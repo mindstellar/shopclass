@@ -869,8 +869,6 @@ function osc_render_file($file = '')
     if ($file == '') {
         $file = __get('file');
     }
-    // Clean $file to prevent hacking of some
-    osc_sanitize_url($file);
     $file = str_replace(array(
                             "..\\",
                             '../'
@@ -900,7 +898,6 @@ function osc_render_file($file = '')
  */
 function osc_render_file_url($file = '')
 {
-    osc_sanitize_url($file);
     $file = str_replace(array(
                             "..\\",
                             '../'

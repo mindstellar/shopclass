@@ -634,7 +634,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `response_cache_control` | filter | `$header` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `response_is_cacheable` | filter | `true` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `rules_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
-| `sanitize_html_allowed` | filter | `implode(',', array( 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a[href\|title\|rel]', 'h3', 'h4', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span[style]', 'img[src\|alt\|width\|height]', ))` | `oc-includes/osclass/helpers/hSanitize.php` |
+| `sanitize_html_allowed` | filter | `implode(',', [ 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a[href\|title\|rel]', 'h3', 'h4', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span[style]', 'img[src\|alt\|width\|height]', ])` | `oc-includes/osclass/classes/utility/Sanitize.php` |
 | `scripts_defer` | filter | `defined('OC_ADMIN') && OC_ADMIN` | `oc-includes/osclass/classes/Scripts.php` |
 | `scripts_loaded` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/osclass/classes/admin/ui/SettingsForm.php` |

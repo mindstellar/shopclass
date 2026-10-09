@@ -44,6 +44,7 @@ final class ListPaging
      * Anything that is not a whole number above zero is page 1 — absent, empty, negative,
      * a word, a float. The value is written back to the request, because a screen builds its
      * own paging links from the parameter afterwards and they have to agree with the rows.
+     * An old admin link's `pageNum` still counts when `iPage` is absent.
      *
      * @param string $name
      *
@@ -52,6 +53,9 @@ final class ListPaging
     public static function page(string $name = 'iPage'): int
     {
         $raw  = Params::getParam($name);
+        if ($name === 'iPage' && ($raw === '' || $raw === null) && defined('OC_ADMIN') && OC_ADMIN) {
+            $raw = Params::getParam('pageNum');
+        }
         $page = (is_numeric($raw) && (int) $raw >= 1) ? (int) $raw : 1;
 
         Params::setParam($name, $page);

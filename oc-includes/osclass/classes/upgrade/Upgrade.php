@@ -38,11 +38,6 @@ class Upgrade
     private $packageInfoValid;
 
     /**
-     * @var \mindstellar\utility\Zip
-     */
-    private $Zip;
-
-    /**
      * @var \mindstellar\utility\FileSystem
      */
     private $FileSystem;
@@ -61,7 +56,6 @@ class Upgrade
     {
         $this->objPackage = $packageObj;
         $this->validatePackageInfo();
-        $this->Zip        = new Zip();
         $this->FileSystem = new FileSystem();
     }
 
@@ -178,6 +172,61 @@ class Upgrade
     }
 
     /**
+     * Make sure the downloads folder exists and this PHP user can write to it.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    public static function downloadsReady(string $path): bool
+    {
+        if (!is_dir($path)) {
+            @mkdir($path, 0755, true);
+        }
+
+        return is_dir($path) && is_writable($path);
+    }
+
+    /**
+     * Download a package zip, check it against $sha256 when given, and unzip it into a new
+     * folder under $downloadsPath. The zip is always removed, and so is the folder on a failure.
+     *
+     * @param string      $url
+     * @param string|null $sha256
+     * @param string      $downloadsPath ends with a slash; see downloadsReady()
+     * @param string      $prefix        start of the unique file name
+     *
+     * @return string|null the extracted folder, or null when the download failed or did not match
+     * @throws \UnexpectedValueException when the zip cannot be unzipped
+     * @throws \Exception
+     */
+    public static function stagePackage(string $url, ?string $sha256, string $downloadsPath, string $prefix): ?string
+    {
+        $fs          = new FileSystem();
+        $uniqueId    = $fs->generateUniqueId($prefix);
+        $zipFile     = $downloadsPath . $uniqueId . '.zip';
+        $extractPath = $downloadsPath . $uniqueId;
+
+        try {
+            $downloaded = $fs->downloadFile($url, $zipFile, null, true, $sha256);
+            if (!$downloaded) {
+                return null;
+            }
+            if ((new Zip())->unzipFile($downloaded, $extractPath) !== 1) {
+                throw new \UnexpectedValueException(__('Unable to unzip package file.'));
+            }
+
+            return $extractPath;
+        } catch (\Throwable $e) {
+            // A failed unzip can leave partial output behind.
+            $fs->remove($extractPath);
+            throw $e;
+        } finally {
+            $fs->remove($zipFile);
+        }
+    }
+
+    /**
      * Explain which files block the upgrade and how to get past it.
      *
      * @param array<string> $paths
@@ -266,44 +315,16 @@ class Upgrade
      */
     private function downloadPackageAndExtract()
     {
-        $unique_id       = $this->FileSystem->generateUniqueId('package_');
-        $unique_filename = $unique_id . '.zip';
-        $download_path   = CONTENT_PATH . 'downloads/';
-        $zip_file        = $download_path . $unique_filename;
-        $extract_path    = $download_path . $unique_id;
-
-        if (!is_dir($download_path)) {
-            @mkdir($download_path, 0755, true);
-        }
-        if (!is_dir($download_path) || !is_writable($download_path)) {
+        $download_path = CONTENT_PATH . 'downloads/';
+        if (!self::downloadsReady($download_path)) {
             throw new RuntimeException(self::unwritableMessage([$download_path]));
         }
 
-        try {
-            $downloaded = $this->FileSystem->downloadFile(
-                $this->objPackage->getSourceUrl(),
-                $zip_file,
-                null,
-                true,
-                $this->objPackage->getSha256()
-            );
-
-            if (!$downloaded) {
-                return false;
-            }
-
-            $resultCode = $this->Zip->unzipFile($downloaded, $extract_path);
-            if ($resultCode === 1) {
-                return $extract_path;
-            }
-            throw new RuntimeException(__('Unable to unzip package file.'));
-        } catch (\Throwable $e) {
-            // unzipFile() can still leave partial output in $extract_path on a -1 (read/write)
-            // failure part-way through; never leave that behind on any failure path.
-            $this->FileSystem->remove($extract_path);
-            throw $e;
-        } finally {
-            $this->FileSystem->remove($zip_file);
-        }
+        return self::stagePackage(
+            $this->objPackage->getSourceUrl(),
+            $this->objPackage->getSha256(),
+            $download_path,
+            'package_'
+        ) ?? false;
     }
 }

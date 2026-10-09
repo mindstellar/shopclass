@@ -23,12 +23,13 @@ final class SignedPayload
      * @param int                 $ttl     seconds the token stays valid
      * @param int                 $round   when above 0, the expiry is rounded up to a multiple of this many
      *                                     seconds, so equal data packed in the same window gives the same token
+     * @param int|null            $now     the current time; time() when null
      *
      * @return string
      */
-    public static function pack(string $purpose, array $data, int $ttl, int $round = 0): string
+    public static function pack(string $purpose, array $data, int $ttl, int $round = 0, ?int $now = null): string
     {
-        $data['x'] = time() + $ttl;
+        $data['x'] = ($now ?? time()) + $ttl;
         if ($round > 0) {
             $data['x'] = (int) (ceil($data['x'] / $round) * $round);
         }
@@ -38,14 +39,15 @@ final class SignedPayload
     }
 
     /**
-     * @param string $purpose
-     * @param string $token
+     * @param string   $purpose
+     * @param string   $token
+     * @param int|null $now the current time; time() when null
      *
      * @return array<string,mixed>|null null when forged, damaged, made for another purpose or expired
      */
-    public static function unpack(string $purpose, string $token): ?array
+    public static function unpack(string $purpose, string $token, ?int $now = null): ?array
     {
-        $opened = self::open($purpose, $token);
+        $opened = self::open($purpose, $token, $now);
 
         return $opened === null || $opened['expired'] ? null : $opened['data'];
     }
@@ -54,12 +56,13 @@ final class SignedPayload
      * Check the signature apart from the expiry, for a caller that answers an expired token
      * differently from a forged one.
      *
-     * @param string $purpose
-     * @param string $token
+     * @param string   $purpose
+     * @param string   $token
+     * @param int|null $now the current time; time() when null
      *
      * @return array{data:array<string,mixed>,expired:bool}|null null when forged, damaged or made for another purpose
      */
-    public static function open(string $purpose, string $token): ?array
+    public static function open(string $purpose, string $token, ?int $now = null): ?array
     {
         $parts = explode('.', $token);
         if (count($parts) !== 2 || !hash_equals(self::sign($purpose, $parts[0]), $parts[1])) {
@@ -69,7 +72,7 @@ final class SignedPayload
         if (!is_array($data) || !isset($data['x'])) {
             return null;
         }
-        $expired = (int) $data['x'] < time();
+        $expired = (int) $data['x'] < ($now ?? time());
         unset($data['x']);
 
         return array('data' => $data, 'expired' => $expired);

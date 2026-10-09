@@ -507,7 +507,7 @@ class CAdminAppearance extends AdminSecBaseModel
 
         // The toolbar count is saved once a day; recount when it disagrees with this list,
         // so the header drawn next shows the same number as the Updates tab.
-        if ((int) osc_get_preference('themes_update_count') !== count($marketUpdates)) {
+        if ((int) osc_update_check_state('themes')['count'] !== count($marketUpdates)) {
             osc_admin_toolbar_update_themes(true);
         }
 

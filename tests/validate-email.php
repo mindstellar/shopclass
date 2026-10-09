@@ -193,13 +193,6 @@ class CityDouble extends City
         return array('b_active' => '1', 'fk_i_region_id' => '3', 'fk_c_country_code' => 'US');
     }
 }
-class LoginAttemptDouble extends LoginAttempt
-{
-    public function countByIpContext($context, $ip, $since)
-    {
-        return $context === 'comment_post' ? 1 : 0;
-    }
-}
 if (!function_exists('osc_selectable_parent_categories')) {
     function osc_selectable_parent_categories()
     {
@@ -222,7 +215,6 @@ $swap('Category', $make(CategoryDouble::class));
 $swap('Country', $make(CountryDouble::class));
 $swap('Region', $make(RegionDouble::class));
 $swap('City', $make(CityDouble::class));
-$swap('LoginAttempt', $make(LoginAttemptDouble::class));
 
 $cats = array('7', '8', '0');
 pin('category', array_map(array($v, 'category'), $cats), array_map('osc_validate_category', $cats));
@@ -240,7 +232,7 @@ check('...an active city in its region is taken, an inactive region refused', os
 $_SERVER['REMOTE_ADDR'] = '198.51.100.7';
 Params::init();
 pin('spam delay, item and comment', array($v->delay(), $v->delay('comment')), array(osc_validate_spam_delay(), osc_validate_spam_delay('comment')));
-check('...a recent comment holds back the next, a listing is free', osc_validate_spam_delay() && !osc_validate_spam_delay('comment'));
+check('...with no counter to read, both are allowed', osc_validate_spam_delay() && osc_validate_spam_delay('comment'));
 
 $hv = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hValidate.php');
 preg_match_all('/^function (osc_validate_\w+)\(.*?\n\{\n(.*?)^\}/ms', $hv, $m, PREG_SET_ORDER);

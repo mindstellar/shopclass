@@ -180,6 +180,33 @@ function osc_response_etag_value($body)
 }
 
 /**
+ * The tags in an If-Match or If-None-Match header, quoted, with any `W/` removed. A proxy
+ * that compresses the answer (nginx gzip, Cloudflare) weakens the tag it passes on.
+ *
+ * @return array<int,string>
+ */
+function osc_etag_tags(string $header): array
+{
+    $tags = array();
+    foreach (explode(',', $header) as $tag) {
+        $tag = trim($tag);
+        if ($tag !== '') {
+            $tags[] = str_starts_with($tag, 'W/') ? substr($tag, 2) : $tag;
+        }
+    }
+
+    return $tags;
+}
+
+/**
+ * Whether a conditional header names $etag: `*`, or any tag in the list, weak or strong.
+ */
+function osc_etag_matches(string $header, string $etag): bool
+{
+    return trim($header) === '*' || in_array($etag, osc_etag_tags($header), true);
+}
+
+/**
  * Answer a repeat request with "nothing changed" instead of the page again.
  *
  * Registered on `response_body`, so it sees the finished page.
@@ -217,7 +244,7 @@ function osc_response_etag($body)
     $etag = osc_response_etag_value($body);
     header('ETag: ' . $etag);
 
-    if (trim((string)Params::getServerParam('HTTP_IF_NONE_MATCH', false, false)) === $etag) {
+    if (osc_etag_matches((string)Params::getServerParam('HTTP_IF_NONE_MATCH', false, false), $etag)) {
         http_response_code(304);
 
         return '';

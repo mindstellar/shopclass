@@ -523,7 +523,7 @@ return array(
     array(
     ),
     'count' => 0,
-    'q' => 2,
+    'q' => 3,
   ),
   'pattern two words' =>
   array(

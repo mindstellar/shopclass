@@ -525,14 +525,7 @@ if (!function_exists('osc_admin_toolbar_close')) {
 
 if (!function_exists('osc_admin_pager')) {
     /**
-     * Page through a list.
-     *
-     * Renders nothing at all when everything fits on one page — a pager under a
-     * three-row table is chrome reporting on itself.
-     *
-     * The range ("1–25 of 240") is stated in words rather than as a strip of numbered
-     * links, because the question an admin actually has is "how much of this is there",
-     * and a row of page numbers answers a question nobody asked.
+     * Page through a list given its numbers; draws the same pager as osc_admin_pagination().
      *
      * @param array<string,mixed> $opts 'total', 'per_page', 'page' (1-based), 'base_url', 'params'
      *
@@ -543,47 +536,15 @@ if (!function_exists('osc_admin_pager')) {
         $total   = max(0, (int) ($opts['total'] ?? 0));
         $perPage = max(1, (int) ($opts['per_page'] ?? 25));
         $page    = max(1, (int) ($opts['page'] ?? 1));
-        $pages   = (int) ceil($total / $perPage);
+        $params  = $opts['params'] ?? array();
 
-        if ($pages < 2) {
-            return;
-        }
-
-        $page  = min($page, $pages);
-        $first = (($page - 1) * $perPage) + 1;
-        $last  = min($total, $page * $perPage);
-
-        $link = static function ($target) use ($opts) {
-            $params         = $opts['params'] ?? array();
-            $params['pageNum'] = $target;
-
-            return osc_esc_html(($opts['base_url'] ?? '') . '&' . http_build_query($params));
-        }; ?>
-        <nav class="osc-pager" aria-label="<?php echo osc_esc_html(__('Pagination')); ?>">
-            <p class="osc-pager-range">
-                <?php printf(
-                    osc_esc_html(__('%1$s–%2$s of %3$s')),
-                    number_format($first),
-                    number_format($last),
-                    number_format($total)
-                ); ?>
-            </p>
-            <div class="osc-pager-controls">
-                <?php if ($page > 1) { ?>
-                    <a class="btn btn-secondary btn-sm" href="<?php echo $link($page - 1); ?>"
-                       rel="prev"><?php _e('Previous'); ?></a>
-                <?php } else { ?>
-                    <span class="btn btn-secondary btn-sm disabled" aria-disabled="true"><?php _e('Previous'); ?></span>
-                <?php } ?>
-                <?php if ($page < $pages) { ?>
-                    <a class="btn btn-secondary btn-sm" href="<?php echo $link($page + 1); ?>"
-                       rel="next"><?php _e('Next'); ?></a>
-                <?php } else { ?>
-                    <span class="btn btn-secondary btn-sm disabled" aria-disabled="true"><?php _e('Next'); ?></span>
-                <?php } ?>
-            </div>
-        </nav>
-        <?php
+        osc_admin_pagination(array(
+            'iTotalDisplayRecords' => $total,
+            'iDisplayLength'       => $perPage,
+            'iPage'                => $page,
+            'iShown'               => max(0, min($perPage, $total - (($page - 1) * $perPage))),
+            'base_url'             => ($opts['base_url'] ?? '') . ($params === array() ? '' : '&' . http_build_query($params)),
+        ));
     }
 }
 
@@ -964,14 +925,8 @@ if (!function_exists('osc_admin_pagination')) {
     /**
      * The range line and page controls under a DataTables-shaped list.
      *
-     * Every list screen defined its own `showingResults` closure over the same numbers and
-     * hung it on `before_show_pagination_admin`. This computes them from the one array they
-     * all already have.
-     *
-     * Two shapes exist in the admin: rows under `aaData` or under `aRows`, and a filtered
-     * count with or without an unfiltered `iTotalRecords` beside it. Both are handled here,
-     * because a screen that silently lost its "filtered from N total" line would be
-     * reporting a smaller catalogue than it holds.
+     * Rows come under `aaData` or `aRows`; a filtered count may sit beside an unfiltered
+     * `iTotalRecords`, which adds the "filtered from N total" part of the range line.
      *
      * @param array<string,mixed> $aData The controller's row set plus its display/total counts
      *
@@ -979,28 +934,7 @@ if (!function_exists('osc_admin_pagination')) {
      */
     function osc_admin_pagination(array $aData)
     {
-        $perPage  = (int) ($aData['iDisplayLength'] ?? 0);
-        $page     = \mindstellar\admin\ListPaging::page();
-        $shown    = count($aData['aRows'] ?? $aData['aaData'] ?? array());
-        $filtered = (int) ($aData['iTotalDisplayRecords'] ?? 0);
-        // Only widens the sentence when it is genuinely larger than the filtered count.
-        $total    = isset($aData['iTotalRecords']) ? (int) $aData['iTotalRecords'] : null;
-
-        osc_add_hook(
-            'before_show_pagination_admin',
-            static function () use ($perPage, $page, $shown, $filtered, $total) {
-                // An empty list has no range to state; the empty row inside the table says it.
-                if ($shown === 0) {
-                    return;
-                }
-                $from = (($page - 1) * $perPage) + 1;
-                echo '<ul class="showing-results"><li><span>'
-                     . osc_pagination_showing($from, $from + $shown - 1, $filtered, $total)
-                     . '</span></li></ul>';
-            }
-        );
-
-        osc_show_pagination_admin($aData);
+        osc_show_pagination_admin(array('show_range' => true) + $aData);
     }
 }
 

@@ -156,11 +156,10 @@ function osc_validate_category($value)
 
 /**
  * Validate if $value url is a valid url.
- * Check header response to validate.
  *
  * @param string  $value
  * @param boolean $required
- * @param bool    $get_headers
+ * @param bool    $get_headers also ask a public address with a 3-second HEAD request
  *
  * @return boolean
  */

@@ -23,6 +23,10 @@ The defaults are:
 So on a MyISAM table with default settings, a search for `TV`, `PC` or `BMW` finds
 nothing. The word was never put in the index, so it can never match.
 
+ShopClass reads the server's InnoDB minimum. When every word in a search is
+shorter than it, or is a stopword, ShopClass matches the words anywhere in the
+title or description instead, which is slower but finds them.
+
 If your categories are full of short model names or two-letter abbreviations,
 lower the minimum.
 

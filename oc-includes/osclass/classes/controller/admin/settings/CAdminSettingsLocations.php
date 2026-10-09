@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\database\DbException;
 use mindstellar\location\CountryCode;
 use mindstellar\location\LocationAdminQuery;
@@ -169,7 +170,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     private function listModel(): array
     {
         $query    = new LocationAdminQuery();
-        $page     = max(1, Params::getParamInt('pageNum', 1));
+        $page     = ListPaging::page();
         $per      = LocationAdminQuery::DEFAULT_PER;
         $regionId = Params::getParamInt('region');
         $country  = strtoupper(trim(Params::getParamString('country_code') ?: Params::getParamString('country')));
@@ -860,7 +861,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     {
         $search = LocationAdminView::search(Params::getParamString('q', false, false, false), '');
 
-        return array('q' => $search['q'], 'pageNum' => Params::getParamInt('pageNum'));
+        return array('q' => $search['q'], 'iPage' => ListPaging::page());
     }
 
     /**
@@ -887,7 +888,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     }
 
     /**
-     * The canonical list URL: country=…&region=…&pageNum=…, empty values left out.
+     * The canonical list URL: country=…&region=…&iPage=…, empty values left out.
      *
      * @param array<string,string|int> $params
      *
@@ -895,8 +896,8 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function listUrl(array $params = array()): string
     {
-        if (isset($params['pageNum']) && (int) $params['pageNum'] <= 1) {
-            unset($params['pageNum']);
+        if (isset($params['iPage']) && (int) $params['iPage'] <= 1) {
+            unset($params['iPage']);
         }
         // Some rows store the country code lowercase; every URL this builds carries it upper.
         if (isset($params['country']) && is_string($params['country'])) {

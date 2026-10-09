@@ -18,6 +18,9 @@ namespace mindstellar\utility;
  */
 class Sanitize
 {
+    /** Built on first use by richHtml(). */
+    private static ?\HTMLPurifier $purifier = null;
+
     /**
      * Sanitised String
      *
@@ -148,7 +151,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options unused; kept for signature compatibility
      *
-     * @return string|false
+     * @return int
      * @deprecated since 5.1.0 use Sanitize::int() instead, to be removed in 7.0.0
      */
     public function filterInt($value, ...$options)
@@ -157,15 +160,23 @@ class Sanitize
     }
 
     /**
-     * Sanitised Int
+     * Sanitised Int: the value as PHP reads it as a whole number, so "12abc" is 12,
+     * "1.5" is 1 and anything that is not a number is 0.
      *
      * @param mixed $value
      *
-     * @return string|false
+     * @return int
      */
-    public function int($value)
+    public function int($value): int
     {
-        return filter_var($value, FILTER_SANITIZE_NUMBER_INT);
+        if (is_array($value) || is_object($value) || $value === null) {
+            return 0;
+        }
+        if (is_float($value) && !is_finite($value)) {
+            return 0;
+        }
+
+        return (int) (is_string($value) ? trim($value) : $value);
     }
 
     /**
@@ -195,20 +206,13 @@ class Sanitize
      * Sanitised URL
      *
      * @param mixed $value
-     * @param array $options
+     * @param array $options unused; kept for signature compatibility
      *
-     * @return string|false
+     * @return string
      */
-    public function url($value, ...$options)
+    public function url($value, ...$options): string
     {
-        $options = array_merge(
-            [
-                'default' => '',
-            ],
-            $options
-        );
-
-        return filter_var($value, FILTER_SANITIZE_URL, $options);
+        return is_scalar($value) ? (string) filter_var((string) $value, FILTER_SANITIZE_URL) : '';
     }
 
     /**
@@ -350,7 +354,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options
      *
-     * @return string|false
+     * @return string
      * @deprecated since 5.1.0 use Sanitize::url() instead, to be removed in 7.0.0
      */
     public function filterURL($value, ...$options)
@@ -359,64 +363,175 @@ class Sanitize
     }
 
     /**
-     * Sanitize string that's all-caps
+     * Lower-case a value written entirely in capitals, keeping its first letter upper case.
+     * A value with any lower-case letter is returned as it is, so "McDonald" keeps its case.
      *
-     * @param string $value value to sanitize
+     * @param mixed $value
      *
-     * @return string sanitized
+     * @return string
      */
-    public function allcaps($value)
+    public function allcaps($value): string
     {
-        $sanitizedString = $this->string($value);
-        if ($sanitizedString != false) {
-            return ucfirst(strtolower($sanitizedString));
+        $value = is_scalar($value) ? (string) $value : '';
+        if (!mb_check_encoding($value, 'UTF-8')
+            || !preg_match('/\p{Lu}/u', $value)
+            || preg_match('/\p{Ll}/u', $value)
+        ) {
+            return $value;
         }
+        $lower = mb_strtolower($value, 'UTF-8');
 
-        return '';
+        return mb_convert_case(mb_substr($lower, 0, 1, 'UTF-8'), MB_CASE_TITLE, 'UTF-8')
+            . mb_substr($lower, 1, null, 'UTF-8');
     }
 
     /**
-     * Sanitize a username
+     * Tidy a person or place name: trimmed, all-caps lowered, and each word started
+     * with a capital. Letters already in capitals are kept.
      *
-     * @param string $value
+     * @param mixed $value
      *
-     * @return string sanitized
+     * @return string
      */
-    public function username($value)
+    public function name($value): string
     {
-        $sanitizedString = $this->string($value);
-        if ($sanitizedString) {
-            // Sanitize username, trim leading/trailing spaces and replace space with underscore.
-            $value = preg_replace('/[^a-zA-Z0-9_\.]/', '', $value);
-            $value = preg_replace('/[\s]+/', '_', $value);
-            return trim($value);
-        }
+        $value = $this->allcaps(trim(is_scalar($value) ? (string) $value : ''));
+        $named = preg_replace_callback(
+            '/(^|\s)(\p{Ll})/u',
+            static fn (array $m): string => $m[1] . mb_convert_case($m[2], MB_CASE_TITLE, 'UTF-8'),
+            $value
+        );
 
-        return '';
+        return $named ?? ucwords($value);
     }
 
     /**
-     * Format phone number. Remove non-numeric characters.
+     * Sanitize a username: whitespace becomes '_', anything but ASCII letters, digits,
+     * '_' and '.' is dropped, and runs of '_' collapse to one.
      *
-     * @param string $value value to sanitize
+     * @param mixed $value
      *
-     * @return string sanitized
+     * @return string
      */
-    public function phone($value)
+    public function username($value): string
     {
-        $value = $this->string($value);
-        if ($value) {
-            $value = preg_replace('/[^+0-9]/', '', $value);
-            // check if the first character is a +
-            if (strpos($value, '+') === 0) {
-                $value = '+' . str_replace('+', '', $value);
-            } else {
-                $value = str_replace('+', '', $value);
-            }
+        $value = trim(is_scalar($value) ? (string) $value : '');
+        $value = (string) preg_replace('/\s+/', '_', $value);
+        $value = (string) preg_replace('/[^A-Za-z0-9_.]/', '', $value);
 
+        return (string) preg_replace('/_{2,}/', '_', $value);
+    }
+
+    /**
+     * Sanitize a phone number without reformatting it for any one country: digits, a leading
+     * '+', and the separators people type (space, '-', '.', '/', brackets) between digits are
+     * kept; anything else is dropped. A value with no digit becomes ''.
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    public function phone($value): string
+    {
+        $value = trim(is_scalar($value) ? (string) $value : '');
+        $plus  = strpos($value, '+') === 0;
+        $value = (string) preg_replace('/[^0-9 ().\/-]+/', ' ', $value);
+        $value = (string) preg_replace('/\([^0-9]*\)/', ' ', $value);
+        $value = (string) preg_replace('/(?<![0-9])[.\/-]+(?![0-9])/', ' ', $value);
+        $value = trim((string) preg_replace('/\s+/', ' ', $value), ' -./');
+        if (!preg_match('/[0-9]/', $value)) {
+            return '';
+        }
+
+        return ($plus ? '+' : '') . $value;
+    }
+
+    /**
+     * Turn a value into a URL-safe slug: tags, accents, entities and punctuation removed,
+     * whitespace collapsed to single hyphens.
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    public function slug($value): string
+    {
+        return (string) (new Formatting())->formatSlug(is_scalar($value) ? (string) $value : '');
+    }
+
+    /**
+     * Reduce a value to plain text, taking every tag out along with what it contained.
+     * It is the filter Params::getParam() runs over request data, so the result is
+     * escaped the same way. Arrays are walked; other non-strings are returned unchanged.
+     *
+     * @param mixed $value
+     *
+     * @return mixed same shape as $value
+     */
+    public function text($value)
+    {
+        if (is_array($value)) {
+            return array_map([$this, 'text'], $value);
+        }
+        if (!is_string($value)) {
             return $value;
         }
 
-        return '';
+        return \Params::purifyText($value);
+    }
+
+    /**
+     * Sanitize rich text to the markup a Shopclass editor can produce: inline formatting,
+     * lists, links, headings, quotes, tables, images and colour spans. Scripts, iframes,
+     * event handlers and any URL scheme but http, https and mailto are removed.
+     * Arrays are walked, so a per-locale map can be passed in. Unlike html(), this keeps markup.
+     *
+     * @param mixed $value
+     *
+     * @return mixed same shape as $value
+     */
+    public function richHtml($value)
+    {
+        if (is_array($value)) {
+            return array_map([$this, 'richHtml'], $value);
+        }
+        if (!is_string($value) || $value === '') {
+            return $value;
+        }
+
+        return self::purifier()->purify($value);
+    }
+
+    /**
+     * The purifier richHtml() uses, built once per request.
+     */
+    private static function purifier(): \HTMLPurifier
+    {
+        if (self::$purifier !== null) {
+            return self::$purifier;
+        }
+        $config = \HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', osc_apply_filter('sanitize_html_allowed', implode(',', [
+            'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li',
+            'a[href|title|rel]', 'h3', 'h4', 'blockquote', 'hr',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td',
+            'span[style]', 'img[src|alt|width|height]',
+        ])));
+        // Only what the colour and alignment buttons write; other CSS can build overlays.
+        $config->set('CSS.AllowedProperties', [
+            'color', 'background-color', 'text-align',
+            'font-weight', 'font-style', 'text-decoration',
+        ]);
+        $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
+        // Outbound links get nofollow so descriptions are not worth spamming; URI.Host tells
+        // the purifier which links point back into this site.
+        $config->set('HTML.Nofollow', true);
+        $host = function_exists('osc_base_url') ? parse_url((string) osc_base_url(), PHP_URL_HOST) : null;
+        if (is_string($host) && $host !== '') {
+            $config->set('URI.Host', $host);
+        }
+        \mindstellar\security\PurifierCache::apply($config);
+
+        return self::$purifier = new \HTMLPurifier($config);
     }
 }

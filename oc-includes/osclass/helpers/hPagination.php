@@ -144,53 +144,74 @@ function osc_pagination($params = null)
 }
 
 /**
- * Print the admin table pagination: a "go to page" form and the page links.
+ * Print the admin list pager: the range line, a "go to page" form and the page links.
+ * osc_admin_pagination() and osc_admin_pager() both draw through this.
  *
- * @param array<string,mixed> $aData DataTable data: iPage, iTotalDisplayRecords, iDisplayLength
+ * @param array<string,mixed> $aData iTotalDisplayRecords, iDisplayLength, optional iPage (default the
+ *                                   request's), base_url (default this request without its page),
+ *                                   iTotalRecords, iShown or aRows/aaData, and show_range to print the range line
  *
  * @return void
  */
 function osc_show_pagination_admin($aData)
 {
-    $pageActual = isset($aData['iPage']) ? $aData['iPage'] : Params::getParam('iPage');
-    $urlActual  = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-    $urlActual  = preg_replace('/&iPage=(\d+)?/', '', $urlActual);
-    $pageTotal  = ceil($aData['iTotalDisplayRecords'] / $aData['iDisplayLength']);
-    $params     = array(
-        'total'    => $pageTotal,
-        'selected' => $pageActual - 1,
-        'url'      => $urlActual . '&iPage={PAGE}',
-        'sides'    => 5
-    );
-
+    $perPage    = max(1, (int) ($aData['iDisplayLength'] ?? 0));
+    $pageActual = max(1, (int) ($aData['iPage'] ?? \mindstellar\admin\ListPaging::page()));
+    $filtered   = (int) ($aData['iTotalDisplayRecords'] ?? 0);
+    $pageTotal  = (int) ceil($filtered / $perPage);
+    $urlActual  = isset($aData['base_url'])
+        ? (string) $aData['base_url']
+        : osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
+    // Old links may carry pageNum; the page always goes out as iPage.
+    $urlActual  = rtrim((string) preg_replace('/(?<=[?&])(iPage|pageNum)=[^&]*(&|$)/', '', $urlActual), '&');
+    $hidden     = array();
+    foreach (explode('&', (string) parse_url($urlActual, PHP_URL_QUERY)) as $pair) {
+        if ($pair !== '') {
+            $kv       = explode('=', $pair, 2);
+            $hidden[] = array(urldecode($kv[0]), urldecode($kv[1] ?? ''));
+        }
+    }
+    $shown = isset($aData['iShown'])
+        ? (int) $aData['iShown']
+        : count($aData['aRows'] ?? $aData['aaData'] ?? array());
+    $from  = (($pageActual - 1) * $perPage) + 1;
+    $total = isset($aData['iTotalRecords']) ? (int) $aData['iTotalRecords'] : null;
     ?>
     <div class="has-pagination">
-        <?php osc_run_hook('before_show_pagination_admin'); ?>
-        <?php if ($pageTotal > 1) { ?>
-            <form method="get" action="<?php echo $urlActual; ?>" style="display:inline;" nocsrf>
-                <?php foreach (Params::getParamsAsArray('get') as $key => $value) { ?>
-                    <?php if ($key !== 'iPage') { ?>
-                        <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
-                               value="<?php echo osc_esc_html($value); ?>"/>
-                    <?php }
-                    } ?>
+        <?php osc_run_hook('before_show_pagination_admin');
+        // An empty list has no range to state; the empty row inside the table says it.
+        if (!empty($aData['show_range']) && $shown > 0) {
+            echo '<ul class="showing-results"><li><span>'
+                . osc_pagination_showing($from, $from + $shown - 1, $filtered, $total)
+                . '</span></li></ul>';
+        }
+        if ($pageTotal > 1) { ?>
+            <form method="get" action="<?php echo osc_esc_html(strtok($urlActual, '?')); ?>" style="display:inline;" nocsrf>
+                <?php foreach ($hidden as [$key, $value]) { ?>
+                    <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
+                           value="<?php echo osc_esc_html($value); ?>"/>
+                <?php } ?>
                 <ul>
                     <li>
                         <span class="list-first"><?php _e('Page'); ?></span>
                     </li>
                     <li class="pagination-input">
-                        <input id="gotoPage" type="text" name="iPage" value="<?php echo osc_esc_html($pageActual); ?>"/>
+                        <input id="gotoPage" type="text" name="iPage" value="<?php echo $pageActual; ?>"/>
                         <button type="submit"><?php _e('Go!'); ?></button>
                     </li>
                 </ul>
             </form>
             <?php
-            $pagination = new Pagination($params);
-            $aux        = $pagination->doPagination();
-            echo $aux;
+            $pagination = new Pagination(array(
+                'total'    => $pageTotal,
+                'selected' => $pageActual - 1,
+                'url'      => $urlActual . '&iPage={PAGE}',
+                'sides'    => 5
+            ));
+            echo $pagination->doPagination();
         }
-    osc_run_hook('after_show_pagination_admin');
-    ?>
+        osc_run_hook('after_show_pagination_admin');
+        ?>
     </div>
     <?php
 }

@@ -14,6 +14,8 @@ namespace mindstellar\apiaccess;
 
 use mindstellar\auth\AuthStamp;
 use mindstellar\security\SignedPayload;
+use mindstellar\utility\Clock;
+use mindstellar\utility\SystemClock;
 
 /**
  * Page tokens for the same-site session mode: `scs_<SignedPayload>`, signed with the install's
@@ -39,8 +41,11 @@ final class PageTokens
 
     private const PURPOSE = 'api-session';
 
-    public function __construct(private int $ttl = self::TTL)
+    private Clock $clock;
+
+    public function __construct(private int $ttl = self::TTL, ?Clock $clock = null)
     {
+        $this->clock = $clock ?? new SystemClock();
     }
 
     /**
@@ -50,14 +55,13 @@ final class PageTokens
      */
     public function issue(array $user): IssuedToken
     {
-        // SignedPayload stamps the expiry from time(), so the answer counts from it too.
-        $expiresAt = time() + $this->ttl;
+        $now   = $this->clock->now();
         $token = self::PREFIX . SignedPayload::pack(self::PURPOSE, [
             'sub' => (int) $user['pk_i_id'],
             'st'  => AuthStamp::fingerprint($user),
-        ], $this->ttl);
+        ], $this->ttl, 0, $now);
 
-        return new IssuedToken($token, $expiresAt);
+        return new IssuedToken($token, $now + $this->ttl);
     }
 
     /**
@@ -86,7 +90,7 @@ final class PageTokens
         if (!str_starts_with($token, self::PREFIX)) {
             return self::REFUSED;
         }
-        $opened = SignedPayload::open(self::PURPOSE, substr($token, strlen(self::PREFIX)));
+        $opened = SignedPayload::open(self::PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now());
         $data   = $opened['data'] ?? null;
         if ($data === null || !is_int($data['sub'] ?? null) || !is_string($data['st'] ?? null)
             || $data['sub'] !== (int) ($user['pk_i_id'] ?? 0)

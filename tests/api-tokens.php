@@ -262,6 +262,28 @@ pin('stored as a hash with its family, label, address and a 30-day expiry', [
 ], [$row['kind'], $row['hash'], $row['family'], $row['name'], $row['ip'], $row['expires']]);
 check('the token itself is stored nowhere', !str_contains((string) json_encode($store->rows), explode('.', $first->token())[1]));
 
+harness_section('one mint and check for keys and refresh tokens');
+[$mintId, $mintSecret, $mintHash] = ApiKeys::mint();
+pin('mint() gives a 16-character id, a 64-hex secret and its sha256', [1, 1, hash('sha256', $mintSecret)],
+    [preg_match('/^[0-9A-Za-z]{16}$/D', $mintId), preg_match('/^[0-9a-f]{64}$/D', $mintSecret), $mintHash]);
+pin('parse() splits a refresh token', ['scr_', $row['tokenId'], explode('.', $first->token())[1]], ApiKeys::parse($first->token(), [RefreshTokens::PREFIX]));
+pin('and refuses a prefix it was not given', null, ApiKeys::parse($first->token(), [ApiKeys::KEY_PREFIX, ApiKeys::PUBLIC_PREFIX]));
+pin('or a short secret', null, ApiKeys::parse('scr_' . str_repeat('A', 16) . '.abc', [RefreshTokens::PREFIX]));
+$stored = new StoredKey(1, CredentialKind::REFRESH, $row['tokenId'], $row['hash'], '', [], null);
+pin('secretMatches() checks the stored hash', [true, false], [ApiKeys::secretMatches($stored, explode('.', $first->token())[1]), ApiKeys::secretMatches($stored, str_repeat('0', 64))]);
+$code = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/apiaccess/ApiKeys.php')
+    . file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/api/auth/RefreshTokens.php');
+pin('both make secrets and compare hashes in one place', [1, 1, 2], [substr_count($code, 'random_bytes(32)'), substr_count($code, 'hash_equals('), substr_count($code, '::mint()')]);
+
+harness_section('a Clock reaches SignedPayload');
+$pages = new \mindstellar\apiaccess\PageTokens(600, $clock);
+$page  = $pages->issue($store->users[10]);
+pin('a page token expires from the clock\'s time', $now + 600, $page->expiresAt());
+pin('and is checked at the clock\'s time', \mindstellar\apiaccess\PageTokens::VALID, $pages->check($page->token(), $store->users[10]));
+$now += 601;
+pin('so moving the clock past it expires it', \mindstellar\apiaccess\PageTokens::EXPIRED, $pages->check($page->token(), $store->users[10]));
+$now -= 601;
+
 $now          += 3600;
 $store->trace  = true;
 $second        = $refresh->rotate($first->token(), '192.0.2.2');

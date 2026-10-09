@@ -383,7 +383,7 @@ pin(
         'b_show_email'       => '1',
         's_contact_name'     => 'Grace Hopper',
         's_contact_email'    => 'grace@example.test',
-        's_contact_phone'    => '5550199',
+        's_contact_phone'    => '555-0199',
     ),
     only(row($admin, 't_item', 'pk_i_id', $itemId), array(
         'fk_i_category_id', 'i_price', 'fk_c_currency_code', 'b_show_email',

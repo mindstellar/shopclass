@@ -214,14 +214,11 @@ final class Response
      */
     public static function versionMatches(string $header, string $version): bool
     {
-        $header = trim($header);
-        if ($header === '*') {
+        if (trim($header) === '*') {
             return true;
         }
-        foreach (explode(',', $header) as $tag) {
-            $tag = trim($tag);
-            $tag = trim(str_starts_with($tag, 'W/') ? substr($tag, 2) : $tag, '"');
-            if (hash_equals($version, explode('.', $tag, 2)[0])) {
+        foreach (osc_etag_tags($header) as $tag) {
+            if (hash_equals($version, explode('.', trim($tag, '"'), 2)[0])) {
                 return true;
             }
         }
@@ -307,18 +304,7 @@ final class Response
      */
     public static function etagMatches(string $header, string $etag): bool
     {
-        $header = trim($header);
-        if ($header === '*') {
-            return true;
-        }
-        foreach (explode(',', $header) as $tag) {
-            $tag = trim($tag);
-            if ((str_starts_with($tag, 'W/') ? substr($tag, 2) : $tag) === $etag) {
-                return true;
-            }
-        }
-
-        return false;
+        return osc_etag_matches($header, $etag);
     }
 
     private function setHeader(string $name, string $value): void

@@ -649,6 +649,125 @@ function osc_admin_toolbar_spam()
 }
 
 /**
+ * Re-scan installed plugins, themes or languages for updates and save the result.
+ *
+ * @param string $kind 'plugins', 'themes' or 'languages'
+ *
+ * @return int How many have an update available
+ */
+function osc_update_check_scan(string $kind): int
+{
+    $toUpdate   = array();
+    $downloaded = array();
+    // Catalog failures are absorbed internally; a hard throw still must not break the admin footer poll or the CLI.
+    try {
+        $pending = match ($kind) {
+            'plugins' => \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates(),
+            'themes'  => \mindstellar\market\PackageIndex::forThemes()->pendingUpdates(),
+            default   => array(),
+        };
+    } catch (\Throwable $e) {
+        $pending = array();
+    }
+
+    if ($kind === 'plugins') {
+        foreach (Plugins::listAll() as $plugin) {
+            $info = osc_plugin_get_info($plugin);
+            if (isset($pending[dirname($plugin)])) {
+                $toUpdate[] = $info['plugin_update_uri'] ?? null;
+            }
+            $downloaded[] = $info['plugin_update_uri'] ?? null;
+        }
+    } elseif ($kind === 'themes') {
+        foreach (WebThemes::getInstance()->getListThemes() as $theme) {
+            $info = WebThemes::getInstance()->loadThemeInfo($theme);
+            if (isset($pending[$theme])) {
+                $toUpdate[] = $theme;
+            }
+            $downloaded[] = $info['theme_update_uri'] ?? null;
+        }
+    } elseif ($kind === 'languages') {
+        foreach (OSCLocale::getInstance()->listAll() as $lang) {
+            if (osc_check_language_update($lang['pk_c_code'], $lang['s_version'])) {
+                $toUpdate[] = $lang['pk_c_code'];
+            }
+            $downloaded[] = $lang['pk_c_code'];
+        }
+    } else {
+        throw new InvalidArgumentException('Unknown update check: ' . $kind);
+    }
+
+    osc_update_check_save($kind, array(
+        'checked'    => time(),
+        'count'      => count($toUpdate),
+        'to_update'  => $toUpdate,
+        'downloaded' => $downloaded,
+    ));
+
+    return count($toUpdate);
+}
+
+/**
+ * Number of plugins, themes or languages with an update, from the saved check unless forced.
+ * Without $force it schedules a background re-check once the saved one is a day old.
+ *
+ * @param string $kind  'plugins', 'themes' or 'languages'
+ * @param bool   $force Re-scan now instead of returning the saved count
+ *
+ * @return int
+ */
+function osc_update_check_count(string $kind, bool $force = false): int
+{
+    if ($force) {
+        return osc_update_check_scan($kind);
+    }
+    $state = osc_update_check_state($kind);
+    if ((time() - (int) $state['checked']) > (24 * 3600)) {
+        osc_add_hook('admin_footer', 'check_' . $kind . '_admin_footer');
+    }
+
+    return (int) $state['count'];
+}
+
+/**
+ * Add a toolbar counter for plugin, theme or language updates, when any are available.
+ *
+ * @param string $kind  'plugins', 'themes' or 'languages'
+ * @param bool   $force Re-scan for updates and rebuild the entry
+ *
+ * @return void
+ */
+function osc_admin_toolbar_update_counter(string $kind, bool $force = false): void
+{
+    if (osc_is_moderator()) {
+        return;
+    }
+    $entries = array(
+        'plugins'   => array('update_plugin', __('Plugin updates'), 'bi-plug', '?page=plugins#update-plugins'),
+        'themes'    => array('update_theme', __('Theme updates'), 'bi-brush', '?page=appearance'),
+        'languages' => array('update_language', __('Language updates'), 'bi-translate', '?page=languages'),
+    );
+    [$id, $label, $icon, $query] = $entries[$kind];
+    $total = osc_update_check_count($kind, $force);
+
+    if ($force) {
+        AdminToolbar::getInstance()->remove_menu($id);
+    }
+    if ($total > 0) {
+        AdminToolbar::getInstance()->add_menu(
+            array(
+                'id'    => $id,
+                'title' => '<i class="bi ' . $icon . '" aria-hidden="true"></i>'
+                    . '<span class="toolbar-label">' . $label . '</span>'
+                    . '<i class="circle circle-gray">' . $total . '</i>',
+                'href'  => osc_admin_base_url(true) . $query,
+                'meta'  => array('class' => 'action-btn ', 'title' => $label)
+            )
+        );
+    }
+}
+
+/**
  * Add the toolbar entry announcing a core update, when one is recorded as available.
  *
  * @param bool $force Rebuild the entry rather than leaving an already-rendered one in place
@@ -661,20 +780,19 @@ function osc_admin_toolbar_update_core($force = false)
         if ($force) {
             AdminToolbar::getInstance()->remove_menu('update_core');
         }
-        if (getPreference('update_core_available') && !\mindstellar\upgrade\BuildInfo::isEdge()) {
-            $update_json = json_decode(Preference::getInstance()->get('update_core_json'), false);
+        $core = osc_update_check_state('core');
+        if (!empty($core['available']) && !\mindstellar\upgrade\BuildInfo::isEdge()) {
+            $package = is_array($core['package'] ?? null) ? $core['package'] : array();
             // The core can also be replaced outside the admin (a new container image, a manual
             // deploy), which leaves this announcing a version already running.
-            if (!isset($update_json->s_new_version)
-                || version_compare($update_json->s_new_version, OSCLASS_VERSION, 'le')
+            if (!isset($package['s_new_version'])
+                || version_compare($package['s_new_version'], OSCLASS_VERSION, 'le')
             ) {
-                osc_set_preference('update_core_available');
-                osc_set_preference('update_core_json');
-                osc_reset_preferences();
+                osc_update_check_save('core', array('checked' => (int) $core['checked']));
 
                 return;
             }
-            $label       = __('Shopclass ') . $update_json->s_new_version . __(' is available');
+            $label       = __('Shopclass ') . $package['s_new_version'] . __(' is available');
             $title       = '<i class="bi bi-arrow-up-circle" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>';
             AdminToolbar::getInstance()->add_menu(
@@ -690,68 +808,29 @@ function osc_admin_toolbar_update_core($force = false)
 }
 
 /**
- * Number of plugins with an update available, from the cached count unless forced.
- * Without $force it schedules a background re-check once the cached count is a day old.
+ * Number of plugins with an update available; see osc_update_check_count().
  *
- * @param bool $force Re-scan now instead of returning the cached count
+ * @param bool $force Re-scan now instead of returning the saved count
  *
- * @return int|string Int when re-scanned, the stored preference string otherwise
+ * @return int
  */
 function osc_check_plugins_update($force = false)
 {
-    $total = getPreference('plugins_update_count');
-    if ($force) {
-        return _osc_check_plugins_update();
-    }
-
-    if ((time() - (int)osc_plugins_last_version_check()) > (24 * 3600)) {
-        osc_add_hook('admin_footer', 'check_plugins_admin_footer');
-    }
-
-    return $total;
+    return osc_update_check_count('plugins', (bool) $force);
 }
 
 /**
- * Re-scan every installed plugin against the catalogue and cache the result.
+ * Re-scan every installed plugin against the catalogue; see osc_update_check_scan().
  *
- * @return int Number of plugins with an update available
+ * @return int
  */
 function _osc_check_plugins_update()
 {
-    $total            = 0;
-    $array            = array();
-    $array_downloaded = array();
-    $plugins          = Plugins::listAll();
-
-    // Catalog failures are absorbed internally (cached payload + retry clock);
-    // a hard throw here still must not break the admin footer poll or the CLI.
-    try {
-        $pending = \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates();
-    } catch (\Throwable $e) {
-        $pending = array();
-    }
-
-    foreach ($plugins as $plugin) {
-        $info = osc_plugin_get_info($plugin);
-        $slug = dirname($plugin);
-        if (isset($pending[$slug])) {
-            $array[] = @$info['plugin_update_uri'];
-            $total++;
-        }
-        $array_downloaded[] = @$info['plugin_update_uri'];
-    }
-
-    osc_set_preference('plugins_to_update', json_encode($array));
-    osc_set_preference('plugins_downloaded', json_encode($array_downloaded));
-    osc_set_preference('plugins_update_count', $total);
-    osc_set_preference('plugins_last_version_check', time());
-    osc_reset_preferences();
-
-    return $total;
+    return osc_update_check_scan('plugins');
 }
 
 /**
- * Add the toolbar counter for plugin updates, when any are available.
+ * Toolbar counter for plugin updates; see osc_admin_toolbar_update_counter().
  *
  * @param bool $force Re-scan for updates and rebuild the entry
  *
@@ -759,86 +838,33 @@ function _osc_check_plugins_update()
  */
 function osc_admin_toolbar_update_plugins($force = false)
 {
-    if (!osc_is_moderator()) {
-        $total = osc_check_plugins_update($force);
-
-        if ($force) {
-            AdminToolbar::getInstance()->remove_menu('update_plugin');
-        }
-        if ($total > 0) {
-            $label = __('Plugin updates');
-            $title = '<i class="bi bi-plug" aria-hidden="true"></i>'
-                . '<span class="toolbar-label">' . $label . '</span>'
-                . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::getInstance()->add_menu(
-                array(
-                    'id'    => 'update_plugin',
-                    'title' => $title,
-                    'href'  => osc_admin_base_url(true) . '?page=plugins#update-plugins',
-                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
-                )
-            );
-        }
-    }
+    osc_admin_toolbar_update_counter('plugins', (bool) $force);
 }
 
 /**
- * Number of themes with an update available, from the cached count unless forced.
- * Without $force it schedules a background re-check once the cached count is a day old.
+ * Number of themes with an update available; see osc_update_check_count().
  *
- * @param bool $force Re-scan now instead of returning the cached count
+ * @param bool $force Re-scan now instead of returning the saved count
  *
- * @return int|string Int when re-scanned, the stored preference string otherwise
+ * @return int
  */
 function osc_check_themes_update($force = false)
 {
-    $total = getPreference('themes_update_count');
-    if ($force) {
-        return _osc_check_themes_update();
-    } elseif ((time() - (int)osc_themes_last_version_check()) > (24 * 3600)) {
-        osc_add_hook('admin_footer', 'check_themes_admin_footer');
-    }
-
-    return $total;
+    return osc_update_check_count('themes', (bool) $force);
 }
 
 /**
- * Re-scan every installed theme against the catalogue and cache the result.
+ * Re-scan every installed theme against the catalogue; see osc_update_check_scan().
  *
- * @return int Number of themes with an update available
+ * @return int
  */
 function _osc_check_themes_update()
 {
-    $total            = 0;
-    $array            = array();
-    $array_downloaded = array();
-    $themes           = WebThemes::getInstance()->getListThemes();
-
-    try {
-        $pending = \mindstellar\market\PackageIndex::forThemes()->pendingUpdates();
-    } catch (\Throwable $e) {
-        $pending = array();
-    }
-
-    foreach ($themes as $theme) {
-        $info = WebThemes::getInstance()->loadThemeInfo($theme);
-        if (isset($pending[$theme])) {
-            $array[] = $theme;
-            $total++;
-        }
-        $array_downloaded[] = @$info['theme_update_uri'];
-    }
-    osc_set_preference('themes_to_update', json_encode($array));
-    osc_set_preference('themes_downloaded', json_encode($array_downloaded));
-    osc_set_preference('themes_update_count', $total);
-    osc_set_preference('themes_last_version_check', time());
-    osc_reset_preferences();
-
-    return $total;
+    return osc_update_check_scan('themes');
 }
 
 /**
- * Add the toolbar counter for theme updates, when any are available.
+ * Toolbar counter for theme updates; see osc_admin_toolbar_update_counter().
  *
  * @param bool $force Re-scan for updates and rebuild the entry
  *
@@ -846,80 +872,33 @@ function _osc_check_themes_update()
  */
 function osc_admin_toolbar_update_themes($force = false)
 {
-    if (!osc_is_moderator()) {
-        $total = osc_check_themes_update($force);
-
-        if ($force) {
-            AdminToolbar::getInstance()->remove_menu('update_theme');
-        }
-        if ($total > 0) {
-            $label = __('Theme updates');
-            $title = '<i class="bi bi-brush" aria-hidden="true"></i>'
-                . '<span class="toolbar-label">' . $label . '</span>'
-                . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::getInstance()->add_menu(
-                array(
-                    'id'    => 'update_theme',
-                    'title' => $title,
-                    'href'  => osc_admin_base_url(true) . '?page=appearance',
-                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
-                )
-            );
-        }
-    }
+    osc_admin_toolbar_update_counter('themes', (bool) $force);
 }
 
 /**
- * Number of languages with an update available, from the cached count unless forced.
- * Without $force it schedules a background re-check once the cached count is a day old.
+ * Number of languages with an update available; see osc_update_check_count().
  *
- * @param bool $force Re-scan now instead of returning the cached count
+ * @param bool $force Re-scan now instead of returning the saved count
  *
- * @return int|string Int when re-scanned, the stored preference string otherwise
+ * @return int
  */
 function osc_check_languages_update($force = false)
 {
-    $total = getPreference('languages_update_count');
-    if ($force) {
-        return _osc_check_languages_update();
-    }
-
-    if ((time() - (int)osc_languages_last_version_check()) > (24 * 3600)) {
-        osc_add_hook('admin_footer', 'check_languages_admin_footer');
-    }
-
-    return $total;
+    return osc_update_check_count('languages', (bool) $force);
 }
 
 /**
- * Re-check every installed language against its published version and cache the result.
+ * Re-check every installed language against its published version; see osc_update_check_scan().
  *
- * @return int Number of languages with an update available
+ * @return int
  */
 function _osc_check_languages_update()
 {
-    $total            = 0;
-    $array            = array();
-    $array_downloaded = array();
-    $languages        = OSCLocale::getInstance()->listAll();
-    foreach ($languages as $lang) {
-        if (osc_check_language_update($lang['pk_c_code'], $lang['s_version'])) {
-            $array[] = $lang['pk_c_code'];
-            $total++;
-        }
-        $array_downloaded[] = $lang['pk_c_code'];
-    }
-    osc_set_preference('languages_to_update', json_encode($array));
-    osc_set_preference('languages_downloaded', json_encode($array_downloaded));
-    osc_set_preference('languages_update_count', $total);
-    osc_set_preference('languages_last_version_check', time());
-    osc_reset_preferences();
-
-    return $total;
+    return osc_update_check_scan('languages');
 }
 
 /**
- * Add the toolbar counter for language updates, when any are available.
+ * Toolbar counter for language updates; see osc_admin_toolbar_update_counter().
  *
  * @param bool $force Re-scan for updates and rebuild the entry
  *
@@ -927,27 +906,7 @@ function _osc_check_languages_update()
  */
 function osc_admin_toolbar_update_languages($force = false)
 {
-    if (!osc_is_moderator()) {
-        $total = osc_check_languages_update($force);
-
-        if ($force) {
-            AdminToolbar::getInstance()->remove_menu('update_language');
-        }
-        if ($total > 0) {
-            $label = __('Language updates');
-            $title = '<i class="bi bi-translate" aria-hidden="true"></i>'
-                . '<span class="toolbar-label">' . $label . '</span>'
-                . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::getInstance()->add_menu(
-                array(
-                    'id'    => 'update_language',
-                    'title' => $title,
-                    'href'  => osc_admin_base_url(true) . '?page=languages',
-                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
-                )
-            );
-        }
-    }
+    osc_admin_toolbar_update_counter('languages', (bool) $force);
 }
 
 /**

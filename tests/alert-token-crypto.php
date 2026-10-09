@@ -9,64 +9,82 @@
  */
 
 /**
- * Pins the search-alert token format.
- *
- * Two things have to hold at once: a token minted now round-trips and refuses to be
- * tampered with, and a token minted by the previous release -- unauthenticated
- * AES-256-CTR -- still reads, so an alert link already sitting in a rendered page
- * survives the upgrade.  Usage: php tests/alert-token-crypto.php
+ * Pins the search-alert token format: a token minted now round-trips through SecretBox and
+ * refuses tampering, and a raw AES-GCM token from before 7.0 still reads, so an alert link
+ * already sitting in a cached page survives the upgrade.  Usage: php tests/alert-token-crypto.php
  */
 
 require_once __DIR__ . '/lib/harness.php';
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 
 $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
-// The helpers reach for the install's persistent alert key and the preference
-// store behind it. Stub that surface so the crypto can be exercised standalone.
-$GLOBALS['__alert_key'] = str_repeat('k', 40);
+define('OSC_CSRF_SECRET', str_repeat('s', 64));
+
+// The helpers read the old alert key from preferences; stub that store.
+$GLOBALS['__prefs'] = array('alert_private_key' => str_repeat('k', 40));
+function osc_get_preference($key, $section = 'osclass')
+{
+    return $GLOBALS['__prefs'][$key] ?? '';
+}
 function osc_get_alert_private_key()
 {
-    return $GLOBALS['__alert_key'];
-}
-function osc_set_alert_private_key()
-{
-}
-function osc_set_alert_public_key()
-{
+    return $GLOBALS['__prefs']['alert_private_key'];
 }
 
-// Pull in just the token functions, not the whole helper file (which needs a booted
-// application). Extracting them by name keeps the test to the unit under test.
+// Pull in just the token functions, not the whole helper file (which needs a booted application).
 $src = file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hSecurity.php');
-foreach (array('osc_encrypt_alert', 'osc_decrypt_alert', 'osc_decrypt_alert_legacy', 'osc_alert_cipher_key') as $fn) {
+foreach (array('osc_encrypt_alert', 'osc_decrypt_alert', 'osc_decrypt_alert_legacy', 'osc_alert_cipher_key', 'osc_random_string') as $fn) {
     if (preg_match('/\nfunction ' . $fn . '\(.*?\n\}\n/s', $src, $m)) {
-        eval($m[0]);
+        eval('use mindstellar\\security\\SecretBox;' . $m[0]);
     }
 }
+
+/** A token as 6.x minted it: 12-byte nonce, tag, then AES-256-GCM ciphertext under the alert key. */
+$mintOld = static function (string $plain): string {
+    $iv  = random_bytes(12);
+    $tag = '';
+    $key = hash_hmac('sha256', 'shopclass-alert-token-v1', $GLOBALS['__prefs']['alert_private_key'], true);
+    $ct  = openssl_encrypt($plain, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+
+    return $iv . $tag . $ct;
+};
 
 $payload = '{"sCategory":["12","13"],"sPattern":"road bike","sRegion":"Kent"}';
 
 harness_section('round trip');
 $token = osc_encrypt_alert($payload);
 pin('decrypts to the original payload', $payload, osc_decrypt_alert($token));
+pin('is a SecretBox token', true, \mindstellar\security\SecretBox::isSealed($token));
 pin('ciphertext is not the plaintext', false, strpos($token, 'road bike') !== false);
+pin('survives the base64 the search page wraps it in', $payload, osc_decrypt_alert(base64_decode(base64_encode($token))));
 
 // GCM is randomised per call, so the same payload must not produce the same token --
 // otherwise identical searches are linkable across users.
 pin('two encryptions differ', false, osc_encrypt_alert($payload) === osc_encrypt_alert($payload));
 
-harness_section('rejects tampering');
-// The whole point of the change: flipping a ciphertext bit under CTR produced a
-// controlled edit to the plaintext. Under GCM the tag fails and nothing is returned.
-$flipped    = $token;
-$flipped[28] = ($flipped[28] === "\x00") ? "\x01" : "\x00";
-pin('bit-flipped body rejected', '', osc_decrypt_alert($flipped));
+harness_section('a token from before 7.0 still reads');
+$old = $mintOld($payload);
+pin('an old raw GCM token decrypts', $payload, osc_decrypt_alert($old));
+$oldFlipped     = $old;
+$oldFlipped[30] = ($oldFlipped[30] === "\x00") ? "\x01" : "\x00";
+pin('an edited old token is refused', '', osc_decrypt_alert($oldFlipped));
+$GLOBALS['__prefs']['alert_private_key'] = '';
+pin('with no old key stored, an old-format token is refused', '', osc_decrypt_alert($old));
+$GLOBALS['__prefs']['alert_private_key'] = str_repeat('k', 40);
 
-$badTag     = $token;
+harness_section('rejects tampering');
+$raw     = base64_decode(substr($token, 5));
+$reseal  = static fn (string $bytes): string => 'enc1:' . base64_encode($bytes);
+$flipped = $raw;
+$flipped[28] = ($flipped[28] === "\x00") ? "\x01" : "\x00";
+pin('bit-flipped body rejected', '', osc_decrypt_alert($reseal($flipped)));
+
+$badTag     = $raw;
 $badTag[13] = ($badTag[13] === "\x00") ? "\x01" : "\x00";
-pin('tampered tag rejected', '', osc_decrypt_alert($badTag));
+pin('tampered tag rejected', '', osc_decrypt_alert($reseal($badTag)));
 
 pin('truncated token rejected', '', osc_decrypt_alert(substr($token, 0, 20)));
 pin('empty token rejected', '', osc_decrypt_alert(''));
@@ -96,7 +114,6 @@ pin('so an edited legacy token is refused', '', osc_decrypt_alert($forged));
 
 harness_section('a v2 envelope survives the round trip');
 // The subscribe endpoint only accepts a token whose plaintext is a valid v2 envelope.
-require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 if (!function_exists('osc_apply_filter')) {
     function osc_apply_filter($hook, $content = '', ...$args)
     {
@@ -117,9 +134,15 @@ pin('fromToken(): garbage is refused', null, \mindstellar\search\AlertEnvelope::
 pin('fromToken(): an empty token is refused', null, \mindstellar\search\AlertEnvelope::fromToken(''));
 pin('a v1 payload decrypts but does not validate', null, \mindstellar\search\AlertEnvelope::validate(osc_decrypt_alert($token)));
 
+harness_section('osc_random_string');
+pin('gives the length asked for', [0, 1, 32, 45], array_map(static fn (int $n): int => strlen(osc_random_string($n)), [0, 1, 32, 45]));
+pin('from A-Z, a-z, 0-9, "." and "/"', 1, preg_match('#^[A-Za-z0-9./]{200}$#', osc_random_string(200)));
+pin('and differs each call', false, osc_random_string(32) === osc_random_string(32));
+
 harness_section('a wrong key never yields the payload');
-$GLOBALS['__alert_key'] = str_repeat('z', 40);
-pin('new token under wrong key', '', osc_decrypt_alert($token));
+$GLOBALS['__prefs']['alert_private_key'] = str_repeat('z', 40);
+pin('old token under the wrong alert key', '', osc_decrypt_alert($old));
 pin('legacy token under wrong key', false, osc_decrypt_alert($legacyToken) === $payload);
+pin('another purpose cannot open a new token', null, \mindstellar\security\SecretBox::open('other', $token));
 
 exit(harness_result());

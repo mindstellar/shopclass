@@ -9,18 +9,9 @@
  */
 
 /**
- * Behaviour pins for \mindstellar\security\ActionThrottle — the per-address rate
- * limit on the public share-a-listing and contact-seller forms.
- *
- * The limit is what stops one source driving the site's own address as a spam
- * relay, so the arithmetic is what matters: a count read one low lets an extra
- * send through, one read high refuses a legitimate visitor. Fixtures are written
- * with raw mysqli, never through the code under test, so a bug in record() cannot
- * hide by corrupting the rows exceeded() then reads.
- *
- * The source address is read through Params from $_SERVER['REMOTE_ADDR']; each
- * test sets it and re-inits Params so the limiter sees a known address (there is
- * no REMOTE_ADDR under CLI otherwise).
+ * Behaviour pins for \mindstellar\security\ActionThrottle, the per-address limit on public
+ * forms. A count read one low lets an extra send through, one read high refuses a visitor.
+ * Fixtures are added with RateLimit::addRolling() (pinned in ratelimit.php), not record().
  *
  * Usage:  php tests/models/actionthrottle.php      (standalone, own scratch database)
  *         php tests/run-models.php actionthrottle  (as part of the suite)
@@ -43,36 +34,22 @@ if (!function_exists('osc_plugins_path')) {
     }
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
-$table = DB_TABLE_PREFIX . 't_login_attempt';
+$table  = DB_TABLE_PREFIX . 't_rate_counter';
+$ledger = DB_TABLE_PREFIX . 't_login_attempt';
 
-$truncate = static function () use ($admin, $table): void {
+$truncate = static function () use ($admin, $table, $ledger): void {
     $admin->query("TRUNCATE TABLE $table");
+    $admin->query("TRUNCATE TABLE $ledger");
 };
 
-/** Seed one row with raw mysqli, bypassing the code under test. */
-$seed = static function ($context, $ip, $date) use ($admin, $table): void {
-    $stmt = $admin->prepare(
-        "INSERT INTO $table (s_context, s_account, s_ip, dt_date) VALUES (?, '', ?, ?)"
-    );
-    $stmt->bind_param('sss', $context, $ip, $date);
-    $stmt->execute();
-    $stmt->close();
+/** One event for $ip, $secondsAgo in the past. */
+$seed = static function ($context, $ip, $secondsAgo): void {
+    \mindstellar\security\RateLimit::addRolling($context, $ip, 86400, time() - $secondsAgo);
 };
 
-/** @return array */
-$rows = static function () use ($admin, $table): array {
-    $res = $admin->query("SELECT * FROM $table ORDER BY pk_i_id");
-    $out = array();
-    while ($row = $res->fetch_assoc()) {
-        $out[] = $row;
-    }
-    $res->free();
-
-    return $out;
-};
-
-$at = static function ($secondsAgo): string {
-    return date('Y-m-d H:i:s', time() - $secondsAgo);
+/** Events counted, across every row. */
+$events = static function () use ($admin, $table): int {
+    return (int) $admin->query("SELECT COALESCE(SUM(i_count), 0) FROM $table")->fetch_row()[0];
 };
 
 /** Point the limiter at a known source address (or none, when ''). */
@@ -109,13 +86,11 @@ harness_section('ActionThrottle::record');
 $truncate();
 $setIp('203.0.113.9');
 ActionThrottle::record('send_friend');
-
-$written = $rows();
-check('exactly one row was written', count($written) === 1, (string)count($written));
-$row = $written[0] ?? array();
-pin('s_context round-trips', 'send_friend', $row['s_context'] ?? null);
-pin('s_account is empty — these limits key on the address', '', $row['s_account'] ?? null);
-pin('s_ip is the source address', '203.0.113.9', $row['s_ip'] ?? null);
+pin('one event is counted', 1, $events());
+pin('for that address and context', 1, \mindstellar\security\RateLimit::countRolling('send_friend', '203.0.113.9', 3600));
+pin('the sign-in ledger is left alone', '0', $admin->query("SELECT COUNT(*) FROM $ledger")->fetch_row()[0]);
+$bucket = (string) $admin->query("SELECT s_bucket FROM $table LIMIT 1")->fetch_row()[0];
+check('the address is not stored as given', strpos($bucket, '203.0.113.9') === false);
 
 $truncate();
 pin('one record() call costs one query', 1, harness_query_count(static function () {
@@ -125,7 +100,7 @@ pin('one record() call costs one query', 1, harness_query_count(static function 
 $truncate();
 $setIp('');
 ActionThrottle::record('send_friend');
-check('record() with no source address writes nothing', count($rows()) === 0, (string)count($rows()));
+check('record() with no source address writes nothing', $events() === 0, (string)$events());
 
 /* ----------------------------------------------------------------------------
  * exceeded() — the ceiling
@@ -135,11 +110,11 @@ harness_section('ActionThrottle::exceeded — the ceiling');
 $truncate();
 $setIp('198.51.100.1');
 for ($i = 0; $i < 4; $i++) {
-    $seed('send_friend', '198.51.100.1', $at(60));
+    $seed('send_friend', '198.51.100.1', 60);
 }
 check('four sends under a limit of five is allowed', ActionThrottle::exceeded('send_friend', 5, 3600) === false);
 
-$seed('send_friend', '198.51.100.1', $at(60)); // fifth
+$seed('send_friend', '198.51.100.1', 60); // fifth
 check('the fifth send reaches the limit and the next is refused', ActionThrottle::exceeded('send_friend', 5, 3600) === true);
 check('a higher limit still lets it through', ActionThrottle::exceeded('send_friend', 10, 3600) === false);
 check('exceededFor uses the default limit', ActionThrottle::exceededFor('send_friend', 5) === true);
@@ -149,7 +124,7 @@ osc_add_filter('action_throttle_limit', static function ($limit, $context) use (
 });
 check('the filter raises it for that form', ActionThrottle::exceededFor('send_friend', 5) === false);
 for ($i = 0; $i < 5; $i++) {
-    $seed('item_contact', '198.51.100.1', $at(60));
+    $seed('item_contact', '198.51.100.1', 60);
 }
 check('and leaves other forms at their default', ActionThrottle::exceededFor('item_contact', 5) === true);
 
@@ -158,9 +133,9 @@ harness_section('ActionThrottle::exceededFor — stored limit, default and filte
 $filterMax = null;
 $truncate();
 $setIp('198.51.100.7');
-$fill = static function ($context, $n) use ($seed, $at): void {
+$fill = static function ($context, $n) use ($seed): void {
     for ($i = 0; $i < $n; $i++) {
-        $seed($context, '198.51.100.7', $at(60));
+        $seed($context, '198.51.100.7', 60);
     }
 };
 $fill('send_friend', 4);
@@ -185,7 +160,7 @@ harness_section('ActionThrottle::exceeded — a max of zero disables the limit')
 $truncate();
 $setIp('198.51.100.1');
 for ($i = 0; $i < 20; $i++) {
-    $seed('send_friend', '198.51.100.1', $at(60));
+    $seed('send_friend', '198.51.100.1', 60);
 }
 check('max <= 0 never refuses, however many events exist', ActionThrottle::exceeded('send_friend', 0, 3600) === false);
 
@@ -197,14 +172,14 @@ harness_section('ActionThrottle::exceeded — window, context and address scope 
 $truncate();
 $setIp('198.51.100.1');
 for ($i = 0; $i < 5; $i++) {
-    $seed('send_friend', '198.51.100.1', $at(4000)); // older than a 3600s window
+    $seed('send_friend', '198.51.100.1', 4000); // older than a 3600s window
 }
 check('events older than the window do not count', ActionThrottle::exceeded('send_friend', 5, 3600) === false);
 
 $truncate();
 $setIp('198.51.100.1');
 for ($i = 0; $i < 5; $i++) {
-    $seed('item_contact', '198.51.100.1', $at(60)); // a different context
+    $seed('item_contact', '198.51.100.1', 60); // a different context
 }
 check('another context does not count against this one', ActionThrottle::exceeded('send_friend', 5, 3600) === false);
 check('and the context that has the events is over its own limit', ActionThrottle::exceeded('item_contact', 5, 3600) === true);
@@ -212,14 +187,14 @@ check('and the context that has the events is over its own limit', ActionThrottl
 $truncate();
 $setIp('198.51.100.1');
 for ($i = 0; $i < 5; $i++) {
-    $seed('send_friend', '198.51.100.2', $at(60)); // a different address
+    $seed('send_friend', '198.51.100.2', 60); // a different address
 }
 check("another address's events do not count against this one", ActionThrottle::exceeded('send_friend', 5, 3600) === false);
 
 $truncate();
 $setIp('2001:db8:5:6::1');
 ActionThrottle::record('send_friend');
-pin('an IPv6 source is stored as its /64', '2001:db8:5:6::/64', $rows()[0]['s_ip'] ?? null);
+pin('an IPv6 source is counted as its /64', 1, \mindstellar\security\RateLimit::countRolling('send_friend', '2001:db8:5:6::/64', 3600));
 $setIp('2001:db8:5:6:abcd::2');
 check('two addresses in one /64 share a count', ActionThrottle::exceeded('send_friend', 1, 3600) === true);
 $setIp('2001:db8:5:7::1');
@@ -236,10 +211,10 @@ check('no address to key on is never refused', ActionThrottle::exceeded('send_fr
  * the table arrives with an upgrade and the files are in place before it runs, so
  * a missing ledger must let the action through, not take the form down.
  * ------------------------------------------------------------------------- */
-harness_section('ActionThrottle: ledger unavailable');
+harness_section('ActionThrottle: counter unavailable');
 
 $setIp('203.0.113.50');
-$admin->query("DROP TABLE IF EXISTS $table");
+$admin->query("RENAME TABLE $table TO {$table}_gone");
 
 check('exceeded() lets the action through when the table is gone', ActionThrottle::exceeded('send_friend', 1, 3600) === false);
 check(
@@ -254,21 +229,17 @@ check(
         }
     })()
 );
+$admin->query("RENAME TABLE {$table}_gone TO $table");
 
-// Put the table back so the runner's inter-file truncate still finds it.
-$admin->query(
-    "CREATE TABLE $table ("
-    . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
-    . " s_context VARCHAR(20) NOT NULL DEFAULT '',"
-    . " s_account VARCHAR(191) NOT NULL DEFAULT '',"
-    . " s_ip VARCHAR(45) NOT NULL DEFAULT '',"
-    . ' dt_date DATETIME NOT NULL,'
-    . ' PRIMARY KEY (pk_i_id),'
-    . ' INDEX idx_ip (s_ip, dt_date),'
-    . ' INDEX idx_account (s_context, s_account(64), dt_date),'
-    . ' INDEX idx_date (dt_date)'
-    . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
-);
+harness_section('ActionThrottle: a short posting wait');
+
+$truncate();
+$setIp('198.51.100.9');
+ActionThrottle::record('item_post');
+check('a second post inside a 60s wait is refused', ActionThrottle::exceeded('item_post', 1, 60) === true);
+$truncate();
+$seed('item_post', '198.51.100.9', 60 + \mindstellar\security\RateLimit::SLICE + 1);
+check('one past the wait (and a slice) is allowed', ActionThrottle::exceeded('item_post', 1, 60) === false);
 
 $truncate();
 

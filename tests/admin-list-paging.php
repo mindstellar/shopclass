@@ -22,6 +22,7 @@
 error_reporting(E_ALL & ~E_DEPRECATED);
 
 define('ABS_PATH', dirname(__DIR__) . '/');
+define('OC_ADMIN', true);
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
@@ -67,6 +68,12 @@ pin('an array cannot be a page number', 1, $page(array('2')));
 $request(array('iPage' => '-3'));
 ListPaging::page();
 pin('the corrected page is written back', 1, (int) Params::getParam('iPage'));
+
+$request(array('pageNum' => '4'));
+pin('an old admin link with pageNum still pages', 4, ListPaging::page());
+pin('...and is written back as iPage', 4, (int) Params::getParam('iPage'));
+$request(array('pageNum' => '4', 'iPage' => '2'));
+pin('iPage wins over pageNum', 2, ListPaging::page());
 
 harness_section('Page size');
 
@@ -134,5 +141,58 @@ pin('aRows past the end goes to the last page', $base . 'page=items&iPage=3', Li
 pin('aaData is read the same way', $base . 'page=items&iPage=3', ListPaging::pastEnd($table('aaData', 0), 9));
 pin('a page with rows stays', null, ListPaging::pastEnd($table('aaData', 2), 9));
 pin('missing counts mean page 1', $base . 'page=items&iPage=1', ListPaging::pastEnd(array(), 9));
+
+harness_section('One pager for both widget names');
+
+require_once __DIR__ . '/lib/stubs.php';
+if (!function_exists('_e')) {
+    function _e($key, $domain = 'core')
+    {
+        echo $key;
+    }
+}
+if (!function_exists('osc_admin_base_url')) {
+    function osc_admin_base_url($index = false)
+    {
+        return 'https://example.test/oc-admin/index.php';
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPagination.php';
+require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
+
+$render = static function (callable $draw): string {
+    ob_start();
+    $draw();
+
+    return (string) ob_get_clean();
+};
+$request(array());
+$pager = $render(static fn () => osc_admin_pager(array(
+    'total'    => 240,
+    'per_page' => 25,
+    'page'     => 3,
+    'base_url' => 'https://example.test/oc-admin/index.php?page=billing',
+    'params'   => array('status' => 'paid'),
+)));
+$table = $render(static fn () => osc_admin_pagination(array(
+    'aaData'               => array_fill(0, 25, array()),
+    'iTotalDisplayRecords' => 240,
+    'iDisplayLength'       => 25,
+    'iPage'                => 3,
+    'base_url'             => 'https://example.test/oc-admin/index.php?page=billing&status=paid',
+)));
+pin('both names draw the same markup', $table, $pager);
+check('the range line is stated', strpos($pager, 'Showing 51 to 75 of 240 results') !== false, $pager);
+check('page links carry iPage', strpos($pager, 'status=paid&amp;iPage=4') !== false, $pager);
+check('the go-to form keeps the list filters', strpos($pager, 'name="status"') !== false && strpos($pager, 'name="page"') !== false, $pager);
+check('no pageNum goes out', strpos($pager, 'pageNum') === false, $pager);
+
+$_SERVER['QUERY_STRING'] = 'page=items&pageNum=2&iDisplayLength=10';
+$request(array('page' => 'items', 'pageNum' => '2'));
+$fromRequest = $render(static fn () => osc_admin_pagination(array('aaData' => array_fill(0, 10, array()), 'iTotalDisplayRecords' => 30, 'iDisplayLength' => 10)));
+check('an old pageNum link is read and rewritten', strpos($fromRequest, 'Showing 11 to 20') !== false
+    && strpos($fromRequest, 'pageNum') === false && strpos($fromRequest, 'iPage=3') !== false, $fromRequest);
+$hooks = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/parts/ui.php');
+check('the widgets register no hook per call', strpos($hooks, "'before_show_pagination_admin'") === false);
 
 exit(harness_result());

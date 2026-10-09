@@ -19,8 +19,6 @@ osc_admin_page(array(
 
 $aData      = __get('aData');
 $sections   = __get('sections');
-$enabled    = __get('log_enabled');
-$retention  = (int) __get('log_retention_days');
 $curSection = (string) Params::getParam('section');
 $curQuery   = (string) Params::getParam('q');
 $hasFilter  = ($curSection !== '' || $curQuery !== '');
@@ -35,32 +33,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <div id="log-settings">
         <?php osc_admin_form_section(__('Logging')); ?>
-        <form name="log_settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="page" value="tools"/>
-            <input type="hidden" name="action" value="logs_settings_post"/>
-            <fieldset class="form-horizontal">
-                <?php osc_admin_form_row_open(__('Record activity')); ?>
-                        <div class="form-label-checkbox">
-                            <input type="checkbox" id="admin_log_enabled" name="admin_log_enabled" value="1"
-                                <?php echo($enabled ? 'checked="checked"' : ''); ?> />
-                            <label for="admin_log_enabled"><?php _e('Record admin and listing activity'); ?></label>
-                        </div>
-                        <div class="help-box">
-                            <?php _e('Turn logging off to stop recording new entries. Existing entries are kept until pruned.'); ?>
-                        </div>
-                <?php osc_admin_form_row_close(); ?>
-                <?php osc_admin_number(array(
-                    'id'     => 'admin_log_retention_days',
-                    'name'   => 'admin_log_retention_days',
-                    'label'  => __('Keep entries for'),
-                    'value'  => $retention,
-                    'min'    => 0,
-                    'suffix' => __('days'),
-                    'help'   => __('The daily task deletes entries older than this. Set to 0 to keep them forever.'),
-                )); ?>
-                <?php osc_admin_form_actions(); ?>
-            </fieldset>
-        </form>
+        <?php $form = __get('log_form');
+        osc_admin_settings_form($form['id'], $form); ?>
     </div>
 
     <?php osc_admin_form_section(__('Recent activity'), array('spaced' => true)); ?>

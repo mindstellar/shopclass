@@ -42,9 +42,11 @@ final class UpdateAjax extends AjaxHandler
                 // A live fetch succeeded: record the result and reset the once-a-day clock.
                 $upgradeOsclass    = new Osclass($package_json);
                 $upgrade_available = $upgradeOsclass->isUpgradable();
-                osc_set_preference('update_core_available', $upgrade_available ? '1' : '');
-                osc_set_preference('update_core_json', json_encode($package_json));
-                osc_set_preference('last_version_check', time());
+                osc_update_check_save('core', array(
+                    'checked'   => time(),
+                    'available' => $upgrade_available,
+                    'package'   => $package_json,
+                ));
                 AjaxResponse::json(array(
                     'error' => 0,
                     'msg'   => $upgrade_available ? __('Update available') : __('No update available'),
@@ -170,6 +172,8 @@ final class UpdateAjax extends AjaxHandler
     {
         $dayInSeconds   = 24 * 3600;
         $retryInSeconds = 3600;
-        osc_set_preference('last_version_check', time() - ($dayInSeconds - $retryInSeconds));
+        $state            = osc_update_check_state('core');
+        $state['checked'] = time() - ($dayInSeconds - $retryInSeconds);
+        osc_update_check_save('core', $state);
     }
 }

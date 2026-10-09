@@ -20,6 +20,8 @@ use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\AuthStamp;
 use mindstellar\security\SignedPayload;
 use mindstellar\user\UserStore;
+use mindstellar\utility\Clock;
+use mindstellar\utility\SystemClock;
 
 /**
  * Access tokens: `sca_<SignedPayload>`, signed with the install's key and stored nowhere. Every use
@@ -38,6 +40,8 @@ final class AccessTokens
     /** @var \Closure(string): bool|null */
     private ?\Closure $familyLive;
 
+    private Clock $clock;
+
     /**
      * @param int           $ttl        seconds a token lives
      * @param callable|null $familyLive (family) => whether the sign-in still has a live refresh token; by default checked in the same query as the user
@@ -46,9 +50,11 @@ final class AccessTokens
         private Scopes $scopes,
         private UserRows $users,
         private int $ttl = self::TTL,
-        ?callable $familyLive = null
+        ?callable $familyLive = null,
+        ?Clock $clock = null
     ) {
         $this->familyLive = $familyLive === null ? null : \Closure::fromCallable($familyLive);
+        $this->clock      = $clock ?? new SystemClock();
     }
 
     public static function looksLikeToken(string $token): bool
@@ -75,7 +81,7 @@ final class AccessTokens
             'scopes' => implode(' ', $scopes),
             'st'     => AuthStamp::fingerprint($user),
             'fam'    => $family,
-        ], $ttl ?? $this->ttl);
+        ], $ttl ?? $this->ttl, 0, $this->clock->now());
     }
 
     /**
@@ -87,7 +93,7 @@ final class AccessTokens
         if (!self::looksLikeToken($token)) {
             return KeyCheck::refused(false);
         }
-        $opened = SignedPayload::open(self::PURPOSE, substr($token, strlen(self::PREFIX)));
+        $opened = SignedPayload::open(self::PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now());
         $data   = $opened['data'] ?? null;
         if ($data === null || ($data['kind'] ?? null) !== CredentialKind::USER || !is_int($data['sub'] ?? null)
             || !is_string($data['fam'] ?? null) || !is_string($data['st'] ?? null)

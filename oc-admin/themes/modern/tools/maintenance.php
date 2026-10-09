@@ -14,10 +14,6 @@
  */
 
 $maintenance = file_exists(osc_base_path() . '.maintenance');
-$lockout     = osc_maintenance_lockout_enabled();
-$message     = osc_sanitize_maintenance_message(
-    (string)osc_get_preference(OSC_MAINTENANCE_PREF_MESSAGE, OSC_MAINTENANCE_PREF_SECTION)
-);
 
 /**
  * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
@@ -56,32 +52,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 )); ?>
 
         <?php osc_admin_form_section(__('Visitors'), array('spaced' => true)); ?>
-        <?php osc_admin_form_open(array(
-            'page'   => 'tools',
-            'action' => 'maintenance',
-            'fields' => array('mode' => 'save'),
-        )); ?>
-            <?php osc_admin_form_row_open(__('Public site')); ?>
-                <?php osc_admin_checkbox(array(
-                    'id'      => 'maintenance_lockout',
-                    'name'    => 'maintenance_lockout',
-                    'label'   => __('Block the public site (HTTP 503)'),
-                    'checked' => $lockout,
-                    'help'    => __('Unchecked, visitors keep using the site and see the message below as a banner. The choice is kept when maintenance mode is turned off.'),
-                )); ?>
-            <?php osc_admin_form_row_close(); ?>
-            <?php osc_admin_textarea(array(
-                'id'    => 'maintenance_message',
-                'name'  => 'maintenance_message',
-                'label' => __('Message'),
-                'value' => $message,
-                'rows'  => 4,
-                'attrs' => array('maxlength' => OSC_MAINTENANCE_MESSAGE_MAX),
-                'help'  => __('Shown on the banner, and on the 503 page. Plain text only. Leave blank for the default message.'),
-            )); ?>
-        <?php osc_admin_form_close(array(
-            array('label' => __('Save settings'), 'type' => 'submit', 'variant' => 'primary'),
-        )); ?>
+        <?php $form = __get('maintenance_form');
+        osc_admin_settings_form($form['id'], $form); ?>
     </div>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

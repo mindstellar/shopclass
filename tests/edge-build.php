@@ -111,7 +111,7 @@ check('the version check asks GitHub nothing on edge', (bool) preg_match(
     "/function checkVersion\\(\\): void\\s*\\{\\s*if \\(BuildInfo::isEdge\\(\\)\\) \\{\\s*AjaxResponse::json\\([^;]+;\\s*return;\\s*\\}/",
     $ajax
 ));
-check('the toolbar offers no new version on edge', strpos($functions, "getPreference('update_core_available') && !\\mindstellar\\upgrade\\BuildInfo::isEdge()") !== false);
+check('the toolbar offers no new version on edge', strpos($functions, '!empty($core[\'available\']) && !\\mindstellar\\upgrade\\BuildInfo::isEdge()') !== false);
 check('the admin footer does not poll on edge', strpos($footer, '> (24 * 3600) && !\\mindstellar\\upgrade\\BuildInfo::isEdge()') !== false);
 check('the automatic security install stops when updates are off', strpos($auto, '|| osc_self_update_disabled()) {') !== false);
 check('the in-app upgrade refuses when updates are off', strpos($ajax, 'if (osc_self_update_disabled()) {') !== false

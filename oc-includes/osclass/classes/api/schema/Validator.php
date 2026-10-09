@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\schema;
 
 use mindstellar\utility\DateInput;
+use mindstellar\utility\Validate;
 
 /**
  * A JSON Schema subset validator. The same schema arrays describe the API in OpenAPI, so a
@@ -261,9 +262,8 @@ final class Validator
     private static function isFormat(string $value, string $format): bool
     {
         return match ($format) {
-            'email'     => filter_var($value, FILTER_VALIDATE_EMAIL) !== false,
-            'uri'       => filter_var($value, FILTER_VALIDATE_URL) !== false
-                && in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ['http', 'https'], true),
+            'email'     => (new Validate())->email($value),
+            'uri'       => Validate::httpUrl($value),
             'date-time' => !DateInput::isDay($value) && DateInput::parse($value) !== null,
             default     => false,
         };

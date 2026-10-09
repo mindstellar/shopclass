@@ -50,36 +50,26 @@ class Utils
         if (ini_get('allow_url_fopen') === false) {
             throw new RuntimeException(__('Is allow_url_fopen enabled?'));
         }
-        // parse the given URL
+        // fsockopen rather than FileSystem: curl waits for the answer, and this only sends.
         $parsed_url = parse_url($target_url);
-
-        if ($parsed_url === false || !isset($parsed_url['host'], $parsed_url['path'])) {
+        if ($parsed_url === false || !isset($parsed_url['host'])) {
             return false;
         }
-        // extract host, path, port:
-        $host = $parsed_url['host'];
-        $path = $parsed_url['path'];
-        $port = 80;
-        if (isset($parsed_url['port'])) {
-            $port = $parsed_url['port'];
-        }
+        $https = strtolower($parsed_url['scheme'] ?? 'http') === 'https';
+        $port  = (int) ($parsed_url['port'] ?? ($https ? 443 : 80));
+        $path  = ($parsed_url['path'] ?? '/') . (isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '');
 
-        if (isset($parsed_url['scheme']) && $parsed_url['scheme'] === 'https') {
-            $host = 'ssl://' . $host;
-            $port = 443;
-        }
-        $fp = fsockopen($host, $port);
-
+        $fp = @fsockopen(($https ? 'ssl://' : '') . $parsed_url['host'], $port, $errno, $errstr, 5);
         if ($fp === false) {
             return false;
         }
         $data              = http_build_query($query_data);
-        $out               = 'POST ' . $path . ' HTTP/1.1' . PHP_EOL;
-        $out               .= 'Host: ' . $parsed_url['host'] . PHP_EOL;
-        $out               .= 'Referer: Shopclass ' . OSCLASS_VERSION . PHP_EOL;
-        $out               .= 'Content-type: application/x-www-form-urlencoded' . PHP_EOL;
-        $out               .= 'Content-Length: ' . strlen($data) . PHP_EOL;
-        $out               .= 'Connection: close' . PHP_EOL . PHP_EOL;
+        $out               = 'POST ' . $path . " HTTP/1.1\r\n";
+        $out               .= 'Host: ' . $parsed_url['host'] . (isset($parsed_url['port']) ? ':' . $port : '') . "\r\n";
+        $out               .= 'Referer: Shopclass ' . OSCLASS_VERSION . "\r\n";
+        $out               .= "Content-Type: application/x-www-form-urlencoded\r\n";
+        $out               .= 'Content-Length: ' . strlen($data) . "\r\n";
+        $out               .= "Connection: close\r\n\r\n";
         $out               .= $data;
         $number_bytes_sent = fwrite($fp, $out);
         fclose($fp);

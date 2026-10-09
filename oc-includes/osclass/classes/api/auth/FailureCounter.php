@@ -15,6 +15,8 @@ namespace mindstellar\api\auth;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\security\AddressBucket;
 use mindstellar\security\RateLimit;
+use mindstellar\utility\Clock;
+use mindstellar\utility\SystemClock;
 
 /**
  * Failed token checks, counted per address and key id (MAX) and per address with no known key id
@@ -37,10 +39,10 @@ final class FailureCounter
     /** The preference holding the end of the last window with a failure for a known key id. */
     public const MARKER = 'auth_failures_until';
 
-    /** @var \Closure(string, string[], int): ?array<string,int> */
+    /** @var \Closure(string, string[], int, int): ?array<string,int> */
     private \Closure $counts;
 
-    /** @var \Closure(string, string, int): ?int */
+    /** @var \Closure(string, string, int, int): ?int */
     private \Closure $increment;
 
     /** @var (\Closure(): int)|null */
@@ -49,35 +51,33 @@ final class FailureCounter
     /** @var (\Closure(int): bool)|null */
     private ?\Closure $mark;
 
-    /** @var \Closure(): int */
-    private \Closure $now;
+    private Clock $clock;
 
     /**
      * Without $markedUntil and $mark every check reads the counter, unless the counters are the
      * site's own, which keep the marker in the `api` preferences (loaded on every request).
      *
-     * @param callable|null $counts      (context, keys, window) => key => failures, null when unreadable
-     * @param callable|null $increment   (context, key, window) => failures after this one
+     * @param callable|null $counts      (context, keys, window, now) => key => failures, null when unreadable
+     * @param callable|null $increment   (context, key, window, now) => failures after this one
      * @param callable|null $markedUntil () => the marker's time, 0 when unset
      * @param callable|null $mark        (time) => whether the marker was written
-     * @param callable|null $now         () => the current time
      */
     public function __construct(
         ?callable $counts = null,
         ?callable $increment = null,
         ?callable $markedUntil = null,
         ?callable $mark = null,
-        ?callable $now = null
+        ?Clock $clock = null
     ) {
         if ($counts === null && $increment === null && $markedUntil === null && $mark === null) {
             $markedUntil = static fn (): int => (int) osc_get_preference(self::MARKER, ApiSettings::SECTION);
             $mark        = static fn (int $until): bool => (bool) osc_set_preference(self::MARKER, (string) $until, ApiSettings::SECTION, 'INTEGER');
         }
-        $this->counts      = \Closure::fromCallable($counts ?? [RateLimit::class, 'countMany']);
-        $this->increment   = \Closure::fromCallable($increment ?? [RateLimit::class, 'increment']);
+        $this->counts      = \Closure::fromCallable($counts ?? static fn (string $c, array $keys, int $w, int $now): ?array => RateLimit::countMany($c, $keys, $w, $now));
+        $this->increment   = \Closure::fromCallable($increment ?? static fn (string $c, string $key, int $w, int $now): ?int => RateLimit::increment($c, $key, $w, true, $now));
         $this->markedUntil = $markedUntil !== null && $mark !== null ? \Closure::fromCallable($markedUntil) : null;
         $this->mark        = $markedUntil !== null && $mark !== null ? \Closure::fromCallable($mark) : null;
-        $this->now         = \Closure::fromCallable($now ?? 'time');
+        $this->clock       = $clock ?? new SystemClock();
     }
 
     /**
@@ -91,7 +91,7 @@ final class FailureCounter
         if ($ip === '' || $tokenId === null) {
             return false;
         }
-        if ($this->markedUntil !== null && ($this->markedUntil)() <= ($this->now)()) {
+        if ($this->markedUntil !== null && ($this->markedUntil)() <= $this->clock->now()) {
             return false;
         }
 
@@ -108,7 +108,7 @@ final class FailureCounter
 
     private function count(string $key): int
     {
-        return (int) ((($this->counts)(self::CONTEXT, [$key], self::WINDOW) ?? [])[$key] ?? 0);
+        return (int) ((($this->counts)(self::CONTEXT, [$key], self::WINDOW, $this->clock->now()) ?? [])[$key] ?? 0);
     }
 
     /**
@@ -126,7 +126,7 @@ final class FailureCounter
         if ($byKey) {
             $this->markWindow();
         }
-        ($this->increment)(self::CONTEXT, $byKey ? self::keyKey($ip, $tokenId) : self::addressKey($ip), self::WINDOW);
+        ($this->increment)(self::CONTEXT, $byKey ? self::keyKey($ip, $tokenId) : self::addressKey($ip), self::WINDOW, $this->clock->now());
     }
 
     /**
@@ -138,7 +138,7 @@ final class FailureCounter
         if ($this->mark === null) {
             return;
         }
-        $now = ($this->now)();
+        $now = $this->clock->now();
         $end = $now - ($now % self::WINDOW) + self::WINDOW;
         if (($this->markedUntil)() < $end) {
             ($this->mark)($end);

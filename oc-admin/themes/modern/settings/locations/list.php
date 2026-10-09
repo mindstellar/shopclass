@@ -32,7 +32,7 @@ $parentName  = $level === 'city' ? ($loc['region']['name'] ?? '') : ($loc['count
 $here        = array('country' => $countryCode, 'region' => $regionId);
 $view        = $here + array(
     'q'       => $scope === 'level' ? $q : '',
-    'pageNum' => $loc['page'] > 1 ? $loc['page'] : null,
+    'iPage'   => $loc['page'] > 1 ? $loc['page'] : null,
 );
 
 $nouns = array(

@@ -26,7 +26,6 @@ use mindstellar\routing\ServerRules;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 use Plugins;
-use Preference;
 use Rewrite;
 use Throwable;
 
@@ -213,11 +212,9 @@ class Osclass extends UpgradePackage
         // should be allowed to reset the once-a-day check clock or claim "checked now".
         $isFresh    = false;
         $package_info = array();
-        $preference = Preference::getInstance();
+        $saved      = osc_update_check_state('core');
         if ($force === true
-            || (
-                !$preference->get('update_core_json') && (time() - (int) $preference->get('last_version_check')) > (24 * 3600)
-            )
+            || (empty($saved['package']) && (time() - (int) $saved['checked']) > (24 * 3600))
         ) {
             // The whole list, not /releases/latest: that is the newest stable release only, and
             // the list is not in version order, so the channel picks the highest it allows.
@@ -255,7 +252,7 @@ class Osclass extends UpgradePackage
             }
         }
         if (empty($package_info)) {
-            $package_info = json_decode($preference->get('update_core_json'), true);
+            $package_info = is_array($saved['package'] ?? null) ? $saved['package'] : null;
         }
 
         return Plugins::applyFilter('osclass_upgrade_package', $package_info);
@@ -304,8 +301,7 @@ class Osclass extends UpgradePackage
      */
     public function afterProcessUpgrade()
     {
-        osc_set_preference('update_core_available');
-        osc_set_preference('update_core_json');
+        osc_update_check_save('core', array('checked' => (int) osc_update_check_state('core')['checked']));
 
         return true;
     }

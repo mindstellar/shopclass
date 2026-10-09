@@ -25,8 +25,6 @@ final class LocationCatalog
     /** Where installed checksums live: one JSON object, not 250 preference rows. */
     private const PREF_INSTALLED = 'location_data_installed';
 
-    /** When the manifest was last fetched, so an admin screen is not a network call. */
-    private const PREF_CHECKED   = 'location_catalog_checked';
     /** Which catalog URL the cached manifest came from. */
     private const PREF_SOURCE    = 'location_catalog_source';
     /** The manifest URL a pointer resolved to, and the data release it names. */
@@ -66,7 +64,7 @@ final class LocationCatalog
             return $this->manifest;
         }
 
-        $checked = (int) osc_get_preference(self::PREF_CHECKED);
+        $checked = (int) osc_update_check_state('location')['checked'];
         $cached  = $this->readCache();
 
         // The cache belongs to the catalog it came from. Pointing the install at another
@@ -115,7 +113,7 @@ final class LocationCatalog
         $data = self::normalizeManifest($data);
 
         $this->writeCache($data);
-        osc_set_preference(self::PREF_CHECKED, (string) time());
+        osc_update_check_save('location', array('checked' => time()));
         osc_set_preference(self::PREF_SOURCE, $source);
         // Country files are addressed relative to the manifest, not to the pointer, so
         // the resolved URL is remembered — otherwise a cache hit would have nothing to
@@ -259,7 +257,7 @@ final class LocationCatalog
         }
 
         $this->manifest = null;
-        osc_set_preference(self::PREF_CHECKED, '0');
+        osc_update_check_save('location', array('checked' => 0));
     }
 
     /**

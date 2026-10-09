@@ -28,15 +28,11 @@
  */
 function osc_sanitize_url($value)
 {
-    if (!function_exists('filter_var')) {
-        return preg_replace('|([^a-zA-Z0-9\$\-\_\.\+!\*\'\(\),{}\|\^~\[\]`"#%;\/\?:@=<>\\\&]*)|', '', $value);
-    }
-
-    return filter_var($value, FILTER_SANITIZE_URL);
+    return (new \mindstellar\utility\Sanitize())->url($value);
 }
 
 /**
- * Sanitize a string.
+ * Turn a string into a URL-safe slug (not an HTML-escaped string).
  *
  * @param string $value value to sanitize
  *
@@ -44,13 +40,11 @@ function osc_sanitize_url($value)
  */
 function osc_sanitize_string($value)
 {
-    return osc_sanitizeString($value);
+    return (new \mindstellar\utility\Sanitize())->slug($value);
 }
 
 /**
- * Sanitize capitalization for a string.
- * Capitalize first letter of each name.
- * If all-caps, remove all-caps.
+ * Sanitize capitalization for a name: trimmed, all-caps lowered, each word capitalised.
  *
  * @param string $value value to sanitize
  *
@@ -58,7 +52,7 @@ function osc_sanitize_string($value)
  */
 function osc_sanitize_name($value)
 {
-    return ucwords(osc_sanitize_allcaps(trim($value)));
+    return (new \mindstellar\utility\Sanitize())->name($value);
 }
 
 /**
@@ -70,11 +64,7 @@ function osc_sanitize_name($value)
  */
 function osc_sanitize_allcaps($value)
 {
-    if (preg_match('/^([A-Z][^A-Z]*)+$/', $value) && !preg_match('/[a-z]+/', $value)) {
-        $value = ucfirst(strtolower($value));
-    }
-
-    return $value;
+    return (new \mindstellar\utility\Sanitize())->allcaps($value);
 }
 
 /**
@@ -86,28 +76,24 @@ function osc_sanitize_allcaps($value)
  */
 function osc_sanitize_username($value)
 {
-    return preg_replace('/(_+)/', '_', preg_replace('/([^0-9A-Za-z_]*)/', '', str_replace(' ', '_', trim($value))));
+    return (new \mindstellar\utility\Sanitize())->username($value);
 }
 
 /**
- * Sanitize number (with no periods)
+ * Sanitize a whole number
  *
  * @param string $value value to sanitize
  *
- * @return int|string sanitized
+ * @return int sanitized
  */
 function osc_sanitize_int($value)
 {
-    if (!preg_match('/^[0-9]*$/', $value)) {
-        return (int)$value;
-    }
-
-    return $value;
+    return (new \mindstellar\utility\Sanitize())->int($value);
 }
 
 /**
- * Format phone number. Supports 10-digit with extensions,
- * and defaults to international if cannot match US number.
+ * Sanitize a phone number: digits, a leading '+' and common separators are kept,
+ * with no country-specific formatting.
  *
  * @param string $value value to sanitize
  *
@@ -115,42 +101,12 @@ function osc_sanitize_int($value)
  */
 function osc_sanitize_phone($value)
 {
-    if (empty($value)) {
-        return '';
-    }
-
-    // Remove strings that aren't letter and number.
-    $value = preg_replace('/[^a-z0-9]/', '', strtolower($value));
-
-    // Remove 1 from front of number.
-    if (preg_match('/^([0-9]{11})/', $value) && $value[0] == 1) {
-        $value = substr($value, 1);
-    }
-
-    // Check for phone ext.
-    $ext = '';
-    if (!preg_match('/^[0-9]$/', $value)) {
-        $value =
-            preg_replace('/^([0-9]{10})([a-z]+)([0-9]+)/', '$1ext$3', $value); // Replace 'x|ext|extension' with 'ext'.
-        list($value, $ext) = explode('ext', $value); // Split number & ext.
-    }
-
-    // Add dashes: ___-___-____
-    if (strlen($value) == 7) {
-        $value = preg_replace('/([0-9]{3})([0-9]{4})/', '$1-$2', $value);
-    } elseif (strlen($value) == 10) {
-        $value = preg_replace('/([0-9]{3})([0-9]{3})([0-9]{4})/', '$1-$2-$3', $value);
-    }
-
-    return $ext ? $value . ' x' . $ext : $value;
+    return (new \mindstellar\utility\Sanitize())->phone($value);
 }
 
 /**
  * Reduce a value to plain text, taking every tag out along with what it contained.
- *
- * The filter is the one Params::getParam() runs over request data, applied to a value read
- * from somewhere else. Like that one it escapes what it keeps, so the result is stored
- * pre-escaped and stays inert wherever it is printed.
+ * Like Params::getParam() it escapes what it keeps, so the result is stored pre-escaped.
  *
  * @param array|string $value value to sanitize
  *
@@ -158,34 +114,13 @@ function osc_sanitize_phone($value)
  */
 function osc_sanitize_text($value)
 {
-    if (is_array($value)) {
-        return array_map('osc_sanitize_text', $value);
-    }
-    if (!is_string($value)) {
-        return $value;
-    }
-
-    return Params::purifyText($value);
+    return (new \mindstellar\utility\Sanitize())->text($value);
 }
 
 /**
- * Sanitise rich text to the markup a Shopclass editor can legitimately produce.
- *
- * The listing description is read with Params' XSS check switched off wherever a rich
- * editor is in use -- the check strips every tag, which would eat the formatting the
- * editor exists to produce -- and nothing replaced it, so a description was stored exactly
- * as submitted. A poster did not even need the editor's source view: the raw HTML went
- * through the ordinary form POST, and `<script>` in a description ran for every visitor
- * who opened the listing.
- *
- * So: an allow-list rather than all-or-nothing. Everything the toolbars can emit survives
- * -- inline formatting, lists, links, headings, quotes, tables, images, and the colour
- * spans the admin listing editor's forecolor button writes. Scripts, iframes, event
- * handlers, and any URL scheme that is not http/https/mailto do not.
- *
+ * Sanitise rich text to the markup a Shopclass editor can produce. Scripts, iframes,
+ * event handlers and any URL scheme but http, https and mailto are removed.
  * Arrays are walked, so a per-locale description map can be passed straight in.
- *
- * The built definition is cached by PurifierCache, or rebuilt each time when it cannot be.
  *
  * @param array|string $value
  *
@@ -193,48 +128,7 @@ function osc_sanitize_text($value)
  */
 function osc_sanitize_html($value)
 {
-    static $purifier = null;
-
-    if (is_array($value)) {
-        foreach ($value as $k => $v) {
-            $value[$k] = osc_sanitize_html($v);
-        }
-
-        return $value;
-    }
-
-    if (!is_string($value) || $value === '') {
-        return $value;
-    }
-
-    if ($purifier === null) {
-        $config = HTMLPurifier_Config::createDefault();
-        $config->set('HTML.Allowed', osc_apply_filter('sanitize_html_allowed', implode(',', array(
-            'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li',
-            'a[href|title|rel]', 'h3', 'h4', 'blockquote', 'hr',
-            'table', 'thead', 'tbody', 'tr', 'th', 'td',
-            'span[style]', 'img[src|alt|width|height]',
-        ))));
-        // forecolor writes a colour span; nothing else needs inline CSS, and every
-        // property left out is one that cannot be abused for overlay or exfiltration.
-        $config->set('CSS.AllowedProperties', array(
-            'color', 'background-color', 'text-align',
-            'font-weight', 'font-style', 'text-decoration',
-        ));
-        $config->set('URI.AllowedSchemes', array('http' => true, 'https' => true, 'mailto' => true));
-        // A seller's outbound links pass search-engine ranking to whatever they point at,
-        // which is what makes a listing description worth spamming. Links back into this
-        // site are left alone, so URI.Host has to be set for the check to know which is which.
-        $config->set('HTML.Nofollow', true);
-        $host = function_exists('osc_base_url') ? parse_url((string)osc_base_url(), PHP_URL_HOST) : null;
-        if (is_string($host) && $host !== '') {
-            $config->set('URI.Host', $host);
-        }
-        \mindstellar\security\PurifierCache::apply($config);
-        $purifier = new HTMLPurifier($config);
-    }
-
-    return $purifier->purify($value);
+    return (new \mindstellar\utility\Sanitize())->richHtml($value);
 }
 
 /**

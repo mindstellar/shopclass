@@ -934,7 +934,7 @@ function processHeaders($headers)
 }
 
 /**
- * Download file using fsockopen
+ * Download a URL, or return its body when $fileout is null. Forwards to FileSystem.
  *
  * @param string                   $sourceFile
  * @param string|null              $fileout   Destination path; null returns the body instead
@@ -942,87 +942,15 @@ function processHeaders($headers)
  *
  * @return bool|string
  * @since      3.0
- * @deprecated since 4.0.0
+ * @deprecated since 4.0.0 use osc_downloadFile() or osc_file_get_contents()
  */
 function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
 {
-    // parse URL
-    $aUrl = parse_url($sourceFile);
-    $host = $aUrl['host'];
-    if ('localhost' === strtolower($host)) {
-        $host = '127.0.0.1';
+    if ($fileout === null) {
+        return osc_file_get_contents($sourceFile, $post_data);
     }
 
-    $link = $aUrl['path'] . (isset($aUrl['query']) ? '?' . $aUrl['query'] : '');
-
-    if (empty($link)) {
-        $link .= '/';
-    }
-
-    $fp = @fsockopen($host, 80, $errno, $errstr, 30);
-    if (!$fp) {
-        return false;
-    }
-
-    $ua  = Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')';
-    $out = ($post_data != null && is_array($post_data) ? 'POST' : 'GET') . " $link HTTP/1.1\r\n";
-    $out .= "Host: $host\r\n";
-    $out .= "User-Agent: $ua\r\n";
-    $out .= "Connection: Close\r\n\r\n";
-    $out .= "\r\n";
-    if ($post_data != null && is_array($post_data)) {
-        $out .= http_build_query($post_data);
-    }
-    fwrite($fp, $out);
-
-    $contents = '';
-    while (!feof($fp)) {
-        $contents .= fgets($fp, 1024);
-    }
-
-    fclose($fp);
-
-    // check redirections ?
-    // if (redirections) then do request again
-    $aResult = processResponse($contents);
-    $headers = processHeaders($aResult['headers']);
-
-    $location = @$headers['location'];
-    if (isset($location) && $location != '') {
-        $aUrl = parse_url($headers['location']);
-
-        $host = $aUrl['host'];
-        if ('localhost' === strtolower($host)) {
-            $host = '127.0.0.1';
-        }
-
-        $requestPath = $aUrl['path'] . (isset($aUrl['query']) ? '?' . $aUrl['query'] : '');
-
-        if (empty($requestPath)) {
-            $requestPath .= '/';
-        }
-
-        return download_fsockopen('http://' . $host . $requestPath, $fileout, $post_data);
-    } else {
-        $body             = $aResult['body'];
-        $transferEncoding = @$headers['transfer-encoding'];
-        if ($transferEncoding === 'chunked') {
-            $body = http_chunked_decode($aResult['body']);
-        }
-        if ($fileout != null) {
-            $ff = @fopen($fileout, 'wb+');
-            if ($ff !== false) {
-                fwrite($ff, $body);
-                fclose($ff);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        return $body;
-    }
+    return osc_downloadFile($sourceFile, $fileout, $post_data);
 }
 
 /**

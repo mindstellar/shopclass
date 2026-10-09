@@ -41,8 +41,6 @@ final class RefreshTokens
     private const REFUSED = 'refused';
     private const REUSED  = 'reused';
 
-    private const TOKEN = '/^scr_([0-9A-Za-z]{16})\.([0-9a-f]{64})$/D';
-
     /**
      * @param int $ttlDays days a token lives unused
      */
@@ -77,9 +75,11 @@ final class RefreshTokens
      */
     public function rotate(string $token, string $ip): IssuedToken
     {
-        $found = preg_match(self::TOKEN, $token, $m) === 1 ? $this->store->findByTokenId($m[1]) : null;
+        $parts  = ApiKeys::parse($token, [self::PREFIX]);
+        $secret = $parts[2] ?? '';
+        $found  = $parts === null ? null : $this->store->findByTokenId($parts[1]);
         if ($found === null || $found->kind() !== CredentialKind::REFRESH || $found->family() === null
-            || !hash_equals($found->secretHash(), ApiKeys::hash($m[2]))
+            || !ApiKeys::secretMatches($found, $secret)
         ) {
             throw self::refused();
         }
@@ -87,7 +87,6 @@ final class RefreshTokens
 
         // The family's rows are locked, so rotations and revokes run one at a time. Refusals are
         // thrown after the commit, so the revokes they made are kept.
-        $secret  = $m[2];
         $outcome = $this->store->atomically(function () use ($found, $family, $ip, $secret) {
             $this->store->lockFamily($family);
             $row = $this->store->find($found->id());
@@ -165,13 +164,12 @@ final class RefreshTokens
     {
         $now     = $this->clock->now();
         $expires = $now + $this->ttlDays * 86400;
-        $secret  = bin2hex(random_bytes(32));
-        $tokenId = ApiKeys::newId();
-        $id      = $this->store->insert(new StoredKey(
+        [$tokenId, $secret, $hash] = ApiKeys::mint();
+        $id = $this->store->insert(new StoredKey(
             id: 0,
             kind: CredentialKind::REFRESH,
             tokenId: $tokenId,
-            secretHash: ApiKeys::hash($secret),
+            secretHash: $hash,
             name: $label,
             scopes: $scopes,
             owner: KeyOwner::user($userId, $stamp),

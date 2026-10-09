@@ -349,9 +349,9 @@ $marked  = new FailureCounter(
 
         return true;
     },
-    static function () use (&$now): int {
+    new TestClock(static function () use (&$now): int {
         return $now;
-    }
+    })
 );
 $mauth = api_test_authenticator($keys, $marked);
 check('with no marker a good key authenticates', $mauth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);

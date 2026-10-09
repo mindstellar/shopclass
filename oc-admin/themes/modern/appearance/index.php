@@ -94,7 +94,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="appearance">
         <?php
         $csrf_token      = osc_csrf_token_url();
-        $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
+        $aThemesToUpdate = osc_update_check_state('themes')['to_update'];
         $bThemesToUpdate = is_array($aThemesToUpdate);
         $themeMeta       = static function ($info) {
             $meta = array(sprintf(__('Version %s'), osc_esc_html($info['version'])));

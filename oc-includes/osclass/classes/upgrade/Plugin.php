@@ -28,6 +28,7 @@ use RuntimeException;
 /**
  * Class Plugin
  *
+ * @deprecated 7.0.0 Nothing calls it: market\Installer and market\Catalog install and update plugins.
  * @package mindstellar\upgrade
  */
 class Plugin extends UpgradePackage

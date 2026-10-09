@@ -327,7 +327,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 if ($max > $count) {
                     $max = $count;
                 }
-                $aPluginsToUpdate = json_decode(osc_get_preference('plugins_to_update'), true);
+                $aPluginsToUpdate = osc_update_check_state('plugins')['to_update'];
                 $bPluginsToUpdate = is_array($aPluginsToUpdate) ? true : false;
                 // Catalog-sourced updates (docs/MARKET.md) are keyed by slug and read from the
                 // cached catalog only -- cheap, no network egress on page render. Most catalog
@@ -601,7 +601,7 @@ class CAdminPlugins extends AdminSecBaseModel
 
         // The toolbar count is saved once a day; recount when it disagrees with this list,
         // so the header drawn next shows the same number as the Updates tab.
-        if ((int) osc_get_preference('plugins_update_count') !== count($marketUpdates)) {
+        if ((int) osc_update_check_state('plugins')['count'] !== count($marketUpdates)) {
             osc_admin_toolbar_update_plugins(true);
         }
 

@@ -32,8 +32,6 @@ final class ApiKeys
 
     private const KEY_ID_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    private const TOKEN = '/^(sck|scp)_([0-9A-Za-z]{16})\.([0-9a-f]{64})$/D';
-
     public function __construct(private CredentialStore $store, private Scopes $scopes, private Clock $clock)
     {
     }
@@ -49,6 +47,41 @@ final class ApiKeys
     public static function hash(string $secret): string
     {
         return hash('sha256', $secret);
+    }
+
+    /**
+     * A new stored token's parts: its public id, its secret (shown once) and the secret's hash.
+     *
+     * @return array{0:string,1:string,2:string} token id, secret, secret hash
+     */
+    public static function mint(): array
+    {
+        $secret = bin2hex(random_bytes(32));
+
+        return [self::newId(), $secret, self::hash($secret)];
+    }
+
+    /**
+     * The prefix, token id and secret of a `<prefix><token id>.<secret>` token, or null when it
+     * is malformed or its prefix is not one of $prefixes.
+     *
+     * @param string[] $prefixes e.g. [self::KEY_PREFIX]
+     *
+     * @return array{0:string,1:string,2:string}|null
+     */
+    public static function parse(string $token, array $prefixes): ?array
+    {
+        $pattern = '/^(' . implode('|', array_map(static fn (string $p): string => preg_quote($p, '/'), $prefixes)) . ')([0-9A-Za-z]{16})\.([0-9a-f]{64})$/D';
+
+        return preg_match($pattern, $token, $m) === 1 ? [$m[1], $m[2], $m[3]] : null;
+    }
+
+    /**
+     * Whether $secret is the one the stored row was made with, compared in constant time.
+     */
+    public static function secretMatches(StoredKey $key, string $secret): bool
+    {
+        return hash_equals($key->secretHash(), self::hash($secret));
     }
 
     /**
@@ -74,13 +107,12 @@ final class ApiKeys
             throw new \InvalidArgumentException('A key needs at least one scope it may hold.');
         }
 
-        $tokenId = self::newId();
-        $secret  = bin2hex(random_bytes(32));
-        $id      = $this->store->insert(new StoredKey(
+        [$tokenId, $secret, $hash] = self::mint();
+        $id = $this->store->insert(new StoredKey(
             id: 0,
             kind: $kind,
             tokenId: $tokenId,
-            secretHash: self::hash($secret),
+            secretHash: $hash,
             name: mb_substr(trim($name), 0, 100),
             scopes: $scopes,
             owner: $owner,
@@ -129,7 +161,7 @@ final class ApiKeys
      */
     public static function tokenId(string $token): ?string
     {
-        return preg_match(self::TOKEN, $token, $m) === 1 ? $m[2] : null;
+        return self::parse($token, [self::KEY_PREFIX, self::PUBLIC_PREFIX])[1] ?? null;
     }
 
     /**
@@ -141,16 +173,18 @@ final class ApiKeys
      */
     public function check(string $token, string $ip = ''): KeyCheck
     {
-        if (preg_match(self::TOKEN, $token, $m) !== 1) {
+        $parts = self::parse($token, [self::KEY_PREFIX, self::PUBLIC_PREFIX]);
+        if ($parts === null) {
             return KeyCheck::refused(false);
         }
-        $kind = $m[1] === 'scp' ? CredentialKind::PUBLIC : CredentialKind::KEY;
-        $key  = $this->store->findByTokenId($m[2]);
+        [$prefix, $tokenId, $secret] = $parts;
+        $kind = $prefix === self::PUBLIC_PREFIX ? CredentialKind::PUBLIC : CredentialKind::KEY;
+        $key  = $this->store->findByTokenId($tokenId);
         if ($key === null) {
             return KeyCheck::refused(false);
         }
         $now = $this->clock->now();
-        if ($key->kind() !== $kind || !hash_equals($key->secretHash(), self::hash($m[3])) || !$key->isUsableAt($now)) {
+        if ($key->kind() !== $kind || !self::secretMatches($key, $secret) || !$key->isUsableAt($now)) {
             return KeyCheck::refused(true);
         }
         $owner = $key->owner();

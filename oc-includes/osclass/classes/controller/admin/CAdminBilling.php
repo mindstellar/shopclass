@@ -128,7 +128,7 @@ class CAdminBilling extends AdminSecBaseModel
             'user_id' => Params::getParamInt('userId'),
         );
 
-        $page   = ListPaging::page('pageNum');
+        $page   = ListPaging::page();
         $total  = OrderStore::searchCount($filters);
         $offset = ListPaging::start($page, self::PER_PAGE);
 
@@ -313,7 +313,7 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function creditsView()
     {
-        $page   = ListPaging::page('pageNum');
+        $page   = ListPaging::page();
         $total  = Wallet::balanceCount();
         $offset = ListPaging::start($page, self::PER_PAGE);
 
@@ -340,7 +340,7 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=credits');
         }
 
-        $page   = ListPaging::page('pageNum');
+        $page   = ListPaging::page();
         $total  = Wallet::historyCount($userId);
         $offset = ListPaging::start($page, self::PER_PAGE);
 

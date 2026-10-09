@@ -63,6 +63,14 @@ pin('enum is strict', array(' enum'), $errs(array('enum' => array(1, 2)), '1'));
 harness_section('format');
 pin('an e-mail format accepts a full address and names format for a partial one', array(array(), array(' format')), array($errs(array('type' => 'string', 'format' => 'email'), 'a@b.co'), $errs(array('type' => 'string', 'format' => 'email'), 'a@')));
 pin('uri wants http or https', array(array(), array(' format')), array($errs(array('type' => 'string', 'format' => 'uri'), 'https://x.test/a'), $errs(array('type' => 'string', 'format' => 'uri'), 'javascript:alert(1)')));
+$validate = new \mindstellar\utility\Validate();
+foreach (array('a@b.co', 'user@[127.0.0.1]', 'user@localhost', 'a..b@example.com', 'user@-x.com') as $email) {
+    pin('email agrees with the web form: ' . $email, $validate->email($email) ? array() : array(' format'), $errs(array('type' => 'string', 'format' => 'email'), $email));
+}
+foreach (array('https://x.test/a', 'http://x.test', 'ftp://x.test/a', 'data:text/html,x', 'https://') as $url) {
+    pin('uri agrees with Validate::httpUrl: ' . $url, \mindstellar\utility\Validate::httpUrl($url) ? array() : array(' format'), $errs(array('type' => 'string', 'format' => 'uri'), $url));
+}
+pin('a bracketed IP domain is refused, as the web form refuses it', array(' format'), $errs(array('type' => 'string', 'format' => 'email'), 'user@[127.0.0.1]'));
 pin('date-time is RFC 3339', array(array(), array(), array(' format')), array(
     $errs(array('type' => 'string', 'format' => 'date-time'), '2026-10-03T12:00:00Z'),
     $errs(array('type' => 'string', 'format' => 'date-time'), '2026-10-03T12:00:00.5+05:30'),

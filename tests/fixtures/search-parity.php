@@ -529,7 +529,7 @@ return array(
       5 => 'sofa',
     ),
     'count' => 6,
-    'q' => 6,
+    'q' => 7,
   ),
   'pattern two words' =>
   array(

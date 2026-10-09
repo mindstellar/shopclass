@@ -69,7 +69,9 @@ foreach (glob($formDir . '/*.php') as $form) {
         // that controller, not to ?page=settings, so its actions are not this router's.
         continue;
     }
-    if (preg_match("/'route'\\]\\s*=\\s*array\\(\\s*'page'\\s*=>\\s*'(?!settings')/", $src)) {
+    if (preg_match("/'route'\\]\\s*=\\s*array\\(\\s*'page'\\s*=>\\s*'(?!settings')/", $src)
+        || strpos($src, 'extends ToolsSettingsScreen') !== false
+    ) {
         // A screen routed to its own controller (Listings, Users settings) is not this router's either.
         continue;
     }

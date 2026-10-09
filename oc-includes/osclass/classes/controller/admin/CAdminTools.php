@@ -20,6 +20,10 @@ if (!defined('ABS_PATH')) {
  * Class CAdminTools
  */
 use mindstellar\admin\DatabaseTools;
+use mindstellar\admin\form\CleanupSettingsScreen;
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\LogSettingsScreen;
+use mindstellar\admin\form\MaintenanceSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\admin\SystemChecks;
 use mindstellar\backup\BackupBucket;
@@ -273,10 +277,12 @@ class CAdminTools extends AdminSecBaseModel
             case ('maintenance'):
                 if (Demo::active()) {
                     osc_add_flash_warning_message(Demo::message(), 'admin');
+                    $this->_exportVariableToView('maintenance_form', MaintenanceSettingsScreen::formVars());
                     $this->doView('tools/maintenance.php');
                     break;
                 }
                 $mode = Params::getParam('mode');
+                $form = null;
                 if ($mode === 'on') {
                     osc_csrf_check();
                     $maintenance_file = osc_base_path() . '.maintenance';
@@ -307,28 +313,19 @@ class CAdminTools extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
                 } elseif ($mode === 'save') {
                     osc_csrf_check();
-                    osc_set_preference(
-                        OSC_MAINTENANCE_PREF_LOCKOUT,
-                        Params::getParamString('maintenance_lockout') === '1' ? '1' : '0',
-                        OSC_MAINTENANCE_PREF_SECTION,
-                        'BOOLEAN'
-                    );
-                    osc_set_preference(
-                        OSC_MAINTENANCE_PREF_MESSAGE,
-                        osc_sanitize_maintenance_message(Params::getParamString('maintenance_message')),
-                        OSC_MAINTENANCE_PREF_SECTION,
-                        'STRING'
-                    );
-                    osc_reset_preferences();
-                    osc_purge_page_cache('maintenance');
-                    osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
+                    $result = CoreSettings::attempt(MaintenanceSettingsScreen::register());
+                    if ($result['errors'] === array()) {
+                        osc_purge_page_cache('maintenance');
+                        osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
+                        $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
+                    }
+                    $form = $result['values'];
                 }
+                $this->_exportVariableToView('maintenance_form', MaintenanceSettingsScreen::formVars($form));
                 $this->doView('tools/maintenance.php');
                 break;
             case 'cleanup':
-                $this->_exportVariableToView('cleanup_history', $this->jobLog(array('cleanup'), 10));
-                $this->doView('tools/cleanup.php');
+                $this->drawCleanup();
                 break;
             case 'jobs_run':
                 if ($this->refuseOnDemo(self::jobsUrl())) {
@@ -387,32 +384,11 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                $limit = Params::getParamInt('batch_limit');
-                osc_set_preference('batch_limit', $limit > 0 ? $limit : Cleanup::DEFAULT_BATCH, 'osclass', 'INTEGER');
-                foreach (Cleanup::RULES as $rule) {
-                    osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'osclass', 'BOOLEAN');
-                    $days = Params::getParamInt('days_' . $rule);
-                    osc_set_preference('days_' . $rule, $days > 0 ? $days : Cleanup::DEFAULT_DAYS, 'osclass', 'INTEGER');
+                $result = CoreSettings::attempt(CleanupSettingsScreen::register());
+                if ($result['errors'] !== array()) {
+                    $this->drawCleanup($result['values']);
+                    break;
                 }
-                osc_set_preference(
-                    'item_views_enabled',
-                    Params::getParam('item_views_enabled') ? '1' : '0',
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'count_bot_views',
-                    Params::getParam('count_bot_views') ? '1' : '0',
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'item_stats_retention_days',
-                    max(0, Params::getParamInt('item_stats_retention_days')),
-                    'osclass',
-                    'INTEGER'
-                );
-                osc_reset_preferences();
                 osc_add_flash_ok_message(_m('Cleanup settings saved'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 break;
@@ -457,27 +433,14 @@ class CAdminTools extends AdminSecBaseModel
 
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('sections', Log::getInstance()->distinctSections());
-                $this->_exportVariableToView('log_enabled', osc_is_admin_log_enabled());
-                $this->_exportVariableToView('log_retention_days', osc_admin_log_retention_days());
+                $this->_exportVariableToView('log_form', LogSettingsScreen::formVars());
                 $this->doView('tools/logs.php');
                 break;
             case ('logs_settings_post'):
                 osc_csrf_check();
-                $retention = Params::getParamInt('admin_log_retention_days');
-                osc_set_preference(
-                    'admin_log_enabled',
-                    Params::getParam('admin_log_enabled') != '' ? 1 : 0,
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'admin_log_retention_days',
-                    $retention > 0 ? $retention : 0,
-                    'osclass',
-                    'INTEGER'
-                );
-                osc_reset_preferences();
-                osc_add_flash_ok_message(_m('Activity log settings saved'), 'admin');
+                if (CoreSettings::attempt(LogSettingsScreen::register())['errors'] === array()) {
+                    osc_add_flash_ok_message(_m('Activity log settings saved'), 'admin');
+                }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
             case ('logs_clear'):
@@ -512,6 +475,18 @@ class CAdminTools extends AdminSecBaseModel
     private static function backupUrl(): string
     {
         return osc_admin_base_url(true) . '?page=tools&action=backup';
+    }
+
+    /**
+     * The Cleanup screen, with the values a rejected save hands back, or the stored ones.
+     *
+     * @param array<string,mixed>|null $values
+     */
+    private function drawCleanup(?array $values = null): void
+    {
+        $this->_exportVariableToView('cleanup_history', $this->jobLog(array('cleanup'), 10));
+        $this->_exportVariableToView('cleanup_form', CleanupSettingsScreen::formVars($values));
+        $this->doView('tools/cleanup.php');
     }
 
     /**

@@ -110,9 +110,22 @@ Plugin authors should read the Breaking section before upgrading.
 - The market's `.last-backup` pointer is written whole through `FileSystem::writeAtomic()`.
 - `cron.php` matches the CLI `cron-type` in any case.
 - A custom field's slug avoids the reserved `api`, as a field group's already did. `LocationService::uniqueSlug()` is private.
+- Search-alert tokens are sealed with `SecretBox`; tokens from 6.x still open. `alert_public_key` is no longer created.
+- `ActionThrottle` counts in `t_rate_counter` through `RateLimit::addRolling()`; `t_login_attempt` holds sign-in failures only.
+- `SignedPayload` and `RateLimit` take an optional `$now`; `FailureCounter`, `PageTokens` and `AccessTokens` take a `Clock`.
+- Every `osc_sanitize_*()` helper forwards to `mindstellar\utility\Sanitize`; new `Sanitize::name()`, `slug()`, `text()` and `richHtml()`.
+- `osc_sanitize_phone()` and `Sanitize::phone()` keep a leading `+`, digits and separators, with no US formatting; saved phone numbers keep their spaces and dashes.
+- `osc_sanitize_username()` keeps dots, as sign-up does, and `Sanitize::username()` turns spaces into `_`.
+- `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters; `Sanitize::allcaps()` no longer lower-cases mixed-case text or escapes it.
+- `osc_sanitize_int()` and `Sanitize::int()` return an int: "1.5" is 1, not "15".
+- Update-check results, the backup-folder probe and the location catalog check time live in the key-value store, not in preferences; `osc_update_check_state()` reads them and the old readers still work.
+- `osc_admin_pager()` and `osc_admin_pagination()` draw one pager; admin lists page with `iPage`, and old `pageNum` links still work.
+- The Cleanup, Maintenance and Activity log settings are declared settings forms, with the same preferences and defaults.
+- `mindstellar\upgrade\Plugin` and `Theme` are deprecated. The core updater and the market installer share download and unzip.
 
 ### Fixed
 
+- A search made only of stopwords, or of words below the server's FULLTEXT minimum, now matches by substring instead of finding nothing.
 - Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting; `ssl` does.
 - The installer saves a downloaded language's files into that language's folder.
 - `Formatting::formatSlug()` gives the same slug as `osc_sanitizeString()`; its pattern was broken.
@@ -121,6 +134,10 @@ Plugin authors should read the Breaking section before upgrading.
 - The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
 - A category translated to a new language can no longer take the reserved `api` slug.
 - The category tree no longer breaks on a cache driver that answers a miss with null.
+- Public pages answer 304 to an `If-None-Match` list or a weak `W/` tag, as the API does.
+- The API's `email` and `uri` formats refuse what the web forms refuse.
+- `osc_validate_url()` with its header check no longer asks private addresses, and gives up after 3 seconds.
+- The pseudo-cron request keeps the URL's port and query and gives up connecting after 5 seconds.
 
 ## Shopclass 6.4.5
 

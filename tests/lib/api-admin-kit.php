@@ -118,6 +118,7 @@ function api_admin_boot(string $scratch): mysqli
     }
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
+    require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
     require_once __DIR__ . '/action-standins.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hHttpCache.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php';

@@ -12,15 +12,21 @@ declare(strict_types=1);
 
 namespace mindstellar\search\query;
 
+use mindstellar\database\Db;
+
 /**
  * The keyword filter and the description locales it searches.
  *
  * Every word becomes a required prefix term, a quoted phrase a required phrase and
- * -word an exclusion, in FULLTEXT BOOLEAN MODE. When every term is shorter than the
- * FULLTEXT minimum token size it matches by substring instead.
+ * -word an exclusion, in FULLTEXT BOOLEAN MODE. When no term can be indexed (each is
+ * shorter than the server's minimum token size or is an InnoDB stopword) it matches by
+ * substring instead.
  */
 final class PatternFilter
 {
+    /** @var array{min:int,stop:array<string,bool>}|null the server's FULLTEXT settings, read once per request */
+    private static ?array $server = null;
+
     private bool $active = false;
     /** @var mixed the pattern as given */
     private $given = null;
@@ -133,14 +139,54 @@ final class PatternFilter
         if ($phrases !== array()) {
             return true;
         }
-        $min = defined('OSC_FT_MIN_WORD_LEN') ? max(1, (int)OSC_FT_MIN_WORD_LEN) : 3;
+        $server = self::serverSettings();
+        $min    = defined('OSC_FT_MIN_WORD_LEN') ? max(1, (int)OSC_FT_MIN_WORD_LEN) : $server['min'];
         foreach ($words as $w) {
-            if (!$w['neg'] && $this->length($w['text']) >= $min) {
+            $lower = function_exists('mb_strtolower') ? mb_strtolower($w['text'], 'UTF-8') : strtolower($w['text']);
+            if (!$w['neg'] && $this->length($w['text']) >= $min && !isset($server['stop'][$lower])) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * The InnoDB minimum token size and default stopwords, cached for a day. A failed read
+     * keeps the old rule: 3 characters and no stopwords.
+     *
+     * @return array{min:int,stop:array<string,bool>}
+     */
+    private static function serverSettings(): array
+    {
+        if (self::$server === null) {
+            $read = \mindstellar\cache\CacheGroup::remember('fulltext', 'server', static function (): ?array {
+                try {
+                    $vars = Db::selectOne('SELECT @@innodb_ft_min_token_size AS m, @@innodb_ft_enable_stopword AS e,'
+                        . ' @@innodb_ft_server_stopword_table AS s, @@innodb_ft_user_stopword_table AS u,'
+                        . " (SELECT GROUP_CONCAT(value SEPARATOR ' ') FROM INFORMATION_SCHEMA.INNODB_FT_DEFAULT_STOPWORD) AS w");
+                } catch (\Throwable $e) {
+                    return null;
+                }
+                if ($vars === null || (int)$vars['m'] < 1) {
+                    return null;
+                }
+                $stop = array();
+                // A custom stopword table is not read: its words stay on the FULLTEXT path as before.
+                if ((int)$vars['e'] === 1 && (string)$vars['s'] === '' && (string)$vars['u'] === '') {
+                    foreach (explode(' ', strtolower((string)$vars['w'])) as $word) {
+                        if ($word !== '') {
+                            $stop[$word] = true;
+                        }
+                    }
+                }
+
+                return array('min' => (int)$vars['m'], 'stop' => $stop);
+            }, 86400);
+            self::$server = is_array($read) ? $read : array('min' => 3, 'stop' => array());
+        }
+
+        return self::$server;
     }
 
     /**

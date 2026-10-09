@@ -28,6 +28,7 @@ use WebThemes;
 /**
  * Class Theme
  *
+ * @deprecated 7.0.0 Nothing calls it: market\Installer and market\Catalog install and update themes.
  * @package mindstellar\upgrade
  */
 class Theme extends UpgradePackage

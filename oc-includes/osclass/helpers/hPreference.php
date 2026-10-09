@@ -602,13 +602,60 @@ function osc_normal_dimensions()
 }
 
 /**
+ * The saved result of the last update check for core, plugins, themes, languages or the location catalog.
+ * It lives in the key-value store because preferences load on every request.
+ *
+ * @param string $kind 'core', 'plugins', 'themes', 'languages' or 'location'
+ *
+ * @return array<string,mixed> checked (time), count, to_update, downloaded; core adds available and package
+ */
+function osc_update_check_state(string $kind): array
+{
+    try {
+        $state = osc_kv_get('update_check', $kind);
+    } catch (\Throwable $e) {
+        $state = null;
+    }
+
+    return (is_array($state) ? $state : array())
+        + array('checked' => 0, 'count' => 0, 'to_update' => array(), 'downloaded' => array());
+}
+
+/**
+ * Save an update check's result for $kind, and drop the preference rows it used to live in.
+ *
+ * @param string              $kind  as osc_update_check_state() takes it
+ * @param array<string,mixed> $state as osc_update_check_state() returns it
+ *
+ * @return void
+ */
+function osc_update_check_save(string $kind, array $state): void
+{
+    osc_kv_set('update_check', $kind, $state, 7 * 24 * 3600);
+
+    $legacy = match ($kind) {
+        'core'     => array('update_core_available', 'update_core_json', 'last_version_check'),
+        'location' => array('location_catalog_checked'),
+        default    => array($kind . '_to_update', $kind . '_downloaded', $kind . '_update_count', $kind . '_last_version_check'),
+    };
+    $stored = Preference::getInstance()->getSection('osclass');
+    $found  = array_intersect($legacy, array_keys($stored));
+    foreach ($found as $name) {
+        osc_delete_preference($name);
+    }
+    if ($found !== array()) {
+        osc_reset_preferences();
+    }
+}
+
+/**
  * Gets when was the last version check
  *
  * @return int
  */
 function osc_last_version_check()
 {
-    return (int)getPreference('last_version_check');
+    return (int) osc_update_check_state('core')['checked'];
 }
 
 /**
@@ -618,7 +665,7 @@ function osc_last_version_check()
  */
 function osc_themes_last_version_check()
 {
-    return (int)getPreference('themes_last_version_check');
+    return (int) osc_update_check_state('themes')['checked'];
 }
 
 /**
@@ -628,7 +675,7 @@ function osc_themes_last_version_check()
  */
 function osc_plugins_last_version_check()
 {
-    return (int)getPreference('plugins_last_version_check');
+    return (int) osc_update_check_state('plugins')['checked'];
 }
 
 /**
@@ -638,7 +685,7 @@ function osc_plugins_last_version_check()
  */
 function osc_languages_last_version_check()
 {
-    return (int)getPreference('languages_last_version_check');
+    return (int) osc_update_check_state('languages')['checked'];
 }
 
 /**
@@ -648,7 +695,9 @@ function osc_languages_last_version_check()
  */
 function osc_update_core_json()
 {
-    return getPreference('update_core_json');
+    $package = osc_update_check_state('core')['package'] ?? null;
+
+    return is_array($package) ? (string) json_encode($package) : '';
 }
 
 /**

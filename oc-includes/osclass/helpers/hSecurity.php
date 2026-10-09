@@ -21,6 +21,7 @@
  */
 
 use mindstellar\security\Csrf;
+use mindstellar\security\SecretBox;
 
 /**
  * bcrypt work factor used by osc_hash_password().
@@ -373,7 +374,7 @@ function osc_hash_password($password)
 }
 
 /**
- * Encrypt an alert payload into an AES-256-GCM token: nonce, tag, then ciphertext.
+ * Encrypt an alert payload into a SecretBox token.
  *
  * @param string $alert
  *
@@ -381,34 +382,16 @@ function osc_hash_password($password)
  */
 function osc_encrypt_alert($alert)
 {
-    osc_set_alert_private_key(); // ensure the persistent keys exist
-    osc_set_alert_public_key();
-
-    // AES-GCM: 12-byte nonce (the size the mode is defined for) and a full 16-byte tag.
-    $iv  = random_bytes(12);
-    $tag = '';
-
-    $ciphertext = openssl_encrypt(
-        (string)$alert,
-        'aes-256-gcm',
-        osc_alert_cipher_key(),
-        OPENSSL_RAW_DATA,
-        $iv,
-        $tag,
-        '',
-        16
-    );
-
-    if ($ciphertext === false) {
+    try {
+        return SecretBox::seal('alert-token', (string)$alert);
+    } catch (\RuntimeException $e) {
         return '';
     }
-
-    return $iv . $tag . $ciphertext;
 }
 
 /**
- * Decrypt an alert token. Only the authenticated format is accepted: the legacy CTR one
- * can be edited without detection, and its search conditions are run as SQL by the alert cron.
+ * Decrypt an alert token. Tokens from before 7.0 (raw AES-GCM under the alert_private_key
+ * preference) still open; the older CTR format is refused, as the alert cron runs its conditions.
  *
  * @param string $string
  *
@@ -417,26 +400,14 @@ function osc_encrypt_alert($alert)
 function osc_decrypt_alert($string)
 {
     $string = (string)$string;
-
-    $ivLen  = 12;
-    $tagLen = 16;
-
-    if (strlen($string) > $ivLen + $tagLen) {
-        $plain = openssl_decrypt(
-            substr($string, $ivLen + $tagLen),
-            'aes-256-gcm',
-            osc_alert_cipher_key(),
-            OPENSSL_RAW_DATA,
-            substr($string, 0, $ivLen),
-            substr($string, $ivLen, $tagLen)
-        );
-
-        if ($plain !== false) {
-            return $plain;
-        }
+    if (SecretBox::isSealed($string)) {
+        return SecretBox::open('alert-token', $string) ?? '';
+    }
+    if ($string === '' || !osc_get_preference('alert_private_key')) {
+        return '';
     }
 
-    return '';
+    return SecretBox::openWith(osc_alert_cipher_key(), base64_encode($string), '') ?? '';
 }
 
 /**
@@ -487,21 +458,21 @@ function osc_decrypt_alert_legacy($string)
 }
 
 /**
- * Encryption key for alert tokens, derived from the install's persistent alert key.
+ * Key of the alert tokens minted before 7.0, derived from the alert_private_key preference.
  *
- * Derived rather than used directly so the value handed to the cipher is bound to
- * this one purpose: the same stored key backing a second use later cannot then share
- * key material with this one.
+ * @deprecated since 7.0.0; new tokens are sealed with SecretBox
  *
  * @return string 32 raw bytes
  */
 function osc_alert_cipher_key()
 {
-    return hash_hmac('sha256', 'shopclass-alert-token-v1', (string)osc_get_alert_private_key(), true);
+    return hash_hmac('sha256', 'shopclass-alert-token-v1', (string)osc_get_preference('alert_private_key'), true);
 }
 
 /**
  * Mint the install's persistent alert public key if it has none yet.
+ *
+ * @deprecated since 7.0.0; nothing reads this key
  *
  * @return void
  */
@@ -514,9 +485,9 @@ function osc_set_alert_public_key()
 }
 
 /**
- * Persistent per-install public key for search-alert tokens. Kept in preferences (not the
- * session) so an encoded alert issued on one request stays verifiable/decryptable on a later
- * one without a session — which is what lets anonymous search pages stay cookieless.
+ * Persistent per-install public key, once meant for search-alert tokens.
+ *
+ * @deprecated since 7.0.0; nothing reads this key
  *
  * @return string
  */
@@ -543,8 +514,7 @@ function osc_set_alert_private_key()
 }
 
 /**
- * Persistent per-install private key backing search-alert encryption. See
- * osc_get_alert_public_key() for why it is preference-backed rather than per-session.
+ * Persistent per-install key of the alert tokens minted before 7.0.
  *
  * @return string
  */
@@ -558,7 +528,7 @@ function osc_get_alert_private_key()
 }
 
 /**
- * A random base64-ish string of $length characters, from the best entropy source available.
+ * A random string of $length characters from A-Z, a-z, 0-9, "." and "/".
  *
  * @param int $length
  *
@@ -566,43 +536,7 @@ function osc_get_alert_private_key()
  */
 function osc_random_string($length)
 {
-    $buffer       = '';
-    $buffer_valid = false;
+    $length = max(0, (int)$length);
 
-    if (function_exists('openssl_random_pseudo_bytes')) {
-        $buffer = openssl_random_pseudo_bytes($length);
-        if ($buffer) {
-            $buffer_valid = true;
-        }
-    }
-
-    if (!$buffer_valid && is_readable('/dev/urandom')) {
-        $f    = fopen('/dev/urandom', 'rb');
-        $read = strlen($buffer);
-        while ($read < $length) {
-            $buffer .= fread($f, $length - $read);
-            $read   = strlen($buffer);
-        }
-        fclose($f);
-        if ($read >= $length) {
-            $buffer_valid = true;
-        }
-    }
-
-    if (!$buffer_valid || strlen($buffer) < $length) {
-        $bl = strlen($buffer);
-        for ($i = 0; $i < $length; $i++) {
-            if ($i < $bl) {
-                $buffer[$i] ^= chr(mt_rand(0, 255));
-            } else {
-                $buffer .= chr(mt_rand(0, 255));
-            }
-        }
-    }
-
-    if (!$buffer_valid) {
-        $buffer = osc_genRandomPassword(2 * $length);
-    }
-
-    return substr(str_replace('+', '.', base64_encode($buffer)), 0, $length);
+    return substr(str_replace('+', '.', base64_encode(random_bytes(max(1, $length)))), 0, $length);
 }

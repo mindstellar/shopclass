@@ -14,6 +14,7 @@ use Category;
 use City;
 use Country;
 use mindstellar\security\ActionThrottle;
+use mindstellar\security\AddressGuard;
 use Region;
 
 /**
@@ -399,12 +400,24 @@ class Validate
     }
 
     /**
+     * Whether a public address answers a HEAD request with 200, 301 or 302 within 3 seconds.
+     */
+    private static function answers(string $url): bool
+    {
+        if (!(new AddressGuard())->check($url)['ok']) {
+            return false;
+        }
+
+        return in_array((new FileSystem())->head($url, 3), array(200, 301, 302), true);
+    }
+
+    /**
      * Validate if $value url is a valid url.
-     * Check header response to validate.
      *
      * @param string  $value
      * @param boolean $required
-     * @param bool    $get_headers
+     * @param bool    $get_headers also ask the address with a HEAD request and want 200, 301 or 302;
+     *                             a private or reserved host fails without being asked
      *
      * @return boolean
      */
@@ -416,11 +429,8 @@ class Validate
             $success = $this->filterURL($sanitizedValue);
 
             if ($success) {
-                if ($get_headers) {
-                    @$headers = get_headers($sanitizedValue);
-                    if (!preg_match('/^HTTP\/\d\.\d\s+(200|301|302)/', $headers[0])) {
-                        return false;
-                    }
+                if ($get_headers && !self::answers($sanitizedValue)) {
+                    return false;
                 }
             } else {
                 return false;

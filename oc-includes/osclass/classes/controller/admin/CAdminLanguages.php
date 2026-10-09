@@ -140,12 +140,12 @@ class CAdminLanguages extends AdminSecBaseModel
                         }
                         // Clear this code from the pending-update list so the row's
                         // "Update" action disappears until the next version check.
-                        $pending = json_decode(osc_get_preference('languages_to_update'), true);
-                        if (is_array($pending) && ($k = array_search($languageToImport, $pending, true)) !== false) {
-                            unset($pending[$k]);
-                            osc_set_preference('languages_to_update', json_encode(array_values($pending)));
-                            osc_set_preference('languages_update_count', count($pending));
-                            osc_reset_preferences();
+                        $pending = osc_update_check_state('languages');
+                        if (($k = array_search($languageToImport, $pending['to_update'], true)) !== false) {
+                            unset($pending['to_update'][$k]);
+                            $pending['to_update'] = array_values($pending['to_update']);
+                            $pending['count']     = count($pending['to_update']);
+                            osc_update_check_save('languages', $pending);
                         }
                         osc_invalidate_locale_cache();
                         if ($failed > 0) {
@@ -465,7 +465,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     $displayRecords = ($start + $limit) - $count;
                 }
                 // ----
-                $aLanguagesToUpdate = json_decode(osc_get_preference('languages_to_update'), true);
+                $aLanguagesToUpdate = osc_update_check_state('languages')['to_update'];
                 $bLanguagesToUpdate = is_array($aLanguagesToUpdate);
                 // ----
                 $aData = array();

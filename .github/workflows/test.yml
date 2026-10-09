@@ -604,6 +604,10 @@ jobs:
         run: php tests/custom-field-validation.php
       - name: Format helpers
         run: php tests/format-helpers.php
+      - name: Full-text search rules
+        run: php tests/search-fulltext.php
+      - name: Fire-and-forget HTTP
+        run: php tests/http-fire-and-forget.php
       - name: Cron schedules
         run: php tests/cron-schedule.php
       # The username availability check stripped dots that registration keeps.

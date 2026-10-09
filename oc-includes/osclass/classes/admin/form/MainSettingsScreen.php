@@ -57,8 +57,7 @@ final class MainSettingsScreen extends SettingsScreen
             // A changed channel offers different releases, so the saved answer is dropped and
             // the next update check asks again.
             ->onAfterSave(static function () {
-                osc_set_preference('update_core_json', '');
-                osc_set_preference('last_version_check', 0);
+                osc_update_check_save('core', array('checked' => 0));
             });
 
         $form
@@ -355,7 +354,7 @@ final class MainSettingsScreen extends SettingsScreen
      */
     private static function drawVersionCheck()
     {
-        $last = (int)osc_get_preference('last_version_check');
+        $last = osc_last_version_check();
         echo '<div class="field-inline"><span id="last-version-check">'
             . osc_esc_html(__('Last checked on ') . ($last > 0
                 ? osc_format_date(date('d-m-Y h:i:s', $last))

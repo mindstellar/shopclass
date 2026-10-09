@@ -707,6 +707,26 @@ pin('a locale filter is in the record', array('en_US'), json_decode($en->toJson(
 check('so two locales give two result cache keys', md5($en->toJson()) !== md5($es->toJson()));
 pin('the same locales in another order give the same key', $both->toJson(), $bothReversed->toJson());
 
+harness_section('Search: FULLTEXT settings come from the server');
+$ftServer = new ReflectionProperty(\mindstellar\search\query\PatternFilter::class, 'server');
+if (PHP_VERSION_ID < 80100) {
+    $ftServer->setAccessible(true);
+}
+$ftServer->setValue(null, null);
+Object_Cache_Factory::getInstance()->flush();
+$s = new Search();
+$s->addPattern('Mountain');
+$s->doSearch();
+$ftRead = $ftServer->getValue();
+pin('the minimum token size is the server value', (int)$admin->query('SELECT @@innodb_ft_min_token_size')->fetch_row()[0], $ftRead['min']);
+check('the InnoDB default stopwords are read', isset($ftRead['stop']['with']));
+
+/* "with" is an InnoDB stopword, so FULLTEXT finds nothing; the substring fallback finds it. */
+$lamp = $mkItem('Lamp with shade', $catCars, 40.0, 0, $regionA, $cityA, 'Alpha', 'Aville');
+$s = new Search();
+$s->addPattern('with');
+pin('a stopword-only search falls back and finds the listing', array($lamp), $sorted($ids($s->doSearch())));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

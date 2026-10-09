@@ -242,6 +242,8 @@ if (!function_exists('osc_current_admin_theme_url')) {
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 // After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
 require_once __DIR__ . '/lib/stubs.php';
+// The general screen's save drops the saved update check, which lives in the key-value store.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';

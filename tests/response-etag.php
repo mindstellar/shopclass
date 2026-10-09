@@ -65,6 +65,23 @@ check(
     osc_response_etag_value($page) !== osc_response_etag_value($page . '<!-- 12 ms -->')
 );
 
+harness_section('If-None-Match is read as a list, weak tags included');
+
+$tag = osc_response_etag_value($page);
+check('the exact tag matches', osc_etag_matches($tag, $tag));
+check('a tag weakened by gzip or a CDN matches', osc_etag_matches('W/' . $tag, $tag));
+check('a tag anywhere in a list matches', osc_etag_matches('"other", W/' . $tag . ' , "third"', $tag));
+check('* matches', osc_etag_matches(' * ', $tag));
+check('another tag does not', !osc_etag_matches('"other", W/"x"', $tag));
+check('an empty header does not', !osc_etag_matches('', $tag));
+check('the tag without its quotes does not', !osc_etag_matches(trim($tag, '"'), $tag));
+pin('tags come back quoted, W/ removed', array('"a"', '"b"'), osc_etag_tags('"a", W/"b",'));
+$source = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php');
+check(
+    'the page 304 goes through the same matcher',
+    preg_match('/osc_etag_matches\(\(string\)Params::getServerParam\(\'HTTP_IF_NONE_MATCH\'/', $source) === 1
+);
+
 harness_section('Server-Timing reports the build time without touching the page');
 
 pin('milliseconds with one decimal', 'app;dur=84.2;desc="Page build"', osc_server_timing_value(100.0, 100.0842));
