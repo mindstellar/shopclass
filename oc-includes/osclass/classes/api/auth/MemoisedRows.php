@@ -42,4 +42,14 @@ class MemoisedRows
 
         return $this->rows[$id];
     }
+
+    /**
+     * The row when it was read already, without reading it.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function held(int $id): ?array
+    {
+        return $this->rows[$id] ?? null;
+    }
 }

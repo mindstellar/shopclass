@@ -838,14 +838,14 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 });
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
-pin('POST /listings, no photos: 31 queries (one checks the sign-in is live, one the places; ban rules come from the cache)', 31, $qPost);
-pin('PATCH /listings/{id}, no photos: 24 queries (an unchanged location and custom field are not rewritten; edited_item reuses the locked row)', 24, $qPatch);
+pin('POST /listings, no photos: 25 queries (one checks the sign-in is live, one checks the places and one reads them; ban rules come from the cache)', 25, $qPost);
+pin('PATCH /listings/{id}, no photos: 19 queries (an unchanged location and custom field are not rewritten; edited_item reuses the locked row and the texts)', 19, $qPatch);
 $qGet     = harness_query_count(static fn () => $call('GET', 'listings/' . $qMade, null, $sueToken));
 $qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header('ETag');
 $qMatched = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '998'), $sueToken, array('If-Match' => $qEtag)));
 echo "  GET /listings/{id} as its owner: $qGet queries, PATCH with If-Match: $qMatched\n";
-pin('GET /listings/{id} as its owner: 7 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos, seller)', 7, $qGet);
-pin('PATCH with If-Match: 33 queries, the 24 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 33, $qMatched);
+pin('GET /listings/{id} as its owner: 6 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos; the seller is the signed-in user)', 6, $qGet);
+pin('PATCH with If-Match: 28 queries, the 19 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 28, $qMatched);
 
 $writes = static function (): array {
     $db  = DBConnectionClass::newInstance()->getOsclassDb();

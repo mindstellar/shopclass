@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
+use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\currency\CurrencyService;
@@ -19,6 +20,7 @@ use mindstellar\database\Db;
 use mindstellar\fields\FieldQuery;
 use mindstellar\listing\ListingQuery;
 use mindstellar\user\UserQuery;
+use mindstellar\user\UserStore;
 
 /**
  * Listings as the API answers with them, serialized in the caller's view. A page costs a fixed
@@ -32,7 +34,10 @@ final class ListingReader
 
     private ?CurrencyService $currencies = null;
 
-    public function __construct(private CategoryCatalog $categories, private ListingSerializer $serializer)
+    /**
+     * @param MemoisedRows|null $known users the request has read already, as the signed-in user; a seller among them is not read again
+     */
+    public function __construct(private CategoryCatalog $categories, private ListingSerializer $serializer, private ?MemoisedRows $known = null)
     {
         $this->listings = new ListingQuery();
         $this->rows     = new ListingRows($this->listings);
@@ -174,7 +179,19 @@ final class ListingReader
      */
     private function users(array $ids): array
     {
-        return (new UserQuery())->byIds($ids, ['pk_i_id', 's_name', 's_username'], true);
+        $columns = ['pk_i_id', 's_name', 's_username'];
+        $users   = [];
+        $rest    = [];
+        foreach ($ids as $id) {
+            $row = $this->known?->held($id);
+            if ($row === null) {
+                $rest[] = $id;
+            } elseif (UserStore::isLive($row)) {
+                $users[$id] = array_map(static fn (string $column): string => (string) $row[$column], array_combine($columns, $columns));
+            }
+        }
+
+        return $users + (new UserQuery())->byIds($rest, $columns, true);
     }
 
     /**

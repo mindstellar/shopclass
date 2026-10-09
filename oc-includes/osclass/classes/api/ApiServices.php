@@ -416,7 +416,7 @@ final class ApiServices
 
     public function listingReader(): ListingReader
     {
-        return $this->once(__FUNCTION__, fn (): ListingReader => new ListingReader(CategoryCatalog::fromSite(), $this->listingSerializer()));
+        return $this->once(__FUNCTION__, fn (): ListingReader => new ListingReader(CategoryCatalog::fromSite(), $this->listingSerializer(), $this->users));
     }
 
     /**
