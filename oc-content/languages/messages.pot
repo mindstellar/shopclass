@@ -2607,6 +2607,10 @@ msgstr ""
 msgid "The location catalog could not be reached. Try again in a few minutes."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The log could not be cleared"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "The member replies to this address."
 msgstr ""
