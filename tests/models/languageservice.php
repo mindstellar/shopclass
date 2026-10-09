@@ -28,6 +28,7 @@ if (!function_exists('osc_plugins_path')) {
 }
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hHttpCache.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/utils.php';
+require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hKv.php';
 
 use mindstellar\language\LanguageService;
 use mindstellar\language\LocaleStore;
@@ -156,6 +157,15 @@ pin('a code that is not a locale code is refused before any folder or fetch', ar
     LanguageService::downloadFiles('../ff_FF', $fetch), LanguageService::downloadFiles('ff_FF/x', $fetch), LanguageService::downloadFiles("ff_FF\n", $fetch),
     $asked, is_dir(osc_translations_path() . '../ff_FF'),
 ));
+osc_update_check_save('languages', array('checked' => 1, 'count' => 2, 'to_update' => array('ff_FF', 'hh_HH'), 'downloaded' => array()));
+$asked  = array();
+$import = $service->importPublished('ff_FF', array('locale_code' => 'ff_FF') + $manifest, $fetch);
+pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('mail' => false, 'failed' => 1), true), array(
+    $import, in_array(osc_get_i18n_repository_url('src/translations/ff_FF/mail.json'), $asked, true),
+));
+pin('...and takes it off the pending-update list', array(array('hh_HH'), 1), array(osc_update_check_state('languages')['to_update'], osc_update_check_state('languages')['count']));
+osc_deleteDir(osc_translations_path() . 'ff_FF');
+$asked = array();
 touch(osc_translations_path() . 'gg_GG');
 pin('a folder that cannot be made is null, with nothing fetched', array(null, array()), array(LanguageService::downloadFiles('gg_GG', $fetch), $asked));
 @unlink(osc_translations_path() . 'gg_GG');

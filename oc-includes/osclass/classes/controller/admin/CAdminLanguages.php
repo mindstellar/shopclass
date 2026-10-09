@@ -162,24 +162,14 @@ class CAdminLanguages extends AdminSecBaseModel
             }
 
             if (isset($published[$languageToImport])) {
-                $mailJSON =
-                    osc_file_get_contents(osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/mail.json'));
-                if (!$this->languages->install($published[$languageToImport], $languageToImport, $mailJSON)) {
+                $result = $this->languages->importPublished($languageToImport, $published[$languageToImport]);
+                if (!$result['mail']) {
                     osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
                 }
-                $failed = LanguageService::downloadFiles($languageToImport);
+                $failed = $result['failed'];
                 if ($failed === null) {
                     osc_add_flash_error_message(sprintf(_m('Directory "%s" was not created'), osc_translations_path() . $languageToImport . '/'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-                // Clear this code from the pending-update list so the row's
-                // "Update" action disappears until the next version check.
-                $pending = osc_update_check_state('languages');
-                if (($k = array_search($languageToImport, $pending['to_update'], true)) !== false) {
-                    unset($pending['to_update'][$k]);
-                    $pending['to_update'] = array_values($pending['to_update']);
-                    $pending['count']     = count($pending['to_update']);
-                    osc_update_check_save('languages', $pending);
                 }
                 osc_invalidate_locale_cache();
                 if ($failed > 0) {

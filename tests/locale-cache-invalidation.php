@@ -195,6 +195,7 @@ $writes = array(
     '->enable(',
     '->disable(',
     '->install(',
+    '->importPublished(',
     'osc_checkLocales(',
     'osc_db_query(',
     't_locale',

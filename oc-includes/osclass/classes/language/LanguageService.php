@@ -98,6 +98,33 @@ final class LanguageService
     }
 
     /**
+     * Install a language from the translation repository: its manifest entry and e-mail
+     * templates, then its files. A language installed this way leaves the pending-update list.
+     *
+     * @param array<string,mixed>                     $manifest its entry in published()
+     * @param (callable(string): (string|false))|null $fetch    reads a URL; osc_file_get_contents() when null
+     *
+     * @return array{mail:bool,failed:?int} whether the e-mail templates were imported, and downloadFiles()'s answer
+     */
+    public function importPublished(string $code, array $manifest, ?callable $fetch = null): array
+    {
+        $fetch ??= 'osc_file_get_contents';
+        $mail    = $this->install($manifest, $code, $fetch(osc_get_i18n_repository_url('src/translations/' . $code . '/mail.json')));
+        $failed  = self::downloadFiles($code, $fetch);
+        if ($failed !== null) {
+            $pending = osc_update_check_state('languages');
+            if (($k = array_search($code, $pending['to_update'], true)) !== false) {
+                unset($pending['to_update'][$k]);
+                $pending['to_update'] = array_values($pending['to_update']);
+                $pending['count']     = count($pending['to_update']);
+                osc_update_check_save('languages', $pending);
+            }
+        }
+
+        return array('mail' => $mail, 'failed' => $failed);
+    }
+
+    /**
      * Turn a language on for the website, or for oc-admin. Its category names are filled in first.
      *
      * @return int rows changed
