@@ -40,6 +40,8 @@ final class ListingInput
     {
         $actor ??= self::sessionActor($admin);
         $data  = self::build(Params::getParamsAsArray('', false), $actor, $isAdd, Params::getFiles('photos'));
+        // A signed-in seller's form posts their name and e-mail in hidden fields; plugins reading
+        // the request get the account's own values instead.
         if (($data['userId'] ?? null) !== null) {
             Params::setParam('contactName', $data['contactName']);
             Params::setParam('contactEmail', $data['contactEmail']);
