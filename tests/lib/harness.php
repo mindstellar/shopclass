@@ -341,6 +341,25 @@ if (!function_exists('harness_method_source')) {
     }
 }
 
+if (!function_exists('harness_code_only')) {
+    /**
+     * PHP source without its comments, line numbers kept, so a scan matches code only.
+     */
+    function harness_code_only(string $source): string
+    {
+        $code = '';
+        foreach (token_get_all($source) as $token) {
+            if (is_array($token) && in_array($token[0], array(T_COMMENT, T_DOC_COMMENT), true)) {
+                $code .= str_repeat("\n", substr_count($token[1], "\n"));
+                continue;
+            }
+            $code .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $code;
+    }
+}
+
 if (!function_exists('harness_action_source')) {
     /**
      * The source of the method a controller's ACTIONS map gives an action; '' when the map
