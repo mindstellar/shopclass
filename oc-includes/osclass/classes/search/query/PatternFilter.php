@@ -28,6 +28,9 @@ final class PatternFilter
     /** @var array{min:int,stop:array<string,bool>}|null the server's FULLTEXT settings, read once per request */
     private static ?array $server = null;
 
+    /** Words past this many are ignored; repeats count once. */
+    private const MAX_WORDS = 20;
+
     private bool $active = false;
     /** @var mixed the pattern as given */
     private $given = null;
@@ -353,7 +356,7 @@ final class PatternFilter
         $clauses = array();
         $params  = array();
         foreach ($terms as $term) {
-            $like      = '%' . str_replace(array('%', '_'), array('\%', '\_'), $term) . '%';
+            $like      = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\%', '\_'), $term) . '%';
             $clauses[] = '(d.s_title LIKE ? OR d.s_description LIKE ?)';
             $params[]  = $like;
             $params[]  = $like;
@@ -391,12 +394,16 @@ final class PatternFilter
             $word = (string)$word;
             $neg  = ($word[0] === '-');
             $text = (string)preg_replace('/[+\-*"()~<>@]/u', '', $word);
-            if ($text !== '') {
-                $words[] = array('neg' => $neg, 'text' => $text);
+            $key  = ($neg ? '-' : '') . (function_exists('mb_strtolower') ? mb_strtolower($text, 'UTF-8') : strtolower($text));
+            if ($text !== '' && !isset($words[$key])) {
+                $words[$key] = array('neg' => $neg, 'text' => $text);
+            }
+            if (count($words) >= self::MAX_WORDS) {
+                break;
             }
         }
 
-        return $words;
+        return array_values($words);
     }
 
     /**
