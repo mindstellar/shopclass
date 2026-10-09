@@ -107,8 +107,9 @@ require ' . var_export($root . '/index.php', true) . ';
         'WEB_PATH'               => $base . '/',
         'REL_WEB_URL'            => '/',
     ];
+    // JIT off: with a coverage extension loaded, PHP warns at start that it cannot use JIT.
     $server = proc_open(
-        [PHP_BINARY, '-d', 'display_errors=1', '-d', 'error_reporting=' . E_ALL, '-S', '127.0.0.1:' . $smokePort, '-t', $root, $dir . 'router.php'],
+        [PHP_BINARY, '-d', 'display_errors=1', '-d', 'error_reporting=' . E_ALL, '-d', 'opcache.jit=disable', '-S', '127.0.0.1:' . $smokePort, '-t', $root, $dir . 'router.php'],
         [0 => ['file', '/dev/null', 'r'], 1 => ['file', $dir . 'server.log', 'w'], 2 => ['file', $dir . 'server.log', 'a']],
         $pipes,
         $root,
