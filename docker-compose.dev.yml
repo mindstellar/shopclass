@@ -87,6 +87,20 @@ services:
       # Reach the database from the host (e.g. a GUI client) at 127.0.0.1:3307.
       - "3307:3306"
 
+  # Throwaway MySQL for the database tests (tests/run-models.php), on 127.0.0.1:33061.
+  # Data lives in memory and is gone on stop. Start it with `npm run test:db`.
+  db-test:
+    image: mysql:8.0
+    container_name: shopclass-db-test
+    profiles: [test]
+    command: --skip-log-bin --innodb-flush-log-at-trx-commit=0 --innodb-doublewrite=0
+    tmpfs:
+      - /var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "33061:3306"
+
   # Memcached (optional object cache)
   memcached:
     image: memcached:alpine

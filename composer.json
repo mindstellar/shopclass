@@ -57,6 +57,9 @@
         "roave/security-advisories": "dev-latest"
     },
     "scripts": {
+        "test": "php tests/run-unit.php",
+        "test:models": "php tests/run-models.php",
+        "cs:install": "mkdir -p tools && curl -fsSL -o tools/php-cs-fixer.phar https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/download/v3.64.0/php-cs-fixer.phar",
         "cs:check": "php tools/php-cs-fixer.phar fix --dry-run --diff",
         "cs:fix": "php tools/php-cs-fixer.phar fix",
         "lint:install": "composer install --working-dir=tools/lint --no-interaction",

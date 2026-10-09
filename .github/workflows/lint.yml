@@ -26,11 +26,6 @@ on:
       - '.gitignore'
   workflow_call:
 
-# Pin the same php-cs-fixer the tree was formatted with; a version drift here
-# would flag files as unformatted that a developer's local run left clean.
-env:
-  PHP_CS_FIXER_VERSION: v3.64.0
-
 jobs:
   lint:
     name: PHP format + 8.0 floor
@@ -61,11 +56,9 @@ jobs:
 
       # The formatter is a pinned PHAR rather than a composer dep, so that it
       # never lands in the committed oc-includes/vendor tree shipped in the zip.
+      # The pin is in composer.json's cs:install, the same one a developer runs.
       - name: Fetch php-cs-fixer
-        run: |
-          mkdir -p tools
-          curl -fsSL -o tools/php-cs-fixer.phar \
-            "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/download/${PHP_CS_FIXER_VERSION}/php-cs-fixer.phar"
+        run: composer cs:install
 
       # The one-time reformat left the whole tree clean, so this is a full-tree
       # dry-run: any drift is a real failure, not pre-existing debt to skip.

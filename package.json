@@ -22,7 +22,9 @@
     "dev:down": "npm run env:init && docker compose down",
     "dev:logs": "npm run env:init && docker compose logs -f",
     "lint": "eslint oc-admin/themes/modern/js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "php tests/run-unit.php",
+    "test:models": "php tests/run-models.php",
+    "test:db": "npm run env:init && docker compose --profile test up -d db-test",
     "env:init": "node -e \"const f=require('fs');f.existsSync('.env')||f.copyFileSync('.env.example','.env')\""
   },
   "repository": "git+https://github.com/mindstellar/shopclass.git",
