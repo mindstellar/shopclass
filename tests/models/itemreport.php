@@ -367,17 +367,15 @@ pin('clearing an item with no reports is harmless and costs one query', 1, harne
 }));
 
 /* ----------------------------------------------------------------------------
- * F3 baseline: the admin reported-listings table calls countReporters() and
- * reasonBreakdown() once per row (ItemsDataTable::reportersCell). This model
- * contributes 2 aggregate queries per reported row — pinned so a later batch
- * method (F3, separate work) has a documented starting point.
+ * The admin reported-listings table calls countReporters() and reasonBreakdown()
+ * once per row (ItemsDataTable::reportersCell): 2 aggregate queries per row.
  * ------------------------------------------------------------------------- */
-harness_section('ItemReport: F3 per-row aggregate baseline');
+harness_section('ItemReport: per-row aggregates');
 
 $truncate();
 $asAnon('203.0.113.7');
 $model->log($itemA, 'spam');
-pin('the two per-row aggregates cost 2 queries together (F3 baseline)', 2, harness_query_count(static function () use ($model, $itemA) {
+pin('the two per-row aggregates cost 2 queries together', 2, harness_query_count(static function () use ($model, $itemA) {
     $model->countReporters($itemA);
     $model->reasonBreakdown($itemA);
 }));

@@ -31,6 +31,27 @@ final class FieldQuery
     }
 
     /**
+     * The type of each field asked for that exists.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,string> id => e_type
+     * @throws \mindstellar\database\DbException
+     */
+    public static function types(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $types = [];
+        foreach (Db::table(DB_TABLE_PREFIX . 't_meta_fields')->select('pk_i_id', 'e_type')->whereIn('pk_i_id', $ids)->get() as $row) {
+            $types[(int) $row['pk_i_id']] = (string) $row['e_type'];
+        }
+
+        return $types;
+    }
+
+    /**
      * One listing's values, each with its field's type.
      *
      * @return array<int,array<string,mixed>>

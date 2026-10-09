@@ -26,12 +26,12 @@ final class CachePolicy
     /** What a same-site session answer varies on. */
     public const SESSION_VARY = ['Authorization', PageTokens::HEADER, 'Cookie', 'Origin'];
 
+    /** Paths whose answer changes with admin switches, so a shared cache must not keep them. */
+    private const PRIVATE_PATHS = ['openapi.json'];
+
     public function __construct(private int $maxAge)
     {
     }
-
-    /** Paths whose answer changes with admin switches, so a shared cache must not keep them. */
-    public const PRIVATE_PATHS = ['openapi.json'];
 
     public function isPublic(Request $request, Credential $credential): bool
     {

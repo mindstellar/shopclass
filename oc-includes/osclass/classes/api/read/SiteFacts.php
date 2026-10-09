@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\apiaccess\ApiSettings;
 
@@ -74,9 +73,7 @@ final class SiteFacts
             return $this->defaultLocale;
         }
         if (!isset($this->locales[$asked])) {
-            throw ProblemException::from(Problem::validation([
-                ['pointer' => '/locale', 'code' => 'enum', 'message' => 'must be one of: ' . implode(', ', array_keys($this->locales)), 'in' => 'query'],
-            ]));
+            throw ProblemException::field('/locale', 'enum', 'must be one of: ' . implode(', ', array_keys($this->locales)), 'query');
         }
 
         return $asked;

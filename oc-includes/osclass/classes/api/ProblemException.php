@@ -46,6 +46,14 @@ final class ProblemException extends \RuntimeException
     }
 
     /**
+     * 403 api_disabled: the site owner has switched the API off.
+     */
+    public static function apiDisabled(): self
+    {
+        return self::of('api_disabled', 'Ask the site owner to switch the API on.');
+    }
+
+    /**
      * $value when a lookup found something, else a 404 saying `No such <what>.`
      *
      * @template T

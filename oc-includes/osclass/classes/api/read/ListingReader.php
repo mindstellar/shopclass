@@ -30,13 +30,12 @@ final class ListingReader
 
     private ListingRows $rows;
 
-    private ?CurrencyService $currencies;
+    private ?CurrencyService $currencies = null;
 
-    public function __construct(private CategoryCatalog $categories, private ListingSerializer $serializer, ?ListingQuery $listings = null, ?CurrencyService $currencies = null)
+    public function __construct(private CategoryCatalog $categories, private ListingSerializer $serializer)
     {
-        $this->listings   = $listings ?? new ListingQuery();
-        $this->rows       = new ListingRows($this->listings);
-        $this->currencies = $currencies;
+        $this->listings = new ListingQuery();
+        $this->rows     = new ListingRows($this->listings);
     }
 
     /**
@@ -122,7 +121,7 @@ final class ListingReader
      * @param array<int,array<string,mixed>> $items   extended listing rows
      * @param array<string,bool>             $lookups which of seller, photos, fields to load
      */
-    private function load(array $items, array $lookups = ['seller' => true, 'photos' => true, 'fields' => false]): ListingRelations
+    private function load(array $items, array $lookups): ListingRelations
     {
         $ids     = [];
         $userIds = [];

@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 
 /**
@@ -118,8 +117,6 @@ final class SparseFieldset
 
     private static function unknown(string $name): ProblemException
     {
-        return ProblemException::from(Problem::validation([
-            ['pointer' => '/fields', 'code' => 'enum', 'message' => 'is not a known member: ' . $name, 'in' => 'query'],
-        ]));
+        return ProblemException::field('/fields', 'enum', 'is not a known member: ' . $name, 'query');
     }
 }

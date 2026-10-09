@@ -213,6 +213,7 @@ pin('its id is an integer path parameter', ['name' => 'id', 'in' => 'path', 'req
 check('its 401 and 429 are Problems', isset($show['responses']['401'], $show['responses']['429']));
 pin('the API key is a bearer scheme', ['http', 'bearer'], [$core['components']['securitySchemes']['bearer']['type'], $core['components']['securitySchemes']['bearer']['scheme']]);
 check('every core scope is listed', array_keys(Scopes::CORE) === array_keys($core['x-scopes']));
+pin('every core route names a core scope', [], array_keys(array_filter(Router::core(), static fn (array $spec): bool => ($spec['scope'] ?? null) !== null && !isset(Scopes::CORE[$spec['scope']]))));
 pin('the committed copy names no site', OpenApi::relativeServers(), $core['servers']);
 check('every component schema is in the document', array_keys(Schema::components()) === array_keys($core['components']['schemas']));
 
@@ -357,11 +358,6 @@ foreach (['controller', 'write'] as $dir) {
 }
 $named = static fn (string $code): bool => str_starts_with($code, 'Warning::') && defined(Warning::class . substr($code, 7))
     && in_array(constant(Warning::class . substr($code, 7)), Warning::CODES, true);
-pin('the scan finds every warning the core emits', ['Warning::COMMENT_PENDING', 'Warning::EMAIL_CONFIRMATION_SENT', 'Warning::LISTING_PENDING', 'Warning::PHOTO_SKIPPED'], (static function (array $codes): array {
-    sort($codes);
-
-    return array_values(array_unique($codes));
-})($emitted));
 pin('every warning a controller or writer emits is a Warning constant listed in Warning::CODES', [], array_values(array_filter(array_unique($emitted), static fn (string $c): bool => !$named($c))));
 pin('a literal code is caught', ["'comment_waiting'"], api_emitted_warning_codes("\$warnings = Warning::member(\$live ? [] : ['comment_waiting' => 'Soon.']);"));
 

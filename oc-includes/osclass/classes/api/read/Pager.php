@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -40,9 +39,7 @@ final class Pager
         $filters ??= ['list' => $path] + $request->query();
         $limit = $request->queryInt('limit', $spec->defaultLimit());
         if ($limit < 1 || $limit > $spec->maxLimit()) {
-            throw ProblemException::from(Problem::validation([
-                ['pointer' => '/limit', 'code' => 'maximum', 'message' => 'must be between 1 and ' . $spec->maxLimit(), 'in' => 'query'],
-            ]));
+            throw ProblemException::field('/limit', 'maximum', 'must be between 1 and ' . $spec->maxLimit(), 'query');
         }
         unset($filters['sort'], $filters['order'], $filters['cursor'], $filters['limit']);
         $hash  = Cursor::filterHash($filters + ['sort' => $spec->sort(), 'order' => $spec->direction()]);

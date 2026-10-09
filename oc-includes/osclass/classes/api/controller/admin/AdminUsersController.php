@@ -25,6 +25,7 @@ use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
+use mindstellar\auth\SignOut;
 use mindstellar\moderation\StatusFlags;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
@@ -109,7 +110,7 @@ final class AdminUsersController
     public function signOutEverywhere(ApiCall $call): Response
     {
         $id = (int) $this->user($call->intArg())['pk_i_id'];
-        \mindstellar\auth\SignOut::everywhereUser($id);
+        SignOut::everywhereUser($id);
         $this->users->forget($id);
 
         return Response::noContent();

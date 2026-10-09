@@ -28,6 +28,7 @@ use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
 use mindstellar\apiaccess\Credential;
 use mindstellar\auth\Reauth;
+use mindstellar\auth\SignOut;
 use mindstellar\user\AccountService;
 
 /**
@@ -110,6 +111,7 @@ final class AccountController
         foreach ($this->sessions->list($userId) as $session) {
             if (!$session->isKey() && $session->id() === $family) {
                 $label = $session->row()->name();
+                break;
             }
         }
 
@@ -130,7 +132,7 @@ final class AccountController
             throw ProblemException::of('wrong_credential', 'Signing out of all devices needs an access token.');
         }
         $userId = (int) $this->user($credential)['pk_i_id'];
-        \mindstellar\auth\SignOut::everywhereUser($userId);
+        SignOut::everywhereUser($userId);
         $this->users->forget($userId);
 
         return Response::noContent();

@@ -347,9 +347,7 @@ final class ApiServices
         $include = $request->queryList('include');
         foreach ($include as $name) {
             if (!in_array($name, $includes, true)) {
-                throw ProblemException::from(Problem::validation([
-                    ['pointer' => '/include', 'code' => 'enum', 'message' => 'is not a known value: ' . $name, 'in' => 'query'],
-                ]));
+                throw ProblemException::field('/include', 'enum', 'is not a known value: ' . $name, 'query');
             }
         }
 

@@ -139,7 +139,7 @@ final class AuthController
     {
         if ($token === '') {
             throw ProblemException::from(
-                Problem::validation([['pointer' => '/refresh_token', 'code' => 'required', 'message' => 'is required for the refresh_token grant']])
+                ProblemException::field('/refresh_token', 'required', 'is required for the refresh_token grant')->response()
                     ->withBodyMember('error', 'invalid_request')
             );
         }

@@ -48,8 +48,7 @@ final class ExtensionMembers
      */
     public static function fromHooks(Validator $validator, ?callable $log = null): self
     {
-        $declared = [];
-        $declared = osc_apply_filter('api_fields', $declared);
+        $declared = osc_apply_filter('api_fields', []);
 
         return self::fromDeclarations(is_array($declared) ? $declared : [], $validator, $log);
     }

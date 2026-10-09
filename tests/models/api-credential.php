@@ -132,7 +132,7 @@ $keyed   = static fn (): int => harness_query_count(static function () use ($aut
     $limiter->hit(new RateBucket('api_key', (string) $credential->id(), 120));
 });
 osc_get_preference(FailureCounter::MARKER, ApiSettings::SECTION);
-pin('key with owner + rate count: 2 queries; no failure check while no key failed (was 3)', 2, $keyed());
+pin('key with owner + rate count: 2 queries; no failure check while no key failed', 2, $keyed());
 $problem = null;
 try {
     $auth->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer sck_' . $made->tokenId() . '.' . str_repeat('0', 64)], '192.0.2.51'));

@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\read;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -139,9 +138,7 @@ final class ListingSearch
         $users = $userId !== null ? [(string) $userId] : $request->queryList('user');
         foreach ($users as $user) {
             if (RowId::parse($user) === null) {
-                throw ProblemException::from(Problem::validation([
-                    ['pointer' => '/user', 'code' => 'format', 'message' => 'must be a user id: ' . $user, 'in' => 'query'],
-                ]));
+                throw ProblemException::field('/user', 'format', 'must be a user id: ' . $user, 'query');
             }
         }
         if ($users !== []) {

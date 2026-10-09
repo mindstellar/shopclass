@@ -474,7 +474,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `alert_row_actions` | filter | `$alertActions, osc_alert()` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `api_cors_origins` | filter | `$origins, $request` | `oc-includes/osclass/classes/api/http/Cors.php` |
-| `api_fields` | filter | `$declared` | `oc-includes/osclass/classes/api/serializer/ExtensionMembers.php` |
+| `api_fields` | filter | `[]` | `oc-includes/osclass/classes/api/serializer/ExtensionMembers.php` |
 | `api_listing` | filter | `$data, $item, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
 | `api_listing_input` | filter | `$input, $request, $credential` | `oc-includes/osclass/classes/api/write/ListingWriter.php` |
 | `api_listings_prefetch` | action | `$ids, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
@@ -484,7 +484,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `api_response` | filter | `$response, $request, $route` | `oc-includes/osclass/classes/api/Kernel.php` |
 | `api_routes` | filter | `$routes` | `oc-includes/osclass/classes/api/routing/Router.php` |
 | `api_schemas` | filter | `[]` | `oc-includes/osclass/classes/api/schema/ExtensionSchemas.php` |
-| `api_scopes` | filter | `$scopes` | `oc-includes/osclass/classes/apiaccess/Scopes.php` |
+| `api_scopes` | filter | `[]` | `oc-includes/osclass/classes/apiaccess/Scopes.php` |
 | `api_webhook_delivered` | action | `$endpointData, $event, $httpStatus, $attempt` | `oc-includes/osclass/classes/webhook/Delivery.php` |
 | `api_webhook_events` | filter | `$events` | `oc-includes/osclass/classes/webhook/Events.php` |
 | `api_webhook_payload` | filter | `$payload, $type, $endpointData` | `oc-includes/osclass/classes/webhook/Dispatcher.php` |

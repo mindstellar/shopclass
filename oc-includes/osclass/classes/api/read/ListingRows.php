@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
-use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\listing\ListingQuery;
 
 /**
@@ -68,7 +67,7 @@ final class ListingRows
             if (isset($texts[$id])) {
                 $row['locale'] = $texts[$id];
             }
-            [, $row['s_title'], $row['s_description']] = ListingSerializer::localeText($row['locale'] ?? [], $locale);
+            [, $row['s_title'], $row['s_description']] = ListingText::pick($row['locale'] ?? [], $locale);
             $out[] = $row + ($more[$id] ?? []);
         }
 

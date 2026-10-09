@@ -35,10 +35,10 @@ final class PhotosController
     private PhotoRoom $room;
     private OwnedListings $owned;
 
-    public function __construct(private ApiServices $api, ?PhotoRoom $room = null, ?OwnedListings $owned = null)
+    public function __construct(private ApiServices $api)
     {
-        $this->room   = $room ?? new PhotoRoom();
-        $this->owned  = $owned ?? new OwnedListings();
+        $this->room   = new PhotoRoom();
+        $this->owned  = new OwnedListings();
         $this->photos = $api->photoIntake();
     }
 

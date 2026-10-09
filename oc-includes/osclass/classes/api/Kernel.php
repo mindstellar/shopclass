@@ -132,7 +132,7 @@ final class Kernel
     private static function disabled(ApiSettings $settings, Request $request, string $requestId): Response
     {
         $cors     = Cors::fromSettings($settings, $request);
-        $response = ProblemException::of('api_disabled', 'Ask the site owner to switch the API on.')->response();
+        $response = ProblemException::apiDisabled()->response();
         $response = $response->withHeader(RequestId::HEADER, $requestId)->withDefaultHeaders($cors->headers($request));
 
         return self::withInstance($response, $requestId);
@@ -424,7 +424,7 @@ final class Kernel
     private function routePath(Request $request): string
     {
         if (!$this->settings->enabled()) {
-            throw ProblemException::of('api_disabled', 'Ask the site owner to switch the API on.');
+            throw ProblemException::apiDisabled();
         }
         if ($request->path() === null) {
             throw self::noEndpoint();
