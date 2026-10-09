@@ -360,6 +360,80 @@ if (!function_exists('harness_code_only')) {
     }
 }
 
+if (!function_exists('harness_class_files')) {
+    /**
+     * Every PHP file under a folder of the repository, sorted, as relative path => source.
+     *
+     * @param string                       $dir    a folder relative to the repository root
+     * @param (callable(string): bool)|null $filter keeps a relative path when it returns true
+     *
+     * @return array<string,string>
+     */
+    function harness_class_files(string $dir = 'oc-includes/osclass/classes', ?callable $filter = null): array
+    {
+        $root  = dirname(__DIR__, 2) . '/';
+        $files = array();
+        $it    = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . $dir, FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $file) {
+            $path = substr($file->getPathname(), strlen($root));
+            if ($file->getExtension() === 'php' && ($filter === null || $filter($path))) {
+                $files[$path] = (string) file_get_contents($file->getPathname());
+            }
+        }
+        ksort($files);
+
+        return $files;
+    }
+}
+
+if (!function_exists('harness_shrink_only')) {
+    /**
+     * Compare what a scan found with the list kept in a fixture file: nothing may be added,
+     * and anything that went away must be taken off the list. With --write, save the list
+     * instead. A list of names, or name => count where a count may only go down.
+     *
+     * @param array<int|string,string|int> $found
+     */
+    function harness_shrink_only(string $fixture, array $found, string $what): void
+    {
+        $counted = $found !== array() && array_keys($found) !== range(0, count($found) - 1);
+        if (in_array('--write', $GLOBALS['argv'] ?? array(), true)) {
+            $lines = $counted ? array_map(static fn ($k, $v): string => "$k $v", array_keys($found), $found) : $found;
+            file_put_contents($fixture, implode("\n", $lines) . "\n");
+            echo 'Wrote ' . count($found) . " entries to $fixture.\n";
+            exit(0);
+        }
+        if (!is_file($fixture)) {
+            check("the list $fixture exists (run with --write)", false);
+
+            return;
+        }
+        $listed = array();
+        foreach (array_filter(array_map('trim', file($fixture))) as $line) {
+            if (preg_match('/^(\S+) (\d+)$/', $line, $m) === 1) {
+                $listed[$m[1]] = (int) $m[2];
+            } else {
+                $listed[$line] = 1;
+            }
+        }
+        $now   = $counted ? $found : array_fill_keys($found, 1);
+        $grown = array();
+        $gone  = array();
+        foreach ($now as $name => $count) {
+            if ($count > ($listed[$name] ?? 0)) {
+                $grown[] = $counted ? "$name: $count, listed " . ($listed[$name] ?? 0) : (string) $name;
+            }
+        }
+        foreach ($listed as $name => $count) {
+            if (($now[$name] ?? 0) < $count) {
+                $gone[] = $counted ? "$name: " . ($now[$name] ?? 0) . ", listed $count" : (string) $name;
+            }
+        }
+        pin("no new $what", array(), $grown);
+        pin("the list names nothing that is gone (run --write)", array(), $gone);
+    }
+}
+
 if (!function_exists('harness_action_source')) {
     /**
      * The source of the method a controller's ACTIONS map gives an action; '' when the map

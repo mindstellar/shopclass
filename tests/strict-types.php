@@ -22,33 +22,14 @@ $GLOBALS['failLabels'] = array();
 
 const STRICT_FIXTURE = __DIR__ . '/fixtures/no-strict-types.txt';
 
-$root    = realpath(__DIR__ . '/..') . '/';
 $missing = array();
-$files   = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . 'oc-includes/osclass/classes', FilesystemIterator::SKIP_DOTS));
-foreach ($files as $file) {
-    if ($file->getExtension() !== 'php') {
-        continue;
-    }
-    $src = (string) file_get_contents($file->getPathname());
-    if (preg_match('/^namespace mindstellar\\\\/m', $src) === 1 && strpos($src, 'declare(strict_types=1);') === false) {
-        $missing[] = substr($file->getPathname(), strlen($root));
+foreach (harness_class_files() as $path => $source) {
+    if (preg_match('/^namespace mindstellar\\\\/m', $source) === 1 && strpos($source, 'declare(strict_types=1);') === false) {
+        $missing[] = $path;
     }
 }
-sort($missing);
-
-if (in_array('--write', $argv, true)) {
-    file_put_contents(STRICT_FIXTURE, implode("\n", $missing) . "\n");
-    echo 'Wrote ' . count($missing) . " files.\n";
-    exit(0);
-}
-
-$allowed = array_filter(array_map('trim', file(STRICT_FIXTURE)));
 
 harness_section('new classes declare strict types');
-$new = array_values(array_diff($missing, $allowed));
-pin('no file outside the old list lacks declare(strict_types=1)', array(), $new);
-
-$fixed = array_values(array_diff($allowed, $missing));
-pin('the old list names no file that now declares it (run --write)', array(), $fixed);
+harness_shrink_only(STRICT_FIXTURE, $missing, 'file without declare(strict_types=1)');
 
 exit(harness_result());

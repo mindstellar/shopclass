@@ -75,7 +75,7 @@ foreach ($it as $file) {
     }
     foreach (declared_names((string) file_get_contents($file->getPathname())) as $name) {
         $seen++;
-        if (!isset($map[$name])) {
+        if (!isset($map[$name]) || realpath($map[$name]) !== realpath($file->getPathname())) {
             $missing[] = $name . ' (' . substr($file->getPathname(), strlen(ABS_PATH)) . ')';
         }
     }
@@ -89,6 +89,6 @@ pin('a namespaced class and a global one are found', array('mindstellar\base\Act
 check('the scan reads core', $seen > 500, $seen . ' declarations');
 
 harness_section('The class map');
-pin('every declaration is in the class map (run composer dump-autoload)', array(), $missing);
+pin('every declaration is in the class map, at its own file (run composer dump-autoload)', array(), $missing);
 
 exit(harness_result());

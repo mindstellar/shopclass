@@ -1,5 +1,7 @@
 oc-includes/osclass/classes/Cleanup.php 2
 oc-includes/osclass/classes/Sitemap.php 2
+oc-includes/osclass/classes/auth/AdminPassword.php 2
+oc-includes/osclass/classes/auth/AdminStore.php 1
 oc-includes/osclass/classes/backup/BackupJobs.php 2
 oc-includes/osclass/classes/backup/BackupService.php 1
 oc-includes/osclass/classes/billing/OrderStore.php 2
@@ -7,6 +9,7 @@ oc-includes/osclass/classes/category/CategoryQuery.php 1
 oc-includes/osclass/classes/controller/CWebSearch.php 2
 oc-includes/osclass/classes/controller/admin/CAdminTools.php 1
 oc-includes/osclass/classes/controller/admin/CAdminUsers.php 1
+oc-includes/osclass/classes/controller/base/abstract/BaseModel.php 1
 oc-includes/osclass/classes/fields/FieldQuery.php 1
 oc-includes/osclass/classes/job/CategoryJobs.php 2
 oc-includes/osclass/classes/job/JobQueue.php 21
@@ -17,6 +20,6 @@ oc-includes/osclass/classes/routing/FrontController.php 1
 oc-includes/osclass/classes/search/AlertStore.php 2
 oc-includes/osclass/classes/search/query/SearchExecutor.php 1
 oc-includes/osclass/classes/security/MessageGuard.php 2
-oc-includes/osclass/classes/utility/Utils.php 1
+oc-includes/osclass/classes/utility/Utils.php 2
 oc-includes/osclass/classes/webhook/WebhookService.php 2
 oc-includes/osclass/classes/widgets/WidgetStore.php 1

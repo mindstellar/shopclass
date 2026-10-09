@@ -57,23 +57,6 @@ const P_BUILDER = '/(?<!function )(?:\bosc_db_table|\bDb::table)\s*\(/';
 const P_TABLE = '/DB_TABLE_PREFIX\s*\.|\.\s*[\'"]t_[a-z]|%st_[a-z]|\{\$\w+\}t_[a-z]/';
 
 /**
- * The source with comments blanked, line numbers kept.
- */
-function code_only(string $src): string
-{
-    $out = '';
-    foreach (token_get_all($src) as $t) {
-        if (is_array($t) && ($t[0] === T_COMMENT || $t[0] === T_DOC_COMMENT)) {
-            $out .= str_repeat("\n", substr_count($t[1], "\n"));
-        } else {
-            $out .= is_array($t) ? $t[1] : $t;
-        }
-    }
-
-    return $out;
-}
-
-/**
  * Where the rule does not apply.
  */
 function table_owner(string $rel, string $code): bool
@@ -123,7 +106,7 @@ check('catches a joined literal', raw_access("<?php \$s = 'FROM ' . \$p . 't_ite
 check('catches an interpolated prefix', raw_access("<?php \$s = \"FROM {\$p}t_pages\";") !== array());
 check('catches a sprintf prefix', raw_access("<?php sprintf('%st_item.b_active', DB_TABLE_PREFIX);") !== array());
 check('lets the prefix pass as a value', raw_access("<?php size(\$c, DB_TABLE_PREFIX); \$a = DB_TABLE_PREFIX;") === array());
-check('ignores comments', raw_access(code_only("<?php // osc_db_table(DB_TABLE_PREFIX . 't_x')\n/** FROM {\$p}t_x */")) === array());
+check('ignores comments', raw_access(harness_code_only("<?php // osc_db_table(DB_TABLE_PREFIX . 't_x')\n/** FROM {\$p}t_x */")) === array());
 check('a Store file owns its table', table_owner('oc-includes/osclass/classes/user/UserStore.php', ''));
 check('a DAO subclass owns its table', table_owner('oc-includes/osclass/classes/Sitemap.php', 'class Sitemap extends DAO {'));
 check('a base Model subclass owns its table', table_owner('x.php', "use mindstellar\\base\\Model;\nfinal class X extends Model {"));
@@ -158,7 +141,7 @@ $outside = array();
 $counts  = array();
 foreach ($files as $path) {
     $rel  = substr($path, strlen(ABS_PATH));
-    $code = code_only((string) file_get_contents($path));
+    $code = harness_code_only((string) file_get_contents($path));
     if (table_owner($rel, $code)) {
         continue;
     }

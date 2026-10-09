@@ -21,13 +21,13 @@ const LONG_FIXTURE = __DIR__ . '/fixtures/long-controller-methods.txt';
 const LONG_LINES   = 100;
 
 /**
- * Every method in a file with its length in lines, from `function` to its closing brace.
+ * Every method in PHP source with its length in lines, from `function` to its closing brace.
  *
  * @return array<string,int>
  */
-function method_lengths(string $file): array
+function method_lengths(string $source): array
 {
-    $tokens  = token_get_all((string) file_get_contents($file));
+    $tokens  = token_get_all($source);
     $count   = count($tokens);
     $lengths = array();
     for ($i = 0; $i < $count; $i++) {
@@ -66,32 +66,17 @@ function method_lengths(string $file): array
     return $lengths;
 }
 
-$root  = realpath(__DIR__ . '/..') . '/';
-$long  = array();
-$files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . 'oc-includes/osclass/classes/controller', FilesystemIterator::SKIP_DOTS));
-foreach ($files as $file) {
-    if ($file->getExtension() !== 'php') {
-        continue;
-    }
-    foreach (method_lengths($file->getPathname()) as $method => $lines) {
+$long = array();
+foreach (harness_class_files('oc-includes/osclass/classes/controller') as $path => $source) {
+    foreach (method_lengths($source) as $method => $lines) {
         if ($lines > LONG_LINES) {
-            $long[] = substr($file->getPathname(), strlen($root)) . '::' . $method;
+            $long[] = $path . '::' . $method;
         }
     }
 }
-sort($long);
-
-if (in_array('--write', $argv, true)) {
-    file_put_contents(LONG_FIXTURE, implode("\n", $long) . "\n");
-    echo 'Wrote ' . count($long) . " methods.\n";
-    exit(0);
-}
-
-$allowed = array_filter(array_map('trim', file(LONG_FIXTURE)));
 
 harness_section('controller methods stay short');
-pin('no method outside the old list is over ' . LONG_LINES . ' lines', array(), array_values(array_diff($long, $allowed)));
-pin('the old list names no method that is now short (run --write)', array(), array_values(array_diff($allowed, $long)));
-pin('the length of a known method is counted from function to its brace', 4, method_lengths($root . 'oc-includes/osclass/classes/controller/CWebItem.php')['listingData'] ?? null);
+harness_shrink_only(LONG_FIXTURE, $long, 'method over ' . LONG_LINES . ' lines');
+pin('the length of a known method is counted from function to its brace', 4, method_lengths(harness_class_files('oc-includes/osclass/classes/controller')['oc-includes/osclass/classes/controller/CWebItem.php'])['listingData'] ?? null);
 
 exit(harness_result());
