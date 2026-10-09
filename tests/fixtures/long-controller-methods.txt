@@ -1,0 +1,13 @@
+oc-includes/osclass/classes/controller/CWebContact.php::contactPost
+oc-includes/osclass/classes/controller/CWebForm.php::submit
+oc-includes/osclass/classes/controller/CWebItem.php::showItem
+oc-includes/osclass/classes/controller/CWebLogin.php::loginPost
+oc-includes/osclass/classes/controller/admin/CAdminEmails.php::doModel
+oc-includes/osclass/classes/controller/admin/CAdminLanguages.php::languages
+oc-includes/osclass/classes/controller/admin/CAdminPlugins.php::plugins
+oc-includes/osclass/classes/controller/admin/CAdminSettings.php::doModel
+oc-includes/osclass/classes/controller/admin/CAdminTools.php::systemEnvironment
+oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php::doModel
+oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php::doModel
+oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php::doModel
+oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php::doModel
