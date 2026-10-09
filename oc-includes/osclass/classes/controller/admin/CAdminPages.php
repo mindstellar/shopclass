@@ -26,6 +26,8 @@ use mindstellar\pages\PageService;
 
 class CAdminPages extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to pages(). */
     private const ACTIONS = array(
         'edit'      => 'editForm',
@@ -62,7 +64,7 @@ class CAdminPages extends AdminSecBaseModel
     {
         parent::doModel();
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'pages') : 'pages';
+        $method = $this->actionMethod('pages');
 
         $this->$method();
     }

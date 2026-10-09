@@ -27,6 +27,8 @@ use mindstellar\validation\ConflictException;
 
 class CAdminLanguages extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to languages(). */
     private const ACTIONS = array(
         'add'                 => 'addForm',
@@ -67,7 +69,7 @@ class CAdminLanguages extends AdminSecBaseModel
      */
     public function doModel()
     {
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'languages') : 'languages';
+        $method = $this->actionMethod('languages');
 
         $this->$method();
 

@@ -28,6 +28,8 @@ use mindstellar\validation\RefusedException;
  */
 class CWebUser extends WebSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action does nothing. */
     private const ACTIONS = array(
         'dashboard'            => 'dashboard',
@@ -73,7 +75,7 @@ class CWebUser extends WebSecBaseModel
      */
     public function doModel()
     {
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? null) : null;
+        $method = $this->actionMethod(null);
         if ($method === null) {
             return;
         }

@@ -34,6 +34,8 @@ use mindstellar\validation\RefusedException;
 
 class CAdminItems extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     //specific for this class
     private Item $itemManager;
 
@@ -86,7 +88,7 @@ class CAdminItems extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url());
         }
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'listings') : 'listings';
+        $method = $this->actionMethod('listings');
 
         return $this->$method() === false ? false : null;
     }

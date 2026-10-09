@@ -17,6 +17,8 @@
  */
 class CWebContact extends BaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to contactForm(). */
     private const ACTIONS = array(
         'contact_post' => 'contactPost',
@@ -45,7 +47,7 @@ class CWebContact extends BaseModel
      */
     public function doModel()
     {
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'contactForm') : 'contactForm';
+        $method = $this->actionMethod('contactForm');
 
         return $this->$method() === false ? false : null;
     }

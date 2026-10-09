@@ -29,6 +29,8 @@ use mindstellar\security\Totp;
 
 class CAdminAdmins extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to admins(). */
     private const ACTIONS = array(
         'add'          => 'addForm',
@@ -80,7 +82,7 @@ class CAdminAdmins extends AdminSecBaseModel
     {
         parent::doModel();
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'admins') : 'admins';
+        $method = $this->actionMethod('admins');
 
         $this->$method();
     }

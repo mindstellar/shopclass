@@ -34,6 +34,8 @@ use mindstellar\validation\RefusedException;
  */
 class CWebItem extends BaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     private $itemManager;
     private $user;
 
@@ -89,7 +91,7 @@ class CWebItem extends BaseModel
         $locales = OSCLocale::getInstance()->listAllEnabled();
         $this->_exportVariableToView('locales', $locales);
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'showItem') : 'showItem';
+        $method = $this->actionMethod('showItem');
 
         return $this->$method() === false ? false : null;
     }

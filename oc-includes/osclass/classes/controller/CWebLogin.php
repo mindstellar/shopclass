@@ -17,6 +17,8 @@
  */
 class CWebLogin extends BaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to loginForm(). */
     private const ACTIONS = array(
         'login_post'   => 'loginPost',
@@ -50,7 +52,7 @@ class CWebLogin extends BaseModel
      */
     public function doModel()
     {
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'loginForm') : 'loginForm';
+        $method = $this->actionMethod('loginForm');
 
         $this->$method();
     }

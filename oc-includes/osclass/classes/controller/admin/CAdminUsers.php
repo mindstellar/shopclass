@@ -35,6 +35,8 @@ use mindstellar\validation\RefusedException;
  */
 class CAdminUsers extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to users(). */
     private const ACTIONS = array(
         'create'               => 'createForm',
@@ -89,7 +91,7 @@ class CAdminUsers extends AdminSecBaseModel
     {
         parent::doModel();
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'users') : 'users';
+        $method = $this->actionMethod('users');
 
         $this->$method();
     }

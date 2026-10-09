@@ -97,11 +97,37 @@ foreach ($controllers as $class => [$file, $expected, $fallback]) {
     }
     $dispatch = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/' . $file, 'doModel');
     if ($fallback === null) {
-        check('any other action does nothing', strpos($dispatch, '?? null') !== false);
+        check('any other action does nothing', strpos($dispatch, 'actionMethod(null)') !== false);
     } else {
         check("any other action goes to $fallback", method_exists($class, $fallback) && strpos($dispatch, "'$fallback'") !== false);
     }
 }
+/** A controller with a two-action map, to drive ActionMap directly. */
+final class ActionMapProbe
+{
+    use \mindstellar\base\ActionMap;
+
+    private const ACTIONS = array('item_add' => 'itemAdd', 'delete' => 'remove');
+
+    public $action;
+
+    public function pick(?string $default): ?string
+    {
+        return $this->actionMethod($default);
+    }
+}
+
+harness_section('ActionMap');
+$probe = new ActionMapProbe();
+$pick  = static function ($action, ?string $default) use ($probe): ?string {
+    $probe->action = $action;
+
+    return $probe->pick($default);
+};
+pin('a mapped action gives its method', array('itemAdd', 'remove'), array($pick('item_add', 'show'), $pick('delete', 'show')));
+pin('an unknown, empty or missing action gives the default', array('show', 'show', 'show'), array($pick('nope', 'show'), $pick('', 'show'), $pick(null, 'show')));
+pin('an action sent as a list gives the default, not an error', 'show', $pick(array('item_add'), 'show'));
+pin('a map with no default gives null', null, $pick('nope', null));
 check('the view beacon is answered before the map', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'doModel'), "'view_beacon'") !== false);
 
 exit(harness_result());

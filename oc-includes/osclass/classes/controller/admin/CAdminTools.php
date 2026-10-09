@@ -40,6 +40,8 @@ use mindstellar\utility\Formatting;
 
 class CAdminTools extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to systemInfo(). */
     private const ACTIONS = array(
         'import'             => 'importMoved',
@@ -111,7 +113,7 @@ class CAdminTools extends AdminSecBaseModel
     {
         parent::doModel();
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'systemInfo') : 'systemInfo';
+        $method = $this->actionMethod('systemInfo');
 
         $this->$method();
     }

@@ -20,6 +20,8 @@ use mindstellar\search\UserAlerts;
  */
 class CWebUserNonSecure extends BaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to toSignIn(). */
     private const ACTIONS = array(
         'change_email_confirm' => 'confirmEmailChange',
@@ -56,7 +58,7 @@ class CWebUserNonSecure extends BaseModel
      */
     public function doModel()
     {
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'toSignIn') : 'toSignIn';
+        $method = $this->actionMethod('toSignIn');
 
         $this->$method();
 

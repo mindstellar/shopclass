@@ -25,6 +25,8 @@ use mindstellar\widgets\WidgetStore;
 
 class CAdminAppearance extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to themes(). */
     private const ACTIONS = array(
         'add'                  => 'addForm',
@@ -54,7 +56,7 @@ class CAdminAppearance extends AdminSecBaseModel
     public function doModel()
     {
         parent::doModel();
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'themes') : 'themes';
+        $method = $this->actionMethod('themes');
 
         $this->$method();
     }

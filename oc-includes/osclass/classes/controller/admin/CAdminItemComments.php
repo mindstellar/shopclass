@@ -26,6 +26,8 @@ use mindstellar\validation\InvalidException;
 
 class CAdminItemComments extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to comments(). */
     private const ACTIONS = array(
         'bulk_actions'      => 'bulkActions',
@@ -64,7 +66,7 @@ class CAdminItemComments extends AdminSecBaseModel
     {
         parent::doModel();
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'comments') : 'comments';
+        $method = $this->actionMethod('comments');
 
         return $this->$method() === false ? false : null;
     }

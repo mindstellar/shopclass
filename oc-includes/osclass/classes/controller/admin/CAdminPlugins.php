@@ -24,6 +24,8 @@ use mindstellar\security\PluginAjaxFile;
  */
 class CAdminPlugins extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to plugins(). */
     private const ACTIONS = array(
         'add'            => 'addForm',
@@ -63,7 +65,7 @@ class CAdminPlugins extends AdminSecBaseModel
     {
         parent::doModel();
 
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'plugins') : 'plugins';
+        $method = $this->actionMethod('plugins');
 
         $this->$method();
     }

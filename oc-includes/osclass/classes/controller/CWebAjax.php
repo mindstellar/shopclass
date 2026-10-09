@@ -25,6 +25,8 @@ use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
 {
+    use \mindstellar\base\ActionMap;
+
     /** Each action and the method that answers it; any other action goes to noAction(). */
     private const ACTIONS = array(
         'bulk_actions'                => 'bulkActions',
@@ -63,7 +65,7 @@ class CWebAjax extends BaseModel
      */
     public function doModel()
     {
-        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'noAction') : 'noAction';
+        $method = $this->actionMethod('noAction');
 
         $this->$method();
     }

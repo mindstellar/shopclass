@@ -81,7 +81,7 @@ foreach ($routes as $action) {
 check('action=database redirects to the Database tab', strpos($body('database'), '$this->redirectTo(self::databaseUrl());') !== false);
 check('...which is System info > Database', strpos($body('databaseUrl'), "self::movedTo('database')") !== false);
 pin('...at this address', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
-check('no action lands on System info', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', 'doModel'), "?? 'systemInfo'") !== false
+check('no action lands on System info', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', 'doModel'), "actionMethod('systemInfo')") !== false
     && strpos($body('system-info'), '$this->systemInfoPage();') !== false);
 check('#backup and #restore on the old Database URL follow to Backup and restore', strpos($shell, "location.hash === '#backup' || location.hash === '#restore'") !== false);
 check('the old Database page file is gone', !is_file($theme . 'tools/database.php'));
