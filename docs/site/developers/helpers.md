@@ -863,7 +863,7 @@ Core defines 1154 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_force_aspect_image()` | Force image aspect |
 | `osc_force_jpeg()` | Force uploaded images to be JPEG |
 | `osc_get_bool_preference($key, $section = 'osclass')` | generic function to retrieve preferences as bool |
-| `osc_get_int_preference($key, int $default, int $min = PHP_INT_MIN, $section = 'osclass')` | A number preference: $default while it is unset, and never below $min. |
+| `osc_get_int_preference($key, int $default, int $min = PHP_INT_MIN, $section = 'osclass')` | A number preference: $default while it is unset, and never below $min (no floor unless one is given). |
 | `osc_get_preference($key, $section = 'osclass')` | generic function to retrieve preferences |
 | `osc_get_preference_section($section = 'osclass')` | generic function to retrieve preferences |
 | `osc_image_format()` | How new photos are saved: original, jpeg or webp. |

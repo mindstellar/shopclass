@@ -1239,7 +1239,7 @@ function osc_max_latest_items_at_home()
 }
 
 /**
- * A number preference: $default while it is unset, and never below $min.
+ * A number preference: $default while it is unset, and never below $min (no floor unless one is given).
  *
  * @param string $key
  * @param int    $default
