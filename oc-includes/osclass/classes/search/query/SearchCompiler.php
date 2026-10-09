@@ -65,6 +65,10 @@ final class SearchCompiler
                 if ($relevance) {
                     $s->selectBound(...$pattern->relevanceSelect());
                     $s->having('relevance > 0');
+                    $short = $pattern->shortWordCondition();
+                    if ($short !== null) {
+                        $s->where(...$short);
+                    }
                 } else {
                     $s->where(...$pattern->matchCondition());
                 }

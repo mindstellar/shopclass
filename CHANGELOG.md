@@ -127,7 +127,7 @@ Plugin authors should read the Breaking section before upgrading.
 ### Fixed
 
 - A search made only of stopwords, or of words below the server's FULLTEXT minimum, now matches by substring instead of finding nothing.
-- A search mixing a stopword or a too-short word with real words ("about town") no longer finds nothing.
+- A search mixing real words with stopwords drops the stopwords, and a too-short word ("sony tv") must still appear in the text.
 - Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting; `ssl` does.
 - The installer saves a downloaded language's files into that language's folder.
 - `Formatting::formatSlug()` gives the same slug as `osc_sanitizeString()`; its pattern was broken.

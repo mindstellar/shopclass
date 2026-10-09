@@ -730,6 +730,16 @@ $s = new Search();
 $s->addPattern('about lamp');
 pin('a stopword next to a real word does not empty the search', array($lamp), $sorted($ids($s->doSearch())));
 
+/* "tv" is below the minimum token size, so it is matched by substring next to the FULLTEXT word. */
+$tvLamp = $mkItem('Lamp for the TV', $catCars, 45.0, 0, $regionA, $cityA, 'Alpha', 'Aville');
+$s = new Search();
+$s->addPattern('tv lamp');
+pin('a short word next to a real word must still appear', array($tvLamp), $sorted($ids($s->doSearch())));
+$s = new Search();
+$s->addPattern('tv lamp');
+$s->order('relevance');
+pin('so must it when sorted by relevance', array($tvLamp), $sorted($ids($s->doSearch())));
+
 /* A custom stopword table replaces the default list. */
 $stopDb = (string)$admin->query('SELECT DATABASE()')->fetch_row()[0];
 $admin->query('DROP TABLE IF EXISTS ft_custom_stop');

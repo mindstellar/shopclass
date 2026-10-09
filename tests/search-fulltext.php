@@ -9,7 +9,7 @@
  */
 
 /**
- * Pins PatternFilter::fullTextUsable() and booleanQuery() against injected server settings:
+ * Pins PatternFilter::fullTextUsable(), booleanQuery() and shortWordCondition() against injected server settings:
  * the minimum token size and stopwords decide the FULLTEXT path and the required words,
  * and OSC_FT_MIN_WORD_LEN overrides the size. The real server read is pinned in tests/models/search.php.
  *   php tests/search-fulltext.php
@@ -69,6 +69,22 @@ pin('a phrase keeps the short word out of the required list', '+"the sedan" +sed
 pin('an exclusion is kept', '+sedan* -the', $query('sedan -the'));
 pin('a search without such words is unchanged', '+sedan* +coupe* -wagon', $query('sedan coupe -wagon'));
 pin('a stopword-only search keeps its words', '+the* +with*', $query('the with'));
+
+harness_section('PatternFilter: short words match by substring');
+$short = static function (string $pattern): ?array {
+    $f = new PatternFilter();
+    $f->set($pattern);
+
+    return $f->shortWordCondition();
+};
+pin('a short word next to a real word must appear by substring', array('((d.s_title LIKE ? OR d.s_description LIKE ?))', array('%sed%', '%sed%')), $short('sed sedan'));
+pin('a stopword next to a real word is dropped', null, $short('the sedan'));
+pin('an excluded short word adds nothing', null, $short('-sed sedan'));
+pin('a search the index cannot use adds nothing here', null, $short('sed'));
+pin('LIKE wildcards in a short word are escaped', array('%\\%%', '%\\%%'), $short('% sedan')[1]);
+$f = new PatternFilter();
+$f->set('sed sedan');
+pin('the MATCH condition carries the short word', array('MATCH(d.s_description, d.s_title) AGAINST(? IN BOOLEAN MODE) AND ((d.s_title LIKE ? OR d.s_description LIKE ?))', array('+sedan*', '%sed%', '%sed%')), $f->matchCondition());
 
 harness_section('PatternFilter: OSC_FT_MIN_WORD_LEN overrides the server');
 define('OSC_FT_MIN_WORD_LEN', 2);

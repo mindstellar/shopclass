@@ -32,8 +32,9 @@ ShopClass remembers the server's minimum and stopword list for a day when a
 server, press **Clear cache** in **Tools → System info → Cache**, or run
 `php oc-cli.php cache:flush`. Without a persistent cache it reads them fresh.
 
-In a search with both kinds of word, such as `about town`, the short and stop
-words are not required. Only `town` has to match.
+In a search with both kinds of word, stopwords are dropped and short words are
+matched anywhere in the title or description. `about town` needs only `town`.
+`sony tv` needs `sony` and also `tv` somewhere in the text.
 
 If your categories are full of short model names or two-letter abbreviations,
 lower the minimum.

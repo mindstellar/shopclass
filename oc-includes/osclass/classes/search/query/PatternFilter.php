@@ -20,7 +20,8 @@ use mindstellar\database\Db;
  * Every indexable word becomes a required prefix term, a quoted phrase a required phrase
  * and -word an exclusion, in FULLTEXT BOOLEAN MODE. When no term can be indexed (each is
  * shorter than the server's minimum token size or is an InnoDB stopword) it matches by
- * substring instead.
+ * substring instead. In a search that does use the index, short words must still appear by
+ * substring and stopwords are dropped.
  */
 final class PatternFilter
 {
@@ -165,6 +166,42 @@ final class PatternFilter
     }
 
     /**
+     * Whether the word is a stopword. Stopwords carry no meaning, so a search may drop them.
+     *
+     * @param string $word
+     *
+     * @return bool
+     */
+    private function stopword(string $word): bool
+    {
+        $lower = function_exists('mb_strtolower') ? mb_strtolower($word, 'UTF-8') : strtolower($word);
+
+        return isset(self::serverSettings()['stop'][$lower]);
+    }
+
+    /**
+     * Words too short for the index in a search that still uses it ("sony TV"): each must
+     * appear by substring, or null when there are none.
+     *
+     * @return array{0:string,1:array<int,mixed>}|null
+     */
+    public function shortWordCondition(): ?array
+    {
+        if ($this->raw === null || $this->raw === '' || !$this->fullTextUsable()) {
+            return null;
+        }
+        $phrases = array();
+        $short   = array();
+        foreach ($this->terms($phrases) as $w) {
+            if (!$w['neg'] && !$this->indexable($w['text']) && !$this->stopword($w['text'])) {
+                $short[] = $w['text'];
+            }
+        }
+
+        return $short === array() ? null : $this->likeAll($short);
+    }
+
+    /**
      * The InnoDB minimum token size and stopwords (default or custom table), cached for a day. A failed read
      * keeps the old rule: 3 characters and no stopwords.
      *
@@ -261,7 +298,10 @@ final class PatternFilter
      */
     public function matchCondition(): array
     {
-        return array('MATCH(d.s_description, d.s_title) AGAINST(? IN BOOLEAN MODE)', array($this->booleanQuery()));
+        $match = array('MATCH(d.s_description, d.s_title) AGAINST(? IN BOOLEAN MODE)', array($this->booleanQuery()));
+        $short = $this->shortWordCondition();
+
+        return $short === null ? $match : array($match[0] . ' AND ' . $short[0], array_merge($match[1], $short[1]));
     }
 
     /**
@@ -298,6 +338,18 @@ final class PatternFilter
             return $this->matchCondition();
         }
 
+        return $this->likeAll($terms);
+    }
+
+    /**
+     * Every term in the title or the description, by substring.
+     *
+     * @param string[] $terms
+     *
+     * @return array{0:string,1:array<int,mixed>}
+     */
+    private function likeAll(array $terms): array
+    {
         $clauses = array();
         $params  = array();
         foreach ($terms as $term) {
