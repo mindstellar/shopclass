@@ -43,17 +43,16 @@ final class LocationService
      */
     public static function resolve(array $in, bool $matchByName = false): array
     {
-        $text    = static fn (string $key): string => (string) ($in[$key] ?? '');
-        $country = \Country::getInstance()->findByCode($text('countryCode'));
-        $found   = is_array($country) && !empty($country);
-        $out     = [
-            'countryId'   => $found ? $country['pk_c_code'] : null,
-            'countryName' => $found ? $country['s_name'] : $text('country'),
+        $text  = static fn (string $key): string => (string) ($in[$key] ?? '');
+        $found = (new LocationQuery())->lineage($text('countryCode'), (int) $text('regionId'), (int) $text('cityId'));
+        $out   = [
+            'countryId'   => $found['countryCode'],
+            'countryName' => $found['countryCode'] !== null ? $found['countryName'] : $text('country'),
         ];
 
-        $regionId = self::place('region', $text('regionId'), $text('region'), \Region::getInstance(), null, $out['countryId'], $matchByName);
-        $out      = $out + ['regionId' => $regionId[0], 'regionName' => $regionId[1]];
-        $city     = self::place('city', $text('cityId'), $text('city'), \City::getInstance(), $out['regionId'], $out['countryId'], $matchByName);
+        $region = self::place('region', $text('regionId'), $text('region'), $found['regionName'], \Region::getInstance(), null, $out['countryId'], $matchByName);
+        $out    = $out + ['regionId' => $region[0], 'regionName' => $region[1]];
+        $city   = self::place('city', $text('cityId'), $text('city'), $found['cityName'], \City::getInstance(), $out['regionId'], $out['countryId'], $matchByName);
 
         return $out + ['cityId' => $city[0], 'cityName' => $city[1]];
     }
@@ -112,14 +111,14 @@ final class LocationService
     }
 
     /**
+     * @param string|null $stored the name stored for the id, from lineage()
+     *
      * @return array{0:?int,1:?string} the place's id and name
      */
-    private static function place(string $level, string $id, string $name, $model, ?int $parent, ?string $countryId, bool $matchByName): array
+    private static function place(string $level, string $id, string $name, ?string $stored, $model, ?int $parent, ?string $countryId, bool $matchByName): array
     {
         if ($id !== '') {
-            $place = (int) $id > 0 ? $model->findByPrimaryKey((int) $id) : null;
-
-            return is_array($place) && !empty($place) ? [(int) $place['pk_i_id'], $place['s_name']] : [null, null];
+            return (int) $id > 0 && $stored !== null ? [(int) $id, $stored] : [null, null];
         }
         if ($matchByName && $countryId !== null) {
             $place = $model->findByName($name, $level === 'region' ? $countryId : $parent);

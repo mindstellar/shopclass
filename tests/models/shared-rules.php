@@ -77,6 +77,8 @@ $named = LocationService::resolve(['countryCode' => 'US', 'region' => 'Texas', '
 pin('with name matching, typed places find their ids', [$region, $city], [$named['regionId'], $named['cityId']]);
 $gone = LocationService::resolve(['countryCode' => 'US', 'regionId' => '9999', 'cityId' => 'abc']);
 pin('a posted id that does not exist gives null for the id and the name', [null, null, null, null], [$gone['regionId'], $gone['regionName'], $gone['cityId'], $gone['cityName']]);
+pin('a lower-case code gives the stored code', 'US', LocationService::resolve(['countryCode' => 'us'])['countryId']);
+pin('ids are resolved in one query', 1, harness_query_count(static fn () => LocationService::resolve(['countryCode' => 'US', 'regionId' => (string) $region, 'cityId' => (string) $city])));
 
 harness_section('LocationService::checkPlaces');
 $placeRefusal = static function (string $country, string $regionId, string $cityId): ?array {

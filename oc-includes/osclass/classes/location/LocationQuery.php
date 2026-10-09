@@ -93,26 +93,35 @@ final class LocationQuery
 
     /**
      * In one read: whether the country exists, the region's country and the city's region and
-     * country. A member is null when its place is not stored.
+     * country, and the stored code and names. A member is null when its place is not stored.
      *
-     * @return array{country:?bool,regionCountry:?string,cityRegion:?int,cityCountry:?string}
+     * @return array{country:?bool,regionCountry:?string,cityRegion:?int,cityCountry:?string,countryCode:?string,countryName:?string,regionName:?string,cityName:?string}
      */
     public function lineage(string $countryCode, int $regionId, int $cityId): array
     {
-        $city = self::tableName(self::CITY);
-        $row  = Db::selectOne(
-            'SELECT (SELECT 1 FROM ' . self::tableName(self::COUNTRY) . ' WHERE pk_c_code = ?) AS country,'
-            . ' (SELECT fk_c_country_code FROM ' . self::tableName(self::REGION) . ' WHERE pk_i_id = ?) AS region_country,'
+        $country = self::tableName(self::COUNTRY);
+        $region  = self::tableName(self::REGION);
+        $city    = self::tableName(self::CITY);
+        $row     = Db::selectOne(
+            'SELECT (SELECT pk_c_code FROM ' . $country . ' WHERE pk_c_code = ?) AS country_code,'
+            . ' (SELECT s_name FROM ' . $country . ' WHERE pk_c_code = ?) AS country_name,'
+            . ' (SELECT fk_c_country_code FROM ' . $region . ' WHERE pk_i_id = ?) AS region_country,'
+            . ' (SELECT s_name FROM ' . $region . ' WHERE pk_i_id = ?) AS region_name,'
             . ' (SELECT fk_i_region_id FROM ' . $city . ' WHERE pk_i_id = ?) AS city_region,'
-            . " (SELECT IFNULL(fk_c_country_code, '') FROM " . $city . ' WHERE pk_i_id = ?) AS city_country',
-            [$countryCode, $regionId, $cityId, $cityId]
+            . " (SELECT IFNULL(fk_c_country_code, '') FROM " . $city . ' WHERE pk_i_id = ?) AS city_country,'
+            . ' (SELECT s_name FROM ' . $city . ' WHERE pk_i_id = ?) AS city_name',
+            [$countryCode, $countryCode, $regionId, $regionId, $cityId, $cityId, $cityId]
         ) ?? [];
 
         return [
-            'country'       => isset($row['country']) ? true : null,
+            'country'       => isset($row['country_code']) ? true : null,
             'regionCountry' => isset($row['region_country']) ? (string) $row['region_country'] : null,
             'cityRegion'    => isset($row['city_region']) ? (int) $row['city_region'] : null,
             'cityCountry'   => isset($row['city_country']) ? (string) $row['city_country'] : null,
+            'countryCode'   => isset($row['country_code']) ? (string) $row['country_code'] : null,
+            'countryName'   => isset($row['country_code']) ? (string) $row['country_name'] : null,
+            'regionName'    => isset($row['region_name']) ? (string) $row['region_name'] : null,
+            'cityName'      => isset($row['city_name']) ? (string) $row['city_name'] : null,
         ];
     }
 
