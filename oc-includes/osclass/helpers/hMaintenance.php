@@ -124,6 +124,31 @@ function osc_maintenance_should_lockout_request($fileExists, $lockoutEnabled, $i
 }
 
 /**
+ * Turn maintenance mode on or off by writing or removing the `.maintenance` file, and clear
+ * the page cache when it changed.
+ *
+ * @param bool        $on
+ * @param string|null $path the `.maintenance` file; the site's own by default
+ *
+ * @return bool false when the file could not be written or removed
+ */
+function osc_maintenance_set($on, $path = null)
+{
+    $path ??= osc_base_path() . '.maintenance';
+    if ($on) {
+        $handle = @fopen($path, 'wb');
+        $done   = $handle !== false && fclose($handle);
+    } else {
+        $done = @unlink($path);
+    }
+    if ($done) {
+        osc_purge_page_cache('maintenance');
+    }
+
+    return $done;
+}
+
+/**
  * Whether `.maintenance` was written by the package upgrader.
  *
  * @param string $path Path to the `.maintenance` file.

@@ -109,4 +109,18 @@ pin(
 );
 pin('empty after tags', '', osc_sanitize_maintenance_message('<p></p>'));
 
+harness_section('turning it on and off');
+$purged = array();
+function osc_purge_page_cache($why)
+{
+    $GLOBALS['purged'][] = $why;
+}
+$flag = sys_get_temp_dir() . '/osc-maintenance-' . getmypid();
+@unlink($flag);
+check('on writes the file', osc_maintenance_set(true, $flag) && is_file($flag));
+check('off removes it', osc_maintenance_set(false, $flag) && !is_file($flag));
+pin('each change clears the page cache', array('maintenance', 'maintenance'), $purged);
+check('off with no file reports the failure, and clears nothing', !osc_maintenance_set(false, $flag) && count($purged) === 2);
+check('on in a folder that does not exist reports the failure', !osc_maintenance_set(true, $flag . '/missing/.maintenance'));
+
 exit(harness_result());
