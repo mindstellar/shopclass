@@ -300,6 +300,7 @@ pin(
         'findItemTypesByUserID',
         'findLocationByID',
         'findResourcesByID',
+        'fitTitle',
         'getInstance',
         'insertLocale',
         'listAllWithCategories',

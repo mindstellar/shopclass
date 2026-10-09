@@ -903,7 +903,7 @@ class Item extends DAO
      *
      * @return string|null
      */
-    private static function fitTitle($title): ?string
+    public static function fitTitle($title): ?string
     {
         return $title === null ? null : mb_substr((string) $title, 0, self::TITLE_WIDTH, 'UTF-8');
     }
