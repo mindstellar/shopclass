@@ -88,12 +88,7 @@ class CategoryStats extends DAO
         $categoryId = (int)$categoryId;
 
         // The category and every ancestor, counted in one statement.
-        $ids = array();
-        for ($id = $categoryId; $id > 0 && !in_array($id, $ids, true);) {
-            $ids[]  = $id;
-            $result = Category::getInstance()->findByPrimaryKey($id);
-            $id     = isset($result['fk_i_parent_id']) ? (int)$result['fk_i_parent_id'] : 0;
-        }
+        $ids = iterator_to_array($this->chain($categoryId), false);
         if ($ids === array()) {
             return false;
         }
@@ -135,6 +130,41 @@ class CategoryStats extends DAO
             return false;
         }
 
+        $return = false;
+        foreach ($this->chain((int)$categoryId) as $id) {
+            $level = $this->decreaseOne($id);
+            if ($level === false) {
+                return false;
+            }
+            $return = (int)$return + $level;
+        }
+
+        return $return;
+    }
+
+    /**
+     * A category's id, then its ancestors' ids. A parent is looked up only when the caller asks for it.
+     *
+     * @return \Generator<int,int>
+     */
+    private function chain(int $categoryId): \Generator
+    {
+        $seen = array();
+        for ($id = $categoryId; $id > 0 && !in_array($id, $seen, true);) {
+            $seen[] = $id;
+            yield $id;
+            $result = Category::getInstance()->findByPrimaryKey($id);
+            $id     = isset($result['fk_i_parent_id']) ? (int)$result['fk_i_parent_id'] : 0;
+        }
+    }
+
+    /**
+     * Take one listing off a category's count, or start its row at 0.
+     *
+     * @return int|false Affected rows, false on a failed query
+     */
+    private function decreaseOne(int $categoryId)
+    {
         try {
             $row = Db::table($this->getTableName())
                 ->select('i_num_items')
@@ -144,43 +174,28 @@ class CategoryStats extends DAO
             return false;
         }
 
-        $categoryStat = $row !== null ? Db::stringifyRow($row) : array();
-        $return       = 0;
-
-        if (isset($categoryStat['i_num_items'])) {
-            try {
-                $return = Db::execute(
-                    'UPDATE ' . $this->getTableName()
-                    . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_category_id = ?',
-                    array($categoryId)
-                );
-            } catch (\mindstellar\database\DbException $e) {
-                $return = false;
-            }
-        } else {
+        if ($row === null) {
             try {
                 Db::table($this->getTableName())->insert(array(
                     'fk_i_category_id' => $categoryId,
                     'i_num_items'      => 0,
                 ));
             } catch (\mindstellar\database\DbException $e) {
-                $return = false;
+                return false;
             }
+
+            return 0;
         }
 
-        if ($return !== false) {
-            $result = Category::getInstance()->findByPrimaryKey($categoryId);
-            if ($result['fk_i_parent_id'] != null) {
-                $parent_res = $this->decreaseNumItems($result['fk_i_parent_id']);
-                if ($parent_res !== false) {
-                    $return += $parent_res;
-                } else {
-                    $return = false;
-                }
-            }
+        try {
+            return Db::execute(
+                'UPDATE ' . $this->getTableName()
+                . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_category_id = ?',
+                array($categoryId)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
         }
-
-        return $return;
     }
 
     /**
