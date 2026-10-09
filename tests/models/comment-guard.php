@@ -132,14 +132,14 @@ osc_add_hook('pre_item_delete_comment_post', static function ($item, $commentId)
 $refusal = static function (Actor $actor) use ($mine): string {
     try {
         (new \mindstellar\comment\CommentService())->delete($mine, $actor);
-    } catch (\mindstellar\validation\RefusedException $e) {
+    } catch (\mindstellar\exception\RefusedException $e) {
         return get_class($e);
     }
 
     return 'deleted';
 };
 pin('a guest and another user are refused before pre_item_delete_comment_post fires', array(
-    \mindstellar\validation\ForbiddenException::class, \mindstellar\validation\ForbiddenException::class, 0,
+    \mindstellar\exception\ForbiddenException::class, \mindstellar\exception\ForbiddenException::class, 0,
 ), array($refusal(Actor::visitor()), $refusal(Actor::user($other)), $preHooks));
 pin('the author deletes it, and the hook fires once', array('deleted', 1, 0), array(
     $refusal(Actor::user($author)), $preHooks,

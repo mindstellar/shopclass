@@ -19,10 +19,10 @@ use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
-use mindstellar\apiaccess\ApiKeyService;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiKeyService;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\Scopes;
 
 /**
  * `/admin/keys`: the keys of Settings -> API, through the same ApiKeyService. A key made

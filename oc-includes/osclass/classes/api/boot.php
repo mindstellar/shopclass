@@ -12,7 +12,7 @@
  * Plugs the REST API into core, which never names an API class itself. Loaded by hApi.php.
  */
 
-\mindstellar\apiaccess\ApiAccess::connect(
+\mindstellar\apikey\ApiAccess::connect(
     static fn () => \mindstellar\api\Kernel::serve(),
     static fn () => \mindstellar\api\identity\WebIdentity::forget(),
     static fn () => \mindstellar\api\Problem::maintenance()->send()

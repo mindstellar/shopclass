@@ -24,7 +24,7 @@ use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
-use mindstellar\apiaccess\PageTokens;
+use mindstellar\apikey\PageTokens;
 use mindstellar\auth\SignIn;
 
 /**

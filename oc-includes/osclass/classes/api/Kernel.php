@@ -30,11 +30,11 @@ use mindstellar\api\ratelimit\RatePolicy;
 use mindstellar\api\routing\RouteMatch;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\Scopes;
-use mindstellar\validation\RefusedException;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\Scopes;
+use mindstellar\exception\RefusedException;
 
 /**
  * Answers one API request as an ordered pipeline from the on/off switch to caching, where any step

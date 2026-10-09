@@ -25,14 +25,14 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\CredentialStore;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\Scopes;
-use mindstellar\apiaccess\StoredKey;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\CredentialStore;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\Scopes;
+use mindstellar\apikey\StoredKey;
 use mindstellar\utility\SystemClock;
 
 final class Things

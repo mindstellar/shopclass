@@ -41,11 +41,11 @@ use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\api\Warning;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\CredentialStore;
-use mindstellar\apiaccess\Scopes;
-use mindstellar\apiaccess\StoredKey;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\CredentialStore;
+use mindstellar\apikey\Scopes;
+use mindstellar\apikey\StoredKey;
 use mindstellar\utility\SystemClock;
 
 /**

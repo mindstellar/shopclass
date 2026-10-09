@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 use mindstellar\api\ProblemException;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\listing\ListingPolicy;

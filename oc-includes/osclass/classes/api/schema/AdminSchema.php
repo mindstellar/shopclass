@@ -14,7 +14,7 @@ namespace mindstellar\api\schema;
 
 use mindstellar\admin\ExposedSettings;
 use mindstellar\api\serializer\CustomFieldSerializer;
-use mindstellar\apiaccess\ApiKeyService;
+use mindstellar\apikey\ApiKeyService;
 use mindstellar\comment\CommentStatus;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\webhook\Endpoint;

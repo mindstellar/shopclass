@@ -10,7 +10,7 @@
 
 /**
  * Core never names a mindstellar\api class: the REST API builds on core, not the other way
- * round. Core reaches the API only through mindstellar\apiaccess\ApiAccess, which the API's
+ * round. Core reaches the API only through mindstellar\apikey\ApiAccess, which the API's
  * boot.php connects.
  *
  * DB-free.  Usage: php tests/core-no-api-import.php
@@ -65,7 +65,7 @@ harness_section('The pattern');
 check('catches a use line', preg_match(API_NAME, 'use mindstellar\api\Kernel;') === 1);
 check('catches a fully qualified call', preg_match(API_NAME, '\mindstellar\api\ApiServices::site()') === 1);
 check('catches a class name in a string', preg_match(API_NAME, "'mindstellar\\\\api\\\\Kernel'") === 1);
-check('lets the core apiaccess module through', preg_match(API_NAME, 'use mindstellar\apiaccess\ApiAccess;') === 0);
+check('lets the core apiaccess module through', preg_match(API_NAME, 'use mindstellar\apikey\ApiAccess;') === 0);
 
 harness_section('Core files');
 

@@ -113,6 +113,7 @@ diff and commit the new list with your change:
 | `strict-types.php` | files still without `declare(strict_types=1)` (may only shrink) |
 | `controller-method-size.php` | controller methods over 100 lines (may only shrink) |
 | `db-errors-not-swallowed.php` | catches that hide a database error, per file (may only shrink) |
+| `classes-folder-map.php` | every class folder has a line in the architecture page's folder map |
 
 ## What else CI checks
 

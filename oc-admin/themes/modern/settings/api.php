@@ -10,9 +10,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\apiaccess\ApiKeyService;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiKeyService;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\Scopes;
 use mindstellar\webhook\Endpoint;
 
 $form    = __get('api_form');

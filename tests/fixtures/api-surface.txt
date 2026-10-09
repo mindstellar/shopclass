@@ -12,7 +12,7 @@ function osc_webhook_emit(string $type, array $data, array $options = []): ?stri
 mindstellar\api\ApiCall::public actor(string $scope = ''): mindstellar\auth\Actor
 mindstellar\api\ApiCall::public arg(string $name): ?string
 mindstellar\api\ApiCall::public args(): array
-mindstellar\api\ApiCall::public credential(): mindstellar\apiaccess\Credential
+mindstellar\api\ApiCall::public credential(): mindstellar\apikey\Credential
 mindstellar\api\ApiCall::public input(): array
 mindstellar\api\ApiCall::public intArg(string $name = 'id'): int
 mindstellar\api\ApiCall::public kit(): mindstellar\api\ApiKit
@@ -137,28 +137,28 @@ mindstellar\api\serializer\ViewContext::public includes(string $name): bool
 mindstellar\api\serializer\ViewContext::public locale(): string
 mindstellar\api\serializer\ViewContext::public version(): string
 mindstellar\api\serializer\ViewContext::public view(): string
-mindstellar\api\serializer\ViewContext::public viewer(): mindstellar\apiaccess\Credential
+mindstellar\api\serializer\ViewContext::public viewer(): mindstellar\apikey\Credential
 mindstellar\api\serializer\ViewContext::public wants(string $member): bool
-mindstellar\apiaccess\Credential::public adminId(): ?int
-mindstellar\apiaccess\Credential::public has(string $scope): bool
-mindstellar\apiaccess\Credential::public isAdmin(): bool
-mindstellar\apiaccess\Credential::public isAnonymous(): bool
-mindstellar\apiaccess\Credential::public isModerator(): bool
-mindstellar\apiaccess\Credential::public isSession(): bool
-mindstellar\apiaccess\Credential::public isUser(): bool
-mindstellar\apiaccess\Credential::public kind(): string
-mindstellar\apiaccess\Credential::public scopes(): array
-mindstellar\apiaccess\Credential::public userId(): ?int
-mindstellar\apiaccess\CredentialKind::ANONYMOUS = "anonymous"
-mindstellar\apiaccess\CredentialKind::KEY = "key"
-mindstellar\apiaccess\CredentialKind::PUBLIC = "public"
-mindstellar\apiaccess\CredentialKind::SESSION = "session"
-mindstellar\apiaccess\CredentialKind::USER = "user"
-mindstellar\apiaccess\Scopes::AUDIENCES = ["admin","moderator","user"]
-mindstellar\apiaccess\Scopes::AUDIENCE_ADMIN = "admin"
-mindstellar\apiaccess\Scopes::AUDIENCE_MODERATOR = "moderator"
-mindstellar\apiaccess\Scopes::AUDIENCE_USER = "user"
-mindstellar\apiaccess\Scopes::PLUGIN_SCOPE = "/^ext:[a-z0-9-]+:[a-z0-9:_-]+$/D"
+mindstellar\apikey\Credential::public adminId(): ?int
+mindstellar\apikey\Credential::public has(string $scope): bool
+mindstellar\apikey\Credential::public isAdmin(): bool
+mindstellar\apikey\Credential::public isAnonymous(): bool
+mindstellar\apikey\Credential::public isModerator(): bool
+mindstellar\apikey\Credential::public isSession(): bool
+mindstellar\apikey\Credential::public isUser(): bool
+mindstellar\apikey\Credential::public kind(): string
+mindstellar\apikey\Credential::public scopes(): array
+mindstellar\apikey\Credential::public userId(): ?int
+mindstellar\apikey\CredentialKind::ANONYMOUS = "anonymous"
+mindstellar\apikey\CredentialKind::KEY = "key"
+mindstellar\apikey\CredentialKind::PUBLIC = "public"
+mindstellar\apikey\CredentialKind::SESSION = "session"
+mindstellar\apikey\CredentialKind::USER = "user"
+mindstellar\apikey\Scopes::AUDIENCES = ["admin","moderator","user"]
+mindstellar\apikey\Scopes::AUDIENCE_ADMIN = "admin"
+mindstellar\apikey\Scopes::AUDIENCE_MODERATOR = "moderator"
+mindstellar\apikey\Scopes::AUDIENCE_USER = "user"
+mindstellar\apikey\Scopes::PLUGIN_SCOPE = "/^ext:[a-z0-9-]+:[a-z0-9:_-]+$/D"
 mindstellar\auth\Actor::public adminId(): ?int
 mindstellar\auth\Actor::public ip(): string
 mindstellar\auth\Actor::public isAdmin(): bool

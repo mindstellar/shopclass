@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\auth;
 
-use mindstellar\apiaccess\IssuedToken;
+use mindstellar\apikey\IssuedToken;
 use mindstellar\model\KeyValue;
 use mindstellar\security\SecretBox;
 

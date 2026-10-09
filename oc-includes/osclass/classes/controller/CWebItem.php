@@ -15,6 +15,9 @@
 use mindstellar\auth\Actor;
 use mindstellar\comment\CommentService;
 use mindstellar\comment\SavedComment;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingMailService;
@@ -25,9 +28,6 @@ use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
 use mindstellar\security\Captcha;
 use mindstellar\utility\Validate;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\RefusedException;
 
 /**
  * Class CWebItem

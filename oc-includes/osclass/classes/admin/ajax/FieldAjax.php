@@ -16,12 +16,12 @@ namespace mindstellar\admin\ajax;
 use Category;
 use Field;
 use FieldGroup;
+use mindstellar\exception\RefusedException;
 use mindstellar\fields\FieldService;
 use mindstellar\fields\FieldSlug;
 use mindstellar\fields\FieldTypeRegistry;
 use mindstellar\form\builder\FormService;
 use mindstellar\utility\AjaxResponse;
-use mindstellar\validation\RefusedException;
 use Params;
 use RuntimeException;
 

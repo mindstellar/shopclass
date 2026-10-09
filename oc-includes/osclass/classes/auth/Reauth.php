@@ -10,10 +10,10 @@
 
 namespace mindstellar\auth;
 
-use mindstellar\security\LoginThrottle;
+use mindstellar\exception\BlockedException;
 
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\InvalidException;
+use mindstellar\exception\InvalidException;
+use mindstellar\security\LoginThrottle;
 
 /**
  * Asks a signed-in user for their current password again before an account change, on the

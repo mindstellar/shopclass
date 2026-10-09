@@ -14,9 +14,9 @@ namespace mindstellar\api;
 
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\Scopes;
 use mindstellar\utility\DateInput;
 
 /**

@@ -14,10 +14,10 @@ namespace mindstellar\api\auth;
 
 use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\IssuedToken;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\IssuedToken;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\Scopes;
 use mindstellar\utility\Clock;
 
 /**

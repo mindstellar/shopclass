@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiSettings;
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 

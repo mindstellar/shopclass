@@ -1341,10 +1341,10 @@ $signOutPanel = static function () use ($root): string {
     return (string)ob_get_clean();
 };
 check('with no key, no count is shown', !str_contains($signOutPanel(), 'API key'));
-$rootOwner = \mindstellar\apiaccess\KeyOwner::admin($root, false);
-$rootKeys  = new \mindstellar\apiaccess\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\apiaccess\Scopes(), new \mindstellar\utility\SystemClock());
+$rootOwner = \mindstellar\apikey\KeyOwner::admin($root, false);
+$rootKeys  = new \mindstellar\apikey\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\apikey\Scopes(), new \mindstellar\utility\SystemClock());
 $rootKeys->create('key', 'script', array('admin:users'), $rootOwner);
-$rootKeys->create('public', 'app', array(\mindstellar\apiaccess\Scopes::PUBLIC_READ), $rootOwner);
+$rootKeys->create('public', 'app', array(\mindstellar\apikey\Scopes::PUBLIC_READ), $rootOwner);
 check('with two keys, the panel says both are revoked', str_contains($signOutPanel(), 'This also revokes your 2 API keys.'));
 
 harness_section('a new password signs the admin out everywhere');

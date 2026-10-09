@@ -14,8 +14,8 @@ namespace mindstellar\api\routing;
 
 use mindstellar\api\RouteSpec;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Scopes;
 
 /**
  * The route table and its matcher, per API version: the core routes, then plugin routes from

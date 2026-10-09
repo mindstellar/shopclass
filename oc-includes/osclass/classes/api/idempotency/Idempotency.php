@@ -16,9 +16,9 @@ use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
+use mindstellar\exception\RefusedException;
 use mindstellar\utility\Clock;
-use mindstellar\validation\RefusedException;
 
 /**
  * `Idempotency-Key` on POST, PUT, PATCH and DELETE: a write sent again with the same key gets the

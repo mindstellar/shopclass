@@ -21,9 +21,9 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 use mindstellar\api\Response;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\Scopes;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 

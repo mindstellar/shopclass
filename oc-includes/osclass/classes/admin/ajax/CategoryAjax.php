@@ -15,10 +15,10 @@ namespace mindstellar\admin\ajax;
 
 use Category;
 use mindstellar\category\CategoryService;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\RefusedException;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\Utils;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\RefusedException;
 use OSCLocale;
 use Params;
 use RuntimeException;

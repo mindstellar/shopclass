@@ -81,20 +81,20 @@ $accounts = new \mindstellar\user\AccountService();
 $refusal  = static function (callable $fn): string {
     try {
         $fn();
-    } catch (\mindstellar\validation\RefusedException $e) {
+    } catch (\mindstellar\exception\RefusedException $e) {
         return get_class($e);
     }
 
     return '';
 };
-pin('a wrong code is refused', 'mindstellar\validation\NotFoundException', $refusal(fn () => $accounts->confirm($newId, 'wrong')));
+pin('a wrong code is refused', 'mindstellar\exception\NotFoundException', $refusal(fn () => $accounts->confirm($newId, 'wrong')));
 pin('a wrong code moves nothing', null, $ownerOf('t_item', $guestItem));
 pin('the right code confirms the account', '', $refusal(fn () => $accounts->confirm($newId, $code)));
 pin('the guest listing moves to the account', $newId, $ownerOf('t_item', $guestItem));
 pin('the guest alert moves to the account', $newId, $ownerOf('t_alerts', $alertId));
 pin('the account counts the listing', '1', $itemsOf($newId));
 pin('a listing another account owns is left alone', $other, $ownerOf('t_item', $otherItem));
-pin('the code works once', 'mindstellar\validation\NotFoundException', $refusal(fn () => $accounts->confirm($newId, $code)));
+pin('the code works once', 'mindstellar\exception\NotFoundException', $refusal(fn () => $accounts->confirm($newId, $code)));
 pin('confirming twice counts the listing once', '1', $itemsOf($newId));
 
 harness_section('an account an admin makes');

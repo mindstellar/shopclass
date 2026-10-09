@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\language;
 
-use mindstellar\validation\ConflictException;
+use mindstellar\exception\ConflictException;
 use OSCLocale;
 use Page;
 

@@ -9,7 +9,7 @@ oc-includes/osclass/classes/category/CategoryQuery.php 1
 oc-includes/osclass/classes/controller/CWebSearch.php 2
 oc-includes/osclass/classes/controller/admin/CAdminTools.php 1
 oc-includes/osclass/classes/controller/admin/CAdminUsers.php 1
-oc-includes/osclass/classes/controller/base/abstract/BaseModel.php 1
+oc-includes/osclass/classes/controller/BaseModel.php 1
 oc-includes/osclass/classes/fields/FieldQuery.php 1
 oc-includes/osclass/classes/job/CategoryJobs.php 2
 oc-includes/osclass/classes/job/JobQueue.php 21

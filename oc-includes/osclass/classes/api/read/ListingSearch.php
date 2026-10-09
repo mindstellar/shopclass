@@ -18,7 +18,7 @@ use mindstellar\api\Response;
 use mindstellar\api\RowId;
 use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\listing\ListingQuery;
 use mindstellar\search\SearchCriteria;
 use mindstellar\search\SearchRunner;

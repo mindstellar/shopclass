@@ -210,7 +210,7 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
 function osc_media_owner_types(): array
 {
     $out = array();
-    foreach (\mindstellar\media\MediaQuery::ownerTypes() as $type) {
+    foreach (\mindstellar\storage\MediaQuery::ownerTypes() as $type) {
         if (Resource::isValidOwnerType($type)) {
             $out[] = $type;
         }
@@ -233,7 +233,7 @@ function osc_media_owner_types(): array
  */
 function osc_media_library_query(string $type, int $iPage, int $perPage): array
 {
-    return \mindstellar\media\MediaQuery::page($type, $iPage, $perPage);
+    return \mindstellar\storage\MediaQuery::page($type, $iPage, $perPage);
 }
 
 /**

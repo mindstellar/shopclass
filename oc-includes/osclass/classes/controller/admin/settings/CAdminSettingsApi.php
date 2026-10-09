@@ -15,11 +15,11 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\form\ApiSettingsScreen;
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\apiaccess\ApiAccess;
-use mindstellar\apiaccess\ApiKeyService;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\IssuedToken;
-use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apikey\ApiAccess;
+use mindstellar\apikey\ApiKeyService;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\IssuedToken;
+use mindstellar\apikey\KeyOwner;
 use mindstellar\security\AdminReauth;
 use mindstellar\security\AdminTwoFactor;
 use mindstellar\webhook\WebhookService;

@@ -14,9 +14,9 @@ namespace mindstellar\api\ratelimit;
 
 use mindstellar\api\Request;
 use mindstellar\api\RouteSpec;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
 use mindstellar\security\AddressBucket;
 
 /**

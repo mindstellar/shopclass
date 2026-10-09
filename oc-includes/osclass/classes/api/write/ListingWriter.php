@@ -16,15 +16,15 @@ use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\auth\Actor;
 use mindstellar\database\Db;
+use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoRoom;
 use mindstellar\listing\SavedListing;
 use mindstellar\moderation\ListingModeration;
-use mindstellar\validation\InvalidException;
 
 /**
  * The API's side of a listing write, shared by the seller's writes and the admin's edit. It turns a

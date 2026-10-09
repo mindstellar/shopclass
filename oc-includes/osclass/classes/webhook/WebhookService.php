@@ -13,12 +13,12 @@ declare(strict_types=1);
 namespace mindstellar\webhook;
 
 use mindstellar\database\DbException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 use mindstellar\job\JobQueue;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
 use mindstellar\utility\Validate;
-use mindstellar\validation\NotFoundException;
-use mindstellar\validation\RefusedException;
 
 /**
  * Webhook endpoints as Settings -> API and `/admin/webhooks` manage them: checks what was

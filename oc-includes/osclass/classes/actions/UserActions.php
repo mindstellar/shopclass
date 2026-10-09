@@ -13,12 +13,12 @@
  */
 
 use mindstellar\auth\Actor;
+use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
 use mindstellar\security\Captcha;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 use mindstellar\user\Usernames;
-use mindstellar\validation\ForbiddenException;
-use mindstellar\validation\InvalidException;
 
 /**
  * Class UserActions

@@ -20,8 +20,8 @@ use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
-use mindstellar\apiaccess\PersonalKeys;
-use mindstellar\apiaccess\StoredKey;
+use mindstellar\apikey\PersonalKeys;
+use mindstellar\apikey\StoredKey;
 use mindstellar\utility\Clock;
 
 /**

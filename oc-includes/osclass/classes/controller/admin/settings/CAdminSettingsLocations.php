@@ -18,6 +18,8 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\ListPaging;
 use mindstellar\database\DbException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 use mindstellar\location\CountryCode;
 use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
@@ -27,8 +29,6 @@ use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 use mindstellar\security\Demo;
 use mindstellar\utility\AjaxResponse;
-use mindstellar\validation\NotFoundException;
-use mindstellar\validation\RefusedException;
 
 /**
  * Class CAdminSettingsLocations

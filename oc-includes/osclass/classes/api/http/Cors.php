@@ -15,8 +15,8 @@ namespace mindstellar\api\http;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
 
 /**
  * Cross-origin access for browser apps, from the `api_cors_origins` preference and filter. `*`

@@ -17,7 +17,7 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\Response;
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiSettings;
 use mindstellar\auth\Actor;
 use mindstellar\user\AccountInput;
 

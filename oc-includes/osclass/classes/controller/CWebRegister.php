@@ -78,7 +78,7 @@ class CWebRegister extends BaseModel
                         Params::getParamInt('id'),
                         Params::getParamString('code')
                     );
-                } catch (\mindstellar\validation\RefusedException $e) {
+                } catch (\mindstellar\exception\RefusedException $e) {
                     osc_add_flash_error_message($e->getMessage());
                     $this->redirectTo(osc_base_url());
 

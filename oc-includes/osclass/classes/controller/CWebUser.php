@@ -14,14 +14,14 @@
 
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\RefusedException;
 use mindstellar\search\UserAlerts;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 use mindstellar\user\Usernames;
 use mindstellar\utility\AjaxResponse;
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\RefusedException;
 
 /**
  * Class CWebUser
@@ -433,7 +433,7 @@ class CWebUser extends WebSecBaseModel
      */
     private function apiAccessPage(): void
     {
-        $this->apiAccessView(\mindstellar\apiaccess\ApiAccess::site()->accountAccess());
+        $this->apiAccessView(\mindstellar\apikey\ApiAccess::site()->accountAccess());
     }
 
     /**
@@ -442,7 +442,7 @@ class CWebUser extends WebSecBaseModel
     private function apiAccessPagePost(): void
     {
         osc_csrf_check();
-        $this->apiAccessPost(\mindstellar\apiaccess\ApiAccess::site()->accountAccess());
+        $this->apiAccessPost(\mindstellar\apikey\ApiAccess::site()->accountAccess());
     }
 
     /**
@@ -490,7 +490,7 @@ class CWebUser extends WebSecBaseModel
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }
             osc_add_flash_error_message(_m('Oops! you can not do that'));
-            $this->redirectTo($e instanceof \mindstellar\validation\NotFoundException ? osc_user_login_url() : osc_user_delete_url());
+            $this->redirectTo($e instanceof \mindstellar\exception\NotFoundException ? osc_user_login_url() : osc_user_delete_url());
             return;
         }
 
@@ -526,12 +526,12 @@ class CWebUser extends WebSecBaseModel
     /**
      * The "API access" page: the sign-ins and personal keys that act for this user.
      *
-     * @param \mindstellar\apiaccess\AccountAccess $access
+     * @param \mindstellar\apikey\AccountAccess $access
      * @param string                         $newKey a key's token, shown once right after it is made
      *
      * @return void
      */
-    private function apiAccessView(\mindstellar\apiaccess\AccountAccess $access, string $newKey = '')
+    private function apiAccessView(\mindstellar\apikey\AccountAccess $access, string $newKey = '')
     {
         if (!osc_api_enabled()) {
             $this->redirectTo(osc_user_dashboard_url());
@@ -548,11 +548,11 @@ class CWebUser extends WebSecBaseModel
      * End a sign-in, revoke a key, or make a key. A new key's token is shown on this answer
      * and never again, so it is not put in a cookie or a redirect.
      *
-     * @param \mindstellar\apiaccess\AccountAccess $access
+     * @param \mindstellar\apikey\AccountAccess $access
      *
      * @return void
      */
-    private function apiAccessPost(\mindstellar\apiaccess\AccountAccess $access)
+    private function apiAccessPost(\mindstellar\apikey\AccountAccess $access)
     {
         if (!osc_api_enabled()) {
             $this->redirectTo(osc_user_dashboard_url());

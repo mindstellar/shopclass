@@ -23,20 +23,20 @@ use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\Scopes;
 use mindstellar\utility\SystemClock;
 
-$store = new class () implements \mindstellar\apiaccess\CredentialStore {
-    public function findByTokenId(string $tokenId): ?\mindstellar\apiaccess\StoredKey
+$store = new class () implements \mindstellar\apikey\CredentialStore {
+    public function findByTokenId(string $tokenId): ?\mindstellar\apikey\StoredKey
     {
         return null;
     }
-    public function find(int $id): ?\mindstellar\apiaccess\StoredKey
+    public function find(int $id): ?\mindstellar\apikey\StoredKey
     {
         return null;
     }
-    public function insert(\mindstellar\apiaccess\StoredKey $key): int
+    public function insert(\mindstellar\apikey\StoredKey $key): int
     {
         return 1;
     }

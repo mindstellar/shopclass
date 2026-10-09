@@ -131,11 +131,11 @@ use mindstellar\api\serializer\Links;
 use mindstellar\api\write\ImageFetcher;
 use mindstellar\api\write\PhotoFile;
 use mindstellar\api\write\PhotoStage;
-use mindstellar\apiaccess\AccountAccess;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\AccountAccess;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\Scopes;
 use mindstellar\billing\Billing;
 use mindstellar\model\ApiCredential;
 use mindstellar\security\AddressGuard;
@@ -528,7 +528,7 @@ $raced = null;
 try {
     (new \mindstellar\api\controller\PhotosController($GLOBALS['lw_services'], $racyRoom))->add(new \mindstellar\api\ApiCall(
         new Request('POST', 'v1/listings/' . $withPhoto . '/photos', array(), array(), '192.0.2.60', '', $photoFile($jpeg)),
-        new \mindstellar\apiaccess\Credential(\mindstellar\apiaccess\CredentialKind::USER, array('listings:write'), (int) $itemRow($withPhoto)['fk_i_user_id']),
+        new \mindstellar\apikey\Credential(\mindstellar\apikey\CredentialKind::USER, array('listings:write'), (int) $itemRow($withPhoto)['fk_i_user_id']),
         array('id' => (string) $withPhoto)
     ));
 } catch (\mindstellar\api\ProblemException $e) {
@@ -849,7 +849,7 @@ pin('PATCH with If-Match: 28 queries, the 19 plus the owner check, 5 locked row 
 $sellerOf = static function (?\mindstellar\api\auth\MemoisedRows $known) use ($qMade): mixed {
     $reader = new \mindstellar\api\read\ListingReader(\mindstellar\api\read\CategoryCatalog::fromSite(), $GLOBALS['lw_services']->listingSerializer(), $known);
 
-    return $reader->one($qMade, new \mindstellar\api\serializer\ViewContext(\mindstellar\apiaccess\Credential::anonymous(), 'en_US'))['seller'] ?? null;
+    return $reader->one($qMade, new \mindstellar\api\serializer\ViewContext(\mindstellar\apikey\Credential::anonymous(), 'en_US'))['seller'] ?? null;
 };
 $heldAs = static function (int $id, string $enabled) use ($sue): \mindstellar\api\auth\MemoisedRows {
     $rows = new \mindstellar\api\auth\MemoisedRows(static fn (int $id): array => array('pk_i_id' => (string) $id, 's_name' => 'Held name', 's_username' => 'held', 'b_enabled' => $enabled, 'b_active' => '1'));

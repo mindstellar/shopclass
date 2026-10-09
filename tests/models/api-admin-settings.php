@@ -23,7 +23,7 @@ if (api_admin_isolated(__FILE__)) {
 use mindstellar\admin\ExposedSettings;
 use mindstellar\api\http\RowVersions;
 use mindstellar\api\Response;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\settings\SettingsPageRegistry;
 
 $admin = api_admin_boot('osc_models_api_admin_settings');

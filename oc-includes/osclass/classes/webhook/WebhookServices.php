@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\webhook;
 
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiSettings;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;

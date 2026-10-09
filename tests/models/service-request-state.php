@@ -86,11 +86,11 @@ if (!function_exists('osc_item')) {
 
 use mindstellar\auth\Actor;
 use mindstellar\comment\CommentService;
+use mindstellar\exception\NotFoundException;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\SavedListing;
 use mindstellar\user\AccountService;
-use mindstellar\validation\NotFoundException;
 
 /** A listing store that finds nothing. */
 final class NoItems extends Item

@@ -260,7 +260,7 @@ $split->hit(new RateBucket('api_anon', 'k', 10));
 $split->hit(new RateBucket('api_register', 'k', 10, 3600, true));
 pin('a plain bucket uses the fast counter, an exact one the database', [1, 1], [$memory, $exactN]);
 
-$policy  = new \mindstellar\api\ratelimit\RatePolicy(new \mindstellar\apiaccess\ApiSettings(true));
+$policy  = new \mindstellar\api\ratelimit\RatePolicy(new \mindstellar\apikey\ApiSettings(true));
 $exactOf = static function (array $buckets): array {
     $out = [];
     foreach ($buckets as $bucket) {

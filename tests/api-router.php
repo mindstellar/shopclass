@@ -37,12 +37,12 @@ use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialStore;
-use mindstellar\apiaccess\Scopes;
-use mindstellar\apiaccess\StoredKey;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialStore;
+use mindstellar\apikey\Scopes;
+use mindstellar\apikey\StoredKey;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 
@@ -381,15 +381,15 @@ $refusing = static fn (\Throwable $e): array => ['handler' => static function ()
     throw $e;
 }, 'auth' => RouteSpec::AUTH_NONE];
 $refusals = api_test_kernel(new Router($validator, [
-    'GET r/missing'   => $refusing(new \mindstellar\validation\NotFoundException('No such thing.')),
-    'GET r/conflict'  => $refusing(new \mindstellar\validation\ConflictException('Already done.')),
-    'GET r/forbidden' => $refusing(new \mindstellar\validation\ForbiddenException('Not on this site.')),
-    'GET r/blocked'   => $refusing(new \mindstellar\validation\BlockedException('Wait.', 30)),
-    'GET r/invalid'   => $refusing(\mindstellar\validation\InvalidException::all([
+    'GET r/missing'   => $refusing(new \mindstellar\exception\NotFoundException('No such thing.')),
+    'GET r/conflict'  => $refusing(new \mindstellar\exception\ConflictException('Already done.')),
+    'GET r/forbidden' => $refusing(new \mindstellar\exception\ForbiddenException('Not on this site.')),
+    'GET r/blocked'   => $refusing(new \mindstellar\exception\BlockedException('Wait.', 30)),
+    'GET r/invalid'   => $refusing(\mindstellar\exception\InvalidException::all([
         ['pointer' => '/a', 'code' => 'invalid', 'message' => 'is bad'],
         ['pointer' => '/b', 'code' => 'taken', 'message' => 'is worse'],
     ])),
-    'GET r/refused'   => $refusing(new \mindstellar\validation\RefusedException('Not now.')),
+    'GET r/refused'   => $refusing(new \mindstellar\exception\RefusedException('Not now.')),
 ]), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $validator);
 $refused = static fn (string $path): Response => $refusals->handle(new Request('GET', 'v1/r/' . $path, [], [], '127.0.0.1'));
 pin('NotFound is 404, Conflict 409, Forbidden 403', [[404, 'not_found'], [409, 'conflict'], [403, 'forbidden']], [
@@ -598,7 +598,7 @@ pin('a route built with a kit hands it to the call', \mindstellar\api\ApiKit::cl
 
 harness_section('cache headers');
 $policy = new \mindstellar\api\http\CachePolicy(60);
-$keyed  = new Credential(\mindstellar\apiaccess\CredentialKind::KEY, ['listings:read'], 4);
+$keyed  = new Credential(\mindstellar\apikey\CredentialKind::KEY, ['listings:read'], 4);
 $cc     = static fn (string $path): string => $policy->header(new Request('GET', 'v1/' . $path), $keyed);
 pin('account, admin and session reads are never stored', ['private, no-store', 'private, no-store', 'private, no-store', 'private, no-store'], [
     $cc('account'), $cc('account/keys/3'), $cc('admin/listings'), $cc('admin/users/4/sessions'),
@@ -635,9 +635,9 @@ pin('refused and rejected errors are about the body', ['body', 'body'], [
     \mindstellar\api\Problem::rejected('No.')->body()['errors'][0]['in'],
 ]);
 pin('a core refusal reason maps to its API code', ['feature_disabled', 'wrong_credential', 'forbidden'], [
-    \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('Off.', \mindstellar\validation\ForbiddenException::DISABLED))->body()['code'],
-    \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('Sign in.', \mindstellar\validation\ForbiddenException::SIGN_IN))->body()['code'],
-    \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('No.', 'something_else'))->body()['code'],
+    \mindstellar\api\Problem::fromRefusal(new \mindstellar\exception\ForbiddenException('Off.', \mindstellar\exception\ForbiddenException::DISABLED))->body()['code'],
+    \mindstellar\api\Problem::fromRefusal(new \mindstellar\exception\ForbiddenException('Sign in.', \mindstellar\exception\ForbiddenException::SIGN_IN))->body()['code'],
+    \mindstellar\api\Problem::fromRefusal(new \mindstellar\exception\ForbiddenException('No.', 'something_else'))->body()['code'],
 ]);
 
 harness_section('If-Match');

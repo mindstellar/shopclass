@@ -31,13 +31,13 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\Scopes;
-use mindstellar\apiaccess\SignInStore;
-use mindstellar\apiaccess\StoredKey;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\Scopes;
+use mindstellar\apikey\SignInStore;
+use mindstellar\apikey\StoredKey;
 use mindstellar\utility\SystemClock;
 
 /** t_api_credential as an array, with a user table beside it. */
@@ -271,17 +271,17 @@ pin('and refuses a prefix it was not given', null, ApiKeys::parse($first->token(
 pin('or a short secret', null, ApiKeys::parse('scr_' . str_repeat('A', 16) . '.abc', [RefreshTokens::PREFIX]));
 $stored = new StoredKey(1, CredentialKind::REFRESH, $row['tokenId'], $row['hash'], '', [], null);
 pin('secretMatches() checks the stored hash', [true, false], [ApiKeys::secretMatches($stored, explode('.', $first->token())[1]), ApiKeys::secretMatches($stored, str_repeat('0', 64))]);
-$code = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/apiaccess/ApiKeys.php')
+$code = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/apikey/ApiKeys.php')
     . file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/api/auth/RefreshTokens.php');
 pin('both make secrets and compare hashes in one place', [1, 1, 2], [substr_count($code, 'random_bytes(32)'), substr_count($code, 'hash_equals('), substr_count($code, '::mint()')]);
 
 harness_section('a Clock reaches SignedPayload');
-$pages = new \mindstellar\apiaccess\PageTokens(600, $clock);
+$pages = new \mindstellar\apikey\PageTokens(600, $clock);
 $page  = $pages->issue($store->users[10]);
 pin('a page token expires from the clock\'s time', $now + 600, $page->expiresAt());
-pin('and is checked at the clock\'s time', \mindstellar\apiaccess\PageTokens::VALID, $pages->check($page->token(), $store->users[10]));
+pin('and is checked at the clock\'s time', \mindstellar\apikey\PageTokens::VALID, $pages->check($page->token(), $store->users[10]));
 $now += 601;
-pin('so moving the clock past it expires it', \mindstellar\apiaccess\PageTokens::EXPIRED, $pages->check($page->token(), $store->users[10]));
+pin('so moving the clock past it expires it', \mindstellar\apikey\PageTokens::EXPIRED, $pages->check($page->token(), $store->users[10]));
 $now -= 601;
 
 $now          += 3600;

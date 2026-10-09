@@ -84,7 +84,7 @@ harness_section('LocationService::checkPlaces');
 $placeRefusal = static function (string $country, string $regionId, string $cityId): ?array {
     try {
         LocationService::checkPlaces($country, $regionId, $cityId);
-    } catch (\mindstellar\validation\InvalidException $e) {
+    } catch (\mindstellar\exception\InvalidException $e) {
         return [$e->pointer(), $e->reason()];
     }
 

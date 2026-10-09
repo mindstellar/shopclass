@@ -21,8 +21,8 @@ use mindstellar\api\serializer\ViewContext;
 use mindstellar\api\write\CustomFieldValues;
 use mindstellar\api\write\ListingBody;
 use mindstellar\api\write\OwnedListing;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
 use mindstellar\listing\ListingPolicy;
 
 $form = new ListingBody(',', 'en_US');

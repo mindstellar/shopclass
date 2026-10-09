@@ -14,8 +14,8 @@ namespace mindstellar\api\write;
 
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
+use mindstellar\exception\InvalidException;
 use mindstellar\location\LocationService;
-use mindstellar\validation\InvalidException;
 
 /**
  * The place members of a body (`country`, `region_id`, `city_id`, `lat`, `lng`) laid over a

@@ -14,9 +14,9 @@ namespace mindstellar\api\http;
 
 use mindstellar\admin\ExposedSettings;
 use mindstellar\admin\form\store\PreferenceStore;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\database\Db;
-use mindstellar\resource\RowHashQuery;
+use mindstellar\database\RowHashQuery;
 use mindstellar\security\SigningKey;
 use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\webhook\WebhookEndpointStore;

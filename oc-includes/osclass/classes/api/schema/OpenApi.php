@@ -18,11 +18,11 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\PageTokens;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\PageTokens;
+use mindstellar\apikey\Scopes;
 use mindstellar\cache\CacheGroup;
 use mindstellar\webhook\Events;
 

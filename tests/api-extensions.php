@@ -30,8 +30,8 @@ use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\SparseFieldset;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
 
 final class PlainLinks implements Links
 {

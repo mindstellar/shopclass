@@ -12,8 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
 
 /**
  * Who a resource is shaped for and how: the caller, the view it gets (public, owner or

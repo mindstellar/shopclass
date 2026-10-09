@@ -11,7 +11,7 @@
 namespace mindstellar\form\admin;
 
 use Exception;
-use mindstellar\form\base\FormInputs;
+use mindstellar\form\FormInputs;
 use mindstellar\utility\Escape;
 use mindstellar\utility\Sanitize;
 use Session;

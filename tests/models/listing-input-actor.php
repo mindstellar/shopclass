@@ -40,9 +40,9 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hFields.php';
 
 use mindstellar\auth\Actor;
+use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
-use mindstellar\validation\InvalidException;
 
 seed_locale($admin);
 seed_country($admin);

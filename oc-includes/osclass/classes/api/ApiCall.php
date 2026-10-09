@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api;
 
 use mindstellar\api\serializer\ViewContext;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingPolicy;
 

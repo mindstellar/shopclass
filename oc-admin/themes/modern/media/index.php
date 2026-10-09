@@ -130,7 +130,7 @@ function mediaResolveUsageBatch(array $rows)
 
     // Library uploads: load every page once and match in PHP.
     if (!empty($scan)) {
-        $pages = \mindstellar\media\MediaQuery::pageTexts();
+        $pages = \mindstellar\storage\MediaQuery::pageTexts();
         foreach ($scan as $rid => $needles) {
             foreach ($pages as $pg) {
                 $text = (string) $pg['text'];
@@ -145,9 +145,9 @@ function mediaResolveUsageBatch(array $rows)
     }
 
     // One title lookup per owner type for the explicit owners.
-    $itemTitles = \mindstellar\media\MediaQuery::ownerTitles('item', array_keys($itemIds));
-    $userTitles = \mindstellar\media\MediaQuery::ownerTitles('user', array_keys($userIds));
-    $pageTitles = \mindstellar\media\MediaQuery::ownerTitles('page', array_keys($pageIds));
+    $itemTitles = \mindstellar\storage\MediaQuery::ownerTitles('item', array_keys($itemIds));
+    $userTitles = \mindstellar\storage\MediaQuery::ownerTitles('user', array_keys($userIds));
+    $pageTitles = \mindstellar\storage\MediaQuery::ownerTitles('page', array_keys($pageIds));
 
     foreach ($result as $rid => $u) {
         if ($u === null) {

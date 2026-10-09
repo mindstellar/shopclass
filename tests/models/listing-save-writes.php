@@ -26,10 +26,10 @@ if (api_admin_isolated(__FILE__)) {
 
 use mindstellar\auth\Actor;
 use mindstellar\database\Db;
+use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingGeocode;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
-use mindstellar\validation\InvalidException;
 
 $admin = api_admin_boot('osc_models_listing_save_writes');
 if (!function_exists('osc_item_map_type')) {

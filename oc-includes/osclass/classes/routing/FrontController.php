@@ -38,7 +38,7 @@ final class FrontController
         // A cookie never authenticates an API call: forget the browser's identity before anything reads it.
         $api = Params::getParamString('page') === 'api';
         if ($api) {
-            \mindstellar\apiaccess\ApiAccess::begin();
+            \mindstellar\apikey\ApiAccess::begin();
         }
 
         self::maintenanceGate($api, $cli);
@@ -136,7 +136,7 @@ final class FrontController
         }
 
         if ($api) {
-            \mindstellar\apiaccess\ApiAccess::maintenance();
+            \mindstellar\apikey\ApiAccess::maintenance();
         }
 
         header('HTTP/1.1 503 Service Temporarily Unavailable');

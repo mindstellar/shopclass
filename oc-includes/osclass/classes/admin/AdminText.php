@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\admin;
 
-use mindstellar\validation\InvalidException;
+use mindstellar\exception\InvalidException;
 use Params;
 
 /**

@@ -12,12 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\api;
 
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\ForbiddenException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
-use mindstellar\validation\RefusedException;
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 
 /**
  * RFC 9457 problem answers and the error catalogue. `code` is the stable name a client branches on,

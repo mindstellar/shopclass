@@ -11,7 +11,7 @@
 
 namespace mindstellar\admin\form;
 
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiSettings;
 use mindstellar\base\SettingsScreen;
 
 /**

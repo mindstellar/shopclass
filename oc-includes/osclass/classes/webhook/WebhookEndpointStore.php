@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\webhook;
 
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\database\RowHashQuery;
 use mindstellar\model\KeyValue;
-use mindstellar\resource\RowHashQuery;
 
 /**
  * Webhook endpoints in the shared t_key_value store, group `api_webhook`, one key per endpoint id.

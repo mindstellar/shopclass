@@ -19,6 +19,11 @@ use mindstellar\auth\Actor;
 use mindstellar\auth\Reauth;
 use mindstellar\auth\SignOut;
 use mindstellar\database\Db;
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
 use mindstellar\listing\ListingService;
 use mindstellar\location\LocationService;
 use mindstellar\moderation\StatusFlags;
@@ -26,11 +31,6 @@ use mindstellar\security\ActionToken;
 use mindstellar\security\RateLimit;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\Sanitize;
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\ForbiddenException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
 
 /**
  * A user's account, for the account pages, the admin's users screen, the API and plugins

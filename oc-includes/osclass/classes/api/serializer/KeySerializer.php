@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
-use mindstellar\apiaccess\AccessEntry;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiKeyService;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\StoredKey;
+use mindstellar\apikey\AccessEntry;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiKeyService;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\StoredKey;
 
 /**
  * An API key as the admin's and the user's key lists show it, and a sign-in as the session

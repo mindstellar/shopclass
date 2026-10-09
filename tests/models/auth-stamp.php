@@ -219,7 +219,7 @@ $session->session_end();
 $sessionSource = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Session.php');
 check('session_end() expires the cookie in the browser', str_contains($sessionSource, "setcookie('osclass', '', array(") && str_contains($sessionSource, "'expires'  => time() - 3600,"));
 $main = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebMain.php');
-$web  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/base/WebSecBaseModel.php');
+$web  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/WebSecBaseModel.php');
 check('the web logout link and the account logout both end it', str_contains($main, 'session_end();') && str_contains($web, 'session_end();'));
 
 harness_section('the buttons');

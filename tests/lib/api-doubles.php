@@ -30,9 +30,9 @@ use mindstellar\api\Kernel;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Scopes;
 use mindstellar\utility\SystemClock;
 
 /** The Idempotency-Key store as an array. */

@@ -17,10 +17,10 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\currency\CurrencyService;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
-use mindstellar\validation\RefusedException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 
 /**
  * Class CAdminSettingsCurrencies

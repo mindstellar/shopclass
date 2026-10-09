@@ -192,14 +192,14 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `admin_title` | filter | `osc_page_title() . ' - Shopclass'` | `oc-admin/themes/modern/parts/header.php` |
 | `admin_user_profile_info` | filter | `$aInfo['s_info'], $aUser['pk_i_id'], $aInfo['fk_c_locale_code']` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 | `admin_users_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
-| `init_admin` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
+| `init_admin` | action | none | `oc-includes/osclass/classes/controller/AdminSecBaseModel.php` |
 | `init_admin_admins` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
 | `init_admin_billing` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminBilling.php` |
 | `init_admin_categories` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminCategories.php` |
 | `init_admin_comments` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `init_admin_emails` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminEmails.php` |
 | `init_admin_fields` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminCFields.php` |
-| `init_admin_insecure` | action | none | `oc-includes/osclass/classes/controller/base/AdminBaseModel.php` |
+| `init_admin_insecure` | action | none | `oc-includes/osclass/classes/controller/AdminBaseModel.php` |
 | `init_admin_items` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminItems.php` |
 | `init_admin_languages` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminLanguages.php` |
 | `init_admin_login` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
@@ -445,7 +445,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `actions_manage_keyword_block` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `actions_manage_rules` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
 | `add_admin_toolbar_menus` | action | none | `oc-includes/osclass/classes/AdminToolbar.php` |
-| `after_admin_html` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
+| `after_admin_html` | action | none | `oc-includes/osclass/classes/controller/AdminSecBaseModel.php` |
 | `after_delete_city` | action | `$pk` | `oc-includes/osclass/classes/model/City.php` |
 | `after_delete_city_area` | action | `$pk` | `oc-includes/osclass/classes/model/CityArea.php` |
 | `after_delete_country` | action | `$pk` | `oc-includes/osclass/classes/model/Country.php` |
@@ -484,13 +484,13 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `api_response` | filter | `$response, $request, $route` | `oc-includes/osclass/classes/api/Kernel.php` |
 | `api_routes` | filter | `[]` | `oc-includes/osclass/classes/api/routing/Router.php` |
 | `api_schemas` | filter | `[]` | `oc-includes/osclass/classes/api/schema/ExtensionSchemas.php` |
-| `api_scopes` | filter | `[]` | `oc-includes/osclass/classes/apiaccess/Scopes.php` |
+| `api_scopes` | filter | `[]` | `oc-includes/osclass/classes/apikey/Scopes.php` |
 | `api_webhook_delivered` | action | `$endpointData, $event, $httpStatus, $attempt` | `oc-includes/osclass/classes/webhook/Delivery.php` |
 | `api_webhook_events` | filter | `$events` | `oc-includes/osclass/classes/webhook/Events.php` |
 | `api_webhook_payload` | filter | `$payload, $type, $endpointData` | `oc-includes/osclass/classes/webhook/Dispatcher.php` |
 | `ban_rule_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 | `base_url` | filter | `$path, $with_index` | `oc-includes/osclass/helpers/hDefines.php` |
-| `before_admin_html` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
+| `before_admin_html` | action | none | `oc-includes/osclass/classes/controller/AdminSecBaseModel.php` |
 | `before_delete_city` | action | `$pk` | `oc-includes/osclass/classes/model/City.php` |
 | `before_delete_city_area` | action | `$pk` | `oc-includes/osclass/classes/model/CityArea.php` |
 | `before_delete_country` | action | `$pk` | `oc-includes/osclass/classes/model/Country.php` |
@@ -556,7 +556,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `image_jpeg_quality` | filter | `$qualityPref` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `image_max_pixels` | filter | `50000000` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `image_png_compression` | filter | `6` | `oc-includes/osclass/classes/ImageProcessing.php` |
-| `init` | action | none | `oc-includes/osclass/classes/controller/CWebApi.php` |
+| `init` | action | none | `oc-includes/osclass/classes/controller/BaseModel.php` |
 | `init_ajax` | action | none | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `init_billing` | action | none | `oc-includes/osclass/classes/controller/CWebBilling.php` |
 | `init_billing_non_secure` | action | none | `oc-includes/osclass/classes/controller/CWebBillingNonSecure.php` |

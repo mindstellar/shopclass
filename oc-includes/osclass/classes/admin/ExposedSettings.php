@@ -17,8 +17,8 @@ use mindstellar\admin\form\CommentSettingsScreen;
 use mindstellar\admin\form\MainSettingsScreen;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
+use mindstellar\exception\InvalidException;
 use mindstellar\settings\SettingsPageRegistry;
-use mindstellar\validation\InvalidException;
 
 /**
  * The settings `/admin/settings` reads and changes: a fixed list, never a secret (keys,

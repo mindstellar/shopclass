@@ -96,8 +96,8 @@ use mindstellar\api\routing\Router;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\Scopes;
 
 $definitions = Schema::definitions();
 $validator   = new Validator($definitions);

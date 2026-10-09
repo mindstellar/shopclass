@@ -22,7 +22,7 @@ if (!function_exists('osc_api_enabled')) {
      */
     function osc_api_enabled(): bool
     {
-        return \mindstellar\apiaccess\ApiSettings::fromPreferences()->enabled();
+        return \mindstellar\apikey\ApiSettings::fromPreferences()->enabled();
     }
 }
 
@@ -58,7 +58,7 @@ if (!function_exists('osc_api_public_reads')) {
      */
     function osc_api_public_reads(): bool
     {
-        return \mindstellar\apiaccess\ApiSettings::fromPreferences()->publicReads();
+        return \mindstellar\apikey\ApiSettings::fromPreferences()->publicReads();
     }
 }
 
@@ -185,7 +185,7 @@ if (!function_exists('osc_api_url')) {
     function osc_api_url(string $path = '', ?string $version = null): string
     {
         $parts = explode('?', ltrim($path, '/'), 2);
-        $route = ($version ?? \mindstellar\apiaccess\ApiSettings::PINNED_VERSION) . ($parts[0] === '' ? '' : '/' . $parts[0]);
+        $route = ($version ?? \mindstellar\apikey\ApiSettings::PINNED_VERSION) . ($parts[0] === '' ? '' : '/' . $parts[0]);
         $query = $parts[1] ?? '';
 
         if (osc_rewrite_enabled()) {
@@ -210,7 +210,7 @@ if (!function_exists('osc_api_session_token')) {
         if (!osc_api_enabled()) {
             return '';
         }
-        $token = \mindstellar\apiaccess\ApiAccess::site()->pageTokens()->forWebUser();
+        $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forWebUser();
 
         return $token === null ? '' : $token->token();
     }
@@ -231,11 +231,11 @@ if (!function_exists('osc_api_session_meta')) {
         if (!osc_api_enabled()) {
             return '';
         }
-        $token = \mindstellar\apiaccess\ApiAccess::site()->pageTokens()->forWebUser();
+        $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forWebUser();
         $data  = [
             'url'        => osc_api_url(),
             'token'      => $token === null ? '' : $token->token(),
-            'header'     => \mindstellar\apiaccess\PageTokens::HEADER,
+            'header'     => \mindstellar\apikey\PageTokens::HEADER,
             'expires_at' => $token === null ? null : \mindstellar\database\UtcDatetime::rfc3339((int) $token->expiresAt()),
         ];
 
@@ -285,7 +285,7 @@ if (!function_exists('osc_user_api_access_url')) {
 osc_add_filter('user_menu_filter', static function ($options) {
     $options = is_array($options) ? $options : [];
     $userId  = (int) osc_logged_user_id();
-    if ($userId > 0 && \mindstellar\apiaccess\ApiAccess::site()->accountAccess()->relevant($userId)) {
+    if ($userId > 0 && \mindstellar\apikey\ApiAccess::site()->accountAccess()->relevant($userId)) {
         $options[] = ['name' => _m('API access'), 'url' => osc_user_api_access_url(), 'class' => 'opt_api_access'];
     }
 
@@ -295,10 +295,10 @@ osc_add_filter('user_menu_filter', static function ($options) {
 // Signing out everywhere (which a password change does) revokes the API sign-ins and keys
 // too, in the same transaction.
 osc_add_hook('user_signout_all_after', static function ($userId): void {
-    \mindstellar\apiaccess\ApiAccess::site()->accessEntries()->endAll((int) $userId);
+    \mindstellar\apikey\ApiAccess::site()->accessEntries()->endAll((int) $userId);
 });
 osc_add_hook('admin_signout_all_after', static function ($adminId): void {
-    \mindstellar\apiaccess\ApiAccess::site()->keyService()->revokeAdminKeys((int) $adminId);
+    \mindstellar\apikey\ApiAccess::site()->keyService()->revokeAdminKeys((int) $adminId);
 });
 
 // The REST API registers its request handler and turns core events into webhooks.

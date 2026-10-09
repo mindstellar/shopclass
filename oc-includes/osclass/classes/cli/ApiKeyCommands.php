@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace mindstellar\cli;
 
 use InvalidArgumentException;
-use mindstellar\apiaccess\ApiAccess;
-use mindstellar\apiaccess\ApiKeyService;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apikey\ApiAccess;
+use mindstellar\apikey\ApiKeyService;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\KeyOwner;
 
 /**
  * The api:key:* commands. Shell access is the authority here, so no password is asked; the

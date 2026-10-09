@@ -21,9 +21,9 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
+use mindstellar\exception\ConflictException;
 use mindstellar\language\LanguageService;
 use mindstellar\language\LocaleStore;
-use mindstellar\validation\ConflictException;
 
 class CAdminLanguages extends AdminSecBaseModel
 {

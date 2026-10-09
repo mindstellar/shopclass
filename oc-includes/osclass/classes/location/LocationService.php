@@ -17,11 +17,11 @@ use City;
 use CityArea;
 use CityStats;
 use ItemLocation;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 use mindstellar\routing\ReservedSlugs;
 use mindstellar\utility\DeferredMail;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
-use mindstellar\validation\RefusedException;
 use Region;
 use RegionStats;
 

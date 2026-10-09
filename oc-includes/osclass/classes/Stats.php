@@ -14,7 +14,7 @@
 
 /**
  * Aggregate counts backing the admin statistics screens. The SQL lives in
- * mindstellar\stats\StatsQuery.
+ * mindstellar\admin\StatsQuery.
  */
 class Stats
 {
@@ -47,16 +47,16 @@ class Stats
     }
 
     /**
-     * @var \mindstellar\stats\StatsQuery|null
+     * @var \mindstellar\admin\StatsQuery|null
      */
     private $query;
 
     /**
-     * @return \mindstellar\stats\StatsQuery
+     * @return \mindstellar\admin\StatsQuery
      */
     private function query()
     {
-        return $this->query ??= new \mindstellar\stats\StatsQuery();
+        return $this->query ??= new \mindstellar\admin\StatsQuery();
     }
 
     /**

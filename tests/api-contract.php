@@ -21,9 +21,9 @@ use mindstellar\api\ratelimit\RatePolicy;
 use mindstellar\api\Request;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\Scopes;
 
 const API_SURFACE_FIXTURE = __DIR__ . '/fixtures/api-surface.txt';
 const API_HELPERS         = 'oc-includes/osclass/helpers/hApi.php';
@@ -112,7 +112,7 @@ check('ViewContext is built by core, not by plugins', !str_contains($surface, 'V
 foreach (['RouteSpec::public key()', 'RouteSpec::public path()', 'RouteSpec::public method()', 'RouteSpec::public auth()', 'RouteSpec::public scope()', 'RouteSpec::public plugin()', 'Response::public status()', 'Response::public body()', 'Response::public withBodyMember('] as $handed) {
     check('hooks hand plugins ' . $handed . ', so it is @api', str_contains($surface, $handed));
 }
-check('Credential, which every handler reads, is pinned', str_contains($surface, 'mindstellar\\apiaccess\\Credential::public has(string $scope): bool'));
+check('Credential, which every handler reads, is pinned', str_contains($surface, 'mindstellar\\apikey\\Credential::public has(string $scope): bool'));
 foreach (['osc_api_register_route', 'osc_api_register_schema', 'osc_api_register_field', 'osc_api_url', 'osc_webhook_emit'] as $helper) {
     check($helper . '() is pinned with its signature', str_contains($surface, 'function ' . $helper . '('));
 }

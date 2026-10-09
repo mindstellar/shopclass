@@ -164,7 +164,7 @@ $api = new class () implements \mindstellar\api\serializer\Links {
         return '';
     }
 };
-$whole = \mindstellar\api\read\Page::whole(['a', 'b'], $api, new \mindstellar\api\ApiCall(new Request('GET', 'v1/currencies', ['api_key' => 'k', 'x' => '1'], [], '', null), \mindstellar\apiaccess\Credential::anonymous()));
+$whole = \mindstellar\api\read\Page::whole(['a', 'b'], $api, new \mindstellar\api\ApiCall(new Request('GET', 'v1/currencies', ['api_key' => 'k', 'x' => '1'], [], '', null), \mindstellar\apikey\Credential::anonymous()));
 pin('a whole list has the page envelope', '{"data":["a","b"],"meta":{"total":2,"limit":2},"links":{"self":"https://x.test/api/v1/currencies?x=1","next":null}}', $whole->prepare('GET')['body']);
 
 $cookie = (new Response(200, ['data' => []], ['Set-Cookie' => 'a=b', 'X-Test' => "1\r\nSet-Cookie: c=d"]))->withHeader('set-cookie', 'e=f');

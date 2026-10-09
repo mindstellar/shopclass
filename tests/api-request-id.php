@@ -24,12 +24,12 @@ use mindstellar\api\RequestId;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialStore;
-use mindstellar\apiaccess\Scopes;
-use mindstellar\apiaccess\StoredKey;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialStore;
+use mindstellar\apikey\Scopes;
+use mindstellar\apikey\StoredKey;
 use mindstellar\utility\SystemClock;
 
 if (!function_exists('osc_users_enabled')) {

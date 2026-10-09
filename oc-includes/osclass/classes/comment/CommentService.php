@@ -16,14 +16,14 @@ declare(strict_types=1);
 namespace mindstellar\comment;
 
 use mindstellar\auth\Actor;
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\ViewScope;
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\ForbiddenException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
 
 /**
  * Posting and deleting a comment on a listing, for the comment form, the API and plugins

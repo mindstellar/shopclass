@@ -30,9 +30,9 @@ require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hHttpCache.php'
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/utils.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hKv.php';
 
+use mindstellar\exception\ConflictException;
 use mindstellar\language\LanguageService;
 use mindstellar\language\LocaleStore;
-use mindstellar\validation\ConflictException;
 
 if (!function_exists('_m')) {
     function _m($text)

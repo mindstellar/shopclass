@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\auth;
 
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiSettings;
 use mindstellar\security\AddressBucket;
 use mindstellar\security\RateLimit;
 use mindstellar\utility\Clock;

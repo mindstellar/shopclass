@@ -115,7 +115,7 @@ $web = [
         $asUser($userId);
         try {
             (new \mindstellar\comment\CommentService())->post($itemId, ['title' => '', 'body' => $body], new \mindstellar\auth\Actor($userId, null, '192.0.2.70'));
-        } catch (\mindstellar\validation\RefusedException $e) {
+        } catch (\mindstellar\exception\RefusedException $e) {
             return false;
         }
 
@@ -126,7 +126,7 @@ $web = [
         $asUser($userId);
         try {
             (new \mindstellar\comment\CommentService())->delete($commentId, new \mindstellar\auth\Actor($userId, null, '192.0.2.70'));
-        } catch (\mindstellar\validation\RefusedException $e) {
+        } catch (\mindstellar\exception\RefusedException $e) {
             return false;
         }
 
@@ -137,7 +137,7 @@ $web = [
         $asUser($userId);
         try {
             (new \mindstellar\user\AccountService())->update($userId, Params::withRequest($form, static fn (): array => \mindstellar\user\AccountInput::read(false)), \mindstellar\auth\Actor::user($userId, '192.0.2.70'));
-        } catch (\mindstellar\validation\RefusedException $e) {
+        } catch (\mindstellar\exception\RefusedException $e) {
             return false;
         }
 
@@ -148,7 +148,7 @@ $web = [
         $asUser($userId);
         try {
             return (new \mindstellar\user\AccountService())->requestEmailChange($userId, $new, \mindstellar\auth\Actor::user($userId, '192.0.2.70'));
-        } catch (\mindstellar\validation\RefusedException $e) {
+        } catch (\mindstellar\exception\RefusedException $e) {
             return false;
         }
     },
@@ -157,7 +157,7 @@ $web = [
         $asUser($userId);
         try {
             (new \mindstellar\user\AccountService())->changePassword($user($userId), $current, $new, $new);
-        } catch (\mindstellar\validation\RefusedException $e) {
+        } catch (\mindstellar\exception\RefusedException $e) {
             return false;
         }
 
@@ -168,7 +168,7 @@ $web = [
         $form = \mindstellar\api\write\AccountBody::admin($user($userId), $patch);
         try {
             (new \mindstellar\user\AccountService())->update($userId, $form, \mindstellar\auth\Actor::admin($adminId));
-        } catch (\mindstellar\validation\RefusedException $e) {
+        } catch (\mindstellar\exception\RefusedException $e) {
             return false;
         }
 
@@ -182,7 +182,7 @@ $web = [
     'editComment' => static function (int $id, string $body, string $email): bool {
         try {
             \mindstellar\moderation\CommentModeration::make()->edit($id, ['title' => '', 'body' => $body, 'author_name' => 'Tom', 'author_email' => $email]);
-        } catch (\mindstellar\validation\InvalidException $e) {
+        } catch (\mindstellar\exception\InvalidException $e) {
             return false;
         }
 
@@ -198,7 +198,7 @@ $web = [
     'deleteCurrency' => static function (string $code): bool {
         try {
             \mindstellar\currency\CurrencyService::make()->delete($code);
-        } catch (\mindstellar\validation\RefusedException $e) {
+        } catch (\mindstellar\exception\RefusedException $e) {
             return false;
         }
 
@@ -271,7 +271,7 @@ $admin->query("DELETE FROM {$p}t_ban_rule");
 $guest = static fn (): string => (string) (static function () {
     try {
         (new \mindstellar\comment\CommentService())->post($GLOBALS['sueCar'], ['author_name' => 'Ann', 'author_email' => 'ann@example.test', 'body' => 'Guest'], \mindstellar\auth\Actor::guest('192.0.2.80'));
-    } catch (\mindstellar\validation\RefusedException $e) {
+    } catch (\mindstellar\exception\RefusedException $e) {
         return get_class($e);
     }
 
@@ -282,7 +282,7 @@ pin('a guest comments under the name sent', ['saved', 'Ann'], [$guest(), $admin-
 for ($i = 1; $i < \mindstellar\comment\CommentPolicy::PER_HOUR; $i++) {
     \mindstellar\security\RateLimit::hit('comment_post', 'ip:192.0.2.80', 1000, 3600);
 }
-pin('past the hourly cap a guest is refused too', 'mindstellar\\validation\\BlockedException', $guest());
+pin('past the hourly cap a guest is refused too', 'mindstellar\\exception\\BlockedException', $guest());
 for ($i = 0; $i < \mindstellar\comment\CommentPolicy::PER_HOUR; $i++) {
     \mindstellar\comment\CommentPolicy::tooMany(\mindstellar\auth\Actor::guest('2001:db8:1:2::' . dechex($i + 1)));
 }
@@ -362,7 +362,7 @@ pin('the API fires the same, in the same order', $webDrop, $apiDrop);
 $self = static function (string $password) use ($cat): string {
     try {
         (new \mindstellar\user\AccountService())->delete($cat, \mindstellar\auth\Actor::user($cat, '192.0.2.70'), $password);
-    } catch (\mindstellar\validation\InvalidException $e) {
+    } catch (\mindstellar\exception\InvalidException $e) {
         return $e->reason();
     }
 
@@ -421,7 +421,7 @@ foreach (['enabled_user_registration' => '1', 'enabled_user_validation' => '0', 
     Preference::getInstance()->set($k, $v);
 }
 osc_reset_preferences();
-$signUp = api_admin_caller(static fn (): \mindstellar\apiaccess\ApiSettings => new \mindstellar\apiaccess\ApiSettings(enabled: true, registration: true));
+$signUp = api_admin_caller(static fn (): \mindstellar\apikey\ApiSettings => new \mindstellar\apikey\ApiSettings(enabled: true, registration: true));
 // CWebRegister 'register_post'; AccountService::register() fires before_user_register.
 $webRegister = static function (array $form) use ($asUser) {
     $asUser(null);
@@ -509,7 +509,7 @@ harness_section('refusal reasons');
 $reason = static function (callable $act): string {
     try {
         $act();
-    } catch (\mindstellar\validation\ForbiddenException $e) {
+    } catch (\mindstellar\exception\ForbiddenException $e) {
         return $e->reason();
     }
 

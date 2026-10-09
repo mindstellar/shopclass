@@ -46,6 +46,7 @@ Tests hold these rules:
 - `tests/db-errors-not-swallowed.php`: new code does not hide a database error.
 - `tests/controller-actions.php` and `tests/controller-method-size.php`: each action has its own short method.
 - `tests/strict-types.php` and `tests/classmap-current.php`: new classes are strict and loadable.
+- `tests/classes-folder-map.php`: every class folder is in the folder map below.
 - `tests/hook-contract.php` and `tests/api-contract.php`: hook names and arguments, and the API surface plugins use.
 
 ## A request, start to finish
@@ -71,7 +72,7 @@ Admin pages take the same path from `oc-admin/index.php`, with `PageDispatcher::
 A REST API request:
 
 1. The `api` page goes to `CWebApi`, which hands the request to
-   `mindstellar\apiaccess\ApiAccess::serve()`.
+   `mindstellar\apikey\ApiAccess::serve()`.
 2. `mindstellar\api\Kernel::handle()` finds the route, checks the key, scope, rate limit and
    body, then calls the route's controller, such as `ListingWritesController::create()`.
 3. The controller turns the body into the same data (`ListingWriter` → `ListingInput::fromArray()`)
@@ -86,23 +87,56 @@ bridges exist for hooks that still read global state: `Params::withRequest()` ru
 other request values, and `ViewScope::withItem()` runs a hook with the listing the
 `osc_item_*()` helpers read.
 
-## Modules
+## Folders
 
-Each module lives under `mindstellar\` in `oc-includes/osclass/classes/<module>/`.
+Every class lives in `oc-includes/osclass/classes/`. A folder is a module: its classes are
+in the `mindstellar\<folder>` namespace, except the old classes with no namespace, which
+plugins use (`controller`, `model`, `form`, `actions`, `datatables` and the files in the root).
+`tests/classes-folder-map.php` fails when a folder is missing from this table.
 
-| Module | Holds | State |
-|---|---|---|
-| `auth` | `SignIn`, `SignOut`, `Reauth`, `AuthStamp`, `AdminPassword`, `Actor` | Done |
-| `user` | `AccountService` (sign-up and its confirmation link, profile, e-mail change, password, account state, delete), `AccountInput`, `Usernames` | Done |
-| `listing` | `ListingService`, `PhotoService`, `ListingMailService` (contact the seller, share with a friend), `ListingInput`, `ListingPolicy`, `ListingStatus`, `ListingValidator`, `ListingStats` | Done |
-| `comment` | `CommentService`, `CommentPolicy`, `SavedComment` | Done |
-| `moderation` | `ListingModeration`, `CommentModeration`: what an admin does to a listing's or comment's status | Done |
-| `category` | `CategoryService` | Done |
-| `currency` | `CurrencyService` | Done |
-| `fields` | `FieldService`, `FieldSlug`, `FieldTypeRegistry`: custom fields and their types | Done |
-| `location` | `LocationService`, locations admin and import | Done |
-| `validation` | The refusals every service throws (below) | Done |
-| `api` | The REST API: HTTP only, no rules of its own | Done |
+| Folder | Holds |
+|---|---|
+| `actions` | `ItemActions`, `UserActions`: old wrappers kept for plugins; each calls a service |
+| `admin` | Admin panel code: ajax actions (`ajax/`), settings screens (`form/`), shared form and editor parts (`ui/`), stats, system checks |
+| `api` | The REST API: HTTP only, no rules of its own. Core never uses it, so it can be switched off |
+| `apikey` | API keys, sign-in tokens and scopes. Core manages them (settings, CLI, account pages) even with the API off, so they are not under `api` |
+| `auth` | Signing in and out, re-asking for a password, and `Actor`: who is acting |
+| `backup` | Making, storing and restoring backups |
+| `base` | Abstract base classes and traits other classes extend: `Model`, `Registry`, `SettingsScreen`, `ActionMap` |
+| `billing` | Packages, orders, entitlements, payment gateways and receipts |
+| `cache` | The object cache, its drivers and page-cache purges |
+| `category` | Categories: `CategoryService`, `CategoryStore`, `CategoryQuery` |
+| `cli` | `oc-cli.php` commands |
+| `comment` | Listing comments: posting, rules and reads |
+| `controller` | Web and admin page controllers (`CWeb*`, `admin/CAdmin*`) and their base classes |
+| `currency` | Currencies and `Money` |
+| `database` | The database connection, `Db` and `QueryBuilder`, the legacy `DAO`, schema checks |
+| `datatables` | The admin list tables |
+| `exception` | The refusals every service throws (below) |
+| `fields` | Custom fields and their types |
+| `form` | Old form renderers kept for themes, `FormBuilder`, and the form builder (`builder/`) |
+| `job` | The background job queue |
+| `language` | Installing and storing languages |
+| `listing` | Listings and their photos: posting, editing, rules, reads and mail |
+| `location` | Countries, regions, cities: reads, admin and import |
+| `logger` | The admin log and error logging |
+| `market` | The plugin and theme market: catalogue, install, compatibility |
+| `migration` | Running the database migrations |
+| `model` | Tables several modules use: the old `Item`, `User`… classes and new `mindstellar\model` stores |
+| `moderation` | What an admin does to a listing's or comment's status, and the keyword block list |
+| `pages` | Static pages and page templates |
+| `privacy` | Where a person's data lives, so a copy can be handed back |
+| `routing` | URLs: routes, the front controller and reserved slugs |
+| `search` | Search and saved-search alerts; the SQL is built in `query/` |
+| `security` | CSRF, rate limits, captcha, ban rules, two-factor sign-in, signed links |
+| `settings` | The registry plugins add settings pages to, and image fields on those pages |
+| `storage` | File storage (local, S3), uploads and the media library |
+| `theme` | Themes and their views |
+| `upgrade` | Core, plugin and theme updates |
+| `user` | User accounts: sign-up, profile, password, delete |
+| `utility` | Small tools with no module: escaping, dates, files, the clock |
+| `webhook` | Outgoing webhooks: endpoints, delivery and retries |
+| `widgets` | Widget types plugins register, and saved widgets |
 
 ### Names
 
@@ -195,14 +229,14 @@ Pick the read by what you need:
 
 ## Refusals
 
-A service refuses with one of `mindstellar\validation\{InvalidException,
+A service refuses with one of `mindstellar\exception\{InvalidException,
 NotFoundException, ConflictException, ForbiddenException, BlockedException}`, all subclasses of `RefusedException`. A web controller shows the message; the API turns
 each into its problem response (`422`, `404`, `409`, `403`, `429`). `BlockedException` is too many
 wrong passwords, or too many writes in an hour, such as comments.
 
 ```php
 use mindstellar\listing\ListingService;
-use mindstellar\validation\RefusedException;
+use mindstellar\exception\RefusedException;
 
 try {
     $saved = (new ListingService())->create($data, $actor);

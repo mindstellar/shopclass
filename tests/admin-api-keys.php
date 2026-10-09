@@ -156,10 +156,10 @@ class AdminSecBaseModel
 
 require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php';
 
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\KeyOwner;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\KeyOwner;
+use mindstellar\apikey\Scopes;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 
@@ -291,9 +291,9 @@ check('starts with scp_', str_starts_with($public, 'scp_'));
 pin('only gets the public read scope, whatever was ticked', array(Scopes::PUBLIC_READ), $keys()->check($public)->credential()?->scopes());
 
 try {
-    \mindstellar\api\ApiServices::site()->access()->keyService()->create(\mindstellar\apiaccess\KeyOwner::admin(1), 'Odd', 'key', array('<b>x</b>'));
+    \mindstellar\api\ApiServices::site()->access()->keyService()->create(\mindstellar\apikey\KeyOwner::admin(1), 'Odd', 'key', array('<b>x</b>'));
     $refusal = null;
-} catch (\mindstellar\validation\RefusedException $e) {
+} catch (\mindstellar\exception\RefusedException $e) {
     $refusal = $e->getMessage();
 }
 pin('...while the refusal itself is plain text', 'This key cannot hold: <b>x</b>', $refusal);
@@ -358,7 +358,7 @@ harness_section('every setting on the screen is seeded');
 $migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0060_api_credential.php';
 $seeded    = array();
 foreach ((new ReflectionClassConstant($migration, 'PREFERENCES'))->getValue() as $name => $type) {
-    $seeded[$name] = array(mindstellar\apiaccess\ApiSettings::seedValue($name), $type);
+    $seeded[$name] = array(mindstellar\apikey\ApiSettings::seedValue($name), $type);
 }
 preg_match_all("~\\('api', '([a-z_]+)', '([^']*)', '([A-Z]+)'\\)~", (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/basic_data.sql'), $rows, PREG_SET_ORDER);
 $installed = array();
@@ -366,7 +366,7 @@ foreach ($rows as $row) {
     $installed[$row[1]] = array($row[2], $row[3]);
 }
 pin('the migration and the installer seed the same rows', $seeded, $installed);
-$defaults = array_keys(mindstellar\apiaccess\ApiSettings::DEFAULTS);
+$defaults = array_keys(mindstellar\apikey\ApiSettings::DEFAULTS);
 $names    = array_keys($seeded);
 sort($defaults);
 sort($names);
@@ -374,8 +374,8 @@ pin('the migration seeds every ApiSettings default', $defaults, $names);
 foreach (mindstellar\settings\SettingsPageRegistry::getInstance()->fields(mindstellar\admin\form\ApiSettingsScreen::register()) as $name => $field) {
     $default = is_bool($field['default']) ? (string) (int) $field['default'] : (string) $field['default'];
     pin($name . ' is seeded with the form default', $default, $seeded[$name][0] ?? null);
-    if (array_key_exists($name, mindstellar\apiaccess\ApiSettings::DEFAULTS)) {
-        pin('...which is the ApiSettings default', mindstellar\apiaccess\ApiSettings::seedValue($name), $default);
+    if (array_key_exists($name, mindstellar\apikey\ApiSettings::DEFAULTS)) {
+        pin('...which is the ApiSettings default', mindstellar\apikey\ApiSettings::seedValue($name), $default);
     }
 }
 

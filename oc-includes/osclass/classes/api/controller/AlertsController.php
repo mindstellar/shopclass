@@ -20,7 +20,7 @@ use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AlertSerializer;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\search\AlertEnvelope;
 use mindstellar\search\UserAlerts;
 

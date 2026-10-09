@@ -33,9 +33,9 @@ use mindstellar\auth\AdminPassword;
 use mindstellar\auth\AuthStamp;
 use mindstellar\auth\SignIn;
 use mindstellar\auth\SignOut;
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\InvalidException;
 use mindstellar\security\LoginThrottle;
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\InvalidException;
 
 $admin = scratchdb_session('osc_models_usersignin');
 if (!defined('PLUGINS_PATH')) {

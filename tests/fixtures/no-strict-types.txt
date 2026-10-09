@@ -80,9 +80,9 @@ oc-includes/osclass/classes/database/StrictRefusals.php
 oc-includes/osclass/classes/database/TablePrefix.php
 oc-includes/osclass/classes/fields/FieldTypeRegistry.php
 oc-includes/osclass/classes/form/admin/Item.php
-oc-includes/osclass/classes/form/base/FormBuilder.php
-oc-includes/osclass/classes/form/base/FormInputs.php
-oc-includes/osclass/classes/form/base/InputInterface.php
+oc-includes/osclass/classes/form/FormBuilder.php
+oc-includes/osclass/classes/form/FormInputs.php
+oc-includes/osclass/classes/form/InputInterface.php
 oc-includes/osclass/classes/form/builder/FieldValidator.php
 oc-includes/osclass/classes/form/builder/FormContextRegistry.php
 oc-includes/osclass/classes/form/builder/FormService.php

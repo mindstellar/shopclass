@@ -22,7 +22,7 @@ use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\api\write\OwnedListings;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\moderation\StatusFlags;
 use mindstellar\search\query\CategoryFilter;

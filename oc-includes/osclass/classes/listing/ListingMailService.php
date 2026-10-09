@@ -12,12 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\listing;
 
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\InvalidException;
 use mindstellar\security\ActionThrottle;
 use mindstellar\security\MessageGuard;
 use mindstellar\security\MessageHold;
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\InvalidException;
 
 /**
  * Mail a visitor sends about a listing: an enquiry to its seller, or the listing shared with

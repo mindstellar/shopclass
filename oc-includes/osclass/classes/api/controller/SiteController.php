@@ -18,7 +18,7 @@ use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
-use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apikey\ApiSettings;
 
 /**
  * `GET /`: what the site is, what the API allows on it and where its collections are.

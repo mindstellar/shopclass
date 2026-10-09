@@ -12,16 +12,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\form\base\FormInputs;
+use mindstellar\form\FormInputs;
 
 /**
  * Class Form
  *
  * The base every core form class still extends. New code should build on
- * \mindstellar\form\base\FormInputs or \mindstellar\form\base\FormBuilder directly;
+ * \mindstellar\form\FormInputs or \mindstellar\form\FormBuilder directly;
  * this class is not going away while the twelve core forms rest on it.
  *
- * @see \mindstellar\form\base\FormInputs
+ * @see \mindstellar\form\FormInputs
  */
 class Form extends FormInputs
 {

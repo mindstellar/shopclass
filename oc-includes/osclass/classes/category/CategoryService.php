@@ -16,12 +16,12 @@ namespace mindstellar\category;
 use Category;
 use Item;
 use mindstellar\database\Db;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
 use mindstellar\job\CategoryJobs;
 use mindstellar\routing\ReservedSlugs;
 use mindstellar\utility\DeferredMail;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
 
 /**
  * Category writes the categories screen and the API share, each firing the screen's hooks:

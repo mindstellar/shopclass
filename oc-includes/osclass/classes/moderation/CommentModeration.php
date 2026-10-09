@@ -15,10 +15,10 @@ namespace mindstellar\moderation;
 
 use Item;
 use ItemComment;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\ViewScope;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
 
 /**
  * What an admin does to a comment: approve, hold, block, unblock, edit, delete. Each fires

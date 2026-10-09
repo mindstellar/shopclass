@@ -112,10 +112,10 @@ use mindstellar\api\auth\UserRows;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\api\serializer\Links;
-use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\Scopes;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\Scopes;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 

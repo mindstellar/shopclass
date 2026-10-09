@@ -139,7 +139,7 @@ pin('route[] array is 404', '404', dispatch_route(array('cron_hourly')));
 pin('route[] array fired no route hook', array(), fired_route_hooks());
 
 harness_section('wiring');
-$base = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/base/abstract/BaseModel.php');
+$base = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/BaseModel.php');
 check('the real BaseModel constructor fires init', strpos($base, "osc_run_hook('init');") !== false);
 
 exit(harness_result());

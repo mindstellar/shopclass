@@ -21,8 +21,8 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
+use mindstellar\exception\InvalidException;
 use mindstellar\moderation\CommentModeration;
-use mindstellar\validation\InvalidException;
 
 class CAdminItemComments extends AdminSecBaseModel
 {

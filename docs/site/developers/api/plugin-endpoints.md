@@ -340,7 +340,7 @@ API requests do not load the active theme's `functions.php`, so hooks a theme ad
 `api_response` does not run when an `ProblemException` was thrown. A PUT, PATCH or DELETE that sends `If-Match`, on a path whose GET keeps no stored version, also runs it once for that GET, to compare ETags; check `$request->method()` if that matters to you. Plugin routes keep no stored version.
 
 ```php
-use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apikey\CredentialKind;
 
 osc_add_hook('api_request_before', function ($request, $route, $credential) {
     if ($credential->kind() === CredentialKind::PUBLIC && $request->queryString('q') === 'scrape') {

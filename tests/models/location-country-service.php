@@ -37,9 +37,9 @@ require_once __DIR__ . '/../lib/action-standins.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
 
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 use mindstellar\location\LocationService;
-use mindstellar\validation\NotFoundException;
-use mindstellar\validation\RefusedException;
 
 $p       = DB_TABLE_PREFIX;
 $service = new LocationService();

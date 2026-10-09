@@ -19,7 +19,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
-use mindstellar\apiaccess\Credential;
+use mindstellar\apikey\Credential;
 use mindstellar\user\UserStore;
 
 /**

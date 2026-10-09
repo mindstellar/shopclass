@@ -977,7 +977,7 @@ function osc_resource_owner_title($resource)
             return '';
         }
         try {
-            $rows = \mindstellar\media\MediaQuery::descriptions($type, $id);
+            $rows = \mindstellar\storage\MediaQuery::descriptions($type, $id);
         } catch (\Throwable $e) {
             return '';
         }

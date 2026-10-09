@@ -16,9 +16,9 @@ use Currency;
 use mindstellar\admin\AdminText;
 use mindstellar\cache\CacheGroup;
 use mindstellar\database\Db;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
 
 /**
  * Currency reads and writes for the currencies screen and the API: the enabled list, add one,

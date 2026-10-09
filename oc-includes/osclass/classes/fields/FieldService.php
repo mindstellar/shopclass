@@ -15,8 +15,8 @@ namespace mindstellar\fields;
 use Field;
 use mindstellar\admin\AdminText;
 use mindstellar\database\Db;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
 
 /**
  * Custom field writes for the field screen and the API: add, edit and delete a field, with

@@ -13,9 +13,9 @@ declare(strict_types=1);
 namespace mindstellar\api\http;
 
 use mindstellar\api\Request;
-use mindstellar\apiaccess\Credential;
-use mindstellar\apiaccess\CredentialKind;
-use mindstellar\apiaccess\PageTokens;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\PageTokens;
 
 /**
  * Caching headers for a successful answer. Public answers may sit in a shared cache, key answers
