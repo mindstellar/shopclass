@@ -37,10 +37,11 @@ $cache      = (string) file_get_contents($theme . 'tools/system-info/cache.php')
 $spamView   = (string) file_get_contents($theme . 'settings/spamNbots.php');
 $spamCtl    = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php');
 
-/** The body of a case label up to the next case, or of a private method. */
+/** The method an action runs, or a private method by its name. */
 $body = static function (string $name) use ($controller): string {
-    if (preg_match("/case \\(?'" . preg_quote($name, '/') . "'\\)?:(.*?)(?=\\n\\s*case |\\n\\s*default:)/s", $controller, $m)) {
-        return $m[1];
+    $action = harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $name);
+    if ($action !== '') {
+        return $action;
     }
     if (preg_match('/private (?:static )?function ' . preg_quote($name, '/') . '\(.*?\n    \}\n/s', $controller, $m)) {
         return $m[0];
@@ -75,15 +76,17 @@ harness_section('Old URLs');
 
 $routes = array('database', 'system_info', 'system-info', 'upgrade', 'backup', 'import', 'import_post', 'jobs', 'cache', 'jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear');
 foreach ($routes as $action) {
-    check("the controller routes action=$action", (bool) preg_match("/case \\(?'" . preg_quote($action, '/') . "'\\)?:/", $controller));
+    check("the controller routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
-check('action=database redirects to the Database tab', (bool) preg_match("/case 'database':\\s*(?:\\/\\/[^\\n]*\\s*)?\\\$this->redirectTo\\(self::databaseUrl\\(\\)\\);/", $controller));
+check('action=database redirects to the Database tab', strpos($body('database'), '$this->redirectTo(self::databaseUrl());') !== false);
 check('...which is System info > Database', strpos($body('databaseUrl'), "self::movedTo('database')") !== false);
 pin('...at this address', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
-check('no action lands on System info', (bool) preg_match("/case 'system-info':\\s*default:\\s*\\\$this->systemInfoPage\\(\\);/", $controller));
+check('no action lands on System info', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', 'doModel'), "?? 'systemInfo'") !== false
+    && strpos($body('system-info'), '$this->systemInfoPage();') !== false);
 check('#backup and #restore on the old Database URL follow to Backup and restore', strpos($shell, "location.hash === '#backup' || location.hash === '#restore'") !== false);
 check('the old Database page file is gone', !is_file($theme . 'tools/database.php'));
-check('action=jobs and action=cache redirect through movedTo', (bool) preg_match("/case \\(?'cache'\\)?:\\s*case 'jobs':\\s*(?:\\/\\/[^\\n]*\\s*)?\\\$this->redirectTo\\(osc_admin_base_url\\(true\\) \\. self::movedTo\\(\\\$this->action\\)\\);/", $controller));
+check('action=jobs and action=cache redirect through movedTo', $body('jobs') === $body('cache')
+    && strpos($body('jobs'), '$this->redirectTo(osc_admin_base_url(true) . self::movedTo($this->action));') !== false);
 pin('...to the Jobs tab', '?page=tools&action=system-info&tab=jobs', CAdminTools::movedTo('jobs'));
 pin('...and the Cache tab', '?page=tools&action=system-info&tab=cache', CAdminTools::movedTo('cache'));
 check('the old Background jobs and Cache page files are gone', !is_file($theme . 'tools/jobs.php') && !is_file($theme . 'tools/cache.php'));

@@ -341,6 +341,24 @@ if (!function_exists('harness_method_source')) {
     }
 }
 
+if (!function_exists('harness_action_source')) {
+    /**
+     * The source of the method a controller's ACTIONS map gives an action; '' when the map
+     * does not name it.
+     */
+    function harness_action_source(string $file, string $action): string
+    {
+        $source = (string) file_get_contents($file);
+        if (!preg_match('/const ACTIONS = array\((.*?)\);/s', $source, $map)
+            || !preg_match("/'" . preg_quote($action, '/') . "'\\s*=>\\s*'(\\w+)'/", $map[1], $method)
+        ) {
+            return '';
+        }
+
+        return harness_method_source($file, $method[1]);
+    }
+}
+
 if (!function_exists('harness_questions')) {
     /**
      * Read the session's cumulative statement counter off the singleton handle.

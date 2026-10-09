@@ -76,7 +76,7 @@ pin('upgrade keeps its own screen', null, CAdminTools::movedTo('upgrade'));
 pin('database lands on the System info Database tab', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
 
 foreach (array('upgrade', 'database', 'backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post') as $action) {
-    check("the controller still routes action=$action", (bool) preg_match("/case \\(?'" . preg_quote($action, '/') . "'\\)?:/", $controller));
+    check("the controller still routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
 
 $menu = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php');

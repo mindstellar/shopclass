@@ -74,6 +74,14 @@ $controllers = array(
     ), 'admins'),
     'CAdminPages' => array('admin/CAdminPages.php', array('add', 'add_post', 'delete', 'edit', 'edit_post'), 'pages'),
     'CWebContact' => array('CWebContact.php', array('confirm', 'confirm_post', 'contact_post', 'report', 'report_post'), 'contactForm'),
+    'CAdminTools' => array('admin/CAdminTools.php', array(
+        'backup', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'backup_cancel', 'backup_delete',
+        'backup_dismiss', 'backup_download', 'backup_post', 'backup_reopen', 'backup_restore', 'backup_start',
+        'backup_upload', 'cache', 'cache_clear', 'category', 'category_post', 'cleanup', 'cleanup_post', 'cleanup_run',
+        'database', 'import', 'import_post', 'jobs', 'jobs_forget', 'jobs_retry', 'jobs_run', 'locations',
+        'locations_post', 'logs', 'logs_clear', 'logs_settings_post', 'maintenance', 'system-info', 'system_info',
+        'upgrade', 'version',
+    ), 'systemInfo'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {

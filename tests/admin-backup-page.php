@@ -36,10 +36,11 @@ $sysinfo    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tool
 $upgrade    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/upgrade.php');
 $menu       = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php');
 
-/** The body of a case label up to the next case, or of a private method. */
+/** The method an action runs, or a private method by its name. */
 $body = static function (string $name) use ($controller): string {
-    if (preg_match("/case \\('" . preg_quote($name, '/') . "'\\):(.*?)(?=\\n\\s*case |\\n\\s*default:)/s", $controller, $m)) {
-        return $m[1];
+    $action = harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $name);
+    if ($action !== '') {
+        return $action;
     }
     if (preg_match('/private function ' . preg_quote($name, '/') . '\(.*?\n    \}\n/s', $controller, $m)) {
         return $m[0];
@@ -52,7 +53,7 @@ harness_section('Old URLs');
 
 foreach (array('backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post',
     'backup_start', 'backup_cancel', 'backup_download', 'backup_delete', 'backup_restore', 'backup_upload', 'backup_dismiss', 'backup_reopen') as $action) {
-    check("the controller routes action=$action", (bool) preg_match("/case \\('" . preg_quote($action, '/') . "'\\):/", $controller));
+    check("the controller routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
 pin('import lands on the restore part of the new page', '?page=tools&action=backup#restore', CAdminTools::movedTo('import'));
 pin('backup has its own page again', null, CAdminTools::movedTo('backup'));
@@ -180,7 +181,7 @@ check('backup_restore checks the password before it starts anything', $verify !=
 check('...with the posted password and code', strpos($restore, "Params::getParamString('password', false, false)") !== false
     && strpos($restore, "Params::getParamString('code')") !== false);
 check('...and a refusal leaves before startRestore', (bool) preg_match(
-    '/if \(\$reauth !== \'\'\) \{[^}]*redirectTo\([^}]*break;\s*\}/s',
+    '/if \(\$reauth !== \'\'\) \{[^}]*redirectTo\([^}]*return;\s*\}/s',
     substr($restore, 0, (int) $start)
 ));
 check('an uploaded file reaches a restore only through backup_restore', strpos($body('backupUpload'), 'startRestore') === false
