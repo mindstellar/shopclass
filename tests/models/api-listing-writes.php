@@ -418,6 +418,8 @@ $r = $call('PATCH', 'listings/' . $heldId, array('price' => '1400'), $sueToken);
 pin('an edit held for the admin\'s approval disables the listing and warns that it is pending', array(200, 'disabled', 'listing_pending'), array($r->status(), $r->body()['data']['status'] ?? null, $r->body()['warnings'][0]['code'] ?? null));
 Preference::getInstance()->set('moderate_admin_edit', '0');
 osc_reset_preferences();
+$r = $call('PATCH', 'listings/' . $pendingId, array('price' => '950'), $sueToken);
+pin('an edit of a listing still awaiting activation stays pending and warns so', array(200, 'pending', 'listing_pending'), array($r->status(), $r->body()['data']['status'] ?? null, $r->body()['warnings'][0]['code'] ?? null));
 
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
 osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
@@ -769,8 +771,20 @@ pin('...and the API answers only that', 'the address is not one the site downloa
 $admin->query("DELETE FROM {$p}t_rate_counter");
 $fetchBucket = (new RatePolicy(new ApiSettings(true, photoUrls: true)))->photoFetch($sue);
 $realLimiter = RateLimiter::sampled(new SystemClock());
-$qFetchCount = harness_query_count(static fn () => $realLimiter->enforceN($fetchBucket, 3, 'Too many.'));
-pin('three URLs are counted in the fetch limit with one write', array(1, 3), array($qFetchCount, \mindstellar\security\RateLimit::count('api_photo_fetch', (string) $sue, 3600)));
+$qFetchCount = harness_query_count(static fn () => $realLimiter->hit($fetchBucket, true, 3));
+pin('three fetches are counted in the fetch limit with one write', array(1, 3), array($qFetchCount, \mindstellar\security\RateLimit::count('api_photo_fetch', (string) $sue, 3600)));
+$admin->query("DELETE FROM {$p}t_rate_counter");
+$settings              = new ApiSettings(true, userKeys: true, photoUrls: true);
+$GLOBALS['lw_limiter'] = $realLimiter;
+$threeUrls             = array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg', 'https://photos.example.com/c.jpg');
+$r = $call('POST', 'listings', $listing(array('title' => 'Three by URL', 'photo_urls' => $threeUrls)), $sueToken);
+pin('a listing posted with three photo URLs counts three fetches, not one', array(201, 3, 3), array(
+    $r->status(), count($r->body()['data']['photos'] ?? array()), \mindstellar\security\RateLimit::count('api_photo_fetch', (string) $sue, 3600),
+));
+\mindstellar\security\RateLimit::add('api_photo_fetch', (string) $sue, RatePolicy::PHOTO_FETCHES_PER_HOUR - 5, 3600);
+pin('three photo URLs with two fetches left in the hour are 429', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'One too many by URL', 'photo_urls' => $threeUrls)), $sueToken)));
+unset($GLOBALS['lw_limiter']);
+$settings = new ApiSettings(true, userKeys: true);
 $admin->query("DELETE FROM {$p}t_rate_counter");
 
 harness_section('queries');

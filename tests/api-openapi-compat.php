@@ -456,6 +456,17 @@ pin('a request type newly added breaks', ['GET x body: now has a type'], oa_brea
 pin('a changed request pattern breaks', ['GET x body.a: pattern "^x" became "^y"'], oa_breaks($bodyA, $with($bodyA, static function (array &$o): void {
     $o['body']['content']['application/json']['properties']['a']['pattern'] = '^y';
 })));
+pin('a request maximum lowered or minItems raised breaks', ['GET x body.a: maximum 10 became 5', 'GET x body.a: minItems 1 became 2'], oa_breaks(
+    $req(static function (array &$a): void {
+        $a += ['maximum' => 10, 'minItems' => 1];
+    }),
+    $req(static function (array &$a): void {
+        $a += ['maximum' => 5, 'minItems' => 2];
+    })
+));
+pin('a request const newly added breaks', ['GET x body.a: now has an enum'], oa_breaks($body, $req(static function (array &$a): void {
+    $a['const'] = 'x';
+})));
 pin('a request object newly closed breaks', ['GET x body: unknown members are now refused'], oa_breaks($body, $with($body, static function (array &$o): void {
     $o['body']['content']['application/json']['additionalProperties'] = false;
 })));
@@ -483,6 +494,15 @@ pin('a response alternative added breaks; reordered passes', ['GET x 200.status.
 pin('a response alternative dropped passes', [], oa_breaks($resA, $with($resA, static function (array &$o): void {
     $o['responses']['200']['application/json']['properties']['status']['oneOf'] = [['type' => 'string']];
 })));
+pin('a response const dropped breaks', ['GET x 200.status: no longer has an enum'], oa_breaks(
+    $res(static function (array &$s): void {
+        unset($s['enum']);
+        $s['const'] = 'a';
+    }),
+    $res(static function (array &$s): void {
+        unset($s['enum']);
+    })
+));
 $headed = $with($base, static function (array &$o): void {
     $o['headers'] = ['200' => ['etag' => ['type' => 'string']]];
 });

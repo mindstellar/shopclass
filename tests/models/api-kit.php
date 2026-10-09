@@ -188,4 +188,21 @@ pin('its owner sees it', array($pending, $first), $ids($owner, array($pending, $
 pin('repeats and bad ids are dropped', array($first), $ids($public, array($first, $first, 0, -3)));
 pin('no ids, no query', array(), $ids($public, array()));
 
+harness_section('listingContext');
+// The context for a query, or the status of the problem it answers.
+$contextFor = static function (array $query) use ($kit, $public) {
+    try {
+        return $kit->listingContext(new ApiCall(new Request('GET', 'v1/ext/acme/x', $query, array(), '127.0.0.1'), $public));
+    } catch (\mindstellar\api\ProblemException $e) {
+        return $e->response()->status();
+    }
+};
+$context = $contextFor(array('fields' => 'title,price', 'include' => 'translations'));
+$asked   = $context instanceof \mindstellar\api\serializer\ViewContext
+    ? array($context->wants('title'), $context->wants('price'), $context->wants('description'), $context->includes('translations'), $context->includes('custom_fields'))
+    : $context;
+pin('?fields= keeps the members asked for, ?include= switches on the includes asked for', array(true, true, false, true, false), $asked);
+pin('without ?fields= every member is kept', true, $contextFor(array())->wants('description'));
+pin('an unknown field or include is 422', array(422, 422), array($contextFor(array('fields' => 'nosuch')), $contextFor(array('include' => 'photos'))));
+
 exit(harness_result());

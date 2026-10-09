@@ -521,11 +521,12 @@ check('its own Ext component and Problem are allowed', $rules->addPlugin('GET', 
     200 => ['$ref' => '#/components/schemas/ExtAcmeThing'], 404 => ['$ref' => '#/components/schemas/Problem'],
 ]]));
 $logged = [];
-check('ext/<slug>/ is only for the plugin named <slug>: one that names no plugin or another is refused and logged', $rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme'])
-    && !$rules->addPlugin('GET', 'ext/acme/b', $none + ['plugin' => 'evil'])
-    && !$rules->addPlugin('GET', 'ext/acme/c', $none)
-    && count($logged) === 2 && str_contains($logged[0], 'GET ext/acme/b (plugin evil) refused: ext/acme/ belongs to plugin acme')
-    && str_contains($logged[1], 'GET ext/acme/c refused: ext/acme/ belongs to plugin acme'));
+check('ext/<slug>/ takes a route from the plugin named <slug>', $rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme']) && $logged === []);
+check('ext/<slug>/ refuses and logs a route from another plugin', !$rules->addPlugin('GET', 'ext/acme/b', $none + ['plugin' => 'evil'])
+    && str_contains($logged[0] ?? '', 'GET ext/acme/b (plugin evil) refused: ext/acme/ belongs to plugin acme'));
+$logged = [];
+check('ext/<slug>/ refuses and logs a route that names no plugin', !$rules->addPlugin('GET', 'ext/acme/c', $none)
+    && str_contains($logged[0] ?? '', 'GET ext/acme/c refused: ext/acme/ belongs to plugin acme'));
 $logged = [];
 $rules->addPlugin('GET', 'ext/acme/{any}', $none + ['plugin' => 'acme']);
 $rules->addPlugin('GET', 'ext/acme/fixed', $none + ['plugin' => 'acme']);
