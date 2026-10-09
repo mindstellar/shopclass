@@ -441,7 +441,7 @@ final class ApiServices
 
     public function listingWriter(): ListingWriter
     {
-        return $this->once(__FUNCTION__, fn (): ListingWriter => new ListingWriter(new CustomFieldValues(), $this->facts(), $this->listings(), $this->photoRoom()));
+        return $this->once(__FUNCTION__, fn (): ListingWriter => new ListingWriter(new CustomFieldValues(fn (int $category): array => $this->listings()->fields($category)), $this->facts(), $this->listings(), $this->photoRoom()));
     }
 
     /**

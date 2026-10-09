@@ -45,6 +45,9 @@ final class ListingService
     /** @var string|null the actor and e-mail mayPost() last allowed */
     private ?string $allowed = null;
 
+    /** @var array<int,array<int,array<string,mixed>>> fields() by category */
+    private array $fields = array();
+
     /**
      * Each collaborator defaults to the one the site uses; tests pass their own.
      */
@@ -102,6 +105,16 @@ final class ListingService
             throw new ForbiddenException(self::refusalMessage($refusal), $refusal === ListingPolicy::REGISTERED_ONLY ? ForbiddenException::SIGN_IN : ForbiddenException::BANNED);
         }
         $this->allowed = $key;
+    }
+
+    /**
+     * The custom fields a category's listings take, read once for this service.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function fields(int $categoryId): array
+    {
+        return $this->fields[$categoryId] ??= \Field::getInstance()->findByCategory($categoryId);
     }
 
     /**
@@ -1110,7 +1123,7 @@ final class ListingService
      */
     private function customFields(array $aItem): array
     {
-        $_meta  = \Field::getInstance()->findByCategory($aItem['catId']);
+        $_meta  = $this->fields((int) $aItem['catId']);
         $meta   = $aItem['meta'] ?? array();
         $errors = $this->validator->meta($_meta, $meta);
 
