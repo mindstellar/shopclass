@@ -138,10 +138,7 @@ if (!function_exists('scratchdb_bootstrap')) {
         $admin = new mysqli($host, $user, $pass, '', $port);
         if ($admin->connect_errno) {
             fwrite(STDERR, 'admin connect failed: ' . $admin->connect_error . "\n");
-            fwrite(STDERR, "Is the throwaway container up?\n");
-            fwrite(STDERR, "  docker run -d --name shopclass-scratch -p 33061:3306 --tmpfs /var/lib/mysql "
-                . "-e MYSQL_ROOT_PASSWORD=root mysql:8.0 --skip-log-bin --innodb-flush-log-at-trx-commit=0 "
-                . "--innodb-doublewrite=0\n");
+            fwrite(STDERR, "Is the test database up? Start it with: npm run test:db (see tests/README.md)\n");
             exit(2);
         }
 

@@ -14,7 +14,8 @@ php tests/models/<name>.php      # one database test, in a fresh database of its
 php tests/run-models.php <name>  # one database test, the way the suite runs it
 ```
 
-The database tests need the server from `npm run test:db`, or another MySQL or MariaDB.
+Both suites need the server from `npm run test:db`, or another MySQL or MariaDB: the
+model tests, and the unit tests that make a scratch database of their own.
 Point them at it with `DRIFT_DB_HOST`, `DRIFT_DB_PORT`, `DRIFT_DB_USER` and
 `DRIFT_DB_PASS` (default `127.0.0.1:33061`, `root`/`root`). Each test creates its own
 database and drops it when it ends.

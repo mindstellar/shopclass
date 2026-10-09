@@ -46,7 +46,7 @@ Tests hold these rules: `tests/core-no-api-import.php` (core never imports the A
 
 A page on the site:
 
-1. `index.php` loads `oc-load.php`. There, `Rewrite::init()` turns a friendly URL into the
+1. `index.php` loads `oc-load.php`. There, `Rewrite::getInstance()->init()` turns a friendly URL into the
    `page` and `action` request values, using the `CoreRoutes` table and the routes plugins add.
 2. `mindstellar\routing\FrontController::run()` checks maintenance mode, then asks
    `PageDispatcher::web()` for the controller of `page`.
@@ -106,8 +106,8 @@ A class's last word says what kind it is, in every module:
 |---|---|
 | `…Service` | Holds the rules for one area and does its writes. |
 | `…Policy` | Yes/no answers. |
-| `…Store` | Saves rows of one table, and reads them by id. Static methods. |
-| `…Query` | Reads for one screen or the API, across tables. Never writes. |
+| `…Store` | Saves rows of one table, and reads them by id. |
+| `…Query` | Reads for one screen or the API, across tables. New ones never write. |
 | `…Registry` | Plugins and themes register entries in it. |
 | `…Exception` | Thrown. |
 | `…Input`, `…Body` | A web request or an API body, read into the data a service takes. |

@@ -51,17 +51,7 @@ if ($check) {
     // CI runs every file this runner finds, so the check is that each one says what it checks.
     $missing = array();
     foreach ($all as $name) {
-        $doc = false;
-        foreach (token_get_all((string) file_get_contents($dir . '/' . $name . '.php')) as $token) {
-            if (is_array($token) && $token[0] === T_DOC_COMMENT) {
-                $doc = trim(preg_replace('#^\s*(/\*\*|\*/|\*)#m', '', $token[1])) !== '';
-                break;
-            }
-            if (is_array($token) && !in_array($token[0], array(T_OPEN_TAG, T_COMMENT, T_WHITESPACE), true)) {
-                break;
-            }
-        }
-        if (!$doc) {
+        if (!fileDocblock((string) file_get_contents($dir . '/' . $name . '.php'))) {
             $missing[] = $name;
         }
     }
@@ -133,5 +123,43 @@ foreach ($failed as $name => $out) {
 }
 printf("\n%d files, %d passed, %d failed, %.1fs\n", $done, $passed, count($failed), microtime(true) - $start);
 exit($failed === array() ? 0 : 1);
+
+/**
+ * Whether the file opens with a docblock of its own: one with words in it, before any
+ * code but declare(), and not the docblock of a function or class.
+ */
+function fileDocblock(string $code): bool
+{
+    $tokens = token_get_all($code);
+    $skip   = array(T_WHITESPACE, T_COMMENT, T_OPEN_TAG);
+    $i      = 0;
+    $count  = count($tokens);
+    while ($i < $count && is_array($tokens[$i]) && in_array($tokens[$i][0], $skip, true)) {
+        $i++;
+    }
+    if ($i < $count && is_array($tokens[$i]) && $tokens[$i][0] === T_DECLARE) {
+        while ($i < $count && $tokens[$i] !== ';') {
+            $i++;
+        }
+        $i++;
+        while ($i < $count && is_array($tokens[$i]) && in_array($tokens[$i][0], $skip, true)) {
+            $i++;
+        }
+    }
+    if ($i >= $count || !is_array($tokens[$i]) || $tokens[$i][0] !== T_DOC_COMMENT) {
+        return false;
+    }
+    // A docblock right above a function or class is theirs; a blank line or a comment after it makes it the file's.
+    $next = $tokens[$i + 1] ?? null;
+    $gap  = is_array($next) && ($next[0] === T_COMMENT || ($next[0] === T_WHITESPACE && substr_count($next[1], "\n") > 1));
+    $j    = $i + 1;
+    while ($j < $count && is_array($tokens[$j]) && in_array($tokens[$j][0], $skip, true)) {
+        $j++;
+    }
+    $owned = !$gap && isset($tokens[$j]) && is_array($tokens[$j])
+        && in_array($tokens[$j][0], array(T_FUNCTION, T_FN, T_CLASS, T_FINAL, T_ABSTRACT, T_INTERFACE, T_TRAIT, T_ENUM, T_READONLY), true);
+
+    return preg_match('/[\p{L}\p{N}]/u', $tokens[$i][1]) === 1 && !$owned;
+}
 
 /* file end: ./tests/run-unit.php */

@@ -4,6 +4,8 @@
 
 ## Checks
 
+The commands are in `tests/README.md`, under "What else CI checks".
+
 - [ ] `composer test` and `composer test:models` pass
 - [ ] `composer lint` passes
 - [ ] A new test fails without the change

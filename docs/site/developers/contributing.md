@@ -17,14 +17,9 @@ need no PHP at all.
 3. Make the change. If it touches the admin theme, run `npm run build` and
    **commit the compiled output**: releases are cut with `git archive`, so
    whatever is committed is exactly what users receive.
-4. Run the tests and the linters:
-   ```bash
-   composer test             # unit tests
-   composer test:models      # database tests (start one with npm run test:db)
-   composer lint             # PSR-12, the PHP 8.0 floor and PHPStan
-   ```
-   The first time, run `composer cs:install` and `composer lint:install`.
-5. Open a pull request against `develop`. Its template lists the other checks CI runs.
+4. Run `composer test`, `composer test:models` and `composer lint`, and the other checks
+   in [`tests/README.md`](https://github.com/mindstellar/shopclass/blob/develop/tests/README.md#what-else-ci-checks).
+5. Open a pull request against `develop`.
 
 See [coding style](/docs/developers/coding-style/) for the standard, and the
 [developer overview](/docs/developers/) for a local development stack.
@@ -43,6 +38,8 @@ npm run test:db                  # a throwaway MySQL on 127.0.0.1:33061 (Docker)
 composer test                    # the unit tests, 4 at a time
 composer test:models             # the database tests
 ```
+
+Both suites need that database: some unit tests make a scratch database of their own.
 
 How to write a test, the pinned lists and every check CI runs are in
 [`tests/README.md`](https://github.com/mindstellar/shopclass/blob/develop/tests/README.md).
