@@ -45,6 +45,10 @@ $controllers = array(
         'add', 'add_post', 'admin', 'admin_post', 'configure', 'configure_post', 'delete', 'disable', 'enable',
         'error_plugin', 'install', 'renderplugin', 'uninstall',
     ), 'plugins'),
+    'CAdminAppearance' => array('admin/CAdminAppearance.php', array(
+        'activate', 'add', 'add_post', 'add_widget', 'add_widget_post', 'delete', 'delete_widget', 'edit_widget',
+        'edit_widget_post', 'render', 'reorder_widgets_post', 'widget_create_post', 'widget_move_post', 'widgets',
+    ), 'themes'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {
