@@ -133,6 +133,7 @@ Plugin authors should read the Breaking section before upgrading.
 - The installer saves a downloaded language's files into that language's folder.
 - `Formatting::formatSlug()` gives the same slug as `osc_sanitizeString()`; its pattern was broken.
 - An unknown place id in a listing no longer causes a server error.
+- The alerts chart on Statistics → Listings scales to its largest count, not its last.
 - The ban rules are read once per request, not once per address checked.
 - The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
 - The locations pager reloads the list in place again.
