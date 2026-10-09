@@ -126,7 +126,7 @@ class CWebItem extends BaseModel
                     // Fresh post form (no submitted data to restore): drop any temp
                     // uploads a previous, abandoned posting left in the session so they
                     // can't silently attach to this new listing.
-                    UploadTmpStore::removeOwner((string) osc_upload_token());
+                    UploadTmpStore::removeOwner(UploadTmpStore::formOwner());
                 }
 
                 if (Session::getInstance()->_getForm('countryId') != '') {
@@ -204,7 +204,7 @@ class CWebItem extends BaseModel
                 Session::getInstance()->_clearVariables();
                 // Uploads were consumed by the successful post; drop the session
                 // mapping so it can't bleed into the next listing.
-                UploadTmpStore::removeOwner((string) osc_upload_token());
+                UploadTmpStore::removeOwner(UploadTmpStore::formOwner());
                 if ($saved->needsValidation()) {
                     osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
                 } elseif (osc_moderate_admin_post()) {
@@ -235,7 +235,7 @@ class CWebItem extends BaseModel
                     if ($form == 0) {
                         // Fresh edit form: drop temp uploads left by an earlier,
                         // abandoned posting so they can't attach to this item.
-                        UploadTmpStore::removeOwner((string) osc_upload_token());
+                        UploadTmpStore::removeOwner(UploadTmpStore::formOwner());
                     }
 
                     $this->_exportVariableToView('item', $item);
@@ -313,7 +313,7 @@ class CWebItem extends BaseModel
                         Session::getInstance()->_clearVariables();
                         // Uploads were consumed by the successful edit; drop the session
                         // mapping so it can't bleed into a later listing.
-                        UploadTmpStore::removeOwner((string) osc_upload_token());
+                        UploadTmpStore::removeOwner(UploadTmpStore::formOwner());
                         if (osc_moderate_admin_edit()) {
                             osc_add_flash_ok_message(_m('Your listing will be published after an admin approves the changes.'));
                         } else {

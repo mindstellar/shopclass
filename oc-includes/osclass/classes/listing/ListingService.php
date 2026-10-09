@@ -74,7 +74,7 @@ final class ListingService
     {
         $this->mayPost($actor, (string) ($data['contactEmail'] ?? ''));
 
-        return $this->write(fn (array &$notices): SavedListing => $this->insert($data, $actor, $import, $notices));
+        return $this->write(fn (array &$notices): SavedListing => $this->insert($data, $actor, $import, $notices), $data);
     }
 
     /**
@@ -109,7 +109,7 @@ final class ListingService
      */
     public function update(array $data, Actor $actor, bool $import = false, bool $matchSecret = true): SavedListing
     {
-        return $this->write(fn (array &$notices): SavedListing => $this->change($data, $actor, $import, $matchSecret, $notices));
+        return $this->write(fn (array &$notices): SavedListing => $this->change($data, $actor, $import, $matchSecret, $notices), $data);
     }
 
     /**
@@ -592,17 +592,22 @@ final class ListingService
     /**
      * Run a write in one transaction with e-mails held until it commits, and remove the
      * files of photos it stored when it fails. What went wrong with a photo goes with the
-     * result, or with the refusal, for the form to show.
+     * result, or with the refusal, for the form to show. The photos are resized before the
+     * transaction opens, so it holds its locks only while rows are written.
      *
      * @param callable(string[]&): SavedListing $fn
+     * @param array<string,mixed>               $data the listing form, with its photos
      */
-    private function write(callable $fn): SavedListing
+    private function write(callable $fn, array $data): SavedListing
     {
         $notices = array();
+        $photos  = $this->photos;
         try {
             $saved = PhotoService::cleanUpOnFailure(
-                $this->photos,
-                static function () use ($fn, &$notices): SavedListing {
+                $photos,
+                static function () use ($fn, &$notices, $photos, $data): SavedListing {
+                    $photos->prepare($data['photos'] ?? null);
+
                     return DeferredMail::transaction(static function () use ($fn, &$notices): SavedListing {
                         return $fn($notices);
                     });

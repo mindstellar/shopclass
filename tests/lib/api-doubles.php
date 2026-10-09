@@ -15,6 +15,7 @@
 
 require_once dirname(__DIR__, 2) . '/oc-includes/vendor/autoload.php';
 
+use mindstellar\api\ApiServices;
 use mindstellar\api\auth\AccessTokens;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
@@ -24,6 +25,7 @@ use mindstellar\api\auth\UserRows;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\IdempotencyRecord;
 use mindstellar\api\idempotency\IdempotencyStore;
+use mindstellar\api\idempotency\KvIdempotencyStore;
 use mindstellar\api\Kernel;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\routing\Router;
@@ -138,5 +140,22 @@ function api_test_kernel(
         $users ?? api_test_users(),
         $admins ?? new MemoisedRows(static fn (): ?array => null),
         $idempotency ?? new Idempotency(new MemoryIdempotencyStore(), new SystemClock())
+    );
+}
+
+/**
+ * The kernel ApiServices::kernel() wires, over the core routes and $validator, with a limiter
+ * that lets every request through.
+ */
+function api_services_kernel(ApiServices $services, Validator $validator): Kernel
+{
+    return api_test_kernel(
+        new Router($validator, Router::core(), handlers: $services->handlers()),
+        $services->authenticator(),
+        $services->settings(),
+        validator: $validator,
+        users: $services->users(),
+        idempotency: new Idempotency(new KvIdempotencyStore(), $services->clock()),
+        admins: $services->admins()
     );
 }

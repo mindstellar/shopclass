@@ -27,20 +27,22 @@ use mindstellar\comment\CommentService;
  */
 final class CommentsController
 {
+    private CommentService $comments;
+
     public function __construct(private ApiServices $api)
     {
+        $this->comments = new CommentService();
     }
 
     public function create(ApiCall $call): Response
     {
-        $input    = $call->input();
-        $comments = new CommentService();
-        $saved    = $comments->post($call->intArg(), [
+        $input = $call->input();
+        $saved = $this->comments->post($call->intArg(), [
             'title' => (string) ($input['title'] ?? ''),
             'body'  => (string) ($input['body'] ?? ''),
         ], $call->listingActor());
 
-        $row      = $comments->find($saved->id());
+        $row      = $this->comments->find($saved->id());
         $warnings = Warning::member($saved->isLive() ? [] : [Warning::COMMENT_PENDING => 'The comment shows once it is approved.']);
 
         return $this->api->created($call, (new CommentSerializer())->one($row ?? []), 'comments/' . $saved->id(), $warnings);
@@ -53,14 +55,14 @@ final class CommentsController
     public function show(ApiCall $call): Response
     {
         $actor   = $call->listingActor();
-        $comment = ProblemException::found((new CommentService())->visible($call->intArg(), $actor), 'comment');
+        $comment = ProblemException::found($this->comments->visible($call->intArg(), $actor), 'comment');
 
         return Response::ok((new CommentSerializer())->one($comment));
     }
 
     public function delete(ApiCall $call): Response
     {
-        (new CommentService())->delete($call->intArg(), $call->actor());
+        $this->comments->delete($call->intArg(), $call->actor());
 
         return Response::noContent();
     }

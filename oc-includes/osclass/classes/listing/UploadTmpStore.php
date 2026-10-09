@@ -15,12 +15,84 @@ namespace mindstellar\listing;
 use mindstellar\base\Model;
 
 /**
- * Reads and writes of t_item_upload_tmp: photos uploaded before their listing exists, each
- * row tying a temp file to an owner token.
+ * Photos uploaded before their listing exists: a file in uploads/temp/ and a t_item_upload_tmp
+ * row tying it to an owner token. The listing form and the API both stage through here.
  */
 final class UploadTmpStore extends Model
 {
     protected const TABLE = 't_item_upload_tmp';
+
+    /** Seconds a staged photo is kept; the hourly cron sweeps older ones. */
+    public const TTL = 7200;
+
+    /**
+     * The temp folder staged files live in, with a trailing slash.
+     */
+    public static function dir(): string
+    {
+        return osc_content_path() . 'uploads/temp/';
+    }
+
+    /**
+     * The owner token of this browser's listing form.
+     */
+    public static function formOwner(): string
+    {
+        return (string) osc_upload_token();
+    }
+
+    /**
+     * The owner token of an API user.
+     */
+    public static function userOwner(int $userId): string
+    {
+        return 'api:' . $userId;
+    }
+
+    /**
+     * Record a file already in the temp folder under an owner.
+     *
+     * @return int how many unexpired files the owner holds, this one included
+     * @throws \mindstellar\database\DbException
+     */
+    public static function stage(string $owner, string $uuid, string $file, int $now): int
+    {
+        self::add($owner, $uuid, $file, date('Y-m-d H:i:s', $now));
+
+        return self::countSince($owner, self::cutoff($now));
+    }
+
+    /**
+     * The owner's unexpired files for these uuids that are still in $dir.
+     *
+     * @param string[] $uuids
+     *
+     * @return array<string,array{file:string,expires:int}> uuid => file name and expiry
+     * @throws \mindstellar\database\DbException
+     */
+    public static function staged(string $owner, array $uuids, int $now, string $dir): array
+    {
+        $out = [];
+        foreach (self::find($owner, self::cutoff($now), $uuids) as $row) {
+            $file = (string) $row['s_file'];
+            if (basename($file) === $file && is_file($dir . $file)) {
+                $out[(string) $row['s_uuid']] = ['file' => $file, 'expires' => (int) strtotime((string) $row['dt_date']) + self::TTL];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Delete one staged file, row and file, when the owner staged it.
+     *
+     * @return bool false when the owner did not stage it or the file could not be removed
+     * @throws \mindstellar\database\DbException
+     */
+    public static function discard(string $owner, string $file, string $dir): bool
+    {
+        return basename($file) === $file && self::removeFile($owner, $file) > 0 && @unlink($dir . $file);
+    }
 
     /**
      * @throws \mindstellar\database\DbException
@@ -100,5 +172,10 @@ final class UploadTmpStore extends Model
     public static function pruneBefore(string $before): int
     {
         return self::table()->where('dt_date', '<=', $before)->delete();
+    }
+
+    private static function cutoff(int $now): string
+    {
+        return date('Y-m-d H:i:s', $now - self::TTL);
     }
 }

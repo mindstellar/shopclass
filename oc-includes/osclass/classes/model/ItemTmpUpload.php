@@ -71,7 +71,7 @@ class ItemTmpUpload extends DAO
      */
     public function add($token, $uuid, $file)
     {
-        UploadTmpStore::add((string)$token, (string)$uuid, (string)$file, date('Y-m-d H:i:s'));
+        UploadTmpStore::stage((string)$token, (string)$uuid, (string)$file, time());
 
         return 1;
     }

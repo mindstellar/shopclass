@@ -56,6 +56,7 @@ Plugin authors should read the Breaking section before upgrading.
 - API listings sorted by `price` page by cursor, not offset, and cursors last a week.
 - A listing edit hands `edited_item` the row it locked with the edit on it, instead of reading the listing again.
 - The "with photos" search checks each listing's photos directly instead of joining every photo and grouping.
+- Listing photos are resized before the save's transaction, so it no longer holds row locks while images are processed.
 
 ### Changed
 

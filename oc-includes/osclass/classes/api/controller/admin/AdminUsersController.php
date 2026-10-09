@@ -27,7 +27,6 @@ use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
 use mindstellar\auth\SignOut;
 use mindstellar\moderation\StatusFlags;
-use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
 
 /**
@@ -48,7 +47,7 @@ final class AdminUsersController
     {
         $this->users = $api->users();
         $this->sessions = $api->access()->accessEntries();
-        $this->query = new UserQuery();
+        $this->query = $api->userQuery();
     }
 
     public function index(ApiCall $call): Response
@@ -82,7 +81,7 @@ final class AdminUsersController
         $user     = $this->user($call->intArg());
         $userId   = (int) $user['pk_i_id'];
         $input    = $call->input();
-        $accounts = new AccountService();
+        $accounts = $this->api->accounts();
         $actor    = $call->actor('admin:users');
         [$flags, $edit] = StatusFlags::split($input, self::STATUS_MEMBERS);
         $accounts->adminEdit($userId, $edit === [] ? null : AccountBody::admin($user, $edit), $flags, $actor);
@@ -97,7 +96,7 @@ final class AdminUsersController
     public function delete(ApiCall $call): Response
     {
         $id = (int) $this->user($call->intArg())['pk_i_id'];
-        (new AccountService())->delete($id, $call->actor('admin:users'));
+        $this->api->accounts()->delete($id, $call->actor('admin:users'));
         $this->users->forget($id);
 
         return Response::noContent();

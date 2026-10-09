@@ -87,15 +87,11 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
 
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
-use mindstellar\api\idempotency\Idempotency;
-use mindstellar\api\idempotency\KvIdempotencyStore;
 use mindstellar\api\identity\WebIdentity;
-use mindstellar\api\Kernel;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
-use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
@@ -225,16 +221,7 @@ $settings  = new ApiSettings(true, userKeys: true);
 $call      = static function (string $method, string $path, array|string|null $body = null, ?string $token = null, array $headers = array(), string $ip = '192.0.2.50') use ($validator, $facts, &$settings): Response {
     $users    = new UserRows();
     $services = new ApiServices($settings, new Scopes(), new ApiCredential(), $users, new SystemClock(), $GLOBALS['aa_limiter'] ?? RateLimiter::fromSite(new SystemClock()), $facts, new AccountLinks());
-    $kernel   = new Kernel(
-        new Router($validator, Router::core(), handlers: $services->handlers()),
-        $services->authenticator(),
-        api_test_limiter(),
-        $validator,
-        $settings,
-        $users,
-        $services->admins(),
-        new Idempotency(new KvIdempotencyStore(), $services->clock())
-    );
+    $kernel   = api_services_kernel($services, $validator);
     if ($token !== null) {
         $headers['Authorization'] = 'Bearer ' . $token;
     }

@@ -39,7 +39,7 @@ final class LocationsController
     public function __construct(private ApiServices $api)
     {
         $this->serializer = new LocationSerializer();
-        $this->places     = new LocationQuery();
+        $this->places     = $api->locationQuery();
     }
 
     public function countries(ApiCall $call): Response

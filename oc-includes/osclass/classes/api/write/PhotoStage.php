@@ -24,7 +24,7 @@ use mindstellar\utility\Clock;
 final class PhotoStage
 {
     /** Seconds a staged photo is kept. */
-    public const TTL = 7200;
+    public const TTL = UploadTmpStore::TTL;
 
     /** Staged photos one user may hold at once. */
     public const MAX_PENDING = 50;
@@ -41,7 +41,7 @@ final class PhotoStage
 
     public static function fromSite(Clock $clock): self
     {
-        return new self(osc_content_path() . 'uploads/temp/', $clock);
+        return new self(UploadTmpStore::dir(), $clock);
     }
 
     /**
@@ -61,12 +61,9 @@ final class PhotoStage
             throw new \RuntimeException('The photo could not be stored.');
         }
         $now   = $this->clock->now();
-        $owner = self::owner($userId);
-        UploadTmpStore::add($owner, $token, $file, date('Y-m-d H:i:s', $now));
-        $pending = UploadTmpStore::countSince($owner, $this->cutoff());
-        if ($pending > self::MAX_PENDING) {
-            $this->forget($userId, [$token]);
-            @unlink($this->dir . $file);
+        $owner = UploadTmpStore::userOwner($userId);
+        if (UploadTmpStore::stage($owner, $token, $file, $now) > self::MAX_PENDING) {
+            UploadTmpStore::discard($owner, $file, $this->dir);
 
             throw new \OverflowException('Too many photos are waiting for a listing.');
         }
@@ -88,13 +85,9 @@ final class PhotoStage
         if ($tokens === []) {
             return [];
         }
-        $rows = UploadTmpStore::find(self::owner($userId), $this->cutoff(), $tokens);
         $out = [];
-        foreach ($rows as $row) {
-            $file = (string) $row['s_file'];
-            if (basename($file) === $file && is_file($this->dir . $file)) {
-                $out[(string) $row['s_uuid']] = new PhotoFile($this->dir . $file, strtolower(pathinfo($file, PATHINFO_EXTENSION)), (string) $row['s_uuid'], (int) strtotime((string) $row['dt_date']) + self::TTL);
-            }
+        foreach (UploadTmpStore::staged(UploadTmpStore::userOwner($userId), $tokens, $this->clock->now(), $this->dir) as $token => $row) {
+            $out[$token] = new PhotoFile($this->dir . $row['file'], strtolower(pathinfo($row['file'], PATHINFO_EXTENSION)), $token, $row['expires']);
         }
 
         return $out;
@@ -111,7 +104,7 @@ final class PhotoStage
         if ($tokens === []) {
             return;
         }
-        UploadTmpStore::remove(self::owner($userId), $tokens);
+        UploadTmpStore::remove(UploadTmpStore::userOwner($userId), $tokens);
     }
 
     /**
@@ -134,15 +127,5 @@ final class PhotoStage
     private static function wellFormed(array $tokens): array
     {
         return array_values(array_unique(array_filter($tokens, static fn ($t): bool => is_string($t) && preg_match('/^[0-9a-f]{32}$/D', $t) === 1)));
-    }
-
-    private function cutoff(): string
-    {
-        return date('Y-m-d H:i:s', $this->clock->now() - self::TTL);
-    }
-
-    private static function owner(int $userId): string
-    {
-        return 'api:' . $userId;
     }
 }

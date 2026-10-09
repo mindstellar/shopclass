@@ -50,7 +50,7 @@ final class AccountController
         $this->tokens   = $api->tokenIssuer();
         $this->refresh  = $api->refreshTokens();
         $this->sessions = $api->access()->accessEntries();
-        $this->accounts = new AccountService();
+        $this->accounts = $api->accounts();
     }
 
     /**

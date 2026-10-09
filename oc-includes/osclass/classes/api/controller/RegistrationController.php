@@ -20,7 +20,6 @@ use mindstellar\api\Response;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\auth\Actor;
 use mindstellar\user\AccountInput;
-use mindstellar\user\AccountService;
 
 /**
  * Sign-up, when the site switches it on, through AccountService::register() with the same checks,
@@ -61,7 +60,7 @@ final class RegistrationController
         ]);
         // The site-wide cap counts only sign-ups that passed every check, so bad requests cannot use it up.
         $site    = fn () => $this->limiter->enforce($this->api->ratePolicy()->signUpSite(), $busy, false);
-        $account = (new AccountService())->register($form, Actor::guest($request->ip()), true, true, $site);
+        $account = $this->api->accounts()->register($form, Actor::guest($request->ip()), true, true, $site);
 
         // No id and no Location: a taken e-mail must answer the same, and until the activation
         // link is opened the account's profile is not shown.

@@ -34,12 +34,14 @@ final class PhotosController
     private PhotoIntake $photos;
     private PhotoRoom $room;
     private OwnedListings $owned;
+    private PhotoService $service;
 
     public function __construct(private ApiServices $api)
     {
-        $this->room   = new PhotoRoom();
-        $this->owned  = new OwnedListings();
-        $this->photos = $api->photoIntake();
+        $this->room    = $api->photoRoom();
+        $this->owned   = $api->ownedListings();
+        $this->photos  = $api->photoIntake();
+        $this->service = new PhotoService();
     }
 
     public function stage(ApiCall $call): Response
@@ -63,7 +65,7 @@ final class PhotosController
         $refuseWhenFull();
 
         $photo = $this->photos->upload($call->request());
-        $new   = (new PhotoService())->add($id, [
+        $new   = $this->service->add($id, [
             'name'     => [basename($photo->path())],
             'type'     => ['image/*'],
             'tmp_name' => [$photo->path()],
@@ -91,7 +93,7 @@ final class PhotosController
     {
         $id      = $this->owned->own($call->intArg(), $call->credential())->id();
         $photoId = $call->intArg('photo');
-        if (!(new PhotoService())->delete($photoId, $id, $call->actor())) {
+        if (!$this->service->delete($photoId, $id, $call->actor())) {
             throw ProblemException::notFound('No such photo on this listing.');
         }
 

@@ -12,12 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
-use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RowId;
-use mindstellar\api\serializer\ListingSerializer;
+use mindstellar\api\serializer\Links;
+use mindstellar\api\serializer\ViewContext;
 use mindstellar\apiaccess\Credential;
 use mindstellar\listing\ListingQuery;
 use mindstellar\search\SearchCriteria;
@@ -32,8 +32,17 @@ final class ListingSearch
     /** API filter => search page parameter. */
     private const LISTS = ['category' => 'sCategory', 'country' => 'sCountry', 'region' => 'sRegion', 'city' => 'sCity', 'city_area' => 'sCityArea'];
 
-    public function __construct(private ApiServices $api, private ListingReader $reader)
-    {
+    /**
+     * @param \Closure(Request, Credential): ViewContext $context a request's listing view context
+     */
+    public function __construct(
+        private ListingReader $reader,
+        private ListingQuery $listings,
+        private Cursor $cursor,
+        private Links $links,
+        private SiteFacts $facts,
+        private \Closure $context
+    ) {
     }
 
     /**
@@ -47,15 +56,14 @@ final class ListingSearch
      */
     public function newest(Request $request, Credential $credential, string $path, array $statuses, array $userIds, array $categoryIds = [], string $title = ''): Response
     {
-        $listings = new ListingQuery($this->api->clock());
-        $context  = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
-        $pager    = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), $path);
+        $context = ($this->context)($request, $credential);
+        $pager   = Pager::fromRequest($request, $this->cursor, ListSpec::byId(), $path);
 
         return $pager->respond(
-            fn (): array => $listings->newest($statuses, $userIds, $categoryIds, $title, $pager->afterId(), $pager->limit() + 1),
-            fn (): int => $listings->count($statuses, $userIds, $categoryIds, $title),
+            fn (): array => $this->listings->newest($statuses, $userIds, $categoryIds, $title, $pager->afterId(), $pager->limit() + 1),
+            fn (): int => $this->listings->count($statuses, $userIds, $categoryIds, $title),
             fn (array $items): array => $this->reader->many($this->reader->extend($items, $context), $context),
-            $this->api->links()
+            $this->links
         );
     }
 
@@ -65,14 +73,13 @@ final class ListingSearch
      */
     public function run(Request $request, Credential $credential, ?int $userId, string $path): Response
     {
-        $facts   = $this->api->facts();
-        $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
+        $context = ($this->context)($request, $credential);
         $sort    = ListingSort::fromRequest($request);
         $filters = $request->query();
         if ($userId !== null) {
             $filters['user'] = (string) $userId;
         }
-        $pager = Pager::fromRequest($request, $this->api->cursor(), $sort->spec($facts->defaultLimit(), $facts->maxLimit()), $path, $filters);
+        $pager = Pager::fromRequest($request, $this->cursor, $sort->spec($this->facts->defaultLimit(), $this->facts->maxLimit()), $path, $filters);
 
         $params = self::params($request, $this->reader->categories(), $context->locale(), $userId) + [
             'sOrder'     => $sort->searchOrder(),
@@ -93,7 +100,7 @@ final class ListingSearch
             static fn (): array => $result->items(),
             static fn (): ?int => $result->total(),
             fn (array $page): array => $this->reader->many($page, $context),
-            $this->api->links()
+            $this->links
         );
     }
 

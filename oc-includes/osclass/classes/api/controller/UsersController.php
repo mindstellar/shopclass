@@ -20,7 +20,6 @@ use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\apiaccess\Credential;
-use mindstellar\user\UserQuery;
 use mindstellar\user\UserStore;
 
 /**
@@ -39,7 +38,7 @@ final class UsersController
         $credential = $call->credential();
         $context = $this->api->context($call->request(), $credential, 'user', UserSerializer::MEMBERS);
         $id      = $call->intArg();
-        $user    = self::visible($this->api->facts()->usersEnabled() ? (new UserQuery())->find($id) : null, $credential);
+        $user    = self::visible($this->api->facts()->usersEnabled() ? $this->api->userQuery()->find($id) : null, $credential);
 
         return Response::ok($this->api->userSerializer()->one($user, $context));
     }
@@ -48,7 +47,7 @@ final class UsersController
     {
         $credential = $call->credential();
         $id = $call->intArg();
-        self::visible($this->api->facts()->usersEnabled() ? (new UserQuery())->statusRow($id) : null, $credential);
+        self::visible($this->api->facts()->usersEnabled() ? $this->api->userQuery()->statusRow($id) : null, $credential);
 
         return $this->api->listingSearch()->run($call->request(), $credential, $id, 'users/' . $id . '/listings');
     }

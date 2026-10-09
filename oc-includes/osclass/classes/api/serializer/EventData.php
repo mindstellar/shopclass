@@ -14,6 +14,7 @@ namespace mindstellar\api\serializer;
 
 use mindstellar\api\ApiServices;
 use mindstellar\api\read\ListingReader;
+use mindstellar\api\read\SiteFacts;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
 use mindstellar\comment\CommentQuery;
@@ -31,8 +32,15 @@ use mindstellar\webhook\WebhookServices;
  */
 final class EventData
 {
-    public function __construct(private ListingReader $listings, private ApiServices $api, private Clock $clock)
-    {
+    public function __construct(
+        private ListingReader $listings,
+        private Links $links,
+        private UserSerializer $userSerializer,
+        private SiteFacts $facts,
+        private UserQuery $users,
+        private CommentQuery $comments,
+        private Clock $clock
+    ) {
     }
 
     /**
@@ -45,7 +53,7 @@ final class EventData
             return null;
         }
         if (ListingStatus::of($item, $this->clock->now()) !== ListingStatus::ACTIVE) {
-            return self::notLive($id, $this->api->links()->listing($item));
+            return self::notLive($id, $this->links->listing($item));
         }
 
         return $this->listings->view($item, $this->context());
@@ -56,9 +64,9 @@ final class EventData
      */
     public function user(int $id): ?array
     {
-        $user = (new UserQuery())->bareRow($id);
+        $user = $this->users->bareRow($id);
 
-        return $user === null ? null : $this->api->userSerializer()->one($user, $this->context());
+        return $user === null ? null : $this->userSerializer->one($user, $this->context());
     }
 
     /**
@@ -66,7 +74,7 @@ final class EventData
      */
     public function comment(int $id): ?array
     {
-        $row = (new CommentQuery())->find($id);
+        $row = $this->comments->find($id);
         if ($row === null) {
             return null;
         }
@@ -99,12 +107,15 @@ final class EventData
 
     /**
      * Register the hook listeners that turn core events into webhooks.
+     *
+     * @param (\Closure(): self)|null $data the EventData to build each event with; the site's when null
      */
-    public static function listen(): void
+    public static function listen(?\Closure $data = null): void
     {
-        $listing = static fn (string $type): \Closure => static function ($item) use ($type): void {
+        $data ??= static fn (): self => ApiServices::site()->eventData();
+        $listing = static fn (string $type): \Closure => static function ($item) use ($type, $data): void {
             $id = (int) (is_array($item) ? ($item['pk_i_id'] ?? 0) : $item);
-            self::bridge($type, static fn (): ?array => $id > 0 ? ApiServices::site()->eventData()->listing($id) : null);
+            self::bridge($type, static fn (): ?array => $id > 0 ? $data()->listing($id) : null);
         };
         osc_add_hook('posted_item', $listing('listing.created'));
         osc_add_hook('edited_item', $listing('listing.updated'));
@@ -114,14 +125,14 @@ final class EventData
         osc_add_hook('after_delete_item', static function ($id): void {
             self::bridge('listing.deleted', static fn (): array => self::deleted((int) $id));
         });
-        osc_add_hook('add_comment', static function ($id): void {
-            self::bridge('comment.created', static fn (): ?array => ApiServices::site()->eventData()->comment((int) $id));
+        osc_add_hook('add_comment', static function ($id) use ($data): void {
+            self::bridge('comment.created', static fn (): ?array => $data()->comment((int) $id));
         });
-        osc_add_hook('user_register_completed', static function ($id): void {
-            self::bridge('user.registered', static fn (): ?array => ApiServices::site()->eventData()->user((int) $id));
+        osc_add_hook('user_register_completed', static function ($id) use ($data): void {
+            self::bridge('user.registered', static fn (): ?array => $data()->user((int) $id));
         });
-        osc_add_hook('user_edit_completed', static function ($id): void {
-            self::bridge('user.updated', static fn (): ?array => ApiServices::site()->eventData()->user((int) $id));
+        osc_add_hook('user_edit_completed', static function ($id) use ($data): void {
+            self::bridge('user.updated', static fn (): ?array => $data()->user((int) $id));
         });
         osc_add_hook('after_delete_user', static function ($id): void {
             self::bridge('user.deleted', static fn (): array => self::deleted((int) $id));
@@ -148,6 +159,6 @@ final class EventData
 
     private function context(): ViewContext
     {
-        return new ViewContext(Credential::anonymous(), $this->api->facts()->defaultLocale(), version: ApiSettings::PINNED_VERSION);
+        return new ViewContext(Credential::anonymous(), $this->facts->defaultLocale(), version: ApiSettings::PINNED_VERSION);
     }
 }

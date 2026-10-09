@@ -119,16 +119,12 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
 
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
-use mindstellar\api\idempotency\Idempotency;
-use mindstellar\api\idempotency\KvIdempotencyStore;
 use mindstellar\api\identity\WebIdentity;
-use mindstellar\api\Kernel;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\ratelimit\RatePolicy;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
-use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
@@ -296,16 +292,7 @@ $call = static function (string $method, string $path, ?array $body = null, ?str
         new ImageFetcher($guard, $transport),
         2048 * 1024
     );
-    $kernel   = new Kernel(
-        new Router($validator, Router::core(), handlers: $services->handlers()),
-        $services->authenticator(),
-        api_test_limiter(),
-        $validator,
-        $settings,
-        $users,
-        $services->admins(),
-        new Idempotency(new KvIdempotencyStore(), $services->clock())
-    );
+    $kernel   = api_services_kernel($services, $validator);
     if ($token !== null) {
         $headers['Authorization'] = 'Bearer ' . $token;
     }
@@ -750,6 +737,26 @@ pin('the legacy ItemTmpUpload model answers as before', array(true, false, false
     $legacy->deleteByTokenFile('other', 'a.jpg'), $legacy->deleteByTokenFile('web-form', 'a.jpg'),
     $legacy->pruneBefore('2000-01-01 00:00:00'), $legacy->deleteByToken('web-form'),
 ));
+$stageDir = $lwRoot . 'stage/';
+foreach (array('kept.jpg', 'old.jpg') as $name) {
+    copy($jpeg, $stageDir . $name);
+}
+$now = time();
+\mindstellar\listing\UploadTmpStore::stage('web-form', 'u1', 'kept.jpg', $now);
+\mindstellar\listing\UploadTmpStore::stage('web-form', 'u2', 'old.jpg', $now - \mindstellar\listing\UploadTmpStore::TTL - 1);
+\mindstellar\listing\UploadTmpStore::stage('web-form', 'u3', 'gone.jpg', $now);
+pin('the shared stage lists only the owner\'s unexpired files that still exist', array(array('u1'), array()), array(
+    array_keys(\mindstellar\listing\UploadTmpStore::staged('web-form', array('u1', 'u2', 'u3'), $now, $stageDir)),
+    \mindstellar\listing\UploadTmpStore::staged('other', array('u1'), $now, $stageDir),
+));
+pin('a staged file is discarded only by its owner, row and file together', array(false, true, true, false), array(
+    \mindstellar\listing\UploadTmpStore::discard('other', 'kept.jpg', $stageDir),
+    is_file($stageDir . 'kept.jpg') && \mindstellar\listing\UploadTmpStore::discard('web-form', 'kept.jpg', $stageDir),
+    !is_file($stageDir . 'kept.jpg'),
+    \mindstellar\listing\UploadTmpStore::owns('web-form', 'kept.jpg'),
+));
+\mindstellar\listing\UploadTmpStore::removeOwner('web-form');
+@unlink($stageDir . 'old.jpg');
 $fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024, fopen('php://memory', 'w'));
 pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
 pin('a download that crawls is dropped', array(ImageFetcher::LOW_SPEED, ImageFetcher::LOW_SPEED_TIME), array($fetcher[CURLOPT_LOW_SPEED_LIMIT] ?? null, $fetcher[CURLOPT_LOW_SPEED_TIME] ?? null));

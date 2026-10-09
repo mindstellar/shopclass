@@ -50,6 +50,7 @@ use mindstellar\api\serializer\ViewContext;
 use mindstellar\api\write\CustomFieldValues;
 use mindstellar\api\write\ImageFetcher;
 use mindstellar\api\write\ListingWriter;
+use mindstellar\api\write\OwnedListings;
 use mindstellar\api\write\PhotoIntake;
 use mindstellar\api\write\PhotoStage;
 use mindstellar\apiaccess\ApiAccess;
@@ -59,16 +60,25 @@ use mindstellar\apiaccess\PageTokens;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\apiaccess\SignInStore;
 use mindstellar\auth\AdminStore;
+use mindstellar\comment\CommentQuery;
+use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
 use mindstellar\fields\FieldService;
+use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
+use mindstellar\listing\PhotoRoom;
+use mindstellar\location\LocationQuery;
 use mindstellar\moderation\ListingModeration;
+use mindstellar\user\AccountService;
+use mindstellar\user\UserQuery;
 use mindstellar\utility\Clock;
 use mindstellar\webhook\WebhookServices;
 
 /**
  * The API's composition root: every service is built here on first use and shared after.
- * site() is the one for this request; tests build their own over test doubles.
+ * site() is the one for this request; tests build their own over test doubles. A core
+ * service or query that two API classes use comes from here; one used by a single class is
+ * built once in that class's constructor.
  */
 final class ApiServices
 {
@@ -394,7 +404,14 @@ final class ApiServices
 
     public function listingSearch(): ListingSearch
     {
-        return $this->once(__FUNCTION__, fn (): ListingSearch => new ListingSearch($this, $this->listingReader()));
+        return $this->once(__FUNCTION__, fn (): ListingSearch => new ListingSearch(
+            $this->listingReader(),
+            $this->listingQuery(),
+            $this->cursor(),
+            $this->links(),
+            $this->facts(),
+            fn (Request $request, Credential $credential): ViewContext => $this->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES)
+        ));
     }
 
     public function listingReader(): ListingReader
@@ -424,7 +441,7 @@ final class ApiServices
 
     public function listingWriter(): ListingWriter
     {
-        return $this->once(__FUNCTION__, fn (): ListingWriter => new ListingWriter(new CustomFieldValues(), $this->facts(), $this->listings()));
+        return $this->once(__FUNCTION__, fn (): ListingWriter => new ListingWriter(new CustomFieldValues(), $this->facts(), $this->listings(), $this->photoRoom()));
     }
 
     /**
@@ -458,7 +475,61 @@ final class ApiServices
      */
     public function eventData(): EventData
     {
-        return $this->once(__FUNCTION__, fn (): EventData => new EventData($this->listingReader(), $this, $this->clock));
+        return $this->once(__FUNCTION__, fn (): EventData => new EventData(
+            $this->listingReader(),
+            $this->links(),
+            $this->userSerializer(),
+            $this->facts(),
+            $this->userQuery(),
+            $this->commentQuery(),
+            $this->clock
+        ));
+    }
+
+    public function listingQuery(): ListingQuery
+    {
+        return $this->once(__FUNCTION__, fn (): ListingQuery => new ListingQuery($this->clock));
+    }
+
+    /**
+     * The listings a write may change, each read with its owner.
+     */
+    public function ownedListings(): OwnedListings
+    {
+        return $this->once(__FUNCTION__, fn (): OwnedListings => new OwnedListings($this->listingQuery()));
+    }
+
+    public function photoRoom(): PhotoRoom
+    {
+        return $this->once(__FUNCTION__, static fn (): PhotoRoom => new PhotoRoom());
+    }
+
+    public function userQuery(): UserQuery
+    {
+        return $this->once(__FUNCTION__, static fn (): UserQuery => new UserQuery());
+    }
+
+    /**
+     * Core's account writes: sign-up, profile edits and deletes.
+     */
+    public function accounts(): AccountService
+    {
+        return $this->once(__FUNCTION__, static fn (): AccountService => new AccountService());
+    }
+
+    public function commentQuery(): CommentQuery
+    {
+        return $this->once(__FUNCTION__, static fn (): CommentQuery => new CommentQuery());
+    }
+
+    public function locationQuery(): LocationQuery
+    {
+        return $this->once(__FUNCTION__, static fn (): LocationQuery => new LocationQuery());
+    }
+
+    public function currencies(): CurrencyService
+    {
+        return $this->once(__FUNCTION__, static fn (): CurrencyService => CurrencyService::make());
     }
 
     /**

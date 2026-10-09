@@ -34,6 +34,9 @@ final class PhotoService
     /** @var string[] what went wrong with a photo, for the form to show */
     private array $notices = array();
 
+    /** @var array<string,array{extension:string,mime:string,files:array<string,string>}> prepare()'s photos, by temp name */
+    private array $prepared = array();
+
     /**
      * Whether every uploaded file's MIME type is in the allowed-extension list.
      *
@@ -131,35 +134,10 @@ final class PhotoService
                     || ($maxImagesPerItem > 0 && $totalItemImages < $maxImagesPerItem)
                 ) {
                     if ($error == UPLOAD_ERR_OK) {
-                        $tmpName   = $aResources['tmp_name'][$key];
-                        $imgres    = \ImageProcessing::fromFile($tmpName);
-                        $extension = osc_apply_filter('upload_image_extension', $imgres->getExt());
-                        $mime      = osc_apply_filter('upload_image_mime', $imgres->getMime());
-
-                        // Create normal size
-                        $path        = $tmpName . '_normal';
-                        $normal_path = $path;
-                        $size        = explode('x', osc_normal_dimensions());
-                        $img         = $imgres->autoRotate();
-
-                        $img = $img->resizeTo((int) $size[0], (int) $size[1]);
-                        if (osc_is_watermark_text()) {
-                            $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-                        } elseif (osc_is_watermark_image()) {
-                            $img->doWatermarkImage();
-                        }
-                        $img->saveToFile($path, $extension);
-                        // Create preview
-                        $path = $tmpName . '_preview';
-                        $size = explode('x', osc_preview_dimensions());
-                        \ImageProcessing::fromFile($normal_path)->resizeTo((int) $size[0], (int) $size[1])
-                            ->saveToFile($path, $extension);
-
-                        // Create thumbnail
-                        $path = $tmpName . '_thumbnail';
-                        $size = explode('x', osc_thumbnail_dimensions());
-                        \ImageProcessing::fromFile($normal_path)->resizeTo((int) $size[0], (int) $size[1])
-                            ->saveToFile($path, $extension);
+                        $tmpName = (string) $aResources['tmp_name'][$key];
+                        $photo   = $this->prepared[$tmpName] ?? self::process($tmpName);
+                        unset($this->prepared[$tmpName]);
+                        $extension = $photo['extension'];
 
                         $totalItemImages++;
 
@@ -170,19 +148,22 @@ final class PhotoService
                         if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
                             return 3; // PATH CAN NOT BE CREATED
                         }
-                        $copies = array(
-                            $tmpName . '_normal'    => $folder . $resourceId . '.' . $extension,
-                            $tmpName . '_preview'   => $folder . $resourceId . '_preview.' . $extension,
-                            $tmpName . '_thumbnail' => $folder . $resourceId . '_thumbnail.' . $extension,
-                        );
+                        $copies = array();
+                        foreach ($photo['files'] as $variant => $from) {
+                            if ($variant !== '_original') {
+                                $copies[$from] = $folder . $resourceId . $variant . '.' . $extension;
+                            }
+                        }
                         $copied = true;
                         foreach ($copies as $from => $to) {
                             $copied = $copied && osc_copy($from, $to);
                         }
                         // A photo row without its files shows as a broken image, so undo it.
                         if (!$copied) {
-                            foreach ($copies as $from => $to) {
+                            foreach ($photo['files'] as $from) {
                                 @unlink($from);
+                            }
+                            foreach ($copies as $to) {
                                 @unlink($to);
                             }
                             @unlink($tmpName);
@@ -191,13 +172,12 @@ final class PhotoService
                             $this->notices[] = _m('A photo could not be saved. Check that the uploads folder can be written to.');
                             continue;
                         }
-                        if (osc_keep_original_image()) {
-                            $path = $folder . $resourceId . '_original.' . $extension;
-                            ResourceUploader::saveOriginal($tmpName, $path, $extension);
+                        if (isset($photo['files']['_original'])) {
+                            osc_copy($photo['files']['_original'], $folder . $resourceId . '_original.' . $extension);
                         }
-                        unlink($tmpName . '_normal');
-                        unlink($tmpName . '_preview');
-                        unlink($tmpName . '_thumbnail');
+                        foreach ($photo['files'] as $from) {
+                            @unlink($from);
+                        }
                         unlink($tmpName);
 
                         $s_path = str_replace(osc_base_path(), '', $folder);
@@ -206,7 +186,7 @@ final class PhotoService
                                 's_path'         => $s_path,
                                 's_name'         => osc_genRandomPassword(),
                                 's_extension'    => $extension,
-                                's_content_type' => $mime
+                                's_content_type' => $photo['mime']
                             ),
                             array(
                                 'pk_i_id'      => $resourceId,
@@ -226,6 +206,78 @@ final class PhotoService
         }
 
         return 0; // NO PROBLEMS
+    }
+
+    /**
+     * Resize the uploaded images ahead of a save, so its transaction only copies files and
+     * writes rows. Only files that pass checkTypes() and checkSizes() are prepared; store()
+     * handles the rest as before.
+     *
+     * @param array<string,array<int,mixed>>|mixed $aResources A $_FILES entry
+     */
+    public function prepare($aResources): void
+    {
+        if (!is_array($aResources) || empty($aResources['error'])) {
+            return;
+        }
+        foreach ($aResources['error'] as $key => $error) {
+            $tmpName = (string) ($aResources['tmp_name'][$key] ?? '');
+            $one     = array('error' => array(UPLOAD_ERR_OK), 'tmp_name' => array($tmpName), 'size' => array($aResources['size'][$key] ?? 0));
+            if ($error == UPLOAD_ERR_OK && $tmpName !== '' && !isset($this->prepared[$tmpName]) && self::checkTypes($one) && self::checkSizes($one)) {
+                try {
+                    $this->prepared[$tmpName] = self::process($tmpName);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove the variants prepare() made that no store() took.
+     */
+    public function discardPrepared(): void
+    {
+        foreach ($this->prepared as $photo) {
+            foreach ($photo['files'] as $file) {
+                @unlink($file);
+            }
+        }
+        $this->prepared = array();
+    }
+
+    /**
+     * Write a photo's variants next to its temp file, by the suffix each gets in the uploads folder.
+     *
+     * @return array{extension:string,mime:string,files:array<string,string>}
+     */
+    private static function process(string $tmpName): array
+    {
+        $imgres    = \ImageProcessing::fromFile($tmpName);
+        $extension = osc_apply_filter('upload_image_extension', $imgres->getExt());
+        $mime      = osc_apply_filter('upload_image_mime', $imgres->getMime());
+        $files     = array('' => $tmpName . '_normal', '_preview' => $tmpName . '_preview', '_thumbnail' => $tmpName . '_thumbnail');
+
+        $size = explode('x', osc_normal_dimensions());
+        $img  = $imgres->autoRotate()->resizeTo((int) $size[0], (int) $size[1]);
+        if (osc_is_watermark_text()) {
+            $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
+        } elseif (osc_is_watermark_image()) {
+            $img->doWatermarkImage();
+        }
+        $img->saveToFile($files[''], $extension);
+        foreach (array('_preview' => osc_preview_dimensions(), '_thumbnail' => osc_thumbnail_dimensions()) as $variant => $dimensions) {
+            $size = explode('x', $dimensions);
+            \ImageProcessing::fromFile($files[''])->resizeTo((int) $size[0], (int) $size[1])->saveToFile($files[$variant], $extension);
+        }
+        if (osc_keep_original_image()) {
+            ResourceUploader::saveOriginal($tmpName, $tmpName . '_original', $extension);
+            if (is_file($tmpName . '_original')) {
+                $files['_original'] = $tmpName . '_original';
+            }
+        }
+
+        return array('extension' => $extension, 'mime' => $mime, 'files' => $files);
     }
 
     /**
@@ -313,6 +365,8 @@ final class PhotoService
     public function add(int $itemId, array $files, Actor $actor): array
     {
         return self::cleanUpOnFailure($this, function () use ($itemId, $files, $actor): array {
+            $this->prepare($files);
+
             return DeferredMail::transaction(function () use ($itemId, $files, $actor): array {
                 $this->store($files, $itemId);
                 if ($this->storedIds === array()) {
@@ -428,7 +482,8 @@ final class PhotoService
 
     /**
      * Run a save that stores photos through $photos; when it throws, remove the files of the
-     * photos it had stored, as the rollback took their rows.
+     * photos it had stored, as the rollback took their rows. Prepared variants no store() took
+     * are removed either way.
      *
      * @param callable(): mixed $save
      *
@@ -442,6 +497,8 @@ final class PhotoService
             self::discardStored($photos->storedRows);
 
             throw $e;
+        } finally {
+            $photos->discardPrepared();
         }
     }
 

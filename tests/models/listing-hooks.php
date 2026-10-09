@@ -122,14 +122,10 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
 
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
-use mindstellar\api\idempotency\Idempotency;
-use mindstellar\api\idempotency\KvIdempotencyStore;
 use mindstellar\api\identity\WebIdentity;
-use mindstellar\api\Kernel;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
-use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
@@ -271,16 +267,7 @@ $call = static function (string $method, string $path, ?array $body = null, ?str
         new ImageFetcher($guard, $transport),
         2048 * 1024
     );
-    $kernel   = new Kernel(
-        new Router($validator, Router::core(), handlers: $services->handlers()),
-        $services->authenticator(),
-        api_test_limiter(),
-        $validator,
-        $settings,
-        $users,
-        $services->admins(),
-        new Idempotency(new KvIdempotencyStore(), $services->clock())
-    );
+    $kernel   = api_services_kernel($services, $validator);
     if ($token !== null) {
         $headers['Authorization'] = 'Bearer ' . $token;
     }
@@ -402,8 +389,8 @@ $webPhotoPost = $record(static function () use ($asUser, $sue, $webForm, $photoC
 $asUser(null);
 $staged       = (string) ($call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg))->body()['data']['token'] ?? '');
 $apiPhotoPost = $record(static fn () => $call('POST', 'listings', $listing(array('photo_tokens' => array($staged))), $sueToken));
-pin('the web post with a photo stores it before the stats', array(
-    'item_prepare_data', 'item_add_prepare_data', 'pre_item_add', 'pre_item_add_error', 'upload_image_extension', 'upload_image_mime', 'uploaded_file', 'invalidate_item_cache', 'item_increase_stat', 'posted_item',
+pin('the web post with a photo resizes it before the save and stores it before the stats', array(
+    'item_prepare_data', 'upload_image_extension', 'upload_image_mime', 'item_add_prepare_data', 'pre_item_add', 'pre_item_add_error', 'uploaded_file', 'invalidate_item_cache', 'item_increase_stat', 'posted_item',
 ), $webPhotoPost);
 pin('the API post with a photo fires the same, in the same order', $webPhotoPost, $apiPhotoPost);
 
@@ -489,6 +476,44 @@ pin('a plugin failing in posted_item rolls the web post back and its e-mail is n
 $webPost('Web post that saves');
 $asUser(null);
 pin('a saved web post sends its e-mail once', 1, count(HeldMailer::$sent));
+
+harness_section('photos are resized before the save transaction opens');
+$resizedIn = array();
+osc_add_filter('upload_image_extension', static function ($ext) use (&$resizedIn) {
+    $resizedIn[] = \mindstellar\database\Db::inTransaction();
+
+    return $ext;
+});
+osc_add_hook('pre_item_add', static function (): void {
+    if (!empty($GLOBALS['lh_fail_pre'])) {
+        throw new RuntimeException('A plugin failed.');
+    }
+});
+$photoPost = static function (string $title, string $photo) use ($asUser, $sue, $webForm): bool {
+    $asUser($sue);
+    $actions = new ItemActions(false);
+    $actions->prepareDataFrom($webForm(array('title' => array('en_US' => $title), 'photos' => array($photo))), true);
+    try {
+        $actions->add();
+
+        return true;
+    } catch (RuntimeException $e) {
+        return false;
+    } finally {
+        $asUser(null);
+    }
+};
+$saved = $photoCopy();
+pin('a saved post resized its photo outside any transaction and left no variants behind', array(true, array(false), array()), array($photoPost('Photo post that saves', $saved), $resizedIn, glob($saved . '_*')));
+foreach (array('lh_fail_pre' => 'Photo post refused early', 'lh_fail_posted' => 'Photo post rolled back') as $flag => $title) {
+    $resizedIn       = array();
+    $failed          = $photoCopy();
+    $before          = glob(UPLOADS_PATH . '*/*');
+    $GLOBALS[$flag]  = true;
+    $ok              = $photoPost($title, $failed);
+    unset($GLOBALS[$flag]);
+    pin($title . ': the prepared variants and stored files are gone', array(false, array(false), 0, array(), array()), array($ok, $resizedIn, $titled($title), glob($failed . '_*'), array_values(array_diff(glob(UPLOADS_PATH . '*/*'), $before))));
+}
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

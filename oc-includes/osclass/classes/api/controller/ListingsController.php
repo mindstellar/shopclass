@@ -21,8 +21,6 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
-use mindstellar\comment\CommentQuery;
-use mindstellar\listing\ListingQuery;
 
 /**
  * Listings: search, one listing, its photos and its comments. Search leaves out listings that
@@ -86,7 +84,7 @@ final class ListingsController
         $facts = $this->api->facts();
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), 'listings/' . $id . '/comments', ['listing' => $id] + $request->query());
 
-        $comments = new CommentQuery();
+        $comments = $this->api->commentQuery();
 
         return $pager->respond(
             fn (): array => $comments->approved($id, $pager->afterId() ?? 0, $pager->limit() + 1),
@@ -104,6 +102,6 @@ final class ListingsController
      */
     private function visibleRow(ApiCall $call, int $id): array
     {
-        return ProblemException::found($call->visibleListing((new ListingQuery($this->api->clock()))->statusRow($id)), 'listing');
+        return ProblemException::found($call->visibleListing($this->api->listingQuery()->statusRow($id)), 'listing');
     }
 }

@@ -43,8 +43,8 @@ final class ListingWritesController
 
     public function __construct(private ApiServices $api)
     {
-        $this->room   = new PhotoRoom();
-        $this->owned  = new OwnedListings();
+        $this->room   = $api->photoRoom();
+        $this->owned  = $api->ownedListings();
         $this->reader = $api->listingReader();
         $this->writer = $api->listingWriter();
         $this->photos = $api->photoIntake();

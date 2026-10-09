@@ -340,7 +340,15 @@ $kit    = new ApiServices(
         }
     }
 );
-$eventData = static fn (ApiServices $kit): EventData => new EventData(new ListingReader(CategoryCatalog::fromSite(), $kit->listingSerializer()), $kit, new SystemClock());
+$eventData = static fn (ApiServices $kit): EventData => new EventData(
+    new ListingReader(CategoryCatalog::fromSite(), $kit->listingSerializer()),
+    $kit->links(),
+    $kit->userSerializer(),
+    $kit->facts(),
+    $kit->userQuery(),
+    $kit->commentQuery(),
+    new SystemClock()
+);
 $data = $eventData($kit)->listing($item);
 pin('a listing event carries the public listing', [$item, 'Red bike', 'http://localhost/item/' . $item], [$data['id'] ?? null, $data['title'] ?? null, $data['url'] ?? null]);
 check('a listing event never carries the IP or the seller e-mail', !array_key_exists('ip', (array) $data) && !str_contains((string) json_encode($data), '@'));

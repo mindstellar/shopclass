@@ -44,7 +44,7 @@ final class AdminListingsController
 
     public function __construct(private ApiServices $api)
     {
-        $this->owned      = new OwnedListings();
+        $this->owned      = $api->ownedListings();
         $this->reader     = $api->listingReader();
         $this->writer     = $api->listingWriter();
         $this->moderation = $api->listingModeration();

@@ -43,7 +43,7 @@ final class AdminCommentsController
     {
         $this->moderation = CommentModeration::make();
         $this->serializer = new CommentSerializer();
-        $this->comments   = new CommentQuery();
+        $this->comments   = $api->commentQuery();
     }
 
     public function index(ApiCall $call): Response

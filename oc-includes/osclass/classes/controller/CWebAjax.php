@@ -94,15 +94,8 @@ class CWebAjax extends BaseModel
                 $json       = array();
 
                 if ($ajax_photo != '') {
-                    $success = false;
-
-                    // removeFile() is the authorisation: a positive count means this
-                    // browser's upload token really staged that file, so it may be removed.
-                    // Anything else (a forged or foreign filename) matches no row and is left
-                    // untouched, which also keeps the unlink below to real staged basenames.
-                    if (UploadTmpStore::removeFile((string) osc_upload_token(), (string) $ajax_photo) > 0) {
-                        $success = @unlink(osc_content_path() . 'uploads/temp/' . $ajax_photo);
-                    }
+                    // Only a file this browser's upload token staged is removed.
+                    $success = UploadTmpStore::discard(UploadTmpStore::formOwner(), (string) $ajax_photo, UploadTmpStore::dir());
 
                     AjaxResponse::json(array(
                         'success' => $success,
@@ -300,15 +293,8 @@ class CWebAjax extends BaseModel
                 }
 
                 $result['uploadName'] = 'auto_' . $filename;
-                // Stage the file against the form's upload token (a cookie, not the session).
-                // Record the name the client attaches and deletes by (uploadName), so the
-                // "remove photo" action authorises against — and unlinks — the right file.
-                UploadTmpStore::add(
-                    (string) osc_upload_token(),
-                    (string) Params::getParam('qquuid'),
-                    (string) $result['uploadName'],
-                    date('Y-m-d H:i:s')
-                );
+                // Stage the name the client attaches and deletes by, under the form's upload token.
+                UploadTmpStore::stage(UploadTmpStore::formOwner(), Params::getParamString('qquuid'), (string) $result['uploadName'], time());
                 if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
                     \mindstellar\security\ActionThrottle::record('ajax_upload');
                 }

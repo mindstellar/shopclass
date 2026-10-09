@@ -164,6 +164,6 @@ final class AdminLocationsController
      */
     private function row(string $level, int $id): array
     {
-        return ProblemException::found((new LocationQuery())->find($level, $id), 'location');
+        return ProblemException::found($this->api->locationQuery()->find($level, $id), 'location');
     }
 }
