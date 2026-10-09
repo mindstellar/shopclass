@@ -151,6 +151,20 @@ They are kept for plugins.
 - Core's new code reads tables through Stores and Queries with `mindstellar\database\Db`.
   The `osc_db_*` helpers are for plugins.
 
+Pick the read by what you need:
+
+| You need | Use |
+|---|---|
+| Some columns of one listing, maybe locked for a write | `ListingStore::find($id, $columns, $lock)` |
+| A listing's status flags | `ListingQuery::statusRow($id)` |
+| A listing as the edit form reads it | `ListingQuery::editRows($id, $withTexts)` |
+| A listing with its texts, category name and place, for a theme or a hook | `Item::getInstance()->findByPrimaryKey($id)` |
+| A listing as the API answers with it | `mindstellar\api\read\ListingReader` |
+| The listing the current page shows | `osc_item()` |
+| One user's bare row | `UserStore::find($id)` |
+| Several users' columns | `UserQuery::byIds($ids, $columns)` |
+| A user with their descriptions, cached | `UserQuery::find($id)` |
+
 ### Rules for new code
 
 - **Base classes** are `abstract` and live in `base/` (`mindstellar\base\`): `Model`,
