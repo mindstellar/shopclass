@@ -1,0 +1,222 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * Regenerates the reference tables in docs/site/developers/helpers.md from the source.
+ *
+ * Only the region between the begin and end markers is rewritten; the prose above it is
+ * hand-written. CI regenerates and fails on a diff, so the list cannot drift from core.
+ *
+ * Usage: php tools/gen-helpers-doc.php [--check]
+ */
+
+const ROOT  = __DIR__ . '/../';
+const DOC   = ROOT . 'docs/site/developers/helpers.md';
+const BEGIN = '<!-- generated:helpers -->';
+const END   = '<!-- /generated:helpers -->';
+
+// The installer, config loader and fallback page files are left out: they only load in
+// their own context, so a plugin cannot rely on them.
+const FILES = array(
+    'oc-includes/osclass/alerts.php',
+    'oc-includes/osclass/formatting.php',
+    'oc-includes/osclass/functions.php',
+    'oc-includes/osclass/locales.php',
+    'oc-includes/osclass/utils.php',
+);
+
+/**
+ * The first sentence of a docblock's summary, on one line.
+ */
+function helpers_summary(string $doc): string
+{
+    $lines = array();
+    foreach (preg_split('/\R/', $doc) as $line) {
+        $line = trim(preg_replace('#^\s*(/\*\*|\*/|\*)#', '', $line));
+        if (strpos($line, '@') === 0) {
+            break;
+        }
+        if ($line === '') {
+            if ($lines) {
+                break;
+            }
+            continue;
+        }
+        $lines[] = $line;
+    }
+
+    return implode(' ', $lines);
+}
+
+/**
+ * Text for a table cell: pipes escaped, and angle brackets outside code spans turned into
+ * entities so a summary naming a tag does not render as one.
+ */
+function helpers_cell(string $text): string
+{
+    $parts = explode('`', str_replace('|', '\\|', $text));
+    foreach ($parts as $i => $part) {
+        if ($i % 2 === 0) {
+            $parts[$i] = str_replace(array('<', '>'), array('&lt;', '&gt;'), $part);
+        }
+    }
+
+    return implode('`', $parts);
+}
+
+/**
+ * Every global osc_* function in one file, as name => args, summary, and the deprecation
+ * note (null when the helper is not deprecated).
+ *
+ * @return array<string,array{args:string,summary:string,deprecated:?string}>
+ */
+function helpers_scan_file(string $source): array
+{
+    $tokens = token_get_all($source);
+    $count  = count($tokens);
+    $found  = array();
+    $doc    = '';
+    for ($i = 0; $i < $count; $i++) {
+        $t = $tokens[$i];
+        if (is_array($t) && $t[0] === T_DOC_COMMENT) {
+            $doc = $t[1];
+            continue;
+        }
+        if (!is_array($t) || $t[0] !== T_FUNCTION) {
+            if (is_array($t) && in_array($t[0], array(T_WHITESPACE, T_COMMENT), true)) {
+                continue;
+            }
+            if (!is_array($t) || !in_array($t[0], array(T_STATIC, T_PUBLIC, T_PRIVATE, T_PROTECTED, T_FINAL, T_ABSTRACT), true)) {
+                $doc = '';
+            }
+            continue;
+        }
+        $j = $i + 1;
+        while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+            $j++;
+        }
+        if ($j < $count && $tokens[$j] === '&') {
+            $j++;
+        }
+        $name = is_array($tokens[$j] ?? null) && $tokens[$j][0] === T_STRING ? $tokens[$j][1] : '';
+        if (strpos($name, 'osc_') !== 0 || isset($found[$name])) {
+            $doc = '';
+            continue;
+        }
+
+        // The parameter list, brackets balanced.
+        $args  = '';
+        $level = 0;
+        for ($k = $j + 1; $k < $count; $k++) {
+            $text = is_array($tokens[$k]) ? $tokens[$k][1] : $tokens[$k];
+            if ($text === '(') {
+                if ($level++ === 0) {
+                    continue;
+                }
+            } elseif ($text === ')' && --$level === 0) {
+                break;
+            }
+            $args .= $text;
+        }
+
+        $found[$name] = array(
+            'args'       => trim(preg_replace('/\s+/', ' ', $args)),
+            'summary'    => helpers_summary($doc),
+            'deprecated' => preg_match('/@deprecated\b[ \t]*(.*)/', $doc, $m) ? trim($m[1]) : null,
+        );
+        $doc = '';
+    }
+
+    return $found;
+}
+
+/**
+ * Every helper, grouped by the file that defines it.
+ *
+ * @return array<string,array<string,array{args:string,summary:string,deprecated:?string}>>
+ */
+function helpers_scan(): array
+{
+    $files = glob(ROOT . 'oc-includes/osclass/helpers/*.php');
+    $files = array_merge(
+        array_map(static fn ($f) => 'oc-includes/osclass/helpers/' . basename($f), $files),
+        FILES
+    );
+    sort($files);
+
+    $groups = array();
+    foreach ($files as $path) {
+        $found = helpers_scan_file(file_get_contents(ROOT . $path));
+        if ($found) {
+            ksort($found);
+            $groups[$path] = $found;
+        }
+    }
+
+    return $groups;
+}
+
+$groups     = helpers_scan();
+$total      = 0;
+$deprecated = 0;
+foreach ($groups as $found) {
+    $total += count($found);
+    foreach ($found as $info) {
+        $deprecated += $info['deprecated'] === null ? 0 : 1;
+    }
+}
+
+$out   = array(BEGIN, '');
+$out[] = 'Core defines ' . $total . ' helpers, ' . $deprecated . ' of them deprecated. '
+    . 'Generated from the source; do not edit by hand.';
+$out[] = '';
+
+foreach ($groups as $path => $found) {
+    $out[] = '### ' . basename($path, '.php') . ' (' . count($found) . ')';
+    $out[] = '';
+    $out[] = '`' . $path . '`';
+    $out[] = '';
+    $out[] = '| Helper | What it does |';
+    $out[] = '|---|---|';
+    foreach ($found as $name => $info) {
+        $call    = '`' . str_replace('|', '\\|', $name . '(' . $info['args'] . ')') . '`';
+        $summary = helpers_cell($info['summary']);
+        if ($info['deprecated'] !== null) {
+            $note    = rtrim(helpers_cell($info['deprecated']), '.');
+            $summary = '**Deprecated' . ($note === '' ? '' : ' ' . $note) . '.** ' . $summary;
+        }
+        $out[] = '| ' . $call . ' | ' . trim($summary) . ' |';
+    }
+    $out[] = '';
+}
+
+$out[] = END;
+$block = implode("\n", $out);
+
+$doc = file_get_contents(DOC);
+$a   = strpos($doc, BEGIN);
+$b   = strpos($doc, END);
+if ($a === false || $b === false) {
+    fwrite(STDERR, "Markers missing in " . DOC . "\n");
+    exit(1);
+}
+$updated = substr($doc, 0, $a) . $block . substr($doc, $b + strlen(END));
+
+if (in_array('--check', $argv, true)) {
+    if ($updated !== $doc) {
+        fwrite(STDERR, "docs/site/developers/helpers.md is stale. Run: php tools/gen-helpers-doc.php\n");
+        exit(1);
+    }
+    echo "helpers.md matches the source.\n";
+    exit(0);
+}
+
+file_put_contents(DOC, $updated);
+echo 'Wrote ' . $total . " helpers to docs/site/developers/helpers.md\n";

@@ -11,6 +11,7 @@ The commands are in `tests/README.md`, under "What else CI checks".
 - [ ] A new test fails without the change
 - [ ] Changed strings: `npm run i18n`, templates committed
 - [ ] Changed hooks: `php tools/gen-hooks-doc.php`, and `php tests/hook-contract.php --write` if on purpose
+- [ ] Changed `osc_*` helpers: `php tools/gen-helpers-doc.php`
 - [ ] Changed API routes: `php tools/gen-openapi.php` and `php tools/gen-api-doc.php`
 - [ ] Changed SCSS or admin JS: `npm run build`, built files committed
 - [ ] New class without a namespace: `composer dump-autoload`, `oc-includes/vendor/composer/` committed

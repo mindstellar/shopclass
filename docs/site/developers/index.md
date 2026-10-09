@@ -44,6 +44,7 @@ Worth knowing before you port something:
 | Publish a plugin or theme | [Package specification](/docs/developers/package-spec/) |
 | Get it listed for every install | [The market](/docs/developers/market/) |
 | Run your code inside core | [Hooks and filters](/docs/developers/hooks/) |
+| Find the `osc_*` helper for a job | [Helper functions](/docs/developers/helpers/) |
 | Know which core class to call, and where hooks fire | [Architecture](/docs/developers/architecture/) |
 | Add a page of your own | [Routes](/docs/developers/routes/) |
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |

@@ -149,6 +149,8 @@ if (!function_exists('osc_job_describe')) {
 
 if (!function_exists('osc_job_has_handler')) {
     /**
+     * Whether a handler is registered for a job type.
+     *
      * @param string $type
      *
      * @return bool

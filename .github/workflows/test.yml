@@ -105,6 +105,8 @@ jobs:
       # The hooks reference is generated, so it cannot drift from what core fires.
       - name: Hooks reference is current
         run: php tools/gen-hooks-doc.php --check
+      - name: Helpers reference is current
+        run: php tools/gen-helpers-doc.php --check
       # The OpenAPI file and the endpoint reference are generated from the route table.
       - name: OpenAPI document is current
         run: php tools/gen-openapi.php --check

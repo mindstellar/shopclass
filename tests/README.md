@@ -124,6 +124,7 @@ Run these before you push. Each one fails CI when it is out of date.
 | `composer lint:install` once | before the first `composer lint` |
 | `npm run i18n` | a new or changed translatable string |
 | `php tools/gen-hooks-doc.php` | a new or changed hook |
+| `php tools/gen-helpers-doc.php` | a new, changed or deprecated `osc_*` helper |
 | `php tools/gen-openapi.php` and `php tools/gen-api-doc.php` | a REST API route change |
 | `npm run build` | a change to SCSS or admin JS (commit the built files) |
 | `composer dump-autoload` | a new class without a namespace (commit `oc-includes/vendor/composer/`) |
