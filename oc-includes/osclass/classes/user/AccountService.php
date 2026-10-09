@@ -473,6 +473,26 @@ final class AccountService
     }
 
     /**
+     * Send a password reset link to the account with this e-mail, when it is enabled. Fires
+     * `hook_email_user_forgot_password`. The caller gives the same answer either way, so the
+     * form does not tell who has an account.
+     *
+     * @return bool whether a link was sent
+     */
+    public function requestPasswordReset(string $email): bool
+    {
+        $user = $this->users->findByEmail($email);
+        if (!is_array($user) || empty($user['pk_i_id']) || (int) $user['b_enabled'] === 0) {
+            return false;
+        }
+        $code         = (string) $this->users->issuePassCode((int) $user['pk_i_id'], \User::PASS_CODE_RESET);
+        $password_url = osc_forgot_user_password_confirm_url($user['pk_i_id'], $code);
+        osc_run_hook('hook_email_user_forgot_password', $user, $password_url);
+
+        return true;
+    }
+
+    /**
      * Apply a pending e-mail change once its confirmation code checks out: the code must
      * match and be younger than User::PASS_CODE_TTL, and is cleared on use. The user row,
      * their listings, comments and alerts switch in one transaction.

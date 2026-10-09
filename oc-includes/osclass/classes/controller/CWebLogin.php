@@ -155,16 +155,8 @@ class CWebLogin extends BaseModel
             }
         }
 
-        $uActions = new UserActions(false);
-        if ($uActions->bootstrap_login($user['pk_i_id']) !== 3) {
-            osc_add_flash_error_message(_m("The user doesn't exist"));
-            $this->redirectTo(osc_user_login_url());
-        }
-        // bootstrap_login() already issued a browser-session identity cookie;
-        // upgrade it to a persistent one when "remember me" is ticked.
-        if (Params::getParam('remember') == 1) {
-            osc_web_user_login($user, true);
-        }
+        // SignIn::attempt() has checked the account is active and enabled; "remember me" makes the cookie last.
+        osc_web_user_login($user, Params::getParam('remember') == 1);
 
         if ($url_redirect == '') {
             $url_redirect = osc_user_dashboard_url();
@@ -248,19 +240,11 @@ class CWebLogin extends BaseModel
         }
         \mindstellar\security\LoginThrottle::recordFailure('web-recover', $recoverAccount);
 
-        $userActions = new UserActions(false);
-        $success     = $userActions->recover_password();
-
-        switch ($success) {
-            // Whether or not the address belongs to an account, the answer is
-            // the same -- telling the visitor it was not recognised would let
-            // anyone use this form to test addresses.
-            case (0): // recover ok
-            case (1): // no account for that address
-                osc_add_flash_ok_message(_m('If that email address belongs to an account, we have sent it instructions to reset the password'));
-                $this->redirectTo(osc_base_url());
-                break;
-        }
+        // Whether or not the address belongs to an account, the answer is the same: telling
+        // the visitor it was not recognised would let anyone use this form to test addresses.
+        (new \mindstellar\user\AccountService())->requestPasswordReset((string) Params::getParam('s_email'));
+        osc_add_flash_ok_message(_m('If that email address belongs to an account, we have sent it instructions to reset the password'));
+        $this->redirectTo(osc_base_url());
     }
 
     /**

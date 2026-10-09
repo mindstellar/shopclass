@@ -349,7 +349,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `hook_email_new_email` | action | `$newEmail, osc_change_user_email_confirm_url($userId, $code)` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_new_item_non_register_user` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `hook_email_send_friend` | action | `$args` | `oc-includes/osclass/classes/security/MessageHold.php` |
-| `hook_email_user_forgot_password` | action | `$user, $password_url` | `oc-includes/osclass/classes/actions/UserActions.php` |
+| `hook_email_user_forgot_password` | action | `$admin, $password_url` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `hook_email_user_registration` | action | `$user` | `oc-includes/osclass/classes/controller/CWebRegister.php` |
 | `hook_email_user_validation` | action | `$user, $input` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_warn_expiration` | action | `$item` | `oc-includes/osclass/cron.php` |

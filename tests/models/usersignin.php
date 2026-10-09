@@ -244,6 +244,37 @@ $login = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controlle
 check('the reset form stores the password through AccountService::setPassword() with the code', str_contains($login, 'AccountService::setPassword(')
     && !str_contains($login, 'osc_hash_password(') && !str_contains($login, 'SignOut::'));
 
+harness_section('asking for a reset link');
+if (!function_exists('osc_forgot_user_password_confirm_url')) {
+    function osc_forgot_user_password_confirm_url($id, $code)
+    {
+        return 'http://localhost/forgot/' . $id . '/' . $code;
+    }
+}
+$resetMails  = [];
+$resetListen = static function ($user, $url) use (&$resetMails): void {
+    $resetMails[] = [(int) $user['pk_i_id'], $url];
+};
+osc_add_hook('hook_email_user_forgot_password', $resetListen);
+$accounts = new \mindstellar\user\AccountService();
+check('an enabled account is sent a link', $accounts->requestPasswordReset('uma@example.test'));
+pin('...once, to that account, with the link its new code makes', [1, $uma, true], [
+    count($resetMails), $resetMails[0][0] ?? null, $row()['s_pass_code'] !== null && str_starts_with((string) ($resetMails[0][1] ?? ''), 'http://localhost/forgot/' . $uma . '/'),
+]);
+$admin->query("UPDATE {$p}t_user SET b_enabled = 0 WHERE pk_i_id = $uma");
+scratchdb_forget_cache();
+pin('a blocked account, or an address with no account, is sent nothing', [false, false, 1], [
+    $accounts->requestPasswordReset('uma@example.test'), $accounts->requestPasswordReset('nobody@example.test'), count($resetMails),
+]);
+$admin->query("UPDATE {$p}t_user SET b_enabled = 1 WHERE pk_i_id = $uma");
+scratchdb_forget_cache();
+osc_remove_hook('hook_email_user_forgot_password', $resetListen);
+\mindstellar\user\AccountInput::keepSignUp(['s_name' => ' Uma <b>', 's_username' => 'Uma Two', 's_email' => ' uma@example.test ', 's_phone_land' => '', 's_phone_mobile' => '555 0100', 's_password' => 'secret']);
+pin('a refused sign-up keeps the form, escaped and trimmed as before, and never the password', [' Uma &lt;b&gt;', 'uma@example.test', ''], [
+    Session::getInstance()->_getForm('user_s_name'), Session::getInstance()->_getForm('user_s_email'), Session::getInstance()->_getForm('s_password'),
+]);
+Session::getInstance()->_clearVariables();
+
 harness_section('an admin edit with a new password');
 if (!function_exists('osc_base_url')) {
     function osc_base_url($withIndex = false)

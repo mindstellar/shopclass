@@ -12,7 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\user;
 
+use mindstellar\utility\Sanitize;
 use Params;
+use Session;
 
 /**
  * The profile and sign-up forms, read for AccountService from the request or from plain values
@@ -54,6 +56,23 @@ final class AccountInput
     public static function signUp(): array
     {
         return self::signUpFromArray(self::request());
+    }
+
+    /**
+     * Keep a refused sign-up form in the session, cleaned, so it is filled in again. The
+     * password is never kept.
+     *
+     * @param array<string,mixed> $form what signUp() gave
+     */
+    public static function keepSignUp(array $form): void
+    {
+        $clean   = new Sanitize();
+        $session = Session::getInstance();
+        $session->_setForm('user_s_name', $clean->string((string) $form['s_name']));
+        $session->_setForm('user_s_username', $clean->username((string) $form['s_username']));
+        $session->_setForm('user_s_email', $clean->email((string) $form['s_email']));
+        $session->_setForm('user_s_phone_land', $clean->phone((string) $form['s_phone_land']));
+        $session->_setForm('user_s_phone_mobile', $clean->phone((string) $form['s_phone_mobile']));
     }
 
     /**

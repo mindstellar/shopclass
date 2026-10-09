@@ -17,7 +17,6 @@ use mindstellar\security\Captcha;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 use mindstellar\user\Usernames;
-use mindstellar\utility\Sanitize;
 use mindstellar\validation\ForbiddenException;
 use mindstellar\validation\InvalidException;
 
@@ -31,10 +30,6 @@ class UserActions
 
     public $is_admin;
     public $manager;
-    /**
-     * @var \mindstellar\utility\Sanitize
-     */
-    private $Sanitize;
 
     /**
      * UserActions constructor.
@@ -45,7 +40,6 @@ class UserActions
     {
         $this->is_admin = $is_admin;
         $this->manager  = User::getInstance();
-        $this->Sanitize = new Sanitize();
     }
 
     /**
@@ -62,12 +56,7 @@ class UserActions
         try {
             $account = (new AccountService())->register($form, Actor::fromSession((bool) $this->is_admin), $captcha);
         } catch (InvalidException $e) {
-            $session = Session::getInstance();
-            $session->_setForm('user_s_name', $this->Sanitize->string((string) $form['s_name']));
-            $session->_setForm('user_s_username', $this->Sanitize->username((string) $form['s_username']));
-            $session->_setForm('user_s_email', $this->Sanitize->email((string) $form['s_email']));
-            $session->_setForm('user_s_phone_land', $this->Sanitize->phone((string) $form['s_phone_land']));
-            $session->_setForm('user_s_phone_mobile', $this->Sanitize->phone((string) $form['s_phone_mobile']));
+            AccountInput::keepSignUp($form);
 
             return implode(PHP_EOL, array_column($e->errors(), 'message')) . PHP_EOL;
         } catch (ForbiddenException $e) {
@@ -133,28 +122,14 @@ class UserActions
     }
 
     /**
-     * Recover user password
-     *
-     * The caller owns the captcha check, which has to happen before the throttle is
-     * consulted — and a captcha token verifies exactly once, so there is only ever one
-     * place to do it. CWebLogin's 'recover_post' does it, mirroring CAdminLogin.
+     * Send a password reset link to the e-mail the request carries. The caller owns the
+     * captcha check. Compatibility: use \mindstellar\user\AccountService::requestPasswordReset().
      *
      * @return int 0 when the email was sent, 1 when the address matched no enabled account
      */
     public function recover_password()
     {
-        $user = User::getInstance()->findByEmail(Params::getParam('s_email'));
-
-        if (!$user || ($user['b_enabled'] == 0)) {
-            return 1;
-        }
-
-        $code = User::getInstance()->issuePassCode((int)$user['pk_i_id'], User::PASS_CODE_RESET);
-
-        $password_url = osc_forgot_user_password_confirm_url($user['pk_i_id'], $code);
-        osc_run_hook('hook_email_user_forgot_password', $user, $password_url);
-
-        return 0;
+        return (new AccountService())->requestPasswordReset((string) Params::getParam('s_email')) ? 0 : 1;
     }
 
     /**
@@ -218,7 +193,8 @@ class UserActions
     }
 
     /**
-     * Bootstrap user login
+     * Sign a user in by id, after checking the account is active and enabled.
+     * Compatibility: core signs in through \mindstellar\auth\SignIn and osc_web_user_login().
      *
      * @param int $user_id
      *
