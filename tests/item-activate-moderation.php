@@ -96,9 +96,7 @@ list($result, $fake) = run_activate(array('b_active' => 0, 'b_enabled' => 1), 'w
 check('a wrong secret changes nothing', $result === null && $fake->updates === array());
 
 harness_section('CWebItem activate');
-$controller = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php');
-preg_match("/case 'activate':(.*?)\n            case 'item_delete':/s", $controller, $m);
-$body = $m[1] ?? '';
+$body = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'activateItem');
 check('the case was parsed', $body !== '');
 check('a guest is sent home when the page would be hidden', preg_match(
     '/if \(!ListingPolicy::canView\(array\(\'b_active\' => 1\) \+ \$item\[0\], Actor::visitor\(\)\)\) \{[^}]*redirectTo\(osc_base_url\(\)\)/',

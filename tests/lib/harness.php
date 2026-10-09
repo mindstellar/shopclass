@@ -301,6 +301,46 @@ if (!function_exists('harness_public_method_map')) {
     }
 }
 
+if (!function_exists('harness_method_source')) {
+    /**
+     * The source of one method or function in a PHP file, from `function` to its closing
+     * brace; '' when there is none. Lets a test read one method instead of a span of text.
+     */
+    function harness_method_source(string $file, string $method): string
+    {
+        $tokens = token_get_all((string) file_get_contents($file));
+        $count  = count($tokens);
+        for ($i = 0; $i < $count; $i++) {
+            if (!is_array($tokens[$i]) || $tokens[$i][0] !== T_FUNCTION) {
+                continue;
+            }
+            $j = $i + 1;
+            while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+                $j++;
+            }
+            if (!is_array($tokens[$j] ?? null) || $tokens[$j][1] !== $method) {
+                continue;
+            }
+            $out   = '';
+            $depth = 0;
+            for ($k = $i; $k < $count; $k++) {
+                $text = is_array($tokens[$k]) ? $tokens[$k][1] : $tokens[$k];
+                $out .= $text;
+                if ($text === '{' || (is_array($tokens[$k]) && in_array($tokens[$k][0], array(T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES), true))) {
+                    $depth++;
+                } elseif ($text === '}') {
+                    $depth--;
+                    if ($depth === 0) {
+                        return $out;
+                    }
+                }
+            }
+        }
+
+        return '';
+    }
+}
+
 if (!function_exists('harness_questions')) {
     /**
      * Read the session's cumulative statement counter off the singleton handle.

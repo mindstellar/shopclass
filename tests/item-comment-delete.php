@@ -18,10 +18,8 @@
 
 require_once __DIR__ . '/lib/harness.php';
 
-$controller = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php');
 
-preg_match("/case 'delete_comment':(.*?)\n            default:/s", $controller, $m);
-$body = $m[1] ?? '';
+$body = harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php', 'deleteComment');
 
 harness_section('delete_comment');
 check('the case was parsed', $body !== '');

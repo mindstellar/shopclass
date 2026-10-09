@@ -664,7 +664,7 @@ foreach (CoreRoutes::all() as $name => $route) {
     }
     check(
         "$name -> {$to['action']}",
-        strpos($itemController, "case '{$to['action']}':") !== false
+        preg_match("/^\\s*'" . preg_quote($to['action'], '/') . "'\\s*=>/m", $itemController) === 1
             || strpos($itemController, "\$this->action === '{$to['action']}'") !== false
     );
 }

@@ -60,8 +60,8 @@ check(
 
 harness_section('the item page uses it');
 $webSrc = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php');
-preg_match("/\n            default:(.*?)osc_run_hook\('show_item'/s", $webSrc, $v);
-$view  = $v[1] ?? '';
+$view  = harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php', 'showItem');
+$view  = (string) strstr($view, "osc_run_hook('show_item'", true);
 $gate  = strpos($view, 'ListingPolicy::canView(');
 $after = $gate === false ? '' : substr($view, $gate, 200);
 check('the view was parsed', $view !== '');
@@ -74,9 +74,8 @@ preg_match('/private function notFoundIfHidden.*?\n    }/s', $webSrc, $h);
 $helper = $h[0] ?? '';
 check('the helper checks canView', strpos($helper, 'ListingPolicy::canView(') !== false);
 check('the helper sends the 404', strpos($helper, '$this->do404()') !== false);
-foreach (array('send_friend', 'send_friend_post', 'contact', 'contact_post') as $action) {
-    preg_match("/case '$action':(.*?)\n            case '/s", $webSrc, $c);
-    $body = $c[1] ?? '';
+foreach (array('send_friend' => 'sendFriend', 'send_friend_post' => 'sendFriendPost', 'contact' => 'contactForm', 'contact_post' => 'contactPost') as $action => $method) {
+    $body = harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php', $method);
     $find = strpos($body, 'findByPrimaryKey(');
     $gate = strpos($body, '$this->notFoundIfHidden($item)');
     $view = strpos($body, "_exportVariableToView('item'");
@@ -121,9 +120,8 @@ check('admin rights with no admin signed in still count', ListingPolicy::canView
 
 harness_section('both delete paths use it');
 $root = __DIR__ . '/../oc-includes/osclass/classes/controller/';
-$web  = file_get_contents($root . 'CWebItem.php');
 $ajax = file_get_contents($root . 'CWebAjax.php');
-preg_match("/case 'deleteResources':(.*?)case 'mark':/s", $web, $w);
+$w = array(1 => harness_method_source($root . 'CWebItem.php', 'deleteResources'));
 preg_match("/case 'delete_image':(.*?)case 'alerts':/s", $ajax, $a);
 foreach (array('CWebItem deleteResources' => $w[1] ?? '', 'CWebAjax delete_image' => $a[1] ?? '') as $name => $body) {
     $manage = strpos($body, 'ListingPolicy::canManage(');
