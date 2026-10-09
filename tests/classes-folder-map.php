@@ -23,7 +23,7 @@ sort($folders);
 $doc = (string) file_get_contents($root . '/docs/site/developers/architecture.md');
 $map = substr($doc, (int) strpos($doc, '## Folders'));
 $map = substr($map, 0, (int) strpos($map, "\n## ", 1) ?: strlen($map));
-preg_match_all('/^\| `([a-z]+)` \|/m', $map, $m);
+preg_match_all('/^\| `([a-z0-9_]+)` \|/m', $map, $m);
 $listed = $m[1];
 sort($listed);
 

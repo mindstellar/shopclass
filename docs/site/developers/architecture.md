@@ -90,8 +90,9 @@ other request values, and `ViewScope::withItem()` runs a hook with the listing t
 ## Folders
 
 Every class lives in `oc-includes/osclass/classes/`. A folder is a module: its classes are
-in the `mindstellar\<folder>` namespace, except the old classes with no namespace, which
-plugins use (`controller`, `model`, `form`, `actions`, `datatables` and the files in the root).
+in the `mindstellar\<folder>` namespace. The old classes plugins use have no namespace: all of
+`controller`, `actions` and `datatables`, the files in the root, and some of `model`, `form` and
+`logger`.
 `tests/classes-folder-map.php` fails when a folder is missing from this table.
 
 | Folder | Holds |
@@ -110,11 +111,11 @@ plugins use (`controller`, `model`, `form`, `actions`, `datatables` and the file
 | `comment` | Listing comments: posting, rules and reads |
 | `controller` | Web and admin page controllers (`CWeb*`, `admin/CAdmin*`) and their base classes |
 | `currency` | Currencies and `Money` |
-| `database` | The database connection, `Db` and `QueryBuilder`, the legacy `DAO`, schema checks |
+| `database` | The database connection, `Db` and `QueryBuilder`, the legacy `DAO`, schema checks, row hashes that tell when a row changed |
 | `datatables` | The admin list tables |
 | `exception` | The refusals every service throws (below) |
 | `fields` | Custom fields and their types |
-| `form` | Old form renderers kept for themes, `FormBuilder`, and the form builder (`builder/`) |
+| `form` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
 | `job` | The background job queue |
 | `language` | Installing and storing languages |
 | `listing` | Listings and their photos: posting, editing, rules, reads and mail |
@@ -122,7 +123,7 @@ plugins use (`controller`, `model`, `form`, `actions`, `datatables` and the file
 | `logger` | The admin log and error logging |
 | `market` | The plugin and theme market: catalogue, install, compatibility |
 | `migration` | Running the database migrations |
-| `model` | Tables several modules use: the old `Item`, `User`… classes and new `mindstellar\model` stores |
+| `model` | Tables several modules use: the old `Item`, `User`… classes (kept for plugins; add no methods) and new `mindstellar\model` stores |
 | `moderation` | What an admin does to a listing's or comment's status, and the keyword block list |
 | `pages` | Static pages and page templates |
 | `privacy` | Where a person's data lives, so a copy can be handed back |

@@ -65,7 +65,7 @@ harness_section('The pattern');
 check('catches a use line', preg_match(API_NAME, 'use mindstellar\api\Kernel;') === 1);
 check('catches a fully qualified call', preg_match(API_NAME, '\mindstellar\api\ApiServices::site()') === 1);
 check('catches a class name in a string', preg_match(API_NAME, "'mindstellar\\\\api\\\\Kernel'") === 1);
-check('lets the core apiaccess module through', preg_match(API_NAME, 'use mindstellar\apikey\ApiAccess;') === 0);
+check('lets the core apikey module through', preg_match(API_NAME, 'use mindstellar\apikey\ApiAccess;') === 0);
 
 harness_section('Core files');
 

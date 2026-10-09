@@ -57,5 +57,3 @@ abstract class Logger
      */
     abstract public function debug($message = '', $caller = null);
 }
-
-/* file end: ./oc-includes/osclass/logger/logger.php */
