@@ -17,8 +17,13 @@
 require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\Problem;
+use mindstellar\api\ratelimit\RatePolicy;
+use mindstellar\api\Request;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\Scopes;
 
 const API_SURFACE_FIXTURE = __DIR__ . '/fixtures/api-surface.txt';
 const API_HELPERS         = 'oc-includes/osclass/helpers/hApi.php';
@@ -104,7 +109,7 @@ check('the @api surface matches tests/fixtures/api-surface.txt; a change is a pl
     array_map(static fn (string $l): string => '- ' . $l, array_diff(explode("\n", $pinned), explode("\n", $surface)))
 )));
 check('ViewContext is built by core, not by plugins', !str_contains($surface, 'ViewContext::public __construct'));
-foreach (['RouteSpec::public key()', 'RouteSpec::public path()', 'RouteSpec::public method()', 'Response::public status()', 'Response::public body()', 'Response::public withBodyMember('] as $handed) {
+foreach (['RouteSpec::public key()', 'RouteSpec::public path()', 'RouteSpec::public method()', 'RouteSpec::public auth()', 'RouteSpec::public scope()', 'RouteSpec::public plugin()', 'Response::public status()', 'Response::public body()', 'Response::public withBodyMember('] as $handed) {
     check('hooks hand plugins ' . $handed . ', so it is @api', str_contains($surface, $handed));
 }
 check('Credential, which every handler reads, is pinned', str_contains($surface, 'mindstellar\\apiaccess\\Credential::public has(string $scope): bool'));
@@ -114,6 +119,33 @@ foreach (['osc_api_register_route', 'osc_api_register_schema', 'osc_api_register
 check('the unchecked ListingReader::one() is not @api; ApiKit::listing() is', !str_contains($surface, 'ListingReader::public one(') && str_contains($surface, 'ApiKit::public listing('));
 check('no @api method takes or hands out a raw listing row', !str_contains($surface, 'ApiCall::public canViewListing(') && !str_contains($surface, 'ApiCall::public visibleListing(') && !str_contains($surface, 'ApiKit::public listings('));
 check('error titles are not pinned', !str_contains($surface, 'Problem::CATALOGUE'));
+check('Links takes no raw row in the contract; plugins call it, never implement it', !str_contains($surface, 'Links::public listing(') && !str_contains($surface, 'Links::public photo('));
+check('ApiKit::listingContext() is pinned, so plugins need no ListingSerializer constant', str_contains($surface, 'ApiKit::public listingContext(') && !str_contains($surface, 'ListingSerializer::'));
+
+preg_match_all("/^if \\(!function_exists\\('(\\w+)'\\)\\)/m", (string) file_get_contents(ABS_PATH . API_HELPERS), $guarded);
+$elsewhere = array_values(array_filter($guarded[1], static fn (string $f): bool => !function_exists($f) || (new ReflectionFunction($f))->getFileName() !== realpath(ABS_PATH . API_HELPERS)));
+pin('every API helper comes from hApi.php, not an earlier definition that would hide it from the surface', [], $elsewhere);
+
+harness_section('hook payload shapes');
+$pluginPage = (string) file_get_contents(ABS_PATH . 'docs/site/developers/api/plugin-endpoints.md');
+preg_match('/^\\| `api_rate_limit` \\|[^|]*\\| `array\\(([^)]*)\\)/m', $pluginPage, $row);
+preg_match_all("/'(\\w+)' =>/", $row[1] ?? '', $documented);
+$seen    = null;
+$buckets = api_with_filter('api_rate_limit', static function ($limit) use (&$seen) {
+    $seen = $limit;
+
+    return ['max' => 7, 'window' => 30];
+}, static fn () => (new RatePolicy(new ApiSettings(true)))->bucketsFor(new Request('GET', 'v1/x', [], [], '127.0.0.1'), new RouteSpec('GET', 'x', ['handler' => 'strlen']), Credential::anonymous()));
+pin('api_rate_limit hands the keys plugin-endpoints.md documents', $documented[1], array_keys((array) $seen));
+pin('and reads max and window back', [7, 30], [$buckets[0]->max(), $buckets[0]->window()]);
+
+check('plugin-endpoints.md documents api_problem_codes entries as [status, title]', str_contains($pluginPage, '`$codes` (`code => array($status, $title)`)'));
+$teapot = api_with_filter('api_problem_codes', static fn ($codes) => ['ext_acme_teapot' => [418, 'Short and stout']] + (array) $codes, static fn () => Problem::make('ext_acme_teapot'));
+pin('an api_problem_codes entry is read as [status, title]', [418, 'Short and stout'], [$teapot->status(), $teapot->body()['title']]);
+
+check('plugin-endpoints.md documents api_scopes entries with description and audience', preg_match("/'description' => .*\\n\\s*'audience' +=>/", $pluginPage) === 1);
+$scopes = api_with_filter('api_scopes', static fn ($s) => ['ext:acme:x' => ['description' => 'Do x.', 'audience' => Scopes::AUDIENCE_USER]] + (array) $s, static fn () => Scopes::fromHooks());
+pin('an api_scopes entry is read as description and audience', ['Do x.', 'user'], [$scopes->all()['ext:acme:x'] ?? null, $scopes->pluginAudience('ext:acme:x')]);
 
 harness_section('error codes');
 $errorsPage = (string) file_get_contents(ABS_PATH . 'docs/site/developers/api/errors.md');

@@ -268,9 +268,9 @@ if (!function_exists('osc_webhook_emit')) {
 
 if (!function_exists('osc_user_api_access_url')) {
     /**
-     * The account page listing the user's API sign-ins and personal keys.
+     * The account page listing the user's API sign-ins and personal keys, for a theme's account menu.
      *
-     * @return string
+     * @api
      */
     function osc_user_api_access_url(): string
     {

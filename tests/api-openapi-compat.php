@@ -10,8 +10,9 @@
 
 /**
  * The breaking-change gate: core's v1 OpenAPI document against the saved baseline. A removed
- * operation, success status, member or enum value, a changed type or auth, or a request member
- * made required fails; additions pass.
+ * operation, success status, success header, member or enum value, a changed type or auth, or a
+ * request member made required fails, as does a request constraint tightened or a response one
+ * loosened; additions pass.
  * DB-free. Usage: php tests/api-openapi-compat.php [--write]   (--write saves a new baseline)
  */
 
@@ -85,6 +86,7 @@ function oa_shape(array $doc): array
                 }
             }
             $responses = [];
+            $headers   = [];
             foreach ($op['responses'] as $status => $response) {
                 if (((string) $status)[0] !== '2') {
                     continue;
@@ -93,10 +95,15 @@ function oa_shape(array $doc): array
                 foreach ($response['content'] ?? [] as $type => $media) {
                     $responses[(string) $status][$type] = oa_strip($media['schema'] ?? []);
                 }
+                foreach ($response['headers'] ?? [] as $name => $header) {
+                    $header = isset($header['$ref']) ? ($doc['components']['headers'][substr((string) $header['$ref'], strrpos((string) $header['$ref'], '/') + 1)] ?? []) : $header;
+
+                    $headers[(string) $status][strtolower((string) $name)] = oa_strip($header['schema'] ?? []);
+                }
             }
             $ops[strtoupper($method) . ' ' . $path] = [
                 'auth' => $op['x-auth'] ?? null, 'scope' => $op['x-scope'] ?? null,
-                'parameters' => $params, 'body' => $body, 'responses' => $responses,
+                'parameters' => $params, 'body' => $body, 'responses' => $responses, 'headers' => $headers,
             ];
         }
     }
@@ -207,12 +214,65 @@ function oa_schema_breaks(array $old, array $new, bool $request, string $where, 
     if (is_array($old['additionalProperties'] ?? null) && is_array($new['additionalProperties'] ?? null)) {
         array_push($breaks, ...oa_schema_breaks($old['additionalProperties'], $new['additionalProperties'], $request, $where . '{}', $schemas, $seen));
     }
+    array_push($breaks, ...oa_constraint_breaks($old, $new, $request, $where));
+    // By content: each part the client may send (request) or must read (response) needs a match on the other side.
     foreach (['oneOf', 'anyOf'] as $k) {
-        foreach ((array) ($old[$k] ?? []) as $i => $part) {
-            if (isset($new[$k][$i])) {
-                array_push($breaks, ...oa_schema_breaks((array) $part, (array) $new[$k][$i], $request, $where . '.' . $k . '[' . $i . ']', $schemas, $seen));
+        [$from, $to] = $request ? [(array) ($old[$k] ?? []), (array) ($new[$k] ?? [])] : [(array) ($new[$k] ?? []), (array) ($old[$k] ?? [])];
+        if ($from === [] || $to === []) {
+            continue;
+        }
+        foreach ($from as $i => $part) {
+            $matched = false;
+            foreach ($to as $other) {
+                $trial = $seen;
+                if (oa_schema_breaks($request ? (array) $part : (array) $other, $request ? (array) $other : (array) $part, $request, $where, $schemas, $trial) === []) {
+                    $matched = true;
+                    break;
+                }
+            }
+            if (!$matched) {
+                $breaks[] = $where . '.' . $k . ': ' . ($request ? 'part ' . $i . ' is no longer accepted' : 'new part ' . $i . ' matches no old one');
             }
         }
+    }
+
+    return $breaks;
+}
+
+/**
+ * Bounds, patterns, enums, types and closed objects. A request may only widen and a response only narrow.
+ *
+ * @param array<string,mixed> $old
+ * @param array<string,mixed> $new
+ *
+ * @return string[]
+ */
+function oa_constraint_breaks(array $old, array $new, bool $request, string $where): array
+{
+    // For a request the new side must not be stricter; for a response the old side.
+    [$loose, $strict] = $request ? [$old, $new] : [$new, $old];
+    $breaks           = [];
+    foreach (['maxLength', 'maxItems', 'maximum'] as $k) {
+        if (isset($strict[$k]) && (!isset($loose[$k]) || $strict[$k] < $loose[$k])) {
+            $breaks[] = $where . ': ' . $k . ' ' . json_encode($old[$k] ?? null) . ' became ' . json_encode($new[$k] ?? null);
+        }
+    }
+    foreach (['minLength', 'minItems', 'minimum'] as $k) {
+        if (isset($strict[$k]) && (!isset($loose[$k]) || $strict[$k] > $loose[$k])) {
+            $breaks[] = $where . ': ' . $k . ' ' . json_encode($old[$k] ?? null) . ' became ' . json_encode($new[$k] ?? null);
+        }
+    }
+    if (isset($strict['pattern']) && ($loose['pattern'] ?? null) !== $strict['pattern']) {
+        $breaks[] = $where . ': pattern ' . json_encode($old['pattern'] ?? null) . ' became ' . json_encode($new['pattern'] ?? null);
+    }
+    foreach (['enum', 'type'] as $k) {
+        $has = static fn (array $s): bool => $k === 'enum' ? isset($s['enum']) || array_key_exists('const', $s) : isset($s[$k]);
+        if ($has($strict) && !$has($loose)) {
+            $breaks[] = $where . ': ' . ($request ? 'now has' : 'no longer has') . ($k === 'enum' ? ' an enum' : ' a type');
+        }
+    }
+    if ($request && ($new['additionalProperties'] ?? null) === false && ($old['additionalProperties'] ?? null) !== false) {
+        $breaks[] = $where . ': unknown members are now refused';
     }
 
     return $breaks;
@@ -268,6 +328,15 @@ function oa_breaks(array $old, array $new): array
                     }
                     array_push($breaks, ...oa_schema_breaks($schema, $now['body']['content'][$type], true, $key . ' body', $schemas));
                 }
+            }
+        }
+        foreach ($op['headers'] ?? [] as $status => $headers) {
+            foreach ($headers as $name => $schema) {
+                if (!isset($now['headers'][$status][$name])) {
+                    $breaks[] = $key . ': ' . $status . ' no longer sends ' . $name;
+                    continue;
+                }
+                array_push($breaks, ...oa_schema_breaks($schema, $now['headers'][$status][$name], false, $key . ' ' . $status . ' header ' . $name, $schemas));
             }
         }
         foreach ($op['responses'] as $status => $content) {
@@ -355,6 +424,75 @@ pin('a request member or parameter turned required breaks', ['GET x: parameter q
 pin('a changed auth breaks', ['GET x: auth public listings:read became user listings:read'], oa_breaks($base, $with($base, static function (array &$o): void {
     $o['auth'] = 'user';
 })));
+
+harness_section('the gate: constraints, alternatives and headers');
+$req  = static fn (callable $change): array => $with($body, static function (array &$o) use ($change): void {
+    $change($o['body']['content']['application/json']['properties']['a']);
+});
+$res  = static fn (callable $change): array => $with($base, static function (array &$o) use ($change): void {
+    $change($o['responses']['200']['application/json']['properties']['status']);
+});
+$bodyA = $req(static function (array &$a): void {
+    $a += ['maxLength' => 10, 'minimum' => 1, 'pattern' => '^x', 'oneOf' => [['type' => 'string'], ['type' => 'integer']]];
+});
+pin('a request bound tightened breaks', ['GET x body.a: maxLength 10 became 5', 'GET x body.a: minimum 1 became 2'], oa_breaks($bodyA, $with($bodyA, static function (array &$o): void {
+    $o['body']['content']['application/json']['properties']['a'] = ['maxLength' => 5, 'minimum' => 2] + $o['body']['content']['application/json']['properties']['a'];
+})));
+pin('a request bound loosened or dropped passes', [], oa_breaks($bodyA, $with($bodyA, static function (array &$o): void {
+    $o['body']['content']['application/json']['properties']['a']['maxLength'] = 20;
+    unset($o['body']['content']['application/json']['properties']['a']['minimum']);
+})));
+pin('a request bound, pattern, enum or type newly added breaks', [
+    'GET x body.a: maxItems null became 3', 'GET x body.a: minLength null became 1', 'GET x body.a: pattern null became "^a"', 'GET x body.a: now has an enum',
+], oa_breaks($body, $req(static function (array &$a): void {
+    $a += ['maxItems' => 3, 'minLength' => 1, 'pattern' => '^a', 'enum' => ['x']];
+})));
+pin('a request type newly added breaks', ['GET x body: now has a type'], oa_breaks(
+    $with($body, static function (array &$o): void {
+        unset($o['body']['content']['application/json']['type']);
+    }),
+    $body
+));
+pin('a changed request pattern breaks', ['GET x body.a: pattern "^x" became "^y"'], oa_breaks($bodyA, $with($bodyA, static function (array &$o): void {
+    $o['body']['content']['application/json']['properties']['a']['pattern'] = '^y';
+})));
+pin('a request object newly closed breaks', ['GET x body: unknown members are now refused'], oa_breaks($body, $with($body, static function (array &$o): void {
+    $o['body']['content']['application/json']['additionalProperties'] = false;
+})));
+pin('request alternatives are matched by content, not position', [], oa_breaks($bodyA, $with($bodyA, static function (array &$o): void {
+    $o['body']['content']['application/json']['properties']['a']['oneOf'] = [['type' => 'integer'], ['type' => 'boolean'], ['type' => 'string']];
+})));
+pin('a request alternative dropped breaks', ['GET x body.a.oneOf: part 1 is no longer accepted'], oa_breaks($bodyA, $with($bodyA, static function (array &$o): void {
+    $o['body']['content']['application/json']['properties']['a']['oneOf'] = [['type' => 'string']];
+})));
+$resA = $res(static function (array &$s): void {
+    $s += ['maxLength' => 10, 'minLength' => 1, 'pattern' => '^[ab]$', 'oneOf' => [['type' => 'string'], ['type' => 'null']]];
+});
+pin('a response bound tightened passes', [], oa_breaks($resA, $with($resA, static function (array &$o): void {
+    $o['responses']['200']['application/json']['properties']['status'] = ['maxLength' => 5, 'minLength' => 2] + $o['responses']['200']['application/json']['properties']['status'];
+})));
+pin('a response bound loosened or a restriction dropped breaks', [
+    'GET x 200.status: maxLength 10 became 20', 'GET x 200.status: minLength 1 became null', 'GET x 200.status: pattern "^[ab]$" became null', 'GET x 200.status: no longer has an enum',
+], oa_breaks($resA, $with($resA, static function (array &$o): void {
+    $o['responses']['200']['application/json']['properties']['status']['maxLength'] = 20;
+    unset($o['responses']['200']['application/json']['properties']['status']['minLength'], $o['responses']['200']['application/json']['properties']['status']['pattern'], $o['responses']['200']['application/json']['properties']['status']['enum']);
+})));
+pin('a response alternative added breaks; reordered passes', ['GET x 200.status.oneOf: new part 2 matches no old one'], oa_breaks($resA, $with($resA, static function (array &$o): void {
+    $o['responses']['200']['application/json']['properties']['status']['oneOf'] = [['type' => 'null'], ['type' => 'string'], ['type' => 'integer']];
+})));
+pin('a response alternative dropped passes', [], oa_breaks($resA, $with($resA, static function (array &$o): void {
+    $o['responses']['200']['application/json']['properties']['status']['oneOf'] = [['type' => 'string']];
+})));
+$headed = $with($base, static function (array &$o): void {
+    $o['headers'] = ['200' => ['etag' => ['type' => 'string']]];
+});
+pin('a 2xx header dropped or retyped breaks; one added passes', ['GET x: 200 no longer sends etag', 'GET x 200 header etag: type string became integer'], [
+    ...oa_breaks($headed, $base),
+    ...oa_breaks($headed, $with($headed, static function (array &$o): void {
+        $o['headers']['200'] = ['etag' => ['type' => 'integer'], 'location' => ['type' => 'string']];
+    })),
+]);
+check('core 2xx answers have their headers in the shape', isset($current['operations']['GET /listings/{id}']['headers']['200']['etag']['type']));
 
 harness_section('core v1 against the baseline');
 $baseline = is_file(OPENAPI_BASELINE) ? json_decode((string) file_get_contents(OPENAPI_BASELINE), true) : null;

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api;
 
 use mindstellar\api\serializer\Links;
+use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\listing\ListingQuery;
 
@@ -40,6 +41,18 @@ final class ApiKit
     public function context(ApiCall $call, string $object, array $members, array $includes = []): ViewContext
     {
         return $this->services->context($call->request(), $call->credential(), $object, $members, $includes);
+    }
+
+    /**
+     * The full listing view for this caller, honouring `fields`, `include` and `locale` as core's listing endpoints do.
+     *
+     * @throws ProblemException 400 or 422 for an unknown field, include or locale
+     *
+     * @api
+     */
+    public function listingContext(ApiCall $call): ViewContext
+    {
+        return $this->context($call, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
     }
 
     /**

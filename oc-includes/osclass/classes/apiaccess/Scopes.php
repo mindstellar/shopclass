@@ -23,13 +23,14 @@ use mindstellar\admin\ModeratorAccess;
  */
 final class Scopes
 {
-    /** Only full admins' keys may hold the scope. */
+    /** @api Only full admins' keys may hold the scope. */
     public const AUDIENCE_ADMIN = 'admin';
-    /** Admins' and moderators' keys may hold it. */
+    /** @api Admins' and moderators' keys may hold it. */
     public const AUDIENCE_MODERATOR = 'moderator';
-    /** Users' keys and tokens may hold it, as may any admin's key. */
+    /** @api Users' keys and tokens may hold it, as may any admin's key. */
     public const AUDIENCE_USER = 'user';
 
+    /** @api */
     public const AUDIENCES = [self::AUDIENCE_ADMIN, self::AUDIENCE_MODERATOR, self::AUDIENCE_USER];
 
     /** The scope public data is read with; the only one a public key may hold. */
@@ -73,7 +74,8 @@ final class Scopes
     /** Scopes only a signed-in user's access token may hold, never a key or a session. */
     public const TOKEN_ONLY = ['account:write'];
 
-    private const PLUGIN_SCOPE = '/^ext:[a-z0-9-]+:[a-z0-9:_-]+$/D';
+    /** @api What a plugin scope's name must match: `ext:<slug>:<verb>`. */
+    public const PLUGIN_SCOPE = '/^ext:[a-z0-9-]+:[a-z0-9:_-]+$/D';
 
     /** held => what it also grants */
     private const IMPLIES = [
@@ -113,8 +115,7 @@ final class Scopes
      */
     public static function fromHooks(): self
     {
-        $scopes = [];
-        $scopes = osc_apply_filter('api_scopes', $scopes);
+        $scopes = osc_apply_filter('api_scopes', []);
 
         return new self(is_array($scopes) ? $scopes : [], ModeratorAccess::pages());
     }

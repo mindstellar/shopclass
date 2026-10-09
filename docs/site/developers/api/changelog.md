@@ -104,6 +104,8 @@ Also added:
 - An `api` member on `GET /`: `registration`, `personal_keys`, `photo_urls`, `public_reads`.
 - Hooks: `api_webhook_events`, `api_webhook_payload`, `api_webhook_delivered`. Function:
   `osc_webhook_emit()`.
+- For plugins: `ApiKit::listingContext()`, `Scopes::PLUGIN_SCOPE` and the `Scopes::AUDIENCE_*`
+  constants, `RouteSpec::auth()`, `scope()` and `plugin()`, and `osc_user_api_access_url()`.
 - Settings: **Allow webhook addresses on a private network**.
 - No new error codes. Admin actions the state refuses answer `409 conflict`.
 

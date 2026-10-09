@@ -493,6 +493,8 @@ final class RouteSpec
 
     /**
      * The plugin that registered the route, when known.
+     *
+     * @api
      */
     public function plugin(): ?string
     {
@@ -536,11 +538,21 @@ final class RouteSpec
         return $this->handler;
     }
 
+    /**
+     * One of the AUTH_* constants.
+     *
+     * @api
+     */
     public function auth(): string
     {
         return $this->auth;
     }
 
+    /**
+     * The scope the route needs, or null for none.
+     *
+     * @api
+     */
     public function scope(): ?string
     {
         return $this->scope;

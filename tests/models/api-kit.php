@@ -112,7 +112,6 @@ use mindstellar\api\auth\UserRows;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\api\serializer\Links;
-use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\CredentialKind;
@@ -175,7 +174,7 @@ $services = new ApiServices(new ApiSettings(true), new Scopes(), new ApiCredenti
 $kit      = new ApiKit($services);
 $ids      = static function (Credential $credential, array $wanted) use ($kit): array {
     $call    = new ApiCall(new Request('GET', 'v1/ext/acme/x', array(), array(), '127.0.0.1'), $credential);
-    $context = $kit->context($call, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
+    $context = $kit->listingContext($call);
 
     return array_column($kit->listingsById($call, $wanted, $context), 'id');
 };

@@ -16,21 +16,19 @@ namespace mindstellar\api\serializer;
  * The site's absolute URLs and display formats a serializer needs: the theme helpers in
  * production, plain strings in tests. Every method but avatar() works from the row it is
  * given and runs no query.
+ *
+ * Plugins call it through ApiKit::links() and must not implement it: core may add methods.
  */
 interface Links
 {
     /**
      * @param array<string,mixed> $item a listing row with s_title, s_city, fk_i_category_id
-     *
-     * @api
      */
     public function listing(array $item): string;
 
     /**
      * @param array<string,mixed> $resource a t_item_resource row
      * @param string              $variant  '' (normal), 'thumbnail', 'preview' or 'original'
-     *
-     * @api
      */
     public function photo(array $resource, string $variant): string;
 

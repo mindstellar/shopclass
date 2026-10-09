@@ -82,6 +82,8 @@ final class ApiCall
     /**
      * Whether the caller may see this listing row; false for a missing row.
      *
+     * @internal Core use only: it takes a raw row. Plugins use ApiKit::listing().
+     *
      * @param array<string,mixed>|null $row
      */
     public function canViewListing(?array $row): bool
@@ -91,6 +93,8 @@ final class ApiCall
 
     /**
      * $row when the caller may see it, else null.
+     *
+     * @internal Core use only: it takes a raw row. Plugins use ApiKit::listing().
      *
      * @param array<string,mixed>|null $row
      *
@@ -146,6 +150,8 @@ final class ApiCall
 
     /**
      * What the route's prepare step returned; null when it has none.
+     *
+     * @internal Core use only: plugin routes have no prepare step.
      */
     public function prepared(): mixed
     {

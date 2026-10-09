@@ -58,8 +58,7 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
 ### The path
 
 - It must start with `ext/<slug>/`. The slug is yours: lowercase letters, digits and `-`.
-  The first plugin to register a route under a slug owns it; another plugin's route there
-  is dropped.
+  The route's `plugin` (by default your plugin's folder name) must equal the slug; any other route there is dropped and logged.
 - A path that does not, or that would replace a core route, is dropped and logged. The
   rest of your routes still load.
 - Registering the same method and path twice keeps the first and logs the second. Two
@@ -137,11 +136,11 @@ A handler that needs nothing from the call may take no argument.
 | Class | Use |
 |---|---|
 | `ApiCall` | `request()`, `credential()`, `args()` (the path values), `arg($name)` (one value, or `null`), `intArg($name)`, `input()` (the decoded JSON body, `array()` when none was sent), `kit()`, `userId()` (0 when the caller is not a user), `actor($scope)` (the caller for core services, an `Actor` with `userId()`, `adminId()`, `isAdmin()`, `isGuest()` and `ip()`), `listingActor()` |
-| `ApiKit` | `context($call, $object, $members, $includes)` (a `ViewContext` for this caller), `listing($call, $id, $context)` (one listing, or `null` when it does not exist or the caller may not see it), `listingsById($call, $ids, $context)` (listings in the order given; missing ones and those the caller may not see are left out), `links()` |
+| `ApiKit` | `listingContext($call)` (the full listing view for this caller, honouring `fields`, `include` and `locale` as core's listing endpoints do), `context($call, $object, $members, $includes)` (a `ViewContext` for another object), `listing($call, $id, $context)` (one listing, or `null` when it does not exist or the caller may not see it), `listingsById($call, $ids, $context)` (listings in the order given; missing ones and those the caller may not see are left out), `links()` (a `Links`: `user($id, $username)`, `avatar($userId)`, `api($path)`, `price($micros, $symbol)`; call it, do not implement it, as core may add methods) |
 | `Request` | `method()`, `path()`, `version()`, `routePath()`, `query()`, `queryString($name)`, `queryInt($name)`, `queryBool($name)`, `queryList($name)`, `queryIds($name)`, `header($name)`, `input()`, `ip()` |
 | `Credential` | `kind()` (a `CredentialKind` constant: `ANONYMOUS`, `PUBLIC`, `KEY`, `USER` or `SESSION`), `scopes()`, `has($scope)`, `userId()`, `adminId()`, `isAdmin()`, `isModerator()`, `isUser()`, `isSession()`, `isAnonymous()` |
 | `Response` | `Response::ok($data, $status = 200)`, `Response::created($data, $location)`, `Response::collection($items, $meta, $links)`, `Response::noContent()`, `->withHeader($name, $value)`, and in hooks `->status()`, `->body()`, `->withBodyMember($name, $value)` |
-| `RouteSpec` | In hooks: `key()` (`GET ext/acme/x`), `method()`, `path()` |
+| `RouteSpec` | In hooks: `key()` (`GET ext/acme/x`), `method()`, `path()`, `auth()` (an `AUTH_*` value), `scope()` (or `null`), `plugin()` (or `null`) |
 | `read\Page` | `Page::whole($items, $call->kit()->links(), $call)`: a full list in the standard list envelope |
 | `ProblemException` | `of($code, $detail)`, `notFound($detail)`, `field($pointer, $code, $message)`, `tooMany($message, $retryAfter)`, `from($response)` |
 
@@ -191,7 +190,8 @@ osc_add_filter('api_scopes', function ($scopes) {
 ```
 
 The `audience` says who may hold the scope. Default `admin`. A scope with another name, or
-an unknown audience, is dropped.
+an unknown audience, is dropped. `Scopes::PLUGIN_SCOPE` is the name pattern, and
+`Scopes::AUDIENCE_ADMIN`, `AUDIENCE_MODERATOR` and `AUDIENCE_USER` the audiences.
 
 | Audience | May hold it |
 |---|---|

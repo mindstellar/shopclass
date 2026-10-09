@@ -92,42 +92,6 @@ function hook_scan(): array
 }
 
 /**
- * How many arguments a hook call passes after its name, read from just after the name: top-level
- * commas up to the closing paren.
- */
-function hook_arg_count(string $src, int $offset): int
-{
-    $depth = 0;
-    $count = 0;
-    $quote = null;
-    for ($i = $offset, $n = strlen($src); $i < $n; $i++) {
-        $c = $src[$i];
-        if ($quote !== null) {
-            if ($c === '\\') {
-                $i++;
-            } elseif ($c === $quote) {
-                $quote = null;
-            }
-            continue;
-        }
-        if ($c === '\'' || $c === '"') {
-            $quote = $c;
-        } elseif ($c === '(' || $c === '[' || $c === '{') {
-            $depth++;
-        } elseif ($c === ')' || $c === ']' || $c === '}') {
-            if ($depth === 0) {
-                return $count;
-            }
-            $depth--;
-        } elseif ($c === ',' && $depth === 0) {
-            $count++;
-        }
-    }
-
-    return $count;
-}
-
-/**
  * The top-level arguments of a call, read from just after its opening paren, as source text.
  *
  * @return string[]
@@ -164,6 +128,14 @@ function hook_call_args(string $src, int $offset): array
     }
 
     return $args;
+}
+
+/**
+ * How many arguments a hook call passes after its name, read from just after the name.
+ */
+function hook_arg_count(string $src, int $offset): int
+{
+    return count(hook_call_args($src, $offset)) - 1;
 }
 
 /**
