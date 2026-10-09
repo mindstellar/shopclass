@@ -66,6 +66,7 @@ Plugin authors should read the Breaking section before upgrading.
 - Saving a listing whose expiry did not change no longer rewrites it.
 - API listings sorted by `price` page by cursor, not offset, and cursors last a week.
 - A listing edit hands `edited_item` the row it locked with the edit on it, instead of reading the listing again.
+- A listing save runs fewer queries: an API post 25 instead of 31, an edit 19 instead of 24. Places are looked up in one query, and `posted_item` and `edited_item` get the texts the save wrote.
 - The "with photos" search checks each listing's photos directly instead of joining every photo and grouping.
 - Listing photos are resized before the save's transaction, so it no longer holds row locks while images are processed.
 
