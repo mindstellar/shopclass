@@ -223,8 +223,7 @@ $web  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/contr
 check('the web logout link and the account logout both end it', str_contains($main, 'session_end();') && str_contains($web, 'session_end();'));
 
 harness_section('the buttons');
-$user  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php');
-$case  = substr($user, (int) strpos($user, "case 'sign_out_all_post':"), 900);
+$case  = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php', 'signOutAllPost');
 check('the account button checks the CSRF token, then the password', (int) strpos($case, 'osc_csrf_check();') < (int) strpos($case, 'Reauth::verify(') && str_contains($case, 'Reauth::verify('));
 check('and signs out through SignOut, this browser too', str_contains($case, 'SignOut::everywhereUser($userId);') && str_contains($case, '$this->logout();'));
 $view = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/account/user-signin-content.php');

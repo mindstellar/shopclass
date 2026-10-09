@@ -30,11 +30,11 @@ $defines = file_get_contents(
 
 harness_section('GET delete does not mutate');
 check(
-    'the GET case exists',
-    (bool)preg_match("/case 'delete':/", $controller)
+    'the GET action exists',
+    (bool)preg_match("/'delete'\s*=>\s*'deleteForm'/", $controller)
 );
-preg_match("/case 'delete':(.*?)case 'delete_post':/s", $controller, $get);
-check('GET delete was parsed as its own case', isset($get[1]) && $get[1] !== '');
+$get = array(1 => harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebUser.php', 'deleteForm'));
+check('GET delete was parsed as its own method', isset($get[1]) && $get[1] !== '');
 check(
     'GET delete does not call deleteUser',
     isset($get[1]) && strpos($get[1], 'deleteUser') === false
@@ -50,7 +50,7 @@ check(
 );
 
 harness_section('POST delete_post is the mutation');
-preg_match("/case 'delete_post':(.*?)private function handleAvatarUpload/s", $controller, $post);
+$post = array(1 => harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebUser.php', 'deletePost'));
 check('delete_post was parsed', isset($post[1]) && $post[1] !== '');
 check(
     'delete_post checks CSRF',

@@ -21,7 +21,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
-/** Controller => [its file, the actions it has always answered, the method for any other action]. */
+/** Controller => [its file, the actions it has always answered, the method for any other action, or null for none]. */
 $controllers = array(
     'CWebItem'    => array('CWebItem.php', array(
         'activate', 'add_comment', 'contact', 'contact_post', 'deleteResources', 'delete_comment', 'item_add',
@@ -49,6 +49,11 @@ $controllers = array(
         'activate', 'add', 'add_post', 'add_widget', 'add_widget_post', 'delete', 'delete_widget', 'edit_widget',
         'edit_widget_post', 'render', 'reorder_widgets_post', 'widget_create_post', 'widget_move_post', 'widgets',
     ), 'themes'),
+    'CWebUser' => array('CWebUser.php', array(
+        'alerts', 'api_access', 'api_access_post', 'change_email', 'change_email_post', 'change_password',
+        'change_password_post', 'change_username', 'change_username_post', 'dashboard', 'delete', 'delete_post',
+        'export', 'items', 'profile', 'profile_post', 'sign_out_all_post', 'unsub_alert',
+    ), null),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {
@@ -62,8 +67,12 @@ foreach ($controllers as $class => [$file, $expected, $fallback]) {
     foreach ($actions as $action => $method) {
         check("$action has its method $method", method_exists($class, $method));
     }
-    check("any other action goes to $fallback", method_exists($class, $fallback)
-        && strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/' . $file, 'doModel'), "'$fallback'") !== false);
+    $dispatch = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/' . $file, 'doModel');
+    if ($fallback === null) {
+        check('any other action does nothing', strpos($dispatch, '?? null') !== false);
+    } else {
+        check("any other action goes to $fallback", method_exists($class, $fallback) && strpos($dispatch, "'$fallback'") !== false);
+    }
 }
 check('the view beacon is answered before the map', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'doModel'), "'view_beacon'") !== false);
 

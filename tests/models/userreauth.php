@@ -77,13 +77,11 @@ check('which is a refusal, not an error', Reauth::verify($row(), $read) !== '');
 $_POST = [];
 Params::init();
 
-$source = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php');
-$change = substr($source, (int) strpos($source, "case 'change_password_post':"), 1800);
-$cases  = ['change_password_post' => $change];
-if (str_contains($source, "case 'sign_out_all_post':")) {
-    $cases['change_password_post'] = substr($change, 0, (int) strpos($change, "case 'sign_out_all_post':"));
-    $cases['sign_out_all_post']    = substr($source, (int) strpos($source, "case 'sign_out_all_post':"), 900);
-}
+$cases  = [
+    'change_password_post' => harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php', 'changePasswordPost'),
+    'sign_out_all_post'    => harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php', 'signOutAllPost'),
+];
+$change = $cases['change_password_post'];
 foreach ($cases as $case => $code) {
     check("$case reads the passwords as strings", str_contains($code, "Params::getParamString('password', false, false)")
         && !preg_match("/Params::getParam\\('(password|new_password2?)'/", $code));

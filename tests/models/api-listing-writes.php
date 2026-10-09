@@ -1005,7 +1005,7 @@ pin('ending a sign-in revokes its refresh family', array(true, 0), array(
 check('an unknown session is refused', !($page->end($sue, 'nope')));
 $settings = new ApiSettings(true, userKeys: true);
 $web      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php');
-preg_match("/case 'api_access_post':.*?break;/s", $web, $postCase);
+$postCase = array(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php', 'apiAccessPagePost'));
 check('the page\'s POST checks the CSRF token', isset($postCase[0]) && str_contains($postCase[0], 'osc_csrf_check()'));
 preg_match('/private function apiAccessPost\(.*?\n    }\n/s', $web, $postMethod);
 check('the key page does nothing while the API is off', isset($postMethod[0]) && str_contains($postMethod[0], 'if (!osc_api_enabled())'));
