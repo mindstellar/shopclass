@@ -234,8 +234,8 @@ $admins = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/con
 $case   = substr($admins, (int) strpos($admins, "case ('sign_out_all'):"), 400);
 $method = substr($admins, (int) strpos($admins, 'private function signOutEverywhere()'), 900);
 check('the admin button checks the CSRF token, then the password and code', str_contains($case, 'osc_csrf_check();') && str_contains($method, 'AdminReauth::verify('));
-$users = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminUsers.php');
-check('the Users screen action checks the CSRF token', str_contains(substr($users, (int) strpos($users, "case ('sign_out_all'):"), 120), 'osc_csrf_check();'));
+$users = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminUsers.php', 'signOutAll');
+check('the Users screen action checks the CSRF token', str_contains($users, 'osc_csrf_check();'));
 
 $result = harness_result();
 ob_end_flush();

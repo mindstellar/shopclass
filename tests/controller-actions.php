@@ -31,6 +31,12 @@ $controllers = array(
         'bulk_actions', 'clear_reports', 'clear_stat', 'delete', 'deleteResource', 'item_edit', 'item_edit_post',
         'items_reported', 'post', 'post_item', 'settings', 'settings_post', 'status', 'status_premium', 'status_spam',
     ), 'listings'),
+    'CAdminUsers' => array('admin/CAdminUsers.php', array(
+        'activate', 'alerts', 'ban', 'create', 'create_ban_rule', 'create_ban_rule_post', 'create_post', 'deactivate',
+        'delete', 'delete_alerts', 'delete_ban_rule', 'disable', 'edit', 'edit_ban_rule', 'edit_ban_rule_post',
+        'edit_post', 'enable', 'resend_activation', 'settings', 'settings_post', 'sign_out_all', 'status_alerts',
+        'user_login',
+    ), 'users'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {
