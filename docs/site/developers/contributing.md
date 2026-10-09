@@ -17,11 +17,14 @@ need no PHP at all.
 3. Make the change. If it touches the admin theme, run `npm run build` and
    **commit the compiled output**: releases are cut with `git archive`, so
    whatever is committed is exactly what users receive.
-4. Run the linters:
+4. Run the tests and the linters:
    ```bash
-   composer lint     # PSR-12 check + PHP 8.0 compatibility
+   composer test             # unit tests
+   composer test:models      # database tests (start one with npm run test:db)
+   composer lint             # PSR-12, the PHP 8.0 floor and PHPStan
    ```
-5. Open a pull request against `develop`.
+   The first time, run `composer cs:install` and `composer lint:install`.
+5. Open a pull request against `develop`. Its template lists the other checks CI runs.
 
 See [coding style](/docs/developers/coding-style/) for the standard, and the
 [developer overview](/docs/developers/) for a local development stack.
@@ -36,22 +39,13 @@ under the new version number. Run `composer update <package>` and commit
 ## Running the tests
 
 ```bash
-php tests/run-unit.php           # the unit tests, 4 at a time (-j N to change)
-php tests/run-models.php         # the database tests
-php tests/models/<name>.php      # one database test file
+npm run test:db                  # a throwaway MySQL on 127.0.0.1:33061 (Docker)
+composer test                    # the unit tests, 4 at a time
+composer test:models             # the database tests
 ```
 
-`run-unit.php` does not run the database tests. Those need a throwaway MySQL on
-port 33061. This one keeps its data in memory and skips disk syncs, so it is fast:
-
-```bash
-docker run -d --name shopclass-scratch -p 33061:3306 --tmpfs /var/lib/mysql \
-  -e MYSQL_ROOT_PASSWORD=root mysql:8.0 --skip-log-bin \
-  --innodb-flush-log-at-trx-commit=0 --innodb-doublewrite=0
-```
-
-Another server works too: set `DRIFT_DB_HOST`, `DRIFT_DB_PORT`, `DRIFT_DB_USER`
-and `DRIFT_DB_PASS`.
+How to write a test, the pinned lists and every check CI runs are in
+[`tests/README.md`](https://github.com/mindstellar/shopclass/blob/develop/tests/README.md).
 
 ## Documentation
 

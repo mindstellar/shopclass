@@ -328,12 +328,9 @@ Installation, local development, and the production image are covered in the sec
 
 ## Contributing
 
-Contributions are welcome: bug fixes, features, translations, docs.
-
-1. Open an issue describing the change before you start.
-2. Branch from **`develop`** (never target `master`).
-3. Make your change; if it touches the admin theme, run `npm run build` and commit the compiled output.
-4. Open a pull request against `develop`.
+Contributions are welcome: bug fixes, features, translations, docs. Open an issue
+first, branch from **`develop`**, and see [CONTRIBUTING.md](CONTRIBUTING.md) for the
+steps and [tests/README.md](tests/README.md) for the tests.
 
 Because ShopClass runs on installs with third-party themes and plugins, treat the
 `osc_*` helpers, hook names, admin CSS class names, and `oc-includes/assets/`
