@@ -13,10 +13,8 @@ namespace mindstellar\utility;
 use Category;
 use City;
 use Country;
-use LoginAttempt;
-use Params;
+use mindstellar\security\ActionThrottle;
 use Region;
-use Session;
 
 /**
  * Class Validate
@@ -234,26 +232,43 @@ class Validate
     }
 
     /**
+     * Validate one or more digits (no sign, no periods)
+     *
+     * @param mixed $value
+     *
+     * @return boolean
+     */
+    public function int($value)
+    {
+        return is_scalar($value) && preg_match('/^[0-9]+$/', (string) $value) === 1;
+    }
+
+    /**
      * Validate one or more numbers (no periods), must be more than 0.
      *
-     * @param string|int $value
+     * @param mixed $value
      *
      * @return boolean
      */
     public function nozero($value)
     {
-        return $this->filterInt($value) && $value > 0;
+        return $this->int($value) && $value > 0;
     }
 
     /**
      * Validate $value is a number or a numeric string
      *
-     * @param string|int|float $value
+     * @param mixed   $value
+     * @param boolean $required when false, an empty value passes
      *
      * @return boolean
      */
-    public function number($value)
+    public function number($value, $required = true)
     {
+        if (!$required && ($value === null || $value === '')) {
+            return true;
+        }
+
         return is_numeric($value);
     }
 
@@ -338,9 +353,9 @@ class Validate
             if ($countryId) {
                 $data     = Region::getInstance()->findByPrimaryKey($region);
                 $regionId = $data['pk_i_id'];
-                if ($data['b_active'] === 1) {
+                if ((int) $data['b_active'] === 1) {
                     $data = City::getInstance()->findByPrimaryKey($city);
-                    if ($data['b_active'] === 1 && $data['fk_i_region_id'] === $regionId
+                    if ((int) $data['b_active'] === 1 && (string) $data['fk_i_region_id'] === (string) $regionId
                         && strtolower($data['fk_c_country_code']) === strtolower($countryId)
                     ) {
                         return true;
@@ -369,12 +384,12 @@ class Validate
     {
         if ($this->nozero($value)) {
             $data = Category::getInstance()->findByPrimaryKey($value);
-            if (isset($data['b_enabled']) && $data['b_enabled'] === 1) {
+            if (isset($data['b_enabled']) && (int) $data['b_enabled'] === 1) {
                 if (osc_selectable_parent_categories()) {
                     return true;
                 }
 
-                if ($data['fk_i_parent_id'] !== null) {
+                if ($data['fk_i_parent_id'] !== null && $data['fk_i_parent_id'] !== '') {
                     return true;
                 }
             }
@@ -425,20 +440,15 @@ class Validate
     public function delay($type = 'item')
     {
         if ($type === 'item') {
-            $delay   = osc_item_spam_delay();
+            $delay   = (int) osc_item_spam_delay();
             $context = 'item_post';
         } else {
-            $delay   = osc_comment_spam_delay();
+            $delay   = (int) osc_comment_spam_delay();
             $context = 'comment_post';
         }
 
-        // Allowed when this address has not posted of this kind within the delay window. The
-        // throttle records live in the DB now (see ItemActions), not the session.
-        return LoginAttempt::getInstance()->countByIpContext(
-            $context,
-            (string)Params::getServerParam('REMOTE_ADDR'),
-            date('Y-m-d H:i:s', time() - (int)$delay)
-        ) === 0;
+        // Allowed when this address has not posted of this kind within the delay window.
+        return $delay <= 0 || !ActionThrottle::exceeded($context, 1, $delay);
     }
 
     /**

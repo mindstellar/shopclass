@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\webhook;
 
+use mindstellar\database\UtcDatetime;
 use mindstellar\security\SecretBox;
 
 /**
@@ -361,7 +362,7 @@ final class Endpoint
      */
     public function toArray(?int $now = null, ?string $secret = null): array
     {
-        $at = static fn (?int $time): ?string => $time === null ? null : gmdate('Y-m-d\TH:i:s\Z', $time);
+        $at = static fn (?int $time): ?string => $time === null ? null : UtcDatetime::rfc3339($time);
 
         $out = [
             'id'                    => $this->id(),

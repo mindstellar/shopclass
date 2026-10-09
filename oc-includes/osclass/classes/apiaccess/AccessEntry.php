@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\apiaccess;
 
+use mindstellar\database\UtcDatetime;
+
 /**
  * One thing that acts for a user: a sign-in (a refresh family) or a personal key.
  */
@@ -100,6 +102,6 @@ final class AccessEntry
 
     private static function timestamp(?int $time): ?string
     {
-        return $time === null ? null : gmdate('Y-m-d\TH:i:s\Z', $time);
+        return $time === null ? null : UtcDatetime::rfc3339($time);
     }
 }

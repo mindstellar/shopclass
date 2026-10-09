@@ -600,6 +600,10 @@ jobs:
       # .info and .online address for years while accepting a local part with a space in it.
       - name: Email validation
         run: php tests/validate-email.php
+      - name: Custom field validation
+        run: php tests/custom-field-validation.php
+      - name: Format helpers
+        run: php tests/format-helpers.php
       # The username availability check stripped dots that registration keeps.
       - name: Sanitize drift
         run: php tests/sanitize-drift.php

@@ -13,7 +13,7 @@
 
 namespace mindstellar\listing;
 
-use mindstellar\utility\Sanitize;
+use mindstellar\form\builder\FieldValidator;
 
 /**
  * The listing form's own checks, for every way a listing is saved: lengths, places, price,
@@ -42,13 +42,6 @@ final class ListingValidator
         's_contact_name'  => 100,
         's_contact_email' => 140,
     );
-
-    private Sanitize $sanitize;
-
-    public function __construct()
-    {
-        $this->sanitize = new Sanitize();
-    }
 
     /**
      * One refusal as the listing errors carry it.
@@ -250,232 +243,28 @@ final class ListingValidator
 
             return array();
         }
-        if (is_array($meta)) {
-            $valid_id = array_column($_meta, 'pk_i_id');
-            // special case for checkboxes
-            foreach ($_meta as $value) {
-                if (isset($value['e_type']) && $value['e_type'] === 'CHECKBOX') {
-                    $meta[$value['pk_i_id']] = ($meta[$value['pk_i_id']] ?? 0);
-                }
-            }
-            foreach ($meta as $k => $v) {
-                if (!in_array($k, $valid_id, false)) {
-                    unset($meta[$k]);
-                } else {
-                    $key = array_search($k, array_column($_meta, 'pk_i_id'), false);
-                    // Sanitize by type
-                    $meta[$k] = $this->sanitizeMeta($_meta[$key]['e_type'], $v);
-                }
-                unset($k, $v);
-            }
-            [$meta, $errors] = $this->validateMeta($_meta, $meta);
-
-            return $errors;
+        if (!is_array($meta)) {
+            return array();
         }
-
-        return array();
-    }
-
-    /**
-     * Sanitise one submitted custom-field value according to its field type.
-     *
-     * @param string $e_type
-     * @param mixed  $metaValue
-     *
-     * @return mixed same shape as $metaValue
-     */
-    private function sanitizeMeta($e_type, $metaValue)
-    {
-        switch ($e_type) {
-            case 'DATEINTERVAL':
-                if (!empty($metaValue)) {
-                    if ($metaValue['from']) {
-                        $metaValue['from'] = (int)$metaValue['from'];
-                    }
-                    if ($metaValue['to']) {
-                        $metaValue['to'] = (int)$metaValue['to'];
-                    }
-                }
-                break;
-            case 'DATE':
-                if (!empty($metaValue)) {
-                    $metaValue = (int)$metaValue;
-                }
-                break;
-            case 'CHECKBOX':
-                $metaValue = (int)$metaValue;
-                break;
-            case 'URL':
-                $metaValue = $this->sanitize->websiteUrl($metaValue);
-                break;
-            default:
-                // sanitize string safe for html
-                $metaValue = $this->sanitize->html($metaValue);
-                break;
-        }
-
-        return $metaValue;
-    }
-
-    /**
-     * Apply the conditional and required rules to the submitted custom-field values.
-     *
-     * @param array<int,array<string,mixed>> $_meta       The category's field definitions
-     * @param array<int,mixed>               $meta        Submitted values
-     *
-     * @return array{0:array<int,mixed>,1:array<int,array{pointer:string,code:string,message:string}>} the surviving values and the errors
-     */
-    private function validateMeta($_meta, $meta)
-    {
-        $errors = array();
-        // Map slug -> submitted value so conditional rules (stored by slug) can be
-        // re-evaluated server-side; the client engine is UX only.
-        $slugValues = array();
-        foreach ($_meta as $_m) {
-            $slugValues[$_m['s_slug']] = $meta[$_m['pk_i_id']] ?? null;
-        }
-
-        foreach ($_meta as $_m) {
-            $pointer = '/custom_fields/' . $_m['pk_i_id'];
-            // Conditional logic: a field hidden by its show_when rule is not part of
-            // this submission — drop any value and never require it. A required_when
-            // rule overrides the field's static required flag.
-            $rules = (isset($_m['rules']) && is_array($_m['rules'])) ? $_m['rules'] : array();
-            if (isset($rules['show_when']) && !$this->condition($rules['show_when'], $slugValues)) {
-                unset($meta[$_m['pk_i_id']]);
-                continue;
-            }
-            $isMetaRequired = $_m['b_required'];
-            if (isset($rules['required_when'])) {
-                $isMetaRequired = $this->condition($rules['required_when'], $slugValues) ? 1 : 0;
-            }
-            $isMetaValueSet = isset($meta[$_m['pk_i_id']]);
-            $metaValue      = $meta[$_m['pk_i_id']] ?? null;
-
-            // Registry-defined types (e.g. EMAIL) validate their stored value here,
-            // on top of the storage primitive's required/format checks below.
-            if ($isMetaValueSet && $metaValue !== '' && $metaValue !== null) {
-                $typeSpec = osc_field_type(osc_field_resolve_type($_m));
-                if ($typeSpec !== null && is_callable($typeSpec['validate'])) {
-                    $typeError = call_user_func($typeSpec['validate'], $metaValue, $_m);
-                    if (is_string($typeError) && $typeError !== '') {
-                        $errors[] = self::entry($pointer, 'invalid', $typeError);
-                    }
-                }
-            }
-
-            switch ($_m['e_type']) {
-                case 'DATEINTERVAL':
-                    if ($isMetaValueSet && $metaValue) {
-                        if ($metaValue['from'] && $metaValue['to']) {
-                            if (!is_numeric($metaValue['from']) || !is_numeric($metaValue['to'])) {
-                                $errors[] = self::entry($pointer, 'invalid', sprintf(_m('%s is invalid.'), $_m['s_name']));
-                            }
-                        } elseif ($isMetaRequired) {
-                            $errors[] = self::entry($pointer, 'required', sprintf(_m('%s is required.'), $_m['s_name']));
-                        }
-                    } elseif ($isMetaRequired) {
-                        $errors[] = self::entry($pointer, 'required', sprintf(_m('%s is required.'), $_m['s_name']));
-                    }
-                    break;
-                case 'CHECKBOX':
-                case 'NUMBER':
-                case 'DATE':
-                    if ($isMetaValueSet && $metaValue > 0) {
-                        if (!is_numeric($metaValue)) {
-                            $errors[] = self::entry($pointer, 'invalid', sprintf(_m('%s is invalid.'), $_m['s_name']));
-                        }
-                    } elseif ($isMetaRequired) {
-                        $errors[] = self::entry($pointer, 'required', sprintf(_m('%s is required.'), $_m['s_name']));
-                    }
-                    break;
-                case 'RADIO':
-                case 'DROPDOWN':
-                    if ($isMetaValueSet && $metaValue) {
-                        // Cascading option fields validate against the option set for
-                        // the parent's submitted value (falling back to the union), not
-                        // the flat s_options list (which is empty for a cascade child).
-                        if (!empty($_m['cascade_map']) && is_array($_m['cascade_map'])) {
-                            $parentSlug  = $_m['cascade_parent'] ?? '';
-                            $parentValue = $slugValues[$parentSlug] ?? '';
-                            if (isset($_m['cascade_map'][$parentValue])) {
-                                $allowed = $_m['cascade_map'][$parentValue];
-                            } else {
-                                $allowed = array();
-                                foreach ($_m['cascade_map'] as $opts) {
-                                    $allowed = array_merge($allowed, (array)$opts);
-                                }
-                            }
-                            if (!in_array($metaValue, $allowed, false)) {
-                                $errors[] = self::entry($pointer, 'invalid', sprintf(_m('%s is invalid.'), $_m['s_name']));
-                            }
-                        } elseif (!in_array($metaValue, explode(',', $_m['s_options']), false)) {
-                            // check value exist in options csv
-                            $errors[] = self::entry($pointer, 'invalid', sprintf(_m('%s is invalid.'), $_m['s_name']));
-                        }
-                    } elseif ($isMetaRequired) {
-                        $errors[] = self::entry($pointer, 'required', sprintf(_m('%s is required.'), $_m['s_name']));
-                    }
-                    break;
-                case 'URL':
-                    if ($isMetaValueSet && $metaValue) {
-                        // first validate using filter_var than osc_validate_url
-                        if (!filter_var($metaValue, FILTER_VALIDATE_URL)) {
-                            $errors[] = self::entry($pointer, 'invalid', sprintf(_m('%s is invalid.'), $_m['s_name']));
-                        } elseif (!osc_validate_url($metaValue)) {
-                            $errors[] = self::entry($pointer, 'invalid', sprintf(_m('%s is invalid.'), $_m['s_name']));
-                        }
-                    } elseif ($isMetaRequired) {
-                        $errors[] = self::entry($pointer, 'required', sprintf(_m('%s is required.'), $_m['s_name']));
-                    }
-                    break;
-                case 'TEXTAREA':
-                case 'TEXT':
-                default:
-                    if ($isMetaRequired && (!$isMetaValueSet || !$metaValue)) {
-                        $errors[] = self::entry($pointer, 'required', sprintf(_m('%s is required.'), $_m['s_name']));
-                    }
-                    break;
+        $types = array_column($_meta, 'e_type', 'pk_i_id');
+        foreach ($types as $id => $type) {
+            if ($type === 'CHECKBOX') {
+                $meta[$id] ??= 0;
             }
         }
+        foreach ($meta as $k => $v) {
+            if (isset($types[$k])) {
+                $meta[$k] = FieldValidator::sanitizeValue($types[$k], $v);
+            } else {
+                unset($meta[$k]);
+            }
+        }
+        $result = FieldValidator::check($_meta, $meta);
+        $meta   = $result['values'];
 
-        return array($meta, $errors);
-    }
-
-    /**
-     * Evaluate a single conditional-logic condition (the value stored under a rule's
-     * show_when/required_when key) against the submitted field values, keyed by the
-     * controlling field's slug. Mirrors the client engine so client and server agree.
-     *
-     * @param array $cond       {field: slug, op: eq|neq|filled|gt|lt, value?: mixed}
-     * @param array $slugValues submitted meta values keyed by field slug
-     *
-     * @return bool
-     */
-    private function condition($cond, $slugValues)
-    {
-        if (!is_array($cond) || empty($cond['field'])) {
-            return true;
-        }
-        $actual   = $slugValues[$cond['field']] ?? '';
-        if (is_array($actual)) {
-            // interval/number ranges have no single scalar; treat as filled/empty only
-            $actual = implode('', array_map('strval', $actual));
-        }
-        $expected = isset($cond['value']) ? (string)$cond['value'] : '';
-        $op       = $cond['op'] ?? 'eq';
-        switch ($op) {
-            case 'neq':
-                return (string)$actual !== $expected;
-            case 'filled':
-                return trim((string)$actual) !== '';
-            case 'gt':
-                return is_numeric($actual) && is_numeric($expected) && (float)$actual > (float)$expected;
-            case 'lt':
-                return is_numeric($actual) && is_numeric($expected) && (float)$actual < (float)$expected;
-            case 'eq':
-            default:
-                return (string)$actual === $expected;
-        }
+        return array_map(
+            static fn (array $e): array => self::entry('/custom_fields/' . $e['field'], $e['code'], $e['message']),
+            $result['errors']
+        );
     }
 }

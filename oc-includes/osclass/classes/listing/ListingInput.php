@@ -16,6 +16,7 @@ namespace mindstellar\listing;
 use Category;
 use ItemTmpUpload;
 use mindstellar\auth\Actor;
+use mindstellar\currency\Money;
 use mindstellar\location\LocationService;
 use Params;
 use Session;
@@ -313,16 +314,8 @@ final class ListingInput
         }
 
         if ($aItem['price'] !== null) {
-            $price          = str_replace(
-                array(osc_locale_thousands_sep(), osc_locale_dec_point()),
-                array('', '.'),
-                trim($aItem['price'])
-            );
-            // A non-numeric price (stray currency symbol, letters, or nothing
-            // left after normalising) must not reach the multiplication: under
-            // PHP 8 that raises a TypeError and 500s the whole submission. Treat
-            // it as "no price" instead. Stored as an integer in millionths.
-            $aItem['price'] = is_numeric($price) ? (int)round((float)$price * 1000000) : null;
+            // A price that is not a number after the locale's separators are read is no price.
+            $aItem['price'] = Money::parse((string) $aItem['price']);
         }
 
         if ($aItem['catId'] == '') {

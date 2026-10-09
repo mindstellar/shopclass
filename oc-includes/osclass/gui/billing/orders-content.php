@@ -15,6 +15,7 @@ if (!defined('ABS_PATH')) {
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\Receipts;
+use mindstellar\currency\Money;
 
 /**
  * The buyer's own orders -- markup only: no page chrome, no heading
@@ -57,11 +58,6 @@ $statusWords = array(
     Order::STATUS_CANCELLED => _m('Cancelled'),
 );
 
-$formatMoney = static function (int $micros, string $currency): string {
-    return number_format($micros / 1000000, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
-           . ' ' . strtoupper($currency);
-};
-
 // Column headings, also each cell's label when a row stacks on a phone.
 $col = array(
     'date'    => _m('Date'),
@@ -103,7 +99,7 @@ $col = array(
                         <td data-label="<?php echo osc_esc_html($col['date']); ?>"><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
                         <td data-label="<?php echo osc_esc_html($col['method']); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
                         <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['amount']); ?>">
-                            <?php echo osc_esc_html($formatMoney($order->getAmount(), $order->getCurrency())); ?>
+                            <?php echo osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())); ?>
                         </td>
                         <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['credits']); ?>"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
                         <td data-label="<?php echo osc_esc_html($col['status']); ?>">

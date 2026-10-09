@@ -189,8 +189,7 @@ function osc_market_render_untested_note($compat)
 }
 
 /**
- * Bytes -> a short human-readable size ("340 KB", "1.2 MB"). No core helper for this
- * exists yet; kept local since only the Updates tab needs it.
+ * Bytes -> a short human-readable size ("340 KB", "1.2 MB"); empty for nothing.
  *
  * @param int $bytes
  *
@@ -198,19 +197,7 @@ function osc_market_render_untested_note($compat)
  */
 function osc_market_format_size($bytes)
 {
-    $bytes = max(0, (int) $bytes);
-    if ($bytes === 0) {
-        return '';
-    }
-    $units = array('B', 'KB', 'MB', 'GB');
-    $i     = 0;
-    $value = (float) $bytes;
-    while ($value >= 1024 && $i < count($units) - 1) {
-        $value /= 1024;
-        $i++;
-    }
-
-    return ($i === 0 ? (string) $bytes : number_format($value, $value < 10 ? 1 : 0)) . ' ' . $units[$i];
+    return (int) $bytes > 0 ? \mindstellar\utility\Formatting::bytes((int) $bytes) : '';
 }
 
 /**

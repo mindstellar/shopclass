@@ -22,6 +22,7 @@
  * validates an address any other way.  Usage:  php tests/validate-email.php
  */
 
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hValidate.php';
 require_once __DIR__ . '/lib/harness.php';
 
@@ -106,5 +107,38 @@ foreach ($roots as $root) {
     }
 }
 pin('every form validates through osc_validate_email()', '', implode(', ', $offenders));
+
+harness_section('osc_validate_* forward to Validate');
+
+$v = new \mindstellar\utility\Validate();
+foreach (array('a@b.co', 'bad name@x.com', '', 'u@nodot') as $email) {
+    pin('email ' . var_export($email, true), $v->email($email, false), osc_validate_email($email, false));
+}
+foreach (array('12', '0', '007', '-1', '1.5', ' 5', array('1')) as $n) {
+    pin('int ' . json_encode($n), $v->int($n), osc_validate_int($n));
+    pin('nozero ' . json_encode($n), $v->nozero($n), osc_validate_nozero($n));
+}
+check('nozero keeps the digits-only rule', osc_validate_nozero('007') && !osc_validate_nozero(' 5') && !osc_validate_nozero('+5'));
+check('nozero refuses an array instead of throwing', !osc_validate_nozero(array('1')));
+check('an empty optional number passes', osc_validate_number('') && osc_validate_number(null));
+check('an empty required number fails', !osc_validate_number('', true));
+check('a numeric string passes', osc_validate_number('12.5', true));
+pin('text', $v->text('ab', 2), osc_validate_text('ab', 2));
+pin('phone', $v->phone('+1 555 0100', 7), osc_validate_phone('+1 555 0100', 7));
+pin('range', $v->range('abc', 1, 2), osc_validate_range('abc', 1, 2));
+pin('username', $v->username('john_doe'), osc_validate_username('john_doe'));
+foreach (array('https://example.com/a?b=1', 'not a url', '') as $url) {
+    pin('url ' . var_export($url, true), $v->url($url), osc_validate_url($url));
+}
+
+$hv = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hValidate.php');
+preg_match_all('/^function (osc_validate_\w+)\(.*?\n\{\n(.*?)^\}/ms', $hv, $m, PREG_SET_ORDER);
+$fat = array();
+foreach ($m as $fn) {
+    if (substr_count(trim($fn[2]), "\n") > 0 || strpos($fn[2], 'Validate())->') === false) {
+        $fat[] = $fn[1];
+    }
+}
+pin('every osc_validate_* is a one-line forwarder', '', implode(', ', $fat));
 
 exit(harness_result());

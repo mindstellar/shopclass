@@ -11,6 +11,7 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\currency\Money;
 use RuntimeException;
 use Throwable;
 use User;
@@ -220,21 +221,6 @@ final class Receipts
     }
 
     /**
-     * Money the way the account pages show it: two decimals in the site's locale and the
-     * currency code.
-     *
-     * @param int    $micros
-     * @param string $currency
-     *
-     * @return string
-     */
-    public static function money(int $micros, string $currency): string
-    {
-        return number_format($micros / 1000000, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
-               . ' ' . strtoupper($currency);
-    }
-
-    /**
      * Everything a receipt shows, as plain text. Escaping is the caller's.
      *
      * @param Order $order
@@ -252,7 +238,7 @@ final class Receipts
             'number'   => $order->getId(),
             'date'     => osc_format_date($paid),
             'credits'  => sprintf(__('%s credits'), number_format($order->getCredits())),
-            'amount'   => self::money($order->getAmount(), $order->getCurrency()),
+            'amount'   => Money::format($order->getAmount(), $order->getCurrency()),
             'method'   => osc_billing_gateway_name($order->getGateway()),
             'ref'      => (string) $order->getExternalRef(),
             'email'    => (string) ($user['s_email'] ?? ''),

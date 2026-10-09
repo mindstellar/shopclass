@@ -18,6 +18,9 @@ namespace mindstellar\database;
  */
 final class UtcDatetime
 {
+    /** The RFC 3339 UTC form the API and webhooks send: `2026-01-31T12:00:00Z`. */
+    public const RFC3339 = 'Y-m-d\TH:i:s\Z';
+
     private function __construct()
     {
     }
@@ -28,6 +31,14 @@ final class UtcDatetime
     public static function format(int $time): string
     {
         return gmdate('Y-m-d H:i:s', $time);
+    }
+
+    /**
+     * A Unix time as an RFC 3339 UTC time.
+     */
+    public static function rfc3339(int $time): string
+    {
+        return gmdate(self::RFC3339, $time);
     }
 
     /**

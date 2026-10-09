@@ -589,13 +589,8 @@ if (!function_exists('osc_admin_pager')) {
 
 if (!function_exists('osc_admin_money')) {
     /**
-     * Format a micros amount for display.
-     *
-     * Money is stored as the value times 1,000,000 (matching t_item.i_price) and is
-     * divided only here, at the edge, so no arithmetic anywhere else ever touches a float.
-     * The currency code is shown rather than a symbol: an admin reconciling against a
-     * gateway needs to know it was EUR, and one glyph does not distinguish the several
-     * currencies that use "$".
+     * Format a micros amount for display, with the currency code rather than a symbol:
+     * an admin reconciling against a gateway needs to know it was EUR, not just "$".
      *
      * @param int    $micros
      * @param string $currency ISO 4217
@@ -604,10 +599,7 @@ if (!function_exists('osc_admin_money')) {
      */
     function osc_admin_money($micros, $currency)
     {
-        $value = (int) $micros / 1000000;
-
-        return number_format($value, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
-               . ' ' . strtoupper((string) $currency);
+        return \mindstellar\currency\Money::format((int) $micros, (string) $currency);
     }
 }
 

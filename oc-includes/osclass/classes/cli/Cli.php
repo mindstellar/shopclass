@@ -25,6 +25,7 @@ use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
+use mindstellar\utility\Formatting;
 use Params;
 use Plugins;
 use Sitemap;
@@ -1355,19 +1356,7 @@ class Cli
      */
     private function formatBytes(int $bytes): string
     {
-        if ($bytes <= 0) {
-            return 'unknown size';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $i     = 0;
-        $value = (float) $bytes;
-        while ($value >= 1024 && $i < count($units) - 1) {
-            $value /= 1024;
-            $i++;
-        }
-
-        return sprintf('%.1f %s', $value, $units[$i]);
+        return $bytes > 0 ? Formatting::bytes($bytes) : 'unknown size';
     }
 
     /**

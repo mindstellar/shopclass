@@ -13,6 +13,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\Order;
@@ -21,6 +22,7 @@ use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
+use mindstellar\currency\Money;
 
 /**
  * The billing section: payment orders and user credit balances.
@@ -126,9 +128,9 @@ class CAdminBilling extends AdminSecBaseModel
             'user_id' => Params::getParamInt('userId'),
         );
 
-        $page   = max(1, Params::getParamInt('pageNum'));
+        $page   = ListPaging::page('pageNum');
         $total  = OrderStore::searchCount($filters);
-        $offset = ($page - 1) * self::PER_PAGE;
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $orders = OrderStore::search($filters, self::PER_PAGE, $offset);
 
@@ -311,9 +313,9 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function creditsView()
     {
-        $page   = max(1, Params::getParamInt('pageNum'));
+        $page   = ListPaging::page('pageNum');
         $total  = Wallet::balanceCount();
-        $offset = ($page - 1) * self::PER_PAGE;
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $this->_exportVariableToView('wallets', Wallet::balances(self::PER_PAGE, $offset));
         $this->_exportVariableToView('outstanding', Wallet::totalOutstanding());
@@ -338,9 +340,9 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=credits');
         }
 
-        $page   = max(1, Params::getParamInt('pageNum'));
+        $page   = ListPaging::page('pageNum');
         $total  = Wallet::historyCount($userId);
-        $offset = ($page - 1) * self::PER_PAGE;
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $this->_exportVariableToView('user', $user);
         $this->_exportVariableToView('balance', Wallet::balance($userId));
@@ -476,9 +478,7 @@ class CAdminBilling extends AdminSecBaseModel
 
         $data = array(
             's_name'     => $name,
-            // Money is entered as decimal currency and stored as micros -- integer
-            // maths only, the value is never kept as a float past this line.
-            'i_amount'   => (int) round((float) $amountRaw * 1000000),
+            'i_amount'   => Money::toMicros($amountRaw),
             's_currency' => $currency,
             'i_credits'  => $credits,
             'i_position' => max(0, $position),

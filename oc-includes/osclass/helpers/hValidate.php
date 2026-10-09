@@ -30,13 +30,7 @@
  */
 function osc_validate_text($value = '', $count = 1, $required = true)
 {
-    if ($required || $value) {
-        if (!preg_match("/([\p{L}\p{N}]){" . $count . '}/iu', strip_tags($value))) {
-            return false;
-        }
-    }
-
-    return true;
+    return (new \mindstellar\utility\Validate())->text($value, $count, $required);
 }
 
 /**
@@ -48,11 +42,7 @@ function osc_validate_text($value = '', $count = 1, $required = true)
  */
 function osc_validate_int($value)
 {
-    if (preg_match('/^[0-9]+$/', $value)) {
-        return true;
-    }
-
-    return false;
+    return (new \mindstellar\utility\Validate())->int($value);
 }
 
 /**
@@ -64,7 +54,7 @@ function osc_validate_int($value)
  */
 function osc_validate_nozero($value)
 {
-    return preg_match('/^[0-9]+$/', $value) && $value > 0;
+    return (new \mindstellar\utility\Validate())->nozero($value);
 }
 
 /**
@@ -77,13 +67,7 @@ function osc_validate_nozero($value)
  */
 function osc_validate_number($value = null, $required = false)
 {
-    if ($required || $value != '') {
-        if (!is_numeric($value)) {
-            return false;
-        }
-    }
-
-    return true;
+    return (new \mindstellar\utility\Validate())->number($value, $required);
 }
 
 /**
@@ -98,13 +82,7 @@ function osc_validate_number($value = null, $required = false)
  */
 function osc_validate_phone($value = null, $count = 10, $required = false)
 {
-    if ($required || $value != '') {
-        if (!preg_match("/([\p{Nd}][^\p{Nd}]*){" . $count . '}/i', strip_tags($value))) {
-            return false;
-        }
-    }
-
-    return true;
+    return (new \mindstellar\utility\Validate())->phone($value, $count, $required);
 }
 
 /**
@@ -117,7 +95,7 @@ function osc_validate_phone($value = null, $count = 10, $required = false)
  */
 function osc_validate_min($value = null, $min = 6)
 {
-    return !(mb_strlen($value, 'UTF-8') < $min);
+    return (new \mindstellar\utility\Validate())->min($value, $min);
 }
 
 /**
@@ -130,7 +108,7 @@ function osc_validate_min($value = null, $min = 6)
  */
 function osc_validate_max($value = null, $max = 255)
 {
-    return !(mb_strlen($value, 'UTF-8') > $max);
+    return (new \mindstellar\utility\Validate())->max($value, $max);
 }
 
 /**
@@ -144,7 +122,7 @@ function osc_validate_max($value = null, $max = 255)
  */
 function osc_validate_range($value, $min = 6, $max = 255)
 {
-    return mb_strlen($value, 'UTF-8') >= $min && mb_strlen($value, 'UTF-8') <= $max;
+    return (new \mindstellar\utility\Validate())->range($value, $min, $max);
 }
 
 /**
@@ -161,30 +139,7 @@ function osc_validate_range($value, $min = 6, $max = 255)
  */
 function osc_validate_location($city, $sCity, $region, $sRegion, $country, $sCountry)
 {
-    if (osc_validate_nozero($city) && osc_validate_nozero($region) && osc_validate_text($country, 2)) {
-        $data      = Country::getInstance()->findByCode($country);
-        $countryId = $data['pk_c_code'];
-        if ($countryId) {
-            $data     = Region::getInstance()->findByPrimaryKey($region);
-            $regionId = $data['pk_i_id'];
-            if ($data['b_active'] == 1) {
-                $data = City::getInstance()->findByPrimaryKey($city);
-                if ($data['b_active'] == 1 && $data['fk_i_region_id'] == $regionId
-                    && strtolower($data['fk_c_country_code']) == strtolower($countryId)
-                ) {
-                    return true;
-                }
-            }
-        }
-    } elseif (osc_validate_nozero($region) && osc_validate_text($country, 2) && $sCity != '') {
-        return true;
-    } elseif ($sRegion != '' && osc_validate_text($country, 2) && $sCity != '') {
-        return true;
-    } elseif ($sRegion != '' && $sCountry != '' && $sCity != '') {
-        return true;
-    }
-
-    return false;
+    return (new \mindstellar\utility\Validate())->location($city, $sCity, $region, $sRegion, $country, $sCountry);
 }
 
 /**
@@ -196,20 +151,7 @@ function osc_validate_location($city, $sCity, $region, $sRegion, $country, $sCou
  */
 function osc_validate_category($value)
 {
-    if (osc_validate_nozero($value)) {
-        $data = Category::getInstance()->findByPrimaryKey($value);
-        if (isset($data['b_enabled']) && $data['b_enabled'] == 1) {
-            if (osc_selectable_parent_categories()) {
-                return true;
-            }
-
-            if ($data['fk_i_parent_id'] != null) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return (new \mindstellar\utility\Validate())->category($value);
 }
 
 /**
@@ -224,31 +166,7 @@ function osc_validate_category($value)
  */
 function osc_validate_url($value, $required = false, $get_headers = false)
 {
-    if ($required || $value !== '') {
-        $value = osc_sanitize_url($value);
-        if (!function_exists('filter_var')) {
-            $success =
-                preg_match(
-                    '|^(http\:\/\/[a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_\-]+)*\.[a-zA-Z]{2,4}(?:\/[a-zA-Z0-9_]+)*(?:\/[a-zA-Z0-9_]+\.[a-zA-Z]{2,4}(?:\?[a-zA-Z0-9_]+\=[a-zA-Z0-9_]+)?)?(?:\&[a-zA-Z0-9_]+\=[a-zA-Z0-9_]+)*)$|',
-                    $value,
-                    $m
-                );
-        } else {
-            $success = filter_var($value, FILTER_VALIDATE_URL);
-        }
-        if ($success) {
-            if ($get_headers) {
-                @$headers = get_headers($value);
-                if (!preg_match('/^HTTP\/\d\.\d\s+(200|301|302)/', $headers[0])) {
-                    return false;
-                }
-            }
-        } else {
-            return false;
-        }
-    }
-
-    return true;
+    return (new \mindstellar\utility\Validate())->url($value, $required, $get_headers);
 }
 
 /**
@@ -260,21 +178,7 @@ function osc_validate_url($value, $required = false, $get_headers = false)
  */
 function osc_validate_spam_delay($type = 'item')
 {
-    if ($type === 'item') {
-        $delay   = osc_item_spam_delay();
-        $context = 'item_post';
-    } else {
-        $delay   = osc_comment_spam_delay();
-        $context = 'comment_post';
-    }
-
-    // Allowed when this address has not posted of this kind within the delay window. The
-    // throttle records live in the DB now (see ItemActions), not the session.
-    return LoginAttempt::getInstance()->countByIpContext(
-        $context,
-        (string)Params::getServerParam('REMOTE_ADDR'),
-        date('Y-m-d H:i:s', time() - (int)$delay)
-    ) === 0;
+    return (new \mindstellar\utility\Validate())->delay($type);
 }
 
 /**
@@ -288,58 +192,7 @@ function osc_validate_spam_delay($type = 'item')
  */
 function osc_validate_email($email, $required = true)
 {
-    if ($required || $email !== '') {
-        // Test for the minimum length the email can be
-        if (strlen($email) < 3) {
-            return false;
-        }
-
-        // Test for an @ character after the first position
-        if (strpos($email, '@', 1) === false) {
-            return false;
-        }
-
-        // Split out the local and domain parts
-        list($local, $domain) = explode('@', $email, 2);
-
-        // LOCAL PART
-        // Test for invalid characters
-        if (!preg_match('/^[a-zA-Z0-9!#$%&\'*+\/=?^_`{|}~\.-]+$/', $local)) {
-            return false;
-        }
-
-        // DOMAIN PART
-        // Test for sequences of periods
-        if (preg_match('/\.{2,}/', $domain)) {
-            return false;
-        }
-        // Test for leading and trailing periods and whitespace
-        if (trim($domain, " \t\n\r\0\x0B.") !== $domain) {
-            return false;
-        }
-        // Split the domain into subs
-        $subs = explode('.', $domain);
-        // Assume the domain will have at least two subs
-        if (2 > count($subs)) {
-            return false;
-        }
-        // Loop through each sub
-        foreach ($subs as $sub) {
-            // Test for leading and trailing hyphens and whitespace
-            if (trim($sub, " \t\n\r\0\x0B-") !== $sub) {
-                return false;
-            }
-            // Test for invalid characters
-            if (!preg_match('/^[a-z0-9-]+$/i', $sub)) {
-                return false;
-            }
-        }
-
-        // Congratulations your email made it!
-        return true;
-    }
-
-    return true;
+    return (new \mindstellar\utility\Validate())->email($email, $required);
 }
 
 /**
@@ -352,7 +205,7 @@ function osc_validate_email($email, $required = true)
  */
 function osc_validate_username($value, $min = 1)
 {
-    return mb_strlen($value, 'UTF-8') >= $min && preg_match('/^[A-Za-z0-9_]+$/', $value);
+    return (new \mindstellar\utility\Validate())->username($value, $min);
 }
 
 /**

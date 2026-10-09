@@ -12,20 +12,17 @@
 namespace mindstellar\form\builder;
 
 use mindstellar\utility\Sanitize;
+use mindstellar\utility\Validate;
 
 /**
- * Server-authoritative validation + sanitisation for a form submission.
+ * Server-authoritative validation + sanitisation for custom-field values, shared by
+ * the form builder and the listing form.
  *
- * Given a form's field definitions and the raw posted meta values, it sanitises
- * per field type, re-evaluates the conditional rules (a field hidden by its
- * show_when rule is dropped and never required; required_when overrides the static
- * flag), runs the field-type registry's validators (e.g. EMAIL format) and the
- * per-type format checks, validates cascading-option membership, and returns the
- * clean values plus any error messages.
- *
- * It deliberately mirrors the item form's validation (ItemActions) rather than
- * sharing its private methods, so the item write path — the compatibility contract
- * — is untouched. The client engine is UX only; this is the authority.
+ * It sanitises per field type, re-evaluates the conditional rules (a field hidden by
+ * its show_when rule is dropped and never required; required_when overrides the static
+ * flag), runs the field-type registry's validators (e.g. EMAIL format) and the per-type
+ * format checks, and validates cascading-option membership. The client engine is UX
+ * only; this is the authority.
  *
  * @package mindstellar\form\builder
  */
@@ -41,24 +38,48 @@ final class FieldValidator
      */
     public static function process(array $fields, array $meta): array
     {
-        $sanitize = new Sanitize();
-
-        // slug => raw value, for evaluating rules that reference a sibling field.
-        $slugValues = array();
+        $clean = array();
         foreach ($fields as $f) {
-            $slugValues[$f['s_slug']] = $meta[$f['pk_i_id']] ?? null;
+            $clean[(int) $f['pk_i_id']] = self::sanitizeValue($f['e_type'], $meta[$f['pk_i_id']] ?? null);
         }
+        $result = self::check($fields, $clean, $meta);
 
         $values = array();
-        $errors = array();
+        foreach ($fields as $f) {
+            $id = (int) $f['pk_i_id'];
+            if (array_key_exists($id, $result['values']) && self::hasValue($f['e_type'], $result['values'][$id])) {
+                $values[$id] = $result['values'][$id];
+            }
+        }
 
+        return array('values' => $values, 'errors' => array_column($result['errors'], 'message'));
+    }
+
+    /**
+     * Validate sanitised values against their fields.
+     *
+     * @param array<int,array<string,mixed>> $fields     resolved field rows
+     * @param array<int|string,mixed>        $values     sanitised values keyed by field id
+     * @param array<int|string,mixed>|null   $ruleValues values the rules and cascades read, keyed by field id; $values when null
+     *
+     * @return array{values: array<int|string,mixed>, errors: array<int,array{field:int,code:string,message:string}>}
+     *         $values without the fields hidden by their rules, and one error at most per field
+     */
+    public static function check(array $fields, array $values, ?array $ruleValues = null): array
+    {
+        $ruleValues ??= $values;
+        $slugValues   = array();
+        foreach ($fields as $f) {
+            $slugValues[$f['s_slug']] = $ruleValues[$f['pk_i_id']] ?? null;
+        }
+
+        $errors = array();
         foreach ($fields as $f) {
             $id    = (int) $f['pk_i_id'];
-            $eType = $f['e_type'];
             $rules = (isset($f['rules']) && is_array($f['rules'])) ? $f['rules'] : array();
 
-            // Hidden by its show_when rule: not part of this submission.
             if (isset($rules['show_when']) && !self::evaluateCondition($rules['show_when'], $slugValues)) {
+                unset($values[$id]);
                 continue;
             }
             $required = !empty($f['b_required']);
@@ -66,15 +87,9 @@ final class FieldValidator
                 $required = self::evaluateCondition($rules['required_when'], $slugValues);
             }
 
-            $value = self::sanitize($eType, $meta[$id] ?? null, $sanitize);
-
-            $error = self::validateField($f, $value, $required, $slugValues);
+            $error = self::validateField($f, $values[$id] ?? null, $required, $slugValues);
             if ($error !== null) {
-                $errors[] = $error;
-            }
-
-            if (self::hasValue($eType, $value)) {
-                $values[$id] = $value;
+                $errors[] = array('field' => $id) + $error;
             }
         }
 
@@ -117,25 +132,22 @@ final class FieldValidator
     }
 
     /**
-     * Sanitise a raw posted value by its storage primitive.
+     * Sanitise a raw posted value by its storage primitive. A date range end posted empty
+     * stays '', so an edit clears it.
      *
-     * @param string                       $eType
-     * @param mixed                        $value
-     * @param \mindstellar\utility\Sanitize $sanitize
+     * @param string $eType
+     * @param mixed  $value
      *
      * @return mixed
      */
-    private static function sanitize($eType, $value, Sanitize $sanitize)
+    public static function sanitizeValue($eType, $value)
     {
         switch ($eType) {
             case 'DATEINTERVAL':
                 $out = array();
-                if (is_array($value)) {
-                    if (isset($value['from']) && $value['from'] !== '') {
-                        $out['from'] = (int) $value['from'];
-                    }
-                    if (isset($value['to']) && $value['to'] !== '') {
-                        $out['to'] = (int) $value['to'];
+                foreach (array('from', 'to') as $end) {
+                    if (is_array($value) && isset($value[$end]) && is_scalar($value[$end])) {
+                        $out[$end] = $value[$end] === '' ? '' : (int) $value[$end];
                     }
                 }
 
@@ -145,9 +157,9 @@ final class FieldValidator
             case 'CHECKBOX':
                 return (int) $value;
             case 'URL':
-                return $sanitize->websiteUrl((string) (is_scalar($value) ? $value : ''));
+                return (new Sanitize())->websiteUrl((string) (is_scalar($value) ? $value : ''));
             default:
-                return $sanitize->html(is_scalar($value) ? (string) $value : '');
+                return (new Sanitize())->html(is_scalar($value) ? (string) $value : '');
         }
     }
 
@@ -172,21 +184,21 @@ final class FieldValidator
     }
 
     /**
-     * Per-field validation. Returns an error message or null. Mirrors
-     * ItemActions::validateMetaFields plus the field-type registry validators.
+     * Per-field validation: the field-type registry validator, then the storage primitive's checks.
      *
      * @param array<string,mixed> $f          One resolved field row
      * @param mixed               $value      The sanitised value
      * @param bool                $required
      * @param array<string,mixed> $slugValues Submitted values keyed by field slug
      *
-     * @return string|null
+     * @return array{code:string,message:string}|null
      */
-    private static function validateField(array $f, $value, bool $required, array $slugValues): ?string
+    private static function validateField(array $f, $value, bool $required, array $slugValues): ?array
     {
-        $name  = $f['s_name'];
-        $eType = $f['e_type'];
-        $set   = !(($value === '' || $value === null) || (is_array($value) && empty($value)));
+        $name    = $f['s_name'];
+        $set     = !(($value === '' || $value === null) || (is_array($value) && empty($value)));
+        $invalid = array('code' => 'invalid', 'message' => sprintf(_m('%s is invalid.'), $name));
+        $missing = $required ? array('code' => 'required', 'message' => sprintf(_m('%s is required.'), $name)) : null;
 
         // Registry-defined validators (e.g. EMAIL format) run first on scalar values.
         if ($set && !is_array($value)) {
@@ -194,77 +206,54 @@ final class FieldValidator
             if ($typeSpec !== null && is_callable($typeSpec['validate'])) {
                 $typeError = call_user_func($typeSpec['validate'], $value, $f);
                 if (is_string($typeError) && $typeError !== '') {
-                    return $typeError;
+                    return array('code' => 'invalid', 'message' => $typeError);
                 }
             }
         }
 
-        switch ($eType) {
+        switch ($f['e_type']) {
             case 'DATEINTERVAL':
-                if ($set) {
-                    if (!empty($value['from']) && !empty($value['to'])) {
-                        if (!is_numeric($value['from']) || !is_numeric($value['to'])) {
-                            return sprintf(__('%s is invalid.'), $name);
-                        }
-                    } elseif ($required) {
-                        return sprintf(__('%s is required.'), $name);
-                    }
-                } elseif ($required) {
-                    return sprintf(__('%s is required.'), $name);
+                if ($set && !empty($value['from']) && !empty($value['to'])) {
+                    return is_numeric($value['from']) && is_numeric($value['to']) ? null : $invalid;
                 }
-                break;
+
+                return $missing;
             case 'CHECKBOX':
             case 'NUMBER':
             case 'DATE':
                 if ($set && $value > 0) {
-                    if (!is_numeric($value)) {
-                        return sprintf(__('%s is invalid.'), $name);
-                    }
-                } elseif ($required) {
-                    return sprintf(__('%s is required.'), $name);
+                    return is_numeric($value) ? null : $invalid;
                 }
-                break;
+
+                return $missing;
             case 'RADIO':
             case 'DROPDOWN':
-                if ($set) {
-                    if (!empty($f['cascade_map']) && is_array($f['cascade_map'])) {
-                        $parentValue = $slugValues[$f['cascade_parent'] ?? ''] ?? '';
-                        if (isset($f['cascade_map'][$parentValue])) {
-                            $allowed = $f['cascade_map'][$parentValue];
-                        } else {
-                            $allowed = array();
-                            foreach ($f['cascade_map'] as $opts) {
-                                $allowed = array_merge($allowed, (array) $opts);
-                            }
-                        }
-                        if (!in_array($value, $allowed, false)) {
-                            return sprintf(__('%s is invalid.'), $name);
-                        }
-                    } elseif (!in_array($value, explode(',', (string) ($f['s_options'] ?? '')), false)) {
-                        return sprintf(__('%s is invalid.'), $name);
-                    }
-                } elseif ($required) {
-                    return sprintf(__('%s is required.'), $name);
+                if (!$set) {
+                    return $missing;
                 }
-                break;
+                if (!empty($f['cascade_map']) && is_array($f['cascade_map'])) {
+                    $parentValue = $slugValues[$f['cascade_parent'] ?? ''] ?? '';
+                    if (is_scalar($parentValue) && isset($f['cascade_map'][$parentValue])) {
+                        $allowed = (array) $f['cascade_map'][$parentValue];
+                    } else {
+                        $allowed = array();
+                        foreach ($f['cascade_map'] as $opts) {
+                            $allowed = array_merge($allowed, (array) $opts);
+                        }
+                    }
+                } else {
+                    $allowed = explode(',', (string) ($f['s_options'] ?? ''));
+                }
+
+                return in_array($value, $allowed, false) ? null : $invalid;
             case 'URL':
                 if ($set) {
-                    if (!filter_var($value, FILTER_VALIDATE_URL) || !osc_validate_url($value)) {
-                        return sprintf(__('%s is invalid.'), $name);
-                    }
-                } elseif ($required) {
-                    return sprintf(__('%s is required.'), $name);
+                    return Validate::httpUrl($value) ? null : $invalid;
                 }
-                break;
-            case 'TEXTAREA':
-            case 'TEXT':
-            default:
-                if ($required && !$set) {
-                    return sprintf(__('%s is required.'), $name);
-                }
-                break;
-        }
 
-        return null;
+                return $missing;
+            default:
+                return $set ? null : $missing;
+        }
     }
 }

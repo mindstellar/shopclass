@@ -47,9 +47,9 @@ class Formatting
     public function formatSlug($string)
     {
         $string = strip_tags($string);
-        $string = preg_replace('/%([a-fA-F0-9]{...})/', '--$1--', $string);
+        $string = preg_replace('/%([a-fA-F0-9][a-fA-F0-9])/', '--$1--', $string);
         $string = str_replace('%', '', $string);
-        $string = preg_replace('/--([a-fA-F0-9]{...})--/', '%$1', $string);
+        $string = preg_replace('/--([a-fA-F0-9][a-fA-F0-9])--/', '%$1', $string);
 
         $string = $this->removeAccents($string);
 
@@ -58,7 +58,7 @@ class Formatting
         $string = preg_replace('/\s+/', '-', $string);
         $string = preg_replace('|[\p{Ps}\p{Pe}\p{Pi}\p{Pf}\p{Po}\p{S}\p{Z}\p{C}\p{No}]+|u', '', $string);
 
-        if (is_utf8($string)) {
+        if ($this->isUtf8($string)) {
             $string = urlencode($string);
             // mdash & ndash
             $string = str_replace(array('%e2%80%93', '%e2%80%94'), '-', strtolower($string));

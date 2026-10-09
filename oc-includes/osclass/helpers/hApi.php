@@ -236,7 +236,7 @@ if (!function_exists('osc_api_session_meta')) {
             'url'        => osc_api_url(),
             'token'      => $token === null ? '' : $token->token(),
             'header'     => \mindstellar\apiaccess\PageTokens::HEADER,
-            'expires_at' => $token === null ? null : gmdate('Y-m-d\TH:i:s\Z', (int) $token->expiresAt()),
+            'expires_at' => $token === null ? null : \mindstellar\database\UtcDatetime::rfc3339((int) $token->expiresAt()),
         ];
 
         return '<meta name="shopclass-api" content="' . osc_esc_html((string) json_encode($data, JSON_UNESCAPED_SLASHES)) . '">' . PHP_EOL;

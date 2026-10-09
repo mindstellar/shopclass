@@ -14,6 +14,7 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\billing\Order;
 use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\currency\Money;
 
 /**
  * Package picker and payment methods -- markup only: no page chrome, no heading
@@ -46,11 +47,6 @@ $order        = __get('order');
 $order        = $order instanceof Order ? $order : null;
 $checkoutHtml = __get('checkoutHtml');
 $checkoutHtml = is_string($checkoutHtml) ? $checkoutHtml : '';
-
-$formatMoney = static function (int $micros, string $currency): string {
-    return number_format($micros / 1000000, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
-           . ' ' . strtoupper($currency);
-};
 ?>
 <div class="oe-account">
 <div class="oe-account-main">
@@ -103,7 +99,7 @@ $formatMoney = static function (int $micros, string $currency): string {
                                     <?php echo osc_esc_html(sprintf(_m('%s credits'), number_format((int) $package['i_credits']))); ?>
                                 </span>
                                 <span class="oe-bill-pkg-price">
-                                    <?php echo osc_esc_html($formatMoney((int) $package['i_amount'], (string) $package['s_currency'])); ?>
+                                    <?php echo osc_esc_html(Money::format((int) $package['i_amount'], (string) $package['s_currency'])); ?>
                                 </span>
                             </label>
                         </div>

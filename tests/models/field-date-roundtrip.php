@@ -59,13 +59,10 @@ $posted = array(
     $rangeField => array('from' => '1775001600', 'to' => (string) (1775174400 + 86399)),
 );
 
-$actions  = (new ReflectionClass(\mindstellar\listing\ListingValidator::class))->newInstanceWithoutConstructor();
-$sanitize = new ReflectionMethod(\mindstellar\listing\ListingValidator::class, 'sanitizeMeta');
-$sanitize->setAccessible(true);
 $model = Field::getInstance();
 foreach ($posted as $fieldId => $value) {
     $type = $fieldId === $dateField ? 'DATE' : 'DATEINTERVAL';
-    $model->replace($itemId, $fieldId, $sanitize->invoke($actions, $type, $value));
+    $model->replace($itemId, $fieldId, \mindstellar\form\builder\FieldValidator::sanitizeValue($type, $value));
 }
 
 harness_section('the posted timestamps are stored as sent');

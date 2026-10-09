@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
+use mindstellar\database\UtcDatetime;
+
 /**
  * The API's value rules: integer ids, booleans, RFC 3339 UTC times, prices as decimal
  * strings, and null instead of an empty string.
@@ -85,7 +87,7 @@ final class Format
             return null;
         }
 
-        return $date->setTimezone($zones['UTC'])->format('Y-m-d\TH:i:s\Z');
+        return $date->setTimezone($zones['UTC'])->format(UtcDatetime::RFC3339);
     }
 
     /**
@@ -111,7 +113,7 @@ final class Format
      */
     public static function timestamp(mixed $value): ?string
     {
-        return is_numeric($value) ? gmdate('Y-m-d\TH:i:s\Z', (int) $value) : null;
+        return is_numeric($value) ? UtcDatetime::rfc3339((int) $value) : null;
     }
 
     /**

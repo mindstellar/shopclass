@@ -149,7 +149,7 @@ final class Dispatcher
         // set to another second keeps its own.
         $millis  = (int) floor(microtime(true) * 1000);
         $msgId   = Signer::messageId(intdiv($millis, 1000) === $now ? $millis : $now * 1000);
-        $payload = ['type' => $type, 'id' => $msgId, 'timestamp' => gmdate('Y-m-d\TH:i:s\Z', $now), 'data' => $data];
+        $payload = ['type' => $type, 'id' => $msgId, 'timestamp' => \mindstellar\database\UtcDatetime::rfc3339($now), 'data' => $data];
         if (($data['live'] ?? null) === false) {
             $payload = ['type' => $type, 'id' => $msgId, 'timestamp' => $payload['timestamp'], 'thin' => true, 'data' => $data];
         }

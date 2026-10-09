@@ -9,6 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\billing\Billing;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
@@ -124,8 +125,8 @@ class CWebBilling extends WebSecBaseModel
     private function walletView()
     {
         $userId = osc_logged_user_id();
-        $page   = max(1, Params::getParamInt('pageNum'));
-        $offset = ($page - 1) * self::PER_PAGE;
+        $page   = ListPaging::page('pageNum');
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $this->_exportVariableToView('balance', Wallet::balance($userId));
         $this->_exportVariableToView('entries', Wallet::history($userId, self::PER_PAGE, $offset));
@@ -155,8 +156,8 @@ class CWebBilling extends WebSecBaseModel
     private function ordersView()
     {
         $userId = osc_logged_user_id();
-        $page   = max(1, Params::getParamInt('pageNum'));
-        $offset = ($page - 1) * self::PER_PAGE;
+        $page   = ListPaging::page('pageNum');
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $this->_exportVariableToView('orders', OrderStore::forUser($userId, self::PER_PAGE, $offset));
         $this->_exportVariableToView('total', OrderStore::searchCount(array('user_id' => $userId)));
