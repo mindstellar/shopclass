@@ -37,6 +37,25 @@ class CAdminItems extends AdminSecBaseModel
     //specific for this class
     private Item $itemManager;
 
+    /** Each action and the method that answers it; any other action shows the listings table. */
+    private const ACTIONS = array(
+        'bulk_actions'   => 'bulkActions',
+        'delete'         => 'deleteListings',
+        'status'         => 'setStatus',
+        'status_premium' => 'setFlag',
+        'status_spam'    => 'setFlag',
+        'clear_reports'  => 'clearReports',
+        'clear_stat'     => 'clearStat',
+        'item_edit'      => 'itemEdit',
+        'item_edit_post' => 'itemEditPost',
+        'deleteResource' => 'deleteResource',
+        'post'           => 'newItem',
+        'post_item'      => 'newItemPost',
+        'settings'       => 'settings',
+        'settings_post'  => 'settingsPost',
+        'items_reported' => 'reported',
+    );
+
     /**
      * Take the item manager for this request.
      */
@@ -67,419 +86,506 @@ class CAdminItems extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url());
         }
 
-        //specific things for this class
-        switch ($this->action) {
-            case 'bulk_actions':
-                osc_csrf_check();
-                $moderate = static function (string $action) {
-                    $moderation = ListingModeration::make();
-                    $adminId    = (int) osc_logged_admin_id();
+        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'listings') : 'listings';
 
-                    return static function ($id) use ($moderation, $action, $adminId): bool {
-                        try {
-                            return $moderation->apply($action, (int) $id, $adminId, '');
-                        } catch (RefusedException $e) {
+        return $this->$method() === false ? false : null;
+    }
+
+    /**
+     * Apply a bulk action to the selected listings.
+     */
+    private function bulkActions(): void
+    {
+        osc_csrf_check();
+        $moderate = static function (string $action) {
+            $moderation = ListingModeration::make();
+            $adminId    = (int) osc_logged_admin_id();
+
+            return static function ($id) use ($moderation, $action, $adminId): bool {
+                try {
+                    return $moderation->apply($action, (int) $id, $adminId, '');
+                } catch (RefusedException $e) {
+                    return false;
+                }
+            };
+        };
+        switch (Params::getParam('bulk_actions')) {
+            case 'enable_all':
+                BulkAction::apply($moderate('enable'), '%d listing has been enabled', '%d listings have been enabled');
+                break;
+            case 'disable_all':
+                BulkAction::apply($moderate('disable'), '%d listing has been disabled', '%d listings have been disabled');
+                break;
+            case 'activate_all':
+                BulkAction::apply($moderate('activate'), '%d listing has been activated', '%d listings have been activated');
+                break;
+            case 'deactivate_all':
+                BulkAction::apply($moderate('deactivate'), '%d listing has been deactivated', '%d listings have been deactivated');
+                break;
+            case 'premium_all':
+                BulkAction::apply($moderate('premium'), '%d listing has been marked as premium', '%d listings have been marked as premium');
+                break;
+            case 'depremium_all':
+                BulkAction::apply($moderate('unpremium'), '%d listing is no longer premium', '%d listings are no longer premium');
+                break;
+            case 'spam_all':
+                BulkAction::apply($moderate('spam'), '%d listing has been marked as spam', '%d listings have been marked as spam');
+                break;
+            case 'despam_all':
+                BulkAction::apply($moderate('unspam'), '%d listing is no longer marked as spam', '%d listings are no longer marked as spam');
+                break;
+            case 'delete_all':
+                $manager = $this->itemManager;
+                BulkAction::apply(
+                    static function ($id) use ($manager) {
+                        $item = $manager->findByPrimaryKey($id);
+
+                        return $item && (new ListingService())->delete((int) $item['pk_i_id'], (string) $item['s_secret'], Actor::fromSession(true));
+                    },
+                    '%d listing has been deleted',
+                    '%d listings have been deleted'
+                );
+                break;
+            case 'clear_spam_all':
+                $this->bulkClearStat('spam', '%d listing has been unmarked as spam', '%d listings have been unmarked as spam');
+                break;
+            case 'clear_bad_all':
+                $this->bulkClearStat('bad', '%d listing has been unmarked as missclassified', '%d listings have been unmarked as missclassified');
+                break;
+            case 'clear_dupl_all':
+                $this->bulkClearStat('duplicated', '%d listing has been unmarked as duplicated', '%d listings have been unmarked as duplicated');
+                break;
+            case 'clear_expi_all':
+                $this->bulkClearStat('expired', '%d listing has been unmarked as expired', '%d listings have been unmarked as expired');
+                break;
+            case 'clear_offe_all':
+                $this->bulkClearStat('offensive', '%d listing has been unmarked as offensive', '%d listings have been unmarked as offensive');
+                break;
+            case 'clear_all':
+                $this->bulkClearStat('all', '%d listing has been unmarked', '%d listings have been unmarked');
+                break;
+            case 'clear_reports_all':
+                // 'clear_all' only resets the raw t_item_stats counters. This also
+                // forgets the deduplicated report log, so the reports already on
+                // file cannot immediately re-trigger the report-threshold auto-block.
+                $manager = $this->itemManager;
+                BulkAction::apply(
+                    static function ($id) use ($manager) {
+                        if (!$manager->findByPrimaryKey($id)) {
                             return false;
                         }
-                    };
-                };
-                switch (Params::getParam('bulk_actions')) {
-                    case 'enable_all':
-                        BulkAction::apply($moderate('enable'), '%d listing has been enabled', '%d listings have been enabled');
-                        break;
-                    case 'disable_all':
-                        BulkAction::apply($moderate('disable'), '%d listing has been disabled', '%d listings have been disabled');
-                        break;
-                    case 'activate_all':
-                        BulkAction::apply($moderate('activate'), '%d listing has been activated', '%d listings have been activated');
-                        break;
-                    case 'deactivate_all':
-                        BulkAction::apply($moderate('deactivate'), '%d listing has been deactivated', '%d listings have been deactivated');
-                        break;
-                    case 'premium_all':
-                        BulkAction::apply($moderate('premium'), '%d listing has been marked as premium', '%d listings have been marked as premium');
-                        break;
-                    case 'depremium_all':
-                        BulkAction::apply($moderate('unpremium'), '%d listing is no longer premium', '%d listings are no longer premium');
-                        break;
-                    case 'spam_all':
-                        BulkAction::apply($moderate('spam'), '%d listing has been marked as spam', '%d listings have been marked as spam');
-                        break;
-                    case 'despam_all':
-                        BulkAction::apply($moderate('unspam'), '%d listing is no longer marked as spam', '%d listings are no longer marked as spam');
-                        break;
-                    case 'delete_all':
-                        $manager = $this->itemManager;
-                        BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                $item = $manager->findByPrimaryKey($id);
+                        ListingCounters::clearAllReports((int) $id);
 
-                                return $item && (new ListingService())->delete((int) $item['pk_i_id'], (string) $item['s_secret'], Actor::fromSession(true));
-                            },
-                            '%d listing has been deleted',
-                            '%d listings have been deleted'
-                        );
-                        break;
-                    case 'clear_spam_all':
-                        $this->bulkClearStat('spam', '%d listing has been unmarked as spam', '%d listings have been unmarked as spam');
-                        break;
-                    case 'clear_bad_all':
-                        $this->bulkClearStat('bad', '%d listing has been unmarked as missclassified', '%d listings have been unmarked as missclassified');
-                        break;
-                    case 'clear_dupl_all':
-                        $this->bulkClearStat('duplicated', '%d listing has been unmarked as duplicated', '%d listings have been unmarked as duplicated');
-                        break;
-                    case 'clear_expi_all':
-                        $this->bulkClearStat('expired', '%d listing has been unmarked as expired', '%d listings have been unmarked as expired');
-                        break;
-                    case 'clear_offe_all':
-                        $this->bulkClearStat('offensive', '%d listing has been unmarked as offensive', '%d listings have been unmarked as offensive');
-                        break;
-                    case 'clear_all':
-                        $this->bulkClearStat('all', '%d listing has been unmarked', '%d listings have been unmarked');
-                        break;
-                    case 'clear_reports_all':
-                        // 'clear_all' only resets the raw t_item_stats counters. This also
-                        // forgets the deduplicated report log, so the reports already on
-                        // file cannot immediately re-trigger the report-threshold auto-block.
-                        $manager = $this->itemManager;
-                        BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                if (!$manager->findByPrimaryKey($id)) {
-                                    return false;
-                                }
-                                ListingCounters::clearAllReports((int) $id);
-
-                                return true;
-                            },
-                            '%d listing has had its reports cleared',
-                            '%d listings have had their reports cleared'
-                        );
-                        break;
-                    default:
-                        if (Params::getParam('bulk_actions') != '') {
-                            osc_run_hook('item_bulk_' . Params::getParam('bulk_actions'), Params::getParam('id'));
-                        }
-                        break;
-                }
-                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
-                break;
-            case 'delete':          //delete
-                osc_csrf_check();
-                $id      = Params::getParam('id');
-                $success = false;
-
-                foreach ($id as $i) {
-                    if ($i) {
-                        $aItem   = $this->itemManager->findByPrimaryKey($i);
-                        $success = (new ListingService())->delete((int) $aItem['pk_i_id'], (string) $aItem['s_secret'], Actor::fromSession(true));
-                    }
-                }
-
-                if ($success) {
-                    osc_add_flash_ok_message(_m('The listing has been deleted'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m("The listing couldn't be deleted"), 'admin');
-                }
-
-                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
-                break;
-            case 'status':          //status
-                osc_csrf_check();
-                $id     = Params::getParamInt('id');
-                $value  = Params::getParamString('value');
-                $action = array('ACTIVE' => 'activate', 'INACTIVE' => 'deactivate', 'ENABLE' => 'enable', 'DISABLE' => 'disable')[$value] ?? '';
-                if ($id <= 0 || $action === '') {
-                    return false;
-                }
-                $done = array(
-                    'activate'   => _m('The listing has been activated'),
-                    'deactivate' => _m('The listing has been deactivated'),
-                    'enable'     => _m('The listing has been enabled'),
-                    'disable'    => _m('The listing has been disabled'),
+                        return true;
+                    },
+                    '%d listing has had its reports cleared',
+                    '%d listings have had their reports cleared'
                 );
-                $this->moderate($action, $id, $done[$action], _m("The listing can't be activated because it's blocked"));
-                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
-                break;
-            case 'status_premium':  //status premium
-            case 'status_spam':  //status spam
-                osc_csrf_check();
-                $id    = Params::getParamInt('id');
-                $value = Params::getParamString('value');
-                if ($id <= 0 || !in_array($value, array('0', '1'), true)) {
-                    return false;
-                }
-                $action = ($value === '1' ? '' : 'un') . ($this->action === 'status_spam' ? 'spam' : 'premium');
-                $this->moderate($action, $id, _m('Changes have been applied'), _m('An error has occurred'));
-                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
-                break;
-            case 'clear_reports':
-                // Row-level twin of the 'clear_reports_all' bulk action: resets the raw
-                // t_item_stats counters AND forgets the deduplicated report log, so
-                // reports already on file cannot immediately re-trigger the
-                // report-threshold auto-block.
-                osc_csrf_check();
-                $id = Params::getParamInt('id');
-
-                if ($id <= 0) {
-                    return false;
-                }
-
-                ListingCounters::clearAllReports($id);
-
-                osc_add_flash_ok_message(_m('Reports have been cleared for this listing'), 'admin');
-                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
-                break;
-            case 'clear_stat':
-                osc_csrf_check();
-                $id   = Params::getParam('id');
-                $stat = Params::getParam('stat');
-
-                if (!$id) {
-                    return false;
-                }
-
-                if (!$stat) {
-                    return false;
-                }
-
-                $id = (int)$id;
-
-                $success = is_string($stat) && ListingCounters::clearReport($id, $stat) > 0;
-
-                if ($success) {
-                    osc_add_flash_ok_message(_m('The listing has been unmarked as') . " $stat", 'admin');
-                } else {
-                    osc_add_flash_error_message(_m("The listing hasn't been unmarked as") . " $stat", 'admin');
-                }
-
-                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
-                break;
-            case 'item_edit':       // edit item
-                $id = Params::getParam('id');
-
-                $item = Item::getInstance()->findByPrimaryKey((int) $id);
-                if (count($item) <= 0) {
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=items');
-                }
-
-                $this->exportItemState($item);
-
-                $form     = count(Session::getInstance()->_getForm());
-                $keepForm = count(Session::getInstance()->_getKeepForm());
-
-                if ($form == 0 || $form == $keepForm) {
-                    Session::getInstance()->_dropKeepForm();
-                }
-
-                // save referer if belongs to manage items
-                // redirect only if ManageItems or ReportedListngs
-                if (Params::existServerParam('HTTP_REFERER')) {
-                    $referer = Params::getServerParam('HTTP_REFERER', false, false);
-                    if (preg_match('/page=items/', $referer)) {
-                        if (preg_match("/action=([\p{L}|_|-]+)/u", $referer, $matches)) {
-                            if ($matches[1] === 'items_reported') {
-                                Session::getInstance()->_set('osc_admin_referer', $referer);
-                            }
-                        } else {
-                            // no actions - Manage Listings
-                            Session::getInstance()->_set('osc_admin_referer', $referer);
-                        }
-                    }
-                }
-
-                $this->_exportVariableToView('item', $item);
-                $this->_exportVariableToView('new_item', false);
-
-                osc_run_hook('before_item_edit', $item);
-                $this->doView('items/frm.php');
-                break;
-            case 'item_edit_post':
-                osc_csrf_check();
-                $formData = ListingInput::read(true, false);
-                $meta     = Params::getParam('meta');
-                ListingInput::keep($formData, $meta);
-
-                $success = $this->saveListing($formData, false);
-
-                // edit() answers with the number of rows it changed, or with the message it
-                // refused on. A save that changed nothing affected no rows and is still a
-                // save, so only a message is a refusal.
-                if (!is_string($success) && $success !== false) {
-                    osc_add_flash_ok_message(_m('Changes saved correctly'), 'admin');
-                    $url = osc_admin_base_url(true) . '?page=items';
-                    // if Referer is saved that means referer is ManageListings or ReportListings
-                    if (Session::getInstance()->_get('osc_admin_referer') != '') {
-                        $url = Session::getInstance()->_get('osc_admin_referer');
-                    }
-                    Session::getInstance()->_clearVariables();
-                    ListingInput::dropKept($meta);
-
-                    $this->redirectTo($url);
-                } else {
-                    // Drawn again with what was typed still in it, rather than thrown away
-                    // with a redirect. ListingInput::read() has already put the submission in the
-                    // session form, which is where the view reads the content fields from.
-                    osc_add_flash_error_message($success, 'admin');
-                    $this->drawItemForm(false, $this->itemErrors($success, $formData));
-
-                    return null;
-                }
-                break;
-            case 'deleteResource':  //delete resource
-                osc_csrf_check();
-                $deleted = (new PhotoService())->delete(
-                    Params::getParamInt('id'),
-                    Params::getParamInt('fkid'),
-                    Actor::fromSession(true),
-                    Params::getParamString('name')
-                );
-                if (!$deleted) {
-                    osc_add_flash_error_message(_m('An error has occurred'), 'admin');
-                } else {
-                    osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=items');
-                break;
-            case 'post':            // add item
-                $form     = count(Session::getInstance()->_getForm());
-                $keepForm = count(Session::getInstance()->_getKeepForm());
-                if ($form == 0 || $form == $keepForm) {
-                    Session::getInstance()->_dropKeepForm();
-                }
-
-                $this->_exportVariableToView('new_item', true);
-                osc_run_hook('post_item');
-                $this->doView('items/frm.php');
-                break;
-            case 'post_item':       //post item
-                osc_csrf_check();
-                $formData = ListingInput::read(true, true);
-                $meta     = Params::getParam('meta');
-                ListingInput::keep($formData, $meta);
-
-                $success = $this->saveListing($formData, true);
-
-                if ($success == 1 || $success == 2) {
-                    $url = osc_admin_base_url(true) . '?page=items';
-                    // if Referer is saved that means referer is ManageListings or ReportListings
-                    if (Session::getInstance()->_get('osc_admin_referer') != '') {
-                        $url = Session::getInstance()->_get('osc_admin_referer');
-                        Session::getInstance()->_drop('osc_admin_referer');
-                    }
-                    Session::getInstance()->_clearVariables();
-                    ListingInput::dropKept($meta);
-                    osc_add_flash_ok_message(_m('A new listing has been added'), 'admin');
-
-                    $this->redirectTo($url);
-                } else {
-                    osc_add_flash_error_message($success, 'admin');
-                    $this->drawItemForm(true, $this->itemErrors($success, $formData));
-
-                    return null;
-                }
-                break;
-            case ('settings'):          // calling the items settings view
-                $this->drawSettings();
-                break;
-            case ('settings_post'):     // update item settings
-                osc_csrf_check();
-                $result = CoreSettings::attempt(ItemSettingsScreen::register());
-                if ($result['errors'] !== array()) {
-                    $this->drawSettings($result['values']);
-                    break;
-                }
-                if ($result['updated'] > 0) {
-                    osc_add_flash_ok_message(_m("Listings' settings have been updated"), 'admin');
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=settings');
-                break;
-            case ('items_reported'):
-
-                // set default iDisplayLength
-                ListPaging::rememberedLength();
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
-
-                // Table header order by related
-                if (Params::getParam('sort') == '') {
-                    Params::setParam('sort', 'date');
-                }
-                if (Params::getParam('direction') == '') {
-                    Params::setParam('direction', 'desc');
-                }
-
-                $page = ListPaging::page();
-
-                $params = Params::getParamsAsArray();
-
-                $itemsDataTable = new ItemsDataTable();
-                $itemsDataTable->tableReported($params);
-                $aData = $itemsDataTable->getData();
-
-                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
-                if ($pastEnd !== null) {
-                    $this->redirectTo($pastEnd);
-                }
-
-                $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
-
-                //calling the view...
-                $this->doView('items/reported.php');
                 break;
             default:
-
-                // set default iDisplayLength
-                ListPaging::rememberedLength();
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
-
-                // Table header order by related
-                if (Params::getParam('sort') == '') {
-                    Params::setParam('sort', 'date');
+                if (Params::getParam('bulk_actions') != '') {
+                    osc_run_hook('item_bulk_' . Params::getParam('bulk_actions'), Params::getParam('id'));
                 }
-                if (Params::getParam('direction') == '') {
-                    Params::setParam('direction', 'desc');
-                }
+                break;
+        }
+        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+    }
 
-                $page = ListPaging::page();
+    /**
+     * Delete the selected listings.
+     */
+    private function deleteListings(): void
+    {
+        osc_csrf_check();
+        $id      = Params::getParam('id');
+        $success = false;
 
-                $params = Params::getParamsAsArray();
-
-                $itemsDataTable = new ItemsDataTable();
-                $aData          = $itemsDataTable->table($params);
-
-                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
-                if ($pastEnd !== null) {
-                    $this->redirectTo($pastEnd);
-                }
-
-                $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('countries', Country::getInstance()->listAll());
-                $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
-                $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
-
-                $bulk_options = BulkAction::options(
-                    array(
-                        'delete_all' => __('Delete'),
-                        'activate_all' => __('Activate'),
-                        'deactivate_all' => __('Deactivate'),
-                        'disable_all' => __('Block'),
-                        'enable_all' => __('Unblock'),
-                        'premium_all' => __('Mark as premium'),
-                        'depremium_all' => __('Unmark as premium'),
-                        'spam_all' => __('Mark as spam'),
-                        'despam_all' => __('Unmark as spam')
-                    ),
-                    __('Are you sure you want to %s the selected listings?')
-                );
-                $bulk_options = osc_apply_filter('item_bulk_filter', $bulk_options);
-                $this->_exportVariableToView('bulk_options', $bulk_options);
-
-                //calling the view...
-                $this->doView('items/index.php');
+        foreach ($id as $i) {
+            if ($i) {
+                $aItem   = $this->itemManager->findByPrimaryKey($i);
+                $success = (new ListingService())->delete((int) $aItem['pk_i_id'], (string) $aItem['s_secret'], Actor::fromSession(true));
+            }
         }
 
+        if ($success) {
+            osc_add_flash_ok_message(_m('The listing has been deleted'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m("The listing couldn't be deleted"), 'admin');
+        }
+
+        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+    }
+
+    /**
+     * Activate, deactivate, enable or disable one listing.
+     *
+     * @return false|null false when there was nothing usable to act on
+     */
+    private function setStatus(): ?bool
+    {
+        osc_csrf_check();
+        $id     = Params::getParamInt('id');
+        $value  = Params::getParamString('value');
+        $action = array('ACTIVE' => 'activate', 'INACTIVE' => 'deactivate', 'ENABLE' => 'enable', 'DISABLE' => 'disable')[$value] ?? '';
+        if ($id <= 0 || $action === '') {
+            return false;
+        }
+        $done = array(
+            'activate'   => _m('The listing has been activated'),
+            'deactivate' => _m('The listing has been deactivated'),
+            'enable'     => _m('The listing has been enabled'),
+            'disable'    => _m('The listing has been disabled'),
+        );
+        $this->moderate($action, $id, $done[$action], _m("The listing can't be activated because it's blocked"));
+        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+
         return null;
+    }
+
+    /**
+     * Mark one listing as premium or spam, or unmark it.
+     *
+     * @return false|null false when there was nothing usable to act on
+     */
+    private function setFlag(): ?bool
+    {
+        osc_csrf_check();
+        $id    = Params::getParamInt('id');
+        $value = Params::getParamString('value');
+        if ($id <= 0 || !in_array($value, array('0', '1'), true)) {
+            return false;
+        }
+        $action = ($value === '1' ? '' : 'un') . ($this->action === 'status_spam' ? 'spam' : 'premium');
+        $this->moderate($action, $id, _m('Changes have been applied'), _m('An error has occurred'));
+        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+
+        return null;
+    }
+
+    /**
+     * Clear one listing's reports and its report log.
+     *
+     * @return false|null false when there was nothing usable to act on
+     */
+    private function clearReports(): ?bool
+    {
+        // Row-level twin of the 'clear_reports_all' bulk action: resets the raw
+        // t_item_stats counters AND forgets the deduplicated report log, so
+        // reports already on file cannot immediately re-trigger the
+        // report-threshold auto-block.
+        osc_csrf_check();
+        $id = Params::getParamInt('id');
+
+        if ($id <= 0) {
+            return false;
+        }
+
+        ListingCounters::clearAllReports($id);
+
+        osc_add_flash_ok_message(_m('Reports have been cleared for this listing'), 'admin');
+        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+
+        return null;
+    }
+
+    /**
+     * Clear one kind of report on a listing.
+     *
+     * @return false|null false when there was nothing usable to act on
+     */
+    private function clearStat(): ?bool
+    {
+        osc_csrf_check();
+        $id   = Params::getParam('id');
+        $stat = Params::getParam('stat');
+
+        if (!$id) {
+            return false;
+        }
+
+        if (!$stat) {
+            return false;
+        }
+
+        $id = (int)$id;
+
+        $success = is_string($stat) && ListingCounters::clearReport($id, $stat) > 0;
+
+        if ($success) {
+            osc_add_flash_ok_message(_m('The listing has been unmarked as') . " $stat", 'admin');
+        } else {
+            osc_add_flash_error_message(_m("The listing hasn't been unmarked as") . " $stat", 'admin');
+        }
+
+        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+
+        return null;
+    }
+
+    /**
+     * The listing editor.
+     */
+    private function itemEdit(): void
+    {
+        $id = Params::getParam('id');
+
+        $item = Item::getInstance()->findByPrimaryKey((int) $id);
+        if (count($item) <= 0) {
+            $this->redirectTo(osc_admin_base_url(true) . '?page=items');
+        }
+
+        $this->exportItemState($item);
+
+        $form     = count(Session::getInstance()->_getForm());
+        $keepForm = count(Session::getInstance()->_getKeepForm());
+
+        if ($form == 0 || $form == $keepForm) {
+            Session::getInstance()->_dropKeepForm();
+        }
+
+        // save referer if belongs to manage items
+        // redirect only if ManageItems or ReportedListngs
+        if (Params::existServerParam('HTTP_REFERER')) {
+            $referer = Params::getServerParam('HTTP_REFERER', false, false);
+            if (preg_match('/page=items/', $referer)) {
+                if (preg_match("/action=([\p{L}|_|-]+)/u", $referer, $matches)) {
+                    if ($matches[1] === 'items_reported') {
+                        Session::getInstance()->_set('osc_admin_referer', $referer);
+                    }
+                } else {
+                    // no actions - Manage Listings
+                    Session::getInstance()->_set('osc_admin_referer', $referer);
+                }
+            }
+        }
+
+        $this->_exportVariableToView('item', $item);
+        $this->_exportVariableToView('new_item', false);
+
+        osc_run_hook('before_item_edit', $item);
+        $this->doView('items/frm.php');
+    }
+
+    /**
+     * Save the listing editor.
+     */
+    private function itemEditPost(): void
+    {
+        osc_csrf_check();
+        $formData = ListingInput::read(true, false);
+        $meta     = Params::getParam('meta');
+        ListingInput::keep($formData, $meta);
+
+        $success = $this->saveListing($formData, false);
+
+        // edit() answers with the number of rows it changed, or with the message it
+        // refused on. A save that changed nothing affected no rows and is still a
+        // save, so only a message is a refusal.
+        if (!is_string($success) && $success !== false) {
+            osc_add_flash_ok_message(_m('Changes saved correctly'), 'admin');
+            $url = osc_admin_base_url(true) . '?page=items';
+            // if Referer is saved that means referer is ManageListings or ReportListings
+            if (Session::getInstance()->_get('osc_admin_referer') != '') {
+                $url = Session::getInstance()->_get('osc_admin_referer');
+            }
+            Session::getInstance()->_clearVariables();
+            ListingInput::dropKept($meta);
+
+            $this->redirectTo($url);
+        } else {
+            // Drawn again with what was typed still in it, rather than thrown away
+            // with a redirect. ListingInput::read() has already put the submission in the
+            // session form, which is where the view reads the content fields from.
+            osc_add_flash_error_message($success, 'admin');
+            $this->drawItemForm(false, $this->itemErrors($success, $formData));
+
+            return;
+        }
+    }
+
+    /**
+     * Delete one of a listing's photos.
+     */
+    private function deleteResource(): void
+    {
+        osc_csrf_check();
+        $deleted = (new PhotoService())->delete(
+            Params::getParamInt('id'),
+            Params::getParamInt('fkid'),
+            Actor::fromSession(true),
+            Params::getParamString('name')
+        );
+        if (!$deleted) {
+            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
+        } else {
+            osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=items');
+    }
+
+    /**
+     * The form for a new listing.
+     */
+    private function newItem(): void
+    {
+        $form     = count(Session::getInstance()->_getForm());
+        $keepForm = count(Session::getInstance()->_getKeepForm());
+        if ($form == 0 || $form == $keepForm) {
+            Session::getInstance()->_dropKeepForm();
+        }
+
+        $this->_exportVariableToView('new_item', true);
+        osc_run_hook('post_item');
+        $this->doView('items/frm.php');
+    }
+
+    /**
+     * Save a new listing.
+     */
+    private function newItemPost(): void
+    {
+        osc_csrf_check();
+        $formData = ListingInput::read(true, true);
+        $meta     = Params::getParam('meta');
+        ListingInput::keep($formData, $meta);
+
+        $success = $this->saveListing($formData, true);
+
+        if ($success == 1 || $success == 2) {
+            $url = osc_admin_base_url(true) . '?page=items';
+            // if Referer is saved that means referer is ManageListings or ReportListings
+            if (Session::getInstance()->_get('osc_admin_referer') != '') {
+                $url = Session::getInstance()->_get('osc_admin_referer');
+                Session::getInstance()->_drop('osc_admin_referer');
+            }
+            Session::getInstance()->_clearVariables();
+            ListingInput::dropKept($meta);
+            osc_add_flash_ok_message(_m('A new listing has been added'), 'admin');
+
+            $this->redirectTo($url);
+        } else {
+            osc_add_flash_error_message($success, 'admin');
+            $this->drawItemForm(true, $this->itemErrors($success, $formData));
+
+            return;
+        }
+    }
+
+    /**
+     * The listing settings page.
+     */
+    private function settings(): void
+    {
+        $this->drawSettings();
+    }
+
+    /**
+     * Save the listing settings.
+     */
+    private function settingsPost(): void
+    {
+        osc_csrf_check();
+        $result = CoreSettings::attempt(ItemSettingsScreen::register());
+        if ($result['errors'] !== array()) {
+            $this->drawSettings($result['values']);
+            return;
+        }
+        if ($result['updated'] > 0) {
+            osc_add_flash_ok_message(_m("Listings' settings have been updated"), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=settings');
+    }
+
+    /**
+     * The reported listings.
+     */
+    private function reported(): void
+    {
+        // set default iDisplayLength
+        ListPaging::rememberedLength();
+        $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+        // Table header order by related
+        if (Params::getParam('sort') == '') {
+            Params::setParam('sort', 'date');
+        }
+        if (Params::getParam('direction') == '') {
+            Params::setParam('direction', 'desc');
+        }
+
+        $page = ListPaging::page();
+
+        $params = Params::getParamsAsArray();
+
+        $itemsDataTable = new ItemsDataTable();
+        $itemsDataTable->tableReported($params);
+        $aData = $itemsDataTable->getData();
+
+        $pastEnd = ListPaging::pastEnd($aData, (int) $page);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $this->_exportVariableToView('aData', $aData);
+        $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
+
+        //calling the view...
+        $this->doView('items/reported.php');
+    }
+
+    /**
+     * The listings table.
+     */
+    private function listings(): void
+    {
+        // set default iDisplayLength
+        ListPaging::rememberedLength();
+        $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+        // Table header order by related
+        if (Params::getParam('sort') == '') {
+            Params::setParam('sort', 'date');
+        }
+        if (Params::getParam('direction') == '') {
+            Params::setParam('direction', 'desc');
+        }
+
+        $page = ListPaging::page();
+
+        $params = Params::getParamsAsArray();
+
+        $itemsDataTable = new ItemsDataTable();
+        $aData          = $itemsDataTable->table($params);
+
+        $pastEnd = ListPaging::pastEnd($aData, (int) $page);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $this->_exportVariableToView('aData', $aData);
+        $this->_exportVariableToView('countries', Country::getInstance()->listAll());
+        $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
+        $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
+
+        $bulk_options = BulkAction::options(
+            array(
+                'delete_all' => __('Delete'),
+                'activate_all' => __('Activate'),
+                'deactivate_all' => __('Deactivate'),
+                'disable_all' => __('Block'),
+                'enable_all' => __('Unblock'),
+                'premium_all' => __('Mark as premium'),
+                'depremium_all' => __('Unmark as premium'),
+                'spam_all' => __('Mark as spam'),
+                'despam_all' => __('Unmark as spam')
+            ),
+            __('Are you sure you want to %s the selected listings?')
+        );
+        $bulk_options = osc_apply_filter('item_bulk_filter', $bulk_options);
+        $this->_exportVariableToView('bulk_options', $bulk_options);
+
+        //calling the view...
+        $this->doView('items/index.php');
     }
 
     /**

@@ -18,7 +18,6 @@
 
 require_once __DIR__ . '/lib/harness.php';
 
-
 $body = harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php', 'deleteComment');
 
 harness_section('delete_comment');
