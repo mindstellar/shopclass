@@ -8,14 +8,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 17-07-2021
- * Time: 15:31
- * License is provided in root directory.
- */
-
 namespace mindstellar\form\base;
 
 /**
