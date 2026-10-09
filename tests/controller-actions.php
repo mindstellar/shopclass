@@ -41,6 +41,10 @@ $controllers = array(
         'add', 'add_post', 'delete', 'disable_bo_selected', 'disable_selected', 'edit', 'edit_post',
         'enable_bo_selected', 'enable_selected', 'import_locations',
     ), 'languages'),
+    'CAdminPlugins' => array('admin/CAdminPlugins.php', array(
+        'add', 'add_post', 'admin', 'admin_post', 'configure', 'configure_post', 'delete', 'disable', 'enable',
+        'error_plugin', 'install', 'renderplugin', 'uninstall',
+    ), 'plugins'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {
