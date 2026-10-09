@@ -37,10 +37,16 @@ The direction is one way: controllers → services → policies and models. A se
 calls a controller, and core never imports `mindstellar\api`. The API is one more set of
 controllers.
 
-Tests hold these rules: `tests/core-no-api-import.php` (core never imports the API),
-`tests/no-raw-table-access.php` (table SQL stays in models and stores),
-`tests/strict-types.php`, `tests/hook-contract.php` (hook names and arguments) and
-`tests/api-contract.php` (the API surface plugins use).
+Tests hold these rules:
+
+- `tests/core-no-api-import.php`: core never imports the API.
+- `tests/no-raw-table-access.php`: table SQL stays in models and stores.
+- `tests/services-no-request-state.php`: services, policies, stores and queries never read the request.
+- `tests/query-store-layering.php`: queries only read and call no legacy model; stores use no query.
+- `tests/db-errors-not-swallowed.php`: new code does not hide a database error.
+- `tests/controller-actions.php` and `tests/controller-method-size.php`: each action has its own short method.
+- `tests/strict-types.php` and `tests/classmap-current.php`: new classes are strict and loadable.
+- `tests/hook-contract.php` and `tests/api-contract.php`: hook names and arguments, and the API surface plugins use.
 
 ## A request, start to finish
 

@@ -92,9 +92,9 @@ for a moment and run the test again. It must fail. Then put the code back.
 
 ## Tests that read source code
 
-Some tests read a PHP file as text, for example to check that core never imports the
-API (`core-no-api-import.php`) or that table SQL stays in models and stores
-(`no-raw-table-access.php`). Keep these for rules about the code itself. To test what
+Some tests read a PHP file as text, to hold a rule about the code itself: core never
+imports the API, table SQL stays in models and stores, services never read the request.
+The architecture page lists them. Use `harness_code_only()` so comments do not count. To test what
 code does, run it. When you must read source, check one line or one method, not the
 text between two `case` labels: a harmless move then breaks the test.
 
@@ -110,7 +110,9 @@ diff and commit the new list with your change:
 | `api-contract.php` | the REST API surface plugins use |
 | `api-openapi-compat.php` | the published OpenAPI document |
 | `search-exports-contract.php` | the search helpers themes call |
-| `strict-types.php` | files still without `declare(strict_types=1)` |
+| `strict-types.php` | files still without `declare(strict_types=1)` (may only shrink) |
+| `controller-method-size.php` | controller methods over 100 lines (may only shrink) |
+| `db-errors-not-swallowed.php` | catches that hide a database error, per file (may only shrink) |
 
 ## What else CI checks
 

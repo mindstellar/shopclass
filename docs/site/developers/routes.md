@@ -140,7 +140,7 @@ Inside `mydynamicroute.php`, read the captured groups with `Params::getParam()`.
   the public site refuses it with a 404. Naming the folder `admin` does not put
   the page in the admin panel. For that, link to the route with
   `osc_route_admin_url()` instead of `osc_route_url()`.
-- Core's URL rules are built once and stored with the version number. After you change
+- Core's URL rules are stored and rebuilt when the version number changes. After you change
   `CoreRoutes` in your own copy, save **Settings → Permalinks** to rebuild them.
 
 :::danger[Make your patterns unique]
