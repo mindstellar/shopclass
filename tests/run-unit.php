@@ -12,8 +12,8 @@
  * Runs every tests/*.php in its own PHP process and fails if any fails.
  *
  * Usage:  php tests/run-unit.php [-j N] [name ...]   run all (or the named) tests, 4 at a time
- *         php tests/run-unit.php --check             fail if a test file is not run by
- *                                                    CI or by the runner (no tests run)
+ *         php tests/run-unit.php --check             fail if a test file has no docblock
+ *                                                    saying what it checks (no tests run)
  * Needs the database settings of tests/lib/scratchdb.php for the DB tests.
  */
 
@@ -48,21 +48,27 @@ for ($i = 0; $i < count($args); $i++) {
 }
 
 if ($check) {
-    // Every test must be named as `php tests/<name>.php` in a workflow, so CI cannot skip it.
-    $yaml = '';
-    foreach (glob(dirname($dir) . '/.github/workflows/*.yml') ?: array() as $y) {
-        $yaml .= file_get_contents($y) . "\n";
-    }
+    // CI runs every file this runner finds, so the check is that each one says what it checks.
     $missing = array();
     foreach ($all as $name) {
-        if (!preg_match('#php tests/' . preg_quote($name, '#') . '\.php(?![\w.-])#', $yaml)) {
+        $doc = false;
+        foreach (token_get_all((string) file_get_contents($dir . '/' . $name . '.php')) as $token) {
+            if (is_array($token) && $token[0] === T_DOC_COMMENT) {
+                $doc = trim(preg_replace('#^\s*(/\*\*|\*/|\*)#m', '', $token[1])) !== '';
+                break;
+            }
+            if (is_array($token) && !in_array($token[0], array(T_OPEN_TAG, T_COMMENT, T_WHITESPACE), true)) {
+                break;
+            }
+        }
+        if (!$doc) {
             $missing[] = $name;
         }
     }
     foreach ($missing as $name) {
-        fwrite(STDERR, "FAIL  tests/$name.php is run by no workflow; add a step or an entry in RUNNER_EXCLUDE\n");
+        fwrite(STDERR, "FAIL  tests/$name.php has no docblock at the top saying what it checks\n");
     }
-    echo $missing === array() ? 'OK  all ' . count($all) . " tests are wired into CI\n" : '';
+    echo $missing === array() ? 'OK  all ' . count($all) . " tests say what they check\n" : '';
     exit($missing === array() ? 0 : 1);
 }
 
