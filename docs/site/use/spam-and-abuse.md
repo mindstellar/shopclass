@@ -53,12 +53,13 @@ The settings are in **Settings → Spam and bots → Sign-in protection**:
 | Keep records for | 7 days |
 
 The per-account limit is the one that matters against a targeted attack; the
-per-IP limit catches broad scanning. A user's username and e-mail share one account
+per-IP limit catches broad scanning. An IPv6 visitor counts by its /64 network, as do the
+form and posting limits, so changing addresses inside it does not reset the count. A user's username and e-mail share one account
 budget. Once it is spent, signing in by the other name answers as a wrong password.
 
 **Failed sign-ins right now**, under **Tools → System info → Security**, lists every
 address and account with recent failures and says which are blocked. **Unblock** lets one of them try again at
-once; **Unblock everyone** clears them all.
+once (for an IPv6 address, its whole /64); **Unblock everyone** clears them all.
 
 :::danger[Behind a proxy, throttling needs the real client IP]
 If your site sits behind Cloudflare, a tunnel or any reverse proxy and the real

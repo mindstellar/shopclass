@@ -176,7 +176,7 @@ does not have. A write refused by the form has `code: "rejected"` on each entry 
 ### `rate_limited`
 
 429. Over a rate limit: the per-minute limits, or an hourly cap on listings, comments, photo
-downloads, e-mail changes or sign-ups. Wait `Retry-After` seconds. See
+downloads, e-mail changes, saved searches or sign-ups. Wait `Retry-After` seconds. See
 [rate limits](/docs/developers/api/authentication/#rate-limits) and
 [write limits](/docs/developers/api/writes/#limits).
 

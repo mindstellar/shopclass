@@ -339,7 +339,7 @@ curl -i -X POST $API/account/alerts \
 |---|---|
 | Filters | `q`, `category`, `country`, `region`, `city`, `city_area`, `user`, `locale`, `price_min`, `price_max`, `with_photos`, `premium`, `custom_field`. At least one. |
 | Same search again | Answers `200` with the saved one, not a second `201`. |
-| Limit | A user keeps at most 20 saved searches; the site owner can change it. One more is `422 validation_failed` at `/`. |
+| Limit | A user keeps at most 20 saved searches; the site owner can change it. One more is `422 validation_failed` at `/`. The hourly alert limit in **Spam and bots** also applies: over it is `429 rate_limited`. |
 | `type` | How often it mails: `instant`, `hourly`, `daily` or `weekly`. |
 | List and stop | `GET /account/alerts`, `DELETE /account/alerts/{id}` (`204`). |
 | Shown on the web | The same search appears on the account's alerts page. |
@@ -430,6 +430,7 @@ curl -X POST $API/listings -H "Authorization: Bearer $TOKEN" \
 | Comments | 20 an hour per user, counted with the ones they post on the site's comment form | `429 rate_limited` |
 | Photos fetched by address | 30 an hour per user by default (a setting), counted on `PATCH` | `429 rate_limited` |
 | E-mail changes on the account | 5 an hour per user | `429 rate_limited` |
+| Saved searches | The site's hourly alert limit, counted with the web form | `429 rate_limited` |
 | Staged photos waiting | 50 per user | `422` on `/photo` |
 | `photo_tokens` / `photo_urls` in one body | 50 / 20 | `422 validation_failed` |
 | Sign-ups | 5 an hour per address; 100 for the site by default (a setting), counting only those that passed their checks | `429 rate_limited` |

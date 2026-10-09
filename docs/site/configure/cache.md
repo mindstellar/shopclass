@@ -52,7 +52,7 @@ $_cache_config = array(
 );
 ```
 
-The REST API's rate limits also count in memcached, so every web server shares one count.
+The REST API's rate limits count in the object cache too: with memcached every web server shares one count; with `apcu` each server counts its own; with no `OSC_CACHE` they count in the database.
 
 ## APCu (one server only)
 
