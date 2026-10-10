@@ -444,27 +444,25 @@ final class PhotoService
         }
         \Log::getInstance()->insertLog('item', 'delete resource backtrace', $resource['pk_i_id'], $backtrace, $actor->logRole(), $actor->logId());
 
-        // A file cannot come back, so it goes only once the delete has committed.
-        \mindstellar\database\Db::afterCommit(static function () use ($resource): void {
-            if (($resource['s_storage'] ?? 'local') === 'local'
-                && \mindstellar\storage\StorageManager::getInstance()->remote() === null) {
-                try {
-                    foreach (\mindstellar\storage\ResourceLocator::VARIANTS as $variant) {
-                        $file = $resource['s_path'] . $resource['pk_i_id'] . $variant . '.' . $resource['s_extension'];
-                        if (file_exists($file) && !is_dir($file)) {
-                            (new \mindstellar\utility\FileSystem())->remove($file);
-                        }
-                    }
-                } catch (\Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
-            } else {
-                \mindstellar\storage\StorageJobs::enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
-            }
-            osc_run_hook('delete_resource', $resource);
-        });
+        self::purgeFiles(array($resource));
 
         return true;
+    }
+
+    /**
+     * Remove photos' files once the delete has committed, in one storage job for those on remote
+     * storage, and fire `delete_resource` for each.
+     *
+     * @param array<int,array<string,mixed>> $resources listing photo rows
+     */
+    private static function purgeFiles(array $resources): void
+    {
+        \mindstellar\storage\StorageJobs::purgeAfterCommit($resources);
+        \mindstellar\database\Db::afterCommit(static function () use ($resources): void {
+            foreach ($resources as $resource) {
+                osc_run_hook('delete_resource', $resource);
+            }
+        });
     }
 
     /**
@@ -475,11 +473,8 @@ final class PhotoService
      */
     public static function discardStored(array $resources): void
     {
+        \mindstellar\storage\StorageJobs::removeFiles($resources);
         foreach ($resources as $resource) {
-            $base = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'];
-            foreach (\mindstellar\storage\ResourceLocator::VARIANTS as $variant) {
-                @unlink($base . $variant . '.' . $resource['s_extension']);
-            }
             osc_run_hook('delete_resource', $resource);
         }
     }
@@ -538,8 +533,10 @@ final class PhotoService
             );
         $log_ids = '';
         foreach ($resources as $resource) {
-            osc_deleteResource($resource['pk_i_id'], $is_admin, $resource);
             $log_ids .= $resource['pk_i_id'] . ',';
+        }
+        if (!Demo::active()) {
+            self::purgeFiles($resources);
         }
         \Log::getInstance()->insertLog(
             'itemActions',

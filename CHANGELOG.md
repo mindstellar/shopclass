@@ -72,6 +72,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Performance
 
+- Deleting a listing or account with files on remote storage queues one job for all its files, not one per file.
 - The API counts requests in the object cache set by `OSC_CACHE`; with memcached all web servers share one count. Write and hourly caps count in the database.
 - The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
 - Photo URLs in an API listing write download at the same time, not one after another, within 30 seconds in all.

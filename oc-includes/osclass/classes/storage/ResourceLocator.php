@@ -77,6 +77,20 @@ class ResourceLocator
     }
 
     /**
+     * Whether a row's files sit under the site folder: a relative path with no `..`, and a plain
+     * extension, so a row or job payload cannot point a delete elsewhere.
+     *
+     * @param array<string,mixed> $resource
+     */
+    public static function isUploadPath(array $resource): bool
+    {
+        $path = (string) ($resource['s_path'] ?? '');
+
+        return $path !== '' && $path[0] !== '/' && !str_contains($path, '..') && !str_contains($path, '\\') && !str_contains($path, ':')
+            && preg_match('/^[a-z0-9]{1,10}$/i', (string) ($resource['s_extension'] ?? '')) === 1;
+    }
+
+    /**
      * Directory portion of the storage key (the part before the filename).
      *
      * @param array<string,mixed> $resource a t_resource row, or a listing photo row

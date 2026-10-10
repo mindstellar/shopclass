@@ -369,7 +369,7 @@ seed_exec(
 
 /* Avatars are t_resource rows owned by the user: the rows go with the user, and the
  * local files are unlinked after the delete commits. */
-$avatarDir = 'tests/tmp-avatar-' . getmypid() . '/';
+$avatarDir = 'oc-content/uploads/tmp-avatar-' . getmypid() . '/';
 @mkdir(ABS_PATH . $avatarDir, 0777, true);
 $seedAvatar = static function (int $uid) use ($admin, $prefix, $avatarDir): int {
     return seed_exec(

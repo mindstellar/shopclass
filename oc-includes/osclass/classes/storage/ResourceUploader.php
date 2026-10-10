@@ -12,9 +12,7 @@
 namespace mindstellar\storage;
 
 use ImageProcessing;
-use mindstellar\database\Db;
 use mindstellar\model\Resource;
-use mindstellar\utility\FileSystem;
 use Throwable;
 
 /**
@@ -215,7 +213,7 @@ final class ResourceUploader
             return;
         }
 
-        $this->purgeFiles($resourceRow);
+        StorageJobs::purgeAfterCommit(array($resourceRow));
 
         (new Resource())->deleteResourcesIds(array((int) $resourceRow['pk_i_id']));
         (new Resource())->invalidateOwnerCache(
@@ -243,8 +241,8 @@ final class ResourceUploader
         }
 
         $rows = (new Resource())->findByOwner($ownerType, $ownerId);
+        StorageJobs::purgeAfterCommit($rows);
         foreach ($rows as $row) {
-            $this->purgeFiles($row);
             osc_run_hook('delete_resource', $row);
         }
 
@@ -263,8 +261,8 @@ final class ResourceUploader
     public function purgeDeleted(array $rows): void
     {
         $owners = array();
+        StorageJobs::purgeAfterCommit($rows);
         foreach ($rows as $row) {
-            $this->purgeFiles($row);
             osc_run_hook('delete_resource', $row);
             $owners[($row['s_owner_type'] ?? '') . ':' . ($row['i_owner_id'] ?? 0)] = $row;
         }
@@ -274,39 +272,6 @@ final class ResourceUploader
                 (int) ($row['i_owner_id'] ?? 0)
             );
         }
-    }
-
-    /**
-     * Remove a resource's files, or queue their removal when the row lives on (or
-     * an install has configured) a remote adapter. Never touches the database.
-     *
-     * @param array<string,mixed> $row a t_resource row
-     *
-     * @return void
-     */
-    private function purgeFiles(array $row): void
-    {
-        if (empty($row['pk_i_id'])) {
-            return;
-        }
-
-        // A file cannot come back, so it goes only once the delete has committed.
-        Db::afterCommit(static function () use ($row): void {
-            $storage = $row['s_storage'] ?? 'local';
-
-            if ($storage === 'local' && StorageManager::getInstance()->remote() === null) {
-                foreach (ResourceLocator::variants() as $variant) {
-                    $path = ResourceLocator::localPath($row, $variant);
-                    if (file_exists($path) && !is_dir($path)) {
-                        (new FileSystem())->remove($path);
-                    }
-                }
-
-                return;
-            }
-
-            StorageJobs::enqueue('delete', $storage, $row);
-        });
     }
 
     /**

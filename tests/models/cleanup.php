@@ -62,7 +62,7 @@ $admin  = scratchdb_session('osc_models_cleanup');
 $prefix = DB_TABLE_PREFIX;
 $engine = Cleanup::getInstance();
 
-$dir = 'tests/tmp-cleanup-' . getmypid() . '/';
+$dir = 'oc-content/uploads/tmp-cleanup-' . getmypid() . '/';
 @mkdir(ABS_PATH . $dir, 0777, true);
 // Removed at shutdown, so a failed or fatal run leaves no folder behind.
 register_shutdown_function(static function () use ($dir): void {
