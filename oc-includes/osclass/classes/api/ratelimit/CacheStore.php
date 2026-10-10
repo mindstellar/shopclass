@@ -28,7 +28,7 @@ final class CacheStore implements CounterStore
 
     /**
      * A store over $cache when it outlives the request and counts atomically; null otherwise. The
-     * default driver lasts one request, and the deprecated memcache one has no atomic increment.
+     * default driver lasts one request.
      */
     public static function of(\mindstellar\cache\CacheDriver $cache): ?self
     {

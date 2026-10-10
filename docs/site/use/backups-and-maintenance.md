@@ -235,7 +235,7 @@ php oc-cli.php backup:restore 2026-09-29-140213-everything-k7f3q9abcdefghij.zip
 ## Cache
 
 **Tools → System info → Cache** shows which object-cache driver is running (in-request only
-by default, or APCu, Memcached, Redis/Valkey or Memcache if set up), whether it keeps
+by default, or APCu, Memcached or Redis/Valkey if set up), whether it keeps
 data between requests, and stats such as entries, hit rate and memory use when
 the driver reports them. It warns when the driver config.php asks for is not
 installed, or does not answer.

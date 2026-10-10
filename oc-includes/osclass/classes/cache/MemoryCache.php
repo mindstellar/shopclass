@@ -109,23 +109,16 @@ class MemoryCache extends Cache
     }
 
     /**
-     * Retrieves the cache contents, if it exists
+     * This cache keeps nothing past the request, so the store never holds a key.
      *
-     * @param int|string $key   What the contents in the cache are called
-     * @param bool       $found if can be retrieved from cache
+     * @param string    $storeKey
+     * @param bool|null $found
      *
-     * @return bool|mixed False on failure to retrieve contents or the cache
-     *      contents on success
-     * @since 3.4
-     *
+     * @return mixed
      */
-    public function get($key, &$found = null)
+    protected function fetch(string $storeKey, &$found)
     {
-        $value = $this->local($key, $found);
-        if ($found) {
-            return $value;
-        }
-        ++$this->cache_misses;
+        $found = false;
 
         return false;
     }
@@ -182,5 +175,17 @@ class MemoryCache extends Cache
     protected function statsTitle(): string
     {
         return 'Default(dummy) stats';
+    }
+
+    /**
+     * Whether this request holds a value for $key.
+     *
+     * @param int|string $key
+     *
+     * @return bool
+     */
+    protected function _exists($key)
+    {
+        return isset($this->cache[$key]);
     }
 }

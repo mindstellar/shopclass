@@ -67,6 +67,42 @@ abstract class Cache implements \mindstellar\cache\CacheDriver
     }
 
     /**
+     * The cached value for $key: this request's copy first, then the store.
+     *
+     * @param int|string $key
+     * @param bool|null  $found set to whether the key was found
+     *
+     * @return mixed The value, or false on a miss.
+     */
+    public function get($key, &$found = null)
+    {
+        $value = $this->local($key, $found);
+        if ($found) {
+            return $value;
+        }
+        $value = $this->fetch($this->_key($key), $found);
+        if (!$found) {
+            ++$this->cache_misses;
+
+            return false;
+        }
+        $this->cache[$key] = self::copy($value);
+        ++$this->cache_hits;
+
+        return $value;
+    }
+
+    /**
+     * Read one key from the store.
+     *
+     * @param string    $storeKey the key with the site prefix
+     * @param bool|null $found    set to whether the store held it
+     *
+     * @return mixed
+     */
+    abstract protected function fetch(string $storeKey, &$found);
+
+    /**
      * A copy a caller may change without changing the cached value: objects are cloned.
      *
      * @param mixed $value
@@ -100,18 +136,6 @@ abstract class Cache implements \mindstellar\cache\CacheDriver
     protected function ttl($expire)
     {
         return (int) $expire > 0 ? (int) $expire : (int) $this->default_expiration;
-    }
-
-    /**
-     * Whether this request holds a value for $key.
-     *
-     * @param int|string $key
-     *
-     * @return bool
-     */
-    protected function _exists($key)
-    {
-        return isset($this->cache[$key]);
     }
 
     /**

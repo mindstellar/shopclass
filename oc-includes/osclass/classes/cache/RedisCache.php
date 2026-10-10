@@ -111,34 +111,17 @@ class RedisCache extends Cache
     }
 
     /**
-     * Retrieves the cache contents, if it exists.
+     * @param string    $storeKey
+     * @param bool|null $found
      *
-     * @param int|string $key
-     * @param bool       $found set true if the key was present, false otherwise
-     *
-     * @return bool|mixed The cached contents, or false on miss.
+     * @return mixed
      */
-    public function get($key, &$found = null)
+    protected function fetch(string $storeKey, &$found)
     {
-        $value = $this->local($key, $found);
-        if ($found) {
-            return $value;
-        }
+        $reply = $this->call('GET', $storeKey);
+        $found = is_string($reply);
 
-        $reply = $this->call('GET', $this->_key($key));
-        if (!is_string($reply)) {
-            $found = false;
-            ++$this->cache_misses;
-
-            return false;
-        }
-
-        $value             = $this->decode($reply);
-        $found             = true;
-        $this->cache[$key] = self::copy($value);
-        ++$this->cache_hits;
-
-        return $value;
+        return $found ? $this->decode($reply) : false;
     }
 
     /**

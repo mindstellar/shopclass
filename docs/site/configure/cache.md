@@ -128,7 +128,7 @@ ShopClass, empty the cache:
 php oc-cli.php cache:flush
 ```
 
-## The old memcache driver
+## The memcache driver is gone
 
 The `memcache` driver is gone. `define('OSC_CACHE', 'memcache')` now uses the
 `memcached` driver with the same servers, so install the `memcached` extension.
@@ -136,10 +136,17 @@ Without it, the site falls back to the one-request cache.
 
 ## Writing your own driver
 
-A plugin can add a cache: a class named `Object_Cache_<name>` that extends
-`mindstellar\base\Cache` (or implements `mindstellar\cache\CacheDriver`), picked
-with `OSC_CACHE` set to `<name>`. Drivers written for the old `iObject_Cache`
-interface keep working.
+A plugin can add a cache: a class named `Object_Cache_<name>`, picked with
+`OSC_CACHE` set to `<name>`. It must be loaded before the first cache call.
+
+- Extend `mindstellar\base\Cache` and write `is_supported()`, `fetch()`, `add()`,
+  `set()`, `delete()`, `flush()`, `_get_cache()` and `statsTitle()`. The base keeps
+  the in-request copy, the hit and miss counts and the site key prefix.
+- Or implement `mindstellar\cache\CacheDriver` yourself. Drivers written for the
+  old `iObject_Cache` interface keep working.
+
+An unknown name, or a driver whose `is_supported()` says no, falls back to the
+one-request cache with a PHP notice.
 
 ## Troubleshooting
 

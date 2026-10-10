@@ -131,38 +131,22 @@ class ApcuCache extends Cache
     }
 
     /**
-     * Retrieves the cache contents, if it exists
+     * @param string    $storeKey
+     * @param bool|null $found
      *
-     * @param int|string $key   What the contents in the cache are called
-     * @param bool       $found if can be retrieved from cache
-     *
-     * @return bool|mixed False on failure to retrieve contents or the cache
-     *        contents on success
-     * @since 3.7
-     *
+     * @return mixed
      */
-    public function get($key, &$found = null)
+    protected function fetch(string $storeKey, &$found)
     {
-        $value = $this->local($key, $found);
-        if ($found) {
-            return $value;
-        }
-        $value = apcu_fetch($this->_key($key), $found);
+        $value = apcu_fetch($storeKey, $found);
         if (!$found) {
-            ++$this->cache_misses;
-
             return false;
         }
         if (is_object($value) && 'ArrayObject' === get_class($value)) {
             $value = $value->getArrayCopy();
         }
-        if (null === $value) {
-            $value = false;
-        }
-        $this->cache[$key] = self::copy($value);
-        ++$this->cache_hits;
 
-        return $value;
+        return $value ?? false;
     }
 
     /**

@@ -141,40 +141,26 @@ class MemcachedCache extends Cache
     }
 
     /**
-     * Retrieves the cache contents, if it exists.
+     * @param string    $storeKey
+     * @param bool|null $found
      *
-     * @param int|string $key
-     * @param bool       $found set true if the key was present, false otherwise
-     *
-     * @return bool|mixed The cached contents, or false on miss.
+     * @return mixed
      */
-    public function get($key, &$found = null)
+    protected function fetch(string $storeKey, &$found)
     {
-        $value = $this->local($key, $found);
-        if ($found) {
-            return $value;
-        }
-
+        $found = false;
         if ($this->down) {
-            $found = false;
-            ++$this->cache_misses;
-
             return false;
         }
-        $value = $this->memcached->get($this->_key($key));
+        $value = $this->memcached->get($storeKey);
         // Only a real answer is a hit: a dead or unreachable server reports a miss, so the
         // caller loads from the database instead of getting false as if it were the value.
         if ($this->memcached->getResultCode() !== \Memcached::RES_SUCCESS) {
             $this->answered();
-            $found = false;
-            ++$this->cache_misses;
 
             return false;
         }
-
-        $found             = true;
-        $this->cache[$key] = self::copy($value);
-        ++$this->cache_hits;
+        $found = true;
 
         return $value;
     }
