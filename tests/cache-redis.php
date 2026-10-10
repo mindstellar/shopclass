@@ -148,17 +148,33 @@ foreach ($clients as $label => $raw) {
     pin('increment creates a counter at its first value', 1, $cache->increment('hits', 1, 1, 30));
     pin('and counts up from there', 3, $fresh()->increment('hits', 2, 1, 30));
     pin('a counter reads back as a number', 3, $fresh()->get('hits'));
+    check('a number added first is counted on top of', $cache->add('limit', 5, 30) && $fresh()->increment('limit', 1, 0, 30) === 6);
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'hits');
+    check('and expires like any other value', is_int($ttl) && $ttl > 0 && $ttl <= 30);
 
     $raw->command('SET', 'other_site_key', 'theirs');
     check('flush clears this site', $cache->flush());
     pin('so its keys are gone', false, $fresh()->get('row'));
     pin('but another site keeps its own', 'theirs', $raw->command('GET', 'other_site_key'));
     $raw->command('DEL', 'other_site_key');
+    for ($i = 0; $i < 1200; $i++) {
+        $raw->command('SET', $cache->site_prefix . 'bulk' . $i, '1');
+    }
+    $cache->flush();
+    pin('flush keeps going past the first page of keys', [], $raw->command('KEYS', $cache->site_prefix . '*'));
 
     $stats = $cache->statsData();
     check('stats read the server', is_array($stats) && isset($stats['uptime'], $stats['memory_used']));
     check('and name the client', str_contains((string) ($stats['server'] ?? ''), '(' . ($label === 'phpredis' ? 'phpredis' : 'built-in client') . ')'));
 }
+
+harness_section('the database number');
+
+$one = new RespClient($config + ['database' => 1]);
+$one->command('SET', 'in_db_one', '1');
+pin('a key lands in the chosen database', 1, (new RespClient($config + ['database' => 1]))->command('EXISTS', 'in_db_one'));
+pin('and not in database 0', 0, (new RespClient($config))->command('EXISTS', 'in_db_one'));
+$one->command('DEL', 'in_db_one');
 
 harness_section('a server that refuses the sign-in');
 

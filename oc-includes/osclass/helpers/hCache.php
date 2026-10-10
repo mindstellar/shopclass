@@ -162,7 +162,7 @@ function osc_cache_set($key, $data, $expire = 0)
 /**
  * Invalidate cached data that is a pure function of an item id (currently the
  * item's resource/photo list). Without this the object cache is TTL-only, so a
- * persistent backend (memcached/apcu) serves a stale copy of an item the user
+ * persistent backend (memcached, redis, apcu) serves a stale copy of an item the user
  * just edited for up to OSC_CACHE_TTL seconds.
  *
  * The osc_cache_* helpers suffix every key with the current user locale, so the

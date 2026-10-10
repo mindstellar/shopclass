@@ -49,11 +49,11 @@ final class PhpRedisClient implements RedisClient
 
     private function open(): \Redis
     {
-        $host    = (string) ($this->config['host'] ?? '127.0.0.1');
+        $host    = (string) ($this->config['host'] ?? '') ?: '127.0.0.1';
         $timeout = (float) ($this->config['timeout'] ?? 1.0);
         $redis   = new \Redis();
         $host[0] === '/'
-            ? $redis->connect($host, 0, $timeout)
+            ? $redis->connect($host, 0, $timeout, null, 0, $timeout)
             : $redis->connect($host, (int) ($this->config['port'] ?? 6379), $timeout, null, 0, $timeout);
 
         $password = (string) ($this->config['password'] ?? '');

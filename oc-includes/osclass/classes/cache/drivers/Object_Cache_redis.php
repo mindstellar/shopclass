@@ -62,13 +62,14 @@ class Object_Cache_redis implements iObject_Cache
         global $_cache_config;
         $server       = (isset($_cache_config[0]) && is_array($_cache_config[0])) ? $_cache_config[0] : array();
         $this->config = array(
-            'host'     => (string) ($server['default_host'] ?? '127.0.0.1'),
+            'host'     => (string) ($server['default_host'] ?? '') ?: '127.0.0.1',
             'port'     => (int) ($server['default_port'] ?? 6379),
             'password' => (string) ($server['password'] ?? ''),
             'username' => (string) ($server['username'] ?? ''),
             'database' => (int) ($server['database'] ?? 0),
             'timeout'  => 1.0,
         );
+        // phpredis is compiled C and faster; the built-in client is for servers without it.
         $this->client = $client ?? (class_exists('Redis') ? new PhpRedisClient($this->config) : new RespClient($this->config));
     }
 
@@ -307,7 +308,8 @@ padding: 1em;'><h2>Redis stats</h2>";
      */
     private function encode($data): string
     {
-        return serialize($data);
+        // A whole number is stored as bare digits, so increment() can count on top of it.
+        return is_int($data) ? (string) $data : serialize($data);
     }
 
     /**
@@ -315,7 +317,6 @@ padding: 1em;'><h2>Redis stats</h2>";
      */
     private function decode(string $reply)
     {
-        // A counter made by increment() is stored as bare digits, not serialized.
         if (preg_match('/^-?\d+$/', $reply)) {
             return (int) $reply;
         }
@@ -362,15 +363,4 @@ padding: 1em;'><h2>Redis stats</h2>";
         return 'redis';
     }
 
-    /**
-     * Utility function to determine whether a key exists in the cache.
-     *
-     * @param int|string $key
-     *
-     * @return bool
-     */
-    protected function _exists($key)
-    {
-        return isset($this->cache[$key]);
-    }
 }

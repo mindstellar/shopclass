@@ -5790,6 +5790,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
 msgid ""
+"Keys are kept apart per site, so several sites can share one Redis or "
+"Valkey server. Clearing empties only this site's keys."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/system-info/cache.php
+msgid ""
 "Keys are kept apart per site, so several sites can share one memcached "
 "server. Clearing, though, empties the whole server, other sites too."
 msgstr ""

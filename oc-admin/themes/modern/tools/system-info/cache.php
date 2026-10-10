@@ -25,6 +25,8 @@ $shared     = in_array($driver, array('memcached', 'memcache'), true);
         )); ?>
         <?php if ($persistent && $shared) { ?>
             <p class="text-muted"><?php _e('Keys are kept apart per site, so several sites can share one memcached server. Clearing, though, empties the whole server, other sites too.'); ?></p>
+        <?php } elseif ($persistent && $driver === 'redis') { ?>
+            <p class="text-muted"><?php _e('Keys are kept apart per site, so several sites can share one Redis or Valkey server. Clearing empties only this site\'s keys.'); ?></p>
         <?php } ?>
         <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'cache_clear', 'horizontal' => false)); ?>
             <?php osc_admin_action_button(array(

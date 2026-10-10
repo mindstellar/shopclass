@@ -27,7 +27,8 @@
  * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, OSC_DB_STRICT_MODE, optionally
  * REL_WEB_URL / WEB_PATH (or OSC_CLI_URL, the address for the command line
  * only), and the object cache — OSC_CACHE (driver name) plus
- * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached/memcache server.
+ * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached, memcache or redis server, and
+ * OSC_CACHE_PASSWORD / OSC_CACHE_USERNAME / OSC_CACHE_DB for redis.
  *
  * Safe to include more than once.
  */

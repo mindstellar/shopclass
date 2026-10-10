@@ -47,8 +47,11 @@ final class RespClient implements RedisClient
      */
     private function open(): void
     {
-        $host    = (string) ($this->config['host'] ?? '127.0.0.1');
+        $host    = (string) ($this->config['host'] ?? '') ?: '127.0.0.1';
         $timeout = (float) ($this->config['timeout'] ?? 1.0);
+        if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $host = '[' . $host . ']';
+        }
         $address = $host[0] === '/'
             ? 'unix://' . $host
             : (str_contains($host, '://') ? $host : 'tcp://' . $host) . ':' . (int) ($this->config['port'] ?? 6379);
