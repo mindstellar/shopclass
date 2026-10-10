@@ -27,7 +27,7 @@
  * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, OSC_DB_STRICT_MODE, optionally
  * REL_WEB_URL / WEB_PATH (or OSC_CLI_URL, the address for the command line
  * only), and the object cache — OSC_CACHE (driver name) plus
- * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached, memcache or redis server, and
+ * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached or redis server, and
  * OSC_CACHE_PASSWORD / OSC_CACHE_USERNAME / OSC_CACHE_DB for redis.
  *
  * Safe to include more than once.
@@ -116,7 +116,7 @@ if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_M
 }
 
 // Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',
-// 'memcache', 'redis' — and the memcached/memcache/redis drivers read their server from the
+// 'redis' ('memcache' now means memcached) — and the memcached and redis drivers read their server from the
 // $_cache_config global. Bridge both from the environment so a containerised deploy can
 // enable a persistent cache without a config.php. A value set in config.php (the constant,
 // or the $_cache_config global) still wins; when OSC_CACHE is unset the app keeps its

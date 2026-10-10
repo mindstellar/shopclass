@@ -11,14 +11,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\base\ObjectCache;
+declare(strict_types=1);
+
+namespace mindstellar\cache;
+
+use mindstellar\base\Cache;
 
 /**
- * Object_Cache_apcu class
- *
- * @author Navjot Tomer
+ * Object cache in APCu, inside PHP itself: fast, but each web server has its own.
  */
-class Object_Cache_apcu extends ObjectCache
+class ApcuCache extends Cache
 {
     /**
      * Adds data to the cache if it doesn't already exist.
@@ -40,7 +42,7 @@ class Object_Cache_apcu extends ObjectCache
         $store_data = $data;
 
         if (is_array($data)) {
-            $store_data = new ArrayObject($data);
+            $store_data = new \ArrayObject($data);
         }
 
         $expire = $this->ttl($expire);
@@ -119,7 +121,7 @@ class Object_Cache_apcu extends ObjectCache
         // store for every other install in the same PHP pool.
         if (extension_loaded('apcu')) {
             if (class_exists('APCUIterator')) {
-                return apcu_delete(new APCUIterator('/^' . preg_quote($this->site_prefix, '/') . '/'));
+                return apcu_delete(new \APCUIterator('/^' . preg_quote($this->site_prefix, '/') . '/'));
             }
 
             return apcu_clear_cache();
@@ -181,7 +183,7 @@ class Object_Cache_apcu extends ObjectCache
         $store_data = $data;
 
         if (is_array($data)) {
-            $store_data = new ArrayObject($data);
+            $store_data = new \ArrayObject($data);
         }
 
         $this->cache[$key] = $data;
@@ -194,7 +196,7 @@ class Object_Cache_apcu extends ObjectCache
     /**
      * Normalised cache statistics for the admin's cache screen.
      *
-     * Deliberately NOT part of iObject_Cache: third-party drivers implement that
+     * Deliberately NOT part of CacheDriver: third-party drivers implement that
      * interface, and adding a required method would fatal them. Callers probe with
      * method_exists() instead. The legacy stats() is left alone — it echoes debug
      * markup and anything already calling it keeps working.

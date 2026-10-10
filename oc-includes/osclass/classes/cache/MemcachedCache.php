@@ -11,17 +11,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\base\ObjectCache;
+declare(strict_types=1);
+
+namespace mindstellar\cache;
+
+use mindstellar\base\Cache;
 
 /**
- * Object_Cache_memcached class
- *
- * Backed by the modern `memcached` PHP extension (the `Memcached` class), which
- * supersedes the legacy `memcache` extension used by Object_Cache_memcache. Set
- * OSC_CACHE = 'memcached' in config.php to use it, and optionally define the
- * $_cache_config global to point at one or more servers.
+ * Object cache on one or more memcached servers, through the memcached extension. Point the
+ * $_cache_config global (or OSC_CACHE_HOST) at the servers.
  */
-class Object_Cache_memcached extends ObjectCache
+class MemcachedCache extends Cache
 {
     protected $_memcache_conf = array(
         'default' => array(
@@ -34,7 +34,7 @@ class Object_Cache_memcached extends ObjectCache
     /**
      * Holds the Memcached client.
      *
-     * @var Memcached
+     * @var \Memcached
      */
     private $memcached;
 
@@ -69,12 +69,12 @@ class Object_Cache_memcached extends ObjectCache
             }
         }
 
-        $this->memcached = new Memcached();
+        $this->memcached = new \Memcached();
         // Short limits so a hung server costs about a second per request, not a hang.
-        $this->memcached->setOption(Memcached::OPT_CONNECT_TIMEOUT, 1000);
-        $this->memcached->setOption(Memcached::OPT_POLL_TIMEOUT, 1000);
-        $this->memcached->setOption(Memcached::OPT_SEND_TIMEOUT, 1000000);
-        $this->memcached->setOption(Memcached::OPT_RECV_TIMEOUT, 1000000);
+        $this->memcached->setOption(\Memcached::OPT_CONNECT_TIMEOUT, 1000);
+        $this->memcached->setOption(\Memcached::OPT_POLL_TIMEOUT, 1000);
+        $this->memcached->setOption(\Memcached::OPT_SEND_TIMEOUT, 1000000);
+        $this->memcached->setOption(\Memcached::OPT_RECV_TIMEOUT, 1000000);
         foreach ($cache_server as $_config) {
             $this->memcached->addServer($_config['hostname'], $_config['port'], $_config['weight']);
         }
@@ -164,7 +164,7 @@ class Object_Cache_memcached extends ObjectCache
         $value = $this->memcached->get($this->_key($key));
         // Only a real answer is a hit: a dead or unreachable server reports a miss, so the
         // caller loads from the database instead of getting false as if it were the value.
-        if ($this->memcached->getResultCode() !== Memcached::RES_SUCCESS) {
+        if ($this->memcached->getResultCode() !== \Memcached::RES_SUCCESS) {
             $this->answered();
             $found = false;
             ++$this->cache_misses;
@@ -209,7 +209,7 @@ class Object_Cache_memcached extends ObjectCache
      *
      * Unlike a get()/set() read-modify-write, concurrent callers do not clobber each
      * other, which is what a hit counter needs. NOT the 4-arg
-     * Memcached::increment($key, $by, $initial, $expiry): its auto-create only works
+     * \Memcached::increment($key, $by, $initial, $expiry): its auto-create only works
      * under the binary protocol, and the default ASCII protocol warns and returns
      * false there. So: 2-arg increment (atomic), and on a miss add() the key at
      * $initial. add() is create-only, so if a second caller raced us to create it our
@@ -254,7 +254,7 @@ class Object_Cache_memcached extends ObjectCache
     /**
      * Normalised cache statistics for the admin's cache screen.
      *
-     * Deliberately NOT part of iObject_Cache: third-party drivers implement that
+     * Deliberately NOT part of CacheDriver: third-party drivers implement that
      * interface, and adding a required method would fatal them. Callers probe with
      * method_exists() instead. The legacy stats() is left alone — it echoes debug
      * markup and anything already calling it keeps working.

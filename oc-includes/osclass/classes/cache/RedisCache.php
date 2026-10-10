@@ -8,17 +8,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\base\ObjectCache;
-use mindstellar\cache\PhpRedisClient;
-use mindstellar\cache\RedisClient;
-use mindstellar\cache\RespClient;
+declare(strict_types=1);
+
+namespace mindstellar\cache;
+
+use mindstellar\base\Cache;
 
 /**
  * Object cache on a Redis-protocol server: Redis, Valkey, KeyDB or Dragonfly. Set OSC_CACHE to
  * 'redis' and point the $_cache_config global (or OSC_CACHE_HOST and friends) at the server.
  * It uses the phpredis extension when installed, and a built-in client otherwise.
  */
-class Object_Cache_redis extends ObjectCache
+class RedisCache extends Cache
 {
     private RedisClient $client;
 
@@ -185,7 +186,7 @@ class Object_Cache_redis extends ObjectCache
 
     /**
      * Normalised cache statistics for the admin's cache screen, from the server's INFO reply.
-     * Not part of iObject_Cache; callers probe for it with method_exists().
+     * Not part of CacheDriver; callers probe for it with method_exists().
      *
      * @return array<string,int|string|null>|null Null when the server does not answer.
      */

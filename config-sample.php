@@ -81,7 +81,7 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
  *   'apcu'      - APCu user cache (single server)
  *   'redis'     - Redis or Valkey; uses the phpredis extension when installed, and a
  *                 built-in client otherwise, so it needs no extension
- *   'memcache'  - DEPRECATED legacy memcache extension; use 'memcached' instead
+ *   'memcache'  - the old driver is gone; this value now uses 'memcached'
  */
 //define('OSC_CACHE', 'memcached');
 
@@ -89,7 +89,7 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
 //define('OSC_CACHE_TTL', 60);
 
 /**
- * Optional memcached/memcache server list. Omit to use 127.0.0.1:11211.
+ * Optional memcached server list. Omit to use 127.0.0.1:11211.
  * Each entry needs default_host, default_port and default_weight.
  */
 //$_cache_config = array(

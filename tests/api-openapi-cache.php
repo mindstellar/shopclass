@@ -17,6 +17,8 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+// The old cache names: this driver is written the way a plugin's is, for iObject_Cache.
+require_once ABS_PATH . 'oc-includes/osclass/compatibility.php';
 
 define('OSC_CACHE', 'probe');
 define('OSCLASS_VERSION', '7.0.0-test');
@@ -120,5 +122,11 @@ $show($make());
 pin('a change in the active plugins makes a new one', 3, Object_Cache_probe::$sets);
 $show($make());
 pin('the same plugin state again is a cache hit', 3, Object_Cache_probe::$sets);
+
+harness_section('a plugin driver written for the old cache names');
+
+check('OSC_CACHE picks a plugin\'s Object_Cache_<name> class', \mindstellar\cache\CacheManager::getInstance() instanceof Object_Cache_probe);
+check('the old Object_Cache_Factory name hands out the same driver', Object_Cache_Factory::getInstance() === \mindstellar\cache\CacheManager::getInstance());
+check('and a driver for iObject_Cache is a CacheDriver', Object_Cache_probe::$sets > 0 && new Object_Cache_probe() instanceof \mindstellar\cache\CacheDriver);
 
 exit(harness_result());

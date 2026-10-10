@@ -121,7 +121,7 @@ Preference::getInstance();
 $model     = CityStats::getInstance();
 $table     = DB_TABLE_PREFIX . 't_city_stats';
 $locations = DB_TABLE_PREFIX . 't_item_location';
-$cache     = Object_Cache_Factory::getInstance();
+$cache     = \mindstellar\cache\CacheManager::getInstance();
 
 seed_country($admin, 'US', 'United States');
 

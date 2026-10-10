@@ -11,12 +11,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\base\ObjectCache;
+declare(strict_types=1);
+
+namespace mindstellar\cache;
+
+use mindstellar\base\Cache;
 
 /**
- * Object_Cache_default class
+ * The default cache: values live for one request only. It needs nothing installed.
  */
-class Object_Cache_default extends ObjectCache
+class MemoryCache extends Cache
 {
     /**
      * Sets up object properties
@@ -129,7 +133,7 @@ class Object_Cache_default extends ObjectCache
     /**
      * Normalised cache statistics for the admin's cache screen.
      *
-     * Deliberately NOT part of iObject_Cache: third-party drivers implement that
+     * Deliberately NOT part of CacheDriver: third-party drivers implement that
      * interface, and adding a required method would fatal them. Callers probe with
      * method_exists() instead. The legacy stats() is left alone — it echoes debug
      * markup and anything already calling it keeps working.

@@ -112,7 +112,7 @@ require_once ABS_PATH . 'oc-includes/osclass/utils.php';               // osc_is
 
 Preference::getInstance(); // warm the preference map so osc_current_user_locale() never charges a query to a count pin
 
-$cache        = Object_Cache_Factory::getInstance();
+$cache        = \mindstellar\cache\CacheManager::getInstance();
 $itemTable    = DB_TABLE_PREFIX . 't_item';
 $descTable    = DB_TABLE_PREFIX . 't_item_description';
 $locTable     = DB_TABLE_PREFIX . 't_item_location';

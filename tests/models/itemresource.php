@@ -101,7 +101,7 @@ Preference::getInstance();
 
 $model = ItemResource::getInstance();
 $table = DB_TABLE_PREFIX . 't_item_resource';
-$cache = Object_Cache_Factory::getInstance();
+$cache = \mindstellar\cache\CacheManager::getInstance();
 
 /**
  * Empty the object cache.

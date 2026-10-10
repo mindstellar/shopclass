@@ -64,7 +64,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 
 Preference::getInstance(); // warm the preference map so no lookup is charged to a count pin
 
-$cache     = Object_Cache_Factory::getInstance();
+$cache     = \mindstellar\cache\CacheManager::getInstance();
 $itemTable = DB_TABLE_PREFIX . 't_item';
 $descTable = DB_TABLE_PREFIX . 't_item_description';
 $locTable  = DB_TABLE_PREFIX . 't_item_location';

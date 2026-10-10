@@ -52,7 +52,7 @@ final class RateLimiter
      */
     public static function fromSite(Clock $clock): self
     {
-        $store = CacheStore::of(\Object_Cache_Factory::getInstance());
+        $store = CacheStore::of(\mindstellar\cache\CacheManager::getInstance());
         if ($store === null) {
             return self::sampled($clock);
         }

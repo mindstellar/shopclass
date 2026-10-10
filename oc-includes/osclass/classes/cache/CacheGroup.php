@@ -27,7 +27,7 @@ final class CacheGroup
     public static function generation(string $group): int
     {
         $found = null;
-        $gen   = \Object_Cache_Factory::getInstance()->get('osc_' . $group . '_cache_gen', $found);
+        $gen   = CacheManager::getInstance()->get('osc_' . $group . '_cache_gen', $found);
 
         return is_numeric($gen) ? (int)$gen : 0;
     }
@@ -42,7 +42,7 @@ final class CacheGroup
     public static function invalidate(string $group): int
     {
         $gen = self::generation($group) + 1;
-        \Object_Cache_Factory::getInstance()->set('osc_' . $group . '_cache_gen', $gen, 0);
+        CacheManager::getInstance()->set('osc_' . $group . '_cache_gen', $gen, 0);
 
         return $gen;
     }
@@ -60,7 +60,7 @@ final class CacheGroup
      */
     public static function remember(string $group, string $key, callable $load, ?int $ttl = null)
     {
-        $cache = \Object_Cache_Factory::getInstance();
+        $cache = CacheManager::getInstance();
         $base  = defined('WEB_PATH') ? WEB_PATH : '';
         $full  = 'osc_' . $group . ':' . md5($base . '|' . self::generation($group) . '|' . $key);
         $found = null;

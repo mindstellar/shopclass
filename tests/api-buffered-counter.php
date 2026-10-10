@@ -60,7 +60,7 @@ final class ArrayStore implements CounterStore
 }
 
 /** An object cache driver held in memory, named like the driver it stands in for. */
-final class MemoryCacheDriver implements iObject_Cache
+final class MemoryCacheDriver implements \mindstellar\cache\CacheDriver
 {
     public array $data = [];
     public bool $down = false;

@@ -23,7 +23,7 @@ require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 use mindstellar\cache\CacheGroup;
 
 /** Keeps every value set, null too, and answers found for any key it holds. */
-final class KeepAllCache implements iObject_Cache
+final class KeepAllCache implements \mindstellar\cache\CacheDriver
 {
     /** @var array<string,mixed> */
     public array $data = [];
@@ -85,7 +85,7 @@ final class KeepAllCache implements iObject_Cache
 }
 
 $cache = new KeepAllCache();
-$factory = new ReflectionProperty('Object_Cache_Factory', 'instance');
+$factory = new ReflectionProperty('mindstellar\\cache\\CacheManager', 'instance');
 $factory->setAccessible(true);
 $factory->setValue(null, $cache);
 

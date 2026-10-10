@@ -47,7 +47,7 @@ final class SystemChecks
     public const JOBS_OVERDUE = 3600;
 
     /** The object-cache drivers Shopclass ships, in the order the Cache tab lists them. */
-    public const CACHE_DRIVERS = array('apcu', 'memcached', 'redis', 'memcache');
+    public const CACHE_DRIVERS = array('apcu', 'memcached', 'redis');
 
     private const RANK = array('danger' => 0, 'warning' => 1, 'info' => 2);
 
@@ -1111,7 +1111,7 @@ final class SystemChecks
             'apcu'      => 'APCu',
             'memcached' => 'Memcached',
             'redis'     => 'Redis / Valkey',
-            'memcache'  => 'Memcache',
+            'memcache'  => 'Memcached',
         );
 
         return $names[$driver] ?? $driver;

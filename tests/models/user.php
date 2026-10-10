@@ -76,8 +76,8 @@ if (!function_exists('osc_test_cache_flush')) {
     function osc_test_cache_flush()
     {
         $GLOBALS['__user_test_cache'] = array();
-        if (class_exists('Object_Cache_Factory')) {
-            Object_Cache_Factory::getInstance()->flush();
+        if (class_exists('mindstellar\\cache\\CacheManager')) {
+            \mindstellar\cache\CacheManager::getInstance()->flush();
         }
     }
 }

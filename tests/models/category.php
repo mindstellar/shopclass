@@ -110,7 +110,7 @@ require_once ABS_PATH . 'oc-includes/osclass/formatting.php';          // osc_sa
 
 Preference::getInstance(); // osc_current_user_locale() -> osc_language() reads a preference; warm it so it is never charged to a query-count pin
 
-$cache      = Object_Cache_Factory::getInstance();
+$cache      = \mindstellar\cache\CacheManager::getInstance();
 $catTable   = DB_TABLE_PREFIX . 't_category';
 $descTable  = DB_TABLE_PREFIX . 't_category_description';
 $statsTable = DB_TABLE_PREFIX . 't_category_stats';
@@ -628,7 +628,7 @@ harness_section('Category::toTree — a cache read of null is a miss');
 $m = $freshCategory();
 $treeIds = array_column($m->toTree(), 'pk_i_id');
 // A driver that answers null on a miss used to be read as a stored tree.
-$nullCache = new class () implements iObject_Cache {
+$nullCache = new class () implements \mindstellar\cache\CacheDriver {
     public static function is_supported()
     {
         return true;
@@ -666,7 +666,7 @@ $nullCache = new class () implements iObject_Cache {
     {
     }
 };
-$factoryProp = new ReflectionProperty('Object_Cache_Factory', 'instance');
+$factoryProp = new ReflectionProperty('mindstellar\\cache\\CacheManager', 'instance');
 if (PHP_VERSION_ID < 80100) {
     $factoryProp->setAccessible(true);
 }

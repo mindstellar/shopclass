@@ -149,8 +149,8 @@ $car3 = $mkItem('Green Coupe', $catCars, 9000.0, 0, $regionB, $cityB, 'Beta', 'B
  * the request cache here — standalone this is a harmless no-op, but it lets the
  * category-filtered pins below see this file's own categories.
  */
-if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::getInstance()->flush();
+if (class_exists('mindstellar\\cache\\CacheManager')) {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 $searchCategoryReset = new ReflectionProperty('Category', 'instance');
 if (PHP_VERSION_ID < 80100) {
@@ -713,7 +713,7 @@ if (PHP_VERSION_ID < 80100) {
     $ftServer->setAccessible(true);
 }
 $ftServer->setValue(null, null);
-Object_Cache_Factory::getInstance()->flush();
+\mindstellar\cache\CacheManager::getInstance()->flush();
 $s = new Search();
 $s->addPattern('Mountain');
 $s->doSearch();
@@ -746,7 +746,7 @@ $admin->query('DROP TABLE IF EXISTS ft_custom_stop');
 $admin->query('CREATE TABLE ft_custom_stop (value VARCHAR(18) NOT NULL) ENGINE=InnoDB');
 $admin->query("INSERT INTO ft_custom_stop (value) VALUES ('zebra')");
 $ftServer->setValue(null, null);
-Object_Cache_Factory::getInstance()->flush();
+\mindstellar\cache\CacheManager::getInstance()->flush();
 try {
     $admin->query("SET GLOBAL innodb_ft_server_stopword_table = '" . $stopDb . "/ft_custom_stop'");
     $s = new Search();
@@ -757,7 +757,7 @@ try {
     $admin->query('SET GLOBAL innodb_ft_server_stopword_table = NULL');
     $admin->query('DROP TABLE ft_custom_stop');
     $ftServer->setValue(null, null);
-    Object_Cache_Factory::getInstance()->flush();
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 check('a custom stopword table is read', isset($ftCustom['stop']['zebra']) && !isset($ftCustom['stop']['with']));
 

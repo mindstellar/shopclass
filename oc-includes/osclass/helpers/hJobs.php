@@ -296,16 +296,16 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
     // (each spawns an FPM worker). Throttle it to at most one dispatch per 5 minutes.
     //
     // Prefer the object cache as the lock: with a real backend (memcached/apcu) the window is
-    // shared across every web node and every locale (Object_Cache_Factory directly, not the
+    // shared across every web node and every locale (CacheManager directly, not the
     // locale-suffixed osc_cache_* helpers). The default driver is a per-request array that never
     // survives between requests and so cannot throttle anything, so there fall back to the
     // modification time of a stamp file under uploads/, no cache backend required. Either path
     // fails open (write fails or file unwritable => cron still runs), never closed.
     $window = 300;
     $fire   = false;
-    $cache  = Object_Cache_Factory::getInstance();
+    $cache  = \mindstellar\cache\CacheManager::getInstance();
 
-    if (!($cache instanceof Object_Cache_default)) {
+    if (!($cache instanceof \mindstellar\cache\MemoryCache)) {
         $found = false;
         if ($cache->get('osclass_autocron_tick', $found) === false) {
             $cache->set('osclass_autocron_tick', 1, $window);

@@ -53,7 +53,7 @@ function osc_get_locales()
 }
 
 /** Stands in for the object cache; records what it was asked to delete. */
-class Object_Cache_Factory
+class RecordingCacheManager
 {
     public static $deleted = array();
 
@@ -74,6 +74,7 @@ class Object_Cache_Factory
         return true;
     }
 }
+class_alias('RecordingCacheManager', 'mindstellar\\cache\\CacheManager');
 
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hCache.php';
 require_once __DIR__ . '/lib/harness.php';
@@ -87,7 +88,7 @@ function invalidations($itemId, array $locales = array())
 {
     $GLOBALS['fired']   = array();
     $GLOBALS['locales'] = $locales;
-    Object_Cache_Factory::$deleted = array();
+    RecordingCacheManager::$deleted = array();
     osc_invalidate_item_cache($itemId);
 
     return array_values(array_filter($GLOBALS['fired'], static function ($f) {
@@ -111,7 +112,7 @@ harness_section('invalidate_item_cache — every branch reaches it');
 
 check(
     'the locale branch still clears its per-locale keys',
-    count(Object_Cache_Factory::$deleted) === 2
+    count(RecordingCacheManager::$deleted) === 2
 );
 $f = invalidations(7, $two);
 pin('...and fires the hook after them', 1, count($f));

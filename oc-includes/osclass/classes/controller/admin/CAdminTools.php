@@ -1242,9 +1242,9 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function cacheSupported(string $driver): bool
     {
-        $class = 'Object_Cache_' . $driver;
+        $class = \mindstellar\cache\CacheManager::driverClass($driver);
 
-        return class_exists($class) && method_exists($class, 'is_supported') && $class::is_supported();
+        return $class !== null && $class::is_supported();
     }
 
     /**
@@ -1255,7 +1255,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function cacheAnswers(): bool
     {
-        $cache = \Object_Cache_Factory::getInstance();
+        $cache = \mindstellar\cache\CacheManager::getInstance();
         $key   = 'osc_sysinfo_probe';
         $value = bin2hex(random_bytes(8));
         try {

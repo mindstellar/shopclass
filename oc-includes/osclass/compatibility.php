@@ -52,6 +52,11 @@ const OSC_RENAMED_CLASSES = array(
     'mindstellar\\admin\\form\\SitemapSettingsForm' => 'mindstellar\\admin\\form\\SitemapSettingsScreen',
     'mindstellar\\admin\\form\\SpamSettingsForm' => 'mindstellar\\admin\\form\\SpamSettingsScreen',
     'mindstellar\\admin\\form\\StorageSettingsForm' => 'mindstellar\\admin\\form\\StorageSettingsScreen',
+    'iObject_Cache' => 'mindstellar\\cache\\CacheDriver',
+    'Object_Cache_Factory' => 'mindstellar\\cache\\CacheManager',
+    'Object_Cache_default' => 'mindstellar\\cache\\MemoryCache',
+    'Object_Cache_apcu' => 'mindstellar\\cache\\ApcuCache',
+    'Object_Cache_memcached' => 'mindstellar\\cache\\MemcachedCache',
 );
 
 spl_autoload_register(static function (string $class): void {

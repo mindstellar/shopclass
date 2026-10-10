@@ -11,10 +11,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+declare(strict_types=1);
+
+namespace mindstellar\cache;
+
 /**
- * Interface iObject_Cache
+ * What every object-cache driver offers. Core's drivers extend mindstellar\base\Cache; a
+ * driver from a plugin may implement this alone. The old name iObject_Cache still works.
  */
-interface iObject_Cache
+interface CacheDriver
 {
     /**
      * Whether the backing store this driver needs is available on this system.

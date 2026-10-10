@@ -341,8 +341,8 @@ foreach ($items as $n => $id) {
 $admin->query("INSERT INTO {$prefix}t_category_slug_history (fk_i_category_id, fk_c_locale_code, s_slug, dt_date)"
     . " VALUES ($catCars, '$locale', 'old-cars', NOW())");
 
-if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::getInstance()->flush();
+if (class_exists('mindstellar\\cache\\CacheManager')) {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 foreach (array('Category', 'Search') as $singleton) {
     $reset = new ReflectionProperty($singleton, 'instance');

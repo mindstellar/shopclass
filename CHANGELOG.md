@@ -40,6 +40,7 @@ Plugin authors should read the Breaking section before upgrading.
 - `osc_sanitize_int()` returns an int: "1.5" is 1, not "15".
 - The `/api/` path is reserved; a page or category with the slug `api` must be renamed. System info and `doctor` list any.
 - `oc-includes/osclass/mimes.php` is removed. Uploads accept image types only, listed in `UploadMimes`.
+- The `memcache` cache driver is removed; `OSC_CACHE=memcache` now uses `memcached`.
 
 ### Security
 
@@ -76,6 +77,7 @@ Plugin authors should read the Breaking section before upgrading.
 ### Changed
 
 - `mindstellar\form\base\FormBuilder`, `FormInputs` and `InputInterface` moved to `mindstellar\form\`; the old names still work.
+- The object cache classes moved to `mindstellar\cache\` (`CacheManager`, `CacheDriver`, `MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`); the old `Object_Cache_*` and `iObject_Cache` names still work.
 - Shared core classes are reached with `getInstance()`. `newInstance()` and `instance()` still work but are deprecated.
 - Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
 - The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.

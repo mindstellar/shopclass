@@ -21,6 +21,7 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\cache\PhpRedisClient;
+use mindstellar\cache\RedisCache;
 use mindstellar\cache\RespClient;
 
 if (!function_exists('__')) {
@@ -69,7 +70,7 @@ check('a closed connection is a dead server', $threw);
 harness_section('a server that does not answer');
 
 $GLOBALS['_cache_config'] = [['default_host' => '127.0.0.1', 'default_port' => 1]];
-$dead  = new Object_Cache_redis();
+$dead  = new RedisCache();
 $start = microtime(true);
 $found = null;
 pin('a get is a miss', false, $dead->get('anything', $found));
@@ -90,7 +91,7 @@ $broken = new class ($calls) implements mindstellar\cache\RedisClient {
         throw new RuntimeException('down');
     }
 };
-$skips = new Object_Cache_redis($broken);
+$skips = new RedisCache($broken);
 $skips->get('a');
 $skips->set('b', 1);
 $skips->increment('c');
@@ -115,8 +116,8 @@ foreach ($clients as $label => $raw) {
     harness_section('the driver over ' . ($label === 'phpredis' ? 'phpredis' : 'the built-in client'));
 
     $GLOBALS['_cache_config'] = [['default_host' => $host, 'default_port' => (int) $port]];
-    $cache                    = new Object_Cache_redis($raw);
-    $fresh                    = static fn (): Object_Cache_redis => new Object_Cache_redis($raw);
+    $cache                    = new RedisCache($raw);
+    $fresh                    = static fn (): RedisCache => new RedisCache($raw);
     $cache->flush();
 
     $row = ['pk_i_id' => 7, 's_name' => 'Bike', 'tags' => ['a', 'b'], 'price' => null];
@@ -178,7 +179,7 @@ $one->command('DEL', 'in_db_one');
 
 harness_section('a server that refuses the sign-in');
 
-$refused = new Object_Cache_redis(new RespClient($config + ['password' => 'not-the-password']));
+$refused = new RedisCache(new RespClient($config + ['password' => 'not-the-password']));
 $found   = null;
 pin('a get is a miss, not an error', false, $refused->get('row', $found));
 pin('a set fails', false, $refused->set('row', 1));

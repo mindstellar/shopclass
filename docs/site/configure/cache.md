@@ -109,8 +109,8 @@ environment variables instead:
 
 | Variable | What it sets |
 |---|---|
-| `OSC_CACHE` | The cache type: `memcached`, `redis`, `apcu` or `memcache` |
-| `OSC_CACHE_HOST` | The cache server's host, for memcached, memcache or redis |
+| `OSC_CACHE` | The cache type: `memcached`, `redis` or `apcu` |
+| `OSC_CACHE_HOST` | The cache server's host, for memcached or redis |
 | `OSC_CACHE_PORT` | The cache server's port. Default `11211`, or `6379` for redis |
 | `OSC_CACHE_PASSWORD` | Redis only: the server's password |
 | `OSC_CACHE_USERNAME` | Redis only: the user name, for a server with users |
@@ -130,8 +130,16 @@ php oc-cli.php cache:flush
 
 ## The old memcache driver
 
-`define('OSC_CACHE', 'memcache')` still works. It uses the old `memcache`
-extension, which nobody maintains any more. It is deprecated: use `memcached`.
+The `memcache` driver is gone. `define('OSC_CACHE', 'memcache')` now uses the
+`memcached` driver with the same servers, so install the `memcached` extension.
+Without it, the site falls back to the one-request cache.
+
+## Writing your own driver
+
+A plugin can add a cache: a class named `Object_Cache_<name>` that extends
+`mindstellar\base\Cache` (or implements `mindstellar\cache\CacheDriver`), picked
+with `OSC_CACHE` set to `<name>`. Drivers written for the old `iObject_Cache`
+interface keep working.
 
 ## Troubleshooting
 

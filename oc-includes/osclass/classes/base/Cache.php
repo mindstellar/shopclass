@@ -15,9 +15,9 @@ namespace mindstellar\base;
 /**
  * What every object-cache driver shares: the in-request copy of each value, hit and miss
  * counts, a key prefix per site and the default time a value lives. A driver adds the calls
- * to its own store. A driver from a plugin may still implement \iObject_Cache directly.
+ * to its own store. A driver from a plugin may still implement CacheDriver directly.
  */
-abstract class ObjectCache implements \iObject_Cache
+abstract class Cache implements \mindstellar\cache\CacheDriver
 {
     /**
      * Values already read or written in this request, by caller key.

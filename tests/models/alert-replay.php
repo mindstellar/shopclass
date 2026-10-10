@@ -393,8 +393,8 @@ $seedItemMeta($i6, $fNumber, '2000');
  * once per process. Reset it (as tests/models/search.php does) so this file's
  * own categories are what gets seen.
  */
-if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::getInstance()->flush();
+if (class_exists('mindstellar\\cache\\CacheManager')) {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 $categoryReset = new ReflectionProperty('Category', 'instance');
 if (PHP_VERSION_ID < 80100) {
@@ -1497,8 +1497,8 @@ $admin->query('DELETE FROM ' . $prefix . "t_job_queue WHERE s_type = '" . $conve
 // friends). This file runs early in the suite, so those ids are the *first* ones
 // TRUNCATE's AUTO_INCREMENT reset hands out — a later file that reseeds its own
 // category at the same id would otherwise read this file's cached row back for it.
-if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::getInstance()->flush();
+if (class_exists('mindstellar\\cache\\CacheManager')) {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 $categoryReset->setValue(null, null);
 

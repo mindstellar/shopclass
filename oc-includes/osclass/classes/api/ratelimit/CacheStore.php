@@ -21,7 +21,7 @@ final class CacheStore implements CounterStore
     /** @var \Closure(string, int, int, int): mixed */
     private \Closure $increment;
 
-    private function __construct(private \iObject_Cache $cache, \Closure $increment)
+    private function __construct(private \mindstellar\cache\CacheDriver $cache, \Closure $increment)
     {
         $this->increment = $increment;
     }
@@ -30,7 +30,7 @@ final class CacheStore implements CounterStore
      * A store over $cache when it outlives the request and counts atomically; null otherwise. The
      * default driver lasts one request, and the deprecated memcache one has no atomic increment.
      */
-    public static function of(\iObject_Cache $cache): ?self
+    public static function of(\mindstellar\cache\CacheDriver $cache): ?self
     {
         if ($cache->_get_cache() === 'default' || !method_exists($cache, 'increment')) {
             return null;

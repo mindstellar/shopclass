@@ -24,20 +24,20 @@ function osc_cache_add($key, $data, $expire = 0)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::getInstance()->add($key, $data, $expire);
+    return \mindstellar\cache\CacheManager::getInstance()->add($key, $data, $expire);
 }
 
 /**
  * Close the active cache driver.
  *
- * No bundled driver implements close() -- iObject_Cache releases through __destruct --
+ * No bundled driver implements close() -- CacheDriver releases through __destruct --
  * so this is a no-op unless a custom driver defines one.
  *
  * @return mixed True when the driver has nothing to close
  */
 function osc_cache_close()
 {
-    $cache = Object_Cache_Factory::getInstance();
+    $cache = \mindstellar\cache\CacheManager::getInstance();
 
     return method_exists($cache, 'close') ? $cache->close() : true;
 }
@@ -53,7 +53,7 @@ function osc_cache_delete($key)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::getInstance()->delete($key);
+    return \mindstellar\cache\CacheManager::getInstance()->delete($key);
 }
 
 /**
@@ -63,20 +63,20 @@ function osc_cache_delete($key)
  */
 function osc_cache_flush()
 {
-    return Object_Cache_Factory::getInstance()->flush();
+    return \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 
 /**
  * Normalised statistics for the active cache driver, or null when it has none.
  *
- * Probed rather than declared on iObject_Cache, because third-party drivers
+ * Probed rather than declared on CacheDriver, because third-party drivers
  * implement that interface and a new required method would fatal them.
  *
  * @return array<string,mixed>|null
  */
 function osc_cache_stats()
 {
-    $cache = Object_Cache_Factory::getInstance();
+    $cache = \mindstellar\cache\CacheManager::getInstance();
     if (!method_exists($cache, 'statsData')) {
         return null;
     }
@@ -90,7 +90,7 @@ function osc_cache_stats()
  * concurrent callers do not clobber one another the way a get()/set() would.
  *
  * The native atomic increment is probed with method_exists() rather than declared
- * on iObject_Cache — a required interface method would fatal any third-party driver
+ * on CacheDriver — a required interface method would fatal any third-party driver
  * that implements the interface, exactly the reason osc_cache_stats() probes for
  * statsData(). A driver without it degrades to a (non-atomic) get/set here.
  *
@@ -104,7 +104,7 @@ function osc_cache_stats()
 function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
 {
     $key  .= osc_current_user_locale();
-    $cache = Object_Cache_Factory::getInstance();
+    $cache = \mindstellar\cache\CacheManager::getInstance();
 
     if (method_exists($cache, 'increment')) {
         return (int)$cache->increment($key, $by, $initial, $expire);
@@ -125,7 +125,7 @@ function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
  */
 function osc_cache_init()
 {
-    Object_Cache_Factory::getInstance();
+    \mindstellar\cache\CacheManager::getInstance();
 }
 
 /**
@@ -140,7 +140,7 @@ function osc_cache_get($key, &$found)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::getInstance()->get($key, $found);
+    return \mindstellar\cache\CacheManager::getInstance()->get($key, $found);
 }
 
 /**
@@ -156,7 +156,7 @@ function osc_cache_set($key, $data, $expire = 0)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::getInstance()->set($key, $data, $expire);
+    return \mindstellar\cache\CacheManager::getInstance()->set($key, $data, $expire);
 }
 
 /**
@@ -181,7 +181,7 @@ function osc_invalidate_item_cache($itemId)
     }
 
     $baseKey = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $itemId);
-    $cache   = Object_Cache_Factory::getInstance();
+    $cache   = \mindstellar\cache\CacheManager::getInstance();
 
     $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
     if (empty($locales)) {
@@ -223,7 +223,7 @@ function osc_invalidate_user_cache($userId)
     }
 
     $baseKey = md5(osc_base_url() . 'User:findByPrimaryKey:' . $userId);
-    $cache   = Object_Cache_Factory::getInstance();
+    $cache   = \mindstellar\cache\CacheManager::getInstance();
 
     $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
     if (empty($locales)) {
