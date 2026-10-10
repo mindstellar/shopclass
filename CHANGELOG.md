@@ -4,163 +4,108 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 7.0.0
 
-This release adds a REST API. Apps, scripts and other sites can read your listings, let users post and comment, run the site with an admin key, and get a signed webhook when something changes.
+Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes.
 
-Site owners make keys and webhook endpoints in **Settings → API**, and users manage their own sign-ins on a new **API access** page. The API is off by default; switch it on there.
+It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
 
-Plugin authors should read the Breaking section before upgrading.
+Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
 
-- Redis and Valkey work as the object cache with `OSC_CACHE=redis`, through phpredis or a built-in client that needs no extension.
-- `oc-cli.php jobs:work --listen` starts background jobs as soon as they are due: at once with Redis or Valkey, within seconds without. It also runs the due scheduled tasks, so it replaces the cron line. The Docker image runs it and its compose file adds Valkey.
-- A premium upgrade ends at its end time through a background job, not up to an hour later.
-- With Redis or Valkey, listing views and rate limits count in the cache instead of writing to the database on every request.
-- A `listing.reported` webhook is sent when a visitor reports a listing, at most once an hour per listing and reason.
-- A REST API at `/api/v1` for listings, categories, fields, locations, currencies and profiles, with API keys, paging and OpenAPI. See [REST API](https://shopclass.org/docs/developers/api/).
-- Users can sign in through the API with a password and a refresh token, then post, edit and delete listings, upload photos, comment and save searches. `Idempotency-Key` makes a retried write safe.
-- Admin keys run the site through `/api/v1/admin/`: listings, comments, users, taxonomy, settings, API keys and the job queue. Moderator keys reach listings and comments only.
-- Webhooks send signed POSTs for listing, comment and user events, with retries, auto-pause and secret rotation. See [Webhooks](https://shopclass.org/docs/developers/api/webhooks/).
-- **Settings → API** makes, rotates and revokes keys and manages webhook endpoints. `oc-cli.php api:key:create`, `api:key:list` and `api:key:revoke` do the keys from a shell.
-- Users get an **API access** page to see the apps signed in to their account and, when you allow it, to make personal keys.
-- **Sign out of all devices** for users (account page), for admins (their profile; also revokes their API keys) and, from the admin Users screen, for any user.
-- `POST /api/v1/account/sign-out-everywhere` and `POST /api/v1/admin/users/{id}/sign-out-everywhere` sign a user out of every device.
-- Theme JavaScript can call the API as the signed-in user with `osc_api_session_meta()`. See [Authentication](https://shopclass.org/docs/developers/api/authentication/).
-- Plugins can add API routes, scopes, listing fields and webhook events. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
-- API routes carry a version. Plugins get `ApiKit` (with `listingContext()` and `listingsById()`), `osc_api_register_schema()` and the `api_problem_codes` and `api_schemas` filters.
-- The `api_listing`, `api_user` and `api_category` filters get `$data, $context`, not the database row.
+- **REST API** at `/api/v1` for listings, categories, custom fields, locations, currencies and profiles, with API keys, paging and an OpenAPI description. See [REST API](https://shopclass.org/docs/developers/api/).
+- People can sign in through the API, then post, edit and delete listings, upload photos, comment and save searches. A retried request with an `Idempotency-Key` is never done twice.
+- Admin keys manage listings, comments, users, categories, settings, keys and the job queue through `/api/v1/admin/`; moderator keys reach listings and comments only.
+- **Webhooks** send signed messages when listings, comments and users change, including a `listing.reported` message when a visitor reports a listing. Failed deliveries retry and a failing endpoint pauses itself. See [Webhooks](https://shopclass.org/docs/developers/api/webhooks/).
+- **Settings → API** makes, rotates and revokes keys and manages webhooks. `oc-cli.php api:key:create`, `api:key:list` and `api:key:revoke` do the same from a shell.
+- A new **API access** page shows people which apps are signed in to their account and, if you allow it, lets them make their own keys.
+- **Sign out of all devices**, for people on their account page, for admins on their profile, for any user from the admin Users screen, and through the API.
+- **Redis and Valkey** work as the object cache with `OSC_CACHE=redis`, through phpredis or a built-in client that needs no PHP extension.
+- `oc-cli.php jobs:work --listen` runs background jobs as soon as they are due and runs the scheduled tasks too, so it replaces the cron line. The Docker image runs it and its compose file adds Valkey.
+- With Redis or Valkey, listing views and rate limits count in the cache instead of writing to the database on every visit.
+- A premium upgrade ends exactly at its end time, not up to an hour later.
+- Theme JavaScript can call the API as the signed-in user with `osc_api_session_meta()`.
+- Plugins can add API routes, scopes, listing fields, schemas and webhook events. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
+- A shared key-value store with the `osc_kv_*()` helpers, so plugins can keep small values without a table of their own. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
 - `osc_item_cover_urls()` gives the first photo of many listings in one query.
-- A shared key-value store, `t_key_value`, with the `osc_kv_*()` helpers. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
+- Search reads your database's full-text word length and stopword list, and falls back to a plain text match when a search cannot use the index.
 
 ### Breaking
 
-- Saved-search alerts go out daily or weekly; hourly ones become daily on upgrade. `hook_alert_email_hourly` no longer fires.
-- `PluginCategory` no longer extends `DAO`, and the `t_plugin_category` table is removed; its public calls still work.
-- `t_item_resource` is removed: listing photos are the `item` rows of `t_resource`, with the same ids, files and URLs, and `fk_i_item_id` is `i_owner_id` there. Read them with the photo helpers; `ItemResource` keeps its own calls, but inherited `DAO` calls are gone.
-- `Cron`, `AlertsStats`, `UserEmailTmp` and `ItemTmpUpload` no longer extend `DAO`, and their tables move into `t_key_value`. Their own calls still work; inherited `DAO` calls such as `insert()` and `update()` are gone.
-- Listing Import 0.3 needs Shopclass 7.0. Its old plugin keys stop working: make new keys in **Settings → API**.
-- Listing Import's API lives under `/api/v1/ext/listing-import/`; its 0.2 paths are gone.
-- Plugin API routes live only under `/api/v1/ext/<plugin>/`, and the route's `plugin` must be that slug. An admin plugin route needs an `admin:` scope, or the plugin's own declared `ext:` scope for admins or moderators.
-- A record Listing Import cannot import is a `422 validation_failed`.
-- `osc_count_premium_comments()` and `osc_has_premium_comments()` are removed. They called a method that never existed, so any call ended in a fatal error.
-- `osc_sanitize_phone()` keeps a leading `+` and separators and no longer reformats; saved numbers keep their spaces and dashes.
-- `osc_sanitize_username()` keeps dots, and `Sanitize::username()` turns spaces into `_`.
-- `osc_sanitize_int()` returns an int: "1.5" is 1, not "15".
-- The `/api/` path is reserved; a page or category with the slug `api` must be renamed. System info and `doctor` list any.
-- `oc-includes/osclass/mimes.php` is removed. Uploads accept image types only, listed in `UploadMimes`.
+- Saved-search alerts go out daily or weekly; hourly alerts become daily on upgrade. `hook_alert_email_hourly` no longer fires.
+- Listing photos moved from `t_item_resource` into `t_resource` (owner type `item`), with the same ids, files and links; `fk_i_item_id` is `i_owner_id` there. Use the photo helpers or `ItemResource` instead of SQL on the old table.
+- `t_plugin_category`, `t_cron`, `t_alerts_sent`, `t_user_email_tmp` and `t_item_upload_tmp` moved into the key-value store, and `t_locations_tmp` is removed.
+- `ItemResource`, `PluginCategory`, `Cron`, `AlertsStats`, `UserEmailTmp` and `ItemTmpUpload` keep their own methods but no longer extend `DAO`, so inherited calls such as `insert()` and `update()` are gone.
+- Plugin API routes live under `/api/v1/ext/<plugin>/`. An admin plugin route needs an `admin:` scope, or the plugin's own `ext:` scope for admins or moderators.
+- The `api_listing`, `api_user` and `api_category` filters get `$data, $context` instead of the database row.
+- Listing Import 0.3 needs Shopclass 7.0: its API moved to `/api/v1/ext/listing-import/`, old plugin keys stop working (make new ones in **Settings → API**), and a record it cannot import is a `422 validation_failed`.
+- `/api/` is reserved: rename any page or category with the slug `api`. System info and `doctor` list them.
+- `osc_count_premium_comments()` and `osc_has_premium_comments()` are removed; they always ended in a fatal error.
+- `osc_sanitize_phone()` keeps a leading `+`, spaces and dashes; `osc_sanitize_username()` keeps dots; `osc_sanitize_int()` returns an int ("1.5" is 1).
+- `oc-includes/osclass/mimes.php` is removed; uploads take image types only (see `UploadMimes`).
 - The `memcache` cache driver is removed; `OSC_CACHE=memcache` now uses `memcached`.
 
 ### Security
 
-- A listing edit with the wrong secret no longer attaches the photos it carried.
-- Webhooks go only to ports 80 and 443, and only to public addresses unless you allow a private network. The site connects to the address it checked.
-- API keys and refresh tokens are stored hashed, and a cookie alone never signs in to the API.
-- Signing out also deletes the session cookie, on the site and in the admin.
-- A new password (changed, reset or set by an admin) signs the user out of every device, API sign-ins and keys included.
-- API sign-ins and the web sign-in form share one limit on wrong passwords.
-- A user keeps at most 20 saved searches, set under **Settings → Spam and bots → Search alerts**.
-- Changing the e-mail through the API asks for the current password.
-- A photo URL that is refused or fails to download no longer says why.
-- Sign-in, form and posting limits count an IPv6 visitor by its /64, so changing address inside it no longer resets them.
-- Saving a search through the API or while signed in counts toward the hourly alert limit, as guests already did.
-- Flash, form and sign-in redirect cookies are signed for their one use and expire with the cookie.
+- API keys and refresh tokens are stored hashed, and a browser cookie alone never signs in to the API.
+- A new password, whether changed, reset or set by an admin, signs the account out of every device, API keys included.
+- The API and the sign-in form share one limit on wrong passwords, and changing your e-mail through the API asks for your password.
+- Webhooks only go to ports 80 and 443 on public addresses, unless you allow a private network.
+- Signing out deletes the session cookie, on the site and in the admin.
+- Limits on sign-in, forms and posting count an IPv6 visitor by its /64 block, so switching addresses inside it no longer resets them.
+- A user keeps at most 20 saved searches (**Settings → Spam and bots → Search alerts**), and saving one through the API counts toward the hourly limit.
+- Contact form attachments must be a picture, PDF, text or office file whose name matches its content, up to 5 MB (**Settings → General**).
+- A listing edit with the wrong secret no longer attaches or resizes the photos it carried, and a post can never resize more photos than the listing may hold.
+- Flash, form and sign-in redirect cookies are signed and work once.
 - A custom URL field takes only `http` and `https` addresses.
-- A file written with a private mode, such as a backup's SQL dump, is private from the moment it is created.
-- Installing a language refuses a code that is not a locale code such as `en` or `en_US`.
-- A listing post refused for coming too soon, or an edit with the wrong secret, resizes no photo, and a save resizes no more photos than the listing may hold.
-- A file attached to the contact form or the contact publisher form must be a picture, PDF, text or office document whose name matches its content, up to 5 MB, set in **Settings → General**.
+- Backup files are private from the moment they are created.
+- Installing a language refuses anything that is not a locale code such as `en` or `en_US`.
+- A photo URL that fails to download no longer says why.
 
 ### Performance
 
-- Deleting a listing or account with files on remote storage queues one job for all its files, not one per file.
-- The API counts requests in the object cache set by `OSC_CACHE`; with memcached all web servers share one count. Write and hourly caps count in the database.
-- The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
-- Photo URLs in an API listing write download at the same time, not one after another, within 30 seconds in all.
+- Saving a listing runs fewer queries (an edit 19 instead of 24) and resizes photos before it locks any rows.
+- The "with photos" search checks each listing's photos directly instead of joining them all.
+- Deleting a listing or account queues one job for its files on remote storage, not one per photo.
+- Listing counts per country, region and city are corrected once a week in the background instead of in a slow hourly pass.
+- The market catalogue cache no longer rides along with the settings every page loads (about 140 KB).
 - Saving a listing whose expiry did not change no longer rewrites it.
-- API listings sorted by `price` page by cursor, not offset, and cursors last a week.
-- A listing edit hands `edited_item` the row it locked with the edit on it, instead of reading the listing again.
-- A listing save runs fewer queries: an API post 25 instead of 31, an edit 19 instead of 24. Places are looked up in one query, and `posted_item` and `edited_item` get the texts the save wrote.
-- The "with photos" search checks each listing's photos directly instead of joining every photo and grouping.
-- Listing photos are resized before the save's transaction, so it no longer holds row locks while images are processed.
+- API listings sorted by price page by cursor, and photo URLs in an API post download side by side.
+- The API counts requests in the object cache, so with memcached or Redis every web server shares one count.
 
 ### Changed
 
-- `mindstellar\form\base\FormBuilder`, `FormInputs` and `InputInterface` moved to `mindstellar\form\`; the old names still work.
-- The object cache classes moved to `mindstellar\cache\` (`CacheManager`, `CacheDriver`, `MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`); the old `Object_Cache_*` and `iObject_Cache` names still work.
-- Shared core classes are reached with `getInstance()`. `newInstance()` and `instance()` still work but are deprecated.
-- Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
-- The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
-- The installer no longer pings Google and Bing with the sitemap; both endpoints are retired.
-- A listing's API `ETag` and `If-Match` version change when its photos change.
-- Unblocking one comment e-mails its author when it goes live.
-- Enabling a category refreshes the caches that list it.
-- A subcategory under a disabled parent can be disabled.
-- Category and custom field labels are escaped in core forms.
-- Comment hooks receive the comment id as an int.
-- `pre_item_delete_comment_post` fires only once the comment's author is confirmed.
-- Upgrading refreshes an `.htaccess` Shopclass wrote so Apache passes the `Authorization` header to the API; a hand-edited one is left alone.
-- Web sign-in checks bans against the account's e-mail.
-- Web sign-up refuses a banned address as well as a banned e-mail.
-- `before_validating_login` fires after the empty-field and captcha checks.
-- Editing a user's status in the admin fires its hooks and log, and the user's listings follow.
-- A failed sign-in no longer uses up the saved return address.
-- Changing a password (user or admin) signs out every device.
-- New actions `user_signout_all_after` and `admin_signout_all_after`.
-- Posting, editing and deleting a listing on the site runs in one transaction, and its e-mails go out once it is saved.
-- A user may post 20 comments an hour (a guest, 20 per address; an IPv6 /64 counts as one address), on the site and through the API together.
-- Currency codes must be three letters.
-- Sign-up on the site, through the API and on the Users screen runs in one transaction, so a failed sign-up leaves no account behind.
-- `ItemActions::add()` refuses a banned e-mail or address, as the post form does.
-- Every photo delete is logged the same way, as `item` / `deleteResource`.
-- Listing writes and sign-in move to `mindstellar\listing` and `mindstellar\auth`; `ItemAccess`, `UserReauth` are deprecated. See [Architecture](https://shopclass.org/docs/developers/architecture/).
-- Accounts, comments, categories, currencies and custom fields move to their own `mindstellar\` modules, shared by the site and the API.
+- Posting, editing and deleting a listing, and signing up, each run in one transaction, so a failure leaves nothing half done and e-mails go out only once it is saved.
 - A signed-in user comments under their account's name and e-mail, and a listing that is not live takes comments only from its owner.
-- Asking to change your e-mail to an address another account holds no longer says it is taken; no link is sent.
-- A user may ask for 5 e-mail changes an hour.
-- Deleting your account asks for your password under the same wrong-password limit as other password checks.
-- `before_user_delete` fires for an admin's delete too, and every account delete is logged.
-- Admin listing status changes (activate, block, spam, premium) are logged.
-- An admin comment edit needs a valid author e-mail and a body, on the screen and through the API.
-- `mindstellar\Csrf` is now `mindstellar\security\Csrf`; the old name still works.
-- `BackupManager` is now `BackupService`, and `BackupFailure` is now `BackupException`.
-- **Listings → Settings** and **Users → Settings** check their numbers: a negative or blank number saves as 0.
-- Adding, renaming or deleting a country runs in one transaction, so a failure leaves nothing half done.
-- New `Db::withNamedLock()`, `Db::retryOnce()`, `FileSystem::writeAtomic()`, `FileSystem::head()` and `ImageProcessing::usesImagick()` replace the copies core kept of each. A failed query inside a transaction is no longer retried.
-- `Formatting::iniBytes()` is the one php.ini size parser; `SystemChecks::iniBytes()` and `MediaSettingsScreen::sizeToKb()` forward to it.
-- The market's `.last-backup` pointer is written whole through `FileSystem::writeAtomic()`.
-- `cron.php` matches the CLI `cron-type` in any case.
-- A custom field's slug avoids the reserved `api`, as a field group's already did. `LocationService::uniqueSlug()` is private.
-- Search-alert tokens are sealed with `SecretBox`; tokens from 6.x still open. `alert_public_key` is no longer created.
-- `ActionThrottle` counts in `t_rate_counter`.
-- `SignedPayload`, `RateLimit` and the token classes accept a clock for tests.
-- Every `osc_sanitize_*()` helper forwards to `mindstellar\utility\Sanitize`; new `Sanitize::name()`, `slug()`, `text()` and `richHtml()`.
-- `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters; `Sanitize::allcaps()` no longer lower-cases mixed-case text or escapes it.
-- Update-check state moved to the key-value store; `osc_update_check_state()` reads it.
-- `osc_admin_pager()` and `osc_admin_pagination()` draw one pager; admin lists page with `iPage`, and old `pageNum` links still work.
-- The Cleanup, Maintenance and Activity log settings are declared settings forms, with the same preferences and defaults.
-- `mindstellar\upgrade\Plugin` and `Theme` are deprecated. The core updater and the market installer share download and unzip.
+- People may post 20 comments an hour (guests 20 per address), on the site and through the API together.
+- Asking to change your e-mail to an address someone else holds no longer says it is taken; no link is sent. You may ask 5 times an hour.
+- Deleting your account asks for your password.
+- Unblocking a comment e-mails its author when it goes live.
+- Banned e-mails and addresses are checked on sign-in, sign-up and `ItemActions::add()`, as on the post form.
+- Admin status changes to listings, users and accounts are logged and fire their hooks.
+- **Listings → Settings** and **Users → Settings** save a blank or negative number as 0; currency codes must be three letters.
+- Upgrading refreshes an `.htaccess` Shopclass wrote so Apache passes the `Authorization` header to the API; a hand-edited one is left alone.
+- A listing's API version (`ETag`) changes when its photos change.
+- The installer no longer pings Google and Bing with the sitemap; both services are retired.
+- Code moved into `mindstellar\` modules shared by the site and the API: listings, sign-in, accounts, comments, categories, currencies, custom fields, cache and forms. Old class names still work. See [Architecture](https://shopclass.org/docs/developers/architecture/).
+- Shared classes are reached with `getInstance()`; `newInstance()` and `instance()` still work but are deprecated.
+- New helpers for plugins: `Db::withNamedLock()`, `Db::retryOnce()`, `FileSystem::writeAtomic()`, `FileSystem::head()`, `ImageProcessing::usesImagick()` and `Sanitize::name()`, `slug()`, `text()` and `richHtml()`.
+- New actions `user_signout_all_after` and `admin_signout_all_after`. `before_validating_login` fires after the empty-field and captcha checks, `before_user_delete` fires for admin deletes too, comment hooks get the comment id as an int, and `pre_item_delete_comment_post` fires only once the author is confirmed.
+- `mindstellar\Csrf` is now `mindstellar\security\Csrf`; `BackupManager` is now `BackupService`. Old names still work. `mindstellar\upgrade\Plugin` and `Theme` are deprecated.
+- `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
 
-- A search made only of stopwords, or of words below the server's FULLTEXT minimum, now matches by substring instead of finding nothing.
-- **Settings → Media** refuses an image size with a zero side, which made every photo upload fail.
-- A search mixing real words with stopwords drops the stopwords, and a too-short word ("sony tv") must still appear in the text.
-- Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting; `ssl` does.
-- The installer saves a downloaded language's files into that language's folder.
-- `Formatting::formatSlug()` gives the same slug as `osc_sanitizeString()`; its pattern was broken.
-- An unknown place id in a listing no longer causes a server error.
-- The alerts chart on Statistics → Listings scales to its largest count, not its last.
-- The ban rules are read once per request, not once per address checked.
-- The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
-- The locations pager reloads the list in place again.
-- A stopword table set on the database server is read for search.
-- A posting wait or throttle window longer than a day is no longer cut to a day.
-- A category translated to a new language can no longer take the reserved `api` slug.
-- The category tree no longer breaks on a cache driver that answers a miss with null.
-- Public pages answer 304 to an `If-None-Match` list or a weak `W/` tag, as the API does.
-- The API's `email` and `uri` formats refuse what the web forms refuse.
-- `osc_validate_url()` with its header check no longer asks private addresses, and gives up after 3 seconds.
-- The pseudo-cron request keeps the URL's port and query and gives up connecting after 5 seconds.
+- A search made only of very short or common words now finds matches instead of nothing, and "sony tv" no longer shows every Sony listing.
+- Search results are cached per language, so a language filter no longer shows another language's results.
+- **Settings → Media** refuses an image size with a zero side, which broke every photo upload.
+- Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting.
+- The installer saves a downloaded language into that language's folder.
+- An unknown place in a listing no longer causes a server error.
+- The alerts chart on **Statistics → Listings** scales to its largest count.
+- The category tree no longer breaks on a cache that answers a miss with null.
+- Public pages answer 304 to a list of `If-None-Match` tags or a weak `W/` tag.
+- `osc_validate_url()` no longer contacts private addresses and gives up after 3 seconds.
+- A subcategory under a disabled parent can be disabled, and enabling a category refreshes every cached list that shows it.
 
 ## Shopclass 6.4.6
 
