@@ -13,7 +13,9 @@ Plugin authors should read the Breaking section before upgrading.
 ### New
 
 - Redis and Valkey work as the object cache with `OSC_CACHE=redis`, through phpredis or a built-in client that needs no extension.
-- `oc-cli.php jobs:work --listen` starts background jobs as soon as they are due: at once with Redis or Valkey, within seconds without. The Docker image runs it and its compose file adds Valkey.
+- `oc-cli.php jobs:work --listen` starts background jobs as soon as they are due: at once with Redis or Valkey, within seconds without. It also runs the due scheduled tasks, so it replaces the cron line. The Docker image runs it and its compose file adds Valkey.
+- A premium upgrade ends at its end time through a background job, not up to an hour later.
+- A `listing.reported` webhook is sent when a visitor reports a listing.
 - A REST API at `/api/v1` for listings, categories, fields, locations, currencies and profiles, with API keys, paging and OpenAPI. See [REST API](https://shopclass.org/docs/developers/api/).
 - Users can sign in through the API with a password and a refresh token, then post, edit and delete listings, upload photos, comment and save searches. `Idempotency-Key` makes a retried write safe.
 - Admin keys run the site through `/api/v1/admin/`: listings, comments, users, taxonomy, settings, API keys and the job queue. Moderator keys reach listings and comments only.
@@ -135,6 +137,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Fixed
 
+- `oc-cli.php cron` with no `--type` runs only the tasks that are due, as the docs say; it used to run hourly, daily and weekly every time.
 - A search made only of stopwords, or of words below the server's FULLTEXT minimum, now matches by substring instead of finding nothing.
 - **Settings → Media** refuses an image size with a zero side, which made every photo upload fail.
 - A search mixing real words with stopwords drops the stopwords, and a too-short word ("sony tv") must still appear in the text.

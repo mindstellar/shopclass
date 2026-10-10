@@ -269,6 +269,17 @@ pin('a user.deleted payload carries the id only', ['id' => 42], json_decode(json
 $clearJobs();
 osc_run_hook('after_delete_item', 5, []);
 pin('after_delete_item queues listing.deleted? Nobody subscribes, so nothing', 0, count($jobs()));
+$clearJobs();
+[$reportEp] = $manager()->create('https://hooks.example/reports', ['listing.reported'], '', true, 1);
+\mindstellar\webhook\WebhookServices::reset();
+osc_run_hook('item_marked', 5, 'offensive');
+$reportRows = $jobs();
+pin('item_marked queues listing.reported with the id and reason', [1, ['id' => 5, 'reason' => 'offensive']], [
+    count($reportRows),
+    json_decode(json_decode($reportRows[0]['s_payload'] ?? '{}', true)['body'] ?? '{}', true)['data'] ?? null,
+]);
+$store->delete($reportEp->id());
+\mindstellar\webhook\WebhookServices::reset();
 
 harness_section('events built inside a write are queued after it commits');
 $clearJobs();

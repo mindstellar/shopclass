@@ -805,6 +805,16 @@ pin('a Redis server that is down falls back to sleeping', array(JobWorker::LISTE
 $wakeShared->setValue(null, $wakeBefore);
 $truncate();
 
+$listenTicks = 0;
+try {
+    JobWorker::listen(60, static function (): void {
+    }, $listenStop, static function () use (&$listenTicks): void {
+        $listenTicks++;
+    });
+} catch (JobQueueStopListening $e) {
+}
+pin('the scheduled tasks run once when it starts', 1, $listenTicks);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

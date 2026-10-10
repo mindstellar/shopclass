@@ -170,17 +170,8 @@ do not add a `jobs:work` line. With the Valkey service that `docker-compose.prod
 and the one-command installer add, a job starts the moment it is queued; without
 it, within five seconds.
 
-Scheduled tasks still need cron. Run it from the host, from
-a sidecar (a small helper container running next to the app), or from your
-orchestrator (the system managing your containers, such as Kubernetes):
-
-```cron
-*/5 * * * * docker compose -f /path/to/docker-compose.prod.yml exec -T app php oc-cli.php cron
-```
-
-On Kubernetes, a `CronJob` running the same command is the equivalent. Without
-it, alerts never send and listings never expire. See
-[setting up cron](/docs/configure/cron/).
+The same worker runs the scheduled tasks (alerts, cleanup, the sitemap) when they
+are due, so the container needs no cron line either.
 
 ## Built-in HTTPS
 

@@ -26,6 +26,35 @@ use mindstellar\listing\ListingStore;
  */
 final class Premium
 {
+    public const JOB = 'billing.premium_end';
+
+    /**
+     * Register the job that ends upgrades on time; called from `register_jobs`.
+     */
+    public static function registerJobs(): void
+    {
+        osc_job_register_handler(self::JOB, static function (): void {
+            self::expire();
+        });
+        osc_job_describe(self::JOB, __('End premium listings'), static fn (array $payload): string => (string) ($payload['at'] ?? ''));
+    }
+
+    /**
+     * Queue a job for the moment an upgrade ends. The hourly sweep still ends any it misses.
+     */
+    public static function scheduleEnd(string $at): void
+    {
+        $time = strtotime($at);
+        if ($time === false) {
+            return;
+        }
+        try {
+            osc_job_enqueue(self::JOB, array('at' => $at), array('delay' => max(0, $time - time()), 'unique_key' => (string) $time));
+        } catch (\Throwable $e) {
+            error_log('Premium end job was not queued: ' . $e->getMessage());
+        }
+    }
+
     /**
      * End every upgrade whose date has passed.
      *

@@ -35,7 +35,7 @@ no wrapper script needed.
 
 | Command | What it does |
 |---|---|
-| `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks: e-mail alerts, expiring premium listings, cleanup, sitemap warm. Defaults to all three tiers. |
+| `cron [--type=due\|hourly\|daily\|weekly\|all]` | Run the scheduled tasks that are due: e-mail alerts, expiring premium listings, cleanup, sitemap warm. A named type, or `all`, runs now even when it is not due. |
 
 A typical crontab entry (see [setting up cron](/docs/configure/cron/) for the
 full setup):
@@ -183,7 +183,9 @@ On a server where you can keep a process running (systemd, supervisord, Docker),
 run it with `--listen` instead. It stays up for an hour (`--max-seconds=` changes
 that), then exits with `0` so your process manager restarts it. With a Redis or
 Valkey cache (`OSC_CACHE=redis`) a job starts the moment it is queued, and a job
-held for later within 30 seconds of its time. Without one, it looks every five seconds:
+held for later within 30 seconds of its time. Without one, it looks every five seconds.
+Every five minutes it also runs the scheduled tasks that are due, so it replaces the
+`cron` line too:
 
 ```bash
 php /path/to/site/oc-cli.php jobs:work --listen

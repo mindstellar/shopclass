@@ -4364,6 +4364,10 @@ msgstr ""
 msgid "Encryption"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/Premium.php
+msgid "End premium listings"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid "Endpoint"
 msgstr ""

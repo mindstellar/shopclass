@@ -94,9 +94,9 @@ Added to v1.
 
 Also added:
 
-- Webhooks: signed deliveries in the Standard Webhooks layout for ten events
+- Webhooks: signed deliveries in the Standard Webhooks layout for eleven events
   (`listing.created`, `listing.updated`, `listing.deleted`, `listing.activated`,
-  `listing.deactivated`, `listing.spam`, `comment.created`, `user.registered`, `user.updated`,
+  `listing.deactivated`, `listing.spam`, `listing.reported`, `comment.created`, `user.registered`, `user.updated`,
   `user.deleted`), with retries, auto-pause and secret rotation. Plugins add events named
   `ext.<slug>.<name>`.
 - Scopes: `admin:comments`, `admin:settings`, `admin:keys`, `admin:webhooks`.

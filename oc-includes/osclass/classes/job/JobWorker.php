@@ -93,17 +93,22 @@ final class JobWorker
     /** Seconds a listener sleeps between looks when no Redis-protocol cache carries signals. */
     public const LISTEN_POLL = 5;
 
+    /** Seconds between a listener's runs of the scheduled tasks, as often as auto-cron at most. */
+    public const SCHEDULE_EVERY = 300;
+
     /**
      * Run jobs as soon as they are due, for $maxSeconds: while jobs are due, call $work; then
-     * wait for JobQueue's signal, or sleep without one.
+     * wait for JobQueue's signal, or sleep without one. $schedule runs at the start and every
+     * SCHEDULE_EVERY seconds after.
      *
      * @param int                 $maxSeconds how long to listen
      * @param callable():void     $work       runs due jobs; the CLI starts a fresh `jobs:work`
      * @param callable(int):void|null $sleep  for tests
+     * @param callable():void|null $schedule  runs the due scheduled tasks; the CLI starts `cron --type=due`
      *
      * @return int how many times $work was called
      */
-    public static function listen(int $maxSeconds, callable $work, ?callable $sleep = null): int
+    public static function listen(int $maxSeconds, callable $work, ?callable $sleep = null, ?callable $schedule = null): int
     {
         $sleep ??= static function (int $seconds): void {
             sleep($seconds);
@@ -111,8 +116,13 @@ final class JobWorker
         $queue  = JobQueue::getInstance();
         $start  = time();
         $called = 0;
+        $ticked = null;
 
         while (($left = $maxSeconds - (time() - $start)) > 0) {
+            if ($schedule !== null && ($ticked === null || time() - $ticked >= self::SCHEDULE_EVERY)) {
+                $ticked = time();
+                $schedule();
+            }
             $due = $queue->stats()['due'];
             if ($due > 0) {
                 $work();

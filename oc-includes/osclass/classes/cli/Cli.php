@@ -47,7 +47,7 @@ class Cli
      */
     private array $commands = [
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
-        'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
+        'cron'                => ['cmdCron', 'Run the scheduled tasks that are due (--type=hourly|daily|weekly|all forces them)'],
         'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations'],
         'core:update'         => ['cmdCoreUpdate', 'Update Shopclass to the newest release on this channel, then migrate the database (--reinstall)'],
         'db:doctor'           => ['cmdDbDoctor', 'Report schema differences and strict SQL mode readiness (--strict: readiness only); changes nothing'],
@@ -373,7 +373,7 @@ class Cli
     }
 
     /**
-     * Run the due scheduled tasks for one or every cron type.
+     * Run the scheduled tasks that are due, or force one or every cron type.
      *
      * @param array<string, mixed> $args
      *
@@ -381,11 +381,11 @@ class Cli
      */
     private function cmdCron(array $args): int
     {
-        $type  = (string) ($args['type'] ?? 'all');
+        $type  = (string) ($args['type'] ?? 'due');
         $valid = ['hourly', 'daily', 'weekly'];
 
-        if ($type !== 'all' && !in_array($type, $valid, true)) {
-            $this->err("Invalid --type. Use hourly, daily, weekly, or all.\n");
+        if ($type !== 'all' && $type !== 'due' && !in_array($type, $valid, true)) {
+            $this->err("Invalid --type. Use due, hourly, daily, weekly, or all.\n");
 
             return 2;
         }
@@ -402,6 +402,14 @@ class Cli
         // tries to schedule another auto-cron pass.
         if (!defined('__FROM_CRON__')) {
             define('__FROM_CRON__', true);
+        }
+
+        if ($type === 'due') {
+            Params::setParam('cron-type', '');
+            require LIB_PATH . 'osclass/cron.php';
+            $this->out("Ran the due scheduled tasks.\n");
+
+            return 0;
         }
 
         $types = $type === 'all' ? $valid : [$type];
@@ -825,8 +833,8 @@ class Cli
         }
         if ($listen) {
             // Each pass is its own process, so no cached data or memory outlives it.
-            $command = array(PHP_BINARY, ABS_PATH . 'oc-cli.php', 'jobs:work', '--max-seconds=50');
-            \mindstellar\job\JobWorker::listen($maxSeconds, function () use ($command): void {
+            $spawn = function (string ...$args): void {
+                $command = array_merge(array(PHP_BINARY, ABS_PATH . 'oc-cli.php'), $args);
                 $process = proc_open($command, array(STDIN, STDOUT, STDERR), $pipes);
                 if (!is_resource($process)) {
                     $this->err('Could not start ' . implode(' ', $command) . "\n");
@@ -834,7 +842,13 @@ class Cli
                     return;
                 }
                 proc_close($process);
-            });
+            };
+            \mindstellar\job\JobWorker::listen(
+                $maxSeconds,
+                static fn () => $spawn('jobs:work', '--max-seconds=50'),
+                null,
+                static fn () => $spawn('cron', '--type=due')
+            );
 
             return 0;
         }

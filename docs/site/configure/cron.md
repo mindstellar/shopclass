@@ -8,7 +8,8 @@ sidebar:
 Some jobs must run on a timer, not when someone opens a page:
 
 - sending e-mail alerts
-- ending premium listings when they expire
+- ending premium listings when they expire (a background job ends each one on
+  time; the hourly run catches any it missed)
 - removing spam and accounts that were never activated
 - rebuilding the XML sitemap
 
@@ -128,7 +129,7 @@ php /path/to/site/oc-cli.php cron --type=hourly
 
 | Schedule | Jobs |
 |---|---|
-| Hourly | Expiring premium listings |
+| Hourly | Expiring premium listings that their own background job missed |
 | Daily | Daily e-mail alerts; cleanup of expired, spam, blocked and unactivated content |
 | Weekly | Weekly e-mail alerts; longer-running maintenance |
 
@@ -148,5 +149,6 @@ does only this work:
 
 It is safe to run every minute. With no work waiting, it costs one database
 query, so you can add it before you need it. Where you can keep a process running,
-`jobs:work --listen` starts each job as soon as it is due instead. See the
+`jobs:work --listen` starts each job as soon as it is due instead. It also runs the
+scheduled tasks every five minutes, so it replaces both lines. See the
 [CLI reference](/docs/cli/) and [Background jobs](/docs/developers/jobs/).

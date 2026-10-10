@@ -37174,6 +37174,70 @@
                 }
             }
         },
+        "listing.reported": {
+            "post": {
+                "operationId": "webhookListingReported",
+                "summary": "A visitor reported a listing. The data holds its id and the reason.",
+                "parameters": [
+                    {
+                        "name": "webhook-id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "webhook-timestamp",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "webhook-signature",
+                        "in": "header",
+                        "required": true,
+                        "description": "Standard Webhooks: v1,<base64 HMAC-SHA256>, space separated while a rotated secret is valid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/WebhookMessage"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {
+                                                "const": "listing.reported"
+                                            },
+                                            "data": {
+                                                "$ref": "#/components/schemas/WebhookReport"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "security": [],
+                "responses": {
+                    "2XX": {
+                        "description": "Received. Anything else is retried with backoff."
+                    }
+                }
+            }
+        },
         "comment.created": {
             "post": {
                 "operationId": "webhookCommentCreated",
@@ -42378,6 +42442,28 @@
                 },
                 "required": [
                     "id"
+                ]
+            },
+            "WebhookReport": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "spam",
+                            "badcat",
+                            "offensive",
+                            "repeated",
+                            "expired"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "reason"
                 ]
             },
             "WebhookPing": {

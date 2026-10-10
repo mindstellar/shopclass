@@ -174,7 +174,8 @@ Or keep one worker running with `jobs:work --listen`. With a Redis or Valkey cac
 a job wakes it at once (a delayed job runs within 30 seconds of its time); without one it
 looks every five seconds. Every job is still a row in
 `t_job_queue`, so cron, `jobs:work` and the listener can run side by side, and turning Redis
-off loses nothing. The Docker image runs the listener for you.
+off loses nothing. The listener also runs the due scheduled tasks every five minutes, so it
+needs no cron line. The Docker image runs it for you.
 
 `php oc-cli.php jobs:status` reports what is waiting and names anything that gave up. Both
 exit non-zero when a job has stopped retrying, so a cron log can notice. `php oc-cli.php doctor`

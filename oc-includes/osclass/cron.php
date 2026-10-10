@@ -134,8 +134,10 @@ foreach ($schedules as $type => [$period, $purgeKey, $jobs]) {
     if (!is_array($cron)) {
         continue;
     }
-    $due = CLI
-        ? strtolower((string) Params::getParam('cron-type')) === strtolower($type)
+    // The CLI names a schedule to force it; with none named it runs what is due, as the web does.
+    $forced = CLI ? strtolower((string) Params::getParam('cron-type')) : '';
+    $due    = $forced !== ''
+        ? $forced === strtolower($type)
         : ($i_now - strtotime($cron['d_next_exec']) + $shift_seconds) >= 0;
     if ($due && Cron::getInstance()->claim($type, (string) $cron['d_next_exec'], $d_now, date('Y-m-d H:i:s', $i_now_truncated + $period))) {
         osc_runAlert($type, $cron['d_last_exec']);

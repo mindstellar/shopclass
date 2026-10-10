@@ -109,7 +109,7 @@ harness_section('events');
 $core = Events::fromHooks();
 pin('core events, ping not subscribable', [
     'listing.created', 'listing.updated', 'listing.deleted', 'listing.activated', 'listing.deactivated', 'listing.spam',
-    'comment.created', 'user.registered', 'user.updated', 'user.deleted',
+    'listing.reported', 'comment.created', 'user.registered', 'user.updated', 'user.deleted',
 ], $core->subscribable());
 check('ping is in the catalogue', $core->has(Events::PING));
 $warnings = [];

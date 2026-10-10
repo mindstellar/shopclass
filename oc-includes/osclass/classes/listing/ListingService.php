@@ -353,7 +353,7 @@ final class ListingService
      * Make a listing premium or not. Fires `item_premium_on` or `item_premium_off`.
      *
      * $days makes the upgrade time-limited: the listing stops being premium once
-     * dt_premium_expiration passes and the hourly sweep flips it back. Omitting it keeps
+     * dt_premium_expiration passes and a job queued for that time flips it back. Omitting it keeps
      * the historical behaviour of a permanent, admin-granted upgrade with no end date.
      *
      * @param int      $id
@@ -409,6 +409,9 @@ final class ListingService
         );
         // updated correctly
         if ($result == 1) {
+            if (!empty($set['dt_premium_expiration'])) {
+                \mindstellar\billing\Premium::scheduleEnd($set['dt_premium_expiration']);
+            }
             // An expired listing is counted only while premium, so the switch can move it.
             if ($current && osc_item_is_counted($current) !== osc_item_is_counted(array('b_premium' => $value) + $current)) {
                 $item = $this->items->findByPrimaryKey($id);

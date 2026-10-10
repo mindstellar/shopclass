@@ -2742,6 +2742,30 @@ Receipts::$mailer = null;
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 
+harness_section('Premium: a job ends it on time');
+$endJobs = static function () use ($admin): array {
+    $out = array();
+    $res = $admin->query('SELECT s_payload, dt_next_run FROM ' . DB_TABLE_PREFIX . "t_job_queue WHERE s_type = '" . Premium::JOB . "'");
+    while ($row = $res->fetch_assoc()) {
+        $out[] = $row;
+    }
+
+    return $out;
+};
+$timed = seed_item($admin, $categoryId, $userId, 'Timed premium');
+(new ItemActions(true))->premium($timed, true, 3);
+$timedEnd = $admin->query('SELECT dt_premium_expiration FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $timed)->fetch_assoc()['dt_premium_expiration'];
+$queuedEnd = $endJobs();
+pin('a dated upgrade queues one job', 1, count($queuedEnd));
+check('due when the upgrade ends', abs(strtotime((string) $queuedEnd[0]['dt_next_run']) - strtotime((string) $timedEnd)) <= 1);
+(new ItemActions(true))->premium($permanent, true);
+pin('a permanent upgrade queues none', 1, count($endJobs()));
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_item SET dt_premium_expiration = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE pk_i_id = " . $timed);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_job_queue SET dt_next_run = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE s_type = '" . Premium::JOB . "'");
+\mindstellar\job\JobWorker::run(10);
+pin('the job ends it', '0', $isPremium($timed));
+pin('and leaves the queue', 0, count($endJobs()));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

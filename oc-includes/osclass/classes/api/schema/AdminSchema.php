@@ -41,7 +41,7 @@ final class AdminSchema
         'Job', 'Jobs', 'JobsDocument',
         'Webhook', 'WebhookInput', 'WebhookPatch', 'WebhookList', 'WebhookDocument', 'WebhookTest', 'WebhookTestDocument',
         'WebhookDelivery', 'WebhookDeliveries', 'WebhookDeliveriesDocument', 'WebhookEvent', 'WebhookEventList',
-        'WebhookMessage', 'WebhookDeleted', 'WebhookPing',
+        'WebhookMessage', 'WebhookDeleted', 'WebhookReport', 'WebhookPing',
     ];
 
     private function __construct()
@@ -314,6 +314,10 @@ final class AdminSchema
                 'data'      => ['type' => 'object'],
             ], ['type', 'id', 'timestamp', 'data']),
             'WebhookDeleted'            => Schema::object(['id' => ['type' => 'integer']], ['id']),
+            'WebhookReport'             => Schema::object([
+                'id'     => ['type' => 'integer'],
+                'reason' => ['type' => 'string', 'enum' => ['spam', 'badcat', 'offensive', 'repeated', 'expired']],
+            ], ['id', 'reason']),
             'WebhookPing'               => Schema::object([
                 'endpoint_id' => ['type' => 'string'],
                 'message'     => ['type' => 'string'],

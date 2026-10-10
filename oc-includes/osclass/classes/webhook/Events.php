@@ -31,6 +31,7 @@ final class Events
         'listing.activated'   => ['A listing was approved or activated.', 'Listing'],
         'listing.deactivated' => ['A listing was sent back to moderation.', 'Listing'],
         'listing.spam'        => ['A listing was marked as spam.', 'Listing'],
+        'listing.reported'    => ['A visitor reported a listing. The data holds its id and the reason.', 'WebhookReport'],
         'comment.created'     => ['A comment was added to a listing, approved or waiting for moderation.', 'Comment'],
         'user.registered'     => ['A user signed up.', 'User'],
         'user.updated'        => ['A user changed their profile.', 'User'],

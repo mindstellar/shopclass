@@ -122,6 +122,9 @@ final class EventData
         osc_add_hook('activate_item', $listing('listing.activated'));
         osc_add_hook('deactivate_item', $listing('listing.deactivated'));
         osc_add_hook('item_spam_on', $listing('listing.spam'));
+        osc_add_hook('item_marked', static function ($id, $reason): void {
+            self::bridge('listing.reported', static fn (): array => ['id' => (int) $id, 'reason' => (string) $reason]);
+        });
         osc_add_hook('after_delete_item', static function ($id): void {
             self::bridge('listing.deleted', static fn (): array => self::deleted((int) $id));
         });
