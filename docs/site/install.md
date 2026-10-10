@@ -102,7 +102,7 @@ notice instead of re-running.
 A fresh install works, but three things are worth doing on day one:
 
 1. **[Set up cron](/docs/configure/cron/)**: without it, e-mail alerts never
-   send and expired listings never expire.
+   send and expired listings never expire. The Docker image runs it for you.
 2. **[Configure your mail server](/docs/configure/mail-server/)**: registration
    and contact e-mails depend on it.
 3. **[Install location data](/docs/configure/locations/)** for the countries you

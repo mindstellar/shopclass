@@ -330,14 +330,14 @@ and ignores that header.
 
 ## Running more than one instance
 
-Three things have to be true before a second instance is safe:
+Two things have to be true before a second instance is safe:
 
 1. **Uploads are offloaded to S3**, otherwise each instance has its own photos.
 2. **The object cache is memcached or Redis, not APCu**: APCu lives inside one PHP
    process, so two instances never see the same cache.
-3. **Cron runs once**, not once per instance.
 
-Each instance runs its own job worker. That is safe: a job is claimed by one worker only.
+Each instance runs its own job worker and scheduled tasks. That is safe: one worker
+claims each job, and one instance claims each scheduled run.
 
 ## Local development
 

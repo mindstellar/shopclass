@@ -97,7 +97,7 @@ namespace {
 
         public function getCronByType(string $type): array
         {
-            return array('d_last_exec' => 'last-' . $type, 'd_next_exec' => '2000-01-01 00:00:00');
+            return array('d_last_exec' => 'last-' . $type, 'd_next_exec' => $GLOBALS['nextExec'] ?? '2000-01-01 00:00:00');
         }
 
         public function claim(string $type, string $next, string $now, string $nextExec): bool
@@ -239,6 +239,13 @@ namespace {
     harness_section('periods and other types');
     pin('each schedule moves its next run on by its period', array('HOURLY' => 3600, 'DAILY' => 86400, 'WEEKLY' => 604800), $GLOBALS['periods']);
     pin('an unknown cron-type runs only the cron hook', array('hook cron'), cron_run('monthly', 'hour'));
+
+    harness_section('no cron-type: only what is due');
+    $claims = static fn (array $ran): array => array_values(array_filter($ran, static fn (string $r): bool => str_starts_with($r, 'claim ')));
+    pin('every overdue schedule runs', array('claim HOURLY', 'claim DAILY', 'claim WEEKLY'), $claims(cron_run('', 'forever')));
+    $GLOBALS['nextExec'] = date('Y-m-d H:i:s', time() + 3600);
+    pin('none that is not due yet: only the cron hook', array('hook cron'), cron_run('', 'forever'));
+    unset($GLOBALS['nextExec']);
 
     exit(harness_result());
 }

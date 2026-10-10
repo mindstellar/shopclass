@@ -302,7 +302,7 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
     // survives between requests and so cannot throttle anything, so there fall back to the
     // modification time of a stamp file under uploads/, no cache backend required. Either path
     // fails open (write fails or file unwritable => cron still runs), never closed.
-    $window = 300;
+    $window = JobWorker::SCHEDULE_EVERY;
     $fire   = false;
     $cache  = \mindstellar\cache\CacheManager::getInstance();
 

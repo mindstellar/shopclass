@@ -278,6 +278,11 @@ pin('item_marked queues listing.reported with the id and reason', [1, ['id' => 5
     count($reportRows),
     json_decode(json_decode($reportRows[0]['s_payload'] ?? '{}', true)['body'] ?? '{}', true)['data'] ?? null,
 ]);
+$clearJobs();
+osc_run_hook('item_marked', 5, 'offensive');
+pin('the same report again within the hour sends nothing', 0, count($jobs()));
+osc_run_hook('item_marked', 5, 'spam');
+pin('another reason does', 1, count($jobs()));
 $store->delete($reportEp->id());
 \mindstellar\webhook\WebhookServices::reset();
 

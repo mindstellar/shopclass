@@ -93,7 +93,7 @@ final class JobWorker
     /** Seconds a listener sleeps between looks when no Redis-protocol cache carries signals. */
     public const LISTEN_POLL = 5;
 
-    /** Seconds between a listener's runs of the scheduled tasks, as often as auto-cron at most. */
+    /** Seconds between runs of the scheduled tasks, from a listener or from auto-cron. */
     public const SCHEDULE_EVERY = 300;
 
     /**

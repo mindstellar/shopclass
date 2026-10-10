@@ -123,7 +123,10 @@ final class EventData
         osc_add_hook('deactivate_item', $listing('listing.deactivated'));
         osc_add_hook('item_spam_on', $listing('listing.spam'));
         osc_add_hook('item_marked', static function ($id, $reason): void {
-            self::bridge('listing.reported', static fn (): array => ['id' => (int) $id, 'reason' => (string) $reason]);
+            // Reports are anonymous, so one listing and reason sends at most one an hour.
+            if (\mindstellar\security\RateLimit::hit('webhook_report', (int) $id . ':' . $reason, 1, 3600)) {
+                self::bridge('listing.reported', static fn (): array => ['id' => (int) $id, 'reason' => (string) $reason]);
+            }
         });
         osc_add_hook('after_delete_item', static function ($id): void {
             self::bridge('listing.deleted', static fn (): array => self::deleted((int) $id));

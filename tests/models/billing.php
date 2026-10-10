@@ -2758,8 +2758,10 @@ $timedEnd = $admin->query('SELECT dt_premium_expiration FROM ' . DB_TABLE_PREFIX
 $queuedEnd = $endJobs();
 pin('a dated upgrade queues one job', 1, count($queuedEnd));
 check('due when the upgrade ends', abs(strtotime((string) $queuedEnd[0]['dt_next_run']) - strtotime((string) $timedEnd)) <= 1);
+Premium::scheduleEnd((string) $timedEnd);
+pin('a second upgrade ending at the same time shares the job', 1, count($endJobs()));
 (new ItemActions(true))->premium($permanent, true);
-pin('a permanent upgrade queues none', 1, count($endJobs()));
+pin('a permanent upgrade adds none', 1, count($endJobs()));
 $admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_item SET dt_premium_expiration = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE pk_i_id = " . $timed);
 $admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_job_queue SET dt_next_run = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE s_type = '" . Premium::JOB . "'");
 \mindstellar\job\JobWorker::run(10);

@@ -122,7 +122,7 @@ php oc-cli.php help          # list every command
 
 | Command | What it does |
 |---|---|
-| `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks (alerts, cleanup, sitemap warm). Default runs all three. |
+| `cron [--type=due\|hourly\|daily\|weekly\|all]` | Run the scheduled tasks that are due (alerts, cleanup, sitemap warm). A named type, or `all`, forces it. |
 | `db:upgrade` | Run pending migrations after an update. |
 | `db:doctor [--strict]` | Report where the database differs from what ShopClass declares, and whether the site is ready for strict SQL mode. Changes nothing. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. `--dry-run` only reports. |

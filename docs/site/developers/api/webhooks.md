@@ -24,7 +24,7 @@ The site owner adds endpoints on **Settings → API → Webhooks**
 | `listing.activated` | A listing is approved or activated. | The listing |
 | `listing.deactivated` | A listing is sent back to moderation. | The listing |
 | `listing.spam` | A listing is marked as spam. | The listing |
-| `listing.reported` | A visitor reports a listing. | `{"id": 412, "reason": "offensive"}`; the reason is `spam`, `badcat`, `offensive`, `repeated` or `expired` |
+| `listing.reported` | A visitor reports a listing. At most one an hour per listing and reason. | `{"id": 412, "reason": "offensive"}`; the reason is `spam`, `badcat`, `offensive`, `repeated` or `expired` |
 | `listing.deleted` | A listing is deleted. | `{"id": 412}` |
 | `comment.created` | A comment is added, approved or waiting for moderation. | The comment |
 | `user.registered` | A user signs up. | The user |
