@@ -137,7 +137,6 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Fixed
 
-- `oc-cli.php cron` with no `--type` runs only the tasks that are due, as the docs say; it used to run hourly, daily and weekly every time.
 - A search made only of stopwords, or of words below the server's FULLTEXT minimum, now matches by substring instead of finding nothing.
 - **Settings → Media** refuses an image size with a zero side, which made every photo upload fail.
 - A search mixing real words with stopwords drops the stopwords, and a too-short word ("sony tv") must still appear in the text.
@@ -157,6 +156,15 @@ Plugin authors should read the Breaking section before upgrading.
 - The API's `email` and `uri` formats refuse what the web forms refuse.
 - `osc_validate_url()` with its header check no longer asks private addresses, and gives up after 3 seconds.
 - The pseudo-cron request keeps the URL's port and query and gives up connecting after 5 seconds.
+
+## Shopclass 6.4.6
+
+This release fixes `php oc-cli.php cron`, which ran the hourly, daily and weekly tasks every time
+instead of only the due ones, so a cron line every five minutes sent daily alerts every five minutes.
+
+### Fixed
+
+- `php oc-cli.php cron` with no `--type` runs only the tasks that are due, as the docs say.
 
 ## Shopclass 6.4.5
 
