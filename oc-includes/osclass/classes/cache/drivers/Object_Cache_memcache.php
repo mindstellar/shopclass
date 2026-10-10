@@ -11,33 +11,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\base\ObjectCache;
+
 /**
  * Object_Cache_memcache class
  */
-class Object_Cache_memcache implements iObject_Cache
+class Object_Cache_memcache extends ObjectCache
 {
-    /**
-     * The amount of times the cache data was already stored in the cache.
-     *
-     * @since  3.4
-     * @var int
-     */
-    public $cache_hits = 0;
-    /**
-     * Amount of times the cache did not have the request in cache
-     *
-     * @var int
-     * @since  3.4
-     */
-    public $cache_misses = 0;
-    /**
-     * The blog prefix to prepend to keys in non-global groups.
-     *
-     * @var string
-     * @since  3.4
-     */
-    public $site_prefix;
-    public $default_expiration = 60;
     protected $_memcache_conf = array(
         'default' => array(
             'default_host'   => '127.0.0.1',
@@ -52,7 +32,6 @@ class Object_Cache_memcache implements iObject_Cache
      * @since  3.4
      */
     private $memcached;
-    private $cache;
 
     /**
      * Sets up object properties; PHP 5 style constructor
@@ -67,7 +46,7 @@ class Object_Cache_memcache implements iObject_Cache
             . 'or "apcu" instead.',
             E_USER_DEPRECATED
         );
-        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
+        parent::__construct();
         $cache_server      = array();
         global $_cache_config;
         if (!isset($_cache_config) || !is_array($_cache_config)) {
@@ -107,9 +86,7 @@ class Object_Cache_memcache implements iObject_Cache
     {
         $id = $key;
 
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
 
         $store_data = $data;
 
@@ -117,7 +94,7 @@ class Object_Cache_memcache implements iObject_Cache
             $store_data = new ArrayObject($data);
         }
 
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
         $result = $this->memcached->add($this->_key($key), array($store_data, time(), $expire), 0, $expire);
         if (false !== $result) {
             $this->cache[$key] = $data;
@@ -172,15 +149,8 @@ class Object_Cache_memcache implements iObject_Cache
      */
     public function get($key, &$found = null)
     {
-        $found = false;
-        if (isset($this->cache[$key])) {
-            $found = true;
-            if (is_object($this->cache[$key])) {
-                $value = clone $this->cache[$key];
-            } else {
-                $value = $this->cache[$key];
-            }
-            ++$this->cache_hits;
+        $value = $this->local($key, $found);
+        if ($found) {
             $return = $value;
         } else {
             $found = true;
@@ -193,7 +163,7 @@ class Object_Cache_memcache implements iObject_Cache
                 $value = false;
             }
 
-            $this->cache[$key] = is_object($value) ? clone $value : $value;
+            $this->cache[$key] = self::copy($value);
             if ($found) {
                 ++$this->cache_hits;
                 $return = $this->cache[$key];
@@ -219,9 +189,7 @@ class Object_Cache_memcache implements iObject_Cache
      */
     public function set($key, $data, $expire = 0)
     {
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
 
         $store_data = $data;
 
@@ -231,32 +199,9 @@ class Object_Cache_memcache implements iObject_Cache
 
         $this->cache[$key] = $data;
 
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
 
         return $this->memcached->set($this->_key($key), $store_data, 0, $expire);
-    }
-
-    /**
-     * Echoes the stats of the caching.
-     * Gives the cache hits, and cache misses.
-     *
-     * @return void
-     * @since 3.4
-     *
-     */
-    public function stats()
-    {
-        echo "<div style='position:absolute;width:200px;top:0px;'>
-<div style='float:right;
- margin-right:30px;margin-top:15px;border: 1px red solid;
-border-radius: 17px;
-padding: 1em;'><h2>Memcache stats</h2>";
-        echo '<p>';
-        echo "<strong>Cache Hits:</strong> {$this->cache_hits}<br />";
-        echo "<strong>Cache Misses:</strong> {$this->cache_misses}<br />";
-        echo '</p>';
-        echo '<ul>';
-        echo '</ul></div></div>';
     }
 
     /**
@@ -306,24 +251,6 @@ padding: 1em;'><h2>Memcache stats</h2>";
     }
 
     /**
-     * Namespace every key with a value unique to this install.
-     *
-     * APCu and memcached are shared stores: several installs can sit behind one
-     * PHP-FPM pool or point at one memcached. site_prefix existed for exactly this
-     * but was set to '' and never read, so two installs collided on identical keys
-     * and could serve each other's cached values. Derived from WEB_PATH, so it is
-     * stable across requests and different for each install.
-     *
-     * @param int|string $key
-     *
-     * @return string
-     */
-    private function _key($key)
-    {
-        return $this->site_prefix . $key;
-    }
-
-    /**
      * Whether the legacy memcache extension is loaded.
      *
      * @return bool
@@ -341,15 +268,6 @@ padding: 1em;'><h2>Memcache stats</h2>";
     }
 
     /**
-     * Nothing to release: the memcached connection closes with the request.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
-    }
-
-    /**
      * The driver's identifier, as accepted by OSC_CACHE.
      *
      * @return string
@@ -359,16 +277,8 @@ padding: 1em;'><h2>Memcache stats</h2>";
         return 'memcache';
     }
 
-    /**
-     * Utility function to determine whether a key exists in the cache.
-     *
-     * @param int|string $key
-     *
-     * @return bool
-     * @since  3.4.0
-     */
-    protected function _exists($key)
+    protected function statsTitle(): string
     {
-        return isset($this->cache[$key]);
+        return 'Memcache stats';
     }
 }

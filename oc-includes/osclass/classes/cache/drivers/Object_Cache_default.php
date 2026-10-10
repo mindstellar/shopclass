@@ -11,43 +11,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\base\ObjectCache;
+
 /**
  * Object_Cache_default class
  */
-class Object_Cache_default implements iObject_Cache
+class Object_Cache_default extends ObjectCache
 {
-    /**
-     * Holds the cached objects
-     *
-     * @var array
-     * @since  3.4
-     */
-    public $cache = array();
-
-    /**
-     * The amount of times the cache data was already stored in the cache.
-     *
-     * @since  3.4
-     * @var int
-     */
-    public $cache_hits = 0;
-
-    /**
-     * Amount of times the cache did not have the request in cache
-     *
-     * @var int
-     * @since  3.4
-     */
-    public $cache_misses = 0;
-
-    /**
-     * The site prefix to prepend to keys.
-     *
-     * @var string
-     * @since  3.4
-     */
-    public $site_prefix;
-
     /**
      * Sets up object properties
      *
@@ -81,19 +51,6 @@ class Object_Cache_default implements iObject_Cache
     }
 
     /**
-     * Utility function to determine whether a key exists in the cache.
-     *
-     * @param int|string $key
-     *
-     * @return bool
-     * @since  3.4
-     */
-    protected function _exists($key)
-    {
-        return isset($this->cache[$key]);
-    }
-
-    /**
      * Sets the data contents into the cache
      *
      * @param int|string $key    What to call the contents in the cache
@@ -106,10 +63,7 @@ class Object_Cache_default implements iObject_Cache
      */
     public function set($key, $data, $expire = 0)
     {
-
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
 
         $this->cache[$key] = $data;
 
@@ -163,39 +117,13 @@ class Object_Cache_default implements iObject_Cache
      */
     public function get($key, &$found = null)
     {
-        if ($this->_exists($key)) {
-            $found = true;
-            ++$this->cache_hits;
-            if (is_object($this->cache[$key])) {
-                return clone $this->cache[$key];
-            }
-
-            return $this->cache[$key];
+        $value = $this->local($key, $found);
+        if ($found) {
+            return $value;
         }
-        $found = false;
         ++$this->cache_misses;
 
         return false;
-    }
-
-    /**
-     * Echoes the stats of the caching.
-     * Gives the cache hits, and cache misses.
-     *
-     * @return void
-     * @since 3.4
-     *
-     */
-    public function stats()
-    {
-        echo "<div style='position:absolute; width:200px;top:0px;'><div style='float:right;margin-right:30px;margin-top:15px;border: 1px red solid;
-border-radius: 17px;
-padding: 1em;'><h2>Default(dummy) stats</h2>";
-        echo '<p>';
-        echo "<strong>Cache Hits:</strong> {$this->cache_hits}<br />";
-        echo "<strong>Cache Misses:</strong> {$this->cache_misses}<br />";
-        echo '</p>';
-        echo '</div></div>';
     }
 
     /**
@@ -226,15 +154,6 @@ padding: 1em;'><h2>Default(dummy) stats</h2>";
     }
 
     /**
-     * Nothing to release: the store is a plain array discarded with the request.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
-    }
-
-    /**
      * The driver's identifier, as accepted by OSC_CACHE.
      *
      * @return string
@@ -254,5 +173,10 @@ padding: 1em;'><h2>Default(dummy) stats</h2>";
     protected function _getKey($key)
     {
         return md5($key);
+    }
+
+    protected function statsTitle(): string
+    {
+        return 'Default(dummy) stats';
     }
 }

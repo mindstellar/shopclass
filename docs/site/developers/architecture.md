@@ -103,7 +103,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `apikey` | API keys, sign-in tokens and scopes. Core manages them (settings, CLI, account pages) even with the API off, so they are not under `api` |
 | `auth` | Signing in and out, re-asking for a password, and `Actor`: who is acting |
 | `backup` | Making, storing and restoring backups |
-| `base` | Abstract base classes and traits other classes extend: `Model`, `Registry`, `SettingsScreen`, `ActionMap` |
+| `base` | Abstract base classes and traits other classes extend: `Model`, `Registry`, `SettingsScreen`, `ObjectCache`, `ActionMap` |
 | `billing` | Packages, orders, entitlements, payment gateways and receipts |
 | `cache` | The object cache, its drivers (`drivers/`), the Redis clients they use, and page-cache purges |
 | `category` | Categories: `CategoryService`, `CategoryStore`, `CategoryQuery` |

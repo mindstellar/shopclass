@@ -11,6 +11,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\base\ObjectCache;
+
 /**
  * Object_Cache_memcached class
  *
@@ -19,38 +21,8 @@
  * OSC_CACHE = 'memcached' in config.php to use it, and optionally define the
  * $_cache_config global to point at one or more servers.
  */
-class Object_Cache_memcached implements iObject_Cache
+class Object_Cache_memcached extends ObjectCache
 {
-    /**
-     * Holds the cached objects (in-process, per-request layer).
-     *
-     * @var array
-     */
-    public $cache = array();
-
-    /**
-     * The amount of times the cache data was already stored in the cache.
-     *
-     * @var int
-     */
-    public $cache_hits = 0;
-
-    /**
-     * Amount of times the cache did not have the request in cache.
-     *
-     * @var int
-     */
-    public $cache_misses = 0;
-
-    /**
-     * The blog prefix to prepend to keys in non-global groups.
-     *
-     * @var string
-     */
-    public $site_prefix;
-
-    public $default_expiration = 60;
-
     protected $_memcache_conf = array(
         'default' => array(
             'default_host'   => '127.0.0.1',
@@ -78,7 +50,7 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function __construct()
     {
-        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
+        parent::__construct();
         $cache_server      = array();
         global $_cache_config;
         if (!isset($_cache_config) || !is_array($_cache_config)) {
@@ -119,14 +91,12 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function add($key, $data, $expire = 0)
     {
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
 
         if ($this->down) {
             return false;
         }
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
         $result = $this->memcached->add($this->_key($key), $data, $expire);
         $this->answered();
         if (false !== $result) {
@@ -180,11 +150,9 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function get($key, &$found = null)
     {
-        if (isset($this->cache[$key])) {
-            $found = true;
-            ++$this->cache_hits;
-
-            return is_object($this->cache[$key]) ? clone $this->cache[$key] : $this->cache[$key];
+        $value = $this->local($key, $found);
+        if ($found) {
+            return $value;
         }
 
         if ($this->down) {
@@ -205,7 +173,7 @@ class Object_Cache_memcached implements iObject_Cache
         }
 
         $found             = true;
-        $this->cache[$key] = is_object($value) ? clone $value : $value;
+        $this->cache[$key] = self::copy($value);
         ++$this->cache_hits;
 
         return $value;
@@ -222,16 +190,14 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function set($key, $data, $expire = 0)
     {
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
 
         $this->cache[$key] = $data;
 
         if ($this->down) {
             return false;
         }
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
         $result = $this->memcached->set($this->_key($key), $data, $expire);
         $this->answered();
 
@@ -258,7 +224,7 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function increment($key, $by = 1, $initial = 0, $expire = 0)
     {
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
         $mKey   = $this->_key($key);
         if ($this->down) {
             $this->cache[$key] = $initial;
@@ -283,26 +249,6 @@ class Object_Cache_memcached implements iObject_Cache
         $this->cache[$key] = $value;
 
         return $value;
-    }
-
-    /**
-     * Echoes the stats of the caching.
-     *
-     * @return void
-     */
-    public function stats()
-    {
-        echo "<div style='position:absolute;width:200px;top:0px;'>
-<div style='float:right;
- margin-right:30px;margin-top:15px;border: 1px red solid;
-border-radius: 17px;
-padding: 1em;'><h2>Memcached stats</h2>";
-        echo '<p>';
-        echo "<strong>Cache Hits:</strong> {$this->cache_hits}<br />";
-        echo "<strong>Cache Misses:</strong> {$this->cache_misses}<br />";
-        echo '</p>';
-        echo '<ul>';
-        echo '</ul></div></div>';
     }
 
     /**
@@ -378,24 +324,6 @@ padding: 1em;'><h2>Memcached stats</h2>";
     }
 
     /**
-     * Namespace every key with a value unique to this install.
-     *
-     * APCu and memcached are shared stores: several installs can sit behind one
-     * PHP-FPM pool or point at one memcached. site_prefix existed for exactly this
-     * but was set to '' and never read, so two installs collided on identical keys
-     * and could serve each other's cached values. Derived from WEB_PATH, so it is
-     * stable across requests and different for each install.
-     *
-     * @param int|string $key
-     *
-     * @return string
-     */
-    private function _key($key)
-    {
-        return $this->site_prefix . $key;
-    }
-
-    /**
      * Whether the memcached extension is loaded.
      *
      * @return bool
@@ -412,15 +340,6 @@ padding: 1em;'><h2>Memcached stats</h2>";
     }
 
     /**
-     * Nothing to release: the Memcached client closes with the request.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
-    }
-
-    /**
      * The driver's identifier, as accepted by OSC_CACHE.
      *
      * @return string
@@ -430,15 +349,8 @@ padding: 1em;'><h2>Memcached stats</h2>";
         return 'memcached';
     }
 
-    /**
-     * Utility function to determine whether a key exists in the cache.
-     *
-     * @param int|string $key
-     *
-     * @return bool
-     */
-    protected function _exists($key)
+    protected function statsTitle(): string
     {
-        return isset($this->cache[$key]);
+        return 'Memcached stats';
     }
 }

@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\base\ObjectCache;
 use mindstellar\cache\PhpRedisClient;
 use mindstellar\cache\RedisClient;
 use mindstellar\cache\RespClient;
@@ -17,30 +18,8 @@ use mindstellar\cache\RespClient;
  * 'redis' and point the $_cache_config global (or OSC_CACHE_HOST and friends) at the server.
  * It uses the phpredis extension when installed, and a built-in client otherwise.
  */
-class Object_Cache_redis implements iObject_Cache
+class Object_Cache_redis extends ObjectCache
 {
-    /**
-     * Holds the cached objects (in-process, per-request layer).
-     *
-     * @var array
-     */
-    public $cache = array();
-
-    /** @var int */
-    public $cache_hits = 0;
-
-    /** @var int */
-    public $cache_misses = 0;
-
-    /**
-     * Put before every key, so several sites can share one server.
-     *
-     * @var string
-     */
-    public $site_prefix;
-
-    public $default_expiration = 60;
-
     private RedisClient $client;
 
     /** @var array<string,mixed> */
@@ -58,7 +37,7 @@ class Object_Cache_redis implements iObject_Cache
      */
     public function __construct(?RedisClient $client = null)
     {
-        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
+        parent::__construct();
         global $_cache_config;
         $server       = (isset($_cache_config[0]) && is_array($_cache_config[0])) ? $_cache_config[0] : array();
         $this->config = array(
@@ -84,9 +63,7 @@ class Object_Cache_redis implements iObject_Cache
      */
     public function add($key, $data, $expire = 0)
     {
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
         $stored = $this->call('SET', $this->_key($key), $this->encode($data), 'EX', (string) $this->ttl($expire), 'NX') === true;
         if ($stored) {
             $this->cache[$key] = $data;
@@ -142,11 +119,9 @@ class Object_Cache_redis implements iObject_Cache
      */
     public function get($key, &$found = null)
     {
-        if (isset($this->cache[$key])) {
-            $found = true;
-            ++$this->cache_hits;
-
-            return is_object($this->cache[$key]) ? clone $this->cache[$key] : $this->cache[$key];
+        $value = $this->local($key, $found);
+        if ($found) {
+            return $value;
         }
 
         $reply = $this->call('GET', $this->_key($key));
@@ -159,7 +134,7 @@ class Object_Cache_redis implements iObject_Cache
 
         $value             = $this->decode($reply);
         $found             = true;
-        $this->cache[$key] = is_object($value) ? clone $value : $value;
+        $this->cache[$key] = self::copy($value);
         ++$this->cache_hits;
 
         return $value;
@@ -176,9 +151,7 @@ class Object_Cache_redis implements iObject_Cache
      */
     public function set($key, $data, $expire = 0)
     {
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
         $this->cache[$key] = $data;
 
         return $this->call('SET', $this->_key($key), $this->encode($data), 'EX', (string) $this->ttl($expire)) === true;
@@ -208,25 +181,6 @@ class Object_Cache_redis implements iObject_Cache
         $this->cache[$key] = $value;
 
         return $value;
-    }
-
-    /**
-     * Echoes the stats of the caching.
-     *
-     * @return void
-     */
-    public function stats()
-    {
-        echo "<div style='position:absolute;width:200px;top:0px;'>
-<div style='float:right;
- margin-right:30px;margin-top:15px;border: 1px red solid;
-border-radius: 17px;
-padding: 1em;'><h2>Redis stats</h2>";
-        echo '<p>';
-        echo "<strong>Cache Hits:</strong> {$this->cache_hits}<br />";
-        echo "<strong>Cache Misses:</strong> {$this->cache_misses}<br />";
-        echo '</p>';
-        echo '</div></div>';
     }
 
     /**
@@ -292,18 +246,6 @@ padding: 1em;'><h2>Redis stats</h2>";
     }
 
     /**
-     * Seconds a value lives: the default when none is given.
-     *
-     * @param int $expire
-     *
-     * @return int
-     */
-    private function ttl($expire)
-    {
-        return (int) $expire > 0 ? (int) $expire : $this->default_expiration;
-    }
-
-    /**
      * @param mixed $data
      */
     private function encode($data): string
@@ -325,16 +267,6 @@ padding: 1em;'><h2>Redis stats</h2>";
     }
 
     /**
-     * @param int|string $key
-     *
-     * @return string
-     */
-    private function _key($key)
-    {
-        return $this->site_prefix . $key;
-    }
-
-    /**
      * True when phpredis is installed or PHP may open sockets, which the built-in client needs.
      *
      * @return bool
@@ -342,15 +274,6 @@ padding: 1em;'><h2>Redis stats</h2>";
     public static function is_supported()
     {
         return class_exists('Redis') || function_exists('stream_socket_client');
-    }
-
-    /**
-     * Nothing to release: the connection closes with the request.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
     }
 
     /**
@@ -363,4 +286,8 @@ padding: 1em;'><h2>Redis stats</h2>";
         return 'redis';
     }
 
+    protected function statsTitle(): string
+    {
+        return 'Redis stats';
+    }
 }

@@ -1033,6 +1033,7 @@ return array(
     'mindstellar\\backup\\ZipWriter' => $baseDir . '/oc-includes/osclass/classes/backup/ZipWriter.php',
     'mindstellar\\base\\ActionMap' => $baseDir . '/oc-includes/osclass/classes/base/ActionMap.php',
     'mindstellar\\base\\Model' => $baseDir . '/oc-includes/osclass/classes/base/Model.php',
+    'mindstellar\\base\\ObjectCache' => $baseDir . '/oc-includes/osclass/classes/base/ObjectCache.php',
     'mindstellar\\base\\Registry' => $baseDir . '/oc-includes/osclass/classes/base/Registry.php',
     'mindstellar\\base\\SettingsScreen' => $baseDir . '/oc-includes/osclass/classes/base/SettingsScreen.php',
     'mindstellar\\billing\\Billing' => $baseDir . '/oc-includes/osclass/classes/billing/Billing.php',

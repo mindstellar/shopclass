@@ -11,56 +11,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\base\ObjectCache;
+
 /**
  * Object_Cache_apcu class
  *
  * @author Navjot Tomer
  */
-class Object_Cache_apcu implements iObject_Cache
+class Object_Cache_apcu extends ObjectCache
 {
-    /**
-     * Holds the cached objects
-     *
-     * @var array
-     * @since  3.7
-     */
-    public $cache = array();
-
-    /**
-     * The amount of times the cache data was already stored in the cache.
-     *
-     * @since  3.7
-     * @var int
-     */
-    public $cache_hits = 0;
-
-    /**
-     * Amount of times the cache did not have the request in cache
-     *
-     * @var int
-     * @since  3.7
-     */
-    public $cache_misses = 0;
-
-    /**
-     * The blog prefix to prepend to keys in non-global groups.
-     *
-     * @var string
-     * @since  3.7
-     */
-    public $site_prefix;
-    public $default_expiration = 60;
-
-    /**
-     * Sets up object properties; PHP 5 style constructor
-     *
-     * @since 3.7
-     */
-    public function __construct()
-    {
-        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
-    }
-
     /**
      * Adds data to the cache if it doesn't already exist.
      *
@@ -76,9 +35,7 @@ class Object_Cache_apcu implements iObject_Cache
     {
         $id = $this->_key($key);
 
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
 
         $store_data = $data;
 
@@ -86,7 +43,7 @@ class Object_Cache_apcu implements iObject_Cache
             $store_data = new ArrayObject($data);
         }
 
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
         $result = apcu_add($id, $store_data, $expire);
         if (false !== $result) {
             $this->cache[$key] = $data;
@@ -112,7 +69,7 @@ class Object_Cache_apcu implements iObject_Cache
      */
     public function increment($key, $by = 1, $initial = 0, $expire = 0)
     {
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
         $id     = $this->_key($key);
 
         if (apcu_add($id, $initial, $expire)) {
@@ -184,35 +141,26 @@ class Object_Cache_apcu implements iObject_Cache
      */
     public function get($key, &$found = null)
     {
-        if (isset($this->cache[$key])) {
-            $found = true;
-            if (is_object($this->cache[$key])) {
-                $value = clone $this->cache[$key];
-            } else {
-                $value = $this->cache[$key];
-            }
-            ++$this->cache_hits;
-            $return = $value;
-        } else {
-            $value = apcu_fetch($this->_key($key), $found);
-
-            if (is_object($value) && 'ArrayObject' === get_class($value)) {
-                $value = $value->getArrayCopy();
-            }
-            if (null === $value) {
-                $value = false;
-            }
-            if ($found) {
-                $this->cache[$key] = is_object($value) ? clone $value : $value;
-                ++$this->cache_hits;
-                $return = $this->cache[$key];
-            } else {
-                ++$this->cache_misses;
-                $return = false;
-            }
+        $value = $this->local($key, $found);
+        if ($found) {
+            return $value;
         }
+        $value = apcu_fetch($this->_key($key), $found);
+        if (!$found) {
+            ++$this->cache_misses;
 
-        return $return;
+            return false;
+        }
+        if (is_object($value) && 'ArrayObject' === get_class($value)) {
+            $value = $value->getArrayCopy();
+        }
+        if (null === $value) {
+            $value = false;
+        }
+        $this->cache[$key] = self::copy($value);
+        ++$this->cache_hits;
+
+        return $value;
     }
 
     /**
@@ -228,9 +176,7 @@ class Object_Cache_apcu implements iObject_Cache
      */
     public function set($key, $data, $expire = 0)
     {
-        if (is_object($data)) {
-            $data = clone $data;
-        }
+        $data = self::copy($data);
 
         $store_data = $data;
 
@@ -240,28 +186,9 @@ class Object_Cache_apcu implements iObject_Cache
 
         $this->cache[$key] = $data;
 
-        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $expire = $this->ttl($expire);
 
         return apcu_store($this->_key($key), $store_data, $expire);
-    }
-
-    /**
-     * Echoes the stats of the caching.
-     * Gives the cache hits, and cache misses.
-     *
-     * @return void
-     * @since 3.7
-     *
-     */
-    public function stats()
-    {
-        echo "<div style='position:absolute; width:200px;top:0px;'><div style='float:right;margin-right:30px;margin-top:15px;border: 1px red solid;border-radius: 17px;padding: 1em;'><h2>APC stats</h2>";
-        echo '<p>';
-        echo "<strong>Cache Hits:</strong> {$this->cache_hits}<br />";
-        echo "<strong>Cache Misses:</strong> {$this->cache_misses}<br />";
-        echo '</p>';
-        echo '<ul>';
-        echo '</ul></div></div>';
     }
 
     /**
@@ -303,24 +230,6 @@ class Object_Cache_apcu implements iObject_Cache
     }
 
     /**
-     * Namespace every key with a value unique to this install.
-     *
-     * APCu and memcached are shared stores: several installs can sit behind one
-     * PHP-FPM pool or point at one memcached. site_prefix existed for exactly this
-     * but was set to '' and never read, so two installs collided on identical keys
-     * and could serve each other's cached values. Derived from WEB_PATH, so it is
-     * stable across requests and different for each install.
-     *
-     * @param int|string $key
-     *
-     * @return string
-     */
-    private function _key($key)
-    {
-        return $this->site_prefix . $key;
-    }
-
-    /**
      * Whether the APCu extension is loaded and enabled.
      *
      * @return bool
@@ -337,15 +246,6 @@ class Object_Cache_apcu implements iObject_Cache
     }
 
     /**
-     * Nothing to release: the APCu store outlives the request.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
-    }
-
-    /**
      * The driver's identifier, as accepted by OSC_CACHE.
      *
      * @return string
@@ -355,16 +255,8 @@ class Object_Cache_apcu implements iObject_Cache
         return 'apcu';
     }
 
-    /**
-     * Utility function to determine whether a key exists in the cache.
-     *
-     * @param int|string $key
-     *
-     * @return bool
-     * @since  3.7
-     */
-    protected function _exists($key)
+    protected function statsTitle(): string
     {
-        return isset($this->cache[$key]);
+        return 'APC stats';
     }
 }

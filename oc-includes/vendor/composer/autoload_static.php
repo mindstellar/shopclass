@@ -1150,6 +1150,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\backup\\ZipWriter' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/backup/ZipWriter.php',
         'mindstellar\\base\\ActionMap' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/ActionMap.php',
         'mindstellar\\base\\Model' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/Model.php',
+        'mindstellar\\base\\ObjectCache' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/ObjectCache.php',
         'mindstellar\\base\\Registry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/Registry.php',
         'mindstellar\\base\\SettingsScreen' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/SettingsScreen.php',
         'mindstellar\\billing\\Billing' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Billing.php',
