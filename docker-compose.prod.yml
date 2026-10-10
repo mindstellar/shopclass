@@ -41,6 +41,10 @@ services:
       # set it. Uncomment on a new deployment — on an existing one, try it on a copy
       # first if third-party plugins write to the database.
       # OSC_DB_STRICT_MODE: "1"
+      # Valkey holds the object cache and wakes the job worker the moment a job is
+      # queued. Remove these two lines and the valkey service to run without it.
+      OSC_CACHE: redis
+      OSC_CACHE_HOST: valkey
     volumes:
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads
@@ -60,6 +64,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      valkey:
+        condition: service_started
     restart: unless-stopped
 
   # Kept in step with the dev stack's `mariadb` service by hand.
@@ -77,6 +83,10 @@ services:
       MARIADB_USER: shopclass
       MARIADB_PASSWORD: shopclass
       MARIADB_ROOT_PASSWORD: root
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
     restart: unless-stopped
 
 volumes:

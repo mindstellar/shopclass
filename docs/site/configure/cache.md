@@ -78,6 +78,10 @@ A host starting with `/` is a Unix socket, and `tls://host` connects over TLS. A
 `'username'` for a server with users (ACL). Several sites can share one server:
 each keeps its own keys, and emptying the cache empties only that site's.
 
+With Redis or Valkey, a background job also starts the moment it is queued, when the
+job listener runs (`oc-cli.php jobs:work --listen`; the Docker image runs it). See
+[Background jobs](/docs/developers/jobs/).
+
 The REST API's rate limits count in the object cache too: with memcached or Redis every web server shares one count; with `apcu` each server counts its own; with no `OSC_CACHE` they count in the database.
 
 ## APCu (one server only)

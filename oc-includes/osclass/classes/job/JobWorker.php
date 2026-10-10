@@ -87,6 +87,52 @@ final class JobWorker
         return $ran;
     }
 
+    /** Seconds a listener waits for a signal before it looks for due jobs anyway. */
+    public const LISTEN_WAIT = 30;
+
+    /** Seconds a listener sleeps between looks when no Redis-protocol cache carries signals. */
+    public const LISTEN_POLL = 5;
+
+    /**
+     * Run jobs as soon as they are due, for $maxSeconds: while jobs are due, call $work; then
+     * wait for JobQueue's signal, or sleep without one.
+     *
+     * @param int                 $maxSeconds how long to listen
+     * @param callable():void     $work       runs due jobs; the CLI starts a fresh `jobs:work`
+     * @param callable(int):void|null $sleep  for tests
+     *
+     * @return int how many times $work was called
+     */
+    public static function listen(int $maxSeconds, callable $work, ?callable $sleep = null): int
+    {
+        $sleep ??= static function (int $seconds): void {
+            sleep($seconds);
+        };
+        $queue  = JobQueue::getInstance();
+        $cache  = \mindstellar\cache\CacheManager::getInstance();
+        $redis  = $cache instanceof \mindstellar\cache\RedisCache ? $cache : null;
+        $start  = time();
+        $called = 0;
+
+        while (($left = $maxSeconds - (time() - $start)) > 0) {
+            $due = $queue->stats()['due'];
+            if ($due > 0) {
+                $work();
+                $called++;
+                // Jobs it could not take, such as other jobs during a restore, are waited out.
+                if ($queue->stats()['due'] < $due) {
+                    continue;
+                }
+            }
+            $waited = $redis ? $redis->waitSignal(JobQueue::SIGNAL, min(self::LISTEN_WAIT, $left)) : null;
+            if ($waited === null) {
+                $sleep(min(self::LISTEN_POLL, $left));
+            }
+        }
+
+        return $called;
+    }
+
     /**
      * One activity-log row per worker pass that did anything, so there is a history of
      * the work after the finished jobs have left the queue.

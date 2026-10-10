@@ -170,6 +170,11 @@ queue and does nothing else, so it is safe to run every minute:
 * * * * * php /path/to/oc-cli.php jobs:work --max-seconds=50
 ```
 
+Or keep one worker running with `jobs:work --listen`. With a Redis or Valkey cache, queueing
+a job wakes it at once; without one it looks every five seconds. Every job is still a row in
+`t_job_queue`, so cron, `jobs:work` and the listener can run side by side, and turning Redis
+off loses nothing. The Docker image runs the listener for you.
+
 `php oc-cli.php jobs:status` reports what is waiting and names anything that gave up. Both
 exit non-zero when a job has stopped retrying, so a cron log can notice. `php oc-cli.php doctor`
 warns about the same, and about work that has waited over an hour.

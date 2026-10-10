@@ -77,6 +77,7 @@ pin('a get is a miss', false, $dead->get('anything', $found));
 pin('and says so', false, $found);
 pin('a set fails', false, $dead->set('anything', 1));
 check('and the request is not held up', microtime(true) - $start < 2);
+pin('a worker waiting on it is told it cannot', null, $dead->waitSignal('jobs', 1));
 
 $calls  = 0;
 $broken = new class ($calls) implements mindstellar\cache\RedisClient {
@@ -163,6 +164,14 @@ foreach ($clients as $label => $raw) {
     }
     $cache->flush();
     pin('flush keeps going past the first page of keys', [], $raw->command('KEYS', $cache->site_prefix . '*'));
+
+    $cache->signal('jobs');
+    $cache->signal('jobs');
+    pin('signals fold into one', 1, $raw->command('LLEN', $cache->site_prefix . 'signal_jobs'));
+    pin('a waiting worker gets it', true, $fresh()->waitSignal('jobs', 1));
+    $start = microtime(true);
+    pin('with none sent it waits and says so', false, $fresh()->waitSignal('jobs', 1));
+    check('for about the time asked', microtime(true) - $start >= 0.9 && microtime(true) - $start < 3);
 
     $stats = $cache->statsData();
     check('stats read the server', is_array($stats) && isset($stats['uptime'], $stats['memory_used']));

@@ -163,7 +163,7 @@ Shell access is the permission here, so no admin password is asked.
 | `doctor` | Check PHP version, extensions, database, strict SQL mode readiness, writability, cron freshness and cache. Exits non-zero if any check fails. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
-| `jobs:work [--max-seconds=]` | Drain the background job queue and nothing else. Safe to run every minute. |
+| `jobs:work [--max-seconds=] [--listen]` | Drain the background job queue and nothing else. Safe to run every minute. `--listen` keeps it running and starts jobs as soon as they are due. |
 | `jobs:status` | Show pending, running and gave-up jobs, and the oldest pending one, per type; name anything that gave up. `--type=` narrows it to one type. |
 
 Slow work (moving photos to remote storage, emptying a large category, whatever a
@@ -178,6 +178,15 @@ run every minute and pick new work up quickly:
 It exits non-zero only when the queue holds jobs the worker gave up on. A backlog
 still draining is the normal case and exits `0`. An empty queue costs one query, so
 the entry is harmless to leave in place on a site that queues nothing.
+
+On a server where you can keep a process running (systemd, supervisord, Docker),
+run it with `--listen` instead. It stays up for an hour, then exits so your process
+manager restarts it. A job starts at once with a Redis or Valkey cache
+(`OSC_CACHE=redis`), and within five seconds without one:
+
+```bash
+php /path/to/site/oc-cli.php jobs:work --listen
+```
 
 `storage:work` still works, as a deprecated alias for `jobs:work`. New crontabs
 should use `jobs:work` directly.

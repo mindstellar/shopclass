@@ -54,7 +54,7 @@ class Cli
         'db:repair'           => ['cmdDbRepair', 'Bring the schema back in line with struct.sql; never drops anything (--dry-run)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
-        'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=)'],
+        'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=, --listen)'],
         'jobs:status'         => ['cmdJobsStatus', 'Show what is on the job queue per type, and what stopped retrying (--type=)'],
         'storage:work'        => ['cmdJobsWork', 'Deprecated alias for jobs:work'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
@@ -802,17 +802,38 @@ class Cli
      *
      *     * * * * * php oc-cli.php jobs:work --max-seconds=50
      *
+     * With --listen it keeps running (an hour by default) and starts a fresh worker as soon
+     * as a job is due: at once with a Redis or Valkey cache, within seconds without one.
+     *
      * @param array<string, mixed> $args
      *
      * @return int Exit code; 1 when a job has stopped retrying
      */
     private function cmdJobsWork(array $args): int
     {
-        $maxSeconds = (int) ($args['max-seconds'] ?? 20);
+        $listen     = !empty($args['listen']);
+        $maxSeconds = (int) ($args['max-seconds'] ?? ($listen ? 3600 : 20));
         if ($maxSeconds < 1) {
             $this->err("--max-seconds must be 1 or more.\n");
 
             return 2;
+        }
+        if ($listen && !function_exists('proc_open')) {
+            $this->err("--listen needs proc_open, which this PHP has turned off.\n");
+
+            return 2;
+        }
+        if ($listen) {
+            // Each pass is its own process, so no cached data or memory outlives it.
+            $command = array(PHP_BINARY, ABS_PATH . 'oc-cli.php', 'jobs:work', '--max-seconds=50');
+            \mindstellar\job\JobWorker::listen($maxSeconds, static function () use ($command): void {
+                $process = proc_open($command, array(STDIN, STDOUT, STDERR), $pipes);
+                if (is_resource($process)) {
+                    proc_close($process);
+                }
+            });
+
+            return 0;
         }
 
         $queue   = \mindstellar\job\JobQueue::getInstance();

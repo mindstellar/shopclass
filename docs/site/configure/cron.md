@@ -147,5 +147,6 @@ does only this work:
 ```
 
 It is safe to run every minute. With no work waiting, it costs one database
-query, so you can add it before you need it. See the
+query, so you can add it before you need it. Where you can keep a process running,
+`jobs:work --listen` starts each job as soon as it is due instead. See the
 [CLI reference](/docs/cli/) and [Background jobs](/docs/developers/jobs/).

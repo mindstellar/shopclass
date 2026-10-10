@@ -33,6 +33,9 @@ class RedisCache extends Cache
      */
     private $down = false;
 
+    /** A second connection for waitSignal(), whose reads may block for a while. */
+    private ?RedisClient $waiter = null;
+
     /**
      * @param RedisClient|null $client a client to use instead of the configured one, for tests
      */
@@ -49,8 +52,52 @@ class RedisCache extends Cache
             'database' => (int) ($server['database'] ?? 0),
             'timeout'  => 1.0,
         );
-        // phpredis is compiled C and faster; the built-in client is for servers without it.
-        $this->client = $client ?? (class_exists('Redis') ? new PhpRedisClient($this->config) : new RespClient($this->config));
+        $this->client = $client ?? self::client($this->config);
+    }
+
+    /**
+     * Tell a waiting worker that $name has work. At most one signal is kept: one wakes it.
+     *
+     * @param string $name
+     *
+     * @return void
+     */
+    public function signal(string $name): void
+    {
+        $key = $this->_key('signal_' . $name);
+        $this->call('LPUSH', $key, '1');
+        $this->call('LTRIM', $key, '0', '0');
+    }
+
+    /**
+     * Wait up to $seconds for a signal().
+     *
+     * @param string $name
+     * @param int    $seconds
+     *
+     * @return bool|null true when one came, false on a timeout, null when the server cannot be reached
+     */
+    public function waitSignal(string $name, int $seconds): ?bool
+    {
+        $this->waiter ??= self::client(array('timeout' => (float) ($seconds + 5)) + $this->config);
+        try {
+            // A timeout is null from the built-in client and an empty list from phpredis.
+            return !empty($this->waiter->command('BLPOP', $this->_key('signal_' . $name), (string) max(1, $seconds)));
+        } catch (\RuntimeException $e) {
+            return null;
+        }
+    }
+
+    /**
+     * phpredis is compiled C and faster; the built-in client is for servers without it.
+     *
+     * @param array<string,mixed> $config
+     *
+     * @return RedisClient
+     */
+    private static function client(array $config): RedisClient
+    {
+        return class_exists('Redis') ? new PhpRedisClient($config) : new RespClient($config);
     }
 
     /**

@@ -43,6 +43,9 @@ final class JobQueue
     /** A `running` row older than this is treated as a dead worker's and recovered. */
     public const STALE_LOCK_SECONDS = 900;
 
+    /** The signal a listening worker waits on; see wake(). */
+    public const SIGNAL = 'jobs';
+
     /** The largest encoded payload s_payload (TEXT) holds. */
     public const MAX_PAYLOAD_BYTES = 65535;
 
@@ -153,18 +156,23 @@ final class JobQueue
         try {
             // keep_existing: a key clash leaves the waiting job alone and queues nothing.
             if ($unique === null || !empty($options['keep_existing'])) {
-                return Db::table($this->table())->insert($row);
+                $id = (int) Db::table($this->table())->insert($row);
+            } else {
+                // LAST_INSERT_ID(pk_i_id) makes a matched row's id the insert id.
+                $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'
+                    . ' VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')'
+                    . self::onDuplicate() . ', pk_i_id = LAST_INSERT_ID(pk_i_id)';
+
+                $id = (int) Db::retryOnce(static fn () => Db::insertGetId($sql, array_values($row)));
             }
-
-            // LAST_INSERT_ID(pk_i_id) makes a matched row's id the insert id.
-            $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'
-                . ' VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')'
-                . self::onDuplicate() . ', pk_i_id = LAST_INSERT_ID(pk_i_id)';
-
-            return (int) Db::retryOnce(static fn () => Db::insertGetId($sql, array_values($row)));
         } catch (DbException $e) {
             return 0;
         }
+        if ($id > 0 && empty($options['delay'])) {
+            self::wake();
+        }
+
+        return $id;
     }
 
     /**
@@ -237,6 +245,9 @@ final class JobQueue
             } catch (DbException $e) {
                 // A failed chunk is not counted; the others still go in.
             }
+        }
+        if ($queued > 0 && empty($options['delay'])) {
+            self::wake();
         }
 
         return $queued;
@@ -574,6 +585,24 @@ final class JobQueue
             )));
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers it
+            return;
+        }
+        if ($delaySeconds <= 0) {
+            self::wake();
+        }
+    }
+
+    /**
+     * Tell a listening worker (`jobs:work --listen`) that a job is due now. Only a Redis-protocol
+     * cache carries the signal; the job itself is always in the table.
+     *
+     * @return void
+     */
+    private static function wake(): void
+    {
+        $cache = \mindstellar\cache\CacheManager::getInstance();
+        if ($cache instanceof \mindstellar\cache\RedisCache) {
+            $cache->signal(self::SIGNAL);
         }
     }
 
@@ -648,7 +677,9 @@ final class JobQueue
                 ->update(self::resetColumns(array('s_status' => self::STATUS_PENDING)));
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers them
+            return;
         }
+        self::wake();
     }
 
     /**
@@ -824,7 +855,7 @@ final class JobQueue
     public function retry(int $id): bool
     {
         try {
-            return Db::table($this->table())
+            $retried = Db::table($this->table())
                 ->where('pk_i_id', $id)
                 ->where('s_status', self::STATUS_ERROR)
                 ->update(self::resetColumns(array(
@@ -836,6 +867,11 @@ final class JobQueue
         } catch (DbException $e) {
             return false;
         }
+        if ($retried) {
+            self::wake();
+        }
+
+        return $retried;
     }
 
     /**
@@ -850,7 +886,7 @@ final class JobQueue
         try {
             $q = self::whereType(Db::table($this->table())->where('s_status', self::STATUS_ERROR), $type);
 
-            return $q->update(self::resetColumns(array(
+            $retried = $q->update(self::resetColumns(array(
                 's_status'     => self::STATUS_PENDING,
                 'i_attempts'   => 0,
                 's_last_error' => null,
@@ -859,6 +895,11 @@ final class JobQueue
         } catch (DbException $e) {
             return 0;
         }
+        if ($retried > 0) {
+            self::wake();
+        }
+
+        return $retried;
     }
 
     /**

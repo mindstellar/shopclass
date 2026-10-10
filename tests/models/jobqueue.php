@@ -661,6 +661,90 @@ try {
 }
 pin('inside a transaction it throws after one try', array(true, 1), array($thrown, $tries));
 
+harness_section('Waking a listening worker');
+
+$truncate();
+$wakeSent   = array();
+$wakeClient = new class ($wakeSent) implements \mindstellar\cache\RedisClient {
+    public function __construct(private array &$sent)
+    {
+    }
+
+    public function command(string ...$args): mixed
+    {
+        $this->sent[] = $args[0];
+
+        return true;
+    }
+};
+$wakeShared = new ReflectionProperty(\mindstellar\cache\CacheManager::class, 'instance');
+$wakeShared->setAccessible(true);
+$wakeBefore = $wakeShared->getValue();
+$wakeShared->setValue(null, new \mindstellar\cache\RedisCache($wakeClient));
+
+$queue->enqueue('test.ok', array('n' => 1));
+pin('a job due now sends the signal', array('LPUSH', 'LTRIM'), $wakeSent);
+$wakeSent = array();
+$queue->enqueue('test.ok', array('n' => 2), array('delay' => 60));
+pin('a job held for later does not', array(), $wakeSent);
+$queue->enqueueMany('test.ok', array(array('n' => 3), array('n' => 4)));
+pin('a bulk enqueue sends one', array('LPUSH', 'LTRIM'), $wakeSent);
+$wakeSent = array();
+$id   = $queue->enqueue('test.boom', array());
+$wakeSent = array();
+JobWorker::run(10);
+pin('a failure waiting to back off does not', array(), $wakeSent);
+$table = DB_TABLE_PREFIX . 't_job_queue';
+\mindstellar\database\Db::table($table)->where('pk_i_id', $id)->update(array('s_status' => JobQueue::STATUS_ERROR));
+$queue->retry($id);
+pin('a retried job does', array('LPUSH', 'LTRIM'), $wakeSent);
+$wakeShared->setValue(null, $wakeBefore);
+
+harness_section('Listening');
+
+final class JobQueueStopListening extends RuntimeException
+{
+}
+$truncate();
+$listenSlept = array();
+$listenStop  = static function (int $seconds) use (&$listenSlept): void {
+    $listenSlept[] = $seconds;
+
+    throw new JobQueueStopListening();
+};
+$listenFor = static function (callable $work) use ($listenStop): int {
+    $calls = 0;
+    try {
+        JobWorker::listen(60, static function () use ($work, &$calls): void {
+            $calls++;
+            $work();
+        }, $listenStop);
+    } catch (JobQueueStopListening $e) {
+    }
+
+    return $calls;
+};
+
+$seen = array();
+JobRegistry::register('test.listen', static function (Job $job) use (&$seen) {
+    $seen[] = $job->get('n');
+});
+$queue->enqueue('test.listen', array('n' => 1));
+$queue->enqueue('test.listen', array('n' => 2));
+pin('due jobs start the worker once', 1, $listenFor(static fn () => JobWorker::run(10)));
+pin('which runs them all', array(1, 2), $seen);
+pin('then, with no Redis cache, it sleeps a few seconds', array(JobWorker::LISTEN_POLL), $listenSlept);
+
+$truncate();
+$listenSlept = array();
+$queue->enqueue('test.ok', array('n' => 3), array('delay' => 60));
+pin('a job held for later starts nothing', 0, $listenFor(static fn () => JobWorker::run(10)));
+
+$queue->enqueue('test.ok', array('n' => 4));
+pin('a worker that gets nothing done is not started again at once', 1, $listenFor(static function (): void {
+}));
+$truncate();
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
