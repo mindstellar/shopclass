@@ -285,9 +285,9 @@ $cacheFacts = array_column(SystemChecks::report('cache', $env(array(
     'cache_driver'    => 'memcached',
     'cache_supported' => true,
     'cache_working'   => false,
-    'cache_drivers'   => array('apcu' => false, 'memcached' => true, 'memcache' => false),
+    'cache_drivers'   => array('apcu' => false, 'memcached' => true, 'redis' => true, 'memcache' => false),
 )))['groups'][1]['rows'], 'value', 'label');
-pin('which drivers the server has', array('APCu' => 'not installed', 'Memcached' => 'installed · in use', 'Memcache' => 'not installed'), $cacheFacts);
+pin('which drivers the server has', array('APCu' => 'not installed', 'Memcached' => 'installed · in use', 'Redis / Valkey' => 'installed', 'Memcache' => 'not installed'), $cacheFacts);
 pin('the working row says why not', 'no, it did not answer', array_column(SystemChecks::report('cache', $env(array('cache_driver' => 'memcached', 'cache_supported' => true, 'cache_working' => false)))['groups'][0]['rows'], 'value', 'label')['Working']);
 pin('stats rows, skipping what the driver does not give', array(
     'Hit rate' => '75% (300 hits, 100 misses)',

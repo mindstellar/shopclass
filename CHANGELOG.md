@@ -12,6 +12,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### New
 
+- Redis and Valkey work as the object cache with `OSC_CACHE=redis`, through phpredis or a built-in client that needs no extension.
 - A REST API at `/api/v1` for listings, categories, fields, locations, currencies and profiles, with API keys, paging and OpenAPI. See [REST API](https://shopclass.org/docs/developers/api/).
 - Users can sign in through the API with a password and a refresh token, then post, edit and delete listings, upload photos, comment and save searches. `Idempotency-Key` makes a retried write safe.
 - Admin keys run the site through `/api/v1/admin/`: listings, comments, users, taxonomy, settings, API keys and the job queue. Moderator keys reach listings and comments only.

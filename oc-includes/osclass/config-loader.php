@@ -115,7 +115,7 @@ if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_M
 }
 
 // Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',
-// 'memcache' — and the memcached/memcache drivers read their server list from the
+// 'memcache', 'redis' — and the memcached/memcache/redis drivers read their server from the
 // $_cache_config global. Bridge both from the environment so a containerised deploy can
 // enable a persistent cache without a config.php. A value set in config.php (the constant,
 // or the $_cache_config global) still wins; when OSC_CACHE is unset the app keeps its
@@ -124,15 +124,19 @@ if (!defined('OSC_CACHE') && $oscEnv('OSC_CACHE') !== null) {
     define('OSC_CACHE', $oscEnv('OSC_CACHE'));
 }
 if (defined('OSC_CACHE')
-    && in_array(OSC_CACHE, array('memcached', 'memcache'), true)
+    && in_array(OSC_CACHE, array('memcached', 'memcache', 'redis'), true)
     && !isset($GLOBALS['_cache_config'])
     && $oscEnv('OSC_CACHE_HOST') !== null
 ) {
     $GLOBALS['_cache_config'] = array(
         array(
             'default_host'   => $oscEnv('OSC_CACHE_HOST'),
-            'default_port'   => (int)($oscEnv('OSC_CACHE_PORT') ?? 11211),
+            'default_port'   => (int)($oscEnv('OSC_CACHE_PORT') ?? (OSC_CACHE === 'redis' ? 6379 : 11211)),
             'default_weight' => 1,
+            // Redis and Valkey only.
+            'password'       => (string)($oscEnv('OSC_CACHE_PASSWORD') ?? ''),
+            'username'       => (string)($oscEnv('OSC_CACHE_USERNAME') ?? ''),
+            'database'       => (int)($oscEnv('OSC_CACHE_DB') ?? 0),
         ),
     );
 }

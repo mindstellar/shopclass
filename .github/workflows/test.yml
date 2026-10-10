@@ -82,7 +82,13 @@ jobs:
           --health-timeout=5s
           --health-retries=10
           --tmpfs /var/lib/mysql
+      # For tests/cache-redis.php, with both the built-in client and phpredis.
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
     env:
+      OSC_TEST_REDIS: 127.0.0.1:6379
       DRIFT_DB_HOST: 127.0.0.1
       DRIFT_DB_PORT: 3306
       DRIFT_DB_USER: root
@@ -94,7 +100,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mysqli
+          extensions: mysqli, redis
       # Scratch data needs no crash safety; without disk syncs the suite runs several times faster.
       - name: Fast scratch database
         run: php -r '$db = new mysqli("127.0.0.1", "root", "root", "", 3306); $db->query("SET GLOBAL innodb_flush_log_at_trx_commit = 0"); $db->query("SET GLOBAL sync_binlog = 0");'

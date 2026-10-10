@@ -79,6 +79,8 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
  *
  *   'memcached' - modern memcached extension (recommended)
  *   'apcu'      - APCu user cache (single server)
+ *   'redis'     - Redis or Valkey; uses the phpredis extension when installed, and a
+ *                 built-in client otherwise, so it needs no extension
  *   'memcache'  - DEPRECATED legacy memcache extension; use 'memcached' instead
  */
 //define('OSC_CACHE', 'memcached');
@@ -92,4 +94,12 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
  */
 //$_cache_config = array(
 //    array('default_host' => '127.0.0.1', 'default_port' => 11211, 'default_weight' => 1),
+//);
+
+/**
+ * Optional Redis/Valkey server. Omit to use 127.0.0.1:6379. A host starting with "/" is a
+ * Unix socket; "tls://host" connects over TLS. Only the first entry is used.
+ */
+//$_cache_config = array(
+//    array('default_host' => '127.0.0.1', 'default_port' => 6379, 'password' => '', 'username' => '', 'database' => 0),
 //);

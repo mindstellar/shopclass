@@ -1,6 +1,6 @@
 ---
 title: Object caching
-description: "Speed up ShopClass by keeping repeated database results in memcached or APCu: setup, how long entries last, environment variables, and how it differs from a page cache."
+description: "Speed up ShopClass by keeping repeated database results in memcached, Redis, Valkey or APCu: setup, how long entries last, environment variables, and how it differs from a page cache."
 sidebar:
   order: 4
 ---
@@ -23,14 +23,16 @@ finished pages in front of PHP. You can use both. See
 
 ## Before you start
 
-The cache needs a PHP extension (an add-on module for PHP). Install the one you
-want, then check that PHP can see it:
+memcached and APCu need a PHP extension (an add-on module for PHP). Install the
+one you want, then check that PHP can see it:
 
 ```bash
-php -m | grep -E 'memcached|apcu'
+php -m | grep -E 'memcached|apcu|redis'
 ```
 
-If the extension is missing, the setting does nothing.
+If the extension is missing, the setting does nothing. Redis and Valkey need no
+extension: ShopClass uses `phpredis` when it is installed, and its own client
+otherwise.
 
 ## memcached (recommended)
 
@@ -52,7 +54,31 @@ $_cache_config = array(
 );
 ```
 
-The REST API's rate limits count in the object cache too: with memcached every web server shares one count; with `apcu` each server counts its own; with no `OSC_CACHE` they count in the database.
+## Redis or Valkey
+
+**Redis** and **Valkey** are cache servers like memcached. Use them if your host
+offers one, or if you run other things on Redis already. KeyDB and Dragonfly work
+too.
+
+```php
+define('OSC_CACHE', 'redis');
+```
+
+This connects to `127.0.0.1:6379`. For another server, a password or a database
+number:
+
+```php
+define('OSC_CACHE', 'redis');
+$_cache_config = array(
+    array('default_host' => '10.0.0.5', 'default_port' => 6379, 'password' => 'secret', 'database' => 1),
+);
+```
+
+A host starting with `/` is a Unix socket, and `tls://host` connects over TLS. Add
+`'username'` for a server with users (ACL). Several sites can share one server:
+each keeps its own keys, and emptying the cache empties only that site's.
+
+The REST API's rate limits count in the object cache too: with memcached or Redis every web server shares one count; with `apcu` each server counts its own; with no `OSC_CACHE` they count in the database.
 
 ## APCu (one server only)
 
@@ -83,9 +109,12 @@ environment variables instead:
 
 | Variable | What it sets |
 |---|---|
-| `OSC_CACHE` | The cache type: `memcached`, `apcu` or `memcache` |
-| `OSC_CACHE_HOST` | The cache server's host, for memcached or memcache |
-| `OSC_CACHE_PORT` | The cache server's port. Default `11211` |
+| `OSC_CACHE` | The cache type: `memcached`, `redis`, `apcu` or `memcache` |
+| `OSC_CACHE_HOST` | The cache server's host, for memcached, memcache or redis |
+| `OSC_CACHE_PORT` | The cache server's port. Default `11211`, or `6379` for redis |
+| `OSC_CACHE_PASSWORD` | Redis only: the server's password |
+| `OSC_CACHE_USERNAME` | Redis only: the user name, for a server with users |
+| `OSC_CACHE_DB` | Redis only: the database number. Default `0` |
 
 A `define()` in `config.php`, or a `$_cache_config` array, always wins over
 these variables.
@@ -112,8 +141,9 @@ The cache still holds the old answer until the entry ends. Lower
 
 **The site got slower after turning it on.**
 ShopClass probably cannot reach the cache server. Every lookup then waits for the
-connection to time out first. Check the host and port, and check that memcached
-is running.
+connection to time out first. Check the host and port, and check that the cache
+server is running. ShopClass stops asking a server after its first failure in a page
+load, and the reason is in the PHP error log.
 
 **Two web servers show different versions of the site.**
-You are using APCu, which keeps one cache per server. Move to memcached.
+You are using APCu, which keeps one cache per server. Move to memcached or Redis.

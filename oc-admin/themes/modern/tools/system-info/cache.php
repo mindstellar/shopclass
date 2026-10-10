@@ -38,7 +38,7 @@ $shared     = in_array($driver, array('memcached', 'memcache'), true);
 
     <?php if ($driver === 'default') { ?>
         <p class="text-muted sysinfo-aside"><?php printf(
-            __('To keep data between requests, install APCu or Memcached and set %1$s in config.php. <a href="%2$s">How to change it</a>.'),
+            __('To keep data between requests, install APCu, Memcached or Redis/Valkey and set %1$s in config.php. <a href="%2$s">How to change it</a>.'),
             '<code>define(\'OSC_CACHE\', \'apcu\');</code>',
             osc_esc_html(\mindstellar\admin\SystemChecks::url($env, 'server', 'server-help'))
         ); ?></p>

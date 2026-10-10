@@ -8455,9 +8455,9 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid ""
-"Point %1$s at an installed driver (for example %2$s or %3$s) so category "
-"trees, user data and search stop being recomputed on every request; %4$s "
-"sets how long, in seconds, a value is kept."
+"Point %1$s at an installed driver (for example %2$s, %3$s or %5$s) so "
+"category trees, user data and search stop being recomputed on every "
+"request; %4$s sets how long, in seconds, a value is kept."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
@@ -11928,8 +11928,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
 msgid ""
-"To keep data between requests, install APCu or Memcached and set %1$s in "
-"config.php. <a href=\"%2$s\">How to change it</a>."
+"To keep data between requests, install APCu, Memcached or Redis/Valkey and "
+"set %1$s in config.php. <a href=\"%2$s\">How to change it</a>."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add.php
@@ -13483,6 +13483,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "becomes"
+msgstr ""
+
+#: oc-includes/osclass/classes/cache/drivers/Object_Cache_redis.php
+msgid "built-in client"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php

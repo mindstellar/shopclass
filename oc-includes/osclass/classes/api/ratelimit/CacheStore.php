@@ -13,8 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\api\ratelimit;
 
 /**
- * The site's object cache (OSC_CACHE) as a CounterStore. With memcached every web server shares
- * one count; with APCu each server counts its own.
+ * The site's object cache (OSC_CACHE) as a CounterStore. With memcached or Redis every web server
+ * shares one count; with APCu each server counts its own.
  */
 final class CacheStore implements CounterStore
 {

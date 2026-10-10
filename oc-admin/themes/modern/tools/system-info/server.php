@@ -97,7 +97,7 @@ post_max_size = 20M</pre>
 
                 <div class="sysinfo-help-item">
                     <div class="sysinfo-help-title"><?php _e('Turn on a persistent object cache'); ?></div>
-                    <p><?php printf(__('Point %1$s at an installed driver (for example %2$s or %3$s) so category trees, user data and search stop being recomputed on every request; %4$s sets how long, in seconds, a value is kept.'), '<code>OSC_CACHE</code>', '<code>apcu</code>', '<code>memcached</code>', '<code>OSC_CACHE_TTL</code>'); ?></p>
+                    <p><?php printf(__('Point %1$s at an installed driver (for example %2$s, %3$s or %5$s) so category trees, user data and search stop being recomputed on every request; %4$s sets how long, in seconds, a value is kept.'), '<code>OSC_CACHE</code>', '<code>apcu</code>', '<code>memcached</code>', '<code>OSC_CACHE_TTL</code>', '<code>redis</code>'); ?></p>
                     <pre>define('OSC_CACHE', 'apcu');
 define('OSC_CACHE_TTL', 300);</pre>
                 </div>
