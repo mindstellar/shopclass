@@ -2,6 +2,15 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.6
+
+This release fixes `php oc-cli.php cron`, which ran the hourly, daily and weekly tasks every time
+instead of only the due ones, so a cron line every five minutes sent daily alerts every five minutes.
+
+### Fixed
+
+- `php oc-cli.php cron` with no `--type` runs only the tasks that are due, as the docs say.
+
 ## Shopclass 6.4.5
 
 This release fixes the admin password reset, which ended in an error page after a new
