@@ -165,13 +165,36 @@ class ItemStats extends DAO
      */
     public function increaseBatch($column, array $itemIds)
     {
+        // Deduplicated: the same id twice in one statement would increment twice.
+        $ids = array_values(array_unique(array_map('intval', array_filter($itemIds, 'is_numeric'))));
+
+        return $this->increaseBy($column, array_fill_keys($ids, 1));
+    }
+
+    /**
+     * Add a count per listing to one counter, in one statement plus one rollup write.
+     *
+     * @param string          $column
+     * @param array<int,int>  $counts listing id => how much to add
+     *
+     * @return bool false if the column is rejected or the statement fails
+     * @since  7.0.0
+     */
+    public function increaseBy($column, array $counts)
+    {
         if (!in_array($column, self::COUNTERS, true)) {
             return false;
         }
 
-        // Deduplicated: the same id twice in one statement would increment twice.
-        $ids = array_values(array_unique(array_map('intval', array_filter($itemIds, 'is_numeric'))));
-        if (!$ids) {
+        $params = array();
+        $total  = 0;
+        foreach ($counts as $id => $by) {
+            if ((int) $id > 0 && (int) $by > 0) {
+                array_push($params, (int) $id, (int) $by);
+                $total += (int) $by;
+            }
+        }
+        if (!$params) {
             return true;
         }
 
@@ -179,19 +202,19 @@ class ItemStats extends DAO
             return true;
         }
 
-        $values = implode(', ', array_fill(0, count($ids), '(?, CURDATE(), 1)'));
+        $values = implode(', ', array_fill(0, count($params) / 2, '(?, CURDATE(), ?)'));
 
         $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_item_id, dt_date, ' . $column . ')
                 VALUES ' . $values . '
-                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = CURDATE()';
+                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + VALUES(' . $column . '), dt_date = CURDATE()';
 
         try {
-            Db::execute($sql, $ids);
+            Db::execute($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        $this->increaseDaily($column, count($ids));
+        $this->increaseDaily($column, $total);
 
         return true;
     }

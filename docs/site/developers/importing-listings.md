@@ -90,6 +90,8 @@ Two classes in `mindstellar\security` cover what an API that receives listings n
 **`RateLimit::hit($context, $key, $max, $windowSeconds)`** counts one request for `$key`
 and returns `false` once `$max` is passed in the window. The key can be an API key or an
 account id; it is stored hashed. If the counter cannot be reached, it allows the request.
+With a Redis or Valkey cache it counts there; pass `$failOpen = false` for a limit that must
+refuse when unsure, and it always counts in the database.
 
 ```php
 if (!RateLimit::hit('acme_api', $apiKeyId, 120, 60)) {

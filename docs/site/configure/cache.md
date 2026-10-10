@@ -82,6 +82,11 @@ With Redis or Valkey, a background job also starts the moment it is queued, when
 job listener runs (`oc-cli.php jobs:work --listen`; the Docker image runs it). See
 [Background jobs](/docs/developers/jobs/).
 
+Redis or Valkey also takes two busy writes off the database. Listing views are added up
+there and saved about once a minute, so a view shows on the listing up to a minute later.
+Rate limits (sign-up, comments, contact forms, the API) count there too. If the server stops
+answering, both go back to the database on their own.
+
 The REST API's rate limits count in the object cache too: with memcached or Redis every web server shares one count; with `apcu` each server counts its own; with no `OSC_CACHE` they count in the database.
 
 ## APCu (one server only)

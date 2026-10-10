@@ -111,6 +111,59 @@ pin('countRolling() with no table is null', null, RateLimit::countRolling('test_
 pin('addRolling() with no table says so', false, RateLimit::addRolling('test_api', 'key-one', 3600));
 $admin->query("RENAME TABLE {$table}_gone TO $table");
 
+harness_section('with a Redis-protocol cache');
+
+$rlServer = getenv('OSC_TEST_REDIS');
+if (!$rlServer) {
+    echo "  (no OSC_TEST_REDIS server: the Redis checks were not run)\n";
+} else {
+    [$rlHost, $rlPort]        = explode(':', $rlServer) + [1 => '6379'];
+    $rlShared                 = new ReflectionProperty(\mindstellar\cache\CacheManager::class, 'instance');
+    $rlShared->setAccessible(true);
+    $rlBefore                 = $rlShared->getValue();
+    $rlConfigBefore           = $GLOBALS['_cache_config'] ?? null;
+    $GLOBALS['_cache_config'] = [['default_host' => $rlHost, 'default_port' => (int) $rlPort]];
+    $rlCache                  = new \mindstellar\cache\RedisCache();
+    $rlCache->flush();
+    $rlShared->setValue(null, $rlCache);
+    $admin->query("TRUNCATE TABLE $table");
+
+    $got = array();
+    for ($i = 0; $i < 4; $i++) {
+        $got[] = RateLimit::hit('test_api', 'key-one', 3, 3600);
+    }
+    pin('the first three are allowed, the fourth is not', array(true, true, true, false), $got);
+    pin('and the database is not written', 0, $count());
+    pin('count() and countMany() read it', array(4, array('key-one' => 4, 'key-two' => 0)), array(
+        RateLimit::count('test_api', 'key-one', 3600),
+        RateLimit::countMany('test_api', array('key-one', 'key-two'), 3600),
+    ));
+    pin('a window at a given time is its own', array(2, 2, 0), array(
+        RateLimit::add('test_now', 'k', 2, 3600, true, $past),
+        RateLimit::count('test_now', 'k', 3600, $past),
+        RateLimit::count('test_now', 'k', 3600),
+    ));
+    $rlNow = 1_800_000_000;
+    RateLimit::addRolling('test_roll', 'ip', 60, $rlNow - 100);
+    RateLimit::addRolling('test_roll', 'ip', 60, $rlNow - 30);
+    RateLimit::addRolling('test_roll', 'ip', 60, $rlNow);
+    pin('a rolling count sums the slices in the window', 2, RateLimit::countRolling('test_roll', 'ip', 60, $rlNow));
+    pin('a shorter window sums fewer', 1, RateLimit::countRolling('test_roll', 'ip', 10, $rlNow));
+    pin('and a slice no count can reach is dropped', 2, count($rlCache->hashRead('rl:test_roll:0:' . sha1('ip')) ?? array()));
+    pin('still no database rows', 0, $count());
+    pin('a limit that fails closed still counts in the table', array(true, 1), array(RateLimit::hit('test_closed', 'k', 3, 3600, false), $count()));
+    $admin->query("TRUNCATE TABLE $table");
+
+    $GLOBALS['_cache_config'] = [['default_host' => '127.0.0.1', 'default_port' => 1]];
+    $rlShared->setValue(null, new \mindstellar\cache\RedisCache());
+    pin('when the server does not answer the table counts instead', array(true, 1), array(RateLimit::hit('test_down', 'k', 3, 3600), $count()));
+
+    $rlCache->flush();
+    $rlShared->setValue(null, $rlBefore);
+    $GLOBALS['_cache_config'] = $rlConfigBefore;
+    $admin->query("TRUNCATE TABLE $table");
+}
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

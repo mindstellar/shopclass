@@ -84,6 +84,67 @@ pin('the report log is emptied', 0, $logCount($itemA));
 pin('another listing keeps its log', 2, $logCount($itemB));
 pin('and its counters', 2, $row($itemB)['i_num_spam']);
 
+harness_section('views with a Redis-protocol cache');
+
+$lcServer = getenv('OSC_TEST_REDIS');
+if (!$lcServer) {
+    echo "  (no OSC_TEST_REDIS server: the Redis checks were not run)\n";
+} else {
+    if (!function_exists('osc_job_enqueue')) {
+        function osc_job_enqueue(string $type, array $payload = array(), array $options = array()): int
+        {
+            return \mindstellar\job\JobQueue::getInstance()->enqueue($type, $payload, $options);
+        }
+    }
+    [$lcHost, $lcPort]        = explode(':', $lcServer) + [1 => '6379'];
+    $lcShared                 = new ReflectionProperty(\mindstellar\cache\CacheManager::class, 'instance');
+    $lcShared->setAccessible(true);
+    $lcBefore                 = $lcShared->getValue();
+    $lcConfigBefore           = $GLOBALS['_cache_config'] ?? null;
+    $GLOBALS['_cache_config'] = [['default_host' => $lcHost, 'default_port' => (int) $lcPort]];
+    $lcCache                  = new \mindstellar\cache\RedisCache();
+    $lcCache->flush();
+    $lcShared->setValue(null, $lcCache);
+    $lcJobs    = DB_TABLE_PREFIX . 't_job_queue';
+    $lcFlushes = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM $lcJobs WHERE s_type = '" . ListingCounters::FLUSH_JOB . "'")->fetch_row()[0];
+    $lcPremium = static fn (int $id): int => (int) $admin->query("SELECT i_num_premium_views FROM $stats WHERE fk_i_item_id = $id")->fetch_row()[0];
+    $admin->query("DELETE FROM $lcJobs WHERE s_type = '" . ListingCounters::FLUSH_JOB . "'");
+
+    $lcViews   = $row($itemA)['i_num_views'];
+    $lcPremA   = $lcPremium($itemA);
+    $lcGone    = seed_item($admin, $catId, null, 'Deleted soon');
+    $lcQueries = harness_query_count(static function () use ($itemA, $itemB, $lcGone): void {
+        ListingCounters::addView($itemA);
+        ListingCounters::addView($itemA);
+        ListingCounters::addView($lcGone);
+        ListingCounters::addPremiumViews(array($itemA, $itemB, $itemA));
+    });
+    pin('views are not written to the table at once', $lcViews, $row($itemA)['i_num_views']);
+    pin('one job is queued to write them', 1, $lcFlushes());
+    pin('which is the only database write for many views', 1, $lcQueries);
+    $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_item WHERE pk_i_id = $lcGone");
+    pin('the job writes every listing still there', 3, ListingCounters::flush());
+    pin('with all its views', $lcViews + 2, $row($itemA)['i_num_views']);
+    pin('premium views once per listing shown', $lcPremA + 1, $lcPremium($itemA));
+    pin('a deleted listing gets no views', 0, (int) $admin->query("SELECT COALESCE(SUM(i_num_views), 0) FROM $stats WHERE fk_i_item_id = $lcGone")->fetch_row()[0]);
+    pin('a second run has nothing to write', 0, ListingCounters::flush());
+
+    $setPref('0');
+    ListingCounters::addView($itemA);
+    pin('with views off nothing is added up', 0, ListingCounters::flush());
+    $setPref('1');
+
+    $GLOBALS['_cache_config'] = [['default_host' => '127.0.0.1', 'default_port' => 1]];
+    $lcShared->setValue(null, new \mindstellar\cache\RedisCache());
+    ListingCounters::addView($itemA);
+    pin('when the server does not answer the view is written at once', $lcViews + 3, $row($itemA)['i_num_views']);
+
+    $lcCache->flush();
+    $lcShared->setValue(null, $lcBefore);
+    $GLOBALS['_cache_config'] = $lcConfigBefore;
+    $admin->query("DELETE FROM $lcJobs WHERE s_type = '" . ListingCounters::FLUSH_JOB . "'");
+}
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

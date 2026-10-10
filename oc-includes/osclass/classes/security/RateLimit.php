@@ -11,14 +11,18 @@
 namespace mindstellar\security;
 
 use mindstellar\base\Model;
+use mindstellar\cache\RedisCache;
 use mindstellar\database\Db;
 
 /**
  * A rate limit on any key: an API key, an account, a token, an address (ActionThrottle).
  *
  * One counter row per key per fixed window, or per SLICE for a rolling count, so a busy key
- * costs one row, not one per request. The key is stored hashed, so a secret passed as the key
- * is never written. It fails open: a counter that cannot be reached allows the request.
+ * costs one row, not one per request. With a Redis-protocol cache the counters live there and
+ * the database is not written, except for a limit that fails closed; when that server does not
+ * answer, the table takes over. The key
+ * is stored hashed, so a secret passed as the key is never written. It fails open: a counter
+ * that cannot be reached allows the request.
  */
 final class RateLimit extends Model
 {
@@ -84,6 +88,12 @@ final class RateLimit extends Model
         $windowSeconds = max(1, $windowSeconds);
         $now         ??= time();
         $window        = $now - ($now % $windowSeconds);
+        $bucket        = self::bucket($context, $key, $windowSeconds);
+        // A limit that must refuse when unsure stays in the table, which never drops a count.
+        $count         = $failOpen ? RedisCache::site()?->counter('rl:' . $bucket . ':' . $window, $by, $window + $windowSeconds - $now) : null;
+        if ($count !== null) {
+            return $count;
+        }
 
         return self::write(self::bucket($context, $key, $windowSeconds), $window, $window + $windowSeconds, $by, $failOpen);
     }
@@ -103,8 +113,21 @@ final class RateLimit extends Model
     {
         $now  ??= time();
         $slice  = $now - ($now % self::SLICE);
+        $bucket = self::bucket($context, $key, 0);
+        $keep   = self::SLICE + max(1, $keepSeconds);
+        $redis  = RedisCache::site();
+        $added  = $redis?->hashAdd('rl:' . $bucket, (string) $slice, 1, $keep);
+        if ($added !== null) {
+            // Once per slice, drop the slices no count can reach any more.
+            if ($added === 1) {
+                $old = array_filter(array_keys($redis->hashRead('rl:' . $bucket) ?? array()), static fn ($s): bool => (int) $s <= $now - $keep);
+                $redis->hashDelete('rl:' . $bucket, array_map('strval', $old));
+            }
 
-        return self::write(self::bucket($context, $key, 0), $slice, $slice + self::SLICE + max(1, $keepSeconds), 1, true) !== null;
+            return true;
+        }
+
+        return self::write($bucket, $slice, $slice + $keep, 1, true) !== null;
     }
 
     /**
@@ -120,11 +143,22 @@ final class RateLimit extends Model
      */
     public static function countRolling(string $context, string $key, int $windowSeconds, ?int $now = null): ?int
     {
-        $now ??= time();
+        $now  ??= time();
+        $bucket = self::bucket($context, $key, 0);
+        $after  = $now - max(1, $windowSeconds) - self::SLICE;
+        $slices = RedisCache::site()?->hashRead('rl:' . $bucket);
+        if ($slices !== null) {
+            $total = 0;
+            foreach ($slices as $slice => $count) {
+                $total += (int) $slice > $after ? $count : 0;
+            }
+
+            return $total;
+        }
         try {
             return (int) Db::scalar(
                 'SELECT COALESCE(SUM(i_count), 0) FROM ' . self::tableName() . ' WHERE s_bucket = ? AND i_window > ?',
-                array(self::bucket($context, $key, 0), $now - max(1, $windowSeconds) - self::SLICE)
+                array($bucket, $after)
             );
         } catch (\Throwable $e) {
             FailOpen::log('RateLimit', 'the request', $e);
@@ -167,22 +201,12 @@ final class RateLimit extends Model
      */
     public static function count(string $context, string $key, int $windowSeconds = 60, ?int $now = null): ?int
     {
-        $windowSeconds = max(1, $windowSeconds);
-        $now         ??= time();
-        try {
-            return (int) Db::scalar(
-                'SELECT i_count FROM ' . self::tableName() . ' WHERE s_bucket = ? AND i_window = ?',
-                array(self::bucket($context, $key, $windowSeconds), $now - ($now % $windowSeconds))
-            );
-        } catch (\Throwable $e) {
-            FailOpen::log('RateLimit', 'the request', $e);
-
-            return null;
-        }
+        return self::countMany($context, array($key), $windowSeconds, $now)[$key] ?? null;
     }
 
     /**
-     * count() for several keys of one context, in one query.
+     * count() for several keys of one context, in one query. Like count(), it reads where a
+     * fail-open hit() counts.
      *
      * @param string   $context
      * @param string[] $keys
@@ -203,11 +227,20 @@ final class RateLimit extends Model
         if ($buckets === array()) {
             return $counts;
         }
+        $window = $now - ($now % $windowSeconds);
+        $cached = RedisCache::site()?->counters(array_map(static fn (string $b): string => 'rl:' . $b . ':' . $window, array_keys($buckets)));
+        if ($cached !== null) {
+            foreach (array_combine(array_keys($buckets), array_values($cached)) as $bucket => $count) {
+                $counts[$buckets[$bucket]] = $count;
+            }
+
+            return $counts;
+        }
         try {
             $rows = Db::select(
                 'SELECT s_bucket, i_count FROM ' . self::tableName() . ' WHERE i_window = ? AND s_bucket IN ('
                 . implode(', ', array_fill(0, count($buckets), '?')) . ')',
-                array_merge(array($now - ($now % $windowSeconds)), array_keys($buckets))
+                array_merge(array($window), array_keys($buckets))
             );
         } catch (\Throwable $e) {
             FailOpen::log('RateLimit', 'the request', $e);

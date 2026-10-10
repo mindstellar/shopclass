@@ -574,10 +574,7 @@ class Search extends DAO
             // This block shows on the home, category and search pages: one write for all
             // of it, and none for a crawler.
             if (osc_request_counts_as_view()) {
-                ItemStats::getInstance()->increaseBatch(
-                    'i_num_premium_views',
-                    array_column($items, 'pk_i_id')
-                );
+                \mindstellar\listing\ListingCounters::addPremiumViews(array_column($items, 'pk_i_id'));
             }
 
             return Item::getInstance()->extendData($items);

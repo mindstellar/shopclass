@@ -78,6 +78,9 @@ pin('and says so', false, $found);
 pin('a set fails', false, $dead->set('anything', 1));
 check('and the request is not held up', microtime(true) - $start < 2);
 pin('a worker waiting on it is told it cannot', null, $dead->waitSignal('jobs', 1));
+pin('counters and hashes say they cannot be reached', array(null, null, null, null, null), array(
+    $dead->counter('c', 1, 60), $dead->counters(array('c')), $dead->hashAdd('h', 'f', 1, 60), $dead->hashRead('h'), $dead->hashTake('h'),
+));
 
 $calls  = 0;
 $broken = new class ($calls) implements mindstellar\cache\RedisClient {
@@ -172,6 +175,22 @@ foreach ($clients as $label => $raw) {
     $start = microtime(true);
     pin('with none sent it waits and says so', false, $fresh()->waitSignal('jobs', 1));
     check('for about the time asked', microtime(true) - $start >= 0.9 && microtime(true) - $start < 3);
+
+    pin('a counter starts at what is added', 1, $cache->counter('views', 1, 30));
+    pin('and counts on from there', 3, $fresh()->counter('views', 2, 30));
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'counter_views');
+    check('it lives the time asked', is_int($ttl) && $ttl > 0 && $ttl <= 30);
+    pin('counters reads several, 0 for one not set', array('views' => 3, 'none' => 0), $fresh()->counters(array('views', 'none')));
+    pin('a hash field counts up', array(1, 3), array($cache->hashAdd('buf', '7', 1, 30), $cache->hashAdd('buf', '7', 2, 30)));
+    $cache->hashAdd('buf', '9', 1, 30);
+    pin('hashRead gives every field as a number', array('7' => 3, '9' => 1), $fresh()->hashRead('buf'));
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'hash_buf');
+    check('a hash lives the time asked', is_int($ttl) && $ttl > 0 && $ttl <= 30);
+    $cache->hashDelete('buf', array('9'));
+    pin('hashDelete removes fields', array('7' => 3), $fresh()->hashRead('buf'));
+    pin('hashTake hands the counts over', array('7' => 3), $fresh()->hashTake('buf'));
+    pin('and leaves nothing behind', array(array(), array()), array($fresh()->hashRead('buf'), $fresh()->hashTake('buf')));
+    pin('and no copy either', array(), $raw->command('KEYS', $cache->site_prefix . 'hash_buf*'));
 
     $stats = $cache->statsData();
     check('stats read the server', is_array($stats) && isset($stats['uptime'], $stats['memory_used']));

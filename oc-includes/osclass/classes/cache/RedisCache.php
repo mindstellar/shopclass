@@ -89,6 +89,138 @@ class RedisCache extends Cache
     }
 
     /**
+     * The site's object cache when it is this driver, else null.
+     */
+    public static function site(): ?self
+    {
+        $cache = CacheManager::getInstance();
+
+        return $cache instanceof self ? $cache : null;
+    }
+
+    /**
+     * Add $by to the counter $name, which lives $ttl seconds from its first count.
+     *
+     * @return int|null the new count; null when the server cannot be reached
+     */
+    public function counter(string $name, int $by, int $ttl): ?int
+    {
+        $key = $this->_key('counter_' . $name);
+        if ($this->call('SET', $key, (string) $by, 'EX', (string) max(1, $ttl), 'NX') === true) {
+            return $by;
+        }
+        $reply = $this->call('INCRBY', $key, (string) $by);
+
+        return is_int($reply) ? $reply : null;
+    }
+
+    /**
+     * The counters $names, 0 for one not set.
+     *
+     * @param string[] $names
+     *
+     * @return array<string,int>|null name => count; null when the server cannot be reached
+     */
+    public function counters(array $names): ?array
+    {
+        $names = array_values($names);
+        if ($names === array()) {
+            return array();
+        }
+        $reply = $this->call('MGET', ...array_map(fn (string $n): string => $this->_key('counter_' . $n), $names));
+        if (!is_array($reply)) {
+            return null;
+        }
+        $out = array();
+        foreach ($names as $i => $name) {
+            $out[$name] = (int) ($reply[$i] ?? 0);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Add $by to $field of the hash $name, which then lives $ttl seconds.
+     *
+     * @return int|null the field's new count; null when the server cannot be reached
+     */
+    public function hashAdd(string $name, string $field, int $by, int $ttl): ?int
+    {
+        $key   = $this->_key('hash_' . $name);
+        $reply = $this->call('HINCRBY', $key, $field, (string) $by);
+        if (!is_int($reply)) {
+            return null;
+        }
+        $this->call('EXPIRE', $key, (string) max(1, $ttl));
+
+        return $reply;
+    }
+
+    /**
+     * Every field of the hash $name.
+     *
+     * @return array<string,int>|null field => count; null when the server cannot be reached
+     */
+    public function hashRead(string $name): ?array
+    {
+        $reply = $this->call('HGETALL', $this->_key('hash_' . $name));
+
+        return is_array($reply) ? self::pairs($reply) : null;
+    }
+
+    /**
+     * Remove $fields from the hash $name.
+     *
+     * @param string[] $fields
+     */
+    public function hashDelete(string $name, array $fields): void
+    {
+        if ($fields !== array()) {
+            $this->call('HDEL', $this->_key('hash_' . $name), ...array_values($fields));
+        }
+    }
+
+    /**
+     * Read the hash $name and remove it, so counts added meanwhile start a new one.
+     *
+     * @return array<string,int>|null field => count, empty when there is none; null when the
+     *                                server cannot be reached
+     */
+    public function hashTake(string $name): ?array
+    {
+        $key   = $this->_key('hash_' . $name);
+        $taken = $key . ':taking:' . bin2hex(random_bytes(6));
+        // RENAME is refused when there is no hash, so nothing was counted since the last take.
+        if ($this->call('RENAME', $key, $taken) !== true) {
+            return $this->down ? null : array();
+        }
+        $reply = $this->call('HGETALL', $taken);
+        $this->call('DEL', $taken);
+
+        return is_array($reply) ? self::pairs($reply) : null;
+    }
+
+    /**
+     * A flat field, value, field, value list as field => int. phpredis may already key it.
+     *
+     * @param array<int|string,mixed> $reply
+     *
+     * @return array<string,int>
+     */
+    private static function pairs(array $reply): array
+    {
+        if ($reply !== array_values($reply)) {
+            return array_map('intval', $reply);
+        }
+        $out = array();
+        for ($i = 0, $n = count($reply) - 1; $i < $n; $i += 2) {
+            $out[(string) $reply[$i]] = (int) $reply[$i + 1];
+        }
+
+        return $out;
+    }
+
+    /**
      * phpredis is compiled C and faster; the built-in client is for servers without it.
      *
      * @param array<string,mixed> $config
