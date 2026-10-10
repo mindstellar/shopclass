@@ -4,7 +4,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 7.0.0
 
-Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes.
+Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
 
 It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
 
@@ -15,7 +15,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - **REST API** at `/api/v1` for listings, categories, custom fields, locations, currencies and profiles, with API keys, paging and an OpenAPI description. See [REST API](https://shopclass.org/docs/developers/api/).
 - People can sign in through the API, then post, edit and delete listings, upload photos, comment and save searches. A retried request with an `Idempotency-Key` is never done twice.
 - Admin keys manage listings, comments, users, categories, settings, keys and the job queue through `/api/v1/admin/`; moderator keys reach listings and comments only.
-- **Webhooks** send signed messages when listings, comments and users change, including a `listing.reported` message when a visitor reports a listing. Failed deliveries retry and a failing endpoint pauses itself. See [Webhooks](https://shopclass.org/docs/developers/api/webhooks/).
+- **Webhooks** send signed messages when listings, comments and users change, including a `listing.reported` message when a visitor reports a listing (at most once an hour per listing and reason). Failed deliveries retry and a failing endpoint pauses itself. See [Webhooks](https://shopclass.org/docs/developers/api/webhooks/).
 - **Settings → API** makes, rotates and revokes keys and manages webhooks. `oc-cli.php api:key:create`, `api:key:list` and `api:key:revoke` do the same from a shell.
 - A new **API access** page shows people which apps are signed in to their account and, if you allow it, lets them make their own keys.
 - **Sign out of all devices**, for people on their account page, for admins on their profile, for any user from the admin Users screen, and through the API.
@@ -24,7 +24,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With Redis or Valkey, listing views and rate limits count in the cache instead of writing to the database on every visit.
 - A premium upgrade ends exactly at its end time, not up to an hour later.
 - Theme JavaScript can call the API as the signed-in user with `osc_api_session_meta()`.
-- Plugins can add API routes, scopes, listing fields, schemas and webhook events. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
+- Plugins can add API routes, scopes, listing fields, schemas and webhook events, with `ApiKit`, `osc_api_register_schema()` and the `api_problem_codes` filter. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
 - A shared key-value store with the `osc_kv_*()` helpers, so plugins can keep small values without a table of their own. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
 - `osc_item_cover_urls()` gives the first photo of many listings in one query.
 - Search reads your database's full-text word length and stopword list, and falls back to a plain text match when a search cannot use the index.
@@ -35,12 +35,12 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Listing photos moved from `t_item_resource` into `t_resource` (owner type `item`), with the same ids, files and links; `fk_i_item_id` is `i_owner_id` there. Use the photo helpers or `ItemResource` instead of SQL on the old table.
 - `t_plugin_category`, `t_cron`, `t_alerts_sent`, `t_user_email_tmp` and `t_item_upload_tmp` moved into the key-value store, and `t_locations_tmp` is removed.
 - `ItemResource`, `PluginCategory`, `Cron`, `AlertsStats`, `UserEmailTmp` and `ItemTmpUpload` keep their own methods but no longer extend `DAO`, so inherited calls such as `insert()` and `update()` are gone.
-- Plugin API routes live under `/api/v1/ext/<plugin>/`. An admin plugin route needs an `admin:` scope, or the plugin's own `ext:` scope for admins or moderators.
+- Plugin API routes live under `/api/v1/ext/<plugin>/`, and a route's `plugin` must be that slug. An admin plugin route needs an `admin:` scope, or the plugin's own `ext:` scope for admins or moderators.
 - The `api_listing`, `api_user` and `api_category` filters get `$data, $context` instead of the database row.
 - Listing Import 0.3 needs Shopclass 7.0: its API moved to `/api/v1/ext/listing-import/`, old plugin keys stop working (make new ones in **Settings → API**), and a record it cannot import is a `422 validation_failed`.
 - `/api/` is reserved: rename any page or category with the slug `api`. System info and `doctor` list them.
 - `osc_count_premium_comments()` and `osc_has_premium_comments()` are removed; they always ended in a fatal error.
-- `osc_sanitize_phone()` keeps a leading `+`, spaces and dashes; `osc_sanitize_username()` keeps dots; `osc_sanitize_int()` returns an int ("1.5" is 1).
+- `osc_sanitize_phone()` keeps a leading `+`, spaces and dashes; `osc_sanitize_username()` keeps dots and `Sanitize::username()` turns spaces into `_`; `osc_sanitize_int()` returns an int ("1.5" is 1).
 - `oc-includes/osclass/mimes.php` is removed; uploads take image types only (see `UploadMimes`).
 - The `memcache` cache driver is removed; `OSC_CACHE=memcache` now uses `memcached`.
 
@@ -63,7 +63,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Performance
 
-- Saving a listing runs fewer queries (an edit 19 instead of 24) and resizes photos before it locks any rows.
+- Saving a listing runs fewer queries (an edit 19 instead of 24) and resizes photos before it locks any rows; `posted_item` and `edited_item` get the saved row and texts instead of reading them again.
 - The "with photos" search checks each listing's photos directly instead of joining them all.
 - Deleting a listing or account queues one job for its files on remote storage, not one per photo.
 - Listing counts per country, region and city are corrected once a week in the background instead of in a slow hourly pass.
@@ -79,6 +79,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - People may post 20 comments an hour (guests 20 per address), on the site and through the API together.
 - Asking to change your e-mail to an address someone else holds no longer says it is taken; no link is sent. You may ask 5 times an hour.
 - Deleting your account asks for your password.
+- An admin comment edit needs a valid author e-mail and a body, on the screen and through the API.
 - Unblocking a comment e-mails its author when it goes live.
 - Banned e-mails and addresses are checked on sign-in, sign-up and `ItemActions::add()`, as on the post form.
 - Admin status changes to listings, users and accounts are logged and fire their hooks.
@@ -88,7 +89,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The installer no longer pings Google and Bing with the sitemap; both services are retired.
 - Code moved into `mindstellar\` modules shared by the site and the API: listings, sign-in, accounts, comments, categories, currencies, custom fields, cache and forms. Old class names still work. See [Architecture](https://shopclass.org/docs/developers/architecture/).
 - Shared classes are reached with `getInstance()`; `newInstance()` and `instance()` still work but are deprecated.
-- New helpers for plugins: `Db::withNamedLock()`, `Db::retryOnce()`, `FileSystem::writeAtomic()`, `FileSystem::head()`, `ImageProcessing::usesImagick()` and `Sanitize::name()`, `slug()`, `text()` and `richHtml()`.
+- A failed query inside a transaction is no longer retried. New helpers for plugins: `Db::withNamedLock()`, `Db::retryOnce()`, `FileSystem::writeAtomic()`, `FileSystem::head()`, `ImageProcessing::usesImagick()` and `Sanitize::name()`, `slug()`, `text()` and `richHtml()`.
 - New actions `user_signout_all_after` and `admin_signout_all_after`. `before_validating_login` fires after the empty-field and captcha checks, `before_user_delete` fires for admin deletes too, comment hooks get the comment id as an int, and `pre_item_delete_comment_post` fires only once the author is confirmed.
 - `mindstellar\Csrf` is now `mindstellar\security\Csrf`; `BackupManager` is now `BackupService`. Old names still work. `mindstellar\upgrade\Plugin` and `Theme` are deprecated.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
