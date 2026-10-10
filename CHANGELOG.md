@@ -30,6 +30,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Breaking
 
+- Saved-search alerts go out daily or weekly; hourly ones become daily on upgrade. `hook_alert_email_hourly` no longer fires.
 - `PluginCategory` no longer extends `DAO`, and the `t_plugin_category` table is removed; its public calls still work.
 - Listing Import 0.3 needs Shopclass 7.0. Its old plugin keys stop working: make new keys in **Settings → API**.
 - Listing Import's API lives under `/api/v1/ext/listing-import/`; its 0.2 paths are gone.
@@ -77,7 +78,6 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Changed
 
-- Saved-search alerts go out daily or weekly. Hourly alerts become daily on upgrade.
 - `mindstellar\form\base\FormBuilder`, `FormInputs` and `InputInterface` moved to `mindstellar\form\`; the old names still work.
 - The object cache classes moved to `mindstellar\cache\` (`CacheManager`, `CacheDriver`, `MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`); the old `Object_Cache_*` and `iObject_Cache` names still work.
 - Shared core classes are reached with `getInstance()`. `newInstance()` and `instance()` still work but are deprecated.

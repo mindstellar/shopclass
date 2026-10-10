@@ -554,6 +554,28 @@ pin(
     $model->findByEmail('0')
 );
 
+harness_section('Hourly alerts are gone');
+
+$admin->query("DELETE FROM $table");
+$admin->query("INSERT INTO $table (s_email, s_search, s_secret, b_active, e_type, dt_date) VALUES"
+    . " ('h1@example.test', '{\"q\":\"h1\"}', 's', 1, 'HOURLY', '2026-01-01 00:00:00'),"
+    . " ('h2@example.test', '{\"q\":\"h2\"}', 's', 1, 'HOURLY', '2026-01-01 00:00:00'),"
+    . " ('w1@example.test', '{\"q\":\"w1\"}', 's', 1, 'WEEKLY', '2026-01-01 00:00:00')");
+$hourlyMigration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0069_hourly_alerts_to_daily.php';
+$hourlyMigration->up(\mindstellar\database\Connection::getInstance());
+$hourlyMigration->up(\mindstellar\database\Connection::getInstance());
+pin('migration 0069 makes hourly alerts daily, and runs twice safely', array('DAILY' => 2, 'WEEKLY' => 1), array(
+    'DAILY'  => count($model->findByType('DAILY')),
+    'WEEKLY' => count($model->findByType('WEEKLY')),
+));
+
+require_once ABS_PATH . 'oc-includes/osclass/alerts.php';
+$admin->query("INSERT INTO $table (s_email, s_search, s_secret, b_active, e_type, dt_date) VALUES ('h3@example.test', '{\"q\":\"h3\"}', 's', 1, 'HOURLY', '2026-01-01 00:00:00')");
+pin('osc_runAlert(HOURLY) does nothing, not even a lookup', 0, harness_query_count(static function (): void {
+    osc_runAlert('HOURLY', '2000-01-01 00:00:00');
+}));
+$admin->query("DELETE FROM $table");
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

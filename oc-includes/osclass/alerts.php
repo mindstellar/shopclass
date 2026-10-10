@@ -23,7 +23,7 @@
 function osc_runAlert($type = null, $last_exec = null)
 {
     $mUser = User::getInstance();
-    if (!in_array($type, array('DAILY', 'WEEKLY'))) {
+    if (!in_array($type, Alerts::TYPES, true)) {
         return;
     }
 
@@ -35,7 +35,7 @@ function osc_runAlert($type = null, $last_exec = null)
         }
     }
 
-    $internal_name = $type === 'WEEKLY' ? 'alert_email_weekly' : 'alert_email_daily';
+    $internal_name = 'alert_email_' . strtolower($type);
 
     $active   = true;
     $searches = Alerts::getInstance()->findByTypeGroup($type, $active);

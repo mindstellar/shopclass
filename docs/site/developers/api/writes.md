@@ -340,7 +340,7 @@ curl -i -X POST $API/account/alerts \
 | Filters | `q`, `category`, `country`, `region`, `city`, `city_area`, `user`, `locale`, `price_min`, `price_max`, `with_photos`, `premium`, `custom_field`. At least one. |
 | Same search again | Answers `200` with the saved one, not a second `201`. |
 | Limit | A user keeps at most 20 saved searches; the site owner can change it. One more is `422 validation_failed` at `/`. The hourly alert limit in **Spam and bots** also applies: over it is `429 rate_limited`. |
-| `type` | How often it mails: `instant`, `hourly`, `daily` or `weekly`. |
+| `type` | How often it mails: `daily` or `weekly`. |
 | List and stop | `GET /account/alerts`, `DELETE /account/alerts/{id}` (`204`). |
 | Shown on the web | The same search appears on the account's alerts page. |
 

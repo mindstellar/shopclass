@@ -81,8 +81,7 @@ the site is busy and moderate from the admin lists instead.
 ## Alerts and cron
 
 Saved-search alerts are **not** sent when a listing is published. They are sent
-by **cron**, on the schedule each user picked for their saved search: hourly,
-daily or weekly.
+by **cron**, once a day, or once a week for alerts set to weekly.
 
 That means the single most common report, "my users never get alerts", is
 almost always a missing crontab entry, not a mail problem. Check it first:

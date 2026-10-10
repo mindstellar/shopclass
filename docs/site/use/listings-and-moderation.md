@@ -116,8 +116,8 @@ member's report and only stop contact mail; see
 **Users → Alerts** lists saved searches. As the admin explains: *alerts
 notify a user by email when a new listing matches their saved search.*
 
-Alerts are sent by **cron**, on the schedule each user picked for their
-saved search: hourly, daily or weekly. If your users say they never receive
+Alerts are sent by **cron**, once a day, or once a week for alerts set to
+weekly. If your users say they never receive
 them, check cron before anything else. See
 [setting up cron](/docs/configure/cron/).
 
