@@ -677,10 +677,8 @@ $wakeClient = new class ($wakeSent) implements \mindstellar\cache\RedisClient {
         return true;
     }
 };
-$wakeShared = new ReflectionProperty(\mindstellar\cache\CacheManager::class, 'instance');
-$wakeShared->setAccessible(true);
-$wakeBefore = $wakeShared->getValue();
-$wakeShared->setValue(null, new \mindstellar\cache\RedisCache($wakeClient));
+require_once __DIR__ . '/../lib/cache-swap.php';
+$wakeBefore = test_cache_swap(new \mindstellar\cache\RedisCache($wakeClient));
 
 $queue->enqueue('test.ok', array('n' => 1));
 pin('a job due now sends the signal', array('LPUSH', 'LTRIM'), $wakeSent);
@@ -715,7 +713,7 @@ $queue->claim(1);
 $wakeSent = array();
 $queue->repeat($id, array('n' => 7));
 pin('and so does one carried on now', array('LPUSH', 'LTRIM'), $wakeSent);
-$wakeShared->setValue(null, $wakeBefore);
+test_cache_swap($wakeBefore);
 
 harness_section('Listening');
 
@@ -793,7 +791,7 @@ $listenRedis = new class ($wakeClient, $listenWaits) extends \mindstellar\cache\
         return array_shift($this->replies);
     }
 };
-$wakeShared->setValue(null, $listenRedis);
+test_cache_swap($listenRedis);
 $listenRedis->replies = array(false, true);
 $listenFor(static fn () => null);
 pin('with Redis it waits for the signal instead of sleeping', array('jobs:30', 'jobs:30', 'jobs:30'), $listenWaits);
@@ -802,7 +800,7 @@ $listenWaits          = array();
 $listenRedis->replies = array(null);
 $listenFor(static fn () => null);
 pin('a Redis server that is down falls back to sleeping', array(JobWorker::LISTEN_POLL), $listenSlept);
-$wakeShared->setValue(null, $wakeBefore);
+test_cache_swap($wakeBefore);
 $truncate();
 
 $listenTicks = 0;

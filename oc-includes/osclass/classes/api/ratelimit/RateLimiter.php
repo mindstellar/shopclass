@@ -19,7 +19,7 @@ use mindstellar\utility\Clock;
 /**
  * Counts requests in their buckets over core's RateLimit, in the object cache when the site has
  * one and in database samples when it does not, and builds the rate limit headers. An exact bucket is counted
- * in the database on every request, and it fails open like RateLimit.
+ * by RateLimit on every request (in Redis or Valkey when the site has it), and it fails open like RateLimit.
  */
 final class RateLimiter
 {
@@ -48,10 +48,16 @@ final class RateLimiter
 
     /**
      * The site's limiter: exact buckets with RateLimit, the others in the object cache, or in
-     * samples (SampledCounter) when the cache cannot hold counts.
+     * samples (SampledCounter) when the cache cannot hold counts. With Redis or Valkey,
+     * RateLimit already counts there, so every bucket goes straight to it.
      */
     public static function fromSite(Clock $clock): self
     {
+        if (\mindstellar\cache\RedisCache::site() !== null) {
+            [$db, $add] = self::counters($clock);
+
+            return new self($db, $clock, $db, $add);
+        }
         $store = CacheStore::of(\mindstellar\cache\CacheManager::getInstance());
         if ($store === null) {
             return self::sampled($clock);

@@ -167,6 +167,7 @@ $declared = array(
     'getViews',
     'increase',
     'increaseBatch',
+    'increaseBy',
     'newInstance',
     'purgeOlderThan',
 );

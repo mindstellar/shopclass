@@ -101,6 +101,31 @@ $skips->set('b', 1);
 $skips->increment('c');
 pin('after the first failure the request stops asking the server', 1, $calls);
 
+$sent     = array();
+$scripted = new class ($sent) implements mindstellar\cache\RedisClient {
+    public function __construct(private array &$sent)
+    {
+    }
+
+    public function command(string ...$args): mixed
+    {
+        $this->sent[] = $args[0];
+
+        return match ($args[0]) {
+            'SET'    => null,
+            'INCRBY' => 2,
+            'RENAME' => true,
+            'HGETALL' => array(),
+            default  => 1,
+        };
+    }
+};
+(new RedisCache($scripted))->counter('c', 2, 60);
+pin('a counter that ran out between SET and INCRBY gets its expiry back', array('SET', 'INCRBY', 'EXPIRE'), $sent);
+$sent = array();
+(new RedisCache($scripted))->hashTake('h');
+pin('a taken hash expires before it is read, in case the request dies', array('RENAME', 'EXPIRE', 'HGETALL', 'DEL'), $sent);
+
 $server = getenv('OSC_TEST_REDIS');
 if (!$server) {
     echo "  (no OSC_TEST_REDIS server: the server checks were not run)\n";

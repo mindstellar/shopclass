@@ -110,6 +110,10 @@ class RedisCache extends Cache
             return $by;
         }
         $reply = $this->call('INCRBY', $key, (string) $by);
+        // The key ran out between the two calls and INCRBY made it again, with no expiry.
+        if ($reply === $by) {
+            $this->call('EXPIRE', $key, (string) max(1, $ttl));
+        }
 
         return is_int($reply) ? $reply : null;
     }
@@ -194,6 +198,8 @@ class RedisCache extends Cache
         if ($this->call('RENAME', $key, $taken) !== true) {
             return $this->down ? null : array();
         }
+        // So a copy left by a request that died here does not stay for ever.
+        $this->call('EXPIRE', $taken, '3600');
         $reply = $this->call('HGETALL', $taken);
         $this->call('DEL', $taken);
 

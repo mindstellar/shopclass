@@ -113,19 +113,12 @@ $admin->query("RENAME TABLE {$table}_gone TO $table");
 
 harness_section('with a Redis-protocol cache');
 
-$rlServer = getenv('OSC_TEST_REDIS');
-if (!$rlServer) {
+require_once __DIR__ . '/../lib/cache-swap.php';
+$rlCache = test_redis_cache();
+if ($rlCache === null) {
     echo "  (no OSC_TEST_REDIS server: the Redis checks were not run)\n";
 } else {
-    [$rlHost, $rlPort]        = explode(':', $rlServer) + [1 => '6379'];
-    $rlShared                 = new ReflectionProperty(\mindstellar\cache\CacheManager::class, 'instance');
-    $rlShared->setAccessible(true);
-    $rlBefore                 = $rlShared->getValue();
-    $rlConfigBefore           = $GLOBALS['_cache_config'] ?? null;
-    $GLOBALS['_cache_config'] = [['default_host' => $rlHost, 'default_port' => (int) $rlPort]];
-    $rlCache                  = new \mindstellar\cache\RedisCache();
-    $rlCache->flush();
-    $rlShared->setValue(null, $rlCache);
+    $rlBefore = test_cache_swap($rlCache);
     $admin->query("TRUNCATE TABLE $table");
 
     $got = array();
@@ -151,16 +144,20 @@ if (!$rlServer) {
     pin('a shorter window sums fewer', 1, RateLimit::countRolling('test_roll', 'ip', 10, $rlNow));
     pin('and a slice no count can reach is dropped', 2, count($rlCache->hashRead('rl:test_roll:0:' . sha1('ip')) ?? array()));
     pin('still no database rows', 0, $count());
+    $rlLimiter = \mindstellar\api\ratelimit\RateLimiter::fromSite(new \mindstellar\utility\SystemClock());
+    $rlBucket  = new \mindstellar\api\ratelimit\RateBucket('test_api_rl', 'key', 2, 3600);
+    pin('the API limiter judges on the cache count', array(true, true, false), array(
+        $rlLimiter->hit($rlBucket)->allowed(), $rlLimiter->hit($rlBucket)->allowed(), $rlLimiter->hit($rlBucket)->allowed(),
+    ));
+    pin('which RateLimit holds at once, with no buffer in between', array(3, 0), array(RateLimit::count('test_api_rl', 'key', 3600), $count()));
     pin('a limit that fails closed still counts in the table', array(true, 1), array(RateLimit::hit('test_closed', 'k', 3, 3600, false), $count()));
     $admin->query("TRUNCATE TABLE $table");
 
-    $GLOBALS['_cache_config'] = [['default_host' => '127.0.0.1', 'default_port' => 1]];
-    $rlShared->setValue(null, new \mindstellar\cache\RedisCache());
+    test_cache_swap(test_redis_cache('127.0.0.1:1'));
     pin('when the server does not answer the table counts instead', array(true, 1), array(RateLimit::hit('test_down', 'k', 3, 3600), $count()));
 
     $rlCache->flush();
-    $rlShared->setValue(null, $rlBefore);
-    $GLOBALS['_cache_config'] = $rlConfigBefore;
+    test_cache_swap($rlBefore);
     $admin->query("TRUNCATE TABLE $table");
 }
 

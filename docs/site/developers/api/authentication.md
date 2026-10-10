@@ -449,7 +449,8 @@ Posting has its own hourly limits on top: see [Writes](/docs/developers/api/writ
 The per-minute read buckets count in the site's [object cache](/docs/configure/cache/). With
 memcached or Redis all web servers share one count. With APCu each web server counts its own, so a site
 behind several servers allows that many per server. With no object cache they count in the
-database, in samples. `api_write` and the hourly caps always count in the database.
+database, in samples. `api_write` and the hourly caps count exactly on every request: in Redis or
+Valkey when the site has it, otherwise in the database. With Redis or Valkey every bucket counts there.
 
 IPv6 addresses count by their `/64`. An IPv4-mapped IPv6 address counts as that IPv4 client.
 

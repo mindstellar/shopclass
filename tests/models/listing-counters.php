@@ -86,8 +86,9 @@ pin('and its counters', 2, $row($itemB)['i_num_spam']);
 
 harness_section('views with a Redis-protocol cache');
 
-$lcServer = getenv('OSC_TEST_REDIS');
-if (!$lcServer) {
+require_once __DIR__ . '/../lib/cache-swap.php';
+$lcCache = test_redis_cache();
+if ($lcCache === null) {
     echo "  (no OSC_TEST_REDIS server: the Redis checks were not run)\n";
 } else {
     if (!function_exists('osc_job_enqueue')) {
@@ -96,15 +97,7 @@ if (!$lcServer) {
             return \mindstellar\job\JobQueue::getInstance()->enqueue($type, $payload, $options);
         }
     }
-    [$lcHost, $lcPort]        = explode(':', $lcServer) + [1 => '6379'];
-    $lcShared                 = new ReflectionProperty(\mindstellar\cache\CacheManager::class, 'instance');
-    $lcShared->setAccessible(true);
-    $lcBefore                 = $lcShared->getValue();
-    $lcConfigBefore           = $GLOBALS['_cache_config'] ?? null;
-    $GLOBALS['_cache_config'] = [['default_host' => $lcHost, 'default_port' => (int) $lcPort]];
-    $lcCache                  = new \mindstellar\cache\RedisCache();
-    $lcCache->flush();
-    $lcShared->setValue(null, $lcCache);
+    $lcBefore  = test_cache_swap($lcCache);
     $lcJobs    = DB_TABLE_PREFIX . 't_job_queue';
     $lcFlushes = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM $lcJobs WHERE s_type = '" . ListingCounters::FLUSH_JOB . "'")->fetch_row()[0];
     $lcPremium = static fn (int $id): int => (int) $admin->query("SELECT i_num_premium_views FROM $stats WHERE fk_i_item_id = $id")->fetch_row()[0];
@@ -134,14 +127,12 @@ if (!$lcServer) {
     pin('with views off nothing is added up', 0, ListingCounters::flush());
     $setPref('1');
 
-    $GLOBALS['_cache_config'] = [['default_host' => '127.0.0.1', 'default_port' => 1]];
-    $lcShared->setValue(null, new \mindstellar\cache\RedisCache());
+    test_cache_swap(test_redis_cache('127.0.0.1:1'));
     ListingCounters::addView($itemA);
     pin('when the server does not answer the view is written at once', $lcViews + 3, $row($itemA)['i_num_views']);
 
     $lcCache->flush();
-    $lcShared->setValue(null, $lcBefore);
-    $GLOBALS['_cache_config'] = $lcConfigBefore;
+    test_cache_swap($lcBefore);
     $admin->query("DELETE FROM $lcJobs WHERE s_type = '" . ListingCounters::FLUSH_JOB . "'");
 }
 

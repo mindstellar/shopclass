@@ -82,12 +82,21 @@ With Redis or Valkey, a background job also starts the moment it is queued, when
 job listener runs (`oc-cli.php jobs:work --listen`; the Docker image runs it). See
 [Background jobs](/docs/developers/jobs/).
 
-Redis or Valkey also takes two busy writes off the database. Listing views are added up
-there and saved about once a minute, so a view shows on the listing up to a minute later.
-Rate limits (sign-up, comments, contact forms, the API) count there too. If the server stops
-answering, both go back to the database on their own.
+Redis or Valkey also takes two busy writes off the database:
 
-The REST API's rate limits count in the object cache too: with memcached or Redis every web server shares one count; with `apcu` each server counts its own; with no `OSC_CACHE` they count in the database.
+- **Listing views** add up there and a background job saves them about once a minute, so a
+  view count can be a minute behind. Without the job listener or a cron line running
+  `jobs:work` each minute, it is as far behind as your cron runs.
+- **Rate limits** (sign-up, comments, contact forms, the REST API) count there. A limit that
+  must refuse when unsure, such as the admin two-step sign-in, stays in the database.
+
+If the server stops answering, both go back to the database on their own. Give the server
+enough memory that it never has to drop keys (the Docker compose file gives 128 MB): a
+dropped rate-limit key starts that limit again from zero.
+
+With memcached or APCu, only the REST API's per-minute limits count in the cache: with
+memcached every web server shares one count, with APCu each server counts its own. Everything
+else counts in the database, as it does with no `OSC_CACHE`.
 
 ## APCu (one server only)
 
