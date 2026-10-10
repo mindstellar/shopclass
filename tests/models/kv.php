@@ -146,6 +146,14 @@ pin('osc_kv_delete_group removes every key of the group and only those', [2, 0, 
 pin('an empty group removes nothing', 0, osc_kv_delete_group('acme'));
 check('a malformed group is refused', $refused(static fn () => osc_kv_delete_group('Bad Group')));
 
+harness_section('increment');
+$kv->increment('count', 'n', 5, $now);
+$kv->increment('count', 'n', -2, $now + 60);
+$counted = $kv->get('count', 'n', $now + 60);
+pin('increment starts from 0 and adds what it is given, below 0 too', ['3', $now, $now + 60], [$counted['value'], $counted['created'], $counted['updated']]);
+check('a malformed key is refused', $refused(static fn () => $kv->increment('count', ' n')));
+$kv->deleteGroup('count');
+
 harness_section('times are UTC, whatever the time zone');
 $zone = date_default_timezone_get();
 date_default_timezone_set('America/New_York');

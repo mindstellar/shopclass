@@ -129,6 +129,24 @@ final class KeyValue extends Model
     }
 
     /**
+     * Add to a whole-number value in one statement, starting from 0 when the key is absent.
+     * Safe under concurrent callers.
+     *
+     * @throws \InvalidArgumentException on a malformed group or key
+     * @throws \mindstellar\database\DbException
+     */
+    public function increment(string $group, string $key, int $by = 1, ?int $now = null): void
+    {
+        self::check($group, $key);
+        $now = self::datetime($now ?? time());
+        Db::execute(
+            'INSERT INTO ' . DB_TABLE_PREFIX . self::TABLE . ' (s_group, s_key, s_value, dt_created) VALUES (?, ?, ?, ?)'
+            . ' ON DUPLICATE KEY UPDATE s_value = CAST(s_value AS SIGNED) + ?, dt_updated = ?',
+            [$group, $key, (string) $by, $now, $by, $now]
+        );
+    }
+
+    /**
      * Replace the value and state of an existing key, keeping its expiry.
      *
      * @param string|null $onlyState change it only while its state is this

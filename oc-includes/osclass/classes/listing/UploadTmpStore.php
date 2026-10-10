@@ -12,17 +12,16 @@ declare(strict_types=1);
 
 namespace mindstellar\listing;
 
-use mindstellar\base\Model;
+use mindstellar\model\KeyValue;
 
 /**
- * Photos uploaded before their listing exists: a file in uploads/temp/ and a t_item_upload_tmp
- * row tying it to an owner token. The listing form and the API both stage through here.
+ * Photos uploaded before their listing exists: a file in uploads/temp/ and a t_key_value row
+ * tying it to an owner token. Each owner has its own group, keyed by file name, holding the
+ * upload's uuid. The listing form and the API both stage through here.
  */
-final class UploadTmpStore extends Model
+final class UploadTmpStore
 {
-    protected const TABLE = 't_item_upload_tmp';
-
-    /** Seconds a staged photo is kept; the hourly cron sweeps older ones. */
+    /** Seconds a staged photo is kept; expired rows read as absent and the daily cron removes them. */
     public const TTL = 7200;
 
     /**
@@ -54,12 +53,13 @@ final class UploadTmpStore extends Model
      *
      * @return int how many unexpired files the owner holds, this one included
      * @throws \mindstellar\database\DbException
+     * @throws \InvalidArgumentException on a file name the store cannot hold
      */
     public static function stage(string $owner, string $uuid, string $file, int $now): int
     {
-        self::add($owner, $uuid, $file, date('Y-m-d H:i:s', $now));
+        (new KeyValue())->set(self::group($owner), $file, $uuid, $now + self::TTL, null, $now);
 
-        return self::countSince($owner, self::cutoff($now));
+        return count(self::rows($owner, $now));
     }
 
     /**
@@ -73,10 +73,10 @@ final class UploadTmpStore extends Model
     public static function staged(string $owner, array $uuids, int $now, string $dir): array
     {
         $out = [];
-        foreach (self::find($owner, self::cutoff($now), $uuids) as $row) {
-            $file = (string) $row['s_file'];
-            if (basename($file) === $file && is_file($dir . $file)) {
-                $out[(string) $row['s_uuid']] = ['file' => $file, 'expires' => (int) strtotime((string) $row['dt_date']) + self::TTL];
+        foreach (self::rows($owner, $now) as $file => $row) {
+            $file = (string) $file;
+            if (in_array($row['value'], $uuids, true) && basename($file) === $file && is_file($dir . $file)) {
+                $out[(string) $row['value']] = ['file' => $file, 'expires' => (int) $row['expires']];
             }
         }
 
@@ -95,45 +95,20 @@ final class UploadTmpStore extends Model
     }
 
     /**
-     * @throws \mindstellar\database\DbException
-     */
-    public static function add(string $owner, string $uuid, string $file, string $date): void
-    {
-        self::table()->insert(['s_token' => $owner, 's_uuid' => $uuid, 's_file' => $file, 'dt_date' => $date]);
-    }
-
-    /**
-     * Rows the owner added after the cutoff.
+     * Forget the owner's files for these uuids.
      *
-     * @throws \mindstellar\database\DbException
-     */
-    public static function countSince(string $owner, string $cutoff): int
-    {
-        return self::table()->where('s_token', $owner)->where('dt_date', '>', $cutoff)->count();
-    }
-
-    /**
-     * The owner's rows for these uuids, added after the cutoff.
-     *
-     * @param string[] $uuids
-     *
-     * @return array<int,array<string,mixed>>
-     * @throws \mindstellar\database\DbException
-     */
-    public static function find(string $owner, string $cutoff, array $uuids): array
-    {
-        return self::table()->select('s_uuid', 's_file', 'dt_date')
-            ->where('s_token', $owner)->where('dt_date', '>', $cutoff)->whereIn('s_uuid', $uuids)->get();
-    }
-
-    /**
      * @param string[] $uuids
      *
      * @throws \mindstellar\database\DbException
      */
     public static function remove(string $owner, array $uuids): void
     {
-        self::table()->where('s_token', $owner)->whereIn('s_uuid', $uuids)->delete();
+        $kv = new KeyValue();
+        foreach (self::rows($owner, time()) as $file => $row) {
+            if (in_array($row['value'], $uuids, true)) {
+                $kv->delete(self::group($owner), (string) $file);
+            }
+        }
     }
 
     /**
@@ -143,7 +118,7 @@ final class UploadTmpStore extends Model
      */
     public static function owns(string $owner, string $file): bool
     {
-        return $owner !== '' && $file !== '' && self::table()->select('pk_i_id')->where('s_token', $owner)->where('s_file', $file)->first() !== null;
+        return $owner !== '' && self::validFile($file) && (new KeyValue())->get(self::group($owner), $file) !== null;
     }
 
     /**
@@ -153,7 +128,7 @@ final class UploadTmpStore extends Model
      */
     public static function removeFile(string $owner, string $file): int
     {
-        return self::table()->where('s_token', $owner)->where('s_file', $file)->delete();
+        return $owner !== '' && self::validFile($file) ? (new KeyValue())->delete(self::group($owner), $file) : 0;
     }
 
     /**
@@ -161,21 +136,31 @@ final class UploadTmpStore extends Model
      */
     public static function removeOwner(string $owner): int
     {
-        return self::table()->where('s_token', $owner)->delete();
+        return $owner !== '' ? (new KeyValue())->deleteGroup(self::group($owner)) : 0;
     }
 
     /**
-     * Drop rows dated at or before $before ('Y-m-d H:i:s').
-     *
+     * @return array<string,array{value:?string,expires:?int}> the owner's live rows, by file name
      * @throws \mindstellar\database\DbException
      */
-    public static function pruneBefore(string $before): int
+    private static function rows(string $owner, int $now): array
     {
-        return self::table()->where('dt_date', '<=', $before)->delete();
+        return $owner !== '' ? (new KeyValue())->group(self::group($owner), 1000, $now) : [];
     }
 
-    private static function cutoff(int $now): string
+    private static function group(string $owner): string
     {
-        return date('Y-m-d H:i:s', $now - self::TTL);
+        return 'upload.' . sha1($owner);
+    }
+
+    private static function validFile(string $file): bool
+    {
+        try {
+            KeyValue::check('upload', $file);
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -630,8 +630,7 @@ if (!function_exists('seed_widget')) {
 
 if (!function_exists('seed_cron')) {
     /**
-     * t_cron has no primary key, so the same e_type can legitimately appear more
-     * than once; this helper does not deduplicate.
+     * One schedule's times in the `cron` group of t_key_value, replacing any there.
      *
      * @return int Always 0 — the table has no AUTO_INCREMENT column
      */
@@ -643,9 +642,9 @@ if (!function_exists('seed_cron')) {
     ): int {
         return seed_exec(
             $admin,
-            'INSERT INTO ' . DB_TABLE_PREFIX . 't_cron (e_type, d_last_exec, d_next_exec) VALUES (?, ?, ?)',
-            'sss',
-            array($type, $lastExec, $nextExec)
+            'REPLACE INTO ' . DB_TABLE_PREFIX . "t_key_value (s_group, s_key, s_value, dt_created) VALUES ('cron', ?, ?, NOW())",
+            'ss',
+            array($type, (string) json_encode(array('last' => $lastExec, 'next' => $nextExec)))
         );
     }
 }

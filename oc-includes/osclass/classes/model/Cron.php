@@ -12,28 +12,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Db;
+use mindstellar\model\KeyValue;
 
 /**
- * Class Cron
+ * When each cron schedule (HOURLY, DAILY, WEEKLY) last ran and next runs, kept in the
+ * `cron` group of t_key_value as JSON {"last": ..., "next": ...} in site time.
  */
-class Cron extends DAO
+class Cron
 {
+    public const KV_GROUP = 'cron';
+
     /**
-     *
      * @var Cron
      */
     private static $instance;
-
-    /**
-     *
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setTableName('t_cron');
-        $this->setFields(array('e_type', 'd_last_exec', 'd_next_exec'));
-    }
 
     /**
      * Return the shared Cron model instance, creating it on first use.
@@ -62,19 +54,47 @@ class Cron extends DAO
      *
      * @param string $type
      *
-     * @return array<string,string|null>|false The row, or false when no cron of that type exists
+     * @return array<string,string>|false e_type, d_last_exec and d_next_exec, or false when no cron of that type exists
      */
     public function getCronByType($type)
     {
-        $row = Db::table($this->getTableName())
-            ->where('e_type', $type)
-            ->first();
+        $read = $this->read((string) $type);
 
-        if ($row === null) {
-            return false;
+        return $read === null ? false : $read['row'];
+    }
+
+    /**
+     * Every schedule, as getCronByType() returns each.
+     *
+     * @return array<int,array<string,string>>
+     */
+    public function listAll()
+    {
+        $rows = array();
+        foreach ((new KeyValue())->group(self::KV_GROUP) as $type => $stored) {
+            $row = self::row((string) $type, $stored['value']);
+            if ($row !== null) {
+                $rows[] = $row;
+            }
         }
 
-        return Db::stringifyRow($row);
+        return $rows;
+    }
+
+    /**
+     * Track a schedule again as never run, when it has no readable times.
+     *
+     * @param string $type HOURLY, DAILY or WEEKLY
+     */
+    public function restore(string $type): void
+    {
+        try {
+            if ($this->read($type) === null) {
+                (new KeyValue())->set(self::KV_GROUP, $type, self::encode('1000-01-01 00:00:00', '1000-01-01 00:00:00'));
+            }
+        } catch (\mindstellar\database\DbException | \InvalidArgumentException $e) {
+            error_log('Cron schedule ' . $type . ' not restored: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -90,13 +110,50 @@ class Cron extends DAO
      */
     public function claim(string $type, string $seenNext, string $lastExec, string $nextExec): bool
     {
-        $q = Db::table($this->getTableName())->where('e_type', $type)->where('d_next_exec', $seenNext);
-
         try {
-            return $q->update(array('d_last_exec' => $lastExec, 'd_next_exec' => $nextExec)) === 1;
-        } catch (\mindstellar\database\DbException $e) {
+            $read = $this->read($type);
+            if ($read === null || $read['row']['d_next_exec'] !== $seenNext) {
+                return false;
+            }
+
+            // The update matches only the exact value read, so a run claimed in between wins.
+            return (new KeyValue())->update(self::KV_GROUP, $type, self::encode($lastExec, $nextExec), null, null, null, $read['value']) === 1;
+        } catch (\mindstellar\database\DbException | \InvalidArgumentException $e) {
             return false;
         }
+    }
+
+    /**
+     * @return array{value:string,row:array<string,string>}|null
+     */
+    private function read(string $type): ?array
+    {
+        try {
+            $stored = (new KeyValue())->get(self::KV_GROUP, $type);
+        } catch (\InvalidArgumentException $e) {
+            return null;
+        }
+        $row = $stored === null ? null : self::row($type, $stored['value']);
+
+        return $row === null ? null : array('value' => (string) $stored['value'], 'row' => $row);
+    }
+
+    /**
+     * @return array<string,string>|null
+     */
+    private static function row(string $type, ?string $value): ?array
+    {
+        $times = json_decode((string) $value, true);
+        if (!is_array($times) || !isset($times['last'], $times['next'])) {
+            return null;
+        }
+
+        return array('e_type' => $type, 'd_last_exec' => (string) $times['last'], 'd_next_exec' => (string) $times['next']);
+    }
+
+    private static function encode(string $last, string $next): string
+    {
+        return (string) json_encode(array('last' => $last, 'next' => $next));
     }
 }
 

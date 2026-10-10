@@ -148,8 +148,8 @@ final class UserStore extends Model
     }
 
     /**
-     * Carry a changed e-mail onto the user's listings, comments and alerts, and drop any
-     * pending change to that address.
+     * Carry a changed e-mail onto the user's listings, comments and alerts, and drop the
+     * user's pending change.
      *
      * @throws \mindstellar\database\DbException
      */
@@ -158,7 +158,7 @@ final class UserStore extends Model
         self::owned('t_item', $userId)->update(['s_contact_email' => $email]);
         self::owned('t_item_comment', $userId)->update(['s_author_email' => $email]);
         self::owned('t_alerts', $userId)->update(['s_email' => $email]);
-        Db::table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('s_new_email', $email)->delete();
+        \UserEmailTmp::getInstance()->deleteByUser($userId);
     }
 
     /**
@@ -201,16 +201,6 @@ final class UserStore extends Model
         }
 
         return $written;
-    }
-
-    /**
-     * Drop pending e-mail changes made before $before.
-     *
-     * @throws \mindstellar\database\DbException
-     */
-    public static function prunePendingEmails(string $before): void
-    {
-        Db::table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('dt_date', '<', $before)->delete();
     }
 
     /**

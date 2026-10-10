@@ -12,41 +12,26 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Db;
+use mindstellar\model\KeyValue;
 
 /**
- * Model database for AlertsStats table
+ * How many alert e-mails went out each day, in the `alerts_sent` group of t_key_value,
+ * one key per 'Y-m-d' date.
  *
  * @package    Shopclass
  * @subpackage Model
  * @since      3.1
  */
-class AlertsStats extends DAO
+class AlertsStats
 {
+    public const KV_GROUP = 'alerts_sent';
+
     /**
-     * It references to self object: AlertsStats.
-     * It is used as a singleton
-     *
-     * @since  3.1
      * @var AlertsStats
      */
     private static $instance;
 
     /**
-     * Set data related to t_alerts_sent table
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setTableName('t_alerts_sent');
-        $this->setPrimaryKey('d_date');
-        $this->setFields(array('d_date', 'i_num_alerts_sent'));
-    }
-
-    /**
-     * It creates a new AlertsStats object class ir if it has been created
-     * before, it return the previous object
-     *
      * @return AlertsStats
      * @since  3.1
      */
@@ -68,7 +53,7 @@ class AlertsStats extends DAO
     }
 
     /**
-     * Increase the alerts-sent counter for one day, creating the row if needed.
+     * Increase the alerts-sent counter for one day.
      *
      * @param string $date 'Y-m-d'
      *
@@ -77,21 +62,12 @@ class AlertsStats extends DAO
      */
     public function increase($date)
     {
-        // check the date it's ok
-        if (!preg_match('|^[0-9]{4}-[0-9]{2}-[0-9]{2}$|', $date)) {
+        if (!preg_match('|^[0-9]{4}-[0-9]{2}-[0-9]{2}$|', (string) $date)) {
             return false;
         }
 
-        // One statement covers both the first alert of the day and every one
-        // after it, so there is no failed insert to interpret. The date is
-        // bound rather than interpolated, and the format guard above already
-        // constrains it.
-        $sql = 'INSERT INTO ' . $this->getTableName() . ' (d_date, i_num_alerts_sent)
-                VALUES (?, 1)
-                ON DUPLICATE KEY UPDATE i_num_alerts_sent = i_num_alerts_sent + 1';
-
         try {
-            Db::execute($sql, array($date));
+            (new KeyValue())->increment(self::KV_GROUP, (string) $date);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

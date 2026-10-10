@@ -415,9 +415,9 @@ seed_exec(
 );
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_user_email_tmp (fk_i_user_id, s_new_email, dt_date) VALUES (?, 'new@example.test', NOW())",
-    'i',
-    array($owner)
+    "INSERT INTO {$prefix}t_key_value (s_group, s_key, s_value, dt_created) VALUES ('email_change', ?, 'new@example.test', NOW())",
+    's',
+    array((string) $owner)
 );
 // t_billing_wallet and t_user_entitlement both carry a real ON DELETE CASCADE FK to
 // t_user -- seeded here so that cascade is actually exercised rather than passing
@@ -465,7 +465,7 @@ pin('their alerts went with them', 0, $rows('t_alerts', "fk_i_user_id = $owner")
 pin('their form submissions went with them', 0, $rows('t_form_submission', "fk_i_user_id = $owner"));
 pin('and their submission id is gone', 0, $rows('t_form_submission', "pk_i_id = $ownerSubmission"));
 pin('their profile went with them', 0, $rows('t_user_description', "fk_i_user_id = $owner"));
-pin('their pending email change went with them', 0, $rows('t_user_email_tmp', "fk_i_user_id = $owner"));
+pin('their pending email change went with them', 0, $rows('t_key_value', "s_group = 'email_change' AND s_key = '$owner'"));
 pin('their wallet went with them', 0, $rows('t_billing_wallet', "fk_i_user_id = $owner"));
 pin('their entitlements went with them', 0, $rows('t_user_entitlement', "fk_i_user_id = $owner"));
 pin('their ledger history survives -- deliberately, it is the audit trail', 1, $rows('t_billing_ledger', "fk_i_user_id = $owner"));

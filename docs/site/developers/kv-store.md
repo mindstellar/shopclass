@@ -72,6 +72,11 @@ Name your group after your plugin slug, such as `acme`. Do not use a name core u
 | `api_idempotency` | The REST API's `Idempotency-Key` replay |
 | `api_webhook` | The REST API's webhook endpoints: one key per endpoint (`ep_…`), holding its address, events, secret and failure count. It has no expiry. |
 | `market` | The plugin and theme catalogue cache from the market, so it is not loaded on every page. |
+| `alerts_sent` | How many alert e-mails went out, one key per day. |
+| `cron` | When the hourly, daily and weekly schedules last ran and next run. |
+| `email_change` | A pending e-mail change, one key per user. It expires after 7 days. |
+| `plugin_categories` | The categories each plugin is limited to, one key per plugin. |
+| `upload.…` | Photos uploaded before their listing is saved: one group per form or API user, expiring after 2 hours. Every group that starts with `upload.` is reserved. |
 
 ## Expiry
 
@@ -105,9 +110,9 @@ expires. `$state` is a short label stored with the key: 1 to 16 characters of `a
 
 ## Personal data
 
-`t_key_value` has no user column. Core's data export and account erasure do **not** reach it, and
-list the table as retained. If your plugin stores something about a person here, your plugin
-must export and erase it itself.
+`t_key_value` has no user column. Core's data export and account erasure reach only core's own
+`email_change` group. If your plugin stores something about a person here, your plugin must
+export and erase it itself.
 
 ## Clean up on uninstall
 

@@ -35,6 +35,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 - Saved-search alerts go out daily or weekly; hourly ones become daily on upgrade. `hook_alert_email_hourly` no longer fires.
 - `PluginCategory` no longer extends `DAO`, and the `t_plugin_category` table is removed; its public calls still work.
+- `Cron`, `AlertsStats`, `UserEmailTmp` and `ItemTmpUpload` no longer extend `DAO`, and their tables move into `t_key_value`. Their own calls still work; inherited `DAO` calls such as `insert()` and `update()` are gone.
 - Listing Import 0.3 needs Shopclass 7.0. Its old plugin keys stop working: make new keys in **Settings → API**.
 - Listing Import's API lives under `/api/v1/ext/listing-import/`; its 0.2 paths are gone.
 - Plugin API routes live only under `/api/v1/ext/<plugin>/`, and the route's `plugin` must be that slug. An admin plugin route needs an `admin:` scope, or the plugin's own declared `ext:` scope for admins or moderators.

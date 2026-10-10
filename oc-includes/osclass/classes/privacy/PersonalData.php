@@ -73,12 +73,6 @@ class PersonalData
                 'erase'    => self::ERASE_DELETED,
                 'why'      => 'The profile text, one row per locale.',
             ),
-            't_user_email_tmp' => array(
-                'user_key' => 'fk_i_user_id',
-                'export'   => true,
-                'erase'    => self::ERASE_DELETED,
-                'why'      => 'A pending email change they started.',
-            ),
             't_item' => array(
                 'user_key' => 'fk_i_user_id',
                 'export'   => true,
@@ -141,7 +135,8 @@ class PersonalData
                 'erase'    => self::ERASE_RETAINED,
                 'why'      => 'Shared key-value rows, keyed by group and key rather than by account. Core keeps '
                     . 'stored answers to repeated API writes here; an answer can hold the profile it returned, '
-                    . 'and each is deleted within a day.',
+                    . 'and each is deleted within a day. A pending email change is also kept here; it is '
+                    . 'exported as pending_email_change and deleted with the account.',
             ),
             't_item_report_log' => array(
                 'user_key' => null,
@@ -232,6 +227,13 @@ class PersonalData
         // than the raw rows. The uploaded images are referenced, not copied: including the
         // bytes would turn this back into a file to build, store and clean up.
         $out['data']['t_item']['urls'] = self::itemUrls($userId);
+
+        $pending = \UserEmailTmp::getInstance()->findByPrimaryKey($userId);
+        $out['data']['pending_email_change'] = array(
+            'retention' => self::ERASE_DELETED,
+            'why'       => 'A pending email change they started.',
+            'rows'      => $pending === false ? array() : array($pending),
+        );
 
         return $out;
     }

@@ -202,7 +202,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('api', 'api_photo_fetches_per_hour', '30', 'INTEGER')
     ,('api', 'api_refresh_days', '30', 'INTEGER');
 
-INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
-    ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),
-    ('DAILY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),
-    ('WEEKLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00');
+INSERT INTO /*TABLE_PREFIX*/t_key_value (s_group, s_key, s_value, dt_created) VALUES
+    ('cron', 'HOURLY', '{"last":"1000-01-01 00:00:00","next":"1000-01-01 00:00:00"}', UTC_TIMESTAMP()),
+    ('cron', 'DAILY', '{"last":"1000-01-01 00:00:00","next":"1000-01-01 00:00:00"}', UTC_TIMESTAMP()),
+    ('cron', 'WEEKLY', '{"last":"1000-01-01 00:00:00","next":"1000-01-01 00:00:00"}', UTC_TIMESTAMP());

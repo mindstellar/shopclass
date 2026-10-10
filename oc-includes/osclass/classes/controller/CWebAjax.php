@@ -386,7 +386,13 @@ class CWebAjax extends BaseModel
 
         $result['uploadName'] = 'auto_' . $filename;
         // Stage the name the client attaches and deletes by, under the form's upload token.
-        UploadTmpStore::stage(UploadTmpStore::formOwner(), Params::getParamString('qquuid'), (string) $result['uploadName'], time());
+        try {
+            UploadTmpStore::stage(UploadTmpStore::formOwner(), Params::getParamString('qquuid'), (string) $result['uploadName'], time());
+        } catch (\InvalidArgumentException $e) {
+            @unlink(UploadTmpStore::dir() . $result['uploadName']);
+            AjaxResponse::json(array('success' => false));
+            return;
+        }
         if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
             \mindstellar\security\ActionThrottle::record('ajax_upload');
         }

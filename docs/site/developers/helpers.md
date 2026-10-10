@@ -1383,7 +1383,7 @@ Core defines 1154 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_signed_redirect_verify($value)` | Verify a signed-redirect cookie value and return its same-site URL, or '' if the value is absent, tampered, expired or off-site. Does not touch the cookie. |
 | `osc_tinymce_config($preset = 'basic', array $overrides = array())` | The TinyMCE config every editor in the product starts from, as the JSON object literal tinymce.init() takes. |
 | `osc_turnstile_configured()` | Whether both Cloudflare Turnstile keys are configured. |
-| `osc_upload_token()` | The unguessable token that ties temp photo uploads on a listing form to the browser that made them, without a session. Read from (or minted into) the `oc_upload` cookie once per request; it is the capability ItemTmpUpload checks so a visitor can only delete the photos they uploaded. |
+| `osc_upload_token()` | The unguessable token that ties temp photo uploads on a listing form to the browser that made them, without a session. Read from (or minted into) the `oc_upload` cookie once per request; it is the capability the upload store checks so a visitor can only delete the photos they uploaded. |
 | `osc_write_signed_redirect_cookie($cookieName, $value, $expiry)` | Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone — not the session container — so it never starts a session. |
 
 ### hValidate (15)

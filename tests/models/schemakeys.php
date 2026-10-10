@@ -45,7 +45,9 @@ $count = static function (string $sql) use ($admin): int {
 
 harness_section('migration 0051');
 
-$admin->query("ALTER TABLE {$p}t_cron DROP PRIMARY KEY");
+// t_cron is gone from struct.sql (0070); 0051 met it without a key.
+$admin->query("CREATE TABLE {$p}t_cron (e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,"
+    . " d_last_exec DATETIME NOT NULL DEFAULT '1000-01-01 00:00:00', d_next_exec DATETIME NOT NULL DEFAULT '1000-01-01 00:00:00')");
 // t_plugin_category is gone from struct.sql (0067); 0051 met it without a key.
 $admin->query("CREATE TABLE {$p}t_plugin_category (s_plugin_name VARCHAR(40) NOT NULL, fk_i_category_id INT UNSIGNED NOT NULL)");
 // WEEKLY has no row at all, as after a lost dedupe race.
@@ -160,12 +162,52 @@ $migrate('0053_item_category_live_index.php');
 $migrate('0053_item_category_live_index.php');
 pin('a missing idx_category_live is added once', array('idx_category_live'), array_keys(array_filter($indexes('t_item'), static fn ($c) => $c === $live)));
 
+harness_section('migration 0070');
+
+$admin->query("DELETE FROM {$p}t_cron");
+$admin->query("INSERT INTO {$p}t_cron VALUES ('HOURLY', '2026-01-01 00:00:00', '2026-01-01 01:00:00')");
+$admin->query("CREATE TABLE {$p}t_alerts_sent (d_date DATE NOT NULL, i_num_alerts_sent INT UNSIGNED NOT NULL DEFAULT 0, PRIMARY KEY (d_date))");
+$admin->query("INSERT INTO {$p}t_alerts_sent VALUES ('2026-01-01', 7)");
+$admin->query("CREATE TABLE {$p}t_user_email_tmp (fk_i_user_id INT UNSIGNED NOT NULL, s_new_email VARCHAR(100) NOT NULL, dt_date DATETIME NOT NULL, PRIMARY KEY (fk_i_user_id))");
+$admin->query("INSERT INTO {$p}t_user_email_tmp VALUES (5, 'new@example.test', NOW()), (6, 'old@example.test', NOW() - INTERVAL 8 DAY)");
+$admin->query("CREATE TABLE {$p}t_item_upload_tmp (pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT, s_token VARCHAR(64) NOT NULL DEFAULT '',"
+    . " s_uuid VARCHAR(191) NOT NULL DEFAULT '', s_file VARCHAR(191) NOT NULL DEFAULT '', dt_date DATETIME NOT NULL, PRIMARY KEY (pk_i_id))");
+$admin->query("INSERT INTO {$p}t_item_upload_tmp (s_token, s_uuid, s_file, dt_date) VALUES ('tok', 'u1', 'a.jpg', NOW()), ('tok', 'u2', 'b.jpg', NOW() - INTERVAL 3 HOUR)");
+$admin->query("INSERT INTO {$p}t_key_value (s_group, s_key, s_value, dt_created) VALUES ('alerts_sent', '2026-01-01', '9', NOW())");
+$migrate('0070_small_tables_to_key_value.php');
+$migrate('0070_small_tables_to_key_value.php');
+$kv = static function (string $group) use ($admin, $p): array {
+    $out = array();
+    foreach ($admin->query("SELECT s_key, s_value FROM {$p}t_key_value WHERE s_group = '$group' ORDER BY s_key")->fetch_all() as $row) {
+        $out[$row[0]] = $row[1];
+    }
+
+    return $out;
+};
+$expiresIn = static fn (string $group, string $key): int => (int) $count(
+    "SELECT TIMESTAMPDIFF(MINUTE, UTC_TIMESTAMP(), dt_expires) FROM {$p}t_key_value WHERE s_group = '$group' AND s_key = '$key'"
+);
+pin('a moved e-mail change keeps its 7 days and a moved upload its 2 hours', array(true, true), array(
+    abs($expiresIn('email_change', '5') - 7 * 24 * 60) <= 2,
+    abs($expiresIn('upload.' . sha1('tok'), 'a.jpg') - 120) <= 2,
+));
+pin('cron times, alert counts, live e-mail changes and live uploads move to the key-value store; a key already there is kept', array(
+    array('HOURLY' => '{"last":"2026-01-01 00:00:00","next":"2026-01-01 01:00:00"}'),
+    array('2026-01-01' => '9'),
+    array('5' => 'new@example.test'),
+    array('a.jpg' => 'u1'),
+), array($kv('cron'), $kv('alerts_sent'), $kv('email_change'), $kv('upload.' . sha1('tok'))));
+pin('the four tables are dropped', 0, $count(
+    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()"
+    . " AND table_name IN ('{$p}t_cron', '{$p}t_alerts_sent', '{$p}t_user_email_tmp', '{$p}t_item_upload_tmp')"
+));
+$admin->query("DELETE FROM {$p}t_key_value WHERE s_group IN ('cron', 'alerts_sent', 'email_change', 'upload." . sha1('tok') . "')");
+
 // Back to struct.sql for the model tests that follow.
 $admin->query("ALTER TABLE {$p}t_log DROP INDEX idx_oc_t_log_dt_date, ADD INDEX idx_date (dt_date)");
 $admin->query("ALTER TABLE {$p}t_user DROP INDEX site_reg_date, ADD INDEX idx_reg_date (dt_reg_date)");
 $admin->query("ALTER TABLE {$p}t_item DROP INDEX site_expiration, ADD INDEX idx_expiration (dt_expiration)");
 $admin->query("ALTER TABLE {$p}t_alerts DROP INDEX s_email_prefix");
-$admin->query("DELETE FROM {$p}t_cron");
 $admin->query("DROP TABLE {$p}t_plugin_category");
 
 if (!defined('MODELS_RUNNER')) {

@@ -24,9 +24,8 @@
  *                  count. Region overrides ONLY deleteByPrimaryKey (cascade), so
  *                  the base deleteByPrimaryKey shape is pinned via Currency.
  *   - Currency     (t_currency, PK pk_c_code; incoming FK from t_item): the
- *                  FK-violation (1451) delete and the base deleteByPrimaryKey.
- *   - AlertsStats  (t_alerts_sent, PK d_date): the duplicate-key (1062) insert
- *                  that AlertsStats::increase() relies on via getErrorLevel().
+ *                  FK-violation (1451) delete, the duplicate-key (1062) insert
+ *                  and the base deleteByPrimaryKey.
  *
  * NOTE (contradicts the design-review assumption): Currency is NOT override-free
  * for findByPrimaryKey — it overrides it with a process-lifetime static cache
@@ -227,7 +226,6 @@ function admin_count(mysqli $admin, string $table): int
  * ------------------------------------------------------------------------- */
 $region   = Region::getInstance();
 $currency = Currency::getInstance();
-$alerts   = AlertsStats::getInstance();
 
 echo "== 1. findByPrimaryKey ==\n";
 // Base method via Region (no override).
@@ -273,10 +271,9 @@ $insId = $region->dao->insertedId();
 check('after insert: dao->insertedId() is int > 0', is_int($insId) && $insId > 0, describe($insId));
 pin("insert(['bad_key'=>1]) === false", false, $region->insert(array('bad_key' => 1)));
 
-// Duplicate-PK insert pins the errno side-channel AlertsStats::increase() relies on.
-pin('AlertsStats insert(new) === true', true, $alerts->insert(array('d_date' => '2026-01-01', 'i_num_alerts_sent' => '1')));
-pin('AlertsStats insert(duplicate PK) === false', false, $alerts->insert(array('d_date' => '2026-01-01', 'i_num_alerts_sent' => '1')));
-pin('AlertsStats getErrorLevel() === 1062 after dup insert', 1062, $alerts->getErrorLevel());
+// Duplicate-PK insert pins the errno side-channel getErrorLevel() reports.
+pin('Currency insert(duplicate PK) === false', false, $currency->insert(array('pk_c_code' => 'USD', 's_name' => 'Again', 's_description' => 'd', 'b_enabled' => 1)));
+pin('Currency getErrorLevel() === 1062 after dup insert', 1062, $currency->getErrorLevel());
 
 echo "\n== 4. update ==\n";
 pin('update(newvalue, where) === 1 (rows changed)', 1, $region->update(array('s_name' => 'AlphaX'), array('pk_i_id' => $id1)));

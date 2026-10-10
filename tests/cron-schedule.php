@@ -59,16 +59,6 @@ namespace mindstellar\model {
     }
 }
 
-namespace mindstellar\user {
-    class UserStore
-    {
-        public static function prunePendingEmails(string $before): void
-        {
-            $GLOBALS['ran'][] = 'UserStore::prunePendingEmails';
-        }
-    }
-}
-
 namespace {
     error_reporting(E_ALL);
 
@@ -125,11 +115,6 @@ namespace {
     }
 
     class Item
-    {
-        use Noted;
-    }
-
-    class ItemTmpUpload
     {
         use Noted;
     }
@@ -215,19 +200,19 @@ namespace {
 
     harness_section('the hourly schedule');
     pin('HOURLY in capitals runs the hourly jobs, alerts first, then the purge, then its hook', array(
-        'claim HOURLY', 'alert HOURLY since last-HOURLY', 'purgeDate 3600', 'ItemTmpUpload::pruneBefore',
+        'claim HOURLY', 'alert HOURLY since last-HOURLY', 'purgeDate 3600',
         'RateLimit::prune', 'hook cron_hourly', 'hook cron',
     ), cron_run('HOURLY', 'hour'));
     pin('a numeric setting keeps that many searches instead', array(
-        'claim HOURLY', 'alert HOURLY since last-HOURLY', 'purgeNumber 1000', 'ItemTmpUpload::pruneBefore',
+        'claim HOURLY', 'alert HOURLY since last-HOURLY', 'purgeNumber 1000',
         'RateLimit::prune', 'hook cron_hourly', 'hook cron',
     ), cron_run('hourly', '1000'));
-    pin('a daily purge is not run hourly', array('claim HOURLY', 'alert HOURLY since last-HOURLY', 'ItemTmpUpload::pruneBefore', 'RateLimit::prune', 'hook cron_hourly', 'hook cron'), cron_run('hourly', 'day'));
+    pin('a daily purge is not run hourly', array('claim HOURLY', 'alert HOURLY since last-HOURLY', 'RateLimit::prune', 'hook cron_hourly', 'hook cron'), cron_run('hourly', 'day'));
 
     harness_section('the daily schedule');
     pin('daily runs alerts, the day purge, the stats and prunes, then its hook', array(
         'claim DAILY', 'alert DAILY since last-DAILY', 'purgeDate 86400', 'osc_update_cat_stats', 'MessageGuard::purgeExpired',
-        'LoginThrottle::prune', 'KeyValue::prune', 'ApiCredential::pruneRefresh', 'UserStore::prunePendingEmails',
+        'LoginThrottle::prune', 'KeyValue::prune', 'ApiCredential::pruneRefresh',
         'Sitemap::warmCache', 'hook cron_daily', 'hook cron',
     ), cron_run('Daily', 'day'));
 

@@ -17,7 +17,7 @@ use mindstellar\utility\Clock;
 
 /**
  * Photos uploaded before their listing exists, kept where the listing form keeps its own:
- * a file in uploads/temp/ and a t_item_upload_tmp row. The row's token is the user's, so a
+ * a file in uploads/temp/ and a staged-upload row. The row's token is the user's, so a
  * photo token only works for the user who uploaded it. The hourly cron removes both after
  * two hours, as it does for the form's uploads.
  */

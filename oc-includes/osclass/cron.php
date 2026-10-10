@@ -53,10 +53,6 @@ $schedules = array(
                 }
             }
         }
-        // Drop the tracking rows abandoned uploads leave in t_item_upload_tmp, on the same
-        // window as the temp files swept above.
-        ItemTmpUpload::getInstance()->pruneBefore(date('Y-m-d H:i:s', time() - (2 * 3600)));
-
         \mindstellar\security\RateLimit::prune();
 
         osc_run_hook('cron_hourly');
@@ -88,19 +84,12 @@ $schedules = array(
         // the table is the fastest-growing one in the schema.
         \mindstellar\security\LoginThrottle::prune();
 
-        // Expired key-value rows (API Idempotency-Keys among them), and refresh tokens that can no longer be used.
+        // Expired key-value rows (API Idempotency-Keys, staged uploads and pending e-mail changes among them), and refresh tokens that can no longer be used.
         try {
             (new \mindstellar\model\KeyValue())->prune(time());
             (new \mindstellar\model\ApiCredential())->pruneRefresh(time() - (7 * 24 * 3600));
         } catch (\mindstellar\database\DbException $e) {
             error_log('Key-value and API prune failed: ' . $e->getMessage());
-        }
-
-        // Pending e-mail changes are dropped after 7 days; their confirmation link then stops working.
-        try {
-            \mindstellar\user\UserStore::prunePendingEmails(date('Y-m-d H:i:s', time() - (7 * 24 * 3600)));
-        } catch (\mindstellar\database\DbException $e) {
-            error_log('Pending e-mail change prune failed: ' . $e->getMessage());
         }
 
         // Pre-generate the XML sitemap into the object cache so bots never trigger
@@ -132,6 +121,8 @@ $schedules = array(
 foreach ($schedules as $type => [$period, $purgeKey, $jobs]) {
     $cron = Cron::getInstance()->getCronByType($type);
     if (!is_array($cron)) {
+        // A lost schedule comes back as never run, so the next cron run finds it due.
+        Cron::getInstance()->restore($type);
         continue;
     }
     // The CLI names a schedule to force it; with none named it runs what is due, as the web does.

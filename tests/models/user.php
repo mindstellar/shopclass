@@ -362,9 +362,9 @@ $doomed = seed_user($admin, 'doomed', 'doomed@example.test', 1, 1);
 $seedDescription($doomed, 'en_US', 'to be removed');
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_user_email_tmp (fk_i_user_id, s_new_email, dt_date) VALUES (?, ?, NOW())",
-    'is',
-    array($doomed, 'new@example.test')
+    "INSERT INTO {$prefix}t_key_value (s_group, s_key, s_value, dt_created) VALUES ('email_change', ?, ?, NOW())",
+    'ss',
+    array((string) $doomed, 'new@example.test')
 );
 
 /* Avatars are t_resource rows owned by the user: the rows go with the user, and the
@@ -391,7 +391,7 @@ pin('deleteUser(null) is a no-op returning false', false, $model->deleteUser(nul
 pin('deleting a user reports true', true, $model->deleteUser($doomed));
 pin('the user row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE pk_i_id = $doomed"));
 pin('its description rows are gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user_description WHERE fk_i_user_id = $doomed"));
-pin('its pending email-change row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user_email_tmp WHERE fk_i_user_id = $doomed"));
+pin('its pending email-change row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_key_value WHERE s_group = 'email_change' AND s_key = '$doomed'"));
 pin('the victim survives untouched', 1, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE pk_i_id = $victim"));
 pin('deleting a missing id returns false', false, $model->deleteUser(999999));
 pin('its avatar row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_resource WHERE s_owner_type = 'user' AND i_owner_id = $doomed"));

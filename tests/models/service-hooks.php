@@ -311,8 +311,8 @@ $apiEmail = $record(static fn () => $call('PATCH', 'account', ['email' => 'tommy
 pin('the web request fires these', ['hook_email_new_email'], $webEmail);
 pin('the API request fires the same', $webEmail, $apiEmail);
 pin('both wait for the link, the address unchanged', [['susan@example.test', 'sue@example.test'], ['tommy@example.test', 'tom@example.test']], [
-    [$admin->query("SELECT s_new_email FROM {$p}t_user_email_tmp WHERE fk_i_user_id = $sue")->fetch_row()[0] ?? null, $user($sue)['s_email']],
-    [$admin->query("SELECT s_new_email FROM {$p}t_user_email_tmp WHERE fk_i_user_id = $tom")->fetch_row()[0] ?? null, $user($tom)['s_email']],
+    [$admin->query("SELECT s_value FROM {$p}t_key_value WHERE s_group = 'email_change' AND s_key = '$sue'")->fetch_row()[0] ?? null, $user($sue)['s_email']],
+    [$admin->query("SELECT s_value FROM {$p}t_key_value WHERE s_group = 'email_change' AND s_key = '$tom'")->fetch_row()[0] ?? null, $user($tom)['s_email']],
 ]);
 pin('an address another account holds: neither side sends a link or says it is taken', [false, 200, []], [
     $web['email']($sue, 'tom@example.test'),

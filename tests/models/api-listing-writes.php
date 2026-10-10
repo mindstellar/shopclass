@@ -713,10 +713,11 @@ $r = $call('POST', 'listings', null, $sueToken, array('Content-Type' => Request:
 pin('POST does not', '415 unsupported_media_type', $code($r));
 
 harness_section('the photo stage');
-$stageRows = static fn (int $userId): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$userId'")->fetch_row()[0];
-$admin->query("DELETE FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$tom'");
+$stageGroup = static fn (int $userId): string => 'upload.' . sha1('api:' . $userId);
+$stageRows  = static fn (int $userId): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_key_value WHERE s_group = '" . $stageGroup($userId) . "'")->fetch_row()[0];
+$admin->query("DELETE FROM {$p}t_key_value WHERE s_group = '" . $stageGroup($tom) . "'");
 for ($i = 0; $i < PhotoStage::MAX_PENDING; $i++) {
-    $admin->query("INSERT INTO {$p}t_item_upload_tmp (s_token, s_uuid, s_file, dt_date) VALUES ('api:$tom', '" . md5((string) $i) . "', 'none', NOW())");
+    (new \mindstellar\model\KeyValue())->set($stageGroup($tom), 'none' . $i, md5((string) $i), time() + 3600);
 }
 $extra = $lwRoot . 'extra.jpg';
 copy($jpeg, $extra);
@@ -728,7 +729,7 @@ try {
 }
 pin('one photo past the cap is taken back out, even when it raced the count', array(true, PhotoStage::MAX_PENDING), array($overflow, $stageRows($tom)));
 pin('the API answers 422 limit for a photo past the cap', array(422, 'limit'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['code'] ?? null))($call('POST', 'photos', null, $tomToken, array(), $photoFile($jpeg))));
-$admin->query("DELETE FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$tom'");
+$admin->query("DELETE FROM {$p}t_key_value WHERE s_group = '" . $stageGroup($tom) . "'");
 $legacy = ItemTmpUpload::getInstance();
 $legacy->add('web-form', 'u1', 'a.jpg');
 $legacy->add('web-form', 'u2', 'b.jpg');
@@ -758,7 +759,7 @@ pin('a staged file is discarded only by its owner, row and file together', array
 \mindstellar\listing\UploadTmpStore::removeOwner('web-form');
 @unlink($stageDir . 'old.jpg');
 copy($jpeg, $stageDir . '../outside.jpg');
-\mindstellar\listing\UploadTmpStore::add('web-form', 'u4', '../outside.jpg', date('Y-m-d H:i:s', $now));
+\mindstellar\listing\UploadTmpStore::stage('web-form', 'u4', '../outside.jpg', $now);
 pin('a file name that climbs out of the stage folder is neither listed nor deleted', array(array(), false, true), array(
     \mindstellar\listing\UploadTmpStore::staged('web-form', array('u4'), $now, $stageDir),
     \mindstellar\listing\UploadTmpStore::discard('web-form', '../outside.jpg', $stageDir),
@@ -771,8 +772,29 @@ pin('stage counts each owner\'s files on their own', array(1, 1, 2), array(
     \mindstellar\listing\UploadTmpStore::stage('owner-b', 'b1', 'b1.jpg', $now),
     \mindstellar\listing\UploadTmpStore::stage('owner-a', 'a2', 'a2.jpg', $now),
 ));
+\mindstellar\listing\UploadTmpStore::stage('owner-a', 'a3', 'a3.jpg', $now - 3600);
+pin('remove forgets only the owner\'s files with those uuids', array(array('a1.jpg' => true, 'a2.jpg' => false), true), array(
+    (static function () use ($now): array {
+        \mindstellar\listing\UploadTmpStore::remove('owner-a', array('a2', 'b1'));
+
+        return array('a1.jpg' => \mindstellar\listing\UploadTmpStore::owns('owner-a', 'a1.jpg'), 'a2.jpg' => \mindstellar\listing\UploadTmpStore::owns('owner-a', 'a2.jpg'));
+    })(),
+    \mindstellar\listing\UploadTmpStore::owns('owner-b', 'b1.jpg'),
+));
+pin('a staged file counts for two hours from when it was staged', array(1, 2, 2), array(
+    \mindstellar\listing\UploadTmpStore::stage('owner-c', 'c1', 'c1.jpg', $now - 3600),
+    \mindstellar\listing\UploadTmpStore::stage('owner-c', 'c2', 'c2.jpg', $now),
+    \mindstellar\listing\UploadTmpStore::stage('owner-c', 'c3', 'c3.jpg', $now + 3601),
+));
+pin('a name the store cannot hold is neither owned nor removed', array(false, 0, false, 0), array(
+    \mindstellar\listing\UploadTmpStore::owns('owner-a', " a1.jpg"),
+    \mindstellar\listing\UploadTmpStore::removeFile('owner-a', "a1.jpg\n"),
+    \mindstellar\listing\UploadTmpStore::owns('owner-a', ''),
+    \mindstellar\listing\UploadTmpStore::removeFile('', 'a1.jpg'),
+));
 \mindstellar\listing\UploadTmpStore::removeOwner('owner-a');
 \mindstellar\listing\UploadTmpStore::removeOwner('owner-b');
+\mindstellar\listing\UploadTmpStore::removeOwner('owner-c');
 $fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024, fopen('php://memory', 'w'));
 pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
 pin('a download that crawls is dropped', array(ImageFetcher::LOW_SPEED, ImageFetcher::LOW_SPEED_TIME), array($fetcher[CURLOPT_LOW_SPEED_LIMIT] ?? null, $fetcher[CURLOPT_LOW_SPEED_TIME] ?? null));

@@ -742,7 +742,7 @@ function osc_get_http_referer()
 /**
  * The unguessable token that ties temp photo uploads on a listing form to the browser that
  * made them, without a session. Read from (or minted into) the `oc_upload` cookie once per
- * request; it is the capability {@see ItemTmpUpload} checks so a visitor can only delete the
+ * request; it is the capability the upload store checks so a visitor can only delete the
  * photos they uploaded.
  *
  * @return string 32 hex characters

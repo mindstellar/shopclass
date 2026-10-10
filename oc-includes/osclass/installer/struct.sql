@@ -198,15 +198,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_user_description (
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_user_email_tmp (
-    fk_i_user_id INT UNSIGNED NOT NULL,
-    s_new_email VARCHAR(100) NOT NULL,
-    dt_date DATETIME NOT NULL,
-
-        PRIMARY KEY (fk_i_user_id),
-        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_category (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_parent_id INT UNSIGNED NULL,
@@ -471,14 +462,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_pages_description (
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_cron (
-  e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
-  d_last_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
-  d_next_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
-
-  PRIMARY KEY (e_type)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_email VARCHAR(100) DEFAULT NULL,
@@ -495,13 +478,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     INDEX idx_user (fk_i_user_id),
     INDEX idx_email (s_email),
     FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
-    d_date DATE NOT NULL,
-    i_num_alerts_sent INT UNSIGNED NOT NULL DEFAULT 0,
-
-    PRIMARY KEY (d_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_latest_searches (
@@ -775,18 +751,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_key_value (
 
         PRIMARY KEY (s_group, s_key),
         INDEX idx_expires (dt_expires)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (
-    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    s_token VARCHAR(64) NOT NULL DEFAULT '',
-    s_uuid VARCHAR(191) NOT NULL DEFAULT '',
-    s_file VARCHAR(191) NOT NULL DEFAULT '',
-    dt_date DATETIME NOT NULL,
-
-        PRIMARY KEY (pk_i_id),
-        INDEX idx_token (s_token),
-        INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 -- Credit balance per user. The ledger below is the source of truth. This row is a

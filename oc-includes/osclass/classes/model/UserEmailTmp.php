@@ -13,31 +13,26 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\model\KeyValue;
 
 /**
- * Model database for the t_user_email_tmp table (pending email changes).
+ * Pending e-mail changes, in the `email_change` group of t_key_value: one key per user id,
+ * holding the new address, dropped after 7 days.
  *
  * @package    Shopclass
  * @subpackage Model
  */
-class UserEmailTmp extends DAO
+class UserEmailTmp
 {
+    public const KV_GROUP = 'email_change';
+
+    /** Seconds a pending change waits for its confirmation. */
+    public const TTL = 7 * 24 * 3600;
+
     /**
-     *
      * @var \UserEmailTmp
      */
     private static $instance;
-
-    /**
-     * Set data related to t_user_email_tmp table
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setTableName('t_user_email_tmp');
-        $this->setPrimaryKey('fk_i_user_id');
-        $this->setFields(array('fk_i_user_id', 's_new_email', 'dt_date'));
-    }
 
     /**
      * Return the shared UserEmailTmp model instance, creating it on first use.
@@ -66,42 +61,58 @@ class UserEmailTmp extends DAO
      *
      * @param array{fk_i_user_id:int|string,s_new_email:string} $userEmailTmp
      *
-     * @return int|false False when a new row was written, otherwise 1 for an
-     *                   overwritten row and 0 when nothing changed or the user id is unknown
+     * @return int|false False when there was no pending change, otherwise 1 when one was
+     *                   replaced and 0 when it already held this address or the user id is unknown
      */
     public function insertOrUpdate($userEmailTmp)
     {
-        $now = date('Y-m-d H:i:s');
-
-        // One statement instead of an insert that is expected to fail followed by
-        // an update. The assignments are spelled out rather than using VALUES(),
-        // which MySQL 8 deprecates and whose replacement syntax MariaDB rejects.
-        $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_user_id, s_new_email, dt_date)
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE s_new_email = ?, dt_date = ?';
-
-        try {
-            $affected = Db::execute($sql, array(
-                $userEmailTmp['fk_i_user_id'],
-                $userEmailTmp['s_new_email'],
-                $now,
-                $userEmailTmp['s_new_email'],
-                $now
-            ));
-        } catch (\mindstellar\database\DbException $e) {
-            // An unknown user id trips the foreign key. That used to fail the
-            // insert and then match no rows on the update, reporting 0.
+        $userId = (int) ($userEmailTmp['fk_i_user_id'] ?? 0);
+        $email  = (string) ($userEmailTmp['s_new_email'] ?? '');
+        if ($userId <= 0 || Db::table(DB_TABLE_PREFIX . 't_user')->select('pk_i_id')->where('pk_i_id', $userId)->first() === null) {
             return 0;
         }
-
-        // MySQL reports 1 for a fresh insert, 2 when it overwrote an existing row
-        // and 0 when that row already held these values. Callers have always been
-        // told false for a new row, and the affected-row count otherwise.
-        if ($affected === 1) {
+        $before = $this->findByPrimaryKey($userId);
+        $now    = time();
+        (new KeyValue())->set(self::KV_GROUP, (string) $userId, $email, $now + self::TTL, null, $now);
+        if ($before === false) {
             return false;
         }
 
-        return $affected === 2 ? 1 : 0;
+        return $before['s_new_email'] === $email ? 0 : 1;
+    }
+
+    /**
+     * The pending change of a user.
+     *
+     * @param int $userId
+     *
+     * @return array{fk_i_user_id:string,s_new_email:string,dt_date:string}|false false when there is none
+     */
+    public function findByPrimaryKey($userId)
+    {
+        $userId = (int) $userId;
+        $row    = $userId > 0 ? (new KeyValue())->get(self::KV_GROUP, (string) $userId) : null;
+        if ($row === null || $row['value'] === null) {
+            return false;
+        }
+
+        return array(
+            'fk_i_user_id' => (string) $userId,
+            's_new_email'  => $row['value'],
+            'dt_date'      => date('Y-m-d H:i:s', $row['updated'] ?? $row['created']),
+        );
+    }
+
+    /**
+     * Drop a user's pending change.
+     *
+     * @param int $userId
+     *
+     * @return int rows removed
+     */
+    public function deleteByUser($userId): int
+    {
+        return (int) $userId > 0 ? (new KeyValue())->delete(self::KV_GROUP, (string) (int) $userId) : 0;
     }
 }
 

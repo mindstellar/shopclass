@@ -12,30 +12,17 @@
 use mindstellar\listing\UploadTmpStore;
 
 /**
- * ItemTmpUpload DAO — photos uploaded to a listing form before the listing is saved.
+ * Photos uploaded to a listing form before the listing is saved.
  *
- * Replaces the $_SESSION['ajax_files'] list, so uploading a photo no longer starts a
- * session. Each row ties an uploaded temp file to the per-form upload token (an unguessable
- * cookie, see osc_upload_token()); the token is the capability that lets the "remove photo"
- * action delete only the files it uploaded. The final listing attaches its photos from the
- * submitted `ajax_photos` form field, not from here, so this table only backs the delete and
- * cleanup paths. Temp files are swept by the hourly cron; stale rows are pruned there too.
+ * Each staged file is tied to the per-form upload token (an unguessable cookie, see
+ * osc_upload_token()); the token is the capability that lets the "remove photo" action delete
+ * only the files it uploaded. Kept in t_key_value through {@see UploadTmpStore}; staged files
+ * expire after two hours.
  */
-class ItemTmpUpload extends DAO
+class ItemTmpUpload
 {
     /** @var ItemTmpUpload */
     private static $instance;
-
-    /**
-     * Set data related to t_item_upload_tmp table
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setTableName('t_item_upload_tmp');
-        $this->setPrimaryKey('pk_i_id');
-        $this->setFields(array('pk_i_id', 's_token', 's_uuid', 's_file', 'dt_date'));
-    }
 
     /**
      * Return the shared ItemTmpUpload model instance, creating it on first use.
@@ -122,16 +109,15 @@ class ItemTmpUpload extends DAO
     }
 
     /**
-     * Drop rows older than a moment. The temp files themselves are swept by the cron; this
-     * clears the tracking rows abandoned uploads leave behind.
+     * Staged files now expire on their own.
      *
      * @param string $before 'Y-m-d H:i:s'
      *
-     * @return int rows removed
-     * @throws \mindstellar\database\DbException on a query failure
+     * @return int always 0
+     * @deprecated 7.0.0 Staged files expire after two hours without a prune.
      */
     public function pruneBefore($before)
     {
-        return UploadTmpStore::pruneBefore((string)$before);
+        return 0;
     }
 }
