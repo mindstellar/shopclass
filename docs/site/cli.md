@@ -180,9 +180,10 @@ still draining is the normal case and exits `0`. An empty queue costs one query,
 the entry is harmless to leave in place on a site that queues nothing.
 
 On a server where you can keep a process running (systemd, supervisord, Docker),
-run it with `--listen` instead. It stays up for an hour, then exits so your process
-manager restarts it. A job starts at once with a Redis or Valkey cache
-(`OSC_CACHE=redis`), and within five seconds without one:
+run it with `--listen` instead. It stays up for an hour (`--max-seconds=` changes
+that), then exits with `0` so your process manager restarts it. With a Redis or
+Valkey cache (`OSC_CACHE=redis`) a job starts the moment it is queued, and a job
+held for later within 30 seconds of its time. Without one, it looks every five seconds:
 
 ```bash
 php /path/to/site/oc-cli.php jobs:work --listen

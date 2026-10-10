@@ -42,9 +42,11 @@ services:
       # first if third-party plugins write to the database.
       # OSC_DB_STRICT_MODE: "1"
       # Valkey holds the object cache and wakes the job worker the moment a job is
-      # queued. Remove these two lines and the valkey service to run without it.
+      # queued. To run without it, remove these two lines, the valkey service and
+      # the valkey entry under depends_on.
       OSC_CACHE: redis
       OSC_CACHE_HOST: valkey
+      OSC_CACHE_PASSWORD: shopclass
     volumes:
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads
@@ -87,6 +89,7 @@ services:
 
   valkey:
     image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--requirepass", "shopclass", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
     restart: unless-stopped
 
 volumes:

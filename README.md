@@ -185,7 +185,7 @@ PHP is newer.
 
 ### Run it with Docker
 
-A full local stack (PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin)
+A full local stack (PHP-FPM, MariaDB, Nginx, Valkey, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`, alongside `docker-compose.prod.yml` for the
 production image:
 

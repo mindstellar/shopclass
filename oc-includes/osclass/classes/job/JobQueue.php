@@ -600,10 +600,32 @@ final class JobQueue
      */
     private static function wake(): void
     {
+        self::redis()?->signal(self::SIGNAL);
+    }
+
+    /**
+     * Wait up to $seconds for wake().
+     *
+     * @param int $seconds
+     *
+     * @return bool|null true when woken, false on a timeout, null when no signal can come
+     *                   (no Redis-protocol cache, or its server is down)
+     */
+    public function waitForWake(int $seconds): ?bool
+    {
+        return self::redis()?->waitSignal(self::SIGNAL, $seconds);
+    }
+
+    /**
+     * The object cache when it can carry signals.
+     *
+     * @return \mindstellar\cache\RedisCache|null
+     */
+    private static function redis(): ?\mindstellar\cache\RedisCache
+    {
         $cache = \mindstellar\cache\CacheManager::getInstance();
-        if ($cache instanceof \mindstellar\cache\RedisCache) {
-            $cache->signal(self::SIGNAL);
-        }
+
+        return $cache instanceof \mindstellar\cache\RedisCache ? $cache : null;
     }
 
     /**

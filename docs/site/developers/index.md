@@ -85,7 +85,7 @@ npm run build        # vendor assets + SCSS → CSS + JS
 npm run watch        # rebuild on change
 ```
 
-A full stack (PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin)
+A full stack (PHP-FPM, MariaDB, Nginx, Valkey, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`:
 
 ```bash

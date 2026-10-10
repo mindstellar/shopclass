@@ -698,6 +698,23 @@ $table = DB_TABLE_PREFIX . 't_job_queue';
 \mindstellar\database\Db::table($table)->where('pk_i_id', $id)->update(array('s_status' => JobQueue::STATUS_ERROR));
 $queue->retry($id);
 pin('a retried job does', array('LPUSH', 'LTRIM'), $wakeSent);
+\mindstellar\database\Db::table($table)->where('pk_i_id', $id)->update(array('s_status' => JobQueue::STATUS_ERROR));
+$wakeSent = array();
+$queue->retryAll();
+pin('so does retrying them all', array('LPUSH', 'LTRIM'), $wakeSent);
+$truncate();
+$id       = $queue->enqueue('test.ok', array('n' => 5));
+$wakeSent = array();
+$queue->claim(1);
+$queue->repeat($id, array('n' => 6), 60);
+pin('a job carried on later does not', array(), $wakeSent);
+$queue->claim(1);
+$queue->release(array($id));
+pin('a claimed job handed back does', array('LPUSH', 'LTRIM'), $wakeSent);
+$queue->claim(1);
+$wakeSent = array();
+$queue->repeat($id, array('n' => 7));
+pin('and so does one carried on now', array('LPUSH', 'LTRIM'), $wakeSent);
 $wakeShared->setValue(null, $wakeBefore);
 
 harness_section('Listening');
@@ -743,6 +760,49 @@ pin('a job held for later starts nothing', 0, $listenFor(static fn () => JobWork
 $queue->enqueue('test.ok', array('n' => 4));
 pin('a worker that gets nothing done is not started again at once', 1, $listenFor(static function (): void {
 }));
+
+$truncate();
+$queue->enqueue('test.listen', array('n' => 5));
+$queue->enqueue('test.listen', array('n' => 6));
+$queue->enqueue('test.listen', array('n' => 7));
+pin('a worker that gets something done is started again at once', 3, $listenFor(static function () use ($queue): void {
+    foreach ($queue->claim(1) as $row) {
+        $queue->complete((int) $row['pk_i_id']);
+    }
+}));
+
+$truncate();
+$listenSlept = array();
+$listenWaits = array();
+$listenRedis = new class ($wakeClient, $listenWaits) extends \mindstellar\cache\RedisCache {
+    /** @var array<int,bool|null> */
+    public array $replies = array();
+
+    public function __construct(\mindstellar\cache\RedisClient $client, private array &$waits)
+    {
+        parent::__construct($client);
+    }
+
+    public function waitSignal(string $name, int $seconds): ?bool
+    {
+        $this->waits[] = $name . ':' . $seconds;
+        if ($this->replies === array()) {
+            throw new JobQueueStopListening();
+        }
+
+        return array_shift($this->replies);
+    }
+};
+$wakeShared->setValue(null, $listenRedis);
+$listenRedis->replies = array(false, true);
+$listenFor(static fn () => null);
+pin('with Redis it waits for the signal instead of sleeping', array('jobs:30', 'jobs:30', 'jobs:30'), $listenWaits);
+pin('so it never sleeps', array(), $listenSlept);
+$listenWaits          = array();
+$listenRedis->replies = array(null);
+$listenFor(static fn () => null);
+pin('a Redis server that is down falls back to sleeping', array(JobWorker::LISTEN_POLL), $listenSlept);
+$wakeShared->setValue(null, $wakeBefore);
 $truncate();
 
 if (!defined('MODELS_RUNNER')) {

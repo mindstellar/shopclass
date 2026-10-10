@@ -51,17 +51,16 @@ services:
       - DB_NAME=${SHOPCLASS_DATABASE_NAME:-shopclass}
       - DB_USER=${SHOPCLASS_DATABASE_USER:-shopclass}
       - DB_PASSWORD=${SHOPCLASS_DATABASE_PASSWORD:-shopclass}
-      # Persistent object cache backed by the memcached service below.
-      - OSC_CACHE=memcached
-      - OSC_CACHE_HOST=memcached
-      - OSC_CACHE_PORT=11211
+      # Persistent object cache backed by the valkey service below, as in production.
+      - OSC_CACHE=redis
+      - OSC_CACHE_HOST=valkey
       # The site's address for php oc-cli.php only; web requests keep using the
       # address they came in on (see .env.example).
       - OSC_CLI_URL=${OSC_CLI_URL:-}
     depends_on:
       mariadb:
         condition: service_healthy
-      memcached:
+      valkey:
         condition: service_started
     command: php-fpm
 
@@ -101,10 +100,10 @@ services:
     ports:
       - "33061:3306"
 
-  # Memcached (optional object cache)
-  memcached:
-    image: memcached:alpine
-    container_name: shopclass-memcached
+  # Valkey (object cache, and the job worker's wake-up signal)
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: shopclass-valkey
 
   # Nginx web server
   webserver:

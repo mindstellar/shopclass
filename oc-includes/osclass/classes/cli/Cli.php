@@ -826,11 +826,14 @@ class Cli
         if ($listen) {
             // Each pass is its own process, so no cached data or memory outlives it.
             $command = array(PHP_BINARY, ABS_PATH . 'oc-cli.php', 'jobs:work', '--max-seconds=50');
-            \mindstellar\job\JobWorker::listen($maxSeconds, static function () use ($command): void {
+            \mindstellar\job\JobWorker::listen($maxSeconds, function () use ($command): void {
                 $process = proc_open($command, array(STDIN, STDOUT, STDERR), $pipes);
-                if (is_resource($process)) {
-                    proc_close($process);
+                if (!is_resource($process)) {
+                    $this->err('Could not start ' . implode(' ', $command) . "\n");
+
+                    return;
                 }
+                proc_close($process);
             });
 
             return 0;

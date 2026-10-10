@@ -171,7 +171,8 @@ queue and does nothing else, so it is safe to run every minute:
 ```
 
 Or keep one worker running with `jobs:work --listen`. With a Redis or Valkey cache, queueing
-a job wakes it at once; without one it looks every five seconds. Every job is still a row in
+a job wakes it at once (a delayed job runs within 30 seconds of its time); without one it
+looks every five seconds. Every job is still a row in
 `t_job_queue`, so cron, `jobs:work` and the listener can run side by side, and turning Redis
 off loses nothing. The Docker image runs the listener for you.
 

@@ -6,8 +6,8 @@ sidebar:
 ---
 
 ShopClass publishes a self-contained image: Nginx (the web server), PHP-FPM
-(the process that runs the PHP code) and Supervisor (the tool that keeps both
-running), all in one container, with the Storefront theme baked in. It
+(the process that runs the PHP code), the background job worker and Supervisor
+(the tool that keeps them running), all in one container, with the Storefront theme baked in. It
 provisions itself on first boot.
 
 ```bash
@@ -165,7 +165,12 @@ docker compose exec app php oc-cli.php user:reset-password --user=admin
 
 ## Cron in a container
 
-The container does not schedule anything for you. Run cron from the host, from
+The container runs background jobs for you (`oc-cli.php jobs:work --listen`), so
+do not add a `jobs:work` line. With the Valkey service that `docker-compose.prod.yml`
+and the one-command installer add, a job starts the moment it is queued; without
+it, within five seconds.
+
+Scheduled tasks still need cron. Run it from the host, from
 a sidecar (a small helper container running next to the app), or from your
 orchestrator (the system managing your containers, such as Kubernetes):
 
@@ -341,8 +346,10 @@ Three things have to be true before a second instance is safe:
    process, so two instances never see the same cache.
 3. **Cron runs once**, not once per instance.
 
+Each instance runs its own job worker. That is safe: a job is claimed by one worker only.
+
 ## Local development
 
 For working on ShopClass itself there is a separate development stack (PHP-FPM,
-MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin) in `docker-compose.dev.yml`.
+MariaDB, Nginx, Valkey, Mailhog and phpMyAdmin) in `docker-compose.dev.yml`.
 See the [developer documentation](/docs/developers/).

@@ -307,6 +307,7 @@ ADMIN_PASSWORD=$ADMIN_PASSWORD
 
 DB_PASSWORD=$(random 32)
 DB_ROOT_PASSWORD=$(random 32)
+VALKEY_PASSWORD=$(random 32)
 
 # Outgoing mail. Set these to send e-mail, then run: docker compose up -d
 SMTP_HOST=
@@ -357,6 +358,9 @@ services:
       OSC_ADMIN_EMAIL: \${ADMIN_EMAIL}
       OSC_ADMIN_PASSWORD: \${ADMIN_PASSWORD}
       OSC_MICROCACHE: "1"
+      OSC_CACHE: redis
+      OSC_CACHE_HOST: valkey
+      OSC_CACHE_PASSWORD: \${VALKEY_PASSWORD}
       SMTP_HOST: \${SMTP_HOST:-}
       SMTP_PORT: \${SMTP_PORT:-587}
       SMTP_USER: \${SMTP_USER:-}
@@ -370,6 +374,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      valkey:
+        condition: service_started
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--requirepass", "\${VALKEY_PASSWORD}", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
     restart: unless-stopped
 
   db:

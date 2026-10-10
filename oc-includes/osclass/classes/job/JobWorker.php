@@ -109,8 +109,6 @@ final class JobWorker
             sleep($seconds);
         };
         $queue  = JobQueue::getInstance();
-        $cache  = \mindstellar\cache\CacheManager::getInstance();
-        $redis  = $cache instanceof \mindstellar\cache\RedisCache ? $cache : null;
         $start  = time();
         $called = 0;
 
@@ -124,8 +122,7 @@ final class JobWorker
                     continue;
                 }
             }
-            $waited = $redis ? $redis->waitSignal(JobQueue::SIGNAL, min(self::LISTEN_WAIT, $left)) : null;
-            if ($waited === null) {
+            if ($queue->waitForWake(min(self::LISTEN_WAIT, $left)) === null) {
                 $sleep(min(self::LISTEN_POLL, $left));
             }
         }
