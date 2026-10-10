@@ -199,6 +199,19 @@ pin('another row holding a photo id moves aside, even with the item owner type',
     (string) $admin->query("SELECT s_base_name FROM {$p}t_resource WHERE i_owner_id = 999")->fetch_row()[0],
     (string) $admin->query("SELECT i_owner_id FROM {$p}t_resource WHERE pk_i_id = 30")->fetch_row()[0],
 ));
+$snapshot = static fn (): string => md5(json_encode($admin->query("SELECT * FROM {$p}t_resource ORDER BY pk_i_id")->fetch_all()));
+$before   = $snapshot();
+$admin->query("CREATE TABLE {$p}t_item_resource (pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT, fk_i_item_id INT UNSIGNED NOT NULL,"
+    . " s_name VARCHAR(60) NULL, s_extension VARCHAR(10) NULL, s_content_type VARCHAR(40) NULL, s_path VARCHAR(250) NULL,"
+    . " s_storage VARCHAR(30) NOT NULL DEFAULT 'local', PRIMARY KEY (pk_i_id))");
+$admin->query("INSERT INTO {$p}t_item_resource SELECT pk_i_id, i_owner_id, s_name, s_extension, s_content_type, s_path, s_storage"
+    . " FROM {$p}t_resource WHERE s_owner_type = 'item'");
+$migrate();
+$migrate();
+pin('running it again over photos already moved changes no row and drops the old table', array($before, 0), array(
+    $snapshot(),
+    $count("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '{$p}t_item_resource'"),
+));
 pin('the cover is the first image, not the first file', array($itemC => osc_base_url() . $root . 'item/31_thumbnail.jpg'), osc_item_cover_urls(array($itemC)));
 
 $admin->query("DELETE FROM {$p}t_resource");

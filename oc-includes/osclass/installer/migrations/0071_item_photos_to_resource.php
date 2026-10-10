@@ -41,23 +41,18 @@ return new class () implements MigrationInterface {
             $conn->execute('ALTER TABLE ' . $resources . ' ADD COLUMN s_base_name VARCHAR(40) NULL');
         }
 
-        $clashes = $conn->select(
-            'SELECT r.pk_i_id FROM ' . $resources . ' r INNER JOIN ' . $photos . ' p ON p.pk_i_id = r.pk_i_id'
-            . " WHERE NOT (r.s_owner_type = 'item' AND r.i_owner_id = p.fk_i_item_id) ORDER BY r.pk_i_id"
+        // One statement, so a site with many clashing rows upgrades in seconds: every clashing row moves past
+        // the highest id of both tables by the same step, which keeps the new ids unique.
+        $step = 1 + max(
+            (int) ($conn->select('SELECT MAX(pk_i_id) AS m FROM ' . $photos)[0]['m'] ?? 0),
+            (int) ($conn->select('SELECT MAX(pk_i_id) AS m FROM ' . $resources)[0]['m'] ?? 0)
         );
-        if ($clashes !== array()) {
-            $next = 1 + max(
-                (int) ($conn->select('SELECT MAX(pk_i_id) AS m FROM ' . $photos)[0]['m'] ?? 0),
-                (int) ($conn->select('SELECT MAX(pk_i_id) AS m FROM ' . $resources)[0]['m'] ?? 0)
-            );
-            foreach ($clashes as $row) {
-                $old = (int) $row['pk_i_id'];
-                $conn->execute(
-                    'UPDATE ' . $resources . ' SET s_base_name = COALESCE(s_base_name, ?), pk_i_id = ? WHERE pk_i_id = ?',
-                    array((string) $old, $next++, $old)
-                );
-            }
-        }
+        $conn->execute(
+            'UPDATE ' . $resources . ' r INNER JOIN ' . $photos . ' p ON p.pk_i_id = r.pk_i_id'
+            . ' SET r.s_base_name = COALESCE(r.s_base_name, CAST(p.pk_i_id AS CHAR)), r.pk_i_id = r.pk_i_id + ?'
+            . " WHERE NOT (r.s_owner_type = 'item' AND r.i_owner_id = p.fk_i_item_id)",
+            array($step)
+        );
 
         $conn->execute(
             'INSERT INTO ' . $resources
