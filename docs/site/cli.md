@@ -35,7 +35,7 @@ no wrapper script needed.
 
 | Command | What it does |
 |---|---|
-| `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks: e-mail alerts, expiring premium listings, cleanup, sitemap warm. Defaults to all three tiers. |
+| `cron [--type=due\|hourly\|daily\|weekly\|all]` | Run the scheduled tasks that are due: e-mail alerts, expiring premium listings, cleanup, sitemap warm. A named type, or `all`, runs now even when it is not due. |
 
 A typical crontab entry (see [setting up cron](/docs/configure/cron/) for the
 full setup):
