@@ -190,6 +190,8 @@ function _alert_email_deliver($user, $title, $body)
 /**
  * Email one subscriber the hourly digest of new listings matching their saved search.
  *
+ * @deprecated 7.0.0 Core no longer sends hourly alerts; they go out daily.
+ *
  * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
  * @param string              $ads        Pre-rendered HTML list of the matching listings
  * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link

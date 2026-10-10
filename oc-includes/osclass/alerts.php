@@ -15,7 +15,7 @@
  * Send the saved-search alert emails due for one frequency band.
  * Each saved search is isolated, so a failing one does not abort the rest of the run.
  *
- * @param string|null $type      One of HOURLY, DAILY or WEEKLY; anything else is a no-op
+ * @param string|null $type      DAILY or WEEKLY; anything else is a no-op
  * @param string|null $last_exec Datetime to search from; taken from the cron row when null
  *
  * @return void
@@ -23,7 +23,7 @@
 function osc_runAlert($type = null, $last_exec = null)
 {
     $mUser = User::getInstance();
-    if (!in_array($type, array('HOURLY', 'DAILY', 'WEEKLY'))) {
+    if (!in_array($type, array('DAILY', 'WEEKLY'))) {
         return;
     }
 
@@ -35,18 +35,7 @@ function osc_runAlert($type = null, $last_exec = null)
         }
     }
 
-    $internal_name = 'alert_email_hourly';
-    switch ($type) {
-        case 'HOURLY':
-            $internal_name = 'alert_email_hourly';
-            break;
-        case 'DAILY':
-            $internal_name = 'alert_email_daily';
-            break;
-        case 'WEEKLY':
-            $internal_name = 'alert_email_weekly';
-            break;
-    }
+    $internal_name = $type === 'WEEKLY' ? 'alert_email_weekly' : 'alert_email_daily';
 
     $active   = true;
     $searches = Alerts::getInstance()->findByTypeGroup($type, $active);

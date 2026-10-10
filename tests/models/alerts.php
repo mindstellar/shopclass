@@ -232,11 +232,13 @@ harness_section('Alerts: serialized JSON round-trip (write path via createAlert)
 /* createAlert stores $alert into s_search. A blob with special bytes must land
  * byte-for-byte -- no re-encoding, no cleaning. */
 $writeBlob = '{"sPattern":"50%_ \\\\ \"quoted\"","x":"café"}';
-$newId = $model->createAlert(99, 'writer@example.test', $writeBlob, 'writerSecret', 'HOURLY');
+$newId = $model->createAlert(99, 'writer@example.test', $writeBlob, 'writerSecret', 'WEEKLY');
 check('createAlert returns a positive int id for a fresh alert', is_int($newId) && $newId > 0, describe($newId));
 pin('the blob was stored byte-identical (read back with raw mysqli)', $writeBlob, $rawSearchFor((int)$newId));
 pin('createAlert wrote the email verbatim', 'writer@example.test', $rawColFor((int)$newId, 's_email'));
-pin('createAlert wrote the type verbatim', 'HOURLY', $rawColFor((int)$newId, 'e_type'));
+pin('createAlert wrote the type verbatim', 'WEEKLY', $rawColFor((int)$newId, 'e_type'));
+// Out of the per-type counts below.
+$admin->query("UPDATE $table SET e_type = 'HOURLY' WHERE pk_i_id = " . (int) $newId);
 pin('createAlert wrote the secret verbatim', 'writerSecret', $rawColFor((int)$newId, 's_secret'));
 
 /* ----------------------------------------------------------------------------
@@ -382,7 +384,7 @@ pin('a non-existent email does not match', array(), $model->findByEmailByType('g
 harness_section('Alerts::createAlert -- deduplication');
 
 $before = $rowCount();
-$dupResult = $model->createAlert(99, 'writer@example.test', $writeBlob, 'anotherSecret', 'HOURLY');
+$dupResult = $model->createAlert(99, 'writer@example.test', $writeBlob, 'anotherSecret', 'WEEKLY');
 pin('a duplicate (same user + same s_search, not unsubbed) returns false', false, $dupResult);
 pin('no row was written for the duplicate', $before, $rowCount());
 
@@ -396,6 +398,8 @@ pin('the anonymous alert defaulted e_type to DAILY', 'DAILY', $rawColFor((int)$a
 // no anonymous row already matches; a repeat of the exact anon pair dedups.
 pin('a repeat anonymous pair (email+search) dedups to false', false, $model->createAlert(0, 'newanon@example.test', '{"q":"newanon"}', 'anonSecret2'));
 
+$hourlyId = $model->createAlert(0, 'hourly@example.test', '{"q":"hourly"}', 'x', 'HOURLY');
+pin('an hourly alert is stored as daily', 'DAILY', $rawColFor((int) $hourlyId, 'e_type'));
 pin('a null user id is a guest too', false, $model->createAlert(null, 'newanon@example.test', '{"q":"newanon"}', 'x'));
 $seedAlert('nullguest@example.test', null, '{"q":"nullguest"}', 'nullSecret', 'DAILY', 1, '2025-05-02 00:00:00');
 pin('a guest alert dedups against a NULL-user row', false, $model->createAlert(0, 'nullguest@example.test', '{"q":"nullguest"}', 'x'));

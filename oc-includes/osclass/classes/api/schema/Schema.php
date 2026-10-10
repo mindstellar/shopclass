@@ -566,7 +566,7 @@ final class Schema
             'Alert'        => self::object([
                 'id'         => ['type' => 'integer'],
                 'filters'    => self::ref('AlertFilters'),
-                'type'       => ['type' => 'string', 'description' => 'How often it mails: instant, hourly, daily or weekly.'],
+                'type'       => ['type' => 'string', 'description' => 'How often it mails: daily or weekly.'],
                 'active'     => ['type' => 'boolean'],
                 'created_at' => self::time(),
             ], ['id', 'filters', 'type', 'active']),

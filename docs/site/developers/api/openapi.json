@@ -39879,7 +39879,7 @@
                     },
                     "type": {
                         "type": "string",
-                        "description": "How often it mails: instant, hourly, daily or weekly."
+                        "description": "How often it mails: daily or weekly."
                     },
                     "active": {
                         "type": "boolean"

@@ -77,6 +77,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Changed
 
+- Saved-search alerts go out daily or weekly. Hourly alerts become daily on upgrade.
 - `mindstellar\form\base\FormBuilder`, `FormInputs` and `InputInterface` moved to `mindstellar\form\`; the old names still work.
 - The object cache classes moved to `mindstellar\cache\` (`CacheManager`, `CacheDriver`, `MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`); the old `Object_Cache_*` and `iObject_Cache` names still work.
 - Shared core classes are reached with `getInstance()`. `newInstance()` and `instance()` still work but are deprecated.

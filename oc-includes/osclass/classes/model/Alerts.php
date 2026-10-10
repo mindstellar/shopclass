@@ -364,6 +364,8 @@ class Alerts extends DAO
      */
     public function createAlert($userid, $email, $alert, $secret, $type = 'DAILY')
     {
+        // Alerts go out daily or weekly only.
+        $type = $type === 'WEEKLY' ? 'WEEKLY' : 'DAILY';
         $query = Db::table($this->getTableName())
             ->where('s_search', $alert)
             ->whereRaw('dt_unsub_date IS NULL');

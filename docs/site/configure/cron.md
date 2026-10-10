@@ -128,9 +128,9 @@ php /path/to/site/oc-cli.php cron --type=hourly
 
 | Schedule | Jobs |
 |---|---|
-| Hourly | E-mail alerts, expiring premium listings |
-| Daily | Cleanup of expired, spam, blocked and unactivated content; alerts |
-| Weekly | Longer-running maintenance |
+| Hourly | Expiring premium listings |
+| Daily | Daily e-mail alerts; cleanup of expired, spam, blocked and unactivated content |
+| Weekly | Weekly e-mail alerts; longer-running maintenance |
 
 Plugins add their own jobs through the `cron_hourly`, `cron_daily` and
 `cron_weekly` hooks.
