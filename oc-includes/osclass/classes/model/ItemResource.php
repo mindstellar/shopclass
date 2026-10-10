@@ -15,37 +15,40 @@
 use mindstellar\database\Db;
 
 /**
- * Model database for ItemResource table
+ * Listing photos: the `item` rows of t_resource, read and written in the old t_item_resource
+ * row shape (pk_i_id, fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage).
  *
  * @package    Shopclass
  * @subpackage Model
  */
-class ItemResource extends DAO
+class ItemResource
 {
+    /** The owner type listing photos have in t_resource. */
+    public const OWNER = \mindstellar\model\Resource::OWNER_ITEM;
+
+    /** The old column names, in the order rows come back. */
+    private const FIELDS = array('pk_i_id', 'fk_i_item_id', 's_name', 's_extension', 's_content_type', 's_path', 's_storage');
+
+    /** The old columns as t_resource holds them. */
+    private const SELECT = 'pk_i_id, i_owner_id AS fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage';
+
     /**
-     * It references to self object: ItemResource.
-     * It is used as a singleton
-     *
-     * @var ItemResource
+     * The select list that reads t_resource in the old row shape, with an optional table alias.
+     */
+    public static function columns(string $alias = ''): string
+    {
+        return $alias === '' ? self::SELECT : preg_replace('/(^|, )/', '$1' . $alias . '.', self::SELECT);
+    }
+
+    /**
+     * @var \ItemResource
      */
     private static $instance;
 
     /**
-     * Set data related to t_item_resource table
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setTableName('t_item_resource');
-        $this->setPrimaryKey('pk_i_id');
-        $this->setFields(array('pk_i_id', 'fk_i_item_id', 's_name', 's_extension', 's_content_type', 's_path', 's_storage'));
-    }
-
-    /**
-     * It creates a new ItemResource object class ir if it has been created
-     * before, it return the previous object
+     * Return the shared ItemResource model instance, creating it on first use.
      *
-     * @return ItemResource
+     * @return \ItemResource
      */
     public static function getInstance()
     {
@@ -65,149 +68,135 @@ class ItemResource extends DAO
     }
 
     /**
-     * Get all resources
+     * The table listing photos live in, with its prefix.
      *
-     * @return array<int,array<string,string|null>> Resource rows, each with the item's dt_pub_date
+     * @return string
+     */
+    public function getTableName()
+    {
+        return DB_TABLE_PREFIX . 't_resource';
+    }
+
+    /**
+     * @return string[] the old column names
+     */
+    public function getFields()
+    {
+        return self::FIELDS;
+    }
+
+    /**
+     * Every photo, each with its listing's dt_pub_date.
+     *
+     * @return array<int,array<string,string|null>>
      */
     public function getAllResources()
     {
-        // The query builder has no notion of a table alias, and neither `r.*` nor the
-        // aliased join can be expressed through its identifier allowlist, so this is
-        // hand-written SQL with the same columns, the same join and no values to bind.
-        $sql = 'SELECT r.*, c.dt_pub_date'
-            . ' FROM ' . $this->getTableName() . ' r'
-            . ' INNER JOIN ' . $this->getTableItemName() . ' c ON c.pk_i_id = r.fk_i_item_id';
-
-        try {
-            $rows = Db::select($sql);
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        return Db::stringifyRows($rows);
+        return $this->select(
+            'SELECT ' . self::columns('r') . ', c.dt_pub_date'
+            . ' FROM ' . $this->getTableName() . ' r INNER JOIN ' . $this->getTableItemName() . ' c ON c.pk_i_id = r.i_owner_id'
+            . ' WHERE r.s_owner_type = ?',
+            array(self::OWNER)
+        );
     }
 
     /**
-     * Return table item name
-     *
-     * @return string table name
+     * @return string
      */
     public function getTableItemName()
     {
-        return $this->getTablePrefix() . 't_item';
+        return DB_TABLE_PREFIX . 't_item';
     }
 
     /**
-     * Get all resources belong to an item given its id
+     * @return string
+     */
+    public function getTableItemDescription()
+    {
+        return DB_TABLE_PREFIX . 't_item_description';
+    }
+
+    /**
+     * A listing's photos, in upload order. Cached.
      *
-     * @param int $itemId Item id
+     * @param int $itemId
      *
      * @return array<int,array<string,string|null>>
-     *
-     * @since  2.3.7
      */
     public function getAllResourcesFromItem($itemId)
     {
-        $key   = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $itemId);
+        $key   = self::cacheKey((int) $itemId);
         $found = false;
         $cache = osc_cache_get($key, $found);
-        if ($cache === false) {
-            try {
-                $rows = Db::table($this->getTableName())
-                    ->where('fk_i_item_id', (int)$itemId)
-                    ->get();
-            } catch (\mindstellar\database\DbException $e) {
-                // A failed read is not memoized, so the next call retries.
-                return array();
-            }
-
-            $return = Db::stringifyRows($rows);
-            osc_cache_set($key, $return, OSC_CACHE_TTL);
-
-            return $return;
+        if ($cache !== false) {
+            return $cache;
         }
+        try {
+            $rows = Db::stringifyRows($this->rows('i_owner_id = ?', array((int) $itemId)));
+        } catch (\mindstellar\database\DbException $e) {
+            // A failed read is not memoized, so the next call retries.
+            return array();
+        }
+        osc_cache_set($key, $rows, OSC_CACHE_TTL);
 
-        return $cache;
+        return $rows;
     }
 
     /**
-     * Prime the per-item resource cache for a set of items in a single query.
-     *
-     * Listing loops call getAllResourcesFromItem() once per item, which is an N+1.
-     * Calling this first (e.g. from Item::extendData) fetches every listed item's
-     * resources in one query and seeds the exact cache keys getAllResourcesFromItem
-     * reads, so those per-item calls become cache hits. Items with no resources are
-     * seeded with an empty array so they don't fall through to their own query.
+     * Read the photos of many listings in one query and cache each listing's list.
      *
      * @param int[] $itemIds
      *
      * @return void
-     * @since  5.3.0
      */
     public function primeResourcesCache($itemIds)
     {
-        $itemIds = array_values(array_unique(array_map('intval', (array)$itemIds)));
+        $itemIds = array_values(array_unique(array_map('intval', (array) $itemIds)));
         if (empty($itemIds)) {
             return;
         }
-
         try {
-            $rows = Db::stringifyRows(
-                Db::table($this->getTableName())
-                    ->whereIn('fk_i_item_id', $itemIds)
-                    ->get()
-            );
+            $rows = Db::stringifyRows($this->rows(
+                'i_owner_id IN (' . implode(', ', array_fill(0, count($itemIds), '?')) . ')',
+                $itemIds
+            ));
         } catch (\mindstellar\database\DbException $e) {
             // A failed read still seeds every id with an empty list, so the memo
-            // reports "no resources" rather than retrying. Long-standing behaviour.
+            // reports "no resources" rather than retrying.
             $rows = array();
         }
-
         $byItem = array_fill_keys($itemIds, array());
         foreach ($rows as $row) {
-            $byItem[(int)$row['fk_i_item_id']][] = $row;
+            $byItem[(int) $row['fk_i_item_id']][] = $row;
         }
-
         foreach ($byItem as $id => $resources) {
-            $key = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $id);
-            osc_cache_set($key, $resources, OSC_CACHE_TTL);
+            osc_cache_set(self::cacheKey((int) $id), $resources, OSC_CACHE_TTL);
         }
     }
 
     /**
-     * Get first resource belong to an item given it id
+     * A listing's first photo, or an empty array.
      *
-     * @param int $itemId Item id
+     * @param int $itemId
      *
-     * @return array<string,string|null> Empty when the item has no resources
+     * @return array<string,string|null>
      */
     public function getResource($itemId)
     {
         try {
-            $row = Db::table($this->getTableName())
-                ->select(...$this->getFields())
-                ->where('fk_i_item_id', $itemId)
-                ->first();
+            $rows = $this->rows('i_owner_id = ?', array((int) $itemId), ' ORDER BY pk_i_id LIMIT 1');
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($row === null) {
-            return array();
-        }
-
-        return Db::stringifyRow($row);
+        return $rows === array() ? array() : Db::stringifyRow($rows[0]);
     }
 
     /**
-     * Check if resource id and name exist
-     *
      * @param int    $resourceId
-     * @param string $code
+     * @param string $code s_name
      *
-     * @return int|string The match count; int 0 for a null argument or a query failure
-     * @see        ItemResource::existResource
-     * @deprecated since 2.3
+     * @return string|int see existResource()
      */
     public function getResourceSecure($resourceId, $code)
     {
@@ -215,24 +204,21 @@ class ItemResource extends DAO
     }
 
     /**
-     * Check if resource id and name exist
+     * How many photos have this id and code: "1" or "0", or int 0 when either is null.
      *
      * @param int    $resourceId
-     * @param string $code
+     * @param string $code s_name
      *
-     * @return int|string The match count as a string; int 0 for a null argument or a query failure
+     * @return string|int
      */
     public function existResource($resourceId, $code)
     {
         if ($resourceId === null || $code === null) {
-            // A null left the comparison without a right-hand side, so the query
-            // failed and the caller got the INT zero rather than the string a
-            // genuine no-match returns. Both are falsy; the type is still visible.
             return 0;
         }
-
         try {
             $count = Db::table($this->getTableName())
+                ->where('s_owner_type', self::OWNER)
                 ->where('pk_i_id', $resourceId)
                 ->where('s_name', $code)
                 ->count();
@@ -240,129 +226,85 @@ class ItemResource extends DAO
             return 0;
         }
 
-        // An aggregate with no GROUP BY always yields exactly one row, so there is no
-        // "not exactly one row" branch to take.
-        return (string)$count;
+        return (string) $count;
     }
 
     /**
-     * Count resouces belong to item given its id
+     * How many photos one listing has, or all listings when $itemId is null.
      *
-     * @param int|null $itemId Item id; null counts every resource
+     * @param int|null $itemId
      *
-     * @return int|string The count as a string, int 0 on a query failure
+     * @return string|int
      */
     public function countResources($itemId = null)
     {
         try {
-            $query = Db::table($this->getTableName());
+            $query = Db::table($this->getTableName())->where('s_owner_type', self::OWNER);
             if (null !== $itemId && is_numeric($itemId)) {
-                $query = $query->where('fk_i_item_id', $itemId);
+                $query = $query->where('i_owner_id', $itemId);
             }
             $count = $query->count();
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        // As in existResource(), the aggregate always returns one row, so the
-        // "not exactly one row" branch was unreachable.
-        return (string)$count;
+        return (string) $count;
     }
 
     /**
-     * Get resources, if $itemId is set return resources belong to an item given its id,
-     * can be filtered by $start/$end and ordered by column.
+     * A page of photos with their listing's dt_pub_date, for the admin.
      *
-     * @param int|null $itemId Item id
+     * @param int|null $itemId
      * @param int      $start  offset
-     * @param int      $length row count
-     * @param string   $order  column order default='r.pk_i_id'
-     * @param string   $type   order type [DESC|ASC]
+     * @param int      $length
+     * @param string   $order  r.pk_i_id, r.fk_i_item_id or c.dt_pub_date
+     * @param string   $type   ASC or DESC
      *
-     * @return array<int,array<string,string|null>> Empty when $order or $type is rejected
+     * @return array<int,array<string,string|null>>
      */
     public function getResources($itemId = null, $start = 0, $length = 10, $order = 'r.pk_i_id', $type = 'DESC')
     {
-        if (!in_array($order, array(
-            0 => 'r.pk_i_id',
-            1 => 'r.pk_i_id',
-            2 => 'r.pk_i_id',
-            3 => 'r.fk_i_item_id',
-            4 => 'c.dt_pub_date'
-        ))
-        ) {
-            // order by is incorrect
+        $columns = array('r.pk_i_id' => 'r.pk_i_id', 'r.fk_i_item_id' => 'r.i_owner_id', 'c.dt_pub_date' => 'c.dt_pub_date');
+        if (!isset($columns[$order]) || !in_array(strtoupper((string) $type), array('DESC', 'ASC'), true)) {
             return array();
         }
 
-        if (!in_array(strtoupper($type), array('DESC', 'ASC'))) {
-            // order type is incorrect
-            return array();
-        }
-
-        // Aliases, `r.*` and the aliased join are all outside the query builder's
-        // identifier allowlist, so this stays hand-written SQL. Every value is a
-        // placeholder; $order is one of the five literals checked above and $type is
-        // DESC or ASC, checked above as well.
-        $sql = 'SELECT r.*, c.dt_pub_date'
-            . ' FROM ' . $this->getTableName() . ' r'
-            . ' INNER JOIN ' . $this->getTableItemName() . ' c ON c.pk_i_id = r.fk_i_item_id';
-
-        $params = array();
+        $sql = 'SELECT ' . self::columns('r') . ', c.dt_pub_date'
+            . ' FROM ' . $this->getTableName() . ' r INNER JOIN ' . $this->getTableItemName() . ' c ON c.pk_i_id = r.i_owner_id'
+            . ' WHERE r.s_owner_type = ?';
+        $params = array(self::OWNER);
         if (null !== $itemId && is_numeric($itemId)) {
-            $sql     .= ' WHERE r.fk_i_item_id = ?';
+            $sql     .= ' AND r.i_owner_id = ?';
             $params[] = $itemId;
         }
-
-        $sql .= ' ORDER BY ' . $order . ' ' . strtoupper($type);
-
-        // Legacy compiled "LIMIT <start>, <length>", i.e. $start is the OFFSET, with
-        // two gates worth keeping: a non-numeric $start dropped the clause entirely
-        // and returned every row, and a $length of zero or less dropped the offset,
-        // turning $start into the row count.
+        $sql .= ' ORDER BY ' . $columns[$order] . ' ' . strtoupper((string) $type);
+        // $start is the offset; a non-numeric $start returns every row, and a $length of
+        // zero or less makes $start the row count.
         if (is_numeric($start)) {
-            $sql .= ' LIMIT ' . (int)$start;
-            if (is_numeric($length) && (int)$length > 0) {
-                $sql .= ', ' . (int)$length;
+            $sql .= ' LIMIT ' . (int) $start;
+            if (is_numeric($length) && (int) $length > 0) {
+                $sql .= ', ' . (int) $length;
             }
         }
 
-        try {
-            $rows = Db::select($sql, $params);
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        return Db::stringifyRows($rows);
+        return $this->select($sql, $params);
     }
 
     /**
-     * Get a page of resource ids, ordered by pk_i_id, without loading the
-     * full rows. Used by low-memory batch operations — e.g. queuing images
-     * for background regeneration — that need to walk the whole table.
-     *
-     * @param int $offset
-     * @param int $limit
+     * Photo ids in id order, a page at a time.
      *
      * @return int[]
-     * @since  5.3.0
      */
     public function getResourceIdsBatch(int $offset, int $limit): array
     {
         if ($offset < 0) {
-            // Legacy emitted "LIMIT -n", an invalid clause whose failure landed here.
             return array();
         }
-
         try {
-            $query = Db::table($this->getTableName())
-                ->select('pk_i_id')
-                ->orderBy('pk_i_id', 'ASC');
-            // Legacy compiled "LIMIT <offset>, <limit>": the first argument is the
-            // OFFSET, and a $limit of zero or less dropped the offset, turning
-            // $offset into the row count instead.
-            $query = $limit > 0 ? $query->limit($limit)->offset($offset) : $query->limit($offset);
-            $rows  = $query->get();
+            $rows = Db::select(
+                'SELECT pk_i_id FROM ' . $this->getTableName() . ' WHERE s_owner_type = ? ORDER BY pk_i_id ASC' . self::limit($offset, $limit),
+                array(self::OWNER)
+            );
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -371,60 +313,116 @@ class ItemResource extends DAO
     }
 
     /**
-     * Get a page of full resource rows for a given storage adapter id,
-     * ordered by pk_i_id. Used by the admin migration actions to walk every
-     * resource currently on one storage backend (e.g. 'local') and enqueue
-     * a job per row without loading the whole table into memory at once.
-     *
-     * @param string $storage
-     * @param int    $offset
-     * @param int    $limit
+     * Photos on one storage, in id order, a page at a time.
      *
      * @return array<int,array<string,string|null>>
-     * @since  5.3.0
      */
     public function getResourcesBatchByStorage(string $storage, int $offset, int $limit): array
     {
         if ($offset < 0) {
-            // Legacy emitted "LIMIT -n", an invalid clause whose failure landed here.
             return array();
         }
-
         try {
-            $query = Db::table($this->getTableName())
-                ->select(...$this->getFields())
-                ->where('s_storage', $storage)
-                ->orderBy('pk_i_id', 'ASC');
-            // Same legacy paging shape as getResourceIdsBatch(): $offset is the
-            // offset, and a $limit of zero or less turns it into the row count.
-            $query = $limit > 0 ? $query->limit($limit)->offset($offset) : $query->limit($offset);
-            $rows  = $query->get();
+            return Db::stringifyRows($this->rows('s_storage = ?', array($storage), ' ORDER BY pk_i_id ASC' . self::limit($offset, $limit)));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-
-        return Db::stringifyRows($rows);
     }
 
     /**
-     * Delete all resources where id is in $ids
+     * One photo, or false.
      *
-     * @param array<int,int|string>|int|string $ids
+     * @param int|string $id
      *
-     * @return int|false Rows deleted, or false for an empty list or a query failure
+     * @return array<string,string|null>|false
+     */
+    public function findByPrimaryKey($id)
+    {
+        try {
+            $rows = $this->rows('pk_i_id = ?', array($id));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return count($rows) === 1 ? Db::stringifyRow($rows[0]) : false;
+    }
+
+    /**
+     * Add a photo row.
+     *
+     * @param array<string,mixed> $values old column names; fk_i_item_id is required
+     *
+     * @return int the new id, or 0 when refused or the write failed
+     */
+    public function insertGetId($values)
+    {
+        $data = self::toColumns(is_array($values) ? $values : array());
+        if ($data === null || empty($data['i_owner_id'])) {
+            return 0;
+        }
+        $data['s_owner_type'] = self::OWNER;
+        $data['dt_created']   = date('Y-m-d H:i:s');
+        try {
+            return Db::table($this->getTableName())->insert($data);
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Change photo rows.
+     *
+     * @param array<string,mixed> $values old column names
+     * @param array<string,mixed> $where  old column names; an empty one is refused
+     *
+     * @return int|false rows changed, or false when refused or the write failed
+     */
+    public function update($values, $where)
+    {
+        $data  = self::toColumns(is_array($values) ? $values : array());
+        $match = self::toColumns(is_array($where) ? $where : array());
+        if ($data === null || $data === array() || $match === null || $match === array()) {
+            return false;
+        }
+        try {
+            $query = Db::table($this->getTableName())->where('s_owner_type', self::OWNER);
+            foreach ($match as $column => $value) {
+                $query = $query->where($column, $value);
+            }
+
+            return $query->update($data);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $values old column names
+     * @param int                 $key
+     *
+     * @return int|false
+     */
+    public function updateByPrimaryKey($values, $key)
+    {
+        return $this->update($values, array('pk_i_id' => $key));
+    }
+
+    /**
+     * Delete photo rows by id. Rows of other owner types are left alone.
+     *
+     * @param int|int[] $ids
+     *
+     * @return int|false rows removed, or false for an empty list or a failed write
      */
     public function deleteResourcesIds($ids)
     {
         $values = is_array($ids) ? $ids : array($ids);
         if ($values === array()) {
-            // Legacy compiled "IN ()" here, an invalid clause, and the failed delete
-            // returned false — which callers can tell apart from a clean run that
-            // matched nothing.
             return false;
         }
-
         try {
             return Db::table($this->getTableName())
+                ->where('s_owner_type', self::OWNER)
                 ->whereIn('pk_i_id', $values)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {
@@ -433,13 +431,68 @@ class ItemResource extends DAO
     }
 
     /**
-     * Return table description name
-     *
-     * @return string table description name
+     * The cache key of one listing's photo list.
      */
-    public function getTableItemDescription()
+    public static function cacheKey(int $itemId): string
     {
-        return $this->getTablePrefix() . 't_item_description';
+        return md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $itemId);
+    }
+
+    /**
+     * @param array<int,mixed> $params
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    private function rows(string $where, array $params, string $tail = ''): array
+    {
+        return Db::select(
+            'SELECT ' . self::SELECT . ' FROM ' . $this->getTableName() . ' WHERE s_owner_type = ? AND ' . $where
+            . ($tail === '' ? ' ORDER BY pk_i_id' : $tail),
+            array_merge(array(self::OWNER), $params)
+        );
+    }
+
+    /**
+     * @param array<int,mixed> $params
+     *
+     * @return array<int,array<string,string|null>>
+     */
+    private function select(string $sql, array $params): array
+    {
+        try {
+            return Db::stringifyRows(Db::select($sql, $params));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+    }
+
+    /**
+     * The old paging: $offset is the offset, and a $limit of zero or less makes it the row count.
+     */
+    private static function limit(int $offset, int $limit): string
+    {
+        return $limit > 0 ? ' LIMIT ' . $limit . ' OFFSET ' . $offset : ' LIMIT ' . $offset;
+    }
+
+    /**
+     * Old column names to t_resource ones, or null when one is unknown.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function toColumns(array $values): ?array
+    {
+        $out = array();
+        foreach ($values as $column => $value) {
+            if (!in_array($column, self::FIELDS, true)) {
+                return null;
+            }
+            $out[$column === 'fk_i_item_id' ? 'i_owner_id' : $column] = $value;
+        }
+
+        return $out;
     }
 }
 

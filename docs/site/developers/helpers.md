@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1154 helpers, 20 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -500,7 +500,7 @@ Core defines 1154 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (115)
+### hItems (116)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -550,6 +550,7 @@ Core defines 1154 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_item_content_locale()` | The locale the current item's title and description actually resolve to. |
 | `osc_item_country()` | Gets country name of current item |
 | `osc_item_country_code()` | Gets country code of current item Country code are two letters like US, ES, ... |
+| `osc_item_cover_urls(array $itemIds, string $variant = 'thumbnail')` | The first image of each listing, as a URL, in one query. Built as osc_resource_url() and its variants build it, filters included, so storage plugins still route the files. It does not check the listing is public: pass only ids the page may show. |
 | `osc_item_currency()` | Gets currency of current item |
 | `osc_item_currency_symbol()` | Gets currency symbol of an item |
 | `osc_item_description($locale = '')` | Gets description from current item, if $locale is unspecified $locale is current user locale |
@@ -1029,8 +1030,8 @@ Core defines 1154 helpers, 20 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_get_resource_url(array $resource, string $variant = '')` | Public URL for a resource row's variant, routed through the same resource_path and resource_url filters the item helpers use — so remote-adapter URL substitution and private-bucket presigning apply identically to any owner type. |
 | `osc_get_resources(string $ownerType, int $ownerId)` | All resources belonging to an owner, as an array of resource rows. |
-| `osc_media_library_query(string $type, int $iPage, int $perPage)` | A page of normalised media rows plus the total for a filter. $type is 'all', 'item' (listing photos), or a t_resource owner type ('user', 'page', 'library', a plugin type). Each row carries: src ('item'\|'resource'), id, owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage. |
-| `osc_media_owner_types()` | Distinct, well-formed owner types currently present in t_resource. |
+| `osc_media_library_query(string $type, int $iPage, int $perPage)` | A page of normalised media rows plus the total for a filter. $type is 'all', 'item' (listing photos), or a t_resource owner type ('user', 'page', 'library', a plugin type). Each row carries: src ('item'\|'resource'), id, owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage, s_base_name. |
+| `osc_media_owner_types()` | Distinct, well-formed owner types currently present in t_resource, listing photos left out. |
 | `osc_media_row_urls(array $row)` | The thumbnail and full URLs for a normalised media row (see osc_media_library_query). Uses the storage-aware osc_get_resource_url so offloaded files resolve correctly. |
 | `osc_resource_owner_exists(string $ownerType, int $ownerId)` | Whether the owner record a resource points at still exists. |
 | `osc_sweep_orphan_resources()` | Walk t_resource and delete resources whose owner no longer exists. |

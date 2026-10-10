@@ -190,7 +190,7 @@ for ($i = 0; $i < 25; $i++) {
     $minutes = ($i >= 10 && $i < 15) ? 10 : $i;
     $admin->query("UPDATE {$p}t_item SET dt_pub_date = DATE_SUB('2026-10-01 12:00:00', INTERVAL $minutes MINUTE) WHERE pk_i_id = $id");
     $admin->query("UPDATE {$p}t_item_location SET fk_i_region_id = $region, s_region = 'Alpha', fk_i_city_id = $city, s_city = 'Aville' WHERE fk_i_item_id = $id");
-    seed_exec($admin, "INSERT INTO {$p}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES (?, 'p', 'jpg', 'image/jpeg', 'oc-content/uploads/0/')", 'i', array($id));
+    seed_photo($admin, $id, array('s_name' => 'p'));
     seed_exec($admin, "INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value) VALUES (?, ?, ?)", 'iis', array($id, $fieldId, $i % 2 ? 'red' : 'blue'));
     $live[] = $id;
 }
@@ -515,8 +515,8 @@ $dbDown = static function (string $table, callable $fn) use ($admin, $p) {
 };
 $down = static fn (Response $r): array => array($r->status(), $r->prepare()['headers']['Cache-Control'] ?? null);
 pin('a database error on the listing row is a 500 with no-store, not a 404', array(500, 'private, no-store'), $dbDown('t_item_description', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
-pin('a database error on its photos is a 500, not a 200 a cache could keep without them', array(500, 'private, no-store'), $dbDown('t_item_resource', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
-pin('the same on the photos endpoint', array(500, 'private, no-store'), $dbDown('t_item_resource', static fn (): array => $down($get('listings/' . $live[0] . '/photos', array(), null, $open))));
+pin('a database error on its photos is a 500, not a 200 a cache could keep without them', array(500, 'private, no-store'), $dbDown('t_resource', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
+pin('the same on the photos endpoint', array(500, 'private, no-store'), $dbDown('t_resource', static fn (): array => $down($get('listings/' . $live[0] . '/photos', array(), null, $open))));
 pin('a database error on the seller is a 500', array(500, 'private, no-store'), $dbDown('t_user', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
 pin('a database error on custom fields is a 500', array(500, 'private, no-store'), $dbDown('t_item_meta', static fn (): array => $down($get('listings/' . $live[0], array('include' => 'custom_fields'), null, $open))));
 pin('the listing answers again once the database is back', 200, $get('listings/' . $live[0], array(), null, $open)->status());

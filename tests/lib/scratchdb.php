@@ -575,6 +575,38 @@ if (!function_exists('seed_item')) {
     }
 }
 
+if (!function_exists('seed_photo')) {
+    /**
+     * Insert a listing photo: an `item` row of t_resource.
+     *
+     * @param array<string,string> $overrides s_name, s_extension, s_content_type, s_path, s_storage
+     *
+     * @return int The photo id
+     */
+    function seed_photo(mysqli $admin, int $itemId, array $overrides = []): int
+    {
+        $row = array_merge(
+            array(
+                's_name'         => 'photo',
+                's_extension'    => 'jpg',
+                's_content_type' => 'image/jpeg',
+                's_path'         => 'oc-content/uploads/0/',
+                's_storage'      => 'local',
+            ),
+            $overrides
+        );
+
+        return seed_exec(
+            $admin,
+            'INSERT INTO ' . DB_TABLE_PREFIX . "t_resource
+             (s_owner_type, i_owner_id, s_name, s_extension, s_content_type, s_path, s_storage, dt_created)
+             VALUES ('item', ?, ?, ?, ?, ?, ?, NOW())",
+            'isssss',
+            array($itemId, $row['s_name'], $row['s_extension'], $row['s_content_type'], $row['s_path'], $row['s_storage'])
+        );
+    }
+}
+
 if (!function_exists('seed_page')) {
     /**
      * Insert a static page and its description row.

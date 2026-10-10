@@ -25,7 +25,7 @@ use mindstellar\utility\FileSystem;
 class LocalStorage implements StorageAdapter
 {
     /**
-     * Adapter id stored in t_item_resource.s_storage.
+     * Adapter id stored in t_resource.s_storage.
      *
      * @return string
      */

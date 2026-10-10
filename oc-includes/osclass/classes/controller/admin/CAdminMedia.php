@@ -163,7 +163,8 @@ class CAdminMedia extends AdminSecBaseModel
             );
         } elseif ($src === 'resource') {
             $row = (new \mindstellar\model\Resource())->findByPrimaryKey($id);
-            if ($row !== null) {
+            // A listing photo goes through PhotoService, which clears the listing's cache and fires its hooks.
+            if ($row !== null && $row['s_owner_type'] !== \ItemResource::OWNER) {
                 (new \mindstellar\storage\ResourceUploader())->delete($row);
                 Log::getInstance()
                     ->insertLog('media', 'delete', (string) $id, (string) $id, 'admin', osc_logged_admin_id());

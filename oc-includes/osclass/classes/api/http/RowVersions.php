@@ -30,9 +30,12 @@ use mindstellar\webhook\WebhookEndpointStore;
  */
 final class RowVersions implements ResourceVersions
 {
+    /** Listing photos among the rows of t_resource. */
+    private const PHOTO = "s_owner_type = '" . \ItemResource::OWNER . "'";
+
     private const LISTING = ['arg' => 'id', 'owner' => 'fk_i_user_id', 'tables' => [
         ['t_item', 'pk_i_id'], ['t_item_description', 'fk_i_item_id'], ['t_item_location', 'fk_i_item_id'], ['t_item_meta', 'fk_i_item_id'],
-        ['t_item_resource', 'fk_i_item_id'],
+        ['t_resource', 'i_owner_id', self::PHOTO],
     ]];
 
     private const COMMENT = ['arg' => 'id', 'owner' => 'fk_i_user_id', 'tables' => [['t_item_comment', 'pk_i_id']]];
@@ -48,7 +51,7 @@ final class RowVersions implements ResourceVersions
     private const RESOURCES = [
         'listings/{id}'                 => self::LISTING,
         'admin/listings/{id}'           => self::LISTING,
-        'listings/{id}/photos/{photo}'  => ['arg' => 'photo', 'tables' => [['t_item_resource', 'pk_i_id']]],
+        'listings/{id}/photos/{photo}'  => ['arg' => 'photo', 'tables' => [['t_resource', 'pk_i_id', self::PHOTO]]],
         'comments/{id}'                 => self::COMMENT,
         'admin/comments/{id}'           => self::COMMENT,
         'account'                       => ['arg' => null, 'tables' => self::USER_TABLES],

@@ -190,12 +190,8 @@ $mk = static function (array $o) use ($admin, $p, $locale, &$label): int {
     );
     seed_exec($admin, "INSERT INTO {$p}t_item_stats (fk_i_item_id, dt_date) VALUES (?, CURDATE())", 'i', array($id));
     if ($o['pic']) {
-        seed_exec(
-            $admin,
-            "INSERT INTO {$p}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES (?, 'photo', 'jpg', 'image/jpeg', '/p.jpg'), (?, 'photo2', 'jpg', 'image/jpeg', '/p2.jpg')",
-            'ii',
-            array($id, $id)
-        );
+        seed_photo($admin, $id, array('s_path' => '/p.jpg'));
+        seed_photo($admin, $id, array('s_name' => 'photo2', 's_path' => '/p2.jpg'));
     }
     $label[$id] = $o['key'];
 
@@ -673,7 +669,7 @@ $cases['addField with comma'] = static function () use ($run, $p) {
 };
 $cases['addGroupBy and addHaving'] = static function () use ($run, $p) {
     $s = new Search();
-    $s->addJoinTable('r', $p . 't_item_resource r', 'r.fk_i_item_id = ' . $p . 't_item.pk_i_id', 'LEFT');
+    $s->addJoinTable('r', $p . "t_resource r", "r.s_owner_type = 'item' AND r.i_owner_id = " . $p . 't_item.pk_i_id', 'LEFT');
     $s->addField('COUNT(r.pk_i_id) as photos');
     $s->addGroupBy($p . 't_item.pk_i_id');
     $s->addHaving('photos > 1');

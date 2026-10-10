@@ -245,7 +245,8 @@ final class SettingsImage
         $found = null;
         try {
             foreach ((new Resource())->findByOwner(Resource::OWNER_SETTING, 0) as $row) {
-                if ((int)($row['pk_i_id'] ?? 0) === $id) {
+                // A renumbered image keeps the id the preference stored in s_base_name.
+                if ((int)($row['pk_i_id'] ?? 0) === $id || (string)($row['s_base_name'] ?? '') === (string)$id) {
                     $found = $row;
                     break;
                 }

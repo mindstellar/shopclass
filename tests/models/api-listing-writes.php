@@ -515,7 +515,7 @@ $third = $call('POST', 'listings/' . $withPhoto . '/photos', null, $sueToken, ar
 pin('a multipart photo too, up to the cap of 3', 201, $third->status());
 $over = $call('POST', 'listings/' . $withPhoto . '/photos', null, $sueToken, array(), $photoFile($jpeg));
 pin('a photo over the cap is refused', array(422, 'limit'), array($over->status(), $over->body()['errors'][0]['code'] ?? null));
-pin('the listing holds 3', 3, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE fk_i_item_id = $withPhoto")->fetch_row()[0]);
+pin('the listing holds 3', 3, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_resource WHERE s_owner_type = 'item' AND i_owner_id = $withPhoto")->fetch_row()[0]);
 $racyRoom = new class () extends \mindstellar\listing\PhotoRoom {
     private int $calls = 0;
 
@@ -540,7 +540,7 @@ pin('another seller cannot add one', '403 not_owner', $code($call('POST', 'listi
 $photoId = (int) $third->body()['data']['id'];
 pin('another seller cannot remove one', '403 not_owner', $code($call('DELETE', 'listings/' . $withPhoto . '/photos/' . $photoId, null, $tomToken)));
 pin('the owner removes one', 204, $call('DELETE', 'listings/' . $withPhoto . '/photos/' . $photoId, null, $sueToken)->status());
-pin('a removed photo is gone from the table', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE pk_i_id = $photoId")->fetch_row()[0]);
+pin('a removed photo is gone from the table', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_resource WHERE pk_i_id = $photoId")->fetch_row()[0]);
 pin('a photo of another listing is 404 here', 404, $call('DELETE', 'listings/' . $made . '/photos/' . $photoId, null, $sueToken)->status());
 $tokens = array();
 for ($i = 0; $i < 3; $i++) {
@@ -625,7 +625,7 @@ unset($GLOBALS['lw_limiter']);
 $fetches = 0;
 $r = $call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg')), $sueToken);
 pin('only what the listing has room for is fetched; the rest is a warning', array(200, 1, 3, 'photo_skipped'), array(
-    $r->status(), $fetches, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE fk_i_item_id = $withPhoto")->fetch_row()[0], $r->body()['warnings'][0]['code'] ?? null,
+    $r->status(), $fetches, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_resource WHERE s_owner_type = 'item' AND i_owner_id = $withPhoto")->fetch_row()[0], $r->body()['warnings'][0]['code'] ?? null,
 ));
 $fetches = 0;
 $r = $call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/c.jpg')), $sueToken);

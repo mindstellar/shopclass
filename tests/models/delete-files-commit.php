@@ -63,7 +63,7 @@ Params::init();
 /** A listing with one photo whose four files exist on disk. */
 $listingWithPhoto = static function (?int $userId) use ($admin, $cars, $p, $dfRoot): array {
     $item  = seed_item($admin, $cars, $userId, 'Car');
-    $photo = seed_exec($admin, "INSERT INTO {$p}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES (?, 'x', 'jpg', 'image/jpeg', 'photos/')", 'i', array($item));
+    $photo = seed_photo($admin, $item, array('s_name' => 'x', 's_path' => 'photos/'));
     foreach (array('', '_original', '_thumbnail', '_preview') as $variant) {
         file_put_contents($dfRoot . 'photos/' . $photo . $variant . '.jpg', 'jpg');
     }
@@ -139,20 +139,20 @@ harness_section('deleting a listing');
 [$item, $file] = $listingWithPhoto(null);
 $throwIn = 'after_delete_item';
 pin('a throwing after_delete_item fails the delete', 'hook failed', $attempt(static fn () => (new ListingService())->delete($item, $secret($item), Actor::guest('192.0.2.90'))));
-pin('the listing, its photo row and its files survive the rollback', array(1, 1, true), array($rows('t_item', "pk_i_id = $item"), $rows('t_item_resource', "fk_i_item_id = $item"), is_file($file)));
+pin('the listing, its photo row and its files survive the rollback', array(1, 1, true), array($rows('t_item', "pk_i_id = $item"), $rows('t_resource', "s_owner_type = 'item' AND i_owner_id = $item"), is_file($file)));
 $throwIn = null;
 pin('a normal delete goes through', 'done', $attempt(static fn () => (new ListingService())->delete($item, $secret($item), Actor::guest('192.0.2.90'))));
 pin('the listing and its files are gone after the commit', array(0, false), array($rows('t_item', "pk_i_id = $item"), is_file($file)));
 
 harness_section('deleting one photo');
 [$item, $file] = $listingWithPhoto(null);
-$photoId       = (int) $admin->query("SELECT pk_i_id FROM {$p}t_item_resource WHERE fk_i_item_id = $item")->fetch_row()[0];
-$admin->query("CREATE TRIGGER {$p}df_block BEFORE DELETE ON {$p}t_item_resource FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'blocked'");
+$photoId       = (int) $admin->query("SELECT pk_i_id FROM {$p}t_resource WHERE s_owner_type = 'item' AND i_owner_id = $item")->fetch_row()[0];
+$admin->query("CREATE TRIGGER {$p}df_block BEFORE DELETE ON {$p}t_resource FOR EACH ROW BEGIN IF OLD.s_owner_type = 'item' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'blocked'; END IF; END");
 pin('a failed row delete reports false', false, (new PhotoService())->delete($photoId, $item, Actor::admin(1)));
-pin('the row and its file survive', array(1, true), array($rows('t_item_resource', "pk_i_id = $photoId"), is_file($file)));
+pin('the row and its file survive', array(1, true), array($rows('t_resource', "pk_i_id = $photoId"), is_file($file)));
 $admin->query("DROP TRIGGER {$p}df_block");
 pin('a normal delete goes through', true, (new PhotoService())->delete($photoId, $item, Actor::admin(1)));
-pin('the row and its file are gone', array(0, false), array($rows('t_item_resource', "pk_i_id = $photoId"), is_file($file)));
+pin('the row and its file are gone', array(0, false), array($rows('t_resource', "pk_i_id = $photoId"), is_file($file)));
 
 harness_section('deleting an account');
 $ann            = seed_user($admin, 'ann', 'ann@example.test');

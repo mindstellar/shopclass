@@ -86,7 +86,7 @@ harness_section('every member change');
 $admin->query('SET FOREIGN_KEY_CHECKS = 0');
 $admin->query("INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) VALUES ($item, 1, 'red', '')");
 $admin->query("INSERT INTO {$p}t_user_description (fk_i_user_id, fk_c_locale_code, s_info) VALUES ($user, 'en_US', 'About me')");
-$admin->query("INSERT INTO {$p}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES ($item, 'a', 'jpg', 'image/jpeg', 'oc-content/uploads/0/')");
+$photoA = seed_photo($admin, $item, ['s_name' => 'a']);
 $sweep = static function (string $table, string $where, string $join, callable $read) use ($admin, $p): array {
     $missed = [];
     $types  = [];
@@ -127,7 +127,15 @@ pin('every t_item column changes a listing\'s version', [], $sweep('t_item', "pk
 pin('every t_item_description column does', [], $sweep('t_item_description', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
 pin('every t_item_location column does', [], $sweep('t_item_location', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
 pin('every t_item_meta column does', [], $sweep('t_item_meta', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
-pin('every t_item_resource column does', [], $sweep('t_item_resource', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
+// The match keeps the photo while the sweep renames its owner type ('item' becomes 'itemx'), and skips the user row beside it.
+$userRow = $photoA + 1000;
+$admin->query("INSERT INTO {$p}t_resource (pk_i_id, s_owner_type, i_owner_id, s_name, s_extension, s_content_type, s_path, dt_created) VALUES ($userRow, 'user', $item, 'u', 'jpg', 'image/jpeg', 'oc-content/uploads/0/', NOW())");
+pin('every t_resource column of a photo does', [], $sweep('t_resource', "i_owner_id = $item AND s_owner_type IN ('item', 'itemx')", 'i_owner_id', $listingVersion));
+$before = $listingVersion();
+$admin->query("UPDATE {$p}t_resource SET s_name = 'v' WHERE pk_i_id = $userRow");
+$changed = $listingVersion();
+$admin->query("DELETE FROM {$p}t_resource WHERE pk_i_id = $userRow");
+pin('a row of another owner type with the same id does not', [$before, $before], [$changed, $listingVersion()]);
 pin('every hashed t_user column changes the account\'s version', [], $sweep('t_user', "pk_i_id = $user", 'pk_i_id', $accountVersion));
 pin('every t_user_description column does', [], $sweep('t_user_description', "fk_i_user_id = $user", 'fk_i_user_id', $accountVersion));
 $before = $listingVersion();
@@ -135,10 +143,9 @@ $admin->query("INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value
 $added = $listingVersion();
 $admin->query("DELETE FROM {$p}t_item_meta WHERE fk_i_item_id = $item AND fk_i_field_id = 2");
 pin('adding a child row changes it, removing it changes it back', [true, $before], [$added !== $before, $listingVersion()]);
-$admin->query("INSERT INTO {$p}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES ($item, 'b', 'jpg', 'image/jpeg', 'oc-content/uploads/0/')");
-$photo = (int) $admin->insert_id;
+$photo = seed_photo($admin, $item, ['s_name' => 'b']);
 $added = $listingVersion();
-$admin->query("DELETE FROM {$p}t_item_resource WHERE pk_i_id = $photo");
+$admin->query("DELETE FROM {$p}t_resource WHERE pk_i_id = $photo");
 pin('so does adding a photo, and deleting it changes it back', [true, $before], [$added !== $before, $listingVersion()]);
 $admin->query('SET FOREIGN_KEY_CHECKS = 1');
 $v2 = $listingVersion();

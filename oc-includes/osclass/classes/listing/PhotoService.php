@@ -321,7 +321,7 @@ final class PhotoService
     }
 
     /**
-     * @return array<string,mixed>|false the photo's t_item_resource row
+     * @return array<string,mixed>|false the photo's row
      */
     public static function find(int $photoId): array|false
     {
@@ -329,7 +329,7 @@ final class PhotoService
     }
 
     /**
-     * The photo (t_item_resource) ids the last store() saved, in order.
+     * The photo ids the last store() saved, in order.
      *
      * @return int[]
      */
@@ -423,7 +423,7 @@ final class PhotoService
      * Remove a photo's files, here or on remote storage, and fire `delete_resource`. The row
      * is the caller's to delete.
      *
-     * @param array<string,mixed> $resource the t_item_resource row
+     * @param array<string,mixed> $resource the listing photo row
      *
      * @return bool false on a demo install, where nothing is deleted
      */
@@ -471,7 +471,7 @@ final class PhotoService
      * Remove the files of photos a save stored before it was rolled back. Their rows went
      * with the rollback, so nothing else would.
      *
-     * @param array<int,array<string,mixed>> $resources t_item_resource rows, as `uploaded_file` passed them
+     * @param array<int,array<string,mixed>> $resources listing photo rows, as `uploaded_file` passed them
      */
     public static function discardStored(array $resources): void
     {

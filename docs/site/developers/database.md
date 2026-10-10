@@ -20,13 +20,13 @@ $prefix = DB_TABLE_PREFIX;             // in raw SQL
 |---|---|
 | `t_item` | Listings: price, dates, contact, coordinates, flags. |
 | `t_item_description` | Title and description, one row per language. Carries the full-text index. |
-| `t_item_resource` | Uploaded photos and files attached to a listing. |
+| `t_resource` | Uploaded files: listing photos (owner type `item`), avatars, page and settings images. Read listing photos with the `osc_*resource*` helpers. |
 | `t_category` / `t_category_description` | The category tree and its translations. |
 | `t_country`, `t_region`, `t_city` | [Location data](/docs/configure/locations/). |
 | `t_user` | Accounts, with `t_admin` for admin users. |
 | `t_preference` | Every setting, grouped by section: the row that decides how the site behaves. |
 | `t_pages` | Static pages. |
-| `t_plugin_category` | Per-plugin, per-category configuration. |
+| `t_key_value` | Small values by group and key. See [Key-value store](/docs/developers/kv-store/). |
 
 Column names follow a typed prefix: `i_` integer, `s_` string, `d_` decimal,
 `b_` boolean, `dt_` datetime, `pk_` primary key, `fk_` foreign key, so
@@ -77,8 +77,8 @@ $p = DB_TABLE_PREFIX;
 
 $rows = osc_db_table($p . 't_item AS i')
     ->select('i.pk_i_id')
-    ->selectRaw('COUNT(r.pk_i_id) AS n_pic')
-    ->leftJoin($p . 't_item_resource AS r', 'r.fk_i_item_id', '=', 'i.pk_i_id')
+    ->selectRaw('COUNT(c.pk_i_id) AS n_comments')
+    ->leftJoin($p . 't_item_comment AS c', 'c.fk_i_item_id', '=', 'i.pk_i_id')
     ->where('i.b_active', 1)
     ->whereNotNull('i.dt_pub_date')
     ->groupBy('i.pk_i_id')

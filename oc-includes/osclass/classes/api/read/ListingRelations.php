@@ -19,7 +19,7 @@ namespace mindstellar\api\read;
 final class ListingRelations
 {
     /**
-     * @param array<int,array<int,array<string,mixed>>> $photos     item id => t_item_resource rows
+     * @param array<int,array<int,array<string,mixed>>> $photos     item id => listing photo rows
      * @param array<int,array<string,mixed>>            $users      user id => t_user row
      * @param array<int,array<int,array<string,mixed>>> $fields     item id => field value rows
      * @param array<string,array<string,mixed>>         $currencies code => t_currency row

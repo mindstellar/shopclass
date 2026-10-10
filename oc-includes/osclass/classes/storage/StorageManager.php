@@ -104,7 +104,7 @@ class StorageManager
      * Falls back to the local adapter when the stored id isn't registered
      * (e.g. the plugin that provided it was deactivated).
      *
-     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     * @param array<string,mixed> $resource a t_resource row, or a listing photo row
      *
      * @return StorageAdapter
      */

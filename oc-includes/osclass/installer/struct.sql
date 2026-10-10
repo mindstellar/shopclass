@@ -6,13 +6,14 @@ SET NAMES 'utf8mb4';
 -- cleanup even if a caller forgets, and a parent delete can no longer half-succeed.
 --
 -- Everything else stays RESTRICT on purpose. A child that is an entity in its own
--- right -- t_item, t_item_comment, t_item_resource, and the location hierarchy --
+-- right -- t_item, t_item_comment, and the location hierarchy --
 -- has files on disk, counter updates or lifecycle hooks attached to its removal, so
 -- it must go through the model that performs them. There, RESTRICT is the safety
 -- net: it turns a forgotten cascade into a loud failure instead of orphaned files.
 --
 -- t_billing_ledger and t_billing_order deliberately carry no foreign key at all, for
--- the reason given in the note above each of them.
+-- the reason given in the note above each of them. t_resource has none either: its owner
+-- can be a listing, a user, a page or a plugin's record, so the owner's model removes it.
 
 CREATE TABLE /*TABLE_PREFIX*/t_locale (
     pk_c_code CHAR(5) NOT NULL,
@@ -360,20 +361,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_stats_daily (
         PRIMARY KEY (dt_date, i_bucket)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
-    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    fk_i_item_id INT UNSIGNED NOT NULL,
-    s_name VARCHAR(60) NULL,
-    s_extension VARCHAR(10) NULL,
-    s_content_type VARCHAR(40) NULL,
-    s_path VARCHAR(250) NULL,
-    s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
-
-        PRIMARY KEY (pk_i_id),
-        INDEX fk_i_item_id (fk_i_item_id),
-        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_job_queue (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_type VARCHAR(60) NOT NULL,
@@ -404,6 +391,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_resource (
     s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
     dt_created DATETIME NOT NULL,
     dt_updated DATETIME NULL,
+    s_base_name VARCHAR(40) NULL,
 
         PRIMARY KEY (pk_i_id),
         INDEX idx_owner (s_owner_type, i_owner_id),

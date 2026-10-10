@@ -15,8 +15,8 @@ namespace mindstellar\storage;
 use mindstellar\database\Db;
 
 /**
- * Media library reads: listing photos (t_item_resource) and other uploads (t_resource) as
- * one list, and the titles of what owns them.
+ * Media library reads: every upload in t_resource, listing photos included, as one list,
+ * and the titles of what owns them.
  */
 final class MediaQuery
 {
@@ -35,7 +35,7 @@ final class MediaQuery
      */
     public static function ownerTypes(): array
     {
-        $rows = Db::select('SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource ORDER BY s_owner_type');
+        $rows = Db::select('SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource WHERE s_owner_type <> ? ORDER BY s_owner_type', array(\ItemResource::OWNER));
 
         return array_map(static fn (array $row): string => (string) $row['s_owner_type'], $rows);
     }
@@ -50,22 +50,16 @@ final class MediaQuery
      */
     public static function page(string $type, int $iPage, int $perPage): array
     {
-        $itemT  = DB_TABLE_PREFIX . 't_item_resource';
         $resT   = DB_TABLE_PREFIX . 't_resource';
         $offset = max(0, ($iPage - 1) * $perPage);
 
-        $itemSel = "SELECT 'item' AS src, pk_i_id AS id, fk_i_item_id AS owner_id, 'item' AS owner_type,"
-            . " s_name, s_extension, s_content_type, s_path, s_storage, NULL AS dt FROM $itemT";
-        $resSel  = "SELECT 'resource' AS src, pk_i_id AS id, i_owner_id AS owner_id, s_owner_type AS owner_type,"
-            . " s_name, s_extension, s_content_type, s_path, s_storage, dt_created AS dt FROM $resT";
+        $columns = 'pk_i_id AS id, i_owner_id AS owner_id, s_owner_type AS owner_type,'
+            . ' s_name, s_extension, s_content_type, s_path, s_storage, dt_created AS dt, s_base_name';
+        $base    = "SELECT IF(s_owner_type = ?, 'item', 'resource') AS src, $columns FROM $resT";
 
-        $params = array();
-        if ($type === 'item') {
-            $base = $itemSel;
-        } elseif ($type === 'all') {
-            $base = "($itemSel) UNION ALL ($resSel)";
-        } else {
-            $base     = $resSel . ' WHERE s_owner_type = ?';
+        $params = array(\ItemResource::OWNER);
+        if ($type !== 'all') {
+            $base    .= ' WHERE s_owner_type = ?';
             $params[] = $type;
         }
 

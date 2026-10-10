@@ -32,7 +32,8 @@ final class RowHashQuery extends Model
         't_item_location'        => ['fk_i_item_id', 'fk_c_country_code', 's_country', 's_address', 's_zip', 'fk_i_region_id', 's_region', 'fk_i_city_id',
             's_city', 'fk_i_city_area_id', 's_city_area', 'd_coord_lat', 'd_coord_long'],
         't_item_meta'            => ['fk_i_item_id', 'fk_i_field_id', 's_value', 's_multi'],
-        't_item_resource'        => ['pk_i_id', 'fk_i_item_id', 's_name', 's_extension', 's_content_type', 's_path', 's_storage'],
+        't_resource'             => ['pk_i_id', 's_owner_type', 'i_owner_id', 's_name', 's_extension', 's_content_type', 's_path', 's_storage',
+            'dt_created', 'dt_updated', 's_base_name'],
         't_item_comment'         => ['pk_i_id', 'fk_i_item_id', 'dt_pub_date', 's_title', 's_author_name', 's_author_email', 's_body', 'b_enabled', 'b_active',
             'b_spam', 'fk_i_user_id'],
         't_api_credential'       => ['pk_i_id', 'e_kind', 's_token_id', 's_secret_hash', 's_name', 's_scopes', 'fk_i_user_id', 'fk_i_admin_id', 's_family',
@@ -63,7 +64,8 @@ final class RowHashQuery extends Model
     /**
      * Hashes of the rows matching a key, one select per table.
      *
-     * @param array<int,array{0:string,1:string}> $tables    table (no prefix) and the column holding the key; index 0 is the head
+     * @param array<int,array{0:string,1:string,2?:string}> $tables table (no prefix), the column holding the key, and an
+     *                                                             optional fixed condition written in code; index 0 is the head
      * @param string|null                         $owner     column of the first table to return as "o"
      * @param bool                                $lock      lock the rows (FOR UPDATE), one table at a time
      * @param int|null                            $lockOwner with $lock, read and lock only a row $owner holds for this user
@@ -74,11 +76,12 @@ final class RowHashQuery extends Model
     public static function hashes(array $tables, int|string $key, ?string $owner, bool $lock, ?int $lockOwner = null): array
     {
         $selects = [];
-        foreach ($tables as $i => [$table, $column]) {
-            $selects[] = 'SELECT ' . $i . ' AS t, SHA2(CONCAT_WS(\',\', '
+        foreach ($tables as $i => $spec) {
+            [$table, $column] = $spec;
+            $selects[]        = 'SELECT ' . $i . ' AS t, SHA2(CONCAT_WS(\',\', '
                 . implode(', ', array_map(static fn (string $c): string => 'QUOTE(CAST(' . $c . ' AS BINARY))', self::COLUMNS[$table]))
                 . '), 256) AS r, ' . ($i === 0 && $owner !== null ? $owner : 'NULL') . ' AS o FROM ' . DB_TABLE_PREFIX . $table
-                . ' WHERE ' . $column . ' = ?';
+                . ' WHERE ' . $column . ' = ?' . (isset($spec[2]) ? ' AND ' . $spec[2] : '');
         }
         $db = Connection::getInstance();
         if (!$lock) {
@@ -88,7 +91,8 @@ final class RowHashQuery extends Model
         if ($lockOwner !== null && $owner !== null) {
             // A plain read first, so another user's row, or the gap where a missing one would go, is never locked.
             $mine = ' AND IFNULL(' . $owner . ', 0) = ?';
-            if ($db->select('SELECT 1 FROM ' . DB_TABLE_PREFIX . $tables[0][0] . ' WHERE ' . $tables[0][1] . ' = ?' . $mine, [$key, $lockOwner]) === []) {
+            $head = DB_TABLE_PREFIX . $tables[0][0] . ' WHERE ' . $tables[0][1] . ' = ?' . (isset($tables[0][2]) ? ' AND ' . $tables[0][2] : '');
+            if ($db->select('SELECT 1 FROM ' . $head . $mine, [$key, $lockOwner]) === []) {
                 return [];
             }
             $selects[0] .= $mine;

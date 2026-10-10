@@ -75,13 +75,15 @@ function mediaFileNeedles(array $row)
 {
     $needles = array();
 
-    $key = trim((string) ($row['s_path'] ?? '')) . (int) $row['id'];
-    if ($key !== (string) (int) $row['id']) {
+    $base = \mindstellar\storage\ResourceLocator::baseName(array('pk_i_id' => (int) $row['id'], 's_base_name' => $row['s_base_name'] ?? null));
+    $key  = trim((string) ($row['s_path'] ?? '')) . $base;
+    if ($key !== $base) {
         $needles[] = $key;
     }
 
     $full = (string) osc_get_resource_url(array(
         'pk_i_id'        => $row['id'],
+        's_base_name'    => $row['s_base_name'] ?? null,
         's_path'         => $row['s_path'] ?? '',
         's_extension'    => $row['s_extension'] ?? '',
         's_storage'      => $row['s_storage'] ?? 'local',
@@ -186,7 +188,12 @@ function mediaImageSize(array $row)
     if ($storage !== '' && $storage !== 'local') {
         return '';
     }
-    $path = osc_base_path() . (string) ($row['s_path'] ?? '') . (int) $row['id'] . '.' . (string) ($row['s_extension'] ?? '');
+    $path = \mindstellar\storage\ResourceLocator::localPath(array(
+        'pk_i_id'     => (int) $row['id'],
+        's_base_name' => $row['s_base_name'] ?? null,
+        's_path'      => $row['s_path'] ?? '',
+        's_extension' => $row['s_extension'] ?? '',
+    ));
     if (!is_file($path)) {
         return '';
     }
@@ -266,6 +273,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     // storage-aware URL filters, so offloaded files resolve correctly).
                     $res = array(
                         'pk_i_id'        => $row['id'],
+                        's_base_name'    => $row['s_base_name'] ?? null,
                         's_path'         => $row['s_path'],
                         's_extension'    => $row['s_extension'],
                         's_storage'      => $row['s_storage'],

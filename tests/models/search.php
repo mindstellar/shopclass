@@ -287,16 +287,19 @@ pin('a below-min-length term falls back to substring match', array($car2), $sort
  * ------------------------------------------------------------------------- */
 harness_section('Search: with photos');
 
-$admin->query("INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES
-    ($car1, 'a', 'jpg', 'image/jpeg', '/a.jpg'), ($car1, 'b', 'jpg', 'image/jpeg', '/b.jpg'),
-    ($car3, 'c', 'png', 'image/png', '/c.png'), ($bike1, 'd', 'pdf', 'application/pdf', '/d.pdf')");
+seed_photo($admin, $car1, array('s_name' => 'a', 's_path' => '/a.jpg'));
+seed_photo($admin, $car1, array('s_name' => 'b', 's_path' => '/b.jpg'));
+seed_photo($admin, $car3, array('s_name' => 'c', 's_extension' => 'png', 's_content_type' => 'image/png', 's_path' => '/c.png'));
+seed_photo($admin, $bike1, array('s_name' => 'd', 's_extension' => 'pdf', 's_content_type' => 'application/pdf', 's_path' => '/d.pdf'));
+// An image of another owner type whose id matches a listing without photos.
+$admin->query("INSERT INTO {$prefix}t_resource (s_owner_type, i_owner_id, s_name, s_extension, s_content_type, s_path, dt_created) VALUES ('user', $car2, 'u', 'jpg', 'image/jpeg', '/u.jpg', NOW())");
 $s = new Search();
 $s->withPicture(true);
 pin('only listings with an image, each once', array($car1, $car3), $sorted($ids($s->doSearch())));
 pin('and the count agrees', 2, $s->count());
 $s = new Search();
 $s->withPicture(true);
-$s->addJoinTable('photos', $prefix . 't_item_resource AS r2', 'r2.fk_i_item_id = ' . $prefix . 't_item.pk_i_id', 'LEFT');
+$s->addJoinTable('photos', $prefix . 't_resource AS r2', "r2.s_owner_type = 'item' AND r2.i_owner_id = " . $prefix . 't_item.pk_i_id', 'LEFT');
 pin('a plugin join that repeats a listing still lists it once', array($car1, $car3), $sorted($ids($s->doSearch())));
 
 /* ----------------------------------------------------------------------------

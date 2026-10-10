@@ -90,7 +90,7 @@ class ItemActions
     }
 
     /**
-     * The photo (t_item_resource) ids the last uploadItemResources() call saved, in order.
+     * The photo ids the last uploadItemResources() call saved, in order.
      *
      * @return int[]
      */

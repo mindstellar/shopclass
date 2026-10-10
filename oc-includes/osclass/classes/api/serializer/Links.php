@@ -27,7 +27,7 @@ interface Links
     public function listing(array $item): string;
 
     /**
-     * @param array<string,mixed> $resource a t_item_resource row
+     * @param array<string,mixed> $resource a listing photo row
      * @param string              $variant  '' (normal), 'thumbnail', 'preview' or 'original'
      */
     public function photo(array $resource, string $variant): string;

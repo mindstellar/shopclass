@@ -9,6 +9,7 @@
  */
 
 use mindstellar\model\Resource;
+use mindstellar\storage\ResourceLocator;
 use mindstellar\storage\ResourceUploader;
 use mindstellar\storage\StorageManager;
 
@@ -54,7 +55,7 @@ function osc_get_resource_url(array $resource, string $variant = ''): string
         default     => array('', 'resource_url'),
     };
 
-    $url = $base . ($resource['pk_i_id'] ?? '') . $suffix . '.' . ($resource['s_extension'] ?? '');
+    $url = $base . ResourceLocator::baseName($resource) . $suffix . '.' . ($resource['s_extension'] ?? '');
 
     return (string) osc_apply_filter($filter, $url, $resource);
 }
@@ -86,12 +87,8 @@ osc_add_hook('uploaded_resource', static function ($resource) {
 // A user's resources are removed by User::deleteUser(), with the user row, so a delete
 // that rolls back keeps them.
 
-// Future-proofing: no t_resource rows use owner type 'item' until the item
-// backfill lands, but registering the cascade now means they are covered the
-// moment they exist. The legacy t_item_resource path is unaffected.
-osc_add_hook('delete_item', static function ($id) {
-    (new ResourceUploader())->deleteByOwner(Resource::OWNER_ITEM, (int) $id);
-});
+// A listing's photos are removed by Item::deleteByPrimaryKey(), with the listing, so a
+// delete that rolls back keeps them.
 
 // Daily orphan sweep: reclaim resources whose owner record is gone.
 osc_add_hook('cron_daily', 'osc_sweep_orphan_resources');
@@ -195,15 +192,12 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
  * Unified media library (read layer over both resource tables)
  * -------------------------------------------------------------------------
  * The admin Media page and the editor's media picker both browse every uploaded
- * image: listing photos (t_item_resource) plus everything in the polymorphic
- * t_resource (avatars, page images, unattached library uploads, plugin types).
- * These helpers project both tables onto one shape so callers don't repeat the
- * union. t_item_resource stays the source of truth for listing images — this is
- * a view layer only.
+ * file in t_resource: listing photos (owner type `item`), avatars, page images,
+ * unattached library uploads and plugin types, in one shape.
  */
 
 /**
- * Distinct, well-formed owner types currently present in t_resource.
+ * Distinct, well-formed owner types currently present in t_resource, listing photos left out.
  *
  * @return string[]
  */
@@ -223,7 +217,7 @@ function osc_media_owner_types(): array
  * A page of normalised media rows plus the total for a filter. $type is 'all',
  * 'item' (listing photos), or a t_resource owner type ('user', 'page',
  * 'library', a plugin type). Each row carries: src ('item'|'resource'), id,
- * owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage.
+ * owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage, s_base_name.
  *
  * @param string $type
  * @param int    $iPage    1-based page number
@@ -249,6 +243,7 @@ function osc_media_row_urls(array $row): array
 {
     $res = array(
         'pk_i_id'        => $row['id'] ?? '',
+        's_base_name'    => $row['s_base_name'] ?? null,
         's_path'         => $row['s_path'] ?? '',
         's_extension'    => $row['s_extension'] ?? '',
         's_storage'      => $row['s_storage'] ?? 'local',

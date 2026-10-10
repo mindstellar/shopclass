@@ -163,7 +163,7 @@ final class ListingReader
      *
      * @param int[] $ids
      *
-     * @return array<int,array<int,array<string,mixed>>> item id => t_item_resource rows
+     * @return array<int,array<int,array<string,mixed>>> item id => listing photo rows
      */
     private function photoRows(array $ids): array
     {

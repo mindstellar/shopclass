@@ -228,13 +228,7 @@ $mkItem = static function (
         array($id)
     );
     if ($hasPicture) {
-        seed_exec(
-            $admin,
-            "INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path)
-             VALUES (?, 'photo', 'jpg', 'image/jpeg', '/photo.jpg')",
-            'i',
-            array($id)
-        );
+        seed_photo($admin, $id, array('s_path' => '/photo.jpg'));
     }
 
     return $id;

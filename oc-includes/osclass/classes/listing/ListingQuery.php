@@ -255,7 +255,7 @@ final class ListingQuery
      *
      * @param int[] $ids
      *
-     * @return array<int,array<string,mixed>> t_item_resource rows
+     * @return array<int,array<string,mixed>> listing photo rows
      * @throws \mindstellar\database\DbException
      */
     public function photos(array $ids): array

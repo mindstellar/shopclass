@@ -234,13 +234,7 @@ seed_exec(
     'ii',
     array($item, $user)
 );
-seed_exec(
-    $admin,
-    "INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
-     VALUES (?, 'photo', 'jpg', 'image/jpeg', 'oc-content/uploads/', 'local')",
-    'i',
-    array($item)
-);
+seed_photo($admin, $item, array('s_path' => 'oc-content/uploads/'));
 seed_exec(
     $admin,
     "INSERT INTO {$prefix}t_item_report_log (fk_i_item_id, s_reporter, fk_i_user_id, s_ip, s_reason, dt_date)
@@ -273,7 +267,6 @@ foreach (
     array(
         't_item_description',
         't_item_comment',
-        't_item_resource',
         't_item_location',
         't_item_stats',
         't_item_meta',
@@ -284,6 +277,7 @@ foreach (
 ) {
     pin("$child has nothing left for the item", 0, $rows($child, "fk_i_item_id = $item"));
 }
+pin('t_resource has no photo left for the item', 0, $rows('t_resource', "s_owner_type = 'item' AND i_owner_id = $item"));
 
 /* ---------------------------------------------------------------------------
  * The rollback. This is the guarantee the transaction exists for, and the one that
@@ -307,13 +301,7 @@ $admin->query(
 );
 
 $blocked = seed_item($admin, $cat, $user, 'A listing that cannot be deleted');
-seed_exec(
-    $admin,
-    "INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
-     VALUES (?, 'photo', 'jpg', 'image/jpeg', 'oc-content/uploads/', 'local')",
-    'i',
-    array($blocked)
-);
+seed_photo($admin, $blocked, array('s_path' => 'oc-content/uploads/'));
 seed_exec(
     $admin,
     "INSERT INTO {$prefix}t_delete_blocker (fk_i_item_id) VALUES (?)",
@@ -328,7 +316,7 @@ pin('the listing is still there', 1, $rows('t_item', "pk_i_id = $blocked"));
 pin('its description survived the rollback', 1, $rows('t_item_description', "fk_i_item_id = $blocked"));
 // The row surviving is also what keeps the files: they are unlinked only after the
 // commit, from rows read before it, so a rollback never reaches the filesystem.
-pin('its images survived the rollback', 1, $rows('t_item_resource', "fk_i_item_id = $blocked"));
+pin('its images survived the rollback', 1, $rows('t_resource', "s_owner_type = 'item' AND i_owner_id = $blocked"));
 pin('its location survived the rollback', 1, $rows('t_item_location', "fk_i_item_id = $blocked"));
 pin('its stats survived the rollback', 1, $rows('t_item_stats', "fk_i_item_id = $blocked"));
 
@@ -567,6 +555,11 @@ pin('no moderation log for a missing item', 0, $count(
     "SELECT COUNT(*) c FROM {$prefix}t_item_moderation_log m
        LEFT JOIN {$prefix}t_item i ON m.fk_i_item_id = i.pk_i_id
       WHERE i.pk_i_id IS NULL"
+));
+pin('no listing photo for a missing item', 0, $count(
+    "SELECT COUNT(*) c FROM {$prefix}t_resource r
+       LEFT JOIN {$prefix}t_item i ON r.i_owner_id = i.pk_i_id
+      WHERE r.s_owner_type = 'item' AND i.pk_i_id IS NULL"
 ));
 pin('no city slug history for a missing city', 0, $count(
     "SELECT COUNT(*) c FROM {$prefix}t_location_slug_history h

@@ -16,12 +16,12 @@ use mindstellar\base\Model;
 use mindstellar\database\Db;
 
 /**
- * Small t_item_resource reads and writes for listing photos. The legacy ItemResource
- * model keeps its own methods.
+ * Small reads and writes for listing photos: the `item` rows of t_resource, in the old
+ * t_item_resource shape (fk_i_item_id is the listing). The ItemResource model keeps its own methods.
  */
 final class PhotoStore extends Model
 {
-    protected const TABLE = 't_item_resource';
+    protected const TABLE = 't_resource';
 
     /**
      * Delete one photo of one listing.
@@ -32,8 +32,9 @@ final class PhotoStore extends Model
     public static function delete(int $photoId, int $itemId): int
     {
         return self::table()
+            ->where('s_owner_type', \ItemResource::OWNER)
             ->where('pk_i_id', $photoId)
-            ->where('fk_i_item_id', $itemId)
+            ->where('i_owner_id', $itemId)
             ->delete();
     }
 
@@ -47,7 +48,17 @@ final class PhotoStore extends Model
      */
     public static function ofItems(array $itemIds): array
     {
-        return self::table()->whereIn('fk_i_item_id', $itemIds)->orderBy('pk_i_id')->get();
+        $itemIds = array_values(array_map('intval', $itemIds));
+        if ($itemIds === array()) {
+            return array();
+        }
+
+        return Db::select(
+            'SELECT ' . \ItemResource::columns() . ' FROM '
+            . self::tableName() . ' WHERE s_owner_type = ? AND i_owner_id IN (' . implode(', ', array_fill(0, count($itemIds), '?')) . ')'
+            . ' ORDER BY pk_i_id',
+            array_merge(array(\ItemResource::OWNER), $itemIds)
+        );
     }
 
     /**
@@ -60,9 +71,9 @@ final class PhotoStore extends Model
     {
         $rows = Db::select(
             'SELECT pk_i_id, s_path, s_extension, s_content_type, s_storage FROM '
-            . self::tableName() . " WHERE fk_i_item_id = ? AND s_content_type LIKE 'image/%' "
+            . self::tableName() . " WHERE s_owner_type = ? AND i_owner_id = ? AND s_content_type LIKE 'image/%' "
             . 'ORDER BY pk_i_id ASC LIMIT 1',
-            array($itemId)
+            array(\ItemResource::OWNER, $itemId)
         );
 
         return $rows === [] ? null : $rows[0];
@@ -75,6 +86,6 @@ final class PhotoStore extends Model
      */
     public static function countIn(string $storage): int
     {
-        return self::table()->where('s_storage', $storage)->count();
+        return self::table()->where('s_owner_type', \ItemResource::OWNER)->where('s_storage', $storage)->count();
     }
 }

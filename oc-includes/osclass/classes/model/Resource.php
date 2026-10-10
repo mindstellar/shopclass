@@ -18,9 +18,8 @@ use Throwable;
  *
  * A resource row belongs to an owner identified by the (s_owner_type, i_owner_id)
  * pair rather than a foreign key, so items, users, pages and plugin-defined owner
- * types all share one table and one storage pipeline. Column names and types
- * mirror t_item_resource so the storage layer's row-shape assumptions (s_path,
- * s_storage, variant naming) carry over unchanged.
+ * types all share one table and one storage pipeline. Listing photos are the
+ * `item` rows; ItemResource reads them in their old row shape.
  *
  * Queries run through the parameterized osc_db_* / QueryBuilder API (bound
  * placeholders, no string-built SQL); it does not extend the legacy DAO layer.
@@ -68,6 +67,7 @@ class Resource extends Model
         's_storage',
         'dt_created',
         'dt_updated',
+        's_base_name',
     );
 
     /** @deprecated 7.0.0 Use new Resource(). */
@@ -146,6 +146,28 @@ class Resource extends Model
 
         try {
             $row = $this->table()->where('pk_i_id', $id)->first();
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * The row an id names for this owner type. A row that was given a new id keeps its old one
+     * in s_base_name, so an id stored before that, such as a settings image, still finds it.
+     *
+     * @return array<string,mixed>|null the row, or null when the owner type has no such id
+     */
+    public function findOwned(string $ownerType, int $id): ?array
+    {
+        if ($id <= 0 || !self::isValidOwnerType($ownerType)) {
+            return null;
+        }
+
+        try {
+            $row = $this->table()->where('pk_i_id', $id)->where('s_owner_type', $ownerType)->first()
+                ?? $this->table()->where('s_base_name', (string) $id)->where('s_owner_type', $ownerType)->first();
         } catch (Throwable $e) {
             return null;
         }
@@ -410,7 +432,8 @@ class Resource extends Model
      */
     private function filterColumns(array $data): array
     {
-        $allowed = array_diff(self::COLUMNS, array('pk_i_id', 's_owner_type', 'i_owner_id'));
+        // s_base_name is set only when an upgrade gives a row a new id.
+        $allowed = array_diff(self::COLUMNS, array('pk_i_id', 's_owner_type', 'i_owner_id', 's_base_name'));
 
         return array_intersect_key($data, array_flip($allowed));
     }

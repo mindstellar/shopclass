@@ -29,12 +29,14 @@ Plugin authors should read the Breaking section before upgrading.
 - Plugins can add API routes, scopes, listing fields and webhook events. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
 - API routes carry a version. Plugins get `ApiKit` (with `listingContext()` and `listingsById()`), `osc_api_register_schema()` and the `api_problem_codes` and `api_schemas` filters.
 - The `api_listing`, `api_user` and `api_category` filters get `$data, $context`, not the database row.
+- `osc_item_cover_urls()` gives the first photo of many listings in one query.
 - A shared key-value store, `t_key_value`, with the `osc_kv_*()` helpers. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
 
 ### Breaking
 
 - Saved-search alerts go out daily or weekly; hourly ones become daily on upgrade. `hook_alert_email_hourly` no longer fires.
 - `PluginCategory` no longer extends `DAO`, and the `t_plugin_category` table is removed; its public calls still work.
+- `t_item_resource` is removed: listing photos are the `item` rows of `t_resource`, with the same ids, files and URLs, and `fk_i_item_id` is `i_owner_id` there. Read them with the photo helpers; `ItemResource` keeps its own calls, but inherited `DAO` calls are gone.
 - `Cron`, `AlertsStats`, `UserEmailTmp` and `ItemTmpUpload` no longer extend `DAO`, and their tables move into `t_key_value`. Their own calls still work; inherited `DAO` calls such as `insert()` and `update()` are gone.
 - Listing Import 0.3 needs Shopclass 7.0. Its old plugin keys stop working: make new keys in **Settings → API**.
 - Listing Import's API lives under `/api/v1/ext/listing-import/`; its 0.2 paths are gone.

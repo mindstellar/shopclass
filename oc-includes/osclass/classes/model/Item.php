@@ -1222,14 +1222,13 @@ class Item extends DAO
         // stranding it with none.
         $resources = ItemResource::getInstance()->getAllResourcesFromItem($id);
 
-        // t_item_moderation_log and t_item_report_log carry no foreign key to the
-        // item, so only this removes them. t_item_comment and t_item_resource are
-        // RESTRICT and must go first; the rest cascade, and stay listed for installs
-        // whose foreign keys were never created.
+        // t_item_moderation_log, t_item_report_log and the photos in t_resource carry no
+        // foreign key to the item, so only this removes them. t_item_comment is RESTRICT
+        // and must go first; the rest cascade, and stay listed for installs whose foreign
+        // keys were never created.
         $dependents = array(
             't_item_description',
             't_item_comment',
-            't_item_resource',
             't_item_location',
             't_item_stats',
             't_item_meta',
@@ -1242,6 +1241,7 @@ class Item extends DAO
                 foreach ($dependents as $depTable) {
                     Db::table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
                 }
+                Db::table(DB_TABLE_PREFIX . 't_resource')->where('s_owner_type', ItemResource::OWNER)->where('i_owner_id', $id)->delete();
 
                 // Not parent::deleteByPrimaryKey(): the inherited DAO reports a failed
                 // delete by returning false rather than raising, and a plain return

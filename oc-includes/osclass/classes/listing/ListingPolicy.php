@@ -108,7 +108,7 @@ final class ListingPolicy
     /**
      * Whether a photo row belongs to the listing and matches the code sent with it.
      *
-     * @param array<string,mixed>|mixed $resource a t_item_resource row, or what a failed lookup returned
+     * @param array<string,mixed>|mixed $resource a listing photo row, or what a failed lookup returned
      * @param array<string,mixed>       $item
      * @param string                    $code     the photo's s_name as sent
      */

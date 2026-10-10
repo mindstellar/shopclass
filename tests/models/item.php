@@ -117,7 +117,7 @@ $itemTable    = DB_TABLE_PREFIX . 't_item';
 $descTable    = DB_TABLE_PREFIX . 't_item_description';
 $locTable     = DB_TABLE_PREFIX . 't_item_location';
 $statsTable   = DB_TABLE_PREFIX . 't_item_stats';
-$resTable     = DB_TABLE_PREFIX . 't_item_resource';
+$resTable     = DB_TABLE_PREFIX . 't_resource';
 $commentTable = DB_TABLE_PREFIX . 't_item_comment';
 $metaTable    = DB_TABLE_PREFIX . 't_item_meta';
 $fieldTable   = DB_TABLE_PREFIX . 't_meta_fields';
@@ -158,14 +158,11 @@ $itemExists = static function (int $id) use ($countRows, $itemTable): bool {
 $stubRow = static function (int $id, int $catId): array {
     return array('pk_i_id' => (string) $id, 'fk_i_category_id' => (string) $catId);
 };
-$seedResource = static function (int $itemId, string $name, string $storage = 'local') use ($admin, $resTable): int {
-    return seed_exec(
-        $admin,
-        "INSERT INTO $resTable (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
-         VALUES (?, ?, 'jpg', 'image/jpeg', 'oc-content/uploads/0/', ?)",
-        'iss',
-        array($itemId, $name, $storage)
-    );
+$seedResource = static function (int $itemId, string $name, string $storage = 'local') use ($admin): int {
+    return seed_photo($admin, $itemId, array('s_name' => $name, 's_storage' => $storage));
+};
+$countPhotos = static function (int $itemId) use ($admin, $resTable): int {
+    return (int) $admin->query("SELECT COUNT(*) FROM $resTable WHERE s_owner_type = 'item' AND i_owner_id = $itemId")->fetch_row()[0];
 };
 $setItem = static function (int $id, string $assignments) use ($admin, $itemTable): void {
     $admin->query("UPDATE $itemTable SET $assignments WHERE pk_i_id = $id");
@@ -937,7 +934,7 @@ check('the second doomed item is gone', !$itemExists($doom2));
 pin('the doomed description rows are gone', 0, $countRows($descTable, 'fk_i_item_id', $doom1) + $countRows($descTable, 'fk_i_item_id', $doom2));
 pin('the doomed location rows are gone', 0, $countRows($locTable, 'fk_i_item_id', $doom1) + $countRows($locTable, 'fk_i_item_id', $doom2));
 pin('the doomed stats rows are gone', 0, $countRows($statsTable, 'fk_i_item_id', $doom1) + $countRows($statsTable, 'fk_i_item_id', $doom2));
-pin('the doomed resource row is gone', 0, $countRows($resTable, 'fk_i_item_id', $doom1));
+pin('the doomed resource row is gone', 0, $countPhotos($doom1));
 pin('the doomed comment row is gone', 0, $countRows($commentTable, 'fk_i_item_id', $doom1));
 pin('the doomed meta row is gone', 0, $countRows($metaTable, 'fk_i_item_id', $doom1));
 
@@ -953,7 +950,7 @@ $seedResource($directDoom, 'direct-res');
 $directRet = $model->deleteByPrimaryKey($directDoom);
 check('deleteByPrimaryKey returns the affected-row count', is_int($directRet) || $directRet === false, describe($directRet));
 check('the item is gone', !$itemExists($directDoom));
-pin('its resource rows are gone', 0, $countRows($resTable, 'fk_i_item_id', $directDoom));
+pin('its resource rows are gone', 0, $countPhotos($directDoom));
 // findByPrimaryKey(unknown) returns array() (not null), so the null-guard is not
 // taken; the cascade runs over zero rows and the delete reports int 0 affected.
 // Zero rows matched is not a failure, so it does not roll the transaction back.

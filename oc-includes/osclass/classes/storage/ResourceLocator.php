@@ -16,8 +16,8 @@ namespace mindstellar\storage;
  *
  * Derives filesystem paths and storage keys for a resource row and one of its
  * variants ('', '_original', '_preview', '_thumbnail'). Keys come purely from the
- * row shape (s_path, pk_i_id, s_extension), so it serves both t_item_resource and
- * t_resource rows without knowing which owner they belong to.
+ * row shape (s_path, pk_i_id or s_base_name, s_extension), so it serves every
+ * t_resource row without knowing which owner it belongs to.
  *
  * @package mindstellar\storage
  */
@@ -38,35 +38,48 @@ class ResourceLocator
     /**
      * Absolute local filesystem path for $resource's $variant.
      *
-     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     * @param array<string,mixed> $resource a t_resource row, or a listing photo row
      * @param string               $variant  one of self::VARIANTS
      *
      * @return string
      */
     public static function localPath(array $resource, string $variant = ''): string
     {
-        return osc_base_path() . ($resource['s_path'] ?? '') . ($resource['pk_i_id'] ?? '')
+        return osc_base_path() . ($resource['s_path'] ?? '') . self::baseName($resource)
             . $variant . '.' . ($resource['s_extension'] ?? '');
     }
 
     /**
      * Storage key for $resource's $variant, relative to oc-content/uploads/.
      *
-     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     * @param array<string,mixed> $resource a t_resource row, or a listing photo row
      * @param string               $variant  one of self::VARIANTS
      *
      * @return string
      */
     public static function storageKey(array $resource, string $variant = ''): string
     {
-        return self::keyPrefix($resource) . ($resource['pk_i_id'] ?? '')
+        return self::keyPrefix($resource) . self::baseName($resource)
             . $variant . '.' . ($resource['s_extension'] ?? '');
+    }
+
+    /**
+     * The file name before the variant and extension: s_base_name when a row was given a new id,
+     * otherwise the id.
+     *
+     * @param array<string,mixed> $resource
+     */
+    public static function baseName(array $resource): string
+    {
+        $base = (string) ($resource['s_base_name'] ?? '');
+
+        return ctype_digit($base) ? $base : (string) ($resource['pk_i_id'] ?? '');
     }
 
     /**
      * Directory portion of the storage key (the part before the filename).
      *
-     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     * @param array<string,mixed> $resource a t_resource row, or a listing photo row
      *
      * @return string
      */

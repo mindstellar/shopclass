@@ -40,7 +40,7 @@ final class DatabaseDump
         't_item_location',
         't_item_stats',
         't_item_stats_daily',
-        't_item_resource',
+        't_resource',
         't_item_comment',
         't_preference',
         't_pages',

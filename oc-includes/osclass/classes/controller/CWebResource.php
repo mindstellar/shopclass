@@ -149,9 +149,9 @@ class CWebResource extends BaseModel
     }
 
     /**
-     * Resolve the row from the right table. An empty or 'item' type is the legacy
-     * t_item_resource; any other value is a t_resource owner type and must match
-     * the stored row, so an id cannot be reinterpreted across owner types.
+     * Resolve the row. An empty or 'item' type is a listing photo; any other value is
+     * a t_resource owner type and must match the stored row, so an id cannot be
+     * reinterpreted across owner types.
      *
      * @param int    $id
      * @param string $type
@@ -175,17 +175,9 @@ class CWebResource extends BaseModel
                 return null;
             }
 
-            $row = (new Resource())->findByPrimaryKey($id);
-            if (!is_array($row) || empty($row['pk_i_id'])) {
-                return null;
-            }
             // The URL's declared owner type must match the stored row, so an id
             // cannot be reinterpreted across owner types.
-            if ((string) ($row['s_owner_type'] ?? '') !== $type) {
-                return null;
-            }
-
-            return $row;
+            return (new Resource())->findOwned($type, $id);
         } catch (\Throwable $e) {
             return null;
         }

@@ -75,6 +75,7 @@ final class StorageJobs
     {
         $payload = array(
             'pk_i_id'        => $snapshot['pk_i_id'] ?? null,
+            's_base_name'    => $snapshot['s_base_name'] ?? null,
             'fk_i_item_id'   => $snapshot['fk_i_item_id'] ?? null,
             's_owner_type'   => $snapshot['s_owner_type'] ?? null,
             'i_owner_id'     => $snapshot['i_owner_id'] ?? null,
@@ -340,10 +341,9 @@ final class StorageJobs
     }
 
     /**
-     * Resolve the resource row a snapshot points at from the right table: snapshots
-     * carrying an s_owner_type belong to t_resource (the polymorphic table), everything
-     * else is a legacy item snapshot in t_item_resource. Jobs queued before that upgrade
-     * have no owner fields and take the item path exactly as before.
+     * Resolve the resource row a snapshot points at: a snapshot carrying an s_owner_type
+     * is read for that owner type, anything else is a listing photo. Item snapshots
+     * have no owner fields.
      *
      * @param array<string,mixed> $snapshot
      *
@@ -356,11 +356,12 @@ final class StorageJobs
             return null;
         }
 
-        $model = !empty($snapshot['s_owner_type'])
-            ? (new Resource())
-            : ItemResource::getInstance();
+        if (!empty($snapshot['s_owner_type'])) {
+            // The owner type must match, so a job queued before a row was renumbered cannot reach another row.
+            return (new Resource())->findOwned((string) $snapshot['s_owner_type'], $pk);
+        }
 
-        $row = $model->findByPrimaryKey($pk);
+        $row = ItemResource::getInstance()->findByPrimaryKey($pk);
 
         // Both models inherit DAO::findByPrimaryKey, which returns false (not null) for a
         // missing row; normalise so callers only have to guard one shape.
@@ -384,7 +385,10 @@ final class StorageJobs
         }
 
         if (!empty($snapshot['s_owner_type'])) {
-            (new Resource())->updateResource($pk, array('s_storage' => $storageId));
+            $row = self::resolveRow($snapshot);
+            if ($row !== null) {
+                (new Resource())->updateResource((int) $row['pk_i_id'], array('s_storage' => $storageId));
+            }
 
             return;
         }

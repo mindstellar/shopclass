@@ -23,7 +23,7 @@ namespace mindstellar\storage;
 interface StorageAdapter
 {
     /**
-     * Unique identifier for this adapter, stored in t_item_resource.s_storage.
+     * Unique identifier for this adapter, stored in t_resource.s_storage.
      *
      * @return string
      */

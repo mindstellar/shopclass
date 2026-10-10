@@ -68,7 +68,7 @@ final class ItemAccess
     }
 
     /**
-     * @param array<string,mixed>|mixed $resource a t_item_resource row, or what a failed lookup returned
+     * @param array<string,mixed>|mixed $resource a listing photo row, or what a failed lookup returned
      * @param array<string,mixed>       $item
      * @param string                    $code     the photo's s_name as sent
      */

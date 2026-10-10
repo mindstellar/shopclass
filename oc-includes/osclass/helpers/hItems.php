@@ -1288,6 +1288,41 @@ function osc_get_item_resources()
 }
 
 /**
+ * The first image of each listing, as a URL, in one query. Built as osc_resource_url() and
+ * its variants build it, filters included, so storage plugins still route the files.
+ * It does not check the listing is public: pass only ids the page may show.
+ *
+ * @param int[]  $itemIds
+ * @param string $variant '', 'thumbnail', 'preview' or 'original'
+ *
+ * @return array<int,string> listing id => URL; a listing with no image is left out
+ * @since 7.0.0
+ */
+function osc_item_cover_urls(array $itemIds, string $variant = 'thumbnail'): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $itemIds))));
+    if (!in_array($variant, array('', 'thumbnail', 'preview', 'original'), true) || $ids === array()) {
+        return array();
+    }
+    try {
+        $rows = \mindstellar\listing\PhotoStore::ofItems($ids);
+    } catch (\mindstellar\database\DbException $e) {
+        return array();
+    }
+
+    $out = array();
+    foreach ($rows as $row) {
+        $itemId = (int) $row['fk_i_item_id'];
+        if (isset($out[$itemId]) || strpos((string) $row['s_content_type'], 'image/') !== 0) {
+            continue;
+        }
+        $out[$itemId] = osc_get_resource_url($row, $variant);
+    }
+
+    return $out;
+}
+
+/**
  * Gets number of item comments of current item
  *
  * @return int

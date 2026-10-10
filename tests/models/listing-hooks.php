@@ -434,7 +434,7 @@ pin('adding a photo is an edit: uploaded_file, then edited_item', array('upload_
 pin('the API fires the same, in the same order', $webAdd, $apiAdd);
 
 harness_section('deleting a photo');
-$photoIds = static fn (int $item): array => array_map('intval', array_column($admin->query("SELECT pk_i_id FROM {$p}t_item_resource WHERE fk_i_item_id = $item ORDER BY pk_i_id")->fetch_all(MYSQLI_ASSOC), 'pk_i_id'));
+$photoIds = static fn (int $item): array => array_map('intval', array_column($admin->query("SELECT pk_i_id FROM {$p}t_resource WHERE s_owner_type = 'item' AND i_owner_id = $item ORDER BY pk_i_id")->fetch_all(MYSQLI_ASSOC), 'pk_i_id'));
 $logged   = static fn (int $photo): array => $admin->query("SELECT s_section, s_action, s_who FROM {$p}t_log WHERE fk_i_id = $photo AND s_action = 'deleteResource'")->fetch_all(MYSQLI_ASSOC);
 list($first, $second) = $photoIds($photoListing);
 check('a photo is not deleted through another listing', !(new PhotoService())->delete($first, $photoListing + 1, Actor::user($sue)) && in_array($first, $photoIds($photoListing), true));
