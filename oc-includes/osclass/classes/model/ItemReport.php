@@ -21,8 +21,7 @@ use mindstellar\database\Db;
  */
 class ItemReport extends DAO
 {
-    /** @var ItemReport */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_item_report_log table
@@ -39,20 +38,6 @@ class ItemReport extends DAO
             's_reason',
             'dt_date',
         ));
-    }
-
-    /**
-     * Return the shared ItemReport model instance, creating it on first use.
-     *
-     * @return ItemReport
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

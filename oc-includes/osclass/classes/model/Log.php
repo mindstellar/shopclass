@@ -19,11 +19,7 @@ use mindstellar\database\Db;
  */
 class Log extends DAO
 {
-    /**
-     *
-     * @var \Log
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_log table
@@ -43,20 +39,6 @@ class Log extends DAO
             'fk_i_who_id'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * Return the shared Log model instance, creating it on first use.
-     *
-     * @return \Log
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

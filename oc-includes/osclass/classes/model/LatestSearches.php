@@ -19,11 +19,7 @@ use mindstellar\database\Db;
  */
 class LatestSearches extends DAO
 {
-    /**
-     *
-     * @var \LatestSearches
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_latest_searches table
@@ -37,20 +33,6 @@ class LatestSearches extends DAO
             's_search'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * Return the shared LatestSearches model instance, creating it on first use.
-     *
-     * @return \LatestSearches
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

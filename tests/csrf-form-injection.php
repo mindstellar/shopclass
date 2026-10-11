@@ -97,6 +97,7 @@ pin('the GET form between them is untouched', 1, substr_count($csrf->replaceForm
 
 harness_section('only HTML responses are rewritten');
 // A form inside a JSON string used to get token inputs spliced in, breaking the JSON.
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/security/Csrf.php';
 
 final class CsrfResponse extends \mindstellar\security\Csrf

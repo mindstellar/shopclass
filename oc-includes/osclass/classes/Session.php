@@ -17,8 +17,9 @@
  */
 class Session
 {
+    use \mindstellar\base\SharedInstance;
+
     //attributes
-    private static $instance;
     private $session = array();
     private $ephemeral = array();
     private $messages = array();
@@ -36,20 +37,6 @@ class Session
     public function __construct()
     {
         $this->seedDefaults();
-    }
-
-    /**
-     * The shared Session instance, created on first call.
-     *
-     * @return \Session
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

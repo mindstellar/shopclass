@@ -19,18 +19,14 @@ use mindstellar\database\Db;
  */
 class User extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     /** Seconds an s_pass_code stays valid, for both password reset and e-mail change. */
     public const PASS_CODE_TTL = 86400;
 
     /** Purposes an s_pass_code is bound to, so a code issued for one never passes as the other. */
     public const PASS_CODE_RESET = 'reset';
     public const PASS_CODE_EMAIL = 'email';
-
-    /**
-     *
-     * @var \User
-     */
-    private static $instance;
 
     /**
      * The stored form of an account code: its purpose plus a SHA-256 of the code.
@@ -112,20 +108,6 @@ class User extends DAO
             's_access_ip'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * Return the shared User model instance, creating it on first use.
-     *
-     * @return \User
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

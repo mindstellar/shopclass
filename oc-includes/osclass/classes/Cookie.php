@@ -17,7 +17,8 @@
  */
 class Cookie
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     public $name;
     public $val;
     public $expires;
@@ -47,20 +48,6 @@ class Cookie
                 }
             }
         }
-    }
-
-    /**
-     * The shared Cookie instance, created on first call.
-     *
-     * @return \Cookie
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

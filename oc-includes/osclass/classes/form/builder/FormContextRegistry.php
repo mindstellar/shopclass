@@ -12,6 +12,7 @@
 namespace mindstellar\form\builder;
 
 use InvalidArgumentException;
+use mindstellar\base\SharedInstance;
 
 /**
  * Class FormContextRegistry
@@ -30,7 +31,7 @@ use InvalidArgumentException;
  */
 final class FormContextRegistry
 {
-    private static ?FormContextRegistry $instance = null;
+    use SharedInstance;
 
     /** @var array<string,array> registered context specs, keyed by type */
     private array $contexts = array();
@@ -40,20 +41,6 @@ final class FormContextRegistry
      */
     private function __construct()
     {
-    }
-
-    /**
-     * The shared registry instance.
-     *
-     * @return self
-     */
-    public static function getInstance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

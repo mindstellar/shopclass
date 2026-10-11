@@ -22,6 +22,8 @@
  */
 class AdminMenu
 {
+    use \mindstellar\base\SharedInstance;
+
     /**
      * Menu ids that open a new band in the sidebar, drawn with a hairline above.
      *
@@ -32,7 +34,6 @@ class AdminMenu
      */
     private const BAND_STARTS = array('items', 'appearance', 'settings');
 
-    private static $instance;
     private $aMenu;
 
     /** Submenu keys per section as core left them, before anyone else registered. */
@@ -691,20 +692,6 @@ class AdminMenu
         }
 
         return null;
-    }
-
-    /**
-     * The shared AdminMenu instance, created on first call.
-     *
-     * @return \AdminMenu
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

@@ -22,11 +22,7 @@ use mindstellar\database\Db;
  */
 class Country extends DAO
 {
-    /**
-     *
-     * @var Country
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_country table
@@ -37,20 +33,6 @@ class Country extends DAO
         $this->setTableName('t_country');
         $this->setPrimaryKey('pk_c_code');
         $this->setFields(array('pk_c_code', 's_name', 's_slug'));
-    }
-
-    /**
-     * Return the shared Country model instance, creating it on first use.
-     *
-     * @return \Country
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

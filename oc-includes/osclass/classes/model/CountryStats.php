@@ -23,14 +23,7 @@ use mindstellar\database\Db;
  */
 class CountryStats extends DAO
 {
-    /**
-     * It references to self object: CountryStats.
-     * It is used as a singleton
-     *
-     * @since  2.4
-     * @var CountryStats
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_country_stats table
@@ -43,22 +36,6 @@ class CountryStats extends DAO
         $this->setTableName('t_country_stats');
         $this->setPrimaryKey('fk_c_country_code');
         $this->setFields(array('fk_c_country_code', 'i_num_items'));
-    }
-
-    /**
-     * It creates a new CountryStats object class if it has been created
-     * before, it return the previous object
-     *
-     * @return CountryStats
-     * @since  2.4
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

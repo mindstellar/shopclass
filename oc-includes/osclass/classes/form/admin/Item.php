@@ -11,6 +11,7 @@
 namespace mindstellar\form\admin;
 
 use Exception;
+use mindstellar\base\SharedInstance;
 use mindstellar\form\FormInputs;
 use mindstellar\utility\Escape;
 use mindstellar\utility\Sanitize;
@@ -21,10 +22,8 @@ use Session;
  */
 class Item extends FormInputs
 {
-    /**
-     * @var \mindstellar\form\admin\Item|null
-     */
-    private static $instance;
+    use SharedInstance;
+
     protected $textClass = 'form-control form-control-sm';
     protected $selectClass = 'form-select form-select-sm';
     protected $passwordClass = 'form-control form-control-sm';
@@ -51,20 +50,6 @@ class Item extends FormInputs
         $this->Session           = Session::getInstance();
         $this->adminLocaleCode   = osc_current_admin_locale();
         $this->userLocales       = osc_get_locales();
-    }
-
-    /**
-     * The shared admin item form instance.
-     *
-     * @return \mindstellar\form\admin\Item
-     */
-    public static function getInstance(): Item
-    {
-        if (!isset(self::$instance)) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

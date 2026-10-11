@@ -1146,6 +1146,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\base\\Model' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/Model.php',
         'mindstellar\\base\\Registry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/Registry.php',
         'mindstellar\\base\\SettingsScreen' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/SettingsScreen.php',
+        'mindstellar\\base\\SharedInstance' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/base/SharedInstance.php',
         'mindstellar\\billing\\Billing' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Billing.php',
         'mindstellar\\billing\\CallbackResult' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/CallbackResult.php',
         'mindstellar\\billing\\CheckoutIntent' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/CheckoutIntent.php',

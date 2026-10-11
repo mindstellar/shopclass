@@ -1029,6 +1029,7 @@ return array(
     'mindstellar\\base\\Model' => $baseDir . '/oc-includes/osclass/classes/base/Model.php',
     'mindstellar\\base\\Registry' => $baseDir . '/oc-includes/osclass/classes/base/Registry.php',
     'mindstellar\\base\\SettingsScreen' => $baseDir . '/oc-includes/osclass/classes/base/SettingsScreen.php',
+    'mindstellar\\base\\SharedInstance' => $baseDir . '/oc-includes/osclass/classes/base/SharedInstance.php',
     'mindstellar\\billing\\Billing' => $baseDir . '/oc-includes/osclass/classes/billing/Billing.php',
     'mindstellar\\billing\\CallbackResult' => $baseDir . '/oc-includes/osclass/classes/billing/CallbackResult.php',
     'mindstellar\\billing\\CheckoutIntent' => $baseDir . '/oc-includes/osclass/classes/billing/CheckoutIntent.php',

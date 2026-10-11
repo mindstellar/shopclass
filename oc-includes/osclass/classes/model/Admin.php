@@ -22,13 +22,7 @@ use mindstellar\database\Db;
  */
 class Admin extends DAO
 {
-    /**
-     * It references to self object: Admin.
-     * It is used as a singleton
-     *
-     * @var Admin
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * array for save currencies
@@ -66,20 +60,6 @@ class Admin extends DAO
             $fields[] = (string)$column['Field'];
         }
         $this->setFields($fields);
-    }
-
-    /**
-     * Return the shared Admin model instance, creating it on first use.
-     *
-     * @return \Admin
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

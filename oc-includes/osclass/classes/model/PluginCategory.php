@@ -21,26 +21,12 @@
  */
 class PluginCategory
 {
-    public const KV_GROUP = 'plugin_categories';
+    use \mindstellar\base\SharedInstance;
 
-    /** @var PluginCategory|null */
-    private static $instance;
+    public const KV_GROUP = 'plugin_categories';
 
     /** @var array<string,int[]> lists read this request, by plugin */
     private static array $lists = array();
-
-    /**
-     * @return \PluginCategory
-     * @deprecated 7.0.0 Use new PluginCategory().
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

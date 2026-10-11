@@ -22,15 +22,10 @@ use mindstellar\database\Db;
  */
 class Currency extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     protected $cacheGroup = 'currency';
 
-    /**
-     * It references to self object: Currency.
-     * It is used as a singleton
-     *
-     * @var Currency
-     */
-    private static $instance;
     private static $_currencies;
 
     /**
@@ -42,21 +37,6 @@ class Currency extends DAO
         $this->setTableName('t_currency');
         $this->setPrimaryKey('pk_c_code');
         $this->setFields(array('pk_c_code', 's_name', 's_description', 'b_enabled'));
-    }
-
-    /**
-     * It creates a new Currency object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return Currency
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

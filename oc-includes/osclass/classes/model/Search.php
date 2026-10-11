@@ -30,7 +30,9 @@ use mindstellar\search\query\SqlValue;
  */
 class Search extends DAO
 {
-    private static $instance;
+    // Declares private static $instance; resetInstance() below replaces it.
+    use \mindstellar\base\SharedInstance;
+
     private SearchParts $parts;
     private $total_results;
     private $total_results_table;
@@ -181,20 +183,6 @@ class Search extends DAO
     public function addField($fields)
     {
         $this->parts->plugin->addField($fields, (array)$this->getFields());
-    }
-
-    /**
-     * Return the shared Search instance, creating it on first use.
-     *
-     * @return \Search
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

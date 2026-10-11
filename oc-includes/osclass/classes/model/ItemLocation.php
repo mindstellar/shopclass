@@ -20,13 +20,7 @@
  */
 class ItemLocation extends DAO
 {
-    /**
-     * It references to self object: ItemLocation.
-     * It is used as a singleton
-     *
-     * @var ItemLocation
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_item_location table
@@ -52,21 +46,6 @@ class ItemLocation extends DAO
             'd_coord_long'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * It creates a new ItemLocation object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return ItemLocation
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

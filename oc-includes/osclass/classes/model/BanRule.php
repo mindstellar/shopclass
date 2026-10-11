@@ -19,13 +19,9 @@ use mindstellar\database\Db;
  */
 class BanRule extends DAO
 {
-    protected $cacheGroup = 'ban_rule';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     *
-     * @var \BanRule
-     */
-    private static $instance;
+    protected $cacheGroup = 'ban_rule';
 
     /**
      * Set data related to t_ban_rule table
@@ -42,20 +38,6 @@ class BanRule extends DAO
             's_email'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * Return the shared BanRule model instance, creating it on first use.
-     *
-     * @return \BanRule
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

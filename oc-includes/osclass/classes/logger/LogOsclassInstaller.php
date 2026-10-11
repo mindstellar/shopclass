@@ -17,21 +17,7 @@
  */
 class LogOsclassInstaller extends Logger
 {
-    private static $instance;
-
-    /**
-     * The shared installer logger.
-     *
-     * @return \LogOsclassInstaller
-     */
-    public static function getInstance()
-    {
-        if (!isset(self::$instance)) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
+    use \mindstellar\base\SharedInstance;
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

@@ -21,8 +21,7 @@ use mindstellar\database\Db;
  */
 class ItemModerationLog extends DAO
 {
-    /** @var ItemModerationLog */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_item_moderation_log table
@@ -41,20 +40,6 @@ class ItemModerationLog extends DAO
             's_action',
             'dt_date',
         ));
-    }
-
-    /**
-     * Return the shared ItemModerationLog model instance, creating it on first use.
-     *
-     * @return ItemModerationLog
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

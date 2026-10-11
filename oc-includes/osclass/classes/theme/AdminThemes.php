@@ -17,7 +17,7 @@
  */
 class AdminThemes extends Themes
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Selects the admin theme configured in preferences.
@@ -26,20 +26,6 @@ class AdminThemes extends Themes
     {
         parent::__construct();
         $this->setCurrentTheme(osc_admin_theme());
-    }
-
-    /**
-     * Shared AdminThemes instance, created on first use.
-     *
-     * @return \AdminThemes
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

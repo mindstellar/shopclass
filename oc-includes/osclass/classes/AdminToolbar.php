@@ -22,7 +22,8 @@
  */
 class AdminToolbar
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     private $nodes = array();
 
     /**
@@ -30,20 +31,6 @@ class AdminToolbar
      */
     public function __construct()
     {
-    }
-
-    /**
-     * The shared AdminToolbar instance, created on first call.
-     *
-     * @return \AdminToolbar
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

@@ -19,7 +19,8 @@ use mindstellar\routing\CoreRoutes;
  */
 class Rewrite
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     private $rules;
     private $routes;
     private $request_uri;
@@ -534,20 +535,6 @@ class Rewrite
         }
 
         return array('uri' => $request_uri, 'params' => $params, 'not_found' => false);
-    }
-
-    /**
-     * The shared Rewrite instance, created on first call.
-     *
-     * @return \Rewrite
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

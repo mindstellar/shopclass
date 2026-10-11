@@ -18,25 +18,7 @@
  */
 class Stats
 {
-    /**
-     *
-     * @var \Stats
-     */
-    private static $instance;
-
-    /**
-     * The shared Stats instance, created on first call.
-     *
-     * @return \Stats
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
+    use \mindstellar\base\SharedInstance;
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

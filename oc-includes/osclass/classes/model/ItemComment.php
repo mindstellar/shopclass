@@ -22,13 +22,7 @@ use mindstellar\database\Db;
  */
 class ItemComment extends DAO
 {
-    /**
-     * It references to self object: ItemComment.
-     * It is used as a singleton
-     *
-     * @var ItemComment
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_item_comment table
@@ -52,21 +46,6 @@ class ItemComment extends DAO
             'fk_i_user_id'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * It creates a new ItemComment object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return ItemComment
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

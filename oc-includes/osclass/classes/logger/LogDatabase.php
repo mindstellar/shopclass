@@ -17,11 +17,8 @@
  */
 class LogDatabase
 {
-    /**
-     *
-     * @var LogDatabase|null
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     /**
      *
      * @var array<int, array<string, mixed>>
@@ -40,20 +37,6 @@ class LogDatabase
     {
         $this->messages         = array();
         $this->explain_messages = array();
-    }
-
-    /**
-     * The shared query log for this request.
-     *
-     * @return \LogDatabase
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

@@ -23,14 +23,7 @@ use mindstellar\database\Db;
  */
 class CityStats extends DAO
 {
-    /**
-     * It references to self object: CityStats.
-     * It is used as a singleton
-     *
-     * @since  2.4
-     * @var CityStats
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_city_stats table
@@ -43,22 +36,6 @@ class CityStats extends DAO
         $this->setTableName('t_city_stats');
         $this->setPrimaryKey('fk_i_city_id');
         $this->setFields(array('fk_i_city_id', 'i_num_items'));
-    }
-
-    /**
-     * It creates a new CityStats object class if it has been created
-     * before, it return the previous object
-     *
-     * @return \CityStats
-     * @since  2.4
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

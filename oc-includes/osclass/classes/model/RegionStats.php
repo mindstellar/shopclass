@@ -23,14 +23,7 @@ use mindstellar\database\Db;
  */
 class RegionStats extends DAO
 {
-    /**
-     * It references to self object: RegionStats.
-     * It is used as a singleton
-     *
-     * @since  2.4
-     * @var RegionStats
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_region_stats table
@@ -43,22 +36,6 @@ class RegionStats extends DAO
         $this->setTableName('t_region_stats');
         $this->setPrimaryKey('fk_i_region_id');
         $this->setFields(array('fk_i_region_id', 'i_num_items'));
-    }
-
-    /**
-     * It creates a new RegionStats object class if it has been created
-     * before, it return the previous object
-     *
-     * @return RegionStats
-     * @since  2.4
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

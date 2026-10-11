@@ -19,11 +19,8 @@ use mindstellar\database\Db;
  */
 class Preference extends DAO
 {
-    /**
-     *
-     * @var \Preference
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     /**
      * array for save preferences
      *
@@ -68,20 +65,6 @@ class Preference extends DAO
         }
 
         return true;
-    }
-
-    /**
-     * Return the shared Preference model instance, creating it on first use.
-     *
-     * @return \Preference
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

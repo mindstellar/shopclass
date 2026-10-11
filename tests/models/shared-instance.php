@@ -58,7 +58,7 @@ $classes = array();
 $sources = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/osclass/classes', FilesystemIterator::SKIP_DOTS));
 foreach ($sources as $file) {
     $src = (string) file_get_contents($file->getPathname());
-    if (strpos($src, 'function getInstance(') === false
+    if ((strpos($src, 'function getInstance(') === false && strpos($src, 'SharedInstance;') === false)
         || !preg_match('/function (newInstance|instance)\(/', $src)
         || !preg_match('/^(?:final |abstract )?class (\w+)/m', $src, $m)
     ) {

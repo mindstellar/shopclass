@@ -22,16 +22,10 @@ use mindstellar\database\Db;
  */
 class Item extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     /** Width of t_item_description.s_title, in characters. */
     public const TITLE_WIDTH = 100;
-
-    /**
-     * It references to self object: Item.
-     * It is used as a singleton
-     *
-     * @var Item
-     */
-    private static $instance;
 
     /**
      * Set data related to t_item table
@@ -65,21 +59,6 @@ class Item extends DAO
             'dt_expiration'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * It creates a new Item object class if it has been created
-     * before, it return the previous object
-     *
-     * @return Item
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

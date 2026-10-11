@@ -19,13 +19,9 @@ use mindstellar\database\Db;
  */
 class OSCLocale extends DAO
 {
-    protected $cacheGroup = 'locale';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     *
-     * @var \OSCLocale
-     */
-    private static $instance;
+    protected $cacheGroup = 'locale';
 
     /**
      * Set data related to t_locale table
@@ -54,20 +50,6 @@ class OSCLocale extends DAO
             'b_enabled_bo'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * Return the shared OSCLocale model instance, creating it on first use.
-     *
-     * @return \OSCLocale
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

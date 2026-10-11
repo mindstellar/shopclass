@@ -23,13 +23,7 @@ use mindstellar\database\TablePrefix;
  */
 class Dump extends DAO
 {
-    /**
-     * It references to self object: Dump.
-     * It is used as a singleton
-     *
-     * @var Dump
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /** Bytes collected before table_data() writes them out. */
     private const CHUNK = 1048576;
@@ -39,20 +33,6 @@ class Dump extends DAO
 
     /** Bytes of values per INSERT statement, kept well under max_allowed_packet. */
     private const INSERT_BYTES = 1048576;
-
-    /**
-     * Return the shared Dump model instance, creating it on first use.
-     *
-     * @return \Dump
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

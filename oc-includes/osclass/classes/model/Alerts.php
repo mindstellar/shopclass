@@ -19,14 +19,10 @@ use mindstellar\database\Db;
  */
 class Alerts extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     /** How often alerts go out. Hourly ones were made daily in 7.0. */
     public const TYPES = array('DAILY', 'WEEKLY');
-
-    /**
-     *
-     * @var \Alerts
-     */
-    private static $instance;
 
     /**
      * Alerts constructor.
@@ -48,20 +44,6 @@ class Alerts extends DAO
             'dt_unsub_date'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * Return the shared Alerts model instance, creating it on first use.
-     *
-     * @return \Alerts
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

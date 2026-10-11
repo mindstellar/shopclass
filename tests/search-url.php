@@ -196,6 +196,7 @@ class User extends FakeModel
 
 // The real View: it is standalone, and its cursor behaviour is exactly what the
 // place-list helpers lean on.
+require_once __DIR__ . '/../oc-includes/osclass/classes/base/SharedInstance.php';
 require_once __DIR__ . '/../oc-includes/osclass/classes/View.php';
 
 /** Counts of what each list loader was asked for, so a second load would show up. */

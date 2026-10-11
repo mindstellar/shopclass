@@ -16,8 +16,7 @@ use mindstellar\database\Db;
  */
 class KeywordBlock extends DAO
 {
-    /** @var KeywordBlock */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_keyword_block table
@@ -34,20 +33,6 @@ class KeywordBlock extends DAO
             'b_substring',
             'dt_date',
         ));
-    }
-
-    /**
-     * Return the shared KeywordBlock model instance, creating it on first use.
-     *
-     * @return KeywordBlock
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

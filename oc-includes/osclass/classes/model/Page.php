@@ -19,13 +19,9 @@ use mindstellar\database\Db;
  */
 class Page extends DAO
 {
-    protected $cacheGroup = 'page';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     *
-     * @var Page
-     */
-    private static $instance;
+    protected $cacheGroup = 'page';
 
     /**
      * Set data related to t_pages table
@@ -46,20 +42,6 @@ class Page extends DAO
             's_meta'
         );
         $this->setFields($array_fields);
-    }
-
-    /**
-     * Return the shared Page model instance, creating it on first use.
-     *
-     * @return \Page
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

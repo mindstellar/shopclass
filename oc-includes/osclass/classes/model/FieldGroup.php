@@ -24,15 +24,9 @@ use mindstellar\database\Db;
  */
 class FieldGroup extends DAO
 {
-    protected $cacheGroup = 'field_group';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     * It references to self object: FieldGroup.
-     * It is used as a singleton
-     *
-     * @var FieldGroup
-     */
-    private static $instance;
+    protected $cacheGroup = 'field_group';
 
     /**
      * Set data related to t_meta_group table
@@ -43,20 +37,6 @@ class FieldGroup extends DAO
         $this->setTableName('t_meta_group');
         $this->setPrimaryKey('pk_i_id');
         $this->setFields(array('pk_i_id', 's_name', 's_slug', 'i_position', 's_meta'));
-    }
-
-    /**
-     * Return the shared FieldGroup model instance, creating it on first use.
-     *
-     * @return FieldGroup
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

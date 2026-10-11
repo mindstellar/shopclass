@@ -22,11 +22,7 @@ use mindstellar\database\Db;
  */
 class Region extends DAO
 {
-    /**
-     *
-     * @var \Region
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Region constructor.
@@ -37,20 +33,6 @@ class Region extends DAO
         $this->setTableName('t_region');
         $this->setPrimaryKey('pk_i_id');
         $this->setFields(array('pk_i_id', 'fk_c_country_code', 's_name', 'b_active', 's_slug'));
-    }
-
-    /**
-     * Return the shared Region model instance, creating it on first use.
-     *
-     * @return \Region
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

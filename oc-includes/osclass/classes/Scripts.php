@@ -20,7 +20,8 @@ use mindstellar\utility\Deprecate;
  */
 class Scripts extends Dependencies
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     /**
      * Keep an array of loaded scripts
      *
@@ -92,20 +93,6 @@ class Scripts extends Dependencies
     public function enqueueScript($id)
     {
         $this->queue[$id] = $id;
-    }
-
-    /**
-     * The shared Scripts instance, created on first call.
-     *
-     * @return \Scripts
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

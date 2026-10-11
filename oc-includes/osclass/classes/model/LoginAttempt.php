@@ -26,8 +26,7 @@ use mindstellar\database\Db;
  */
 class LoginAttempt extends DAO
 {
-    /** @var LoginAttempt */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_login_attempt table
@@ -44,20 +43,6 @@ class LoginAttempt extends DAO
             's_ip',
             'dt_date',
         ));
-    }
-
-    /**
-     * Return the shared LoginAttempt model instance, creating it on first use.
-     *
-     * @return LoginAttempt
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

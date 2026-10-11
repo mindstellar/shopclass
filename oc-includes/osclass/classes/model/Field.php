@@ -22,13 +22,7 @@ use mindstellar\database\Db;
  */
 class Field extends DAO
 {
-    /**
-     * It references to self object: Field.
-     * It is used as a singleton
-     *
-     * @var Field
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Current locale code
@@ -51,21 +45,6 @@ class Field extends DAO
         } else {
             $this->currentLocaleCode = osc_current_user_locale();
         }
-    }
-
-    /**
-     * It creates a new Field object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return Field
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

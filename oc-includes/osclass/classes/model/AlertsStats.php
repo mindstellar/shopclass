@@ -24,25 +24,9 @@ use mindstellar\model\KeyValue;
  */
 class AlertsStats
 {
+    use \mindstellar\base\SharedInstance;
+
     public const KV_GROUP = 'alerts_sent';
-
-    /**
-     * @var AlertsStats
-     */
-    private static $instance;
-
-    /**
-     * @return AlertsStats
-     * @since  3.1
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

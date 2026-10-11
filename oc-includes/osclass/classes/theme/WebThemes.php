@@ -16,7 +16,7 @@
  */
 class WebThemes extends Themes
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * @var string
@@ -210,20 +210,6 @@ class WebThemes extends Themes
         $result['int_name'] = $theme;
 
         return $result;
-    }
-
-    /**
-     * Shared WebThemes instance, created on first use.
-     *
-     * @return \WebThemes
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

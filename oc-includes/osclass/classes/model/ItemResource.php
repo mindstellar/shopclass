@@ -23,6 +23,8 @@ use mindstellar\database\Db;
  */
 class ItemResource
 {
+    use \mindstellar\base\SharedInstance;
+
     /** The owner type listing photos have in t_resource. */
     public const OWNER = \mindstellar\model\Resource::OWNER_ITEM;
 
@@ -38,25 +40,6 @@ class ItemResource
     public static function columns(string $alias = ''): string
     {
         return $alias === '' ? self::SELECT : preg_replace('/(^|, )/', '$1' . $alias . '.', self::SELECT);
-    }
-
-    /**
-     * @var \ItemResource
-     */
-    private static $instance;
-
-    /**
-     * Return the shared ItemResource model instance, creating it on first use.
-     *
-     * @return \ItemResource
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

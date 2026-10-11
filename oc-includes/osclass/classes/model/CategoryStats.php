@@ -22,13 +22,7 @@ use mindstellar\database\Db;
  */
 class CategoryStats extends DAO
 {
-    /**
-     * It references to self object: CategotyStats.
-     * It is used as a singleton
-     *
-     * @var CategoryStats
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_category_stats table
@@ -39,21 +33,6 @@ class CategoryStats extends DAO
         $this->setTableName('t_category_stats');
         $this->setPrimaryKey('fk_i_category_id');
         $this->setFields(array('fk_i_category_id', 'i_num_items'));
-    }
-
-    /**
-     * It creates a new CategoryStats object class if it has been created
-     * before, it return the previous object
-     *
-     * @return CategoryStats
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

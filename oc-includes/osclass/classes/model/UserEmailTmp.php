@@ -24,29 +24,12 @@ use mindstellar\model\KeyValue;
  */
 class UserEmailTmp
 {
+    use \mindstellar\base\SharedInstance;
+
     public const KV_GROUP = 'email_change';
 
     /** Seconds a pending change waits for its confirmation. */
     public const TTL = 7 * 24 * 3600;
-
-    /**
-     * @var \UserEmailTmp
-     */
-    private static $instance;
-
-    /**
-     * Return the shared UserEmailTmp model instance, creating it on first use.
-     *
-     * @return \UserEmailTmp
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

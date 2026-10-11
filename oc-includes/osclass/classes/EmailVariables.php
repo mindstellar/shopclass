@@ -22,10 +22,11 @@
  */
 class EmailVariables
 {
+    use \mindstellar\base\SharedInstance;
+
     /** The placeholders osc_mailBeauty() fills in every email, whatever the template. */
     public const COMMON = array('{WEB_URL}', '{WEB_TITLE}', '{WEB_LINK}', '{CURRENT_DATE}', '{HOUR}', '{IP_ADDRESS}');
 
-    private static $instance;
     private $variables;
 
     /**
@@ -89,20 +90,6 @@ class EmailVariables
             '{SELLER_EMAIL}'                   => __('Seller email'),
             '{CONTACT_EMAIL}'                  => __('Contact name'),
         );
-    }
-
-    /**
-     * The shared EmailVariables instance, created on first call.
-     *
-     * @return \EmailVariables
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

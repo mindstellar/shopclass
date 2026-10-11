@@ -18,7 +18,8 @@
  */
 class Styles extends Dependencies
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     public $styles = [];
 
     /**
@@ -82,20 +83,6 @@ class Styles extends Dependencies
     {
         return '<link href="' . Plugins::applyFilter('style_url', $css) . '" rel="stylesheet" type="text/css" />'
                . PHP_EOL;
-    }
-
-    /**
-     * The shared Styles instance, created on first call.
-     *
-     * @return \Styles
-     */
-    public static function getInstance(): Styles
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

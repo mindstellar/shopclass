@@ -17,6 +17,8 @@ use mindstellar\database\Db;
  */
 class Cleanup extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     /** All cleanup rules, in the order they run. */
     public const RULES = array(
         'reported',
@@ -33,22 +35,6 @@ class Cleanup extends DAO
 
     /** Rows per batch when none is saved. */
     public const DEFAULT_BATCH = 250;
-
-    private static $instance;
-
-    /**
-     * The shared Cleanup instance, created on first call.
-     *
-     * @return self
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

@@ -34,13 +34,7 @@ use mindstellar\database\Db;
  */
 class ItemStats extends DAO
 {
-    /**
-     * It references to self object: ItemStats.
-     * It is used as a singleton
-     *
-     * @var ItemStats
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /** Counter columns that may be incremented. */
     private const COUNTERS = array(
@@ -83,21 +77,6 @@ class ItemStats extends DAO
             'i_num_premium_views',
             'dt_date'
         ));
-    }
-
-    /**
-     * It creates a new ItemStats object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return ItemStats
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

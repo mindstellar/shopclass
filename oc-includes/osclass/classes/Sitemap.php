@@ -41,8 +41,7 @@ use mindstellar\utility\Validate;
  */
 class Sitemap extends DAO
 {
-    /** @var Sitemap */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /** Object-cache TTL for every generated document, in seconds (6 hours). */
     public static $cacheTTL = 21600;
@@ -71,20 +70,6 @@ class Sitemap extends DAO
     public function __construct()
     {
         parent::__construct();
-    }
-
-    /**
-     * The shared Sitemap instance, created on first call.
-     *
-     * @return Sitemap
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

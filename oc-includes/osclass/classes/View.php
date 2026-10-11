@@ -17,7 +17,8 @@
  */
 class View
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     private $aExported;
     private $aCurrent;
 
@@ -27,20 +28,6 @@ class View
     public function __construct()
     {
         $this->aExported = array();
-    }
-
-    /**
-     * The shared View instance, created on first call.
-     *
-     * @return \View
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

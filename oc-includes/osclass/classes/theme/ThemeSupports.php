@@ -12,6 +12,7 @@
 namespace mindstellar\theme;
 
 use InvalidArgumentException;
+use mindstellar\base\SharedInstance;
 
 /**
  * What the active theme declares it can do: feature name -> arguments.
@@ -28,7 +29,7 @@ use InvalidArgumentException;
  */
 final class ThemeSupports
 {
-    private static ?self $instance = null;
+    use SharedInstance;
 
     /** @var array<string,mixed> feature arguments, keyed by feature name */
     private array $features = [];
@@ -41,20 +42,6 @@ final class ThemeSupports
      */
     private function __construct()
     {
-    }
-
-    /**
-     * Shared registry instance, created on first use.
-     *
-     * @return self
-     */
-    public static function getInstance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

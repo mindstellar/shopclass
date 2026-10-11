@@ -19,13 +19,9 @@ use mindstellar\database\Db;
  */
 class Widget extends DAO
 {
-    protected $cacheGroup = 'widget';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     *
-     * @var \Widget
-     */
-    private static $instance;
+    protected $cacheGroup = 'widget';
 
     /**
      * Widget constructor.
@@ -36,20 +32,6 @@ class Widget extends DAO
         $this->setTableName('t_widget');
         $this->setPrimaryKey('pk_i_id');
         $this->setFields(array('pk_i_id', 's_description', 's_location', 'e_kind', 's_content', 'i_order', 's_type', 's_config'));
-    }
-
-    /**
-     * Return the shared Widget model instance, creating it on first use.
-     *
-     * @return \Widget
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

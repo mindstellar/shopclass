@@ -12,6 +12,7 @@
 namespace mindstellar\job;
 
 use InvalidArgumentException;
+use mindstellar\base\SharedInstance;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
@@ -33,6 +34,8 @@ use mindstellar\database\QueryBuilder;
  */
 final class JobQueue
 {
+    use SharedInstance;
+
     public const STATUS_PENDING = 'pending';
     public const STATUS_RUNNING = 'running';
     public const STATUS_ERROR   = 'error';
@@ -48,21 +51,6 @@ final class JobQueue
 
     /** The largest encoded payload s_payload (TEXT) holds. */
     public const MAX_PAYLOAD_BYTES = 65535;
-
-    /** @var JobQueue|null */
-    private static $instance;
-
-    /**
-     * @return JobQueue
-     */
-    public static function getInstance(): self
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * @deprecated 7.0.0 Use getInstance().

@@ -36,11 +36,10 @@
  */
 class ItemSpamFilter
 {
+    use \mindstellar\base\SharedInstance;
+
     /** Below this length a keyword is refused. See cleanKeywordList(). */
     public const MIN_KEYWORD_LENGTH = 3;
-
-    /** @var ItemSpamFilter */
-    private static $instance;
 
     /**
      * Keywords bucketed by scope, in the engine's string form (a substring
@@ -56,20 +55,6 @@ class ItemSpamFilter
      * @var array<string, string>
      */
     private $compiledRegexPatterns = array();
-
-    /**
-     * The shared ItemSpamFilter instance, created on first call.
-     *
-     * @return ItemSpamFilter
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.

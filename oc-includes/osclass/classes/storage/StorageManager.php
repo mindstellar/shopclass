@@ -11,6 +11,8 @@
 
 namespace mindstellar\storage;
 
+use mindstellar\base\SharedInstance;
+
 /**
  * Class StorageManager
  *
@@ -22,7 +24,7 @@ namespace mindstellar\storage;
  */
 class StorageManager
 {
-    private static ?StorageManager $instance = null;
+    use SharedInstance;
 
     /** @var StorageAdapter[] */
     private array $adapters = [];
@@ -34,20 +36,6 @@ class StorageManager
      */
     private function __construct()
     {
-    }
-
-    /**
-     * The process-wide registry.
-     *
-     * @return StorageManager
-     */
-    public static function getInstance(): StorageManager
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**

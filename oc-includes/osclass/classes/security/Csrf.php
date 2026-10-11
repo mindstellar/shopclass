@@ -13,6 +13,7 @@
 
 namespace mindstellar\security;
 
+use mindstellar\base\SharedInstance;
 use mindstellar\utility\Utils;
 use Params;
 use Plugins;
@@ -31,6 +32,8 @@ use Session;
  */
 class Csrf
 {
+    use SharedInstance;
+
     /**
      * How long a token stays valid, in seconds (2 hours). A token older than this is rejected
      * as expired. Kept well above any request-cache TTL so a token embedded in a briefly-cached
@@ -64,8 +67,6 @@ class Csrf
      */
     private const ISSUE_BUCKET = 1800;
 
-    private static $instance;
-
     /**
      * Encoded payload for the token issued this request (the CSRFName value).
      * @var string
@@ -89,20 +90,6 @@ class Csrf
     public function __construct()
     {
         $this->session = Session::getInstance();
-    }
-
-    /**
-     * The shared Csrf instance, created on first call.
-     *
-     * @return \mindstellar\security\Csrf
-     */
-    public static function getInstance()
-    {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
     }
 
     /**
