@@ -85,11 +85,17 @@ final class CategoryFilter
      */
     public function apply(Statement $statement): void
     {
-        if ($this->ids !== array()) {
-            $statement->where(
-                DB_TABLE_PREFIX . 't_item.fk_i_category_id IN (' . SqlValue::placeholders(count($this->ids)) . ')',
-                array_map(array(SqlValue::class, 'number'), $this->ids)
-            );
+        if ($this->ids === array()) {
+            return;
+        }
+        $ids = array_map(array(SqlValue::class, 'number'), $this->ids);
+        $in  = DB_TABLE_PREFIX . 't_item.fk_i_category_id IN (';
+        // Whole numbers go into the SQL as they are, so a search with no other values runs as a
+        // plain query, which is faster than a prepared one.
+        if (array_filter($ids, '\is_int') === $ids) {
+            $statement->where($in . implode(', ', $ids) . ')', array());
+        } else {
+            $statement->where($in . SqlValue::placeholders(count($ids)) . ')', $ids);
         }
     }
 

@@ -60,7 +60,8 @@ class Preference extends DAO
         // Merges into the existing map rather than replacing it, so a key
         // removed from the table since the last load stays cached until it is
         // overwritten by name.
-        foreach (Db::stringifyRows($rows) as $row) {
+        // A plain query returns text already, so the rows need no conversion.
+        foreach ($rows as $row) {
             $this->pref[$row['s_section']][$row['s_name']] = $row['s_value'];
         }
 

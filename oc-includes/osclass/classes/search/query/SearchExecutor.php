@@ -35,7 +35,7 @@ final class SearchExecutor
             // digits the text protocol does.
             foreach ($rows as $i => $row) {
                 foreach ($row as $k => $v) {
-                    if (is_float($v)) {
+                    if (\is_float($v)) {
                         $rows[$i][$k] = self::floatText($v);
                     }
                 }

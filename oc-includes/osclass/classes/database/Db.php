@@ -171,10 +171,10 @@ class Db
     public static function stringifyRow(array $row): array
     {
         foreach ($row as $k => $v) {
-            if ($v === null || is_string($v)) {
+            if ($v === null || \is_string($v)) {
                 continue;
             }
-            $row[$k] = is_bool($v) ? ($v ? '1' : '0') : (string)$v;
+            $row[$k] = \is_bool($v) ? ($v ? '1' : '0') : (string)$v;
         }
 
         return $row;
@@ -190,7 +190,7 @@ class Db
     public static function stringifyRows(array $rows): array
     {
         foreach ($rows as $i => $row) {
-            if (is_array($row)) {
+            if (\is_array($row)) {
                 $rows[$i] = self::stringifyRow($row);
             }
         }

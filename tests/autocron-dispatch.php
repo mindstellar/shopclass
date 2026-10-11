@@ -89,4 +89,8 @@ check(
     strpos($block, 'ignore_user_abort') !== false
 );
 
+$worker = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/job/JobWorker.php');
+preg_match('/SCHEDULE_EVERY = (\d+);/', $worker, $every);
+check('the page-side window is the worker\'s SCHEDULE_EVERY', isset($every[1]) && str_contains($block, '$window = ' . $every[1] . ';'));
+
 exit(harness_result());
