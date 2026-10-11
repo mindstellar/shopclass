@@ -56,4 +56,18 @@ pin('no ids add no condition', 'SELECT *', (new class () {
     }
 })());
 
+harness_section('Ordering::apply');
+
+$orderSql = static function (string $column): string {
+    $ordering = new \mindstellar\search\query\Ordering();
+    $ordering->order($column, 'DESC', '', true);
+    $statement = new Statement();
+    $ordering->apply($statement);
+    preg_match('/ORDER BY (.*?)\s+LIMIT/s', $statement->compile()[0], $m);
+
+    return $m[1] ?? '';
+};
+pin('relevance ties are broken by the newest id', 'relevance DESC, oc_t_item.pk_i_id DESC', $orderSql('relevance'));
+pin('other orders are left as they are', 'dt_pub_date DESC', $orderSql('dt_pub_date'));
+
 exit(harness_result());

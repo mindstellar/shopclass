@@ -172,6 +172,10 @@ final class Ordering
     public function apply(Statement $statement): void
     {
         $statement->orderBy((string)$this->column, (string)$this->direction);
+        if ($this->column === 'relevance') {
+            // Many listings share a score; the id keeps their order the same on every page.
+            $statement->orderBy(DB_TABLE_PREFIX . 't_item.pk_i_id', (string)$this->direction);
+        }
         $statement->limit($this->offset, $this->perPage);
     }
 }
