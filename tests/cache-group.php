@@ -30,6 +30,8 @@ final class KeepAllCache implements \mindstellar\cache\CacheDriver
 
     /** @var array<string,int> */
     public array $ttl = [];
+    /** @var array<string,int> reads per key */
+    public array $reads = [];
 
     public static function is_supported()
     {
@@ -51,6 +53,7 @@ final class KeepAllCache implements \mindstellar\cache\CacheDriver
 
     public function get($key, &$found = null)
     {
+        $this->reads[$key] = ($this->reads[$key] ?? 0) + 1;
         $found = array_key_exists($key, $this->data);
 
         return $found ? $this->data[$key] : false;
@@ -109,6 +112,22 @@ CacheGroup::remember('grp', 'short', $load('v'), 7);
 pin('a given ttl is passed to the driver', [7], array_values(array_intersect_key($cache->ttl, array_filter($cache->data, static fn ($v): bool => $v === 'v'))));
 CacheGroup::invalidate('grp');
 pin('invalidating the group makes the next read load again', 'fresh', CacheGroup::remember('grp', 'k', $load('fresh')));
+
+harness_section('a request reads each generation once');
+CacheGroup::forgetGenerations();
+$cache->reads = [];
+CacheGroup::remember('grp', 'k', $load('x'));
+CacheGroup::remember('grp', 'k', $load('x'));
+CacheGroup::remember('grp', 'other', $load('y'));
+pin('three reads in a group ask for its generation once', 1, $cache->reads['osc_grp_cache_gen'] ?? 0);
+$before = CacheGroup::generation('grp');
+$cache->set('osc_grp_cache_gen', $before + 5, 0);
+pin('a drop by another process is not seen in this request', $before, CacheGroup::generation('grp'));
+CacheGroup::forgetGenerations();
+pin('it is seen once the generations are forgotten, as the job worker does per job', $before + 5, CacheGroup::generation('grp'));
+$reads = $cache->reads['osc_grp_cache_gen'];
+pin('a drop in this request is seen at once, with no extra read after it', [$before + 6, $before + 6], [CacheGroup::invalidate('grp'), CacheGroup::generation('grp')]);
+pin('...it reads the generation once, to count up from the latest', $reads + 1, $cache->reads['osc_grp_cache_gen']);
 
 exit(harness_result());
 

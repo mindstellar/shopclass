@@ -24,6 +24,10 @@ class Category extends DAO
      * @var \Category
      */
     private static $instance;
+
+    /** @var array<string,array<int,array<string,mixed>>> branches built by this object, in its language */
+    private array $hierarchies = array();
+
     private $language;
     private $tree;
     private $categories;
@@ -774,7 +778,8 @@ class Category extends DAO
      */
     public function hierarchy($category_id)
     {
-        return array_reverse($this->toRootTree($category_id));
+        // Every listing link on a page asks. This object already holds the tree it was built with.
+        return $this->hierarchies[(string) $category_id] ??= array_reverse($this->toRootTree($category_id));
     }
 
     /**

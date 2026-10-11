@@ -11,6 +11,7 @@
 
 namespace mindstellar\job;
 
+use mindstellar\cache\CacheGroup;
 use Throwable;
 
 /**
@@ -121,6 +122,7 @@ final class JobWorker
         while (($left = $maxSeconds - (time() - $start)) > 0) {
             if ($schedule !== null && ($ticked === null || time() - $ticked >= self::SCHEDULE_EVERY)) {
                 $ticked = time();
+                CacheGroup::forgetGenerations();
                 $schedule();
             }
             $due = $queue->stats()['due'];
@@ -213,6 +215,8 @@ final class JobWorker
     {
         $id   = (int) $row['pk_i_id'];
         $type = (string) $row['s_type'];
+        // The worker outlives a request, so each job reads cache generations afresh.
+        CacheGroup::forgetGenerations();
 
         $handler = JobRegistry::handler($type);
         if ($handler === null) {

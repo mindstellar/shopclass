@@ -39,6 +39,8 @@ if (!function_exists('__')) {
     }
 }
 
+use mindstellar\cache\CacheGroup;
+use mindstellar\cache\CacheManager;
 use mindstellar\job\Job;
 use mindstellar\job\JobQueue;
 use mindstellar\job\JobRegistry;
@@ -348,6 +350,19 @@ $queue->enqueue('test.ok', array('n' => 2));
 pin('the worker runs both jobs', 2, JobWorker::run(10));
 pin('and the handler saw each payload', array(1, 2), $seen);
 pin('a finished job is removed', 0, $queue->count(JobQueue::STATUS_PENDING));
+
+// Another process dropping a cache group between jobs is simulated by writing the generation key directly.
+$generations = array();
+JobRegistry::register('test.gen', static function () use (&$generations) {
+    $generations[] = CacheGroup::generation('jobtest');
+    CacheManager::getInstance()->set('osc_jobtest_cache_gen', end($generations) + 1, 0);
+});
+CacheGroup::generation('jobtest');
+CacheManager::getInstance()->set('osc_jobtest_cache_gen', 7, 0);
+$queue->enqueue('test.gen');
+$queue->enqueue('test.gen');
+JobWorker::run(10);
+pin('each job reads cache generations afresh, so it sees drops made before it', array(7, 8), $generations);
 
 $truncate();
 $id = $queue->enqueue('test.boom', array());
@@ -804,14 +819,19 @@ test_cache_swap($wakeBefore);
 $truncate();
 
 $listenTicks = 0;
+$tickGen     = null;
+CacheGroup::generation('ticktest');
+CacheManager::getInstance()->set('osc_ticktest_cache_gen', 3, 0);
 try {
     JobWorker::listen(60, static function (): void {
-    }, $listenStop, static function () use (&$listenTicks): void {
+    }, $listenStop, static function () use (&$listenTicks, &$tickGen): void {
         $listenTicks++;
+        $tickGen = CacheGroup::generation('ticktest');
     });
 } catch (JobQueueStopListening $e) {
 }
 pin('the scheduled tasks run once when it starts', 1, $listenTicks);
+pin('and read cache generations afresh', 3, $tickGen);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

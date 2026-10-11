@@ -63,6 +63,8 @@ function osc_cache_delete($key)
  */
 function osc_cache_flush()
 {
+    \mindstellar\cache\CacheGroup::forgetGenerations();
+
     return \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 

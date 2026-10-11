@@ -17,6 +17,9 @@ namespace mindstellar\cache;
  */
 final class CacheGroup
 {
+    /** @var array<string,int> generations read in this request; a page asks for the same one dozens of times */
+    private static array $generations = array();
+
     /**
      * The group's current generation, the same on every site locale.
      *
@@ -26,10 +29,23 @@ final class CacheGroup
      */
     public static function generation(string $group): int
     {
-        $found = null;
-        $gen   = CacheManager::getInstance()->get('osc_' . $group . '_cache_gen', $found);
+        if (!isset(self::$generations[$group])) {
+            $found = null;
+            $gen   = CacheManager::getInstance()->get('osc_' . $group . '_cache_gen', $found);
 
-        return is_numeric($gen) ? (int)$gen : 0;
+            self::$generations[$group] = is_numeric($gen) ? (int)$gen : 0;
+        }
+
+        return self::$generations[$group];
+    }
+
+    /**
+     * Read every generation from the cache again. A process that outlives a request, such as
+     * the job worker, calls it before each job so it sees what other processes dropped.
+     */
+    public static function forgetGenerations(): void
+    {
+        self::$generations = array();
     }
 
     /**
@@ -41,8 +57,10 @@ final class CacheGroup
      */
     public static function invalidate(string $group): int
     {
+        unset(self::$generations[$group]);
         $gen = self::generation($group) + 1;
         CacheManager::getInstance()->set('osc_' . $group . '_cache_gen', $gen, 0);
+        self::$generations[$group] = $gen;
 
         return $gen;
     }
