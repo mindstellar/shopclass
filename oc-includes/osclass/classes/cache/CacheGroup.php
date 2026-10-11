@@ -72,6 +72,7 @@ final class CacheGroup
      */
     public static function invalidate(string $group): int
     {
+        $old = self::$generations[$group] ?? 0;
         unset(self::$generations[$group]);
         $cache = CacheManager::getInstance();
         if (method_exists($cache, 'increment')) {
@@ -79,6 +80,11 @@ final class CacheGroup
             $gen = (int)$cache->increment(self::key($group), 1, self::fresh(), self::GENERATION_TTL);
         } else {
             $gen = self::generation($group) + 1;
+            $cache->set(self::key($group), $gen, self::GENERATION_TTL);
+        }
+        if ($gen <= $old) {
+            // The store lost the key (a flush or eviction) and the clock restart landed on the old value.
+            $gen = $old + 1;
             $cache->set(self::key($group), $gen, self::GENERATION_TTL);
         }
         self::$generations[$group] = $gen;

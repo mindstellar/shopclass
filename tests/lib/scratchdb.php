@@ -329,6 +329,7 @@ if (!function_exists('seed_exec')) {
     {
         if (class_exists('mindstellar\\cache\\CacheManager')) {
             \mindstellar\cache\CacheManager::getInstance()->flush();
+            \mindstellar\cache\CacheGroup::forgetGenerations();
         }
     }
 

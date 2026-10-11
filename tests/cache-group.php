@@ -198,6 +198,15 @@ pin('the entries stored before it went are not served', 'reloaded', CacheGroup::
 CacheGroup::invalidate('grp');
 pin('...nor after the next drop', 'again', CacheGroup::remember('grp', 'k', $load('again')));
 
+harness_section('a drop after the store was flushed mid-request still moves forward');
+$swap($cache = new KeepAllCache());
+$ahead = (int) floor(microtime(true) * 1000) + 1000000;
+$cache->set('osc_grp_cache_gen', $ahead, 0);
+CacheGroup::forgetGenerations();
+CacheGroup::generation('grp');
+$cache->delete('osc_grp_cache_gen');
+pin('the new generation is above the one this request was using', true, CacheGroup::invalidate('grp') > $ahead);
+
 harness_section('two requests creating the generation at once agree on it');
 $swap($cache = new RaceCache());
 pin('the one that loses the add takes the winner\'s number', 42, CacheGroup::generation('grp'));
