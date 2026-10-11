@@ -42,6 +42,8 @@ $where = static function (array $ids): array {
 harness_section('CategoryFilter::apply');
 
 pin('whole numbers, as ints or digit strings, go into the SQL', array('oc_t_item.fk_i_category_id IN (3, 7, 12)', array()), $where(array(3, '7', '12')));
+pin('padded digit strings go in as plain numbers', array('oc_t_item.fk_i_category_id IN (7, 7)', array()), $where(array('007', ' 7')));
+pin('text that looks like SQL is bound', array('oc_t_item.fk_i_category_id IN (?)', array('7) OR (1=1')), $where(array('7) OR (1=1')));
 pin('anything else is bound', array('oc_t_item.fk_i_category_id IN (?, ?)', array(3, 'x')), $where(array(3, 'x')));
 pin('a decimal is bound', array('oc_t_item.fk_i_category_id IN (?)', array(1.5)), $where(array('1.5')));
 pin('no ids add no condition', 'SELECT *', (new class () {

@@ -234,6 +234,7 @@ final class ItemUpgradeStore extends Model
     /**
      * Record whether the table holds any rows, so a page can skip reading an empty table.
      * One statement reads and writes, so a grant landing meanwhile cannot be overwritten with '0'.
+     * The write skips Preference, so its shared copy is dropped here by hand.
      */
     private static function refreshRowsFlag(): void
     {

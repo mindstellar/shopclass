@@ -76,9 +76,13 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Saving a listing whose expiry did not change no longer rewrites it.
 - API listings sorted by price page by cursor, and photo URLs in an API post download side by side.
 - The API counts requests in the object cache, so with memcached or Redis every web server shares one count.
+- Pages run fewer queries: with no object cache a listing page runs 27 instead of 31, and with memcached or Redis home runs 8 instead of 12.
+- With memcached or Redis, settings and the country list are cached, a page reads its cache groups in one round trip, and no page writes to the cache on a normal view.
+- A category search sends its category ids as part of the query instead of as a slower prepared statement.
 
 ### Changed
 
+- With memcached or Redis, a plugin that writes `t_preference` with raw SQL must call `osc_reset_preferences()`, or other requests keep the old settings for up to 5 minutes.
 - Posting, editing and deleting a listing, and signing up, each run in one transaction, so a failure leaves nothing half done and e-mails go out only once it is saved.
 - A signed-in user comments under their account's name and e-mail, and a listing that is not live takes comments only from its owner.
 - People may post 20 comments an hour (guests 20 per address), on the site and through the API together.

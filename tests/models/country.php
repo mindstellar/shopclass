@@ -397,6 +397,14 @@ $model->update(array('s_name' => 'Zambia'), array('pk_c_code' => 'AT'));
 pin('an update shows on the next read', array('FR', 'DE', 'US', 'AT'), array_column($model->listAll(), 'pk_c_code'));
 $model->delete(array('pk_c_code' => 'AT'));
 pin('a delete shows on the next read', array('FR', 'DE', 'US'), array_column($model->listAll(), 'pk_c_code'));
+$names = static fn (): array => array_column($model->listAll(), 's_name', 'pk_c_code');
+$before = $names();
+\mindstellar\location\LocationStore::renameCountry('FR', 'Frankreich', 'fr');
+pin('a rename through LocationStore shows on the next read', 'Frankreich', $names()['FR']);
+\mindstellar\location\LocationStore::renameCountry('FR', $before['FR'], 'fr');
+\mindstellar\location\LocationStore::addCountry('AT', 'Austria', 'at');
+pin('an add through LocationStore shows on the next read', true, isset($names()['AT']));
+$model->delete(array('pk_c_code' => 'AT'));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

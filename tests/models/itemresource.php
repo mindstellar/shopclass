@@ -526,6 +526,15 @@ pin(
 /* ----------------------------------------------------------------------------
  * getResource() — the first resource of an item.
  * ------------------------------------------------------------------------- */
+harness_section('ItemResource: the cache helpers drop the kept lists');
+
+$flush();
+$model->primeResourcesCache(array($itemA, $itemB));
+osc_invalidate_item_cache($itemA);
+pin('osc_invalidate_item_cache() drops that listing\'s kept list', array($itemB), $primedIds());
+osc_cache_flush();
+pin('osc_cache_flush() drops every kept list', array(), $primedIds());
+
 harness_section('ItemResource::getResource');
 
 $one = $model->getResource($itemA);

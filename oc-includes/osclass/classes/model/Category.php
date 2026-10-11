@@ -439,12 +439,7 @@ class Category extends DAO
             if (array_key_exists($categoryID, $this->categories)) {
                 $this->categories[$categoryID] = $category;
             }
-            if ($locale != '' && isset($category['locale'][$locale])) {
-                $category['s_name']        = $category['locale'][$locale]['s_name'];
-                $category['s_description'] = $category['locale'][$locale]['s_description'];
-            }
-
-            return $category;
+            return self::inLocale($category, $locale);
         }) ?? false;
     }
 
@@ -462,6 +457,18 @@ class Category extends DAO
         if ($locale != '' && !isset($category['locale'])) {
             return null;
         }
+        return self::inLocale($category, $locale);
+    }
+
+    /**
+     * The row with its name and description in $locale, when it has that locale.
+     *
+     * @param array<string,mixed> $category
+     *
+     * @return array<string,mixed>
+     */
+    private static function inLocale(array $category, string $locale): array
+    {
         if ($locale != '' && isset($category['locale'][$locale])) {
             $category['s_name']        = $category['locale'][$locale]['s_name'];
             $category['s_description'] = $category['locale'][$locale]['s_description'];

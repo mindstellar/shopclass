@@ -18,7 +18,10 @@ use mindstellar\cache\MemoryCache;
 use mindstellar\database\Db;
 
 /**
- * Class Preference
+ * Site settings, loaded once per request into a section => name => value map.
+ * With Redis, Memcached or APCu the map is shared between requests for up to CACHE_TTL seconds;
+ * every write through this class drops it. Code that writes t_preference with raw SQL must call
+ * osc_reset_preferences() afterwards. With the default cache the table is read on every request.
  */
 class Preference extends DAO
 {

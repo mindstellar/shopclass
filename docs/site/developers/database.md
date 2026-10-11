@@ -24,7 +24,7 @@ $prefix = DB_TABLE_PREFIX;             // in raw SQL
 | `t_category` / `t_category_description` | The category tree and its translations. |
 | `t_country`, `t_region`, `t_city` | [Location data](/docs/configure/locations/). |
 | `t_user` | Accounts, with `t_admin` for admin users. |
-| `t_preference` | Every setting, grouped by section: the row that decides how the site behaves. |
+| `t_preference` | Every setting, grouped by section: the row that decides how the site behaves. After writing it with raw SQL, call `osc_reset_preferences()`. |
 | `t_pages` | Static pages. |
 | `t_key_value` | Small values by group and key. See [Key-value store](/docs/developers/kv-store/). |
 

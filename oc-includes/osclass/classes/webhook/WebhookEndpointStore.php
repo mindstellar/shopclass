@@ -93,7 +93,7 @@ final class WebhookEndpointStore
 
     /**
      * Run $run now unless the flag says no endpoint is on; then run it once one is turned
-     * on in this request. A site with no endpoints so skips the work without a query.
+     * on in this request. A missing flag counts as on. The API boot uses it for the event listeners.
      *
      * @param \Closure(): void $run
      */

@@ -103,7 +103,8 @@ class ItemResource
     }
 
     /**
-     * A listing's photos, in upload order. Cached.
+     * A listing's photos, in upload order. Cached, after any list primeResourcesCache() kept for
+     * this request; osc_cache_flush() and osc_invalidate_item_cache() drop those.
      *
      * @param int $itemId
      *

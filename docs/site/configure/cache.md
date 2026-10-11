@@ -98,6 +98,9 @@ With memcached or APCu, only the REST API's per-minute limits count in the cache
 memcached every web server shares one count, with APCu each server counts its own. Everything
 else counts in the database, as it does with no `OSC_CACHE`.
 
+Settings, including secret keys, are stored in the cache. Use a Redis or
+memcached server that only this site can reach.
+
 ## APCu (one server only)
 
 **APCu** keeps the cache inside PHP itself. It is simpler and faster, but each
@@ -117,8 +120,10 @@ change, keep entries longer:
 define('OSC_CACHE_TTL', 300);
 ```
 
-The number is in seconds. The longer it is, the longer a change in the admin
-panel can take to show on the site.
+The number is in seconds. Saving in the admin panel clears what it changed, so
+those edits show at once. A longer time only delays changes made outside the
+admin, such as a plugin writing to the database directly. Settings are always
+kept for 5 minutes at most.
 
 ## Setting it with environment variables
 
