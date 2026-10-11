@@ -55,7 +55,9 @@ class Object_Cache_probe implements iObject_Cache
     }
     public function set($key, $data, $expire = 0)
     {
-        self::$sets++;
+        if (!str_ends_with($key, '_cache_gen')) {
+            self::$sets++;
+        }
         self::$store[$key] = [$data, $expire];
 
         return true;
@@ -111,7 +113,7 @@ $first = $show($make());
 pin('the first call builds and stores it', [200, 1], [$first->status(), Object_Cache_probe::$sets]);
 $second = $show($make());
 pin('the next reads it back: nothing more is stored, the same document', [1, $first->body()], [Object_Cache_probe::$sets, $second->body()]);
-pin('the stored OpenAPI document lives 300 seconds', 300, array_values(Object_Cache_probe::$store)[0][1]);
+pin('the stored OpenAPI document lives 300 seconds', 300, array_values(array_filter(Object_Cache_probe::$store, static fn (string $key): bool => str_starts_with($key, 'osc_openapi:'), ARRAY_FILTER_USE_KEY))[0][1]);
 
 harness_section('the key');
 $plugin = ['GET ext/acme/offers' => ['handler' => static fn (): Response => Response::ok([]), 'auth' => 'none']];

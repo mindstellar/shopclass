@@ -2000,8 +2000,8 @@ function osc_item_adjacent_url(string $direction = 'next', ?int $itemId = null):
 }
 
 /**
- * Shared lookup for the two helpers above: one query on a cache miss, cached 180 s,
- * the empty answer too.
+ * Shared lookup for the two helpers above: one query on a cache miss fetches and caches
+ * both neighbours for 180 s, the empty answer too.
  *
  * @param string   $direction
  * @param int|null $itemId
@@ -2015,22 +2015,24 @@ function _osc_item_adjacent(string $direction, ?int $itemId): array
         return array('id' => 0, 'url' => '');
     }
 
-    $next   = $direction !== 'prev';
+    $dir    = $direction === 'prev' ? 'prev' : 'next';
     $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
-    $key    = 'item_adjacent_' . ($next ? 'next' : 'prev') . '_' . $itemId . '_'
-        . (osc_rewrite_enabled() ? '1' : '0') . '_' . $locale;
+    $suffix = '_' . $itemId . '_' . (osc_rewrite_enabled() ? '1' : '0') . '_' . $locale;
 
     $found  = false;
-    $cached = osc_cache_get($key, $found);
+    $cached = osc_cache_get('item_adjacent_' . $dir . $suffix, $found);
     if ($found && is_array($cached)) {
         return $cached;
     }
 
-    $row    = Item::getInstance()->findAdjacentLive($itemId, $next, $locale);
-    $result = $row === array()
-        ? array('id' => 0, 'url' => '')
-        : array('id' => (int)$row['pk_i_id'], 'url' => osc_item_url_from_item($row));
-    osc_cache_set($key, $result, 180);
+    // A page showing one link usually shows the other.
+    $results = array();
+    foreach (Item::getInstance()->findAdjacentLiveBoth($itemId, $locale) as $side => $row) {
+        $results[$side] = $row === array()
+            ? array('id' => 0, 'url' => '')
+            : array('id' => (int)$row['pk_i_id'], 'url' => osc_item_url_from_item($row));
+        osc_cache_set('item_adjacent_' . $side . $suffix, $results[$side], 180);
+    }
 
-    return $result;
+    return $results[$dir];
 }

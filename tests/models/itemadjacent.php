@@ -9,7 +9,7 @@
  */
 
 /**
- * Pins for osc_item_adjacent_id()/osc_item_adjacent_url() and Item::findAdjacentLive().
+ * Pins for osc_item_adjacent_id()/osc_item_adjacent_url() and Item::findAdjacentLive()/findAdjacentLiveBoth().
  *
  * The URL builder lives in hDefines.php, which a model test cannot load, so it is
  * stood in for by one that prints every field the real builder reads. Equal stand-in
@@ -126,6 +126,21 @@ $row = Item::getInstance()->findAdjacentLive($premium, true, 'fr_FR');
 pin('title follows the asked locale', 'Deuxième', $row['s_title'] ?? null);
 pin('row carries only the URL fields', array('pk_i_id', 'fk_i_category_id', 's_city', 's_title'), array_keys($row));
 pin('nothing before the first listing', array(), Item::getInstance()->findAdjacentLive($a, false, 'en_US'));
+foreach (array($a, $spam, $premium, $b, $c) as $id) {
+    foreach (array('en_US', 'fr_FR') as $loc) {
+        pin("both neighbours of $id ($loc) equal the single lookups", array(
+            'prev' => Item::getInstance()->findAdjacentLive($id, false, $loc),
+            'next' => Item::getInstance()->findAdjacentLive($id, true, $loc),
+        ), Item::getInstance()->findAdjacentLiveBoth($id, $loc));
+    }
+}
+$both = Item::getInstance()->findAdjacentLiveBoth($b, 'en_US');
+pin('both: prev is the premium one', (string)$premium, $both['prev']['pk_i_id'] ?? null);
+pin('both: next falls back to the only title', 'Titre seul', $both['next']['s_title'] ?? null);
+pin('both: an edge gives one empty side', array(), Item::getInstance()->findAdjacentLiveBoth($a, 'en_US')['prev']);
+pin('both neighbours cost one statement', 1, harness_query_count(static function () use ($premium) {
+    Item::getInstance()->findAdjacentLiveBoth($premium, 'en_US');
+}));
 
 harness_section('Cost and cache');
 $cache->flush();
@@ -135,6 +150,10 @@ pin('a cache miss is one statement', 1, harness_query_count(static function () u
 pin('the id from the same lookup is free', 0, harness_query_count(static function () use ($b) {
     osc_item_adjacent_id('next', $b);
 }));
+pin('the other direction came with the same lookup', 0, harness_query_count(static function () use ($b) {
+    osc_item_adjacent_url('prev', $b);
+}));
+pin('the other direction is right', $full($premium), osc_item_adjacent_url('prev', $b));
 pin('an empty answer is one statement', 1, harness_query_count(static function () use ($c) {
     osc_item_adjacent_url('next', $c);
 }));

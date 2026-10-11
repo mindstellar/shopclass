@@ -462,40 +462,84 @@ class Item extends DAO
      */
     public function findAdjacentLive(int $itemId, bool $next, string $locale): array
     {
-        $sql = 'SELECT a.pk_i_id, a.fk_i_category_id, l.s_city, d.fk_c_locale_code, d.s_title'
-            . ' FROM (SELECT i.pk_i_id, i.fk_i_category_id FROM ' . $this->getTableName() . ' i'
-            . ' WHERE i.pk_i_id ' . ($next ? '>' : '<') . ' ? AND ' . implode(' AND ', self::liveConditions('i.'))
-            . ' ORDER BY i.pk_i_id ' . ($next ? 'ASC' : 'DESC') . ' LIMIT 1) a'
+        $dir = $next ? 'next' : 'prev';
+
+        return $this->adjacentLive($itemId, array($dir), $locale)[$dir];
+    }
+
+    /**
+     * Both neighbours of findAdjacentLive() in one statement.
+     *
+     * @param int    $itemId Listing to start from
+     * @param string $locale Preferred title locale
+     *
+     * @return array{prev:array<string,string>,next:array<string,string>} Each as findAdjacentLive() returns it
+     * @since 7.0.0
+     */
+    public function findAdjacentLiveBoth(int $itemId, string $locale): array
+    {
+        return $this->adjacentLive($itemId, array('prev', 'next'), $locale);
+    }
+
+    /**
+     * @param string[] $dirs 'prev' and/or 'next'
+     *
+     * @return array<string,array<string,string>> direction => row, empty when there is none
+     */
+    private function adjacentLive(int $itemId, array $dirs, string $locale): array
+    {
+        $live    = implode(' AND ', self::liveConditions('i.'));
+        $selects = array();
+        $params  = array();
+        foreach ($dirs as $dir) {
+            $next      = $dir === 'next';
+            $selects[] = "(SELECT '" . $dir . "' AS dir, i.pk_i_id, i.fk_i_category_id FROM " . $this->getTableName() . ' i'
+                . ' WHERE i.pk_i_id ' . ($next ? '>' : '<') . ' ? AND ' . $live
+                . ' ORDER BY i.pk_i_id ' . ($next ? 'ASC' : 'DESC') . ' LIMIT 1)';
+            $params[]  = $itemId;
+        }
+        $sql = 'SELECT a.dir, a.pk_i_id, a.fk_i_category_id, l.s_city, d.fk_c_locale_code, d.s_title'
+            . ' FROM (' . implode(' UNION ALL ', $selects) . ') a'
             . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON l.fk_i_item_id = a.pk_i_id'
             . ' LEFT JOIN ' . DB_TABLE_PREFIX . "t_item_description d ON d.fk_i_item_id = a.pk_i_id AND d.s_title <> ''"
-            . ' ORDER BY d.fk_c_locale_code';
+            . ' ORDER BY a.dir, d.fk_c_locale_code';
 
+        $result = array_fill_keys($dirs, array());
         try {
-            $rows = Db::stringifyRows(Db::select($sql, array($itemId)));
+            $rows = Db::stringifyRows(Db::select($sql, $params));
         } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-        if ($rows === array()) {
-            return array();
+            return $result;
         }
 
-        $title = '';
+        $titles  = array();
+        $matched = array();
         foreach ($rows as $row) {
-            if ($row['fk_c_locale_code'] === $locale) {
-                $title = (string)$row['s_title'];
-                break;
+            $dir = (string)$row['dir'];
+            if (!isset($titles[$dir])) {
+                $titles[$dir]  = '';
+                $result[$dir]  = array(
+                    'pk_i_id'          => (string)$row['pk_i_id'],
+                    'fk_i_category_id' => (string)$row['fk_i_category_id'],
+                    's_city'           => (string)$row['s_city'],
+                    's_title'          => '',
+                );
+                $matched[$dir] = false;
             }
-            if ($title === '') {
-                $title = (string)$row['s_title'];
+            if ($matched[$dir]) {
+                continue;
+            }
+            if ($row['fk_c_locale_code'] === $locale) {
+                $titles[$dir]  = (string)$row['s_title'];
+                $matched[$dir] = true;
+            } elseif ($titles[$dir] === '') {
+                $titles[$dir] = (string)$row['s_title'];
             }
         }
+        foreach ($titles as $dir => $title) {
+            $result[$dir]['s_title'] = $title;
+        }
 
-        return array(
-            'pk_i_id'          => (string)$rows[0]['pk_i_id'],
-            'fk_i_category_id' => (string)$rows[0]['fk_i_category_id'],
-            's_city'           => (string)$rows[0]['s_city'],
-            's_title'          => $title,
-        );
+        return $result;
     }
 
     /**

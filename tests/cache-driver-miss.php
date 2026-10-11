@@ -33,6 +33,7 @@ if (!class_exists('Memcached')) {
     pin('a second read is still a miss', false, $found);
     pin('a write to a dead server reports failure', false, $cache->set('osc_test:x', 'v'));
     pin('the value is still readable in this request', 'v', $cache->get('osc_test:x'));
+    pin('getMany on a dead server finds only what this request holds', ['osc_test:x' => 'v'], $cache->getMany(['osc_test:x', 'osc_test:y']));
 
     // After one failure the rest of the request skips the server entirely.
     $probe = new ReflectionProperty($cache, 'down');

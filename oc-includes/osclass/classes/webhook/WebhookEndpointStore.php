@@ -46,6 +46,9 @@ final class WebhookEndpointStore
 
     private KeyValue $kv;
 
+    /** @var list<\Closure(): void> what whenOn() holds back until an endpoint is turned on */
+    private static array $whenOn = [];
+
     public function __construct(?KeyValue $kv = null)
     {
         $this->kv = $kv ?? new KeyValue();
@@ -86,6 +89,22 @@ final class WebhookEndpointStore
         }
 
         return $enabled;
+    }
+
+    /**
+     * Run $run now unless the flag says no endpoint is on; then run it once one is turned
+     * on in this request. A site with no endpoints so skips the work without a query.
+     *
+     * @param \Closure(): void $run
+     */
+    public static function whenOn(\Closure $run): void
+    {
+        if (\function_exists('osc_get_preference') && (string) osc_get_preference(self::FLAG, self::SECTION) === '0') {
+            self::$whenOn[] = $run;
+
+            return;
+        }
+        $run();
     }
 
     public function find(string $id): ?Endpoint
@@ -176,13 +195,23 @@ final class WebhookEndpointStore
     {
         $on = fn (): bool => array_filter($this->all(), static fn (Endpoint $e): bool => $e->enabled()) !== [];
         if ($any ?? $on()) {
-            osc_set_preference(self::FLAG, '1', self::SECTION, 'BOOLEAN');
+            self::flagOn();
 
             return;
         }
         osc_set_preference(self::FLAG, '0', self::SECTION, 'BOOLEAN');
         if ($on()) {
-            osc_set_preference(self::FLAG, '1', self::SECTION, 'BOOLEAN');
+            self::flagOn();
+        }
+    }
+
+    private static function flagOn(): void
+    {
+        osc_set_preference(self::FLAG, '1', self::SECTION, 'BOOLEAN');
+        $waiting      = self::$whenOn;
+        self::$whenOn = [];
+        foreach ($waiting as $run) {
+            $run();
         }
     }
 

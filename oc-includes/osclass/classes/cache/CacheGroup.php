@@ -17,6 +17,12 @@ namespace mindstellar\cache;
  */
 final class CacheGroup
 {
+    /** Groups most pages read; with a driver that reads many keys at once they come in one round trip. */
+    private const COMMON = array('preference', 'locale', 'category', 'currency', 'widget', 'page', 'search');
+
+    /** 30 days, the longest relative expiry memcached accepts. */
+    private const GENERATION_TTL = 2592000;
+
     /** @var array<string,int> generations read in this request; a page asks for the same one dozens of times */
     private static array $generations = array();
 
@@ -30,10 +36,19 @@ final class CacheGroup
     public static function generation(string $group): int
     {
         if (!isset(self::$generations[$group])) {
-            $found = null;
-            $gen   = CacheManager::getInstance()->get('osc_' . $group . '_cache_gen', $found);
-
-            self::$generations[$group] = is_numeric($gen) ? (int)$gen : 0;
+            $cache = CacheManager::getInstance();
+            $read  = true;
+            if (method_exists($cache, 'getMany')) {
+                $groups = array_diff(array_unique(array_merge(self::COMMON, array($group))), array_keys(self::$generations));
+                $keys   = array_combine(array_map(static fn (string $name): string => self::key($name), $groups), $groups);
+                foreach ($cache->getMany(array_keys($keys)) as $key => $gen) {
+                    if (is_numeric($gen)) {
+                        self::$generations[$keys[$key]] = (int)$gen;
+                    }
+                }
+                $read = false;
+            }
+            self::$generations[$group] ??= self::load($cache, $group, $read);
         }
 
         return self::$generations[$group];
@@ -58,11 +73,55 @@ final class CacheGroup
     public static function invalidate(string $group): int
     {
         unset(self::$generations[$group]);
-        $gen = self::generation($group) + 1;
-        CacheManager::getInstance()->set('osc_' . $group . '_cache_gen', $gen, 0);
+        $cache = CacheManager::getInstance();
+        if (method_exists($cache, 'increment')) {
+            // Atomic, so two drops at once both count; a missing key starts from the clock as in load().
+            $gen = (int)$cache->increment(self::key($group), 1, self::fresh(), self::GENERATION_TTL);
+        } else {
+            $gen = self::generation($group) + 1;
+            $cache->set(self::key($group), $gen, self::GENERATION_TTL);
+        }
         self::$generations[$group] = $gen;
 
         return $gen;
+    }
+
+    /**
+     * The stored generation, or a new one stored when there is none. A new one starts from the
+     * clock, not 0, so entries kept from before the key expired or was evicted stay unreachable.
+     */
+    private static function load(CacheDriver $cache, string $group, bool $read): int
+    {
+        $key   = self::key($group);
+        $found = false;
+        $gen   = $read ? $cache->get($key, $found) : null;
+        $start = self::fresh();
+        if (!$found) {
+            if ($cache->add($key, $start, self::GENERATION_TTL)) {
+                return $start;
+            }
+            // Another request created it first, or the store is down.
+            $gen = $cache->get($key, $found);
+        }
+        if ($found && is_numeric($gen)) {
+            return (int)$gen;
+        }
+        if ($found) {
+            $cache->set($key, $start, self::GENERATION_TTL);
+        }
+
+        return $start;
+    }
+
+    private static function key(string $group): string
+    {
+        return 'osc_' . $group . '_cache_gen';
+    }
+
+    /** Milliseconds now: above any generation counted up from an older start. */
+    private static function fresh(): int
+    {
+        return (int)floor(microtime(true) * 1000);
     }
 
     /**

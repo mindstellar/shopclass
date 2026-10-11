@@ -177,6 +177,23 @@ Preference::getInstance()->replace(WebhookEndpointStore::FLAG, '', ApiSettings::
 pin('an unknown flag is worked out on first use', [1, '1'], [count($store->enabled()), $flag()]);
 $store->delete($flagged->id());
 pin('deleting the last one turns it off', '0', $flag());
+$ran = 0;
+WebhookEndpointStore::whenOn(static function () use (&$ran): void {
+    $ran++;
+});
+pin('with no endpoint on, the event listeners wait', 0, $ran);
+[$waker] = $manager()->create('https://hooks.example/waker', ['listing.created'], '', false, 1);
+pin('they still wait for an endpoint that is off', 0, $ran);
+$manager()->update($waker->id(), null, null, null, true);
+pin('turning one on registers them, once', 1, $ran);
+$manager()->update($waker->id(), null, null, null, false);
+$manager()->update($waker->id(), null, null, null, true);
+pin('turning one on again does not register them twice', 1, $ran);
+WebhookEndpointStore::whenOn(static function () use (&$ran): void {
+    $ran++;
+});
+pin('with an endpoint on, they register at once', 2, $ran);
+$store->delete($waker->id());
 
 harness_section('dispatcher: one job per enabled endpoint that subscribes');
 $clearJobs();

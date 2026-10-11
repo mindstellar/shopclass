@@ -286,6 +286,7 @@ pin(
         'extendDataSingle',
         'extendRows',
         'findAdjacentLive',
+        'findAdjacentLiveBoth',
         'findByCategoryID',
         'findByDayExpiration',
         'findByEmail',

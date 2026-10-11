@@ -19,5 +19,5 @@
 );
 
 // Core events (a listing posted, a user registered ...) become webhooks for the endpoints
-// that subscribe to them.
-\mindstellar\api\serializer\EventData::listen();
+// that subscribe to them; with no endpoint on, the listeners wait until one is.
+\mindstellar\webhook\WebhookEndpointStore::whenOn(static fn () => \mindstellar\api\serializer\EventData::listen());

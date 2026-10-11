@@ -310,6 +310,42 @@ class RedisCache extends Cache
     }
 
     /**
+     * Several keys in one round trip. Not part of CacheDriver; callers probe with method_exists().
+     *
+     * @param list<string> $keys
+     *
+     * @return array<string,mixed> the keys found, with their values
+     */
+    public function getMany(array $keys): array
+    {
+        $values = array();
+        $fetch  = array();
+        foreach ($keys as $key) {
+            $value = $this->local($key, $found);
+            if ($found) {
+                $values[$key] = $value;
+            } else {
+                $fetch[] = $key;
+            }
+        }
+        if ($fetch === array()) {
+            return $values;
+        }
+        $reply = $this->call('MGET', ...array_map(fn (string $key): string => $this->_key($key), $fetch));
+        foreach ($fetch as $i => $key) {
+            if (!is_array($reply) || !is_string($reply[$i] ?? null)) {
+                ++$this->cache_misses;
+                continue;
+            }
+            $values[$key]      = $this->decode($reply[$i]);
+            $this->cache[$key] = self::copy($values[$key]);
+            ++$this->cache_hits;
+        }
+
+        return $values;
+    }
+
+    /**
      * Sets the data contents into the cache.
      *
      * @param int|string $key

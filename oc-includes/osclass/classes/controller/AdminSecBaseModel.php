@@ -84,8 +84,8 @@ class AdminSecBaseModel extends SecBaseModel
         // announcing the same news twice.
         osc_reset_preferences();
         if (Utils::versionCompare($configVersion, (string) osc_get_preference('version'), 'gt')) {
+            // This re-reads the preferences after writing, so no reset is needed here.
             Utils::changeOsclassVersionTo($configVersion);
-            osc_reset_preferences();
             osc_add_flash_ok_message(
                 sprintf(_m('Shopclass has been updated to %s'), osc_esc_html($configVersion)),
                 'admin'

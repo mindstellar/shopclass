@@ -100,6 +100,7 @@ $skips->get('a');
 $skips->set('b', 1);
 $skips->increment('c');
 pin('after the first failure the request stops asking the server', 1, $calls);
+pin('getMany on a server that is down finds nothing', [], (new RedisCache($broken))->getMany(['a', 'b']));
 
 $sent     = array();
 $scripted = new class ($sent) implements mindstellar\cache\RedisClient {
@@ -181,6 +182,14 @@ foreach ($clients as $label => $raw) {
     check('a number added first is counted on top of', $cache->add('limit', 5, 30) && $fresh()->increment('limit', 1, 0, 30) === 6);
     $ttl = $raw->command('TTL', $cache->site_prefix . 'hits');
     check('and expires like any other value', is_int($ttl) && $ttl > 0 && $ttl <= 30);
+
+    $cache->set('m1', 1, 30);
+    $cache->set('m2', ['x' => 2], 30);
+    $many = $fresh();
+    pin('getMany reads several keys and leaves out a missing one', ['m1' => 1, 'm2' => ['x' => 2]], $many->getMany(['m1', 'nope', 'm2']));
+    pin('...and counts each as a hit or a miss', [2, 1], [$many->cache_hits, $many->cache_misses]);
+    $hits = $many->cache_hits;
+    pin('a key it read is then held for the request', [1, $hits + 1], [$many->get('m1'), $many->cache_hits]);
 
     $raw->command('SET', 'other_site_key', 'theirs');
     check('flush clears this site', $cache->flush());

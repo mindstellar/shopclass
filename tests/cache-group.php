@@ -23,7 +23,7 @@ require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 use mindstellar\cache\CacheGroup;
 
 /** Keeps every value set, null too, and answers found for any key it holds. */
-final class KeepAllCache implements \mindstellar\cache\CacheDriver
+class KeepAllCache implements \mindstellar\cache\CacheDriver
 {
     /** @var array<string,mixed> */
     public array $data = [];
@@ -38,9 +38,17 @@ final class KeepAllCache implements \mindstellar\cache\CacheDriver
         return true;
     }
 
+    /** @var int add() calls */
+    public int $adds = 0;
+
     public function add($key, $data, $expire = 0)
     {
-        return false;
+        $this->adds++;
+        if (array_key_exists($key, $this->data)) {
+            return false;
+        }
+
+        return $this->set($key, $data, $expire);
     }
 
     public function set($key, $data, $expire = 0)
@@ -128,6 +136,89 @@ pin('it is seen once the generations are forgotten, as the job worker does per j
 $reads = $cache->reads['osc_grp_cache_gen'];
 pin('a drop in this request is seen at once, with no extra read after it', [$before + 6, $before + 6], [CacheGroup::invalidate('grp'), CacheGroup::generation('grp')]);
 pin('...it reads the generation once, to count up from the latest', $reads + 1, $cache->reads['osc_grp_cache_gen']);
+
+/** Reads many keys at once and counts up atomically, as the Redis and memcached drivers do. */
+final class ManyCache extends KeepAllCache
+{
+    /** @var list<list<string>> keys of each getMany() call */
+    public array $many = [];
+
+    public function getMany(array $keys): array
+    {
+        $this->many[] = $keys;
+
+        return array_intersect_key($this->data, array_flip($keys));
+    }
+
+    public function increment($key, $by = 1, $initial = 0, $expire = 0)
+    {
+        if ($this->add($key, $initial, $expire)) {
+            return $initial;
+        }
+        $this->data[$key] += $by;
+
+        return $this->data[$key];
+    }
+}
+
+/** Another request creates the generation between this one's read and its add. */
+final class RaceCache extends KeepAllCache
+{
+    public function add($key, $data, $expire = 0)
+    {
+        $this->set($key, 42, 0);
+
+        return parent::add($key, $data, $expire);
+    }
+}
+
+$swap = static function (\mindstellar\cache\CacheDriver $driver) use ($factory): void {
+    $factory->setValue(null, $driver);
+    CacheGroup::forgetGenerations();
+};
+
+harness_section('a missing generation is stored, so the next request finds it');
+$swap($cache = new KeepAllCache());
+$first = CacheGroup::generation('grp');
+pin('it is stored with a long expiry, not the 60 second default', [$first, 2592000], [$cache->data['osc_grp_cache_gen'] ?? null, $cache->ttl['osc_grp_cache_gen'] ?? null]);
+pin('...and starts from the clock, not 0', true, $first >= (int)floor(microtime(true) * 1000) - 60000);
+CacheGroup::forgetGenerations();
+$cache->reads = [];
+pin('the next request reads it as a hit, with no write', [$first, 1, 1], [CacheGroup::generation('grp'), $cache->reads['osc_grp_cache_gen'], $cache->adds]);
+
+harness_section('a generation that expired or was evicted never returns to an old number');
+$swap($cache = new KeepAllCache());
+$cache->set('osc_grp_cache_gen', 0, 0);
+CacheGroup::remember('grp', 'k', $load('before'));
+CacheGroup::invalidate('grp');
+CacheGroup::remember('grp', 'k', $load('after'));
+$cache->delete('osc_grp_cache_gen');
+CacheGroup::forgetGenerations();
+pin('the entries stored before it went are not served', 'reloaded', CacheGroup::remember('grp', 'k', $load('reloaded')));
+CacheGroup::invalidate('grp');
+pin('...nor after the next drop', 'again', CacheGroup::remember('grp', 'k', $load('again')));
+
+harness_section('two requests creating the generation at once agree on it');
+$swap($cache = new RaceCache());
+pin('the one that loses the add takes the winner\'s number', 42, CacheGroup::generation('grp'));
+$swap($cache = new KeepAllCache());
+$cache->set('osc_grp_cache_gen', 'junk', 0);
+$fixed = CacheGroup::generation('grp');
+pin('a stored value that is not a number is replaced', $fixed, $cache->data['osc_grp_cache_gen']);
+
+harness_section('a driver that reads many keys at once');
+$swap($cache = new ManyCache());
+$cache->set('osc_category_cache_gen', 3, 0);
+$cache->set('osc_page_cache_gen', 4, 0);
+CacheGroup::generation('preference');
+pin('the first generation read fetches the common groups in one call', [1, 7], [count($cache->many), count($cache->many[0])]);
+pin('...and later ones need no read', [3, 4, [], 1], [CacheGroup::generation('category'), CacheGroup::generation('page'), $cache->reads, count($cache->many)]);
+pin('a group it did not find is created without reading it again', [true, []], [isset($cache->data['osc_preference_cache_gen']), $cache->reads]);
+CacheGroup::generation('field_group');
+pin('another group reads itself and the common ones still missing, nothing more', ['osc_field_group_cache_gen'], array_values(array_diff(end($cache->many), ['osc_locale_cache_gen', 'osc_currency_cache_gen', 'osc_widget_cache_gen', 'osc_search_cache_gen'])));
+pin('a drop counts up atomically', 5, CacheGroup::invalidate('page'));
+$cache->delete('osc_page_cache_gen');
+pin('...and a drop of a missing generation starts from the clock', true, CacheGroup::invalidate('page') > 4);
 
 exit(harness_result());
 
