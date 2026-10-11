@@ -517,7 +517,10 @@ class Connection
                 throw new DbException('Database query failed');
             }
 
-            return var_export($value, true);
+            // An exponent makes MySQL read a float, as a prepared statement sends it, not an exact decimal.
+            $text = var_export($value, true);
+
+            return stripos($text, 'E') === false ? $text . 'E0' : $text;
         }
         if (\is_string($value)) {
             return "'" . $this->conn->real_escape_string($value) . "'";
