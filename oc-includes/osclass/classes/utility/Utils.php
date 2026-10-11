@@ -217,7 +217,7 @@ class Utils
         // Bound and written in chunks; a site with no categories writes nothing.
         foreach (array_chunk($categoryTotal, 500, true) as $chunk) {
             try {
-                \mindstellar\category\CategoryStore::writeCounts($chunk);
+                \mindstellar\listing\ListingCountStore::categories()->set($chunk);
             } catch (\mindstellar\database\DbException $e) {
                 return;
             }
@@ -266,7 +266,7 @@ class Utils
         $categoryTotal = self::subtreeItemCount($category);
 
         try {
-            \mindstellar\category\CategoryStore::writeCounts(array((int)$id => (int)$categoryTotal));
+            \mindstellar\listing\ListingCountStore::categories()->set(array((int)$id => (int)$categoryTotal));
         } catch (\mindstellar\database\DbException $e) {
             // A failed write leaves the old count, as the legacy query did; the parents still update.
         }

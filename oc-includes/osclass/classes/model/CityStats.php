@@ -12,7 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Db;
 use mindstellar\listing\ListingCountStore;
 
 /**
@@ -121,7 +120,7 @@ class CityStats extends DAO
     public function deleteByRegion($regionId)
     {
         try {
-            Db::table(ListingCountStore::cities()->table())->where('fk_i_region_id', (int)$regionId)->update(array('i_num_items' => 0));
+            ListingCountStore::cities()->clear('fk_i_region_id', (int)$regionId);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -147,34 +146,18 @@ class CityStats extends DAO
         $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
-            if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {
-                $zero = '>';
-            }
-            if (!preg_match('/^[A-Za-z0-9_.]+ (ASC|DESC)$/i', (string)$order)) {
-                $order = 'city_name ASC';
-            }
-            $cityTable = ListingCountStore::cities()->table();
-
-            // Column aliases put this beyond the builder's identifier allowlist. The region id
-            // is the one caller value and it is bound; $zero and $order were checked above.
-            $params = array();
-            $sql    = 'SELECT pk_i_id as city_id, i_num_items as items, s_name as city_name, s_slug as city_slug'
-                . ' FROM ' . $cityTable . ' WHERE i_num_items ' . $zero . ' 0';
-
-            if (is_numeric($region)) {
-                $sql     .= ' AND fk_i_region_id = ?';
-                $params[] = $region;
-            }
-
-            $sql .= ' ORDER BY ' . $order;
-
             try {
-                $rows = Db::select($sql, $params);
+                $return = ListingCountStore::cities()->listing(
+                    'pk_i_id as city_id, i_num_items as items, s_name as city_name, s_slug as city_slug',
+                    (string)$zero,
+                    (string)$order,
+                    'city_name ASC',
+                    is_numeric($region) ? array('fk_i_region_id' => (int)$region) : array()
+                );
             } catch (\mindstellar\database\DbException $e) {
                 return array();
             }
 
-            $return = Db::stringifyRows($rows);
             osc_cache_set($key, $return, OSC_CACHE_TTL);
 
             return $return;
@@ -184,106 +167,23 @@ class CityStats extends DAO
     }
 
     /**
-     * Calculate the total items that belong to city id
+     * Count a city's live listings from the listings themselves.
      *
      * @param int $cityId
      *
-     * @return int|string Item count as a string, or int 0 when the query fails
+     * @return int|string the count as a string, or int 0 when the query fails
      */
     public function calculateNumItems($cityId)
     {
-        // Three fixed core tables and an aggregate, so the builder cannot carry
-        // it; the city id and the expiry cut-off are the only caller values and
-        // both are bound. The id keeps the (int) cast legacy already applied, and
-        // the cut-off stays on PHP's clock, as it has always been, rather than
-        // moving to the server's NOW().
-        $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
-            . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_city_id = ? AND ';
-        $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
-        $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
-        $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '
-            . DB_TABLE_PREFIX . 't_item.b_spam = 0 AND ';
-        $sql .= '(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
-            . 't_item.dt_expiration >= ? ) AND ';
-        $sql .= DB_TABLE_PREFIX . 't_category.b_enabled = 1 ';
-
         try {
-            $row = Db::selectOne($sql, array((int)$cityId, date('Y-m-d H:i:s')));
+            return ListingCountStore::cities()->recount(array((int)$cityId))[(string)(int)$cityId] ?? 0;
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-
-        if ($row !== null) {
-            $row = Db::stringifyRow($row);
-
-            return $row['total'];
-        }
-
-        return 0;
     }
 
     /**
-     * Batch calculate the total items that belong to city id
-     *
-     * @param array<int,int|string> $cities array of city ids
-     *
-     * @return array<int|string,int|string> City id => item count, 0 for a city with none
-     */
-    private function calculateAllStats(array $cities): array
-    {
-        if (empty($cities)) {
-            return array();
-        }
-        $return = array();
-        $ids    = array_map('intval', $cities);
-
-        // Two joins and an aggregate put this beyond the builder. Every caller
-        // value is bound: the expiry cut-off and the city ids, the latter keeping
-        // the intval() legacy already applied to them. Every table and column
-        // name is a compile-time literal.
-        //
-        // The premium/expiry test is deliberately left UNPARENTHESISED, exactly
-        // as the legacy clause was. `||` binds looser than AND, so it splits the
-        // whole WHERE in two and the city filter constrains only one half. That
-        // is load-bearing for what this query returns today; changing it is a
-        // behaviour fix, not part of a conversion.
-        $sql = 'SELECT fk_i_city_id, count(*) as i_num_items'
-            . ' FROM ' . DB_TABLE_PREFIX . 't_item_location'
-            . ' JOIN ' . DB_TABLE_PREFIX . 't_item ON ' . DB_TABLE_PREFIX . 't_item.pk_i_id = '
-            . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id'
-            . ' JOIN ' . DB_TABLE_PREFIX . 't_category ON ' . DB_TABLE_PREFIX . 't_category.pk_i_id = '
-            . DB_TABLE_PREFIX . 't_item.fk_i_category_id'
-            . ' WHERE ' . DB_TABLE_PREFIX . 't_item.b_active = 1'
-            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1'
-            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_spam = 0'
-            . ' AND (' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
-            . 't_item.dt_expiration >= ?) '
-            . ' AND ' . DB_TABLE_PREFIX . 't_category.b_enabled = 1'
-            . ' AND fk_i_city_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')'
-            . ' GROUP BY fk_i_city_id';
-
-        try {
-            $rows = Db::select($sql, array_merge(array(date('Y-m-d H:i:s')), $ids));
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        foreach (Db::stringifyRows($rows) as $a) {
-            $return[$a['fk_i_city_id']] = $a['i_num_items'];
-        }
-        // fill missing values with 0
-        foreach ($cities as $c) {
-            if (!isset($return[$c])) {
-                $return[$c] = 0;
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * Update the number of items for given cities ids
+     * Recount the listings of these cities and save the counts.
      *
      * @param array<int,int|string> $cities array of city ids
      *
@@ -293,7 +193,9 @@ class CityStats extends DAO
     public function updateAllStats(array $cities)
     {
         try {
-            return ListingCountStore::cities()->set($this->calculateAllStats($cities));
+            $store = ListingCountStore::cities();
+
+            return $store->set($store->recount(array_map('intval', $cities)));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

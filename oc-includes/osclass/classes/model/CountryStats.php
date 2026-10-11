@@ -12,7 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Db;
 use mindstellar\listing\ListingCountStore;
 
 /**
@@ -129,66 +128,37 @@ class CountryStats extends DAO
      */
     public function listCountries($zero = '>', $order = 'country_name ASC')
     {
-        if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {
-            $zero = '>';
-        }
-        if (!preg_match('/^[A-Za-z0-9_.]+ (ASC|DESC)$/i', (string)$order)) {
-            $order = 'country_name ASC';
-        }
-
-        // Column aliases put this beyond the builder's identifier allowlist. It carries no caller
-        // values: $zero and $order were checked above.
-        $sql = 'SELECT pk_c_code as country_code, i_num_items as items, s_name as country_name, s_slug as country_slug'
-            . ' FROM ' . ListingCountStore::countries()->table() . ' WHERE i_num_items ' . $zero . ' 0 ORDER BY ' . $order;
-
         try {
-            $rows = Db::select($sql);
+            return ListingCountStore::countries()->listing(
+                'pk_c_code as country_code, i_num_items as items, s_name as country_name, s_slug as country_slug',
+                (string)$zero,
+                (string)$order,
+                'country_name ASC'
+            );
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-
-        return Db::stringifyRows($rows);
     }
 
     /**
-     * Calculate the total items that belong to countryCode
+     * Count a country's live listings from the listings themselves.
      *
      * @param string $countryCode
      *
-     * @return int|string Item count as a string, or int 0 when the query fails
+     * @return int|string the count as a string, or int 0 when the query fails
      * @since  2.4
      */
     public function calculateNumItems($countryCode)
     {
-        // Three fixed core tables and an aggregate, so the builder cannot carry
-        // it; the country code and the expiry cut-off are the only caller
-        // values and both are bound. The cut-off stays on PHP's clock, as it
-        // has always been, rather than moving to the server's NOW().
-        $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
-               . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_c_country_code = ? AND ';
-        $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
-        $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
-        $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '
-                . DB_TABLE_PREFIX . 't_item.b_spam = 0 AND ';
-        $sql .= '(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX . 't_item.dt_expiration >= ? ) AND ';
-        $sql .= DB_TABLE_PREFIX . 't_category.b_enabled = 1 ';
-
+        if (!is_scalar($countryCode) && $countryCode !== null) {
+            return 0;
+        }
         try {
-            $row = Db::selectOne($sql, array($countryCode, date('Y-m-d H:i:s')));
+            return ListingCountStore::countries()->recount(array((string)$countryCode))[(string)$countryCode] ?? 0;
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-
-        if ($row !== null) {
-            $row = Db::stringifyRow($row);
-
-            return $row['total'];
-        }
-
-        return 0;
     }
-
 }
 
 /* file end: ./oc-includes/osclass/model/CountryStats.php */

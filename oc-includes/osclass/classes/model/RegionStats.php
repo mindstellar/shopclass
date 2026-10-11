@@ -12,7 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Db;
 use mindstellar\listing\ListingCountStore;
 
 /**
@@ -130,46 +129,28 @@ class RegionStats extends DAO
         $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
-            if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {
-                $zero = '>';
-            }
-            if (!preg_match('/^[A-Za-z0-9_.]+ (ASC|DESC)$/i', (string)$order)) {
-                $order = 'region_name ASC';
-            }
-            $order_split = explode(' ', $order);
-
-            $regionTable = ListingCountStore::regions()->table();
-
-            // The projection depends on the sort column, and an order over any
-            // other column selects nothing at all — which is how the legacy
-            // builder fell through to SELECT *.
-            if ($order_split[0] === 'region_name') {
+            // The columns depend on the sort column; an order over any other column selects every column.
+            $by = explode(' ', ListingCountStore::order((string)$order, 'region_name ASC'))[0];
+            if ($by === 'region_name') {
                 $columns = 'pk_i_id as region_id, i_num_items as items, s_name as region_name, s_slug as region_slug';
-            } elseif ($order_split[0] === 'items') {
+            } elseif ($by === 'items') {
                 $columns = 'pk_i_id as region_id, i_num_items as items, s_name as region_name';
             } else {
                 $columns = '*';
             }
 
-            // Column aliases put this beyond the builder's identifier allowlist. The country code
-            // is the one caller value and it is bound; $zero and $order were checked above.
-            $params = array();
-            $sql    = 'SELECT ' . $columns . ' FROM ' . $regionTable . ' WHERE i_num_items ' . $zero . ' 0';
-
-            if ($country !== '%%%%') {
-                $sql     .= ' AND fk_c_country_code = ?';
-                $params[] = $country;
-            }
-
-            $sql .= ' ORDER BY ' . $order;
-
             try {
-                $rows = Db::select($sql, $params);
+                $return = ListingCountStore::regions()->listing(
+                    $columns,
+                    (string)$zero,
+                    (string)$order,
+                    'region_name ASC',
+                    $country !== '%%%%' ? array('fk_c_country_code' => (string)$country) : array()
+                );
             } catch (\mindstellar\database\DbException $e) {
                 return array();
             }
 
-            $return = Db::stringifyRows($rows);
             osc_cache_set($key, $return, OSC_CACHE_TTL);
 
             return $return;
@@ -179,106 +160,23 @@ class RegionStats extends DAO
     }
 
     /**
-     * Calculate the total items that belong to region
+     * Count a region's live listings from the listings themselves.
      *
      * @param int $regionId
      *
-     * @return int|string Item count as a string, or int 0 when the query fails
+     * @return int|string the count as a string, or int 0 when the query fails
      */
     public function calculateNumItems($regionId)
     {
-        // Three fixed core tables and an aggregate, so the builder cannot carry
-        // it; the region id and the expiry cut-off are the only caller values and
-        // both are bound. The id keeps the (int) cast legacy already applied, and
-        // the cut-off stays on PHP's clock, as it has always been, rather than
-        // moving to the server's NOW().
-        $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
-            . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_region_id = ? AND ';
-        $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
-        $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
-        $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '
-            . DB_TABLE_PREFIX . 't_item.b_spam = 0 AND ';
-        $sql .= '(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
-            . 't_item.dt_expiration >= ? ) AND ';
-        $sql .= DB_TABLE_PREFIX . 't_category.b_enabled = 1 ';
-
         try {
-            $row = Db::selectOne($sql, array((int)$regionId, date('Y-m-d H:i:s')));
+            return ListingCountStore::regions()->recount(array((int)$regionId))[(string)(int)$regionId] ?? 0;
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-
-        if ($row !== null) {
-            $row = Db::stringifyRow($row);
-
-            return $row['total'];
-        }
-
-        return 0;
     }
 
     /**
-     * Batch calculate the total items that belong to region id
-     *
-     * @param array<int,int|string> $regions array of region ids
-     *
-     * @return array<int|string,int|string> Region id => item count, 0 for a region with none
-     */
-    private function calculateAllStats(array $regions): array
-    {
-        if (empty($regions)) {
-            return array();
-        }
-        $return = array();
-        $ids    = array_map('intval', $regions);
-
-        // Two joins and an aggregate put this beyond the builder. Every caller
-        // value is bound: the expiry cut-off and the region ids, the latter
-        // keeping the intval() legacy already applied to them. Every table and
-        // column name is a compile-time literal.
-        //
-        // The premium/expiry test is deliberately left UNPARENTHESISED, exactly
-        // as the legacy clause was. `||` binds looser than AND, so it splits the
-        // whole WHERE in two and the region filter constrains only one half.
-        // That is load-bearing for what this query returns today; changing it is
-        // a behaviour fix, not part of a conversion.
-        $sql = 'SELECT fk_i_region_id, count(*) as i_num_items'
-            . ' FROM ' . DB_TABLE_PREFIX . 't_item_location'
-            . ' JOIN ' . DB_TABLE_PREFIX . 't_item ON ' . DB_TABLE_PREFIX . 't_item.pk_i_id = '
-            . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id'
-            . ' JOIN ' . DB_TABLE_PREFIX . 't_category ON ' . DB_TABLE_PREFIX . 't_category.pk_i_id = '
-            . DB_TABLE_PREFIX . 't_item.fk_i_category_id'
-            . ' WHERE ' . DB_TABLE_PREFIX . 't_item.b_active = 1'
-            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1'
-            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_spam = 0'
-            . ' AND (' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
-            . 't_item.dt_expiration >= ?) '
-            . ' AND ' . DB_TABLE_PREFIX . 't_category.b_enabled = 1'
-            . ' AND fk_i_region_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')'
-            . ' GROUP BY fk_i_region_id';
-
-        try {
-            $rows = Db::select($sql, array_merge(array(date('Y-m-d H:i:s')), $ids));
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        foreach (Db::stringifyRows($rows) as $a) {
-            $return[$a['fk_i_region_id']] = $a['i_num_items'];
-        }
-        // fill missing values with 0
-        foreach ($regions as $c) {
-            if (!isset($return[$c])) {
-                $return[$c] = 0;
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * Update the number of items for given regions ids
+     * Recount the listings of these regions and save the counts.
      *
      * @param array<int,int|string> $regions array of region ids
      *
@@ -288,7 +186,9 @@ class RegionStats extends DAO
     public function updateAllStats(array $regions)
     {
         try {
-            return ListingCountStore::regions()->set($this->calculateAllStats($regions));
+            $store = ListingCountStore::regions();
+
+            return $store->set($store->recount(array_map('intval', $regions)));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

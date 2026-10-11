@@ -77,18 +77,6 @@ final class CategoryStore extends Model
     }
 
     /**
-     * Write listing counts per category.
-     *
-     * @param array<int,int> $totals category id => count
-     *
-     * @throws \mindstellar\database\DbException
-     */
-    public static function writeCounts(array $totals): void
-    {
-        \mindstellar\listing\ListingCountStore::categories()->set($totals);
-    }
-
-    /**
      * Category slugs, in any locale, that start with $prefix.
      *
      * @return string[]

@@ -14,6 +14,7 @@ use InvalidArgumentException;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
+use mindstellar\listing\ListingCountStore;
 
 /**
  * Read side of the location admin screen: one page of one level, a search across all
@@ -56,11 +57,7 @@ final class LocationAdminQuery
         $rows  = $total > 0 ? Db::select($pageSql, $params) : array();
         $codes = array_column($rows, 'pk_c_code');
 
-        $listings = $this->keyedCounts(
-            'SELECT pk_c_code AS k, i_num_items AS n FROM ' . $this->table('t_country')
-            . ' WHERE pk_c_code IN (%s)',
-            $codes
-        );
+        $listings = array_map('intval', ListingCountStore::countries()->many($codes));
         $regions  = $this->keyedCounts(
             'SELECT fk_c_country_code AS k, COUNT(*) AS n FROM ' . $this->table('t_region')
             . ' WHERE fk_c_country_code IN (%s) GROUP BY fk_c_country_code',
@@ -109,11 +106,7 @@ final class LocationAdminQuery
         $rows  = $total > 0 ? Db::select($pageSql, $params) : array();
         $ids   = array_map('intval', array_column($rows, 'pk_i_id'));
 
-        $listings = $this->keyedCounts(
-            'SELECT pk_i_id AS k, i_num_items AS n FROM ' . $this->table('t_region')
-            . ' WHERE pk_i_id IN (%s)',
-            $ids
-        );
+        $listings = array_map('intval', ListingCountStore::regions()->many($ids));
         $cities   = $this->keyedCounts(
             'SELECT fk_i_region_id AS k, COUNT(*) AS n FROM ' . $this->table('t_city')
             . ' WHERE fk_i_region_id IN (%s) GROUP BY fk_i_region_id',
@@ -164,11 +157,7 @@ final class LocationAdminQuery
         $rows  = $total > 0 ? Db::select($pageSql, $params) : array();
         $ids   = array_map('intval', array_column($rows, 'pk_i_id'));
 
-        $listings = $this->keyedCounts(
-            'SELECT pk_i_id AS k, i_num_items AS n FROM ' . $this->table('t_city')
-            . ' WHERE pk_i_id IN (%s)',
-            $ids
-        );
+        $listings = array_map('intval', ListingCountStore::cities()->many($ids));
 
         $out = array();
         foreach ($rows as $row) {

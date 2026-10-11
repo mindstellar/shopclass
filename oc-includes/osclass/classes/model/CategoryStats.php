@@ -157,11 +157,7 @@ class CategoryStats extends DAO
      */
     public function countItemsFromCategory($categoryId)
     {
-        try {
-            $row = (ListingCountStore::categories()->row((int)$categoryId, 'fk_i_category_id') ?? false);
-        } catch (\mindstellar\database\DbException $e) {
-            return 0;
-        }
+        $row = $this->findByCategoryId($categoryId);
 
         return $row === false ? 0 : $row['i_num_items'];
     }

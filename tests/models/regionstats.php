@@ -738,17 +738,8 @@ pin(
 $flush();
 pin('the string "0" matches no country at all', array(), $model->listRegions('0', '>='));
 
-/* The change only reaches values that arrive as strings. A genuine int binds as
- * an int, which is still a numeric comparison, so the coercion survives there
- * exactly as before. Callers pass codes read from request params or the
- * database, i.e. strings, so this residue is not reachable in practice — but it
- * is the honest boundary of the change and is pinned as such. */
 $flush();
-pin(
-    'an int 0 still coerces and sweeps up every alphabetically-coded country',
-    'Alpha,Bravo,Charlie',
-    implode(',', array_column($model->listRegions(0, '>='), 'region_name'))
-);
+pin('an int 0 matches no country either', array(), $model->listRegions(0, '>='));
 
 harness_section('listRegions — the error fallback is reachable through the order argument');
 

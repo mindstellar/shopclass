@@ -559,8 +559,7 @@ harness_section('calculateNumItems — a numeric code matches only its own row')
  * a string, so a code of '0' no longer sweeps up every alphabetically-coded
  * country's items. */
 pin('the string "0" counts nothing', '0', $model->calculateNumItems('0'));
-/* As above, a genuine int still binds as a number and still coerces. */
-pin('an int 0 still sweeps up the alphabetically-coded countries', '3', $model->calculateNumItems(0));
+pin('an int 0 counts nothing too', '0', $model->calculateNumItems(0));
 
 harness_section('calculateNumItems — the eligibility rules');
 
@@ -574,13 +573,11 @@ $admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_category SET b_enabled = 0');
 pin('a disabled category takes all of its items with it', '0', $model->calculateNumItems('US'));
 $admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_category SET b_enabled = 1');
 pin('and re-enabling brings them back', '1', $model->calculateNumItems('US'));
+pin('a lower-case code counts the same country', '1', $model->calculateNumItems('us'));
 
 harness_section('calculateNumItems — the failed-query branch returns int 0');
 
-/* An array argument is the one input that reaches the query layer malformed:
- * escape() hands it straight back, it string-casts to `Array` in the SQL, and
- * the method's own false-branch converts the failure to int 0 — a different
- * value and a different type from the string '0' a legitimate zero match gives. */
+/* An array is refused with int 0, a different value and type from the string '0' a real zero match gives. */
 pin('an array code returns int 0, not the string "0"', 0, $quiet(static function () use ($model) {
     return $model->calculateNumItems(array('US'));
 }));

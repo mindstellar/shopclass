@@ -12,12 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\location;
 
-use CityStats;
-use CountryStats;
 use mindstellar\job\Job;
 use mindstellar\job\JobQueue;
 use mindstellar\job\JobRegistry;
-use RegionStats;
+use mindstellar\listing\ListingCountStore;
 
 /**
  * Recounts the live listings of every country, region and city on the job queue. Counts
@@ -98,22 +96,12 @@ final class LocationRecountJobs
             return;
         }
 
-        if ($level === 'country') {
-            $stats = CountryStats::getInstance();
-            foreach ($ids as $code) {
-                if ($stats->setNumItems($code, $stats->calculateNumItems($code)) !== true) {
-                    throw new \RuntimeException('Could not save the listing count of country ' . $code);
-                }
-            }
-        } else {
-            $ids = array_map('intval', $ids);
-            $ok  = $level === 'region'
-                ? RegionStats::getInstance()->updateAllStats($ids)
-                : CityStats::getInstance()->updateAllStats($ids);
-            if ($ok !== true) {
-                throw new \RuntimeException('Could not save the listing counts of ' . count($ids) . ' ' . $level . ' rows');
-            }
-        }
+        $store = match ($level) {
+            'country' => ListingCountStore::countries(),
+            'region'  => ListingCountStore::regions(),
+            default   => ListingCountStore::cities(),
+        };
+        $store->set($store->recount($level === 'country' ? $ids : array_map('intval', $ids)));
 
         if (count($ids) === self::BATCH) {
             $job->repeat(array('level' => $level, 'after' => (string) end($ids)));
