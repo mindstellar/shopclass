@@ -106,6 +106,9 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 
+- Upgrading on MariaDB 10.2 to 10.4 no longer stops at the utf8mb4 step.
+- Restoring a backup on MySQL 5.7 no longer fails on a large table.
+- API and keyword searches sorted by relevance keep listings with the same score in the same order on every page.
 - A search made only of very short or common words now finds matches instead of nothing, and "sony tv" no longer shows every Sony listing.
 - Search results are cached per language, so a language filter no longer shows another language's results.
 - **Settings → Media** refuses an image size with a zero side, which broke every photo upload.
