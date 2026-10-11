@@ -77,43 +77,27 @@ class Category extends DAO
      */
     public function toTree(bool $empty = true)
     {
-        $state = \mindstellar\cache\CacheGroup::remember('category', 'tree:' . $this->language . ':' . (int)$empty, function () use ($empty): ?array {
-            // if listEnabled has been called before, don't redo the query
-            if (!$this->categoriesEnabled) {
-                $this->categoriesEnabled = $this->listEnabled();
-            }
-            $this->tree       = array();
-            $this->categories = array();
-            $this->relation   = array();
-            foreach ($this->categoriesEnabled as $c) {
-                if ($empty || ($c['i_num_items'] > 0)) {
-                    $this->categories[$c['pk_i_id']] = $c;
-                    if ($c['fk_i_parent_id'] == null) {
-                        $this->relation[0][] = $c['pk_i_id'];
-                    } else {
-                        $this->relation[$c['fk_i_parent_id']][] = $c['pk_i_id'];
-                    }
+        // Only the rows are cached; the tree is rebuilt from them, which is faster than reading three copies.
+        if (!$this->categoriesEnabled) {
+            $this->categoriesEnabled = \mindstellar\cache\CacheGroup::remember('category', 'enabled:' . $this->language, fn (): array => $this->listEnabled()) ?? array();
+        }
+        $this->tree       = array();
+        $this->categories = array();
+        $this->relation   = array();
+        foreach ($this->categoriesEnabled as $c) {
+            if ($empty || ($c['i_num_items'] > 0)) {
+                $this->categories[$c['pk_i_id']] = $c;
+                if ($c['fk_i_parent_id'] == null) {
+                    $this->relation[0][] = $c['pk_i_id'];
+                } else {
+                    $this->relation[$c['fk_i_parent_id']][] = $c['pk_i_id'];
                 }
             }
-            if (!isset($this->relation[0])) {
-                return null;
-            }
-
-            return array(
-                'tree'              => $this->sideTree($this->relation[0], $this->categories, $this->relation),
-                'relation'          => $this->relation,
-                'categories'        => $this->categories,
-                'categoriesEnabled' => $this->categoriesEnabled,
-            );
-        });
-        if ($state === null) {
+        }
+        if (!isset($this->relation[0])) {
             return array();
         }
-
-        $this->tree              = $state['tree'];
-        $this->relation          = $state['relation'];
-        $this->categories        = $state['categories'];
-        $this->categoriesEnabled = $state['categoriesEnabled'];
+        $this->tree = $this->sideTree($this->relation[0], $this->categories, $this->relation);
 
         return $this->tree;
     }
@@ -409,21 +393,15 @@ class Category extends DAO
         if ($categoryID == null) {
             return false;
         }
+        $known = $this->knownRow($categoryID, $locale);
+        if ($known !== null) {
+            return $known;
+        }
         $key = 'row:' . $categoryID . ':' . $this->language . ':' . $locale;
 
         return \mindstellar\cache\CacheGroup::remember('category', $key, function () use ($categoryID, $locale): ?array {
             if (isset($this->categories[$categoryID])) {
                 $category = $this->categories[$categoryID];
-
-                // if we already have locale data, we return the category
-                if ($locale == '' || isset($category['locale'])) {
-                    if ($locale != '' && isset($category['locale'][$locale])) {
-                        $category['s_name']        = $category['locale'][$locale]['s_name'];
-                        $category['s_description'] = $category['locale'][$locale]['s_description'];
-                    }
-
-                    return $category;
-                }
             } else {
                 $category = $this->listWhere('a.pk_i_id = %d', (int)$categoryID);
 
@@ -462,6 +440,28 @@ class Category extends DAO
 
             return $category;
         }) ?? false;
+    }
+
+    /**
+     * A category already loaded by this object, in $locale, or null when its locale data is not loaded.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function knownRow(int|string $categoryID, string $locale): ?array
+    {
+        if (!isset($this->categories[$categoryID])) {
+            return null;
+        }
+        $category = $this->categories[$categoryID];
+        if ($locale != '' && !isset($category['locale'])) {
+            return null;
+        }
+        if ($locale != '' && isset($category['locale'][$locale])) {
+            $category['s_name']        = $category['locale'][$locale]['s_name'];
+            $category['s_description'] = $category['locale'][$locale]['s_description'];
+        }
+
+        return $category;
     }
 
     /**

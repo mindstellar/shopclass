@@ -235,7 +235,7 @@ class RedisCache extends Cache
      */
     private static function client(array $config): RedisClient
     {
-        return class_exists('Redis') ? new PhpRedisClient($config) : new RespClient($config);
+        return class_exists('Redis', false) ? new PhpRedisClient($config) : new RespClient($config);
     }
 
     /**
@@ -442,7 +442,7 @@ class RedisCache extends Cache
      */
     public static function is_supported()
     {
-        return class_exists('Redis') || function_exists('stream_socket_client');
+        return class_exists('Redis', false) || function_exists('stream_socket_client');
     }
 
     /**
