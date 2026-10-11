@@ -78,10 +78,11 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The API counts requests in the object cache, so with memcached or Redis every web server shares one count.
 - Pages run fewer queries: with no object cache a listing page runs 27 instead of 31, and with memcached or Redis home runs 8 instead of 12.
 - With memcached or Redis, settings and the country list are cached, a page reads its cache groups in one round trip, and no page writes to the cache on a normal view.
-- A category search sends its category ids as part of the query instead of as a slower prepared statement.
+- Database queries send their values in one trip instead of a prepare and an execute; `define('OSC_DB_REAL_PREPARES', true);` in `config.php` brings back real prepared statements.
 
 ### Changed
 
+- Query values through `Db`/`Connection` come back as text, and a number for `LIMIT ?` must be passed as an int, not a string.
 - With memcached or Redis, a plugin that writes `t_preference` with raw SQL must call `osc_reset_preferences()`, or other requests keep the old settings for up to 5 minutes.
 - Posting, editing and deleting a listing, and signing up, each run in one transaction, so a failure leaves nothing half done and e-mails go out only once it is saved.
 - A signed-in user comments under their account's name and e-mail, and a listing that is not live takes comments only from its owner.

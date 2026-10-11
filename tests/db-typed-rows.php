@@ -36,6 +36,9 @@
 require_once __DIR__ . '/lib/scratchdb.php';
 require_once __DIR__ . '/lib/harness.php';
 
+// The pins below are about real prepared statements; tests/db-one-trip.php covers the default.
+define('OSC_DB_REAL_PREPARES', true);
+
 $admin = scratchdb_session('osc_typed_rows');
 
 $locale   = seed_locale($admin);

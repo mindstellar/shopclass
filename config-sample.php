@@ -46,6 +46,12 @@ define('DB_TABLE_PREFIX', getenv('DB_TABLE_PREFIX') ?: 'oc_');
  */
 define('OSC_DB_STRICT_MODE', true);
 
+/*
+ * Values in a query are escaped and sent with it in one trip. Uncomment to send them as
+ * real prepared statements instead: a little safer, one or two more trips per query.
+ */
+//define('OSC_DB_REAL_PREPARES', true);
+
 /** Website relative root path */
 define('REL_WEB_URL', 'rel_here');
 

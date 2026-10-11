@@ -19,8 +19,9 @@ use Throwable;
  *
  * Injection-safe query API over the singleton mysqli connection managed by
  * ConnectionManager. New code and plugins should use this instead of building
- * SQL strings by hand: every value in $params is sent as a bound parameter, so
- * it can never be interpreted as SQL.
+ * SQL strings by hand: every value in $params is escaped for the connection and
+ * sent in place of its '?' (or as a real prepared statement with OSC_DB_REAL_PREPARES),
+ * so it can never be interpreted as SQL.
  *
  * $params bind VALUES only. Table/column names can never be bound parameters —
  * validate any dynamic identifier against an allowlist before interpolating it
@@ -103,9 +104,10 @@ class Connection
     {
         $start = microtime(true);
         try {
-            if ($params === []) {
-                $result = $this->run(function () use ($sql) {
-                    return $this->conn->query($sql);
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $result = $this->run(function () use ($text) {
+                    return $this->conn->query($text);
                 }, $sql);
                 if (!$result instanceof \mysqli_result) {
                     throw new DbException('Database query failed');
@@ -184,9 +186,10 @@ class Connection
     {
         $start = microtime(true);
         try {
-            if ($params === []) {
-                $this->run(function () use ($sql) {
-                    return $this->conn->query($sql);
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $this->run(function () use ($text) {
+                    return $this->conn->query($text);
                 }, $sql);
 
                 return (int) $this->conn->affected_rows;
@@ -238,9 +241,10 @@ class Connection
     {
         $start = microtime(true);
         try {
-            if ($params === []) {
-                $this->run(function () use ($sql) {
-                    return $this->conn->query($sql);
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $this->run(function () use ($text) {
+                    return $this->conn->query($text);
                 }, $sql);
 
                 return (int) $this->conn->insert_id;
@@ -419,6 +423,110 @@ class Connection
     }
 
     /**
+     * Whether values go to the server as real prepared statements, which costs a prepare and
+     * a close trip per query. Off by default; define OSC_DB_REAL_PREPARES as true to turn it on.
+     */
+    private static function realPrepares(): bool
+    {
+        return \defined('OSC_DB_REAL_PREPARES') && OSC_DB_REAL_PREPARES;
+    }
+
+    /**
+     * $sql with each '?' placeholder replaced by its value, escaped for this connection, so the
+     * query goes in one trip. A '?' inside a quoted string, a quoted name or a comment is kept.
+     * Null when values must go as a real prepared statement: OSC_DB_REAL_PREPARES is on, or the
+     * SQL holds a backslash in quotes, a /*! comment or a -- comment that sql_mode may read
+     * differently.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException when a value is not scalar or null, or the counts differ
+     */
+    private function inline(string $sql, array $params): ?string
+    {
+        if ($params === []) {
+            return $sql;
+        }
+        if (self::realPrepares()) {
+            return null;
+        }
+        $params = array_values($params);
+        $out    = '';
+        $next   = 0;
+        $length = \strlen($sql);
+        for ($i = 0; $i < $length; $i++) {
+            $c = $sql[$i];
+            if ($c === "'" || $c === '"' || $c === '`') {
+                $end = strpos($sql, $c, $i + 1);
+                $end = $end === false ? $length : $end;
+                // A backslash means different things under NO_BACKSLASH_ESCAPES and ANSI_QUOTES.
+                if ($c !== '`' && str_contains(substr($sql, $i, $end - $i), '\\')) {
+                    return null;
+                }
+                $out .= substr($sql, $i, $end - $i + 1);
+                $i    = $end;
+            } elseif ($c === '-' && ($sql[$i + 1] ?? '') === '-' && \ord($sql[$i + 2] ?? 'x') <= 0x20 && $sql[$i + 2] !== ' ') {
+                return null;
+            } elseif ($c === '/' && \in_array(substr($sql, $i, 3), array('/*!', '/*+', '/*M'), true)) {
+                return null;
+            } elseif ($c === '#' || ($c === '-' && substr($sql, $i, 3) === '-- ')) {
+                $end  = strpos($sql, "\n", $i);
+                $end  = $end === false ? $length : $end;
+                $out .= substr($sql, $i, $end - $i);
+                $i    = $end - 1;
+            } elseif ($c === '/' && ($sql[$i + 1] ?? '') === '*') {
+                $end  = strpos($sql, '*/', $i + 2);
+                $end  = $end === false ? $length : $end + 2;
+                $out .= substr($sql, $i, $end - $i);
+                $i    = $end - 1;
+            } elseif ($c === '?') {
+                if (!\array_key_exists($next, $params)) {
+                    throw new DbException('Database query failed');
+                }
+                $out .= $this->literal($params[$next++]);
+            } else {
+                $out .= $c;
+            }
+        }
+        if ($next !== \count($params)) {
+            throw new DbException('Database query failed');
+        }
+
+        return $out;
+    }
+
+    /**
+     * One value as an SQL literal: a number as it is, text escaped and quoted.
+     *
+     * @throws DbException on a value that is neither scalar nor null, or a float that is not finite
+     */
+    private function literal(mixed $value): string
+    {
+        if (\is_int($value)) {
+            return (string) $value;
+        }
+        if (\is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if ($value === null) {
+            return 'NULL';
+        }
+        if (\is_float($value)) {
+            if (!is_finite($value)) {
+                throw new DbException('Database query failed');
+            }
+
+            return var_export($value, true);
+        }
+        if (\is_string($value)) {
+            return "'" . $this->conn->real_escape_string($value) . "'";
+        }
+        error_log('Db query: unsupported param type ' . \gettype($value));
+        throw new DbException('Database query failed');
+    }
+
+    /**
      * Prepare $sql, bind $params as positional parameters, execute, hand the
      * live statement to $consume, and always close the statement afterwards.
      *
@@ -544,7 +652,7 @@ class Connection
      * read helpers delegate to those — so prepared statements count once, not once
      * per prepare/bind/execute step. The logged SQL has $params inlined so the panel
      * shows real values; when OSC_DEBUG_DB_EXPLAIN is on a SELECT's plan is captured
-     * too. Debug-only: the raw execution path never interpolates.
+     * too. Debug-only: queries run through inline(), which is stricter than this display form.
      *
      * @param string           $sql
      * @param array<int,mixed> $params
