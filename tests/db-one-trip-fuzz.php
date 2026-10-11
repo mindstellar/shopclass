@@ -15,6 +15,7 @@
  * Usage:  php tests/db-one-trip-fuzz.php
  * Env:    DRIFT_DB_HOST DRIFT_DB_PORT DRIFT_DB_USER DRIFT_DB_PASS
  *         OSC_FUZZ_SCALE (default 0.25, so the suite stays fast; 1 or more for a full run)
+ * The scale sizes only the random cases, so each scale runs its own set; repeat a failure at the same scale.
  */
 
 require_once __DIR__ . '/lib/scratchdb.php';
@@ -31,7 +32,8 @@ $admin->query("DROP TABLE IF EXISTS $t");
 $admin->query("CREATE TABLE $t (id INT AUTO_INCREMENT PRIMARY KEY, b MEDIUMBLOB NULL, s MEDIUMTEXT NULL, d DOUBLE NULL, n BIGINT NULL, KEY (b(16)), KEY (s(16)), KEY (d), KEY (n)) DEFAULT CHARSET=utf8mb4");
 
 mt_srand(20261011);
-$scale = (float) (getenv('OSC_FUZZ_SCALE') ?: 0.25);
+$scale = getenv('OSC_FUZZ_SCALE');
+$scale = is_numeric($scale) && $scale > 0 ? (float) $scale : 0.25;
 $cases = static fn (int $n): int => max(1, (int) round($n * $scale));
 
 /**
@@ -205,7 +207,7 @@ foreach ($values as $k => $value) {
 }
 $raw->commit();
 pin('every value stored in one trip matches the prepared one', 0, $bad);
-check("($stored stored, $errors both refused, " . \count($values) . ' values)', $stored > $cases(4000));
+check("($stored stored, $errors both refused, " . \count($values) . ' values)', $stored > \count($values) * 2);
 
 harness_section('a WHERE on each value finds the same rows as a prepared statement');
 
@@ -330,6 +332,7 @@ foreach (array('default' => $mode, 'NO_BACKSLASH_ESCAPES' => $mode . ',NO_BACKSL
     $raw->query("SET SESSION sql_mode = '" . $raw->real_escape_string(ltrim($set, ',')) . "'");
     [$bad, $ran] = $fuzzSql($name, $cases(1500));
     pin("every template gives the prepared result ($ran ran)", 0, $bad);
+    check('most templates ran', $ran > $cases(1500) / 3);
 }
 $raw->query("SET SESSION sql_mode = '" . $raw->real_escape_string($mode) . "'");
 pin('sql_mode is restored', $mode, (string) $raw->query('SELECT @@SESSION.sql_mode')->fetch_row()[0]);
