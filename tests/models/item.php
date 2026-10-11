@@ -131,6 +131,7 @@ $model = Item::getInstance();
  * ------------------------------------------------------------------------- */
 $flush = static function () use ($cache): void {
     $cache->flush();
+    ItemResource::getInstance()->forget();
 };
 
 // The shared DBCommandClass singleton keeps clause state per instance; only

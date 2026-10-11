@@ -34,6 +34,9 @@ class ItemResource
     /** The old columns as t_resource holds them. */
     private const SELECT = 'pk_i_id, i_owner_id AS fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage';
 
+    /** @var array<int,array<int,array<string,string|null>>> photo lists read by primeResourcesCache() for this request */
+    private array $primed = array();
+
     /**
      * The select list that reads t_resource in the old row shape, with an optional table alias.
      */
@@ -108,6 +111,9 @@ class ItemResource
      */
     public function getAllResourcesFromItem($itemId)
     {
+        if (array_key_exists((int) $itemId, $this->primed)) {
+            return $this->primed[(int) $itemId];
+        }
         $key   = self::cacheKey((int) $itemId);
         $found = false;
         $cache = osc_cache_get($key, $found);
@@ -126,7 +132,8 @@ class ItemResource
     }
 
     /**
-     * Read the photos of many listings in one query and cache each listing's list.
+     * Read the photos of many listings in one query and keep each listing's list for this request.
+     * They are not written to the cache: one query is cheaper than a cache write per listing.
      *
      * @param int[] $itemIds
      *
@@ -144,16 +151,25 @@ class ItemResource
                 $itemIds
             ));
         } catch (\mindstellar\database\DbException $e) {
-            // A failed read still seeds every id with an empty list, so the memo
-            // reports "no resources" rather than retrying.
-            $rows = array();
+            // Nothing is kept, so each listing's own read retries.
+            return;
         }
         $byItem = array_fill_keys($itemIds, array());
         foreach ($rows as $row) {
             $byItem[(int) $row['fk_i_item_id']][] = $row;
         }
-        foreach ($byItem as $id => $resources) {
-            osc_cache_set(self::cacheKey((int) $id), $resources, OSC_CACHE_TTL);
+        $this->primed = $byItem + $this->primed;
+    }
+
+    /**
+     * Drop the photo lists kept for this request: one listing's, or every one when $itemId is null.
+     */
+    public function forget(?int $itemId = null): void
+    {
+        if ($itemId === null) {
+            $this->primed = array();
+        } else {
+            unset($this->primed[$itemId]);
         }
     }
 

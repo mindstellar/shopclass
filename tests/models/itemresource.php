@@ -20,16 +20,13 @@
  *
  * The quirks kept from the old model, all reproduced rather than fixed:
  *
- *  - getAllResourcesFromItem()/primeResourcesCache() are a memo/prefetch pair over
- *    osc_cache_*. On a default install the object cache is a request-lifetime PHP
- *    array, so it is a genuine within-process memo: a cold read costs one query, a
- *    repeat read costs none, and priming n items costs ONE query and makes all n
- *    reads free. An item with no photos is memoized too.
+ *  - getAllResourcesFromItem() is a memo over osc_cache_*: a cold read costs one
+ *    query and a repeat read costs none. primeResourcesCache() reads n items in ONE
+ *    query and keeps them for the request only, so the n reads after it are free.
+ *    An item with no photos is kept too.
  *  - Nothing invalidates that memo. Deleting photos through this very model leaves
  *    the earlier result being served for the rest of the process.
- *  - A FAILED query is handled differently by the two halves of the pair: the read
- *    returns an empty array and stores nothing, while the prime seeds every id it
- *    was given with an empty array.
+ *  - A FAILED query stores nothing, in the read and in the prime.
  *  - getAllResources() and getResources() INNER JOIN t_item, so a photo whose
  *    listing is gone is invisible through them while countResources(),
  *    getResourceIdsBatch() and getResourcesBatchByStorage() still see it.
@@ -109,6 +106,15 @@ $cache = \mindstellar\cache\CacheManager::getInstance();
  */
 $flush = static function () use ($cache): void {
     $cache->flush();
+    ItemResource::getInstance()->forget();
+};
+
+/** The listing ids primeResourcesCache() keeps for this request. */
+$primedIds = static function (): array {
+    $memo = new ReflectionProperty('ItemResource', 'primed');
+    $memo->setAccessible(true);
+
+    return array_keys($memo->getValue(ItemResource::getInstance()));
 };
 
 /**
@@ -272,6 +278,7 @@ pin(
         'deleteResourcesIds',
         'existResource',
         'findByPrimaryKey',
+        'forget',
         'getAllResources',
         'getAllResourcesFromItem',
         'getFields',
@@ -473,11 +480,8 @@ $primeCost = harness_query_count(static function () use ($model, $itemA, $itemB,
     $model->primeResourcesCache(array($itemA, $itemB, $itemC));
 });
 pin('priming three items costs exactly one query', 1, $primeCost);
-pin(
-    'it seeds one entry per id, on the exact keys the reader uses',
-    array($cacheKey($itemA), $cacheKey($itemB), $cacheKey($itemC)),
-    array_keys($cache->cache)
-);
+pin('it keeps one list per id for this request', array($itemA, $itemB, $itemC), $primedIds());
+pin('...and writes nothing to the cache', array(), array_keys($cache->cache));
 pin('reading all three afterwards costs nothing', 0, harness_query_count(static function () use ($model, $itemA, $itemB, $itemC) {
     $model->getAllResourcesFromItem($itemA);
     $model->getAllResourcesFromItem($itemB);
@@ -496,22 +500,27 @@ $flush();
 pin('an empty id list costs no query at all', 0, harness_query_count(static function () use ($model) {
     $model->primeResourcesCache(array());
 }));
-pin('...and stores nothing', 0, count($cache->cache));
+pin('...and stores nothing', array(0, array()), array(count($cache->cache), $primedIds()));
 
 $flush();
 $model->primeResourcesCache($itemA);
-pin('a bare id (not an array) is accepted and primes that one item', array($cacheKey($itemA)), array_keys($cache->cache));
+pin('a bare id (not an array) is accepted and primes that one item', array($itemA), $primedIds());
 
 $flush();
 $model->primeResourcesCache(array($itemA, $itemA, (string)$itemA));
-pin('duplicate and string-typed ids collapse to a single entry', array($cacheKey($itemA)), array_keys($cache->cache));
+pin('duplicate and string-typed ids collapse to a single entry', array($itemA), $primedIds());
+$model->primeResourcesCache(array($itemA, $itemB));
+$model->forget($itemA);
+pin('forget() drops one listing\'s kept list', array($itemB), $primedIds());
+$model->forget();
+pin('...or every one', array(), $primedIds());
 
 $flush();
 $model->primeResourcesCache(array(null, 'abc'));
 pin(
     'ids that are not numbers become 0 and are primed as an empty result',
-    array($cacheKey(0)),
-    array_keys($cache->cache)
+    array(0),
+    $primedIds()
 );
 
 /* ----------------------------------------------------------------------------
@@ -785,7 +794,7 @@ $flush();
 harness_section('ItemResource: the error-fallback ledger');
 
 $flush();
-$withTableMissing(static function () use ($model, $itemA, $rA1, $cache, $flush, $cacheKey) {
+$withTableMissing(static function () use ($model, $itemA, $rA1, $cache, $flush, $cacheKey, $primedIds) {
     pin('getAllResources returns an empty array', array(), $model->getAllResources());
     pin('getAllResourcesFromItem returns an empty array', array(), $model->getAllResourcesFromItem($itemA));
     pin('...and stores nothing in the cache, so a later read retries', 0, count($cache->cache));
@@ -797,13 +806,11 @@ $withTableMissing(static function () use ($model, $itemA, $rA1, $cache, $flush, 
     pin('getResourcesBatchByStorage returns an empty array', array(), $model->getResourcesBatchByStorage('local', 0, 10));
     pin('deleteResourcesIds returns bool false', false, $model->deleteResourcesIds(array($rA1)));
 
-    /* The prefetch does NOT bail out when its query fails: it still seeds every id
-     * it was given with an empty array, so the memo now reports "no resources" for
-     * items that have them. Reproduced, not fixed. */
+    /* A failed prefetch keeps nothing, so a later read of each listing retries. */
     $flush();
     pin('primeResourcesCache returns null', null, $model->primeResourcesCache(array($itemA)));
-    pin('...but still seeds the id it was given', array($cacheKey($itemA)), array_keys($cache->cache));
-    pin('...with an empty array, poisoning the memo', array(), $model->getAllResourcesFromItem($itemA));
+    pin('...and keeps nothing', array(array(), array()), array($primedIds(), array_keys($cache->cache)));
+    pin('...so a later read retries, and with the table gone finds nothing', array(), $model->getAllResourcesFromItem($itemA));
 });
 $flush();
 pin('the table is back and reads work again', 3, count($model->getAllResources()));

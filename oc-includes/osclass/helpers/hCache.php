@@ -64,6 +64,9 @@ function osc_cache_delete($key)
 function osc_cache_flush()
 {
     \mindstellar\cache\CacheGroup::forgetGenerations();
+    if (class_exists('ItemResource', false)) {
+        ItemResource::getInstance()->forget();
+    }
 
     return \mindstellar\cache\CacheManager::getInstance()->flush();
 }
@@ -182,6 +185,9 @@ function osc_invalidate_item_cache($itemId)
         return;
     }
 
+    if (class_exists('ItemResource', false)) {
+        ItemResource::getInstance()->forget($itemId);
+    }
     $baseKey = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $itemId);
     $cache   = \mindstellar\cache\CacheManager::getInstance();
 

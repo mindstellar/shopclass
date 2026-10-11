@@ -111,7 +111,7 @@ return array(
       3 => 'car3',
     ),
     'count' => 4,
-    'q' => 7,
+    'q' => 8,
   ),
   'subcategory' =>
   array(
