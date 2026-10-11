@@ -28,6 +28,7 @@ registry into the static catalog core actually fetches. See
 | `deprecation-collector/` | A tiny plugin `smoke-install.sh` installs alongside the package under test, to catch deprecated calls the static scan can't see | — |
 | `annotate.php` | Merges the three JSON outputs above into GitHub annotations + one sticky PR comment | Yes, if any error-level finding exists |
 | `build-catalog.php` | Builds the v1/ catalog tree from an entire registry checkout (§7) — not part of the PR gate | Yes, if any package fails to resolve |
+| `check-release-assets.php` | Core's release job only, not published: checks the inventory, this bundle (listed in `package-ci-files.txt`) and `install.sh` before they upload | Yes, on any problem |
 
 `package-lint.php`, `Compatibility.php`, and `build-catalog.php` are owned by
 core (`tools/`, `oc-includes/osclass/classes/market/`, and `tools/ci/`

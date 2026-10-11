@@ -174,16 +174,11 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf package-ci
-          mkdir -p package-ci/deprecation-collector
-          cp tools/package-lint.php package-ci/
-          cp oc-includes/osclass/classes/market/Compatibility.php package-ci/
-          cp deprecated-api.json package-ci/
-          cp tools/ci/deprecation-scan.php package-ci/
-          cp tools/ci/annotate.php package-ci/
-          cp tools/ci/smoke-install.sh package-ci/
-          cp tools/ci/build-catalog.php package-ci/
-          cp oc-includes/osclass/classes/market/Markdown.php package-ci/
-          cp tools/ci/deprecation-collector/index.php package-ci/deprecation-collector/
+          grep -v '^#' tools/ci/package-ci-files.txt | while read -r src dest; do
+            [ -n "$src" ] || continue
+            mkdir -p "package-ci/$(dirname "$dest")"
+            cp "$src" "package-ci/$dest"
+          done
           tar czf shopclass-package-ci.tar.gz package-ci
 
       # Pinned rather than taking whatever the runner happens to ship: the smoke
@@ -241,6 +236,11 @@ jobs:
         run: |
           sed "s/__SHOPCLASS_VERSION__/${OSCLASS_VERSION}/" .docker/install.sh > release/install.sh
           (cd release && sha256sum install.sh > install.sh.sha256)
+
+      # The market's package CI downloads these from the release, so a broken one only shows
+      # later as wrong warnings on someone's pull request. Check them before they ship.
+      - name: Check the market and install files
+        run: php tools/ci/check-release-assets.php "${OSCLASS_VERSION}" deprecated-api.json shopclass-package-ci.tar.gz release/install.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
