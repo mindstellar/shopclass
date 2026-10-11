@@ -41,6 +41,18 @@ namespace mindstellar\security {
     }
 }
 
+namespace mindstellar\user {
+    class UserStore
+    {
+        public static function recountExpired(string $since, string $until): int
+        {
+            $GLOBALS['ran'][] = 'UserStore::recountExpired since ' . $since;
+
+            return 0;
+        }
+    }
+}
+
 namespace mindstellar\model {
     class KeyValue
     {
@@ -212,7 +224,7 @@ namespace {
     harness_section('the daily schedule');
     pin('daily runs alerts, the day purge, the stats and prunes, then its hook', array(
         'claim DAILY', 'alert DAILY since last-DAILY', 'purgeDate 86400', 'osc_update_cat_stats', 'MessageGuard::purgeExpired',
-        'LoginThrottle::prune', 'KeyValue::prune', 'ApiCredential::pruneRefresh',
+        'UserStore::recountExpired since last-DAILY', 'LoginThrottle::prune', 'KeyValue::prune', 'ApiCredential::pruneRefresh',
         'Sitemap::warmCache', 'hook cron_daily', 'hook cron',
     ), cron_run('Daily', 'day'));
 

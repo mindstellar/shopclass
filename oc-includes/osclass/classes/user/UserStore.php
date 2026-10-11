@@ -14,6 +14,7 @@ namespace mindstellar\user;
 
 use mindstellar\base\Model;
 use mindstellar\database\Db;
+use mindstellar\listing\ListingStatus;
 
 /**
  * Writes on t_user and on the rows an account owns elsewhere, plus the small reads the
@@ -46,6 +47,40 @@ final class UserStore extends Model
             . ' FROM ' . DB_TABLE_PREFIX . 't_user u WHERE u.pk_i_id = ? LIMIT 1',
             [$family, $id]
         );
+    }
+
+    /**
+     * Recount i_items, the live listing count, of each seller who had a listing expire from $since
+     * to $until. An expiry is the one change that does not lower the count when it happens.
+     *
+     * @return int sellers whose count changed
+     * @throws \mindstellar\database\DbException
+     */
+    public static function recountExpired(string $since, string $until): int
+    {
+        $p   = DB_TABLE_PREFIX;
+        $ids = array_map('intval', array_column(Db::select(
+            'SELECT DISTINCT fk_i_user_id AS id FROM ' . $p . 't_item'
+            . ' WHERE dt_expiration >= ? AND dt_expiration <= ? AND fk_i_user_id IS NOT NULL',
+            [$since, $until]
+        ), 'id'));
+        $live    = implode(' AND ', ListingStatus::liveConditions('i.'));
+        $changed = 0;
+        foreach (array_chunk($ids, 1000) as $chunk) {
+            // A count is read and written in one statement, so a listing posted meanwhile is not lost.
+            $count = '(SELECT COUNT(*) FROM ' . $p . 't_item i WHERE i.fk_i_user_id = u.pk_i_id AND ' . $live . ')';
+            $rows  = Db::execute(
+                'UPDATE ' . $p . 't_user u SET u.i_items = ' . $count
+                . ' WHERE u.pk_i_id IN (' . implode(', ', array_fill(0, count($chunk), '?')) . ') AND u.i_items <> ' . $count,
+                $chunk
+            );
+            if ($rows > 0 && function_exists('osc_invalidate_user_cache')) {
+                array_map('osc_invalidate_user_cache', $chunk);
+            }
+            $changed += $rows;
+        }
+
+        return $changed;
     }
 
     /**

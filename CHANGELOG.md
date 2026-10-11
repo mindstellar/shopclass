@@ -106,6 +106,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 
+- A seller's listing count goes down when a listing expires; the daily cron recounts it.
 - Upgrading on MariaDB 10.2 to 10.4 no longer stops at the utf8mb4 step.
 - Restoring a backup on MySQL 5.7 no longer fails on a large table.
 - API and keyword searches sorted by relevance keep listings with the same score in the same order on every page.
