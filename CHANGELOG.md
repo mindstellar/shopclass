@@ -68,6 +68,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Performance
 
+- Payment gateways register on the new `register_payment_gateways` hook, so a page that shows no payment builds none.
 - Saving a listing runs fewer queries (an edit 19 instead of 24) and resizes photos before it locks any rows; `posted_item` and `edited_item` get the saved row and texts instead of reading them again.
 - The "with photos" search checks each listing's photos directly instead of joining them all.
 - Deleting a listing or account queues one job for its files on remote storage, not one per photo.

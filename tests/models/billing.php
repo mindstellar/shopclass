@@ -823,6 +823,19 @@ check(
     && !isset(PaymentGatewayRegistry::getInstance()->available('GBP')['fake'])
 );
 
+// A fresh registry, so the first read is still to come.
+$fresh = (new ReflectionClass(PaymentGatewayRegistry::class))->newInstanceWithoutConstructor();
+$fired = 0;
+osc_add_hook(PaymentGatewayRegistry::HOOK, static function () use ($fresh, &$fired) {
+    $fired++;
+    $fresh->register(new FakeGateway('lazy'));
+});
+pin('the hook waits for the first read', 0, $fired);
+pin('get() fires it, so a gateway registered there is found', 'lazy', $fresh->get('lazy')?->getId());
+$fresh->all();
+$fresh->available();
+pin('it fires once, however many reads follow', 1, $fired);
+
 check('valid ids are lower-case slugs', PaymentGatewayRegistry::isValidId('stripe-eu.v2'));
 check('ids reject upper case', !PaymentGatewayRegistry::isValidId('Stripe'));
 check('ids reject spaces', !PaymentGatewayRegistry::isValidId('my gateway'));

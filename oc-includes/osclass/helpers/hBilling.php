@@ -1228,11 +1228,10 @@ osc_register_billing_seller_limits();
 
 /*
  * Core's reference gateway -- bank transfer settled by hand from the admin order
- * screen. Registered on init, and only once billing is switched on, the same way
- * hStorage.php registers its optional remote adapters: an unconditional registration
+ * screen. Registered only once billing is switched on: an unconditional registration
  * would offer a payment method at checkout that a site never asked for.
  */
-osc_add_hook('init', static function () {
+osc_add_hook(PaymentGatewayRegistry::HOOK, static function () {
     if (osc_billing_enabled()) {
         PaymentGatewayRegistry::getInstance()->register(new OfflineGateway());
     }

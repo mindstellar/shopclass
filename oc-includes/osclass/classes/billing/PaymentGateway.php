@@ -22,9 +22,10 @@ namespace mindstellar\billing;
  * Core never sees a card number, an API key, or a provider's signing secret. Those
  * live in the plugin, which is what keeps the regulatory surface out of core.
  *
- * Register an implementation on init:
+ * Register an implementation on `register_payment_gateways`, which fires the first time
+ * anything reads the registry:
  *
- *     osc_add_hook('init', function () {
+ *     osc_add_hook('register_payment_gateways', function () {
  *         PaymentGatewayRegistry::getInstance()->register(new MyGateway());
  *     });
  *

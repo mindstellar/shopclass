@@ -74,8 +74,8 @@ function test_gateway_register()
     }
 }
 
-// 2) The gateway.
-osc_add_hook('init', 'test_gateway_register');
+// 2) The gateway, built the first time a page asks for payment methods (on init before Shopclass 7.0).
+osc_add_hook(defined(PaymentGatewayRegistry::class . '::HOOK') ? PaymentGatewayRegistry::HOOK : 'init', 'test_gateway_register');
 
 // 3) The hosted checkout page and its buttons.
 osc_add_route_hook('test-gateway-checkout', 'test-gateway/checkout/([0-9]+)', 'test-gateway/checkout/{order}');

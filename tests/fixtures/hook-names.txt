@@ -251,6 +251,7 @@ action regenerate_image
 action regenerated_image
 action register_email_taken
 action register_jobs
+action register_payment_gateways
 action register_storage_adapters
 action render_admintoolbar
 action renderplugin_controller
