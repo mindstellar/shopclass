@@ -64,7 +64,7 @@ final class ListingCountStore
     public function recount(array $ids): array
     {
         if ($this->place === null) {
-            throw new \LogicException('Category counts are recounted by CategoryStore.');
+            throw new \LogicException('Category counts are recounted by Utils::updateAllCategoriesStats().');
         }
         if ($ids === array()) {
             return array();
@@ -107,6 +107,9 @@ final class ListingCountStore
         $order = self::order($order, $defaultOrder);
         $sql = 'SELECT ' . $columns . ' FROM ' . $this->table . ' WHERE i_num_items ' . $zero . ' 0';
         foreach (array_keys($where) as $column) {
+            if (!preg_match('/^[A-Za-z0-9_]+$/', (string) $column)) {
+                throw new \InvalidArgumentException('Not a column name: ' . $column);
+            }
             $sql .= ' AND ' . $column . ' = ?';
         }
 
