@@ -860,7 +860,7 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 });
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
-pin('POST /listings, no photos: 25 queries (one checks the sign-in is live, one checks the places and one reads them; ban rules come from the cache)', 25, $qPost);
+pin('POST /listings, no photos: 26 queries (one checks the sign-in is live, one checks the places and one reads them, one sets the search point; ban rules come from the cache)', 26, $qPost);
 pin('PATCH /listings/{id}, no photos: 19 queries (an unchanged location and custom field are not rewritten; edited_item reuses the locked row and the texts)', 19, $qPatch);
 $qGet     = harness_query_count(static fn () => $call('GET', 'listings/' . $qMade, null, $sueToken));
 $qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header('ETag');

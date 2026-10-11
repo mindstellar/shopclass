@@ -20,6 +20,7 @@ use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\apikey\Credential;
 use mindstellar\listing\ListingQuery;
+use mindstellar\search\Distance;
 use mindstellar\search\SearchCriteria;
 use mindstellar\search\SearchRunner;
 
@@ -29,6 +30,9 @@ use mindstellar\search\SearchRunner;
  */
 final class ListingSearch
 {
+    /** The largest radius, in km: the route's `radius` maximum and the reach of a nearest-first sort. */
+    private const MAX_KM = 1000.0;
+
     /** API filter => search page parameter. */
     private const LISTS = ['category' => 'sCategory', 'country' => 'sCountry', 'region' => 'sRegion', 'city' => 'sCity', 'city_area' => 'sCityArea'];
 
@@ -75,6 +79,7 @@ final class ListingSearch
     {
         $context = ($this->context)($request, $credential);
         $sort    = ListingSort::fromRequest($request);
+        $near    = self::near($request, $sort);
         $filters = $request->query();
         if ($userId !== null) {
             $filters['user'] = (string) $userId;
@@ -90,7 +95,7 @@ final class ListingSearch
             SearchCriteria::fromRequest($params, ['pageSize' => $pager->limit(), 'maxPageSize' => $pager->limit()]),
             new \Search(),
             'api',
-            fn (\Search $search) => $this->shape($sort, $pager, $search),
+            fn (\Search $search) => $this->shape($sort, $pager, $search, $near),
             $pager->counts(),
             $params,
             fn (array $rows): array => $this->reader->extend($rows, $context)
@@ -108,8 +113,14 @@ final class ListingSearch
      * Finish the search after SearchRunner set its sort and page: a total order (the id
      * breaks ties), the keyset condition, and one row more than the page.
      */
-    private function shape(ListingSort $sort, Pager $pager, \Search $search): void
+    private function shape(ListingSort $sort, Pager $pager, \Search $search, ?array $near): void
     {
+        if ($near !== null) {
+            $search->near(...$near);
+            if ($sort->name() === 'distance') {
+                $search->order('distance', 'asc');
+            }
+        }
         $columns = $sort->columns();
         if ($columns !== []) {
             $search->orderBy($columns);
@@ -119,6 +130,32 @@ final class ListingSearch
             $search->addCondition(...$sort->after(ListingQuery::tableName(), $after));
         }
         $search->limit($pager->offset(), $pager->limit() + 1);
+    }
+
+    /**
+     * The point and radius in km of a distance search, or null. The point is rounded to two
+     * decimals, as on the search page; with no radius, nearest first keeps to MAX_KM.
+     *
+     * @return array{0:float,1:float,2:float}|null
+     * @throws ProblemException 422 when distance search is off, or a point or radius is half given
+     */
+    private static function near(Request $request, ListingSort $sort): ?array
+    {
+        $lat    = $request->queryString('lat');
+        $lng    = $request->queryString('lng');
+        $radius = $request->queryString('radius');
+        if ($lat === '' && $lng === '' && $radius === '' && $sort->name() !== 'distance') {
+            return null;
+        }
+        if (!osc_geo_search_enabled()) {
+            throw ProblemException::field($lat !== '' ? '/lat' : ($radius !== '' ? '/radius' : '/sort'), 'rejected', 'distance search is switched off on this site', 'query');
+        }
+        $point = Distance::point($lat, $lng);
+        if ($point === null) {
+            throw ProblemException::field($lat === '' ? '/lat' : '/lng', 'required', 'lat and lng are both needed for a distance search', 'query');
+        }
+
+        return [$point[0], $point[1], $radius === '' ? self::MAX_KM : (float) $radius];
     }
 
     /**

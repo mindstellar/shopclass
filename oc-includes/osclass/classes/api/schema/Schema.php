@@ -302,7 +302,8 @@ final class Schema
                 'zip'       => self::nullable('string'),
                 'lat'       => self::nullable('number'),
                 'lng'       => self::nullable('number'),
-            ], ['country', 'region', 'city', 'city_area', 'address', 'zip', 'lat', 'lng']),
+                'distance_km' => self::nullable('integer', 'Km from lat/lng, rounded; null outside a distance search.'),
+            ], ['country', 'region', 'city', 'city_area', 'address', 'zip', 'lat', 'lng', 'distance_km']),
             'contact'      => self::object([
                 'name'  => self::nullable('string'),
                 'email' => self::nullable('string', 'Null unless the seller shows it; always sent to the owner and admins.'),

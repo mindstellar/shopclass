@@ -26,6 +26,9 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Theme JavaScript can call the API as the signed-in user with `osc_api_session_meta()`.
 - Plugins can add API routes, scopes, listing fields, schemas and webhook events, with `ApiKit`, `osc_api_register_schema()` and the `api_problem_codes` filter. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
 - A shared key-value store with the `osc_kv_*()` helpers, so plugins can keep small values without a table of their own. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
+- **Distance search**: visitors find listings within 5 to 100 km or miles of a city or of where they are, and can sort nearest first. Switch it on in **Settings → General**. See [Improving search](https://shopclass.org/docs/configure/search/#distance-search).
+- The API searches by distance with `lat`, `lng`, `radius` and `sort=distance`, and each listing has `distance_km`.
+- Themes can show a listing's distance with `osc_item_distance()` and draw their own distance field with `osc_search_radius_options()`.
 - `osc_item_cover_urls()` gives the first photo of many listings in one query.
 - Search reads your database's full-text word length and stopword list, and falls back to a plain text match when a search cannot use the index.
 
@@ -102,6 +105,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting.
 - The installer saves a downloaded language into that language's folder.
 - An unknown place in a listing no longer causes a server error.
+- Editing a listing on the website no longer clears its map position when the site has no map service.
 - The alerts chart on **Statistics → Listings** scales to its largest count.
 - The category tree no longer breaks on a cache that answers a miss with null.
 - Public pages answer 304 to a list of `If-None-Match` tags or a weak `W/` tag.

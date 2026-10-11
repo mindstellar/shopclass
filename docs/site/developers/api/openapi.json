@@ -30339,6 +30339,38 @@
                         }
                     },
                     {
+                        "name": "lat",
+                        "in": "query",
+                        "required": false,
+                        "description": "Measure distances from this point, with lng. Needs distance search switched on.",
+                        "schema": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                        }
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                        }
+                    },
+                    {
+                        "name": "radius",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only listings within this many km of lat/lng.",
+                        "schema": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 1000
+                        }
+                    },
+                    {
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
@@ -30368,7 +30400,8 @@
                                 "created",
                                 "id",
                                 "price",
-                                "relevance"
+                                "relevance",
+                                "distance"
                             ]
                         }
                     },
@@ -36387,6 +36420,38 @@
                         }
                     },
                     {
+                        "name": "lat",
+                        "in": "query",
+                        "required": false,
+                        "description": "Measure distances from this point, with lng. Needs distance search switched on.",
+                        "schema": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                        }
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                        }
+                    },
+                    {
+                        "name": "radius",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only listings within this many km of lat/lng.",
+                        "schema": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 1000
+                        }
+                    },
+                    {
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
@@ -36416,7 +36481,8 @@
                                 "created",
                                 "id",
                                 "price",
-                                "relevance"
+                                "relevance",
+                                "distance"
                             ]
                         }
                     },
@@ -38029,6 +38095,13 @@
                                     "number",
                                     "null"
                                 ]
+                            },
+                            "distance_km": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "description": "Km from lat/lng, rounded; null outside a distance search."
                             }
                         },
                         "required": [
@@ -38039,7 +38112,8 @@
                             "address",
                             "zip",
                             "lat",
-                            "lng"
+                            "lng",
+                            "distance_km"
                         ]
                     },
                     "contact": {

@@ -148,6 +148,53 @@ final class ListingStore extends Model
     }
 
     /**
+     * Set the point distance search uses for one listing: its own map position, else its
+     * city centre, else its region centre. The map position itself is left as it is.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function stampPoint(int $itemId): void
+    {
+        Db::execute(self::pointSql() . ' WHERE l.fk_i_item_id = ?', array($itemId));
+    }
+
+    /**
+     * Set the point of up to $batch listings after $afterId.
+     *
+     * @return int the last listing id done, or 0 when none was left
+     * @throws \mindstellar\database\DbException
+     */
+    public static function refreshPoints(int $afterId, int $batch): int
+    {
+        $last = Db::select(
+            'SELECT MAX(fk_i_item_id) AS m FROM (SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_location'
+            . ' WHERE fk_i_item_id > ? ORDER BY fk_i_item_id LIMIT ' . max(1, $batch) . ') AS batch',
+            array($afterId)
+        );
+        $lastId = (int) ($last[0]['m'] ?? 0);
+        if ($lastId > 0) {
+            Db::execute(self::pointSql() . ' WHERE l.fk_i_item_id > ? AND l.fk_i_item_id <= ?', array($afterId, $lastId));
+        }
+
+        return $lastId;
+    }
+
+    private static function pointSql(): string
+    {
+        $p      = DB_TABLE_PREFIX;
+        $exact  = 'l.d_coord_lat IS NOT NULL AND l.d_coord_lat <> 0 AND l.d_coord_long IS NOT NULL AND l.d_coord_long <> 0';
+        $city   = 'c.d_coord_lat IS NOT NULL AND c.d_coord_lat <> 0 AND c.d_coord_long IS NOT NULL AND c.d_coord_long <> 0';
+        $region = 'r.d_coord_lat IS NOT NULL AND r.d_coord_lat <> 0 AND r.d_coord_long IS NOT NULL AND r.d_coord_long <> 0';
+
+        return 'UPDATE ' . $p . 't_item_location l'
+            . ' LEFT JOIN ' . $p . 't_city c ON c.pk_i_id = l.fk_i_city_id'
+            . ' LEFT JOIN ' . $p . 't_region r ON r.pk_i_id = l.fk_i_region_id'
+            . " SET l.e_geo_precision = CASE WHEN $exact THEN 'exact' WHEN $city THEN 'city' WHEN $region THEN 'region' ELSE NULL END,"
+            . " l.d_geo_lat = CASE WHEN $exact THEN l.d_coord_lat WHEN $city THEN c.d_coord_lat WHEN $region THEN r.d_coord_lat ELSE NULL END,"
+            . " l.d_geo_long = CASE WHEN $exact THEN l.d_coord_long WHEN $city THEN c.d_coord_long WHEN $region THEN r.d_coord_long ELSE NULL END";
+    }
+
+    /**
      * Store looked-up coordinates, unless the listing got its own in the meantime.
      *
      * @return int rows changed
@@ -155,11 +202,16 @@ final class ListingStore extends Model
      */
     public static function setCoordinates(int $id, float $lat, float $lng): int
     {
-        return Db::execute(
+        $changed = Db::execute(
             'UPDATE ' . DB_TABLE_PREFIX . 't_item_location SET d_coord_lat = ?, d_coord_long = ? WHERE fk_i_item_id = ?'
             . ' AND (d_coord_lat IS NULL OR d_coord_lat = 0 OR d_coord_long IS NULL OR d_coord_long = 0)',
             array($lat, $lng, $id)
         );
+        if ($changed > 0) {
+            self::stampPoint($id);
+        }
+
+        return $changed;
     }
 
     /**

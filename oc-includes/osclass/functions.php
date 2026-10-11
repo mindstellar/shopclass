@@ -60,6 +60,7 @@ function osc_meta_search($catId = null)
 }
 
 osc_add_hook('search_form', 'osc_meta_search');
+osc_add_hook('search_form', 'osc_search_distance_field');
 
 /**
  * Human-readable heading for the current search: keyword prefix, category and place.
@@ -1007,6 +1008,8 @@ function osc_run_cleanup()
 }
 osc_add_hook('cron_daily', array(\mindstellar\job\CleanupJobs::class, 'queue'));
 osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class, 'run'));
+// Catches city and region centres edited in the admin or the API, which no import queues.
+osc_add_hook('cron_weekly', array(\mindstellar\listing\ListingPointJobs::class, 'queue'));
 
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.

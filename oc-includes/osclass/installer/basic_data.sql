@@ -127,6 +127,8 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'recaptchaPubKey', '', 'STRING')
     ,('osclass', 'comments_per_page', '10', 'INTEGER')
     ,('osclass', 'save_latest_searches', '0', 'BOOLEAN')
+    ,('osclass', 'geo_search', '0', 'BOOLEAN')
+    ,('osclass', 'distance_unit', 'km', 'STRING')
     ,('osclass', 'purge_latest_searches', '1000', 'STRING')
     ,('osclass', 'selectable_parent_categories', '0', 'BOOLEAN')
     ,('osclass', 'reg_user_post_comments', '0', 'BOOLEAN')

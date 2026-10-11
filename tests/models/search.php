@@ -180,8 +180,8 @@ pin('doSearch signature is unchanged', 'public doSearch($extended = true, $count
 pin('addPattern signature is unchanged', 'public addPattern($pattern)', harness_method_signature('Search', 'addPattern'));
 pin('setJsonAlert signature is unchanged', 'public setJsonAlert($aData)', harness_method_signature('Search', 'setJsonAlert'));
 pin(
-    'the sort-column allowlist is unchanged',
-    array('i_price', 'dt_pub_date', 'dt_expiration', 'relevance'),
+    'the sort-column allowlist only gained distance',
+    array('i_price', 'dt_pub_date', 'dt_expiration', 'relevance', 'distance'),
     Search::getAllowedColumnsForSorting()
 );
 

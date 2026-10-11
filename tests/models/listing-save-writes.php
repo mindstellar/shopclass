@@ -134,6 +134,13 @@ pin('a new address queues one', [['s_payload' => json_encode(['item' => $noCoord
 $admin->query("DELETE FROM {$p}t_job_queue");
 $service->update(ListingInput::fromArray($form(['id' => (string) $given, 'ownerId' => '0', 'address' => '3 Main Street', 'd_coord_lat' => '10.5', 'd_coord_long' => '20.5']), $actor, false), $actor, false, false);
 pin('a new address on a listing that keeps its coordinates queues none', [[], ['10.5', '20.5']], [$jobs(), array_map(static fn ($v): string => (string) (float) $v, $coords($given))]);
+$point = static fn (int $id): array => array_values((array) $admin->query("SELECT e_geo_precision, d_geo_lat FROM {$p}t_item_location WHERE fk_i_item_id = $id")->fetch_assoc());
+pin('a listing with its own position searches from it', ['exact', '10.500000'], $point($given));
+$service->update(ListingInput::fromArray($form(['id' => (string) $given, 'ownerId' => '0', 'address' => '3 Main Street', 'price' => '1700']), $actor, false), $actor, false, false);
+pin('an edit from a form with no map fields keeps the coordinates', ['10.5', '20.5'], array_map(static fn ($v): string => (string) (float) $v, $coords($given)));
+$service->update(ListingInput::fromArray($form(['id' => (string) $given, 'ownerId' => '0', 'address' => '5 Main Street']), $actor, false), $actor, false, false);
+pin('a new address with no coordinates clears them for a new lookup', [null, null], $coords($given));
+$admin->query("DELETE FROM {$p}t_job_queue");
 Preference::getInstance()->set('map_type', 'none');
 scratchdb_forget_cache();
 osc_reset_preferences();

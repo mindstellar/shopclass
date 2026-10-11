@@ -81,6 +81,30 @@ language, it does nothing useful and can hide real search words. Give MySQL your
 own list with `innodb_ft_server_stopword_table`, or empty the list. ShopClass
 reads a custom stopword table, so its words are treated like the built-in ones.
 
+## Distance search
+
+Visitors can search for listings within 5, 10, 25, 50 or 100 km of a city or of where
+they are, and sort them nearest first. It is off on a new site. Switch it on in
+**Settings → General**, under **Distance search**, and pick kilometres or miles there.
+
+Each listing is measured from its own map position when it has one. Otherwise it is
+measured from the centre of its city, or of its region when it has no city. So distance
+search works without a map service, as long as your location data has city centres
+(see [Locations](/docs/configure/locations/)). A listing with no city and no region is
+left out of a distance search.
+
+Location data installed from an older catalogue may have no city centres. Update it under
+**Listings → Locations**, or with `php oc-cli.php location:update --all`. The update
+queues a background job that gives listings the new centres.
+
+The search form gets a distance list and a **Use my location** button. The browser asks
+the visitor first, and the position is rounded to about 1 km before it is sent.
+"Nearest first" with no distance picked keeps to the largest one, 100 km or miles.
+
+Themes that draw their own field remove the `osc_search_distance_field` action from
+`search_form`; see [Distance search in themes](/docs/developers/distance-search/). The API takes the same search with `lat`, `lng`, `radius` and
+`sort=distance`.
+
 ## Keeping search fast as the site grows
 
 - **Cache repeated work.** Search pages rebuild the category and location lists

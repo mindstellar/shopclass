@@ -439,6 +439,8 @@ final class LocationImporter
             }
         } else {
             Db::transaction($run);
+            // New city and region centres reach the listings that use them.
+            \mindstellar\listing\ListingPointJobs::queue();
         }
 
         return $this->report;

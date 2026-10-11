@@ -322,8 +322,13 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_location (
     s_city_area VARCHAR(200) NULL,
     d_coord_lat DECIMAL(10,6),
     d_coord_long DECIMAL(10,6),
+    -- The point distance search uses: the listing's own position, else its city or region centre.
+    d_geo_lat DECIMAL(10,6) NULL,
+    d_geo_long DECIMAL(10,6) NULL,
+    e_geo_precision ENUM('exact','city','region') NULL,
 
         PRIMARY KEY (fk_i_item_id),
+        INDEX idx_geo (d_geo_lat, d_geo_long),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),

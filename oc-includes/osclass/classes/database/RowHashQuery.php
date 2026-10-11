@@ -59,6 +59,8 @@ final class RowHashQuery extends Model
     public const IGNORED = [
         't_user'           => ['dt_access_date', 's_access_ip', 'i_items', 'i_comments', 's_pass_code', 's_pass_date', 's_pass_ip', 'i_auth_stamp'],
         't_api_credential' => ['dt_last_used', 's_last_ip'],
+        // The search point follows from the location columns that are hashed.
+        't_item_location'  => ['d_geo_lat', 'd_geo_long', 'e_geo_precision'],
     ];
 
     /**

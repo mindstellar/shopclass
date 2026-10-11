@@ -11,6 +11,7 @@
 namespace mindstellar\search;
 
 use mindstellar\fields\FieldQuery;
+use mindstellar\location\LocationQuery;
 
 /**
  * Applies a SearchCriteria to a core Search model.
@@ -31,6 +32,10 @@ class SearchBuilder
      */
     public static function apply(SearchCriteria $criteria, \Search $search): void
     {
+        // A radius measures from the place and replaces its filter; a distance sort keeps it.
+        $near    = self::near($criteria);
+        $byPlace = $near === null || $criteria->radius() === 0;
+
         //FILTERING CATEGORY
         foreach ($criteria->categories() as $category) {
             try {
@@ -40,24 +45,31 @@ class SearchBuilder
             }
         }
 
-        //FILTERING CITY_AREA
-        foreach ($criteria->cityAreas() as $city_area) {
-            $search->addCityArea($city_area);
-        }
+        if ($byPlace) {
+            //FILTERING CITY_AREA
+            foreach ($criteria->cityAreas() as $city_area) {
+                $search->addCityArea($city_area);
+            }
 
-        //FILTERING CITY
-        foreach ($criteria->cities() as $city) {
-            $search->addCity($city);
-        }
+            //FILTERING CITY
+            foreach ($criteria->cities() as $city) {
+                $search->addCity($city);
+            }
 
-        //FILTERING REGION
-        foreach ($criteria->regions() as $region) {
-            $search->addRegion($region);
+            //FILTERING REGION
+            foreach ($criteria->regions() as $region) {
+                $search->addRegion($region);
+            }
         }
 
         //FILTERING COUNTRY
         foreach ($criteria->countries() as $country) {
             $search->addCountry($country);
+        }
+
+        // FILTERING BY DISTANCE
+        if ($near !== null) {
+            $search->near(...$near);
         }
 
         // FILTERING PATTERN
@@ -87,6 +99,38 @@ class SearchBuilder
         $search->priceRange($criteria->priceMin(), $criteria->priceMax());
 
         self::applyMeta($criteria, $search);
+    }
+
+    /**
+     * Where a distance search measures from and how far, when the site offers it: the
+     * visitor's point, else the centre of the one city or region named. A "nearest first"
+     * sort with no radius still keeps to the largest one, so it never reads every listing.
+     *
+     * @return array{0:float,1:float,2:float}|null latitude, longitude, km
+     */
+    private static function near(SearchCriteria $criteria): ?array
+    {
+        if (!osc_geo_search_enabled() || ($criteria->radius() === 0 && $criteria->order() !== 'distance')) {
+            return null;
+        }
+        $point = $criteria->point();
+        if ($point === null) {
+            $cities    = array_values($criteria->cities());
+            $regions   = array_values($criteria->regions());
+            $countries = array_values($criteria->countries());
+            $country   = count($countries) === 1 ? (string) $countries[0] : null;
+            if (count($cities) === 1) {
+                $point = (new LocationQuery())->centre(LocationQuery::CITY, (string) $cities[0], $country);
+            } elseif ($cities === array() && count($regions) === 1) {
+                $point = (new LocationQuery())->centre(LocationQuery::REGION, (string) $regions[0], $country);
+            }
+        }
+        if ($point === null) {
+            return null;
+        }
+        $band = $criteria->radius() > 0 ? $criteria->radius() : max(Distance::BANDS);
+
+        return array($point[0], $point[1], Distance::toKm((float) $band, osc_distance_unit()));
     }
 
     /**

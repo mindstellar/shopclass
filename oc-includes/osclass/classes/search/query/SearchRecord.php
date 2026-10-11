@@ -49,6 +49,9 @@ final class SearchRecord
         if ($parts->onlyPremium) {
             $data['onlyPremium'] = $parts->onlyPremium;
         }
+        if ($parts->radius->used()) {
+            $data['radius'] = $parts->radius->recorded();
+        }
         // The result cache keys on this record, so an explicit locale filter must be in it.
         if ($parts->pattern->locales() !== array()) {
             $locales = array_values($parts->pattern->locales());

@@ -119,6 +119,12 @@ final class MainSettingsScreen extends SettingsScreen
                 ->suffix(__('listings at most'))
                 ->sanitize(self::intOrZero())
                 ->default(0)
+            ->checkbox('geo_search', __('Visitors can search within a distance of a city or of where they are'))
+                ->rowLabel(__('Distance search'))
+            ->select('distance_unit', __('Distances in'), array(
+                'km' => __('Kilometres'),
+                'mi' => __('Miles'),
+            ))
             ->group(__('Category settings'))
             ->checkbox(
                 'selectable_parent_categories',

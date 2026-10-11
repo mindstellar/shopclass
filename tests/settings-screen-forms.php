@@ -499,6 +499,8 @@ pin(
         'num_rss_items'                => 'osclass/num_rss_items',
         'max_latest_items_at_home'     => 'osclass/maxLatestItems@home',
         'default_results_per_page'     => 'osclass/defaultResultsPerPage@search',
+        'geo_search'                   => 'osclass/geo_search',
+        'distance_unit'                => 'osclass/distance_unit',
         'selectable_parent_categories' => 'osclass/selectable_parent_categories',
         'enabled_attachment'           => 'osclass/contact_attachment',
         'attachment_max_mb'            => 'osclass/attachment_max_mb',

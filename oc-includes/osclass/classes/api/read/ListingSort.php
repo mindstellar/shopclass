@@ -21,13 +21,13 @@ use mindstellar\api\Request;
  */
 final class ListingSort
 {
-    public const SORTS = ['created', 'id', 'price', 'relevance'];
+    public const SORTS = ['created', 'id', 'price', 'relevance', 'distance'];
 
     /** sort => the search page's sOrder; `id` is reordered by columns(). */
-    private const SEARCH_ORDER = ['created' => 'dt_pub_date', 'id' => 'dt_pub_date', 'price' => 'i_price', 'relevance' => 'relevance'];
+    private const SEARCH_ORDER = ['created' => 'dt_pub_date', 'id' => 'dt_pub_date', 'price' => 'i_price', 'relevance' => 'relevance', 'distance' => 'distance'];
 
-    /** sort => t_item columns, most significant first; relevance keeps the search's own order. */
-    private const COLUMNS = ['created' => ['dt_pub_date', 'pk_i_id'], 'id' => ['pk_i_id'], 'price' => ['i_price', 'pk_i_id'], 'relevance' => []];
+    /** sort => t_item columns, most significant first; relevance and distance keep the search's own order. */
+    private const COLUMNS = ['created' => ['dt_pub_date', 'pk_i_id'], 'id' => ['pk_i_id'], 'price' => ['i_price', 'pk_i_id'], 'relevance' => [], 'distance' => []];
 
     /** Columns that may hold NULL. MySQL sorts NULL first ascending and last descending. */
     private const NULLABLE = ['i_price'];

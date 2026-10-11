@@ -33,8 +33,8 @@ class AlertEnvelope
 
     /** Core search keys, as the search page reads them. */
     public const CORE_KEYS = array(
-        'bPic', 'bPremium', 'meta', 'sCategory', 'sCity', 'sCityArea', 'sCountry',
-        'sLocale', 'sPattern', 'sPriceMax', 'sPriceMin', 'sRegion', 'sUser',
+        'bPic', 'bPremium', 'iRadius', 'meta', 'sCategory', 'sCity', 'sCityArea', 'sCountry',
+        'sLat', 'sLng', 'sLocale', 'sPattern', 'sPriceMax', 'sPriceMin', 'sRegion', 'sUser',
     );
 
     /** Keys of the old SQL-fragment format; never valid in an envelope. */
@@ -69,6 +69,13 @@ class AlertEnvelope
             'sPriceMax' => $criteria->priceMax(),
             'meta'      => $criteria->meta(),
         );
+        $point = $criteria->point();
+        if ($criteria->radius() > 0) {
+            $values['iRadius'] = $criteria->radius();
+            if ($point !== null) {
+                $values += array('sLat' => $point[0], 'sLng' => $point[1]);
+            }
+        }
 
         return self::fromValues($values, $request);
     }
@@ -365,7 +372,7 @@ class AlertEnvelope
             'sPriceMin' => self::price($values['sPriceMin'] ?? null),
             'sPriceMax' => self::price($values['sPriceMax'] ?? null),
             'meta'      => self::meta($values['meta'] ?? array()),
-        );
+        ) + self::radius($values);
         $params = array_filter($params, static fn ($v) => $v !== '' && $v !== array() && $v !== null);
 
         $out   = $params;
@@ -383,6 +390,25 @@ class AlertEnvelope
         }
 
         return self::sortKeys($out);
+    }
+
+    /**
+     * iRadius, with sLat and sLng when the radius is around the visitor's point, as the search
+     * page reads them. A point without a radius is dropped.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return array<string,string|int>
+     */
+    private static function radius(array $values): array
+    {
+        $band = Distance::band($values['iRadius'] ?? null);
+        if ($band === 0) {
+            return array();
+        }
+        $point = Distance::point($values['sLat'] ?? null, $values['sLng'] ?? null);
+
+        return array('iRadius' => $band) + ($point === null ? array() : array('sLat' => sprintf('%.2f', $point[0]), 'sLng' => sprintf('%.2f', $point[1])));
     }
 
     /**

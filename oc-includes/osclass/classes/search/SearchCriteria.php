@@ -78,6 +78,12 @@ class SearchCriteria
     /** @var int */
     private $rssItems;
 
+    /** @var array{0:float,1:float}|null sLat/sLng, rounded to two decimals */
+    private ?array $point = null;
+
+    /** iRadius as a band in the site's unit, 0 for none. */
+    private int $radius = 0;
+
     /** Defaults for the listing options; the search page passes the site's preferences. */
     private const LIMITS = array(
         'orderField'  => 'dt_pub_date',
@@ -169,6 +175,7 @@ class SearchCriteria
             is_array($params['meta'] ?? null) ? $params['meta'] : ''
         );
         $criteria->setListing($params, array_merge(self::LIMITS, $limits));
+        $criteria->setNear($params);
 
         return $criteria;
     }
@@ -214,6 +221,18 @@ class SearchCriteria
 
         $this->feed     = $params['sFeed'] ?? '';
         $this->rssItems = (int)$limits['rssItems'];
+    }
+
+    /**
+     * The distance search values as sent: iRadius snapped to a band, and the visitor's point.
+     * SearchBuilder decides whether the site offers distance search and where it measures from.
+     *
+     * @param array<string,mixed> $params
+     */
+    private function setNear(array $params): void
+    {
+        $this->radius = Distance::band(self::scalar($params['iRadius'] ?? ''));
+        $this->point  = Distance::point(self::scalar($params['sLat'] ?? ''), self::scalar($params['sLng'] ?? ''));
     }
 
     /**
@@ -401,6 +420,22 @@ class SearchCriteria
     public function sortColumn()
     {
         return (!$this->hasPattern() && $this->order === 'relevance') ? 'dt_pub_date' : $this->order;
+    }
+
+    /**
+     * The visitor's point from sLat/sLng, or null.
+     *
+     * @return array{0:float,1:float}|null
+     */
+    public function point(): ?array
+    {
+        return $this->point;
+    }
+
+    /** The radius asked for, a band in the site's unit; 0 for none. */
+    public function radius(): int
+    {
+        return $this->radius;
     }
 
     /**

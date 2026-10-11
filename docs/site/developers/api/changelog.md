@@ -75,6 +75,17 @@ None.
 
 ## Changes
 
+### v1: distance search
+
+Added to v1.
+
+- `GET /listings` and `GET /users/{id}/listings` take `lat`, `lng` and `radius` (km), and
+  `sort=distance` for nearest first. With no `radius`, nearest first keeps to 1000 km.
+- They answer 422 when distance search is off on the site, and when `radius` or
+  `sort=distance` comes without both `lat` and `lng`.
+- Each listing's `location` has `distance_km`: whole km from `lat`/`lng`, even on a site
+  that shows miles, or null outside a distance search.
+
 ### v1: admin and webhooks
 
 Added to v1.
