@@ -823,18 +823,30 @@ check(
     && !isset(PaymentGatewayRegistry::getInstance()->available('GBP')['fake'])
 );
 
-// A fresh registry, so the first read is still to come.
-$fresh = (new ReflectionClass(PaymentGatewayRegistry::class))->newInstanceWithoutConstructor();
-$fired = 0;
-osc_add_hook(PaymentGatewayRegistry::HOOK, static function () use ($fresh, &$fired) {
-    $fired++;
-    $fresh->register(new FakeGateway('lazy'));
+// Fresh registries, so the first read is still to come. The hook hands over the registry it loads.
+$freshRegistry = static fn (): PaymentGatewayRegistry => (new ReflectionClass(PaymentGatewayRegistry::class))->newInstanceWithoutConstructor();
+$fired         = array();
+osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) use (&$fired) {
+    $id         = spl_object_id($registry);
+    $fired[$id] = ($fired[$id] ?? 0) + 1;
+    $registry->register(new FakeGateway('lazy'));
+    // A listener that reads the registry must not fire the hook again.
+    $registry->available();
 });
-pin('the hook waits for the first read', 0, $fired);
-pin('get() fires it, so a gateway registered there is found', 'lazy', $fresh->get('lazy')?->getId());
-$fresh->all();
-$fresh->available();
-pin('it fires once, however many reads follow', 1, $fired);
+$firstRead = array(
+    'get'       => static fn (PaymentGatewayRegistry $r) => $r->get('lazy')?->getId(),
+    'all'       => static fn (PaymentGatewayRegistry $r) => isset($r->all()['lazy']) ? 'lazy' : null,
+    'available' => static fn (PaymentGatewayRegistry $r) => isset($r->available()['lazy']) ? 'lazy' : null,
+);
+$kept = array(); // alive, so no two registries share an object id
+foreach ($firstRead as $method => $read) {
+    $registry = $kept[] = $freshRegistry();
+    pin("before any read the hook has not fired ($method)", 0, $fired[spl_object_id($registry)] ?? 0);
+    pin("a first $method() fires it and sees the gateway registered there", 'lazy', $read($registry));
+    $registry->get('lazy');
+    $registry->all();
+    pin("it fires once, however many reads follow ($method)", 1, $fired[spl_object_id($registry)] ?? 0);
+}
 
 check('valid ids are lower-case slugs', PaymentGatewayRegistry::isValidId('stripe-eu.v2'));
 check('ids reject upper case', !PaymentGatewayRegistry::isValidId('Stripe'));

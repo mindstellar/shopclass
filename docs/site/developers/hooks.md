@@ -620,7 +620,7 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `regenerated_image` | action | `\ItemResource::getInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `register_email_taken` | action | `$input['s_email']` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `register_jobs` | action | none | `oc-includes/osclass/classes/job/JobWorker.php` |
-| `register_payment_gateways` | action | none | `oc-includes/osclass/classes/billing/PaymentGatewayRegistry.php` |
+| `register_payment_gateways` | action | `$this` | `oc-includes/osclass/classes/billing/PaymentGatewayRegistry.php` |
 | `register_storage_adapters` | action | `StorageManager::getInstance()` | `oc-includes/osclass/helpers/hStorage.php` |
 | `render_admintoolbar` | action | none | `oc-includes/osclass/classes/AdminToolbar.php` |
 | `resource_alt` | filter | `$title, osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |

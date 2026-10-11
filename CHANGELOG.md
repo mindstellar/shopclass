@@ -31,6 +31,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Themes can show a listing's distance with `osc_item_distance()` and draw their own distance field with `osc_search_radius_options()`.
 - `osc_item_cover_urls()` gives the first photo of many listings in one query.
 - Search reads your database's full-text word length and stopword list, and falls back to a plain text match when a search cannot use the index.
+- `register_payment_gateways` hook: gateways register on it, and it fires the first time a page asks for payment methods. Gateways that register on `init` keep working.
 
 ### Breaking
 
@@ -68,7 +69,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Performance
 
-- Payment gateways register on the new `register_payment_gateways` hook, so a page that shows no payment builds none.
+- A page that never asks for payment methods no longer builds the payment gateways.
 - Saving a listing runs fewer queries (an edit 19 instead of 24) and resizes photos before it locks any rows; `posted_item` and `edited_item` get the saved row and texts instead of reading them again.
 - The "with photos" search checks each listing's photos directly instead of joining them all.
 - Deleting a listing or account queues one job for its files on remote storage, not one per photo.

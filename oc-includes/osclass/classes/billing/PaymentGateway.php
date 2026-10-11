@@ -25,8 +25,8 @@ namespace mindstellar\billing;
  * Register an implementation on `register_payment_gateways`, which fires the first time
  * anything reads the registry:
  *
- *     osc_add_hook('register_payment_gateways', function () {
- *         PaymentGatewayRegistry::getInstance()->register(new MyGateway());
+ *     osc_add_hook(PaymentGatewayRegistry::HOOK, function (PaymentGatewayRegistry $registry) {
+ *         $registry->register(new MyGateway());
  *     });
  *
  * @package mindstellar\billing

@@ -22,21 +22,23 @@ files that matter:
 ## Registering a gateway
 
 Implement `mindstellar\billing\PaymentGateway` and register it on the
-`register_payment_gateways` hook, while billing is on. The hook fires the first time a
-page asks for payment methods, so other pages never build your gateway:
+`register_payment_gateways` hook, while billing is on. The hook fires once, the first time
+a page asks for payment methods, so other pages never build your gateway. Add the hook when
+your plugin loads, as below:
 
 ```php
 use mindstellar\billing\PaymentGatewayRegistry;
 
-osc_add_hook(PaymentGatewayRegistry::HOOK, static function () {
+osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::getInstance()->register(new AcmePayGateway());
+        $registry->register(new AcmePayGateway());
     }
 });
 ```
 
-Before Shopclass 7.0 the hook does not exist. To support both, register on `init` when
-`defined(PaymentGatewayRegistry::class . '::HOOK')` is false.
+Before Shopclass 7.0 the hook does not exist. To support both, when
+`defined(PaymentGatewayRegistry::class . '::HOOK')` is false register on `init`, and on
+`init_billing_non_secure` for the payment callback, which does not run `init`.
 
 The interface has six methods:
 
@@ -140,9 +142,7 @@ never reveals whether an order exists.
 ### Pages of your own
 
 The test checkout page and its buttons are [controller routes](/docs/developers/routes/#controller-routes).
-One thing to know:
-
-- Check the buyer owns the order, and call `osc_csrf_check()` on every POST.
+Check the buyer owns the order, and call `osc_csrf_check()` on every POST.
 
 **Pay**, **Decline** and **Refund** pass a signed payload to `Billing::handleCallback()`:
 the same call the callback route makes. **Leave pending** and **Fail with error** send

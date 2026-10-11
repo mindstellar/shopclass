@@ -18,9 +18,10 @@ use mindstellar\currency\CurrencyCode;
 /**
  * Registry of payment gateways.
  *
- * Plugins register an implementation on the `register_payment_gateways` hook, which fires the
- * first time anything reads the registry, so a page that shows no payment builds no gateway.
- * Core looks a gateway up by the id stored on an order. Deliberately mirrors mindstellar\widgets\WidgetRegistry and
+ * Plugins register an implementation on the `register_payment_gateways` hook, which fires
+ * once, the first time anything reads the registry, so a page that never asks for payment
+ * methods builds no gateway. Core looks a gateway up by the id stored on an order.
+ * Deliberately mirrors mindstellar\widgets\WidgetRegistry and
  * mindstellar\fields\FieldTypeRegistry so the three read the same to a plugin author.
  *
  * Nothing is registered by core. With no gateway plugin installed the registry is
@@ -31,7 +32,7 @@ use mindstellar\currency\CurrencyCode;
  */
 final class PaymentGatewayRegistry extends Registry
 {
-    /** Fired once, on the first read, for gateways to register. */
+    /** Fired once, on the first read, with the registry, for gateways to register. */
     public const HOOK = 'register_payment_gateways';
 
     private bool $loaded = false;
@@ -121,8 +122,9 @@ final class PaymentGatewayRegistry extends Registry
         if ($this->loaded) {
             return;
         }
+        // Set first, so a listener that reads the registry does not fire the hook again.
         $this->loaded = true;
-        osc_run_hook('register_payment_gateways');
+        osc_run_hook('register_payment_gateways', $this);
     }
 }
 

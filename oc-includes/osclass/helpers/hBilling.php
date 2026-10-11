@@ -1231,9 +1231,9 @@ osc_register_billing_seller_limits();
  * screen. Registered only once billing is switched on: an unconditional registration
  * would offer a payment method at checkout that a site never asked for.
  */
-osc_add_hook(PaymentGatewayRegistry::HOOK, static function () {
+osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::getInstance()->register(new OfflineGateway());
+        $registry->register(new OfflineGateway());
     }
 });
 
