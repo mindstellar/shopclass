@@ -1275,6 +1275,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\model\\FormSubmission' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/FormSubmission.php',
         'mindstellar\\model\\KeyValue' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/KeyValue.php',
         'mindstellar\\model\\Resource' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/Resource.php',
+        'mindstellar\\model\\SlugHistory' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/SlugHistory.php',
         'mindstellar\\moderation\\CommentModeration' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/moderation/CommentModeration.php',
         'mindstellar\\moderation\\KeywordBlockStore' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/moderation/KeywordBlockStore.php',
         'mindstellar\\moderation\\ListingModeration' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/moderation/ListingModeration.php',

@@ -80,7 +80,7 @@ $before = osc_cache_category_generation();
 $fired = [];
 $r     = $call('PATCH', 'admin/categories/' . $cars, ['translations' => ['en_US' => ['slug' => 'automobiles']]], $boss);
 pin('PATCH a slug: the name is kept', [200, 'automobiles', 'Cars'], [$r->status(), $r->body()['data']['translations']['en_US']['slug'] ?? null, $r->body()['data']['translations']['en_US']['name'] ?? null]);
-pin('the old slug is in the history, so its links redirect', [(string) $cars], array_column($admin->query("SELECT fk_i_category_id FROM {$p}t_category_slug_history WHERE s_slug = 'cars'")->fetch_all(MYSQLI_ASSOC), 'fk_i_category_id'));
+pin('the old slug is in the history, so its links redirect', [(string) $cars], array_column($admin->query("SELECT fk_i_id FROM {$p}t_slug_history WHERE e_type = 'CATEGORY' AND s_slug = 'cars'")->fetch_all(MYSQLI_ASSOC), 'fk_i_id'));
 pin('edited_category fired once and the category cache moved on', [1, true], [$fired['edited_category'] ?? 0, osc_cache_category_generation() !== $before]);
 pin('the slug api is refused: /api/ is the API\'s', [422, '/translations/en_US/slug'], $pointer($call('PATCH', 'admin/categories/' . $cars, ['translations' => ['en_US' => ['slug' => 'API']]], $boss)));
 $r = $call('POST', 'admin/categories', ['translations' => ['en_US' => ['name' => 'API']]], $boss);

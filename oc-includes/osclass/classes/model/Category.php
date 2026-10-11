@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\model\SlugHistory;
 
 /**
  * Category DAO
@@ -499,7 +500,6 @@ class Category extends DAO
             't_category_stats',
             't_meta_categories',
             't_meta_group_categories',
-            't_category_slug_history',
         );
 
         try {
@@ -507,6 +507,7 @@ class Category extends DAO
                 foreach ($dependents as $table) {
                     Db::table(DB_TABLE_PREFIX . $table)->where('fk_i_category_id', $pkInt)->delete();
                 }
+                SlugHistory::forget(SlugHistory::CATEGORY, $pkInt);
 
                 return Db::table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $pkInt)->delete();
             });
@@ -636,30 +637,17 @@ class Category extends DAO
                     $rs = false;
                 }
 
-                $newSlug = $fieldsDescription['s_slug'];
-                // A slug that is now live must never redirect - drop any stale history row for it.
+                // The vacated old slug 301s to the new one, and the now-live slug stops redirecting.
                 try {
-                    Db::execute(
-                        'DELETE FROM ' . DB_TABLE_PREFIX . 't_category_slug_history'
-                        . ' WHERE s_slug = ? AND fk_c_locale_code = ?',
-                        array($newSlug, $k)
+                    SlugHistory::record(
+                        SlugHistory::CATEGORY,
+                        (int) $pk,
+                        $oldSlug,
+                        (string) $fieldsDescription['s_slug'],
+                        (string) $k
                     );
                 } catch (\mindstellar\database\DbException $e) {
                     // best-effort
-                }
-                // Record the vacated old slug so its inbound links 301 to the new one.
-                if ($oldSlug !== '' && $oldSlug !== $newSlug) {
-                    try {
-                        Db::execute(
-                            'INSERT INTO ' . DB_TABLE_PREFIX . 't_category_slug_history'
-                            . ' (fk_i_category_id, fk_c_locale_code, s_slug, dt_date) VALUES (?, ?, ?, ?)'
-                            . ' ON DUPLICATE KEY UPDATE fk_i_category_id = VALUES(fk_i_category_id),'
-                            . ' dt_date = VALUES(dt_date)',
-                            array($pk, $k, $oldSlug, date('Y-m-d H:i:s'))
-                        );
-                    } catch (\mindstellar\database\DbException $e) {
-                        // best-effort
-                    }
                 }
 
                 if ($rs == 0) {

@@ -176,37 +176,6 @@ final class LocationStore
     }
 
     /**
-     * Keep an old slug redirecting to the place, and never redirect a slug that is live.
-     *
-     * @throws \mindstellar\database\DbException
-     */
-    public static function recordSlugChange(string $type, int $id, string $oldSlug, string $newSlug, string $at): void
-    {
-        $table = DB_TABLE_PREFIX . 't_location_slug_history';
-        Db::execute('DELETE FROM ' . $table . ' WHERE e_type = ? AND s_slug = ?', array($type, $newSlug));
-        Db::execute(
-            'INSERT INTO ' . $table . ' (e_type, s_slug, fk_i_id, dt_date) VALUES (?, ?, ?, ?)'
-            . ' ON DUPLICATE KEY UPDATE fk_i_id = VALUES(fk_i_id), dt_date = VALUES(dt_date)',
-            array($type, $oldSlug, $id, $at)
-        );
-    }
-
-    /**
-     * The id of the place an old slug belonged to, or null.
-     *
-     * @throws \mindstellar\database\DbException
-     */
-    public static function idForOldSlug(string $type, string $slug): ?int
-    {
-        $row = Db::selectOne(
-            'SELECT fk_i_id FROM ' . DB_TABLE_PREFIX . 't_location_slug_history WHERE e_type = ? AND s_slug = ?',
-            array($type, $slug)
-        );
-
-        return $row === null ? null : (int) $row['fk_i_id'];
-    }
-
-    /**
      * Which of these region or city ids at least one listing uses.
      *
      * @param string $column 'fk_i_region_id' or 'fk_i_city_id'

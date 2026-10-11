@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\model\SlugHistory;
 
 /**
  * Model database for Region table
@@ -177,15 +178,9 @@ class Region extends DAO
         RegionStats::getInstance()->delete(array('fk_i_region_id' => $pk));
         User::getInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
 
-        // Recorded renames for this region. The table has no foreign key -- fk_i_id
-        // points into either t_region or t_city depending on e_type -- so nothing
-        // removes these rows on its own, and a leftover slug would keep redirecting
-        // to a region that no longer exists.
+        // Old slugs would keep redirecting to a region that is gone.
         try {
-            Db::table(DB_TABLE_PREFIX . 't_location_slug_history')
-                ->where('e_type', 'REGION')
-                ->where('fk_i_id', (int)$pk)
-                ->delete();
+            SlugHistory::forget(SlugHistory::REGION, (int)$pk);
         } catch (\Throwable $e) {
             // A stale redirect is not worth failing the delete over.
         }

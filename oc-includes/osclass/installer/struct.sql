@@ -235,17 +235,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_category_slug_history (
-    fk_i_category_id INT UNSIGNED NOT NULL,
-    fk_c_locale_code CHAR(5) NOT NULL DEFAULT '',
-    s_slug VARCHAR(191) NOT NULL,
-    dt_date DATETIME NOT NULL,
-
-        PRIMARY KEY (s_slug, fk_c_locale_code),
-        INDEX idx_hist_cat (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_item (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_user_id INT UNSIGNED NULL,
@@ -861,17 +850,16 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_upgrade (
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
--- Mirrors t_category_slug_history: the default search-URL scheme embeds the row id
--- ({slug}-r{id}) and self-heals on rename, but subdomain-based location routing
--- resolves purely by slug and has no such fallback, so a rename needs recorded
--- history to redirect from. No foreign key: fk_i_id points into either t_region or
--- t_city depending on e_type, and one column cannot reference two tables.
-CREATE TABLE /*TABLE_PREFIX*/t_location_slug_history (
-    e_type ENUM('REGION', 'CITY') NOT NULL,
-    s_slug VARCHAR(191) NOT NULL,
+-- Old slugs of categories, regions and cities, so links to a renamed one still redirect.
+-- A category slug has its locale, a location slug an empty one. No foreign key: fk_i_id
+-- points into t_category, t_region or t_city by e_type, so a delete removes its rows itself.
+CREATE TABLE /*TABLE_PREFIX*/t_slug_history (
+    e_type ENUM('CATEGORY', 'REGION', 'CITY') NOT NULL,
     fk_i_id INT UNSIGNED NOT NULL,
+    fk_c_locale_code CHAR(5) NOT NULL DEFAULT '',
+    s_slug VARCHAR(191) NOT NULL,
     dt_date DATETIME NOT NULL,
 
-        PRIMARY KEY (e_type, s_slug),
-        INDEX idx_hist_loc (e_type, fk_i_id)
+        PRIMARY KEY (e_type, s_slug, fk_c_locale_code),
+        INDEX idx_owner (e_type, fk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

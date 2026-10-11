@@ -34,6 +34,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Breaking
 
+- `t_category_slug_history` and `t_location_slug_history` are now one table, `t_slug_history`, with an `e_type` column (`CATEGORY`, `REGION` or `CITY`).
 - Saved-search alerts go out daily or weekly; hourly alerts become daily on upgrade. `hook_alert_email_hourly` no longer fires.
 - Listing photos moved from `t_item_resource` into `t_resource` (owner type `item`), with the same ids, files and links; `fk_i_item_id` is `i_owner_id` there. Use the photo helpers or `ItemResource` instead of SQL on the old table.
 - `t_plugin_category`, `t_cron`, `t_alerts_sent`, `t_user_email_tmp` and `t_item_upload_tmp` moved into the key-value store, and `t_locations_tmp` is removed.

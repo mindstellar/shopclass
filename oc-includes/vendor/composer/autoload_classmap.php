@@ -1158,6 +1158,7 @@ return array(
     'mindstellar\\model\\FormSubmission' => $baseDir . '/oc-includes/osclass/classes/model/FormSubmission.php',
     'mindstellar\\model\\KeyValue' => $baseDir . '/oc-includes/osclass/classes/model/KeyValue.php',
     'mindstellar\\model\\Resource' => $baseDir . '/oc-includes/osclass/classes/model/Resource.php',
+    'mindstellar\\model\\SlugHistory' => $baseDir . '/oc-includes/osclass/classes/model/SlugHistory.php',
     'mindstellar\\moderation\\CommentModeration' => $baseDir . '/oc-includes/osclass/classes/moderation/CommentModeration.php',
     'mindstellar\\moderation\\KeywordBlockStore' => $baseDir . '/oc-includes/osclass/classes/moderation/KeywordBlockStore.php',
     'mindstellar\\moderation\\ListingModeration' => $baseDir . '/oc-includes/osclass/classes/moderation/ListingModeration.php',

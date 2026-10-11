@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\model\SlugHistory;
 
 /**
  * Model database for City table
@@ -199,13 +200,9 @@ class City extends DAO
         CityStats::getInstance()->delete(array('fk_i_city_id' => $pk));
         User::getInstance()->update(array('fk_i_city_id' => null, 's_city' => ''), array('fk_i_city_id' => $pk));
 
-        // See Region::deleteByPrimaryKey(): the slug history has no foreign key to
-        // clean it up, so a rename recorded for this city would outlive the city.
+        // Old slugs would keep redirecting to a city that is gone.
         try {
-            Db::table(DB_TABLE_PREFIX . 't_location_slug_history')
-                ->where('e_type', 'CITY')
-                ->where('fk_i_id', (int)$pk)
-                ->delete();
+            SlugHistory::forget(SlugHistory::CITY, (int)$pk);
         } catch (\Throwable $e) {
             // A stale redirect is not worth failing the delete over.
         }

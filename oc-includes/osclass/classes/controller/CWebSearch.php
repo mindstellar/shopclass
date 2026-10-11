@@ -584,7 +584,7 @@ class CWebSearch extends BaseModel
             return null;
         }
         try {
-            $oldId = \mindstellar\category\CategoryStore::idForOldSlug($slug);
+            $oldId = \mindstellar\model\SlugHistory::ownerOf(\mindstellar\model\SlugHistory::CATEGORY, $slug);
         } catch (\mindstellar\database\DbException $e) {
             return null;
         }

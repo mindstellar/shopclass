@@ -562,7 +562,7 @@ seed_city($admin, $e1, 'Epsi Gone', 'EE');
 
 $snapshot = static function () use ($admin, $prefix): array {
     $out = array();
-    foreach (array('t_country', 't_region', 't_city', 't_location_slug_history') as $table) {
+    foreach (array('t_country', 't_region', 't_city', 't_slug_history') as $table) {
         $row = $admin->query("CHECKSUM TABLE {$prefix}{$table}")->fetch_assoc();
         $out[$table] = array(
             (int) $admin->query("SELECT COUNT(*) FROM {$prefix}{$table}")->fetch_row()[0],

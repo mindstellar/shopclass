@@ -25,7 +25,7 @@
  *    what t_meta_categories did to category deletion, and what
  *    t_form_submission_value did to custom-field deletion.
  *  - A child table with no foreign key at all, which nothing blocks and nothing
- *    cleans up: t_item_report_log, t_item_moderation_log, t_location_slug_history.
+ *    cleans up: t_item_report_log, t_item_moderation_log, t_slug_history.
  *    t_alerts and t_form_submission were in this list until 0054 gave them keys;
  *    their models still delete them for installs without the keys.
  *  - t_billing_ledger and t_billing_order carry no foreign key either, but for the
@@ -341,8 +341,8 @@ seed_exec(
 );
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_category_slug_history (fk_i_category_id, fk_c_locale_code, s_slug, dt_date)
-     VALUES (?, 'en_US', 'old-rentals-slug', NOW())",
+    "INSERT INTO {$prefix}t_slug_history (e_type, fk_i_id, fk_c_locale_code, s_slug, dt_date)
+     VALUES ('CATEGORY', ?, 'en_US', 'old-rentals-slug', NOW())",
     'i',
     array($child)
 );
@@ -362,7 +362,7 @@ pin('the subcategory went with it', 0, $rows('t_category', "pk_i_id = $child"));
 pin('the subcategory items went too', 0, $rows('t_item', "pk_i_id = $childItem"));
 pin('descriptions are gone', 0, $rows('t_category_description', "fk_i_category_id IN ($parent, $child)"));
 pin('field assignments are gone', 0, $rows('t_meta_categories', "fk_i_category_id = $child"));
-pin('slug history is gone', 0, $rows('t_category_slug_history', "fk_i_category_id = $child"));
+pin('slug history is gone', 0, $rows('t_slug_history', "e_type = 'CATEGORY' AND fk_i_id = $child"));
 pin('plugin links are gone', 0, count((new PluginCategory())->findByCategoryId($child)));
 pin('stats are gone', 0, $rows('t_category_stats', "fk_i_category_id = $child"));
 
@@ -470,14 +470,14 @@ $histCity   = seed_city($admin, $histRegion, 'Shelbyville');
 
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_location_slug_history (e_type, s_slug, fk_i_id, dt_date)
+    "INSERT INTO {$prefix}t_slug_history (e_type, s_slug, fk_i_id, dt_date)
      VALUES ('CITY', 'old-shelbyville', ?, NOW())",
     'i',
     array($histCity)
 );
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_location_slug_history (e_type, s_slug, fk_i_id, dt_date)
+    "INSERT INTO {$prefix}t_slug_history (e_type, s_slug, fk_i_id, dt_date)
      VALUES ('REGION', 'old-beta', ?, NOW())",
     'i',
     array($histRegion)
@@ -485,11 +485,11 @@ seed_exec(
 
 City::getInstance()->deleteByPrimaryKey($histCity);
 pin('the city is gone', 0, $rows('t_city', "pk_i_id = $histCity"));
-pin("the city's slug history is gone", 0, $rows('t_location_slug_history', "e_type = 'CITY' AND fk_i_id = $histCity"));
+pin("the city's slug history is gone", 0, $rows('t_slug_history', "e_type = 'CITY' AND fk_i_id = $histCity"));
 
 Region::getInstance()->deleteByPrimaryKey($histRegion);
 pin('the region is gone', 0, $rows('t_region', "pk_i_id = $histRegion"));
-pin("the region's slug history is gone", 0, $rows('t_location_slug_history', "e_type = 'REGION' AND fk_i_id = $histRegion"));
+pin("the region's slug history is gone", 0, $rows('t_slug_history', "e_type = 'REGION' AND fk_i_id = $histRegion"));
 
 /* ---------------------------------------------------------------------------
  * Page.
@@ -561,13 +561,18 @@ pin('no listing photo for a missing item', 0, $count(
        LEFT JOIN {$prefix}t_item i ON r.i_owner_id = i.pk_i_id
       WHERE r.s_owner_type = 'item' AND i.pk_i_id IS NULL"
 ));
+pin('no category slug history for a missing category', 0, $count(
+    "SELECT COUNT(*) c FROM {$prefix}t_slug_history h
+       LEFT JOIN {$prefix}t_category c ON h.fk_i_id = c.pk_i_id
+      WHERE h.e_type = 'CATEGORY' AND c.pk_i_id IS NULL"
+));
 pin('no city slug history for a missing city', 0, $count(
-    "SELECT COUNT(*) c FROM {$prefix}t_location_slug_history h
+    "SELECT COUNT(*) c FROM {$prefix}t_slug_history h
        LEFT JOIN {$prefix}t_city ci ON h.fk_i_id = ci.pk_i_id
       WHERE h.e_type = 'CITY' AND ci.pk_i_id IS NULL"
 ));
 pin('no region slug history for a missing region', 0, $count(
-    "SELECT COUNT(*) c FROM {$prefix}t_location_slug_history h
+    "SELECT COUNT(*) c FROM {$prefix}t_slug_history h
        LEFT JOIN {$prefix}t_region r ON h.fk_i_id = r.pk_i_id
       WHERE h.e_type = 'REGION' AND r.pk_i_id IS NULL"
 ));

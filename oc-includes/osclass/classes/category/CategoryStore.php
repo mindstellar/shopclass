@@ -101,21 +101,6 @@ final class CategoryStore extends Model
     }
 
     /**
-     * The category an old slug last belonged to, or null.
-     *
-     * @throws \mindstellar\database\DbException
-     */
-    public static function idForOldSlug(string $slug): ?int
-    {
-        $id = Db::scalar(
-            'SELECT fk_i_category_id FROM ' . DB_TABLE_PREFIX . 't_category_slug_history WHERE s_slug = ? ORDER BY dt_date DESC LIMIT 1',
-            array($slug)
-        );
-
-        return $id === null ? null : (int) $id;
-    }
-
-    /**
      * Category slugs, in any locale, that start with $prefix.
      *
      * @return string[]

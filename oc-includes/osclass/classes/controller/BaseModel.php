@@ -208,7 +208,7 @@ abstract class BaseModel
         }
 
         try {
-            $historyId = \mindstellar\location\LocationStore::idForOldSlug((string)$type, $slug);
+            $historyId = \mindstellar\model\SlugHistory::ownerOf((string)$type, $slug);
         } catch (\mindstellar\database\DbException $e) {
             return;
         }

@@ -11,6 +11,7 @@
 namespace mindstellar\location;
 
 use mindstellar\database\Db;
+use mindstellar\model\SlugHistory;
 
 /**
  * Imports one country's regions and cities, updating what is already there instead of
@@ -967,7 +968,7 @@ final class LocationImporter
         if ((string) $row['s_slug'] !== $slug) {
             $set[]    = 's_slug = ?';
             $params[] = $slug;
-            $this->recordSlugChange($type, $id, (string) $row['s_slug'], $slug);
+            SlugHistory::record($type, $id, (string) $row['s_slug'], $slug);
             $this->sample('renames', array('type' => $type, 'id' => $id, 'from' => $row['s_slug'], 'to' => $slug));
             $this->report[$type === 'REGION' ? 'regions' : 'cities']['renamed']++;
         }
@@ -1028,25 +1029,6 @@ final class LocationImporter
         }
 
         return abs((float) $stored - (float) $incoming) > 0.0000005;
-    }
-
-    /**
-     * File the old slug in the redirect history, so links to it keep resolving.
-     *
-     * @param string $type 'REGION' or 'CITY'
-     * @param int    $id
-     * @param string $oldSlug
-     * @param string $newSlug
-     *
-     * @return void
-     */
-    private function recordSlugChange(string $type, int $id, string $oldSlug, string $newSlug): void
-    {
-        if ($oldSlug === '' || $oldSlug === $newSlug) {
-            return;
-        }
-
-        LocationStore::recordSlugChange($type, $id, $oldSlug, $newSlug, date('Y-m-d H:i:s'));
     }
 
     /**
