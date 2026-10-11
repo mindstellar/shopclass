@@ -25,8 +25,8 @@ class CategoryStats extends DAO
     use \mindstellar\base\SharedInstance;
 
     /**
-     * Names the table that held the counts before 7.0, so the inherited DAO methods have no
-     * table to act on. The counts are in t_category.i_num_items, through ListingCountStore.
+     * No table is behind this DAO: the counts are in t_category.i_num_items, through ListingCountStore.
+     * The DAO names a table that no longer exists, so the inherited DAO methods fail on purpose.
      */
     public function __construct()
     {

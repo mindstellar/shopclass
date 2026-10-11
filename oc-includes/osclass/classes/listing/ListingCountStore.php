@@ -27,7 +27,7 @@ final class ListingCountStore
      * @param string $table the table without its prefix
      * @param string $key   its primary key
      */
-    public function __construct(string $table, private string $key)
+    private function __construct(string $table, private string $key)
     {
         $this->table = DB_TABLE_PREFIX . $table;
     }

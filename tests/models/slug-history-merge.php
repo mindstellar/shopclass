@@ -82,6 +82,21 @@ sort($resumed);
 pin('the next upgrade moves what is left', $expected, $resumed);
 check('and drops the old table', !$exists('t_location_slug_history'));
 
+harness_section('a row that cannot move');
+
+$admin->query("CREATE TABLE {$p}t_location_slug_history (e_type ENUM('REGION', 'CITY') NOT NULL, s_slug VARCHAR(191) NOT NULL,"
+    . ' fk_i_id INT UNSIGNED NOT NULL, dt_date DATETIME NOT NULL, PRIMARY KEY (e_type, s_slug))');
+$admin->query("INSERT INTO {$p}t_location_slug_history VALUES ('REGION', 'old-alpha', " . ($region + 1000) . ', NOW())');
+$threw = false;
+try {
+    $migrate();
+} catch (RuntimeException $e) {
+    $threw = true;
+}
+check('a slug already taken by another row stops the upgrade', $threw);
+check('and the old table is kept', $exists('t_location_slug_history'));
+$admin->query("DROP TABLE {$p}t_location_slug_history");
+
 harness_section('the model');
 
 pin('the same old slug finds a category or a city by kind', array($cars, $city), array(SlugHistory::ownerOf(SlugHistory::CATEGORY, 'autos'), SlugHistory::ownerOf(SlugHistory::CITY, 'autos')));

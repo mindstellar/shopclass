@@ -241,8 +241,10 @@ check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBComm
 pin('the DAO names the old stats table, so its inherited methods have no table to act on', DB_TABLE_PREFIX . 't_region_stats', $model->getTableName());
 pin('primary key', 'fk_i_region_id', $model->getPrimaryKey());
 pin('field allowlist', array('fk_i_region_id', 'i_num_items'), $model->getFields());
-$quietDelete = @$model->deleteByPrimaryKey($regionAlpha);
-pin('an inherited deleteByPrimaryKey() cannot delete the real row', array(false, 1), array($quietDelete, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE pk_i_id = '" . $regionAlpha . "'")->fetch_row()[0]));
+$leafRegion  = seed_region($admin, 'US', 'Delete leaf');
+$quietDelete = @$model->deleteByPrimaryKey($leafRegion);
+pin('an inherited deleteByPrimaryKey() cannot delete the real row', array(false, 1), array($quietDelete, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE pk_i_id = '" . $leafRegion . "'")->fetch_row()[0]));
+$admin->query("DELETE FROM $table WHERE pk_i_id = $leafRegion");
 pin(
     'the model declares exactly these eight public methods of its own',
     array(

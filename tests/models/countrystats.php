@@ -155,8 +155,16 @@ check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBComm
 pin('the DAO names the old stats table, so its inherited methods have no table to act on', DB_TABLE_PREFIX . 't_country_stats', $model->getTableName());
 pin('primary key', 'fk_c_country_code', $model->getPrimaryKey());
 pin('field allowlist', array('fk_c_country_code', 'i_num_items'), $model->getFields());
-$quietDelete = @$model->deleteByPrimaryKey('US');
-pin('an inherited deleteByPrimaryKey() cannot delete the real row', array(false, 1), array($quietDelete, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE pk_c_code = '" . 'US' . "'")->fetch_row()[0]));
+seed_country($admin, 'ZZ', 'Leaf land');
+$quietDelete = @$model->deleteByPrimaryKey('ZZ');
+pin('an inherited deleteByPrimaryKey() cannot delete the real row', array(false, 1), array($quietDelete, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE pk_c_code = '" . 'ZZ' . "'")->fetch_row()[0]));
+$admin->query("DELETE FROM $table WHERE pk_c_code = 'ZZ'");
+$truncate();
+pin(
+    'the store binds a numeric id as text, so 0 matches no alphabetic code',
+    array(0, null, '0|0|0'),
+    array(\mindstellar\listing\ListingCountStore::countries()->add(array(0), 1), \mindstellar\listing\ListingCountStore::countries()->row(0, 'c'), implode('|', array_map('intval', array_values(array_intersect_key(\mindstellar\listing\ListingCountStore::countries()->all(), array_flip(array('US', 'ES', '12')))))))
+);
 pin(
     'the model declares exactly these eight methods of its own',
     array(

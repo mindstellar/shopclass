@@ -37,26 +37,25 @@ return new class () implements MigrationInterface {
     {
         $p = DB_TABLE_PREFIX;
         foreach (self::TABLES as $main => [$key, $stats, $statsKey, $indexed]) {
-            $add = array();
+            // Two statements: a column added alone is instant on MySQL 8 and MariaDB 10.3+, so a big
+            // t_city is not rebuilt.
             if (!$this->has($conn, 'columns', $p . $main, 'column_name', 'i_num_items')) {
-                $add[] = 'ADD COLUMN i_num_items INT UNSIGNED NOT NULL DEFAULT 0';
+                $conn->execute('ALTER TABLE ' . $p . $main . ' ADD COLUMN i_num_items INT UNSIGNED NOT NULL DEFAULT 0');
             }
             if ($indexed && !$this->has($conn, 'statistics', $p . $main, 'index_name', 'idx_num_items')) {
-                $add[] = 'ADD INDEX idx_num_items (i_num_items)';
-            }
-            if ($add !== array()) {
-                $conn->execute('ALTER TABLE ' . $p . $main . ' ' . implode(', ', $add));
+                $conn->execute('ALTER TABLE ' . $p . $main . ' ADD INDEX idx_num_items (i_num_items)');
             }
 
             if (!$this->has($conn, 'tables', $p . $stats, 'table_name', $p . $stats)) {
                 continue;
             }
             // A country code is text, and an old table may have another collation than the new one.
+            // Only zero counts are filled, so a run stopped before the drop cannot undo newer counts.
             $match = $key === 'pk_c_code'
                 ? 'CONVERT(s.' . $statsKey . ' USING utf8mb4) COLLATE utf8mb4_general_ci = m.' . $key
                 : 's.' . $statsKey . ' = m.' . $key;
             $conn->execute(
-                'UPDATE ' . $p . $main . ' m INNER JOIN ' . $p . $stats . ' s ON ' . $match . ' SET m.i_num_items = s.i_num_items'
+                'UPDATE ' . $p . $main . ' m INNER JOIN ' . $p . $stats . ' s ON ' . $match . ' SET m.i_num_items = s.i_num_items WHERE m.i_num_items = 0'
             );
             $conn->execute('DROP TABLE ' . $p . $stats);
         }
