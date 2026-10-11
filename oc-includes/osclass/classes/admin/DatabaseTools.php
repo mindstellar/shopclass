@@ -258,7 +258,8 @@ final class DatabaseTools
 
     /**
      * The [start, end) offsets of each "(...)" row after $offset, or an empty array when
-     * anything but rows separated by commas follows, such as ON DUPLICATE KEY UPDATE.
+     * anything but rows separated by commas follows, such as ON DUPLICATE KEY UPDATE; the
+     * statement then goes whole. It reads backups as the dump writes them, with backslash escapes.
      *
      * @param string $sql
      * @param int    $offset

@@ -90,12 +90,15 @@ return new class () implements MigrationInterface {
         if ($expiry !== null) {
             $conn->execute('SET SESSION information_schema_stats_expiry = 0');
         }
-        $current = (int) ($conn->select(
-            'SELECT AUTO_INCREMENT AS n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?',
-            array($table)
-        )[0]['n'] ?? 0);
-        if ($expiry !== null) {
-            $conn->execute('SET SESSION information_schema_stats_expiry = ' . (int) $expiry);
+        try {
+            $current = (int) ($conn->select(
+                'SELECT AUTO_INCREMENT AS n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?',
+                array($table)
+            )[0]['n'] ?? 0);
+        } finally {
+            if ($expiry !== null) {
+                $conn->execute('SET SESSION information_schema_stats_expiry = ' . (int) $expiry);
+            }
         }
         if ($current < $next) {
             $conn->execute('ALTER TABLE ' . $table . ' AUTO_INCREMENT = ' . $next);

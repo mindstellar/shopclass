@@ -434,9 +434,10 @@ class Connection
     /**
      * $sql with each '?' placeholder replaced by its value, escaped for this connection, so the
      * query goes in one trip. A '?' inside a quoted string, a quoted name or a comment is kept.
-     * Null when values must go as a real prepared statement: OSC_DB_REAL_PREPARES is on, or the
-     * SQL holds a backslash in quotes, a /*! comment or a -- comment that sql_mode may read
-     * differently.
+     * Null tells the caller to use withStatement(): OSC_DB_REAL_PREPARES is on, or the server could
+     * split this SQL into strings and comments differently than this scan does (a backslash in
+     * quotes under NO_BACKSLASH_ESCAPES or ANSI_QUOTES, a /*! or /*+ comment it runs, a -- not
+     * followed by a space), which would put a value in the wrong place.
      *
      * @param string           $sql
      * @param array<int,mixed> $params
@@ -466,7 +467,8 @@ class Connection
                 }
                 $out .= substr($sql, $i, $end - $i + 1);
                 $i    = $end;
-            } elseif ($c === '-' && ($sql[$i + 1] ?? '') === '-' && \ord($sql[$i + 2] ?? 'x') <= 0x20 && $sql[$i + 2] !== ' ') {
+            } elseif ($c === '-' && ($sql[$i + 1] ?? '') === '-' && isset($sql[$i + 2]) && $sql[$i + 2] !== ' ') {
+                // MySQL also reads -- before a control character or DEL as a comment; anything but a space goes prepared.
                 return null;
             } elseif ($c === '/' && \in_array(substr($sql, $i, 3), array('/*!', '/*+', '/*M'), true)) {
                 return null;
@@ -704,18 +706,11 @@ class Connection
 
                 return '?';
             }
-            $v = $values[$i++];
-            if ($v === null) {
-                return 'NULL';
+            try {
+                return $this->literal($values[$i++]);
+            } catch (DbException $e) {
+                return '?';
             }
-            if (is_bool($v)) {
-                return $v ? '1' : '0';
-            }
-            if (is_int($v) || is_float($v)) {
-                return (string) $v;
-            }
-
-            return "'" . $this->conn->real_escape_string((string) $v) . "'";
         }, $sql);
     }
 

@@ -23,8 +23,8 @@ if (!function_exists('osc_db_select')) {
     /**
      * Run a parameterized SELECT and return every row as an associative array.
      *
-     * Values in $params are bound as positional '?' parameters, so they can
-     * never be interpreted as SQL.
+     * Values in $params fill the positional '?' placeholders, escaped for the
+     * connection, so they can never be interpreted as SQL.
      *
      * @param string $sql
      * @param array  $params

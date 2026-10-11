@@ -85,6 +85,8 @@ harness_section('values of each type');
 pin('null, true, false', array(null, '1', '0'), array_values($db->selectOne('SELECT ? AS a, ? AS b, ? AS c', array(null, true, false))));
 pin('a float keeps its digits', '0.1', $db->scalar('SELECT ?', array(0.1)));
 pin('a negative int', '-42', $db->scalar('SELECT ?', array(-42)));
+$fid = $db->insertGetId("INSERT INTO $t (s, f) VALUES (?, ?)", array(1e15, 0.1));
+pin('a float is sent as a float, as a prepared statement sends it', array('1e15', '0.1'), array_values($db->selectOne("SELECT s, f FROM $t WHERE id = ?", array($fid))));
 $db->execute("INSERT INTO $t (s) VALUES (?)", array('007'));
 pin('a numeric string is compared as text', array('007'), array_column($db->select("SELECT s FROM $t WHERE s = ?", array('007')), 's'));
 
@@ -119,8 +121,15 @@ $payload = ', (SELECT USER()) AS pwn, ';
 $before  = $prepares();
 check('a backslash in quotes, default mode', $noPwn(static fn () => $db->selectOne("SELECT 'a\\' AS x, ' ? ' AS c", array($payload))));
 check('so it was prepared', $prepares() > $before);
-check('a ? in a /*! comment', $noPwn(static fn () => $db->selectOne("SELECT 1 /*! , ? AS c */", array($payload))));
-check('-- then a tab', $noPwn(static fn () => $db->selectOne("SELECT 1 AS a --\t?\n", array($payload))));
+$prepared = static function (string $sql) use ($db, $payload, $noPwn, $prepares): bool {
+    $before = $prepares();
+
+    return $noPwn(static fn () => $db->selectOne($sql, array($payload))) && $prepares() > $before;
+};
+check('a ? in a /*! comment goes as a prepared statement', $prepared('SELECT 1 /*! , ? AS c */'));
+check('so does one in a /*+ hint', $prepared('SELECT /*+ ? */ 1'));
+check('-- then a tab goes as a prepared statement', $prepared("SELECT 1 AS a --\t?\n"));
+check('so does -- then DEL', $prepared("SELECT 1 --\x7f'\n, ' AS a, ? AS b"));
 
 harness_section('with NO_BACKSLASH_ESCAPES');
 

@@ -96,6 +96,11 @@ $rows = osc_db_table($p . 't_item AS i')
 When you need raw SQL, use `osc_db_select()` or `osc_db_execute()` with `?`
 placeholders, and never put request input into the string.
 
+Since 7.0, values go to the database escaped inside the query, in one trip, and every
+column comes back as a string. Pass `LIMIT ?` and `OFFSET ?` an int, not a numeric string.
+To send real prepared statements instead, add `define('OSC_DB_REAL_PREPARES', true);`
+to `config.php`.
+
 Each `osc_db_*` helper calls the same method on `mindstellar\database\Db`, such as
 `Db::table()` and `Db::select()`, which core uses. The class needs Shopclass 7.0; the
 helpers also work on 6.x.

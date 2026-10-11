@@ -205,11 +205,15 @@ return new class () implements MigrationInterface {
                     && !$this->indexNameInUse($indexesAfter[$table], $originalName)
                 ) {
                     // RENAME INDEX needs MariaDB 10.5.2, so the index is dropped and re-added in one ALTER.
+                    $definition = $this->indexDefinition($conn, $table, $currentName, $originalName);
+                    if ($definition === null) {
+                        continue;
+                    }
                     $this->run(
                         $conn,
                         'ALTER TABLE ' . $this->quoteIdent($table)
                         . ' DROP INDEX ' . $this->quoteIdent($currentName)
-                        . ', ADD ' . $this->indexDefinition($conn, $table, $currentName, $originalName),
+                        . ', ADD ' . $definition,
                         'restore index name ' . $originalName . ' on ' . $table
                     );
                     $indexesAfter[$table][$signature] = $originalName;
@@ -626,10 +630,10 @@ return new class () implements MigrationInterface {
      * @param string     $index the index as it is now
      * @param string     $name  the name the rebuilt index takes
      *
-     * @return string
+     * @return string|null null when the index is gone
      * @throws \mindstellar\database\DbException
      */
-    private function indexDefinition(Connection $conn, string $table, string $index, string $name): string
+    private function indexDefinition(Connection $conn, string $table, string $index, string $name): ?string
     {
         $rows = $conn->select(
             'SELECT NON_UNIQUE, INDEX_TYPE, COLUMN_NAME, SUB_PART, COLLATION, INDEX_COMMENT'
@@ -639,6 +643,9 @@ return new class () implements MigrationInterface {
             array($table, $index)
         );
 
+        if ($rows === array()) {
+            return null;
+        }
         $parts = array();
         foreach ($rows as $row) {
             $parts[] = $this->quoteIdent($row['COLUMN_NAME'])
