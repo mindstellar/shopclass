@@ -46,7 +46,7 @@ namespace mindstellar\user {
     {
         public static function recountExpired(string $since, string $until): int
         {
-            $GLOBALS['ran'][] = 'UserStore::recountExpired since ' . $since;
+            $GLOBALS['ran'][] = 'UserStore::recountExpired since ' . $since . (abs(strtotime($until) - time()) < 5 ? ' until now' : ' until ' . $until);
 
             return 0;
         }
@@ -224,7 +224,7 @@ namespace {
     harness_section('the daily schedule');
     pin('daily runs alerts, the day purge, the stats and prunes, then its hook', array(
         'claim DAILY', 'alert DAILY since last-DAILY', 'purgeDate 86400', 'osc_update_cat_stats', 'MessageGuard::purgeExpired',
-        'UserStore::recountExpired since last-DAILY', 'LoginThrottle::prune', 'KeyValue::prune', 'ApiCredential::pruneRefresh',
+        'UserStore::recountExpired since last-DAILY until now', 'LoginThrottle::prune', 'KeyValue::prune', 'ApiCredential::pruneRefresh',
         'Sitemap::warmCache', 'hook cron_daily', 'hook cron',
     ), cron_run('Daily', 'day'));
 

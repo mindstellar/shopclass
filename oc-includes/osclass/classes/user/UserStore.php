@@ -51,14 +51,16 @@ final class UserStore extends Model
 
     /**
      * Recount i_items, the live listing count, of each seller who had a listing expire from $since
-     * to $until. An expiry is the one change that does not lower the count when it happens.
+     * to $until. An expiry is the one change that does not lower the count when it happens; a
+     * renewal raises it again. $since goes back 30 days at most, so a long break stays cheap.
      *
      * @return int sellers whose count changed
      * @throws \mindstellar\database\DbException
      */
-    public static function recountExpired(string $since, string $until): int
+    public static function recountExpired(string $since, string $until, int $chunk = 1000): int
     {
-        $p   = DB_TABLE_PREFIX;
+        $since = max($since, date('Y-m-d H:i:s', time() - 30 * 86400));
+        $p     = DB_TABLE_PREFIX;
         $ids = array_map('intval', array_column(Db::select(
             'SELECT DISTINCT fk_i_user_id AS id FROM ' . $p . 't_item'
             . ' WHERE dt_expiration >= ? AND dt_expiration <= ? AND fk_i_user_id IS NOT NULL',
@@ -66,12 +68,12 @@ final class UserStore extends Model
         ), 'id'));
         $live    = implode(' AND ', ListingStatus::liveConditions('i.'));
         $changed = 0;
-        foreach (array_chunk($ids, 1000) as $chunk) {
+        foreach (array_chunk($ids, max(1, $chunk)) as $chunk) {
             // A count is read and written in one statement, so a listing posted meanwhile is not lost.
             $count = '(SELECT COUNT(*) FROM ' . $p . 't_item i WHERE i.fk_i_user_id = u.pk_i_id AND ' . $live . ')';
             $rows  = Db::execute(
                 'UPDATE ' . $p . 't_user u SET u.i_items = ' . $count
-                . ' WHERE u.pk_i_id IN (' . implode(', ', array_fill(0, count($chunk), '?')) . ') AND u.i_items <> ' . $count,
+                . ' WHERE u.pk_i_id IN (' . implode(', ', array_fill(0, count($chunk), '?')) . ') AND NOT (u.i_items <=> ' . $count . ')',
                 $chunk
             );
             if ($rows > 0 && function_exists('osc_invalidate_user_cache')) {

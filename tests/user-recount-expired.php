@@ -29,11 +29,16 @@ $country = seed_country($admin);
 seed_currency($admin);
 $cat = seed_category($admin, 'Motors', null, $locale);
 
-$recent = seed_user($admin, 'recent', 'recent@example.test');
-$old    = seed_user($admin, 'old', 'old@example.test');
-$none   = seed_user($admin, 'none', 'none@example.test');
+$recent  = seed_user($admin, 'recent', 'recent@example.test');
+$right   = seed_user($admin, 'right', 'right@example.test');
+$nulled  = seed_user($admin, 'nulled', 'nulled@example.test');
+$old     = seed_user($admin, 'old', 'old@example.test');
+$ancient = seed_user($admin, 'ancient', 'ancient@example.test');
+$low     = seed_user($admin, 'low', 'low@example.test');
+$high    = seed_user($admin, 'high', 'high@example.test');
+$users   = array($recent, $right, $nulled, $old, $ancient, $low, $high);
 
-$listing = static function (int $user, string $expires, array $set = array()) use ($admin, $cat, $locale, $country, $p): int {
+$listing = static function (?int $user, string $expires, array $set = array()) use ($admin, $cat, $locale, $country, $p): int {
     $id = seed_item($admin, $cat, $user, 'A listing', 10.0, 1, 1, $locale, $country);
     $set['dt_expiration'] = $expires;
     foreach ($set as $column => $value) {
@@ -42,34 +47,58 @@ $listing = static function (int $user, string $expires, array $set = array()) us
 
     return $id;
 };
-$ago = static fn (string $interval): string => date('Y-m-d H:i:s', strtotime('-' . $interval));
+$ago   = static fn (string $interval): string => date('Y-m-d H:i:s', strtotime('-' . $interval));
+$later = $ago('-30 days');
 
-// recent: 2 live, 1 expired an hour ago, 1 expired but premium, 1 spam, 1 disabled.
-$listing($recent, $ago('-30 days'));
-$listing($recent, $ago('-30 days'));
+// recent: 2 live; expired an hour ago; expired but premium; spam; disabled; inactive.
+$listing($recent, $later);
+$listing($recent, $later);
 $listing($recent, $ago('1 hour'));
 $listing($recent, $ago('2 hours'), array('b_premium' => 1));
-$listing($recent, $ago('-30 days'), array('b_spam' => 1));
-$listing($recent, $ago('-30 days'), array('b_enabled' => 0));
-// old: 1 live, 1 expired ten days ago.
-$listing($old, $ago('-30 days'));
+$listing($recent, $later, array('b_spam' => 1));
+$listing($recent, $later, array('b_enabled' => 0));
+$listing($recent, $later, array('b_active' => 0));
+// right: in the window, count already right. nulled: in the window, count NULL.
+$listing($right, $later);
+$listing($right, $ago('1 hour'));
+$listing($nulled, $ago('1 hour'));
+// A guest listing in the window.
+$listing(null, $ago('1 hour'));
+// old: expired ten days ago. ancient: forty days ago, past the 30-day limit.
+$listing($old, $later);
 $listing($old, $ago('10 days'));
+$listing($ancient, $ago('40 days'));
+// low and high expire exactly on the bounds of a window three to two days ago.
+$from = $ago('3 days');
+$to   = $ago('2 days');
+$listing($low, $from);
+$listing($high, $to);
 
-$admin->query("UPDATE {$p}t_user SET i_items = 9 WHERE pk_i_id IN ($recent, $old, $none)");
-$items = static function () use ($admin, $p, $recent, $old, $none): array {
+$admin->query("UPDATE {$p}t_user SET i_items = 9 WHERE pk_i_id IN (" . implode(',', $users) . ')');
+$admin->query("UPDATE {$p}t_user SET i_items = 1 WHERE pk_i_id = $right");
+$admin->query("UPDATE {$p}t_user SET i_items = NULL WHERE pk_i_id = $nulled");
+$items = static function () use ($admin, $p, $users): array {
     $out = array();
-    foreach ($admin->query("SELECT pk_i_id, i_items FROM {$p}t_user WHERE pk_i_id IN ($recent, $old, $none) ORDER BY pk_i_id") as $row) {
-        $out[] = (int) $row['i_items'];
+    foreach ($admin->query("SELECT i_items FROM {$p}t_user WHERE pk_i_id IN (" . implode(',', $users) . ') ORDER BY pk_i_id') as $row) {
+        $out[] = $row['i_items'] === null ? null : (int) $row['i_items'];
     }
 
     return $out;
 };
 
 harness_section('the daily recount');
-$changed = UserStore::recountExpired($ago('1 day'), date('Y-m-d H:i:s'));
-pin('only the seller with a listing that expired in the window is recounted', array(3, 9, 9), $items());
-pin('it says one seller changed', 1, $changed);
+$changed = UserStore::recountExpired($ago('1 day'), date('Y-m-d H:i:s'), 1);
+pin('sellers with a listing that expired in the window are recounted, one per batch', array(3, 1, 0, 9, 9, 9, 9), $items());
+pin('it counts only the sellers that changed', 2, $changed);
 pin('a second run changes nothing', 0, UserStore::recountExpired($ago('1 day'), date('Y-m-d H:i:s')));
 pin('an empty window changes nothing', 0, UserStore::recountExpired($ago('5 days'), $ago('4 days')));
+
+harness_section('window bounds');
+pin('a listing expiring exactly on either bound is in the window', 2, UserStore::recountExpired($from, $to));
+pin('so both sellers go to 0', array(3, 1, 0, 9, 9, 0, 0), $items());
+
+harness_section('a long break');
+UserStore::recountExpired('1000-01-01 00:00:00', date('Y-m-d H:i:s'));
+pin('the window goes back 30 days at most', array(3, 1, 0, 1, 9, 0, 0), $items());
 
 exit(harness_result());

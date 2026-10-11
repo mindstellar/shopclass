@@ -60,8 +60,9 @@ $schedules = array(
     'DAILY'  => array(24 * 3600, 'day', static function (array $cron): void {
         osc_update_cat_stats();
         \mindstellar\security\MessageGuard::purgeExpired();
+        // Sellers whose listings expired since the last run. A failed run is not retried; their next listing change corrects them.
         try {
-            \mindstellar\user\UserStore::recountExpired($cron['d_last_exec'] ?: date('Y-m-d H:i:s', time() - 86400), date('Y-m-d H:i:s'));
+            \mindstellar\user\UserStore::recountExpired((string) $cron['d_last_exec'], date('Y-m-d H:i:s'));
         } catch (\mindstellar\database\DbException $e) {
             error_log('Seller listing recount failed: ' . $e->getMessage());
         }
