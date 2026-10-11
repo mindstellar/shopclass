@@ -57,8 +57,8 @@ final class LocationAdminQuery
         $codes = array_column($rows, 'pk_c_code');
 
         $listings = $this->keyedCounts(
-            'SELECT fk_c_country_code AS k, i_num_items AS n FROM ' . $this->table('t_country_stats')
-            . ' WHERE fk_c_country_code IN (%s)',
+            'SELECT pk_c_code AS k, i_num_items AS n FROM ' . $this->table('t_country')
+            . ' WHERE pk_c_code IN (%s)',
             $codes
         );
         $regions  = $this->keyedCounts(
@@ -110,8 +110,8 @@ final class LocationAdminQuery
         $ids   = array_map('intval', array_column($rows, 'pk_i_id'));
 
         $listings = $this->keyedCounts(
-            'SELECT fk_i_region_id AS k, i_num_items AS n FROM ' . $this->table('t_region_stats')
-            . ' WHERE fk_i_region_id IN (%s)',
+            'SELECT pk_i_id AS k, i_num_items AS n FROM ' . $this->table('t_region')
+            . ' WHERE pk_i_id IN (%s)',
             $ids
         );
         $cities   = $this->keyedCounts(
@@ -165,8 +165,8 @@ final class LocationAdminQuery
         $ids   = array_map('intval', array_column($rows, 'pk_i_id'));
 
         $listings = $this->keyedCounts(
-            'SELECT fk_i_city_id AS k, i_num_items AS n FROM ' . $this->table('t_city_stats')
-            . ' WHERE fk_i_city_id IN (%s)',
+            'SELECT pk_i_id AS k, i_num_items AS n FROM ' . $this->table('t_city')
+            . ' WHERE pk_i_id IN (%s)',
             $ids
         );
 

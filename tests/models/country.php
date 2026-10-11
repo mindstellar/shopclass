@@ -137,7 +137,7 @@ seed_country($admin, 'FR', 'France');
 
 $row = $model->findByCode('US');
 check('a match returns an array', is_array($row), describe($row));
-pin('the row carries exactly the three schema columns', array('pk_c_code', 's_name', 's_slug'), array_keys($row));
+pin('the row carries exactly the four schema columns', array('pk_c_code', 's_name', 's_slug', 'i_num_items'), array_keys($row));
 pin('pk_c_code round-trips', 'US', $row['pk_c_code']);
 pin('s_name round-trips', 'United States', $row['s_name']);
 pin('s_slug round-trips', 'us', $row['s_slug']);
@@ -222,7 +222,7 @@ pin(
     array('FR', 'DE', 'US'),
     array_column($rows, 'pk_c_code')
 );
-pin('each row carries exactly the three schema columns', array('pk_c_code', 's_name', 's_slug'), array_keys($rows[0]));
+pin('each row carries exactly the four schema columns', array('pk_c_code', 's_name', 's_slug', 'i_num_items'), array_keys($rows[0]));
 check('every value in every row is a string or null (C4)', all_rows_string($rows), describe($rows));
 
 /* ----------------------------------------------------------------------------

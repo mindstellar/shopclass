@@ -77,7 +77,7 @@ harness_section('models on the new DB API');
 $modelDir = __DIR__ . '/../oc-includes/osclass/classes/model/';
 foreach (glob($modelDir . '*.php') as $file) {
     $src = (string) file_get_contents($file);
-    if (strpos($src, 'namespace mindstellar\\model;') === false || basename($file) === 'Model.php') {
+    if (strpos($src, 'namespace mindstellar\\model;') === false || basename($file) === 'Model.php' || preg_match('/^trait \w+/m', $src) === 1) {
         continue;
     }
     $name = basename($file, '.php');

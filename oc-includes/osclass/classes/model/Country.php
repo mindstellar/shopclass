@@ -120,7 +120,6 @@ class Country extends DAO
             $result += $mRegions->deleteByPrimaryKey((int) $region['pk_i_id']);
         }
         Item::getInstance()->deleteByCountry($pk);
-        CountryStats::getInstance()->delete(array('fk_c_country_code' => $pk));
         User::getInstance()->update(
             array('fk_c_country_code' => null, 's_country' => ''),
             array('fk_c_country_code' => $pk)

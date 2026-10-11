@@ -2473,7 +2473,7 @@ $countRoot  = seed_category($admin, 'Count root');
 $countChild = seed_category($admin, 'Count child', $countRoot);
 $catCount   = static function (int $catId) use ($admin): int {
     $row = $admin->query(
-        'SELECT i_num_items FROM ' . DB_TABLE_PREFIX . 't_category_stats WHERE fk_i_category_id = ' . $catId
+        'SELECT i_num_items FROM ' . DB_TABLE_PREFIX . 't_category WHERE pk_i_id = ' . $catId
     )->fetch_assoc();
 
     return (int) ($row['i_num_items'] ?? 0);

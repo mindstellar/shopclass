@@ -16,7 +16,7 @@ use mindstellar\base\Model;
 use mindstellar\database\Db;
 
 /**
- * Small t_category and t_category_stats reads and writes for the category services. The
+ * Small t_category reads and writes for the category services. The
  * legacy Category and CategoryStats models keep their own methods.
  */
 final class CategoryStore extends Model
@@ -85,19 +85,7 @@ final class CategoryStore extends Model
      */
     public static function writeCounts(array $totals): void
     {
-        if ($totals === array()) {
-            return;
-        }
-        $params = array();
-        foreach ($totals as $categoryId => $total) {
-            $params[] = (int) $categoryId;
-            $params[] = (int) $total;
-        }
-        Db::execute(
-            'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES '
-            . implode(', ', array_fill(0, count($totals), '(?, ?)')),
-            $params
-        );
+        \mindstellar\listing\ListingCountStore::categories()->set($totals);
     }
 
     /**

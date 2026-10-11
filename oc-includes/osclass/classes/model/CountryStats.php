@@ -13,9 +13,10 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\listing\ListingCountStore;
 
 /**
- * Model database for CountryStats table
+ * The live listing count of each country, kept in t_country.i_num_items
  *
  * @package    Shopclass
  * @subpackage Model
@@ -26,9 +27,8 @@ class CountryStats extends DAO
     use \mindstellar\base\SharedInstance;
 
     /**
-     * Set data related to t_country_stats table
-     *
-     * @since  2.4
+     * Names the table that held the counts before 7.0, so the inherited DAO methods have no
+     * table to act on. The counts are in t_country.i_num_items, through ListingCountStore.
      */
     public function __construct()
     {
@@ -47,121 +47,72 @@ class CountryStats extends DAO
     }
 
     /**
-     * Increase number of country items, given a country id
-     *
-     * @param string $countryCode Country code
-     *
-     * @return bool True once the counter is written, false when the code is
-     *              rejected or the write fails
-     * @since  2.4
-     */
-    public function increaseNumItems($countryCode)
-    {
-        // A listing with no country has no counter. The old guard compared the length to '',
-        // which PHP 8 reads as false for 0, so an empty code reached the database.
-        $length = strlen((string)$countryCode);
-        if ($length === 0 || $length > 2) {
-            return false;
-        }
-
-        // The only caller value is the bound placeholder; the table name is the
-        // one this model set on itself in the constructor.
-        $sql =
-            sprintf(
-                'INSERT INTO %s (fk_c_country_code, i_num_items) VALUES (?, 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
-                $this->getTableName()
-            );
-
-        try {
-            Db::execute($sql, array($countryCode));
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Decrease number of country items, given a Country code
+     * Add one to a country's count. A listing with no country has no count.
      *
      * @param string $countryCode
      *
-     * @return int|false Number of affected rows, or false when there is no
-     *                   counter row for that country
-     * @since  2.4
+     * @return bool false for an empty or too long code, no such country, or a failed write
+     */
+    public function increaseNumItems($countryCode)
+    {
+        $length = strlen((string)$countryCode);
+
+        try {
+            return $length > 0 && $length <= 2 && ListingCountStore::countries()->add(array((string)$countryCode), 1) === 1;
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Take one from a country's count, never below zero.
+     *
+     * @param string $countryCode
+     *
+     * @return int|false rows changed, or false for an empty or too long code or a failed write
      */
     public function decreaseNumItems($countryCode)
     {
         $length = strlen((string)$countryCode);
-        if ($length === 0 || $length > 2) {
-            return false;
-        }
 
         try {
-            $countryStat = Db::table($this->getTableName())
-                ->select('i_num_items')
-                ->where($this->getPrimaryKey(), $countryCode)
-                ->first();
+            return $length > 0 && $length <= 2 ? ListingCountStore::countries()->add(array((string)$countryCode), -1) : false;
         } catch (\mindstellar\database\DbException $e) {
-            $countryStat = null;
+            return false;
         }
-
-        if (isset($countryStat['i_num_items'])) {
-            // The counter is assigned from itself, which no builder update can
-            // express; the country code is the single bound value and the table
-            // name is the model's own.
-            $sql = 'UPDATE ' . $this->getTableName()
-                . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_c_country_code = ?';
-
-            try {
-                return Db::execute($sql, array($countryCode));
-            } catch (\mindstellar\database\DbException $e) {
-                return false;
-            }
-        }
-
-        return false;
     }
 
     /**
-     * Set i_num_items, given a country code
+     * Set a country's count.
      *
      * @param string $countryCode
      * @param int    $numItems
      *
-     * @return bool True once the counter is written, false when the write fails
-     * @since  2.4
+     * @return bool false when the write fails
      */
     public function setNumItems($countryCode, $numItems)
     {
-        $numItems = (int)$numItems;
-
-        // Both caller values are bound; the count is bound twice rather than
-        // read back with VALUES(), which MySQL 8.0.20 deprecates and whose
-        // replacement syntax MariaDB does not accept.
-        $sql = 'INSERT INTO ' . $this->getTableName()
-            . ' (fk_c_country_code, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
-
         try {
-            Db::execute($sql, array($countryCode, $numItems, $numItems));
+            return ListingCountStore::countries()->set(array((string)$countryCode => (int)$numItems));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
-
-        return true;
     }
 
     /**
-     * Find stats by country code
+     * A country's count, as the old stats row: fk_c_country_code and i_num_items.
      *
      * @param string $countryCode
      *
-     * @return array<string,string|null>|false False when the country has no stats row
-     * @since  2.4
+     * @return array<string,string>|false False when there is no such country
      */
     public function findByCountryCode($countryCode)
     {
-        return $this->findByPrimaryKey($countryCode);
+        try {
+            return (ListingCountStore::countries()->row((string)$countryCode, 'fk_c_country_code') ?? false);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -185,19 +136,10 @@ class CountryStats extends DAO
             $order = 'country_name ASC';
         }
 
-        // Column aliases and a join put this beyond the builder's identifier
-        // allowlist. It carries no caller values at all: $zero is one of the
-        // seven operators the in_array() above accepts, $order matched the
-        // identifier-plus-direction pattern above, and both table names are
-        // fixed (the model's own and t_country).
-        $sql = 'SELECT ' . $this->getTableName() . '.fk_c_country_code as country_code, ' . $this->getTableName()
-            . '.i_num_items as items, ' . DB_TABLE_PREFIX . 't_country.s_name as country_name, ' . DB_TABLE_PREFIX
-            . 't_country.s_slug as country_slug'
-            . ' FROM ' . $this->getTableName()
-            . ' JOIN ' . DB_TABLE_PREFIX . 't_country ON ' . $this->getTableName()
-            . '.fk_c_country_code = ' . DB_TABLE_PREFIX . 't_country.pk_c_code'
-            . ' WHERE i_num_items ' . $zero . ' 0'
-            . ' ORDER BY ' . $order;
+        // Column aliases put this beyond the builder's identifier allowlist. It carries no caller
+        // values: $zero and $order were checked above.
+        $sql = 'SELECT pk_c_code as country_code, i_num_items as items, s_name as country_name, s_slug as country_slug'
+            . ' FROM ' . ListingCountStore::countries()->table() . ' WHERE i_num_items ' . $zero . ' 0 ORDER BY ' . $order;
 
         try {
             $rows = Db::select($sql);

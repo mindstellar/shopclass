@@ -178,10 +178,9 @@ class Category extends DAO
         // a compile-time literal or the table-prefix constant; the only caller
         // values are the bound placeholders built above.
         $prefix = $this->getTablePrefix();
-        $sql    = 'SELECT a.*, b.*, c.i_num_items'
+        $sql    = 'SELECT a.*, b.*'
             . ' FROM ' . $this->getTableName() . ' as a'
-            . ' LEFT JOIN ' . $prefix . 't_category_description as b ON (a.pk_i_id = b.fk_i_category_id )'
-            . ' LEFT JOIN ' . $prefix . 't_category_stats as c ON a.pk_i_id = c.fk_i_category_id';
+            . ' LEFT JOIN ' . $prefix . 't_category_description as b ON (a.pk_i_id = b.fk_i_category_id )';
         if ($where !== null) {
             $sql .= ' WHERE ' . $where;
         }
@@ -497,7 +496,6 @@ class Category extends DAO
         // keys were never created, where nothing else would.
         $dependents = array(
             't_category_description',
-            't_category_stats',
             't_meta_categories',
             't_meta_group_categories',
         );

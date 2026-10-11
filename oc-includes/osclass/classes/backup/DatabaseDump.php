@@ -34,7 +34,6 @@ final class DatabaseDump
         't_user_description',
         't_category',
         't_category_description',
-        't_category_stats',
         't_item',
         't_item_description',
         't_item_location',

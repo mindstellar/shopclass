@@ -349,7 +349,7 @@ seed_exec(
 (new PluginCategory())->add('demo', array($child));
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_category_stats (fk_i_category_id, i_num_items) VALUES (?, 1)",
+    "UPDATE {$prefix}t_category SET i_num_items = 1 WHERE pk_i_id = ?",
     'i',
     array($child)
 );
@@ -364,7 +364,6 @@ pin('descriptions are gone', 0, $rows('t_category_description', "fk_i_category_i
 pin('field assignments are gone', 0, $rows('t_meta_categories', "fk_i_category_id = $child"));
 pin('slug history is gone', 0, $rows('t_slug_history', "e_type = 'CATEGORY' AND fk_i_id = $child"));
 pin('plugin links are gone', 0, count((new PluginCategory())->findByCategoryId($child)));
-pin('stats are gone', 0, $rows('t_category_stats', "fk_i_category_id = $child"));
 
 /* ---------------------------------------------------------------------------
  * User, including t_alerts.

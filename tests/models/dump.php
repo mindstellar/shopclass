@@ -347,8 +347,8 @@ $catBody = file_get_contents($catFile);
 
 $expectedCat = '/* dumping data for table `' . $catTable . "` */\n"
     . 'insert into `' . $catTable . "` values\n"
-    . "(2,null,0,0,1,1,null),\n"
-    . "(1,2,0,0,1,1,null);\n"
+    . "(2,null,0,0,1,1,null,0),\n"
+    . "(1,2,0,0,1,1,null,0);\n"
     . "\n";
 
 pin('table_data returns true for t_category', true, $catOk);

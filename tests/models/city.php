@@ -29,7 +29,7 @@
  *
  * deleteByPrimaryKey() has no query of its own to convert: every line either
  * delegates to another model's method (CityArea::findByCity/deleteByPrimaryKey,
- * Item::deleteByCity, CityStats::delete, User::update) or to the inherited
+ * Item::deleteByCity, User::update) or to the inherited
  * DAO::delete(). Its signature and cascade behaviour are pinned; the method
  * body is not touched by this conversion (CityArea's own deleteByPrimaryKey is
  * the precedent for this shape).
@@ -63,9 +63,9 @@ $seedCityArea = static function (int $id, int $cityId, string $name) use ($admin
 $seedCityStats = static function (int $cityId, int $numItems = 3) use ($admin): void {
     seed_exec(
         $admin,
-        'INSERT INTO ' . DB_TABLE_PREFIX . 't_city_stats (fk_i_city_id, i_num_items) VALUES (?, ?)',
+        'UPDATE ' . DB_TABLE_PREFIX . 't_city SET i_num_items = ? WHERE pk_i_id = ?',
         'ii',
-        array($cityId, $numItems)
+        array($numItems, $cityId)
     );
 };
 
@@ -418,11 +418,6 @@ $areaCount = (int) $admin->query(
     'SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . 't_city_area WHERE fk_i_city_id = ' . (int) $cascadeCityId
 )->fetch_assoc()['c'];
 pin('both city areas were deleted', 0, $areaCount);
-
-$statsCount = (int) $admin->query(
-    'SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . 't_city_stats WHERE fk_i_city_id = ' . (int) $cascadeCityId
-)->fetch_assoc()['c'];
-pin('the city stats row was deleted', 0, $statsCount);
 
 $userRow = $admin->query(
     'SELECT fk_i_city_id, s_city FROM ' . DB_TABLE_PREFIX . 't_user WHERE pk_i_id = ' . (int) $cascadeUserId

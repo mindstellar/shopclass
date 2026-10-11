@@ -1115,6 +1115,7 @@ return array(
     'mindstellar\\job\\JobWorker' => $baseDir . '/oc-includes/osclass/classes/job/JobWorker.php',
     'mindstellar\\language\\LanguageService' => $baseDir . '/oc-includes/osclass/classes/language/LanguageService.php',
     'mindstellar\\language\\LocaleStore' => $baseDir . '/oc-includes/osclass/classes/language/LocaleStore.php',
+    'mindstellar\\listing\\ListingCountStore' => $baseDir . '/oc-includes/osclass/classes/listing/ListingCountStore.php',
     'mindstellar\\listing\\ListingCounters' => $baseDir . '/oc-includes/osclass/classes/listing/ListingCounters.php',
     'mindstellar\\listing\\ListingGeocode' => $baseDir . '/oc-includes/osclass/classes/listing/ListingGeocode.php',
     'mindstellar\\listing\\ListingInput' => $baseDir . '/oc-includes/osclass/classes/listing/ListingInput.php',

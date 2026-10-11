@@ -41,8 +41,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_country (
     pk_c_code CHAR(2) NOT NULL,
     s_name VARCHAR(80) NOT NULL,
     s_slug VARCHAR(80) NOT NULL DEFAULT '',
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_c_code),
+        INDEX idx_num_items (i_num_items),
         INDEX idx_s_slug (s_slug),
         INDEX idx_s_name (s_name)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
@@ -66,8 +68,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_region (
     i_source_id INT NULL,
     d_coord_lat DECIMAL(10,6) NULL,
     d_coord_long DECIMAL(10,6) NULL,
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
+        INDEX idx_num_items (i_num_items),
         INDEX fk_c_country_code (fk_c_country_code),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
@@ -89,8 +93,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
     i_source_id INT NULL,
     d_coord_lat DECIMAL(10,6) NULL,
     d_coord_long DECIMAL(10,6) NULL,
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
+        INDEX idx_num_items (i_num_items),
         INDEX fk_i_region_id (fk_i_region_id),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
@@ -207,6 +213,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_category (
     b_enabled TINYINT(1) NOT NULL DEFAULT 1,
     b_price_enabled TINYINT(1) NOT NULL DEFAULT 1,
     s_icon VARCHAR(250) NULL,
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_parent_id (fk_i_parent_id),
@@ -225,14 +232,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_description (
         INDEX idx_s_slug (s_slug),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE,
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
-    fk_i_category_id INT UNSIGNED NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item (
@@ -578,33 +577,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_log (
     fk_i_who_id INT UNSIGNED NOT NULL,
 
         INDEX idx_date (dt_date)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_city_stats (
-    fk_i_city_id INT UNSIGNED NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_i_city_id),
-        INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_region_stats (
-    fk_i_region_id INT UNSIGNED NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_i_region_id),
-        INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
-    fk_c_country_code CHAR(2) NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_c_country_code),
-        INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_ban_rule (

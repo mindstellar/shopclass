@@ -59,9 +59,9 @@ foreach (array(1, 2) as $n) {
     $admin->query("UPDATE {$p}t_item_location SET fk_i_region_id = $region, fk_i_city_id = $city WHERE fk_i_item_id = $item");
 }
 // Counts that drifted: the recount must correct all three.
-$admin->query("REPLACE INTO {$p}t_country_stats VALUES ('US', 9)");
-$admin->query("REPLACE INTO {$p}t_region_stats VALUES ($region, 9)");
-$admin->query("REPLACE INTO {$p}t_city_stats VALUES ($city, 9), ($other, 9)");
+$admin->query("UPDATE {$p}t_country SET i_num_items = 9 WHERE pk_c_code = 'US'");
+$admin->query("UPDATE {$p}t_region SET i_num_items = 9 WHERE pk_i_id = $region");
+$admin->query("UPDATE {$p}t_city SET i_num_items = 9 WHERE pk_i_id IN ($city, $other)");
 $num = static fn (string $sql): int => (int) $admin->query($sql)->fetch_row()[0];
 
 harness_section('the old staging table');
@@ -77,10 +77,10 @@ pin('the total is kept for the progress bar', '4', (string) osc_get_preference('
 
 JobWorker::run(30);
 pin('the queue is empty after the worker runs', 0, LocationRecountJobs::pending());
-pin('the country count is corrected', 2, $num("SELECT i_num_items FROM {$p}t_country_stats WHERE fk_c_country_code = 'US'"));
-pin('the region count is corrected', 2, $num("SELECT i_num_items FROM {$p}t_region_stats WHERE fk_i_region_id = $region"));
-pin('the city with listings counts them', 2, $num("SELECT i_num_items FROM {$p}t_city_stats WHERE fk_i_city_id = $city"));
-pin('the city without listings counts none', 0, $num("SELECT i_num_items FROM {$p}t_city_stats WHERE fk_i_city_id = $other"));
+pin('the country count is corrected', 2, $num("SELECT i_num_items FROM {$p}t_country WHERE pk_c_code = 'US'"));
+pin('the region count is corrected', 2, $num("SELECT i_num_items FROM {$p}t_region WHERE pk_i_id = $region"));
+pin('the city with listings counts them', 2, $num("SELECT i_num_items FROM {$p}t_city WHERE pk_i_id = $city"));
+pin('the city without listings counts none', 0, $num("SELECT i_num_items FROM {$p}t_city WHERE pk_i_id = $other"));
 
 harness_section('the admin button');
 osc_update_location_stats(true);

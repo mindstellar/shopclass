@@ -35,8 +35,8 @@
  *    WHERE fragment (its own docblock: "param needs to be escaped, inside
  *    function will not be escaped"), its multi-argument form is a printf format
  *    whose values legacy escapes through dao->escape() + vsprintf. The three
- *    joined tables (t_category a, t_category_description b, t_category_stats c)
- *    and the a.*, b.*, c.i_num_items projection are the contract; so is the
+ *    joined tables (t_category a, t_category_description b) and the a.*, b.* projection
+ *    (a.i_num_items is the live listing count, 0 for a category with none) are the contract; so is the
  *    per-pk merge that folds the description locales into a 'locale' sub-array
  *    and overlays $this->language's names at the top level.
  *  - Value typing (C4). Legacy rows are all strings/null. listWhere() runs
@@ -48,7 +48,7 @@
  *    findSubcategories(), NOT the stale tree), delegates item cleanup to Item
  *    (out of scope, and exercised over zero item rows here, as Region's cascade
  *    does), fires the delete_category hook, then deletes the plugin/description/
- *    stats/meta rows and finally the category. The first four deletes have
+ *    meta rows and finally the category. The first four deletes have
  *    always discarded their result and must keep per-call swallowed catches so
  *    one failure never aborts the rest; only the final category delete's value
  *    is returned. A survivor subtree proves the cascade is scoped.
@@ -113,7 +113,6 @@ Preference::getInstance(); // osc_current_user_locale() -> osc_language() reads 
 $cache      = \mindstellar\cache\CacheManager::getInstance();
 $catTable   = DB_TABLE_PREFIX . 't_category';
 $descTable  = DB_TABLE_PREFIX . 't_category_description';
-$statsTable = DB_TABLE_PREFIX . 't_category_stats';
 $metaCatT   = DB_TABLE_PREFIX . 't_meta_categories';
 $locale     = 'en_US';
 
@@ -169,12 +168,12 @@ $freshCategory = static function () use ($resetCategory, $locale): Category {
  * checks are off on the admin session, so the fk_i_field_id below need not point
  * at a real field row.
  * ------------------------------------------------------------------------- */
-$seedStats = static function (int $categoryId, int $numItems) use ($admin, $statsTable): void {
+$seedStats = static function (int $categoryId, int $numItems) use ($admin, $catTable): void {
     seed_exec(
         $admin,
-        "INSERT INTO $statsTable (fk_i_category_id, i_num_items) VALUES (?, ?)",
+        "UPDATE $catTable SET i_num_items = ? WHERE pk_i_id = ?",
         'ii',
-        array($categoryId, $numItems)
+        array($numItems, $categoryId)
     );
 };
 $seedPluginCat = static function (int $categoryId, string $plugin = 'demo_plugin'): void {
@@ -228,7 +227,7 @@ $setPosition($property, 1);
 $setPosition($cars, 0);
 $setPosition($bikes, 1);
 $setPosition($hidden, 2);
-$seedStats($cars, 5);   // Cars has an item count; the rest have no stats row (i_num_items -> null via LEFT JOIN)
+$seedStats($cars, 5);   // Cars has an item count; the rest have no listings (i_num_items 0)
 
 $model = $freshCategory();
 
@@ -381,16 +380,16 @@ pin('ordered by i_position ASC (Vehicles pos0, Property pos1, Hidden pos2)', arr
 check('every scalar value in every row is a string or null (C4)', $rowsScalarStrings($roots), describe($roots));
 pin('pk_i_id round-trips as a string, not an int (C4)', (string) $vehicles, $roots[0]['pk_i_id']);
 pin(
-    'the merged row carries the joined a.* / b.* / c.i_num_items columns plus the locale sub-array, in this order',
+    'the merged row carries the joined a.* (with i_num_items) / b.* columns plus the locale sub-array, in this order',
     array(
         'pk_i_id', 'fk_i_parent_id', 'i_expiration_days', 'i_position', 'b_enabled', 'b_price_enabled', 's_icon',
-        'fk_i_category_id', 'fk_c_locale_code', 's_name', 's_description', 's_slug', 'i_num_items', 'locale',
+        'i_num_items', 'fk_i_category_id', 'fk_c_locale_code', 's_name', 's_description', 's_slug', 'locale',
     ),
     array_keys($roots[0])
 );
 pin('fk_c_locale_code is overlaid with $this->language', $locale, $roots[0]['fk_c_locale_code']);
 check('the locale sub-array is keyed by locale code', isset($roots[0]['locale'][$locale]), describe($roots[0]));
-pin('a root with no stats row reports a null i_num_items (LEFT JOIN)', null, $roots[0]['i_num_items']);
+pin('a root with no listings reports i_num_items "0", never null', '0', $roots[0]['i_num_items']);
 pin('one findRootCategories() call costs one query', 1, harness_query_count(static function () use ($m) {
     $m->findRootCategories();
 }));
@@ -401,7 +400,7 @@ $subs = $m->findSubcategories($vehicles);
 pin('Vehicles has two children', 2, count($subs));
 pin('ordered by i_position ASC (Cars pos0, Bikes pos1)', array('Cars', 'Bikes'), array_column($subs, 's_name'));
 check('every scalar value in every row is a string or null even though this path binds a parameter (C4)', $rowsScalarStrings($subs), describe($subs));
-pin('the child that has a stats row reports its count as a string', '5', $subs[0]['i_num_items']);
+pin('the child with listings reports its count as a string', '5', $subs[0]['i_num_items']);
 pin('fk_i_parent_id round-trips as a string', (string) $vehicles, $subs[0]['fk_i_parent_id']);
 pin('a leaf category has no subcategories', array(), $m->findSubcategories($sedans));
 pin('one findSubcategories() call costs one query', 1, harness_query_count(static function () use ($m, $vehicles) {
@@ -838,7 +837,7 @@ harness_section('Category::deleteByPrimaryKey — cascade + survivor subtree');
 // Wipe the category tables and build an isolated doomed/survivor pair.
 $admin->query("SET FOREIGN_KEY_CHECKS = 0");
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'plugin_categories'");
-foreach (array($metaCatT, $statsTable, $descTable, $catTable) as $t) {
+foreach (array($metaCatT, $descTable, $catTable) as $t) {
     $admin->query("TRUNCATE TABLE $t");
 }
 
@@ -869,14 +868,13 @@ check('the doomed root is gone', !$catExists($doomRoot));
 check('the doomed middle category is gone (recursion)', !$catExists($doomMid));
 check('the doomed leaf is gone (recursion)', !$catExists($doomLeaf));
 pin('every doomed description row is gone', 0, $countWhere($descTable, 'fk_i_category_id', $doomRoot) + $countWhere($descTable, 'fk_i_category_id', $doomMid) + $countWhere($descTable, 'fk_i_category_id', $doomLeaf));
-pin('every doomed stats row is gone', 0, $countWhere($statsTable, 'fk_i_category_id', $doomRoot) + $countWhere($statsTable, 'fk_i_category_id', $doomMid) + $countWhere($statsTable, 'fk_i_category_id', $doomLeaf));
 pin('every doomed plugin-category row is gone', 0, $pluginsOn($doomRoot) + $pluginsOn($doomLeaf));
 pin('every doomed meta-category row is gone', 0, $countWhere($metaCatT, 'fk_i_category_id', $doomRoot) + $countWhere($metaCatT, 'fk_i_category_id', $doomLeaf));
 
 check('the survivor root is untouched', $catExists($survRoot));
 check('the survivor child is untouched', $catExists($survChild));
 pin('the survivor description rows are untouched', 2, $countWhere($descTable, 'fk_i_category_id', $survRoot) + $countWhere($descTable, 'fk_i_category_id', $survChild));
-pin('the survivor stats row is untouched', 1, $countWhere($statsTable, 'fk_i_category_id', $survRoot));
+pin('the survivor count is untouched', 9, (int) $admin->query("SELECT i_num_items FROM $catTable WHERE pk_i_id = $survRoot")->fetch_row()[0]);
 pin('the survivor plugin-category row is untouched', 1, $pluginsOn($survRoot));
 pin('the survivor meta-category row is untouched', 1, $countWhere($metaCatT, 'fk_i_category_id', $survRoot));
 

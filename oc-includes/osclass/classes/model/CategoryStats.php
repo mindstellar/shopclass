@@ -12,10 +12,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Db;
+use mindstellar\listing\ListingCountStore;
 
 /**
- * Model database for CategoryStats table
+ * The live listing count of each category, kept in t_category.i_num_items
  *
  * @package    Shopclass
  * @subpackage Model
@@ -25,7 +25,8 @@ class CategoryStats extends DAO
     use \mindstellar\base\SharedInstance;
 
     /**
-     * Set data related to t_category_stats table
+     * Names the table that held the counts before 7.0, so the inherited DAO methods have no
+     * table to act on. The counts are in t_category.i_num_items, through ListingCountStore.
      */
     public function __construct()
     {
@@ -44,41 +45,29 @@ class CategoryStats extends DAO
     }
 
     /**
-     * Increase number of category items, given a category id
+     * Add one to a category's count and to each of its parents'.
      *
-     * @param int $categoryId Category id
+     * @param int $categoryId
      *
-     * @return bool|int True once written, false on a non-numeric id or a failed
-     *                   write; an int once the parent chain has been walked
+     * @return bool|int true for a top category, the number of categories counted for a
+     *                  subcategory, or false when the id is not a number or the write fails
      */
     public function increaseNumItems($categoryId)
     {
         if (!is_numeric($categoryId)) {
             return false;
         }
-
-        // Legacy built this SQL with sprintf('%d', $categoryId), truncating to
-        // an integer before the query ever reached the database. A bound
-        // parameter has to reproduce that same truncation explicitly: MySQL's
-        // foreign-key check on a prepared value does not coerce a fractional
-        // numeric string the way a plain integer literal does, so an uncast
-        // bind of e.g. "5.7" fails where the legacy, already-truncated SQL
-        // text succeeds.
-        $categoryId = (int)$categoryId;
-
-        // The category and every ancestor, counted in one statement.
-        $ids = iterator_to_array($this->chain($categoryId), false);
+        $ids = iterator_to_array($this->chain((int)$categoryId), false);
         if ($ids === array()) {
             return false;
         }
 
-        $sql = 'INSERT INTO ' . $this->getTableName()
-            . ' (fk_i_category_id, i_num_items) VALUES ' . implode(', ', array_fill(0, count($ids), '(?, 1)'))
-            . ' ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1';
-
         try {
-            Db::execute($sql, $ids);
+            $changed = ListingCountStore::categories()->add($ids, 1);
         } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+        if ($changed === 0) {
             return false;
         }
 
@@ -86,36 +75,25 @@ class CategoryStats extends DAO
     }
 
     /**
-     * Decrease number of category items, given a category id
+     * Take one from a category's count and from each of its parents', never below zero.
      *
-     * @param int|null $categoryId Category id
+     * @param int $categoryId
      *
-     * @return int|false Affected rows across the category and its ancestors,
-     *                   false on a null id or a failed query
+     * @return int|false rows changed, or false when the id is missing or a write fails
      */
     public function decreaseNumItems($categoryId)
     {
-        if ($categoryId === null) {
-            // Legacy where('fk_i_category_id', null) only appends a value when
-            // it is non-null, so it emits a bare "fk_i_category_id =" with no
-            // right-hand side -- a SQL syntax error that fails the SELECT and
-            // returns bool false after exactly one query, before ever reaching
-            // a write. A bound null is valid SQL matching zero rows, so a
-            // naive conversion would fall through to the insert branch and
-            // fail there instead (NULL into a NOT NULL column) -- reaching
-            // the same false, but at the cost of a second, wasted query.
-            // Guarded explicitly so the cost matches, not just the return
-            // value.
+        if ($categoryId === null || !is_numeric($categoryId)) {
             return false;
         }
 
-        $return = false;
-        foreach ($this->chain((int)$categoryId) as $id) {
-            $level = $this->decreaseOne($id);
-            if ($level === false) {
-                return false;
+        $return = 0;
+        try {
+            foreach ($this->chain((int)$categoryId) as $id) {
+                $return += ListingCountStore::categories()->add(array($id), -1);
             }
-            $return = (int)$return + $level;
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
         }
 
         return $return;
@@ -138,107 +116,54 @@ class CategoryStats extends DAO
     }
 
     /**
-     * Take one listing off a category's count, or start its row at 0.
-     *
-     * @return int|false Affected rows, false on a failed query
-     */
-    private function decreaseOne(int $categoryId)
-    {
-        try {
-            $row = Db::table($this->getTableName())
-                ->select('i_num_items')
-                ->where($this->getPrimaryKey(), $categoryId)
-                ->first();
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
-        }
-
-        if ($row === null) {
-            try {
-                Db::table($this->getTableName())->insert(array(
-                    'fk_i_category_id' => $categoryId,
-                    'i_num_items'      => 0,
-                ));
-            } catch (\mindstellar\database\DbException $e) {
-                return false;
-            }
-
-            return 0;
-        }
-
-        try {
-            return Db::execute(
-                'UPDATE ' . $this->getTableName()
-                . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_category_id = ?',
-                array($categoryId)
-            );
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Set i_num_items outright for a category, inserting the row if needed.
+     * Set a category's count.
      *
      * @param int $categoryID
      * @param int $numItems
      *
-     * @return bool False when the write failed
+     * @return bool false when the write fails
      */
     public function setNumItems($categoryID, $numItems)
     {
-        $categoryID = (int)$categoryID;
-        $numItems   = (int)$numItems;
-
-        $sql = 'INSERT INTO ' . $this->getTableName()
-            . ' (fk_i_category_id, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
-
         try {
-            Db::execute($sql, array($categoryID, $numItems, $numItems));
+            return ListingCountStore::categories()->set(array((int)$categoryID => (int)$numItems));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
-
-        return true;
     }
 
     /**
-     * Find stats by category id
+     * A category's count, as the old stats row: fk_i_category_id and i_num_items.
      *
-     * @param int $categoryId Category id
+     * @param int $categoryId
      *
-     * @return array<string,string|null>|false False when the category has no stats row
+     * @return array<string,string>|false False when there is no such category
      */
     public function findByCategoryId($categoryId)
     {
-        return $this->findByPrimaryKey($categoryId);
+        try {
+            return (ListingCountStore::categories()->row((int)$categoryId, 'fk_i_category_id') ?? false);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
-     * Count items,  given a category id
+     * A category's count.
      *
-     * @param int $categoryId Category id
+     * @param int $categoryId
      *
-     * @return int|string number of items into category, int 0 when there is no row
+     * @return int|string the count as a string, or 0 when there is no such category
      */
     public function countItemsFromCategory($categoryId)
     {
         try {
-            $row = Db::table($this->getTableName())
-                ->select('i_num_items')
-                ->where('fk_i_category_id', $categoryId)
-                ->first();
+            $row = (ListingCountStore::categories()->row((int)$categoryId, 'fk_i_category_id') ?? false);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        if ($row === null) {
-            return 0;
-        }
-
-        $row = Db::stringifyRow($row);
-
-        return $row['i_num_items'];
+        return $row === false ? 0 : $row['i_num_items'];
     }
 
     /**
@@ -280,18 +205,17 @@ class CategoryStats extends DAO
      */
     public function toNumItemsMap()
     {
-        $map = array();
-        $all = $this->listAll();
+        try {
+            $map = ListingCountStore::categories()->all();
+        } catch (\mindstellar\database\DbException $e) {
+            $map = array();
+        }
 
-        if (empty($all)) {
+        if (empty($map)) {
             return array();
         }
 
         $roots = Category::getInstance()->findRootCategories();
-
-        foreach ($all as $a) {
-            $map[$a['fk_i_category_id']] = $a['i_num_items'];
-        }
 
         $new_map = array();
         foreach ($roots as $root) {

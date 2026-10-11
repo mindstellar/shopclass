@@ -1232,6 +1232,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\job\\JobWorker' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/job/JobWorker.php',
         'mindstellar\\language\\LanguageService' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/language/LanguageService.php',
         'mindstellar\\language\\LocaleStore' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/language/LocaleStore.php',
+        'mindstellar\\listing\\ListingCountStore' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/listing/ListingCountStore.php',
         'mindstellar\\listing\\ListingCounters' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/listing/ListingCounters.php',
         'mindstellar\\listing\\ListingGeocode' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/listing/ListingGeocode.php',
         'mindstellar\\listing\\ListingInput' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/listing/ListingInput.php',

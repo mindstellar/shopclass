@@ -34,6 +34,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Breaking
 
+- The live listing count of each country, region, city and category is now an `i_num_items` column on `t_country`, `t_region`, `t_city` and `t_category`; the four `t_*_stats` tables are gone. `CityStats` and the other stats classes keep their methods.
 - `t_category_slug_history` and `t_location_slug_history` are now one table, `t_slug_history`, with an `e_type` column (`CATEGORY`, `REGION` or `CITY`).
 - Saved-search alerts go out daily or weekly; hourly alerts become daily on upgrade. `hook_alert_email_hourly` no longer fires.
 - Listing photos moved from `t_item_resource` into `t_resource` (owner type `item`), with the same ids, files and links; `fk_i_item_id` is `i_owner_id` there. Use the photo helpers or `ItemResource` instead of SQL on the old table.

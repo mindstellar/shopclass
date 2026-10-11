@@ -197,7 +197,6 @@ class City extends DAO
             $result += $mCityAreas->deleteByPrimaryKey((int) $cityarea['pk_i_id']);
         }
         Item::getInstance()->deleteByCity($pk);
-        CityStats::getInstance()->delete(array('fk_i_city_id' => $pk));
         User::getInstance()->update(array('fk_i_city_id' => null, 's_city' => ''), array('fk_i_city_id' => $pk));
 
         // Old slugs would keep redirecting to a city that is gone.

@@ -175,7 +175,6 @@ class Region extends DAO
             $result += $mCities->deleteByPrimaryKey((int) $city['pk_i_id']);
         }
         Item::getInstance()->deleteByRegion($pk);
-        RegionStats::getInstance()->delete(array('fk_i_region_id' => $pk));
         User::getInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
 
         // Old slugs would keep redirecting to a region that is gone.

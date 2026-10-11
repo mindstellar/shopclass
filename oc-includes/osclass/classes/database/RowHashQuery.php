@@ -61,6 +61,10 @@ final class RowHashQuery extends Model
         't_api_credential' => ['dt_last_used', 's_last_ip'],
         // The search point follows from the location columns that are hashed.
         't_item_location'  => ['d_geo_lat', 'd_geo_long', 'e_geo_precision'],
+        // The live listing count changes with every listing, not with the row's own edits.
+        't_category'       => ['i_num_items'],
+        't_region'         => ['i_num_items'],
+        't_city'           => ['i_num_items'],
     ];
 
     /**

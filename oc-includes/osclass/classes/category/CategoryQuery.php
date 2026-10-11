@@ -28,7 +28,7 @@ final class CategoryQuery
     public function rows(?int $id = null): array
     {
         $p   = DB_TABLE_PREFIX;
-        $sql = 'SELECT c.*, s.i_num_items FROM ' . $p . 't_category c LEFT JOIN ' . $p . 't_category_stats s ON s.fk_i_category_id = c.pk_i_id';
+        $sql = 'SELECT c.* FROM ' . $p . 't_category c';
 
         return Db::stringifyRows($id === null
             ? Db::select($sql . ' ORDER BY c.i_position ASC, c.pk_i_id ASC')
@@ -85,9 +85,8 @@ final class CategoryQuery
             $p = DB_TABLE_PREFIX;
             try {
                 return Db::stringifyRows(Db::select(
-                    'SELECT a.*, b.*, c.i_num_items FROM ' . $p . 't_category a'
+                    'SELECT a.*, b.* FROM ' . $p . 't_category a'
                     . ' LEFT JOIN ' . $p . 't_category_description b ON a.pk_i_id = b.fk_i_category_id'
-                    . ' LEFT JOIN ' . $p . 't_category_stats c ON a.pk_i_id = c.fk_i_category_id'
                     . " WHERE b.s_name != '' AND a.b_enabled = 1 ORDER BY a.i_position ASC, a.pk_i_id ASC"
                 ));
             } catch (\mindstellar\database\DbException $e) {
