@@ -122,6 +122,7 @@ use mindstellar\apikey\ApiSettings;
 use mindstellar\apikey\CredentialKind;
 use mindstellar\apikey\KeyOwner;
 use mindstellar\apikey\Scopes;
+use mindstellar\listing\ListingStore;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 
@@ -425,6 +426,30 @@ $next = (string) $r->body()['links']['next'];
 parse_str((string) parse_url($next, PHP_URL_QUERY), $nextQuery);
 pin('a later keyset page reports no total (it would count only what is left)', null, $get('listings', $nextQuery, $publicKey)->body()['meta']['total']);
 pin('a cursor reused with other filters is refused', 400, $get('listings', array('category' => 'bikes', 'cursor' => $nextQuery['cursor']), $publicKey)->status());
+
+harness_section('distance search');
+$near = array('lat' => '30.27', 'lng' => '-97.74');
+$off  = $get('listings', $near + array('radius' => '10'), $publicKey);
+pin('switched off, a distance search is refused and names the field', array(422, '/lat'), array($off->status(), $off->body()['errors'][0]['pointer'] ?? null));
+pin('so is a distance sort', 422, $get('listings', array('sort' => 'distance'), $publicKey)->status());
+Preference::getInstance()->set('geo_search', '1');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$admin->query("UPDATE {$p}t_city SET d_coord_lat = 30.267153, d_coord_long = -97.743061 WHERE pk_i_id = $city");
+ListingStore::refreshPoints(0, 100000);
+pin('every car within 10 km of the city centre', 25, $get('listings', $near + array('radius' => '10', 'category' => 'cars', 'count' => 'true'), $publicKey)->body()['meta']['total']);
+pin('a listing with no place is not in a distance search', 0, $get('listings', $near + array('radius' => '1000', 'q' => 'racing', 'count' => 'true'), $publicKey)->body()['meta']['total']);
+pin('nothing within 1 km of a point 50 km away', 0, $get('listings', array('lat' => '30.72', 'lng' => '-97.74', 'radius' => '1', 'category' => 'cars', 'count' => 'true'), $publicKey)->body()['meta']['total']);
+$r = $get('listings', $near + array('sort' => 'distance', 'category' => 'cars', 'limit' => 3), $publicKey);
+pin('nearest first gives each listing its distance in whole km', array(200, array(0, 0, 0)), array($r->status(), array_column(array_column($r->body()['data'], 'location'), 'distance_km')));
+pin('a distance page matches the schema', array(), $schemaErrors('ListingPage', $r));
+pin('outside a distance search distance_km is null', array(null), array_unique(array_column(array_column($get('listings', array('category' => 'cars', 'limit' => 3), $publicKey)->body()['data'], 'location'), 'distance_km')));
+$half = $get('listings', array('lat' => '30.27', 'radius' => '10'), $publicKey);
+pin('a point needs both lat and lng', array(422, '/lng'), array($half->status(), $half->body()['errors'][0]['pointer'] ?? null));
+pin('a radius past the route maximum is refused', 422, $get('listings', $near + array('radius' => '5000'), $publicKey)->status());
+Preference::getInstance()->set('geo_search', '0');
+scratchdb_forget_cache();
+osc_reset_preferences();
 
 harness_section('search_conditions');
 $calls     = array();

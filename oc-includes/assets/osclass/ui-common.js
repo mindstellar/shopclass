@@ -283,3 +283,58 @@ function oscAutocomplete(input, opts) {
         initLocationAutocomplete();
     }
 })();
+
+// Search form distance field. "Use my location" puts the browser's position, rounded to two
+// decimals (about 1 km), in place of the picked city and region and sends the form. Picking
+// a place again drops that position, so the radius measures from the place.
+(function () {
+    var PLACE = ['sCity', 'sRegion', 'cityId', 'regionId', 'sCityArea'];
+
+    function setPoint(form, name, value) {
+        var input = form.querySelector('input[name="' + name + '"]');
+        if (value === null) {
+            if (input) { input.parentNode.removeChild(input); }
+            return;
+        }
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            form.appendChild(input);
+        }
+        input.value = value;
+    }
+
+    document.addEventListener('click', function (e) {
+        var button = e.target.closest ? e.target.closest('[data-osc-near-me]') : null;
+        if (!button || !button.form) { return; }
+        var form = button.form;
+        if (!navigator.geolocation) {
+            window.alert(button.getAttribute('data-error'));
+            return;
+        }
+        button.disabled = true;
+        navigator.geolocation.getCurrentPosition(function (pos) {
+            setPoint(form, 'sLat', pos.coords.latitude.toFixed(2));
+            setPoint(form, 'sLng', pos.coords.longitude.toFixed(2));
+            for (var i = 0; i < PLACE.length; i++) {
+                var field = form.querySelector('[name="' + PLACE[i] + '"]');
+                if (field) { field.value = ''; }
+            }
+            var radius = form.querySelector('select[name="iRadius"]');
+            if (radius && radius.value === '' && radius.options.length > 3) { radius.selectedIndex = 3; }
+            form.submit();
+        }, function () {
+            button.disabled = false;
+            window.alert(button.getAttribute('data-error'));
+        }, { timeout: 10000, maximumAge: 600000 });
+    });
+
+    document.addEventListener('change', function (e) {
+        var field = e.target;
+        if (field.form && field.form.querySelector('[data-osc-distance]') && PLACE.indexOf(field.name) !== -1) {
+            setPoint(field.form, 'sLat', null);
+            setPoint(field.form, 'sLng', null);
+        }
+    });
+})();

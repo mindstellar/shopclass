@@ -542,6 +542,22 @@ function osc_item_zip()
 }
 
 /**
+ * How far the current listing is from the search's point, as a whole number in the site's
+ * unit, or null outside a distance search.
+ *
+ * @return int|null
+ */
+function osc_item_distance()
+{
+    $km = osc_item_field('distance');
+    if (!is_numeric($km)) {
+        return null;
+    }
+
+    return (int) round(\mindstellar\search\Distance::fromKm((float) $km, osc_distance_unit()));
+}
+
+/**
  * Gets latitude of current item
  *
  * @return float

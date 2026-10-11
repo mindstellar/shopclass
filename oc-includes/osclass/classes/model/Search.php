@@ -228,7 +228,7 @@ class Search extends DAO
      */
     public static function getAllowedColumnsForSorting()
     {
-        return array('i_price', 'dt_pub_date', 'dt_expiration', 'relevance');
+        return array('i_price', 'dt_pub_date', 'dt_expiration', 'relevance', 'distance');
     }
 
     /**
@@ -692,6 +692,25 @@ class Search extends DAO
     public function addCity($city = array())
     {
         $this->parts->locations->addCity($city);
+    }
+
+    /**
+     * Keep only listings within $km of a point, and give each row its distance in km, so
+     * order('distance') lists the nearest first.
+     */
+    public function near(float $lat, float $lng, float $km): void
+    {
+        $this->parts->radius->near($lat, $lng, $km);
+    }
+
+    /**
+     * The point and radius set by near(), or null.
+     *
+     * @return array{lat:float,lng:float,km:float}|null
+     */
+    public function nearPoint(): ?array
+    {
+        return $this->parts->radius->recorded();
     }
 
     /**

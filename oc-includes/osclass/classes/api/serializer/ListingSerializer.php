@@ -211,6 +211,7 @@ final class ListingSerializer
             'zip'       => Format::text($item['s_zip'] ?? null),
             'lat'       => Format::float($item['d_coord_lat'] ?? null),
             'lng'       => Format::float($item['d_coord_long'] ?? null),
+            'distance_km' => is_numeric($item['distance'] ?? null) ? (int) round((float) $item['distance']) : null,
         ];
     }
 

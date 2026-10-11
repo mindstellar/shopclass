@@ -1131,8 +1131,11 @@ Search listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
+| `lng` | query | number | no |  |
+| `radius` | query | number | no | Only listings within this many km of lat/lng. |
 | `custom_field` | query | object | no | custom_field[<id>]=<value> |
-| `sort` | query | string: `created`, `id`, `price`, `relevance` | no |  |
+| `sort` | query | string: `created`, `id`, `price`, `relevance`, `distance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
@@ -1437,8 +1440,11 @@ A user's live listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
+| `lng` | query | number | no |  |
+| `radius` | query | number | no | Only listings within this many km of lat/lng. |
 | `custom_field` | query | object | no | custom_field[<id>]=<value> |
-| `sort` | query | string: `created`, `id`, `price`, `relevance` | no |  |
+| `sort` | query | string: `created`, `id`, `price`, `relevance`, `distance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |

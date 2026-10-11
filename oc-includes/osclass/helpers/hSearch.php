@@ -55,7 +55,93 @@ function osc_list_orders()
         $list_order[__('Higher price first')] = ['sOrder' => 'i_price', 'iOrderType' => 'desc'];
     }
 
+    if (osc_geo_search_enabled()) {
+        $list_order[__('Nearest first')] = ['sOrder' => 'distance', 'iOrderType' => 'asc'];
+    }
+
     return $list_order;
+}
+
+/**
+ * The search radius in the site's distance unit, or 0 when the search has none.
+ *
+ * @return int
+ */
+function osc_search_radius()
+{
+    return (int) View::getInstance()->_get('search_radius');
+}
+
+/**
+ * The point the current search measures distances from, or null.
+ *
+ * @return array{0:float,1:float}|null latitude, longitude
+ */
+function osc_search_near()
+{
+    $near = View::getInstance()->_get('search_near');
+
+    return is_array($near) ? $near : null;
+}
+
+/**
+ * The radius choices for a search form: value => label, such as 25 => 'Within 25 km'.
+ *
+ * @return array<int,string>
+ */
+function osc_search_radius_options()
+{
+    $options = array();
+    foreach (\mindstellar\search\Distance::BANDS as $band) {
+        $options[$band] = sprintf(__('Within %s'), osc_distance_label($band));
+    }
+
+    return $options;
+}
+
+/**
+ * A distance in the site's unit as text, such as '25 km' or '3 mi'.
+ *
+ * @param int|float $value
+ *
+ * @return string
+ */
+function osc_distance_label($value)
+{
+    return osc_distance_unit() === 'mi'
+        ? sprintf(_n('%d mile', '%d miles', (int) $value), (int) $value)
+        : sprintf(__('%d km'), (int) $value);
+}
+
+/**
+ * The distance field of the search form: a radius choice and a "Use my location" button.
+ * Core adds it to `search_form` when distance search is on; a theme that draws its own removes the hook.
+ *
+ * @return void
+ */
+function osc_search_distance_field()
+{
+    if (!osc_geo_search_enabled()) {
+        return;
+    }
+    osc_enqueue_script('osc-ui-common');
+    $near    = osc_search_near();
+    $current = osc_search_radius();
+    echo '<fieldset class="osc-distance" data-osc-distance>';
+    echo '<label for="osc-radius">' . osc_esc_html(__('Distance')) . '</label>';
+    echo '<select name="iRadius" id="osc-radius">';
+    echo '<option value="">' . osc_esc_html(__('Any distance')) . '</option>';
+    foreach (osc_search_radius_options() as $band => $label) {
+        echo '<option value="' . (int) $band . '"' . ($band === $current ? ' selected' : '') . '>' . osc_esc_html($label) . '</option>';
+    }
+    echo '</select>';
+    if ($near !== null && Params::getParam('sLat') !== '') {
+        echo '<input type="hidden" name="sLat" value="' . osc_esc_html(sprintf('%.2f', $near[0])) . '">';
+        echo '<input type="hidden" name="sLng" value="' . osc_esc_html(sprintf('%.2f', $near[1])) . '">';
+    }
+    echo '<button type="button" class="osc-near-me" data-osc-near-me data-error="'
+        . osc_esc_html(__('Your location is not available.')) . '">' . osc_esc_html(__('Use my location')) . '</button>';
+    echo '</fieldset>';
 }
 
 /**

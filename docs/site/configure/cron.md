@@ -131,7 +131,7 @@ php /path/to/site/oc-cli.php cron --type=hourly
 |---|---|
 | Hourly | Expiring premium listings that their own background job missed |
 | Daily | Daily e-mail alerts; cleanup of expired, spam, blocked and unactivated content |
-| Weekly | Weekly e-mail alerts; longer-running maintenance |
+| Weekly | Weekly e-mail alerts; listing points for distance search; longer-running maintenance |
 
 Plugins add their own jobs through the `cron_hourly`, `cron_daily` and
 `cron_weekly` hooks.

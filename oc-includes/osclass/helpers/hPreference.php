@@ -1041,6 +1041,26 @@ function osc_save_latest_searches()
 }
 
 /**
+ * Whether the search page offers distance search.
+ *
+ * @return bool
+ */
+function osc_geo_search_enabled()
+{
+    return getBoolPreference('geo_search');
+}
+
+/**
+ * The unit distances are shown in: 'km' or 'mi'.
+ *
+ * @return string
+ */
+function osc_distance_unit()
+{
+    return getPreference('distance_unit') === 'mi' ? 'mi' : 'km';
+}
+
+/**
  * How long latest searches are kept before they are purged.
  *
  * @return string

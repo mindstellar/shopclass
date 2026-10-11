@@ -92,6 +92,26 @@ final class LocationQuery
     }
 
     /**
+     * A city's or region's centre, found by id or else by name, within a country when given.
+     *
+     * @param string $level REGION or CITY
+     *
+     * @return array{0:float,1:float}|null latitude and longitude
+     */
+    public function centre(string $level, int|string $place, ?string $country = null): ?array
+    {
+        $query = $this->table($level)->select('d_coord_lat', 'd_coord_long')
+            ->whereNotNull('d_coord_lat')->whereNotNull('d_coord_long');
+        $query = is_numeric($place) ? $query->where('pk_i_id', (int) $place) : $query->where('s_name', trim((string) $place));
+        if ($country !== null && $country !== '') {
+            $query = $query->where('fk_c_country_code', strtoupper($country));
+        }
+        $row   = $query->orderBy('pk_i_id')->first();
+
+        return $row === null ? null : array((float) $row['d_coord_lat'], (float) $row['d_coord_long']);
+    }
+
+    /**
      * In one read: whether the country exists, the region's country and the city's region and
      * country, and the stored code and names. A member is null when its place is not stored.
      *

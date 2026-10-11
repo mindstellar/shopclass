@@ -38,7 +38,7 @@ final class SearchCompiler
         $p             = DB_TABLE_PREFIX;
         $conditionsSql = $parts->plugin->conditionsSql();
         $extraFields   = $parts->plugin->fieldList();
-        $withLocations = $parts->locations->used();
+        $withLocations = $parts->locations->used() || $parts->radius->used();
         $s             = $parts->newStatement();
 
         if ($parts->byItemId) {
@@ -88,6 +88,7 @@ final class SearchCompiler
         if ($withLocations || self::admin()) {
             self::joinLocation($s);
             $parts->locations->apply($s);
+            $parts->radius->apply($s, $count);
         }
         if ($parts->withPicture) {
             // A per-listing lookup that stops at the first photo; EXISTS would be planned as a scan of every photo.
@@ -102,6 +103,10 @@ final class SearchCompiler
 
         // Order and limit do not matter to a COUNT, and leaving the limit out keeps it exact.
         if (!$count) {
+            // Nearest first needs a point to measure from; without one it is the newest first.
+            if ($parts->ordering->column() === 'distance') {
+                $parts->ordering->order($parts->radius->used() ? 'distance' : 'dt_pub_date', $parts->radius->used() ? 'ASC' : 'DESC', null, false);
+            }
             $parts->ordering->apply($s);
             $s->prependOrderBy($parts->leadOrder);
         }
@@ -143,7 +148,7 @@ final class SearchCompiler
         // The filters fire here too, as they always have, though the block uses neither.
         $parts->plugin->conditionsSql();
         $parts->plugin->fieldList();
-        $withLocations = $parts->locations->used();
+        $withLocations = $parts->locations->used() || $parts->radius->used();
         $sub           = null;
 
         if ($parts->pattern->active()) {
@@ -171,6 +176,7 @@ final class SearchCompiler
         if ($withLocations || self::admin()) {
             self::joinLocation($s);
             $parts->locations->apply($s);
+            $parts->radius->apply($s, true);
         }
         $parts->categories->apply($s);
         if ($sub !== null) {

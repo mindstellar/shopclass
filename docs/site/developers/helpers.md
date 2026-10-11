@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -500,7 +500,7 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (116)
+### hItems (117)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -554,6 +554,7 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_item_currency()` | Gets currency of current item |
 | `osc_item_currency_symbol()` | Gets currency symbol of an item |
 | `osc_item_description($locale = '')` | Gets description from current item, if $locale is unspecified $locale is current user locale |
+| `osc_item_distance()` | How far the current listing is from the search's point, as a whole number in the site's unit, or null outside a distance search. |
 | `osc_item_dt_expiration()` | Gets date expiration of current item |
 | `osc_item_field($field, $locale = '')` | Gets a specific field from current item |
 | `osc_item_formated_price()` |  |
@@ -830,7 +831,7 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (131)
+### hPreference (133)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -860,9 +861,11 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_default_results_per_page_at_search()` | Gets default results per page at search |
 | `osc_default_show_as_at_search()` | Gets default show as at search |
 | `osc_delete_preference($key = '', $section = 'osclass')` | generic function to delete preferences |
+| `osc_distance_unit()` | The unit distances are shown in: 'km' or 'mi'. |
 | `osc_enable_send_friend()` | Whether the "share listing / send to a friend" form is available at all. |
 | `osc_force_aspect_image()` | Force image aspect |
 | `osc_force_jpeg()` | Force uploaded images to be JPEG |
+| `osc_geo_search_enabled()` | Whether the search page offers distance search. |
 | `osc_get_bool_preference($key, $section = 'osclass')` | generic function to retrieve preferences as bool |
 | `osc_get_int_preference($key, int $default, int $min = PHP_INT_MIN, $section = 'osclass')` | A number preference: $default while it is unset, and never below $min (no floor unless one is given). |
 | `osc_get_preference($key, $section = 'osclass')` | generic function to retrieve preferences |
@@ -1054,7 +1057,7 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_sanitize_url($value)` | Sanitize a website URL. |
 | `osc_sanitize_username($value)` | Sanitize a username |
 
-### hSearch (63)
+### hSearch (68)
 
 `oc-includes/osclass/helpers/hSearch.php`
 
@@ -1065,6 +1068,7 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_count_list_cities($region = '%%%%')` | Gets the total number of cities in list_cities |
 | `osc_count_list_countries()` | Gets the total number of countries in list_countries |
 | `osc_count_list_regions($country = '%%%%')` | Gets the total number of regions in list_regions |
+| `osc_distance_label($value)` | A distance in the site's unit as text, such as '25 km' or '3 mi'. |
 | `osc_get_canonical()` | The canonical URL exported for the current page. |
 | `osc_get_latest_searches($limit = 20)` | Gets the latest searches done in the website |
 | `osc_get_raw_search($conditions)` | Strip a search condition set down to the filters a visitor actually chose, with category ids resolved to names. Takes a decoded t_alerts.s_search; for an alert stored as search values the result also carries `params`, the stored values, and for a held alert it is only `held`, the reason. |
@@ -1104,8 +1108,10 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_search_category_name($locale = '')` | Name of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with osc_search_category_description(). |
 | `osc_search_city()` | Gets current search city |
 | `osc_search_country()` | Gets current search country |
+| `osc_search_distance_field()` | The distance field of the search form: a radius choice and a "Use my location" button. Core adds it to `search_form` when distance search is on; a theme that draws its own removes the hook. |
 | `osc_search_end()` | Gets current search end item record |
 | `osc_search_has_pic()` | Gets if "has pic" option is enabled or not in the search |
+| `osc_search_near()` | The point the current search measures distances from, or null. |
 | `osc_search_only_premium()` | Gets if "only premium" option is enabled or not in the search |
 | `osc_search_order()` | Gets current search order |
 | `osc_search_order_type()` | Gets current search order type |
@@ -1113,6 +1119,8 @@ Core defines 1155 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_search_pattern()` | Gets current search pattern |
 | `osc_search_price_max()` | Gets current search max price |
 | `osc_search_price_min()` | Gets current search min price |
+| `osc_search_radius()` | The search radius in the site's distance unit, or 0 when the search has none. |
+| `osc_search_radius_options()` | The radius choices for a search form: value =&gt; label, such as 25 =&gt; 'Within 25 km'. |
 | `osc_search_region()` | Gets current search region |
 | `osc_search_show_all_url($params = array())` | Gets for a default search (all categories, noother option) |
 | `osc_search_show_as()` | Gets current search "show as" variable (show the items as a list or as a gallery) |

@@ -838,8 +838,11 @@ final class ListingService
         // rejection instead; what is left is a filtered or plugin-supplied value.
         if (!$locationManager->insert($location)) {
             trigger_error('Item location insert wrote no row for item ' . $itemId . '.', E_USER_WARNING);
-        } elseif (ListingGeocode::wanted($location)) {
-            ListingGeocode::queueAfterCommit((int) $itemId);
+        } else {
+            ListingStore::stampPoint((int) $itemId);
+            if (ListingGeocode::wanted($location)) {
+                ListingGeocode::queueAfterCommit((int) $itemId);
+            }
         }
 
         $this->photos->store($aItem['photos'], $itemId);
@@ -934,15 +937,19 @@ final class ListingService
         $locationManager   = \ItemLocation::getInstance();
         $old_item_location = ListingStore::location($aItem['idItem'], true);
         $old_item_location = $old_item_location === null ? false : Db::stringifyRow($old_item_location);
+        $location          = self::keepCoordinates($location, $old_item_location);
 
         // A rejected update leaves the previous location in place and every hook
         // below still fires, so the only trace it left was the unread return value.
         if (!self::sameLocation($location, $old_item_location)) {
             if ($locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false) {
                 trigger_error('Item location update wrote no row for item ' . $aItem['idItem'] . '.', E_USER_WARNING);
-            } elseif (ListingGeocode::wanted($location)) {
-                // Only a changed address is looked up again, so a failed lookup is not retried on every edit.
-                ListingGeocode::queueAfterCommit($aItem['idItem']);
+            } else {
+                ListingStore::stampPoint((int) $aItem['idItem']);
+                if (ListingGeocode::wanted($location)) {
+                    // Only a changed address is looked up again, so a failed lookup is not retried on every edit.
+                    ListingGeocode::queueAfterCommit($aItem['idItem']);
+                }
             }
         }
 
@@ -1200,6 +1207,28 @@ final class ListingService
                 $mField->replace($itemId, $k, $v);
             }
         }
+    }
+
+    /**
+     * A form without map fields sends no coordinates; the stored ones stay while the place is the same.
+     *
+     * @param array<string,mixed>       $location
+     * @param array<string,mixed>|false $stored
+     *
+     * @return array<string,mixed>
+     */
+    private static function keepCoordinates(array $location, array|false $stored): array
+    {
+        if (!is_array($stored) || !empty($location['d_coord_lat']) || !empty($location['d_coord_long'])) {
+            return $location;
+        }
+        $place = array_diff_key($location, array('d_coord_lat' => 1, 'd_coord_long' => 1));
+        if (self::sameLocation($place, $stored)) {
+            $location['d_coord_lat']  = $stored['d_coord_lat'] ?? null;
+            $location['d_coord_long'] = $stored['d_coord_long'] ?? null;
+        }
+
+        return $location;
     }
 
     /**

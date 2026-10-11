@@ -56,6 +56,7 @@ Worth knowing before you port something:
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
 | Style the account and sign-in pages | [Account pages](/docs/developers/account-pages/) |
 | Extend a theme without forking it | [Child themes](/docs/developers/child-themes/) |
+| Show distance search in a theme | [Distance search in themes](/docs/developers/distance-search/) |
 | Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
 | Style the e-mails the site sends | [E-mail layout](/docs/developers/email-layout/) |
