@@ -11,6 +11,7 @@
 namespace mindstellar\admin;
 
 use Closure;
+use Generator;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 use mindstellar\database\SchemaDoctor;
@@ -186,6 +187,9 @@ final class DatabaseTools
      */
     public static function restore(Connection $conn, $handle, ?callable $each = null, bool $replace = false): int
     {
+        // Leave headroom under the server's packet size for the protocol around the statement.
+        $packet = (int) $conn->scalar('SELECT @@max_allowed_packet');
+        $limit  = $packet > 0 ? $packet - intdiv($packet, 8) : PHP_INT_MAX;
         // A backup lists tables in its own order, so a key may point at a table not made yet.
         $conn->execute('SET FOREIGN_KEY_CHECKS = 0');
         try {
@@ -195,7 +199,9 @@ final class DatabaseTools
                 if ($table !== null) {
                     $conn->execute('DROP TABLE IF EXISTS `' . $table . '`');
                 }
-                $conn->execute($statement);
+                foreach (self::splitInsert($statement, $limit) as $part) {
+                    $conn->execute($part);
+                }
                 $ran++;
                 if ($each !== null) {
                     $each($ran);
@@ -206,6 +212,109 @@ final class DatabaseTools
         }
 
         return $ran;
+    }
+
+    /**
+     * A multi-row INSERT longer than $limit bytes as several INSERTs of the same rows, each
+     * within $limit where a single row allows. Any other statement comes back whole.
+     *
+     * @param string $statement
+     * @param int    $limit
+     *
+     * @return Generator<int,string>
+     */
+    public static function splitInsert(string $statement, int $limit): Generator
+    {
+        if (strlen($statement) <= $limit
+            || !preg_match('/^INSERT\s+(?:(?:LOW_PRIORITY|DELAYED|HIGH_PRIORITY|IGNORE)\s+)*(?:INTO\s+)?'
+                . '(?:`(?:[^`]|``)+`|[A-Za-z0-9_$.]+)\s*(?:\((?:[^()`]|`(?:[^`]|``)*`)*\)\s*)?VALUES?\s*/i', $statement, $m)
+        ) {
+            yield $statement;
+
+            return;
+        }
+
+        $header = strlen($m[0]);
+        $tuples = self::tupleEnds($statement, $header);
+        if ($tuples === array()) {
+            yield $statement;
+
+            return;
+        }
+
+        $head  = substr($statement, 0, $header);
+        $start = $header;
+        $end   = $header;
+        foreach ($tuples as $tuple) {
+            [$from, $to] = $tuple;
+            if ($end > $start && $header + $to - $start > $limit) {
+                yield $head . substr($statement, $start, $end - $start);
+                $start = $from;
+            }
+            $end = $to;
+        }
+        yield $head . substr($statement, $start, $end - $start);
+    }
+
+    /**
+     * The [start, end) offsets of each "(...)" row after $offset, or an empty array when
+     * anything but rows separated by commas follows, such as ON DUPLICATE KEY UPDATE.
+     *
+     * @param string $sql
+     * @param int    $offset
+     *
+     * @return array<int,array{0:int,1:int}>
+     */
+    private static function tupleEnds(string $sql, int $offset): array
+    {
+        $length = strlen($sql);
+        $tuples = array();
+        $i      = $offset;
+        while (true) {
+            if (($sql[$i] ?? '') !== '(') {
+                return array();
+            }
+            $from  = $i;
+            $depth = 0;
+            while ($i < $length) {
+                $i  += strcspn($sql, "()'\"`", $i);
+                $char = $sql[$i] ?? '';
+                if ($char === '(') {
+                    $depth++;
+                } elseif ($char === ')') {
+                    $depth--;
+                    if ($depth === 0) {
+                        $i++;
+                        break;
+                    }
+                } elseif ($char !== '') {
+                    // Backslash escapes apply inside values, not inside backtick identifiers.
+                    $i++;
+                    while ($i < $length) {
+                        $i += strcspn($sql, $char === '`' ? '`' : $char . '\\', $i);
+                        if (($sql[$i] ?? '') === '\\') {
+                            $i += 2;
+                            continue;
+                        }
+                        break;
+                    }
+                }
+                $i++;
+            }
+            if ($depth !== 0) {
+                return array();
+            }
+            $tuples[] = array($from, $i);
+            $i += strspn($sql, " \t\r\n", $i);
+            if ($i >= $length) {
+                return $tuples;
+            }
+            if ($sql[$i] !== ',') {
+                return array();
+            }
+            $i++;
+            $i += strspn($sql, " \t\r\n", $i);
+        }
     }
 
     /**

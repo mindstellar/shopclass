@@ -80,6 +80,11 @@ final class FakeConnection extends Connection
 
         return 0;
     }
+
+    public function scalar(string $sql, array $params = array())
+    {
+        return null;
+    }
 }
 
 $base    = sys_get_temp_dir() . '/osc_backup_jobs_' . getmypid();

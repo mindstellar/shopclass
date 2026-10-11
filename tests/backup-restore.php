@@ -11,8 +11,9 @@
 /**
  * A backup is written and restored in streams: a table several times larger than the
  * memory headroom dumps in INSERTs of about 1 MB, restores, and comes back with the same
- * rows. Also: an old one-INSERT backup still restores, foreign keys do not block a restore,
- * a dump with the prefix token restores onto another prefix, a restore replaces tables,
+ * rows. Also: an old one-INSERT backup still restores and splits under the packet limit,
+ * foreign keys do not block a restore, a dump with the prefix token restores onto another
+ * prefix, a restore replaces tables,
  * Restore and Repair wait for a running upgrade, and a failed statement is logged short.
  *
  * Needs a database (the scratch container by default). Usage:  php tests/backup-restore.php
@@ -108,6 +109,34 @@ if ($peak >= 0) {
     check('the split restore holds a few MB at most', $peak < 4 * 1048576, round($peak / 1048576, 1) . ' MB');
     check('...well under the one-INSERT restore', $peak * 4 < $oldPeak);
 }
+
+harness_section('Packet limit');
+
+// MySQL 5.7 allows 4 MB packets by default, so a restore splits a larger INSERT into ones under the limit.
+$handle = fopen($old, 'rb');
+$whole  = \mindstellar\database\SqlStream::statements($handle)->current();
+fclose($handle);
+$parts = iterator_to_array(DatabaseTools::splitInsert($whole, 1048576), false);
+unset($whole);
+check('the old one-INSERT backup splits into INSERTs under 1 MB', count($parts) >= 12 && max(array_map('strlen', $parts)) <= 1048576, count($parts) . ' parts');
+$admin->query("TRUNCATE TABLE `$table`");
+foreach ($parts as $part) {
+    Connection::getInstance()->execute($part);
+}
+unset($parts);
+pin('...which restore every row', $rows, (int) $admin->query("SELECT COUNT(*) FROM `$table`")->fetch_row()[0]);
+pin('...with the same contents', $before, $checksum());
+
+$head = 'INSERT INTO `t` (`a`, `b`) VALUES ';
+pin('rows split only between rows, never inside a quoted value', array(
+    $head . "(1, 'x),(y')",
+    $head . "(2, 'it\\'s ) (', NOW())",
+    $head . '(3, "q"), (4, `c`)',
+), iterator_to_array(DatabaseTools::splitInsert($head . "(1, 'x),(y'),\n(2, 'it\\'s ) (', NOW()),\n(3, \"q\"), (4, `c`)", 54), false));
+$upsert = $head . "(1, 'a'), (2, 'b') ON DUPLICATE KEY UPDATE b = VALUES(b)";
+pin('an INSERT with more after its rows stays whole', array($upsert), iterator_to_array(DatabaseTools::splitInsert($upsert, 10), false));
+pin('a statement within the limit stays whole', array($head . '(1, 2), (3, 4)'), iterator_to_array(DatabaseTools::splitInsert($head . '(1, 2), (3, 4)', 1000), false));
+
 unlink($file);
 unlink($old);
 

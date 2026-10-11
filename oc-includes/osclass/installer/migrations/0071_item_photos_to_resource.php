@@ -53,6 +53,7 @@ return new class () implements MigrationInterface {
             . " WHERE NOT (r.s_owner_type = 'item' AND r.i_owner_id = p.fk_i_item_id)",
             array($step)
         );
+        $this->raiseAutoIncrement($conn, $resources);
 
         $conn->execute(
             'INSERT INTO ' . $resources
@@ -73,6 +74,32 @@ return new class () implements MigrationInterface {
         }
 
         $conn->execute('DROP TABLE ' . $photos);
+    }
+
+    /**
+     * Move the table's AUTO_INCREMENT past its highest id. MySQL 5.7 does not raise it when an
+     * UPDATE moves an id, so a later insert could take a moved id.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    private function raiseAutoIncrement(Connection $conn, string $table): void
+    {
+        $next = 1 + (int) ($conn->select('SELECT MAX(pk_i_id) AS m FROM ' . $table)[0]['m'] ?? 0);
+        // MySQL 8 caches information_schema counters; read the live one so it is never lowered.
+        $expiry = $conn->select("SHOW SESSION VARIABLES LIKE 'information_schema_stats_expiry'")[0]['Value'] ?? null;
+        if ($expiry !== null) {
+            $conn->execute('SET SESSION information_schema_stats_expiry = 0');
+        }
+        $current = (int) ($conn->select(
+            'SELECT AUTO_INCREMENT AS n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?',
+            array($table)
+        )[0]['n'] ?? 0);
+        if ($expiry !== null) {
+            $conn->execute('SET SESSION information_schema_stats_expiry = ' . (int) $expiry);
+        }
+        if ($current < $next) {
+            $conn->execute('ALTER TABLE ' . $table . ' AUTO_INCREMENT = ' . $next);
+        }
     }
 
     private function exists(Connection $conn, string $table): bool
