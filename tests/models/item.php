@@ -435,8 +435,8 @@ $flush();
 $qFive = harness_query_count(static function () use ($model, $five) {
     $model->extendData($five);
 });
-pin('extendData over 2 items issues a fixed 4 queries (desc + category + stats/location + prime)', 4, $qTwo);
-pin('extendData over 5 items issues the SAME 4 queries — the batch is flat, not per-item', 4, $qFive);
+pin('extendData over 2 items issues a fixed 3 queries (desc + stats/location + prime; names come from the loaded categories)', 3, $qTwo);
+pin('extendData over 5 items issues the SAME 3 queries — the batch is flat, not per-item', 3, $qFive);
 
 harness_section('Item::extendData — a single item skips the prime (no >1 fan-out)');
 
@@ -444,7 +444,7 @@ $flush();
 $qOne = harness_query_count(static function () use ($model, $stubRow, $batchIds, $cat) {
     $model->extendData(array($stubRow($batchIds[0], $cat)));
 });
-pin('extendData over 1 item issues 3 queries — the prime only fires for >1 item', 3, $qOne);
+pin('extendData over 1 item issues 2 queries — the prime only fires for >1 item', 2, $qOne);
 
 pin('extendData over an empty set issues no query and returns it unchanged', 0, harness_query_count(static function () use ($model) {
     $model->extendData(array());
@@ -470,7 +470,84 @@ $flush();
 $qFbpk = harness_query_count(static function () use ($model, $A) {
     $model->findByPrimaryKey($A);
 });
-pin('findByPrimaryKey costs a fixed 4 queries (own read + the 3-query single-item extendData)', 4, $qFbpk);
+pin('findByPrimaryKey costs a fixed 3 queries (own read + the 2-query single-item extendData)', 3, $qFbpk);
+
+/* ----------------------------------------------------------------------------
+ * extendCategoryName — names come from the loaded category tree; only ids
+ * missing from it (a disabled category) are read. Output is pinned against the
+ * old one-query implementation, reproduced here.
+ * ------------------------------------------------------------------------- */
+harness_section('Item::extendCategoryName — names from the loaded categories, same output');
+
+$catDescTable = DB_TABLE_PREFIX . 't_category_description';
+$oldCategoryName = static function (array $items, string $prefLocale) use ($admin, $catDescTable): array {
+    $ids  = array_map('intval', array_unique(array_column($items, 'fk_i_category_id')));
+    $rows = $admin->query("SELECT fk_i_category_id, fk_c_locale_code, s_name FROM $catDescTable WHERE fk_i_category_id IN (" . implode(',', $ids) . ") AND s_name != ''")->fetch_all(MYSQLI_ASSOC);
+    $aCategories = array();
+    foreach ($rows as $c) {
+        $aCategories[$c['fk_i_category_id']]['locale'][$c['fk_c_locale_code']]['s_category_name'] = $c['s_name'];
+    }
+    $out = array();
+    foreach ($items as $item) {
+        $names = $aCategories[$item['fk_i_category_id']]['locale'] ?? array();
+        foreach ($item['locale'] ?? array() as $code => $unused) {
+            if (isset($names[$code])) {
+                $item['locale'][$code]['s_category_name'] = $names[$code]['s_category_name'];
+            }
+        }
+        $item['s_category_name'] = $names[$prefLocale]['s_category_name'] ?? (reset($names)['s_category_name'] ?? '');
+        $out[] = $item;
+    }
+
+    return $out;
+};
+$addCategoryName = static function (int $catId, string $code, string $name) use ($admin, $catDescTable): void {
+    seed_exec($admin, "INSERT INTO $catDescTable (fk_i_category_id, fk_c_locale_code, s_name, s_description, s_slug) VALUES (?, ?, ?, '', ?)", 'isss', array($catId, $code, $name, $name));
+};
+
+// Enabled: two names; French only (no name in the preferred locale); an empty English name beside a French one.
+$twoNames = seed_category($admin, 'Boats', null, $locale);
+$addCategoryName($twoNames, 'fr_FR', 'Bateaux');
+$frOnly = seed_category($admin, 'Velos', null, 'fr_FR');
+$emptyEn = seed_category($admin, '', null, $locale);
+$admin->query("UPDATE $catDescTable SET s_name = '' WHERE fk_i_category_id = $emptyEn");
+$addCategoryName($emptyEn, 'fr_FR', 'Jardin');
+// Disabled: not in the loaded tree, so it is read.
+$offCat = seed_category($admin, 'Archived', null, $locale, 0);
+$addCategoryName($offCat, 'fr_FR', 'Archive');
+
+$flush();
+(new ReflectionProperty('Category', 'instance'))->setValue(null, null);
+Category::getInstance($locale);
+
+$withLocales = static function (int $catId) use ($A): array {
+    return array('pk_i_id' => (string) $A, 'fk_i_category_id' => (string) $catId, 'locale' => array('en_US' => array('s_title' => 't'), 'fr_FR' => array('s_title' => 't')));
+};
+$enabledSet = array($withLocales($cat), $withLocales($twoNames), $withLocales($frOnly), $withLocales($emptyEn), $withLocales($sub));
+
+pin('enabled categories: names cost no query', 0, harness_query_count(static function () use ($model, $enabledSet, $locale) {
+    $model->extendCategoryName($enabledSet, $locale);
+}));
+pin('enabled categories: same output as the old query (en_US preferred)', $oldCategoryName($enabledSet, $locale), $model->extendCategoryName($enabledSet, $locale));
+pin('enabled categories: same output as the old query (fr_FR preferred)', $oldCategoryName($enabledSet, 'fr_FR'), $model->extendCategoryName($enabledSet, 'fr_FR'));
+pin('no name in the preferred locale falls back to another locale', 'Velos', $model->extendCategoryName(array($withLocales($frOnly)), $locale)[0]['s_category_name']);
+pin('an empty preferred name falls back too', 'Jardin', $model->extendCategoryName(array($withLocales($emptyEn)), $locale)[0]['s_category_name']);
+
+$mixedSet = array($withLocales($offCat), $withLocales($cat), $withLocales($offCat));
+pin('a disabled category costs one query', 1, harness_query_count(static function () use ($model, $mixedSet, $locale) {
+    $model->extendCategoryName($mixedSet, $locale);
+}));
+pin('a disabled category: same output as the old query', $oldCategoryName($mixedSet, 'fr_FR'), $model->extendCategoryName($mixedSet, 'fr_FR'));
+pin('...and its name is read', 'Archived', $model->extendCategoryName($mixedSet, $locale)[0]['s_category_name']);
+
+harness_section('ListingQuery::statusRow — the view beacon\'s owner check');
+
+$flush();
+pin('statusRow costs one query', 1, harness_query_count(static function () use ($A) {
+    (new \mindstellar\listing\ListingQuery())->statusRow($A);
+}));
+pin('...and gives the same owner as findByPrimaryKey', $model->findByPrimaryKey($A)['fk_i_user_id'], (new \mindstellar\listing\ListingQuery())->statusRow($A)['fk_i_user_id']);
+pin('...and null for an unknown listing', null, (new \mindstellar\listing\ListingQuery())->statusRow(999999));
 
 /* ----------------------------------------------------------------------------
  * listWhere / findByCategoryID — the comodin and its printf form.

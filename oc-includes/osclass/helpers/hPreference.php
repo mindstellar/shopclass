@@ -1349,7 +1349,8 @@ function osc_delete_preference($key = '', $section = 'osclass')
 }
 
 /**
- * Reload preferences
+ * Reload preferences from the table. Call it after writing t_preference with raw SQL: it
+ * also refreshes the copy other requests read from a persistent object cache.
  *
  * @return bool False when nothing could be read
  */

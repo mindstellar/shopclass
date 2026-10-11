@@ -360,7 +360,7 @@ pin('a non-numeric category returns an empty array', array(), $model->categoryPa
 harness_section('Field::categoryPath — one cached parent map, whatever the depth');
 
 scratchdb_forget_cache();
-pin('a cold walk costs one query, the parent map', 1, harness_query_count(static function () use ($model, $cLeaf) {
+pin('a cold walk costs one query, the enabled category rows', 1, harness_query_count(static function () use ($model, $cLeaf) {
     $model->categoryPath($cLeaf);
 }));
 pin('a warm three-deep walk costs no query', 0, harness_query_count(static function () use ($model, $cLeaf) {
@@ -370,6 +370,20 @@ pin('repeated walks cost no query either', 0, harness_query_count(static functio
     $model->categoryPath($cRoot);
     $model->categoryPath($cLeaf);
 }));
+
+harness_section('Field::categoryPath — reuses the enabled category rows');
+
+scratchdb_forget_cache();
+\mindstellar\category\CategoryQuery::enabledRows();
+pin('with the category tree loaded, a walk costs no query', 0, harness_query_count(static function () use ($model, $cLeaf) {
+    $model->categoryPath($cLeaf);
+}));
+
+$cOff   = seed_category($admin, 'Hidden', null, 'en_US', 0);
+$cUnder = seed_category($admin, 'Under hidden', $cOff);
+scratchdb_forget_cache();
+pin('a disabled ancestor is still on the path', array($cUnder, $cOff), $model->categoryPath($cUnder));
+pin('a disabled category resolves to itself', array($cOff), $model->categoryPath($cOff));
 
 /* ----------------------------------------------------------------------------
  * findByGroup() — fields of a form, ordered by their per-form position.

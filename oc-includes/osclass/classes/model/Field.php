@@ -228,6 +228,28 @@ class Field extends DAO
     }
 
     /**
+     * The fields of several groups in one query, each group's ordered by position.
+     *
+     * @param int[] $groupIds
+     *
+     * @return array<int,array<int,array<string,mixed>>> group id => fields; a group with none is absent
+     */
+    public function findByGroups(array $groupIds)
+    {
+        try {
+            $byGroup = \mindstellar\fields\FieldQuery::groupFields(array_map('intval', $groupIds));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        foreach ($byGroup as $groupId => $fields) {
+            $byGroup[$groupId] = array_map(fn (array $field): array => $this->extendField($field), $fields);
+        }
+
+        return $byGroup;
+    }
+
+    /**
      * Find the fields that apply to a category, honouring category inheritance: a
      * field assigned to any ancestor of $id resolves for $id too — either directly
      * (a loose field, via t_meta_categories) or through a group assigned to the

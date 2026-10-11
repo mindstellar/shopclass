@@ -606,7 +606,8 @@ class Search extends DAO
                 $this->fromUser($options['sUser']);
             }
 
-            return $this->doSearch();
+            // Callers only list the rows, so skip the COUNT(*).
+            return $this->doSearch(true, false);
         });
     }
 

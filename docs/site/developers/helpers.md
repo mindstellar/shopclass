@@ -938,7 +938,7 @@ Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_reg_user_can_send_friend()` | Whether sharing a listing by email requires a logged-in web user. |
 | `osc_reg_user_post()` | Gets if only registered users can publish new items or anyone could |
 | `osc_reg_user_post_comments()` | Gets if only users can post comments |
-| `osc_reset_preferences()` | Reload preferences |
+| `osc_reset_preferences()` | Reload preferences from the table. Call it after writing t_preference with raw SQL: it also refreshes the copy other requests read from a persistent object cache. |
 | `osc_rewrite_enabled()` | Gets if nice urls are enabled or not |
 | `osc_rewrite_rules()` | Gets the rewrite rules (generated via generate_rules.php at root folder) |
 | `osc_save_latest_searches()` | Gets if save searches is enabled or not |

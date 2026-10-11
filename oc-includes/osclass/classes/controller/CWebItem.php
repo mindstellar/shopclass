@@ -23,6 +23,7 @@ use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingMailService;
 use mindstellar\listing\ListingNotices;
 use mindstellar\listing\ListingPolicy;
+use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
@@ -952,7 +953,11 @@ class CWebItem extends BaseModel
 
         $id = Params::getParamInt('id');
         if ($id > 0 && osc_apply_filter('count_view_on_beacon', osc_request_counts_as_view(), $id)) {
-            $item = $this->itemManager->findByPrimaryKey($id);
+            try {
+                $item = (new ListingQuery())->statusRow($id);
+            } catch (\mindstellar\database\DbException $e) {
+                $item = null;
+            }
             if (!empty($item)
                 && !osc_is_admin_user_logged_in()
                 && !($item['fk_i_user_id'] != '' && $item['fk_i_user_id'] == osc_logged_user_id())

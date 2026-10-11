@@ -33,7 +33,7 @@ return array(
       7 => 'tv',
     ),
     'count' => null,
-    'q' => 5,
+    'q' => 4,
   ),
   'unfiltered, not extended' =>
   array(
@@ -54,12 +54,12 @@ return array(
   'count() before doSearch' =>
   array(
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'count after uncounted' =>
   array(
     'count' => 0,
-    'q' => 5,
+    'q' => 4,
   ),
   'page 1 of 3' =>
   array(
@@ -70,7 +70,7 @@ return array(
       2 => 'car3',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'limit offset 2 size 3' =>
   array(
@@ -81,7 +81,7 @@ return array(
       2 => 'bike2',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'set_rpp 2' =>
   array(
@@ -91,7 +91,7 @@ return array(
       1 => 'car2',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'page past the end' =>
   array(
@@ -111,7 +111,7 @@ return array(
       3 => 'car3',
     ),
     'count' => 4,
-    'q' => 8,
+    'q' => 5,
   ),
   'subcategory' =>
   array(
@@ -120,7 +120,7 @@ return array(
       0 => 'sport',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'category by slug' =>
   array(
@@ -130,7 +130,7 @@ return array(
       1 => 'bike2',
     ),
     'count' => 2,
-    'q' => 7,
+    'q' => 6,
   ),
   'category by path slug' =>
   array(
@@ -146,7 +146,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 7,
+    'q' => 6,
   ),
   'two categories' =>
   array(
@@ -158,7 +158,7 @@ return array(
       3 => 'tv',
     ),
     'count' => 4,
-    'q' => 6,
+    'q' => 5,
   ),
   'unknown slug' =>
   array(
@@ -174,7 +174,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 7,
+    'q' => 6,
   ),
   'category id as string' =>
   array(
@@ -184,7 +184,7 @@ return array(
       1 => 'tv',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'region id' =>
   array(
@@ -195,7 +195,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'region id as string' =>
   array(
@@ -206,7 +206,7 @@ return array(
       2 => 'tv',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'region name' =>
   array(
@@ -216,7 +216,7 @@ return array(
       1 => 'car3',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'region name wildcard' =>
   array(
@@ -227,7 +227,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'regions array' =>
   array(
@@ -240,7 +240,7 @@ return array(
       4 => 'sofa',
     ),
     'count' => 5,
-    'q' => 6,
+    'q' => 5,
   ),
   'region leading zero' =>
   array(
@@ -267,7 +267,7 @@ return array(
       2 => 'tv',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'city name' =>
   array(
@@ -278,7 +278,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'cities array' =>
   array(
@@ -291,7 +291,7 @@ return array(
       4 => 'sofa',
     ),
     'count' => 5,
-    'q' => 6,
+    'q' => 5,
   ),
   'city area id' =>
   array(
@@ -300,7 +300,7 @@ return array(
       0 => 'car1',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'city area name' =>
   array(
@@ -309,7 +309,7 @@ return array(
       0 => 'sport',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'city areas array' =>
   array(
@@ -319,7 +319,7 @@ return array(
       1 => 'sport',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'country code' =>
   array(
@@ -329,7 +329,7 @@ return array(
       1 => 'car3',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'country code lower' =>
   array(
@@ -343,7 +343,7 @@ return array(
       5 => 'tv',
     ),
     'count' => 6,
-    'q' => 6,
+    'q' => 5,
   ),
   'country name' =>
   array(
@@ -353,7 +353,7 @@ return array(
       1 => 'car3',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'countries array' =>
   array(
@@ -369,7 +369,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'empty region' =>
   array(
@@ -385,7 +385,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'zero city' =>
   array(
@@ -401,7 +401,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'region and city' =>
   array(
@@ -412,7 +412,7 @@ return array(
       2 => 'tv',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'country, region, category' =>
   array(
@@ -422,7 +422,7 @@ return array(
       1 => 'car2',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'price range' =>
   array(
@@ -433,7 +433,7 @@ return array(
       2 => 'car3',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'price min only' =>
   array(
@@ -445,7 +445,7 @@ return array(
       3 => 'car3',
     ),
     'count' => 4,
-    'q' => 6,
+    'q' => 5,
   ),
   'price max only' =>
   array(
@@ -456,7 +456,7 @@ return array(
       2 => 'tv',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'price zero range' =>
   array(
@@ -472,7 +472,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'price string' =>
   array(
@@ -483,7 +483,7 @@ return array(
       2 => 'car3',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'price float' =>
   array(
@@ -493,7 +493,7 @@ return array(
       1 => 'bike2',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'priceMin()' =>
   array(
@@ -504,7 +504,7 @@ return array(
       2 => 'car3',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'priceMax()' =>
   array(
@@ -515,7 +515,7 @@ return array(
       2 => 'tv',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'pattern word' =>
   array(
@@ -644,7 +644,7 @@ return array(
       0 => 'bike1',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'pattern in user locale misses es_ES' =>
   array(
@@ -662,7 +662,7 @@ return array(
       1 => 'bike2',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'pattern, category, price, premium' =>
   array(
@@ -689,7 +689,7 @@ return array(
       2 => 'tv',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'user id string' =>
   array(
@@ -699,7 +699,7 @@ return array(
       1 => 'bike1',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'username' =>
   array(
@@ -709,7 +709,7 @@ return array(
       1 => 'car3',
     ),
     'count' => 2,
-    'q' => 8,
+    'q' => 7,
   ),
   'unknown username' =>
   array(
@@ -730,7 +730,7 @@ return array(
       4 => 'tv',
     ),
     'count' => 5,
-    'q' => 6,
+    'q' => 5,
   ),
   'usernames array' =>
   array(
@@ -743,7 +743,7 @@ return array(
       4 => 'tv',
     ),
     'count' => 5,
-    'q' => 9,
+    'q' => 8,
   ),
   'with picture' =>
   array(
@@ -755,7 +755,7 @@ return array(
       3 => 'car3',
     ),
     'count' => 4,
-    'q' => 6,
+    'q' => 5,
   ),
   'only premium' =>
   array(
@@ -766,7 +766,7 @@ return array(
       2 => 'bike2',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'picture and premium' =>
   array(
@@ -775,7 +775,7 @@ return array(
       0 => 'sport',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'contact email' =>
   array(
@@ -784,7 +784,7 @@ return array(
       0 => 'sofa',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'contact email quote' =>
   array(
@@ -805,7 +805,7 @@ return array(
       4 => 'sofa',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'item id' =>
   array(
@@ -814,7 +814,7 @@ return array(
       0 => 'car3',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'item id of a hidden listing' =>
   array(
@@ -823,7 +823,7 @@ return array(
       0 => 'hidden',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'include hidden' =>
   array(
@@ -841,7 +841,7 @@ return array(
       9 => 'expired',
     ),
     'count' => 11,
-    'q' => 6,
+    'q' => 5,
   ),
   'include hidden then not' =>
   array(
@@ -857,7 +857,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'new Search(true)' =>
   array(
@@ -875,7 +875,7 @@ return array(
       9 => 'expired',
     ),
     'count' => 11,
-    'q' => 6,
+    'q' => 5,
   ),
   'from primary keys' =>
   array(
@@ -886,7 +886,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'from primary keys unordered' =>
   array(
@@ -897,7 +897,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'from primary keys empty' =>
   array(
@@ -921,7 +921,7 @@ return array(
       7 => 'sport',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order price desc' =>
   array(
@@ -937,7 +937,7 @@ return array(
       7 => 'sofa',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order date asc' =>
   array(
@@ -953,7 +953,7 @@ return array(
       7 => 'car1',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order expiration' =>
   array(
@@ -969,7 +969,7 @@ return array(
       7 => 'car1',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order lower-case dir' =>
   array(
@@ -985,7 +985,7 @@ return array(
       7 => 'sport',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order bad direction' =>
   array(
@@ -1001,7 +1001,7 @@ return array(
       7 => 'sport',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order random' =>
   array(
@@ -1025,7 +1025,7 @@ return array(
       7 => 'car1',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order relevance no pat' =>
   array(
@@ -1049,7 +1049,7 @@ return array(
       7 => 'sport',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order mod date' =>
   array(
@@ -1065,7 +1065,7 @@ return array(
       7 => 'car1',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'order by t_user' =>
   array(
@@ -1080,7 +1080,7 @@ return array(
       6 => 'tv',
     ),
     'count' => 7,
-    'q' => 6,
+    'q' => 5,
   ),
   'orderBy several columns' =>
   array(
@@ -1096,7 +1096,7 @@ return array(
       7 => 'car3',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'addConditions string' =>
   array(
@@ -1109,7 +1109,7 @@ return array(
       4 => 'car3',
     ),
     'count' => 5,
-    'q' => 6,
+    'q' => 5,
   ),
   'addConditions array, duplicate' =>
   array(
@@ -1123,7 +1123,7 @@ return array(
       5 => 'car3',
     ),
     'count' => 6,
-    'q' => 6,
+    'q' => 5,
   ),
   'addConditions with literal question mark' =>
   array(
@@ -1134,7 +1134,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'addCondition with params' =>
   array(
@@ -1143,7 +1143,7 @@ return array(
       0 => 'car2',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'addItemConditions' =>
   array(
@@ -1154,7 +1154,7 @@ return array(
       2 => 'bike2',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'addTable and condition' =>
   array(
@@ -1163,7 +1163,7 @@ return array(
       0 => 'sport',
     ),
     'count' => 1,
-    'q' => 5,
+    'q' => 4,
   ),
   'addJoinTable and field' =>
   array(
@@ -1173,7 +1173,7 @@ return array(
       1 => 'bike1',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'addJoinTable bad type' =>
   array(
@@ -1188,7 +1188,7 @@ return array(
       6 => 'tv',
     ),
     'count' => 7,
-    'q' => 6,
+    'q' => 5,
   ),
   'addField with comma' =>
   array(
@@ -1204,7 +1204,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 6,
+    'q' => 5,
   ),
   'addGroupBy and addHaving' =>
   array(
@@ -1216,7 +1216,7 @@ return array(
       3 => 'car3',
     ),
     'count' => 4,
-    'q' => 6,
+    'q' => 5,
   ),
   'dao where, select, join' =>
   array(
@@ -1227,7 +1227,7 @@ return array(
       2 => 'sport',
     ),
     'count' => 3,
-    'q' => 7,
+    'q' => 6,
   ),
   'dao orderBy and key/value where' =>
   array(
@@ -1242,7 +1242,7 @@ return array(
       6 => 'tv',
     ),
     'count' => 7,
-    'q' => 6,
+    'q' => 5,
   ),
   'broken plugin condition' =>
   array(
@@ -1261,7 +1261,7 @@ return array(
       2 => 'tv',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'sql_search_item_conditions filter' =>
   array(
@@ -1278,7 +1278,7 @@ return array(
       0 => 'car1',
     ),
     'count' => 1,
-    'q' => 7,
+    'q' => 4,
   ),
   'builder: pattern, user, premium' =>
   array(
@@ -1297,7 +1297,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 3,
-    'q' => 6,
+    'q' => 5,
   ),
   'builder: page 2' =>
   array(
@@ -1314,7 +1314,7 @@ return array(
       0 => 'car1',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta TEXTAREA' =>
   array(
@@ -1323,7 +1323,7 @@ return array(
       0 => 'sport',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta URL' =>
   array(
@@ -1332,7 +1332,7 @@ return array(
       0 => 'car2',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta DROPDOWN' =>
   array(
@@ -1341,7 +1341,7 @@ return array(
       0 => 'car1',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta RADIO' =>
   array(
@@ -1350,7 +1350,7 @@ return array(
       0 => 'sport',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta CHECKBOX' =>
   array(
@@ -1359,7 +1359,7 @@ return array(
       0 => 'car1',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta DATE' =>
   array(
@@ -1368,7 +1368,7 @@ return array(
       0 => 'car2',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta DATEINTERVAL' =>
   array(
@@ -1377,7 +1377,7 @@ return array(
       0 => 'car1',
     ),
     'count' => 1,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta NUMBER' =>
   array(
@@ -1387,7 +1387,7 @@ return array(
       1 => 'car3',
     ),
     'count' => 2,
-    'q' => 9,
+    'q' => 8,
   ),
   'builder: meta outside its category' =>
   array(
@@ -1397,7 +1397,7 @@ return array(
       1 => 'bike2',
     ),
     'count' => 2,
-    'q' => 8,
+    'q' => 7,
   ),
   'builder: meta wildcard' =>
   array(
@@ -1407,7 +1407,7 @@ return array(
       1 => 'car2',
     ),
     'count' => 2,
-    'q' => 9,
+    'q' => 8,
   ),
   'runner: request' =>
   array(
@@ -1419,7 +1419,7 @@ return array(
       3 => 'car1',
     ),
     'count' => 4,
-    'q' => 8,
+    'q' => 5,
   ),
   'runner: uncounted with shape' =>
   array(
@@ -1430,7 +1430,7 @@ return array(
       2 => 'car1',
     ),
     'count' => null,
-    'q' => 5,
+    'q' => 4,
   ),
   'premiums' =>
   array(
@@ -1440,7 +1440,7 @@ return array(
       1 => 'car2',
       2 => 'sport',
     ),
-    'q' => 5,
+    'q' => 4,
   ),
   'premiums limit 1' =>
   array(
@@ -1448,7 +1448,7 @@ return array(
     array(
       0 => 1,
     ),
-    'q' => 4,
+    'q' => 3,
   ),
   'premiums in category' =>
   array(
@@ -1457,7 +1457,7 @@ return array(
       0 => 'car2',
       1 => 'sport',
     ),
-    'q' => 5,
+    'q' => 4,
   ),
   'premiums in region' =>
   array(
@@ -1465,7 +1465,7 @@ return array(
     array(
       0 => 'bike2',
     ),
-    'q' => 4,
+    'q' => 3,
   ),
   'premiums with pattern' =>
   array(
@@ -1489,7 +1489,7 @@ return array(
       1 => 'car2',
       2 => 'sport',
     ),
-    'q' => 6,
+    'q' => 4,
   ),
   'latest by category' =>
   array(
@@ -1500,7 +1500,7 @@ return array(
       2 => 'sport',
       3 => 'car3',
     ),
-    'q' => 6,
+    'q' => 4,
   ),
   'latest by country' =>
   array(
@@ -1509,7 +1509,7 @@ return array(
       0 => 'bike2',
       1 => 'car3',
     ),
-    'q' => 6,
+    'q' => 4,
   ),
   'latest by region' =>
   array(
@@ -1519,7 +1519,7 @@ return array(
       1 => 'bike1',
       2 => 'tv',
     ),
-    'q' => 6,
+    'q' => 4,
   ),
   'latest by city' =>
   array(
@@ -1529,7 +1529,7 @@ return array(
       1 => 'car2',
       2 => 'sofa',
     ),
-    'q' => 6,
+    'q' => 4,
   ),
   'latest by user' =>
   array(
@@ -1538,7 +1538,7 @@ return array(
       0 => 'sport',
       1 => 'bike1',
     ),
-    'q' => 6,
+    'q' => 4,
   ),
   'latest with photo' =>
   array(
@@ -1549,7 +1549,7 @@ return array(
       2 => 'bike1',
       3 => 'car3',
     ),
-    'q' => 6,
+    'q' => 4,
   ),
   'countAll' =>
   array(
@@ -1580,7 +1580,7 @@ return array(
       0 => 'car2',
       1 => 'sport',
     ),
-    'q' => 6,
+    'q' => 5,
   ),
   'osc_query_item region and user' =>
   array(
@@ -1590,7 +1590,7 @@ return array(
       1 => 'bike1',
       2 => 'tv',
     ),
-    'q' => 6,
+    'q' => 5,
   ),
   'osc_query_item city area, page' =>
   array(
@@ -1598,7 +1598,7 @@ return array(
     array(
       0 => 'sport',
     ),
-    'q' => 5,
+    'q' => 4,
   ),
   'osc_query_item country, offset' =>
   array(
@@ -1609,7 +1609,7 @@ return array(
       2 => 'sofa',
       3 => 'tv',
     ),
-    'q' => 6,
+    'q' => 5,
   ),
   'osc_query_item id and pattern' =>
   array(
@@ -1617,7 +1617,7 @@ return array(
     array(
       0 => 'car1',
     ),
-    'q' => 5,
+    'q' => 4,
   ),
   'osc_query_item keyword string' =>
   array(
@@ -1626,7 +1626,7 @@ return array(
       0 => 'bike2',
       1 => 'car3',
     ),
-    'q' => 6,
+    'q' => 5,
   ),
   'toJson empty' =>
   array(
@@ -1669,7 +1669,7 @@ return array(
       1 => 'bike2',
     ),
     'count' => 2,
-    'q' => 6,
+    'q' => 5,
   ),
   'setJsonAlert bad envelope' =>
   array(
@@ -1687,7 +1687,7 @@ return array(
       1 => 'car2',
     ),
     'count' => 2,
-    'q' => 8,
+    'q' => 5,
   ),
   'alert replay v2 pattern and meta' =>
   array(
@@ -1707,6 +1707,6 @@ return array(
       3 => 'bike1',
     ),
     'count' => 1,
-    'q' => 11,
+    'q' => 9,
   ),
 );

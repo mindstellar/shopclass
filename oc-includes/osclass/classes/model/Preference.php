@@ -12,6 +12,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\cache\CacheGroup;
+use mindstellar\cache\CacheManager;
+use mindstellar\cache\MemoryCache;
 use mindstellar\database\Db;
 
 /**
@@ -20,6 +23,12 @@ use mindstellar\database\Db;
 class Preference extends DAO
 {
     use \mindstellar\base\SharedInstance;
+
+    /** Seconds the shared map lives, so a write that bypasses this class shows within that time. */
+    private const CACHE_TTL = 300;
+
+    /** Writes through the inherited DAO methods drop the shared map too. */
+    protected $cacheGroup = 'preference';
 
     /**
      * array for save preferences
@@ -37,7 +46,12 @@ class Preference extends DAO
         $this->setTableName('t_preference');
         /* $this->set_primary_key($key); // no primary key in preference table */
         $this->setFields(array('s_section', 's_name', 's_value', 'e_type'));
-        $this->toArray();
+        $shared = $this->loadShared();
+        if ($shared === null) {
+            $this->toArray();
+        } else {
+            $this->merge($shared);
+        }
     }
 
     /**
@@ -47,25 +61,121 @@ class Preference extends DAO
      */
     public function toArray()
     {
+        $map = $this->readTable();
+        if (!$map) {
+            return false;
+        }
+
+        $this->merge($map);
+        $this->share($map);
+
+        return true;
+    }
+
+    /**
+     * Every row as section => name => value, or null when the query failed.
+     *
+     * @return array<string,array<string,string>>|null
+     */
+    private function readTable(): ?array
+    {
         try {
             $rows = Db::table($this->getTableName())->get();
         } catch (\mindstellar\database\DbException $e) {
-            return false;
+            return null;
         }
 
-        if ($rows === []) {
-            return false;
+        // A plain query returns text already, so the rows need no conversion.
+        $map = array();
+        foreach ($rows as $row) {
+            $map[$row['s_section']][$row['s_name']] = $row['s_value'];
         }
 
+        return $map;
+    }
+
+    /**
+     * @param array<string,array<string,string>> $map
+     */
+    private function merge(array $map): void
+    {
         // Merges into the existing map rather than replacing it, so a key
         // removed from the table since the last load stays cached until it is
         // overwritten by name.
-        // A plain query returns text already, so the rows need no conversion.
-        foreach ($rows as $row) {
-            $this->pref[$row['s_section']][$row['s_name']] = $row['s_value'];
+        foreach ($map as $section => $values) {
+            foreach ($values as $name => $value) {
+                $this->pref[$section][$name] = $value;
+            }
+        }
+    }
+
+    /**
+     * Whether the object cache outlives the request. The in-request cache would only hold a
+     * second copy of the map, so it is skipped.
+     */
+    private static function sharedCache(): bool
+    {
+        try {
+            return !(CacheManager::getInstance() instanceof MemoryCache);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * A map from a finished install. Anything else is never cached, so an install in progress
+     * cannot keep the site looking uninstalled.
+     *
+     * @param array<string,array<string,string>>|null $map
+     */
+    private static function shareable(?array $map): bool
+    {
+        return !empty($map['osclass']['osclass_installed']);
+    }
+
+    /**
+     * The map from the object cache, read from the table on a miss.
+     *
+     * @return array<string,array<string,string>>|null null when there is no shared cache to use
+     */
+    private function loadShared(): ?array
+    {
+        if (!self::sharedCache()) {
+            return null;
+        }
+        $read = null;
+        try {
+            $map = CacheGroup::remember('preference', 'map', function () use (&$read): ?array {
+                $read = $this->readTable() ?? array();
+
+                return self::shareable($read) ? $read : null;
+            }, self::CACHE_TTL);
+        } catch (\Throwable $e) {
+            return $read;
         }
 
-        return true;
+        return is_array($map) ? $map : $read;
+    }
+
+    /**
+     * Replace the cached map when it differs from $map, a fresh read of the table.
+     *
+     * @param array<string,array<string,string>> $map
+     */
+    private function share(array $map): void
+    {
+        if (!self::shareable($map) || !self::sharedCache()) {
+            return;
+        }
+        try {
+            $store = static fn (): array => $map;
+            if (CacheGroup::remember('preference', 'map', $store, self::CACHE_TTL) !== $map) {
+                CacheGroup::invalidate('preference');
+                CacheGroup::remember('preference', 'map', $store, self::CACHE_TTL);
+            }
+        } catch (\Throwable $e) {
+            // The next request reads the table.
+        }
     }
 
     /**
@@ -203,6 +313,8 @@ class Preference extends DAO
             return false;
         }
 
+        $this->cacheChanged();
+
         // The map this class answers reads from is loaded once per request, so without
         // this a value written here stays invisible to the code that wrote it until the
         // next request. That reads as a stale preference rather than a missing write: the
@@ -226,14 +338,19 @@ class Preference extends DAO
      */
     public function claim($key, $value, $section = 'osclass')
     {
-        Db::execute(
+        $created = Db::execute(
             'INSERT IGNORE INTO ' . $this->getTableName() . " (s_section, s_name, s_value, e_type) VALUES (?, ?, '', 'STRING')",
             array($section, $key)
         );
 
-        return Db::execute(
+        $changed = Db::execute(
             'UPDATE ' . $this->getTableName() . ' SET s_value = ? WHERE s_section = ? AND s_name = ? AND s_value <> ?',
             array($value, $section, $key, $value)
         ) === 1;
+        if ($created > 0 || $changed) {
+            $this->cacheChanged();
+        }
+
+        return $changed;
     }
 }

@@ -50,6 +50,7 @@ final class LocationStore
     public static function addCountry(string $code, string $name, string $slug): void
     {
         Db::execute('INSERT INTO ' . DB_TABLE_PREFIX . 't_country (pk_c_code, s_name, s_slug) VALUES (?, ?, ?)', array($code, $name, $slug));
+        \mindstellar\cache\CacheGroup::invalidate('country');
     }
 
     /**
@@ -58,6 +59,7 @@ final class LocationStore
     public static function renameCountry(string $code, string $name, string $slug): void
     {
         Db::execute('UPDATE ' . DB_TABLE_PREFIX . 't_country SET s_name = ?, s_slug = ? WHERE pk_c_code = ?', array($name, $slug, $code));
+        \mindstellar\cache\CacheGroup::invalidate('country');
     }
 
     /**

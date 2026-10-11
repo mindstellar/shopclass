@@ -418,13 +418,14 @@ class FieldGroup extends DAO
             return array();
         }
 
+        $rows   = Db::stringifyRows($rows);
+        $fields = Field::getInstance()->findByGroups(array_column($rows, 'pk_i_id'));
         $groups = array();
-        foreach (Db::stringifyRows($rows) as $group) {
-            $fields = Field::getInstance()->findByGroup($group['pk_i_id']);
-            if (empty($fields)) {
+        foreach ($rows as $group) {
+            if (empty($fields[(int) $group['pk_i_id']])) {
                 continue;
             }
-            $group['fields'] = $fields;
+            $group['fields'] = $fields[(int) $group['pk_i_id']];
             $groups[]        = $group;
         }
 

@@ -141,8 +141,9 @@ final class FieldQuery
     }
 
     /**
-     * The category and its ancestors, leaf first, from the cached parent map. A parent
-     * cycle stops at the first repeat.
+     * The category and its ancestors, leaf first. The enabled-category rows the page already
+     * loaded answer it; a disabled category on the path falls back to the cached parent map.
+     * A parent cycle stops at the first repeat.
      *
      * @return int[]
      */
@@ -151,6 +152,15 @@ final class FieldQuery
         if ($categoryId <= 0) {
             return [];
         }
+        $enabled = [];
+        foreach (\mindstellar\category\CategoryQuery::enabledRows() ?? [] as $row) {
+            $enabled[(int) $row['pk_i_id']] = (int) $row['fk_i_parent_id'];
+        }
+        $path = self::walk($categoryId, $enabled);
+        if ($path !== null) {
+            return $path;
+        }
+
         $parents = \mindstellar\cache\CacheGroup::remember('category', 'parents', static function () {
             try {
                 $rows = Db::select('SELECT pk_i_id, fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category');
@@ -160,14 +170,61 @@ final class FieldQuery
 
             return array_map('intval', array_column($rows, 'fk_i_parent_id', 'pk_i_id'));
         }) ?? [];
+
+        return self::walk($categoryId, $parents, false) ?? [];
+    }
+
+    /**
+     * Follow $parents up from $categoryId. Null when $strict and an id on the way is not in the map.
+     *
+     * @param array<int,int> $parents
+     *
+     * @return int[]|null
+     */
+    private static function walk(int $categoryId, array $parents, bool $strict = true): ?array
+    {
         $path    = [];
         $current = $categoryId;
         while ($current > 0 && count($path) < 100 && !in_array($current, $path, true)) {
+            if ($strict && !isset($parents[$current])) {
+                return null;
+            }
             $path[]  = $current;
             $current = $parents[$current] ?? 0;
         }
 
         return $path;
+    }
+
+    /**
+     * The member fields of several forms, each form's in its own order.
+     *
+     * @param int[] $groupIds
+     *
+     * @return array<int,array<int,array<string,mixed>>> group id => t_meta_fields rows
+     * @throws \mindstellar\database\DbException
+     */
+    public static function groupFields(array $groupIds): array
+    {
+        if ($groupIds === []) {
+            return [];
+        }
+        $p    = DB_TABLE_PREFIX;
+        $rows = Db::select(
+            'SELECT mf.*, gf.fk_i_group_id AS group_link_id FROM ' . $p . 't_meta_fields mf'
+            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
+            . ' WHERE gf.fk_i_group_id IN (' . implode(', ', array_fill(0, count($groupIds), '?')) . ')'
+            . ' ORDER BY gf.fk_i_group_id ASC, gf.i_position ASC',
+            array_values($groupIds)
+        );
+        $out = [];
+        foreach (Db::stringifyRows($rows) as $row) {
+            $group = (int) $row['group_link_id'];
+            unset($row['group_link_id']);
+            $out[$group][] = $row;
+        }
+
+        return $out;
     }
 
     /**

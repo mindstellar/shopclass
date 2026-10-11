@@ -484,10 +484,53 @@ $m = $freshCategory();
 $firstCost = harness_query_count(static function () use ($m) {
     $m->findBySlug('cars');
 });
-pin('a cold findBySlug costs one query', 1, $firstCost);
+pin('an enabled category\'s slug is served from the loaded rows, at zero queries', 0, $firstCost);
 pin('a warm findBySlug is served from the slug cache -> the tree, at zero queries', 0, harness_query_count(static function () use ($m) {
     $m->findBySlug('cars');
 }));
+
+harness_section('Category::findBySlug — the loaded rows answer as the query does');
+
+// Cars gains a French slug of its own and a Spanish one it shares with English.
+seed_exec($admin, "INSERT INTO $descTable (fk_i_category_id, fk_c_locale_code, s_name, s_description, s_slug) VALUES (?, 'fr_FR', 'Voitures', 'Voitures description', 'voitures'), (?, 'es_ES', 'Coches', 'Coches description', 'cars')", 'ii', array($cars, $cars));
+$queried = static fn (Category $c, string $slug): array => $c->listWhere('b.s_slug = %s', urlencode(trim($slug)))[0] ?? array();
+foreach (array($locale, 'fr_FR') as $lang) {
+    $resetCategory();
+    $c = new Category($lang);
+    foreach (array('cars', 'voitures', 'CARS', 'cars ') as $slug) {
+        $hit = null;
+        pin("[$lang] '$slug' costs zero queries", 0, harness_query_count(static function () use ($c, $slug, &$hit) {
+            $hit = $c->findBySlug($slug);
+        }));
+        pin("[$lang] '$slug' returns the same row as the query", $queried($c, $slug), $hit);
+    }
+}
+
+$m = $freshCategory();
+$hiddenRow = null;
+pin('a disabled category is not in the loaded rows, so its slug is queried', 1, harness_query_count(static function () use ($m, &$hiddenRow) {
+    $hiddenRow = $m->findBySlug('hidden');
+}));
+pin('...and found', (string) $hidden, $hiddenRow['pk_i_id'] ?? null);
+
+seed_exec($admin, "UPDATE $descTable SET s_slug = 'cars' WHERE fk_i_category_id = ? AND fk_c_locale_code = ?", 'is', array($bikes, $locale));
+$m = $freshCategory();
+$shared = null;
+pin('a slug two categories hold is queried', 1, harness_query_count(static function () use ($m, &$shared) {
+    $shared = $m->findBySlug('cars');
+}));
+pin('...and answers as the query does', $queried($m, 'cars'), $shared);
+seed_exec($admin, "UPDATE $descTable SET s_slug = 'bikes' WHERE fk_i_category_id = ? AND fk_c_locale_code = ?", 'is', array($bikes, $locale));
+
+$m = $freshCategory();
+$m->findBySlug('voitures');
+$m->updateName($property, $locale, 'Property');
+pin('after this object writes, findBySlug reads the table again', 1, harness_query_count(static function () use ($m) {
+    $m->findBySlug('voitures');
+}));
+
+seed_exec($admin, "DELETE FROM $descTable WHERE fk_i_category_id = ? AND fk_c_locale_code IN ('fr_FR', 'es_ES')", 'i', array($cars));
+$m = $freshCategory();
 
 /* ----------------------------------------------------------------------------
  * findNameByPrimaryKey() — tree hit, live query, and the missing-name fallback.

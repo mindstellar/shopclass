@@ -484,6 +484,18 @@ $s = new Search();
 $latest = $s->getLatestItems(10);
 check('getLatestItems returns the recent items', is_array($latest) && count($latest) === 5);
 
+// Nothing reads the total of the latest list, so it skips the COUNT(*).
+\mindstellar\cache\CacheManager::getInstance()->flush();
+$latestQ = harness_query_count(static function () {
+    (new Search())->getLatestItems(10);
+});
+$countedQ = harness_query_count(static function () {
+    $s = new Search();
+    $s->set_rpp(10);
+    $s->doSearch();
+});
+pin('getLatestItems runs one statement fewer than a counted search', $countedQ - 1, $latestQ);
+
 /* ----------------------------------------------------------------------------
  * Old-format alert compat: a blob whose location fragments and pattern were
  * serialized in the legacy inlined form must still revive and run, because the

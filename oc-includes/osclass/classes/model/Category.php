@@ -36,6 +36,12 @@ class Category extends DAO
     private $relation;
     private $slugs;
 
+    /** @var array<string,array<int|string,int>>|null folded slug => category id => index in the enabled rows; null until first use */
+    private ?array $slugMap = null;
+
+    /** Set by this object's writes. findBySlug() then reads the table, since the rows it holds may be out of date. */
+    private bool $slugsWritten = false;
+
     /**
      * Set data related to t_category table
      *
@@ -473,6 +479,7 @@ class Category extends DAO
      */
     public function deleteByPrimaryKey($pk)
     {
+        $this->slugsWritten = true;
         $items   = Item::getInstance()->findByCategoryID((int)($pk));
         $subcats = $this->findSubcategories((int)($pk));
         if (count($subcats) > 0) {
@@ -546,6 +553,7 @@ class Category extends DAO
      */
     public function updateByPrimaryKey($data, $pk)
     {
+        $this->slugsWritten = true;
         $fields = $data['fields'];
 
         $aFieldsDescription = $data['aFieldsDescription'];
@@ -687,7 +695,11 @@ class Category extends DAO
             if (isset($this->slugs[$slug])) {
                 return $this->findByPrimaryKey($this->slugs[$slug]);
             }
-            $slug = urlencode($slug);
+            $slug  = urlencode($slug);
+            $known = $this->slugsWritten ? null : $this->knownSlug($slug);
+            if ($known !== null) {
+                return $known;
+            }
             $results = $this->listWhere('b.s_slug = %s', $slug);
             if (count($results) > 0) {
                 $this->slugs[$slug] = $results[0]['pk_i_id'];
@@ -700,6 +712,50 @@ class Category extends DAO
     }
 
     /**
+     * The row the slug query would return, built from the enabled rows this object holds, or
+     * null when the slug is not there or more than one category could match it.
+     *
+     * @param string $slug urlencoded, as the query binds it
+     *
+     * @return array<string,mixed>|null
+     */
+    private function knownSlug(string $slug): ?array
+    {
+        if ($this->slugMap === null) {
+            $this->slugMap = array();
+            foreach ((array) $this->categoriesEnabled as $i => $c) {
+                foreach ($c['locale'] ?? array() as $text) {
+                    // The column compares without case or trailing spaces, so ids are grouped that way.
+                    $this->slugMap[strtolower(rtrim((string) $text['s_slug'], ' '))][$c['pk_i_id']] = $i;
+                }
+            }
+        }
+        $folded = strtolower(rtrim($slug, ' '));
+        $rows   = $this->slugMap[$folded] ?? array();
+        if (count($rows) === 1) {
+            $c       = $this->categoriesEnabled[reset($rows)];
+            $matched = array();
+            foreach ($c['locale'] as $code => $text) {
+                if (strtolower(rtrim((string) $text['s_slug'], ' ')) === $folded) {
+                    $matched[$code] = $text;
+                }
+            }
+            // Same shape as mergeLocales() gives the query's rows: only the matching texts,
+            // and this model's language when it is one of them.
+            $text = $matched[$this->language] ?? reset($matched);
+            $c['s_name']           = $text['s_name'];
+            $c['s_description']    = $text['s_description'];
+            $c['s_slug']           = $text['s_slug'];
+            $c['fk_c_locale_code'] = $this->language;
+            $c['locale']           = $matched;
+
+            return $c;
+        }
+
+        return null;
+    }
+
+    /**
      * Insert the description of a category
      *
      * @param array<string,mixed> $fields_description
@@ -708,6 +764,7 @@ class Category extends DAO
      */
     public function insertDescription($fields_description)
     {
+        $this->slugsWritten = true;
         if (!empty($fields_description['s_name'])) {
             try {
                 Db::table(DB_TABLE_PREFIX . 't_category_description')->insert($fields_description);
@@ -733,6 +790,7 @@ class Category extends DAO
     // @phpstan-ignore method.childReturnType (the id is returned, as plugins expect)
     public function insert($fields, $aFieldsDescription = null)
     {
+        $this->slugsWritten = true;
         // Assumed to succeed, as the legacy body did (it read insertedId()
         // straight after with no error check); a genuine failure propagates.
         $category_id = Db::table($this->getTableName())->insert($fields);
@@ -990,6 +1048,7 @@ class Category extends DAO
      */
     public function updateName($pk_i_id, $locale, $name)
     {
+        $this->slugsWritten = true;
         try {
             return Db::table(DB_TABLE_PREFIX . 't_category_description')
                 ->where('fk_i_category_id', $pk_i_id)

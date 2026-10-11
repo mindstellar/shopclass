@@ -303,5 +303,7 @@ pin('an unknown, empty or missing action gives the default', array('show', 'show
 pin('an action sent as a list gives the default, not an error', 'show', $pick(array('item_add'), 'show'));
 pin('a map with no default gives null', null, $pick('nope', null));
 check('the view beacon is answered before the map', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'doModel'), "'view_beacon'") !== false);
+$beacon = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'countItemViewBeacon');
+check('the view beacon reads only the status row, not the extended listing', strpos($beacon, 'statusRow(') !== false && strpos($beacon, 'findByPrimaryKey') === false);
 
 exit(harness_result());

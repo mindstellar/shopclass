@@ -1401,33 +1401,37 @@ class Item extends DAO
         $categoryIds = array_column($items, 'fk_i_category_id');
         $categoryIds = array_unique($categoryIds);
 
-        // Hand-written so the optional category-id IN() and the s_name != ''
-        // filter stay in the legacy order; every value is bound.
-        $conditions = array();
-        $params     = array();
-        if (count($categoryIds) > 0) {
-            $placeholders = implode(', ', array_fill(0, count($categoryIds), '?'));
-            $conditions[] = 'fk_i_category_id IN (' . $placeholders . ')';
-            foreach ($categoryIds as $cid) {
-                $params[] = $cid;
-            }
-        }
-        $conditions[] = 's_name != ?';
-        $params[]     = '';
-
-        $sql = 'SELECT fk_i_category_id, fk_c_locale_code, s_name FROM ' . DB_TABLE_PREFIX . 't_category_description'
-            . ' WHERE ' . implode(' AND ', $conditions);
-
-        try {
-            $categories = Db::stringifyRows(Db::select($sql, $params));
-        } catch (\mindstellar\database\DbException $e) {
-            return $items;
+        // Names come from the loaded enabled categories; only ids missing there are read.
+        $known = array();
+        foreach (Category::getInstance()->toTree() as $root) {
+            $this->collectCategoryNames($root, $known);
         }
         $aCategories = array();
-        foreach ($categories as $c) {
-            // if category name is not empty
-            if ($c['s_name'] != '') {
-                $aCategories[$c['fk_i_category_id']]['locale'][$c['fk_c_locale_code']]['s_category_name'] = $c['s_name'];
+        $missing     = array();
+        foreach ($categoryIds as $cid) {
+            if (isset($known[$cid])) {
+                $aCategories[$cid]['locale'] = $known[$cid];
+            } else {
+                $missing[] = $cid;
+            }
+        }
+
+        if ($missing !== array()) {
+            $sql = 'SELECT fk_i_category_id, fk_c_locale_code, s_name FROM ' . DB_TABLE_PREFIX . 't_category_description'
+                . ' WHERE fk_i_category_id IN (' . implode(', ', array_fill(0, count($missing), '?')) . ') AND s_name != ?'
+                . ' ORDER BY fk_i_category_id, fk_c_locale_code';
+            $params   = $missing;
+            $params[] = '';
+
+            try {
+                $categories = Db::stringifyRows(Db::select($sql, $params));
+            } catch (\mindstellar\database\DbException $e) {
+                return $items;
+            }
+            foreach ($categories as $c) {
+                if ($c['s_name'] != '') {
+                    $aCategories[$c['fk_i_category_id']]['locale'][$c['fk_c_locale_code']]['s_category_name'] = $c['s_name'];
+                }
             }
         }
 
@@ -1456,6 +1460,25 @@ class Item extends DAO
             $results[] = $item;
         }
         return $results;
+    }
+
+    /**
+     * Each loaded category's names per locale, keyed by id, in locale-code order.
+     *
+     * @param array<string,mixed>                                     $category a tree node
+     * @param array<int|string,array<int|string,array<string,mixed>>> $out
+     */
+    private function collectCategoryNames(array $category, array &$out): void
+    {
+        $names = array();
+        foreach ($category['locale'] ?? array() as $code => $text) {
+            $names[$code] = array('s_category_name' => $text['s_name']);
+        }
+        ksort($names);
+        $out[$category['pk_i_id']] = $names;
+        foreach ($category['categories'] ?? array() as $child) {
+            $this->collectCategoryNames($child, $out);
+        }
     }
 
     /**

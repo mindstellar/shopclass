@@ -386,6 +386,18 @@ pin('one listByEmptySlug() call costs one query', 1, harness_query_count(static 
 
 check('nothing was written by any of the read-only pins above', $rowCount() === 3, (string) $rowCount());
 
+harness_section('Country::listAll — cached until a country is written');
+
+pin('a second listAll() call costs no query', 0, harness_query_count(static function () use ($model) {
+    $model->listAll();
+}));
+$model->insert(array('pk_c_code' => 'AT', 's_name' => 'Austria', 's_slug' => 'at'));
+pin('an insert shows on the next read', array('AT', 'FR', 'DE', 'US'), array_column($model->listAll(), 'pk_c_code'));
+$model->update(array('s_name' => 'Zambia'), array('pk_c_code' => 'AT'));
+pin('an update shows on the next read', array('FR', 'DE', 'US', 'AT'), array_column($model->listAll(), 'pk_c_code'));
+$model->delete(array('pk_c_code' => 'AT'));
+pin('a delete shows on the next read', array('FR', 'DE', 'US'), array_column($model->listAll(), 'pk_c_code'));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

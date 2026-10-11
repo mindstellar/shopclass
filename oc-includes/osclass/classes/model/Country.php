@@ -24,6 +24,8 @@ class Country extends DAO
 {
     use \mindstellar\base\SharedInstance;
 
+    protected $cacheGroup = 'country';
+
     /**
      * Set data related to t_country table
      */
@@ -90,15 +92,18 @@ class Country extends DAO
      */
     public function listAll()
     {
-        try {
-            // The table name comes from getTableName(), fixed in the constructor
-            // — never runtime input — so the query needs no placeholder for it.
-            $rows = Db::select(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
+        // i_num_items may lag by the cache lifetime, as the category tree's counts do.
+        return \mindstellar\cache\CacheGroup::remember('country', 'all', function (): ?array {
+            try {
+                // The table name comes from getTableName(), fixed in the constructor
+                // — never runtime input — so the query needs no placeholder for it.
+                $rows = Db::select(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
 
-        return Db::stringifyRows($rows);
+            return Db::stringifyRows($rows);
+        }) ?? array();
     }
 
     /**

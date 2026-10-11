@@ -40,6 +40,9 @@ final class ItemUpgradeStore extends Model
     /** Unprefixed table name. */
     protected const TABLE = 't_item_upgrade';
 
+    /** Preference: '0' when the table holds no rows, '1' when it may. Missing means unknown. */
+    private const ROWS_FLAG = 'item_upgrade_rows';
+
     /**
      * @var array<int,array<string,?string>> item id => (upgrade => dt_expiration),
      *      populated only by prime(). An item present as a key with an empty array
@@ -116,6 +119,7 @@ final class ItemUpgradeStore extends Model
             // (a hook firing right after grant(), for instance) would see the
             // pre-grant state instead of what it just paid for.
             unset(self::$primed[$itemId]);
+            \Preference::getInstance()->replace(self::ROWS_FLAG, '1', 'osclass', 'BOOLEAN');
         }
 
         return $granted;
@@ -199,6 +203,9 @@ final class ItemUpgradeStore extends Model
         foreach ($missing as $id) {
             self::$primed[$id] = array();
         }
+        if (!self::mayHaveRows()) {
+            return;
+        }
 
         $rows = self::table()->whereIn('fk_i_item_id', $missing)->get();
         foreach ($rows as $row) {
@@ -215,10 +222,40 @@ final class ItemUpgradeStore extends Model
      */
     public static function purge(): int
     {
-        return Db::execute(
+        $purged = Db::execute(
             'DELETE FROM ' . self::tableName() . ' WHERE dt_expiration IS NOT NULL AND dt_expiration <= ?',
             array(date('Y-m-d H:i:s'))
         );
+        self::refreshRowsFlag();
+
+        return $purged;
+    }
+
+    /**
+     * Record whether the table holds any rows, so a page can skip reading an empty table.
+     * One statement reads and writes, so a grant landing meanwhile cannot be overwritten with '0'.
+     */
+    private static function refreshRowsFlag(): void
+    {
+        $any = 'IF(EXISTS(SELECT 1 FROM ' . self::tableName() . "), '1', '0')";
+        Db::execute(
+            'INSERT INTO ' . DB_TABLE_PREFIX . "t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', ?, " . $any . ", 'BOOLEAN')"
+            . ' ON DUPLICATE KEY UPDATE s_value = ' . $any,
+            array(self::ROWS_FLAG)
+        );
+        $value = (string) Db::scalar('SELECT s_value FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = ?", array(self::ROWS_FLAG));
+        if (\Preference::getInstance()->get(self::ROWS_FLAG) !== $value) {
+            \Preference::getInstance()->set(self::ROWS_FLAG, $value);
+            \mindstellar\cache\CacheGroup::invalidate('preference');
+        }
+    }
+
+    /**
+     * False only when the table is known to be empty.
+     */
+    private static function mayHaveRows(): bool
+    {
+        return \Preference::getInstance()->get(self::ROWS_FLAG) !== '0';
     }
 
     /**
@@ -236,6 +273,9 @@ final class ItemUpgradeStore extends Model
     {
         if (array_key_exists($itemId, self::$primed)) {
             return self::$primed[$itemId];
+        }
+        if (!self::mayHaveRows()) {
+            return self::$primed[$itemId] = array();
         }
 
         $rows = self::table()->where('fk_i_item_id', $itemId)->get();

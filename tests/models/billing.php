@@ -1407,6 +1407,49 @@ check(
     ItemUpgradeStore::has($writeInvalidatesId, 'test.invalidate') === true
 );
 
+/* An install with no upgrade rows must not read the table on every page. purge()
+ * records whether rows exist, grant() marks that they do, and reads skip the
+ * query only while the table is known to be empty. */
+harness_section('ItemUpgrades: a table known to be empty is not read');
+
+$primedCache = new ReflectionProperty(ItemUpgradeStore::class, 'primed');
+$primedCache->setAccessible(true);
+$rowsFlag = static fn (): string => (string) $admin->query(
+    'SELECT s_value FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = 'item_upgrade_rows'"
+)->fetch_row()[0];
+
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_item_upgrade');
+ItemUpgradeStore::purge();
+pin('purge() on an empty table stores the flag as 0', '0', $rowsFlag());
+pin('and this request sees it too', '0', Preference::getInstance()->get('item_upgrade_rows'));
+
+$flagItemA = seed_item($admin, $categoryId, $primeUserId, 'Flag A');
+$flagItemB = seed_item($admin, $categoryId, $primeUserId, 'Flag B');
+pin('prime() on an empty table costs no query', 0, harness_query_count(static function () use ($flagItemA): void {
+    ItemUpgradeStore::prime(array($flagItemA));
+}));
+pin('an unprimed read on an empty table costs no query', 0, harness_query_count(static function () use ($flagItemB): void {
+    ItemUpgradeStore::active($flagItemB);
+}));
+
+ItemUpgradeStore::grant($flagItemA, 'test.flag', 10, null);
+pin('grant() stores the flag as 1', '1', $rowsFlag());
+$primedCache->setValue(null, array());
+pin('prime() reads the table again once a row exists', 1, harness_query_count(static function () use ($flagItemA): void {
+    ItemUpgradeStore::prime(array($flagItemA));
+}));
+check('and finds the granted row', ItemUpgradeStore::has($flagItemA, 'test.flag'));
+
+ItemUpgradeStore::purge();
+pin('purge() leaves the flag at 1 while a live row remains', '1', $rowsFlag());
+
+Preference::getInstance()->set('item_upgrade_rows', '');
+$primedCache->setValue(null, array());
+pin('with no flag stored, prime() still reads the table', 1, harness_query_count(static function () use ($flagItemA): void {
+    ItemUpgradeStore::prime(array($flagItemA));
+}));
+osc_reset_preferences();
+
 /* ----------------------------------------------------------------------------
  * osc_prime_item_upgrades(): the public helper. Accepts item rows and bare ids
  * in the same call, since a theme has whichever is already to hand. It primes with
