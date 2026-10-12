@@ -25,7 +25,7 @@ final class OAuthError
     public const ERRORS = ['invalid_request', 'invalid_grant', 'invalid_scope', 'unsupported_grant_type'];
 
     /** Problem codes that mean the request itself was malformed. */
-    private const MALFORMED = ['invalid_json', 'unsupported_media_type', 'validation_failed'];
+    private const MALFORMED = ['invalid_json', 'validation_failed'];
 
     private function __construct()
     {

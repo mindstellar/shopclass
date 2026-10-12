@@ -396,7 +396,7 @@ final class OpenApi
             $declared += [422 => $problem];
         }
         if ($route->oauth()) {
-            // The token endpoint answers every refused or malformed request as an OAuth 400.
+            // The token endpoint answers a refused or malformed request as an OAuth 400; a wrong content type stays 415.
             unset($declared[422]);
             $declared += [400 => $problem];
         }

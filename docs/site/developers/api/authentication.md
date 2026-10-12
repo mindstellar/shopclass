@@ -137,6 +137,8 @@ curl -X POST $API/auth/token \
 
 The answer has the same shape as a sign-in, with a **new** refresh token.
 
+`POST /auth/token` takes JSON or `application/x-www-form-urlencoded`. Any other content type is a `415`.
+
 | Rule | Detail |
 |---|---|
 | Single use | Each refresh token works once. Store the new one and drop the old. |
