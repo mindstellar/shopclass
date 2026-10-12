@@ -469,6 +469,7 @@ $scenarios = array(
     'non-canonical URL redirects'        => array('index.php?page=search&sPattern=bike&sCategory=' . $catBikes, array('page' => 'search', 'sCategory' => (string)$catBikes, 'sPattern' => 'bike')),
     'rss feed'                           => array('index.php?page=search&sCategory=' . $catCars . '&sFeed=rss', array('page' => 'search', 'sCategory' => (string)$catCars, 'sFeed' => 'rss')),
     'named feed'                         => array('index.php?page=search&sFeed=atom', array('page' => 'search', 'sFeed' => 'atom')),
+    'unknown feed type is a 404'         => array('index.php?page=search&sFeed=bogus', array('page' => 'search', 'sFeed' => 'bogus')),
     'latest searches saved on page 1'    => array('index.php?page=search&sPattern=bike', array('page' => 'search', 'sPattern' => 'bike'), array('save_latest_searches' => '1')),
     // rewrite on: the constructor parses the friendly URI
     'friendly search params'             => array('search/pattern,vintage/category,' . $catCars, array('page' => 'search', 'sParams' => 'pattern,vintage/category,' . $catCars), array('rewriteEnabled' => '1')),

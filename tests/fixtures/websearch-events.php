@@ -519,6 +519,12 @@ return array(
       32 => 'hook feed_atom(items[4,3,2,1])',
       33 => 'end',
     ),
+    'unknown feed type is a 404' =>
+    array(
+      0 => 'hook before_search()',
+      1 => 'filter search_pattern(string(""))',
+      2 => '404',
+    ),
     'latest searches saved on page 1' =>
     array(
       0 => 'hook before_search()',
