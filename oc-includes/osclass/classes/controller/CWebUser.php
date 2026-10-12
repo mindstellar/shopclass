@@ -508,7 +508,7 @@ class CWebUser extends WebSecBaseModel
         Cookie::getInstance()->pop('oc_userSecret');
         Cookie::getInstance()->set();
 
-        osc_add_flash_ok_message(_m('Your account have been deleted'));
+        osc_add_flash_ok_message(_m('Your account has been deleted'));
         $this->redirectTo(osc_base_url());
     }
     /**
