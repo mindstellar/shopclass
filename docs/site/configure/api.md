@@ -21,8 +21,8 @@ All of it is on one screen: **Admin → Settings → API**. Only full admins can
 
 The screen shows your site's own address at the top. Developers read the same
 address from the `friendly_urls` and `links` fields of `GET /api/v1/`. The `api` field of the
-same call tells an app which of the switches below are on: `registration`, `personal_keys`,
-`photo_urls` and `public_reads`.
+same call tells an app which of the switches below are on: `registration`, `personal_keys` and
+`photo_urls`.
 
 Developer docs: [REST API](/docs/developers/api/).
 

@@ -49,7 +49,7 @@ curl -H "Authorization: Bearer $KEY" $API/
     "timezone": "Europe/Madrid",
     "friendly_urls": true,
     "features": { "users": true, "registration": true, "comments": true },
-    "api": { "registration": false, "personal_keys": true, "photo_urls": false, "public_reads": false },
+    "api": { "registration": false, "personal_keys": true, "photo_urls": false },
     "links": {
       "listings": "https://example.com/api/v1/listings",
       "categories": "https://example.com/api/v1/categories",
