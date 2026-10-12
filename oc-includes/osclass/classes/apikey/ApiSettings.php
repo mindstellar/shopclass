@@ -48,7 +48,6 @@ final class ApiSettings
     /** preference => default */
     public const DEFAULTS = [
         'api_enabled'            => false,
-        'api_public_reads'       => false,
         'api_rate_limit_default' => 120,
         'api_rate_limit_anon'    => 60,
         'api_rate_limit_write'   => 30,
@@ -68,7 +67,6 @@ final class ApiSettings
 
     public function __construct(
         private bool $enabled = self::DEFAULTS['api_enabled'],
-        private bool $publicReads = self::DEFAULTS['api_public_reads'],
         private int $rateDefault = self::DEFAULTS['api_rate_limit_default'],
         private int $rateAnon = self::DEFAULTS['api_rate_limit_anon'],
         private int $rateWrite = self::DEFAULTS['api_rate_limit_write'],
@@ -101,7 +99,6 @@ final class ApiSettings
 
         return new self(
             $value('api_enabled') === '1',
-            $value('api_public_reads') === '1',
             (int) $value('api_rate_limit_default'),
             (int) $value('api_rate_limit_anon'),
             (int) $value('api_rate_limit_write'),
@@ -134,11 +131,6 @@ final class ApiSettings
     public function enabled(): bool
     {
         return $this->enabled;
-    }
-
-    public function publicReads(): bool
-    {
-        return $this->publicReads;
     }
 
     public function rateDefault(): int

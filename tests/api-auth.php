@@ -419,11 +419,7 @@ $call   = static function (string $method, string $path, string $token = '', arr
 $r = $call('GET', 'listings');
 pin('anonymous reads are off by default: 401 asking for a token', [401, 'Bearer'], [$r->status(), $r->header('WWW-Authenticate')]);
 pin('an auth none route needs nothing', 200, $call('GET', 'open')->status());
-$anon = $make(new ApiSettings(true, true));
-$r    = $call('GET', 'listings', '', [], null, $anon);
-pin('with anonymous reads on, public data answers', [200, CredentialKind::ANONYMOUS], [$r->status(), $r->body()['data']['kind']]);
-pin('anonymous public data may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
-pin('with anonymous reads on, a user route still wants a token', 401, $call('POST', 'mine', '', [], '{"title":"x"}', $anon)->status());
+pin('a user route wants a token', 401, $call('POST', 'mine', '', [], '{"title":"x"}')->status());
 
 $r = $call('GET', 'listings', $public->token());
 pin('a public key reads listings', [200, CredentialKind::PUBLIC], [$r->status(), $r->body()['data']['kind']]);
@@ -474,7 +470,7 @@ check('a problem after counting keeps the RateLimit header', $call('POST', 'mine
 
 harness_section('the Kernel: rate limits');
 $counts = [];
-$small  = $make(new ApiSettings(true, false, 3, 2, 1, userKeys: true));
+$small  = $make(new ApiSettings(true, 3, 2, 1, userKeys: true));
 $r      = $call('GET', 'users', $new->token(), [], null, $small);
 pin('IETF policy header', '"api_key";q=3;w=60', $r->header('RateLimit-Policy'));
 $reset = 60 - ($now % 60);
@@ -504,12 +500,12 @@ pin('a key\'s own limit overrides the default', 429, $call('GET', 'users', $new-
 $store->rows[$new->id()]['rate'] = null;
 
 $counts    = [];
-$anonSmall = $make(new ApiSettings(true, true, 120, 2));
-$call('GET', 'site', '', [], null, $anonSmall);
-$r = $call('GET', 'site', '', [], null, $anonSmall);
+$anonSmall = $make(new ApiSettings(true, 120, 2));
+$call('GET', 'open', '', [], null, $anonSmall);
+$r = $call('GET', 'open', '', [], null, $anonSmall);
 pin('anonymous answers are public, so they carry no rate headers', null, $r->header('RateLimit-Policy'));
 check('anonymous calls are counted per address', isset($counts['api_anon|198.51.100.1']));
-pin('anonymous calls stop at the anonymous limit', 429, $call('GET', 'site', '', [], null, $anonSmall)->status());
+pin('anonymous calls stop at the anonymous limit', 429, $call('GET', 'open', '', [], null, $anonSmall)->status());
 
 $counts = [];
 $r      = $call('POST', 'mine', $user->token(), [], '{"title":"a"}', $small);

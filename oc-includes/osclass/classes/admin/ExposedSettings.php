@@ -54,7 +54,6 @@ final class ExposedSettings
         'comments_per_page'            => [CommentSettingsScreen::class, 'comments_per_page', ['type' => 'integer', 'minimum' => 0, 'description' => '0 shows every comment.']],
         'comments_notify_admin'        => [CommentSettingsScreen::class, 'notify_new_comment', ['type' => 'boolean']],
         'comments_notify_seller'       => [CommentSettingsScreen::class, 'notify_new_comment_user', ['type' => 'boolean']],
-        'api_public_reads'             => [ApiSettingsScreen::class, 'api_public_reads', ['type' => 'boolean']],
         'api_cors_origins'             => [ApiSettingsScreen::class, 'api_cors_origins', ['type' => 'string', 'maxLength' => 4000, 'description' => 'One origin per line.']],
         'api_rate_limit_default'       => [ApiSettingsScreen::class, 'api_rate_limit_default', ['type' => 'integer', 'minimum' => 1]],
         'api_rate_limit_anon'          => [ApiSettingsScreen::class, 'api_rate_limit_anon', ['type' => 'integer', 'minimum' => 1]],

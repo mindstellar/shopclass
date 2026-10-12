@@ -44,12 +44,12 @@ How a call is accepted:
 | Header | `Authorization: Bearer <credential>`. Any other scheme, such as Basic auth, is ignored. |
 | Query string | `?api_key=scp_…` works for **public keys on `GET` and `HEAD` only**. Any other key or token there is a `401`, on every endpoint, public ones too. See the warning below. |
 | Cookies | Never used alone. Only a [same-site session](#same-site-session-theme-javascript) reads the sign-in cookie, and only with a page token in its header. The API sets no cookie. |
-| No credential | `401`, unless the site owner allowed anonymous reads. Then reads work with the public scope and a lower per-address limit. |
-| `GET /openapi.json` | Any credential, or none when the site allows anonymous reads. |
+| No credential | `401` on every endpoint except `POST /auth/token` and `POST /users`. |
+| `GET /openapi.json` | Any credential. |
 
 :::caution[`?api_key=` is written to logs]
 A key in the address lands in web server and CDN access logs, browser history and `Referer`
-headers. Anyone who can read those has it. A public key only reads what anonymous visitors
+headers. Anyone who can read those has it. A public key only reads what a visitor's browser
 can, so the risk is someone using your rate limit. Send `Authorization: Bearer scp_…` when you
 can, and rotate a key that leaked this way.
 :::
@@ -410,7 +410,7 @@ The same resource looks different to different callers. There are three views.
 
 | View | Who gets it |
 |---|---|
-| `public` | Everyone: public keys, anonymous calls, and admin keys without the resource's admin scope. |
+| `public` | Everyone: public keys, other users, and admin keys without the resource's admin scope. |
 | `owner` | The user a resource belongs to, calling with their own key or token. |
 | `admin` | An admin key holding the resource's admin scope. |
 
@@ -456,8 +456,8 @@ Valkey when the site has it, otherwise in the database. With Redis or Valkey eve
 
 IPv6 addresses count by their `/64`. An IPv4-mapped IPv6 address counts as that IPv4 client.
 
-Answers to keys and tokens carry the limit headers. Answers that a CDN may cache (anonymous and
-public-key reads) leave them out, so one caller's counter is never cached for another.
+Answers to keys and tokens carry the limit headers. Answers that a CDN may cache (public-key
+reads) leave them out, so one caller's counter is never cached for another.
 A `429` always carries them.
 
 | Header | Example | Meaning |

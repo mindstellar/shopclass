@@ -351,7 +351,7 @@ $pref = static fn (string $name): ?string => $admin->query("SELECT s_value FROM 
 pin('origins are stored one per line, tidied', "https://app.example.com\n*", $pref('api_cors_origins'));
 pin('a zero rate limit is floored at one', '1', $pref('api_rate_limit_default'));
 pin('the phone switch is stored', '1', $pref('api_hide_phone'));
-pin('a switch left unticked is stored off', '0', $pref('api_public_reads'));
+pin('a switch left unticked is stored off', '0', $pref('api_user_keys'));
 
 harness_section('every setting on the screen is seeded');
 

@@ -39,7 +39,7 @@ final class RouteSpec
 
     /** @api No credential needed. */
     public const AUTH_NONE = 'none';
-    /** @api Any credential, or none when the site allows anonymous reads. GET only. */
+    /** @api Any credential. GET only. */
     public const AUTH_PUBLIC = 'public';
     /** @api A user's key or access token. */
     public const AUTH_USER = 'user';

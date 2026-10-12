@@ -126,7 +126,7 @@ $kernelFor = static function (array $settings = [], ?PageTokens $with = null, ?c
     return api_test_kernel(
         new Router(new Validator(), $routes),
         api_test_authenticator(new ApiKeys(new NoKeys(), $scopes, new SystemClock()), tokens: api_test_access_tokens($scopes, $users), session: $auth),
-        new ApiSettings(...($settings + ['enabled' => true, 'publicReads' => true])),
+        new ApiSettings(...($settings + ['enabled' => true])),
         users: $users
     );
 };
@@ -141,7 +141,7 @@ $reset  = static function (): void {
 harness_section('guard 1: the page token');
 $reset();
 $r = $kernel->handle($session($same, $cookie(10)));
-pin('the sign-in cookie alone stays anonymous', [200, 0, CredentialKind::ANONYMOUS], [$r->status(), $r->body()['data']['user'], $r->body()['data']['kind']]);
+pin('the sign-in cookie alone is no credential', [401, 'unauthorized'], [$r->status(), $r->body()['code']]);
 $reset();
 $r = $kernel->handle($session($ok(10), $cookie(10)));
 pin('cookie plus a valid page token is that user', [200, 10, CredentialKind::SESSION], [$r->status(), $r->body()['data']['user'], $r->body()['data']['kind']]);
@@ -183,7 +183,7 @@ pin('the token checks the right user and password', [PageTokens::VALID, PageToke
 
 $reset();
 $r = $kernel->handle($session(['Origin' => $site], $cookie(10), 'GET', 'v1/me', ['X-Shopclass-Token' => $page(10), 'token' => $page(10)]));
-pin('a page token in the query string is ignored', [200, 0], [$r->status(), $r->body()['data']['user']]);
+pin('a page token in the query string is ignored', 401, $r->status());
 $reset();
 $r = $kernel->handle($session(['Origin' => $site, 'Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes', [], (string) json_encode(['X-Shopclass-Token' => $page(10), 'token' => $page(10)])));
 pin('a page token in the body is ignored', [401, 'unauthorized'], $code($r));

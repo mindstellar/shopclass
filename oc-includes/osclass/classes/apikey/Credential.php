@@ -43,7 +43,7 @@ final class Credential
     }
 
     /**
-     * No credential. It holds the public read scope only when the site allows anonymous reads.
+     * No credential: a sign-in or sign-up call, or core code acting as a visitor.
      *
      * @param string[] $scopes
      */

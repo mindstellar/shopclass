@@ -22,7 +22,6 @@ return new class () implements MigrationInterface {
     /** preference => e_type; the values are ApiSettings::DEFAULTS, as installer/basic_data.sql seeds them. */
     private const PREFERENCES = array(
         'api_enabled'                => 'BOOLEAN',
-        'api_public_reads'           => 'BOOLEAN',
         'api_rate_limit_default'     => 'INTEGER',
         'api_rate_limit_anon'        => 'INTEGER',
         'api_rate_limit_write'       => 'INTEGER',

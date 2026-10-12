@@ -43,7 +43,9 @@ use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\api\Warning;
 use mindstellar\apikey\ApiKeys;
 use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\CredentialKind;
 use mindstellar\apikey\CredentialStore;
+use mindstellar\apikey\KeyOwner;
 use mindstellar\apikey\Scopes;
 use mindstellar\apikey\StoredKey;
 use mindstellar\utility\SystemClock;
@@ -187,9 +189,9 @@ sort($documented);
 sort($served);
 pin('every core route is documented, and only those', $served, $documented);
 check('GET /openapi.json itself is documented', isset($core['paths']['/openapi.json']['get']));
-pin('GET /openapi.json takes any credential, or none when public reads are on', ['public', true], [$core['paths']['/openapi.json']['get']['x-auth'], in_array((object) [], $core['paths']['/openapi.json']['get']['security'])]);
+pin('GET /openapi.json takes any credential, and never none', ['public', false], [$core['paths']['/openapi.json']['get']['x-auth'], in_array((object) [], $core['paths']['/openapi.json']['get']['security'])]);
 $show = $core['paths']['/listings/{id}']['get'];
-pin('a public read names its scope, both ways to send a key, a page token, and none at all', [['bearer' => ['listings:read']], ['pageSession' => ['listings:read']], ['publicKey' => ['listings:read']], []], array_map(static fn ($r): array => (array) $r, $show['security']));
+pin('a public read names its scope, both ways to send a key, and a page token', [['bearer' => ['listings:read']], ['pageSession' => ['listings:read']], ['publicKey' => ['listings:read']]], array_map(static fn ($r): array => (array) $r, $show['security']));
 pin('a GET takes If-None-Match and can answer 304 with its ETag', [true, true, '#/components/headers/ETag'], [
     in_array('If-None-Match', array_column($show['parameters'], 'name'), true), isset($show['responses']['304']), $show['responses']['200']['headers']['ETag']['$ref'] ?? null,
 ]);
@@ -268,16 +270,19 @@ pin('a sunset before the deprecation is refused', 'GET x: sunset comes before de
 
 harness_section('served by the kernel');
 $store = new class () implements CredentialStore {
+    public ?StoredKey $key = null;
     public function findByTokenId(string $tokenId): ?StoredKey
     {
-    return null;
+    return $this->key !== null && $this->key->tokenId() === $tokenId ? $this->key : null;
     }
     public function find(int $id): ?StoredKey
     {
-    return null;
+    return $id === 1 ? $this->key : null;
     }
     public function insert(StoredKey $key): int
     {
+    $this->key = new StoredKey(1, $key->kind(), $key->tokenId(), $key->secretHash(), $key->name(), $key->scopes(), $key->owner());
+
     return 1;
     }
     public function touch(int $id, string $ip, int $time): void
@@ -290,7 +295,8 @@ $store = new class () implements CredentialStore {
 };
 $definitions = Schema::definitions();
 $full        = new Validator($definitions);
-$settings    = new ApiSettings(true, true);
+$settings    = new ApiSettings(true);
+$publicKey   = (new ApiKeys($store, new Scopes(), new SystemClock()))->create(CredentialKind::PUBLIC, 'Docs', ['listings:read'], KeyOwner::admin(1))->token();
 $router      = null;
 $router      = new Router($full, Router::core() + ['GET old' => [
     'handler' => static fn (): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
@@ -299,12 +305,11 @@ $router      = new Router($full, Router::core() + ['GET old' => [
     return OpenApi::forSite($router, $definitions, new Scopes());
 });
 $kernel   = api_test_kernel($router, api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), $settings, validator: $full);
-$r = $kernel->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'));
-pin('GET /api/v1/openapi.json answers with no credential when public reads are on', [200, '3.1.0'], [$r->status(), $r->body()['openapi'] ?? null]);
-pin('and asks for one when they are off', 401, api_test_kernel($router, api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $full)
-    ->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'))->status());
+$r = $kernel->handle(new Request('GET', 'v1/openapi.json', [], ['Authorization' => 'Bearer ' . $publicKey], '127.0.0.1'));
+pin('GET /api/v1/openapi.json answers a public key', [200, '3.1.0'], [$r->status(), $r->body()['openapi'] ?? null]);
+pin('and asks for a credential when none comes', 401, $kernel->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'))->status());
 pin('with the document revision and its own URL', ['1.0', 'https://shop.test/api/v1'], [$r->body()['info']['version'], $r->body()['servers'][0]['url']]);
-pin('the OpenAPI document stays out of shared caches, as turning public reads off must take effect, and gets an ETag', ['private, no-cache', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
+pin('the OpenAPI document stays out of shared caches, as it lists the site\'s plugin endpoints, and gets an ETag', ['private, no-cache', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
 pin('the live document is sound', [], openapi_problems($r->body()));
 $r = $kernel->handle(new Request('GET', 'v1/old', [], [], '127.0.0.1'));
 pin('a deprecated route answers with Deprecation, Sunset and a changelog link', [

@@ -1,5 +1,4 @@
 function osc_api_enabled(): bool
-function osc_api_public_reads(): bool
 function osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ["public"]): void
 function osc_api_register_route(string $method, string $path, array $spec): void
 function osc_api_register_schema(string $slug, string $name, array $schema): array

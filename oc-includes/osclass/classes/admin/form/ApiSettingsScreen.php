@@ -37,13 +37,6 @@ final class ApiSettingsScreen extends SettingsScreen
             ->checkbox('api_enabled', __('Turn on the REST API'), __('Off by default. When off, every call to /api/v1 is refused.'))
                 ->rowLabel(__('API'))
                 ->default(ApiSettings::DEFAULTS['api_enabled'])
-            ->checkbox(
-                'api_public_reads',
-                __('Allow reading public data without a key'),
-                __('Off by default. When on, anyone can read listings, categories and locations without a key, which makes copying your site easy.')
-            )
-                ->rowLabel(__('Anonymous reads'))
-                ->default(ApiSettings::DEFAULTS['api_public_reads'])
             ->textarea(
                 'api_cors_origins',
                 __('Allowed origins (CORS)'),

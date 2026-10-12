@@ -441,7 +441,7 @@ final class WhoAmI
 $kernel = api_test_kernel(
     new Router(new Validator(), ['GET me' => ['handler' => [WhoAmI::class, 'show'], 'auth' => 'public', 'scope' => 'listings:read']]),
     api_test_authenticator(new ApiKeys($store, $scopes, new SystemClock()), tokens: api_test_access_tokens($scopes, $accounts(), 900)),
-    new ApiSettings(true, true),
+    new ApiSettings(true),
     users: $accounts()
 );
 // The bootstrap resolved user 11 from a signed cookie; index.php forgets it for page=api.
@@ -449,7 +449,7 @@ $_COOKIE = ['oc_userId' => '11', 'oc_userSecret' => 'signed'];
 osc_web_user_apply_identity($store->users[11]);
 \mindstellar\api\identity\WebIdentity::forget();
 $r = $kernel->handle(new Request('GET', 'v1/me', [], [], '192.0.2.20'));
-pin('a valid oc_userId cookie and no header is anonymous', [200, 0, ''], [$r->status(), $r->body()['data']['user'], $r->body()['data']['email']]);
+pin('a valid oc_userId cookie and no header is refused: a cookie alone is no credential', 401, $r->status());
 $r = $kernel->handle(new Request('GET', 'v1/me', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.20'));
 pin('with a token, core sees the token\'s user', [10, 'uma@x.test'], [$r->body()['data']['user'], $r->body()['data']['email']]);
 check('the cookie user is never the caller when a token is sent', $r->body()['data']['user'] !== 11);

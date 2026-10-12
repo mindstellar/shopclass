@@ -535,8 +535,6 @@ final class OpenApi
         }
         if ($route->auth() === RouteSpec::AUTH_PUBLIC && (in_array($route->scope(), [null, Scopes::PUBLIC_READ], true))) {
             $requirement[] = ['publicKey' => $scopes];
-            // A site may let anyone read public data with no credential at all.
-            $requirement[] = (object) [];
         }
 
         return $requirement;

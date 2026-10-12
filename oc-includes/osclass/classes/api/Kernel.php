@@ -33,7 +33,6 @@ use mindstellar\api\schema\Validator;
 use mindstellar\apikey\ApiSettings;
 use mindstellar\apikey\Credential;
 use mindstellar\apikey\CredentialKind;
-use mindstellar\apikey\Scopes;
 use mindstellar\exception\RefusedException;
 
 /**
@@ -455,10 +454,6 @@ final class Kernel
         if ($credential !== null) {
             return $credential;
         }
-        if ($route->auth() === RouteSpec::AUTH_PUBLIC && $this->settings->publicReads()) {
-            return Credential::anonymous(Scopes::PUBLIC);
-        }
-
         throw ProblemException::from(Problem::unauthorized(false));
     }
 

@@ -19,7 +19,7 @@ and signed webhooks tell your server when something changes.
 
 The site owner turns the API on and makes your key:
 [Set up the REST API](/docs/configure/api/). The API is **off by default**, and once on it needs a
-key unless the owner allowed anonymous reads. Writing needs a user account, not a public key.
+key or token for every call except sign-in and sign-up. Writing needs a user account, not a public key.
 
 ## Quick start
 
@@ -70,7 +70,6 @@ call fails:
 | `registration` | `POST /users` works: the site allows sign-up through the API and has registration on. |
 | `personal_keys` | Users may make personal keys. |
 | `photo_urls` | A new listing may name photos by web address (`photo_urls`). |
-| `public_reads` | Reads work without a key. |
 
 ### Categories
 
@@ -191,7 +190,7 @@ curl -i -H "Authorization: Bearer $KEY" -H 'If-None-Match: "9a04037fc4f6b5e68d56
 # HTTP/1.1 304 Not Modified
 ```
 
-Answers for public keys and anonymous calls also carry
+Answers for public keys also carry
 `Cache-Control: public, max-age=60, stale-while-revalidate=60`, so a CDN may keep them.
 The site owner sets the number of seconds. Reads with any other key, and `openapi.json`, are `private, no-cache`.
 Reads of `account*`, `admin/*` and `*/sessions` are `private, no-store`, and so is every write.

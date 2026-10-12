@@ -48,20 +48,6 @@ if (!function_exists('osc_is_api_request')) {
     }
 }
 
-if (!function_exists('osc_api_public_reads')) {
-    /**
-     * Whether public data may be read with no credential at all. Off by default.
-     *
-     * @api
-     *
-     * @return bool
-     */
-    function osc_api_public_reads(): bool
-    {
-        return \mindstellar\apikey\ApiSettings::fromPreferences()->publicReads();
-    }
-}
-
 if (!function_exists('osc_api_register_route')) {
     /**
      * Add an API endpoint, through the `api_routes` filter. The path is below /api/v1/ and

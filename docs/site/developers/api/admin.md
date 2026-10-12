@@ -167,7 +167,7 @@ The settings you can read and change:
 |---|---|
 | Site | `site_title`, `site_description`, `contact_email`, `language`, `currency`, `timezone`, `week_start`, `date_format`, `time_format`, `rss_items`, `latest_listings_at_home`, `results_per_page`, `selectable_parent_categories`, `contact_attachments` |
 | Comments | `comments_enabled`, `comments_need_account`, `comments_captcha`, `comments_per_page`, `comments_notify_admin`, `comments_notify_seller` |
-| API | `api_public_reads`, `api_cors_origins`, `api_rate_limit_default`, `api_rate_limit_anon`, `api_rate_limit_write`, `api_listing_rate`, `api_cache_max_age`, `api_hide_phone`, `api_photo_urls`, `api_user_keys`, `api_registration` |
+| API | `api_cors_origins`, `api_rate_limit_default`, `api_rate_limit_anon`, `api_rate_limit_write`, `api_listing_rate`, `api_cache_max_age`, `api_hide_phone`, `api_photo_urls`, `api_user_keys`, `api_registration` |
 
 Never exposed: keys, passwords, webhook secrets, the switch that turns the API off, and
 the private-network switch for webhooks. Those stay on the screen.

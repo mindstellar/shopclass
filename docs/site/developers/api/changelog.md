@@ -112,7 +112,7 @@ Also added:
   `ext.<slug>.<name>`.
 - Scopes: `admin:comments`, `admin:settings`, `admin:keys`, `admin:webhooks`.
   `admin:listings`, `admin:users` and `admin:taxonomy` also open their admin endpoints.
-- An `api` member on `GET /`: `registration`, `personal_keys`, `photo_urls`, `public_reads`.
+- An `api` member on `GET /`: `registration`, `personal_keys`, `photo_urls`.
 - Hooks: `api_webhook_events`, `api_webhook_payload`, `api_webhook_delivered`. Function:
   `osc_webhook_emit()`.
 - For plugins: `ApiKit::listingContext()`, `Scopes::PLUGIN_SCOPE` and the `Scopes::AUDIENCE_*`

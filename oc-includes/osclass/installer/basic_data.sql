@@ -187,7 +187,6 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'billing_slot_credits', '0', 'INTEGER')
     ,('osclass', 'billing_slot_quantity', '1', 'INTEGER')
     ,('api', 'api_enabled', '0', 'BOOLEAN')
-    ,('api', 'api_public_reads', '0', 'BOOLEAN')
     ,('api', 'api_rate_limit_default', '120', 'INTEGER')
     ,('api', 'api_rate_limit_anon', '60', 'INTEGER')
     ,('api', 'api_rate_limit_write', '30', 'INTEGER')

@@ -88,7 +88,7 @@ $routes = [
 ];
 $counted = 0;
 $kernel  = static function (string $origins) use ($routes, $keys, &$counted): Kernel {
-    $settings = new ApiSettings(true, true, 120, 60, 30, 60, false, $origins);
+    $settings = new ApiSettings(true, 120, 60, 30, 60, false, $origins);
 
     return api_test_kernel(
         new Router(new Validator(), $routes),
@@ -152,7 +152,7 @@ $expose = array_map('trim', explode(',', (string) $r->header('Access-Control-Exp
 check('the app may read ETag, Location, the rate limit headers, Deprecation and Sunset', array_diff(['ETag', 'Location', 'RateLimit', 'RateLimit-Policy', 'Retry-After', 'Deprecation', 'Sunset'], $expose) === []);
 pin('a cacheable answer varies on Authorization, the page token and Origin', 'Authorization, X-Shopclass-Token, Origin', $r->header('Vary'));
 pin('a keyed call from another origin is not granted, though * is listed', null, $k->handle($req('GET', 'v1/users', 'https://other.test', $admin))->header('Access-Control-Allow-Origin'));
-pin('an anonymous call from another origin gets *', '*', $k->handle($req('GET', 'v1/site', 'https://other.test'))->header('Access-Control-Allow-Origin'));
+pin('an anonymous call from another origin gets *, so it can read the 401', '*', $k->handle($req('GET', 'v1/site', 'https://other.test'))->header('Access-Control-Allow-Origin'));
 pin('a public key from another origin gets * too', '*', $k->handle($req('GET', 'v1/site', 'https://other.test', $public))->header('Access-Control-Allow-Origin'));
 $r = $k->handle($req('GET', 'v1/users', 'https://app.test'));
 pin('a refusal is granted too, so the app can read the problem', [401, 'https://app.test', 'Origin'], [$r->status(), $r->header('Access-Control-Allow-Origin'), $r->header('Vary')]);

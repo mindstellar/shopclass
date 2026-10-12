@@ -358,8 +358,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -27535,8 +27534,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -27878,8 +27876,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -28232,8 +28229,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -28557,8 +28553,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -29218,8 +29213,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -29572,8 +29566,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -29859,8 +29852,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -30164,8 +30156,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -30761,8 +30752,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -31528,8 +31518,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -32728,8 +32717,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -33508,8 +33496,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -34313,8 +34300,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -34947,8 +34933,7 @@
                     },
                     {
                         "publicKey": []
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": null
@@ -35731,8 +35716,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -36254,8 +36238,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -36842,8 +36825,7 @@
                         "publicKey": [
                             "listings:read"
                         ]
-                    },
-                    {}
+                    }
                 ],
                 "x-auth": "public",
                 "x-scope": "listings:read"
@@ -38904,17 +38886,12 @@
                             "photo_urls": {
                                 "type": "boolean",
                                 "description": "Whether a listing may name photos by URL in photo_urls."
-                            },
-                            "public_reads": {
-                                "type": "boolean",
-                                "description": "Whether public endpoints answer without a credential."
                             }
                         },
                         "required": [
                             "registration",
                             "personal_keys",
-                            "photo_urls",
-                            "public_reads"
+                            "photo_urls"
                         ],
                         "description": "What the API allows on this site."
                     },
@@ -41619,9 +41596,6 @@
                     "comments_notify_seller": {
                         "type": "boolean"
                     },
-                    "api_public_reads": {
-                        "type": "boolean"
-                    },
                     "api_cors_origins": {
                         "type": "string",
                         "maxLength": 4000,
@@ -41681,7 +41655,6 @@
                     "comments_per_page",
                     "comments_notify_admin",
                     "comments_notify_seller",
-                    "api_public_reads",
                     "api_cors_origins",
                     "api_rate_limit_default",
                     "api_rate_limit_anon",
@@ -41777,9 +41750,6 @@
                         "type": "boolean"
                     },
                     "comments_notify_seller": {
-                        "type": "boolean"
-                    },
-                    "api_public_reads": {
                         "type": "boolean"
                     },
                     "api_cors_origins": {

@@ -1428,10 +1428,6 @@ msgid "Allow people to post comments on listings"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
-msgid "Allow reading public data without a key"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Allow sign-up through the API"
 msgstr ""
 
@@ -1554,10 +1550,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingService.php
 msgid "Anonymous"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
-msgid "Anonymous reads"
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Osclass.php
@@ -7835,12 +7827,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Off by default. When off, every call to /api/v1 is refused."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
-msgid ""
-"Off by default. When on, anyone can read listings, categories and locations "
-"without a key, which makes copying your site easy."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php

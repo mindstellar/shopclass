@@ -66,7 +66,6 @@ final class SiteController
                 'registration'  => $settings->registration() && $facts->usersEnabled() && (bool) osc_user_registration_enabled(),
                 'personal_keys' => $settings->userKeys(),
                 'photo_urls'    => $settings->photoUrls(),
-                'public_reads'  => $settings->publicReads(),
             ],
             'links'          => $links,
         ];

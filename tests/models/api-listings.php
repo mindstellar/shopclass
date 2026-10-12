@@ -281,22 +281,21 @@ $get = static function (string $path, array $query = array(), ?string $token = n
 $ids = static fn (Response $r): array => array_map(static fn (array $l): int => $l['id'], (array) ($r->body()['data'] ?? array()));
 $schemaErrors = static fn (string $schema, Response $r): array => $validator->check(Schema::ref($schema), $r->body());
 
-harness_section('anonymous reads');
+harness_section('no credential');
 $r = $get('listings');
-pin('anonymous reads are off: 401 with a Bearer challenge', array(401, 'unauthorized', 'Bearer'), array($r->status(), $r->body()['code'], $r->header('WWW-Authenticate')));
-$open = $makeKernel(new ApiSettings(true, true, userKeys: true));
-$r    = $get('categories', array(), null, $open);
-pin('with anonymous reads on, a public endpoint answers', 200, $r->status());
-pin('an anonymous public endpoint may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
+pin('a call with no credential is 401 with a Bearer challenge', array(401, 'unauthorized', 'Bearer'), array($r->status(), $r->body()['code'], $r->header('WWW-Authenticate')));
+$r = $get('categories', array(), $publicKey);
+pin('a public key reads a public endpoint', 200, $r->status());
+pin('a public-key answer may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
 check('a user-keyed answer is never cached publicly', str_starts_with((string) $get('categories', array(), $sellerKey)->header('Cache-Control'), 'private'));
 
 harness_section('site');
 $r = $get('', array(), $publicKey);
 pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 'registration' => false, 'comments' => true)), array($r->status(), $r->body()['data']['name'], $r->body()['data']['default_locale'], $r->body()['data']['features']));
 check('the software version is not shown to callers', !(array_key_exists('version', $r->body()['data'])));
-pin('what the API allows here, as this test site sets it', array('registration' => false, 'personal_keys' => true, 'photo_urls' => false, 'public_reads' => false), $r->body()['data']['api'] ?? null);
+pin('what the API allows here, as this test site sets it', array('registration' => false, 'personal_keys' => true, 'photo_urls' => false), $r->body()['data']['api'] ?? null);
 $api = static fn (ApiSettings $settings): ?array => $get('', array(), $publicKey, $makeKernel($settings))->body()['data']['api'] ?? null;
-pin('switched on in the API settings', array('registration' => false, 'personal_keys' => true, 'photo_urls' => true, 'public_reads' => true), $api(new ApiSettings(true, true, userKeys: true, registration: true, photoUrls: true)));
+pin('switched on in the API settings', array('registration' => false, 'personal_keys' => true, 'photo_urls' => true), $api(new ApiSettings(true, userKeys: true, registration: true, photoUrls: true)));
 Preference::getInstance()->set('enabled_user_registration', '1');
 osc_reset_preferences();
 check('sign-up through the API also needs the site to take sign-ups', $api(new ApiSettings(true, userKeys: true, registration: true))['registration'] === true);
@@ -542,12 +541,12 @@ $dbDown = static function (string $table, callable $fn) use ($admin, $p) {
     }
 };
 $down = static fn (Response $r): array => array($r->status(), $r->prepare()['headers']['Cache-Control'] ?? null);
-pin('a database error on the listing row is a 500 with no-store, not a 404', array(500, 'private, no-store'), $dbDown('t_item_description', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
-pin('a database error on its photos is a 500, not a 200 a cache could keep without them', array(500, 'private, no-store'), $dbDown('t_resource', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
-pin('the same on the photos endpoint', array(500, 'private, no-store'), $dbDown('t_resource', static fn (): array => $down($get('listings/' . $live[0] . '/photos', array(), null, $open))));
-pin('a database error on the seller is a 500', array(500, 'private, no-store'), $dbDown('t_user', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
-pin('a database error on custom fields is a 500', array(500, 'private, no-store'), $dbDown('t_item_meta', static fn (): array => $down($get('listings/' . $live[0], array('include' => 'custom_fields'), null, $open))));
-pin('the listing answers again once the database is back', 200, $get('listings/' . $live[0], array(), null, $open)->status());
+pin('a database error on the listing row is a 500 with no-store, not a 404', array(500, 'private, no-store'), $dbDown('t_item_description', static fn (): array => $down($get('listings/' . $live[0], array(), $publicKey))));
+pin('a database error on its photos is a 500, not a 200 a cache could keep without them', array(500, 'private, no-store'), $dbDown('t_resource', static fn (): array => $down($get('listings/' . $live[0], array(), $publicKey))));
+pin('the same on the photos endpoint', array(500, 'private, no-store'), $dbDown('t_resource', static fn (): array => $down($get('listings/' . $live[0] . '/photos', array(), $publicKey))));
+pin('a database error on the seller is a 500', array(500, 'private, no-store'), $dbDown('t_user', static fn (): array => $down($get('listings/' . $live[0], array(), $publicKey))));
+pin('a database error on custom fields is a 500', array(500, 'private, no-store'), $dbDown('t_item_meta', static fn (): array => $down($get('listings/' . $live[0], array('include' => 'custom_fields'), $publicKey))));
+pin('the listing answers again once the database is back', 200, $get('listings/' . $live[0], array(), $publicKey)->status());
 
 harness_section('photos and comments');
 $r = $get('listings/' . $live[0] . '/photos', array(), $publicKey);

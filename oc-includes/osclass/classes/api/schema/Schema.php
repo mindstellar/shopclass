@@ -431,8 +431,7 @@ final class Schema
                 'registration'  => ['type' => 'boolean', 'description' => 'Whether POST /users signs up new accounts.'],
                 'personal_keys' => ['type' => 'boolean', 'description' => 'Whether users may make their own keys at /account/keys.'],
                 'photo_urls'    => ['type' => 'boolean', 'description' => 'Whether a listing may name photos by URL in photo_urls.'],
-                'public_reads'  => ['type' => 'boolean', 'description' => 'Whether public endpoints answer without a credential.'],
-            ], ['registration', 'personal_keys', 'photo_urls', 'public_reads']) + ['description' => 'What the API allows on this site.'],
+            ], ['registration', 'personal_keys', 'photo_urls']) + ['description' => 'What the API allows on this site.'],
             'links'          => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
         ], ['name', 'url', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
     }

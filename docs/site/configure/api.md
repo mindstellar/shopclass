@@ -31,17 +31,10 @@ Developer docs: [REST API](/docs/developers/api/).
 | Setting | What it does |
 |---|---|
 | **Turn on the REST API** | Off by default. When off, every call to `/api/v1` is refused with `api_disabled`. Keys are kept. |
-| **Allow reading public data without a key** | Off by default. See below. |
 | **Allowed origins (CORS)** | Websites whose pages may call the API from a browser. See below. |
 
-### Anonymous reads
-
-With this off, a caller needs a key even to read public listings. That is the
-default on purpose: with no key, anyone can copy every listing on your site with one
-script, and you cannot tell them apart or stop one of them.
-
-Turn it on only if you want an open data feed. The per-address limit still applies.
-Keys keep working either way.
+Every call needs a key or a token, even to read public listings. For an open data feed, make a
+public key and publish it.
 
 ## Keys
 
