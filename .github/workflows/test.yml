@@ -57,6 +57,8 @@ jobs:
         with:
           php-version: ${{ matrix.php-versions }}
           extensions: mbstring, intl, pdo_sqlite, pdo_mysql
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
       # Fails on a parse error, reports deprecations without failing. `php -l`
       # already draws that line by exit code; what it does not do is separate
       # them in its output, so across a thousand files the deprecations were
@@ -101,6 +103,8 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mysqli, redis
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
       # Scratch data needs no crash safety; without disk syncs the suite runs several times faster.
       - name: Fast scratch database
         run: php -r '$db = new mysqli("127.0.0.1", "root", "root", "", 3306); $db->query("SET GLOBAL innodb_flush_log_at_trx_commit = 0"); $db->query("SET GLOBAL sync_binlog = 0");'
@@ -122,6 +126,14 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '22'
+          cache: 'npm'
+      # main.css and the vendored assets are built, not read from the repository.
+      - name: Build admin assets
+        run: |
+          npm ci
+          npm run assets
+          npm run css
+          npm run js
       # The OpenAPI rules a client generator or gateway relies on, beyond what core checks.
       - name: OpenAPI document passes Redocly lint
         run: npx -y @redocly/cli@2.57.0 lint docs/site/developers/api/openapi.json
@@ -131,7 +143,7 @@ jobs:
       # or a row the browser never showed becomes a value anyone can set by hand. The
       # translated half fails just as quietly -- a control reading or writing a key the
       # store does not use drops what was typed with nothing on screen to show for it.
-      # The dependent half is driven in the runner's Chrome against the committed ui-osc.js
+      # The dependent half is driven in the runner's Chrome against the built ui-osc.js
       # and main.css, because a source grep cannot tell a script that runs from one that is
       # merely present; the browser half is skipped where there is no Chrome to run it.
       # The browser is a dependency of that suite, so it is named here rather than assumed

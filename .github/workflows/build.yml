@@ -138,6 +138,14 @@ jobs:
       # Build and package BEFORE tagging: the tag is created only by a successful
       # release (below), so a failed build can never leave a dangling tag that blocks
       # the next run.
+      # Pinned rather than taking whatever the runner ships: the smoke test needs
+      # mysqli for the app and to prepare the database, and composer runs on it too.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, mbstring, intl, gd, curl, zip
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
@@ -148,6 +156,9 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
 
       - name: Package release
         # Archive from the pushed commit, not a tag — the tag does not exist yet.
@@ -180,15 +191,6 @@ jobs:
             cp "$src" "package-ci/$dest"
           done
           tar czf shopclass-package-ci.tar.gz package-ci
-
-      # Pinned rather than taking whatever the runner happens to ship: the smoke
-      # test needs mysqli both for the app and to prepare the database, and the
-      # preinstalled PHP carries no guarantee of it.
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: mysqli, mbstring, intl, gd, curl, zip
 
       # Everything else tests the repository. This tests the artefact: unpack the
       # zip a site owner would download, run the installer against a real
@@ -320,6 +322,29 @@ jobs:
           done
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
           echo "Image tags: ${TAGS}"
+
+      # The image copies the working tree, so the built output has to exist first.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build admin assets
+        run: |
+          npm ci
+          npm run assets
+          npm run css
+          npm run js
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4

@@ -81,6 +81,29 @@ jobs:
           TAG=$(bash scripts/storefront-release.sh "${CORE_VERSION}" | cut -f1)
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
+      # The image copies the working tree, so the built output has to exist first.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build admin assets
+        run: |
+          npm ci
+          npm run assets
+          npm run css
+          npm run js
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
