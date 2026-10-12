@@ -18,6 +18,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/stubs.php';
 
 use mindstellar\admin\InlineMarkdown;
@@ -37,5 +38,18 @@ pin(
 );
 pin('javascript link stays text', '[x](javascript:alert(1))', InlineMarkdown::render('[x](javascript:alert(1))'));
 pin('protocol-relative link stays text', '[x](//evil.com)', InlineMarkdown::render('[x](//evil.com)'));
+
+foreach ([
+    'entity colon'      => '[x](javascript&colon;alert&#40;1&#41;)',
+    'entity first char' => '[x](&#106;avascript:alert)',
+    'entity tab'        => '[x](java&Tab;script&colon;alert)',
+    'leading C0 byte'   => "[x](\x01javascript:alert)",
+    'data link'         => '[x](data:text/html,hi)',
+    'mixed-case scheme' => '[x](JavaScript:alert)',
+    'entity in https'   => '[x](https://a.test/&#106;)',
+] as $label => $md) {
+    pin("{$label} stays text", false, str_contains(InlineMarkdown::render($md), '<a '));
+}
+pin('https with query keeps working', true, str_contains(InlineMarkdown::render('[x](https://a.test/?a=1&b=2)'), '<a href="https://a.test/?a=1&amp;b=2"'));
 
 exit(harness_result());

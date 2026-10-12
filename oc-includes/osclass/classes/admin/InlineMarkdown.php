@@ -15,7 +15,7 @@ namespace mindstellar\admin;
 
 /**
  * Renders the inline Markdown the changelog uses: **bold**, `code` and [text](url).
- * Text is escaped first; only http(s) and relative links become anchors.
+ * Text is escaped first; only plain http(s) and relative links become anchors.
  *
  * @package mindstellar\admin
  */
@@ -38,10 +38,12 @@ final class InlineMarkdown
             }
             $part = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $part);
             $out .= preg_replace_callback('/\[([^\]]+)\]\(([^)\s]+)\)/', static function (array $m) use ($base): string {
-                if (preg_match('~^https?://~i', $m[2])) {
+                // The target is already escaped, so entities like &colon; or &#106; survive
+                // it. Only a plain charset is accepted; `&amp;` is the one entity allowed in https.
+                if (preg_match('|^https?://[A-Za-z0-9._~:/?#@!$*+,;=%\[\]-]+(?:&amp;[A-Za-z0-9._~:/?#@!$*+,;=%\[\]-]*)*$|i', $m[2])) {
                     return '<a href="' . $m[2] . '" target="_blank" rel="noopener noreferrer">' . $m[1] . '</a>';
                 }
-                if (preg_match('~^(?![a-z][a-z0-9+.-]*:|//)~i', $m[2])) {
+                if (preg_match('|^(?!//)[A-Za-z0-9._~/-][A-Za-z0-9._~/#?=%-]*$|', $m[2])) {
                     return '<a href="' . osc_esc_html($base) . $m[2] . '">' . $m[1] . '</a>';
                 }
 
