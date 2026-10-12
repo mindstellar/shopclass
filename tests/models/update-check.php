@@ -84,6 +84,32 @@ pin('the core rows leave preferences', 0, $count("SELECT COUNT(*) FROM $prefs WH
 osc_update_check_save('core', array('checked' => $now));
 pin('no package reads as an empty string', '', osc_update_core_json());
 
+harness_section('update checks while the database is behind');
+$admin->query("DELETE FROM $prefs WHERE s_name = 'version'");
+$admin->query("INSERT INTO $prefs VALUES ('osclass', 'version', '1.0.0', 'STRING')");
+osc_reset_preferences();
+if (!function_exists('__')) {
+    function __($text)
+    {
+        return $text;
+    }
+}
+$ajax = (new ReflectionClass(\mindstellar\admin\ajax\UpdateAjax::class))->newInstanceWithoutConstructor();
+$answer = static function (string $method) use ($ajax): string {
+    ob_start();
+    try {
+        $ajax->$method();
+    } finally {
+        $out = (string) ob_get_clean();
+    }
+
+    return (string) substr($out, (int) strpos($out, '{'));
+};
+pin('the database is behind in this setup', true, \mindstellar\upgrade\Osclass::databaseBehind());
+foreach (array('checkLanguages', 'checkThemes', 'checkPlugins') as $method) {
+    pin($method . ' answers total 0 without a query', array('total' => 0), array_intersect_key((array) json_decode($answer($method), true), array('total' => 0)));
+}
+
 harness_section('sources');
 foreach (array(
     'oc-includes/osclass/classes/admin/ajax/UpdateAjax.php',

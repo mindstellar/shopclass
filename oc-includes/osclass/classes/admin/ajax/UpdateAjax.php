@@ -25,8 +25,8 @@ use mindstellar\utility\AjaxResponse;
  */
 final class UpdateAjax extends AjaxHandler
 {
-    /** Answer quietly while new files wait for their database upgrade (the tables are not there yet). */
-    private static function skipWhileDatabaseBehind(): bool
+    /** Sends the empty answer and returns true while new files wait for their database upgrade (the tables are not there yet). */
+    private static function answeredWhileDatabaseBehind(): bool
     {
         if (!Osclass::databaseBehind()) {
             return false;
@@ -43,7 +43,7 @@ final class UpdateAjax extends AjaxHandler
 
             return;
         }
-        if (self::skipWhileDatabaseBehind()) {
+        if (self::answeredWhileDatabaseBehind()) {
             return;
         }
         // getPackageInfo() reaches GitHub and it, or the Osclass constructor, can throw on
@@ -79,7 +79,7 @@ final class UpdateAjax extends AjaxHandler
 
     public function checkLanguages(): void
     {
-        if (self::skipWhileDatabaseBehind()) {
+        if (self::answeredWhileDatabaseBehind()) {
             return;
         }
         $total = _osc_check_languages_update();
@@ -88,7 +88,7 @@ final class UpdateAjax extends AjaxHandler
 
     public function checkThemes(): void
     {
-        if (self::skipWhileDatabaseBehind()) {
+        if (self::answeredWhileDatabaseBehind()) {
             return;
         }
         MarketAjax::refreshCatalogIfDue('theme');
@@ -98,7 +98,7 @@ final class UpdateAjax extends AjaxHandler
 
     public function checkPlugins(): void
     {
-        if (self::skipWhileDatabaseBehind()) {
+        if (self::answeredWhileDatabaseBehind()) {
             return;
         }
         MarketAjax::refreshCatalogIfDue('plugin');
