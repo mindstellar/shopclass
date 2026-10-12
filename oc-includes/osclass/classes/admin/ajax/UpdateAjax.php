@@ -38,12 +38,12 @@ final class UpdateAjax extends AjaxHandler
 
     public function checkVersion(): void
     {
-        if (self::skipWhileDatabaseBehind()) {
-            return;
-        }
         if (BuildInfo::isEdge()) {
             AjaxResponse::json(array('error' => 0, 'msg' => __('No update available')));
 
+            return;
+        }
+        if (self::skipWhileDatabaseBehind()) {
             return;
         }
         // getPackageInfo() reaches GitHub and it, or the Osclass constructor, can throw on
