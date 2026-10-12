@@ -37,7 +37,7 @@ $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
 $host = getenv('DRIFT_DB_HOST') ?: '127.0.0.1';
-$port = (int) (getenv('DRIFT_DB_PORT') ?: 3306);
+$port = (int) (getenv('DRIFT_DB_PORT') ?: 33061);
 $user = getenv('DRIFT_DB_USER') ?: 'root';
 $pass = getenv('DRIFT_DB_PASS') !== false ? getenv('DRIFT_DB_PASS') : 'root';
 $name = 'osc_connect_setup_' . getmypid();
