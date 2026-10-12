@@ -587,7 +587,7 @@ fi
 
 # ---------------------------------------------------------------------------
 # Fatal / parse error detection. The prod image never shows a raw PHP error to
-# the browser — oc-includes/osclass/classes/logger/OsclassErrors.php catches
+# the browser — oc-includes/osclass/classes/logger/ErrorHandler.php catches
 # every uncaught exception and true fatal and renders a branded error page
 # instead — so a response body will not contain the words "Fatal error". What
 # it does, unconditionally, is `error_log()` the failure with one of two fixed

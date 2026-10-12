@@ -42,7 +42,6 @@
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "npm-font-open-sans": "^1.1.0",
-    "osclass-legacy-assets": "github:mindstellar/osclass-legacy-assets#master",
     "qrcode-generator": "^2.0.4",
     "sortablejs": "^1.15.7",
     "tinymce": "^8.9.2"

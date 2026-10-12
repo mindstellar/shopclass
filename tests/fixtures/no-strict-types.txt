@@ -101,7 +101,7 @@ oc-includes/osclass/classes/location/LocationAdminQuery.php
 oc-includes/osclass/classes/location/LocationAdminView.php
 oc-includes/osclass/classes/location/LocationCatalog.php
 oc-includes/osclass/classes/location/LocationImporter.php
-oc-includes/osclass/classes/logger/OsclassErrors.php
+oc-includes/osclass/classes/logger/ErrorHandler.php
 oc-includes/osclass/classes/market/Catalog.php
 oc-includes/osclass/classes/market/Compatibility.php
 oc-includes/osclass/classes/market/Installer.php

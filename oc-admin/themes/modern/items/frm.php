@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_enqueue_script('php-date');
 osc_enqueue_script('tiny_mce');
 osc_enqueue_script('admin-editor');
 

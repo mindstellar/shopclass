@@ -127,7 +127,7 @@ one-line `conf.d` override (`output_buffering = 4096`) into its own throwaway
 container only; the image and every real deployment are untouched.
 
 Similarly, the prod image never shows a raw PHP error to a client —
-`OsclassErrors` catches every fatal and uncaught exception and renders a
+`ErrorHandler` catches every fatal and uncaught exception and renders a
 branded error page instead — so response bodies never contain the words
 "Fatal error". What does happen unconditionally is an `error_log()` call with
 a fixed prefix (`Shopclass error: ` for an uncaught exception, `Shopclass

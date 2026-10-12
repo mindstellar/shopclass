@@ -401,9 +401,9 @@ class ConnectionManager
         // useful "database unavailable" page (and log it) instead of letting a
         // later query fatal with a raw error. The real driver error is passed
         // as debug-only detail.
-        if (class_exists('\\mindstellar\\logger\\OsclassErrors')) {
+        if (class_exists('\\mindstellar\\logger\\ErrorHandler')) {
             $detail = $this->connErrorDesc ?: ($this->errorDesc ?: $message);
-            \mindstellar\logger\OsclassErrors::getInstance()->renderDbError((string)$detail);
+            \mindstellar\logger\ErrorHandler::getInstance()->renderDbError((string)$detail);
             exit(1);
         }
 

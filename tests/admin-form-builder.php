@@ -114,10 +114,17 @@ check(
     strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php'), 'function osc_admin_form') !== false
 );
 $ocLoad     = (string)file_get_contents(ABS_PATH . 'oc-load.php');
-$atHelper   = strpos($ocLoad, 'helpers/hSettings.php');
+require_once ABS_PATH . 'oc-includes/osclass/classes/boot/Boot.php';
+$atHelper   = strpos($ocLoad, 'Boot::HELPERS');
 $atPlugins  = strpos($ocLoad, 'Plugins::init()');
-check('oc-load.php loads that file', $atHelper !== false);
+check('oc-load.php loads that file', in_array('osclass/helpers/hSettings.php', \mindstellar\boot\Boot::HELPERS, true) && $atHelper !== false);
 check('oc-load.php starts the plugins', $atPlugins !== false);
+$atAdmin   = strpos($ocLoad, "if (defined('OC_ADMIN') && OC_ADMIN) {");
+$atAdminUi = strpos($ocLoad, "    require_once LIB_PATH . 'osclass/helpers/hAdminUi.php';");
+check(
+    'the admin page helpers load inside the admin-only block, after the admin theme',
+    $atAdmin !== false && $atAdminUi !== false && $atAdminUi > $atAdmin && $atAdminUi < strpos($ocLoad, 'WebThemes::init();')
+);
 check(
     'and it is loaded before plugins run, which is when a page is declared',
     $atHelper !== false && $atPlugins !== false && $atHelper < $atPlugins,

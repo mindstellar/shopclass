@@ -29,6 +29,7 @@ class_alias('mindstellar\backup\BackupException', 'mindstellar\backup\BackupFail
  */
 const OSC_RENAMED_CLASSES = array(
     'mindstellar\\Csrf' => 'mindstellar\\security\\Csrf',
+    'mindstellar\\logger\\OsclassErrors' => 'mindstellar\\logger\\ErrorHandler',
     'mindstellar\\backup\\BackupManager' => 'mindstellar\\backup\\BackupService',
     'mindstellar\\billing\\Packages' => 'mindstellar\\billing\\PackageStore',
     'mindstellar\\billing\\Orders' => 'mindstellar\\billing\\OrderStore',

@@ -35,11 +35,6 @@ const TARGETS = [
   { dest: `${ASSETS}/tinymce/skins`, flatten: false, cwd: 'tinymce/skins', src: ['content/default/content.min.css', 'ui/oxide/skin.min.css'] },
   { dest: `${ASSETS}/tinymce/plugins`, flatten: false, cwd: 'tinymce/plugins', src: ['{advlist,anchor,autolink,charmap,code,fullscreen,image,imagetools,insertdatetime,link,lists,media,paste,preview,searchreplace,table,visualblocks}/*.min.js'] },
 
-  // Only date.js is still registered (as `php-date`). The colorpicker, the jQuery
-  // fine-uploader and tabber were 217 KB of unreachable vendor code — nothing registered
-  // or enqueued them, so they are no longer copied out of the package.
-  { dest: `${ASSETS}/osclass-legacy`, flatten: false, cwd: 'osclass-legacy-assets/src', src: ['index.php', 'js/index.php', 'js/date.js'] },
-
   // Bootstrap's SCSS sources, imported by main.scss. Not an asset — it lands in the theme
   // and is gitignored, because it is a verbatim vendor copy. Brand overrides live in
   // scss/_brand.scss, which is tracked and therefore survives this wipe.

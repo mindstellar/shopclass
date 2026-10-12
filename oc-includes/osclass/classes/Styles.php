@@ -38,6 +38,10 @@ class Styles extends Dependencies
         } else {
             Plugins::addHook('header', $print_styles, 9);
         }
+
+        // Core's styles; their scripts are registered in Scripts::init().
+        osc_register_style('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.css')));
+        osc_register_style('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.css')));
     }
 
     /**

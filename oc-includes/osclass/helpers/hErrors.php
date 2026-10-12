@@ -72,6 +72,31 @@ function osc_die($title, $message, $options = array())
 }
 
 /**
+ * The page oc-load.php shows when Shopclass is not set up or not installed: a 503 with a link to
+ * the installer. Core start-up only.
+ *
+ * @internal
+ *
+ * @param string $title
+ * @param string $message trusted HTML
+ * @param bool   $help    also link to the help forum
+ *
+ * @return never
+ */
+function _osc_die_not_ready(string $title, string $message, bool $help = false)
+{
+    $actions = [[
+        'label'   => 'Run the installer',
+        'href'    => osc_get_absolute_url() . 'oc-includes/osclass/install.php',
+        'primary' => true,
+    ]];
+    if ($help) {
+        $actions[] = ['label' => 'Need help?', 'href' => 'https://github.com/mindstellar/shopclass/discussions'];
+    }
+    osc_die($title, $message, ['tone' => 'info', 'status' => 503, 'actions' => $actions]);
+}
+
+/**
  * Read a $_SERVER value, optionally HTML-encoded.
  *
  * @param string $param

@@ -20,7 +20,6 @@
  */
 function osc_meta_publish($catId = null)
 {
-    osc_enqueue_script('php-date');
     echo '<div class="row">';
     FieldForm::meta_fields_input($catId);
     echo '</div>';
@@ -36,7 +35,6 @@ function osc_meta_publish($catId = null)
  */
 function osc_meta_edit($catId = null, $item_id = null)
 {
-    osc_enqueue_script('php-date');
     echo '<div class="row">';
     FieldForm::meta_fields_input($catId, $item_id);
     echo '</div>';

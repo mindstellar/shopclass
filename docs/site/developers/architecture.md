@@ -105,6 +105,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `backup` | Making, storing and restoring backups |
 | `base` | Abstract base classes and traits other classes extend: `Model`, `Registry`, `SettingsScreen`, `Cache` (the object-cache drivers), `ActionMap`, `SharedInstance` (the one shared object behind `getInstance()`) |
 | `billing` | Packages, orders, entitlements, payment gateways and receipts |
+| `boot` | The start-up steps `oc-load.php` runs: the helper file list and the session stage |
 | `cache` | The object cache: `CacheManager`, the drivers (`MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`), the Redis clients they use, and page-cache purges |
 | `category` | Categories: `CategoryService`, `CategoryStore`, `CategoryQuery` |
 | `cli` | `oc-cli.php` commands |

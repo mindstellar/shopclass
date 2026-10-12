@@ -13,19 +13,18 @@ namespace mindstellar\logger;
 use Exception;
 
 /**
- * Class OsclassErrors
- *
- * @package Mindstellar\Logger
+ * Registers PHP's error, exception and shutdown handlers, logs what they catch and shows the error page.
+ * Its old name, ErrorHandler, still works.
  */
-class OsclassErrors
+class ErrorHandler
 {
-    private static ?OsclassErrors $instance = null;
+    private static ?ErrorHandler $instance = null;
     private bool $logEnabled = false;
     private bool $debugEnabled = false;
     private string $logFile = '';
 
     /**
-     * OsclassErrors constructor.
+     * ErrorHandler constructor.
      */
     private function __construct()
     {
@@ -33,17 +32,17 @@ class OsclassErrors
     }
 
     /**
-     * Get an instance of OsclassErrors (Singleton pattern).
+     * The shared instance.
      *
-     * @return OsclassErrors
+     * @return ErrorHandler
      */
-    public static function getInstance(): OsclassErrors
+    public static function getInstance(): ErrorHandler
     {
         return self::$instance ??= new self();
     }
 
     /** @deprecated 7.0.0 Use getInstance(). */
-    public static function newInstance(): OsclassErrors
+    public static function newInstance(): ErrorHandler
     {
         return self::getInstance();
     }
