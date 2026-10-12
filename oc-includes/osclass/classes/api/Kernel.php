@@ -459,7 +459,7 @@ final class Kernel
         if ($credential !== null && $credential->kind() === CredentialKind::KEY && $credential->isUser() && !$this->settings->userKeys()) {
             throw ProblemException::of('feature_disabled', 'Personal keys are switched off on this site.');
         }
-        if ($credential !== null && !$this->settings->enabled() && !in_array($credential->kind(), [CredentialKind::SESSION, CredentialKind::GUEST], true)) {
+        if ($credential !== null && !$this->settings->enabled() && !$credential->isPageToken()) {
             throw ProblemException::apiDisabled();
         }
         if ($credential !== null) {

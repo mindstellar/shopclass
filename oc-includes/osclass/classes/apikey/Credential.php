@@ -116,7 +116,7 @@ final class Credential
     }
 
     /**
-     * A signed-in web user calling from the site's own pages (cookie plus page token).
+     * A signed-in web user, not an admin, calling from the site's own pages (cookie plus page token).
      *
      * @api
      */
@@ -133,6 +133,16 @@ final class Credential
     public function isAdminSession(): bool
     {
         return $this->kind === CredentialKind::SESSION && $this->adminId !== null;
+    }
+
+    /**
+     * Any call with a page token from the site's own pages: a guest, a user or an admin.
+     *
+     * @api
+     */
+    public function isPageToken(): bool
+    {
+        return in_array($this->kind, [CredentialKind::SESSION, CredentialKind::GUEST], true);
     }
 
     /** @api */

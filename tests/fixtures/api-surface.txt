@@ -145,6 +145,7 @@ mindstellar\apikey\Credential::public isAdmin(): bool
 mindstellar\apikey\Credential::public isAdminSession(): bool
 mindstellar\apikey\Credential::public isAnonymous(): bool
 mindstellar\apikey\Credential::public isModerator(): bool
+mindstellar\apikey\Credential::public isPageToken(): bool
 mindstellar\apikey\Credential::public isSession(): bool
 mindstellar\apikey\Credential::public isUser(): bool
 mindstellar\apikey\Credential::public kind(): string
