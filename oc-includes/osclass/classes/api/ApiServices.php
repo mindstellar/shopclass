@@ -61,6 +61,7 @@ use mindstellar\apikey\PageTokens;
 use mindstellar\apikey\Scopes;
 use mindstellar\apikey\SignInStore;
 use mindstellar\auth\AdminStore;
+use mindstellar\auth\AuthStamp;
 use mindstellar\comment\CommentQuery;
 use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
@@ -391,13 +392,13 @@ final class ApiServices
     }
 
     /**
-     * Admin rows, each loaded once per request: the admin an admin key acts for, so core code
-     * and its activity log see who made the change.
+     * Admin rows, each loaded once per request: the admin an admin key or admin page token acts
+     * for, with the sign-out stamp the page token is checked against.
      */
     public function admins(): MemoisedRows
     {
         return $this->once(__FUNCTION__, static fn (): MemoisedRows => new MemoisedRows(static function (int $id): ?array {
-            $row = AdminStore::find($id, ['pk_i_id', 's_name', 's_username', 's_email', 'b_moderator']);
+            $row = AdminStore::find($id, ['pk_i_id', 's_name', 's_username', 's_email', 'b_moderator', AuthStamp::COLUMN]);
 
             return $row === null ? null : Db::stringifyRow($row);
         }));

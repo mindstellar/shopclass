@@ -266,6 +266,11 @@ $dstId    = $model->insert(new StoredKey(0, CredentialKind::KEY, 'DST00000000000
 pin('across a DST fall-back a key expiring later is still usable', [$fallBack + 1800, true], [$model->find($dstId)?->expiresAt(), $model->find($dstId)?->isUsableAt($fallBack)]);
 date_default_timezone_set($zone);
 
+harness_section('admin rows for page tokens');
+seed_exec($admin, 'UPDATE ' . DB_TABLE_PREFIX . 't_admin SET i_auth_stamp = 3 WHERE pk_i_id = ?', 'i', [$adminId]);
+$services = new \mindstellar\api\ApiServices(new ApiSettings(true), new Scopes(), new ApiCredential(), new UserRows(), new SystemClock(), api_test_limiter());
+pin('the admin row carries the sign-out stamp an admin page token is checked against', 3, \mindstellar\auth\AuthStamp::of((array) $services->admins()->find($adminId)));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
