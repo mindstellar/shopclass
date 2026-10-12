@@ -346,7 +346,7 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
 #: oc-includes/osclass/gui/account/user-signin-content.php
-msgid "At least six characters."
+msgid "At least %d characters."
 msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php

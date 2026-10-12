@@ -8255,7 +8255,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/form/AdminForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
-msgid "Password: enter at least 5 characters"
+msgid "Password: enter at least %d characters"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/UserForm.php
@@ -9708,7 +9708,7 @@ msgid "Search themes…"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/UserForm.php
-msgid "Second password: enter at least 5 characters"
+msgid "Second password: enter at least %d characters"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/UserForm.php
