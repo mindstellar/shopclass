@@ -302,8 +302,10 @@ Print the meta tag in the theme's `<head>`:
 ```
 
 Its content is JSON: `url` (the API address), `token` (a guest token when nobody is signed in),
-`header` and `expires_at`. It is empty when the API is off. `osc_api_session_token()` returns
-the token alone.
+`header` and `expires_at`. `osc_api_session_token()` returns the token alone.
+
+Page tokens work while the site owner has the API switched off. Then only page-token calls are
+answered: every key and token, and `POST /auth/token` and `POST /users`, get `403 api_disabled`.
 
 ```js
 const api = JSON.parse(document.querySelector('meta[name="shopclass-api"]').content);

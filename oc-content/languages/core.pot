@@ -7826,7 +7826,9 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
-msgid "Off by default. When off, every call to /api/v1 is refused."
+msgid ""
+"Off by default. When off, apps and keys are refused; the site's own pages "
+"still use it."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php

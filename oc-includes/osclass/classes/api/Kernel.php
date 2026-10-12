@@ -115,7 +115,7 @@ final class Kernel
         $requestId = RequestId::for($request);
         try {
             $settings = ApiServices::site()->settings();
-            $response = $settings->enabled()
+            $response = $settings->enabled() || PageTokenAuth::applies($request)
                 ? self::fromSite()->handle($request, $requestId)
                 : self::disabled($settings, $request, $requestId);
         } catch (\Throwable $e) {
@@ -126,7 +126,8 @@ final class Kernel
     }
 
     /**
-     * The answer while the API is off, built without the router or any service.
+     * The answer while the API is off to anything but the site's own pages, built without the
+     * router or any service.
      */
     private static function disabled(ApiSettings $settings, Request $request, string $requestId): Response
     {
@@ -421,11 +422,12 @@ final class Kernel
     /**
      * The request's path below the version, e.g. `listings/12`.
      *
-     * @throws ProblemException 403 when the API is off, 404 for a refused path or a version the site does not answer
+     * @throws ProblemException 403 when the API is off and this is not a page-token call, 404 for a
+     *                    refused path or a version the site does not answer
      */
     private function routePath(Request $request): string
     {
-        if (!$this->settings->enabled()) {
+        if (!$this->settings->enabled() && !PageTokenAuth::applies($request)) {
             throw ProblemException::apiDisabled();
         }
         if ($request->path() === null) {
@@ -440,16 +442,25 @@ final class Kernel
 
     /**
      * @throws ProblemException 401 when a credential is needed and none (or a bad one) came, 403 for a
-     *                    personal key while the site has them switched off
+     *                    personal key while the site has them switched off, or for anything but a
+     *                    page token while the API is off
      */
     private function credentialFor(Request $request, RouteSpec $route): Credential
     {
         if ($route->auth() === RouteSpec::AUTH_NONE) {
+            if (!$this->settings->enabled()) {
+                // While the API is off, the site's own pages may read and act, but not sign in or sign up through it.
+                throw ProblemException::apiDisabled();
+            }
+
             return Credential::anonymous();
         }
         $credential = $this->authenticator->authenticate($request);
         if ($credential !== null && $credential->kind() === CredentialKind::KEY && $credential->isUser() && !$this->settings->userKeys()) {
             throw ProblemException::of('feature_disabled', 'Personal keys are switched off on this site.');
+        }
+        if ($credential !== null && !$this->settings->enabled() && !in_array($credential->kind(), [CredentialKind::SESSION, CredentialKind::GUEST], true)) {
+            throw ProblemException::apiDisabled();
         }
         if ($credential !== null) {
             return $credential;

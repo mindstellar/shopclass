@@ -30,7 +30,7 @@ Developer docs: [REST API](/docs/developers/api/).
 
 | Setting | What it does |
 |---|---|
-| **Turn on the REST API** | Off by default. When off, every call to `/api/v1` is refused with `api_disabled`. Keys are kept. |
+| **Turn on the REST API** | Off by default. When off, apps and keys are refused with `api_disabled`, and keys are kept. The site's own pages still use the API with page tokens. |
 | **Allowed origins (CORS)** | Websites whose pages may call the API from a browser. See below. |
 
 Every call needs a key or a token, even to read public listings. For an open data feed, make a

@@ -107,6 +107,7 @@ $routes = [
     }, 'auth' => 'user', 'scope' => 'listings:write'],
     'POST secret'  => ['handler' => static fn (): Response => Response::ok(['done' => true]), 'auth' => 'user', 'scope' => 'account:write'],
     'GET admin/x'  => ['handler' => static fn (): Response => Response::ok(['admin' => true]), 'auth' => 'admin', 'scope' => 'admin:users'],
+    'GET open'     => ['handler' => static fn (): Response => Response::ok(['open' => true]), 'auth' => 'none'],
     'GET auth/session' => [
         'handler' => static fn (ApiCall $call): Response => (new AuthController(new \mindstellar\api\ApiServices(new ApiSettings(true), $scopes, new \mindstellar\model\ApiCredential(), $accounts(), new SystemClock(), api_test_limiter())))->pageToken($call),
         'auth'    => 'user',
@@ -324,6 +325,23 @@ $byAddress = $kernelFor([], null, static fn (array $u, string $ip): bool => $ip 
 pin('a banned address is refused', [403, 'banned'], $code($byAddress->handle($asGuest())));
 $guestBucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor($session(), new RouteSpec('GET', 'me', $routes['GET me']), new Credential(CredentialKind::GUEST, Scopes::PUBLIC))[0];
 pin('a guest counts per address, at the no-key limit', ['api_anon', '192.0.2.10', 60], [$guestBucket->name(), $guestBucket->key(), $guestBucket->max()]);
+
+harness_section('with the API switched off');
+$off = $kernelFor(['enabled' => false]);
+$reset();
+pin('a guest token still reads', [200, CredentialKind::GUEST], [($r = $off->handle($asGuest()))->status(), $r->body()['data']['kind']]);
+$reset();
+pin('a signed-in page still writes', 201, $off->handle($session($ok(10) + ['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes'))->status());
+$reset();
+pin('a call with no credential is api_disabled', [403, 'api_disabled'], $code($off->handle($session(['Origin' => $site]))));
+$reset();
+pin('an access token is api_disabled', [403, 'api_disabled'], $code($off->handle($session(['Authorization' => 'Bearer ' . $accessToken]))));
+$reset();
+pin('a public key in the query string is api_disabled, page token or not', [403, 'api_disabled'], $code($off->handle($session($ok(10), $cookie(10), 'GET', 'v1/me', ['api_key' => 'scp_' . str_repeat('A', 16) . '.' . str_repeat('a', 64)]))));
+$reset();
+pin('a route that needs no credential is api_disabled, even with a page token', [403, 'api_disabled'], $code($off->handle($asGuest([], null, 'GET', 'v1/open'))));
+$reset();
+pin('a page token from another site is still refused', [403, 'cross_origin'], $code($off->handle($asGuest(['Origin' => 'https://evil.test']))));
 
 harness_section('guard 5: no CORS, never stored');
 $cors = $kernelFor(['corsOrigins' => "*\n" . $site]);

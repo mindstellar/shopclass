@@ -34,7 +34,7 @@ final class ApiSettingsScreen extends SettingsScreen
 
         CoreSettings::page(self::PAGE_ID, __('API'), ApiSettings::SECTION)
             ->group(__('Access'))
-            ->checkbox('api_enabled', __('Turn on the REST API'), __('Off by default. When off, every call to /api/v1 is refused.'))
+            ->checkbox('api_enabled', __('Turn on the REST API'), __('Off by default. When off, apps and keys are refused; the site\'s own pages still use it.'))
                 ->rowLabel(__('API'))
                 ->default(ApiSettings::DEFAULTS['api_enabled'])
             ->textarea(

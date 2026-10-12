@@ -186,18 +186,12 @@ if (!function_exists('osc_api_session_token')) {
     /**
      * The page token theme JavaScript sends as the X-Shopclass-Token header to call the API from
      * this site's own pages: the signed-in user's, or a guest's that reads public data only. It
-     * lives two hours.
+     * lives two hours. It works while the API is off too.
      *
      * @api
-     *
-     * @return string '' when the API is off
      */
     function osc_api_session_token(): string
     {
-        if (!osc_api_enabled()) {
-            return '';
-        }
-
         return \mindstellar\apikey\ApiAccess::site()->pageTokens()->forPage()->token();
     }
 }
@@ -206,17 +200,12 @@ if (!function_exists('osc_api_session_meta')) {
     /**
      * A `<meta name="shopclass-api">` tag for the page head. Its content is JSON: the API's
      * address (`url`), the page token (`token`, a guest's when nobody is signed in), the `header`
-     * to send it in and when it expires (`expires_at`).
+     * to send it in and when it expires (`expires_at`). It is printed while the API is off too.
      *
      * @api
-     *
-     * @return string '' when the API is off
      */
     function osc_api_session_meta(): string
     {
-        if (!osc_api_enabled()) {
-            return '';
-        }
         $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forPage();
         $data  = [
             'url'        => osc_api_url(),
