@@ -208,6 +208,14 @@ if ($busts !== null) {
     pin('every pk-targeted write busts the cache', 4, $GLOBALS['__user_cache_busts'] - $busts);
 }
 
+// The profile text lives in the cached row too.
+osc_test_cache_flush();
+$model->findByPrimaryKey($victim);
+$model->updateDescription($victim, 'en_US', 'Bio changed');
+pin('a changed bio is visible at once', 'Bio changed', $model->findByPrimaryKey($victim)['locale']['en_US']['s_info']);
+$model->updateDescription($victim, 'fr_FR', 'Nouvelle bio');
+pin('...and so is a bio added for a new locale', 'Nouvelle bio', $model->findByPrimaryKey($victim)['locale']['fr_FR']['s_info']);
+
 // A write with no pk has no single row to drop; it must not blow up either.
 check('an update without a pk is still accepted', $model->update(array('b_enabled' => 1), array('s_email' => 'victim@example.test')) !== false);
 

@@ -479,7 +479,10 @@ class User extends DAO
         $exist      = $this->existDescription($conditions);
 
         if (!$exist) {
-            return $this->insertDescription($id, $locale, $info);
+            $inserted = $this->insertDescription($id, $locale, $info);
+            $this->dropCachedUser($id);
+
+            return $inserted;
         }
 
         $array_where = array(
@@ -488,12 +491,29 @@ class User extends DAO
         );
 
         try {
-            return Db::table(DB_TABLE_PREFIX . 't_user_description')
+            $result = Db::table(DB_TABLE_PREFIX . 't_user_description')
                 ->where('fk_c_locale_code', $locale)
                 ->where('fk_i_user_id', $id)
                 ->update(array('s_info' => $info));
         } catch (\mindstellar\database\DbException $e) {
             return false;
+        }
+        $this->dropCachedUser($id);
+
+        return $result;
+    }
+
+    /**
+     * Drop the cached user row (it holds the description).
+     *
+     * @param int|string $id
+     *
+     * @return void
+     */
+    private function dropCachedUser($id): void
+    {
+        if (function_exists('osc_invalidate_user_cache')) {
+            osc_invalidate_user_cache($id);
         }
     }
 
