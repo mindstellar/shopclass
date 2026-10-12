@@ -134,9 +134,9 @@ curl -X DELETE $API/admin/users/23/sessions/9 -H "Authorization: Bearer $KEY"
 | `DELETE /admin/categories/{id}` | Delete with its subcategories and their listings. A large one answers `202` with no body and no `Location`: it is hidden now and emptied in the background. Read `GET /admin/categories/{id}` until it answers `404`. |
 | `GET`, `PATCH`, `DELETE /admin/currencies/{code}`, `POST /admin/currencies` | Add, rename or change the symbol of, or delete a currency. A currency a listing uses, or the site default, cannot be deleted (`409`). |
 | `GET`, `PATCH`, `DELETE /admin/custom-fields/{id}`, `POST /admin/custom-fields` | Custom fields: `name`, `type`, `slug`, `required`, `searchable`, `options`, `categories`. Deleting a field deletes its values. |
-| `GET`, `PATCH`, `DELETE /admin/regions/{id}`, `POST /admin/regions` | Regions. `POST` takes `country` and `name`. |
-| `GET`, `PATCH`, `DELETE /admin/cities/{id}`, `POST /admin/cities` | Cities. `POST` takes `region_id` and `name`. |
-| `GET`, `PATCH`, `DELETE /admin/areas/{id}`, `POST /admin/areas` | City areas. `POST` takes `city_id` and `name`. |
+| `GET`, `PATCH`, `DELETE /admin/regions/{id}`, `POST /admin/regions` | Regions. `POST` takes `country` and `name`. A `country` that does not exist is a `422` on `/country`. |
+| `GET`, `PATCH`, `DELETE /admin/cities/{id}`, `POST /admin/cities` | Cities. `POST` takes `region_id` and `name`. A `region_id` that does not exist is a `422` on `/region_id`. |
+| `GET`, `PATCH`, `DELETE /admin/areas/{id}`, `POST /admin/areas` | City areas. `POST` takes `city_id` and `name`. A `city_id` that does not exist is a `422` on `/city_id`. |
 
 Deleting a region, city or area deletes the places under it and the listings in them.
 
