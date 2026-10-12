@@ -243,7 +243,7 @@ pin('a failing sign-out rolls the reset back: old password, code still valid', [
     osc_verify_password('reset-password', $row()['s_password']), osc_verify_password('kept-out', $row()['s_password']), $row()['s_pass_code'] !== null,
 ]);
 $login = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php', 'forgotPost');
-check('the reset form stores the password through AccountService::setPassword() with the code', str_contains($login, 'AccountService::setPassword(')
+check('the reset form stores the password through AccountService::resetPassword() with the code', str_contains($login, 'AccountService::resetPassword(')
     && !str_contains($login, 'osc_hash_password(') && !str_contains($login, 'SignOut::'));
 
 harness_section('asking for a reset link');

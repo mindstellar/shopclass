@@ -512,7 +512,7 @@ final class Schema
             'Registration'       => $input([
                 'name'         => $text(100, 1),
                 'email'        => ['type' => 'string', 'format' => 'email', 'maxLength' => 100],
-                'password'     => $text(4096, 1),
+                'password'     => $text(4096, \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH),
                 'username'     => $text(100),
                 'phone_land'   => $text(45),
                 'phone_mobile' => $text(45),

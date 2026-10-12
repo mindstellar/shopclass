@@ -111,17 +111,17 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     <label class="oe-label" for="oe-new-password"><?php
                         echo osc_esc_html(_m('New password')); ?></label>
                     <input class="oe-input" id="oe-new-password" type="password" name="new_password"
-                           autocomplete="new-password" required minlength="6"
+                           autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>"
                            aria-describedby="oe-new-password-hint" />
                     <span class="oe-hint" id="oe-new-password-hint"><?php echo osc_esc_html(
-                        _m('At least six characters.')
+                        sprintf(_m('At least %d characters.'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH)
                     ); ?></span>
                 </div>
                 <div class="oe-field">
                     <label class="oe-label" for="oe-new-password2"><?php
                         echo osc_esc_html(_m('Repeat the new password')); ?></label>
                     <input class="oe-input" id="oe-new-password2" type="password" name="new_password2"
-                           autocomplete="new-password" required minlength="6" data-match="new_password"
+                           autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>" data-match="new_password"
                            data-match-message="<?php echo osc_esc_html(_m('The two passwords do not match.')); ?>" />
                 </div>
                 <div class="oe-actions">

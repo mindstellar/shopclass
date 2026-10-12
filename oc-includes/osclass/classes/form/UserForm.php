@@ -553,11 +553,11 @@ class UserForm extends Form
             ],
             's_password'  => [
                 'required'  => __('Password: this field is required') . '.',
-                'minlength' => __('Password: enter at least 5 characters') . '.',
+                'minlength' => sprintf(__('Password: enter at least %d characters'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH) . '.',
             ],
             's_password2' => [
                 'required'  => __('Second password: this field is required') . '.',
-                'minlength' => __('Second password: enter at least 5 characters') . '.',
+                'minlength' => sprintf(__('Second password: enter at least %d characters'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH) . '.',
                 'equalTo'   => __("Passwords don't match") . '.',
             ],
         ]);

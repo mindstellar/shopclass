@@ -33,9 +33,9 @@ class AdminForm extends Form
                         s_name: {required: true, minlength: 3, maxlength: 50},
                         s_username: {required: true, minlength: 3, maxlength: 50},
                         s_email: {required: true, email: true},
-                        s_password: {minlength: 5},
+                        s_password: {minlength: <?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>},
                         s_password2: {
-                            minlength: 5,
+                            minlength: <?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>,
                             custom: function (v, form) {
                                 return v === form.querySelector('[name="s_password"]').value;
                             }
@@ -56,7 +56,7 @@ class AdminForm extends Form
                             required: "<?php _e('Email: this field is required'); ?>.",
                             email: "<?php _e('Invalid email address'); ?>."
                         },
-                        s_password: {minlength: "<?php _e('Password: enter at least 5 characters'); ?>."},
+                        s_password: {minlength: "<?php echo osc_esc_js(sprintf(__('Password: enter at least %d characters'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH)); ?>."},
                         s_password2: {custom: "<?php echo osc_esc_js(__("Passwords don't match")); ?>."}
                     },
                     errorContainer: '#error_list',

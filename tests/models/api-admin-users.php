@@ -189,6 +189,19 @@ pin('an e-mail another user has is refused', 422, $call('PATCH', 'admin/users/' 
 pin('a new password', 200, $call('PATCH', 'admin/users/' . $sue, ['password' => 'new secret'], $boss)->status());
 check('the new password is stored', password_verify('new secret', (string) $user($sue)['s_password']));
 pin('a new password ends the user keys', 401, $call('GET', 'account', null, $sueKey)->status());
+$before = (string) $user($sue)['s_password'];
+$r      = $call('PATCH', 'admin/users/' . $sue, ['password' => 'abcd'], $boss);
+pin('a 4-character password is refused and not stored', [422, true], [$r->status(), (string) $user($sue)['s_password'] === $before]);
+try {
+    (new \mindstellar\user\AccountService())->update($sue, ['s_name' => 'Susan', 's_email' => 'susan@example.test', 's_username' => 'sue', 's_password' => 'abcd', 's_password2' => 'abcd'], \mindstellar\auth\Actor::admin($bossId, '192.0.2.70'));
+    $short = 'accepted';
+} catch (\mindstellar\exception\InvalidException $e) {
+    $short = $e->getMessage();
+}
+check('the service refuses a 4-character password on an admin edit too, past the schema', str_contains($short, (string) \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH));
+$snap = $user($sue);
+$r    = $call('PATCH', 'admin/users/' . $sue, [], $boss);
+pin('an empty PATCH changes nothing', [200, $snap], [$r->status(), $user($sue)]);
 
 harness_section('users: the actions');
 pin('the key works while the user is enabled', 200, $call('GET', 'account', null, $tomKey)->status());

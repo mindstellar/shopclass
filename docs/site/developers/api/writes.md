@@ -28,7 +28,7 @@ TOKEN=sca_…        # an access token, or a personal key
 | `POST /account/alerts` | `alerts:write` | Save a search. |
 | `GET /account/alerts/{id}` | `alerts:read` | One saved search. The `Location` of a new one. |
 | `DELETE /account/alerts/{id}` | `alerts:write` | Stop a saved search. `204`. |
-| `POST /users` | none | Sign up, when the site allows it. `201`. |
+| `POST /users` | none | Sign up, when the site allows it. `201`. The password needs at least 5 characters. |
 
 A write that is not allowed gets `403`. A user who is not the owner of a live listing gets
 `403 not_owner`. A listing the user cannot see is a `404`.
@@ -348,7 +348,7 @@ curl -i -X POST $API/account/alerts \
 ## Sign up
 
 Off by default. The site owner switches on **Allow sign-up through the API**, and the site must
-have registration on.
+have registration on. The password needs at least 5 characters.
 
 ```bash
 curl -i -X POST $API/users -H "Content-Type: application/json" \

@@ -61,10 +61,10 @@ final class AccountService
         's_zip'          => 15,
     ];
 
-    /** Seconds an account holder waits between activation links. */
     /** The fewest characters a new password may have. */
     public const MIN_PASSWORD_LENGTH = 5;
 
+    /** Seconds an account holder waits between activation links. */
     public const RESEND_WAIT = 1200;
 
     /** E-mail changes a user may ask for in an hour. */
@@ -131,6 +131,8 @@ final class AccountService
         }
         if ($password === '') {
             $refuse(_m('The password cannot be empty'), 6);
+        } elseif (mb_strlen($password) < self::MIN_PASSWORD_LENGTH) {
+            $refuse(self::tooShortMessage(), 6);
         }
         if ($password !== (string) ($form['s_password2'] ?? '')) {
             $refuse(_m("Passwords don't match"), 7);
@@ -618,6 +620,21 @@ final class AccountService
     }
 
     /**
+     * Set a new password from a reset link: setPassword() once the password is long enough.
+     *
+     * @return bool whether the password was stored
+     * @throws InvalidException on /new_password when the password is too short
+     */
+    public static function resetPassword(int $userId, string $new, string $resetCode, string $ip = ''): bool
+    {
+        if (mb_strlen($new) < self::MIN_PASSWORD_LENGTH) {
+            throw new InvalidException('/new_password', 'minLength', self::tooShortMessage());
+        }
+
+        return self::setPassword($userId, $new, $resetCode, $ip);
+    }
+
+    /**
      * Delete an account and everything it owns. The user deletes their own with their
      * password; an admin deletes any. Fires `before_user_delete`, then the model's
      * `delete_user` and `after_delete_user`.
@@ -969,9 +986,6 @@ final class AccountService
     }
 
     /**
-     * The form's messages, one per line, as a refusal.
-     */
-    /**
      * Whether a profile website is acceptable: empty, or a URL whose host looks like a domain.
      */
     public static function validWebsite(string $website): bool
@@ -988,11 +1002,17 @@ final class AccountService
         return str_contains($host, '.') || strcasecmp($host, 'localhost') === 0;
     }
 
-    private static function tooShortMessage(): string
+    /**
+     * The refusal text for a password under MIN_PASSWORD_LENGTH.
+     */
+    public static function tooShortMessage(): string
     {
         return sprintf(_m('The password needs at least %d characters'), self::MIN_PASSWORD_LENGTH);
     }
 
+    /**
+     * The form's messages, one per line, as a refusal.
+     */
     private static function refusal(string $flash): InvalidException
     {
         $errors = [];

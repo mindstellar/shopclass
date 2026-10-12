@@ -292,12 +292,20 @@ class CWebLogin extends BaseModel
                 == Params::getParam('new_password2', false, false)
             ) {
                 // Matching on the code keeps the link single-use under two posts at once.
-                \mindstellar\user\AccountService::setPassword(
-                    (int)$user['pk_i_id'],
-                    Params::getParamString('new_password', false, false),
-                    Params::getParamString('code'),
-                    (string) Params::getServerParam('REMOTE_ADDR')
-                );
+                try {
+                    \mindstellar\user\AccountService::resetPassword(
+                        (int)$user['pk_i_id'],
+                        Params::getParamString('new_password', false, false),
+                        Params::getParamString('code'),
+                        (string) Params::getServerParam('REMOTE_ADDR')
+                    );
+                } catch (\mindstellar\exception\InvalidException $e) {
+                    osc_add_flash_error_message($e->getMessage());
+                    $this->redirectTo(osc_forgot_user_password_confirm_url(
+                        Params::getParamInt('userId'),
+                        Params::getParam('code')
+                    ));
+                }
                 osc_add_flash_ok_message(_m('The password has been changed'));
                 $this->redirectTo(osc_user_login_url());
             } else {

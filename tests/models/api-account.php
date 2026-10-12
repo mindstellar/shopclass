@@ -398,6 +398,17 @@ pin('a personal key cannot edit the account: account:write is access-token only'
 
 harness_section('changing the password');
 $tablet = $login('uma', 'correct horse', array('label' => 'Tablet'))->body();
+$r = $call('POST', 'account/password', array('current_password' => 'correct horse', 'new_password' => 'abcd'), $phone['access_token']);
+pin('a 4-character new password is 422 at /new_password', array(422, '/new_password'), array($r->status(), $r->body()['errors'][0]['pointer'] ?? null));
+check('and the password is unchanged', password_verify('correct horse', $userRow($uma)['s_password']));
+$svc = new \mindstellar\user\AccountService();
+try {
+    $svc->changePassword($userRow($uma), 'correct horse', 'abcd', 'abcd');
+    $short = '';
+} catch (\mindstellar\exception\InvalidException $e) {
+    $short = $e->pointer();
+}
+pin('the service refuses it too, past the schema', '/new_password', $short);
 pin('the current password must match', '422 validation_failed', $code($call('POST', 'account/password', array('current_password' => 'nope', 'new_password' => 'battery staple'), $phone['access_token'])));
 $r = $call('POST', 'account/password', array('current_password' => 'correct horse', 'new_password' => 'battery staple'), $phone['access_token']);
 pin('a change answers a new sign-in for this client: an access and a refresh token', array(200, true, true), array($r->status(), str_starts_with((string) ($r->body()['access_token'] ?? ''), 'sca_'), str_starts_with((string) ($r->body()['refresh_token'] ?? ''), 'scr_')));
@@ -653,6 +664,19 @@ pin('with a stamp set, a rehash still keeps the key and the refresh token', arra
     AuthStamp::of($userRow($uma)), $call('GET', 'account', null, $bound)->status(),
     $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $grant->token()))->status(),
 ));
+$settings = new ApiSettings(true, userKeys: true);
+
+$s = $login('uma', 'battery staple')->body();
+$r = $call('PATCH', 'account', array('website' => 'notaurl'), $s['access_token']);
+pin('a website that is not a URL is 422 at /website', array(422, '/website'), array($r->status(), $r->body()['errors'][0]['pointer'] ?? null));
+$before = $call('GET', 'account', null, $s['access_token'])->body();
+$r      = $call('PATCH', 'account', array(), $s['access_token']);
+pin('an empty PATCH of the account is 200 and changes nothing', array(200, $before['data']), array($r->status(), $r->body()['data'] ?? null));
+$r = $call('POST', 'account/keys', array('scopes' => array('nonsense:read')) + $keyBody, $s['access_token']);
+pin('an unknown scope for a personal key is 422', '422 validation_failed', $code($r));
+$settings = new ApiSettings(true);
+$r        = $call('POST', 'account/keys', $keyBody, $s['access_token']);
+pin('personal keys off: 403 feature_disabled', '403 feature_disabled', $code($r));
 $settings = new ApiSettings(true, userKeys: true);
 
 harness_section('an Idempotency-Key, kept in the table');
