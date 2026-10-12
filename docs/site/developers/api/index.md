@@ -122,16 +122,17 @@ Filters for `GET /listings`:
 | `locale` | Search and return text in this locale, such as `en_US`. |
 | `price_min`, `price_max` | Whole units of the site's currency. |
 | `with_photos`, `premium` | `1` or `true` to keep only those. |
-| `custom_field[<id>]` | A custom field value, such as `custom_field[4]=Blue`. Ids come from `GET /custom-fields`. |
-| `sort` | `created` (default), `id`, `price` or `relevance`. |
+| `custom_field[<id>]` | A custom field value, such as `custom_field[4]=Blue`. Ids come from `GET /custom-fields`. Needs a `category` filter, and the field must be searchable in that category (a parent category's fields count). An unknown id, or a field the category does not have, is a `422`; the web search page ignores them. |
+| `lat`, `lng`, `radius` | Distance search: a point, and optionally a radius in km (1 to 1000). A `422` while the site has distance search off. |
+| `sort` | `created` (default), `id`, `price`, `relevance` or `distance` (nearest first; needs `lat` and `lng`). |
 | `order` | `desc` (default) or `asc`. |
 | `limit` | Page size, 1 up to the site's maximum results per page. Above that is a `422`. |
 | `cursor` | Where the last page ended. Take it from `links.next`. |
 | `count` | `true` to fill `meta.total`; otherwise it is `null`. |
-
-A parameter the endpoint does not know is a `422`, so a typo does not silently return everything.
 | `fields` | Keep only these members: `fields=id,title,price`. `id` is always kept. |
 | `include` | Switch on costly members: `custom_fields` (custom field values) and `translations`. |
+
+A parameter the endpoint does not know is a `422`, so a typo does not silently return everything.
 
 Category, place and user filters take one value, a comma list (`city=1187,3218`) or the
 parameter repeated.
@@ -248,7 +249,8 @@ The body is `{"data": {…the listing…}}`. If the site checks new listings fir
 
 ### 4. Edit it
 
-Send only what changes, as a JSON merge patch.
+Send only what changes, as a JSON merge patch. An empty body (`{}`) changes nothing and answers
+`200` with the current resource.
 
 ```bash
 curl -X PATCH $API/listings/412 \
