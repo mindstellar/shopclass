@@ -51,9 +51,6 @@ if (!defined('ABS_PATH')) {
 ?>
 <style>
 @layer shopclass {
-  /* On :root, not .oe-page: an un-scoped component rule has to resolve these
-     when core renders that component inside a theme, where there is no .oe-page
-     ancestor to inherit from. */
   :root {
     --oe-bench-warm:#f7f9fb; --oe-bench:#fff; --oe-bench-sunk:#eef1f5;
     --oe-rule:#dde3ea; --oe-ink:#14181f; --oe-ink-muted:#5f6b7a;
@@ -61,25 +58,14 @@ if (!defined('ABS_PATH')) {
     --oe-danger:#c22826; --oe-danger-deep:#9b201e; --oe-warning:#7a6716; --oe-success:#1d7d3e;
     --oe-accent:<?php echo $accent; ?>; --oe-band:<?php echo $band; ?>;
   }
-  /* Typography only on the standalone shell, where .oe-page is the <body> and
-     core owns the whole document. Inside a theme it is a <div>, and the theme's
-     own type and text colour should carry through to the page core rendered. */
   body.oe-page {
     color:var(--oe-ink); line-height:1.55;
     font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
   }
   .oe-page *,.oe-page *::before,.oe-page *::after{box-sizing:border-box;}
-  /* Link colour is text colour, so it follows the same rule as the type above it:
-     set only on the standalone shell. Inside a theme the page's links are the
-     theme's links, which is what makes a core-rendered page read as part of the
-     site rather than as a panel dropped into it. */
   body.oe-page a,body.oe-page .oe-link-btn{color:var(--oe-teal);}
-  /* Headings carry user text -- a member's name, a listing title -- so one
-     long token must wrap rather than widen the page. */
   .oe-page .oe-h1{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;margin:0 0 20px;overflow-wrap:anywhere;}
   .oe-page h2{font-size:1.0625rem;font-weight:600;margin:0 0 12px;}
-
-  /* The strip that tells a visitor whose site this is. */
   .oe-page .oe-band{
     background:var(--oe-band); border-bottom:1px solid var(--oe-rule);
     padding:16px 32px; display:flex; align-items:center; gap:12px;
@@ -89,8 +75,6 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-brand{font-weight:600;color:var(--oe-ink);letter-spacing:-.01em;text-decoration:none;}
   .oe-page .oe-brand span{color:var(--oe-teal);}
   .oe-page .oe-logo{max-height:28px;width:auto;display:block;}
-
-  /* layout: card -- a system message. One centred column. */
   .oe-page .oe-card{
     background:var(--oe-bench); border:1px solid var(--oe-rule); border-radius:6px;
     box-shadow:0 1px 3px rgba(20,24,31,.06),0 8px 24px rgba(20,24,31,.05);
@@ -104,25 +88,15 @@ if (!defined('ABS_PATH')) {
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     background:var(--oe-bench-sunk);border-radius:4px;padding:2px 6px;font-size:.9em;
   }
-
-  /* layout: document -- a real page. Wider column under the brand band. */
   .oe-page .oe-doc{max-width:880px;margin:0 auto;padding:32px 16px 64px;}
-
-  /* Furniture. .oe-bill* are the names the billing partials already ship with:
-     themes reach them through the registered render targets, so they stay. */
   .oe-page .oe-panel,.oe-page .oe-bill-card{
     background:var(--oe-bench);border:1px solid var(--oe-rule);border-radius:6px;
     padding:20px 24px;margin-bottom:20px;
   }
-  /* Un-scoped from here to the end of the form block: these are the names the
-     alert form, the contact form and the send-to-a-friend form emit, and those
-     partials render inside a theme's page where .oe-page never appears. */
   .oe-btn,.oe-bill-btn,.oe-lead a.button,.oe-lead a.btn,.oe-actions a.oe-primary,.oe-actions a.oe-secondary{
     display:inline-block;text-decoration:none;border:1px solid var(--oe-teal);border-radius:4px;
     padding:9px 18px;font:inherit;font-size:.9375rem;font-weight:500;cursor:pointer;
     background:var(--oe-teal);color:#fff;
-    /* A theme that paints its own buttons with a gradient would otherwise show it through
-       this fill -- including on the delete-account button, which must read as destructive. */
     background-image:none;text-shadow:none;box-shadow:none;
   }
   .oe-btn:hover,.oe-bill-btn:hover,.oe-lead a.button:hover,.oe-actions a.oe-primary:hover{
@@ -137,7 +111,6 @@ if (!defined('ABS_PATH')) {
     background:var(--oe-bench);color:var(--oe-ink);border-color:var(--oe-rule);
   }
   .oe-actions a.oe-secondary:hover,.oe-btn.oe-secondary:hover{border-color:var(--oe-ink-muted);}
-
   .oe-field{margin:0 0 16px;}
   .oe-label{display:block;font-size:.9375rem;font-weight:500;margin-bottom:6px;}
   .oe-input{
@@ -148,7 +121,6 @@ if (!defined('ABS_PATH')) {
   .oe-page fieldset{border:0;margin:0 0 20px;padding:0;}
   .oe-page legend{font-weight:600;font-size:1.0625rem;margin:0 0 12px;padding:0;}
   .oe-page input[type=radio],.oe-page input[type=checkbox]{accent-color:var(--oe-teal);}
-
   .oe-page .oe-table,.oe-page .oe-bill table{width:100%;border-collapse:collapse;font-size:.9375rem;}
   .oe-page .oe-table th,.oe-page .oe-table td,.oe-page .oe-bill th,.oe-page .oe-bill td{
     text-align:left;padding:10px 8px;border-bottom:1px solid var(--oe-bench-sunk);
@@ -159,7 +131,6 @@ if (!defined('ABS_PATH')) {
   }
   .oe-page .oe-num,.oe-page .oe-bill-num{text-align:right;font-variant-numeric:tabular-nums;}
   .oe-page .oe-scroll{overflow-x:auto;}
-  /* On a phone a billing row stacks into label/value pairs instead of scrolling sideways. */
   @media (max-width:40rem){
     .oe-page .oe-bill thead{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);}
     .oe-page .oe-bill :is(table,tbody,tr,td){display:block;}
@@ -167,15 +138,12 @@ if (!defined('ABS_PATH')) {
     .oe-page .oe-bill td{display:flex;justify-content:space-between;gap:16px;padding:4px 0;border:0;text-align:end;}
     .oe-page .oe-bill td[data-label]::before{content:attr(data-label);color:var(--oe-ink-muted);font-size:.8125rem;text-align:start;}
   }
-
-  /* Un-scoped: the alert form uses .oe-muted for its subscribed notice. */
   .oe-muted,.oe-bill-sub{color:var(--oe-ink-muted);margin:4px 0 0;font-size:.875rem;}
   .oe-page .oe-empty,.oe-page .oe-bill-empty{color:var(--oe-ink-muted);padding:24px 0;text-align:center;}
   .oe-page .oe-pager,.oe-page .oe-bill-pager{display:flex;justify-content:space-between;margin-top:16px;font-size:.875rem;}
   .oe-page .oe-pager a,.oe-page .oe-bill-pager a{text-decoration:none;}
   .oe-page .oe-figure,.oe-page .oe-bill-balance{font-size:2rem;font-weight:700;margin:0;}
   .oe-page .oe-figure.neg,.oe-page .oe-bill-balance.neg{color:var(--oe-danger);}
-
   .oe-page .oe-badge,.oe-page .oe-bill-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:500;}
   .oe-page .oe-badge.paid,.oe-page .oe-bill-badge.paid{background:#e4f8e7;color:var(--oe-success);}
   .oe-page .oe-badge.pending,.oe-page .oe-bill-badge.pending{background:#fdf4d2;color:var(--oe-warning);}
@@ -183,7 +151,6 @@ if (!defined('ABS_PATH')) {
     background:#ffe9e5;color:var(--oe-danger);
   }
   .oe-page .oe-badge.refunded,.oe-page .oe-bill-badge.refunded{background:var(--oe-bench-sunk);color:var(--oe-ink-muted);}
-
   .oe-page .oe-choice,.oe-page .oe-bill-pkg,.oe-page .oe-bill-gw{
     border:1px solid var(--oe-rule);border-radius:6px;padding:14px 16px;margin-bottom:10px;
   }
@@ -194,16 +161,6 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-bill-pkg-credits{color:var(--oe-ink-muted);font-size:.875rem;}
   .oe-page .oe-bill-pkg-price{margin-left:auto;font-weight:600;white-space:nowrap;}
   .oe-page .oe-bill-instructions{white-space:pre-line;}
-
-  /* ------------------------------------------------------------------ account --
-     The vocabulary the account and auth partials emit. Role names, not page
-     names: .oe-account-nav is what a thing IS, .oe-dashboard-box would be where
-     it happened to sit. Documented in docs/site/developers/account-pages.md,
-     which is the contract -- these names cannot be renamed once released. */
-
-  /* Content column plus the section nav. One column below 60rem, nav last in the
-     source either way, so it reads after the page on a narrow screen and in a
-     screen reader. */
   .oe-page .oe-account{
     display:grid; gap:32px; align-items:start;
     grid-template-columns:minmax(0,1fr) minmax(13rem,16rem);
@@ -211,7 +168,6 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-account > *{min-inline-size:0;}
   .oe-page .oe-account-main > :last-child{margin-block-end:0;}
   @media (max-width:60rem){.oe-page .oe-account{grid-template-columns:minmax(0,1fr);gap:28px;}}
-
   .oe-page .oe-account-nav h2{
     font-size:.8125rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
     color:var(--oe-ink-muted); margin:0 0 8px; padding-block-end:8px;
@@ -223,16 +179,7 @@ if (!defined('ABS_PATH')) {
     text-decoration:none; color:inherit;
   }
   .oe-page .oe-account-nav a:hover{background:var(--oe-bench-sunk);text-decoration:underline;}
-  /* aria-current is the accessible signal; the weight and tint follow it rather
-     than being set separately, so the two can never disagree. */
   .oe-page .oe-account-nav [aria-current]{background:var(--oe-bench-sunk);font-weight:600;}
-
-  /* Core's own flash output, whose class names are frozen and are the notice
-     surface for the whole product -- so there is no second .oe-* name for the
-     same role. Scoped inside .oe-page so these rules can only reach a message
-     rendered within core's own block; a theme's header-rendered flash is
-     untouched. The message text carries the meaning, so the tint ranks it
-     rather than being the only signal. */
   .oe-page .flashmessage{
     border:1px solid var(--oe-rule); border-radius:6px; background:var(--oe-bench);
     padding:12px 16px; margin:0 0 20px;
@@ -242,9 +189,6 @@ if (!defined('ABS_PATH')) {
   .oe-page .flashmessage-warning{background:#fdf4d2;border-color:var(--oe-warning);}
   .oe-page .flashmessage-info{background:#e6f6f4;border-color:var(--oe-teal);}
   .oe-page .flashmessage > :last-child{margin-block-end:0;}
-
-  /* A list of records -- listings, alerts. A list, not a table: the rows carry a
-     picture and wrap, which a table row does badly on a phone. */
   .oe-page .oe-list{list-style:none;margin:0;padding:0;}
   .oe-page .oe-list-item{
     display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px 16px;
@@ -259,7 +203,6 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-row-actions{margin-block-start:4px;}
   .oe-page .oe-dashboard-intro{margin-block-end:12px;}
   .oe-page .oe-dashboard-actions{margin-block-end:24px;}
-  /* A titled group of form fields; .oe-grid lays its fields two to a row where there is room. */
   .oe-page .oe-group{border:0;padding:0;margin:0 0 28px;min-inline-size:0;}
   .oe-page .oe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:0 16px;}
   .oe-page .oe-avatar-field{display:flex;flex-wrap:wrap;align-items:flex-start;gap:16px;}
@@ -271,18 +214,15 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-inline-form{display:inline;margin:0;}
   .oe-page .oe-link-btn{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;}
   .oe-page .oe-link-btn.oe-danger-link{color:var(--oe-danger);}
-  /* Status filter over a list. aria-current carries the state; the look follows it. */
   .oe-page .oe-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px;border-block-end:1px solid var(--oe-rule);}
   .oe-page .oe-tabs a{padding:8px 12px;text-decoration:none;color:var(--oe-ink-muted);border-block-end:2px solid transparent;margin-block-end:-1px;}
   .oe-page .oe-tabs a:hover{color:inherit;}
   .oe-page .oe-tabs [aria-current]{color:inherit;font-weight:600;border-block-end-color:currentColor;}
-  /* Set apart from everything routine above it, not decorated. */
   .oe-page .oe-danger{margin-block-start:3rem;padding-block-start:1.5rem;border-block-start:1px solid var(--oe-rule);}
   .oe-page .oe-danger h2{color:var(--oe-danger);}
   .oe-page .oe-profile-head{margin-block-end:1.5rem;}
   .oe-page .oe-contact-open{white-space:nowrap;}
   .oe-page .oe-form-error{margin:0 0 16px;padding:10px 14px;border:1px solid var(--oe-danger);border-radius:6px;background:#ffe9e5;color:var(--oe-danger);}
-  /* Without the dialog script a dialog shows in place, so the page still works. */
   .oe-page .oe-dialog:not([data-osc-dialog-ready]){display:block;position:static;inset:auto;margin:1.5rem 0 0;padding:0;border:0;max-inline-size:none;background:none;color:inherit;}
   .oe-page .oe-dialog:not([data-osc-dialog-ready]) .oe-dialog-close{display:none;}
   .oe-dialog[data-osc-dialog-ready]{inline-size:min(34rem,calc(100% - 32px));padding:0;border:1px solid var(--oe-rule);border-radius:8px;background:var(--oe-bench,#fff);color:inherit;}
@@ -301,37 +241,21 @@ if (!defined('ABS_PATH')) {
     display:grid; place-items:center; text-align:center; padding:4px;
     border-style:dashed; color:var(--oe-ink-muted); font-size:.75rem;
   }
-
   .oe-page .oe-price{
     flex:none; margin:0; font-weight:600; font-size:1.0625rem;
     font-variant-numeric:tabular-nums; margin-inline-start:auto; text-align:end;
   }
-
-  /* A page that is one form: sign in, register, reset a password. Bounded so a
-     single column of fields still reads as one object at any window width. */
   .oe-page .oe-form-page{max-inline-size:30rem;}
-  /* The contact form, and an aside beside it when a theme or plugin fills one. */
   .oe-page .oe-contact{display:grid;gap:32px;align-items:start;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));}
   .oe-page .oe-contact-main{max-inline-size:30rem;min-inline-size:0;}
-  /* Core's register validator writes <li> into #error_list and never changes its
-     visibility, so the box is its own switch: nothing at all until it has one. */
   .oe-page #error_list{list-style:none;margin:0;padding:0;}
   .oe-page #error_list:not(:empty){
     background:#ffe9e5; border:1px solid var(--oe-danger); border-radius:6px;
     margin:0 0 20px; padding:12px 16px; padding-inline-start:32px; list-style:disc;
   }
-
-  /* Help text bound to its field with aria-describedby. */
   .oe-hint{display:block;font-size:.8125rem;color:var(--oe-ink-muted);margin-block-start:6px;}
-  /* A checkbox and its label on one line -- the label wraps the control, so the
-     whole row is the target and no `for` can drift. */
   .oe-check{display:flex;align-items:center;gap:10px;margin:0 0 16px;font-size:.9375rem;}
   .oe-check input{inline-size:auto;flex:none;}
-
-  /* The floor under a control core did not put a class on: UserForm renders bare
-     <input>/<select>/<textarea>. Zero specificity on purpose (:where), so ANY
-     rule a theme writes -- even a bare `input {}` -- wins. Inside a theme these
-     should look like the theme's fields, not like core's. */
   :where(.oe-field, .oe-check) :where(input,select,textarea){
     font:inherit; font-size:.9375rem; inline-size:100%; max-inline-size:22rem;
     padding:8px 10px; background:var(--oe-bench); color:var(--oe-ink);
@@ -339,7 +263,6 @@ if (!defined('ABS_PATH')) {
   }
   :where(.oe-field) :where(textarea){min-block-size:7rem;max-inline-size:34rem;line-height:1.55;}
   .oe-field :is(input,select,textarea):focus-visible{outline:2px solid var(--oe-teal);outline-offset:1px;}
-
   .oe-page .oe-ref{font-size:.8125rem;color:var(--oe-ink-muted);margin:16px 0 0;}
   .oe-page .oe-ref code{
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -359,11 +282,6 @@ if (!defined('ABS_PATH')) {
     font-size:.8125rem;line-height:1.5;color:var(--oe-ink-muted);
   }
 }
-
-/* Outside the layer on purpose. A theme's own `button` rules are un-layered, so they beat
-   anything in @layer whatever the specificity — which left the delete-account button
-   wearing the theme's ordinary grey. Colour is this button's warning, and bender's
-   `button{color:#5f5f5f !important}` is why the label needs the same weapon back. */
 .oe-btn-danger,.oe-btn.oe-btn-danger{
   background:var(--oe-danger,#c22826);background-image:none;border:1px solid var(--oe-danger,#c22826);
   border-radius:4px;padding:9px 18px;font:inherit;font-size:.9375rem;font-weight:500;
