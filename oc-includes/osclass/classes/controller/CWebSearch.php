@@ -80,6 +80,12 @@ class CWebSearch extends BaseModel
         $this->redirectToCanonical($uriParams);
 
         $criteria = $this->buildCriteria($uriParams);
+        if (Params::existParam('sFeed')) {
+            $type = $criteria->feed();
+            if ($type !== '' && $type !== 'rss' && !(is_string($type) && Plugins::hasHook('feed_' . $type))) {
+                $this->do404();
+            }
+        }
         $this->recordLatestSearch($criteria);
 
         $result = \mindstellar\search\SearchRunner::run($criteria, $this->mSearch, 'request');
