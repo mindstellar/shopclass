@@ -47,8 +47,11 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `/api/` is reserved: rename any page or category with the slug `api`. System info and `doctor` list them.
 - `osc_count_premium_comments()` and `osc_has_premium_comments()` are removed; they always ended in a fatal error.
 - `osc_sanitize_phone()` keeps a leading `+`, spaces and dashes; `osc_sanitize_username()` keeps dots and `Sanitize::username()` turns spaces into `_`; `osc_sanitize_int()` returns an int ("1.5" is 1).
-- `oc-includes/osclass/mimes.php` is removed; uploads take image types only (see `UploadMimes`).
+- `oc-includes/osclass/mimes.php` is removed, and core uploads take image types only (see `UploadMimes`): extensions such as pdf or zip in the allowed list no longer pass.
 - The `memcache` cache driver is removed; `OSC_CACHE=memcache` now uses `memcached`.
+- Rows from `osc_db_*`, `Db` and `Connection` queries with `?` values come back as text, not numbers, so a strict check such as `=== 1` fails; a number for `LIMIT ?` must be an int. Defining `OSC_DB_REAL_PREPARES` gives numbers back.
+- Removed functions, deprecated since 4.0 or never used: `osc_save_permissions()`, `testCurl()`, `testFsockopen()`, `http_chunked_decode()`, `processResponse()`, `processHeaders()`, `download_fsockopen()`, `_get_market_url()`, `_need_update()`, `version_compare2()`, `osc_get_alert_public_key()`, `osc_set_alert_public_key()` and `install_ping_search_engines()`. `osc_check_dir_writable()` and `osc_change_permissions()` now look at the given folder only, not the files under it.
+- Removed methods and classes: `Params::_view()`, `PageForm::multilanguage_name_description()`, `Object_Cache_Factory::getCache()` (use `getInstance()`), `LocationsTmp`, `StorageQueue` and `StorageWorker` (use the job queue), and `oc-includes/osclass/timezones.php` (use `DateTimeZone::listIdentifiers()`).
 
 ### Security
 
@@ -85,8 +88,9 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Changed
 
+- While new files wait for their database upgrade, visitors, the API and web cron get the maintenance page until an admin runs the upgrade (or `php oc-cli.php db:upgrade`), so an upgrade from 6.4 no longer shows database errors.
+- The admin warns while an active plugin version is known to break on this core, such as Listing Import before 0.3.0.
 - `$model->dao` (`DBCommandClass`) is deprecated and goes away in 8.0. A model builds it only when a plugin reads it, and in debug mode that logs a notice. Use the `osc_db_*` helpers.
-- Query values through `Db`/`Connection` come back as text, and a number for `LIMIT ?` must be passed as an int, not a string.
 - With memcached or Redis, a plugin that writes `t_preference` with raw SQL must call `osc_reset_preferences()`, or other requests keep the old settings for up to 5 minutes.
 - Posting, editing and deleting a listing, and signing up, each run in one transaction, so a failure leaves nothing half done and e-mails go out only once it is saved.
 - A signed-in user comments under their account's name and e-mail, and a listing that is not live takes comments only from its owner.

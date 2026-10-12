@@ -202,7 +202,7 @@ $log->insertLog('items', 'edit', 1, 'a', 'admin', 1);
 $log->insertLog('items', 'edit', 2, 'b', 'admin', 1);
 pin('LogStore::clearAll() removes every row and says how many', array(2, array()), array(\mindstellar\logger\LogStore::clearAll(), $logRows()));
 $log->insertLog('items', 'edit', 3, 'c', 'admin', 1);
-pin('the model and the old LogQuery::clearAll() go through it', array(1, 0), array($log->clearAll(), \mindstellar\logger\LogQuery::clearAll()));
+pin('the model goes through it', 1, $log->clearAll());
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

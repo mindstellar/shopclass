@@ -48,14 +48,6 @@ final class CacheManager
     }
 
     /**
-     * @deprecated 7.0.0 Use getInstance().
-     */
-    public static function getCache(): CacheDriver
-    {
-        return self::getInstance();
-    }
-
-    /**
      * The class for an OSC_CACHE value, or null when there is none.
      *
      * @return class-string<CacheDriver>|null

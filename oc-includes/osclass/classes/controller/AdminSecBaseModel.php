@@ -37,15 +37,10 @@ class AdminSecBaseModel extends SecBaseModel
         osc_run_hook('init_admin');
 
         $config_version = OSCLASS_VERSION;
-        $installed_version = osc_get_preference('version');
-        if (strlen($installed_version) === 3) {
-            // It's a legacy osclass version i.e. below 390 make it compatible with new methods
-            $installed_version = implode('.', str_split($installed_version));
-        }
         if (!defined('IS_AJAX')
             && !$this instanceof CAdminUpgrade
             && !$this instanceof CAdminTools
-            && Utils::versionCompare($config_version, $installed_version, 'gt')
+            && Utils::versionCompare($config_version, \mindstellar\upgrade\Osclass::storedVersion(), 'gt')
             && !$this->autoUpgradeVersion($config_version)
         ) {
             $this->redirectTo(osc_admin_base_url(true) . '?page=upgrade');

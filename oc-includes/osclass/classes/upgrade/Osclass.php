@@ -53,6 +53,37 @@ class Osclass extends UpgradePackage
     }
 
     /**
+     * The core version the database records; a legacy three-digit one (390) reads as 3.9.0.
+     *
+     * @return string
+     */
+    public static function storedVersion(): string
+    {
+        $version = (string) osc_get_preference('version');
+
+        return strlen($version) === 3 && ctype_digit($version) ? implode('.', str_split($version)) : $version;
+    }
+
+    /**
+     * Whether the files are a newer release than the database and core migrations still wait to run.
+     * A newer release with nothing to migrate has its version written here, so the check stops.
+     *
+     * @return bool true also when the migration ledger cannot be read
+     */
+    public static function databaseBehind(): bool
+    {
+        if (!Utils::versionCompare(OSCLASS_VERSION, self::storedVersion(), 'gt')) {
+            return false;
+        }
+        if (!\mindstellar\admin\DatabaseTools::upToDate()) {
+            return true;
+        }
+        Utils::changeOsclassVersionTo(OSCLASS_VERSION);
+
+        return false;
+    }
+
+    /**
      * Upgrade Shopclass Database by running the pending migrations.
      *
      * Migrations alone build the schema; tests/schema-drift.php holds every release to that.

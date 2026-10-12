@@ -258,7 +258,7 @@ class AlertEnvelope
                 if (!is_int($value)) {
                     return null;
                 }
-                $row = $model::newInstance()->findByPrimaryKey($value);
+                $row = $model::getInstance()->findByPrimaryKey($value);
 
                 return is_array($row) ? ($row['s_name'] ?? null) : null;
             };

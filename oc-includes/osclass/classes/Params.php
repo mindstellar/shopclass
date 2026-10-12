@@ -446,17 +446,6 @@ class Params
     }
 
     /**
-     * Will be removed do not use this
-     *
-     * @return void
-     * @deprecated since 4.0
-     */
-    public static function _view()
-    {
-        print_r(self::getParamsAsArray());
-    }
-
-    /**
      * A purified copy of one request bag: get, post, cookie, files, request, or the merged default.
      *
      * @param string $what          '' | 'get' | 'post' | 'cookie' | 'files' | 'request'

@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\logger;
 
 use mindstellar\database\Db;
-use mindstellar\database\DbException;
 
 /**
  * Activity log reads, and clearing the whole log. The legacy Log model keeps the
@@ -39,21 +38,5 @@ final class LogQuery
         }
 
         return $query->orderBy('dt_date', 'DESC')->limit($limit)->get();
-    }
-
-    /**
-     * Empty the activity log.
-     *
-     * @deprecated 7.0.0 Use LogStore::clearAll(), which reports a failure.
-     *
-     * @return int entries removed; 0 when the table cannot be reached
-     */
-    public static function clearAll(): int
-    {
-        try {
-            return LogStore::clearAll();
-        } catch (DbException $e) {
-            return 0;
-        }
     }
 }

@@ -67,6 +67,10 @@ if (!Curl::available()) {
             seed_exec($db, "INSERT INTO {$p}t_preference VALUES (?, ?, ?, 'BOOLEAN')", 'sss', [$section, $name, $value]);
         }
     }
+    // As the installer does: every migration counts as applied, so the site is not mid-upgrade.
+    $ledger = \mindstellar\migration\MigrationRunner::forCore();
+    $ledger->ensureLedger();
+    $ledger->baseline();
     $adminId   = api_admin_seed_admin($db, 'smoke');
     $publicKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))
         ->create('public', 'smoke app', ['listings:read'], KeyOwner::admin($adminId))->token();
@@ -179,6 +183,22 @@ require ' . var_export($root . '/index.php', true) . ';
     [$code, $head, $body] = $call('OPTIONS', '/api/v1/listings', ['Origin: https://app.example', 'Access-Control-Request-Method: GET']);
     pin('204 for an allowed origin', [204, 'https://app.example'], [$code, $head['access-control-allow-origin'] ?? null]);
     check('...naming the methods', str_contains($head['access-control-allow-methods'] ?? '', 'GET'), describe($head));
+
+    harness_section('new files waiting for their database upgrade');
+    $stored = $db->query("SELECT s_value FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = 'version'")->fetch_row()[0];
+    $db->query("UPDATE {$p}t_preference SET s_value = '6.4.6' WHERE s_section = 'osclass' AND s_name = 'version'");
+    // Migration names sort in run order, so this forgets the newest one.
+    $db->query("DELETE FROM {$p}t_migration ORDER BY s_migration DESC LIMIT 1");
+    [$apiCode, $head, $body] = $call('GET', '/api/v1/listings', $bearer);
+    [$pageCode] = $call('GET', '/');
+    $ledger->baseline();
+    pin('the API answers 503 maintenance', [503, 'maintenance'], [$apiCode, json_decode($body, true)['code'] ?? null]);
+    pin('a page answers 503', 503, $pageCode);
+    [$code] = $call('GET', '/api/v1/listings', $bearer);
+    pin('with nothing pending, the API answers', 200, $code);
+    $nowStored = $db->query("SELECT s_value FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = 'version'")->fetch_row()[0];
+    check('...and the stored version caught up with the files', $nowStored !== '6.4.6', $nowStored);
+    $db->query("UPDATE {$p}t_preference SET s_value = '" . $db->real_escape_string($stored) . "' WHERE s_section = 'osclass' AND s_name = 'version'");
 
     $log = (string) @file_get_contents($dir . 'server.log');
     check('the server logged no PHP error', preg_match('/PHP (Warning|Notice|Deprecated|Fatal|Parse)/', $log) !== 1, $log);

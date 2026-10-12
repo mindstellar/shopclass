@@ -31,13 +31,11 @@ system was built. It explains why the code looks as it does today — several of
 below exist specifically to repair a named defect here — but none of it is the live path
 any more; the sections that follow are.
 
-**The legacy market was hard-disabled, and still is.**
-`_get_market_url()` (`oc-includes/osclass/utils.php`) takes `$disable = true`
-and returns `false` on the first line; so does `_need_update()`
-(`utils.php`). Both remain exactly this way — `@deprecated since 4.0.0`,
-never re-enabled — and every caller (`osc_check_plugin_update()`,
-`osc_check_theme_update()`, `osc_check_language_update()` in `utils.php`)
-still always returns `false`. This path was not repaired; it was replaced.
+**The legacy market was hard-disabled, and is now gone.**
+Its `_get_market_url()` and `_need_update()` helpers were removed in 7.0;
+`osc_check_plugin_update()` and `osc_check_theme_update()` in `utils.php`
+stay as deprecated stubs that return `false`, as they always did.
+This path was not repaired; it was replaced.
 `_osc_check_plugins_update()` (`functions.php:595`) and
 `_osc_check_themes_update()` (`functions.php:674`) no longer depend on it —
 they now resolve against `mindstellar\market\PackageIndex::pendingUpdates()`

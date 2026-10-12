@@ -114,19 +114,21 @@ final class FrontController
     /**
      * Answer 503 while the site is in maintenance, unless the visitor may pass.
      * Admins and the command line pass, except while a package upgrade replaces files.
+     * New files waiting for their database upgrade lock out visitors only, so an admin can run it.
      */
     private static function maintenanceGate(bool $api, bool $cli): void
     {
-        if (!file_exists(ABS_PATH . '.maintenance')) {
+        $schemaBehind = \mindstellar\upgrade\Osclass::databaseBehind();
+        if (!$schemaBehind && !file_exists(ABS_PATH . '.maintenance')) {
             return;
         }
 
         if (!osc_maintenance_should_lockout_request(
             true,
-            osc_maintenance_lockout_enabled(),
+            $schemaBehind || osc_maintenance_lockout_enabled(),
             !$api && osc_is_admin_user_logged_in(),
             $cli,
-            osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')
+            !$schemaBehind && osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')
         )) {
             if (!$cli) {
                 define('__OSC_MAINTENANCE__', true);

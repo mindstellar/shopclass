@@ -459,45 +459,13 @@ function osc_decrypt_alert_legacy($string)
 
 /**
  * Key of the alert tokens minted before 7.0, derived from the alert_private_key preference.
- *
- * @deprecated since 7.0.0; new tokens are sealed with SecretBox
+ * osc_decrypt_alert() still uses it to open those tokens; new tokens are sealed with SecretBox.
  *
  * @return string 32 raw bytes
  */
 function osc_alert_cipher_key()
 {
     return hash_hmac('sha256', 'shopclass-alert-token-v1', (string)osc_get_preference('alert_private_key'), true);
-}
-
-/**
- * Mint the install's persistent alert public key if it has none yet.
- *
- * @deprecated since 7.0.0; nothing reads this key
- *
- * @return void
- */
-function osc_set_alert_public_key()
-{
-    if (!osc_get_preference('alert_public_key')) {
-        osc_set_preference('alert_public_key', osc_random_string(32));
-        osc_reset_preferences();
-    }
-}
-
-/**
- * Persistent per-install public key, once meant for search-alert tokens.
- *
- * @deprecated since 7.0.0; nothing reads this key
- *
- * @return string
- */
-function osc_get_alert_public_key()
-{
-    if (!osc_get_preference('alert_public_key')) {
-        osc_set_alert_public_key();
-    }
-
-    return osc_get_preference('alert_public_key');
 }
 
 /**

@@ -14,7 +14,7 @@
  * osc_invalidate_item_cache() is where every event that makes an item's rendered page
  * wrong already converges: an edit, an image added or removed, the listing deleted, and
  * the storage worker once an offload has rewritten the image URLs. That last one has no
- * hook of its own — StorageWorker calls this function directly — so before this hook
+ * hook of its own — the storage offload job calls this function directly — so before this hook
  * existed, a proxy or CDN had no way to learn that a cached listing page was still
  * pointing at local files the offload had moved.
  *

@@ -99,4 +99,11 @@ foreach (array(
     check($controller . ' no longer prints a bare range', strpos($src, 'Compatibility::rangeLabel(') === false);
 }
 
+harness_section('plugin versions known to break on this core');
+pin('listing-import 0.2.1 must update to 0.3.0', '0.3.0', Compatibility::brokenBelow('listing-import', '0.2.1'));
+pin('listing-import 0.3.0 is fine', null, Compatibility::brokenBelow('listing-import', '0.3.0'));
+pin('a newer listing-import is fine', null, Compatibility::brokenBelow('listing-import', '0.4.0'));
+pin('a plugin with no known break is fine', null, Compatibility::brokenBelow('stripe', '0.0.1'));
+pin('an unknown version is not flagged', null, Compatibility::brokenBelow('listing-import', ''));
+
 exit(harness_result());

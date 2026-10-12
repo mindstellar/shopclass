@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1160 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1132,13 +1132,13 @@ Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_subscribe_alert(string $token, string $email)` | Subscribe an email to a saved search. The owner is the signed-in user, never the caller: a guest gets a confirmation email, a signed-in active user is subscribed at once. |
 | `osc_update_search_url($params = array(), $forced = false)` | Update the search url with new options |
 
-### hSecurity (23)
+### hSecurity (21)
 
 `oc-includes/osclass/helpers/hSecurity.php`
 
 | Helper | What it does |
 |---|---|
-| `osc_alert_cipher_key()` | **Deprecated since 7.0.0; new tokens are sealed with SecretBox.** Key of the alert tokens minted before 7.0, derived from the alert_private_key preference. |
+| `osc_alert_cipher_key()` | Key of the alert tokens minted before 7.0, derived from the alert_private_key preference. osc_decrypt_alert() still uses it to open those tokens; new tokens are sealed with SecretBox. |
 | `osc_ban_rules(string $scope = 'all')` | The ban rules in force. Expired rules are left out, and so are rules that block messages only, unless $scope is 'messages'. |
 | `osc_csrf_check()` | Check if CSRF token is valid, die in other case |
 | `osc_csrf_token_form()` | Hidden CSRF input fields to drop inside a &lt;form&gt;, for templates that want to emit the token explicitly instead of relying on the shutdown auto-injector. Mark the &lt;form&gt; with class="nocsrf" when using this so the injector skips it and the token is not duplicated — the same convention FormBuilder uses. |
@@ -1149,7 +1149,6 @@ Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_encrypt_alert($alert)` | Encrypt an alert payload into a SecretBox token. |
 | `osc_genRandomPassword($length = 8)` | Creates a random password. |
 | `osc_get_alert_private_key()` | Persistent per-install key of the alert tokens minted before 7.0. |
-| `osc_get_alert_public_key()` | **Deprecated since 7.0.0; nothing reads this key.** Persistent per-install public key, once meant for search-alert tokens. |
 | `osc_hash_password($password)` | Hash a password in available method (bcrypt/sha1) |
 | `osc_is_banned($email = '', $ip = null, string $scope = 'all')` | Check if an email and/or IP are banned |
 | `osc_is_email_banned($email, $rules = null)` | Check if email is banned |
@@ -1159,7 +1158,6 @@ Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_proxy_ip_mismatch()` | Whether the current request's REMOTE_ADDR looks like a proxy's address instead of the visitor's — a forwarding header disagrees with it. Detection only; core still reads the visitor IP from REMOTE_ADDR alone, see osc_is_banned() and osc_validate_spam_delay(). |
 | `osc_random_string($length)` | A random string of $length characters from A-Z, a-z, 0-9, "." and "/". |
 | `osc_set_alert_private_key()` | Mint the install's persistent alert private key if it has none yet. |
-| `osc_set_alert_public_key()` | **Deprecated since 7.0.0; nothing reads this key.** Mint the install's persistent alert public key if it has none yet. |
 | `osc_verify_password($password, $hash)` | Verify an user's password |
 
 ### hSettings (20)
@@ -1449,7 +1447,7 @@ Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_listLanguageCodes()` | List the locale codes that have a folder under the translations path. |
 | `osc_listLocales()` | Read every translation folder and return its locale descriptor, keyed by locale code. |
 
-### utils (47)
+### utils (46)
 
 `oc-includes/osclass/utils.php`
 
@@ -1457,15 +1455,15 @@ Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_calculate_location_slug($type)` | Fill in the missing slugs for one location table, returning how many rows were updated. |
 | `osc_changeVersionTo($version = null)` | Change version to param number |
-| `osc_change_permissions($dir = ABS_PATH)` | **Deprecated since 4.0.0.** Walk a directory and chmod anything under it that is not writable to 0755. |
+| `osc_change_permissions($dir = ABS_PATH)` | **Deprecated since 4.0.0, removed in 8.0; use chmod().** Make a directory writable (0755) when it is not. Before 7.0 it walked the whole tree. |
 | `osc_check_captcha()` | Verifies the submitted captcha token for the active provider. |
-| `osc_check_dir_writable($dir = ABS_PATH)` | **Deprecated since 4.0.0.** Walk a directory and report whether the files under it are writable. |
+| `osc_check_dir_writable($dir = ABS_PATH)` | **Deprecated since 4.0.0, removed in 8.0; use is_writable().** Whether a directory is writable. Before 7.0 it walked the whole tree. |
 | `osc_check_language_update($update_uri, $version = null, $disable = false)` | Whether the translations repository has a newer version of an installed language. |
 | `osc_check_plugin_update($update_uri, $version = null)` | **Deprecated since 4.0.0 use mindstellar\market\PackageIndex::forPlugins()-&gt;pendingUpdates() instead.** Whether a plugin's update URI advertises a version newer than the installed one. |
 | `osc_check_recaptcha()` | Verify the reCAPTCHA token on the current POST request. |
 | `osc_check_theme_update($update_uri, $version = null)` | **Deprecated since 4.0.0 use mindstellar\market\PackageIndex::forThemes()-&gt;pendingUpdates() instead.** Whether a theme's update URI advertises a version newer than the installed one. |
 | `osc_copy($source, $dest)` | Copy a file, warning instead of throwing on failure. |
-| `osc_copyemz($file1, $file2)` | **Deprecated since 4.0.0.** Copy a file by reading it whole and writing it out again. |
+| `osc_copyemz($file1, $file2)` | **Deprecated since 4.0.0, removed in 8.0; use copy().** Copy a file. |
 | `osc_dbdump($path, $file)` | Dump osclass database into path file |
 | `osc_deleteDir($path)` | Tries to delete the directory recursively. |
 | `osc_deleteResource($id, $admin, $resource = null)` | Remove resources from disk |
@@ -1490,7 +1488,6 @@ Core defines 1163 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_prune_array(&$input)` | Drop null and empty elements from an array in place, recursively. |
 | `osc_redirect_to($url, $code = null)` | Flush pending flash messages, send a Location header and end the request. |
 | `osc_replace_double_slash($path)` | replace double slash with single slash |
-| `osc_save_permissions($dir = ABS_PATH)` | **Deprecated since 4.0.0.** Record the current permission bits of a directory and everything under it. |
 | `osc_self_update_disabled()` | Whether the in-app self-updater (downloading a package and overwriting core files) is disabled for this installation. Set on immutable deployments — the Docker image sets OSC_DISABLE_SELF_UPDATE=1 — where the running code is baked into an image and a file-writing upgrade would be discarded on the next redeploy while leaving the database ahead of the code. Those installs update by deploying a newer image; the entrypoint's `db:upgrade` migrates the schema. |
 | `osc_sendMail($params)` | Send one email through PHPMailer, using the site's configured mail transport. |
 | `osc_serialize($data)` | Serialize the data (usefull at plugins activation) |

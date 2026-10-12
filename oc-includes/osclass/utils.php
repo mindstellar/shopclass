@@ -328,27 +328,43 @@ function osc_copy($source, $dest)
 }
 
 /**
- * Copy a file by reading it whole and writing it out again.
+ * Copy a file.
  *
- * @param string $file1 Source path
- * @param string $file2 Destination path
+ * @param string $file1
+ * @param string $file2
  *
- * @return bool False when the source could not be read
- * @deprecated since 4.0.0
+ * @return bool
+ * @deprecated since 4.0.0, removed in 8.0; use copy()
  */
 function osc_copyemz($file1, $file2)
 {
-    $contentx   = @file_get_contents($file1);
-    $openedfile = fopen($file2, 'wb');
-    fwrite($openedfile, $contentx);
-    fclose($openedfile);
-    if ($contentx === false) {
-        $status = false;
-    } else {
-        $status = true;
-    }
+    return @copy($file1, $file2);
+}
 
-    return $status;
+/**
+ * Whether a directory is writable. Before 7.0 it walked the whole tree.
+ *
+ * @param string $dir
+ *
+ * @return bool
+ * @deprecated since 4.0.0, removed in 8.0; use is_writable()
+ */
+function osc_check_dir_writable($dir = ABS_PATH)
+{
+    return is_writable($dir);
+}
+
+/**
+ * Make a directory writable (0755) when it is not. Before 7.0 it walked the whole tree.
+ *
+ * @param string $dir
+ *
+ * @return bool
+ * @deprecated since 4.0.0, removed in 8.0; use chmod()
+ */
+function osc_change_permissions($dir = ABS_PATH)
+{
+    return is_writable($dir) || @chmod($dir, 0755);
 }
 
 /**
@@ -416,73 +432,6 @@ function osc_dbdump($path, $file)
 }
 
 /**
- * Returns true if there is curl on system environment
- *
- * @return bool
- * @deprecated since 4.0.0
- */
-function testCurl()
-{
-    return \mindstellar\utility\Curl::available();
-}
-
-/**
- * Returns true if there is fsockopen on system environment
- *
- * @return bool
- * @deprecated since 4.0.0
- */
-function testFsockopen()
-{
-    if (!function_exists('fsockopen')) {
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * IF http-chunked-decode not exist implement here
- *
- * @since 3.0
- */
-if (!function_exists('http_chunked_decode')) {
-    /**
-     * dechunk an http 'transfer-encoding: chunked' message
-     *
-     * @param string $chunk the encoded message
-     *
-     * @return string the decoded message.  If $chunk wasn't encoded properly it will be returned unmodified.
-     * @deprecated since 7.0.0 no longer used by core
-     */
-    function http_chunked_decode($chunk)
-    {
-        $pos     = 0;
-        $len     = strlen($chunk);
-        $dechunk = null;
-        while (($pos < $len)
-               && ($chunkLenHex = substr(
-                   $chunk,
-                   $pos,
-                   ($newlineAt = strpos($chunk, "\n", $pos + 1)) - $pos
-               ))) {
-            if (!is_hex($chunkLenHex)) {
-                trigger_error('Value is not properly chunk encoded', E_USER_WARNING);
-
-                return $chunk;
-            }
-
-            $pos      = $newlineAt + 1;
-            $chunkLen = hexdec(rtrim($chunkLenHex, "\r\n"));
-            $dechunk  .= substr($chunk, $pos, $chunkLen);
-            $pos      = strpos($chunk, "\n", $pos + $chunkLen) + 1;
-        }
-
-        return $dechunk;
-    }
-}
-
-/**
  * determine if a string can represent a number in hexadecimal
  *
  * @param string $hex
@@ -501,69 +450,6 @@ function is_hex($hex)
     $dec = hexdec($hex);
 
     return ($hex === dechex($dec));
-}
-
-/**
- * Process response and return headers and body
- *
- * @param string $content
- *
- * @return array{headers?:string,body?:string} Empty when the response has no header block
- * @since 3.0
- * @deprecated since 7.0.0 no longer used by core
- */
-function processResponse($content)
-{
-    $res     = explode("\r\n\r\n", $content);
-    $headers = $res[0];
-    $body    = isset($res[1]) ? $res[1] : '';
-
-    return array('headers' => $headers, 'body' => $body);
-}
-
-/**
- * Parse headers and return into array format
- *
- * @param string $headers
- *
- * @return array<string,string> Lower-cased header name => value
- * @deprecated since 4.0.0
- */
-function processHeaders($headers)
-{
-    $headers    = str_replace("\r\n", "\n", $headers);
-    $headers    = preg_replace('/\n[ \t]/', ' ', $headers);
-    $headers    = explode("\n", $headers);
-    $tmpHeaders = $headers;
-    $headers    = array();
-
-    foreach ($tmpHeaders as $aux) {
-        if (preg_match('/^(.*):\s(.*)$/', $aux, $matches)) {
-            $headers[strtolower($matches[1])] = $matches[2];
-        }
-    }
-
-    return $headers;
-}
-
-/**
- * Download a URL, or return its body when $fileout is null. Forwards to FileSystem.
- *
- * @param string                   $sourceFile
- * @param string|null              $fileout   Destination path; null returns the body instead
- * @param array<string,mixed>|null $post_data POST body; null issues a GET
- *
- * @return bool|string
- * @since      3.0
- * @deprecated since 4.0.0 use osc_downloadFile() or osc_file_get_contents()
- */
-function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
-{
-    if ($fileout === null) {
-        return osc_file_get_contents($sourceFile, $post_data);
-    }
-
-    return osc_downloadFile($sourceFile, $fileout, $post_data);
 }
 
 /**
@@ -837,175 +723,6 @@ function osc_replace_double_slash($path)
 }
 
 /**
- * Walk a directory and report whether the files under it are writable.
- *
- * @param string $dir
- *
- * @return bool False on a path containing .., or on the first unwritable file
- * @deprecated since 4.0.0
- */
-function osc_check_dir_writable($dir = ABS_PATH)
-{
-    if (strpos($dir, '../') !== false || strpos($dir, "..\\") !== false) {
-        return false;
-    }
-
-    clearstatcache();
-    if ($dh = opendir($dir)) {
-        while (($file = readdir($dh)) !== false) {
-            if ($file !== '.' && $file !== '..') {
-                if (is_dir(osc_replace_double_slash($dir . '/' . $file))) {
-                    if (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/themes')) {
-                        if ($file === 'storefront' || $file === 'index.php') {
-                            $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/plugins')) {
-                        if ($file === 'google_maps' || $file === 'google_analytics' || $file === 'index.php') {
-                            $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/languages')) {
-                        if ($file === 'en_US' || $file === 'index.php') {
-                            $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/downloads')) {
-                        continue;
-                    } elseif (osc_replace_double_slash($dir) === osc_uploads_path()) {
-                        continue;
-                    } else {
-                        $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                        if (!$res) {
-                            return false;
-                        }
-                    }
-                } else {
-                    return is_writable(osc_replace_double_slash($dir . '/' . $file));
-                }
-            }
-        }
-        closedir($dh);
-    }
-
-    return true;
-}
-
-/**
- * Walk a directory and chmod anything under it that is not writable to 0755.
- *
- * @param string $dir
- *
- * @return bool False on a path containing .., or when a chmod fails
- * @deprecated since 4.0.0
- */
-function osc_change_permissions($dir = ABS_PATH)
-{
-    if (strpos($dir, '../') !== false || strpos($dir, "..\\") !== false) {
-        return false;
-    }
-
-    clearstatcache();
-    if ($dh = opendir($dir)) {
-        while (($file = readdir($dh)) !== false) {
-            if ($file !== '.' && $file !== '..' && $file[0] !== '.') {
-                if (!is_writable(osc_replace_double_slash($dir . '/' . $file))) {
-                    $result = chmod(str_replace('//', '/', $dir . '/' . $file), 0755);
-                }
-
-                if (is_dir(osc_replace_double_slash($dir . '/' . $file))) {
-                    if (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/themes')) {
-                        if ($file === 'modern' || $file === 'index.php') {
-                            $res = osc_change_permissions(str_replace('//', '/', $dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/plugins')) {
-                        if ($file === 'google_maps' || $file === 'google_analytics' || $file === 'index.php') {
-                            $res = osc_change_permissions(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/languages')) {
-                        if ($file === 'en_US' || $file === 'index.php') {
-                            $res = osc_change_permissions(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/downloads')) {
-                        continue;
-                    } elseif (osc_replace_double_slash($dir) === osc_uploads_path()) {
-                        continue;
-                    } else {
-                        $res = osc_change_permissions(osc_replace_double_slash($dir . '/' . $file));
-                        if (!$res) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-
-                if (isset($result)) {
-                    return $result;
-                }
-
-                return false;
-            }
-        }
-        closedir($dh);
-    }
-
-    return true;
-}
-
-/**
- * Record the current permission bits of a directory and everything under it.
- *
- * @param string $dir
- *
- * @return array<string,int>|false Path => permission bits, or false on a path containing ..
- * @deprecated since 4.0.0
- */
-function osc_save_permissions($dir = ABS_PATH)
-{
-    if (strpos($dir, '../') !== false || strpos($dir, "..\\") !== false) {
-        return false;
-    }
-
-    $perms       = array();
-    $perms[$dir] = fileperms($dir);
-    clearstatcache();
-    if ($dh = opendir($dir)) {
-        while (($file = readdir($dh)) !== false) {
-            if ($file !== '.' && $file !== '..') {
-                if (is_dir(str_replace('//', '/', $dir . '/' . $file))) {
-                    $res = osc_save_permissions(str_replace('//', '/', $dir . '/' . $file));
-                    foreach ($res as $k => $v) {
-                        $perms[$k] = $v;
-                    }
-                } else {
-                    $perms[str_replace('//', '/', $dir . '/' . $file)] =
-                        fileperms(str_replace('//', '/', $dir . '/' . $file));
-                }
-            }
-        }
-        closedir($dh);
-    }
-
-    return $perms;
-}
-
-/**
  * Format a stored integer price for display.
  *
  * @param int|string $price Price in the currency's smallest stored unit
@@ -1052,17 +769,12 @@ function rglob($pattern, $flags = 0, $path = '')
  * @param string      $update_uri
  * @param string|null $version Version currently installed
  *
- * @return bool
+ * @return bool Always false: the old market is gone.
  * @deprecated since 4.0.0 use mindstellar\market\PackageIndex::forPlugins()->pendingUpdates() instead
  * @see \mindstellar\market\PackageIndex::pendingUpdates()
  */
 function osc_check_plugin_update($update_uri, $version = null)
 {
-    $uri = _get_market_url('plugins', $update_uri);
-    if ($uri != false) {
-        return _need_update($uri, $version);
-    }
-
     return false;
 }
 
@@ -1072,17 +784,12 @@ function osc_check_plugin_update($update_uri, $version = null)
  * @param string      $update_uri
  * @param string|null $version Version currently installed
  *
- * @return bool
+ * @return bool Always false: the old market is gone.
  * @deprecated since 4.0.0 use mindstellar\market\PackageIndex::forThemes()->pendingUpdates() instead
  * @see \mindstellar\market\PackageIndex::pendingUpdates()
  */
 function osc_check_theme_update($update_uri, $version = null)
 {
-    $uri = _get_market_url('themes', $update_uri);
-    if ($uri != false) {
-        return _need_update($uri, $version);
-    }
-
     return false;
 }
 
@@ -1125,107 +832,6 @@ function osc_check_language_update($update_uri, $version = null, $disable = fals
     }
 
     return version_compare((string) $version, $published[$update_uri], '<');
-}
-
-/**
- * Resolve a package's update URI to a market URL.
- *
- * @param string      $type       One of plugins, themes or languages
- * @param string|null $update_uri
- * @param bool        $disable    True short-circuits to false; that is the default
- *
- * @return string|false False unless $update_uri is already an absolute http(s) URL
- * @deprecated since 4.0.0
- */
-function _get_market_url($type, $update_uri, $disable = true)
-{
-    if ($disable) {
-        return false;
-    }
-    if ($update_uri == null) {
-        return false;
-    }
-
-    if (in_array($type, array('plugins', 'themes', 'languages'))) {
-        if (stripos($update_uri, 'http://') === false && stripos($update_uri, 'https://') === false) {
-            // OSCLASS OFFICIAL REPOSITORY
-            // $uri = osc_market_url( $type , $update_uri );
-            return false;
-        }
-
-        $uri = $update_uri;
-
-        return $uri;
-    }
-
-    return false;
-}
-
-/**
- * Whether the JSON descriptor at a URI advertises a version newer than the installed one.
- *
- * @param string      $uri
- * @param string|null $version Version currently installed
- * @param bool        $disable True short-circuits to false; that is the default
- *
- * @return bool
- * @deprecated since 4.0.0
- */
-function _need_update($uri, $version, $disable = true)
-{
-    if ($disable) {
-        return false;
-    }
-    if (false === ($json = osc_file_get_contents($uri))) {
-        return false;
-    }
-
-    $data = json_decode($json, true);
-    if (isset($data['s_version'])) {
-        $result = version_compare2($data['s_version'], $version);
-        if ($result === 1) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Returns
- *      0  if both are equal,
- *      1  if A > B, and
- *      -1 if B < A.
- *
- * @param string $a -> from market
- * @param string $b -> installed version
- *
- * @return int
- * @deprecated since 4.0.0
- * @see Utils::versionCompare()
- */
-function version_compare2($a, $b)
-{
-    Deprecate::deprecatedFunction(__FUNCTION__, '4.0.0', 'Utils::versionCompare()');
-    $aA = explode('.', rtrim($a, '.0')); //Split version into pieces and remove trailing .0
-    $aB = explode('.', rtrim($b, '.0')); //Split version into pieces and remove trailing .0
-    foreach ($aA as $depth => $aVal) { //Iterate over each piece of A
-        if (isset($b[$depth])) { //If B matches A to this depth, compare the values
-            if ($aVal > $aB[$depth]) {
-                return 1;
-            }
-
-            if ($aVal < $aB[$depth]) {
-                return -1;
-            } //Return A > B //Return B > A
-            //An equal result is inconclusive at this point
-        } else {      //If B does not match A to this depth, then A comes after B in sort order
-            return 1; //so return A > B
-        }
-    }
-    //At this point, we know that to the depth that A and B extend to, they are equivalent.
-    //Either the loop ended because A is shorter than B, or both are equal.
-    return (count($aA) < count($aB)) ? -1 : 0;
 }
 
 /**
@@ -1341,9 +947,7 @@ function osc_is_update_compatible($section, $element, $osclass_version = OSCLASS
             $versions = explode(',', $data['s_compatible']);
 
             foreach ($versions as $_version) {
-                $result = version_compare2($osclass_version, $_version);
-
-                if ($result == 0 || $result == -1) {
+                if (version_compare((string) $osclass_version, trim($_version), '<=')) {
                     return true;
                 }
             }
