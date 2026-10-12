@@ -30,24 +30,31 @@ use mindstellar\user\UserStore;
  * The same-site session mode: theme JavaScript on the site's own pages calls the API with a page
  * token in X-Shopclass-Token. A guest token reads public data only. A user's token is refused unless
  * the sign-in cookie is valid and names that user; its credential never holds account:write or admin.
- * Every page token is refused from another site.
+ * An admin's token is refused unless the browser's admin panel session names that admin. Every page
+ * token is refused from another site.
  */
 final class PageTokenAuth
 {
     /** @var \Closure(array<string,mixed>, string): bool */
     private \Closure $banned;
 
+    /** @var \Closure(): (array<string,mixed>|null) */
+    private \Closure $admin;
+
     /**
      * @param callable|null $banned (user row, client address) => whether a ban rule matches; osc_is_banned() by default
+     * @param callable|null $admin  () => the t_admin row the browser's admin session names; none by default
      */
     public function __construct(
         private PageTokens $tokens,
         private UserRows $users,
         private Scopes $scopes,
         private SiteOrigin $origin,
-        ?callable $banned = null
+        ?callable $banned = null,
+        ?callable $admin = null
     ) {
         $this->banned = \Closure::fromCallable($banned ?? [self::class, 'bannedOnSite']);
+        $this->admin  = \Closure::fromCallable($admin ?? static fn (): ?array => null);
     }
 
     /**
@@ -83,6 +90,9 @@ final class PageTokenAuth
             }
 
             return new Credential(CredentialKind::GUEST, Scopes::PUBLIC);
+        }
+        if ($this->tokens->isAdminToken($token)) {
+            return $this->admin($token);
         }
         $user = $this->signedInUser($request);
         if ($user === null) {
@@ -123,6 +133,35 @@ final class PageTokenAuth
         }
 
         return $user;
+    }
+
+    /**
+     * @throws ProblemException 401 session_required with no admin session or another admin's token,
+     *                    401 token_expired
+     */
+    private function admin(string $token): Credential
+    {
+        $admin = ($this->admin)();
+        if ($admin === null) {
+            throw ProblemException::from(self::refused('Sign in to the admin panel, then reload the page.'));
+        }
+        $state = $this->tokens->checkAdmin($token, $admin);
+        if ($state === PageTokens::EXPIRED) {
+            throw self::expired('The page token has expired. Reload the page.');
+        }
+        if ($state !== PageTokens::VALID) {
+            throw ProblemException::from(self::refused('The page token does not belong to this sign-in. Reload the page.'));
+        }
+        $id        = (int) $admin['pk_i_id'];
+        $moderator = !empty($admin['b_moderator']);
+
+        return new Credential(
+            CredentialKind::SESSION,
+            $this->scopes->allowedFor(CredentialKind::SESSION, KeyOwner::admin($id, $moderator)),
+            null,
+            $id,
+            moderator: $moderator
+        );
     }
 
     private static function expired(string $detail): ProblemException

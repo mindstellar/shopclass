@@ -304,6 +304,11 @@ Print the meta tag in the theme's `<head>`:
 Its content is JSON: `url` (the API address), `token` (a guest token when nobody is signed in),
 `header` and `expires_at`. `osc_api_session_token()` returns the token alone.
 
+Admin panel pages print the same tag with `osc_api_admin_session_meta()`. Its token calls admin
+endpoints as the signed-in admin, with that admin's scopes. It needs the admin panel's own session in
+the same browser: a token for another admin, or one made before that admin signed out of all devices,
+is `401 session_required`. It never acts as a user, and `GET /auth/session` does not renew it.
+
 Page tokens work while the site owner has the API switched off. Then only page-token calls are
 answered: every key and token, and `POST /auth/token` and `POST /users`, get `403 api_disabled`.
 
@@ -337,7 +342,7 @@ Every rule must pass, or the call is refused. A call with a page token is never 
 | Page token | Only in the `X-Shopclass-Token` header. Never read from the query string or the body. It names the user and their sign-out stamp, so another user's token, or one made before a password change or a sign-out of all devices, is refused: `401 session_required`. An expired one is `401 token_expired`. |
 | Sign-in cookie | The site's signed sign-in cookie for that same user. With no valid cookie: `401 session_required`. A cookie with no page token is no credential: `401`. A guest token needs no cookie. |
 | Same origin | `Origin` must be the site's own scheme, host and port: `https://example.com` for a site at `https://example.com/shop/`. A GET with no `Origin` must show `Sec-Fetch-Site: same-origin`, or a `Referer` from the site. Anything else is `403 cross_origin`. `http` and `https`, other ports and subdomains are other origins. |
-| User only | An active, enabled user who is not banned. Suspended or unconfirmed: `401 session_required`. Banned: `403 banned`. An admin signed in to the admin panel gets nothing here. |
+| User only | An active, enabled user who is not banned. Suspended or unconfirmed: `401 session_required`. Banned: `403 banned`. An admin uses an admin page token instead (above). |
 | Scopes | Every user scope except `account:write`: no profile, password or e-mail change, no keys, no ending sign-ins. No admin scope. A guest token holds `listings:read` only, and a banned address gets `403 banned`. |
 | No CORS | An answer never carries `Access-Control-Allow-Origin`, even when the site allows `*`. `X-Shopclass-Token` is not an allowed CORS header, so a page on another site cannot send it. |
 | Never stored | Answers are `Cache-Control: private, no-store` and vary on `Cookie`. Guest answers are `private`. |

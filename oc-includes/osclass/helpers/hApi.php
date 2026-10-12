@@ -203,11 +203,13 @@ if (!function_exists('osc_api_session_meta')) {
      * to send it in and when it expires (`expires_at`). It is printed while the API is off too.
      *
      * @api
+     *
+     * @param \mindstellar\apikey\IssuedToken|null $token another page token to print; this page's by default
      */
-    function osc_api_session_meta(): string
+    function osc_api_session_meta(?\mindstellar\apikey\IssuedToken $token = null): string
     {
-        $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forPage();
-        $data  = [
+        $token ??= \mindstellar\apikey\ApiAccess::site()->pageTokens()->forPage();
+        $data    = [
             'url'        => osc_api_url(),
             'token'      => $token->token(),
             'header'     => \mindstellar\apikey\PageTokens::HEADER,
@@ -215,6 +217,23 @@ if (!function_exists('osc_api_session_meta')) {
         ];
 
         return '<meta name="shopclass-api" content="' . osc_esc_html((string) json_encode($data, JSON_UNESCAPED_SLASHES)) . '">' . PHP_EOL;
+    }
+}
+
+if (!function_exists('osc_api_admin_session_meta')) {
+    /**
+     * The `<meta name="shopclass-api">` tag for an admin panel page, with the signed-in admin's
+     * page token. Admin JavaScript sends it to call admin endpoints as that admin.
+     *
+     * @api
+     *
+     * @return string '' when no admin is signed in
+     */
+    function osc_api_admin_session_meta(): string
+    {
+        $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forAdmin();
+
+        return $token === null ? '' : osc_api_session_meta($token);
     }
 }
 

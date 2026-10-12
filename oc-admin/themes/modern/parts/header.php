@@ -25,6 +25,7 @@ if ($oscSidebar !== 'collapsed') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="content-language" content="<?php echo osc_current_admin_locale(); ?>"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <?php echo osc_api_admin_session_meta(); ?>
     <?php osc_run_hook('admin_header'); ?>
 </head>
 <body class="<?php echo implode(' ', osc_apply_filter('admin_body_class', array())); ?>">

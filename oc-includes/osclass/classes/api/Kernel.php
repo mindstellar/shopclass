@@ -187,7 +187,7 @@ final class Kernel
             if ($version !== null) {
                 $response = $response->withVersion($version);
             }
-            if ($credential->isSession()) {
+            if ($credential->isSession() || $credential->isAdminSession()) {
                 // Never stored anywhere, whatever a handler or filter asked for.
                 $response = $response->withHeader('Cache-Control', $this->cachePolicy->header($request, $credential));
             } elseif (!$response->isProblem()) {

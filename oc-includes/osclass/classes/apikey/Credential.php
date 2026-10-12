@@ -125,6 +125,16 @@ final class Credential
         return $this->kind === CredentialKind::SESSION && $this->userId !== null;
     }
 
+    /**
+     * An admin calling from the admin panel's own pages (admin session plus page token).
+     *
+     * @api
+     */
+    public function isAdminSession(): bool
+    {
+        return $this->kind === CredentialKind::SESSION && $this->adminId !== null;
+    }
+
     /** @api */
     public function isAnonymous(): bool
     {
@@ -132,13 +142,13 @@ final class Credential
     }
 
     /**
-     * An admin's API key. A public key made by an admin is not one.
+     * An admin's API key or admin page session. A public key made by an admin is not one.
      *
      * @api
      */
     public function isAdmin(): bool
     {
-        return $this->kind === CredentialKind::KEY && $this->adminId !== null;
+        return in_array($this->kind, [CredentialKind::KEY, CredentialKind::SESSION], true) && $this->adminId !== null;
     }
 
     /** @api */

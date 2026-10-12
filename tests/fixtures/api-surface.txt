@@ -1,8 +1,9 @@
+function osc_api_admin_session_meta(): string
 function osc_api_enabled(): bool
 function osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ["public"]): void
 function osc_api_register_route(string $method, string $path, array $spec): void
 function osc_api_register_schema(string $slug, string $name, array $schema): array
-function osc_api_session_meta(): string
+function osc_api_session_meta(?mindstellar\apikey\IssuedToken $token = NULL): string
 function osc_api_session_token(): string
 function osc_api_url(string $path = '', ?string $version = NULL): string
 function osc_is_api_request(): bool
@@ -141,6 +142,7 @@ mindstellar\api\serializer\ViewContext::public wants(string $member): bool
 mindstellar\apikey\Credential::public adminId(): ?int
 mindstellar\apikey\Credential::public has(string $scope): bool
 mindstellar\apikey\Credential::public isAdmin(): bool
+mindstellar\apikey\Credential::public isAdminSession(): bool
 mindstellar\apikey\Credential::public isAnonymous(): bool
 mindstellar\apikey\Credential::public isModerator(): bool
 mindstellar\apikey\Credential::public isSession(): bool

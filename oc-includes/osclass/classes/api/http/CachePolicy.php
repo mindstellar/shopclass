@@ -45,7 +45,7 @@ final class CachePolicy
      */
     public function header(Request $request, Credential $credential): string
     {
-        if (!$request->isRead() || $credential->isSession() || self::isPersonal($request->routePath())) {
+        if (!$request->isRead() || $credential->isSession() || $credential->isAdminSession() || self::isPersonal($request->routePath())) {
             return 'private, no-store';
         }
         if (!$this->isPublic($request, $credential)) {

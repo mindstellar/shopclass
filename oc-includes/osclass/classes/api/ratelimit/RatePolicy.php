@@ -57,6 +57,7 @@ final class RatePolicy
             $credential->kind() === CredentialKind::GUEST     => ['api_anon', $address, $this->settings->rateAnon()],
             $credential->kind() === CredentialKind::PUBLIC    => ['api_key', $credential->id() . '@' . $address, $max],
             $credential->isUser()                             => ['api_user', (string) $credential->userId(), $max],
+            $credential->isAdminSession()                     => ['api_admin', (string) $credential->adminId(), $max],
             default                                           => ['api_key', (string) $credential->id(), $max],
         };
 

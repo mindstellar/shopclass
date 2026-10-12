@@ -24,6 +24,7 @@ use mindstellar\api\auth\UserRows;
 use mindstellar\api\http\SiteOrigin;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\KvIdempotencyStore;
+use mindstellar\api\identity\AdminSession;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\ratelimit\RatePolicy;
 use mindstellar\api\read\CategoryCatalog;
@@ -257,7 +258,7 @@ final class ApiServices
             $this->access()->keys(),
             new FailureCounter(clock: $this->clock),
             $this->accessTokens(),
-            new PageTokenAuth($this->pageTokens(), $this->users, $this->scopes, SiteOrigin::fromSite()),
+            new PageTokenAuth($this->pageTokens(), $this->users, $this->scopes, SiteOrigin::fromSite(), admin: fn (): ?array => AdminSession::admin($this->admins())),
             fn (int $id, string $ip): bool => ($user = $this->users->find($id)) !== null && PageTokenAuth::bannedOnSite($user, $ip)
         ));
     }

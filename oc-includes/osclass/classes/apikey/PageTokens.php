@@ -19,8 +19,8 @@ use mindstellar\utility\SystemClock;
 
 /**
  * Page tokens for the same-site session mode: `scs_<SignedPayload>`, signed with the install's
- * key and stored nowhere. A user's payload names the user and their sign-out stamp fingerprint, so a
- * password change or sign-out everywhere ends every page token; a guest's names nobody.
+ * key and stored nowhere. A user's or an admin's payload names them and their sign-out stamp
+ * fingerprint, so a password change or sign-out everywhere ends every page token; a guest's names nobody.
  */
 final class PageTokens
 {
@@ -42,6 +42,8 @@ final class PageTokens
     private const PURPOSE = 'api-session';
 
     private const GUEST_PURPOSE = 'api-guest';
+
+    private const ADMIN_PURPOSE = 'api-admin';
 
     private Clock $clock;
 
@@ -74,6 +76,68 @@ final class PageTokens
         $now = $this->clock->now();
 
         return new IssuedToken(self::PREFIX . SignedPayload::pack(self::GUEST_PURPOSE, [], $this->ttl, 0, $now), $now + $this->ttl);
+    }
+
+    /**
+     * A page token for this admin, for the admin panel's own pages.
+     *
+     * @param array<string,mixed> $admin the t_admin row
+     */
+    public function issueAdmin(array $admin): IssuedToken
+    {
+        $now   = $this->clock->now();
+        $token = self::PREFIX . SignedPayload::pack(self::ADMIN_PURPOSE, [
+            'adm' => (int) $admin['pk_i_id'],
+            'st'  => AuthStamp::fingerprint($admin),
+        ], $this->ttl, 0, $now);
+
+        return new IssuedToken($token, $now + $this->ttl);
+    }
+
+    /**
+     * A page token for the admin signed in on this admin request, or null when nobody is.
+     */
+    public function forAdmin(): ?IssuedToken
+    {
+        if (!osc_is_admin_user_logged_in()) {
+            return null;
+        }
+        $admin = \Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
+
+        return is_array($admin) && isset($admin['pk_i_id']) ? $this->issueAdmin($admin) : null;
+    }
+
+    /**
+     * Whether a token is an admin token this site made, expired or not.
+     */
+    public function isAdminToken(string $token): bool
+    {
+        return str_starts_with($token, self::PREFIX)
+            && SignedPayload::open(self::ADMIN_PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now()) !== null;
+    }
+
+    /**
+     * Whether an admin token was made for this admin and their current sign-out stamp.
+     *
+     * @param array<string,mixed> $admin the t_admin row the admin session names
+     *
+     * @return string VALID, EXPIRED or REFUSED
+     */
+    public function checkAdmin(string $token, array $admin): string
+    {
+        if (!str_starts_with($token, self::PREFIX)) {
+            return self::REFUSED;
+        }
+        $opened = SignedPayload::open(self::ADMIN_PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now());
+        $data   = $opened['data'] ?? null;
+        if ($data === null || !is_int($data['adm'] ?? null) || !is_string($data['st'] ?? null)
+            || $data['adm'] !== (int) ($admin['pk_i_id'] ?? 0)
+            || !hash_equals(AuthStamp::fingerprint($admin), $data['st'])
+        ) {
+            return self::REFUSED;
+        }
+
+        return $opened['expired'] ? self::EXPIRED : self::VALID;
     }
 
     /**

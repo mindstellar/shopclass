@@ -121,13 +121,14 @@ final class Idempotency
 
     /**
      * Whose keys these are: one sign-in's (its refresh family, across its access tokens), one
-     * key's, or one user's same-site session.
+     * key's, one user's same-site session, or one admin's page session.
      */
     private static function owner(Credential $credential): string
     {
         return match (true) {
             $credential->isAccessToken() => 'token:' . $credential->userId() . ':' . (string) $credential->family(),
-            $credential->isSession()     => 'session:' . $credential->userId(),
+            $credential->isSession()      => 'session:' . $credential->userId(),
+            $credential->isAdminSession() => 'admin-session:' . $credential->adminId(),
             default                      => 'key:' . (int) $credential->id(),
         };
     }

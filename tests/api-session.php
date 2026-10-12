@@ -21,6 +21,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 require_once __DIR__ . '/lib/test-clock.php';
 
 use mindstellar\api\ApiCall;
+use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\auth\PageTokenAuth;
 use mindstellar\api\controller\AuthController;
 use mindstellar\api\http\Cors;
@@ -107,6 +108,7 @@ $routes = [
     }, 'auth' => 'user', 'scope' => 'listings:write'],
     'POST secret'  => ['handler' => static fn (): Response => Response::ok(['done' => true]), 'auth' => 'user', 'scope' => 'account:write'],
     'GET admin/x'  => ['handler' => static fn (): Response => Response::ok(['admin' => true]), 'auth' => 'admin', 'scope' => 'admin:users'],
+    'GET admin/staff' => ['handler' => static fn (ApiCall $call): Response => Response::ok(['admin' => $call->credential()->adminId(), 'seen' => osc_logged_admin_id()]), 'auth' => 'admin'],
     'GET open'     => ['handler' => static fn (): Response => Response::ok(['open' => true]), 'auth' => 'none'],
     'GET auth/session' => [
         'handler' => static fn (ApiCall $call): Response => (new AuthController(new \mindstellar\api\ApiServices(new ApiSettings(true), $scopes, new \mindstellar\model\ApiCredential(), $accounts(), new SystemClock(), api_test_limiter())))->pageToken($call),
@@ -115,21 +117,23 @@ $routes = [
     ],
 ];
 
-$kernelFor = static function (array $settings = [], ?PageTokens $with = null, ?callable $banned = null) use ($routes, $scopes, $tokens, $accounts): Kernel {
+$kernelFor = static function (array $settings = [], ?PageTokens $with = null, ?callable $banned = null, ?callable $admin = null) use ($routes, $scopes, $tokens, $accounts): Kernel {
     $users = $accounts();
     $auth  = new PageTokenAuth(
         $with ?? $tokens,
         $users,
         $scopes,
         new SiteOrigin(WEB_PATH),
-        $banned ?? static fn (array $u, string $ip): bool => $u['s_email'] === 'banned@x.test'
+        $banned ?? static fn (array $u, string $ip): bool => $u['s_email'] === 'banned@x.test',
+        $admin
     );
 
     return api_test_kernel(
         new Router(new Validator(), $routes),
         api_test_authenticator(new ApiKeys(new NoKeys(), $scopes, new SystemClock()), tokens: api_test_access_tokens($scopes, $users), session: $auth),
         new ApiSettings(...($settings + ['enabled' => true])),
-        users: $users
+        users: $users,
+        admins: new MemoisedRows(static fn (int $id): ?array => $admin !== null ? $admin() : null)
     );
 };
 $kernel = $kernelFor();
@@ -342,6 +346,44 @@ $reset();
 pin('a route that needs no credential is api_disabled, even with a page token', [403, 'api_disabled'], $code($off->handle($asGuest([], null, 'GET', 'v1/open'))));
 $reset();
 pin('a page token from another site is still refused', [403, 'cross_origin'], $code($off->handle($asGuest(['Origin' => 'https://evil.test']))));
+
+harness_section('admin page tokens');
+$staff     = static fn (int $id, int $stamp = 0, int $moderator = 0): array => ['pk_i_id' => (string) $id, 's_username' => 'admin' . $id, 's_name' => 'Admin ' . $id, 's_email' => 'a' . $id . '@x.test', 'i_auth_stamp' => (string) $stamp, 'b_moderator' => (string) $moderator];
+$panel     = null;
+$withPanel = $kernelFor([], null, null, static function () use (&$panel): ?array {
+    return $panel;
+});
+$adminCall = static function (string $token, string $path = 'v1/admin/staff', array $headers = [], string $method = 'GET', ?Kernel $k = null) use (&$withPanel, $session, $site, $reset): Response {
+    $reset();
+
+    return ($k ?? $withPanel)->handle($session($headers + ['Origin' => $site, 'X-Shopclass-Token' => $token, 'Content-Type' => 'application/json'], null, $method, $path));
+};
+$panel = $staff(1);
+$r     = $adminCall($tokens->issueAdmin($staff(1))->token());
+pin('the signed-in admin\'s token calls an admin route as that admin', [200, 1, 1], [$r->status(), $r->body()['data']['admin'], $r->body()['data']['seen']]);
+pin('an admin answer is never stored', 'private, no-store', $r->header('Cache-Control'));
+pin('a scoped admin route answers too', 200, $adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/x')->status());
+pin('an admin token cannot act as a user', [403, 'wrong_credential'], $code($adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/notes', [], 'POST')));
+$panel = $staff(2, 0, 1);
+pin('a moderator\'s token is turned away from a full-admin route', [403, 'wrong_credential'], $code($adminCall($tokens->issueAdmin($staff(2, 0, 1))->token())));
+$panel = null;
+pin('with no admin session the token is refused', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token())));
+$panel = $staff(2);
+pin('another admin\'s token is refused', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token())));
+$panel = $staff(1, 5);
+pin('a token from before a sign-out everywhere is refused', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token())));
+$panel = $staff(1);
+$pastAdmin = new PageTokens(PageTokens::TTL, new TestClock(static fn (): int => time() - PageTokens::TTL - 10));
+pin('an expired admin token is 401 token_expired', [401, 'token_expired'], $code($adminCall($pastAdmin->issueAdmin($staff(1))->token())));
+pin('an admin token from another site is refused', [403, 'cross_origin'], $code($adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/staff', ['Origin' => 'https://evil.test'])));
+pin('without the admin session reader, admin tokens never work', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/staff', [], 'GET', $kernel)));
+$adminOff = $kernelFor(['enabled' => false], null, null, static fn (): array => $staff(1));
+pin('an admin token works while the API is off', 200, $adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/staff', [], 'GET', $adminOff)->status());
+pin('a user\'s token is not an admin token, nor a guest\'s', [false, false], [$tokens->isAdminToken($page(10)), $tokens->isAdminToken($tokens->issueGuest()->token())]);
+pin('an admin token is neither a user\'s nor a guest\'s', [PageTokens::REFUSED, PageTokens::REFUSED], [$tokens->check($tokens->issueAdmin($staff(10))->token(), $rows[10]), $tokens->checkGuest($tokens->issueAdmin($staff(1))->token())]);
+$adminBucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor($session(), new RouteSpec('GET', 'me', $routes['GET me']), new Credential(CredentialKind::SESSION, [], null, 1))[0];
+pin('an admin page session counts per admin', ['api_admin', '1'], [$adminBucket->name(), $adminBucket->key()]);
+check('an admin page session is an admin, not a user session', (static fn (Credential $c): bool => $c->isAdmin() && $c->isAdminSession() && !$c->isSession() && !$c->isUser())(new Credential(CredentialKind::SESSION, [], null, 1)));
 
 harness_section('guard 5: no CORS, never stored');
 $cors = $kernelFor(['corsOrigins' => "*\n" . $site]);

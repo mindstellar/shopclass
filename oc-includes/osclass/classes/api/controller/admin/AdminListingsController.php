@@ -116,7 +116,7 @@ final class AdminListingsController
      */
     private static function note(Credential $credential): string
     {
-        return 'API key #' . (int) $credential->id();
+        return $credential->isAdminSession() ? 'Admin panel page' : 'API key #' . (int) $credential->id();
     }
 
     /**
