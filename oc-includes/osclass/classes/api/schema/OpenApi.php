@@ -526,6 +526,9 @@ final class OpenApi
             return [];
         }
         $scopes      = $route->scope() === null ? [] : [$route->scope()];
+        if ($route->sessionOnly()) {
+            return [['pageSession' => $scopes]];
+        }
         $requirement = [['bearer' => $scopes]];
         if ($this->sessionMayCall($route)) {
             $requirement[] = ['pageSession' => $scopes];

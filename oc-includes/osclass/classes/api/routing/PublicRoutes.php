@@ -301,7 +301,7 @@ final class PublicRoutes
                 auth: RouteSpec::AUTH_USER,
                 scope: 'account:read',
                 errors: [403]
-            ),
+            ) + ['session_only' => true],
             'GET account' => RouteSpec::read(
                 handler: [AccountController::class, 'show'],
                 tag: 'Account',
@@ -386,7 +386,7 @@ final class PublicRoutes
                 status: 201,
                 errors: [403],
                 replayable: false
-            ),
+            ) + ['gate' => 'user_keys'],
             'GET account/keys/{id}' => RouteSpec::read(
                 handler: [AccountKeysController::class, 'show'],
                 tag: 'Account',

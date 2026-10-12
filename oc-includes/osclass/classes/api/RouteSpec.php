@@ -94,6 +94,8 @@ final class RouteSpec
     private bool $upload;
 
     private bool $oauth;
+    private ?string $gate;
+    private bool $sessionOnly;
 
     /** @var callable|array{0:string,1:string}|null */
     private $prepare;
@@ -177,6 +179,8 @@ final class RouteSpec
         $this->replayable  = (bool) ($spec['replayable'] ?? true);
         $this->upload      = (bool) ($spec['upload'] ?? false);
         $this->oauth       = (bool) ($spec['oauth'] ?? false);
+        $this->sessionOnly = (bool) ($spec['session_only'] ?? false);
+        $this->gate        = isset($spec['gate']) && $spec['gate'] !== '' ? (string) $spec['gate'] : null;
         $this->prepare     = $spec['prepare'] ?? null;
         if ($this->prepare !== null && !self::isPair($this->prepare) && !is_callable($this->prepare)) {
             throw new \InvalidArgumentException($key . ': prepare must be callable.');
@@ -614,6 +618,24 @@ final class RouteSpec
     public function upload(): bool
     {
         return $this->upload;
+    }
+
+    /**
+     * Whether only a same-site page session may call the route; the OpenAPI spec then lists
+     * no bearer requirement for it.
+     */
+    public function sessionOnly(): bool
+    {
+        return $this->sessionOnly;
+    }
+
+    /**
+     * The site feature the route needs, checked before the body is read; null for none.
+     * Only `user_keys` (personal API keys) is known.
+     */
+    public function gate(): ?string
+    {
+        return $this->gate;
     }
 
     /**
