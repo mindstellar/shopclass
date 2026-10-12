@@ -53,6 +53,7 @@ $file     = $dir . '/sess_' . $signedIn;
 $before   = [file_get_contents($file), filemtime($file)];
 pin('the session names the admin', '3', $read($signedIn)['pk_i_id'] ?? null);
 check('the session is closed again', session_status() === PHP_SESSION_NONE);
+check('and $_SESSION is unset, so core\'s Session can still start one', !isset($_SESSION));
 pin('and was not written', $before, [file_get_contents($file), filemtime($file)]);
 pin('a stale sign-out stamp is refused', null, $read($saved(['adminId' => 3, 'adminStamp' => 1])));
 pin('a session from before stamps is refused', null, $read($saved(['adminId' => 3])));

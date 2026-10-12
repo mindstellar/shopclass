@@ -60,8 +60,9 @@ final class AdminSession
         session_id($id);
         // No cookie, no cache headers and no write: this answer must not change the browser's session.
         $started = @session_start(['read_and_close' => true, 'use_cookies' => 0, 'cache_limiter' => '', 'use_strict_mode' => 1]);
-        $data    = $started && is_array($_SESSION ?? null) ? $_SESSION : [];
-        $_SESSION = [];
+        $data = $started && is_array($_SESSION ?? null) ? $_SESSION : [];
+        // Core's Session starts only while $_SESSION is unset.
+        unset($_SESSION);
         session_id('');
 
         return $data;
