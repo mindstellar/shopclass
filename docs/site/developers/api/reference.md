@@ -1134,7 +1134,7 @@ Search listings
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
-| `custom_field` | query | object | no | custom_field[<id>]=<value> |
+| `custom_field` | query | object | no | custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422. |
 | `sort` | query | string: `created`, `id`, `price`, `relevance`, `distance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
@@ -1443,7 +1443,7 @@ A user's live listings
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
-| `custom_field` | query | object | no | custom_field[<id>]=<value> |
+| `custom_field` | query | object | no | custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422. |
 | `sort` | query | string: `created`, `id`, `price`, `relevance`, `distance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |

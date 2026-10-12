@@ -362,4 +362,12 @@ $named = static fn (string $code): bool => str_starts_with($code, 'Warning::') &
 pin('every warning a controller or writer emits is a Warning constant listed in Warning::CODES', [], array_values(array_filter(array_unique($emitted), static fn (string $c): bool => !$named($c))));
 pin('a literal code is caught', ["'comment_waiting'"], api_emitted_warning_codes("\$warnings = Warning::member(\$live ? [] : ['comment_waiting' => 'Soon.']);"));
 
+$min = \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH;
+pin('the password minimum in the schema is the account service constant', [$min, $min], [
+    $core['components']['schemas']['PasswordChange']['properties']['new_password']['minLength'] ?? null,
+    $core['components']['schemas']['AdminUserPatch']['properties']['password']['minLength'] ?? null,
+]);
+pin('GET /auth/session lists only the page session', [['pageSession' => ['account:read']]], $core['paths']['/auth/session']['get']['security'] ?? null);
+pin('POST /auth/token documents 415', true, isset($core['paths']['/auth/token']['post']['responses']['415']));
+
 exit(harness_result());

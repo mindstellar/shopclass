@@ -26793,11 +26793,6 @@
                 },
                 "security": [
                     {
-                        "bearer": [
-                            "account:read"
-                        ]
-                    },
-                    {
                         "pageSession": [
                             "account:read"
                         ]
@@ -30374,7 +30369,7 @@
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
-                        "description": "custom_field[<id>]=<value>",
+                        "description": "custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422.",
                         "style": "deepObject",
                         "explode": true,
                         "schema": {
@@ -36455,7 +36450,7 @@
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
-                        "description": "custom_field[<id>]=<value>",
+                        "description": "custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422.",
                         "style": "deepObject",
                         "explode": true,
                         "schema": {
@@ -39214,7 +39209,7 @@
                     },
                     "new_password": {
                         "type": "string",
-                        "minLength": 1,
+                        "minLength": 5,
                         "maxLength": 4096
                     }
                 },
@@ -40835,7 +40830,7 @@
                     },
                     "password": {
                         "type": "string",
-                        "minLength": 1,
+                        "minLength": 5,
                         "maxLength": 4096,
                         "description": "A new password; every sign-in and key of the user ends."
                     },
