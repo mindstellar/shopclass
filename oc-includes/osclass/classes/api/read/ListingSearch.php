@@ -204,9 +204,38 @@ final class ListingSearch
         }
         $meta = $request->query()['custom_field'] ?? null;
         if (is_array($meta) && $meta !== []) {
+            self::checkMeta($meta, (array) ($params['sCategory'] ?? []));
             $params['meta'] = $meta;
         }
 
         return $params;
+    }
+
+    /**
+     * Each custom_field[<id>] must be a searchable field of the chosen categories, as on the
+     * search page; the page ignores the others, the API refuses them.
+     *
+     * @param array<mixed>  $meta
+     * @param array<mixed>  $categoryIds
+     *
+     * @throws ProblemException 422 for an id that is not a field, or one the categories do not search
+     */
+    private static function checkMeta(array $meta, array $categoryIds): void
+    {
+        $searchable = $categoryIds === []
+            ? []
+            : array_map('intval', \Field::getInstance()->findIDSearchableByCategories($categoryIds));
+        foreach (array_keys($meta) as $key) {
+            $pointer = '/custom_field/' . $key;
+            if (RowId::parse((string) $key) === null) {
+                throw ProblemException::field($pointer, 'format', 'must be a custom field id', 'query');
+            }
+            if ($categoryIds === []) {
+                throw ProblemException::field($pointer, 'required', 'needs a category filter that has this field', 'query');
+            }
+            if (!in_array((int) $key, $searchable, true)) {
+                throw ProblemException::field($pointer, 'invalid', 'is not a searchable custom field of the chosen category', 'query');
+            }
+        }
     }
 }

@@ -377,6 +377,8 @@ pin('a schema-invalid sort is refused', 422, $get('listings', array('sort' => 's
 pin('a pattern search', array($bike), $ids($get('listings', array('q' => 'racing'), $publicKey)));
 pin('the user filter finds that seller listings', 1, $get('listings', array('user' => (string) $other, 'count' => 'true'), $publicKey)->body()['meta']['total']);
 pin('a custom field filter', 12, $get('listings', array('category' => 'cars', 'custom_field' => array((string) $fieldId => 'red'), 'count' => 'true'), $publicKey)->body()['meta']['total']);
+pin('a custom field filter with no category is 422', 422, $get('listings', array('custom_field' => array((string) $fieldId => 'red')), $publicKey)->status());
+pin('an unknown custom field is 422', 422, $get('listings', array('category' => 'cars', 'custom_field' => array('99999' => 'red')), $publicKey)->status());
 
 $walk = static function (array $query) use ($get, $publicKey, $ids): array {
     $seen  = array();

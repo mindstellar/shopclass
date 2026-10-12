@@ -70,11 +70,9 @@ pin('API names become the search page\'s own', [
     'sPriceMax' => 500,
     'bPic'      => 1,
     'bPremium'  => 1,
-    'meta'      => ['12' => 'blue'],
 ], $params([
     'q' => 'red bike', 'category' => 'cars,1', 'country' => 'DE', 'region' => ['5', '6'], 'city' => '9', 'city_area' => '3',
     'user' => '7', 'locale' => 'de_DE', 'price_min' => 10, 'price_max' => 500, 'with_photos' => true, 'premium' => true,
-    'custom_field' => ['12' => 'blue'],
 ]));
 pin('a pattern sorts by relevance unless told otherwise', ['relevance', 'created', 'price'], [
     ListingSort::fromRequest($request(['q' => 'x']))->name(), ListingSort::fromRequest($request([]))->name(), ListingSort::fromRequest($request(['q' => 'x', 'sort' => 'price']))->name(),

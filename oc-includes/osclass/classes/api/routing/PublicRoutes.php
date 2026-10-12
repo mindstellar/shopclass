@@ -490,7 +490,7 @@ final class PublicRoutes
             'lat'         => ['type' => 'number', 'minimum' => -90, 'maximum' => 90, 'description' => 'Measure distances from this point, with lng. Needs distance search switched on.'],
             'lng'         => ['type' => 'number', 'minimum' => -180, 'maximum' => 180],
             'radius'      => ['type' => 'number', 'minimum' => 1, 'maximum' => 1000, 'description' => 'Only listings within this many km of lat/lng.'],
-            'custom_field' => ['type' => 'object', 'description' => 'custom_field[<id>]=<value>', 'additionalProperties' => ['type' => ['string', 'array'], 'items' => ['type' => 'string']]],
+            'custom_field' => ['type' => 'object', 'description' => 'custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422.', 'additionalProperties' => ['type' => ['string', 'array'], 'items' => ['type' => 'string']]],
             'sort'        => ['type' => 'string', 'enum' => ListingSort::SORTS],
             'order'       => ['type' => 'string', 'enum' => ['asc', 'desc']],
             'limit'       => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
