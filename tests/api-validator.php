@@ -170,4 +170,8 @@ foreach ($routes as $key => $route) {
 }
 pin('every core route has a handler and schemas the validator can check', [], $broken);
 
+foreach (['' => true, 'example.com' => true, 'https://example.com/a' => true, 'notaurl' => false, 'ftp://x' => false, 'not a url' => false] as $site => $ok) {
+    pin('a profile website ' . json_encode($site), $ok, \mindstellar\user\AccountService::validWebsite($site));
+}
+
 exit(harness_result());

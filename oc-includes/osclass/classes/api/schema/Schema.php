@@ -19,6 +19,7 @@ use mindstellar\api\Warning;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
 use mindstellar\location\CountryCode;
+use mindstellar\user\AccountService;
 use mindstellar\user\UserStatus;
 use mindstellar\utility\DateInput;
 
@@ -480,7 +481,7 @@ final class Schema
             ], ['data']),
             'PasswordChange'     => $input([
                 'current_password' => $text(4096, 1),
-                'new_password'     => $text(4096, 1),
+                'new_password'     => $text(4096, AccountService::MIN_PASSWORD_LENGTH),
             ], ['current_password', 'new_password']),
             'Session'            => self::object([
                 'id'           => ['type' => 'string', 'description' => 'The sign-in\'s id.'],

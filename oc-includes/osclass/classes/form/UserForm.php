@@ -538,7 +538,7 @@ class UserForm extends Form
      */
     private static function registerValidationJs(bool $edit): string
     {
-        $password = $edit ? ['minlength' => 5] : ['required' => true, 'minlength' => 5];
+        $password = $edit ? ['minlength' => \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH] : ['required' => true, 'minlength' => \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH];
 
         return self::validationJs('register', [
             's_name'      => ['required' => true],

@@ -62,6 +62,9 @@ final class AccountService
     ];
 
     /** Seconds an account holder waits between activation links. */
+    /** The fewest characters a new password may have. */
+    public const MIN_PASSWORD_LENGTH = 5;
+
     public const RESEND_WAIT = 1200;
 
     /** E-mail changes a user may ask for in an hour. */
@@ -136,7 +139,7 @@ final class AccountService
         $now   = date('Y-m-d H:i:s');
         $input = ['dt_reg_date' => $now, 'dt_access_date' => $now, 's_secret' => osc_genRandomPassword(), 's_access_ip' => $actor->ip()]
             + $this->input($form, true);
-        if (!osc_validate_url($input['s_website'])) {
+        if (!self::validWebsite($input['s_website'])) {
             $input['s_website'] = '';
         }
         if ($input['s_name'] == '') {
@@ -313,7 +316,7 @@ final class AccountService
                 $flash .= sprintf(_m('The specified e-mail is already used by %s'), $holder['s_username']) . PHP_EOL;
             }
         }
-        if (!osc_validate_url($input['s_website'])) {
+        if (!self::validWebsite($input['s_website'])) {
             $input['s_website'] = '';
         }
         if ($input['s_name'] == '') {
@@ -321,6 +324,10 @@ final class AccountService
         }
         if ($admin && (string) ($form['s_password'] ?? '') !== (string) ($form['s_password2'] ?? '')) {
             $flash .= _m("Passwords don't match") . PHP_EOL;
+        }
+        $given = (string) ($form['s_password'] ?? '');
+        if ($admin && $given !== '' && mb_strlen($given) < self::MIN_PASSWORD_LENGTH) {
+            $flash .= self::tooShortMessage() . PHP_EOL;
         }
         $flash .= self::tooLong($input, (array) ($form['s_info'] ?? []));
 
@@ -573,6 +580,9 @@ final class AccountService
         Reauth::check($user, $current);
         if ($confirm !== null && $confirm !== $new) {
             throw new InvalidException('/new_password2', 'mismatch', _m("Passwords don't match"));
+        }
+        if (mb_strlen($new) < self::MIN_PASSWORD_LENGTH) {
+            throw new InvalidException('/new_password', 'minLength', self::tooShortMessage());
         }
         self::setPassword((int) $user['pk_i_id'], $new);
     }
@@ -961,6 +971,28 @@ final class AccountService
     /**
      * The form's messages, one per line, as a refusal.
      */
+    /**
+     * Whether a profile website is acceptable: empty, or a URL whose host looks like a domain.
+     */
+    public static function validWebsite(string $website): bool
+    {
+        if ($website === '') {
+            return true;
+        }
+        $url = (new \mindstellar\utility\Sanitize())->websiteUrl($website);
+        if (!(new \mindstellar\utility\Validate())->url($url)) {
+            return false;
+        }
+        $host = (string) parse_url($url, PHP_URL_HOST);
+
+        return str_contains($host, '.') || strcasecmp($host, 'localhost') === 0;
+    }
+
+    private static function tooShortMessage(): string
+    {
+        return sprintf(_m('The password needs at least %d characters'), self::MIN_PASSWORD_LENGTH);
+    }
+
     private static function refusal(string $flash): InvalidException
     {
         $errors = [];

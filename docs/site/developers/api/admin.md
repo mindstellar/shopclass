@@ -111,7 +111,7 @@ As for listings, a flag already as asked changes nothing, and an unblock runs be
 |---|---|
 | `GET /admin/users` | List. Filters: `q` (e-mail, username or name starting with it), `confirmed`, `blocked`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/users/{id}` | One user, every member. |
-| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not. `blocked: true` blocks the user, and their sign-ins and keys stop working. Both read back under the same names, and `status` (`active`, `pending` or `disabled`) sums them up. A flag already as asked changes nothing; an unblock runs before a confirm. |
+| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password` (at least 5 characters). A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not. `blocked: true` blocks the user, and their sign-ins and keys stop working. Both read back under the same names, and `status` (`active`, `pending` or `disabled`) sums them up. A flag already as asked changes nothing; an unblock runs before a confirm. |
 | `DELETE /admin/users/{id}` | Delete the user with their listings, comments and saved searches. |
 | `GET /admin/users/{id}/sessions` | The user's live sign-ins. Their keys are at `/admin/keys`. |
 | `DELETE /admin/users/{id}/sessions/{session}` | End one sign-in. |

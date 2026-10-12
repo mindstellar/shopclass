@@ -17,6 +17,7 @@ use mindstellar\api\serializer\CustomFieldSerializer;
 use mindstellar\apikey\ApiKeyService;
 use mindstellar\comment\CommentStatus;
 use mindstellar\currency\CurrencyCode;
+use mindstellar\user\AccountService;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\Events;
 use mindstellar\webhook\WebhookService;
@@ -107,7 +108,7 @@ final class AdminSchema
             'AdminUserPatch'        => $input([
                 'email'     => ['type' => 'string', 'format' => 'email', 'maxLength' => 100],
                 'username'  => $text(100, 1),
-                'password'  => $text(4096, 1) + ['description' => 'A new password; every sign-in and key of the user ends.'],
+                'password'  => $text(4096, AccountService::MIN_PASSWORD_LENGTH) + ['description' => 'A new password; every sign-in and key of the user ends.'],
                 'confirmed' => ['type' => 'boolean', 'description' => 'Whether the account is confirmed.'],
                 'blocked'   => ['type' => 'boolean', 'description' => 'true blocks the user, and their sign-ins and keys stop working.'],
             ] + array_diff_key(Schema::profileMembers(), ['email' => true])),

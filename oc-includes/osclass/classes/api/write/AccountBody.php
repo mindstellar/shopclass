@@ -14,6 +14,7 @@ namespace mindstellar\api\write;
 
 use mindstellar\api\ProblemException;
 use mindstellar\user\AccountInput;
+use mindstellar\user\AccountService;
 
 /**
  * An account body read as the profile form, for AccountService::update(): the stored values
@@ -72,7 +73,7 @@ final class AccountBody
      * @param array<mixed>        $patch
      *
      * @return array<string,string>
-     * @throws ProblemException 422 for a country, region or city that does not exist or has another parent
+     * @throws ProblemException 422 for a bad website, or a country, region or city that does not exist or has another parent
      */
     private static function params(array $user, array $patch): array
     {
@@ -99,6 +100,9 @@ final class AccountBody
         }
         if (array_key_exists('is_company', $patch)) {
             $params['b_company'] = $patch['is_company'] === true ? '1' : '0';
+        }
+        if (array_key_exists('website', $patch) && !AccountService::validWebsite($params['s_website'])) {
+            throw ProblemException::field('/website', 'format', 'must be a web address');
         }
         $params = PlaceBody::apply($params, $patch);
         if (array_intersect_key($patch, ['country' => true, 'region_id' => true, 'city_id' => true]) !== []) {

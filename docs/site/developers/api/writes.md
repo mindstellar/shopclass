@@ -442,9 +442,9 @@ Each `429` has `Retry-After`. The site owner sets the listing number: [Set up th
 | Endpoint | Scope | Does |
 |---|---|---|
 | `GET /account` | `account:read` | Your profile, in the owner's view. |
-| `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email` (with `current_password`). |
+| `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email` (with `current_password`). A `website` that is not a web address is a `422`. |
 | `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
-| `POST /account/password` | `account:write` | Change the password. |
+| `POST /account/password` | `account:write` | Change the password. The new one needs at least 5 characters, as on the site's forms; shorter is a `422` on `/new_password`. |
 | `GET /account/sessions` | `account:read` | Your live sign-ins. Keys are at `/account/keys`. |
 | `DELETE /account/sessions/{id}` | `account:write` | End one sign-in. `204`. |
 | `GET`, `POST`, `DELETE /account/keys` | `account:write` | [Personal keys](/docs/developers/api/authentication/#personal-keys). |
