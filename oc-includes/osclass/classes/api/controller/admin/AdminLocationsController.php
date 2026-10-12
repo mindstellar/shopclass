@@ -18,6 +18,7 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\exception\NotFoundException;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 
@@ -104,11 +105,21 @@ final class AdminLocationsController
     {
         $input = $call->input();
         $name  = AdminText::clean($input['name']);
-        $id    = match ($level) {
-            LocationQuery::REGION => $this->locations->addRegion(strtoupper((string) $input['country']), $name),
-            LocationQuery::CITY   => $this->locations->addCity((int) $input['region_id'], $name),
-            default               => $this->locations->addArea((int) $input['city_id'], $name),
-        };
+        try {
+            $id = match ($level) {
+                LocationQuery::REGION => $this->locations->addRegion(strtoupper((string) $input['country']), $name),
+                LocationQuery::CITY   => $this->locations->addCity((int) $input['region_id'], $name),
+                default               => $this->locations->addArea((int) $input['city_id'], $name),
+            };
+        } catch (NotFoundException) {
+            // The parent in the body is missing: a field error, not a missing URL.
+            $member = match ($level) {
+                LocationQuery::REGION => 'country',
+                LocationQuery::CITY   => 'region_id',
+                default               => 'city_id',
+            };
+            throw ProblemException::field('/' . $member, 'invalid', 'does not exist');
+        }
 
         return $this->api->created($call, $this->serialize($level, $this->row($level, $id)), self::PATHS[$level] . '/' . $id);
     }

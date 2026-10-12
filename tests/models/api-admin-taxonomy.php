@@ -170,7 +170,7 @@ pin('Location names it, and a GET there reads it', ['http://localhost/api/v1/adm
 ]);
 check('the public region list shows it at once', in_array($beta, array_column($call('GET', 'countries/US/regions', null, $boss)->body()['data'] ?? [], 'id'), true));
 pin('the same name again is 422', [422, '/name'], $pointer($call('POST', 'admin/regions', ['country' => 'US', 'name' => 'Beta'], $boss)));
-pin('an unknown country is 404', 404, $call('POST', 'admin/regions', ['country' => 'ZZ', 'name' => 'Gamma'], $boss)->status());
+pin('an unknown country is 422', 422, $call('POST', 'admin/regions', ['country' => 'ZZ', 'name' => 'Gamma'], $boss)->status());
 $r = $call('PATCH', 'admin/regions/' . $region, ['name' => 'Alpha North'], $boss);
 pin('PATCH renames, listings\' stored names follow', [200, 'Alpha North'], [$r->status(), $r->body()['data']['name'] ?? null]);
 $r     = $call('POST', 'admin/cities', ['region_id' => $beta, 'name' => 'Bville'], $boss);
@@ -179,7 +179,7 @@ pin('POST /admin/cities: 201 under the region\'s country', [201, $beta, 'US'], [
 pin('Location names the city, and a GET there reads it', ['http://localhost/api/v1/admin/cities/' . $bcity, 200, 'Bville', 404], [
     $r->header('Location'), $call('GET', 'admin/cities/' . $bcity, null, $boss)->status(), $call('GET', 'admin/cities/' . $bcity, null, $boss)->body()['data']['name'] ?? null, $call('GET', 'admin/cities/99999', null, $boss)->status(),
 ]);
-pin('an unknown region is 404', 404, $call('POST', 'admin/cities', ['region_id' => 99999, 'name' => 'X'], $boss)->status());
+pin('an unknown region is 422', 422, $call('POST', 'admin/cities', ['region_id' => 99999, 'name' => 'X'], $boss)->status());
 $r = $call('PATCH', 'admin/cities/' . $bcity, ['slug' => 'b-ville'], $boss);
 pin('PATCH a slug keeps the name', ['Bville', 'b-ville'], [$r->body()['data']['name'] ?? null, $r->body()['data']['slug'] ?? null]);
 $r    = $call('POST', 'admin/areas', ['city_id' => $bcity, 'name' => 'Old Town'], $boss);
