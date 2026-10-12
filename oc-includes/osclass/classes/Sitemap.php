@@ -742,8 +742,10 @@ class Sitemap extends DAO
      */
     public static function defaultRobotsTxt()
     {
+        $adminPath = (string)parse_url(osc_admin_base_url(), PHP_URL_PATH);
+
         return "User-agent: *\n"
-            . 'Disallow: ' . str_replace(osc_base_url(), '/', osc_admin_base_url()) . "\n"
+            . 'Disallow: ' . ($adminPath !== '' ? $adminPath : '/oc-admin/') . "\n"
             . self::robotsLine() . "\n";
     }
 
