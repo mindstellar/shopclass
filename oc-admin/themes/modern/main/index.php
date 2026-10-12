@@ -222,8 +222,7 @@ if (!empty($numItemsPerCategory)) { ?>
                                             } else {
                                                 $even = true;
                                             } ?>>
-                                                <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;
-                                            catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
+                                                <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
                                                 </td>
                                                 <td><?php echo $subc['i_num_items'] . ' ' . (($subc['i_num_items'] == 1)
                                                      ? __('Listing') : __('Listings')); ?></td>
