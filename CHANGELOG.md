@@ -90,6 +90,8 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Changed
 
+- The RSS feed, sitemaps and robots.txt send the same cache headers as public pages.
+- A new password needs at least 5 characters on the server too, not only in the browser.
 - `mindstellar\logger\OsclassErrors` is now `ErrorHandler`; the old name still works.
 - While new files wait for their database upgrade, visitors, the API and web cron get the maintenance page until an admin runs the upgrade (or `php oc-cli.php db:upgrade`), so an upgrade from 6.4 no longer shows database errors.
 - The admin warns while an active plugin version is known to break on this core, such as Listing Import before 0.3.0.
@@ -117,6 +119,15 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 
+- A changed profile bio shows at once, not after the next save.
+- Searching for a hyphenated word, such as Mid-Century, finds its listings.
+- Custom fields can be deleted from the admin again.
+- A search page past the last page, and an unknown feed type, return 404.
+- robots.txt disallows the real admin path.
+- The installer no longer says "No internet connection" when the country list downloaded fine.
+- The upgrade screen's update checks no longer fail while the database waits for its upgrade.
+- The upgrade screen and changelog page render bold, code and links instead of raw Markdown.
+- Checking for APCu or Memcached no longer writes to the error log.
 - A seller's listing count goes down when a listing expires; the daily cron recounts it.
 - Upgrading on MariaDB 10.2 to 10.4 no longer stops at the utf8mb4 step.
 - Restoring a backup on MySQL 5.7 no longer fails on a large table.
