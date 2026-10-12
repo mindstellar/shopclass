@@ -188,6 +188,8 @@ pin('POST /admin/areas: 201, listed at once', [201, true], [$r->status(), in_arr
 pin('Location names the area, and a GET there reads it', ['http://localhost/api/v1/admin/areas/' . $area, 200, 'Old Town', 404], [
     $r->header('Location'), $call('GET', 'admin/areas/' . $area, null, $boss)->status(), $call('GET', 'admin/areas/' . $area, null, $boss)->body()['data']['name'] ?? null, $call('GET', 'admin/areas/99999', null, $boss)->status(),
 ]);
+$r = $call('POST', 'admin/areas', ['name' => 'Nowhere'], $boss);
+pin('an area with no city_id is 422, required at /city_id', [422, '/city_id', 'required'], [$r->status(), $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null]);
 pin('a moderator cannot read one', '403 insufficient_scope', api_admin_code($call('GET', 'admin/areas/' . $area, null, $mod)));
 pin('an unknown query parameter is 422, naming it', [422, '/bogus', 'query'], [
     $call('GET', 'admin/areas/' . $area, null, $boss, [], ['bogus' => '1'])->status(),
