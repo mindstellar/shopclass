@@ -151,6 +151,12 @@ if (!function_exists('osc_mark_response_cacheable')) {
         $GLOBALS['ws_events'][] = 'call osc_mark_response_cacheable';
     }
 }
+if (!function_exists('osc_send_response_cache_headers')) {
+    function osc_send_response_cache_headers()
+    {
+        $GLOBALS['ws_events'][] = 'call osc_send_response_cache_headers';
+    }
+}
 if (!function_exists('osc_locate_template')) {
     function osc_locate_template($candidates, $type = '')
     {

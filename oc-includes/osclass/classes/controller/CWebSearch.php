@@ -341,6 +341,8 @@ class CWebSearch extends BaseModel
     {
         if ($p_sFeed == '' || $p_sFeed === 'rss') {
             header('Content-type: text/xml; charset=utf-8');
+            osc_mark_response_cacheable();
+            osc_send_response_cache_headers();
 
             $feed = new RSSFeed();
             $feed->setTitle(__('Latest listings added') . ' - ' . osc_page_title());

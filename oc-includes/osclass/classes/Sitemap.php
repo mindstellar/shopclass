@@ -757,7 +757,19 @@ class Sitemap extends DAO
     private function serveRobots()
     {
         header('Content-Type: text/plain; charset=UTF-8');
+        $this->sendCacheHeaders();
         echo self::defaultRobotsTxt();
+    }
+
+    /**
+     * Public sitemap and robots.txt responses are cacheable like public pages.
+     *
+     * @return void
+     */
+    private function sendCacheHeaders()
+    {
+        osc_mark_response_cacheable();
+        osc_send_response_cache_headers();
     }
 
     /* ------------------------------------------------------------------ *
@@ -803,6 +815,7 @@ class Sitemap extends DAO
     {
         if ($output) {
             header('Content-Type: text/xml; charset=UTF-8');
+            $this->sendCacheHeaders();
             echo $xml;
         }
 
