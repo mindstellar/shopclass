@@ -59,13 +59,7 @@ final class PageTokens
      */
     public function issue(array $user): IssuedToken
     {
-        $now   = $this->clock->now();
-        $token = self::PREFIX . SignedPayload::pack(self::PURPOSE, [
-            'sub' => (int) $user['pk_i_id'],
-            'st'  => AuthStamp::fingerprint($user),
-        ], $this->ttl, 0, $now);
-
-        return new IssuedToken($token, $now + $this->ttl);
+        return $this->sign(self::PURPOSE, ['sub' => (int) $user['pk_i_id'], 'st' => AuthStamp::fingerprint($user)]);
     }
 
     /**
@@ -73,9 +67,7 @@ final class PageTokens
      */
     public function issueGuest(): IssuedToken
     {
-        $now = $this->clock->now();
-
-        return new IssuedToken(self::PREFIX . SignedPayload::pack(self::GUEST_PURPOSE, [], $this->ttl, 0, $now), $now + $this->ttl);
+        return $this->sign(self::GUEST_PURPOSE, []);
     }
 
     /**
@@ -85,59 +77,7 @@ final class PageTokens
      */
     public function issueAdmin(array $admin): IssuedToken
     {
-        $now   = $this->clock->now();
-        $token = self::PREFIX . SignedPayload::pack(self::ADMIN_PURPOSE, [
-            'adm' => (int) $admin['pk_i_id'],
-            'st'  => AuthStamp::fingerprint($admin),
-        ], $this->ttl, 0, $now);
-
-        return new IssuedToken($token, $now + $this->ttl);
-    }
-
-    /**
-     * A page token for the admin signed in on this admin request, or null when nobody is.
-     */
-    public function forAdmin(): ?IssuedToken
-    {
-        if (!osc_is_admin_user_logged_in()) {
-            return null;
-        }
-        $admin = \Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
-
-        return is_array($admin) && isset($admin['pk_i_id']) ? $this->issueAdmin($admin) : null;
-    }
-
-    /**
-     * Whether a token is an admin token this site made, expired or not.
-     */
-    public function isAdminToken(string $token): bool
-    {
-        return str_starts_with($token, self::PREFIX)
-            && SignedPayload::open(self::ADMIN_PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now()) !== null;
-    }
-
-    /**
-     * Whether an admin token was made for this admin and their current sign-out stamp.
-     *
-     * @param array<string,mixed> $admin the t_admin row the admin session names
-     *
-     * @return string VALID, EXPIRED or REFUSED
-     */
-    public function checkAdmin(string $token, array $admin): string
-    {
-        if (!str_starts_with($token, self::PREFIX)) {
-            return self::REFUSED;
-        }
-        $opened = SignedPayload::open(self::ADMIN_PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now());
-        $data   = $opened['data'] ?? null;
-        if ($data === null || !is_int($data['adm'] ?? null) || !is_string($data['st'] ?? null)
-            || $data['adm'] !== (int) ($admin['pk_i_id'] ?? 0)
-            || !hash_equals(AuthStamp::fingerprint($admin), $data['st'])
-        ) {
-            return self::REFUSED;
-        }
-
-        return $opened['expired'] ? self::EXPIRED : self::VALID;
+        return $this->sign(self::ADMIN_PURPOSE, ['adm' => (int) $admin['pk_i_id'], 'st' => AuthStamp::fingerprint($admin)]);
     }
 
     /**
@@ -146,24 +86,6 @@ final class PageTokens
     public function forPage(): IssuedToken
     {
         return $this->forWebUser() ?? $this->issueGuest();
-    }
-
-    /**
-     * Whether a token is a guest token this site made.
-     *
-     * @return string VALID, EXPIRED or REFUSED (also for a user's token)
-     */
-    public function checkGuest(string $token): string
-    {
-        if (!str_starts_with($token, self::PREFIX)) {
-            return self::REFUSED;
-        }
-        $opened = SignedPayload::open(self::GUEST_PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now());
-        if ($opened === null) {
-            return self::REFUSED;
-        }
-
-        return $opened['expired'] ? self::EXPIRED : self::VALID;
     }
 
     /**
@@ -181,6 +103,20 @@ final class PageTokens
     }
 
     /**
+     * A page token for the admin signed in on this admin page, or null when nobody is. An API call
+     * has no admin session loaded, so it checks the token with AdminSession instead.
+     */
+    public function forAdmin(): ?IssuedToken
+    {
+        if (!osc_is_admin_user_logged_in()) {
+            return null;
+        }
+        $admin = \Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
+
+        return is_array($admin) && isset($admin['pk_i_id']) ? $this->issueAdmin($admin) : null;
+    }
+
+    /**
      * Whether a token was made by this site for this user and their current password.
      *
      * @param array<string,mixed> $user the t_user row the sign-in cookie names
@@ -189,14 +125,76 @@ final class PageTokens
      */
     public function check(string $token, array $user): string
     {
-        if (!str_starts_with($token, self::PREFIX)) {
+        return $this->checkSubject(self::PURPOSE, 'sub', $token, $user);
+    }
+
+    /**
+     * Whether a token is a guest token this site made.
+     *
+     * @return string VALID, EXPIRED or REFUSED (also for a user's token)
+     */
+    public function checkGuest(string $token): string
+    {
+        $opened = $this->open(self::GUEST_PURPOSE, $token);
+        if ($opened === null) {
             return self::REFUSED;
         }
-        $opened = SignedPayload::open(self::PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now());
+
+        return $opened['expired'] ? self::EXPIRED : self::VALID;
+    }
+
+    /**
+     * Whether a token is an admin token this site made, expired or not.
+     */
+    public function isAdminToken(string $token): bool
+    {
+        return $this->open(self::ADMIN_PURPOSE, $token) !== null;
+    }
+
+    /**
+     * Whether an admin token was made for this admin and their current sign-out stamp.
+     *
+     * @param array<string,mixed> $admin the t_admin row the admin session names
+     *
+     * @return string VALID, EXPIRED or REFUSED
+     */
+    public function checkAdmin(string $token, array $admin): string
+    {
+        return $this->checkSubject(self::ADMIN_PURPOSE, 'adm', $token, $admin);
+    }
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    private function sign(string $purpose, array $data): IssuedToken
+    {
+        $now = $this->clock->now();
+
+        return new IssuedToken(self::PREFIX . SignedPayload::pack($purpose, $data, $this->ttl, 0, $now), $now + $this->ttl);
+    }
+
+    /**
+     * @return array{data: array<string,mixed>, expired: bool}|null null for another purpose, a forgery or damage
+     */
+    private function open(string $purpose, string $token): ?array
+    {
+        return str_starts_with($token, self::PREFIX)
+            ? SignedPayload::open($purpose, substr($token, strlen(self::PREFIX)), $this->clock->now())
+            : null;
+    }
+
+    /**
+     * Whether a token names this row, by its id under $key, and the row's current sign-out stamp.
+     *
+     * @param array<string,mixed> $row
+     */
+    private function checkSubject(string $purpose, string $key, string $token, array $row): string
+    {
+        $opened = $this->open($purpose, $token);
         $data   = $opened['data'] ?? null;
-        if ($data === null || !is_int($data['sub'] ?? null) || !is_string($data['st'] ?? null)
-            || $data['sub'] !== (int) ($user['pk_i_id'] ?? 0)
-            || !hash_equals(AuthStamp::fingerprint($user), $data['st'])
+        if ($data === null || !is_int($data[$key] ?? null) || !is_string($data['st'] ?? null)
+            || $data[$key] !== (int) ($row['pk_i_id'] ?? 0)
+            || !hash_equals(AuthStamp::fingerprint($row), $data['st'])
         ) {
             return self::REFUSED;
         }
