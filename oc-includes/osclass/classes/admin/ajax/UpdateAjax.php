@@ -25,8 +25,22 @@ use mindstellar\utility\AjaxResponse;
  */
 final class UpdateAjax extends AjaxHandler
 {
+    /** Answer quietly while new files wait for their database upgrade (the tables are not there yet). */
+    private static function skipWhileDatabaseBehind(): bool
+    {
+        if (!Osclass::databaseBehind()) {
+            return false;
+        }
+        AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => 0));
+
+        return true;
+    }
+
     public function checkVersion(): void
     {
+        if (self::skipWhileDatabaseBehind()) {
+            return;
+        }
         if (BuildInfo::isEdge()) {
             AjaxResponse::json(array('error' => 0, 'msg' => __('No update available')));
 
@@ -65,12 +79,18 @@ final class UpdateAjax extends AjaxHandler
 
     public function checkLanguages(): void
     {
+        if (self::skipWhileDatabaseBehind()) {
+            return;
+        }
         $total = _osc_check_languages_update();
         AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
     }
 
     public function checkThemes(): void
     {
+        if (self::skipWhileDatabaseBehind()) {
+            return;
+        }
         MarketAjax::refreshCatalogIfDue('theme');
         $total = _osc_check_themes_update();
         AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
@@ -78,6 +98,9 @@ final class UpdateAjax extends AjaxHandler
 
     public function checkPlugins(): void
     {
+        if (self::skipWhileDatabaseBehind()) {
+            return;
+        }
         MarketAjax::refreshCatalogIfDue('plugin');
         $total = _osc_check_plugins_update();
         AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
