@@ -3711,6 +3711,7 @@ msgstr ""
 msgid "Delete currency"
 msgstr ""
 
+#: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/fields/index.php
 msgid "Delete field"
 msgstr ""
