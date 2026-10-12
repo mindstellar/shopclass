@@ -695,6 +695,14 @@ function oc_install()
         );
     }
 
+    // The site language row is built from the language's files, so a language that is not on
+    // disk stops the install here, before any table is created.
+    if (!isset(osc_listLocales()[osc_current_admin_locale()]['locale_code'])) {
+        return array(
+            'error' => sprintf(__('The language %s is not installed.'), osc_esc_html(osc_current_admin_locale())),
+        );
+    }
+
     // A site that already has database settings installs only into that database. Without
     // this, a visitor who reached the form on a live site could point config.php at theirs.
     if (osc_is_configured() && !(($dbhost === DB_HOST || (defined('DB_PORT') && $dbhost === DB_HOST . ':' . DB_PORT))

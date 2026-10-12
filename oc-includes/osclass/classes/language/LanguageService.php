@@ -30,7 +30,7 @@ final class LanguageService
     public const IS_CURRENT = 'current';
 
     /** Translation files a language is installed with, fetched from the i18n repository. */
-    public const FILES = array('theme.po', 'core.po', 'messages.po', 'theme.mo', 'core.mo', 'messages.mo');
+    public const FILES = array('locale.json', 'mail.json', 'theme.po', 'core.po', 'messages.po', 'theme.mo', 'core.mo', 'messages.mo');
 
     public function __construct(private OSCLocale $locales, private Page $pages)
     {

@@ -750,7 +750,12 @@ class Page extends DAO
             return false;
         }
 
+        // A translation can still carry a template for a page this version no longer has.
+        $pages = array_map('strval', array_column(Db::table($this->getTableName())->select('pk_i_id')->get(), 'pk_i_id'));
         foreach ($templates as $template) {
+            if (!in_array((string) $template['fk_i_page_id'], $pages, true)) {
+                continue;
+            }
             $result = $this->updateDescription($template['fk_i_page_id'], $language, $template['s_title'], $template['s_description']);
             if (!$result) {
                 $errorPageIds [] = $template['fk_i_page_id'];

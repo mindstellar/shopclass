@@ -16,6 +16,7 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
 use mindstellar\database\Db;
+use mindstellar\language\LanguageService;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
@@ -300,6 +301,26 @@ class Cli
         if (!defined('REL_WEB_URL')) {
             $path = parse_url($webUrl, PHP_URL_PATH);
             define('REL_WEB_URL', ($path === null || $path === '') ? '/' : $path);
+        }
+
+        // A language that is not bundled is downloaded first, as the web installer does.
+        if (!isset(osc_listLocales()[$locale])) {
+            $published = preg_match('/^[a-z]{2,3}(_[A-Z]{2})?$/D', (string) $locale) ? LanguageService::published() : array();
+            if (!isset($published[$locale])) {
+                $this->err(sprintf(
+                    "The language %s is not bundled and %s.\n",
+                    $locale,
+                    $published === null ? 'the translation repository could not be reached' : 'is not published in the translation repository'
+                ));
+
+                return 2;
+            }
+            $this->out(sprintf("Downloading the %s language\n", $locale));
+            if (LanguageService::downloadFiles($locale) === null || !isset(osc_listLocales()[$locale])) {
+                $this->err(sprintf("Could not download the %s language. Check that %s is writable.\n", $locale, osc_translations_path()));
+
+                return 1;
+            }
         }
 
         // Locale for the seeded site language and admin, mirroring the GUI installer.

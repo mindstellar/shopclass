@@ -124,6 +124,16 @@ $manifest = array(
 check('an install with no mail.json succeeds', $service->install($manifest, 'dd_DD', false));
 pin('...and adds the row, on for oc-admin only', array('0', '1'), array((string) $row('dd_DD')['b_enabled'], (string) $row('dd_DD')['b_enabled_bo']));
 check('an unreadable mail.json is reported', !$service->install($manifest, 'dd_DD', 'not json'));
+$logged  = ini_get('error_log');
+$log     = tempnam(sys_get_temp_dir(), 'osc-mail-');
+ini_set('error_log', $log);
+$mail = json_encode(array('language' => 'dd_DD', 'template' => array(
+    array('fk_i_page_id' => 999999, 's_title' => 'Gone', 's_description' => 'A page this version no longer has'),
+)));
+check('a template for a page that does not exist is skipped', $service->install($manifest, 'dd_DD', $mail));
+pin('...with no failed query', '', (string) file_get_contents($log));
+ini_set('error_log', (string) $logged);
+@unlink($log);
 
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php');
 check(
@@ -148,7 +158,7 @@ pin('an unreadable list is null', null, LanguageService::published(static fn () 
 
 $asked = array();
 pin('one file that will not download is counted', 1, LanguageService::downloadFiles('ff_FF', $fetch));
-pin('...each of the six files is asked for, under the code', array_map(static fn (string $f): string => 'src/translations/ff_FF/' . $f, array('theme.po', 'core.po', 'messages.po', 'theme.mo', 'core.mo', 'messages.mo')), array_map(static fn (string $u): string => substr($u, (int) strpos($u, 'src/translations/')), $asked));
+pin('...each file is asked for under the code, the language\'s description and mail templates too', array_map(static fn (string $f): string => 'src/translations/ff_FF/' . $f, array('locale.json', 'mail.json', 'theme.po', 'core.po', 'messages.po', 'theme.mo', 'core.mo', 'messages.mo')), array_map(static fn (string $u): string => substr($u, (int) strpos($u, 'src/translations/')), $asked));
 pin('...and the others are written into the language folder', 'body of core.po', file_get_contents(osc_translations_path() . 'ff_FF/core.po'));
 check('...the missing one is not', !is_file(osc_translations_path() . 'ff_FF/core.mo'));
 osc_deleteDir(osc_translations_path() . 'ff_FF');
