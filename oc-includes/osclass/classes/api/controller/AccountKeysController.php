@@ -65,6 +65,7 @@ final class AccountKeysController
         $user   = ProblemException::found($this->users->find($userId), 'user');
         $input  = $call->input();
         $scopes = (array) ($input['scopes'] ?? []);
+        $this->keys->checkKnown($scopes);
         $call->credential()->checkGrant($scopes);
         $issued = $this->keys->create(
             $user,

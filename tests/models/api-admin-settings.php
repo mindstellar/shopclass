@@ -143,7 +143,7 @@ pin('a key cannot grant a scope it lacks', '403 forbidden', api_admin_code($call
 pin('a key can make a public key with a scope it holds', [201, 'public', ['listings:read']], (static fn (Response $r): array => [$r->status(), $r->body()['data']['kind'] ?? null, $r->body()['data']['scopes'] ?? null])(
     $call('POST', 'admin/keys', ['name' => 'Mobile app', 'kind' => 'public'], $keyMaker)
 ));
-pin('an unknown scope is refused', 403, $call('POST', 'admin/keys', ['name' => 'Typo', 'scopes' => ['admin:everything']], $boss)->status());
+pin('an unknown scope is 422', 422, $call('POST', 'admin/keys', ['name' => 'Typo', 'scopes' => ['admin:everything']], $boss)->status());
 pin('a past expiry is 422', 422, $call('POST', 'admin/keys', ['name' => 'Old', 'scopes' => ['admin:listings'], 'expires_at' => '2020-01-01'], $boss)->status());
 $at = gmdate('Y-m-d\TH:i:s\Z', time() + 7200);
 $r  = $call('POST', 'admin/keys', ['name' => 'Timed', 'scopes' => ['admin:listings'], 'expires_at' => $at], $boss);

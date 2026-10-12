@@ -62,6 +62,7 @@ final class AdminKeysController
         if ($scopes === [] && $kind === CredentialKind::PUBLIC) {
             $scopes = [Scopes::PUBLIC_READ];
         }
+        $this->keys->checkKnown($scopes);
         $credential->checkGrant($scopes);
         $issued = $this->keys->create(
             KeyOwner::admin((int) $credential->adminId(), $credential->isModerator()),

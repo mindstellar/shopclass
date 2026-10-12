@@ -15,6 +15,7 @@ namespace mindstellar\apikey;
 use mindstellar\auth\AdminStore;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\exception\RefusedException;
 use mindstellar\user\UserStore;
@@ -36,6 +37,23 @@ final class ApiKeyService
 
     public function __construct(private ApiKeys $keys, private SignInStore $store, private Scopes $scopes, private Clock $clock)
     {
+    }
+
+    /**
+     * Refuse a scope this site does not know, before anyone asks whether the caller holds it.
+     *
+     * @param array<mixed> $scopes
+     *
+     * @throws InvalidException naming the first scope that is not known
+     */
+    public function checkKnown(array $scopes): void
+    {
+        $known = $this->scopes->all();
+        foreach (array_values($scopes) as $i => $scope) {
+            if (is_string($scope) && $scope !== '' && !isset($known[$scope])) {
+                throw new InvalidException('/scopes/' . $i, 'unknown', sprintf(_m('%s is not a scope of this site'), $scope));
+            }
+        }
     }
 
     /**

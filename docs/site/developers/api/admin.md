@@ -190,7 +190,7 @@ curl -X PATCH $API/admin/settings -H "Authorization: Bearer $KEY" \
 | `DELETE /admin/keys/{id}` | Revoke. Not another admin's own key: that answers `403 not_owner`. |
 
 A key made here belongs to the admin who owns the calling key. It cannot hold a scope the
-calling key lacks: `403` with the scopes named.
+calling key lacks: `403` with the scopes named. A scope the site does not know is a `422` on `/scopes/<n>`.
 
 Unlike the screen, these calls do not ask for a password. The key is the proof.
 

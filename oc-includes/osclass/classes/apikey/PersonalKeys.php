@@ -78,6 +78,16 @@ final class PersonalKeys
     }
 
     /**
+     * @param array<mixed> $scopes
+     *
+     * @throws InvalidException for a scope this site does not know
+     */
+    public function checkKnown(array $scopes): void
+    {
+        $this->keyService->checkKnown($scopes);
+    }
+
+    /**
      * Make a key after checking the password again.
      *
      * @param array<string,mixed> $user    the t_user row
