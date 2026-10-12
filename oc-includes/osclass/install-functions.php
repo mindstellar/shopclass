@@ -699,7 +699,7 @@ function oc_install()
     // disk stops the install here, before any table is created.
     if (!isset(osc_listLocales()[osc_current_admin_locale()]['locale_code'])) {
         return array(
-            'error' => sprintf(__('The language %s is not installed.'), osc_esc_html(osc_current_admin_locale())),
+            'error' => sprintf(__('The language %s is not installed.'), osc_current_admin_locale()),
         );
     }
 
@@ -835,7 +835,7 @@ function oc_install()
 
     $locales = osc_listLocales();
     $values  = array(
-        'pk_c_code'         => $locales[osc_current_admin_locale()]['locale_code'],
+        'pk_c_code'         => osc_current_admin_locale(),
         's_name'            => $locales[osc_current_admin_locale()]['name'],
         's_short_name'      => $locales[osc_current_admin_locale()]['short_name'],
         's_description'     => $locales[osc_current_admin_locale()]['description'],
