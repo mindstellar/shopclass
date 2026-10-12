@@ -492,9 +492,7 @@ class CAdminItems extends AdminSecBaseModel
             $this->drawSettings($result['values']);
             return;
         }
-        if ($result['updated'] > 0) {
-            osc_add_flash_ok_message(_m("Listings' settings have been updated"), 'admin');
-        }
+        osc_add_flash_ok_message(_m("Listings' settings have been updated"), 'admin');
         $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=settings');
     }
 
