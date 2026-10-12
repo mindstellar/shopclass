@@ -607,6 +607,10 @@ msgstr ""
 msgid "1 widget"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "100 is solid. Lower lets the photo show through the mark."
+msgstr ""
+
 #: oc-admin/themes/modern/users/frm.php
 msgid "<b>Categories:</b> %s"
 msgstr ""
@@ -1934,14 +1938,6 @@ msgid ""
 "backend. "
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Background Color"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Background Hexadecimal color value"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Background jobs are running normally."
 msgstr ""
@@ -2149,6 +2145,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Books - Magazines"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Bottom Centre"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -4047,6 +4047,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid "Drag to reorder, or focus and use the arrow keys"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Drawn around the text, so it reads on light and dark photos."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -6808,6 +6812,14 @@ msgstr ""
 msgid "Met"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Middle Left"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Middle Right"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/storage.php
 msgid "Migration"
 msgstr ""
@@ -7948,6 +7960,10 @@ msgstr ""
 msgid "Only the first %s are shown. Type more of the name to narrow it."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Opacity"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/credits.php
 msgid "Open"
 msgstr ""
@@ -8075,6 +8091,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "Other themes"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Outline Color"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -10804,18 +10824,6 @@ msgstr ""
 msgid "Text Color"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Text angle"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Text offset_x"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Text offset_y"
-msgstr ""
-
 #: oc-admin/themes/modern/functions.php
 msgid "Thank you for using <a href=\"%s\" target=\"_blank\">Shopclass</a>"
 msgstr ""
@@ -11922,6 +11930,10 @@ msgstr ""
 msgid "Tickets"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Tiled across the photo"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Time"
 msgstr ""
@@ -12037,6 +12049,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid "Tools > Backup and restore"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Top Centre"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -12944,10 +12960,6 @@ msgid "Watermark"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Watermark Height"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Watermark Image Settings"
 msgstr ""
 
@@ -12957,10 +12969,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Watermark Text Settings"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Watermark Width"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -13893,10 +13901,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "previously approved comments"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "px"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php

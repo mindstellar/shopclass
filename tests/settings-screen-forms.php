@@ -737,15 +737,11 @@ pin(
         'use_imagick'           => 'osclass/use_imagick',
         'watermark_type'        => '(not stored)',
         'watermark_text'        => 'osclass/watermark_text',
-        'watermark_width'       => '(not stored)',
-        'watermark_height'      => '(not stored)',
-        'text_offset_x'         => '(not stored)',
-        'text_offset_y'         => '(not stored)',
-        'text_angle'            => '(not stored)',
         'watermark_text_color'  => 'osclass/watermark_text_color',
         'background_color'      => '(not stored)',
         'watermark_text_place'  => 'osclass/watermark_place',
         'watermark_image_place' => 'osclass/watermark_place',
+        'watermark_opacity'     => 'osclass/watermark_opacity',
     ),
     keymap(MediaSettingsScreen::register())
 );
@@ -1433,7 +1429,7 @@ pin('the media screen is drawn', array('settings/media.php'), $run['views']);
 check('with an image set, Image is the type shown', strpos($run['drawn'], 'id="watermark_image" name="watermark_type" value="image" checked') !== false);
 check('its block is drawn open', strpos($run['drawn'], 'id="watermark_image_box" data-osc-depends="watermark_type" data-osc-depends-value="[&quot;image&quot;]">') !== false);
 check('and the text block hidden', strpos($run['drawn'], 'id="watermark_text_box" class="table-backoffice-form" data-osc-depends="watermark_type" data-osc-depends-value="[&quot;text&quot;]" hidden>') !== false);
-check('the text options show their defaults before any are saved', strpos($run['drawn'], 'name="watermark_width" class="input-text field-num" value="200"') !== false);
+check('the outline colour shows its default before any is saved', strpos($run['drawn'], 'name="background_color"') !== false && strpos($run['drawn'], 'value="#000000"') !== false);
 
 $media = array(
     'dimThumbnail'         => '240X200',
@@ -1447,12 +1443,8 @@ $media = array(
     'watermark_type'       => 'text',
     'watermark_text'       => 'Hello <b>there</b>',
     'watermark_text_color' => '#ff0000',
-    'watermark_width'      => '150',
-    'watermark_height'     => '40',
-    'text_offset_x'        => '5',
-    'text_offset_y'        => '',
-    'text_angle'           => '15',
     'background_color'     => '#00ff00',
+    'watermark_opacity'    => '150',
     'watermark_text_place' => 'br',
     'watermark_image_place' => 'tl',
 );
@@ -1477,11 +1469,14 @@ pin('and its colour', array('#ff0000', 'STRING'), pref($admin, 'watermark_text_c
 pin('the text position, not the image one', array('br', 'STRING'), pref($admin, 'watermark_place'));
 pin('and clears the image', array('', 'STRING'), pref($admin, 'watermark_image'));
 pin(
-    'the text options land as one JSON object, the key order and the int casts as they were',
-    array('{"watermark_width":150,"watermark_height":40,"text_offset_x":5,"text_offset_y":0,"text_angle":15,"background_color":"#00ff00"}', 'STRING'),
+    'the text options land as one JSON object',
+    array('{"background_color":"#00ff00"}', 'STRING'),
     pref($admin, 'watermark_text_options')
 );
-foreach (array('watermark_type', 'watermark_width', 'text_angle', 'background_color', 'watermark_text_place', 'watermark_image_place') as $control) {
+pin('the opacity is held to 100%', '100', pref($admin, 'watermark_opacity')[0]);
+drive('CAdminSettingsMedia', 'media_post', array('watermark_opacity' => '') + $media);
+pin('an empty opacity saves as solid, not the lowest', '100', pref($admin, 'watermark_opacity')[0]);
+foreach (array('watermark_type', 'background_color', 'watermark_text_place', 'watermark_image_place') as $control) {
     check('"' . $control . '" is stored in no preference row of its own', pref($admin, $control) === null);
 }
 
@@ -1490,7 +1485,7 @@ pin('no watermark clears the text', array('', 'STRING'), pref($admin, 'watermark
 pin('its colour', array('', 'STRING'), pref($admin, 'watermark_text_color'));
 pin('and the image', array('', 'STRING'), pref($admin, 'watermark_image'));
 pin('and writes no position', array('br', 'STRING'), pref($admin, 'watermark_place'));
-pin('nor the text options', '{"watermark_width":150,"watermark_height":40,"text_offset_x":5,"text_offset_y":0,"text_angle":15,"background_color":"#00ff00"}', pref($admin, 'watermark_text_options')[0]);
+pin('nor the text options', '{"background_color":"#00ff00"}', pref($admin, 'watermark_text_options')[0]);
 
 /** A file as PHP hands a POST upload to the request: marked as received, then described. */
 function upload(string $bytes, int $error = UPLOAD_ERR_OK, bool $received = true): array
@@ -2121,7 +2116,7 @@ $screens = array(
     ),
     'settings/media.php'        => array(
         'CAdminSettingsMedia.php',
-        array('dimThumbnail', 'maxSizeKb', 'jpeg_quality', 'use_imagick', 'watermark_type', 'watermark_text', 'watermark_text_place', 'watermark_image_place', 'background_color', 'text_angle', 'watermark_image'),
+        array('dimThumbnail', 'maxSizeKb', 'jpeg_quality', 'use_imagick', 'watermark_type', 'watermark_text', 'watermark_text_place', 'watermark_image_place', 'background_color', 'watermark_opacity', 'watermark_image'),
     ),
     // The Better S3 adoption writes the same keys the form does, so its allowance is the case
     // it lives in, never a key name: a key-name allowance would hide the same write anywhere.

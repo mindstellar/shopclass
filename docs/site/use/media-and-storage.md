@@ -82,10 +82,16 @@ The photo count per listing is set separately, in **Listings → Settings**.
 ShopClass can watermark uploaded images with **text** or with an **image**,
 configured separately.
 
+- **Text** is drawn in its colour with an outline in the **Outline Color**, so
+  it reads on light and dark photos.
+- **Position** is one of nine places (corners, edge centres and the centre), or
+  **Tiled across the photo**: a repeated pattern that cropping cannot remove.
+- **Opacity** from 10% to 100%. Lower lets the photo show through the mark.
+
 Watermarking is applied as images are processed, so it affects new uploads.
 Each size gets its own mark: it is drawn for the normal size, scaled down for
 the preview and thumbnail, and never covers more than 40% of a photo's width
-or height. A corner mark sits a little in from the edge. A mark too small to
+or height. A mark on an edge sits a little in from it. A mark too small to
 read is left off.
 
 Existing photos change only when you regenerate them, and only if **Keep the
@@ -94,7 +100,8 @@ copy, a regenerated photo keeps its old mark, shrunk with the photo.
 
 A watermark discourages your listings being scraped and re-posted elsewhere.
 Keep it small and in a corner: a watermark across the middle of the photo
-devalues the listing for the seller who posted it.
+devalues the listing for the seller who posted it. If you use the centre or the
+tiled pattern, lower the opacity so the photo still shows.
 
 ## Offloading to S3-compatible storage
 

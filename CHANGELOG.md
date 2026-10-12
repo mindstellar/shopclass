@@ -12,6 +12,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
 
+- Watermark opacity, four more positions (top, bottom, left and right centre) and a tiled pattern; a text mark has an outline instead of a solid box.
 - **REST API** at `/api/v1` for listings, categories, custom fields, locations, currencies and profiles, with API keys, paging and an OpenAPI description. See [REST API](https://shopclass.org/docs/developers/api/).
 - People can sign in through the API, then post, edit and delete listings, upload photos, comment and save searches. A retried request with an `Idempotency-Key` is never done twice.
 - Admin keys manage listings, comments, users, categories, settings, keys and the job queue through `/api/v1/admin/`; moderator keys reach listings and comments only.
@@ -35,6 +36,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Breaking
 
+- The text watermark's width, height and offset settings are gone; the mark is sized to its text. `createWatermarkImageFromText()` reads only `background_color` (now the outline colour) from its options.
 - The live listing count of each country, region, city and category is now an `i_num_items` column on `t_country`, `t_region`, `t_city` and `t_category`; the four `t_*_stats` tables are gone. `CityStats` and the other stats classes keep their own methods; the methods they inherit from `DAO` no longer work.
 - `t_category_slug_history` and `t_location_slug_history` are now one table, `t_slug_history`, with an `e_type` column (`CATEGORY`, `REGION` or `CITY`).
 - Saved-search alerts go out daily or weekly; hourly alerts become daily on upgrade. `hook_alert_email_hourly` no longer fires.

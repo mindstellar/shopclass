@@ -1414,6 +1414,16 @@ function osc_watermark_place()
 }
 
 /**
+ * How opaque the watermark is, in percent: 10 to 100, and 100 when unset.
+ *
+ * @return int
+ */
+function osc_watermark_opacity(): int
+{
+    return ImageProcessing::watermarkOpacity(getPreference('watermark_opacity'));
+}
+
+/**
  * Return subdomain type
  *
  * @return string

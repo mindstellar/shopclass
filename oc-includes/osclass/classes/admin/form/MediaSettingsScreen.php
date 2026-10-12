@@ -41,13 +41,8 @@ final class MediaSettingsScreen extends SettingsScreen
     /** Width x height, lower-cased, both above 0: what ImageProcessing::parseSize() accepts. */
     private const DIMENSION = '/^[1-9][0-9]*x[1-9][0-9]*$/';
 
-    /** The text options JSON, each with what a missing or zero entry reads as. */
+    /** The text options JSON, each with what a missing or empty entry reads as. */
     private const TEXT_OPTIONS = array(
-        'watermark_width'  => 200,
-        'watermark_height' => 30,
-        'text_offset_x'    => 0,
-        'text_offset_y'    => null,
-        'text_angle'       => 0,
         'background_color' => '#000000',
     );
 
@@ -63,11 +58,16 @@ final class MediaSettingsScreen extends SettingsScreen
         $gd       = function_exists('gd_info') ? gd_info() : array();
         $freeType = array_key_exists('FreeType Support', $gd);
         $places   = array(
-            'centre' => __('Centre'),
             'tl'     => __('Top Left'),
+            'tc'     => __('Top Centre'),
             'tr'     => __('Top Right'),
+            'ml'     => __('Middle Left'),
+            'centre' => __('Centre'),
+            'mr'     => __('Middle Right'),
             'bl'     => __('Bottom Left'),
+            'bc'     => __('Bottom Centre'),
             'br'     => __('Bottom Right'),
+            'tile'   => __('Tiled across the photo'),
         );
 
         $form = CoreSettings::page(self::PAGE_ID, __('Media Settings'))
@@ -176,23 +176,11 @@ final class MediaSettingsScreen extends SettingsScreen
         $form
             ->text('watermark_text', __('Watermark Text'))
                 ->dependsOn(self::TYPE, 'text');
-        self::textOption($form, 'watermark_width', __('Watermark Width'));
-        self::textOption($form, 'watermark_height', __('Watermark Height'));
-        self::textOption($form, 'text_offset_x', __('Text offset_x'));
-        self::textOption($form, 'text_offset_y', __('Text offset_y'));
         $form
-            // Nothing on screen sets the angle, so the stored one is carried through a save
-            // rather than reset to zero.
-            ->hidden('text_angle', __('Text angle'))
-                ->dependsOn(self::TYPE, 'text')
-                ->persist(false)
-                ->sanitize(static function ($value) {
-                    return (int)$value;
-                })
             ->color('watermark_text_color', __('Text Color'))
                 ->set('id', 'colorpickerField1')
                 ->dependsOn(self::TYPE, 'text')
-            ->color('background_color', __('Background Color'), __('Background Hexadecimal color value'))
+            ->color('background_color', __('Outline Color'), __('Drawn around the text, so it reads on light and dark photos.'))
                 ->set('id', 'colorpickerField2')
                 ->dependsOn(self::TYPE, 'text')
                 ->persist(false)
@@ -232,6 +220,16 @@ final class MediaSettingsScreen extends SettingsScreen
         self::boxClose($form, 'image');
 
         $form
+            ->number('watermark_opacity', __('Opacity'), __('100 is solid. Lower lets the photo show through the mark.'))
+                ->set('min', \ImageProcessing::WATERMARK_OPACITY_MIN)
+                ->set('max', 100)
+                ->set('step', 5)
+                ->suffix('%')
+                ->default(100)
+                ->dependsOn(self::TYPE, array('text', 'image'))
+                ->sanitize(static function ($value) {
+                    return \ImageProcessing::watermarkOpacity($value);
+                })
             ->custom('watermark_clear', static function () {
                 echo '<div class="clear"></div>';
             })
@@ -377,27 +375,6 @@ final class MediaSettingsScreen extends SettingsScreen
     }
 
     /**
-     * One number of the text options JSON: whole, and stored in the JSON rather than on its own.
-     *
-     * @param FormSpec $form
-     * @param string   $name
-     * @param string   $label
-     *
-     * @return void
-     */
-    private static function textOption(FormSpec $form, string $name, string $label): void
-    {
-        $form->number($name, $label)
-            ->set('step', 1)
-            ->suffix(__('px'))
-            ->dependsOn(self::TYPE, 'text')
-            ->persist(false)
-            ->sanitize(static function ($value) {
-                return (int)$value;
-            });
-    }
-
-    /**
      * Open a watermark block: the div the screen has always shown and hidden, now by the
      * shared conditional-field attribute, and its heading.
      *
@@ -451,19 +428,21 @@ final class MediaSettingsScreen extends SettingsScreen
         if (!osc_is_watermark_text() || !osc_watermark_text_color()) {
             return;
         }
+        $path = \ImageProcessing::createWatermarkImageFromText(osc_watermark_text(), osc_watermark_text_color());
+        if ($path === '') {
+            return;
+        }
         osc_admin_form_row_open(__('Preview Watermark'));
-        \ImageProcessing::createWatermarkImageFromText(osc_watermark_text(), osc_watermark_text_color());
         echo '<div class="help-box"><img src="'
-             . osc_base_url() . str_replace(osc_base_path(), '', osc_uploads_path())
-             . \Preference::getInstance()->get('watermark_text_image_name') . '"/></div>';
+             . osc_esc_html(osc_base_url() . str_replace(osc_base_path(), '', $path)) . '"/></div>';
         osc_admin_form_row_close();
     }
 
     /**
-     * The text options as the form shows them: the stored JSON, with a missing or zero entry
-     * read as its default and the y offset defaulting to the height.
+     * The text options as the form shows them: the stored JSON, with a missing or empty entry
+     * read as its default.
      *
-     * @return array<string,int|string>
+     * @return array<string,string>
      */
     private static function textOptions(): array
     {
@@ -471,9 +450,7 @@ final class MediaSettingsScreen extends SettingsScreen
         $stored  = is_array($stored) ? $stored : array();
         $options = array();
         foreach (self::TEXT_OPTIONS as $name => $default) {
-            $options[$name] = empty($stored[$name])
-                ? ($default ?? $options['watermark_height'])
-                : ($name === 'background_color' ? (string)$stored[$name] : (int)$stored[$name]);
+            $options[$name] = empty($stored[$name]) ? $default : (string)$stored[$name];
         }
 
         return $options;
@@ -581,7 +558,7 @@ final class MediaSettingsScreen extends SettingsScreen
                 osc_set_preference('watermark_image', '');
                 $options = array();
                 foreach (array_keys(self::TEXT_OPTIONS) as $name) {
-                    $options[$name] = $values[$name] ?? ($name === 'background_color' ? '' : 0);
+                    $options[$name] = (string)($values[$name] ?? '');
                 }
                 osc_set_preference('watermark_text_options', json_encode($options));
                 break;

@@ -33,6 +33,16 @@ class ImageProcessing
     /** Below this many pixels on either side the watermark is left off. */
     private const WATERMARK_MIN = 8;
 
+    /** The largest share of a photo's width or height one tile of a tiled watermark may cover. */
+    private const WATERMARK_TILE = 0.25;
+
+    /** Tiles repeat every 1.5 mark widths across and 2.5 mark heights down. */
+    private const WATERMARK_TILE_STEP_X = 1.5;
+    private const WATERMARK_TILE_STEP_Y = 2.5;
+
+    /** The lowest watermark opacity, in percent; 100 is solid. */
+    public const WATERMARK_OPACITY_MIN = 10;
+
     /** The gap between a corner mark and the photo's edge, as a share of its shorter side. */
     private const WATERMARK_GAP = 0.02;
 
@@ -655,43 +665,47 @@ class ImageProcessing
         ?string $box = null
     ) {
         $this->watermarked = true;
-        if ($watermark_text !== null && $watermark_text) {
-            $path_watermark = osc_uploads_path() . Preference::getInstance()->get('watermark_text_image_name');
-            if (!file_exists($path_watermark)) {
-                $path_watermark = self::createWatermarkImageFromText(
-                    $watermark_text,
-                    $font_color,
-                    $font_size,
-                    $aOptions
-                );
-            }
-        } else {
-            $path_watermark = osc_uploads_path() . 'watermark.png';
+        $path    = $watermark_text !== null && $watermark_text !== ''
+            ? self::createWatermarkImageFromText($watermark_text, $font_color, $font_size, $aOptions)
+            : osc_uploads_path() . 'watermark.png';
+        if ($path === '' || !is_file($path)) {
+            return $this;
         }
+        $tiled   = osc_watermark_place() === 'tile';
+        $opacity = osc_watermark_opacity();
 
         if ($this->use_imagick) {
-            $wm   = new Imagick('png:' . $path_watermark);
+            $wm   = new Imagick('png:' . $path);
             $geo  = $wm->getImageGeometry();
-            $size = $this->watermarkSize($geo['width'], $geo['height'], $box);
+            $size = $this->watermarkSize($geo['width'], $geo['height'], $box, $tiled);
             if ($size !== null) {
                 $wm->resizeImage($size[0], $size[1], Imagick::FILTER_LANCZOS, 1);
-                $this->calculateWatermarkPosition($size[0], $size[1], $dest_x, $dest_y);
-                $this->im->compositeImage($wm, imagick::COMPOSITE_OVER, (int)$dest_x, (int)$dest_y);
+                if ($opacity < 100) {
+                    $wm->setImageAlphaChannel(Imagick::ALPHACHANNEL_SET);
+                    $wm->evaluateImage(Imagick::EVALUATE_MULTIPLY, $opacity / 100, Imagick::CHANNEL_ALPHA);
+                }
+                foreach ($this->watermarkSpots($size[0], $size[1], $tiled) as [$x, $y]) {
+                    $this->im->compositeImage($wm, Imagick::COMPOSITE_OVER, $x, $y);
+                }
             }
             $wm->destroy();
         } else {
-            $watermark = imagecreatefrompng($path_watermark);
-            $size      = $watermark === false ? null : $this->watermarkSize(imagesx($watermark), imagesy($watermark), $box);
+            $watermark = imagecreatefrompng($path);
+            $size      = $watermark === false ? null : $this->watermarkSize(imagesx($watermark), imagesy($watermark), $box, $tiled);
             if ($size !== null) {
                 $scaled = imagecreatetruecolor($size[0], $size[1]);
                 imagealphablending($scaled, false);
                 imagesavealpha($scaled, true);
                 imagefill($scaled, 0, 0, imagecolorallocatealpha($scaled, 0, 0, 0, 127));
                 imagecopyresampled($scaled, $watermark, 0, 0, 0, 0, $size[0], $size[1], imagesx($watermark), imagesy($watermark));
+                if ($opacity < 100) {
+                    imagefilter($scaled, IMG_FILTER_COLORIZE, 0, 0, 0, (int)round(127 * (100 - $opacity) / 100));
+                }
 
-                $this->calculateWatermarkPosition($size[0], $size[1], $dest_x, $dest_y);
                 imagealphablending($this->im, true);
-                imagecopy($this->im, $scaled, (int)$dest_x, (int)$dest_y, 0, 0, $size[0], $size[1]);
+                foreach ($this->watermarkSpots($size[0], $size[1], $tiled) as [$x, $y]) {
+                    imagecopy($this->im, $scaled, $x, $y, 0, 0, $size[0], $size[1]);
+                }
                 imagealphablending($this->im, false);
                 imagesavealpha($this->im, true);
             }
@@ -705,12 +719,14 @@ class ImageProcessing
      * drawn for the normal size box, scales down with smaller sizes, and never covers more
      * than WATERMARK_MAX of the photo's width or height.
      *
-     * @param string|null $box the normal size box, "WxH"; null reads the site's setting
+     * @param string|null $box   the normal size box, "WxH"; null reads the site's setting
+     * @param bool        $tiled a tile is held to WATERMARK_TILE instead
      *
      * @return array{0:int,1:int}|null
      */
-    private function watermarkSize(int $width, int $height, ?string $box): ?array
+    private function watermarkSize(int $width, int $height, ?string $box, bool $tiled = false): ?array
     {
+        $max = $tiled ? self::WATERMARK_TILE : self::WATERMARK_MAX;
         if ($width < 1 || $height < 1) {
             return null;
         }
@@ -718,12 +734,22 @@ class ImageProcessing
         $scale = min(
             1.0,
             max($this->width / $boxWidth, $this->height / $boxHeight),
-            self::WATERMARK_MAX * $this->width / $width,
-            self::WATERMARK_MAX * $this->height / $height
+            $max * $this->width / $width,
+            $max * $this->height / $height
         );
         $size = array((int)round($width * $scale), (int)round($height * $scale));
 
         return $size[0] < self::WATERMARK_MIN || $size[1] < self::WATERMARK_MIN ? null : $size;
+    }
+
+    /**
+     * A watermark opacity held between WATERMARK_OPACITY_MIN and 100; empty reads as 100.
+     *
+     * @param mixed $value
+     */
+    public static function watermarkOpacity($value): int
+    {
+        return $value === '' || $value === null ? 100 : max(self::WATERMARK_OPACITY_MIN, min(100, (int)$value));
     }
 
     /**
@@ -750,22 +776,16 @@ class ImageProcessing
     }
 
     /**
-     * Create and return watermark image from text
+     * Draw the text watermark as a PNG: the text in its colour with an outline, on a see-through
+     * background cut close around it. The same text drawn before is not drawn again.
      *
      * @param string                   $watermark_text
      * @param string|null              $font_color Hex colour, '#' optional
      * @param int|null                 $font_size
-     * @param array<string,mixed>|null $aOptions   See below
-     *                         array[]
-     *                         ['watermark_width']  int value for watermark width
-     *                         ['watermark_height'] int value for watermark height
-     *                         ['text_offset_x']    int x position of text
-     *                         ['text_offset_y']    int y position of text
-     *                         ['text_angle']       int angle for text
-     *                         ['background_color'] string hexadecimal color value
+     * @param array<string,mixed>|null $aOptions   ['background_color'] the outline colour, hex;
+     *                                             null reads the stored options
      *
-     * @return string Return PNG image path
-     * @throws \ImagickException
+     * @return string the PNG's path, or '' when neither GD with FreeType nor ImageMagick can draw text
      */
     public static function createWatermarkImageFromText(
         $watermark_text,
@@ -779,103 +799,121 @@ class ImageProcessing
         if ($font_size === null) {
             $font_size = Plugins::applyFilter('watermark_font_size', 30);
         }
-        if ($font_color === null) {
-            $font_color = 'ff0000';
-        }
-
+        $font_size  = max(1, (int)$font_size);
+        $font_color = $font_color === null || $font_color === '' ? 'ff0000' : (string)$font_color;
         if ($aOptions === null) {
-            $aOptions = json_decode(Preference::getInstance()->get('watermark_text_options'), true);
+            $aOptions = json_decode((string)Preference::getInstance()->get('watermark_text_options'), true);
+        }
+        $outline = is_array($aOptions) && !empty($aOptions['background_color']) ? (string)$aOptions['background_color'] : '#000000';
+        $text    = html_entity_decode((string)$watermark_text, ENT_QUOTES, 'UTF-8');
+
+        // 'outline' marks this drawing style, so a text mark drawn the old way is drawn again.
+        $name = 'watermark_text_' . md5(implode("\n", array('outline', $text, $font_color, $font_size, $outline, $font_path))) . '.png';
+        $path = osc_uploads_path() . $name;
+        if (is_file($path)) {
+            return $path;
+        }
+        $previous = (string)Preference::getInstance()->get('watermark_text_image_name');
+        if (preg_match('/^watermark_text_[0-9a-f]{32}\.png$/', $previous) && is_file(osc_uploads_path() . $previous)) {
+            @unlink(osc_uploads_path() . $previous);
         }
 
-        $validate_option = static function ($options_array, $option_name, $default_value) {
-            if (isset($options_array[$option_name]) && $options_array[$option_name]) {
-                return $options_array[$option_name];
-            }
-
-            return $default_value;
-        };
-
-        $watermark_width  = (int)$validate_option($aOptions, 'watermark_width', 200);
-        $watermark_height = (int)$validate_option($aOptions, 'watermark_height', $font_size);
-        $text_offset_x    = (int)$validate_option($aOptions, 'text_offset_x', 0);
-        $text_offset_y    = (int)$validate_option($aOptions, 'text_offset_y', $watermark_height);
-        $text_angle       = (int)$validate_option($aOptions, 'text_angle', 0);
-        $background_color = ltrim($validate_option($aOptions, 'background_color', '#000000'), '#');
-
-        $imagickLoaded = extension_loaded('imagick');
-        $use_imagick   = Preference::getInstance()->get('use_imagick');
-
-        $watermark_settings_md5 = md5($watermark_text . $font_color . $font_size . json_encode($aOptions) .
-            $use_imagick);
-        $watermark_filename     = 'watermark_text_' . $watermark_settings_md5 . '.png';
-
-        //Check if image is already generated with same settings (In case it is not saved in preference)
-        if (file_exists(osc_uploads_path() . $watermark_filename)) {
-            // Image found return image path
-            return osc_uploads_path() . $watermark_filename;
+        $stroke = max(1, (int)round($font_size / 12));
+        if (!self::drawTextGd($path, $text, $font_size, $font_path, $font_color, $outline, $stroke)
+            && !self::drawTextImagick($path, $text, $font_size, $font_path, $font_color, $outline, $stroke)
+        ) {
+            return '';
         }
 
-        //Check if any image saved in preference
-        $pref_watermark_text_image_name = Preference::getInstance()->get('watermark_text_image_name');
-        if ($pref_watermark_text_image_name && file_exists(osc_uploads_path() . $pref_watermark_text_image_name)) {
-            //Remove it because we will generate a new one.
-            unlink(osc_uploads_path() . $pref_watermark_text_image_name);
-        }
-
-        // No image is generated create a new one
-        // Check if Imagick enabled and loaded or create image with GD library
-        if ($imagickLoaded && $use_imagick) {
-            // Create some objects
-            $imagick    = new Imagick();
-            $draw       = new ImagickDraw();
-            $background = new ImagickPixel('#' . $background_color);
-
-            $imagick->newImage($watermark_width, $watermark_height, $background);
-            $font_color = ltrim($font_color, '#');
-            $draw->setFillColor('#' . $font_color);
-            $draw->setFont($font_path);
-            $draw->setFontSize($font_size * 1.33);
-            $imagick->annotateImage($draw, $text_offset_x, $text_offset_y, $text_angle, $watermark_text);
-            $imagick->setImageFormat('png');
-
-            //Save Image
-            $imagick->writeImage(osc_uploads_path() . $watermark_filename);
-
-            // Clean Memory
-            $imagick->destroy();
-            $draw->destroy();
-            $background->destroy();
-        } else {
-            $image = imagecreatetruecolor($watermark_width, $watermark_height);
-            imagealphablending($image, true);
-            imagesavealpha($image, true);
-            $background_color_index = self::imageColorAllocateHex($background_color, $image);
-            imagefill($image, 0, 0, $background_color_index);
-            $text_color_index = self::imageColorAllocateHex($font_color, $image);
-            imagettftext(
-                $image,
-                $font_size,
-                $text_angle,
-                $text_offset_x,
-                $text_offset_y,
-                $text_color_index,
-                $font_path,
-                html_entity_decode($watermark_text, 0, 'UTF-8')
-            );
-
-            //Write Image
-            imagepng($image, osc_uploads_path() . $watermark_filename);
-
-            unset($image);
-        }
-
-        // save new image name to preference
-        Preference::getInstance()->replace('watermark_text_image_name', $watermark_filename);
-        // Reset preferences
+        Preference::getInstance()->replace('watermark_text_image_name', $name);
         Preference::getInstance()->toArray();
 
-        // return path of new image
-        return osc_uploads_path() . $watermark_filename;
+        return $path;
+    }
+
+    /**
+     * Draw the outlined text with GD. False when GD has no FreeType or cannot read the font.
+     */
+    private static function drawTextGd(string $path, string $text, int $size, string $font, string $color, string $outline, int $stroke): bool
+    {
+        if (!function_exists('imagettfbbox')) {
+            return false;
+        }
+        $bbox = @imagettfbbox($size, 0, $font, $text);
+        if ($bbox === false) {
+            return false;
+        }
+        $left  = min($bbox[0], $bbox[6]);
+        $top   = min($bbox[5], $bbox[7]);
+        $image = imagecreatetruecolor(
+            max(1, max($bbox[2], $bbox[4]) - $left + 2 * $stroke),
+            max(1, max($bbox[1], $bbox[3]) - $top + 2 * $stroke)
+        );
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        imagefill($image, 0, 0, imagecolorallocatealpha($image, 0, 0, 0, 127));
+        imagealphablending($image, true);
+
+        $black        = imagecolorallocate($image, 0, 0, 0);
+        $outlineColor = self::imageColorAllocateHex($outline, $image);
+        $textColor    = self::imageColorAllocateHex($color, $image);
+        $x            = $stroke - $left;
+        $y            = $stroke - $top;
+        for ($dx = -$stroke; $dx <= $stroke; $dx++) {
+            for ($dy = -$stroke; $dy <= $stroke; $dy++) {
+                if ($dx * $dx + $dy * $dy <= $stroke * $stroke) {
+                    imagettftext($image, $size, 0, $x + $dx, $y + $dy, $outlineColor === false ? $black : $outlineColor, $font, $text);
+                }
+            }
+        }
+        imagettftext($image, $size, 0, $x, $y, $textColor === false ? $black : $textColor, $font, $text);
+
+        return imagepng($image, $path);
+    }
+
+    /**
+     * Draw the outlined text with ImageMagick, for a GD built without FreeType. GD sizes text in
+     * points at 96 dpi, so the size is scaled to match.
+     */
+    private static function drawTextImagick(string $path, string $text, int $size, string $font, string $color, string $outline, int $stroke): bool
+    {
+        if (!extension_loaded('imagick') || !is_file($font)) {
+            return false;
+        }
+        try {
+            $canvas = new Imagick();
+            $canvas->newImage(1, 1, new ImagickPixel('none'));
+            $draw = new ImagickDraw();
+            $draw->setFont($font);
+            $draw->setFontSize($size * 96 / 72);
+            $metrics = $canvas->queryFontMetrics($draw, $text);
+            $canvas->newImage(
+                (int)ceil($metrics['textWidth']) + 2 * $stroke + 2,
+                (int)ceil($metrics['textHeight']) + 2 * $stroke + 2,
+                new ImagickPixel('none')
+            );
+            $x = $stroke + 1;
+            $y = $stroke + 1 + $metrics['ascender'];
+            $draw->setFillColor(new ImagickPixel('#' . ltrim($outline, '#')));
+            $draw->setStrokeColor(new ImagickPixel('#' . ltrim($outline, '#')));
+            $draw->setStrokeWidth(2 * $stroke);
+            $canvas->annotateImage($draw, $x, $y, 0, $text);
+            $draw->setFillColor(new ImagickPixel('#' . ltrim($color, '#')));
+            $draw->setStrokeWidth(0);
+            $draw->setStrokeColor(new ImagickPixel('none'));
+            $canvas->annotateImage($draw, $x, $y, 0, $text);
+            $canvas->trimImage(0);
+            $canvas->setImagePage(0, 0, 0, 0);
+            $canvas->setImageFormat('png');
+            $written = $canvas->writeImage($path);
+            $canvas->destroy();
+
+            return $written;
+        } catch (ImagickException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+
+            return false;
+        }
     }
 
     /**
@@ -917,45 +955,46 @@ class ImageProcessing
     }
 
     /**
-     * Work out where the watermark goes, per the site's watermark placement setting.
+     * Where the mark goes, per the site's position setting: one spot, or a staggered grid
+     * covering the photo when it is tiled.
      *
-     * @param int       $watermark_width
-     * @param int       $watermark_height
-     * @param int|float $dest_x Set by reference
-     * @param int|float $dest_y Set by reference
-     *
-     * @return void
+     * @return list<array{0:int,1:int}> top-left corners
      */
-    private function calculateWatermarkPosition($watermark_width, $watermark_height, &$dest_x, &$dest_y)
+    private function watermarkSpots(int $width, int $height, bool $tiled): array
     {
-        // Corners keep a small gap from the edge, so a crop or rounded card does not cut the mark.
-        $gap    = (int)round(min($this->width, $this->height) * self::WATERMARK_GAP);
-        $left   = $gap;
-        $top    = $gap;
-        $right  = $this->width - $watermark_width - $gap;
-        $bottom = $this->height - $watermark_height - $gap;
-        switch (osc_watermark_place()) {
-            case 'tl':
-                $dest_x = $left;
-                $dest_y = $top;
-                break;
-            case 'tr':
-                $dest_x = $right;
-                $dest_y = $top;
-                break;
-            case 'bl':
-                $dest_x = $left;
-                $dest_y = $bottom;
-                break;
-            case 'br':
-                $dest_x = $right;
-                $dest_y = $bottom;
-                break;
-            default:
-                $dest_x = ($this->width - $watermark_width) / 2;
-                $dest_y = ($this->height - $watermark_height) / 2;
-                break;
+        if ($tiled) {
+            // Odd rows shift by half a step so the marks stagger; the rows sit centred top to bottom.
+            $stepX = (int)ceil($width * self::WATERMARK_TILE_STEP_X);
+            $stepY = (int)ceil($height * self::WATERMARK_TILE_STEP_Y);
+            $spots = array();
+            for ($row = 0, $y = (int)(($this->height % $stepY) / 2); $y < $this->height; $row++, $y += $stepY) {
+                for ($x = $row % 2 === 1 ? -intdiv($stepX, 2) : 0; $x < $this->width; $x += $stepX) {
+                    $spots[] = array($x, $y);
+                }
+            }
+
+            return $spots;
         }
+
+        // Edge marks keep a small gap from the edge, so a crop or rounded card does not cut them.
+        $gap    = (int)round(min($this->width, $this->height) * self::WATERMARK_GAP);
+        $right  = $this->width - $width - $gap;
+        $bottom = $this->height - $height - $gap;
+        $middle = intdiv($this->width - $width, 2);
+        $centre = intdiv($this->height - $height, 2);
+        $spot   = match ((string)osc_watermark_place()) {
+            'tl'    => array($gap, $gap),
+            'tc'    => array($middle, $gap),
+            'tr'    => array($right, $gap),
+            'ml'    => array($gap, $centre),
+            'mr'    => array($right, $centre),
+            'bl'    => array($gap, $bottom),
+            'bc'    => array($middle, $bottom),
+            'br'    => array($right, $bottom),
+            default => array($middle, $centre),
+        };
+
+        return array($spot);
     }
 
     /**

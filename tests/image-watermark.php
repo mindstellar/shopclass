@@ -9,14 +9,16 @@
  */
 
 /**
- * Pins the watermark size: drawn for the normal image size, scaled down with smaller sizes,
- * never over 40% of a photo's width or height, and left off when too small to read. Each size
- * gets its own mark. Runs with GD, and with Imagick when it is loaded.
+ * Pins the watermark: drawn for the normal image size, scaled down with smaller sizes, never
+ * over 40% of a photo's width or height, and left off when too small to read. Each size gets
+ * its own mark. Also its nine places and tiling, its opacity, and outlined text with no box.
+ * Runs with GD, and with Imagick when it is loaded.
  *
  * Usage: php tests/image-watermark.php
  */
 
 define('ABS_PATH', dirname(__DIR__) . '/');
+define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
@@ -29,6 +31,8 @@ $dir = sys_get_temp_dir() . '/osc-watermark-' . getmypid();
 
 $GLOBALS['imagick'] = false;
 $GLOBALS['place']   = 'br';
+$GLOBALS['opacity'] = 100;
+$GLOBALS['text']    = '';
 function osc_use_imagick()
 {
     return $GLOBALS['imagick'];
@@ -47,11 +51,23 @@ function osc_uploads_path()
 }
 function osc_is_watermark_text()
 {
-    return false;
+    return $GLOBALS['text'] !== '';
 }
 function osc_is_watermark_image()
 {
-    return true;
+    return $GLOBALS['text'] === '';
+}
+function osc_watermark_text()
+{
+    return $GLOBALS['text'];
+}
+function osc_watermark_text_color()
+{
+    return '#ffffff';
+}
+function osc_watermark_opacity()
+{
+    return $GLOBALS['opacity'];
 }
 function osc_watermark_place()
 {
@@ -68,6 +84,34 @@ function osc_preview_dimensions()
 function osc_thumbnail_dimensions()
 {
     return '240x180';
+}
+
+// The text options and the drawn text's file name, kept in memory instead of the database.
+class Preference
+{
+    private static ?Preference $instance = null;
+    /** @var array<string,string> */
+    private array $values = array('watermark_text_options' => '{"background_color":"#000000"}');
+
+    public static function getInstance(): self
+    {
+        return self::$instance ??= new self();
+    }
+
+    public function get($key)
+    {
+        return $this->values[$key] ?? '';
+    }
+
+    public function replace($key, $value)
+    {
+        $this->values[$key] = (string)$value;
+    }
+
+    public function toArray()
+    {
+        return $this->values;
+    }
 }
 
 if (!class_exists('Plugins')) {
@@ -123,6 +167,31 @@ $box = static function (string $file): string {
     }
 
     return $x1 < 0 ? 'none' : ($x1 - $x0 + 1) . 'x' . ($y1 - $y0 + 1) . '@' . $x0 . ',' . $y0;
+};
+
+// The red value of one pixel: 255 is the white photo, 0 a solid black mark.
+$red = static function (string $file, int $x, int $y): int {
+    $im = imagecreatefrompng($file);
+    imagepalettetotruecolor($im);
+
+    return imagecolorat($im, $x, $y) >> 16 & 0xFF;
+};
+
+// The share of the pixels inside the dark box that are dark.
+$filled = static function (string $file) use ($box): float {
+    if (!preg_match('/^(\d+)x(\d+)@(\d+),(\d+)$/', $box($file), $m)) {
+        return 0.0;
+    }
+    $im = imagecreatefrompng($file);
+    imagepalettetotruecolor($im);
+    $dark = 0;
+    for ($x = (int)$m[3]; $x < $m[3] + $m[1]; $x++) {
+        for ($y = (int)$m[4]; $y < $m[4] + $m[2]; $y++) {
+            $dark += (imagecolorat($im, $x, $y) >> 16 & 0xFF) < 128 ? 1 : 0;
+        }
+    }
+
+    return $dark / ($m[1] * $m[2]);
 };
 
 $stamp = static function (int $w, int $h) use ($photo, $box, $dir): string {
@@ -181,7 +250,39 @@ foreach ($engines as $engine => $imagick) {
     pin('bottom left keeps the gap', '200x30@10,440', $stamp(640, 480));
     $GLOBALS['place'] = 'centre';
     pin('centre has no gap', '200x30@220,225', $stamp(640, 480));
+    $GLOBALS['place'] = 'tc';
+    pin('top centre', '200x30@220,10', $stamp(640, 480));
+    $GLOBALS['place'] = 'bc';
+    pin('bottom centre', '200x30@220,440', $stamp(640, 480));
+    $GLOBALS['place'] = 'ml';
+    pin('middle left', '200x30@10,225', $stamp(640, 480));
+    $GLOBALS['place'] = 'mr';
+    pin('middle right', '200x30@430,225', $stamp(640, 480));
+
+    $GLOBALS['place'] = 'tile';
+    $stamp(640, 480);
+    $tiles = $box($dir . '/out.png');
+    check('a tiled mark reaches across the photo: ' . $tiles, (bool)preg_match('/^(6[0-3]\d|640)x(4[0-7]\d|480)@/', $tiles));
+    $share = $filled($dir . '/out.png');
+    check('but leaves most of it clear: ' . round($share, 2), $share > 0.05 && $share < 0.5);
     $GLOBALS['place'] = 'br';
+
+    harness_section($engine . ': opacity and text');
+
+    $GLOBALS['opacity'] = 50;
+    $stamp(640, 480);
+    $half = $red($dir . '/out.png', 530, 455);
+    check('a mark at 50% opacity lets half the photo through: ' . $half, $half >= 118 && $half <= 138);
+    $GLOBALS['opacity'] = 100;
+    $stamp(640, 480);
+    pin('at 100% it is solid', 0, $red($dir . '/out.png', 530, 455));
+
+    $GLOBALS['text'] = 'I I';
+    $stamp(640, 480);
+    $text = $filled($dir . '/out.png');
+    check('white text is drawn with a dark outline: ' . $box($dir . '/out.png'), $text > 0);
+    check('and no solid box behind it: ' . round($text, 2), $text < 0.8);
+    $GLOBALS['text'] = '';
 
     harness_section($engine . ': every size');
 
@@ -205,6 +306,35 @@ foreach ($engines as $engine => $imagick) {
     $write(false);
     pin('no sizes are stamped when the mark is off', 'none|none|none', implode('|', array_map($box, $files)));
 }
+
+harness_section('text drawing');
+
+// The outlined text, drawn by one library into a PNG: white text, black outline, see-through.
+$drawn = static function (string $method) use ($dir, $box, $filled): string {
+    $draw = new ReflectionMethod(ImageProcessing::class, $method);
+    $draw->setAccessible(true);
+    $file = $dir . '/text-' . $method . '.png';
+    $ok   = $draw->invoke(null, $file, 'I I', 30, LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf', '#ffffff', '#000000', 3);
+    if (!$ok) {
+        return 'not drawn';
+    }
+    $im     = imagecreatefrompng($file);
+    $corner = imagecolorsforindex($im, imagecolorat($im, 0, 0))['alpha'];
+    imagepalettetotruecolor($im);
+
+    return 'drawn, corner alpha ' . $corner . ', outline ' . ($box($file) === 'none' ? 'missing' : 'present');
+};
+pin('GD draws the outlined text on a see-through background', 'drawn, corner alpha 127, outline present', $drawn('drawTextGd'));
+if (extension_loaded('imagick')) {
+    pin('so does ImageMagick, for a GD built without FreeType', 'drawn, corner alpha 127, outline present', $drawn('drawTextImagick'));
+}
+
+$draw = new ReflectionMethod(ImageProcessing::class, 'drawTextGd');
+$draw->setAccessible(true);
+pin('GD refuses a font it cannot read', false, $draw->invoke(null, $dir . '/x.png', 'I', 30, $dir . '/missing.ttf', '#fff', '#000', 1));
+$draw = new ReflectionMethod(ImageProcessing::class, 'drawTextImagick');
+$draw->setAccessible(true);
+pin('and so does ImageMagick', false, $draw->invoke(null, $dir . '/x.png', 'I', 30, $dir . '/missing.ttf', '#fff', '#000', 1));
 
 array_map('unlink', glob($dir . '/*'));
 @rmdir($dir);

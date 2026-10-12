@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1160 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1161 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -831,7 +831,7 @@ Core defines 1160 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (133)
+### hPreference (134)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -966,6 +966,7 @@ Core defines 1160 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_users_enabled()` | Gets if users are enabled or not |
 | `osc_version()` | Gets current version |
 | `osc_warn_expiration()` | Gets number of days to warn about an ad being expired |
+| `osc_watermark_opacity()` | How opaque the watermark is, in percent: 10 to 100, and 100 when unset. |
 | `osc_watermark_place()` | Return watermark place |
 | `osc_watermark_text()` | Return watermark text |
 | `osc_watermark_text_color()` | Return watermark text color |
