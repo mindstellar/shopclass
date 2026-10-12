@@ -267,7 +267,7 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 ```
 
 **Admin → Settings → Permalinks** shows the full block to copy. If you cannot change
-`.htaccess`, a public key also works as `?api_key=scp_…` on a GET.
+`.htaccess`, a public key also works as `?api_key=scp_…` on a GET. Any other key in `?api_key=`, or any key there on a write, is refused with `401`.
 
 ## nginx
 
