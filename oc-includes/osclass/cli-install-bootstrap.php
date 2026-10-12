@@ -32,6 +32,10 @@ define('CONTENT_PATH', ABS_PATH . 'oc-content/');
 define('TRANSLATIONS_PATH', CONTENT_PATH . 'languages/');
 define('OSC_INSTALLING', 1);
 
+if (!is_file(LIB_PATH . 'vendor/autoload.php')) {
+    fwrite(STDERR, "Shopclass is not built yet. Run composer install and npm run build, or install from a release zip.\n");
+    exit(1);
+}
 require_once LIB_PATH . 'vendor/autoload.php';
 mindstellar\logger\ErrorHandler::getInstance()->register();
 

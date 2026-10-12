@@ -55,6 +55,7 @@ RUN printf '[www]\nclear_env = no\n' > /usr/local/etc/php-fpm.d/zz-clear-env.con
 WORKDIR /application
 COPY . /application
 RUN test -f oc-includes/vendor/autoload.php && test -f oc-admin/themes/modern/css/main.css \
+  && test -d oc-includes/assets/bootstrap \
   || { echo "Build first: composer install --no-dev && npm ci && npm run build"; exit 1; }
 
 # Bundle the storefront default theme from its own repository (themes are not
