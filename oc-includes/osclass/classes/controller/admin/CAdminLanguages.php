@@ -579,9 +579,9 @@ class CAdminLanguages extends AdminSecBaseModel
             }
             $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
-            $row[] = $l['s_name'] . $actions;
-            $row[] = $l['s_short_name'];
-            $row[] = $l['s_description'];
+            $row[] = osc_esc_html($l['s_name']) . $actions;
+            $row[] = osc_esc_html($l['s_short_name']);
+            $row[] = osc_esc_html($l['s_description']);
             $row[] = ($l['b_enabled'] ? __('Yes') : __('No'));
             $row[] = ($l['b_enabled_bo'] ? __('Yes') : __('No'));
 

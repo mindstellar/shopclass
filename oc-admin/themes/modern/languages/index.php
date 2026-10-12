@@ -142,7 +142,7 @@ osc_current_admin_theme_path('parts/header.php');
 )); ?>
 <?php osc_admin_bulk_confirm_dialog(); ?>
 <script>
-    var aExistingLanguages = <?php echo json_encode(OSCLocale::getInstance()->listAll()); ?>;
+    var aExistingLanguages = <?php echo json_encode(OSCLocale::getInstance()->listAll(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     var localeImportUrl = '<?php echo osc_esc_js(osc_get_i18n_repository_url()) ?>';
     let languageOptionsSet = false;
     // shift locale code as array key
