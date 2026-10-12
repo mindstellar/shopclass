@@ -56,7 +56,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                     break;
                 }
 
-                if ($result['values']['akismetKey'] === '') {
+                if ($result['updated'] === 0) {
+                    osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
+                } elseif ($result['values']['akismetKey'] === '') {
                     osc_add_flash_info_message(_m('Your Akismet key has been cleared'), 'admin');
                 } else {
                     osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
