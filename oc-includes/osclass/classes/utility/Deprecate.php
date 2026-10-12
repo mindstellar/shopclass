@@ -40,7 +40,7 @@ class Deprecate
          */
         Plugins::runHook('d_function_run', $function, $replacement, $version);
 
-        if (OSC_DEBUG) {
+        if (defined('OSC_DEBUG') && OSC_DEBUG) {
             $debug_backtrace = debug_backtrace();
             $caller          = next($debug_backtrace);
             if ($replacement !== null) {
@@ -140,7 +140,7 @@ class Deprecate
          */
         Plugins::runHook('d_hook_run', $hook, $replacement, $version, $message);
 
-        if (OSC_DEBUG) {
+        if (defined('OSC_DEBUG') && OSC_DEBUG) {
             $message         = empty($message) ? '' : ' ' . $message;
             $debug_backtrace = debug_backtrace();
 
@@ -221,7 +221,7 @@ class Deprecate
          */
         Plugins::runHook('d_file_included', $file, $replacement, $version, $message);
 
-        if (OSC_DEBUG) {
+        if (defined('OSC_DEBUG') && OSC_DEBUG) {
             $message = empty($message) ? '' : ' ' . $message;
 
             $debug_backtrace = debug_backtrace();

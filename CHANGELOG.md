@@ -85,6 +85,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Changed
 
+- `$model->dao` (`DBCommandClass`) is deprecated and goes away in 8.0. A model builds it only when a plugin reads it, and in debug mode that logs a notice. Use the `osc_db_*` helpers.
 - Query values through `Db`/`Connection` come back as text, and a number for `LIMIT ?` must be passed as an int, not a string.
 - With memcached or Redis, a plugin that writes `t_preference` with raw SQL must call `osc_reset_preferences()`, or other requests keep the old settings for up to 5 minutes.
 - Posting, editing and deleting a listing, and signing up, each run in one transaction, so a failure leaves nothing half done and e-mails go out only once it is saved.

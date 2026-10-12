@@ -996,6 +996,32 @@ if ($dumpTo !== '') {
     file_put_contents($dumpTo, json_encode($clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 }
 
+harness_section('the legacy $dao is built only when read');
+$built = static fn (DAO $model): bool => array_key_exists('dao', get_object_vars($model));
+$GLOBALS['daoDeprecations'] = array();
+osc_add_hook('d_function_run', static function ($function) {
+    $GLOBALS['daoDeprecations'][] = $function;
+});
+$plain = new Search();
+$plain->doSearch();
+check('a search no plugin touched leaves $dao unbuilt', !$built($plain));
+check('isset($model->dao) is true before the first read, as it always was', isset($plain->dao) && !$built($plain));
+pin('nothing deprecated was used yet', array(), $GLOBALS['daoDeprecations']);
+check('reading $dao builds it', $plain->dao instanceof DBCommandClass);
+check('a second read gets the same one', $plain->dao === $plain->dao);
+pin('the first read is reported as deprecated, once', array('$model->dao (DBCommandClass)'), $GLOBALS['daoDeprecations']);
+$copy = unserialize(serialize($plain));
+check('an unserialized model builds $dao again on read', !$built($copy) && $copy->dao instanceof DBCommandClass);
+$warning = '';
+set_error_handler(static function (int $no, string $message) use (&$warning): bool {
+    $warning = $message;
+
+    return true;
+}, E_USER_WARNING);
+$missing = (new Search())->no_such_property;
+restore_error_handler();
+check('any other missing property still warns, naming the caller', $missing === null && str_contains($warning, 'Search::$no_such_property in ' . __FILE__));
+
 exit(harness_result());
 
 /* file end: ./tests/models/search-parity.php */

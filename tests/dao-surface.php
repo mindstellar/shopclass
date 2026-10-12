@@ -25,6 +25,8 @@ harness_section('DAO public method surface');
 
 pin('the public method map is unchanged', array(
     '__construct'        => 'public __construct()',
+    '__get'              => 'public __get($name)',
+    '__isset'            => 'public __isset($name)',
     '__wakeup'           => 'public __wakeup()',
     'checkFieldKeys'     => 'public checkFieldKeys($aKey)',
     'count'              => 'public count()',

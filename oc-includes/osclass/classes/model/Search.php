@@ -486,8 +486,10 @@ class Search extends DAO
     public function doSearch($extended = true, $count = true)
     {
         $mainError = false;
+        // Only a builder a plugin has already read; reading $this->dao here would build one.
+        $dao = array_key_exists('dao', get_object_vars($this)) ? $this->dao : null;
         try {
-            $items = SearchExecutor::rows(SearchCompiler::results($this->parts, $this->dao));
+            $items = SearchExecutor::rows(SearchCompiler::results($this->parts, $dao));
         } catch (DbException $e) {
             $items     = array();
             $mainError = true;
@@ -495,7 +497,7 @@ class Search extends DAO
 
         // COUNT(*) over the unlimited match list: exact, and one row on the wire.
         $this->total_results = $count
-            ? SearchExecutor::total(SearchCompiler::count(SearchCompiler::results($this->parts, $this->dao, true)))
+            ? SearchExecutor::total(SearchCompiler::count(SearchCompiler::results($this->parts, $dao, true)))
             : 0;
 
         if ($mainError) {

@@ -65,6 +65,10 @@ $user  = User::getInstance()->findByPrimaryKey($userId);
 
 `getInstance()` needs Shopclass 7.0. A plugin that also supports 6.x calls `newInstance()`, which still works on 7.0.
 
+The old query builder a model gives out as `$model->dao` (`DBCommandClass`) is deprecated in 7.0
+and goes away in 8.0. In debug mode the first read of `->dao` on each model logs a notice. Move those queries to
+the `osc_db_*` helpers below.
+
 These DAO classes stay as they are for plugins. Core's own new code reads and writes
 through each module's `…Store` and `…Query` classes instead; see
 [where new code goes](/docs/developers/architecture/#where-new-code-goes).

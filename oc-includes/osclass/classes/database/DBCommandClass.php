@@ -24,13 +24,8 @@
  * @package    Shopclass
  * @subpackage Database
  * @since      2.3
- * @deprecated 5.3 For new code prefer the parameterized, injection-safe
- *             mindstellar\database\Connection and the immutable
- *             mindstellar\database\QueryBuilder. Deprecated for direct use only:
- *             DAO::__construct() still instantiates it, so every legacy model
- *             depends on it and it cannot be removed before the legacy DAO is.
- * @see \mindstellar\database\Connection
- * @see \mindstellar\database\QueryBuilder
+ * @deprecated 7.0.0 Removed in 8.0. Core does not use it; a model builds it only when a
+ *             plugin reads $model->dao. Use the osc_db_* helpers.
  */
 class DBCommandClass
 {
@@ -285,9 +280,7 @@ class DBCommandClass
      *
      * @return self
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder::join()
      */
     public function join($table, $cond, $type = '')
@@ -484,9 +477,7 @@ class DBCommandClass
      *
      * @return self
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function orWhereIn($key = null, $values = null)
@@ -502,9 +493,7 @@ class DBCommandClass
      *
      * @return self
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function whereNotIn($key = null, $values = null)
@@ -520,9 +509,7 @@ class DBCommandClass
      *
      * @return self
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function orWhereNotIn($key = null, $values = null)
@@ -595,9 +582,7 @@ class DBCommandClass
      *
      * @return self
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function notLike($field, $match = '', $side = 'both')
@@ -615,9 +600,7 @@ class DBCommandClass
      * @return self
      * @since  2.3
      *
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function orLike($field, $match = '', $side = 'both')
@@ -634,9 +617,7 @@ class DBCommandClass
      *
      * @return self
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function orNotLike($field, $match = '', $side = 'both')
@@ -677,9 +658,7 @@ class DBCommandClass
      * @param string                     $value Ignored when $key is an array
      *
      * @return void
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder::having()
      */
     public function having($key, $value = '')
@@ -722,9 +701,7 @@ class DBCommandClass
      * @param string                     $value Ignored when $key is an array
      *
      * @return void
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder::having()
      */
     public function orHaving($key, $value = '')
@@ -949,9 +926,7 @@ class DBCommandClass
      *
      * @return bool
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function isSelectType($sql)
@@ -969,9 +944,7 @@ class DBCommandClass
      * @param string $sql
      *
      * @return bool false when the statement is empty, fails, or explains to nothing
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function query_debug($sql)
@@ -1354,9 +1327,7 @@ class DBCommandClass
      *
      * @return string
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function _getSelect()
@@ -1521,9 +1492,7 @@ class DBCommandClass
      *
      * @return string
      * @since  2.3
-     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
-     *             from plugins as $model->dao; prefer mindstellar\database\Connection
-     *             or QueryBuilder in new code.
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @see \mindstellar\database\QueryBuilder
      */
     public function lastQuery()
