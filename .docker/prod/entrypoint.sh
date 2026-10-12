@@ -160,7 +160,10 @@ write_microcache_conf
 #   SMTP_PORT      default 25. 587/465 (or SMTP_TLS=1) enables STARTTLS/TLS.
 #   SMTP_USER      set to enable SMTP AUTH; omit for an unauthenticated sidecar.
 #   SMTP_PASSWORD  password for SMTP_USER.
-#   SMTP_FROM      default envelope From. Defaults to root@<hostname>.
+#   SMTP_FROM      default envelope From. Defaults to root@<hostname>. "Name <a@b.c>"
+#                  is taken as a@b.c; the display name comes from Settings -> Mail.
+#   SMTP_STARTTLS  on/off (also 1/0, true/false). Defaults to on, and off for port 465,
+#                  which starts TLS at once.
 configure_mail() {
     ini=/usr/local/etc/php/conf.d/zz-mail.ini   # loads after 99-shopclass.ini
     host="${SMTP_HOST:-}"
@@ -180,13 +183,23 @@ SH
     fi
     port="${SMTP_PORT:-25}"
     from="${SMTP_FROM:-root@$(hostname)}"
+    # msmtp wants a bare address here; it is the envelope sender, not the From: header.
+    case "$from" in
+        *"<"*">"*) from="${from##*<}"; from="${from%%>*}" ;;
+    esac
+    starttls="${SMTP_STARTTLS:-}"
+    [ -z "$starttls" ] && { [ "$port" = "465" ] && starttls=off || starttls=on; }
+    case "$starttls" in
+        0|off|OFF|Off|false|FALSE|False|no|NO|No) starttls=off ;;
+        *) starttls=on ;;
+    esac
     {
         echo "# Rendered by entrypoint from the environment; do not edit."
         echo "defaults"
         echo "logfile -"
         if [ "${SMTP_TLS:-}" = "1" ] || [ "$port" = "587" ] || [ "$port" = "465" ]; then
             echo "tls on"
-            echo "tls_starttls ${SMTP_STARTTLS:-on}"
+            echo "tls_starttls $starttls"
             echo "tls_trust_file /etc/ssl/certs/ca-certificates.crt"
         else
             echo "tls off"

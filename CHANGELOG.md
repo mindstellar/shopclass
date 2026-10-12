@@ -127,6 +127,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 
+- Docker: `SMTP_FROM` may hold a display name, `SMTP_STARTTLS` takes `0`/`1` as well as `on`/`off`, and port 465 no longer tries STARTTLS ([#552](https://github.com/mindstellar/shopclass/issues/552)).
 - An unattended install with `OSC_LOCALE` or `--locale` set to a published language downloads it first, and an unknown one stops before the database is touched ([#553](https://github.com/mindstellar/shopclass/issues/553)). The web installer now downloads a language's description and e-mail templates too.
 - A watermark scales to each photo size, never covers more than 40% of a photo and sits a little in from a corner; thumbnails get their own mark instead of a shrunken one.
 - A changed profile bio shows at once, not after the next save.

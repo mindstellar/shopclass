@@ -66,6 +66,7 @@ With no `OSC_ADMIN_PASSWORD`, a strong admin password is made and printed in the
 | `OSC_TLS_DOMAIN`, `OSC_TLS_REDIRECT_FROM` | Serve HTTPS with a free Let's Encrypt certificate. Publish ports 80 and 443 and keep `/var/lib/shopclass-tls` on a volume |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | Outgoing mail |
+| `SMTP_FROM`, `SMTP_STARTTLS` | The sender address (`Name <a@b.c>` is read as `a@b.c`; set the name in **Settings → Mail**) and `on`/`off` for STARTTLS, off by default on port 465 |
 
 Every setting is in the [Docker guide](https://mindstellar.com/docs/deploy/docker/).
 
