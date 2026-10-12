@@ -933,6 +933,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\admin\\BulkAction' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/BulkAction.php',
         'mindstellar\\admin\\DatabaseTools' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/DatabaseTools.php',
         'mindstellar\\admin\\ExposedSettings' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ExposedSettings.php',
+        'mindstellar\\admin\\InlineMarkdown' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/InlineMarkdown.php',
         'mindstellar\\admin\\ListPaging' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ListPaging.php',
         'mindstellar\\admin\\ModeratorAccess' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ModeratorAccess.php',
         'mindstellar\\admin\\StatsQuery' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/StatsQuery.php',

@@ -816,6 +816,7 @@ return array(
     'mindstellar\\admin\\BulkAction' => $baseDir . '/oc-includes/osclass/classes/admin/BulkAction.php',
     'mindstellar\\admin\\DatabaseTools' => $baseDir . '/oc-includes/osclass/classes/admin/DatabaseTools.php',
     'mindstellar\\admin\\ExposedSettings' => $baseDir . '/oc-includes/osclass/classes/admin/ExposedSettings.php',
+    'mindstellar\\admin\\InlineMarkdown' => $baseDir . '/oc-includes/osclass/classes/admin/InlineMarkdown.php',
     'mindstellar\\admin\\ListPaging' => $baseDir . '/oc-includes/osclass/classes/admin/ListPaging.php',
     'mindstellar\\admin\\ModeratorAccess' => $baseDir . '/oc-includes/osclass/classes/admin/ModeratorAccess.php',
     'mindstellar\\admin\\StatsQuery' => $baseDir . '/oc-includes/osclass/classes/admin/StatsQuery.php',
