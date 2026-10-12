@@ -45,7 +45,7 @@ How a call is accepted:
 | Query string | `?api_key=scp_…` works for **public keys on `GET` and `HEAD` only**. Any other key or token there is a `401`, on every endpoint, public ones too. See the warning below. |
 | Cookies | Never used alone. Only a [same-site session](#same-site-session-theme-javascript) reads the sign-in cookie, and only with a page token in its header. The API sets no cookie. |
 | No credential | `401` on every endpoint except `POST /auth/token` and `POST /users`. |
-| `GET /openapi.json` | Any credential. |
+| `GET /openapi.json` | None needed. |
 
 :::caution[`?api_key=` is written to logs]
 A key in the address lands in web server and CDN access logs, browser history and `Referer`

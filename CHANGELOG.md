@@ -95,7 +95,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Generated files (Composer packages, vendored assets, admin CSS and JS builds) are no longer in git; run `composer install` and `npm run build` after cloning. Release zips are unchanged.
 - The RSS feed, sitemaps and robots.txt send the same cache headers as public pages.
 - A new password needs at least 5 characters on the server too, not only in the browser.
-- Every REST API call needs a key or token, except sign-in and sign-up; the anonymous-reads setting is gone.
+- Every REST API call needs a key or token, except sign-in, sign-up and the API description; the anonymous-reads setting is gone.
 - Visitors who are not signed in get a guest page token, so the site's own pages can read public data from the API.
 - With the REST API switched off, the site's own pages still use it with page tokens; apps and keys are refused.
 - Admin panel pages get an admin page token, so admin JavaScript can call admin endpoints as the signed-in admin.

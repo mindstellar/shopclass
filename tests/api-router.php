@@ -206,7 +206,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET listings/{id}/comments'        => 'public listings:read',
     'GET listings/{id}/photos'          => 'public listings:read',
     'GET listings/{id}/photos/{photo}'  => 'public listings:read',
-    'GET openapi.json'                  => 'public -',
+    'GET openapi.json'                  => 'none -',
     'GET regions/{id}/cities'           => 'public listings:read',
     'GET users/{id}'                    => 'public listings:read',
     'GET users/{id}/listings'           => 'public listings:read',
@@ -373,7 +373,7 @@ $off = $kernel(new ApiSettings(false));
 $docSpec = ['handler' => $handler] + Router::core()['GET openapi.json'];
 $docs    = static fn (ApiSettings $settings): int => api_test_kernel(new Router($validator, ['GET openapi.json' => $docSpec]), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), $settings, validator: $validator)
     ->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'))->status();
-pin('the OpenAPI document needs a credential', 401, $docs(new ApiSettings(true)));
+pin('the OpenAPI document needs no credential', 200, $docs(new ApiSettings(true)));
 pin('a switched-off API answers 403 api_disabled', [403, 'api_disabled'], [$call('GET', 'v1/listings', $off)->status(), $call('GET', 'v1/listings', $off)->body()['code']]);
 
 harness_section('core refusals');

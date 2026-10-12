@@ -189,7 +189,7 @@ sort($documented);
 sort($served);
 pin('every core route is documented, and only those', $served, $documented);
 check('GET /openapi.json itself is documented', isset($core['paths']['/openapi.json']['get']));
-pin('GET /openapi.json takes any credential, and never none', ['public', false], [$core['paths']['/openapi.json']['get']['x-auth'], in_array((object) [], $core['paths']['/openapi.json']['get']['security'])]);
+pin('GET /openapi.json takes no credential', ['none', []], [$core['paths']['/openapi.json']['get']['x-auth'], $core['paths']['/openapi.json']['get']['security']]);
 $show = $core['paths']['/listings/{id}']['get'];
 pin('a public read names its scope, both ways to send a key, and a page token', [['bearer' => ['listings:read']], ['pageSession' => ['listings:read']], ['publicKey' => ['listings:read']]], array_map(static fn ($r): array => (array) $r, $show['security']));
 pin('a GET takes If-None-Match and can answer 304 with its ETag', [true, true, '#/components/headers/ETag'], [
@@ -307,7 +307,8 @@ $router      = new Router($full, Router::core() + ['GET old' => [
 $kernel   = api_test_kernel($router, api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), $settings, validator: $full);
 $r = $kernel->handle(new Request('GET', 'v1/openapi.json', [], ['Authorization' => 'Bearer ' . $publicKey], '127.0.0.1'));
 pin('GET /api/v1/openapi.json answers a public key', [200, '3.1.0'], [$r->status(), $r->body()['openapi'] ?? null]);
-pin('and asks for a credential when none comes', 401, $kernel->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'))->status());
+$anon = $kernel->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'));
+pin('and a call with no credential, counted per address', [200, true], [$anon->status(), $anon->header('RateLimit') !== null]);
 pin('with the document revision and its own URL', ['1.0', 'https://shop.test/api/v1'], [$r->body()['info']['version'], $r->body()['servers'][0]['url']]);
 pin('the OpenAPI document stays out of shared caches, as it lists the site\'s plugin endpoints, and gets an ETag', ['private, no-cache', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
 pin('the live document is sound', [], openapi_problems($r->body()));

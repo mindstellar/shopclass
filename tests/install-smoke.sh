@@ -304,6 +304,11 @@ H="$DB_HOST" P="$DB_PORT" U="$DB_USER" W="$DB_PASS" \
   Q="UPDATE \`$DB_NAME\`.oc_t_preference SET s_value = '1' WHERE s_section = 'api' AND s_name = 'api_enabled'" \
   db_exec || fail "could not switch the API on"
 
+[ "$(code "${API}/openapi.json" "$WORK/openapi.json")" = "200" ] \
+  || fail "the API description does not return 200"
+grep -q '"openapi":"3.1' "$WORK/openapi.json" || fail "the API description is not OpenAPI 3.1"
+ok "API description serves with no key"
+
 [ "$(curl -s -o "$WORK/api-anon.json" -w '%{http_code}' "${API}/")" = "401" ] \
   || fail "the API answers a call with no key"
 grep -q '"code":"unauthorized"' "$WORK/api-anon.json" || fail "a call with no key gets no problem body"
@@ -317,11 +322,6 @@ API_KEY="$(printf '%s\n' "$KEY_OUT" | grep -oE '^scp_[A-Za-z0-9]+\.[A-Za-z0-9]+'
   || fail "the API does not answer a call with a public key"
 grep -q '"data":\[' "$WORK/api-listings.json" || fail "the listings answer has no data member"
 ok "API answers a call with a public key"
-
-[ "$(curl -s -o "$WORK/openapi.json" -w '%{http_code}' -H "Authorization: Bearer ${API_KEY}" "${API}/openapi.json")" = "200" ] \
-  || fail "the API description does not return 200 to a key"
-grep -q '"openapi":"3.1' "$WORK/openapi.json" || fail "the API description is not OpenAPI 3.1"
-ok "API description serves to a key"
 
 # ---------------------------------------------------------------------------
 # A PHP warning or notice on any page above would have been rendered into the

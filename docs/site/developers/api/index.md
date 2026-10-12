@@ -19,7 +19,7 @@ and signed webhooks tell your server when something changes.
 
 The site owner turns the API on and makes your key:
 [Set up the REST API](/docs/configure/api/). The API is **off by default**, and once on it needs a
-key or token for every call except sign-in and sign-up. Writing needs a user account, not a public key.
+key or token for every call except sign-in, sign-up and `GET /openapi.json`. Writing needs a user account, not a public key.
 
 ## Quick start
 

@@ -451,9 +451,8 @@ final class OpenApi
         if (($route->method() === 'GET' && ($status === 200 || $status === 304)) || ($route->method() === 'PATCH' && $status === 200 && $this->hasRead($route))) {
             $names[] = 'ETag';
         }
-        if ($route->auth() !== RouteSpec::AUTH_NONE || $status === 429) {
-            array_push($names, 'RateLimit', 'RateLimit-Policy', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset');
-        }
+        // A call with no credential is counted per address, so every route sends the counters.
+        array_push($names, 'RateLimit', 'RateLimit-Policy', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset');
         if ($status === 429 || $status === 503 || ($status === 409 && $this->idempotent($route))) {
             $names[] = 'Retry-After';
         }
