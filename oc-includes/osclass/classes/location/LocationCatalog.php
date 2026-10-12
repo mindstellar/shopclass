@@ -64,7 +64,7 @@ final class LocationCatalog
             return $this->manifest;
         }
 
-        $checked = (int) osc_update_check_state('location')['checked'];
+        $checked = (int) self::quietly(static fn () => osc_update_check_state('location')['checked'], 0);
         $cached  = $this->readCache();
 
         // The cache belongs to the catalog it came from. Pointing the install at another
@@ -72,7 +72,7 @@ final class LocationCatalog
         // serving the previous catalog's manifest until the six hours are up, which
         // reads as the new catalog offering the old one's countries.
         $source = md5(osc_get_locations_json_url());
-        if (osc_get_preference(self::PREF_SOURCE) !== $source) {
+        if (self::quietly(static fn () => osc_get_preference(self::PREF_SOURCE), null) !== $source) {
             $cached = null;
         }
 
@@ -113,13 +113,15 @@ final class LocationCatalog
         $data = self::normalizeManifest($data);
 
         $this->writeCache($data);
-        osc_update_check_save('location', array('checked' => time()));
-        osc_set_preference(self::PREF_SOURCE, $source);
         // Country files are addressed relative to the manifest, not to the pointer, so
         // the resolved URL is remembered — otherwise a cache hit would have nothing to
-        // build those addresses from.
-        osc_set_preference(self::PREF_MANIFEST, (string) $manifestUrl);
-        osc_set_preference(self::PREF_RELEASE, $release);
+        // build those addresses from. The installer has no database yet, so none of this is required.
+        self::quietly(static function () use ($source, $manifestUrl, $release) {
+            osc_update_check_save('location', array('checked' => time()));
+            osc_set_preference(self::PREF_SOURCE, $source);
+            osc_set_preference(self::PREF_MANIFEST, (string) $manifestUrl);
+            osc_set_preference(self::PREF_RELEASE, $release);
+        }, null);
 
         return $this->manifest = $data;
     }
@@ -451,8 +453,8 @@ final class LocationCatalog
             return array();
         }
 
-        $installed = $this->installed();
-        $present   = $this->countriesInDatabase();
+        $installed = self::quietly(fn () => $this->installed(), array());
+        $present   = self::quietly(fn () => $this->countriesInDatabase(), array());
 
         $out = array();
         foreach ($manifest['countries'] as $entry) {
@@ -524,6 +526,23 @@ final class LocationCatalog
         }
 
         return null;
+    }
+
+    /**
+     * Run a database-backed step, falling back to $default when there is no database (the installer).
+     *
+     * @param callable $fn
+     * @param mixed    $default
+     *
+     * @return mixed
+     */
+    private static function quietly(callable $fn, $default)
+    {
+        try {
+            return $fn();
+        } catch (\Throwable $e) {
+            return $default;
+        }
     }
 
     /**
