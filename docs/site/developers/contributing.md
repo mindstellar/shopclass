@@ -14,9 +14,8 @@ need no PHP at all.
 1. **Open an issue first**, describing the change. It is much less painful to
    agree an approach before the work than after it.
 2. **Branch from `develop`.** Never target `master`.
-3. Make the change. If it touches the admin theme, run `npm run build` and
-   **commit the compiled output**: releases are cut with `git archive`, so
-   whatever is committed is exactly what users receive.
+3. Make the change. After cloning, run `composer install` and `npm ci && npm run build`
+   once. Generated files are not committed.
 4. Run `composer test`, `composer test:models` and `composer lint`, and the other checks
    in [`tests/README.md`](https://github.com/mindstellar/shopclass/blob/develop/tests/README.md#what-else-ci-checks).
 5. Open a pull request against `develop`.
@@ -24,11 +23,9 @@ need no PHP at all.
 See [coding style](/docs/developers/coding-style/) for the standard, and the
 [developer overview](/docs/developers/) for a local development stack.
 
-:::caution[Compiled and vendored output is committed on purpose]
-Nothing runs `composer install` or `npm run build` at release time. A change to
-`composer.json` without a rebuilt `oc-includes/vendor/` ships the old library
-under the new version number. Run `composer update <package>` and commit
-`vendor/` alongside the manifest: CI fails the build otherwise.
+:::note[Generated files are not in git]
+`oc-includes/vendor/`, `oc-includes/assets/` (except `assets/osclass/`) and the admin CSS and
+JS are built by `composer install` and `npm run build`. CI builds them for release zips.
 :::
 
 ## Running the tests

@@ -157,27 +157,19 @@ slot into schedulers and monitoring. A typical crontab entry:
 
 ## Local development
 
-The runtime needs no build tools, but the admin theme's CSS/JS are compiled from
-source. You only need Node to work on them.
+Site owners install from a release zip; CI builds it. After cloning, build the generated
+files yourself: PHP packages, vendored assets, and the admin CSS and JS.
 
 ```bash
 git clone git@github.com:mindstellar/shopclass.git
 cd shopclass
-npm install
-npm run build        # vendor assets + SCSS → CSS + JS
-npm run watch        # rebuild CSS on change while developing
+composer install
+npm ci && npm run build   # vendor assets + SCSS → CSS + JS
+npm run watch             # rebuild CSS on change while developing
 ```
 
-Compiled output (`oc-admin/themes/modern/css/main.css`, `oc-includes/assets/…`)
-is **committed**. Releases are cut with `git archive`, so whatever is committed
-is exactly what users receive. Rebuild and commit the output with any SCSS/JS
-change.
-
-The same applies to PHP dependencies. Nothing runs `composer install` at release,
-so `oc-includes/vendor/` is the library users actually get: a change to
-`composer.json` that is not accompanied by a rebuilt vendor tree ships the old
-code under the new version number. Run `composer update <package>` and commit
-`vendor/` alongside the manifest. CI fails the build otherwise.
+With Docker, `npm run setup` does the same (Composer runs inside the PHP-FPM container).
+These generated files are not in git. Do not commit them.
 
 Dependencies must also resolve on the PHP floor. `config.platform` pins composer
 to 8.0.0, so a package requiring more is refused at resolution even when your own

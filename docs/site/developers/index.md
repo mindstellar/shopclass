@@ -75,13 +75,14 @@ Worth knowing before you port something:
 
 ## A local development stack
 
-The runtime needs no build tools, but the admin theme's CSS and JavaScript are
-compiled from source, so working on core needs Node.
+Working on core needs Composer for the PHP packages and Node for the admin theme's CSS
+and JavaScript, which are built from source. Generated files are not in git.
 
 ```bash
 git clone git@github.com:mindstellar/shopclass.git
 cd shopclass
-npm install
+composer install
+npm ci
 npm run build        # vendor assets + SCSS → CSS + JS
 npm run watch        # rebuild on change
 ```

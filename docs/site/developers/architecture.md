@@ -222,8 +222,8 @@ Pick the read by what you need:
 - **Strict types.** Every file in a `mindstellar\` namespace starts with
   `declare(strict_types=1);`. `tests/strict-types.php` fails on a new file without it.
 - **Class loading.** A class in a `mindstellar\` namespace loads by its path. A class with no
-  namespace loads only from Composer's class map: run `composer dump-autoload` and commit
-  `oc-includes/vendor/composer/`.
+  namespace loads only from Composer's class map: run `composer dump-autoload`.
+  CI regenerates the map with `composer install`.
 - **Code style.** Use `[]` for arrays in new code. Do not reformat lines you are not changing.
 - **Renames keep the old name.** A released class that moves or is renamed is added to
   `OSC_RENAMED_CLASSES` in `compatibility.php`, which makes the alias only when code asks for

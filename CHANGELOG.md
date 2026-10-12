@@ -90,6 +90,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Changed
 
+- Generated files (Composer packages, vendored assets, admin CSS and JS builds) are no longer in git; run `composer install` and `npm run build` after cloning. Release zips are unchanged.
 - The RSS feed, sitemaps and robots.txt send the same cache headers as public pages.
 - A new password needs at least 5 characters on the server too, not only in the browser.
 - `mindstellar\logger\OsclassErrors` is now `ErrorHandler`; the old name still works.

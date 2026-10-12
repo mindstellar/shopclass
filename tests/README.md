@@ -5,6 +5,8 @@ and prints `PASS` or `FAIL` per check, then a `RESULT:` line.
 
 ## Run them
 
+First run: `composer install && npm ci && npm run build`.
+
 ```bash
 npm run test:db                  # once: a throwaway MySQL on 127.0.0.1:33061 (Docker)
 composer test                    # every tests/*.php, 4 at a time (php tests/run-unit.php -j N)
@@ -127,8 +129,7 @@ Run these before you push. Each one fails CI when it is out of date.
 | `php tools/gen-hooks-doc.php` | a new or changed hook |
 | `php tools/gen-helpers-doc.php` | a new, changed or deprecated `osc_*` helper |
 | `php tools/gen-openapi.php` and `php tools/gen-api-doc.php` | a REST API route change |
-| `npm run build` | a change to SCSS or admin JS (commit the built files) |
-| `composer dump-autoload` | a new class without a namespace (commit `oc-includes/vendor/composer/`) |
+| `npm run build` | a change to SCSS or admin JS (built files are not committed) |
+| `composer dump-autoload` | a new class without a namespace (local only; not committed) |
 
-Other CI jobs compare the committed `oc-includes/vendor/` with `composer.lock`, and the
-upgrade migrations with `struct.sql`. They fail with a message that names the fix.
+Another CI job compares the upgrade migrations with `struct.sql`. They fail with a message that names the fix.
