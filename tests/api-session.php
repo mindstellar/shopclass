@@ -18,6 +18,7 @@ define('WEB_PATH', 'https://shop.example.test/sub/');
 
 require_once __DIR__ . '/lib/api-boot.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
+require_once __DIR__ . '/lib/test-clock.php';
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\auth\PageTokenAuth;
@@ -294,6 +295,35 @@ $writeBuckets = (new RatePolicy(new ApiSettings(true)))->bucketsFor(
     new Credential(CredentialKind::SESSION, [], 10)
 );
 pin('the request bucket may count in memory, the write bucket only in the database', [['api_user', false], ['api_write', true]], array_map(static fn ($b): array => [$b->name(), $b->exact()], $writeBuckets));
+
+harness_section('guest page tokens');
+$guest   = static fn (): string => $tokens->issueGuest()->token();
+$asGuest = static fn (array $headers = [], ?SignInCookie $signIn = null, string $method = 'GET', string $path = 'v1/me'): Request
+    => $session($headers + ['Origin' => $site, 'X-Shopclass-Token' => $guest()], $signIn, $method, $path);
+$reset();
+$r = $kernel->handle($asGuest());
+pin('a guest token reads public data as nobody', [200, 0, CredentialKind::GUEST, ['listings:read']], [$r->status(), $r->body()['data']['user'], $r->body()['data']['kind'], $r->body()['data']['scopes']]);
+check('a guest answer is not cached publicly', str_starts_with((string) $r->header('Cache-Control'), 'private'));
+$reset();
+pin('a guest token cannot write', [403, 'wrong_credential'], $code($kernel->handle($asGuest(['Content-Type' => 'application/json'], null, 'POST', 'v1/notes'))));
+$reset();
+pin('nor call an admin route', [403, 'wrong_credential'], $code($kernel->handle($asGuest([], null, 'GET', 'v1/admin/x'))));
+$reset();
+pin('nor a user route, even with a valid sign-in cookie', [403, 'wrong_credential'], $code($kernel->handle($asGuest(['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes'))));
+$reset();
+pin('a guest token from another site is refused', [403, 'cross_origin'], $code($kernel->handle($asGuest(['Origin' => 'https://evil.test']))));
+$past    = new PageTokens(PageTokens::TTL, new TestClock(static fn (): int => time() - PageTokens::TTL - 10));
+$reset();
+pin('an expired guest token is 401 token_expired', [401, 'token_expired'], $code($kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => $past->issueGuest()->token()]))));
+$reset();
+pin('a forged guest token is refused', [401, 'session_required'], $code($kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => substr($guest(), 0, -2) . 'xx']))));
+pin('a user\'s token is not a guest token', PageTokens::REFUSED, $tokens->checkGuest($page(10)));
+pin('nor a guest token a user\'s', PageTokens::REFUSED, $tokens->check($guest(), $rows[10]));
+$reset();
+$byAddress = $kernelFor([], null, static fn (array $u, string $ip): bool => $ip === '192.0.2.10');
+pin('a banned address is refused', [403, 'banned'], $code($byAddress->handle($asGuest())));
+$guestBucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor($session(), new RouteSpec('GET', 'me', $routes['GET me']), new Credential(CredentialKind::GUEST, Scopes::PUBLIC))[0];
+pin('a guest counts per address, at the no-key limit', ['api_anon', '192.0.2.10', 60], [$guestBucket->name(), $guestBucket->key(), $guestBucket->max()]);
 
 harness_section('guard 5: no CORS, never stored');
 $cors = $kernelFor(['corsOrigins' => "*\n" . $site]);

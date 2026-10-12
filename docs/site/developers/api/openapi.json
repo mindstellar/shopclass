@@ -42603,7 +42603,7 @@
                 "type": "apiKey",
                 "in": "header",
                 "name": "X-Shopclass-Token",
-                "description": "Same-site session: a page token (`scs_...`) from osc_api_session_token(), sent with the web sign-in cookie by JavaScript on the site's own pages. No CORS, never `account:write` or admin scopes."
+                "description": "Same-site session: a page token (`scs_...`) from osc_api_session_token(), sent with the web sign-in cookie by JavaScript on the site's own pages; a guest's token reads public data only. No CORS, never `account:write` or admin scopes."
             }
         }
     },

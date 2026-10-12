@@ -94,6 +94,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The RSS feed, sitemaps and robots.txt send the same cache headers as public pages.
 - A new password needs at least 5 characters on the server too, not only in the browser.
 - Every REST API call needs a key or token, except sign-in and sign-up; the anonymous-reads setting is gone.
+- Visitors who are not signed in get a guest page token, so the site's own pages can read public data from the API.
 - `mindstellar\logger\OsclassErrors` is now `ErrorHandler`; the old name still works.
 - While new files wait for their database upgrade, visitors, the API and web cron get the maintenance page until an admin runs the upgrade (or `php oc-cli.php db:upgrade`), so an upgrade from 6.4 no longer shows database errors.
 - The admin warns while an active plugin version is known to break on this core, such as Listing Import before 0.3.0.

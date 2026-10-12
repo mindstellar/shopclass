@@ -53,7 +53,8 @@ final class RatePolicy
         $max     = $credential->rateLimit() ?? $this->settings->rateDefault();
         // A user's own keys count with their tokens, so more keys do not mean a higher limit.
         [$name, $key, $max] = match (true) {
-            $credential->kind() === CredentialKind::ANONYMOUS => ['api_anon', $address, $this->settings->rateAnon()],
+            $credential->kind() === CredentialKind::ANONYMOUS,
+            $credential->kind() === CredentialKind::GUEST     => ['api_anon', $address, $this->settings->rateAnon()],
             $credential->kind() === CredentialKind::PUBLIC    => ['api_key', $credential->id() . '@' . $address, $max],
             $credential->isUser()                             => ['api_user', (string) $credential->userId(), $max],
             default                                           => ['api_key', (string) $credential->id(), $max],

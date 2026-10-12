@@ -27,10 +27,10 @@ use mindstellar\security\RememberMe;
 use mindstellar\user\UserStore;
 
 /**
- * The same-site session mode: theme JavaScript on the site's own pages calls the API as the
- * signed-in web user, with a page token in X-Shopclass-Token. It is refused unless the request
- * comes from this site, the sign-in cookie is valid and the token matches that user; the credential
- * never holds account:write or admin.
+ * The same-site session mode: theme JavaScript on the site's own pages calls the API with a page
+ * token in X-Shopclass-Token. A guest token reads public data only. A user's token is refused unless
+ * the sign-in cookie is valid and names that user; its credential never holds account:write or admin.
+ * Every page token is refused from another site.
  */
 final class PageTokenAuth
 {
@@ -72,17 +72,26 @@ final class PageTokenAuth
         if (!$this->origin->matches($request)) {
             throw ProblemException::of('cross_origin', 'A page token is accepted only from this site\'s own pages.');
         }
+        $token = trim($request->header(PageTokens::HEADER));
+        $guest = $this->tokens->checkGuest($token);
+        if ($guest === PageTokens::EXPIRED) {
+            throw self::expired('The page token has expired. Reload the page.');
+        }
+        if ($guest === PageTokens::VALID) {
+            if (($this->banned)(['s_email' => ''], $request->ip())) {
+                throw ProblemException::of('banned', 'This address may not use the API.');
+            }
+
+            return new Credential(CredentialKind::GUEST, Scopes::PUBLIC);
+        }
         $user = $this->signedInUser($request);
         if ($user === null) {
             throw ProblemException::from(self::refused('Sign in on the site, then reload the page.'));
         }
 
-        $state = $this->tokens->check(trim($request->header(PageTokens::HEADER)), $user);
+        $state = $this->tokens->check($token, $user);
         if ($state === PageTokens::EXPIRED) {
-            throw ProblemException::from(
-                Problem::make('token_expired', 'The page token has expired. Get a new one from GET /auth/session before it runs out, or reload the page.')
-                    ->withHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The page token expired"')
-            );
+            throw self::expired('The page token has expired. Get a new one from GET /auth/session before it runs out, or reload the page.');
         }
         if ($state !== PageTokens::VALID) {
             throw ProblemException::from(self::refused('The page token does not belong to this sign-in. Reload the page.'));
@@ -114,6 +123,14 @@ final class PageTokenAuth
         }
 
         return $user;
+    }
+
+    private static function expired(string $detail): ProblemException
+    {
+        return ProblemException::from(
+            Problem::make('token_expired', $detail)
+                ->withHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The page token expired"')
+        );
     }
 
     private static function refused(string $detail): Response

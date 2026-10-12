@@ -282,10 +282,11 @@ so more keys do not raise the limit.
 A theme's own JavaScript can call the API as the visitor who is signed in on the site: save a
 search, post a comment, edit a listing, without a key and without asking for the password again.
 The browser sends the sign-in cookie. The page adds a short-lived **page token** in a header.
+A visitor who is not signed in gets a **guest page token**, which reads public data only.
 
 | Use | When |
 |---|---|
-| Same-site session | JavaScript on this site's own pages, acting for the signed-in visitor. |
+| Same-site session | JavaScript on this site's own pages: the signed-in visitor, or a guest reading public data. |
 | Public key | A page or app that only reads public data, on this site or another. |
 | Access token | An app, or a page on another site, acting for a user who signs in to it. |
 | Personal key or admin key | A script or server. Never in a page. |
@@ -300,7 +301,7 @@ Print the meta tag in the theme's `<head>`:
 <meta name="shopclass-api" content="{&quot;url&quot;:&quot;https://example.com/api/v1&quot;,&quot;token&quot;:&quot;scs_…&quot;,&quot;header&quot;:&quot;X-Shopclass-Token&quot;,&quot;expires_at&quot;:&quot;2026-10-04T14:00:00Z&quot;}">
 ```
 
-Its content is JSON: `url` (the API address), `token` (empty when nobody is signed in),
+Its content is JSON: `url` (the API address), `token` (a guest token when nobody is signed in),
 `header` and `expires_at`. It is empty when the API is off. `osc_api_session_token()` returns
 the token alone.
 
@@ -324,23 +325,24 @@ const fresh = await fetch(api.url + '/auth/session', { headers: { [api.header]: 
 api.token = (await fresh.json()).data.token;
 ```
 
-`GET /auth/session` answers `token`, `header` and `expires_at`. It works only for a session
-call, with a page token that still works. After that, reload the page.
+`GET /auth/session` answers `token`, `header` and `expires_at`. It works only for a signed-in
+session call, with a page token that still works. A guest reloads the page instead.
 
 Every rule must pass, or the call is refused. A call with a page token is never run as anonymous:
 
 | Rule | Detail |
 |---|---|
 | Page token | Only in the `X-Shopclass-Token` header. Never read from the query string or the body. It names the user and their sign-out stamp, so another user's token, or one made before a password change or a sign-out of all devices, is refused: `401 session_required`. An expired one is `401 token_expired`. |
-| Sign-in cookie | The site's signed sign-in cookie for that same user. With no valid cookie: `401 session_required`. A cookie with no page token stays anonymous. |
+| Sign-in cookie | The site's signed sign-in cookie for that same user. With no valid cookie: `401 session_required`. A cookie with no page token is no credential: `401`. A guest token needs no cookie. |
 | Same origin | `Origin` must be the site's own scheme, host and port: `https://example.com` for a site at `https://example.com/shop/`. A GET with no `Origin` must show `Sec-Fetch-Site: same-origin`, or a `Referer` from the site. Anything else is `403 cross_origin`. `http` and `https`, other ports and subdomains are other origins. |
 | User only | An active, enabled user who is not banned. Suspended or unconfirmed: `401 session_required`. Banned: `403 banned`. An admin signed in to the admin panel gets nothing here. |
-| Scopes | Every user scope except `account:write`: no profile, password or e-mail change, no keys, no ending sign-ins. No admin scope. |
+| Scopes | Every user scope except `account:write`: no profile, password or e-mail change, no keys, no ending sign-ins. No admin scope. A guest token holds `listings:read` only, and a banned address gets `403 banned`. |
 | No CORS | An answer never carries `Access-Control-Allow-Origin`, even when the site allows `*`. `X-Shopclass-Token` is not an allowed CORS header, so a page on another site cannot send it. |
-| Never stored | Answers are `Cache-Control: private, no-store` and vary on `Cookie`. |
+| Never stored | Answers are `Cache-Control: private, no-store` and vary on `Cookie`. Guest answers are `private`. |
 
 A call with `Authorization: Bearer` or `?api_key=` is a key or token call: the page token is
-ignored. Calls count in the user's `api_user` bucket, shared with their access tokens.
+ignored. Calls count in the user's `api_user` bucket, shared with their access tokens. Guest
+calls count per address, at the no-key limit.
 `Idempotency-Key` values are kept per user for session calls.
 
 The sign-in cookie is `SameSite=Lax` and `HttpOnly`, so other sites' pages cannot send it with

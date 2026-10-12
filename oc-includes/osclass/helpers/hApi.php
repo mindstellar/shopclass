@@ -184,29 +184,29 @@ if (!function_exists('osc_api_url')) {
 
 if (!function_exists('osc_api_session_token')) {
     /**
-     * The page token theme JavaScript sends as the X-Shopclass-Token header to call the API as
-     * the signed-in user, from this site's own pages. It lives two hours.
+     * The page token theme JavaScript sends as the X-Shopclass-Token header to call the API from
+     * this site's own pages: the signed-in user's, or a guest's that reads public data only. It
+     * lives two hours.
      *
      * @api
      *
-     * @return string '' when the API is off or nobody is signed in
+     * @return string '' when the API is off
      */
     function osc_api_session_token(): string
     {
         if (!osc_api_enabled()) {
             return '';
         }
-        $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forWebUser();
 
-        return $token === null ? '' : $token->token();
+        return \mindstellar\apikey\ApiAccess::site()->pageTokens()->forPage()->token();
     }
 }
 
 if (!function_exists('osc_api_session_meta')) {
     /**
      * A `<meta name="shopclass-api">` tag for the page head. Its content is JSON: the API's
-     * address (`url`), the page token (`token`, '' when nobody is signed in), the `header` to
-     * send it in and when it expires (`expires_at`).
+     * address (`url`), the page token (`token`, a guest's when nobody is signed in), the `header`
+     * to send it in and when it expires (`expires_at`).
      *
      * @api
      *
@@ -217,12 +217,12 @@ if (!function_exists('osc_api_session_meta')) {
         if (!osc_api_enabled()) {
             return '';
         }
-        $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forWebUser();
+        $token = \mindstellar\apikey\ApiAccess::site()->pageTokens()->forPage();
         $data  = [
             'url'        => osc_api_url(),
-            'token'      => $token === null ? '' : $token->token(),
+            'token'      => $token->token(),
             'header'     => \mindstellar\apikey\PageTokens::HEADER,
-            'expires_at' => $token === null ? null : \mindstellar\database\UtcDatetime::rfc3339((int) $token->expiresAt()),
+            'expires_at' => \mindstellar\database\UtcDatetime::rfc3339((int) $token->expiresAt()),
         ];
 
         return '<meta name="shopclass-api" content="' . osc_esc_html((string) json_encode($data, JSON_UNESCAPED_SLASHES)) . '">' . PHP_EOL;

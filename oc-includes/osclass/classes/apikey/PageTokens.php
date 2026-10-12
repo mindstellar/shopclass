@@ -19,8 +19,8 @@ use mindstellar\utility\SystemClock;
 
 /**
  * Page tokens for the same-site session mode: `scs_<SignedPayload>`, signed with the install's
- * key and stored nowhere. The payload names the user and their sign-out stamp fingerprint, so a
- * password change or sign-out everywhere ends every page token.
+ * key and stored nowhere. A user's payload names the user and their sign-out stamp fingerprint, so a
+ * password change or sign-out everywhere ends every page token; a guest's names nobody.
  */
 final class PageTokens
 {
@@ -40,6 +40,8 @@ final class PageTokens
     public const REFUSED = 'refused';
 
     private const PURPOSE = 'api-session';
+
+    private const GUEST_PURPOSE = 'api-guest';
 
     private Clock $clock;
 
@@ -62,6 +64,42 @@ final class PageTokens
         ], $this->ttl, 0, $now);
 
         return new IssuedToken($token, $now + $this->ttl);
+    }
+
+    /**
+     * A page token for a visitor who is not signed in. It reads public data only.
+     */
+    public function issueGuest(): IssuedToken
+    {
+        $now = $this->clock->now();
+
+        return new IssuedToken(self::PREFIX . SignedPayload::pack(self::GUEST_PURPOSE, [], $this->ttl, 0, $now), $now + $this->ttl);
+    }
+
+    /**
+     * The token for this web request's page: the signed-in user's, or a guest's.
+     */
+    public function forPage(): IssuedToken
+    {
+        return $this->forWebUser() ?? $this->issueGuest();
+    }
+
+    /**
+     * Whether a token is a guest token this site made.
+     *
+     * @return string VALID, EXPIRED or REFUSED (also for a user's token)
+     */
+    public function checkGuest(string $token): string
+    {
+        if (!str_starts_with($token, self::PREFIX)) {
+            return self::REFUSED;
+        }
+        $opened = SignedPayload::open(self::GUEST_PURPOSE, substr($token, strlen(self::PREFIX)), $this->clock->now());
+        if ($opened === null) {
+            return self::REFUSED;
+        }
+
+        return $opened['expired'] ? self::EXPIRED : self::VALID;
     }
 
     /**

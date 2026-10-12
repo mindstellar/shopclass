@@ -28,6 +28,8 @@ final class CredentialKind
     public const USER = 'user';
     /** @api A signed-in web user calling from the site's own pages: cookie plus page token, `scs_`. */
     public const SESSION = 'session';
+    /** @api A visitor calling from the site's own pages with a guest page token, `scs_`: public reads only. */
+    public const GUEST = 'guest';
     /** A refresh token; never authenticates a call itself. */
     public const REFRESH = 'refresh';
 

@@ -231,7 +231,8 @@ final class OpenApi
                         'in'          => 'header',
                         'name'        => PageTokens::HEADER,
                         'description' => 'Same-site session: a page token (`scs_...`) from osc_api_session_token(), sent with the web '
-                            . 'sign-in cookie by JavaScript on the site\'s own pages. No CORS, never `account:write` or admin scopes.',
+                            . 'sign-in cookie by JavaScript on the site\'s own pages; a guest\'s token reads public data only. No CORS, '
+                            . 'never `account:write` or admin scopes.',
                     ],
                 ],
             ],

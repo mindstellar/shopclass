@@ -149,6 +149,7 @@ mindstellar\apikey\Credential::public kind(): string
 mindstellar\apikey\Credential::public scopes(): array
 mindstellar\apikey\Credential::public userId(): ?int
 mindstellar\apikey\CredentialKind::ANONYMOUS = "anonymous"
+mindstellar\apikey\CredentialKind::GUEST = "guest"
 mindstellar\apikey\CredentialKind::KEY = "key"
 mindstellar\apikey\CredentialKind::PUBLIC = "public"
 mindstellar\apikey\CredentialKind::SESSION = "session"
