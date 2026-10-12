@@ -60,7 +60,9 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
                     break;
                 }
 
-                osc_add_flash_ok_message(_m('Mail server configuration has changed'), 'admin');
+                if ($result['updated'] > 0) {
+                    osc_add_flash_ok_message(_m('Mail server configuration has changed'), 'admin');
+                }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=mailserver');
                 break;
         }
