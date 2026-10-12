@@ -169,7 +169,7 @@ Read-only endpoints, authenticated with keys.
 | Endpoint | Returns |
 |---|---|
 | `GET /` | The site, its locales and links |
-| `GET /openapi.json` | The OpenAPI 3.1 document, with the site's plugin endpoints. Any key, or none when the site allows anonymous reads. |
+| `GET /openapi.json` | The OpenAPI 3.1 document, with the site's plugin endpoints. Any key or page token. |
 | `GET /listings`, `GET /listings/{id}` | Search, and one listing |
 | `GET /listings/{id}/photos`, `GET /listings/{id}/comments` | A listing's photos and approved comments |
 | `GET /categories`, `GET /categories/{category}`, `GET /custom-fields` | Categories (flat or tree) and custom fields |
