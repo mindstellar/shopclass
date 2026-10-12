@@ -8,7 +8,7 @@
 ## dependencies are built in CI (`npm ci && npm run build`, `composer install --no-dev`)
 ## BEFORE this runs; this script does not build.
 ## It layers the freshly built runtime output onto a clean `git archive` base
-## (so .gitattributes export-ignore stays the single source of exclusions) and
+## (so .gitattributes export-ignore applies to the sources) and
 ## bundles the storefront theme.
 ##
 ## Environment:
@@ -67,7 +67,7 @@ fi
 rm -rf "$DIR/osclass/oc-includes/vendor"
 mkdir -p "$DIR/osclass/oc-includes/vendor"
 cp -R oc-includes/vendor/. "$DIR/osclass/oc-includes/vendor/"
-# Same exclusions as .gitattributes export-ignore.
+# Drop dev-only and test files from the vendor tree.
 rm -rf "$DIR/osclass/oc-includes/vendor/bin" \
   "$DIR/osclass/oc-includes/vendor/async-aws/core/src/Test" \
   "$DIR/osclass/oc-includes/vendor/symfony/http-client-contracts/Test" \

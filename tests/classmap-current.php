@@ -10,8 +10,8 @@
 
 /**
  * Every class, interface, trait and enum under oc-includes/osclass is in Composer's committed
- * class map. A class with no namespace loads only from it; run `composer dump-autoload` and
- * commit oc-includes/vendor/composer/ after adding one.
+ * class map. A class with no namespace loads only from it; run `composer dump-autoload` after
+ * adding one. CI regenerates the map with `composer install`.
  *
  * DB-free.  Usage: php tests/classmap-current.php
  */

@@ -2,11 +2,10 @@
  * Copies third-party assets out of node_modules into the paths Osclass serves them from.
  *
  * Replaces the old Grunt `clean` + `copy` tasks. Osclass loads vendor assets by literal
- * path (there is no bundler and no asset hashing), and the copied output is committed to
- * git — `.build.sh` packages releases with `git archive`, so nothing rebuilds them at
- * release time. Both destinations are wiped first so a removed dependency cannot leave
+ * path (there is no bundler and no asset hashing). The output is not in git; `npm run build`
+ * and CI create it. Both destinations are wiped first so a removed dependency cannot leave
  * an orphaned file behind that would still ship — except the first-party asset dirs in
- * PRESERVE, which are hand-written source committed under ASSETS, not vendor copies.
+ * PRESERVE, which are hand-written source tracked under ASSETS, not vendor copies.
  */
 import { rm, mkdir, cp, chmod, glob, readdir } from 'node:fs/promises';
 import { dirname, join, basename, relative } from 'node:path';

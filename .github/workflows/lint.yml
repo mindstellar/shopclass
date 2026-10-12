@@ -49,7 +49,7 @@ jobs:
           composer install --no-interaction --prefer-dist
 
       # The formatter is a pinned PHAR rather than a composer dep, so that it
-      # never lands in the committed oc-includes/vendor tree shipped in the zip.
+      # never lands in the oc-includes/vendor tree shipped in the zip.
       # The pin is in composer.json's cs:install, the same one a developer runs.
       - name: Fetch php-cs-fixer
         run: composer cs:install

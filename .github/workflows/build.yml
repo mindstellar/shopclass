@@ -107,11 +107,9 @@ jobs:
     uses: ./.github/workflows/lint.yml
   i18n:
     uses: ./.github/workflows/i18n-drift.yml
-  vendor:
-    uses: ./.github/workflows/vendor-drift.yml
 
   release:
-    needs: [gate, test, drift, lint, i18n, vendor]
+    needs: [gate, test, drift, lint, i18n]
     if: needs.gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     # For the install smoke test below: the zip is installed against a real
@@ -402,7 +400,7 @@ jobs:
   # same test/drift/lint as a release so a broken commit can never ship an image.
   # edge-nightly.yml builds the same image once a night when develop has moved.
   edge:
-    needs: [test, drift, lint, i18n, vendor]
+    needs: [test, drift, lint, i18n]
     if: github.ref_name == 'develop' && contains(github.event.head_commit.message, '[publish-edge]')
     permissions:
       contents: read
