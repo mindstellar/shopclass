@@ -171,7 +171,7 @@ final class LegacyAlertParser
                 return self::heldRow(self::HELD_CONDITION);
             }
             $searchable = $searchable ?? static function (array $ids): array {
-                return (array)\Field::getInstance()->findIDSearchableByCategories($ids);
+                return SearchBuilder::searchableFieldIds($ids);
             };
             $keep           = array_flip(array_map('intval', $searchable($values['sCategory'])));
             $values['meta'] = array_intersect_key($values['meta'], $keep);

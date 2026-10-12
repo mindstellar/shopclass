@@ -21,6 +21,7 @@ use mindstellar\api\serializer\ViewContext;
 use mindstellar\apikey\Credential;
 use mindstellar\listing\ListingQuery;
 use mindstellar\search\Distance;
+use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
 use mindstellar\search\SearchRunner;
 
@@ -222,9 +223,7 @@ final class ListingSearch
      */
     private static function checkMeta(array $meta, array $categoryIds): void
     {
-        $searchable = $categoryIds === []
-            ? []
-            : array_map('intval', \Field::getInstance()->findIDSearchableByCategories($categoryIds));
+        $searchable = SearchBuilder::searchableFieldIds($categoryIds);
         foreach (array_keys($meta) as $key) {
             $pointer = '/custom_field/' . $key;
             if (RowId::parse((string) $key) === null) {

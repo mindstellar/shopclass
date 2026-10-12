@@ -163,6 +163,23 @@ class SearchBuilder
     }
 
     /**
+     * The ids of the fields that can be searched in these categories (ids or slugs),
+     * inheritance included; none when no category is given.
+     *
+     * @param array<mixed> $categories
+     *
+     * @return int[]
+     */
+    public static function searchableFieldIds(array $categories): array
+    {
+        if ($categories === []) {
+            return [];
+        }
+
+        return array_map('intval', (array) \Field::getInstance()->findIDSearchableByCategories($categories));
+    }
+
+    /**
      * One condition per custom-field filter on a field searchable in the asked categories.
      *
      * @param SearchCriteria $criteria
@@ -176,8 +193,11 @@ class SearchBuilder
         if (!is_array($custom_fields) || $custom_fields === []) {
             return;
         }
-        $fields = \Field::getInstance()->findIDSearchableByCategories($criteria->categories());
-        $types  = FieldQuery::types(array_map('intval', array_filter(array_keys($custom_fields), static fn ($key): bool => in_array($key, $fields))));
+        $fields = self::searchableFieldIds((array) $criteria->categories());
+        $types  = FieldQuery::types(array_map('intval', array_filter(
+            array_keys($custom_fields),
+            static fn ($key): bool => (string) (int) $key === (string) $key && in_array((int) $key, $fields, true)
+        )));
 
         $table = DB_TABLE_PREFIX . 't_item_meta';
         foreach ($custom_fields as $key => $aux) {
