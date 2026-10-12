@@ -17,7 +17,7 @@ use mindstellar\auth\AuthStamp;
 
 /**
  * The admin signed in to the admin panel in this browser, read from the PHP session for an admin
- * page token. The session is read once, without a lock, and never written or sent back.
+ * page token. The session is read once and closed at once, never written or sent back.
  */
 final class AdminSession
 {
