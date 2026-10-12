@@ -541,9 +541,8 @@ function osc_gui_account_view(string $themeView): bool
         'user-delete_account.php'  => array(
             'heading' => _m('Delete your account'),
             'tone'    => 'danger',
-            'intro'   => _m('This page has not deleted the account yet. Enter your password and click '
-                            . 'Delete my account. Your listings and messages will be removed. This '
-                            . 'cannot be undone.'),
+            'intro'   => _m('Your account is not deleted yet. Enter your password and click Delete my '
+                            . 'account. Your listings and messages will be removed. This cannot be undone.'),
         ),
     );
 
