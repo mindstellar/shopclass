@@ -30,8 +30,8 @@ Download the latest package from the
 
 :::caution[Install from a release, never from a branch]
 `master` and `develop` may contain untested code, and they do not carry the
-compiled admin CSS and JavaScript that a release package includes. A site
-deployed from a branch will look broken in the admin panel.
+PHP packages and compiled admin files that a release package includes. A site
+deployed from a branch will not start.
 :::
 
 ## 2. Unpack it into your web root

@@ -91,6 +91,7 @@ A full stack (PHP-FPM, MariaDB, Nginx, Valkey, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`:
 
 ```bash
+npm run setup         # first run: installs and builds the generated files
 npm run dev:build     # first run: builds the PHP-FPM image
 npm run dev           # start
 npm run dev:logs      # follow the logs

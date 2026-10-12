@@ -1,5 +1,6 @@
 # Docker Compose configuration for the Shopclass local development stack.
 #
+#   npm run setup         first run (installs and builds the generated files)
 #   npm run dev:build     first run (builds the php-fpm image)
 #   npm run dev           start
 #   npm run dev:down      stop

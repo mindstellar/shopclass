@@ -168,7 +168,7 @@ npm ci && npm run build   # vendor assets + SCSS → CSS + JS
 npm run watch             # rebuild CSS on change while developing
 ```
 
-With Docker, `npm run setup` does the same (Composer runs inside the PHP-FPM container).
+With Docker, `npm run setup` does the same in one step (Composer runs inside the PHP-FPM container).
 These generated files are not in git. Do not commit them.
 
 Dependencies must also resolve on the PHP floor. `config.platform` pins composer
@@ -182,6 +182,7 @@ ships in `docker-compose.dev.yml`, alongside `docker-compose.prod.yml` for the
 production image:
 
 ```bash
+npm run setup         # first run: installs and builds the generated files
 npm run dev:build     # first run: builds the PHP-FPM image
 npm run dev           # start
 npm run dev:down      # stop

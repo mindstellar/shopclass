@@ -17,7 +17,7 @@
     "js": "esbuild oc-admin/themes/modern/js/location.js --minify --sourcemap --outfile=oc-admin/themes/modern/js/location.min.js",
     "i18n": "node scripts/build-i18n.mjs",
     "watch": "node scripts/build-css.mjs --watch",
-    "setup": "npm run env:init && npm run build && docker compose run --rm php-fpm composer install",
+    "setup": "npm run env:init && npm ci && npm run build && docker compose run --rm php-fpm composer install",
     "dev": "npm run env:init && docker compose up -d",
     "dev:build": "npm run env:init && docker compose up -d --build",
     "dev:down": "npm run env:init && docker compose down",
