@@ -151,7 +151,7 @@ curl -X PATCH $API/listings/412 \
 ```
 
 Send `application/merge-patch+json` or `application/json`. The answer repeats `Accept-Patch`.
-An empty patch (`{}`) changes nothing and answers `200` with the current resource. This holds for every `PATCH`.
+An empty patch (`{}`) changes nothing and answers `200` with the current resource. This holds for every `PATCH` except `PATCH /admin/areas/{id}`, where `name` is required.
 
 The patch applies to the write shape above, the same members `POST` takes, not to the
 nested shape a `GET` answers with. Send `"price": "75.00"`, not `"price": {"amount": "75.00"}`.

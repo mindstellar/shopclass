@@ -250,7 +250,7 @@ The body is `{"data": {…the listing…}}`. If the site checks new listings fir
 ### 4. Edit it
 
 Send only what changes, as a JSON merge patch. An empty body (`{}`) changes nothing and answers
-`200` with the current resource.
+`200` with the current resource (not on `PATCH /admin/areas/{id}`, where `name` is required).
 
 ```bash
 curl -X PATCH $API/listings/412 \
