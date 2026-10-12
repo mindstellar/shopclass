@@ -42,7 +42,7 @@ How a call is accepted:
 | Rule | Detail |
 |---|---|
 | Header | `Authorization: Bearer <credential>`. Any other scheme, such as Basic auth, is ignored. |
-| Query string | `?api_key=scp_…` works for **public keys on `GET` and `HEAD` only**. Other keys and tokens are never accepted there. See the warning below. |
+| Query string | `?api_key=scp_…` works for **public keys on `GET` and `HEAD` only**. Any other key or token there is a `401`, on every endpoint, public ones too. See the warning below. |
 | Cookies | Never used alone. Only a [same-site session](#same-site-session-theme-javascript) reads the sign-in cookie, and only with a page token in its header. The API sets no cookie. |
 | No credential | `401`, unless the site owner allowed anonymous reads. Then reads work with the public scope and a lower per-address limit. |
 | `GET /openapi.json` | Any credential, or none when the site allows anonymous reads. |

@@ -273,8 +273,8 @@ pin('a cookie never authenticates', null, $auth->authenticate($req('', [], 'GET'
 check('a good key authenticates', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
 check('the scheme is case-insensitive', $auth->authenticate($req('bearer ' . $new->token())) instanceof Credential);
 check('a public key works as ?api_key= on a GET', $auth->authenticate($req('', ['api_key' => $public->token()])) instanceof Credential);
-pin('an admin key is refused as ?api_key=', null, $auth->authenticate($req('', ['api_key' => $new->token()])));
-pin('nor a public key on a POST', null, $auth->authenticate($req('', ['api_key' => $public->token()], 'POST')));
+pin('an admin key as ?api_key= is a 401', 401, $problem(fn () => $auth->authenticate($req('', ['api_key' => $new->token()])))?->status());
+pin('nor a public key on a POST', 401, $problem(fn () => $auth->authenticate($req('', ['api_key' => $public->token()], 'POST')))?->status());
 pin('a Basic header is not a token', null, $auth->authenticate($req('Basic dXNlcjpwYXNz')));
 check('with Basic auth in front, ?api_key= still works', $auth->authenticate($req('Basic dXNlcjpwYXNz', ['api_key' => $public->token()])) instanceof Credential);
 pin('none of that counted a failure', [], $fails);

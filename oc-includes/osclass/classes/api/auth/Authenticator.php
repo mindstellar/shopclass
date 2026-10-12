@@ -57,6 +57,17 @@ final class Authenticator
     }
 
     /**
+     * Whether `?api_key=` carries something token() would not take: any key on a write, or a
+     * key that is not public.
+     */
+    private static function queryKeyRefused(Request $request): bool
+    {
+        $key = $request->query()['api_key'] ?? null;
+
+        return $key !== null && $key !== '' && self::token($request) === '';
+    }
+
+    /**
      * @return Credential|null null when the request carries no token and no page token
      * @throws ProblemException 429 when this key is shut out from this address or a token fails from
      *                    an address that failed too often, 401 for a refused token, 403 for a
@@ -65,6 +76,10 @@ final class Authenticator
     public function authenticate(Request $request): ?Credential
     {
         $token = self::token($request);
+        if ($token === '' && self::queryKeyRefused($request)) {
+            // A secret in the URL ends up in logs; only a public key on a read may sit there.
+            throw ProblemException::from(Problem::unauthorized(true));
+        }
         if ($token === '') {
             return $this->session?->authenticate($request);
         }
