@@ -386,7 +386,7 @@ final class PublicRoutes
                 status: 201,
                 errors: [403],
                 replayable: false
-            ) + ['gate' => 'user_keys'],
+            ) + ['needs_user_keys' => true],
             'GET account/keys/{id}' => RouteSpec::read(
                 handler: [AccountKeysController::class, 'show'],
                 tag: 'Account',

@@ -164,7 +164,7 @@ final class Kernel
             }
             $credential = $this->credentialFor($request, $route);
             self::authorize($route, $credential);
-            if ($route->gate() === 'user_keys' && !$this->settings->userKeys()) {
+            if ($route->needsUserKeys() && !$this->settings->userKeys()) {
                 throw ProblemException::of('feature_disabled', _m('This site does not let users make API keys.'));
             }
             $rateHeaders = $this->countRequest($request, $route, $credential);
