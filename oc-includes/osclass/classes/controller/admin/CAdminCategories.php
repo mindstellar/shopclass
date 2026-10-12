@@ -63,6 +63,7 @@ class CAdminCategories extends AdminSecBaseModel
                     true
                 );
 
+                osc_add_flash_ok_message(_m('A new category has been added'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
                 break;
             default:                //
