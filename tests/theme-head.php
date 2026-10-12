@@ -168,6 +168,11 @@ function osc_update_search_url($params = array())
     return 'https://example.test/search/cars/sFeed,rss';
 }
 
+function osc_api_session_meta()
+{
+    return '<meta name="shopclass-api" content="{}">' . PHP_EOL;
+}
+
 function osc_search_page()
 {
     return $GLOBALS['searchPage'] ?? 0;
@@ -230,6 +235,7 @@ check('title', strpos($out, '<title>') !== false);
 check('description', strpos($out, 'name="description" content="A description."') !== false);
 check('canonical', strpos($out, 'rel="canonical" href="https://example.test/here"') !== false);
 check('feed', strpos($out, 'application/rss+xml') !== false);
+check('the API meta tag', strpos($out, 'name="shopclass-api"') !== false);
 pin('the header hook ran exactly once', 1, $GLOBALS['hookRuns']);
 
 harness_section('osc_head(): the title is escaped');
@@ -247,7 +253,7 @@ check('no empty keywords', strpos($out, 'name="keywords"') === false);
 
 harness_section('osc_head(): parts are opt-out, one at a time');
 $GLOBALS['page'] = 'item';
-foreach (array('charset', 'viewport', 'title', 'description', 'canonical', 'feed') as $part) {
+foreach (array('charset', 'viewport', 'title', 'description', 'canonical', 'feed', 'api') as $part) {
     $supports->reset();
     osc_add_theme_support('head', array($part => false));
     $out    = $head();
@@ -258,6 +264,7 @@ foreach (array('charset', 'viewport', 'title', 'description', 'canonical', 'feed
         'description' => 'name="description"',
         'canonical'   => 'rel="canonical"',
         'feed'        => 'application/rss+xml',
+        'api'         => 'name="shopclass-api"',
     );
     check('"' . $part . '" can be declined', strpos($out, $marker[$part]) === false);
     pin('and the header hook still runs once without ' . $part, 1, $GLOBALS['hookRuns']);

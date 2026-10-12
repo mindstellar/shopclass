@@ -291,11 +291,9 @@ A visitor who is not signed in gets a **guest page token**, which reads public d
 | Access token | An app, or a page on another site, acting for a user who signs in to it. |
 | Personal key or admin key | A script or server. Never in a page. |
 
-Print the meta tag in the theme's `<head>`:
-
-```php
-<?php echo osc_api_session_meta(); ?>
-```
+Every public page carries it in `<head>`: `osc_head()` prints it, and a theme without `osc_head()`
+gets it from the `header` hook. A page prints it once, so calling `osc_api_session_meta()` as well
+adds nothing.
 
 ```html
 <meta name="shopclass-api" content="{&quot;url&quot;:&quot;https://example.com/api/v1&quot;,&quot;token&quot;:&quot;scs_…&quot;,&quot;header&quot;:&quot;X-Shopclass-Token&quot;,&quot;expires_at&quot;:&quot;2026-10-04T14:00:00Z&quot;}">

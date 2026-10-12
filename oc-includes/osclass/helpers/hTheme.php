@@ -794,6 +794,10 @@ function osc_head(): void
         echo '<link rel="alternate" type="application/rss+xml" title="'
             . osc_esc_html(osc_page_title()) . '" href="' . osc_esc_html((string) $feed) . '">' . PHP_EOL;
     }
+    if ($want('api')) {
+        // The REST API address and this page's token, for the site's own JavaScript.
+        echo osc_api_session_meta();
+    }
 
     // Enqueued styles and scripts, robots meta, and everything plugins add.
     osc_run_hook('header');

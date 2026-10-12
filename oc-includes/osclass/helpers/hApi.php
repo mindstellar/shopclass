@@ -201,6 +201,7 @@ if (!function_exists('osc_api_session_meta')) {
      * A `<meta name="shopclass-api">` tag for the page head. Its content is JSON: the API's
      * address (`url`), the page token (`token`, a guest's when nobody is signed in), the `header`
      * to send it in and when it expires (`expires_at`). It is printed while the API is off too.
+     * osc_head() prints it; a page gets it once, so a second call returns ''.
      *
      * @api
      *
@@ -208,6 +209,11 @@ if (!function_exists('osc_api_session_meta')) {
      */
     function osc_api_session_meta(?\mindstellar\apikey\IssuedToken $token = null): string
     {
+        static $printed = false;
+        if ($printed) {
+            return '';
+        }
+        $printed = true;
         $token ??= \mindstellar\apikey\ApiAccess::site()->pageTokens()->forPage();
         $data    = [
             'url'        => osc_api_url(),
@@ -284,6 +290,14 @@ osc_add_filter('user_menu_filter', static function ($options) {
     }
 
     return $options;
+});
+
+// A theme that does not call osc_head() still gets the API meta tag, unless it declined that part.
+osc_add_hook('header', static function (): void {
+    $head = osc_theme_supports('head');
+    if (!is_array($head) || ($head['api'] ?? true) !== false) {
+        echo osc_api_session_meta();
+    }
 });
 
 // Signing out everywhere (which a password change does) revokes the API sign-ins and keys

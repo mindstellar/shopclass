@@ -33,6 +33,7 @@ It prints, in order:
 | `canonical` | `<link rel="canonical">`, omitted when there is none |
 | `pagination` | `<link rel="prev">` / `<link rel="next">` on a search results page, omitted elsewhere |
 | `feed` | `<link rel="alternate" type="application/rss+xml">`: the current search's feed on a results page, the site's elsewhere |
+| `api` | `<meta name="shopclass-api">`: the REST API address and this page's [page token](/docs/developers/api/authentication/#same-site-session-theme-javascript) |
 
 and then runs the `header` hook, which is where enqueued styles and scripts, the
 robots meta, and everything plugins add come from.
@@ -51,6 +52,9 @@ osc_add_theme_support('head', array('feed' => false));
 Anything not named stays on, so `osc_add_theme_support('head')` on its own means
 "core owns all of it". The declaration is also how core knows your head is
 core-managed; `osc_head()` itself works whether or not you declared anything.
+
+A theme that does not call `osc_head()` still gets the `api` tag from the `header` hook, unless it
+declares `'api' => false`.
 
 ## `osc_body_class()`
 
