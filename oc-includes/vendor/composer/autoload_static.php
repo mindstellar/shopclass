@@ -1263,6 +1263,8 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\logger\\LogQuery' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/LogQuery.php',
         'mindstellar\\logger\\LogStore' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/LogStore.php',
         'mindstellar\\logger\\OsclassErrors' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
+        'mindstellar\\mail\\CoreEmails' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/mail/CoreEmails.php',
+        'mindstellar\\mail\\Mailer' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/mail/Mailer.php',
         'mindstellar\\market\\Catalog' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Catalog.php',
         'mindstellar\\market\\Compatibility' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Compatibility.php',
         'mindstellar\\market\\Installer' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Installer.php',

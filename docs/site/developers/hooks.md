@@ -260,81 +260,81 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
-| `email_admin_new_item_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/emails.php` |
-| `email_admin_new_item_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_admin_new_item_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/emails.php` |
-| `email_admin_new_item_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/emails.php` |
-| `email_admin_new_item_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_new_item_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/emails.php` |
-| `email_admin_user_registration_title` | filter | `$content['s_title'], $user` | `oc-includes/osclass/emails.php` |
-| `email_admin_user_registration_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_user_registration_title', $content['s_title'], $user) ), $words), $user` | `oc-includes/osclass/emails.php` |
-| `email_admin_user_regsitration_description` | filter | `$content['s_text'], $user` | `oc-includes/osclass/emails.php` |
-| `email_admin_user_regsitration_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_admin_user_regsitration_description', $content['s_text'], $user) ), $words ), $user` | `oc-includes/osclass/emails.php` |
-| `email_after_auto_upgrade_description` | filter | `$body, $result` | `oc-includes/osclass/emails.php` |
-| `email_after_auto_upgrade_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_after_auto_upgrade_description', $body, $result) ), $words ), $result` | `oc-includes/osclass/emails.php` |
-| `email_after_auto_upgrade_title` | filter | `$title, $result` | `oc-includes/osclass/emails.php` |
-| `email_after_auto_upgrade_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_after_auto_upgrade_title', $title, $result) ), $words), $result` | `oc-includes/osclass/emails.php` |
-| `email_alert_validation_description` | filter | `$page_description[$prefLocale]['s_text'], $alert, $email, $secret` | `oc-includes/osclass/emails.php` |
-| `email_alert_validation_description_after` | filter | `osc_mailBeauty($_body, $words), $alert, $email, $secret` | `oc-includes/osclass/emails.php` |
-| `email_alert_validation_title` | filter | `$page_description[$prefLocale]['s_title'], $alert, $email, $secret` | `oc-includes/osclass/emails.php` |
-| `email_alert_validation_title_after` | filter | `osc_mailBeauty($_title, $words), $alert, $email, $secret` | `oc-includes/osclass/emails.php` |
-| `email_comment_validated_description` | filter | `$content['s_text'], $aComment` | `oc-includes/osclass/emails.php` |
-| `email_comment_validated_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_comment_validated_description', $content['s_text'], $aComment) ), $words), $aComment` | `oc-includes/osclass/emails.php` |
-| `email_comment_validated_title` | filter | `$content['s_title'], $aComment` | `oc-includes/osclass/emails.php` |
-| `email_comment_validated_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_comment_validated_title', $content['s_title'], $aComment) ), $words), $aComment` | `oc-includes/osclass/emails.php` |
+| `email_admin_new_item_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_new_item_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_admin_new_item_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_new_item_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_new_item_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_new_item_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_user_registration_title` | filter | `$content['s_title'], $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_user_registration_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_user_registration_title', $content['s_title'], $user) ), $words), $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_user_regsitration_description` | filter | `$content['s_text'], $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_user_regsitration_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_admin_user_regsitration_description', $content['s_text'], $user) ), $words ), $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_after_auto_upgrade_description` | filter | `$body, $result` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_after_auto_upgrade_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_after_auto_upgrade_description', $body, $result) ), $words ), $result` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_after_auto_upgrade_title` | filter | `$title, $result` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_after_auto_upgrade_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_after_auto_upgrade_title', $title, $result) ), $words), $result` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_alert_validation_description` | filter | `$page_description[$prefLocale]['s_text'], $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_alert_validation_description_after` | filter | `osc_mailBeauty($_body, $words), $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_alert_validation_title` | filter | `$page_description[$prefLocale]['s_title'], $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_alert_validation_title_after` | filter | `osc_mailBeauty($_title, $words), $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_comment_validated_description` | filter | `$content['s_text'], $aComment` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_comment_validated_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_comment_validated_description', $content['s_text'], $aComment) ), $words), $aComment` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_comment_validated_title` | filter | `$content['s_title'], $aComment` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_comment_validated_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_comment_validated_title', $content['s_title'], $aComment) ), $words), $aComment` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_description` | filter | `$v['s_title']` | `oc-includes/osclass/classes/controller/CWebPage.php` |
-| `email_item_inquiry_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_item_inquiry_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_inquiry_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_item_inquiry_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_item_inquiry_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_validation_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_non_register_user_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_non_register_user_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_validation_non_register_user_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_non_register_user_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_item_validation_non_register_user_title', $content['s_title'], $item) ), $words ), $item` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/emails.php` |
-| `email_item_validation_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_validation_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/emails.php` |
+| `email_item_inquiry_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_inquiry_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_inquiry_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_inquiry_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_inquiry_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_validation_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_validation_non_register_user_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_item_validation_non_register_user_title', $content['s_title'], $item) ), $words ), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_item_validation_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_validation_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_legend_words` | filter | `$array, @$email['s_internal_name']` | `oc-includes/osclass/classes/EmailVariables.php` |
-| `email_new_admin_description` | filter | `$content['s_text'], $data` | `oc-includes/osclass/emails.php` |
-| `email_new_admin_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_admin_description', $content['s_text'], $data) ), $words ), $data` | `oc-includes/osclass/emails.php` |
-| `email_new_admin_title` | filter | `$content['s_title'], $data` | `oc-includes/osclass/emails.php` |
-| `email_new_admin_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_admin_title', $content['s_title'], $data) ), $words), $data` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_admin_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_admin_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_comment_admin_description', $content['s_text'], $aItem) ), $words), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_admin_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_admin_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_new_comment_admin_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_user_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_user_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_comment_user_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_user_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_comment_user_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_new_comment_user_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_new_email_description` | filter | `$content['s_text'], $new_email, $validation_url` | `oc-includes/osclass/emails.php` |
-| `email_new_email_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_email_description', $content['s_text'], $new_email, $validation_url) ), $words ), $new_email, $validation_url` | `oc-includes/osclass/emails.php` |
-| `email_new_email_title` | filter | `$content['s_title'], $new_email, $validation_url` | `oc-includes/osclass/emails.php` |
-| `email_new_email_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_email_title', $content['s_title'], $new_email, $validation_url) ), $words), $new_email, $validation_url` | `oc-includes/osclass/emails.php` |
-| `email_new_item_non_register_user_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/emails.php` |
-| `email_new_item_non_register_user_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item) ), $words), $item` | `oc-includes/osclass/emails.php` |
-| `email_new_item_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/emails.php` |
-| `email_new_item_non_register_user_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/emails.php` |
-| `email_send_friend_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_send_friend_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_send_friend_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_send_friend_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_title` | filter | `osc_apply_filter( 'email_alert_validation_title', $page_description[$prefLocale]['s_title'], $alert, $email, $secret )` | `oc-includes/osclass/emails.php` |
-| `email_user_forgot_pass_word_title` | filter | `$content['s_title'], $user, $password_url` | `oc-includes/osclass/emails.php` |
-| `email_user_forgot_pass_word_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_forgot_pass_word_title', $content['s_title'], $user, $password_url) ), $words ), $user, $password_url` | `oc-includes/osclass/emails.php` |
-| `email_user_forgot_password_description` | filter | `$content['s_text'], $user, $password_url` | `oc-includes/osclass/emails.php` |
-| `email_user_forgot_password_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter( 'email_user_forgot_password_description', $content['s_text'], $user, $password_url ) ), $words ), $user, $password_url` | `oc-includes/osclass/emails.php` |
-| `email_user_registration_description` | filter | `$content['s_text'], $user` | `oc-includes/osclass/emails.php` |
-| `email_user_registration_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_user_registration_description', $content['s_text'], $user) ), $words), $user` | `oc-includes/osclass/emails.php` |
-| `email_user_registration_title` | filter | `$content['s_title'], $user` | `oc-includes/osclass/emails.php` |
-| `email_user_registration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_registration_title', $content['s_title'], $user) ), $words ), $user` | `oc-includes/osclass/emails.php` |
-| `email_user_validation_description` | filter | `$content['s_text'], $user, $input` | `oc-includes/osclass/emails.php` |
-| `email_user_validation_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_user_validation_description', $content['s_text'], $user, $input) ), $words ), $user, $input` | `oc-includes/osclass/emails.php` |
-| `email_user_validation_title` | filter | `$content['s_title'], $user, $input` | `oc-includes/osclass/emails.php` |
-| `email_user_validation_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_user_validation_title', $content['s_title'], $user, $input) ), $words), $user, $input` | `oc-includes/osclass/emails.php` |
-| `email_warn_expiration_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_warn_expiration_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_warn_expiration_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
-| `email_warn_expiration_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_warn_expiration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
+| `email_new_admin_description` | filter | `$content['s_text'], $data` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_admin_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_admin_description', $content['s_text'], $data) ), $words ), $data` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_admin_title` | filter | `$content['s_title'], $data` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_admin_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_admin_title', $content['s_title'], $data) ), $words), $data` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_admin_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_admin_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_comment_admin_description', $content['s_text'], $aItem) ), $words), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_admin_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_admin_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_new_comment_admin_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_user_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_user_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_comment_user_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_user_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_comment_user_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_new_comment_user_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_email_description` | filter | `$content['s_text'], $new_email, $validation_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_email_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_email_description', $content['s_text'], $new_email, $validation_url) ), $words ), $new_email, $validation_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_email_title` | filter | `$content['s_title'], $new_email, $validation_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_email_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_email_title', $content['s_title'], $new_email, $validation_url) ), $words), $new_email, $validation_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_send_friend_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_send_friend_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_send_friend_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_send_friend_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_title` | filter | `osc_apply_filter( 'email_alert_validation_title', $page_description[$prefLocale]['s_title'], $alert, $email, $secret )` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_forgot_pass_word_title` | filter | `$content['s_title'], $user, $password_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_forgot_pass_word_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_forgot_pass_word_title', $content['s_title'], $user, $password_url) ), $words ), $user, $password_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_forgot_password_description` | filter | `$content['s_text'], $user, $password_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_forgot_password_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter( 'email_user_forgot_password_description', $content['s_text'], $user, $password_url ) ), $words ), $user, $password_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_registration_description` | filter | `$content['s_text'], $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_registration_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_user_registration_description', $content['s_text'], $user) ), $words), $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_registration_title` | filter | `$content['s_title'], $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_registration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_registration_title', $content['s_title'], $user) ), $words ), $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_validation_description` | filter | `$content['s_text'], $user, $input` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_validation_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_user_validation_description', $content['s_text'], $user, $input) ), $words ), $user, $input` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_validation_title` | filter | `$content['s_title'], $user, $input` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_user_validation_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_user_validation_title', $content['s_title'], $user, $input) ), $words), $user, $input` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_warn_expiration_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_warn_expiration_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_warn_expiration_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_warn_expiration_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_warn_expiration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `hook_email_admin_new_item` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `hook_email_admin_new_user` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_alert_validation` | action | `Alerts::getInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
@@ -459,18 +459,18 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `after_login` | action | `$user, $redirect` | `oc-includes/osclass/classes/auth/SignIn.php` |
 | `after_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php` |
 | `after_show_pagination_admin` | action | none | `oc-includes/osclass/helpers/hPagination.php` |
-| `alert_email_daily_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_daily_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_daily_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_daily_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_hourly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_hourly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_hourly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_hourly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_weekly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_weekly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_weekly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_weekly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
+| `alert_email_daily_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_daily_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_daily_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_daily_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_hourly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_hourly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_hourly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_hourly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_weekly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_weekly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_weekly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `alert_email_weekly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `alert_row_actions` | filter | `$alertActions, osc_alert()` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `api_cors_origins` | filter | `$origins, $request` | `oc-includes/osclass/classes/api/http/Cors.php` |
@@ -567,7 +567,7 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `init_main` | action | none | `oc-includes/osclass/classes/controller/CWebMain.php` |
 | `init_page` | action | none | `oc-includes/osclass/classes/controller/CWebPage.php` |
 | `init_register` | action | none | `oc-includes/osclass/classes/controller/CWebRegister.php` |
-| `init_send_mail` | filter | `$mail, $params` | `oc-includes/osclass/utils.php` |
+| `init_send_mail` | filter | `$mail, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
 | `invalidate_locale_cache` | action | none | `oc-includes/osclass/helpers/hCache.php` |
 | `job_gave_up` | action | `$type, $payload, $error, $id` | `oc-includes/osclass/classes/job/JobWorker.php` |
 | `keyword_block_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php` |
@@ -587,10 +587,10 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `logout` | action | none | `oc-includes/osclass/classes/controller/CWebMain.php` |
 | `logout_admin` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminMain.php` |
 | `logs_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/LogsDataTable.php` |
-| `mail_from` | filter | `$from, $params` | `oc-includes/osclass/utils.php` |
-| `mail_from_name` | filter | `$from_name, $params` | `oc-includes/osclass/utils.php` |
-| `mail_layout` | filter | `$html !== '' ? $html : $body, $mail, $params` | `oc-includes/osclass/utils.php` |
-| `mail_layout_vars` | filter | `array( 'body' => $body, 'subject' => (string) ($params['subject'] ?? ''), 'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', _osc_mail_text($body))), 0, 120), 'site_name' => osc_page_title(), 'site_url' => osc_base_url(), 'logo_url' => '', 'accent' => '#0b7269', 'footer' => sprintf(__('You received this e-mail from %s.'), osc_page_title()), ), $params` | `oc-includes/osclass/utils.php` |
+| `mail_from` | filter | `$from, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
+| `mail_from_name` | filter | `$from_name, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
+| `mail_layout` | filter | `$html !== '' ? $html : $body, $mail, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
+| `mail_layout_vars` | filter | `array( 'body' => $body, 'subject' => (string) ($params['subject'] ?? ''), 'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', self::plainText($body))), 0, 120), 'site_name' => osc_page_title(), 'site_url' => osc_base_url(), 'logo_url' => '', 'accent' => '#0b7269', 'footer' => sprintf(__('You received this e-mail from %s.'), osc_page_title()), ), $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
 | `market_allowed_package_hosts` | filter | `$defaultHosts` | `oc-includes/osclass/classes/utility/FileSystem.php` |
 | `market_catalog_mirror_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `market_catalog_primary_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
@@ -612,9 +612,9 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `page_routes` | filter | `$core` | `oc-includes/osclass/classes/routing/PageDispatcher.php` |
 | `page_templates` | filter | `WebThemes::getInstance()->getAvailableTemplates()` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
 | `pages_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
-| `phpmailer_smtp_timeout` | filter | `15` | `oc-includes/osclass/utils.php` |
+| `phpmailer_smtp_timeout` | filter | `15` | `oc-includes/osclass/classes/mail/Mailer.php` |
 | `pre_contact_post` | action | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
-| `pre_send_mail` | filter | `$mail, $params` | `oc-includes/osclass/utils.php` |
+| `pre_send_mail` | filter | `$mail, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
 | `public_cache_max_age` | filter | `30` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `regenerate_image` | action | `$resource` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `regenerated_image` | action | `\ItemResource::getInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/osclass/classes/listing/PhotoService.php` |

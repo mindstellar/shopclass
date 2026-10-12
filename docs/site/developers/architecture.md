@@ -121,6 +121,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `listing` | Listings and their photos: posting, editing, rules, reads and mail |
 | `location` | Countries, regions, cities: reads, admin and import |
 | `logger` | The admin log and error logging |
+| `mail` | Sending e-mail (`Mailer`) and the e-mails core sends (`CoreEmails`) |
 | `market` | The plugin and theme market: catalogue, install, compatibility |
 | `migration` | Running the database migrations |
 | `model` | Tables several modules use: the old `Item`, `User`… classes (kept for plugins; add no methods) and new `mindstellar\model` stores |

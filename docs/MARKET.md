@@ -32,11 +32,11 @@ below exist specifically to repair a named defect here — but none of it is the
 any more; the sections that follow are.
 
 **The legacy market was hard-disabled, and still is.**
-`_get_market_url()` (`oc-includes/osclass/utils.php:1338`) takes `$disable = true`
+`_get_market_url()` (`oc-includes/osclass/utils.php`) takes `$disable = true`
 and returns `false` on the first line; so does `_need_update()`
-(`utils.php:1372`). Both remain exactly this way — `@deprecated since 4.0.0`,
+(`utils.php`). Both remain exactly this way — `@deprecated since 4.0.0`,
 never re-enabled — and every caller (`osc_check_plugin_update()`,
-`osc_check_theme_update()`, `osc_check_language_update()`, `utils.php:1265-1319`)
+`osc_check_theme_update()`, `osc_check_language_update()` in `utils.php`)
 still always returns `false`. This path was not repaired; it was replaced.
 `_osc_check_plugins_update()` (`functions.php:595`) and
 `_osc_check_themes_update()` (`functions.php:674`) no longer depend on it —

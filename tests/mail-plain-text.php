@@ -145,6 +145,14 @@ function osc_themes_path()
 {
     return sys_get_temp_dir() . '/';
 }
+function osc_date_format()
+{
+    return 'Y-m-d';
+}
+function osc_time_format()
+{
+    return 'H:i';
+}
 function osc_theme()
 {
     return $GLOBALS['__siteTheme'] ?? '';
@@ -489,5 +497,17 @@ $popSaw = trim((string) stream_get_contents($popPipes[1]));
 proc_close($pop);
 pin('it signs in to the given host and port, with the given account', "USER given-user\nPASS given-pass\nQUIT", $popSaw);
 unset($GLOBALS['__server'], $GLOBALS['__pop']);
+
+harness_section('placeholders in a mail');
+$_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+Params::init();
+pin(
+    'the caller\'s words first, then the site\'s',
+    'Hi Jo, from Example (https://example.com/) at 203.0.113.9 on <a href="https://example.com/">Example</a>',
+    osc_mailBeauty('Hi {USER_NAME}, from {WEB_TITLE} ({WEB_URL}) at {IP_ADDRESS} on {WEB_LINK}', array(array('{USER_NAME}'), array('Jo')))
+);
+pin('case does not matter', 'Jo Example', osc_mailBeauty('{user_name} {web_title}', array(array('{USER_NAME}'), array('Jo'))));
+pin('a caller value may itself hold a site placeholder', 'see https://example.com/', osc_mailBeauty('see {LINK}', array(array('{LINK}'), array('{WEB_URL}'))));
+check('the date and hour are filled in', (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} \d{2}:\d{2}$/', osc_mailBeauty('{CURRENT_DATE} {HOUR}', array(array(), array()))));
 
 exit(harness_result());

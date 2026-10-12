@@ -1146,6 +1146,8 @@ return array(
     'mindstellar\\logger\\LogQuery' => $baseDir . '/oc-includes/osclass/classes/logger/LogQuery.php',
     'mindstellar\\logger\\LogStore' => $baseDir . '/oc-includes/osclass/classes/logger/LogStore.php',
     'mindstellar\\logger\\OsclassErrors' => $baseDir . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
+    'mindstellar\\mail\\CoreEmails' => $baseDir . '/oc-includes/osclass/classes/mail/CoreEmails.php',
+    'mindstellar\\mail\\Mailer' => $baseDir . '/oc-includes/osclass/classes/mail/Mailer.php',
     'mindstellar\\market\\Catalog' => $baseDir . '/oc-includes/osclass/classes/market/Catalog.php',
     'mindstellar\\market\\Compatibility' => $baseDir . '/oc-includes/osclass/classes/market/Compatibility.php',
     'mindstellar\\market\\Installer' => $baseDir . '/oc-includes/osclass/classes/market/Installer.php',

@@ -118,6 +118,7 @@ class User
 
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hSanitize.php'; // the real osc_esc_html(), ahead of any stand-in
 require_once __DIR__ . '/lib/stubs.php';
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/../oc-includes/osclass/emails.php';
 require_once __DIR__ . '/../oc-includes/osclass/alerts.php';
 require_once __DIR__ . '/lib/harness.php';
