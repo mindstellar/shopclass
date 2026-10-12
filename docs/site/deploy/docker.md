@@ -17,6 +17,9 @@ docker pull ghcr.io/mindstellar/shopclass:latest
 Tags are published per release, with `:latest` tracking the newest **stable**
 release. The published image runs **PHP 8.5**.
 
+To build the image from a clone instead, run `composer install --no-dev` and
+`npm ci && npm run build` first, then `docker build`. Otherwise use the published image.
+
 ## One-command install
 
 On a Linux server, one command sets up a site with its own database. If Docker is

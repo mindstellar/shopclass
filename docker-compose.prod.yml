@@ -11,6 +11,7 @@ name: shopclass-prod
 
 services:
   app:
+    # Build first (composer install --no-dev && npm ci && npm run build), or use the published image.
     build:
       context: .
       dockerfile: Dockerfile

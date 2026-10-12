@@ -22,6 +22,9 @@ define('LIB_PATH', ABS_PATH . 'oc-includes/');
 // — this AJAX endpoint would connect to the wrong host and fail with a 503.
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/config-loader.php';
+if (!is_file(LIB_PATH . 'vendor/autoload.php')) {
+    osc_die('Shopclass is not built yet', 'Run composer install and npm run build, or install from a release zip.', ['tone' => 'info', 'status' => 503]);
+}
 require_once LIB_PATH . 'vendor/autoload.php';
 
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';

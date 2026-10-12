@@ -44,7 +44,10 @@ if (PHP_SAPI === 'cli' && !defined('WEB_PATH')) {
 
 require_once LIB_PATH . 'osclass/default-constants.php';
 
-// Stage 2, autoload: stop here when the database is not installed.
+// Stage 2, autoload: stop here when the code is not built or the database is not installed.
+if (!is_file(LIB_PATH . 'vendor/autoload.php')) {
+    osc_die('Shopclass is not built yet', 'Run composer install and npm run build, or install from a release zip.', ['tone' => 'info', 'status' => 503]);
+}
 require_once LIB_PATH . 'vendor/autoload.php';
 ErrorHandler::getInstance()->register();
 if (!Preference::getInstance()->get('osclass_installed')) {

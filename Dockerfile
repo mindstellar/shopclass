@@ -6,9 +6,9 @@
 #   docker build -t shopclass .
 #   docker run -p 8080:80 --env-file prod.env shopclass
 #
-# vendor/ and oc-includes/assets/ are committed, so no composer/npm build is
-# needed here; the storefront default theme lives in its own repo and is bundled
-# below (STOREFRONT_VERSION defaults to its latest release).
+# Build before `docker build`: composer install --no-dev && npm ci && npm run build.
+# The storefront default theme lives in its own repo and is bundled below
+# (STOREFRONT_VERSION defaults to its latest release).
 FROM php:8.5-fpm-alpine
 
 LABEL org.opencontainers.image.title="Shopclass" \
@@ -54,6 +54,8 @@ RUN printf '[www]\nclear_env = no\n' > /usr/local/etc/php-fpm.d/zz-clear-env.con
 
 WORKDIR /application
 COPY . /application
+RUN test -f oc-includes/vendor/autoload.php && test -f oc-admin/themes/modern/css/main.css \
+  || { echo "Build first: composer install --no-dev && npm ci && npm run build"; exit 1; }
 
 # Bundle the storefront default theme from its own repository (themes are not
 # tracked in this repo). Pin with --build-arg STOREFRONT_VERSION=vX.Y.Z if needed.

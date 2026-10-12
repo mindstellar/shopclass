@@ -18,6 +18,10 @@ define('LIB_PATH', ABS_PATH . 'oc-includes/');
 define('CONTENT_PATH', ABS_PATH . 'oc-content/');
 define('TRANSLATIONS_PATH', CONTENT_PATH . 'languages/');
 define('OSC_INSTALLING', 1);
+if (!is_file(LIB_PATH . 'vendor/autoload.php')) {
+    http_response_code(503);
+    die('Shopclass is not built yet. Run composer install and npm run build, or install from a release zip.');
+}
 require_once LIB_PATH . 'vendor/autoload.php';
 mindstellar\logger\ErrorHandler::getInstance()->register();
 // Helper load order mirrors the main bootstrap (oc-load.php) and is
