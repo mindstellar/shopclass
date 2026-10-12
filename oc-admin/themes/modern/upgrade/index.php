@@ -215,13 +215,13 @@ function upgradeReleaseNotes()
             continue;
         }
         if (preg_match('/^-\s+(.+)$/', $line, $m)) {
-            $entries[] = array('cat' => $cat, 'text' => trim(str_replace('`', '', $m[1])));
+            $entries[] = array('cat' => $cat, 'text' => trim($m[1]));
             continue;
         }
         // Entries are hard-wrapped, so an indented line continues the previous bullet.
         if ($entries !== array() && preg_match('/^\s+(\S.*)$/', $line, $m)) {
             $last                     = count($entries) - 1;
-            $entries[$last]['text'] .= ' ' . trim(str_replace('`', '', $m[1]));
+            $entries[$last]['text'] .= ' ' . trim($m[1]);
         }
     }
 
@@ -290,7 +290,7 @@ if (!empty($whatsNew)) {
                 <li class="whatsnew-item">
                     <span class="whatsnew-tag whatsnew-tag-<?php echo osc_esc_html($slug); ?>"><?php
                         echo osc_esc_html($entry['cat']); ?></span>
-                    <span class="whatsnew-text"><?php echo osc_esc_html($entry['text']); ?></span>
+                    <span class="whatsnew-text"><?php echo \mindstellar\admin\InlineMarkdown::render($entry['text']); ?></span>
                 </li>
             <?php } ?>
         </ul>
