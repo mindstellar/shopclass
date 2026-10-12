@@ -223,8 +223,6 @@ class ApcuCache extends Cache
     public static function is_supported()
     {
         if (!extension_loaded('apcu') or ini_get('apc.enabled') != '1') {
-            error_log('The APCu PHP extension must be loaded to use APCu Cache.');
-
             return false;
         }
 

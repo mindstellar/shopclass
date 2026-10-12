@@ -354,8 +354,6 @@ class MemcachedCache extends Cache
     public static function is_supported()
     {
         if (!class_exists('Memcached')) {
-            error_log('The memcached PHP extension must be loaded to use Memcached Cache.');
-
             return false;
         }
 
