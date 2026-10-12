@@ -342,9 +342,7 @@ jobs:
       - name: Build admin assets
         run: |
           npm ci
-          npm run assets
-          npm run css
-          npm run js
+          npm run build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4

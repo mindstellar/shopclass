@@ -60,6 +60,10 @@ if [ ! -f oc-includes/vendor/autoload.php ]; then
   echo "expected composer vendor tree missing: oc-includes/vendor (did 'composer install --no-dev' run?)" >&2
   exit 1
 fi
+if grep -q "'dev' => true" oc-includes/vendor/composer/installed.php; then
+  echo "oc-includes/vendor is a dev install; run 'composer install --no-dev' first" >&2
+  exit 1
+fi
 rm -rf "$DIR/osclass/oc-includes/vendor"
 mkdir -p "$DIR/osclass/oc-includes/vendor"
 cp -R oc-includes/vendor/. "$DIR/osclass/oc-includes/vendor/"

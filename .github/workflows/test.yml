@@ -131,9 +131,7 @@ jobs:
       - name: Build admin assets
         run: |
           npm ci
-          npm run assets
-          npm run css
-          npm run js
+          npm run build
       # The OpenAPI rules a client generator or gateway relies on, beyond what core checks.
       - name: OpenAPI document passes Redocly lint
         run: npx -y @redocly/cli@2.57.0 lint docs/site/developers/api/openapi.json
