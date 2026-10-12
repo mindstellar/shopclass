@@ -55,6 +55,37 @@ final class ResourceUploader
     }
 
     /**
+     * Write a photo's sizes from its clean normal image. Each smaller size is cut from it and
+     * stamped on its own, so the mark is scaled to each one; the normal image is stamped last.
+     *
+     * @param string               $box   the normal size, "WxH", the mark is drawn for
+     * @param array<string,string> $sizes path => "WxH" for each size below normal
+     * @param bool                 $fit   scale down to fit each size, never pad or upscale
+     */
+    public static function writeSizes(
+        ImageProcessing $normal,
+        string $box,
+        string $normalPath,
+        array $sizes,
+        ?string $extension,
+        bool $mark,
+        bool $fit = false
+    ): void {
+        foreach ($sizes as $path => $dims) {
+            [$width, $height] = ImageProcessing::parseSize($dims);
+            $img = (clone $normal)->resizeTo($width, $height, $fit ? true : null, !$fit);
+            if ($mark) {
+                $img->doSiteWatermark($box);
+            }
+            $img->saveToFile($path, $extension);
+        }
+        if ($mark) {
+            $normal->doSiteWatermark($box);
+        }
+        $normal->saveToFile($normalPath, $extension);
+    }
+
+    /**
      * Validate an image, write its variants and record a t_resource row.
      *
      * $options keys (all optional):
@@ -63,7 +94,7 @@ final class ResourceUploader
      *                            Defaults to normal/preview/thumbnail at the
      *                            configured item dimensions.
      *   - 'keep_original' bool   also store the untouched source as {id}_original.
-     *   - 'watermark'     bool   apply the configured watermark to the base image.
+     *   - 'watermark'     bool   apply the configured watermark to every size.
      *   - 'fit'           bool   scale down to fit each size, never pad or upscale.
      *
      * @param string $ownerType
@@ -104,27 +135,15 @@ final class ResourceUploader
             $baseDims = (string) ($variants['normal'] ?? reset($variants));
             [$width, $height] = ImageProcessing::parseSize($baseDims);
             $img = $imgres->autoRotate()->resizeTo($width, $height, $fit ? true : null, !$fit);
-            if ($watermark) {
-                if (osc_is_watermark_text()) {
-                    $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-                } elseif (osc_is_watermark_image()) {
-                    $img->doWatermarkImage();
-                }
-            }
-            $img->saveToFile($normalTmp, $extension);
 
+            $sizes = array();
             foreach ($variants as $name => $dims) {
-                if ($name === 'normal') {
-                    continue;
+                if ($name !== 'normal') {
+                    $secondary['_' . $name] = $tmpFile . '_' . $name;
+                    $sizes[$tmpFile . '_' . $name] = (string) $dims;
                 }
-                $suffix = '_' . $name;
-                $vtmp   = $tmpFile . $suffix;
-                [$width, $height] = ImageProcessing::parseSize((string) $dims);
-                ImageProcessing::fromFile($normalTmp)
-                    ->resizeTo($width, $height, $fit ? true : null, !$fit)
-                    ->saveToFile($vtmp, $extension);
-                $secondary[$suffix] = $vtmp;
             }
+            self::writeSizes($img, $baseDims, $normalTmp, $sizes, $extension, $watermark, $fit);
         } catch (Throwable $e) {
             $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
 

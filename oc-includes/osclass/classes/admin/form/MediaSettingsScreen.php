@@ -221,7 +221,7 @@ final class MediaSettingsScreen extends SettingsScreen
                         ) . '"><br>'
                         : '')
                         . osc_esc_html(__('It has to be a .PNG image')) . '<br>'
-                        . osc_esc_html(__("Shopclass doesn't check the watermark image size")),
+                        . osc_esc_html(__("Drawn for the normal image size, then scaled down for smaller sizes. It never covers more than 40% of a photo's width or height.")),
                 ));
             })
                 ->set('row', false)

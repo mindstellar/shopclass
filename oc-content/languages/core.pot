@@ -4049,6 +4049,12 @@ msgstr ""
 msgid "Drag to reorder, or focus and use the arrow keys"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid ""
+"Drawn for the normal image size, then scaled down for smaller sizes. It "
+"never covers more than 40% of a photo's width or height."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Driver"
 msgstr ""
@@ -10145,10 +10151,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid "Shopclass checks once a day. Check now if you are expecting something."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Shopclass doesn't check the watermark image size"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php

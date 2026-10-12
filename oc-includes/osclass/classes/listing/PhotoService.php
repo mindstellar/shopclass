@@ -264,16 +264,7 @@ final class PhotoService
 
         [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
         $img = $imgres->autoRotate()->resizeTo($width, $height);
-        if (osc_is_watermark_text()) {
-            $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-        } elseif (osc_is_watermark_image()) {
-            $img->doWatermarkImage();
-        }
-        $img->saveToFile($files[''], $extension);
-        foreach (array('_preview' => osc_preview_dimensions(), '_thumbnail' => osc_thumbnail_dimensions()) as $variant => $dimensions) {
-            [$width, $height] = \ImageProcessing::parseSize($dimensions);
-            \ImageProcessing::fromFile($files[''])->resizeTo($width, $height)->saveToFile($files[$variant], $extension);
-        }
+        ResourceUploader::writeSizes($img, osc_normal_dimensions(), $files[''], self::smallerSizes($files), $extension, true);
         if (osc_keep_original_image()) {
             ResourceUploader::saveOriginal($tmpName, $tmpName . '_original', $extension);
             if (is_file($tmpName . '_original')) {
@@ -282,6 +273,18 @@ final class PhotoService
         }
 
         return array('extension' => $extension, 'mime' => $mime, 'files' => $files);
+    }
+
+    /**
+     * The preview and thumbnail paths in $files, each with its size.
+     *
+     * @param array<string,string> $files paths by suffix
+     *
+     * @return array<string,string> path => "WxH"
+     */
+    private static function smallerSizes(array $files): array
+    {
+        return array($files['_preview'] => osc_preview_dimensions(), $files['_thumbnail'] => osc_thumbnail_dimensions());
     }
 
     /**
@@ -591,32 +594,13 @@ final class PhotoService
             return;
         }
 
-        // Create normal size
-        $path        = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
-            . $resource['s_extension'];
-        $path_normal = $path;
+        $base  = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'];
+        $files = array('' => $base . '.' . $resource['s_extension'], '_preview' => $base . '_preview.'
+            . $resource['s_extension'], '_thumbnail' => $base . '_thumbnail.' . $resource['s_extension']);
         [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
-        $img = \ImageProcessing::fromFile($image_tmp)->resizeTo($width, $height);
-        if ($use_original) {
-            if (osc_is_watermark_text()) {
-                $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-            } elseif (osc_is_watermark_image()) {
-                $img->doWatermarkImage();
-            }
-        }
-        $img->saveToFile($path);
-
-        // Create preview
-        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
-            . $resource['s_extension'];
-        [$width, $height] = \ImageProcessing::parseSize(osc_preview_dimensions());
-        \ImageProcessing::fromFile($path_normal)->resizeTo($width, $height)->saveToFile($path);
-
-        // Create thumbnail
-        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.'
-            . $resource['s_extension'];
-        [$width, $height] = \ImageProcessing::parseSize(osc_thumbnail_dimensions());
-        \ImageProcessing::fromFile($path_normal)->resizeTo($width, $height)->saveToFile($path);
+        // Without the original, the normal size already carries the mark; it is not stamped twice.
+        $normal = \ImageProcessing::fromFile($image_tmp)->resizeTo($width, $height);
+        ResourceUploader::writeSizes($normal, osc_normal_dimensions(), $files[''], self::smallerSizes($files), null, $use_original);
 
         osc_run_hook(
             'regenerated_image',

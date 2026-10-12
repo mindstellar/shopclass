@@ -27,6 +27,15 @@ class ImageProcessing
     private $watermarked = false;
     private $use_imagick = false;
 
+    /** The largest share of a photo's width or height the watermark may cover. */
+    private const WATERMARK_MAX = 0.4;
+
+    /** Below this many pixels on either side the watermark is left off. */
+    private const WATERMARK_MIN = 8;
+
+    /** The gap between a corner mark and the photo's edge, as a share of its shorter side. */
+    private const WATERMARK_GAP = 0.02;
+
     /** The photo formats read, by getimagesize() type, with their ImageMagick coder. */
     private const PHOTO_CODERS = array(
         IMAGETYPE_JPEG => 'jpeg',
@@ -262,6 +271,22 @@ class ImageProcessing
     public static function fromFile($imagePath)
     {
         return new ImageProcessing($imagePath);
+    }
+
+    /**
+     * A copy owns its own pixels, so one size can be cut from it without touching the other.
+     */
+    public function __clone()
+    {
+        if ($this->use_imagick) {
+            $this->im = clone $this->im;
+        } else {
+            $copy = imagecreatetruecolor($this->width, $this->height);
+            imagealphablending($copy, false);
+            imagesavealpha($copy, true);
+            imagecopy($copy, $this->im, 0, 0, 0, 0, $this->width, $this->height);
+            $this->im = $copy;
+        }
     }
 
     /**
@@ -617,6 +642,7 @@ class ImageProcessing
      * @param string|null              $font_color     Hex colour, '#' optional
      * @param int|null                 $font_size
      * @param array<string,mixed>|null $aOptions       See createWatermarkImageFromText()
+     * @param string|null              $box            The normal size box ("640x480") the mark is drawn for
      *
      * @return $this
      * @throws \ImagickException
@@ -625,7 +651,8 @@ class ImageProcessing
         $watermark_text = null,
         $font_color = null,
         $font_size = null,
-        $aOptions = null
+        $aOptions = null,
+        ?string $box = null
     ) {
         $this->watermarked = true;
         if ($watermark_text !== null && $watermark_text) {
@@ -643,33 +670,80 @@ class ImageProcessing
         }
 
         if ($this->use_imagick) {
-            $wm                 = new Imagick('png:' . $path_watermark);
-            $watermark_geometry = $wm->getImageGeometry();
-            $watermark_height   = $watermark_geometry['height'];
-            $watermark_width    = $watermark_geometry['width'];
-
-            $this->calculateWatermarkPosition($watermark_width, $watermark_height, $dest_x, $dest_y);
-            $this->im->compositeImage($wm, imagick::COMPOSITE_OVER, $dest_x, $dest_y);
-
+            $wm   = new Imagick('png:' . $path_watermark);
+            $geo  = $wm->getImageGeometry();
+            $size = $this->watermarkSize($geo['width'], $geo['height'], $box);
+            if ($size !== null) {
+                $wm->resizeImage($size[0], $size[1], Imagick::FILTER_LANCZOS, 1);
+                $this->calculateWatermarkPosition($size[0], $size[1], $dest_x, $dest_y);
+                $this->im->compositeImage($wm, imagick::COMPOSITE_OVER, (int)$dest_x, (int)$dest_y);
+            }
             $wm->destroy();
         } else {
-            $watermark        = imagecreatefrompng($path_watermark);
-            $watermark_width  = imagesx($watermark);
-            $watermark_height = imagesy($watermark);
+            $watermark = imagecreatefrompng($path_watermark);
+            $size      = $watermark === false ? null : $this->watermarkSize(imagesx($watermark), imagesy($watermark), $box);
+            if ($size !== null) {
+                $scaled = imagecreatetruecolor($size[0], $size[1]);
+                imagealphablending($scaled, false);
+                imagesavealpha($scaled, true);
+                imagefill($scaled, 0, 0, imagecolorallocatealpha($scaled, 0, 0, 0, 127));
+                imagecopyresampled($scaled, $watermark, 0, 0, 0, 0, $size[0], $size[1], imagesx($watermark), imagesy($watermark));
 
-            $this->calculateWatermarkPosition($watermark_width, $watermark_height, $dest_x, $dest_y);
-            $this->imageCopyMergeAlpha(
-                $this->im,
-                $watermark,
-                $dest_x,
-                $dest_y,
-                0,
-                0,
-                $watermark_width,
-                $watermark_height,
-                100
-            );
-            unset($watermark);
+                $this->calculateWatermarkPosition($size[0], $size[1], $dest_x, $dest_y);
+                imagealphablending($this->im, true);
+                imagecopy($this->im, $scaled, (int)$dest_x, (int)$dest_y, 0, 0, $size[0], $size[1]);
+                imagealphablending($this->im, false);
+                imagesavealpha($this->im, true);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * The mark's size on this photo, or null when it would be too small to read. The mark is
+     * drawn for the normal size box, scales down with smaller sizes, and never covers more
+     * than WATERMARK_MAX of the photo's width or height.
+     *
+     * @param string|null $box the normal size box, "WxH"; null reads the site's setting
+     *
+     * @return array{0:int,1:int}|null
+     */
+    private function watermarkSize(int $width, int $height, ?string $box): ?array
+    {
+        if ($width < 1 || $height < 1) {
+            return null;
+        }
+        [$boxWidth, $boxHeight] = self::parseSize($box ?? (string)osc_normal_dimensions());
+        $scale = min(
+            1.0,
+            max($this->width / $boxWidth, $this->height / $boxHeight),
+            self::WATERMARK_MAX * $this->width / $width,
+            self::WATERMARK_MAX * $this->height / $height
+        );
+        $size = array((int)round($width * $scale), (int)round($height * $scale));
+
+        return $size[0] < self::WATERMARK_MIN || $size[1] < self::WATERMARK_MIN ? null : $size;
+    }
+
+    /**
+     * Stamp the site's watermark, text or image, when one is set.
+     *
+     * @param string|null $box the normal size box the mark is drawn for, "WxH"; null reads the
+     *                         site's setting
+     *
+     * @return $this
+     */
+    public function doSiteWatermark(?string $box = null)
+    {
+        $text = osc_is_watermark_text();
+        if (!$text && !osc_is_watermark_image()) {
+            return $this;
+        }
+        try {
+            $this->doWatermark($text ? osc_watermark_text() : null, $text ? osc_watermark_text_color() : null, null, null, $box);
+        } catch (ImagickException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
         return $this;
@@ -854,100 +928,34 @@ class ImageProcessing
      */
     private function calculateWatermarkPosition($watermark_width, $watermark_height, &$dest_x, &$dest_y)
     {
+        // Corners keep a small gap from the edge, so a crop or rounded card does not cut the mark.
+        $gap    = (int)round(min($this->width, $this->height) * self::WATERMARK_GAP);
+        $left   = $gap;
+        $top    = $gap;
+        $right  = $this->width - $watermark_width - $gap;
+        $bottom = $this->height - $watermark_height - $gap;
         switch (osc_watermark_place()) {
             case 'tl':
-                $dest_x = 0;
-                $dest_y = 0;
+                $dest_x = $left;
+                $dest_y = $top;
                 break;
             case 'tr':
-                $dest_x = $this->width - $watermark_width;
-                $dest_y = 0;
+                $dest_x = $right;
+                $dest_y = $top;
                 break;
             case 'bl':
-                $dest_x = 0;
-                $dest_y = $this->height - $watermark_height;
+                $dest_x = $left;
+                $dest_y = $bottom;
                 break;
             case 'br':
-                $dest_x = $this->width - $watermark_width;
-                $dest_y = $this->height - $watermark_height;
+                $dest_x = $right;
+                $dest_y = $bottom;
                 break;
             default:
                 $dest_x = ($this->width - $watermark_width) / 2;
                 $dest_y = ($this->height - $watermark_height) / 2;
                 break;
         }
-    }
-
-    /**
-     * imagecopymerge() that preserves the source's alpha channel, pixel by pixel.
-     *
-     * @param \GdImage|resource      $dst_im
-     * @param \GdImage|resource      $src_im
-     * @param int                    $dst_x
-     * @param int                    $dst_y
-     * @param int                    $src_x
-     * @param int                    $src_y
-     * @param int                    $src_w
-     * @param int                    $src_h
-     * @param int                    $pct   Opacity, 0-100
-     * @param array<string,int>|null $trans Source colour to treat as transparent
-     *
-     * @return bool false if a pixel could not be written
-     */
-    private function imageCopyMergeAlpha(
-        &$dst_im,
-        $src_im,
-        $dst_x,
-        $dst_y,
-        $src_x,
-        $src_y,
-        $src_w,
-        $src_h,
-        $pct,
-        $trans = null
-    ) {
-        imagealphablending($dst_im, false);
-        imagesavealpha($dst_im, true);
-
-        $dst_w = imagesx($dst_im);
-        $dst_h = imagesy($dst_im);
-
-        $src_x = max($src_x, 0);
-        $src_y = max($src_y, 0);
-        $dst_x = max($dst_x, 0);
-        $dst_y = max($dst_y, 0);
-        if ($dst_x + $src_w > $dst_w) {
-            $src_w = $dst_w - $dst_x;
-        }
-        if ($dst_y + $src_h > $dst_h) {
-            $src_h = $dst_h - $dst_y;
-        }
-
-        for ($x_offset = 0; $x_offset < $src_w; $x_offset++) {
-            for ($y_offset = 0; $y_offset < $src_h; $y_offset++) {
-                $srccolor = imagecolorsforindex($src_im, imagecolorat($src_im, $src_x + $x_offset, $src_y + $y_offset));
-                $dstcolor = imagecolorsforindex($dst_im, imagecolorat($dst_im, $dst_x + $x_offset, $dst_y + $y_offset));
-
-                if ($trans === null || ($srccolor !== $trans)) {
-                    $src_a = $srccolor['alpha'] * $pct / 100;
-                    // blend
-                    $src_a = 127 - $src_a;
-                    $dst_a = 127 - $dstcolor['alpha'];
-                    $dst_r = ($srccolor['red'] * $src_a + $dstcolor['red'] * $dst_a * (127 - $src_a) / 127) / 127;
-                    $dst_g = ($srccolor['green'] * $src_a + $dstcolor['green'] * $dst_a * (127 - $src_a) / 127) / 127;
-                    $dst_b = ($srccolor['blue'] * $src_a + $dstcolor['blue'] * $dst_a * (127 - $src_a) / 127) / 127;
-                    $dst_a = 127 - ($src_a + $dst_a * (127 - $src_a) / 127);
-                    $color = imagecolorallocatealpha($dst_im, $dst_r, $dst_g, $dst_b, $dst_a);
-
-                    if (!imagesetpixel($dst_im, $dst_x + $x_offset, $dst_y + $y_offset, $color)) {
-                        return false;
-                    }
-                    imagecolordeallocate($dst_im, $color);
-                }
-            }
-        }
-
-        return true;
     }
 
     /**

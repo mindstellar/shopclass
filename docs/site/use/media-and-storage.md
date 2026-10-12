@@ -83,7 +83,14 @@ ShopClass can watermark uploaded images with **text** or with an **image**,
 configured separately.
 
 Watermarking is applied as images are processed, so it affects new uploads.
-Existing images take it on when they are regenerated.
+Each size gets its own mark: it is drawn for the normal size, scaled down for
+the preview and thumbnail, and never covers more than 40% of a photo's width
+or height. A corner mark sits a little in from the edge. A mark too small to
+read is left off.
+
+Existing photos change only when you regenerate them, and only if **Keep the
+photo at its full size** was on when they were uploaded. Without the full-size
+copy, a regenerated photo keeps its old mark, shrunk with the photo.
 
 A watermark discourages your listings being scraped and re-posted elsewhere.
 Keep it small and in a corner: a watermark across the middle of the photo

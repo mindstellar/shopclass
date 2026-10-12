@@ -125,6 +125,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 
+- A watermark scales to each photo size, never covers more than 40% of a photo and sits a little in from a corner; thumbnails get their own mark instead of a shrunken one.
 - A changed profile bio shows at once, not after the next save.
 - Searching for a hyphenated word, such as Mid-Century, finds its listings.
 - Custom fields can be deleted from the admin again.
