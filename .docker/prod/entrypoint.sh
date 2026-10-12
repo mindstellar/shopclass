@@ -264,6 +264,8 @@ if ! php "$CLI" install --unattended; then
     echo "entrypoint: install failed — check DB_*/WEB_PATH/OSC_ADMIN_* environment" >&2
     exit 1
 fi
+# A language the install downloaded was written as root; the site updates and deletes it as www-data.
+chown -R www-data:www-data /application/oc-content/languages 2>/dev/null || true
 
 # Reconcile bundled plugins/themes onto the persistent oc-content volume: install
 # ones this image bundles that the volume is missing, refresh ones the image
