@@ -33,7 +33,7 @@ The site owner adds endpoints on **Settings → API → Webhooks**
 | `ping` | Someone presses **Send test**. Never subscribed to. | `{"endpoint_id": "…", "message": "…"}` |
 
 Plugins can add their own events, named `ext.<slug>.<name>`.
-See [Plugin events](#plugin-events). `GET /admin/webhook-events` lists every event the site has.
+See [Plugin events](#plugin-events). `GET /admin/webhook-events` lists every event an endpoint can subscribe to; `ping` is left out.
 
 An event is sent whichever way the change was made: the web, the admin or the API.
 

@@ -207,7 +207,7 @@ sends is in [Webhooks](/docs/developers/api/webhooks/).
 
 | Endpoint | Does |
 |---|---|
-| `GET /admin/webhook-events` | Every event an endpoint can subscribe to, plugin events too: `type`, `description`, `schema`. |
+| `GET /admin/webhook-events` | Every event an endpoint can subscribe to, plugin events too, but not `ping` (sent only by the test call): `type`, `description`, `schema`. |
 | `GET /admin/webhooks`, `GET /admin/webhooks/{id}` | Endpoints, newest first. Never the secret. |
 | `POST /admin/webhooks` | Add one. Body: `url`, `events` (at least one), optional `description` and `enabled` (`true` by default). The answer has the `secret`, once. |
 | `PATCH /admin/webhooks/{id}` | Change `url`, `events`, `description` or `enabled`. `enabled: true` clears a pause and the failure count. |

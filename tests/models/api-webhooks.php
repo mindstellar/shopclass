@@ -690,7 +690,7 @@ pin('a limit outside 1 to 100 is 422', [422, 422], [
 pin('another endpoint\'s deliveries are not shown', 0, count($call('GET', 'admin/webhooks/' . $lanId . '/deliveries', null, $boss)->body()['data']['deliveries'] ?? [1]));
 $r = api_with_filter('api_webhook_events', static fn (array $e): array => $e + ['ext.acme.offer_created' => ['description' => 'An offer.', 'schema' => 'AcmeOffer']], static fn () => $call('GET', 'admin/webhook-events', null, $boss));
 $types = array_column($r->body()['data'] ?? [], 'type');
-check('the catalogue lists core and plugin events, and ping', in_array('listing.created', $types, true) && in_array('ext.acme.offer_created', $types, true) && in_array('ping', $types, true));
+check('the catalogue lists core and plugin events, not ping', in_array('listing.created', $types, true) && in_array('ext.acme.offer_created', $types, true) && !in_array('ping', $types, true));
 pin('matches the schema', [], api_admin_schema_errors('WebhookEventList', $r));
 pin('DELETE: 204, and its waiting deliveries go too', [204, 0, 404], [$call('DELETE', 'admin/webhooks/' . $hookId, null, $boss)->status(), count($jobs()), $call('GET', 'admin/webhooks/' . $hookId, null, $boss)->status()]);
 

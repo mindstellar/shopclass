@@ -129,8 +129,10 @@ final class AdminWebhooksController
 
     public function events(ApiCall $call): Response
     {
-        $out = [];
-        foreach ($this->webhooks->events()->all() as $type => $spec) {
+        $out    = [];
+        $events = $this->webhooks->events();
+        foreach ($events->subscribable() as $type) {
+            $spec  = $events->all()[$type];
             $out[] = ['type' => $type, 'description' => $spec['description'], 'schema' => $spec['schema'] === '' ? null : $spec['schema']];
         }
 
