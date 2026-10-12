@@ -32,6 +32,9 @@ final class PageTokens
     /** Seconds a page token lives. */
     public const TTL = 7200;
 
+    /** A guest token's expiry is rounded up to this step, so a public page renders the same token for a while. */
+    private const GUEST_STEP = 300;
+
     /** check(): the token is good. */
     public const VALID = 'valid';
     /** check(): a genuine token for this user, past its expiry. */
@@ -67,7 +70,7 @@ final class PageTokens
      */
     public function issueGuest(): IssuedToken
     {
-        return $this->sign(self::GUEST_PURPOSE, []);
+        return $this->sign(self::GUEST_PURPOSE, [], self::GUEST_STEP);
     }
 
     /**
@@ -166,11 +169,15 @@ final class PageTokens
     /**
      * @param array<string,mixed> $data
      */
-    private function sign(string $purpose, array $data): IssuedToken
+    private function sign(string $purpose, array $data, int $round = 0): IssuedToken
     {
-        $now = $this->clock->now();
+        $now     = $this->clock->now();
+        $expires = $now + $this->ttl;
+        if ($round > 0) {
+            $expires = (int) (ceil($expires / $round) * $round);
+        }
 
-        return new IssuedToken(self::PREFIX . SignedPayload::pack($purpose, $data, $this->ttl, 0, $now), $now + $this->ttl);
+        return new IssuedToken(self::PREFIX . SignedPayload::pack($purpose, $data, $this->ttl, $round, $now), $expires);
     }
 
     /**
