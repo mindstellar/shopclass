@@ -148,7 +148,7 @@ final class ListingSearch
             return null;
         }
         if (!osc_geo_search_enabled()) {
-            throw ProblemException::field($lat !== '' ? '/lat' : ($radius !== '' ? '/radius' : '/sort'), 'rejected', 'distance search is switched off on this site', 'query');
+            throw ProblemException::field($lat !== '' ? '/lat' : ($radius !== '' ? '/radius' : '/sort'), 'rejected', 'is not available: distance search is switched off on this site', 'query');
         }
         $point = Distance::point($lat, $lng);
         if ($point === null) {
