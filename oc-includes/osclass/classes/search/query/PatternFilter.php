@@ -393,13 +393,16 @@ final class PatternFilter
         foreach ((array)preg_split('/\s+/u', $raw, -1, PREG_SPLIT_NO_EMPTY) as $word) {
             $word = (string)$word;
             $neg  = ($word[0] === '-');
-            $text = (string)preg_replace('/[+\-*"()~<>@]/u', '', $word);
-            $key  = ($neg ? '-' : '') . (function_exists('mb_strtolower') ? mb_strtolower($text, 'UTF-8') : strtolower($text));
-            if ($text !== '' && !isset($words[$key])) {
-                $words[$key] = array('neg' => $neg, 'text' => $text);
-            }
-            if (count($words) >= self::MAX_WORDS) {
-                break;
+            // Only a leading '-' excludes; one inside a word ("Mid-Century") splits it into parts.
+            foreach ((array)preg_split('/[+\-*"()~<>@]+/u', $word, -1, PREG_SPLIT_NO_EMPTY) as $text) {
+                $text = (string)$text;
+                $key  = ($neg ? '-' : '') . (function_exists('mb_strtolower') ? mb_strtolower($text, 'UTF-8') : strtolower($text));
+                if (!isset($words[$key])) {
+                    $words[$key] = array('neg' => $neg, 'text' => $text);
+                }
+                if (count($words) >= self::MAX_WORDS) {
+                    break 2;
+                }
             }
         }
 

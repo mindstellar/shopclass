@@ -69,6 +69,9 @@ pin('a phrase keeps the short word out of the required list', '+"the sedan" +sed
 pin('an exclusion is kept', '+sedan* -the', $query('sedan -the'));
 pin('a search without such words is unchanged', '+sedan* +coupe* -wagon', $query('sedan coupe -wagon'));
 pin('a stopword-only search keeps its words', '+the* +with*', $query('the with'));
+pin('a hyphen inside a word splits it (the short part is a substring match)', '+Century*', $query('Mid-Century'));
+pin('a hyphenated word beside an exclusion', '+sedan* -wagon', $query('sedan -wagon'));
+pin('only the leading hyphen excludes', '-mid -century', $query('-mid-century'));
 
 harness_section('PatternFilter: short words match by substring');
 $short = static function (string $pattern): ?array {
