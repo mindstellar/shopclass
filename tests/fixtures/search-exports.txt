@@ -27,6 +27,7 @@ export search_total_items
 export items
 export search_show_as
 export search
+export search_extras
 export search_alert
 export search_alert_subscribed
 export meta_noindex

@@ -374,6 +374,8 @@ pin('a user filter that is not an id is refused', 422, $badUser->status());
 pin('the refused user filter is named', array('/user', 'query'), array($badUser->body()['errors'][0]['pointer'] ?? null, $badUser->body()['errors'][0]['in'] ?? null));
 pin('a schema-invalid sort is refused', 422, $get('listings', array('sort' => 'secret'), $publicKey)->status());
 pin('a pattern search', array($bike), $ids($get('listings', array('q' => 'racing'), $publicKey)));
+pin('a keyword search gives each listing a snippet with the words marked', '<mark>Racing</mark> bike body text', $get('listings', array('q' => 'racing'), $publicKey)->body()['data'][0]['snippet'] ?? null);
+pin('a search with no keyword has no snippet', false, array_key_exists('snippet', $get('listings', array('category' => 'cars'), $publicKey)->body()['data'][0] ?? array()));
 pin('the user filter finds that seller listings', 1, $get('listings', array('user' => (string) $other, 'count' => 'true'), $publicKey)->body()['meta']['total']);
 pin('a custom field filter', 12, $get('listings', array('category' => 'cars', 'custom_field' => array((string) $fieldId => 'red'), 'count' => 'true'), $publicKey)->body()['meta']['total']);
 $r = $get('listings', array('custom_field' => array((string) $fieldId => 'red')), $publicKey);
@@ -476,6 +478,22 @@ $r = $get('listings', array('category' => 'cars'), $publicKey);
 osc_remove_filter('search_results', $backend);
 pin('a search_results backend may answer with bare rows; they are read as any page\'s', array(array($live[3]), $get('listings/' . $live[3], array(), $publicKey)->body()['data']), array($ids($r), $r->body()['data'][0] ?? null));
 pin('a search_results backend is told the context and to return bare rows', array('api', true), $backendArgs);
+$extrasBackend = static function ($answer) use ($admin, $p, $live) {
+    return array(
+        'items'      => array($admin->query("SELECT * FROM {$p}t_item WHERE pk_i_id = " . (int) $live[3])->fetch_assoc()),
+        'total'      => 1,
+        'snippets'   => array($live[3] => 'a <script>x</script><mark>car</mark>'),
+        'facets'     => array('category' => array(7 => 4)),
+        'suggestion' => 'cars',
+        'relaxed'    => true,
+    );
+};
+osc_add_filter('search_results', $extrasBackend);
+$r = $get('listings', array('category' => 'cars'), $publicKey);
+osc_remove_filter('search_results', $extrasBackend);
+pin('a backend snippet is cleaned to <mark> only', 'a x <mark>car</mark>', $r->body()['data'][0]['snippet'] ?? null);
+pin('backend facets, suggestion and relaxed reach meta', array(array('category' => array('7' => 4)), 'cars', true), array(json_decode(json_encode($r->body()['meta']['facets'] ?? null), true), $r->body()['meta']['suggestion'] ?? null, $r->body()['meta']['relaxed'] ?? null));
+pin('core\'s own search sends no extras in meta', array(), array_intersect_key($get('listings', array('category' => 'cars'), $publicKey)->body()['meta'], array('facets' => 1, 'suggestion' => 1, 'relaxed' => 1)));
 
 harness_section('one listing');
 $views = static fn (int $id): int => (int) $admin->query("SELECT i_num_views FROM {$p}t_item_stats WHERE fk_i_item_id = $id")->fetch_row()[0];
@@ -652,5 +670,22 @@ scratchdb_forget_cache();
 $text = static fn (array $l): array => array($l['locale'] ?? null, $l['title'] ?? null, $l['description'] ?? null);
 pin('one listing asked in en_US: title and description both from fr_FR', array('fr_FR', 'Velo', ''), $text((array) ($get('listings/' . $bike, array(), $publicKey)->body()['data'] ?? array())));
 pin('a search page asked in en_US: the same', array('fr_FR', 'Velo', ''), $text((array) ($get('listings', array('category' => 'bikes'), $publicKey)->body()['data'][0] ?? array())));
+
+harness_section('theme helpers for search extras');
+
+$view = View::getInstance();
+$view->_exportVariableToView('search_extras', \mindstellar\search\SearchExtras::fromAnswer(array(
+    'facets'     => array('category' => array($cars => 5, $bikes => 2, 99999 => 1)),
+    'suggestion' => 'bikes',
+    'relaxed'    => true,
+)));
+pin('category counts roll up into the parent; an unknown id is skipped', array($vehicles => 7, $cars => 5, $bikes => 2), osc_search_category_counts());
+pin('the suggestion and relaxed flag are read', array('bikes', true), array(osc_search_suggestion(), osc_search_relaxed()));
+$view->_exportVariableToView('search_extras', null);
+pin('with no extras the helpers give their empty values', array(array(), '', false), array(osc_search_category_counts(), osc_search_suggestion(), osc_search_relaxed()));
+$view->_exportVariableToView('item', array('pk_i_id' => 1, 's_snippet' => '<mark>x</mark>'));
+pin('osc_item_search_snippet reads the row', '<mark>x</mark>', osc_item_search_snippet());
+$view->_exportVariableToView('item', array('pk_i_id' => 1));
+pin('a row with no snippet gives an empty string', '', osc_item_search_snippet());
 
 exit(harness_result());

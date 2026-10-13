@@ -23,6 +23,7 @@ use mindstellar\listing\ListingQuery;
 use mindstellar\search\Distance;
 use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
+use mindstellar\search\SearchExtras;
 use mindstellar\search\SearchRunner;
 
 /**
@@ -106,8 +107,23 @@ final class ListingSearch
             static fn (): array => $result->items(),
             static fn (): ?int => $result->total(),
             fn (array $page): array => $this->reader->many($page, $context),
-            $this->links
+            $this->links,
+            self::extrasMeta($result->extras())
         );
+    }
+
+    /**
+     * What a search engine plugin added, for `meta`; nothing when core searched.
+     *
+     * @return array<string,mixed>
+     */
+    private static function extrasMeta(SearchExtras $extras): array
+    {
+        $counts = $extras->categoryCounts();
+
+        return ($counts === [] ? [] : ['facets' => ['category' => (object) $counts]])
+            + ($extras->suggestion() === '' ? [] : ['suggestion' => $extras->suggestion()])
+            + ($extras->relaxed() ? ['relaxed' => true] : []);
     }
 
     /**

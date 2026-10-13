@@ -28,8 +28,9 @@ final class Page
      * @param int|null         $total null when it was not counted
      * @param string|null      $next  the next page's cursor
      * @param bool             $truncated more rows exist past the deepest page offset paging reaches
+     * @param array<string,mixed> $meta    more members for `meta`
      */
-    public function __construct(private array $items, private ?int $total, private int $limit, private ?string $next, private bool $truncated = false)
+    public function __construct(private array $items, private ?int $total, private int $limit, private ?string $next, private bool $truncated = false, private array $meta = [])
     {
     }
 
@@ -44,7 +45,7 @@ final class Page
 
         return Response::collection(
             $this->items,
-            ['total' => $this->total, 'limit' => $this->limit] + ($this->truncated ? ['truncated' => true] : []),
+            ['total' => $this->total, 'limit' => $this->limit] + ($this->truncated ? ['truncated' => true] : []) + $this->meta,
             [
                 'self' => $links->api(self::url($path, $query), $version),
                 'next' => $this->next === null ? null : $links->api(self::url($path, $rest + ['cursor' => $this->next]), $version),

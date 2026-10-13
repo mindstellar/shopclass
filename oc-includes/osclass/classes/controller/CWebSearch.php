@@ -270,6 +270,7 @@ class CWebSearch extends BaseModel
         // The model the page was built from, always: osc_get_premiums()/osc_search() read it,
         // and on a page a search_results backend answered it is that backend's model.
         $this->_exportVariableToView('search', $result->model());
+        $this->_exportVariableToView('search_extras', $result->extras());
     }
 
     /**

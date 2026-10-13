@@ -24,16 +24,21 @@ class SearchResult
     /** @var \Search */
     private $model;
 
+    /** @var SearchExtras */
+    private $extras;
+
     /**
      * @param array<int,array<string,mixed>> $items
      * @param int|null                       $total null when the search was not counted
      * @param \Search                        $model the core search, or the one a search_results backend returned
+     * @param SearchExtras|null              $extras what a search_results backend added; none when core searched
      */
-    public function __construct(array $items, $total, \Search $model)
+    public function __construct(array $items, $total, \Search $model, ?SearchExtras $extras = null)
     {
-        $this->items = $items;
-        $this->total = $total;
-        $this->model = $model;
+        $this->items  = $items;
+        $this->total  = $total;
+        $this->model  = $model;
+        $this->extras = $extras ?? SearchExtras::none();
     }
 
     /** @return array<int,array<string,mixed>> */
@@ -55,5 +60,10 @@ class SearchResult
     public function model(): \Search
     {
         return $this->model;
+    }
+
+    public function extras(): SearchExtras
+    {
+        return $this->extras;
     }
 }

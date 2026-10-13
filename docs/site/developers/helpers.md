@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1161 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1165 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1058,7 +1058,7 @@ Core defines 1161 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_sanitize_url($value)` | Sanitize a website URL. |
 | `osc_sanitize_username($value)` | Sanitize a username |
 
-### hSearch (68)
+### hSearch (72)
 
 `oc-includes/osclass/helpers/hSearch.php`
 
@@ -1077,6 +1077,7 @@ Core defines 1161 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_has_list_cities($region = '%%%%')` | Gets the next city in the list_cities list |
 | `osc_has_list_countries()` | Gets the next country in the list_countries list |
 | `osc_has_list_regions($country = '%%%%')` | Gets the next region in the list_regions list |
+| `osc_item_search_snippet()` | The current listing's search snippet: escaped HTML whose only tags are &lt;mark&gt;. A search engine plugin may supply it; core marks the searched words in the description. |
 | `osc_latest_search()` | Gets the current latest search |
 | `osc_latest_search_date()` | Gets the current latest search date |
 | `osc_latest_search_text()` | Gets the current latest search pattern |
@@ -1104,6 +1105,7 @@ Core defines 1161 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_search_alert()` | Gets alert of current search |
 | `osc_search_alert_subscribed()` | Gets current search page |
 | `osc_search_category()` | Gets current search category |
+| `osc_search_category_counts()` | Listings found per category on this search, from a search engine plugin. A parent category's count includes its subcategories. |
 | `osc_search_category_description($locale = '')` | Description of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with osc_search_category_name(). |
 | `osc_search_category_id()` | Gets current search category id |
 | `osc_search_category_name($locale = '')` | Name of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with osc_search_category_description(). |
@@ -1123,9 +1125,11 @@ Core defines 1161 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_search_radius()` | The search radius in the site's distance unit, or 0 when the search has none. |
 | `osc_search_radius_options()` | The radius choices for a search form: value =&gt; label, such as 25 =&gt; 'Within 25 km'. |
 | `osc_search_region()` | Gets current search region |
+| `osc_search_relaxed()` | Whether a search engine plugin widened the search (fuzzy match) to find these results. |
 | `osc_search_show_all_url($params = array())` | Gets for a default search (all categories, noother option) |
 | `osc_search_show_as()` | Gets current search "show as" variable (show the items as a list or as a gallery) |
 | `osc_search_start()` | Gets current search start item record |
+| `osc_search_suggestion()` | A corrected query from a search engine plugin ("Did you mean ..."). Plain text: escape it. |
 | `osc_search_total_items()` | Gets current search total items |
 | `osc_search_total_pages()` | Gets total pages of search |
 | `osc_search_url($params = null)` | Gets search url given params |

@@ -113,6 +113,11 @@ final class Schema
                 'total' => self::nullable('integer', 'Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list. A list that is not paged always has it, equal to its size.'),
                 'limit' => ['type' => 'integer'],
                 'truncated' => ['type' => 'boolean', 'description' => 'Present and true when more matches exist but paging stops here: links.next is null. Narrow the filters, or sort by created or id.'],
+                'facets'     => self::object([
+                    'category' => ['type' => 'object', 'additionalProperties' => ['type' => 'integer'], 'description' => 'Category id => listings found in it, as the search engine counted them.'],
+                ], []) + ['description' => 'Listing search only, when a search engine plugin sent counts.'],
+                'suggestion' => ['type' => 'string', 'description' => 'Listing search only: a corrected query from a search engine plugin.'],
+                'relaxed'    => ['type' => 'boolean', 'description' => 'Listing search only: present and true when a search engine plugin widened the search to find these results.'],
             ], ['limit']),
             'PageLinks'    => self::object([
                 'self' => ['type' => 'string', 'format' => 'uri'],
@@ -277,6 +282,7 @@ final class Schema
             'status'       => ['type' => 'string', 'enum' => ListingStatus::ALL],
             'title'        => ['type' => 'string'],
             'description'  => ['type' => 'string'],
+            'snippet'      => ['type' => 'string', 'description' => 'Keyword searches only: a short piece of the text with the searched words in <mark>. Escaped HTML; <mark> is its only tag.'],
             'locale'       => self::nullable('string', 'The locale the title and description are in.'),
             'category'     => self::object([
                 'id'   => ['type' => 'integer'],

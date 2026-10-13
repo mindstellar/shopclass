@@ -26,7 +26,7 @@ use mindstellar\utility\SystemClock;
 final class ListingSerializer
 {
     public const PUBLIC_MEMBERS = [
-        'id', 'url', 'status', 'title', 'description', 'locale', 'category', 'price', 'location', 'contact', 'seller',
+        'id', 'url', 'status', 'title', 'description', 'snippet', 'locale', 'category', 'price', 'location', 'contact', 'seller',
         'photos', 'custom_fields', 'translations', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
     ];
 
@@ -93,6 +93,7 @@ final class ListingSerializer
             'status'       => fn () => ListingStatus::of($item, $now ?? $this->clock->now()),
             'title'        => static fn () => Format::plain($title),
             'description'  => static fn () => $description,
+            'snippet'      => isset($item['s_snippet']) ? static fn () => (string) $item['s_snippet'] : null,
             'locale'       => static fn () => $textLocale,
             'category'     => fn () => $this->category($item, $relations, $locale),
             'price'        => fn () => $this->price($item, $relations),

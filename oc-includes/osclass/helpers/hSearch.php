@@ -1464,3 +1464,74 @@ function _aux_search_category_slug($paramCat)
 
     return isset($category['s_slug']) ? $category['s_slug'] : '';
 }
+
+/**
+ * The current listing's search snippet: escaped HTML whose only tags are <mark>.
+ * A search engine plugin may supply it; core marks the searched words in the description.
+ *
+ * @return string '' when the page is not a keyword search
+ * @since 7.0.0
+ */
+function osc_item_search_snippet()
+{
+    $snippet = osc_item_field('s_snippet');
+
+    return is_string($snippet) ? $snippet : '';
+}
+
+/**
+ * Listings found per category on this search, from a search engine plugin. A parent
+ * category's count includes its subcategories.
+ *
+ * @return array<int,int> category id => count; empty when core searched
+ * @since 7.0.0
+ */
+function osc_search_category_counts()
+{
+    $extras = View::getInstance()->_get('search_extras');
+    if (!$extras instanceof \mindstellar\search\SearchExtras) {
+        return array();
+    }
+    $out = array();
+    foreach ($extras->categoryCounts() as $id => $count) {
+        if (!is_array(Category::getInstance()->findByPrimaryKey($id))) {
+            continue;
+        }
+        foreach (Category::getInstance()->hierarchy($id) as $category) {
+            if (!is_array($category) || !isset($category['pk_i_id'])) {
+                continue;
+            }
+            $parent       = (int)$category['pk_i_id'];
+            $out[$parent] = ($out[$parent] ?? 0) + $count;
+        }
+    }
+    ksort($out);
+
+    return $out;
+}
+
+/**
+ * A corrected query from a search engine plugin ("Did you mean ..."). Plain text: escape it.
+ *
+ * @return string '' when there is none
+ * @since 7.0.0
+ */
+function osc_search_suggestion()
+{
+    $extras = View::getInstance()->_get('search_extras');
+
+    return $extras instanceof \mindstellar\search\SearchExtras ? $extras->suggestion() : '';
+}
+
+/**
+ * Whether a search engine plugin widened the search (fuzzy match) to find these results.
+ *
+ * @return bool
+ * @since 7.0.0
+ */
+function osc_search_relaxed()
+{
+    $extras = View::getInstance()->_get('search_extras');
+
+    return $extras instanceof \mindstellar\search\SearchExtras && $extras->relaxed();
+}

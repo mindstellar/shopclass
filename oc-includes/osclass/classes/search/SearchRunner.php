@@ -50,16 +50,22 @@ class SearchRunner
 
         // A listener on 'search_results' may answer the query itself (an external engine)
         // with ['items' => array, 'total' => int, 'model' => ?Search], or return null.
+        // Optional keys: 'snippets' [id => html], 'facets' ['category' => [id => count]],
+        // 'suggestion' string, 'relaxed' bool.
         // A backend owns its caching, so core's result cache is skipped when one answers.
         $bare    = $extend !== null;
         $backend = SearchBuilder::asRequest($params, static fn () => osc_apply_filter('search_results', null, $search, \Params::getParamsAsArray(), $context, $bare));
-        $model   = $search;
+        $model    = $search;
+        $extras   = null;
+        $snippets = array();
         if (is_array($backend) && isset($backend['items'])) {
             $aItems = $backend['items'];
             $total = (int)($backend['total'] ?? count($aItems));
             if (isset($backend['model']) && $backend['model'] instanceof \Search) {
                 $model = $backend['model'];
             }
+            $extras   = SearchExtras::fromAnswer($backend);
+            $snippets = is_array($backend['snippets'] ?? null) ? $backend['snippets'] : array();
         } else {
             // The search-cache generation is bumped on every item lifecycle event, so a
             // deleted or disabled listing is never served from a stored result.
@@ -75,12 +81,37 @@ class SearchRunner
         if ($extend !== null && $aItems !== array()) {
             $aItems = $extend($aItems);
         }
+        $aItems = self::withSnippets($aItems, $criteria->pattern(), $snippets);
 
         $aItems = osc_apply_filter('pre_show_items', $aItems);
 
         // Highlight/urgent/bump state for the whole page in one query.
         osc_prime_item_upgrades($aItems);
 
-        return new SearchResult($aItems, $total, $model);
+        return new SearchResult($aItems, $total, $model, $extras);
+    }
+
+    /**
+     * Each row gets `s_snippet`: the backend's, made safe, or core's own from the description.
+     * Only a keyword search has snippets.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     * @param array<mixed>                   $snippets listing id => html from a backend
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function withSnippets(array $rows, string $pattern, array $snippets): array
+    {
+        if ($pattern === '' && $snippets === array()) {
+            return $rows;
+        }
+        foreach ($rows as $i => $row) {
+            $given = $snippets[(int)($row['pk_i_id'] ?? 0)] ?? null;
+            $rows[$i]['s_snippet'] = is_string($given)
+                ? SearchSnippet::clean($given)
+                : SearchSnippet::make((string)($row['s_description'] ?? ''), $pattern);
+        }
+
+        return $rows;
     }
 }

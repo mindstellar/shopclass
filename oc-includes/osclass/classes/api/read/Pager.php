@@ -79,12 +79,12 @@ final class Pager
      * @param (callable(): ?int)|null                             $total counts every match; called only when counts(), after $fetch
      * @param callable(array<int,array<string,mixed>>): array<int,mixed> $shape this page's rows as the answer's data
      */
-    public function respond(callable $fetch, ?callable $total, callable $shape, Links $links): Response
+    public function respond(callable $fetch, ?callable $total, callable $shape, Links $links, array $meta = []): Response
     {
         $rows  = $fetch();
         $count = $total !== null && $this->counts() ? $total() : null;
 
-        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows)))->response($links, $this->path, $this->request->query(), $this->request->version());
+        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows), $meta))->response($links, $this->path, $this->request->query(), $this->request->version());
     }
 
     public function offset(): int

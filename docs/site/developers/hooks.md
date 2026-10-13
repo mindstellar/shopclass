@@ -135,7 +135,12 @@ it back with `Params::getParam()` in your `search_conditions` callback.
 optional `'model'` Search. Core then skips its own result cache. Arguments: `null`, the `Search`,
 the search parameters, the context (`'request'` for the search page, `'api'` for the REST API) and
 `$bare`. When `$bare` is true, return plain `t_item` rows: the caller adds the details itself.
-Saved alerts never reach this filter.
+Saved alerts never reach this filter. The answer may also carry `'snippets'` (listing id => text
+with the searched words in `<mark>`), `'facets'` (`array('category' => array(id => count))`),
+`'suggestion'` (a corrected query) and `'relaxed'` (true when a fuzzy search found the results).
+Core keeps only `<mark>` in a snippet. Themes read these with `osc_item_search_snippet()`,
+`osc_search_category_counts()`, `osc_search_suggestion()` and `osc_search_relaxed()`; the REST API
+sends a `snippet` on each listing and the rest in `meta`.
 
 `page_cache_purge` fires once at the end of a request that changed something every public page
 shows: the theme, settings, a plugin, a category. It runs after the response has gone, and on the
