@@ -817,8 +817,9 @@ class Item extends DAO
     {
         // Expiring between $hours and $hours + 1 from now, as a range an index can use.
         $hours      = (int)$hours;
+        $now        = time();
         $conditions = [
-            self::expiresBetween(time() + $hours * 3600, time() + ($hours + 1) * 3600),
+            self::expiresBetween($now + $hours * 3600, $now + ($hours + 1) * 3600),
             'b_active = 1',
             'b_spam = 0'
         ];

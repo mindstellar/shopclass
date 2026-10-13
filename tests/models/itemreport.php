@@ -202,10 +202,17 @@ pin('fk_i_user_id is SQL NULL for an anonymous reporter', null, $row['fk_i_user_
 pin('s_ip is the reporter address', '203.0.113.7', $row['s_ip']);
 pin('s_reason is the reason as given', 'spam', $row['s_reason']);
 check(
-    'dt_date is populated with a real timestamp (NOW())',
+    'dt_date is populated with a real timestamp',
     isset($row['dt_date']) && (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $row['dt_date']),
     describe($row['dt_date'] ?? null)
 );
+
+$truncate();
+$zone = harness_zone_off_db_date($admin);
+$model->log($itemA, 'spam');
+$stamp = $rowsFor($itemA)[0]['dt_date'] ?? '';
+check('dt_date is PHP\'s time, not the database\'s', abs(strtotime($stamp) - time()) <= 5, describe($stamp));
+date_default_timezone_set($zone);
 check('every value in the row is a string or null (raw readback, C4)', all_values_string($row), describe($row));
 
 harness_section('ItemReport::log — one report costs exactly one query');

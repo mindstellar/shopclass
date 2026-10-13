@@ -88,14 +88,14 @@ $rowFor = static function (int $itemId) use ($admin, $table): ?array {
  * landed on is not knowable — only the total for the date is.
  */
 $dailyTotal = static function (string $column) use ($admin, $daily) {
-    $row = $admin->query("SELECT SUM($column) t FROM $daily WHERE dt_date = CURDATE()")->fetch_assoc();
+    $row = $admin->query("SELECT SUM($column) t FROM $daily WHERE dt_date = '" . date('Y-m-d') . "'")->fetch_assoc();
 
     return $row['t'];
 };
 
 /** How many bucket rows exist for today. */
 $dailyRows = static function () use ($admin, $daily): int {
-    return (int)$admin->query("SELECT COUNT(*) c FROM $daily WHERE dt_date = CURDATE()")->fetch_assoc()['c'];
+    return (int)$admin->query("SELECT COUNT(*) c FROM $daily WHERE dt_date = '" . date('Y-m-d') . "'")->fetch_assoc()['c'];
 };
 
 $truncate = static function () use ($admin, $table, $daily): void {
@@ -522,6 +522,17 @@ pin('sumByUser: liveOnly=false includes the hidden listing', 117, $model->sumByU
 pin('sumByUser: a different user is counted separately', 5, $model->sumByUser('i_num_views', $other));
 pin('sumByUser: a user with no listings sums to 0', 0, $model->sumByUser('i_num_views', 999999));
 pin('sumByUser: a non-whitelisted column is rejected as 0', 0, $model->sumByUser('i_num_views); DROP', $seller));
+
+harness_section('the date is PHP\'s, not the database\'s');
+
+$truncate();
+$admin->query("DELETE FROM $daily");
+$zone = harness_zone_off_db_date($admin);
+$model->increase('i_num_views', $itemA);
+$model->increaseBatch('i_num_views', array($itemA, $itemB));
+pin('increase and increaseBatch stamp PHP\'s date on each listing', array(date('Y-m-d'), date('Y-m-d')), array($rowFor($itemA)['dt_date'], $rowFor($itemB)['dt_date']));
+pin('the daily rollup counts all three under PHP\'s date', '3', $dailyTotal('i_num_views'));
+date_default_timezone_set($zone);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

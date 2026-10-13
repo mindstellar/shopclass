@@ -583,6 +583,26 @@ if (!function_exists('harness_assert_no_n_plus_1')) {
     }
 }
 
+if (!function_exists('harness_zone_off_db_date')) {
+    /**
+     * Move PHP to a zone whose date today differs from the database's, so a write
+     * that used the database clock lands on the wrong day. Returns the old zone.
+     */
+    function harness_zone_off_db_date(mysqli $db): string
+    {
+        $old    = date_default_timezone_get();
+        $dbDate = $db->query('SELECT CURDATE() AS d')->fetch_assoc()['d'];
+        foreach (array('Pacific/Kiritimati', 'Pacific/Pago_Pago') as $zone) {
+            date_default_timezone_set($zone);
+            if (date('Y-m-d') !== $dbDate) {
+                break;
+            }
+        }
+
+        return $old;
+    }
+}
+
 if (!function_exists('harness_result')) {
     /**
      * Print the tally. Returns the process exit code.
