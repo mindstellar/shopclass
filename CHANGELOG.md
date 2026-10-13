@@ -2,6 +2,12 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.7
+
+### Fixed
+
+- A banned e-mail address can no longer sign in by typing its username instead.
+
 ## Shopclass 6.4.6
 
 This release fixes `php oc-cli.php cron`, which ran the hourly, daily and weekly tasks every time

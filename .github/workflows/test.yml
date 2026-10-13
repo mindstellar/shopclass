@@ -506,6 +506,8 @@ jobs:
         run: php tests/admin-request-guards.php
       - name: Every caller of refuseOnDemo() has it
         run: php tests/demo-guard-reachable.php
+      - name: Sign-in checks bans against the account e-mail
+        run: php tests/login-ban-account-email.php
       # A GET form carries no CSRF token, so a dialog sending one to a checked action fails every time.
       - name: Plugin install repair and admin GET forms
         run: php tests/plugin-install-repair.php
