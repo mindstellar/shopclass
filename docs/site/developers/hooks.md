@@ -130,6 +130,13 @@ the session or prints must return early when the context is `'alert'`.
 To store your own filter with an alert, add it with the `alert_search_params` filter, then read
 it back with `Params::getParam()` in your `search_conditions` callback.
 
+`search_results` lets a plugin answer a search itself, from an outside search engine. Return
+`null` to let core run the search, or `array('items' => $rows, 'total' => $count)`, with an
+optional `'model'` Search. Core then skips its own result cache. Arguments: `null`, the `Search`,
+the search parameters, the context (`'request'` for the search page, `'api'` for the REST API) and
+`$bare`. When `$bare` is true, return plain `t_item` rows: the caller adds the details itself.
+Saved alerts never reach this filter.
+
 `page_cache_purge` fires once at the end of a request that changed something every public page
 shows: the theme, settings, a plugin, a category. It runs after the response has gone, and on the
 command line too. Its one argument is the list of reasons, such as `array('theme', 'plugin')`.
@@ -683,7 +690,7 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `search` | action | `$this->mSearch` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `search_conditions` | action | `\Params::getParamsAsArray(), $search, $context` | `oc-includes/osclass/classes/search/SearchBuilder.php` |
 | `search_pattern` | filter | `trim(strip_tags($params['sPattern'] ?? ''))` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
-| `search_results` | filter | `null, $search, \Params::getParamsAsArray(), $context, $extend !== null` | `oc-includes/osclass/classes/search/SearchRunner.php` |
+| `search_results` | filter | `null, $search, \Params::getParamsAsArray(), $context, $bare` | `oc-includes/osclass/classes/search/SearchRunner.php` |
 | `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 | `sql_search_fields` | filter | `$this->fields` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
