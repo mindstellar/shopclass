@@ -130,11 +130,14 @@ use mindstellar\migration\MigrationRunner;
 // install hook, and on `init` after an update (check your own version first)
 $runner = MigrationRunner::forPlugin('myplugin');
 $runner->ensureLedger();
-$result = $runner->run(); // ['ok' => bool, 'failed' => ?string, 'error' => ?string, ...]
+$result = $runner->run(); // ['ok' => bool, 'applied' => [files run], 'failed' => ?string, 'error' => ?string]
 
 // uninstall hook, after dropping your tables
 MigrationRunner::forPlugin('myplugin')->forget();
 ```
+
+A file that throws stops the run and is not recorded, so the next run tries it again. When
+`ok` is false, log `error` and carry on; when another run holds the lock, `failed` is null.
 
 The name is your plugin's folder. Core records each file as `myplugin/0001_create_data.sql`,
 so your file names never clash with core's or another plugin's.

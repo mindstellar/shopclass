@@ -64,15 +64,30 @@ try {
     $threw = true;
 }
 pin('core cannot forget', true, $threw);
+$plugin->run();
+$other->forget();
+pin('forgetting dem_ keeps the rows of demo', array('0001_create.php'), $plugin->applied());
 
 harness_section('folder names');
-$threw = false;
-try {
-    new MigrationRunner($conn, $dir, '../core');
-} catch (InvalidArgumentException $e) {
-    $threw = true;
+foreach (array('a path' => '../core', 'a trailing newline' => "demo\n") as $label => $scope) {
+    $threw = false;
+    try {
+        new MigrationRunner($conn, $dir, $scope);
+    } catch (InvalidArgumentException $e) {
+        $threw = true;
+    }
+    pin($label . ' is refused', true, $threw);
 }
-pin('a path is refused', true, $threw);
+
+harness_section('NO_BACKSLASH_ESCAPES');
+$mode = $admin->query('SELECT @@SESSION.sql_mode')->fetch_row()[0];
+$conn->execute("SET SESSION sql_mode = CONCAT(@@SESSION.sql_mode, ',NO_BACKSLASH_ESCAPES')");
+$other->run();
+pin('a folder with an underscore finds its rows', array('0001_create.php'), $other->applied());
+pin('so nothing runs twice', array(), $other->pending());
+$other->forget();
+pin('and forget() clears them', array(), $other->applied());
+$conn->execute('SET SESSION sql_mode = ?', array($mode));
 
 $admin->query("DELETE FROM $ledger WHERE s_migration IN ('0001_create.php', 'demo/0001_create.php', 'dem_/0001_create.php')");
 $admin->query("DELETE FROM $pref WHERE s_section = 'plugin_probe'");

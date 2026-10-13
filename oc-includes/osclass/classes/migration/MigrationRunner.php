@@ -50,7 +50,7 @@ class MigrationRunner
      */
     public function __construct(Connection $conn, string $migrationsDir, string $scope = '')
     {
-        if ($scope !== '' && !preg_match('/^[A-Za-z0-9_-]+$/', $scope)) {
+        if ($scope !== '' && !preg_match('/^[A-Za-z0-9_-]+\z/', $scope)) {
             throw new \InvalidArgumentException('Invalid migration scope: ' . $scope);
         }
         $this->conn  = $conn;
@@ -119,18 +119,15 @@ class MigrationRunner
      */
     public function applied(): array
     {
+        // Core's list also holds plugin rows; pending() only checks files on disk, so they never match.
         if ($this->scope === '') {
             return array_column($this->conn->select('SELECT s_migration FROM ' . $this->table), 's_migration');
         }
 
-        $prefix = $this->scope . '/';
-        $rows   = $this->conn->select(
-            'SELECT s_migration FROM ' . $this->table . ' WHERE s_migration LIKE ?',
-            array(addcslashes($prefix, '%_\\') . '%')
-        );
+        [$where, $params] = $this->scopeWhere();
         $names = array();
-        foreach ($rows as $row) {
-            $names[] = substr($row['s_migration'], strlen($prefix));
+        foreach ($this->conn->select('SELECT s_migration FROM ' . $this->table . $where, $params) as $row) {
+            $names[] = substr($row['s_migration'], strlen($this->scope) + 1);
         }
 
         return $names;
@@ -244,10 +241,21 @@ class MigrationRunner
         if ($this->scope === '') {
             throw new \LogicException('Core migrations cannot be forgotten.');
         }
-        $this->conn->execute(
-            'DELETE FROM ' . $this->table . ' WHERE s_migration LIKE ?',
-            array(addcslashes($this->scope . '/', '%_\\') . '%')
-        );
+        [$where, $params] = $this->scopeWhere();
+        $this->conn->execute('DELETE FROM ' . $this->table . $where, $params);
+    }
+
+    /**
+     * The WHERE clause for this plugin's ledger rows. A prefix compare, not LIKE: under
+     * NO_BACKSLASH_ESCAPES a LIKE escape stops working and `_` matches any character.
+     *
+     * @return array{0:string,1:array<int,mixed>}
+     */
+    private function scopeWhere(): array
+    {
+        $prefix = $this->scope . '/';
+
+        return array(' WHERE LEFT(s_migration, ?) = ?', array(strlen($prefix), $prefix));
     }
 
     /**
