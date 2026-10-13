@@ -118,6 +118,27 @@ Create them on plugin install, drop them on uninstall, and prefix them with both
 $table = DB_TABLE_PREFIX . 't_myplugin_data';
 ```
 
+### Migrations for your tables
+
+Put numbered files in your plugin's `migrations/` folder (`0001_create_data.sql`,
+`0002_add_column.php`). They work like core's: a `.sql` file runs as written, a `.php` file
+returns an object with `up(Connection $conn)`. Each file runs once. Shopclass 7.0 and later.
+
+```php
+use mindstellar\migration\MigrationRunner;
+
+// install hook, and on `init` after an update (check your own version first)
+$runner = MigrationRunner::forPlugin('myplugin');
+$runner->ensureLedger();
+$result = $runner->run(); // ['ok' => bool, 'failed' => ?string, 'error' => ?string, ...]
+
+// uninstall hook, after dropping your tables
+MigrationRunner::forPlugin('myplugin')->forget();
+```
+
+The name is your plugin's folder. Core records each file as `myplugin/0001_create_data.sql`,
+so your file names never clash with core's or another plugin's.
+
 Do not add columns to core tables. A migration will not know about them, and
 `db:repair` never removes a column: it stays flagged as extra until someone
 removes it by hand.

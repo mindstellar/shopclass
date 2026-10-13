@@ -28,6 +28,9 @@ use Throwable;
  * Migration files are named NNNN_description.sql or NNNN_description.php (zero-padded prefix
  * so string order == numeric order). `.sql` files run their statements verbatim; `.php`
  * files return an object with an up(Connection) method (see MigrationInterface).
+ *
+ * A plugin's runner (forPlugin()) shares the ledger: it records each file as `<folder>/<file>`,
+ * so its names never meet core's or another plugin's.
  */
 class MigrationRunner
 {
@@ -37,16 +40,23 @@ class MigrationRunner
     private Connection $conn;
     private string $dir;
     private string $table;
+    /** Empty for core; a plugin's folder name otherwise. */
+    private string $scope;
 
     /**
      * @param Connection $conn          connection bound to the database being migrated
      * @param string     $migrationsDir absolute path to the migrations directory
+     * @param string     $scope         ledger prefix; empty for core, a plugin's folder name otherwise
      */
-    public function __construct(Connection $conn, string $migrationsDir)
+    public function __construct(Connection $conn, string $migrationsDir, string $scope = '')
     {
+        if ($scope !== '' && !preg_match('/^[A-Za-z0-9_-]+$/', $scope)) {
+            throw new \InvalidArgumentException('Invalid migration scope: ' . $scope);
+        }
         $this->conn  = $conn;
         $this->dir   = rtrim($migrationsDir, '/\\');
         $this->table = DB_TABLE_PREFIX . 't_migration';
+        $this->scope = $scope;
     }
 
     /**
@@ -57,6 +67,18 @@ class MigrationRunner
     public static function forCore(): self
     {
         return new self(Connection::getInstance(), self::coreDir());
+    }
+
+    /**
+     * A runner for one plugin's migrations, kept in `<plugin folder>/migrations/`.
+     *
+     * @param string $folder the plugin's folder name, e.g. `manticore-search`
+     *
+     * @return self
+     */
+    public static function forPlugin(string $folder): self
+    {
+        return new self(Connection::getInstance(), PLUGINS_PATH . $folder . '/migrations', $folder);
     }
 
     /**
@@ -97,9 +119,18 @@ class MigrationRunner
      */
     public function applied(): array
     {
+        if ($this->scope === '') {
+            return array_column($this->conn->select('SELECT s_migration FROM ' . $this->table), 's_migration');
+        }
+
+        $prefix = $this->scope . '/';
+        $rows   = $this->conn->select(
+            'SELECT s_migration FROM ' . $this->table . ' WHERE s_migration LIKE ?',
+            array(addcslashes($prefix, '%_\\') . '%')
+        );
         $names = array();
-        foreach ($this->conn->select('SELECT s_migration FROM ' . $this->table) as $row) {
-            $names[] = $row['s_migration'];
+        foreach ($rows as $row) {
+            $names[] = substr($row['s_migration'], strlen($prefix));
         }
 
         return $names;
@@ -177,7 +208,9 @@ class MigrationRunner
     public function lockName(): string
     {
         // GET_LOCK names are capped at 64 characters, so the scope is hashed.
-        return 'osc_migrate_' . md5((string) $this->conn->scalar('SELECT DATABASE()') . '|' . DB_TABLE_PREFIX);
+        $scope = $this->scope === '' ? '' : '|' . $this->scope;
+
+        return 'osc_migrate_' . md5((string) $this->conn->scalar('SELECT DATABASE()') . '|' . DB_TABLE_PREFIX . $scope);
     }
 
     /**
@@ -196,6 +229,25 @@ class MigrationRunner
                 $this->record($name);
             }
         }
+    }
+
+    /**
+     * Drop this plugin's rows from the ledger, so a reinstall runs its migrations again.
+     * Call it from the plugin's uninstall hook after dropping its tables.
+     *
+     * @return void
+     * @throws \LogicException for core's runner
+     * @throws \mindstellar\database\DbException
+     */
+    public function forget(): void
+    {
+        if ($this->scope === '') {
+            throw new \LogicException('Core migrations cannot be forgotten.');
+        }
+        $this->conn->execute(
+            'DELETE FROM ' . $this->table . ' WHERE s_migration LIKE ?',
+            array(addcslashes($this->scope . '/', '%_\\') . '%')
+        );
     }
 
     /**
@@ -298,7 +350,7 @@ class MigrationRunner
     {
         $this->conn->execute(
             'INSERT INTO ' . $this->table . ' (s_migration, dt_applied) VALUES (?, NOW())',
-            array($name)
+            array($this->scope === '' ? $name : $this->scope . '/' . $name)
         );
     }
 }
