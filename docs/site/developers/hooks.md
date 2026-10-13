@@ -148,7 +148,7 @@ sends a `snippet` on each listing and the rest in `meta`.
 best first, or `null` for core's choice. Core drops the listing itself and any that are not live.
 
 `search_suggestions` answers `GET /search/suggest`, the search box list. Arguments: `null`, what was
-typed, the limit and the context (`'api'`). Return `null` for core's keyword search, or
+typed, the limit and the context (`'api'`). Return `null` for core's title match, or
 `array('listings' => array(ids, best first), 'searches' => array(array('term' => ..., 'count' => ...)))`.
 Either key may be left out. Core drops listings that are not live and strips tags from terms. Core
 itself never suggests searches.

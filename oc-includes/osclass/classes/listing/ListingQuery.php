@@ -288,6 +288,33 @@ final class ListingQuery
     }
 
     /**
+     * Ids of live listings whose title has every word as a word start (title full-text
+     * index), titles that start with $prefix first, then newest.
+     *
+     * @param string[] $words three letters or more, no full-text operators
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    public function titleMatches(array $words, string $prefix, int $limit): array
+    {
+        if ($words === []) {
+            return [];
+        }
+        $p     = DB_TABLE_PREFIX;
+        $match = implode(' ', array_map(static fn (string $w): string => '+' . $w . '*', $words));
+        $rows  = Db::select(
+            'SELECT i.pk_i_id, MAX(d.s_title LIKE ?) AS starts FROM ' . $p . 't_item_description d'
+            . ' INNER JOIN ' . $p . 't_item i ON i.pk_i_id = d.fk_i_item_id'
+            . ' WHERE MATCH(d.s_title) AGAINST(? IN BOOLEAN MODE) AND ' . implode(' AND ', ListingStatus::liveConditions('i.'))
+            . ' GROUP BY i.pk_i_id, i.dt_pub_date ORDER BY starts DESC, i.dt_pub_date DESC, i.pk_i_id DESC LIMIT ?',
+            [addcslashes($prefix, '%_\\') . '%', $match, $limit]
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
+    }
+
+    /**
      * Ids of live listings that share the most of $words in their title, then newest. Only
      * the newest RELATED_POOL listings that pass the filters are scored, so a big category
      * costs the same as a small one.
