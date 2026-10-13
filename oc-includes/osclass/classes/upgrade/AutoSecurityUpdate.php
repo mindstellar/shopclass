@@ -138,11 +138,6 @@ final class AutoSecurityUpdate
                 : sprintf(__('Shopclass installed the files of security update %2$s on %1$s, but the database step failed: %3$s. Open Tools, then System info, then Database, in the admin to finish it.'), $site, $to, $reason);
         }
 
-        osc_sendMail(array(
-            'from'    => _osc_from_email_aux(),
-            'to'      => osc_contact_email(),
-            'subject' => $subject,
-            'body'    => '<p>' . osc_esc_html($body) . '</p>',
-        ));
+        \mindstellar\mail\Mailer::admin($subject, array($body));
     }
 }

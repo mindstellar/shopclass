@@ -45,7 +45,7 @@ pin('peer and host verified', [true, 2], [$o[CURLOPT_SSL_VERIFYPEER], $o[CURLOPT
 pin('default timeouts are 5 and 15 seconds', [5000, 15000], [$o[CURLOPT_CONNECTTIMEOUT_MS], $o[CURLOPT_TIMEOUT_MS]]);
 check('no cookie jar', !isset($o[CURLOPT_COOKIEFILE]) && !isset($o[CURLOPT_COOKIEJAR]));
 check('caller headers are sent', in_array('Authorization: Bearer x', $o[CURLOPT_HTTPHEADER], true));
-check('a default user agent is added', (bool) preg_grep('/^User-Agent: Shopclass\//', $o[CURLOPT_HTTPHEADER]));
+check('a default user agent is added, with no made-up version', in_array('User-Agent: Shopclass', $o[CURLOPT_HTTPHEADER], true));
 check('no body for a GET with none', !isset($o[CURLOPT_POSTFIELDS]));
 
 $o = CurlHttpClient::options('POST', 'https://example.com/', ['user-agent' => 'Acme/1'], 'a=1', ['connect_timeout' => 2, 'timeout' => 0.5], $buffer);
@@ -79,6 +79,8 @@ pin('one byte more stops the transfer', 0, $o[CURLOPT_WRITEFUNCTION](null, 'k'))
 pin('and is marked', [true, 'abcdefghij'], [$buffer->overflowed(), $buffer->body()]);
 
 harness_section('response headers');
+$buffer = new ResponseBuffer(10);
+pin('header bytes are capped apart from the body', [ResponseBuffer::MAX_HEADER_BYTES - 1, 0, true], [$buffer->header(str_repeat('h', ResponseBuffer::MAX_HEADER_BYTES - 1)), $buffer->header('hh'), $buffer->headersOverflowed()]);
 $buffer = new ResponseBuffer(10);
 foreach (["HTTP/1.1 100 Continue\r\n", "X-Early: 1\r\n", "\r\n", "HTTP/1.1 200 OK\r\n", "Content-Type: application/json\r\n", "Set-Cookie: a=1\r\n", "set-cookie: b=2\r\n", "\r\n"] as $line) {
     $buffer->header($line);
@@ -115,8 +117,31 @@ check('an answer past max_bytes throws, saying the limit', str_contains($message
 check('without the query string', $message !== '' && !str_contains($message, 'SECRET'));
 $message = $caught(fn () => (new CurlHttpClient($fake([str_repeat('x', CurlHttpClient::MAX_BYTES), 'x'], 200)))->send('GET', 'https://api.example.com/'));
 check('the default cap applies with no option', str_contains($message, 'larger than 1048576 bytes'));
+$message = $caught(fn () => (new CurlHttpClient($fake([], 200)))->send('GET', 'https://api.example.com/'));
+$r       = null;
+try {
+    $r = (new CurlHttpClient(static fn (): array => ['ok' => false, 'status' => 200, 'errno' => 28]))->send('GET', 'https://api.example.com/');
+} catch (HttpException $e) {
+    $message = $e->getMessage();
+}
+check('a transfer cut short after a 200 (a timeout) is an HttpException, not an answer', $r === null && str_contains($message, 'cURL error 28'));
+$big     = array_fill(0, 70, 'X-Pad: ' . str_repeat('p', 1000) . "\r\n");
+$message = $caught(fn () => (new CurlHttpClient($fake(['ok'], 200, $big)))->send('GET', 'https://api.example.com/'));
+check('headers past 64 KB stop the transfer', str_contains($message, 'headers from api.example.com were larger than 65536 bytes'));
 $message = $caught(fn () => (new CurlHttpClient($fake([], 0)))->send('GET', 'https://api.example.com/v1?key=SECRET'));
 check('no status is an HttpException', $message !== '' && !str_contains($message, 'SECRET'));
+
+harness_section('no cURL');
+$noCurl = 'none';
+try {
+    (new CurlHttpClient(null, static fn (): bool => false))->send('GET', 'https://api.example.com/', [], null, ['timeout' => 0]);
+} catch (HttpException $e) {
+    $noCurl = $e->getMessage();
+} catch (\Throwable $e) {
+    $noCurl = get_class($e);
+}
+pin('without cURL send() throws HttpException before building any option', 'This server cannot make HTTP requests (no cURL)', $noCurl);
+check('a fake transport works without asking', (new CurlHttpClient(static fn (): array => ['ok' => true, 'status' => 204, 'errno' => 0], static fn (): bool => false))->send('GET', 'https://api.example.com/')['status'] === 204);
 
 harness_section('errors');
 $message = '';

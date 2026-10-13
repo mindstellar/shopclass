@@ -19,7 +19,12 @@ namespace mindstellar\http;
  */
 final class ResponseBuffer
 {
+    /** The most header bytes taken before the transfer is stopped. */
+    public const MAX_HEADER_BYTES = 65536;
+
     private string $body = '';
+    private int $headerBytes = 0;
+    private bool $headersOverflowed = false;
     private bool $overflowed = false;
 
     /** @var array<string,string> */
@@ -45,6 +50,12 @@ final class ResponseBuffer
     /** Take one header line. A status line starts a new set, so a 100 Continue leaves no headers behind. */
     public function header(string $line): int
     {
+        $this->headerBytes += strlen($line);
+        if ($this->headerBytes > self::MAX_HEADER_BYTES) {
+            $this->headersOverflowed = true;
+
+            return 0;
+        }
         if (str_starts_with($line, 'HTTP/')) {
             $this->headers = [];
         } elseif (str_contains($line, ':')) {
@@ -57,6 +68,11 @@ final class ResponseBuffer
         }
 
         return strlen($line);
+    }
+
+    public function headersOverflowed(): bool
+    {
+        return $this->headersOverflowed;
     }
 
     public function overflowed(): bool

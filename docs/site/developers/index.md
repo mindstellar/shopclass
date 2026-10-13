@@ -51,7 +51,7 @@ Worth knowing before you port something:
 | Add an admin settings page | [Settings pages](/docs/developers/settings-pages/) |
 | Build an admin add/edit screen | [Admin editors](/docs/developers/admin-editors/) |
 | Take payments | [Payment gateways](/docs/developers/payment-gateways/) |
-| Call another service, or e-mail the site owner | [Outgoing HTTP and admin notices](/docs/developers/http-client/) |
+| Call another service over HTTPS | [HTTP client](/docs/developers/http-client/) |
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
@@ -60,7 +60,7 @@ Worth knowing before you port something:
 | Show distance search in a theme | [Distance search in themes](/docs/developers/distance-search/) |
 | Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
-| Style the e-mails the site sends | [E-mail layout](/docs/developers/email-layout/) |
+| Style the e-mails the site sends, or e-mail the site owner | [E-mail layout](/docs/developers/email-layout/) |
 | Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |
 | Keep a small value, flag or lock without a table | [Key-value store](/docs/developers/kv-store/) |
 | Keep a search filter working in saved alerts | [Saved-search alerts](/docs/developers/alerts/) |

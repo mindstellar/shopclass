@@ -19,7 +19,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `oc-cli.php plugin:install --plugin=<folder>` installs and enables a plugin from a shell.
 - Plugins add their own tables to a person's data export with the `personal_data_export` filter.
 - A payment that arrives for an order already closed as failed is logged as "paid after close" for the admin.
-- `mindstellar\http\CurlHttpClient` gives plugins one HTTPS client with timeouts and a size cap. See [Outgoing HTTP](https://shopclass.org/docs/developers/http-client/).
+- `mindstellar\http\CurlHttpClient` gives plugins one HTTPS client with timeouts and a size cap. See [HTTP client](https://shopclass.org/docs/developers/http-client/).
 - `osc_mail_admin()` e-mails the site owner a short notice and never throws.
 - Geocode provider plugins find a listing's exact position from its street address; pick one in Settings → General → Maps. See [Distance search](https://shopclass.org/docs/developers/distance-search/).
 - `$search->filters()` gives a search plugin what to search for as plain values, custom fields included, so it no longer parses `toJson()`.

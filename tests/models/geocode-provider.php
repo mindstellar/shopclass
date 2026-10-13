@@ -157,6 +157,8 @@ GeocodeProviderRegistry::getInstance()->get('fake');
 GeocodeProviderRegistry::getInstance()->all();
 GeocodeProviderRegistry::getInstance()->active();
 pin('register_geocode_providers fires once across get(), all() and active()', 1, $GLOBALS['geocodeHookRuns']);
+$fresh = (new ReflectionClass(GeocodeProviderRegistry::class))->newInstanceWithoutConstructor();
+pin('all() as the first read on a fresh registry returns the provider', ['fake'], array_keys($fresh->all()));
 
 harness_section('answers are cached');
 $admin->query("DELETE FROM {$p}t_key_value WHERE s_group = 'geocode'");

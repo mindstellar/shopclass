@@ -29,36 +29,48 @@ final class CurlHttpClient implements HttpClient
     /** @var \Closure(array<int,mixed>):array{ok:bool,status:int,errno:int} */
     private \Closure $transport;
 
+    /** @var \Closure():bool */
+    private \Closure $available;
+
     /**
-     * @param callable|null $transport runs the cURL options and returns ok, status and errno; tests pass a fake
+     * @param callable|null $transport for tests only: runs the cURL options and returns ok, status and errno
+     * @param callable|null $available for tests only: whether cURL is there, checked with the default transport
      */
-    public function __construct(?callable $transport = null)
+    public function __construct(?callable $transport = null, ?callable $available = null)
     {
         $this->transport = \Closure::fromCallable($transport ?? [self::class, 'curl']);
+        $this->available = $transport === null ? \Closure::fromCallable($available ?? [Curl::class, 'available']) : static fn (): bool => true;
     }
 
     public function send(string $method, string $url, array $headers = [], ?string $body = null, array $options = []): array
     {
+        // Before the options are built: without the extension the CURLOPT_* constants do not exist.
+        if (!($this->available)()) {
+            throw new HttpException('This server cannot make HTTP requests (no cURL)');
+        }
         $method      = strtoupper($method);
-        $max         = self::option($options, 'max_bytes', self::MAX_BYTES);
+        $max         = (int) self::positive($options, 'max_bytes', self::MAX_BYTES, true);
         $buffer      = new ResponseBuffer($max);
         $curlOptions = self::options($method, $url, $headers, $body, $options, $buffer);
 
         ['ok' => $ok, 'status' => $status, 'errno' => $errno] = ($this->transport)($curlOptions);
 
         $host = (string) parse_url($url, PHP_URL_HOST);
+        if ($buffer->headersOverflowed()) {
+            throw new HttpException(sprintf('The headers from %s were larger than %d bytes', $host, ResponseBuffer::MAX_HEADER_BYTES));
+        }
         if ($buffer->overflowed()) {
             throw new HttpException(sprintf('The answer from %s was larger than %d bytes', $host, $max));
         }
         if (!$ok || $status === 0) {
-            throw new HttpException(sprintf('%s could not be reached (cURL error %d: %s)', $host, $errno, (string) curl_strerror($errno)));
+            throw new HttpException(sprintf('%s could not be reached (cURL error %d: %s)', $host, $errno, (function_exists('curl_strerror') ? (string) curl_strerror($errno) : 'unknown')));
         }
 
         return ['status' => $status, 'headers' => $buffer->headers(), 'body' => $buffer->body()];
     }
 
     /**
-     * Run one request with cURL.
+     * Run one request with cURL. Public so tests can reach it; callers use send().
      *
      * @param array<int,mixed> $curlOptions
      *
@@ -81,6 +93,7 @@ final class CurlHttpClient implements HttpClient
 
     /**
      * The cURL options for one request; checked here, so a bad call fails before any connection.
+     * Public so tests can read them; callers use send().
      *
      * @param array<string,string> $headers
      * @param array<string,mixed>  $options
@@ -110,7 +123,7 @@ final class CurlHttpClient implements HttpClient
             $lines[] = $name . ': ' . $value;
         }
         if (!$agent) {
-            $lines[] = 'User-Agent: Shopclass/' . (defined('OSCLASS_VERSION') ? OSCLASS_VERSION : '7');
+            $lines[] = 'User-Agent: Shopclass' . (defined('OSCLASS_VERSION') ? '/' . OSCLASS_VERSION : '');
         }
 
         $curl = [
@@ -124,8 +137,8 @@ final class CurlHttpClient implements HttpClient
             CURLOPT_SSL_VERIFYPEER    => true,
             CURLOPT_SSL_VERIFYHOST    => 2,
             CURLOPT_NOSIGNAL          => true,
-            CURLOPT_CONNECTTIMEOUT_MS => (int) round(self::seconds($options, 'connect_timeout', self::CONNECT_TIMEOUT) * 1000),
-            CURLOPT_TIMEOUT_MS        => (int) round(self::seconds($options, 'timeout', self::TIMEOUT) * 1000),
+            CURLOPT_CONNECTTIMEOUT_MS => (int) round(self::positive($options, 'connect_timeout', self::CONNECT_TIMEOUT) * 1000),
+            CURLOPT_TIMEOUT_MS        => (int) round(self::positive($options, 'timeout', self::TIMEOUT) * 1000),
             CURLOPT_HEADER            => false,
             CURLOPT_HEADERFUNCTION    => static fn ($handle, string $line): int => $buffer->header($line),
             CURLOPT_WRITEFUNCTION     => static fn ($handle, string $chunk): int => $buffer->append($chunk),
@@ -141,32 +154,19 @@ final class CurlHttpClient implements HttpClient
     }
 
     /**
-     * A positive whole-number option, or the default when it is not given.
+     * A positive option, or the default when it is not given: a whole number, or seconds that may
+     * have a fraction.
      *
      * @param array<string,mixed> $options
      */
-    private static function option(array $options, string $key, int $default): int
+    private static function positive(array $options, string $key, int $default, bool $whole = false): int|float
     {
         $value = $options[$key] ?? $default;
-        if (!is_int($value) || $value <= 0) {
-            throw new \InvalidArgumentException($key . ' must be a positive whole number');
+        $ok    = $whole ? is_int($value) : (is_int($value) || is_float($value)) && is_finite((float) $value);
+        if (!$ok || $value <= 0) {
+            throw new \InvalidArgumentException($key . ($whole ? ' must be a positive whole number' : ' must be a positive number of seconds'));
         }
 
         return $value;
-    }
-
-    /**
-     * A positive number of seconds, or the default when it is not given.
-     *
-     * @param array<string,mixed> $options
-     */
-    private static function seconds(array $options, string $key, int $default): float
-    {
-        $value = $options[$key] ?? $default;
-        if ((!is_int($value) && !is_float($value)) || !is_finite((float) $value) || $value <= 0) {
-            throw new \InvalidArgumentException($key . ' must be a positive number of seconds');
-        }
-
-        return (float) $value;
     }
 }

@@ -278,7 +278,7 @@ final class Mailer
 
     /**
      * Send a short notice to the site's contact address, one escaped paragraph per line.
-     * Never throws: a failure is logged and returns false.
+     * Never throws once called: a failure is logged and returns false.
      *
      * @param array<int,mixed> $lines plain text; anything that is not a string or number is left out
      */
@@ -296,14 +296,14 @@ final class Mailer
                 }
             }
 
-            return (bool) self::send(array(
+            return (bool) self::send([
                 'from'    => CoreEmails::fromAddress(),
                 'to'      => $to,
                 'subject' => $subject,
                 'body'    => $body,
-            ));
+            ]);
         } catch (\Throwable $e) {
-            error_log('osc_mail_admin: ' . $e->getMessage());
+            error_log('Mailer::admin: ' . $e->getMessage());
 
             return false;
         }

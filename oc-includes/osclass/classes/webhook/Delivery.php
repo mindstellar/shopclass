@@ -14,6 +14,7 @@ namespace mindstellar\webhook;
 
 use mindstellar\job\Job;
 use mindstellar\job\JobRetry;
+use mindstellar\mail\Mailer;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
 
@@ -153,20 +154,16 @@ final class Delivery
     {
         $site = osc_page_title();
         $gone = $endpoint->lastStatus() === 'HTTP 410';
-        osc_sendMail([
-            'from'    => _osc_from_email_aux(),
-            'to'      => osc_contact_email(),
-            'subject' => sprintf(__('[%s] A webhook endpoint was paused'), $site),
-            'body'    => '<p>' . osc_esc_html($gone ? sprintf(
-                __('%1$s answered 410 Gone, so the site stopped sending to it. Switch the endpoint on again in Settings, then API, if this was a mistake.'),
-                self::label($endpoint)
-            ) : sprintf(
-                __('Deliveries to %1$s failed %2$d times in a row, so the site stopped sending to it. The last answer was: %3$s. Fix the receiver, then switch the endpoint on again in Settings, then API.'),
-                self::label($endpoint),
-                $endpoint->failures(),
-                (string) $endpoint->lastStatus()
-            )) . '</p>',
-        ]);
+        $line = $gone ? sprintf(
+            __('%1$s answered 410 Gone, so the site stopped sending to it. Switch the endpoint on again in Settings, then API, if this was a mistake.'),
+            self::label($endpoint)
+        ) : sprintf(
+            __('Deliveries to %1$s failed %2$d times in a row, so the site stopped sending to it. The last answer was: %3$s. Fix the receiver, then switch the endpoint on again in Settings, then API.'),
+            self::label($endpoint),
+            $endpoint->failures(),
+            (string) $endpoint->lastStatus()
+        );
+        Mailer::admin(sprintf(__('[%s] A webhook endpoint was paused'), $site), [$line]);
     }
 
     /**

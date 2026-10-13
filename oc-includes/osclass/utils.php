@@ -219,7 +219,7 @@ function osc_sendMail($params)
 
 /**
  * Send a short notice to the site's contact address, one escaped paragraph per line.
- * Returns false, never throws, when it cannot be sent.
+ * Returns false when it cannot be sent; never throws once called.
  *
  * @see \mindstellar\mail\Mailer::admin()
  */
