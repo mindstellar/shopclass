@@ -139,9 +139,25 @@ Read what to search for with `$search->filters()` (7.0+). It returns a `SearchFi
 `categories`, `priceMin`, `priceMax`, `pattern`, `locales`, `withPicture`, `onlyPremium`,
 `locations` (`city_areas`, `cities`, `regions`, `countries`, each a list of
 `['by' => 'id'|'code'|'name', 'value' => …]`), `radius` (`lat`, `lng`, `km`), `userIds`, `order`
-(a list of `['table', 'column', 'direction']`), `offset` and `perPage`. `pattern` and name values
-are the visitor's text: escape or bind them. When `rawSql` is true, or `liveOnly` is false,
+(a list of `['table', 'column', 'direction']`), `meta`, `offset` and `perPage`. `pattern` and name
+values are the visitor's text: escape or bind them. When `rawSql` is true, or `liveOnly` is false,
 return `null`: the search holds SQL your engine cannot run.
+
+`meta` holds the custom-field filters core applied, by field id. Each has the field's storage
+`type` and an `op`:
+
+| Type | `op` | Matches when |
+|---|---|---|
+| TEXT, TEXTAREA, URL | `contains`, `value` | the value contains `value` (core uses LIKE, so `%` and `_` act as wildcards) |
+| DROPDOWN, RADIO | `eq`, `value` | the value is `value` |
+| CHECKBOX | `checked` | the value is `1` |
+| DATE | `between`, `from`, `to` | the value is in that day (unix times, both ends included) |
+| DATEINTERVAL | `covers`, `from`, `to` | the stored range starts on or before `from` and ends on or after `to` |
+| NUMBER | `between`, `from`, `to` | the value is in the range, both ends included |
+
+A field not searchable in the asked categories, or an empty value, is not in `meta`. NUMBER and
+DATEINTERVAL need both ends, and an end of `0` drops the filter. A plugin adds its own typed field
+filter with `$search->addFieldFilter($fieldId, $filter, $sqlCondition)`.
 Saved alerts never reach this filter. The answer may also carry `'snippets'` (listing id => text
 with the searched words in `<mark>`), `'facets'` (`array('category' => array(id => count))`),
 `'suggestion'` (a corrected query) and `'relaxed'` (true when a fuzzy search found the results).

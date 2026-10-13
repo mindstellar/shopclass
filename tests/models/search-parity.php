@@ -996,6 +996,39 @@ if ($dumpTo !== '') {
     file_put_contents($dumpTo, json_encode($clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 }
 
+harness_section('filters() shows custom-field filters');
+$typed = static function (array $meta, string $category) use ($catCars): \mindstellar\search\SearchFilters {
+    $s = new Search();
+    SearchBuilder::apply(SearchCriteria::fromRequest(array('sCategory' => $category, 'meta' => $meta)), $s);
+
+    return $s->filters();
+};
+$dayStart = mktime(0, 0, 0, (int)date('n', $day), (int)date('j', $day), (int)date('Y', $day));
+foreach (array(
+    'TEXT'         => array('mint', array('type' => 'TEXT', 'op' => 'contains', 'value' => 'mint')),
+    'URL'          => array('example.test', array('type' => 'URL', 'op' => 'contains', 'value' => 'example.test')),
+    'DROPDOWN'     => array('red', array('type' => 'DROPDOWN', 'op' => 'eq', 'value' => 'red')),
+    'RADIO'        => array('new', array('type' => 'RADIO', 'op' => 'eq', 'value' => 'new')),
+    'CHECKBOX'     => array('1', array('type' => 'CHECKBOX', 'op' => 'checked')),
+    'DATE'         => array((string)$day, array('type' => 'DATE', 'op' => 'between', 'from' => $dayStart, 'to' => $dayStart + 86399)),
+    'DATEINTERVAL' => array(array('from' => (string)$day, 'to' => (string)($day + 5)), array('type' => 'DATEINTERVAL', 'op' => 'covers', 'from' => $day, 'to' => $day + 5)),
+    'NUMBER'       => array(array('from' => '40000', 'to' => '130000.5'), array('type' => 'NUMBER', 'op' => 'between', 'from' => 40000.0, 'to' => 130000.5)),
+) as $type => [$value, $expected]) {
+    $f = $typed(array($fields[$type] => $value), (string)$catCars);
+    pin($type . ' as plain values', array($fields[$type] => $expected), $f->meta);
+    pin($type . ' is not raw SQL', false, $f->rawSql);
+}
+$f = $typed(array($fields['DROPDOWN'] => 'red'), (string)$catBikes);
+pin('a field not searchable in the category is left out', array(array(), false), array($f->meta, $f->rawSql));
+$f = $typed(array($fields['NUMBER'] => array('from' => '0', 'to' => '10')), (string)$catCars);
+pin('a NUMBER with a 0 end is left out', array(), $f->meta);
+$s = new Search();
+SearchBuilder::apply(SearchCriteria::fromRequest(array('sCategory' => (string)$catCars, 'meta' => array($fields['DROPDOWN'] => 'red'))), $s);
+$s->addConditions($p . 't_item.i_price > 0');
+pin('other SQL still makes it raw', true, $s->filters()->rawSql);
+$s->setJsonAlert(json_decode($s->toJson(), true));
+pin('a filter whose condition was cleared is gone', array(), $s->filters()->meta);
+
 harness_section('the legacy $dao is built only when read');
 $built = static fn (DAO $model): bool => array_key_exists('dao', get_object_vars($model));
 $GLOBALS['daoDeprecations'] = array();

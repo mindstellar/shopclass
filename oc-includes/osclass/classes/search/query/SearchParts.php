@@ -48,6 +48,9 @@ final class SearchParts
     /** @var mixed the locale a keyword search falls back to */
     public $userLocale = null;
 
+    /** @var array<int,array{filter:array<string,mixed>,sql:string}> custom-field filters by field id, with the condition each added */
+    public array $meta = array();
+
     /** @var array<int,string> ORDER BY terms that go ahead of the sort, such as fromPrimaryKeys()' ranking */
     public array $leadOrder = array();
 

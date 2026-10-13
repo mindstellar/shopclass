@@ -230,6 +230,24 @@ class Search extends DAO
     }
 
     /**
+     * Filter by one custom field. $condition is the SQL core runs; $filter is the same rule as
+     * plain values, which filters() shows a search backend.
+     *
+     * @param int                 $fieldId
+     * @param array<string,mixed> $filter    type, op and its values; see SearchFilters::$meta
+     * @param string              $condition
+     *
+     * @return void
+     * @since 7.0.0
+     */
+    public function addFieldFilter(int $fieldId, array $filter, string $condition): void
+    {
+        $condition                   = trim($condition);
+        $this->parts->meta[$fieldId] = array('filter' => $filter, 'sql' => $condition);
+        $this->addConditions($condition);
+    }
+
+    /**
      * Add conditions to the search
      *
      * @param string|array<int,string> $conditions

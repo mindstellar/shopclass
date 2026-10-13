@@ -149,14 +149,28 @@ final class PluginClauses
      * Whether a condition, table, join, GROUP BY or HAVING was added. Extra fields do not count:
      * they do not change which rows match.
      *
-     * @param array<int,string> $known listing conditions core added itself, which do not count
+     * @param array<int,string> $known           listing conditions core added itself, which do not count
+     * @param array<int,string> $knownConditions conditions shown elsewhere, which do not count
      *
      * @return bool
      */
-    public function changesRows(array $known = array()): bool
+    public function changesRows(array $known = array(), array $knownConditions = array()): bool
     {
-        return $this->conditions !== array() || array_diff($this->itemConditions, $known) !== array()
+        return array_diff($this->conditions, $knownConditions) !== array()
+            || array_diff($this->itemConditions, $known) !== array()
             || $this->tables !== array() || $this->joins !== array() || $this->groupBy != '' || $this->having != '';
+    }
+
+    /**
+     * Whether this condition is set.
+     *
+     * @param string $condition
+     *
+     * @return bool
+     */
+    public function hasCondition(string $condition): bool
+    {
+        return in_array($condition, $this->conditions, true);
     }
 
     /**

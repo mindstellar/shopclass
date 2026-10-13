@@ -200,38 +200,40 @@ class SearchBuilder
         )));
 
         $table = DB_TABLE_PREFIX . 't_item_meta';
+        $in    = DB_TABLE_PREFIX . 't_item.pk_i_id IN (';
         foreach ($custom_fields as $key => $aux) {
-            switch ($types[(int)$key] ?? null) {
+            $id   = (int)$key;
+            $type = $types[$id] ?? null;
+            $by   = "SELECT fk_i_item_id FROM $table WHERE $table.fk_i_field_id = $id AND ";
+            switch ($type) {
                 case 'TEXTAREA':
                 case 'TEXT':
                 case 'URL':
                     if (is_scalar($aux) && $aux != '') {
-                        $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                        $str_escaped = self::metaLiteral('%' . $aux . '%');
-                        $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                        $sql         .= $table . '.s_value LIKE ' . $str_escaped;
-                        $search->addConditions(DB_TABLE_PREFIX
-                            . 't_item.pk_i_id IN (' . $sql . ')');
+                        $search->addFieldFilter(
+                            $id,
+                            array('type' => $type, 'op' => 'contains', 'value' => (string)$aux),
+                            $in . $by . $table . '.s_value LIKE ' . self::metaLiteral('%' . $aux . '%') . ')'
+                        );
                     }
                     break;
                 case 'DROPDOWN':
                 case 'RADIO':
                     if (is_scalar($aux) && $aux != '') {
-                        $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                        $str_escaped = self::metaLiteral($aux);
-                        $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                        $sql         .= $table . '.s_value = ' . $str_escaped;
-                        $search->addConditions(DB_TABLE_PREFIX
-                            . 't_item.pk_i_id IN (' . $sql . ')');
+                        $search->addFieldFilter(
+                            $id,
+                            array('type' => $type, 'op' => 'eq', 'value' => (string)$aux),
+                            $in . $by . $table . '.s_value = ' . self::metaLiteral($aux) . ')'
+                        );
                     }
                     break;
                 case 'CHECKBOX':
                     if ($aux != '') {
-                        $sql = "SELECT fk_i_item_id FROM $table WHERE ";
-                        $sql .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                        $sql .= $table . '.s_value = 1';
-                        $search->addConditions(DB_TABLE_PREFIX
-                            . 't_item.pk_i_id IN (' . $sql . ')');
+                        $search->addFieldFilter(
+                            $id,
+                            array('type' => $type, 'op' => 'checked'),
+                            $in . $by . $table . '.s_value = 1)'
+                        );
                     }
                     break;
                 case 'DATE':
@@ -240,14 +242,13 @@ class SearchBuilder
                         $y     = (int)date('Y', (int)$aux);
                         $m     = (int)date('n', (int)$aux);
                         $d     = (int)date('j', (int)$aux);
-                        $start = mktime(0, 0, 0, $m, $d, $y);
-                        $end   = mktime(23, 59, 59, $m, $d, $y);
-                        $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                        $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                        $sql   .= $table . '.s_value >= ' . $start . ' AND ';
-                        $sql   .= $table . '.s_value <= ' . $end;
-                        $search->addConditions(DB_TABLE_PREFIX
-                            . 't_item.pk_i_id IN (' . $sql . ')');
+                        $start = (int)mktime(0, 0, 0, $m, $d, $y);
+                        $end   = (int)mktime(23, 59, 59, $m, $d, $y);
+                        $search->addFieldFilter(
+                            $id,
+                            array('type' => $type, 'op' => 'between', 'from' => $start, 'to' => $end),
+                            $in . $by . $table . '.s_value >= ' . $start . ' AND ' . $table . '.s_value <= ' . $end . ')'
+                        );
                     }
                     break;
                 case 'DATEINTERVAL':
@@ -255,20 +256,15 @@ class SearchBuilder
                         && is_numeric($aux['from']) && is_numeric($aux['to'])
                     ) {
                         // s_value stores unix timestamps for DATEINTERVAL fields
-                        $from         = (int)$aux['from'];
-                        $to           = (int)$aux['to'];
-                        $sql          = "SELECT fk_i_item_id FROM $table WHERE ";
-                        $sql          .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                        $sql          .= $from . ' >= ' . $table
-                            . ".s_value AND s_multi = 'from'";
-                        $sql1         = "SELECT fk_i_item_id FROM $table WHERE ";
-                        $sql1         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                        $sql1         .= $to . ' <= ' . $table
-                            . ".s_value AND s_multi = 'to'";
-                        $sql_interval = 'select a.fk_i_item_id from (' . $sql
-                            . ') a where a.fk_i_item_id IN (' . $sql1 . ')';
-                        $search->addConditions(DB_TABLE_PREFIX
-                            . 't_item.pk_i_id IN (' . $sql_interval . ')');
+                        $from = (int)$aux['from'];
+                        $to   = (int)$aux['to'];
+                        $sql  = $by . $from . ' >= ' . $table . ".s_value AND s_multi = 'from'";
+                        $sql1 = $by . $to . ' <= ' . $table . ".s_value AND s_multi = 'to'";
+                        $search->addFieldFilter(
+                            $id,
+                            array('type' => $type, 'op' => 'covers', 'from' => $from, 'to' => $to),
+                            $in . 'select a.fk_i_item_id from (' . $sql . ') a where a.fk_i_item_id IN (' . $sql1 . '))'
+                        );
                     }
                     break;
                 case 'NUMBER':
@@ -276,14 +272,13 @@ class SearchBuilder
                         && is_numeric($aux['from']) && is_numeric($aux['to'])
                         && is_finite((float)$aux['from']) && is_finite((float)$aux['to'])
                     ) {
-                        $min   = (float)$aux['from'];
-                        $max   = (float)$aux['to'];
-                        $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                        $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                        $sql   .= $table . '.s_value >= ' . $min . ' AND ';
-                        $sql   .= $table . '.s_value <= ' . $max;
-                        $search->addConditions(DB_TABLE_PREFIX
-                            . 't_item.pk_i_id IN (' . $sql . ')');
+                        $min = (float)$aux['from'];
+                        $max = (float)$aux['to'];
+                        $search->addFieldFilter(
+                            $id,
+                            array('type' => $type, 'op' => 'between', 'from' => $min, 'to' => $max),
+                            $in . $by . $table . '.s_value >= ' . $min . ' AND ' . $table . '.s_value <= ' . $max . ')'
+                        );
                     }
                     break;
                 default:

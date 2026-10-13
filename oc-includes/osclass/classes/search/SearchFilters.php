@@ -56,6 +56,21 @@ final class SearchFilters
      * @var array<int,array{table:?string,column:string,direction:string}>
      */
     public array $order = array();
+    /**
+     * Custom-field filters by field id. `type` is the field's storage type; `op` says the rule:
+     * - TEXT, TEXTAREA, URL: `contains` with `value` (core uses LIKE, so `%` and `_` in it are wildcards)
+     * - DROPDOWN, RADIO: `eq` with `value`
+     * - CHECKBOX: `checked`
+     * - DATE: `between` with `from` and `to`, the start and end of that day as unix times
+     * - DATEINTERVAL: `covers` with `from` and `to`: the stored range starts on or before `from`
+     *   and ends on or after `to`
+     * - NUMBER: `between` with `from` and `to`, both ends included
+     * Only filters core applied are here: a field not searchable in the asked categories, or an
+     * empty value, is left out. NUMBER and DATEINTERVAL need both ends, and a 0 end drops the filter.
+     *
+     * @var array<int,array<string,mixed>>
+     */
+    public array $meta = array();
     public int $offset = 0;
     public int $perPage = 10;
     /**
@@ -90,7 +105,15 @@ final class SearchFilters
         $c->order   = $parts->ordering->terms();
         $c->offset  = max(0, (int)$parts->ordering->offset());
         $c->perPage = (int)$parts->ordering->perPage();
-        $c->rawSql   = $parts->plugin->changesRows($parts->liveConditions);
+        $metaSql = array();
+        foreach ($parts->meta as $fieldId => $meta) {
+            // A condition dropped later (an alert restore clears them) is no longer applied.
+            if ($parts->plugin->hasCondition($meta['sql'])) {
+                $c->meta[$fieldId] = $meta['filter'];
+                $metaSql[]         = $meta['sql'];
+            }
+        }
+        $c->rawSql   = $parts->plugin->changesRows($parts->liveConditions, $metaSql);
         $c->liveOnly = $parts->plugin->hasItemConditions($parts->liveConditions);
 
         return $c;
