@@ -103,6 +103,10 @@ class SearchRunner
     private static function withSnippets(array $rows, string $pattern, array $snippets): array
     {
         if ($pattern === '' && $snippets === array()) {
+            foreach ($rows as $i => $row) {
+                unset($rows[$i]['s_snippet']);
+            }
+
             return $rows;
         }
         foreach ($rows as $i => $row) {
