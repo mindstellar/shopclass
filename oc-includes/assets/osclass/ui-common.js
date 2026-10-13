@@ -380,7 +380,7 @@ function oscAutocomplete(input, opts) {
 
         for (var i = 0; i < inputs.length; i++) {
             (function (input) {
-                var limit = parseInt(input.getAttribute('data-osc-suggest-limit'), 10) || 5;
+                var limit = Math.min(10, Math.max(1, parseInt(input.getAttribute('data-osc-suggest-limit'), 10) || 5));
                 oscAutocomplete(input, {
                     minLength: 2,
                     load: function (term) {

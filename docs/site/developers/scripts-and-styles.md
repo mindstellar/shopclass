@@ -135,7 +135,8 @@ add suggested searches; a click on one fills the box and submits its form.
 <input type="search" name="sPattern" data-osc-suggest data-osc-suggest-limit="5">
 ```
 
-It needs the page token, which `osc_head()` prints, and `osc-ui-common`, which core loads on the home,
+`data-osc-suggest-limit` is 1 to 10 (default 5). Core matches listing titles, by word start, once a
+word has three letters. It needs the page token, which `osc_head()` prints, and `osc-ui-common`, which core loads on the home,
 search and post pages. On other pages, call `osc_enqueue_script('osc-ui-common')` and
 `osc_enqueue_style('osc-ui-common')`. Style `.osc-ac-list`, `.osc-ac-option`, `.osc-suggest-thumb`,
 `.osc-suggest-title`, `.osc-suggest-count` and `.osc-ac-option.is-search`.

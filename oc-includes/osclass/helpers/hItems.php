@@ -1497,7 +1497,7 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
 /**
  * Live listings like one listing, best first: same category and shared title words by
  * default, or what a search plugin picks. Also loads them into the custom loop, so
- * `while (osc_has_custom_items())` walks them.
+ * `while (osc_has_custom_items())` walks them; that replaces any list already in the loop.
  *
  * @param int|null            $itemId  the current listing when null
  * @param int                 $limit   1 to 20

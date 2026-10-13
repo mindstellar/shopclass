@@ -176,6 +176,8 @@ done
   without a price come last when highest first, and first when lowest first.
 - `relevance` pages by offset, since its score is not stored, and stops after 10,000 results.
   The last page then has `meta.truncated: true` and no `links.next`.
+- A listing search answered by a search plugin may also carry `meta.facets.category` (category
+  id => count), `meta.suggestion` (a corrected query) and `meta.relaxed: true` (a fuzzy match).
 
 ### Saving bandwidth with ETags
 

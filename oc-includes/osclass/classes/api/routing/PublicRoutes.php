@@ -90,7 +90,7 @@ final class PublicRoutes
                 summary: 'Listings for a search box while someone types, best first; a search plugin may add searches',
                 response: 'SearchSuggestionsDocument',
                 query: [
-                    'q'      => ['type' => 'string', 'maxLength' => 100, 'description' => 'What was typed; under 2 characters suggests nothing.'],
+                    'q'      => ['type' => 'string', 'maxLength' => 100, 'description' => 'What was typed. Titles are matched by word start; input with no word of three letters or more suggests nothing.'],
                     'limit'  => ['type' => 'integer', 'minimum' => 1, 'maximum' => SearchSuggestions::MAX_LIMIT, 'default' => SearchController::DEFAULT_LIMIT],
                     'locale' => self::LOCALE,
                 ]

@@ -1412,7 +1412,7 @@ Listings for a search box while someone types, best first; a search plugin may a
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `q` | query | string | no | What was typed; under 2 characters suggests nothing. |
+| `q` | query | string | no | What was typed. Titles are matched by word start; input with no word of three letters or more suggests nothing. |
 | `limit` | query | integer | no |  |
 | `locale` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |

@@ -36484,7 +36484,7 @@
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "description": "What was typed; under 2 characters suggests nothing.",
+                        "description": "What was typed. Titles are matched by word start; input with no word of three letters or more suggests nothing.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
