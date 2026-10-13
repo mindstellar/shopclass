@@ -17,6 +17,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Watermark opacity, four more positions (top, bottom, left and right centre) and a tiled pattern; a text mark has an outline instead of a solid box.
 - Plugins run their own database migrations with `MigrationRunner::forPlugin()`. See [Database](https://shopclass.org/docs/developers/database/).
 - `oc-cli.php plugin:install --plugin=<folder>` installs and enables a plugin from a shell.
+- `$search->filters()` gives a search plugin what to search for as plain values, so it no longer parses `toJson()`.
 - **REST API** at `/api/v1` for listings, categories, custom fields, locations, currencies and profiles, with API keys, paging and an OpenAPI description. See [REST API](https://shopclass.org/docs/developers/api/).
 - People can sign in through the API, then post, edit and delete listings, upload photos, comment and save searches. A retried request with an `Idempotency-Key` is never done twice.
 - Admin keys manage listings, comments, users, categories, settings, keys and the job queue through `/api/v1/admin/`; moderator keys reach listings and comments only.

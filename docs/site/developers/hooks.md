@@ -135,6 +135,9 @@ it back with `Params::getParam()` in your `search_conditions` callback.
 optional `'model'` Search. Core then skips its own result cache. Arguments: `null`, the `Search`,
 the search parameters, the context (`'request'` for the search page, `'api'` for the REST API) and
 `$bare`. When `$bare` is true, return plain `t_item` rows: the caller adds the details itself.
+Read what to search for with `$search->filters()` (7.0+): categories, price, keywords, locations,
+radius, user ids, order and page as plain values. When its `rawSql` is true, or `liveOnly` is
+false, return `null`: the search holds SQL your engine cannot run.
 Saved alerts never reach this filter. The answer may also carry `'snippets'` (listing id => text
 with the searched words in `<mark>`), `'facets'` (`array('category' => array(id => count))`),
 `'suggestion'` (a corrected query) and `'relaxed'` (true when a fuzzy search found the results).

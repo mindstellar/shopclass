@@ -776,6 +776,68 @@ try {
 }
 check('a custom stopword table is read', isset($ftCustom['stop']['zebra']) && !isset($ftCustom['stop']['with']));
 
+harness_section('Search: filters() gives plain values');
+
+$f = (new Search())->filters();
+pin('an empty search filters by nothing', array(array(), null, null, null, array(), false, null, array(), false), array(
+    $f->categories, $f->priceMin, $f->priceMax, $f->pattern, $f->locations['cities'], $f->withPicture, $f->radius, $f->userIds, $f->rawSql,
+));
+pin('and is newest first, 10 a page', array(array(array('table' => null, 'column' => 'dt_pub_date', 'direction' => 'DESC')), 0, 10), array($f->order, $f->offset, $f->perPage));
+
+$s = new Search();
+$s->addCategory($catCars);
+$s->priceRange(100, 2500);
+$s->addPattern('  red bike ');
+$s->addCity(array('7', 'Pune'));
+$s->addCountry(array('IN', 'India'));
+$s->fromUser(array(3, '5'));
+$s->withPicture(true);
+$s->near(18.5, 73.8, 25.0);
+$s->order('i_price', 'ASC', '%st_item');
+$s->page(2, 20);
+$f = $s->filters();
+pin('the category', true, in_array((int)$catCars, $f->categories, true));
+pin('the price in the site currency', array(100.0, 2500.0), array($f->priceMin, $f->priceMax));
+pin('the keywords, trimmed', 'red bike', $f->pattern);
+pin('a city id and a city name', array(array('by' => 'id', 'value' => 7), array('by' => 'name', 'value' => 'Pune')), $f->locations['cities']);
+pin('a country code and a country name', array(array('by' => 'code', 'value' => 'in'), array('by' => 'name', 'value' => 'India')), $f->locations['countries']);
+pin('user ids as ints', array(3, 5), $f->userIds);
+pin('the switches', array(true, false), array($f->withPicture, $f->onlyPremium));
+pin('the radius', array('lat' => 18.5, 'lng' => 73.8, 'km' => 25.0), $f->radius);
+pin('the order without the table prefix', array(array('table' => 't_item', 'column' => 'i_price', 'direction' => 'ASC')), $f->order);
+pin('the window', array(40, 20), array($f->offset, $f->perPage));
+pin('no raw SQL', false, $f->rawSql);
+
+$s = new Search();
+$s->orderBy(array(array('b_premium', 'DESC'), array('dt_pub_date', 'asc')));
+pin('orderBy gives each term', array(
+    array('table' => 't_item', 'column' => 'b_premium', 'direction' => 'DESC'),
+    array('table' => 't_item', 'column' => 'dt_pub_date', 'direction' => 'ASC'),
+), $s->filters()->order);
+
+$s = new Search();
+$s->order('s_name', 'ASC', '%st_user');
+pin('a t_user order names its table', array(array('table' => 't_user', 'column' => 's_name', 'direction' => 'ASC')), $s->filters()->order);
+
+foreach (array(
+    'a condition'      => static fn (Search $s) => $s->addConditions($prefix . 't_item.i_price > 0'),
+    'a table'          => static fn (Search $s) => $s->addTable($prefix . 't_item_meta'),
+    'a listing filter' => static fn (Search $s) => $s->addItemConditions($prefix . 't_item.b_premium = 1'),
+    'a GROUP BY'       => static fn (Search $s) => $s->addGroupBy($prefix . 't_item.pk_i_id'),
+) as $label => $add) {
+    $s = new Search();
+    $add($s);
+    pin($label . ' is raw SQL', true, $s->filters()->rawSql);
+}
+$s = new Search();
+$s->addField($prefix . 't_item.i_price AS p');
+pin('an extra field is not', false, $s->filters()->rawSql);
+
+pin('a search is of live listings', true, (new Search())->filters()->liveOnly);
+$f = (new Search())->includeHidden()->filters();
+pin('includeHidden() says it is not', array(false, false), array($f->liveOnly, $f->rawSql));
+pin('nor is an expired-listings search', false, (new Search(true))->filters()->liveOnly);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

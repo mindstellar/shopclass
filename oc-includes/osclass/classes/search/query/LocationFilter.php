@@ -26,7 +26,7 @@ final class LocationFilter
 {
     public const LEVELS = array('city_areas', 'cities', 'regions', 'countries');
 
-    /** @var array<string,array<int,array{text:string,sql:string,param:mixed}>> */
+    /** @var array<string,array<int,array{text:string,sql:string,param:mixed,by:string}>> */
     private array $entries = array('city_areas' => array(), 'cities' => array(), 'regions' => array(), 'countries' => array());
 
     /** Set once any location was asked for; the join then stays, as it always did. */
@@ -80,12 +80,14 @@ final class LocationFilter
                     'text'  => sprintf('%sfk_c_country_code = %s ', $column, strtolower((string)SqlValue::literal($country))),
                     'sql'   => $column . 'fk_c_country_code = ? ',
                     'param' => SqlValue::bind(is_numeric($country) ? $country : strtolower($country)),
+                    'by'    => 'code',
                 );
             } else {
                 $this->entries['countries'][] = array(
                     'text'  => sprintf('%ss_country LIKE %s ', $column, SqlValue::literal($country)),
                     'sql'   => $column . 's_country LIKE ? ',
                     'param' => SqlValue::bind($country),
+                    'by'    => 'name',
                 );
             }
         }
@@ -117,6 +119,23 @@ final class LocationFilter
     public function recorded(string $level): array
     {
         return array_column($this->entries[$level], 'text');
+    }
+
+    /**
+     * Each value of a level: an id, a two-letter country code, or a name matched with LIKE.
+     *
+     * @param string $level one of LEVELS
+     *
+     * @return array<int,array{by:string,value:int|string}>
+     */
+    public function values(string $level): array
+    {
+        $values = array();
+        foreach ($this->entries[$level] as $entry) {
+            $values[] = array('by' => $entry['by'], 'value' => $entry['param']);
+        }
+
+        return $values;
     }
 
     /**
@@ -172,12 +191,14 @@ final class LocationFilter
                     'text'  => sprintf('%s%s = %d ', $column, $idColumn, $id),
                     'sql'   => $column . $idColumn . ' = ? ',
                     'param' => $id,
+                    'by'    => 'id',
                 );
             } else {
                 $this->entries[$level][] = array(
                     'text'  => sprintf('%s%s LIKE %s ', $column, $nameColumn, SqlValue::literal($one)),
                     'sql'   => $column . $nameColumn . ' LIKE ? ',
                     'param' => $one,
+                    'by'    => 'name',
                 );
             }
         }

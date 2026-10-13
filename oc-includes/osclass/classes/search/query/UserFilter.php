@@ -80,6 +80,16 @@ final class UserFilter
     }
 
     /**
+     * The user ids asked for; empty when no user filter is set.
+     *
+     * @return array<int,int>
+     */
+    public function ids(): array
+    {
+        return $this->ids === null ? array() : array_map('intval', (array)$this->ids);
+    }
+
+    /**
      * @return array<int,string>|int|string|null
      */
     public function recorded()

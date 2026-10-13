@@ -841,6 +841,17 @@ class Search extends DAO
     }
 
     /**
+     * What this search filters by, as plain values. Search backends read this, not toJson().
+     *
+     * @return \mindstellar\search\SearchFilters
+     * @since 7.0.0
+     */
+    public function filters(): \mindstellar\search\SearchFilters
+    {
+        return \mindstellar\search\SearchFilters::from($this->parts);
+    }
+
+    /**
      * Restore a whole search from a stored alert's decoded JSON.
      *
      * @param array<string,mixed> $aData

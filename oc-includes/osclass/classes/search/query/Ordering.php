@@ -31,6 +31,8 @@ final class Ordering
     private $offset = 0;
     /** @var mixed */
     private $perPage = 10;
+    /** @var array<int,array{table:?string,column:string,direction:string}> the order as plain terms */
+    private array $terms = array(array('table' => null, 'column' => 'dt_pub_date', 'direction' => 'DESC'));
 
     /**
      * Order by one column. An empty or malformed column falls back to relevance for a
@@ -57,6 +59,7 @@ final class Ordering
             $this->column = sprintf("$table.$column", DB_TABLE_PREFIX);
         }
         $this->direction = $direction;
+        $this->terms     = array(self::term($table == '' ? '' : sprintf((string)$table, DB_TABLE_PREFIX), (string)$column, $direction));
     }
 
     /**
@@ -90,6 +93,46 @@ final class Ordering
         }
         $this->column    = $lead . $last[0];
         $this->direction = $last[1];
+        $this->terms     = array();
+        foreach (array_merge($terms, array($last)) as $term) {
+            $this->terms[] = self::term('', $term[0], $term[1]);
+        }
+    }
+
+    /**
+     * The order as plain terms, most significant first. The table is null for a bare
+     * column such as `relevance`, else its name without DB_TABLE_PREFIX.
+     *
+     * @return array<int,array{table:?string,column:string,direction:string}>
+     */
+    public function terms(): array
+    {
+        return $this->terms;
+    }
+
+    /**
+     * @param string $table  the table, with or without DB_TABLE_PREFIX; empty when $column carries it
+     * @param string $column
+     * @param mixed  $direction
+     *
+     * @return array{table:?string,column:string,direction:string}
+     */
+    private static function term(string $table, string $column, $direction): array
+    {
+        $dot = strrpos($column, '.');
+        if ($dot !== false) {
+            $table  = substr($column, 0, $dot);
+            $column = substr($column, $dot + 1);
+        }
+        if ($table !== '' && DB_TABLE_PREFIX !== '' && str_starts_with($table, DB_TABLE_PREFIX)) {
+            $table = substr($table, strlen(DB_TABLE_PREFIX));
+        }
+
+        return array(
+            'table'     => $table === '' ? null : $table,
+            'column'    => $column,
+            'direction' => strtoupper(trim((string)$direction)) === 'ASC' ? 'ASC' : 'DESC',
+        );
     }
 
     /**
