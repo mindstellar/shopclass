@@ -62,6 +62,18 @@ final class PhotoStore extends Model
     }
 
     /**
+     * SQL that is true when the listing in $itemColumn has an image. A lookup that stops at
+     * the first photo; EXISTS would be planned as a scan of every photo.
+     *
+     * @param string $itemColumn a trusted column name, such as 'i.pk_i_id'
+     */
+    public static function hasImageSql(string $itemColumn): string
+    {
+        return '(SELECT 1 FROM ' . self::tableName() . " WHERE s_owner_type = '" . \ItemResource::OWNER . "' AND i_owner_id = "
+            . $itemColumn . " AND s_content_type LIKE 'image/%' LIMIT 1) IS NOT NULL";
+    }
+
+    /**
      * The listing's first image, or null.
      *
      * @return array<string,mixed>|null

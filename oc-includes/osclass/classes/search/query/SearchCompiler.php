@@ -91,9 +91,7 @@ final class SearchCompiler
             $parts->radius->apply($s, $count);
         }
         if ($parts->withPicture) {
-            // A per-listing lookup that stops at the first photo; EXISTS would be planned as a scan of every photo.
-            $s->where('(SELECT 1 FROM ' . $p . 't_resource WHERE ' . $p . "t_resource.s_owner_type = '" . \ItemResource::OWNER . "' AND " . $p . 't_resource.i_owner_id = ' . $p
-                . "t_item.pk_i_id AND " . $p . "t_resource.s_content_type LIKE '%image%' LIMIT 1) IS NOT NULL");
+            $s->where(\mindstellar\listing\PhotoStore::hasImageSql($p . 't_item.pk_i_id'));
         }
         if ($parts->onlyPremium) {
             $s->where($p . 't_item.b_premium = 1');

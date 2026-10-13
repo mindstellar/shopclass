@@ -37,6 +37,12 @@ final class ListingQuery
     /** How many of the newest candidates related() scores. */
     public const RELATED_POOL = 500;
 
+    /** How many title matches titleMatches() ranks, so a common prefix costs the same on any site. */
+    public const TITLE_POOL = 1000;
+
+    /** The shortest word the title full-text index holds. */
+    public const MIN_WORD = 3;
+
     private Clock $clock;
 
     public function __construct(?Clock $clock = null)
@@ -205,6 +211,44 @@ final class ListingQuery
     }
 
     /**
+     * Up to $max distinct lower-case words of MIN_WORD letters or more: the words the title
+     * full-text index holds, with no full-text operators.
+     *
+     * @return string[]
+     */
+    public static function titleWords(string $text, int $max = 5): array
+    {
+        $words = [];
+        foreach (preg_split('/[^\pL\pM\pN]+/u', mb_strtolower($text, 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+            if (mb_strlen($word, 'UTF-8') >= self::MIN_WORD) {
+                $words[$word] = $word;
+            }
+        }
+
+        return array_slice(array_values($words), 0, $max);
+    }
+
+    /**
+     * Positive listing ids, each once, in order, without $without: ids a plugin returned.
+     *
+     * @param array<mixed> $ids
+     *
+     * @return int[]
+     */
+    public static function cleanIds(array $ids, int $without = 0): array
+    {
+        $out = [];
+        foreach ($ids as $id) {
+            $id = is_numeric($id) ? (int) $id : 0;
+            if ($id > 0 && $id !== $without) {
+                $out[$id] = $id;
+            }
+        }
+
+        return array_values($out);
+    }
+
+    /**
      * The live ones of these listings, in the order given.
      *
      * @param int[] $ids
@@ -289,9 +333,10 @@ final class ListingQuery
 
     /**
      * Ids of live listings whose title has every word as a word start (title full-text
-     * index), titles that start with $prefix first, then newest.
+     * index), titles that start with $prefix first, then newest. Only TITLE_POOL matches
+     * are ranked.
      *
-     * @param string[] $words three letters or more, no full-text operators
+     * @param string[] $words from titleWords()
      *
      * @return int[]
      * @throws \mindstellar\database\DbException
@@ -304,9 +349,11 @@ final class ListingQuery
         $p     = DB_TABLE_PREFIX;
         $match = implode(' ', array_map(static fn (string $w): string => '+' . $w . '*', $words));
         $rows  = Db::select(
-            'SELECT i.pk_i_id, MAX(d.s_title LIKE ?) AS starts FROM ' . $p . 't_item_description d'
-            . ' INNER JOIN ' . $p . 't_item i ON i.pk_i_id = d.fk_i_item_id'
-            . ' WHERE MATCH(d.s_title) AGAINST(? IN BOOLEAN MODE) AND ' . implode(' AND ', ListingStatus::liveConditions('i.'))
+            'SELECT i.pk_i_id, MAX(m.s_title LIKE ?) AS starts FROM ('
+            . 'SELECT fk_i_item_id, s_title FROM ' . $p . 't_item_description WHERE MATCH(s_title) AGAINST(? IN BOOLEAN MODE)'
+            . ' LIMIT ' . self::TITLE_POOL
+            . ') m INNER JOIN ' . $p . 't_item i ON i.pk_i_id = m.fk_i_item_id'
+            . ' WHERE ' . implode(' AND ', ListingStatus::liveConditions('i.'))
             . ' GROUP BY i.pk_i_id, i.dt_pub_date ORDER BY starts DESC, i.dt_pub_date DESC, i.pk_i_id DESC LIMIT ?',
             [addcslashes($prefix, '%_\\') . '%', $match, $limit]
         );
@@ -346,9 +393,7 @@ final class ListingQuery
             $where[] = 'i.b_premium = 1';
         }
         if (!empty($match['photos'])) {
-            $where[]  = 'EXISTS (SELECT 1 FROM ' . $p . 't_resource r WHERE r.s_owner_type = ? AND r.i_owner_id = i.pk_i_id'
-                . " AND r.s_content_type LIKE '%image%')";
-            $params[] = \ItemResource::OWNER;
+            $where[] = PhotoStore::hasImageSql('i.pk_i_id');
         }
         $score = $words === [] ? '0' : implode(' + ', array_fill(0, count($words), '(d.s_title LIKE ?)'));
         $likes = array_map(static fn (string $w): string => '%' . addcslashes($w, '%_\\') . '%', $words);

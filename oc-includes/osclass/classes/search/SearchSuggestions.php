@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\search;
 
 use mindstellar\listing\ListingQuery;
-use mindstellar\listing\RelatedListings;
 
 /**
  * Suggestions while someone types: listings for the search box and categories for the
@@ -25,9 +24,6 @@ final class SearchSuggestions
     public const MAX_LIMIT = 10;
 
     public const CATEGORY_LIMIT = 3;
-
-    /** Shorter words are not in the title index, so input without one suggests nothing. */
-    private const MIN_WORD = 3;
 
     /** How many title matches core counts per category. */
     private const CATEGORY_POOL = 50;
@@ -42,12 +38,12 @@ final class SearchSuggestions
     {
         $q     = trim($q);
         $limit = max(1, min(self::MAX_LIMIT, $limit));
-        if (self::words($q) === []) {
+        if (ListingQuery::titleWords($q) === []) {
             return ['listings' => [], 'searches' => []];
         }
 
         $answer   = osc_apply_filter('search_suggestions', null, $q, $limit, $context);
-        $ids      = is_array($answer) ? RelatedListings::cleanIds((array) ($answer['listings'] ?? [])) : (new ListingQuery())->titleMatches(self::words($q), $q, $limit);
+        $ids      = is_array($answer) ? ListingQuery::cleanIds((array) ($answer['listings'] ?? [])) : (new ListingQuery())->titleMatches(ListingQuery::titleWords($q), $q, $limit);
         $searches = is_array($answer) ? self::searches((array) ($answer['searches'] ?? []), $limit) : [];
 
         return [
@@ -64,11 +60,11 @@ final class SearchSuggestions
     public static function categoriesForTitle(string $title): array
     {
         $title = trim($title);
-        if (self::words($title) === []) {
+        if (ListingQuery::titleWords($title) === []) {
             return [];
         }
         $picked = osc_apply_filter('category_suggestions', null, $title, self::CATEGORY_LIMIT);
-        $ids    = is_array($picked) ? RelatedListings::cleanIds($picked) : self::categoryIds($title);
+        $ids    = is_array($picked) ? ListingQuery::cleanIds($picked) : self::categoryIds($title);
 
         $out = [];
         foreach ($ids as $id) {
@@ -93,7 +89,7 @@ final class SearchSuggestions
     {
         $query  = new ListingQuery();
         $counts = [];
-        foreach ($query->findMany($query->titleMatches(self::words($title), $title, self::CATEGORY_POOL)) as $row) {
+        foreach ($query->findMany($query->titleMatches(ListingQuery::titleWords($title), $title, self::CATEGORY_POOL)) as $row) {
             $id          = (int) ($row['fk_i_category_id'] ?? 0);
             $counts[$id] = ($counts[$id] ?? 0) + 1;
         }
@@ -101,24 +97,6 @@ final class SearchSuggestions
         arsort($counts);
 
         return array_keys($counts);
-    }
-
-    /**
-     * The input's words the title index holds: three letters or more, without
-     * full-text operators, at most five.
-     *
-     * @return string[]
-     */
-    private static function words(string $input): array
-    {
-        $words = [];
-        foreach (preg_split('/[^\pL\pN]+/u', $input, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
-            if (mb_strlen($word, 'UTF-8') >= self::MIN_WORD) {
-                $words[mb_strtolower($word, 'UTF-8')] = $word;
-            }
-        }
-
-        return array_slice(array_values($words), 0, 5);
     }
 
     /**

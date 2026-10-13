@@ -30,9 +30,6 @@ final class RelatedListings
         'premium_only'  => false,
     ];
 
-    /** Title words core matches on. */
-    private const WORDS = 5;
-
     /**
      * Live listing rows like $itemId, best first, without the listing itself.
      *
@@ -47,7 +44,7 @@ final class RelatedListings
         $filters = self::filters($filters);
 
         $picked = osc_apply_filter('item_related_ids', null, $itemId, $limit, $filters);
-        $ids    = is_array($picked) ? self::cleanIds($picked, $itemId) : self::defaultIds($itemId, $limit, $filters);
+        $ids    = is_array($picked) ? ListingQuery::cleanIds($picked, $itemId) : self::defaultIds($itemId, $limit, $filters);
 
         return array_slice((new ListingQuery())->findLive($ids), 0, $limit);
     }
@@ -65,26 +62,6 @@ final class RelatedListings
         }
 
         return $out;
-    }
-
-    /**
-     * Positive listing ids from a plugin, each once, in order, without $without.
-     *
-     * @param array<mixed> $ids
-     *
-     * @return int[]
-     */
-    public static function cleanIds(array $ids, int $without = 0): array
-    {
-        $out = [];
-        foreach ($ids as $id) {
-            $id = is_numeric($id) ? (int) $id : 0;
-            if ($id > 0 && $id !== $without) {
-                $out[$id] = $id;
-            }
-        }
-
-        return array_values($out);
     }
 
     /**
@@ -115,7 +92,7 @@ final class RelatedListings
             $match['region'] = (int) $place['fk_i_region_id'];
         }
 
-        return $query->related($itemId, $match, self::words(self::title($query, $itemId)), $limit);
+        return $query->related($itemId, $match, ListingQuery::titleWords(self::title($query, $itemId)), $limit);
     }
 
     /**
@@ -129,22 +106,5 @@ final class RelatedListings
         }
 
         return $titles[osc_current_user_locale()] ?? (string) (reset($titles) ?: '');
-    }
-
-    /**
-     * Up to WORDS distinct title words of three letters or more.
-     *
-     * @return string[]
-     */
-    private static function words(string $title): array
-    {
-        $words = [];
-        foreach (preg_split('/[^\pL\pN]+/u', mb_strtolower($title, 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
-            if (mb_strlen($word, 'UTF-8') >= 3) {
-                $words[$word] = $word;
-            }
-        }
-
-        return array_slice(array_values($words), 0, self::WORDS);
     }
 }

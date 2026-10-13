@@ -705,7 +705,13 @@ $relIds = static fn (array $rows): array => array_map(static fn ($r) => (int) $r
 pin('most shared title words first, then newest; never itself or a hidden listing', array($tTwo, $tOne, $tNone), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6)));
 pin('the limit is kept', array($tTwo), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 1)));
 pin('premium_only keeps premium listings', array($tNone), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6, array('premium_only' => '1'))));
-pin('with_photos keeps listings with a photo (none here)', array(), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6, array('with_photos' => true))));
+seed_photo($admin, $tTwo, array('s_name' => 'related'));
+pin('with_photos keeps listings with a photo', array($tTwo), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6, array('with_photos' => true))));
+$admin->query("UPDATE {$p}t_item_location SET fk_i_region_id = $region WHERE fk_i_item_id IN ($tSource, $tTwo)");
+$admin->query("UPDATE {$p}t_item_location SET fk_c_country_code = 'ZZ' WHERE fk_i_item_id = $tOne");
+scratchdb_forget_cache();
+pin('same_region keeps listings in the listing\'s region', array($tTwo), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6, array('same_region' => 'true'))));
+pin('same_country drops listings in another country', array($tTwo, $tNone), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6, array('same_country' => 'true'))));
 pin('an unknown listing has none', array(), \mindstellar\listing\RelatedListings::rows(999999, 6));
 
 $relArgs   = array();
@@ -733,9 +739,14 @@ harness_section('search box and category suggestions');
 $sugIds = static fn (array $found): array => array_map(static fn ($r) => (int) $r['pk_i_id'], $found['listings']);
 use mindstellar\search\SearchSuggestions;
 
-pin('a title that starts with the input comes first', $tOne, $sugIds(SearchSuggestions::forQuery('Blu', 5))[0] ?? null);
+$bigBlue = seed_item($admin, $trucks, $seller, 'Big blue van', 10.0, 1, 1, $locale, $country);
+$spamBike = seed_item($admin, $bikes, $seller, 'Truck spam bike', 10.0, 1, 1, $locale, $country);
+$admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = $spamBike");
+scratchdb_forget_cache();
+pin('a title that starts with the input comes before a newer one that only contains it', array($tOne, $bigBlue), $sugIds(SearchSuggestions::forQuery('blue', 5)));
 $truckIds = $sugIds(SearchSuggestions::forQuery('truck', 10));
 check('a keyword finds live listings and never a hidden one', in_array($tSource, $truckIds, true) && in_array($tOne, $truckIds, true) && !in_array($tSpam, $truckIds, true), describe($truckIds));
+pin('input with no word of three letters suggests nothing', array('listings' => array(), 'searches' => array()), SearchSuggestions::forQuery('bl ue', 5));
 pin('one character suggests nothing', array('listings' => array(), 'searches' => array()), SearchSuggestions::forQuery('t', 5));
 pin('core never suggests searches', array(), SearchSuggestions::forQuery('truck', 5)['searches']);
 
@@ -751,14 +762,14 @@ osc_remove_filter('search_suggestions', $sugPlugin);
 pin('a plugin answer: hidden listings dropped, searches cleaned', array(array($bike), array(array('term' => 'bike', 'count' => 3))), array($sugIds($found), $found['searches']));
 pin('the plugin is told the input, the capped limit and the context', array('bik', SearchSuggestions::MAX_LIMIT, 'api'), $sugArgs);
 
-$r = $get('search/suggest', array('q' => 'Blu'), $publicKey);
+$r = $get('search/suggest', array('q' => 'Blue tru'), $publicKey);
 $first = $r->body()['data']['listings'][0] ?? array();
 pin('GET /search/suggest gives id, title, url and thumbnail', array(200, $tOne, 'Blue truck', true, null, array()), array($r->status(), $first['id'] ?? null, $first['title'] ?? null, str_contains((string) ($first['url'] ?? ''), 'http'), array_key_exists('thumbnail', $first) ? $first['thumbnail'] : 'missing', $r->body()['data']['searches'] ?? null));
 
 $carFirst = $get('search/suggest', array('q' => 'Car'), $publicKey)->body()['data']['listings'][0] ?? array();
 check('a listing with a photo has a thumbnail URL', is_string($carFirst['thumbnail'] ?? null) && $carFirst['thumbnail'] !== '', describe($carFirst));
 
-pin('categories for a title come from matching listings', array(array('id' => $trucks, 'name' => 'Trucks')), SearchSuggestions::categoriesForTitle('truck'));
+pin('categories for a title come from matching live listings only', array(array('id' => $trucks, 'name' => 'Trucks')), SearchSuggestions::categoriesForTitle('truck'));
 $catPlugin = static fn ($picked, $title, $limit) => array(999999, $cars, $cars, $bikes, $vehicles, $trucks);
 osc_add_filter('category_suggestions', $catPlugin);
 pin('a plugin picks categories; unknown ones dropped, at most three', array($cars, $bikes, $vehicles), array_column(SearchSuggestions::categoriesForTitle('anything'), 'id'));

@@ -56,15 +56,9 @@ final class ListingsController
     {
         $id      = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $request = $call->request();
-        $filters = [];
-        foreach (array_keys(RelatedListings::FILTERS) as $name) {
-            if ($request->queryString($name) !== '') {
-                $filters[$name] = $request->queryBool($name);
-            }
-        }
         $context = $this->api->context($request, $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $reader  = $this->api->listingReader();
-        $rows    = RelatedListings::rows($id, $request->queryInt('limit', 6), $filters);
+        $rows    = RelatedListings::rows($id, $request->queryInt('limit', 6), $request->query());
 
         return Page::whole($rows === [] ? [] : $reader->many($reader->extend($rows, $context), $context), $this->api->links(), $call);
     }
