@@ -1006,6 +1006,7 @@ $typed = static function (array $meta, string $category) use ($catCars): \mindst
 $dayStart = mktime(0, 0, 0, (int)date('n', $day), (int)date('j', $day), (int)date('Y', $day));
 foreach (array(
     'TEXT'         => array('mint', array('type' => 'TEXT', 'op' => 'contains', 'value' => 'mint')),
+    'TEXTAREA'     => array("it's", array('type' => 'TEXTAREA', 'op' => 'contains', 'value' => "it's")),
     'URL'          => array('example.test', array('type' => 'URL', 'op' => 'contains', 'value' => 'example.test')),
     'DROPDOWN'     => array('red', array('type' => 'DROPDOWN', 'op' => 'eq', 'value' => 'red')),
     'RADIO'        => array('new', array('type' => 'RADIO', 'op' => 'eq', 'value' => 'new')),
@@ -1018,6 +1019,28 @@ foreach (array(
     pin($type . ' as plain values', array($fields[$type] => $expected), $f->meta);
     pin($type . ' is not raw SQL', false, $f->rawSql);
 }
+// The SQL core runs for each rule, as toJson() and the result cache key read it.
+$sqlOf = static function (array $meta) use ($catCars): array {
+    $s = new Search();
+    SearchBuilder::apply(SearchCriteria::fromRequest(array('sCategory' => (string)$catCars, 'meta' => $meta)), $s);
+
+    return json_decode($s->toJson(), true)['no_catched_conditions'];
+};
+$m  = $p . 't_item_meta';
+$by = static fn (string $type): string => "{$p}t_item.pk_i_id IN (SELECT fk_i_item_id FROM $m WHERE $m.fk_i_field_id = {$fields[$type]} AND ";
+foreach (array(
+    'TEXTAREA'     => array("it's", $by('TEXTAREA') . "$m.s_value LIKE '%it\\'s%')"),
+    'DROPDOWN'     => array('red', $by('DROPDOWN') . "$m.s_value = 'red')"),
+    'CHECKBOX'     => array('1', $by('CHECKBOX') . "$m.s_value = 1)"),
+    'DATE'         => array((string)$day, $by('DATE') . "$m.s_value >= $dayStart AND $m.s_value <= " . ($dayStart + 86399) . ')'),
+    'DATEINTERVAL' => array(array('from' => (string)$day, 'to' => (string)($day + 5)), "{$p}t_item.pk_i_id IN (select a.fk_i_item_id from ("
+        . "SELECT fk_i_item_id FROM $m WHERE $m.fk_i_field_id = {$fields['DATEINTERVAL']} AND $day >= $m.s_value AND s_multi = 'from') a where a.fk_i_item_id IN ("
+        . "SELECT fk_i_item_id FROM $m WHERE $m.fk_i_field_id = {$fields['DATEINTERVAL']} AND " . ($day + 5) . " <= $m.s_value AND s_multi = 'to'))"),
+    'NUMBER'       => array(array('from' => '40000', 'to' => '130000.5'), $by('NUMBER') . "$m.s_value >= 40000 AND $m.s_value <= 130000.5)"),
+) as $type => [$value, $sql]) {
+    pin($type . ' runs the same SQL as before', array($sql), $sqlOf(array($fields[$type] => $value)));
+}
+
 $f = $typed(array($fields['DROPDOWN'] => 'red'), (string)$catBikes);
 pin('a field not searchable in the category is left out', array(array(), false), array($f->meta, $f->rawSql));
 $f = $typed(array($fields['NUMBER'] => array('from' => '0', 'to' => '10')), (string)$catCars);
@@ -1028,6 +1051,11 @@ $s->addConditions($p . 't_item.i_price > 0');
 pin('other SQL still makes it raw', true, $s->filters()->rawSql);
 $s->setJsonAlert(json_decode($s->toJson(), true));
 pin('a filter whose condition was cleared is gone', array(), $s->filters()->meta);
+
+$s = new Search();
+$s->addFieldFilter($fields['DROPDOWN'], array('type' => 'DROPDOWN', 'op' => 'eq', 'value' => 'a'), $p . "t_item.pk_i_id > 0");
+$s->addFieldFilter($fields['DROPDOWN'], array('type' => 'DROPDOWN', 'op' => 'eq', 'value' => 'b'), $p . "t_item.pk_i_id > 1");
+pin('a second filter on one field makes it raw SQL', true, $s->filters()->rawSql);
 
 harness_section('the legacy $dao is built only when read');
 $built = static fn (DAO $model): bool => array_key_exists('dao', get_object_vars($model));
