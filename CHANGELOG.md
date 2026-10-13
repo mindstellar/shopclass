@@ -2,11 +2,13 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.0.0.beta1
+## Shopclass 7.0.0.beta2
 
 Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
 
 It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
+
+Beta 2 gives themes search snippets, related listings and search box suggestions, which a search plugin can take over.
 
 Plugin authors: please read **Breaking** before you upgrade.
 
@@ -62,6 +64,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Security
 
+- The admin Languages list escapes each language's name and description, and the installer escapes its language error.
 - API keys and refresh tokens are stored hashed, and a browser cookie alone never signs in to the API.
 - A new password, whether changed, reset or set by an admin, signs the account out of every device, API keys included.
 - The API and the sign-in form share one limit on wrong passwords, and changing your e-mail through the API asks for your password.
@@ -134,7 +137,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - An admin's `?theme=` preview works on the search page; it was lost in the redirect to the friendly URL.
 - Expiry warning e-mails, the most-viewed list, report times and view-count dates use the site's time zone, not the database's. The most-viewed list keeps premium listings past their end date.
 - Docker: `SMTP_FROM` may hold a display name, `SMTP_STARTTLS` takes `0`/`1` as well as `on`/`off`, and port 465 no longer tries STARTTLS ([#552](https://github.com/mindstellar/shopclass/issues/552)).
-- An unattended install with `OSC_LOCALE` or `--locale` set to a published language downloads it first, and an unknown one stops before the database is touched ([#553](https://github.com/mindstellar/shopclass/issues/553)). The web installer now downloads a language's description and e-mail templates too.
+- An unattended install with `OSC_LOCALE` or `--locale` set to a published language downloads it first, and an unknown one stops before the database is touched ([#553](https://github.com/mindstellar/shopclass/issues/553)). The web installer now downloads a language's description and e-mail templates too, and Docker lets the site update or delete a language it downloaded at first boot.
 - A watermark scales to each photo size, never covers more than 40% of a photo and sits a little in from a corner; thumbnails get their own mark instead of a shrunken one.
 - A changed profile bio shows at once, not after the next save.
 - Searching for a hyphenated word, such as Mid-Century, finds its listings.
