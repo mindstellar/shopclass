@@ -12,6 +12,7 @@ namespace mindstellar\search;
 
 /**
  * A listing search, normalised out of a request bag built by Params::getParamsAsArray().
+ * Search::filters() gives what the built search runs, after core and plugins change it.
  */
 class SearchCriteria
 {

@@ -31,7 +31,7 @@ final class Ordering
     private $offset = 0;
     /** @var mixed */
     private $perPage = 10;
-    /** @var array<int,array{table:?string,column:string,direction:string}> the order as plain terms */
+    /** @var array<int,array{table:?string,column:string,direction:string}> $column as plain terms; set both together */
     private array $terms = array(array('table' => null, 'column' => 'dt_pub_date', 'direction' => 'DESC'));
 
     /**

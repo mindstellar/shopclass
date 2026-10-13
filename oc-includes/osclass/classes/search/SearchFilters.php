@@ -20,7 +20,9 @@ use mindstellar\search\query\SearchParts;
  * What a built search filters by, as plain values (Search::filters()). A search backend reads
  * this instead of parsing toJson(), whose location, user and order entries are SQL text.
  *
- * A copy: changing it does not change the search.
+ * SearchCriteria is what the visitor asked for; this is what the built search will run.
+ * A copy: changing it does not change the search. `pattern` and `by: name` values are the
+ * visitor's text: escape or bind them.
  */
 final class SearchFilters
 {
