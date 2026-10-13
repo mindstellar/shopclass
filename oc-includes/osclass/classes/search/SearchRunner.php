@@ -50,8 +50,9 @@ class SearchRunner
 
         // A listener on 'search_results' may answer the query itself (an external engine)
         // with ['items' => array, 'total' => int, 'model' => ?Search], or return null.
+        // It gets the context and whether to return bare t_item rows (the caller extends them).
         // A backend owns its caching, so core's result cache is skipped when one answers.
-        $backend = SearchBuilder::asRequest($params, static fn () => osc_apply_filter('search_results', null, $search, \Params::getParamsAsArray()));
+        $backend = SearchBuilder::asRequest($params, static fn () => osc_apply_filter('search_results', null, $search, \Params::getParamsAsArray(), $context, $extend !== null));
         $model   = $search;
         if (is_array($backend) && isset($backend['items'])) {
             $aItems = $backend['items'];

@@ -465,13 +465,17 @@ osc_remove_hook('search_conditions', $condition);
 pin('a plugin listener runs with context api and the search page\'s parameters, also through Params', array(array('api', array((string) $cars), array((string) $cars))), $calls);
 pin('the request is put back after it', '', Params::getParam('sCategory'));
 pin('the search_conditions hook condition applies to the answer', array(24, false), array($r->body()['meta']['total'], in_array($live[24], $ids($r), true)));
-$backend = static function ($answer, $search, $params) use ($admin, $p, $live) {
+$backendArgs = array();
+$backend     = static function ($answer, $search, $params, $context = null, $bare = null) use ($admin, $p, $live, &$backendArgs) {
+    $backendArgs = array($context, $bare);
+
     return array('items' => array($admin->query("SELECT * FROM {$p}t_item WHERE pk_i_id = " . (int) $live[3])->fetch_assoc()), 'total' => 1);
 };
 osc_add_filter('search_results', $backend);
 $r = $get('listings', array('category' => 'cars'), $publicKey);
 osc_remove_filter('search_results', $backend);
 pin('a search_results backend may answer with bare rows; they are read as any page\'s', array(array($live[3]), $get('listings/' . $live[3], array(), $publicKey)->body()['data']), array($ids($r), $r->body()['data'][0] ?? null));
+pin('a search_results backend is told the context and to return bare rows', array('api', true), $backendArgs);
 
 harness_section('one listing');
 $views = static fn (int $id): int => (int) $admin->query("SELECT i_num_views FROM {$p}t_item_stats WHERE fk_i_item_id = $id")->fetch_row()[0];

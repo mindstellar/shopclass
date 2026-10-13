@@ -33,6 +33,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_item_cover_urls()` gives the first photo of many listings in one query.
 - Search reads your database's full-text word length and stopword list, and falls back to a plain text match when a search cannot use the index.
 - `register_payment_gateways` hook: gateways register on it, and it fires the first time a page asks for payment methods. Gateways that register on `init` keep working.
+- The `search_results` filter also gets the context (`request` or `api`) and whether to return bare `t_item` rows.
 
 ### Breaking
 
