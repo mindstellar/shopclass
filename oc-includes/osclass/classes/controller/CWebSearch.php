@@ -77,8 +77,8 @@ class CWebSearch extends BaseModel
         }
 
         $uriParams = Params::getParamsAsArray();
-        // An admin's ?theme= preview stays a query string; folded into the friendly URL it was lost.
-        $preview = isset($uriParams['theme']);
+        // An admin's ?theme= preview is never redirected.
+        $preview = isset($uriParams['theme']) && Session::getInstance()->_get('adminId') != '';
         unset($uriParams['theme']);
         $this->redirectToCanonical($uriParams, $preview);
 

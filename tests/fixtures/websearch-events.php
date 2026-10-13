@@ -951,7 +951,13 @@ return array(
       2 => 'filter search_pattern(string("x"))',
       3 => 'redirect 301 http://localhost/search/pattern,x',
     ),
-    'theme preview is not redirected' =>
+    'theme param from a visitor redirects' =>
+    array(
+      0 => 'hook before_search()',
+      1 => 'filter search_pattern(string("bike"))',
+      2 => 'redirect 301 http://localhost/search/pattern,bike',
+    ),
+    'theme preview by an admin is not redirected' =>
     array(
       0 => 'hook before_search()',
       1 => 'filter search_pattern(string("bike"))',

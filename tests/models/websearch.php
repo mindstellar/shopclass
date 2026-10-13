@@ -488,13 +488,25 @@ $scenarios = array(
     'numeric uri'                        => array('2', array('page' => 'search'), array('rewriteEnabled' => '1')),
     'feed uri'                           => array('feed', array('page' => 'search', 'sFeed' => ''), array('rewriteEnabled' => '1')),
     'bare search with query string'      => array('search?sPattern=x', array('page' => 'search', 'sPattern' => 'x'), array('rewriteEnabled' => '1')),
-    'theme preview is not redirected'    => array('search/pattern,bike?theme=bender', array('page' => 'search', 'sParams' => 'pattern,bike', 'theme' => 'bender'), array('rewriteEnabled' => '1')),
+    'theme param from a visitor redirects' => array('search/pattern,bike?theme=bender', array('page' => 'search', 'sParams' => 'pattern,bike', 'theme' => 'bender'), array('rewriteEnabled' => '1')),
 );
 
 $actual = array();
 foreach ($scenarios as $label => $s) {
     $actual[$label] = $run($s[0], $s[1], $s[2] ?? array());
 }
+
+// An admin's ?theme= preview is not redirected; Session keeps writes in memory, unstarted.
+$sessionStarted = new ReflectionProperty('Session', 'started');
+if (PHP_VERSION_ID < 80100) {
+    $sessionStarted->setAccessible(true);
+}
+$wasStarted = $sessionStarted->getValue(Session::getInstance());
+$sessionStarted->setValue(Session::getInstance(), true);
+Session::getInstance()->_set('adminId', '1');
+$actual['theme preview by an admin is not redirected'] = $run('search/pattern,bike?theme=bender', array('page' => 'search', 'sParams' => 'pattern,bike', 'theme' => 'bender'), array('rewriteEnabled' => '1'));
+Session::getInstance()->_drop('adminId');
+$sessionStarted->setValue(Session::getInstance(), $wasStarted);
 
 // A backend answering search_results takes over: core's search and cache are skipped.
 $GLOBALS['ws_backend'] = array('items' => array(array('pk_i_id' => $items[3])), 'total' => 7);
