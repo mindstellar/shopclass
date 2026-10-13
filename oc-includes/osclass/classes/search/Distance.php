@@ -64,15 +64,24 @@ final class Distance
      */
     public static function point($lat, $lng): ?array
     {
-        if (!is_numeric($lat) || !is_numeric($lng)) {
-            return null;
-        }
-        $lat = round((float) $lat, 2);
-        $lng = round((float) $lng, 2);
-        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+        if (!self::validPoint($lat, $lng)) {
             return null;
         }
 
-        return array($lat, $lng);
+        return array(round((float) $lat, 2), round((float) $lng, 2));
+    }
+
+    /**
+     * True when both values are finite numbers within ±90 latitude and ±180 longitude.
+     */
+    public static function validPoint(mixed $lat, mixed $lng): bool
+    {
+        if (!is_numeric($lat) || !is_numeric($lng)) {
+            return false;
+        }
+        $lat = (float) $lat;
+        $lng = (float) $lng;
+
+        return is_finite($lat) && is_finite($lng) && abs($lat) <= 90 && abs($lng) <= 180;
     }
 }

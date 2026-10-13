@@ -165,6 +165,8 @@ $fake->answer = [91.0, 10.0];
 pin('a position off the globe is no match', null, $geo->geocode('Bad Place', null));
 $fake->answer = [0.0, 0.0];
 pin('so is 0,0', null, $geo->geocode('Null Island', null));
+$fake->answer = [NAN, 10.0];
+pin('so is NaN', null, $geo->geocode('Not A Number', null));
 $fake->answer = [18.6, 73.9];
 $fake->ttl    = 0;
 $geo->geocode('Short Lived', null);

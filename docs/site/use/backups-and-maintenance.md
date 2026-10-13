@@ -185,6 +185,10 @@ Two settings on that page control it:
 - **Keep entries for** is a number of days, 90 by default. The daily task deletes
   older entries. Set it to 0 to keep them forever.
 
+A **paid after close** entry means a buyer paid for an order that had already
+failed. Mark the order paid in **Billing → Orders**, or refund the payment at the
+provider. See [paid listings](/docs/use/currencies-and-paid-listings/#what-buyers-see).
+
 Behind a reverse proxy (a server such as a CDN or load balancer sitting in
 front of yours), the logged IP is only meaningful if the real client IP is
 being passed through. See the

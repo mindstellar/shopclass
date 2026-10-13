@@ -10,7 +10,7 @@
 
 /**
  * A person's data export holds core's tables, and a plugin adds its own through the
- * `personal_data_export` filter; a filter that returns junk cannot empty the export.
+ * `personal_data_export` filter; a filter that returns junk or throws cannot empty the export.
  *
  * Usage:  php tests/models/personal-data-export.php       (standalone, own scratch database)
  *         php tests/run-models.php personal-data-export   (as part of the suite)
@@ -51,6 +51,14 @@ osc_remove_filter('personal_data_export', $add);
 osc_add_filter('personal_data_export', $junk = static fn () => null);
 check('a filter that returns junk leaves the export whole', isset(PersonalData::export($sue)['data']['t_user']));
 osc_remove_filter('personal_data_export', $junk);
+
+osc_add_filter('personal_data_export', $broken = static function (): array {
+    throw new RuntimeException('plugin bug');
+});
+$logged = ini_set('error_log', '/dev/null');
+check('a filter that throws leaves the export whole', isset(PersonalData::export($sue)['data']['t_user']));
+ini_set('error_log', (string) $logged);
+osc_remove_filter('personal_data_export', $broken);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

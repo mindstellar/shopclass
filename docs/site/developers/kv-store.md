@@ -111,8 +111,23 @@ expires. `$state` is a short label stored with the key: 1 to 16 characters of `a
 ## Personal data
 
 `t_key_value` has no user column. Core's data export and account erasure reach only core's own
-`email_change` group. If your plugin stores something about a person here, your plugin must
-export and erase it itself.
+`email_change` group. If your plugin stores something about a person here, add it to the export
+with the `personal_data_export` filter and erase it on the `delete_user` action:
+
+```php
+osc_add_filter('personal_data_export', static function (array $out, $userId): array {
+    $out['data']['acme_notes'] = [
+        'retention' => 'deleted',
+        'why'       => 'Notes the user saved.',
+        'rows'      => acme_notes_for((int) $userId),
+    ];
+
+    return $out;
+});
+osc_add_hook('delete_user', static fn ($userId) => acme_delete_notes((int) $userId));
+```
+
+Name the key `<plugin>_<name>`. Core does not redact these rows, so leave out secrets and tokens.
 
 ## Clean up on uninstall
 

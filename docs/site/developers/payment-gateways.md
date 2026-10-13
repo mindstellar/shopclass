@@ -130,7 +130,9 @@ After your gateway accepts a callback, `Billing::handleCallback()`:
 - refuses an order that belongs to another gateway;
 - settles an order only while it is pending, and keys the credit on the order,
   so a **replayed** callback credits nothing;
-- lets only a paid order be refunded.
+- lets only a paid order be refunded;
+- never reopens an order already closed as **failed**. A verified paid callback for
+  one is logged as `paid after close` in the activity log, for the admin to settle.
 
 Core does **not** compare money on a failed or refunded result. Check those
 yourself if the provider sends figures, as `TestGateway::handleCallback()` does.

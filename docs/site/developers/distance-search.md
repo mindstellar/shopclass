@@ -83,4 +83,8 @@ osc_add_hook('register_geocode_providers', static function ($registry): void {
 `geocode()` returns `[lat, lng]` or `null` for no match. `attribution()` returns the credit
 the service requires; themes echo `osc_geocode_attribution()` as it is, without escaping. Other code can look an
 address up with `osc_geocode($address, $countryCode)`. The `geocode_address` filter can rewrite
-an address first, and `geocode_coordinates` can change or drop an answer.
+an address first, and `geocode_coordinates` can change or drop an answer. `geocode_coordinates`
+runs only on a cache miss, so a cached answer skips it.
+
+A theme that calls `osc_geocode()` on visitor input must cap or throttle it: each new string is a
+paid call to the provider.

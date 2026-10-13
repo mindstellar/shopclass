@@ -219,6 +219,10 @@ pin('around the visitor\'s point it keeps the point, to two decimals', array('19
 
 harness_section('the maths');
 
+pin('a point needs finite numbers within ±90 and ±180', array(true, true, false, false, false, false, false), array(
+    Distance::validPoint('-90', '180'), Distance::validPoint(0, 0), Distance::validPoint(90.01, 0), Distance::validPoint(0, -180.5),
+    Distance::validPoint(INF, 0), Distance::validPoint(0, NAN), Distance::validPoint('1e999', '0'),
+));
 pin('radius choices snap to the nearest band', array(5, 5, 25, 100, 0, 0), array_map(array(Distance::class, 'band'), array(1, 7, 30, 1000, 0, 'x')));
 pin('across the date line the box is two ranges', 2, count(RadiusFilter::box(0.0, 179.9, 50)[1]));
 pin('near a pole every longitude is in reach', array(array(-180.0, 180.0)), RadiusFilter::box(89.9, 10.0, 50)[1]);

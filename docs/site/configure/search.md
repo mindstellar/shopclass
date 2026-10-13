@@ -93,6 +93,10 @@ search works without a map service, as long as your location data has city centr
 (see [Locations](/docs/configure/locations/)). A listing with no city and no region is
 left out of a distance search.
 
+A listing gets an exact position from its street address when an **Address lookup**
+provider is picked in **Settings → General → Maps**; see
+[exact positions](/docs/developers/distance-search/#exact-positions-from-an-address).
+
 Location data installed from an older catalogue may have no city centres. Update it under
 **Listings → Locations**, or with `php oc-cli.php location:update --all`. The update
 queues a background job that gives listings the new centres.

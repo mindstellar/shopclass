@@ -54,7 +54,8 @@ class PersonalData
      * why each one carries a reason.
      *
      * t_key_value, the shared key-value store, has no user column and is listed as retained. A
-     * plugin that keeps personal data in t_key_value must export and erase it itself.
+     * plugin that keeps personal data there adds it to the export through the
+     * `personal_data_export` filter and erases it on the `delete_user` action.
      *
      * @return array<string,array{user_key:?string,export:bool,erase:string,why:string}>
      */
@@ -236,7 +237,13 @@ class PersonalData
         );
 
         // A plugin adds its own tables as $out['data']['<plugin>_<name>'] with the same keys.
-        $filtered = osc_apply_filter('personal_data_export', $out, $userId);
+        // A broken plugin must not turn the download into an error page.
+        try {
+            $filtered = osc_apply_filter('personal_data_export', $out, $userId);
+        } catch (\Throwable $e) {
+            error_log('personal_data_export filter failed: ' . $e->getMessage());
+            $filtered = $out;
+        }
 
         return is_array($filtered) ? $filtered : $out;
     }

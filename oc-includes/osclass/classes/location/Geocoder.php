@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\location;
 
+use mindstellar\search\Distance;
+
 /**
  * Geocodes through the active provider and keeps each answer in the key-value store, so a
  * repeated address costs no call. An address with no match is kept for a day.
@@ -90,8 +92,6 @@ final class Geocoder
         $lat = $coords[0] ?? null;
         $lng = $coords[1] ?? null;
 
-        return is_numeric($lat) && is_numeric($lng)
-            && abs((float) $lat) <= 90 && abs((float) $lng) <= 180
-            && !((float) $lat == 0.0 && (float) $lng == 0.0);
+        return Distance::validPoint($lat, $lng) && !((float) $lat == 0.0 && (float) $lng == 0.0);
     }
 }
