@@ -17,6 +17,8 @@
 // `input`, debounce-fetches JSON [{id,label,value}] from opts.source (adds a
 // `term` param), shows a listbox, and drives it with the standard combobox
 // keyboard model. opts: { source, minLength=1, onSearch(input), onSelect(item) }.
+// Optional: load(term) returns a Promise of items in place of fetching source, and
+// renderItem(item, li) fills an option instead of its label text.
 // onSelect returning false suppresses writing item.value into the input.
 //
 // The dropdown's *structural* styles (fixed positioning, stacking) are applied
@@ -92,7 +94,11 @@ function oscAutocomplete(input, opts) {
             li.className = 'osc-ac-option';
             li.id = uid + '-' + i;
             li.setAttribute('role', 'option');
-            li.textContent = item.label != null ? item.label : item.value;
+            if (opts.renderItem) {
+                opts.renderItem(item, li);
+            } else {
+                li.textContent = item.label != null ? item.label : item.value;
+            }
             li.addEventListener('mousedown', function (e) {
                 e.preventDefault(); // keep focus so blur doesn't close before select
                 choose(i);
@@ -132,6 +138,12 @@ function oscAutocomplete(input, opts) {
         var term = input.value;
         if (term.length < minLength) {
             close();
+            return;
+        }
+        if (opts.load) {
+            opts.load(term)
+                .then(function (data) { if (input.value === term) { render(Array.isArray(data) ? data : []); } })
+                .catch(function () { close(); });
             return;
         }
         // source may be a string, or a function resolved at fetch time (so a
@@ -337,4 +349,97 @@ function oscAutocomplete(input, opts) {
             setPoint(field.form, 'sLng', null);
         }
     });
+})();
+
+// ---------------------------------------------------------------------------
+// Search box suggestions: an input[data-osc-suggest] lists matching listings
+// (thumbnail and title) and any searches a search plugin adds, from the REST API's
+// GET /search/suggest, sent with the page token from <meta name="shopclass-api">.
+// A listing opens its page; a search fills the box and submits its form.
+// Optional data-osc-suggest-limit (1-10). Theme styles: .osc-suggest-thumb,
+// .osc-suggest-title, .osc-suggest-count and .osc-ac-option.is-search.
+// ---------------------------------------------------------------------------
+(function () {
+    function apiMeta() {
+        var meta = document.querySelector('meta[name="shopclass-api"]');
+        try {
+            return meta ? JSON.parse(meta.getAttribute('content')) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function initSuggest() {
+        if (typeof oscAutocomplete !== 'function') { return; }
+        var api = apiMeta();
+        var inputs = document.querySelectorAll('input[data-osc-suggest]');
+        if (!api || !api.url || !inputs.length) { return; }
+        // Either .../api/v1 or .../index.php?page=api&path=v1 when friendly URLs are off.
+        var endpoint = api.url.replace(/\/$/, '') + '/search/suggest';
+        var joiner = endpoint.indexOf('?') > -1 ? '&' : '?';
+
+        for (var i = 0; i < inputs.length; i++) {
+            (function (input) {
+                var limit = parseInt(input.getAttribute('data-osc-suggest-limit'), 10) || 5;
+                oscAutocomplete(input, {
+                    minLength: 2,
+                    load: function (term) {
+                        var url = endpoint + joiner + 'q=' + encodeURIComponent(term) + '&limit=' + limit;
+                        var headers = { Accept: 'application/json' };
+                        headers[api.header] = api.token;
+                        return fetch(url, { credentials: 'omit', headers: headers })
+                            .then(function (r) { return r.ok ? r.json() : { data: {} }; })
+                            .then(function (body) {
+                                var data = body.data || {};
+                                var out = (data.searches || []).map(function (s) {
+                                    return { kind: 'search', label: s.term, value: s.term, count: s.count };
+                                });
+                                return out.concat((data.listings || []).map(function (l) {
+                                    return { kind: 'listing', label: l.title, value: input.value, url: l.url, thumbnail: l.thumbnail };
+                                }));
+                            });
+                    },
+                    renderItem: function (item, li) {
+                        if (item.kind === 'listing' && item.thumbnail) {
+                            var img = document.createElement('img');
+                            img.className = 'osc-suggest-thumb';
+                            img.src = item.thumbnail;
+                            img.alt = '';
+                            img.loading = 'lazy';
+                            li.appendChild(img);
+                        }
+                        var title = document.createElement('span');
+                        title.className = 'osc-suggest-title';
+                        title.textContent = item.label;
+                        li.appendChild(title);
+                        if (item.kind === 'search') {
+                            li.classList.add('is-search');
+                            if (item.count) {
+                                var count = document.createElement('span');
+                                count.className = 'osc-suggest-count';
+                                count.textContent = item.count;
+                                li.appendChild(count);
+                            }
+                        }
+                    },
+                    onSelect: function (item) {
+                        if (item.kind === 'listing') {
+                            window.location.href = item.url;
+                            return false;
+                        }
+                        input.value = item.value;
+                        if (input.form) {
+                            if (input.form.requestSubmit) { input.form.requestSubmit(); } else { input.form.submit(); }
+                        }
+                        return false;
+                    }
+                });
+            })(inputs[i]);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSuggest);
+    } else {
+        initSuggest();
+    }
 })();
