@@ -277,6 +277,39 @@ final class Mailer
     }
 
     /**
+     * Send a short notice to the site's contact address, one escaped paragraph per line.
+     * Never throws: a failure is logged and returns false.
+     *
+     * @param array<int,mixed> $lines plain text; anything that is not a string or number is left out
+     */
+    public static function admin(string $subject, array $lines): bool
+    {
+        try {
+            $to = (string) osc_contact_email();
+            if ($to === '') {
+                return false;
+            }
+            $body = '';
+            foreach ($lines as $line) {
+                if (is_scalar($line) || $line instanceof \Stringable) {
+                    $body .= '<p>' . osc_esc_html((string) $line) . '</p>';
+                }
+            }
+
+            return (bool) self::send(array(
+                'from'    => CoreEmails::fromAddress(),
+                'to'      => $to,
+                'subject' => $subject,
+                'body'    => $body,
+            ));
+        } catch (\Throwable $e) {
+            error_log('osc_mail_admin: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
      * Keep mail links off an address taken from the request Host header. With OSC_CLI_URL set,
      * links to the request address point at it instead; without it, a mail that carries a secret
      * link (params 'secret_link') is refused.

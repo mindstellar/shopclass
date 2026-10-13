@@ -218,6 +218,17 @@ function osc_sendMail($params)
 }
 
 /**
+ * Send a short notice to the site's contact address, one escaped paragraph per line.
+ * Returns false, never throws, when it cannot be sent.
+ *
+ * @see \mindstellar\mail\Mailer::admin()
+ */
+function osc_mail_admin(string $subject, array $lines): bool
+{
+    return \mindstellar\mail\Mailer::admin($subject, $lines);
+}
+
+/**
  * Keep mail links off an address taken from the request Host header. With OSC_CLI_URL set,
  * links to the request address point at it instead; without it, a mail that carries a secret
  * link (params 'secret_link') is refused.

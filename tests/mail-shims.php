@@ -78,7 +78,7 @@ foreach ($added as $name) {
     pin($name . ' calls ' . $target . ' once with its arguments', array(array($target, $args)), $GLOBALS['mail_calls']);
     pin($name . ' returns what the method returns', $real[$target]['void'] ? null : $GLOBALS['mail_return'], $result);
 }
-pin('shims found', 37, $shims);
+pin('shims found', 38, $shims);
 
 harness_section('the hooks still name the old functions');
 pin('hooks registered', 22, count($GLOBALS['mail_hooks']));

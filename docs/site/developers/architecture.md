@@ -117,6 +117,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `exception` | The refusals every service throws (below) |
 | `fields` | Custom fields and their types |
 | `form` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
+| `http` | Outgoing HTTPS requests for core and plugins: `HttpClient`, `CurlHttpClient` |
 | `job` | The background job queue |
 | `language` | Installing and storing languages |
 | `listing` | Listings and their photos: posting, editing, rules, reads and mail |

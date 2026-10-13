@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1169 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1170 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1456,7 +1456,7 @@ Core defines 1169 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_listLanguageCodes()` | List the locale codes that have a folder under the translations path. |
 | `osc_listLocales()` | Read every translation folder and return its locale descriptor, keyed by locale code. |
 
-### utils (46)
+### utils (47)
 
 `oc-includes/osclass/utils.php`
 
@@ -1484,6 +1484,7 @@ Core defines 1169 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_is_update_compatible($section, $element, $osclass_version = OSCLASS_VERSION)` | Whether a package's published descriptor lists the running core version as compatible. |
 | `osc_item_is_counted(array $item)` | Whether a listing counts toward the category, location and user totals: enabled, active, not spam, and premium or not expired. The daily recount uses the same rule. |
 | `osc_mailBeauty($text, $params)` | Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs first, then the site-wide ones. |
+| `osc_mail_admin(string $subject, array $lines)` | Send a short notice to the site's contact address, one escaped paragraph per line. Returns false, never throws, when it cannot be sent. |
 | `osc_mail_layout(string $body, array $params = array())` | Wrap an e-mail body in the site's e-mail layout: a theme's templates/email-layout.php, else core's. A body that is already a whole HTML document, or a send with 'layout' =&gt; false, goes out as it is. |
 | `osc_mail_layout_file(?array $bases = null)` | The e-mail layout file: templates/email-layout.php in the active theme or its parent, else core's own. |
 | `osc_mail_links_trusted($mail, array $params = array())` | Keep mail links off an address taken from the request Host header. With OSC_CLI_URL set, links to the request address point at it instead; without it, a mail that carries a secret link (params 'secret_link') is refused. |
