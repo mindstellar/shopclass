@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1167 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1169 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -686,7 +686,7 @@ Core defines 1167 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_priv_count_locales()` | Private function to count locales |
 | `osc_set_current_user_locale($locale)` | Persist the visitor's chosen front-end locale in a dedicated cookie. |
 
-### hLocation (25)
+### hLocation (27)
 
 `oc-includes/osclass/helpers/hLocation.php`
 
@@ -708,6 +708,8 @@ Core defines 1167 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_country_items()` | Gets country's items |
 | `osc_country_name()` | Gets country's name |
 | `osc_country_url()` | Gets country's url |
+| `osc_geocode(string $address, ?string $countryCode = null)` | The coordinates of an address through the geocode provider the owner picked, cached. |
+| `osc_geocode_attribution()` | The credit the active geocode provider requires near a map or results, or ''. |
 | `osc_has_cities($region = '%%%%')` | Iterator for cities, return null if there's no more cities |
 | `osc_has_city_areas($city = '%%%%')` | Iterator for city areas, return null if there's no more city areas |
 | `osc_has_countries()` | Iterator for countries, return null if there's no more countries |

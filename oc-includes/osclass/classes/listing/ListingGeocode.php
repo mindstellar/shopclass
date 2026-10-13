@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\database\Db;
+use mindstellar\location\Geocoder;
 
 /**
  * Looks up a listing's coordinates from its address on the job queue, once its save has
@@ -37,13 +38,17 @@ final class ListingGeocode
     }
 
     /**
-     * Whether the site shows a map and the location has no coordinates.
+     * Whether the location has no coordinates and a geocode provider or a map is set up.
      *
      * @param array<string,mixed> $location a t_item_location row
      */
     public static function wanted(array $location): bool
     {
-        return !self::hasCoordinates($location) && self::mapType() !== null;
+        if (self::hasCoordinates($location)) {
+            return false;
+        }
+
+        return self::mapType() !== null || (self::hasStreet($location) && Geocoder::active() !== null);
     }
 
     /**
@@ -72,12 +77,23 @@ final class ListingGeocode
      */
     public function run(int $itemId): bool
     {
+        $geocoder = Geocoder::active();
         $mapType  = self::mapType();
         $location = $itemId > 0 ? ListingStore::location($itemId) : null;
-        if ($mapType === null || $location === null || self::hasCoordinates($location)) {
+        if (($geocoder === null && $mapType === null) || $location === null || self::hasCoordinates($location)) {
             return false;
         }
         $address = sprintf('%s, %s, %s, %s', $location['s_address'] ?? '', $location['s_city'] ?? '', $location['s_region'] ?? '', $location['s_country'] ?? '');
+        if ($geocoder !== null) {
+            // Without a street the answer is the city centre, which core already has.
+            if (!self::hasStreet($location)) {
+                return false;
+            }
+            $country = (string) ($location['fk_c_country_code'] ?? '');
+            $coords  = $geocoder->geocode($address, $country !== '' ? $country : null);
+
+            return $coords !== null && ListingStore::setCoordinates($itemId, $coords[0], $coords[1]) > 0;
+        }
         $url     = $mapType === 'google' ? osc_google_maps_geocode_url($address) : osc_openstreet_geocode_url($address);
         $body    = ($this->fetch)($url);
         $coords  = is_string($body) ? self::parse($mapType, $body) : null;
@@ -104,6 +120,14 @@ final class ListingGeocode
         }
 
         return [(float) $at->lat, (float) $at->lng];
+    }
+
+    /**
+     * @param array<string,mixed> $location
+     */
+    private static function hasStreet(array $location): bool
+    {
+        return trim((string) ($location['s_address'] ?? '')) !== '';
     }
 
     /**

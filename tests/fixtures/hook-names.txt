@@ -250,6 +250,7 @@ action pre_user_post
 action regenerate_image
 action regenerated_image
 action register_email_taken
+action register_geocode_providers
 action register_jobs
 action register_payment_gateways
 action register_storage_adapters
@@ -434,6 +435,8 @@ filter flash_message_text
 filter form_fields
 filter form_submit_veto
 filter form_validation_errors
+filter geocode_address
+filter geocode_coordinates
 filter gettext
 filter image_jpeg_quality
 filter image_max_pixels

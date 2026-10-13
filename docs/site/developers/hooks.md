@@ -201,7 +201,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 559 names. Generated from the source; do not edit by hand.
+Core fires 562 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -495,7 +495,7 @@ Core fires 559 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (216)
+### Other (219)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -611,6 +611,8 @@ Core fires 559 names. Generated from the source; do not edit by hand.
 | `form_submit_veto` | filter | `'', $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
 | `form_submitted` | action | `$submissionId, $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
 | `form_validation_errors` | filter | `$result['errors'], $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
+| `geocode_address` | filter | `$address, $countryCode` | `oc-includes/osclass/classes/location/Geocoder.php` |
+| `geocode_coordinates` | filter | `$coords, $address, $country, $this->provider->id()` | `oc-includes/osclass/classes/location/Geocoder.php` |
 | `gettext` | filter | `$string` | `oc-includes/osclass/helpers/hTranslations.php` |
 | `header` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `help_box` | action | none | `oc-admin/themes/modern/parts/header.php` |
@@ -680,6 +682,7 @@ Core fires 559 names. Generated from the source; do not edit by hand.
 | `regenerate_image` | action | `$resource` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `regenerated_image` | action | `\ItemResource::getInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `register_email_taken` | action | `$input['s_email']` | `oc-includes/osclass/classes/user/AccountService.php` |
+| `register_geocode_providers` | action | `$this` | `oc-includes/osclass/classes/location/GeocodeProviderRegistry.php` |
 | `register_jobs` | action | none | `oc-includes/osclass/classes/job/JobWorker.php` |
 | `register_payment_gateways` | action | `$this` | `oc-includes/osclass/classes/billing/PaymentGatewayRegistry.php` |
 | `register_storage_adapters` | action | `StorageManager::getInstance()` | `oc-includes/osclass/helpers/hStorage.php` |

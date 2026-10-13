@@ -399,3 +399,38 @@ function osc_install_json_locations($location = null)
 
     return true;
 }
+
+/**
+ * The coordinates of an address through the geocode provider the owner picked, cached.
+ *
+ * @param string      $address
+ * @param string|null $countryCode two-letter code that narrows the search
+ *
+ * @return array{0:float,1:float}|null latitude and longitude; null with no provider or no match
+ * @since 7.0.0
+ */
+function osc_geocode(string $address, ?string $countryCode = null): ?array
+{
+    $geocoder = \mindstellar\location\Geocoder::active();
+    if ($geocoder === null) {
+        return null;
+    }
+    try {
+        return $geocoder->geocode($address, $countryCode);
+    } catch (\RuntimeException $e) {
+        return null;
+    }
+}
+
+/**
+ * The credit the active geocode provider requires near a map or results, or ''.
+ *
+ * @return string markup from the provider plugin
+ * @since 7.0.0
+ */
+function osc_geocode_attribution(): string
+{
+    $geocoder = \mindstellar\location\Geocoder::active();
+
+    return $geocoder === null ? '' : $geocoder->provider()->attribution();
+}

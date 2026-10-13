@@ -164,6 +164,13 @@ final class MainSettingsScreen extends SettingsScreen
                 ->width('key')
             ->text('openstreet_api_key', __('OpenStreetMaps key'), __('Add your Mapquest Consumer key.'))
                 ->width('key')
+            ->select(
+                \mindstellar\location\GeocodeProviderRegistry::PREF,
+                __('Address lookup'),
+                self::geocodeProviders(),
+                __('Finds the exact map position of a listing from its street address. Without one, listings use their city centre. Providers come from plugins.')
+            )
+                ->default('')
             ->group(__('Software updates'))
             ->custom('version_check', static function () {
                 self::drawVersionCheck();
@@ -381,5 +388,22 @@ final class MainSettingsScreen extends SettingsScreen
             'attrs'   => array('id' => 'check-updates'),
         ));
         echo '</div>';
+    }
+
+    /**
+     * The address lookup choices: none, then each provider a plugin registered.
+     *
+     * @return array<string,string>
+     */
+    private static function geocodeProviders(): array
+    {
+        $choices = array('' => __('None (city centres only)'));
+        foreach (\mindstellar\location\GeocodeProviderRegistry::getInstance()->all() as $id => $provider) {
+            $choices[$id] = $provider->isConfigured()
+                ? $provider->label()
+                : sprintf(__('%s (not set up yet)'), $provider->label());
+        }
+
+        return $choices;
     }
 }

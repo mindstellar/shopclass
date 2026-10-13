@@ -58,3 +58,28 @@ outside a distance search. `osc_distance_label()` turns a number into text such 
 Core sets each listing's search point when a listing is saved through core. A plugin
 that writes `t_item_location` itself leaves the listing out of distance search until
 the weekly job sets its point.
+
+## Exact positions from an address
+
+With no provider, a listing searches from its city or region centre. A geocode provider
+plugin finds the exact position from the listing's street address. The owner picks it in
+**Settings → General → Maps → Address lookup**.
+
+Core looks the address up from a job after the listing is saved, only when the listing has a
+street and no position. Each answer is kept in the key-value store for as long as the
+provider's `cacheTtl()` allows; an address with no match is kept for a day. A provider that
+throws a `RuntimeException` fails the job, and the queue tries again later.
+
+A provider plugin implements `mindstellar\location\GeocodeProvider` and registers it on
+`register_geocode_providers` (7.0+):
+
+```php
+osc_add_hook('register_geocode_providers', static function ($registry): void {
+    $registry->register(new MyProvider());
+});
+```
+
+`geocode()` returns `[lat, lng]` or `null` for no match. `attribution()` returns the credit
+the service requires; themes print it with `osc_geocode_attribution()`. Other code can look an
+address up with `osc_geocode($address, $countryCode)`. The `geocode_address` filter can rewrite
+an address first, and `geocode_coordinates` can change or drop an answer.
