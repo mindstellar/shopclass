@@ -406,6 +406,17 @@ pin('a matching callback mints the credits', $balance + 200, Wallet::balance($us
 /* The same event arriving twice is the normal case, not the exceptional one. */
 $result = Billing::handleCallback('fake', array());
 pin('replaying the callback mints nothing further', $balance + 200, Wallet::balance($userId));
+$logged = static fn (int $id): int => (int) $admin->query("SELECT COUNT(*) FROM " . DB_TABLE_PREFIX . "t_log WHERE s_section = 'billing' AND s_action = 'paid after close' AND fk_i_id = $id")->fetch_row()[0];
+pin('a replay on a paid order logs nothing', 0, $logged($order->getId()));
+
+/* The provider took the money after the order was closed: no credits, but the admin is told. */
+$closed = OrderStore::create($userId, 'fake', 5_000_000, 'USD', 200);
+OrderStore::settle($closed->getId(), Order::STATUS_FAILED);
+$gateway->verdict = CallbackResult::paid($closed->getId(), 'ext_late', 5_000_000, 'USD');
+Billing::handleCallback('fake', array());
+pin('a paid callback on a failed order mints nothing', $balance + 200, Wallet::balance($userId));
+pin('the order stays failed', Order::STATUS_FAILED, OrderStore::find($closed->getId())->getStatus());
+pin('and the log says it was paid after close', 1, $logged($closed->getId()));
 
 /* A gateway must not be able to settle an order that belongs to another. */
 $rival = new FakeGateway('rival');

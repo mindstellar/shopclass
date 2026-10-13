@@ -587,7 +587,14 @@ final class Billing
             return CallbackResult::ignored('currency mismatch');
         }
 
-        self::markPaid($order, $result->getExternalRef());
+        if (!self::markPaid($order, $result->getExternalRef())) {
+            // The provider took the money for an order already closed as failed. A callback
+            // may not reopen it; the log tells the admin to mark it paid or refund it.
+            $now = OrderStore::find($order->getId());
+            if ($now !== null && $now->getStatus() === Order::STATUS_FAILED) {
+                self::log('paid after close', $now, $result->getExternalRef());
+            }
+        }
 
         return $result;
     }
