@@ -129,7 +129,7 @@ final class SearchSuggestions
             $term = is_array($search) && is_string($search['term'] ?? null) ? trim(strip_tags($search['term'])) : '';
             if ($term !== '') {
                 $count = max(0, (int) ($search['count'] ?? 0));
-                $out[] = ['term' => $term, 'count' => $count, 'count_label' => sprintf(_n('%s listing', '%s listings', $count), $count)];
+                $out[] = ['term' => $term, 'count' => $count, 'count_label' => str_replace('%s', (string) $count, _n('%s listing', '%s listings', $count))];
             }
         }
 

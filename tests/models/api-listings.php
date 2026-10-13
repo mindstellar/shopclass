@@ -755,12 +755,12 @@ $sugArgs   = array();
 $sugPlugin = static function ($answer, $q, $limit, $context) use (&$sugArgs, $tSpam, $bike) {
     $sugArgs = array($q, $limit, $context);
 
-    return array('listings' => array($tSpam, $bike), 'searches' => array(array('term' => '<b>bike</b>', 'count' => '3'), array('term' => ''), 'x'));
+    return array('listings' => array($tSpam, $bike), 'searches' => array(array('term' => '<b>bike</b>', 'count' => '3'), array('term' => ''), 'x', array('term' => 'bikes', 'count' => 1)));
 };
 osc_add_filter('search_suggestions', $sugPlugin);
 $found = SearchSuggestions::forQuery('bik', 50);
 osc_remove_filter('search_suggestions', $sugPlugin);
-pin('a plugin answer: hidden listings dropped, searches cleaned', array(array($bike), array(array('term' => 'bike', 'count' => 3, 'count_label' => '3 listings'))), array($sugIds($found), $found['searches']));
+pin('a plugin answer: hidden listings dropped, searches cleaned', array(array($bike), array(array('term' => 'bike', 'count' => 3, 'count_label' => '3 listings'), array('term' => 'bikes', 'count' => 1, 'count_label' => '1 listing'))), array($sugIds($found), $found['searches']));
 pin('the plugin is told the input, the capped limit and the context', array('bik', SearchSuggestions::MAX_LIMIT, 'api'), $sugArgs);
 
 $r = $get('search/suggest', array('q' => 'Blue tru'), $publicKey);
@@ -769,6 +769,7 @@ pin('GET /search/suggest gives id, title, url, thumbnail, price and place', arra
 
 $carFirst = $get('search/suggest', array('q' => 'Car'), $publicKey)->body()['data']['listings'][0] ?? array();
 check('a listing with a photo has a thumbnail URL', is_string($carFirst['thumbnail'] ?? null) && $carFirst['thumbnail'] !== '', describe($carFirst));
+pin('a listing with a city and region has them as its place', 'Aville, Alpha', $carFirst['place'] ?? null);
 
 pin('a long title still finds its category when some words match nothing', array($trucks), array_column(SearchSuggestions::categoriesForTitle('Blue pickup three seater'), 'id'));
 pin('categories for a title come from matching live listings only', array(array('id' => $trucks, 'name' => 'Trucks')), SearchSuggestions::categoriesForTitle('truck'));
