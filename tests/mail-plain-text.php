@@ -507,7 +507,7 @@ pin(
     osc_mailBeauty('Hi {USER_NAME}, from {WEB_TITLE} ({WEB_URL}) at {IP_ADDRESS} on {WEB_LINK}', array(array('{USER_NAME}'), array('Jo')))
 );
 pin('case does not matter', 'Jo Example', osc_mailBeauty('{user_name} {web_title}', array(array('{USER_NAME}'), array('Jo'))));
-pin('a caller value may itself hold a site placeholder', 'see https://example.com/', osc_mailBeauty('see {LINK}', array(array('{LINK}'), array('{WEB_URL}'))));
+pin('a site placeholder in a caller value stays as typed', 'see {WEB_URL}', osc_mailBeauty('see {LINK}', array(array('{LINK}'), array('{WEB_URL}'))));
 check('the date and hour are filled in', (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} \d{2}:\d{2}$/', osc_mailBeauty('{CURRENT_DATE} {HOUR}', array(array(), array()))));
 
 exit(harness_result());
