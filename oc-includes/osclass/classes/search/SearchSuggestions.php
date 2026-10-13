@@ -31,7 +31,7 @@ final class SearchSuggestions
     /**
      * Live listings for the search box, best first, and any searches a plugin adds.
      *
-     * @return array{listings:array<int,array<string,mixed>>,searches:array<int,array{term:string,count:int}>}
+     * @return array{listings:array<int,array<string,mixed>>,searches:array<int,array{term:string,count:int,count_label:string}>}
      * @throws \mindstellar\database\DbException
      */
     public static function forQuery(string $q, int $limit, string $context = 'api'): array
@@ -43,7 +43,7 @@ final class SearchSuggestions
         }
 
         $answer   = osc_apply_filter('search_suggestions', null, $q, $limit, $context);
-        $ids      = is_array($answer) ? ListingQuery::cleanIds((array) ($answer['listings'] ?? [])) : (new ListingQuery())->titleMatches(ListingQuery::titleWords($q), $q, $limit);
+        $ids      = is_array($answer) ? ListingQuery::cleanIds((array) ($answer['listings'] ?? [])) : self::listingIds($q, $limit);
         $searches = is_array($answer) ? self::searches((array) ($answer['searches'] ?? []), $limit) : [];
 
         return [
@@ -81,6 +81,24 @@ final class SearchSuggestions
     }
 
     /**
+     * Titles with every word first; titles with only some of them fill the rest.
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    private static function listingIds(string $q, int $limit): array
+    {
+        $query = new ListingQuery();
+        $words = ListingQuery::titleWords($q);
+        $ids   = $query->titleMatches($words, $q, $limit);
+        if (count($ids) < $limit && count($words) > 1) {
+            $ids = array_slice(array_values(array_unique([...$ids, ...$query->titleMatches($words, $q, $limit, false)])), 0, $limit);
+        }
+
+        return $ids;
+    }
+
+    /**
      * The categories of the live listings whose titles match, the most common first.
      *
      * @return int[]
@@ -89,7 +107,7 @@ final class SearchSuggestions
     {
         $query  = new ListingQuery();
         $counts = [];
-        foreach ($query->findMany($query->titleMatches(ListingQuery::titleWords($title), $title, self::CATEGORY_POOL)) as $row) {
+        foreach ($query->findMany($query->titleMatches(ListingQuery::titleWords($title), $title, self::CATEGORY_POOL, false)) as $row) {
             $id          = (int) ($row['fk_i_category_id'] ?? 0);
             $counts[$id] = ($counts[$id] ?? 0) + 1;
         }
@@ -102,7 +120,7 @@ final class SearchSuggestions
     /**
      * @param array<mixed> $given
      *
-     * @return array<int,array{term:string,count:int}>
+     * @return array<int,array{term:string,count:int,count_label:string}>
      */
     private static function searches(array $given, int $limit): array
     {
@@ -110,7 +128,8 @@ final class SearchSuggestions
         foreach ($given as $search) {
             $term = is_array($search) && is_string($search['term'] ?? null) ? trim(strip_tags($search['term'])) : '';
             if ($term !== '') {
-                $out[] = ['term' => $term, 'count' => max(0, (int) ($search['count'] ?? 0))];
+                $count = max(0, (int) ($search['count'] ?? 0));
+                $out[] = ['term' => $term, 'count' => $count, 'count_label' => sprintf(_n('%s listing', '%s listings', $count), $count)];
             }
         }
 

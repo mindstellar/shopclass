@@ -25,6 +25,13 @@ if (!function_exists('__')) {
     }
 }
 
+if (!function_exists('_n')) {
+    function _n($single_key, $plural_key, $count, $domain = 'core')
+    {
+        return $count == 1 ? $single_key : $plural_key;
+    }
+}
+
 if (!function_exists('osc_apply_filter')) {
     function osc_apply_filter($hook, $content = '', ...$args)
     {

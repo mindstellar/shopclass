@@ -81,9 +81,11 @@ Added to v1.
 
 - `GET /listings/{id}/related`: live listings like one listing, best first. `limit` 1-20 (6);
   `same_category` (on by default), `same_country`, `same_region`, `with_photos`, `premium_only`.
-- `GET /search/suggest?q=`: listings for a search box, as `{id, title, url, thumbnail}`, plus any
-  `searches` a search plugin adds. Titles only; `q` needs a word of three letters or more. `limit` 1-10 (5).
-- `GET /search/categories?title=`: up to three categories for a new listing's title.
+- `GET /search/suggest?q=`: listings for a search box, as `{id, title, url, thumbnail, price, place}`,
+  plus any `searches` a search plugin adds, each with a translated `count_label`. Titles only, all
+  words first, then titles with some of them; `q` needs a word of three letters or more. `limit` 1-10 (5).
+- `GET /search/categories?title=`: up to three categories for a new listing's title, from listings
+  whose titles share the most words with it.
 - On a keyword search each listing has `snippet`: its text with the searched words in `<mark>`.
 - A listing search's `meta` may carry `facets.category`, `suggestion` and `relaxed` when a search
   plugin sent them.

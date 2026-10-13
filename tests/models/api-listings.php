@@ -749,6 +749,7 @@ check('a keyword finds live listings and never a hidden one', in_array($tSource,
 pin('input with no word of three letters suggests nothing', array('listings' => array(), 'searches' => array()), SearchSuggestions::forQuery('bl ue', 5));
 pin('one character suggests nothing', array('listings' => array(), 'searches' => array()), SearchSuggestions::forQuery('t', 5));
 pin('core never suggests searches', array(), SearchSuggestions::forQuery('truck', 5)['searches']);
+pin('titles with some of the words fill in when none has them all', array($bigBlue, $tOne), $sugIds(SearchSuggestions::forQuery('blue seater', 5)));
 
 $sugArgs   = array();
 $sugPlugin = static function ($answer, $q, $limit, $context) use (&$sugArgs, $tSpam, $bike) {
@@ -759,16 +760,17 @@ $sugPlugin = static function ($answer, $q, $limit, $context) use (&$sugArgs, $tS
 osc_add_filter('search_suggestions', $sugPlugin);
 $found = SearchSuggestions::forQuery('bik', 50);
 osc_remove_filter('search_suggestions', $sugPlugin);
-pin('a plugin answer: hidden listings dropped, searches cleaned', array(array($bike), array(array('term' => 'bike', 'count' => 3))), array($sugIds($found), $found['searches']));
+pin('a plugin answer: hidden listings dropped, searches cleaned', array(array($bike), array(array('term' => 'bike', 'count' => 3, 'count_label' => '3 listings'))), array($sugIds($found), $found['searches']));
 pin('the plugin is told the input, the capped limit and the context', array('bik', SearchSuggestions::MAX_LIMIT, 'api'), $sugArgs);
 
 $r = $get('search/suggest', array('q' => 'Blue tru'), $publicKey);
 $first = $r->body()['data']['listings'][0] ?? array();
-pin('GET /search/suggest gives id, title, url and thumbnail', array(200, $tOne, 'Blue truck', true, null, array()), array($r->status(), $first['id'] ?? null, $first['title'] ?? null, str_contains((string) ($first['url'] ?? ''), 'http'), array_key_exists('thumbnail', $first) ? $first['thumbnail'] : 'missing', $r->body()['data']['searches'] ?? null));
+pin('GET /search/suggest gives id, title, url, thumbnail, price and place', array(200, $tOne, 'Blue truck', true, null, true, null, array()), array($r->status(), $first['id'] ?? null, $first['title'] ?? null, str_contains((string) ($first['url'] ?? ''), 'http'), array_key_exists('thumbnail', $first) ? $first['thumbnail'] : 'missing', is_string($first['price'] ?? null), array_key_exists('place', $first) ? $first['place'] : 'missing', $r->body()['data']['searches'] ?? null));
 
 $carFirst = $get('search/suggest', array('q' => 'Car'), $publicKey)->body()['data']['listings'][0] ?? array();
 check('a listing with a photo has a thumbnail URL', is_string($carFirst['thumbnail'] ?? null) && $carFirst['thumbnail'] !== '', describe($carFirst));
 
+pin('a long title still finds its category when some words match nothing', array($trucks), array_column(SearchSuggestions::categoriesForTitle('Blue pickup three seater'), 'id'));
 pin('categories for a title come from matching live listings only', array(array('id' => $trucks, 'name' => 'Trucks')), SearchSuggestions::categoriesForTitle('truck'));
 $catPlugin = static fn ($picked, $title, $limit) => array(999999, $cars, $cars, $bikes, $vehicles, $trucks);
 osc_add_filter('category_suggestions', $catPlugin);

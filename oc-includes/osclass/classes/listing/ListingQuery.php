@@ -332,8 +332,9 @@ final class ListingQuery
     }
 
     /**
-     * Ids of live listings whose title has every word as a word start (title full-text
-     * index), titles that start with $prefix first, then newest. Only TITLE_POOL matches
+     * Ids of live listings whose title has the words as word starts (title full-text index):
+     * titles that start with $prefix first, then the best match, then newest. $everyWord
+     * false also takes titles with only some of the words. Only the TITLE_POOL best matches
      * are ranked.
      *
      * @param string[] $words from titleWords()
@@ -341,21 +342,21 @@ final class ListingQuery
      * @return int[]
      * @throws \mindstellar\database\DbException
      */
-    public function titleMatches(array $words, string $prefix, int $limit): array
+    public function titleMatches(array $words, string $prefix, int $limit, bool $everyWord = true): array
     {
         if ($words === []) {
             return [];
         }
         $p     = DB_TABLE_PREFIX;
-        $match = implode(' ', array_map(static fn (string $w): string => '+' . $w . '*', $words));
+        $match = implode(' ', array_map(static fn (string $w): string => ($everyWord ? '+' : '') . $w . '*', $words));
         $rows  = Db::select(
-            'SELECT i.pk_i_id, MAX(m.s_title LIKE ?) AS starts FROM ('
-            . 'SELECT fk_i_item_id, s_title FROM ' . $p . 't_item_description WHERE MATCH(s_title) AGAINST(? IN BOOLEAN MODE)'
-            . ' LIMIT ' . self::TITLE_POOL
+            'SELECT i.pk_i_id, MAX(m.s_title LIKE ?) AS starts, MAX(m.score) AS score FROM ('
+            . 'SELECT fk_i_item_id, s_title, MATCH(s_title) AGAINST(? IN BOOLEAN MODE) AS score FROM ' . $p . 't_item_description'
+            . ' WHERE MATCH(s_title) AGAINST(? IN BOOLEAN MODE) ORDER BY score DESC LIMIT ' . self::TITLE_POOL
             . ') m INNER JOIN ' . $p . 't_item i ON i.pk_i_id = m.fk_i_item_id'
             . ' WHERE ' . implode(' AND ', ListingStatus::liveConditions('i.'))
-            . ' GROUP BY i.pk_i_id, i.dt_pub_date ORDER BY starts DESC, i.dt_pub_date DESC, i.pk_i_id DESC LIMIT ?',
-            [addcslashes($prefix, '%_\\') . '%', $match, $limit]
+            . ' GROUP BY i.pk_i_id, i.dt_pub_date ORDER BY starts DESC, score DESC, i.dt_pub_date DESC, i.pk_i_id DESC LIMIT ?',
+            [addcslashes($prefix, '%_\\') . '%', $match, $match, $limit]
         );
 
         return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
