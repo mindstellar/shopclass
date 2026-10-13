@@ -505,6 +505,7 @@ filter page_cache_purge_enabled
 filter page_routes
 filter page_templates
 filter pages_processing_row
+filter personal_data_export
 filter phpmailer_smtp_timeout
 filter plugin_icon_url
 filter pre_item_add_error

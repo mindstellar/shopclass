@@ -201,7 +201,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 562 names. Generated from the source; do not edit by hand.
+Core fires 563 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -495,7 +495,7 @@ Core fires 562 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (219)
+### Other (220)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -675,6 +675,7 @@ Core fires 562 names. Generated from the source; do not edit by hand.
 | `page_routes` | filter | `$core` | `oc-includes/osclass/classes/routing/PageDispatcher.php` |
 | `page_templates` | filter | `WebThemes::getInstance()->getAvailableTemplates()` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
 | `pages_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
+| `personal_data_export` | filter | `$out, $userId` | `oc-includes/osclass/classes/privacy/PersonalData.php` |
 | `phpmailer_smtp_timeout` | filter | `15` | `oc-includes/osclass/classes/mail/Mailer.php` |
 | `pre_contact_post` | action | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
 | `pre_send_mail` | filter | `$mail, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |

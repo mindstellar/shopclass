@@ -235,7 +235,10 @@ class PersonalData
             'rows'      => $pending === false ? array() : array($pending),
         );
 
-        return $out;
+        // A plugin adds its own tables as $out['data']['<plugin>_<name>'] with the same keys.
+        $filtered = osc_apply_filter('personal_data_export', $out, $userId);
+
+        return is_array($filtered) ? $filtered : $out;
     }
 
     /**
