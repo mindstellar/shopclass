@@ -39,7 +39,8 @@ final class CurlHttpClient implements HttpClient
     public function __construct(?callable $transport = null, ?callable $available = null)
     {
         $this->transport = \Closure::fromCallable($transport ?? [self::class, 'curl']);
-        $this->available = $transport === null ? \Closure::fromCallable($available ?? [Curl::class, 'available']) : static fn (): bool => true;
+        $this->available = $transport !== null ? static fn (): bool => true
+            : ($available !== null ? \Closure::fromCallable($available) : static fn (): bool => Curl::available());
     }
 
     public function send(string $method, string $url, array $headers = [], ?string $body = null, array $options = []): array
