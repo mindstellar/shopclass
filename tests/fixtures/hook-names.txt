@@ -340,6 +340,7 @@ filter billing_listing_limit_message
 filter body_class
 filter bot_user_agents
 filter cache_relevant_cookies
+filter category_suggestions
 filter cli_commands
 filter comment_bulk_filter
 filter comments_processing_row
@@ -527,6 +528,7 @@ filter save_latest_searches_pattern
 filter scripts_defer
 filter search_pattern
 filter search_results
+filter search_suggestions
 filter shutdown_functions
 filter sitemap_items_source
 filter sitemap_items_total

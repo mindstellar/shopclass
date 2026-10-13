@@ -1387,6 +1387,38 @@ This API described in OpenAPI 3.1, with the site's plugin endpoints
 
 Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
+## Search
+
+| Method | Path | Auth | Scope | Summary |
+|---|---|---|---|---|
+| GET | `/search/categories` | public | `listings:read` | Up to three categories for a new listing's title, best first |
+| GET | `/search/suggest` | public | `listings:read` | Listings for a search box while someone types, best first; a search plugin may add searches |
+
+### GET `/search/categories`
+
+Up to three categories for a new listing's title, best first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `title` | query | string | no |  |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`CategorySuggestionsDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/search/suggest`
+
+Listings for a search box while someone types, best first; a search plugin may add searches
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `q` | query | string | no | What was typed; under 2 characters suggests nothing. |
+| `limit` | query | integer | no |  |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`SearchSuggestionsDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
 ## Site
 
 | Method | Path | Auth | Scope | Summary |

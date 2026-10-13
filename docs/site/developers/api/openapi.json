@@ -69,6 +69,9 @@
             "description": "This description."
         },
         {
+            "name": "Search"
+        },
+        {
             "name": "Site",
             "description": "The site, its locales and its collections."
         },
@@ -36165,6 +36168,626 @@
                 "x-scope": "listings:read"
             }
         },
+        "/search/categories": {
+            "get": {
+                "operationId": "getSearchCategories",
+                "summary": "Up to three categories for a new listing's title, best first",
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "title",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 200
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
+                        }
+                    },
+                    {
+                        "name": "If-None-Match",
+                        "in": "header",
+                        "required": false,
+                        "description": "An ETag from an earlier answer: 304 with no body while it still matches.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategorySuggestionsDocument"
+                                }
+                            }
+                        }
+                    },
+                    "304": {
+                        "description": "Not modified",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No valid credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not allowed for this credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Not valid",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Maintenance",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": [
+                            "listings:read"
+                        ]
+                    },
+                    {
+                        "pageSession": [
+                            "listings:read"
+                        ]
+                    },
+                    {
+                        "publicKey": [
+                            "listings:read"
+                        ]
+                    }
+                ],
+                "x-auth": "public",
+                "x-scope": "listings:read"
+            }
+        },
+        "/search/suggest": {
+            "get": {
+                "operationId": "getSearchSuggest",
+                "summary": "Listings for a search box while someone types, best first; a search plugin may add searches",
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "description": "What was typed; under 2 characters suggests nothing.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "default": 5
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
+                        }
+                    },
+                    {
+                        "name": "If-None-Match",
+                        "in": "header",
+                        "required": false,
+                        "description": "An ETag from an earlier answer: 304 with no body while it still matches.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SearchSuggestionsDocument"
+                                }
+                            }
+                        }
+                    },
+                    "304": {
+                        "description": "Not modified",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No valid credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not allowed for this credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Not valid",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Maintenance",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": [
+                            "listings:read"
+                        ]
+                    },
+                    {
+                        "pageSession": [
+                            "listings:read"
+                        ]
+                    },
+                    {
+                        "publicKey": [
+                            "listings:read"
+                        ]
+                    }
+                ],
+                "x-auth": "public",
+                "x-scope": "listings:read"
+            }
+        },
         "/users": {
             "post": {
                 "operationId": "postUsers",
@@ -40610,6 +41233,92 @@
                 ],
                 "additionalProperties": false
             },
+            "SearchSuggestions": {
+                "type": "object",
+                "properties": {
+                    "listings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "format": "uri"
+                                },
+                                "thumbnail": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "The first photo's thumbnail URL."
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "title",
+                                "url",
+                                "thumbnail"
+                            ]
+                        }
+                    },
+                    "searches": {
+                        "type": "array",
+                        "description": "Searches a search plugin suggests; core sends none.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "term": {
+                                    "type": "string"
+                                },
+                                "count": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "term",
+                                "count"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "listings",
+                    "searches"
+                ]
+            },
+            "CategorySuggestions": {
+                "type": "object",
+                "properties": {
+                    "categories": {
+                        "type": "array",
+                        "maxItems": 3,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "name"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "categories"
+                ]
+            },
             "CategoryList": {
                 "type": "object",
                 "properties": {
@@ -41011,6 +41720,28 @@
                 "properties": {
                     "data": {
                         "$ref": "#/components/schemas/SessionToken"
+                    }
+                },
+                "required": [
+                    "data"
+                ]
+            },
+            "SearchSuggestionsDocument": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/SearchSuggestions"
+                    }
+                },
+                "required": [
+                    "data"
+                ]
+            },
+            "CategorySuggestionsDocument": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/CategorySuggestions"
                     }
                 },
                 "required": [

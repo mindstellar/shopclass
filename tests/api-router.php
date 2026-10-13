@@ -209,6 +209,8 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET listings/{id}/related'         => 'public listings:read',
     'GET openapi.json'                  => 'none -',
     'GET regions/{id}/cities'           => 'public listings:read',
+    'GET search/categories'             => 'public listings:read',
+    'GET search/suggest'                => 'public listings:read',
     'GET users/{id}'                    => 'public listings:read',
     'GET users/{id}/listings'           => 'public listings:read',
     'PATCH account'                     => 'user account:write',

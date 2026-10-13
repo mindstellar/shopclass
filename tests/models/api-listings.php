@@ -728,4 +728,42 @@ $view->_exportVariableToView('item', array('pk_i_id' => $tSource));
 $helperRows = osc_related_listings(null, 2);
 pin('osc_related_listings uses the current listing and fills the custom loop', array(array($tTwo, $tOne), 2), array($relIds($helperRows), osc_count_custom_items()));
 
+harness_section('search box and category suggestions');
+
+$sugIds = static fn (array $found): array => array_map(static fn ($r) => (int) $r['pk_i_id'], $found['listings']);
+use mindstellar\search\SearchSuggestions;
+
+pin('a title that starts with the input comes first', $tOne, $sugIds(SearchSuggestions::forQuery('Blu', 5))[0] ?? null);
+$truckIds = $sugIds(SearchSuggestions::forQuery('truck', 10));
+check('a keyword finds live listings and never a hidden one', in_array($tSource, $truckIds, true) && in_array($tOne, $truckIds, true) && !in_array($tSpam, $truckIds, true), describe($truckIds));
+pin('one character suggests nothing', array('listings' => array(), 'searches' => array()), SearchSuggestions::forQuery('t', 5));
+pin('core never suggests searches', array(), SearchSuggestions::forQuery('truck', 5)['searches']);
+
+$sugArgs   = array();
+$sugPlugin = static function ($answer, $q, $limit, $context) use (&$sugArgs, $tSpam, $bike) {
+    $sugArgs = array($q, $limit, $context);
+
+    return array('listings' => array($tSpam, $bike), 'searches' => array(array('term' => '<b>bike</b>', 'count' => '3'), array('term' => ''), 'x'));
+};
+osc_add_filter('search_suggestions', $sugPlugin);
+$found = SearchSuggestions::forQuery('bik', 50);
+osc_remove_filter('search_suggestions', $sugPlugin);
+pin('a plugin answer: hidden listings dropped, searches cleaned', array(array($bike), array(array('term' => 'bike', 'count' => 3))), array($sugIds($found), $found['searches']));
+pin('the plugin is told the input, the capped limit and the context', array('bik', SearchSuggestions::MAX_LIMIT, 'api'), $sugArgs);
+
+$r = $get('search/suggest', array('q' => 'Blu'), $publicKey);
+$first = $r->body()['data']['listings'][0] ?? array();
+pin('GET /search/suggest gives id, title, url and thumbnail', array(200, $tOne, 'Blue truck', true, null, array()), array($r->status(), $first['id'] ?? null, $first['title'] ?? null, str_contains((string) ($first['url'] ?? ''), 'http'), array_key_exists('thumbnail', $first) ? $first['thumbnail'] : 'missing', $r->body()['data']['searches'] ?? null));
+
+$carFirst = $get('search/suggest', array('q' => 'Car'), $publicKey)->body()['data']['listings'][0] ?? array();
+check('a listing with a photo has a thumbnail URL', is_string($carFirst['thumbnail'] ?? null) && $carFirst['thumbnail'] !== '', describe($carFirst));
+
+pin('categories for a title come from matching listings', array(array('id' => $trucks, 'name' => 'Trucks')), SearchSuggestions::categoriesForTitle('truck'));
+$catPlugin = static fn ($picked, $title, $limit) => array(999999, $cars, $cars, $bikes, $vehicles, $trucks);
+osc_add_filter('category_suggestions', $catPlugin);
+pin('a plugin picks categories; unknown ones dropped, at most three', array($cars, $bikes, $vehicles), array_column(SearchSuggestions::categoriesForTitle('anything'), 'id'));
+osc_remove_filter('category_suggestions', $catPlugin);
+$r = $get('search/categories', array('title' => 'truck'), $publicKey);
+pin('GET /search/categories answers the same', array(200, array(array('id' => $trucks, 'name' => 'Trucks'))), array($r->status(), $r->body()['data']['categories'] ?? null));
+
 exit(harness_result());

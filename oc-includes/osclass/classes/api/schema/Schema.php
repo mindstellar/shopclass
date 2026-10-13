@@ -37,7 +37,7 @@ final class Schema
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
-        'AlertFilters', 'Alert', 'AlertInput',
+        'AlertFilters', 'Alert', 'AlertInput', 'SearchSuggestions', 'CategorySuggestions',
     ];
 
     /** `<name>List`: every item at once. */
@@ -50,7 +50,7 @@ final class Schema
     private const PAGES = ['Listing', 'Comment'];
 
     /** `<name>Document`: one resource. */
-    private const DOCUMENTS = ['Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken'];
+    private const DOCUMENTS = ['Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions'];
 
     private function __construct()
     {
@@ -199,7 +199,7 @@ final class Schema
             ], ['id', 'listing_id', 'title', 'body', 'author', 'published_at']),
             'Site'         => self::site(),
             'OpenApiDocument' => ['type' => 'object', 'description' => 'An OpenAPI 3.1 document.'],
-        ] + self::account() + self::writes();
+        ] + self::account() + self::writes() + self::suggestions();
 
         $page = static fn (string $name): array => self::wholeList($name);
         foreach (self::LISTS as $name) {
@@ -412,6 +412,35 @@ final class Schema
     /**
      * @return array<string,mixed>
      */
+    /**
+     * GET /search/suggest and GET /search/categories.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private static function suggestions(): array
+    {
+        return [
+            'SearchSuggestions' => self::object([
+                'listings' => ['type' => 'array', 'items' => self::object([
+                    'id'        => ['type' => 'integer'],
+                    'title'     => ['type' => 'string'],
+                    'url'       => ['type' => 'string', 'format' => 'uri'],
+                    'thumbnail' => self::nullable('string', 'The first photo\'s thumbnail URL.'),
+                ], ['id', 'title', 'url', 'thumbnail'])],
+                'searches' => ['type' => 'array', 'description' => 'Searches a search plugin suggests; core sends none.', 'items' => self::object([
+                    'term'  => ['type' => 'string'],
+                    'count' => ['type' => 'integer'],
+                ], ['term', 'count'])],
+            ], ['listings', 'searches']),
+            'CategorySuggestions' => self::object([
+                'categories' => ['type' => 'array', 'maxItems' => 3, 'items' => self::object([
+                    'id'   => ['type' => 'integer'],
+                    'name' => ['type' => 'string'],
+                ], ['id', 'name'])],
+            ], ['categories']),
+        ];
+    }
+
     private static function site(): array
     {
         return self::object([

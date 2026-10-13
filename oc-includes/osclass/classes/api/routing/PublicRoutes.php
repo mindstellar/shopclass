@@ -23,6 +23,7 @@ use mindstellar\api\controller\ListingWritesController;
 use mindstellar\api\controller\LocationsController;
 use mindstellar\api\controller\PhotosController;
 use mindstellar\api\controller\RegistrationController;
+use mindstellar\api\controller\SearchController;
 use mindstellar\api\controller\SiteController;
 use mindstellar\api\controller\UsersController;
 use mindstellar\api\read\ListingSort;
@@ -31,6 +32,7 @@ use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\RelatedListings;
+use mindstellar\search\SearchSuggestions;
 
 /**
  * The v1 routes anyone, a user or a user's app calls: reads, sign-in, the account and
@@ -81,6 +83,24 @@ final class PublicRoutes
                 response: 'ListingPage',
                 query: $listings,
                 errors: [400, 422]
+            ),
+            'GET search/suggest' => RouteSpec::read(
+                handler: [SearchController::class, 'suggest'],
+                tag: 'Search',
+                summary: 'Listings for a search box while someone types, best first; a search plugin may add searches',
+                response: 'SearchSuggestionsDocument',
+                query: [
+                    'q'      => ['type' => 'string', 'maxLength' => 100, 'description' => 'What was typed; under 2 characters suggests nothing.'],
+                    'limit'  => ['type' => 'integer', 'minimum' => 1, 'maximum' => SearchSuggestions::MAX_LIMIT, 'default' => SearchController::DEFAULT_LIMIT],
+                    'locale' => self::LOCALE,
+                ]
+            ),
+            'GET search/categories' => RouteSpec::read(
+                handler: [SearchController::class, 'categories'],
+                tag: 'Search',
+                summary: 'Up to three categories for a new listing\'s title, best first',
+                response: 'CategorySuggestionsDocument',
+                query: ['title' => ['type' => 'string', 'maxLength' => 200], 'locale' => self::LOCALE]
             ),
             'GET listings/{id}' => RouteSpec::read(
                 handler: [ListingsController::class, 'show'],

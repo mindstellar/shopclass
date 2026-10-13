@@ -147,6 +147,16 @@ sends a `snippet` on each listing and the rest in `meta`.
 (`same_category`, `same_country`, `same_region`, `with_photos`, `premium_only`). Return listing ids,
 best first, or `null` for core's choice. Core drops the listing itself and any that are not live.
 
+`search_suggestions` answers `GET /search/suggest`, the search box list. Arguments: `null`, what was
+typed, the limit and the context (`'api'`). Return `null` for core's keyword search, or
+`array('listings' => array(ids, best first), 'searches' => array(array('term' => ..., 'count' => ...)))`.
+Either key may be left out. Core drops listings that are not live and strips tags from terms. Core
+itself never suggests searches.
+
+`category_suggestions` answers `GET /search/categories`, the post form's category hint. Arguments:
+`null`, the listing title and the limit (3). Return category ids, best first, or `null` for core's
+choice. Core drops unknown and disabled categories.
+
 `page_cache_purge` fires once at the end of a request that changed something every public page
 shows: the theme, settings, a plugin, a category. It runs after the response has gone, and on the
 command line too. Its one argument is the list of reasons, such as `array('theme', 'plugin')`.
@@ -159,7 +169,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 557 names. Generated from the source; do not edit by hand.
+Core fires 559 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -245,13 +255,14 @@ Core fires 557 names. Generated from the source; do not edit by hand.
 | `init_admin_upgrade` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminUpgrade.php` |
 | `init_admin_users` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 
-### Category (6)
+### Category (7)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
 | `add_category` | action | `$id` | `oc-includes/osclass/classes/category/CategoryService.php` |
 | `after_delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
 | `api_category` | filter | `$data, $context` | `oc-includes/osclass/classes/api/serializer/CategorySerializer.php` |
+| `category_suggestions` | filter | `null, $title, self::CATEGORY_LIMIT` | `oc-includes/osclass/classes/search/SearchSuggestions.php` |
 | `delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
 | `edited_category` | action | `$id, $outcome` | `oc-includes/osclass/classes/category/CategoryService.php` |
 | `edited_category_order` | action | `$error` | `oc-includes/osclass/classes/admin/ajax/CategoryAjax.php` |
@@ -690,7 +701,7 @@ Core fires 557 names. Generated from the source; do not edit by hand.
 | `plugin_icon_url` | filter | `$url, $plugin` | `oc-includes/osclass/helpers/hPlugins.php` |
 | `renderplugin_controller` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 
-### Search (10)
+### Search (11)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -702,6 +713,7 @@ Core fires 557 names. Generated from the source; do not edit by hand.
 | `search_conditions` | action | `\Params::getParamsAsArray(), $search, $context` | `oc-includes/osclass/classes/search/SearchBuilder.php` |
 | `search_pattern` | filter | `trim(strip_tags($params['sPattern'] ?? ''))` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
 | `search_results` | filter | `null, $search, \Params::getParamsAsArray(), $context, $bare` | `oc-includes/osclass/classes/search/SearchRunner.php` |
+| `search_suggestions` | filter | `null, $q, $limit, $context` | `oc-includes/osclass/classes/search/SearchSuggestions.php` |
 | `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 | `sql_search_fields` | filter | `$this->fields` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 

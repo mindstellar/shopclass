@@ -205,6 +205,27 @@ final class ListingQuery
     }
 
     /**
+     * The live ones of these listings, in the order given.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> bare t_item rows
+     * @throws \mindstellar\database\DbException
+     */
+    public function findLive(array $ids): array
+    {
+        $rows = $this->findMany($ids);
+        $out  = [];
+        foreach ($ids as $id) {
+            if (isset($rows[$id]) && ListingStatus::isLive($rows[$id], $this->clock->now())) {
+                $out[] = $rows[$id];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Title and description rows of some listings, in one query.
      *
      * @param int[]       $ids

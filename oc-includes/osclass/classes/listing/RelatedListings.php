@@ -49,7 +49,7 @@ final class RelatedListings
         $picked = osc_apply_filter('item_related_ids', null, $itemId, $limit, $filters);
         $ids    = is_array($picked) ? self::cleanIds($picked, $itemId) : self::defaultIds($itemId, $limit, $filters);
 
-        return array_slice(self::liveRows($ids), 0, $limit);
+        return array_slice((new ListingQuery())->findLive($ids), 0, $limit);
     }
 
     /**
@@ -68,16 +68,18 @@ final class RelatedListings
     }
 
     /**
+     * Positive listing ids from a plugin, each once, in order, without $without.
+     *
      * @param array<mixed> $ids
      *
      * @return int[]
      */
-    private static function cleanIds(array $ids, int $itemId): array
+    public static function cleanIds(array $ids, int $without = 0): array
     {
         $out = [];
         foreach ($ids as $id) {
             $id = is_numeric($id) ? (int) $id : 0;
-            if ($id > 0 && $id !== $itemId) {
+            if ($id > 0 && $id !== $without) {
                 $out[$id] = $id;
             }
         }
@@ -144,26 +146,5 @@ final class RelatedListings
         }
 
         return array_slice(array_values($words), 0, self::WORDS);
-    }
-
-    /**
-     * The live ones of these listings, in the order given.
-     *
-     * @param int[] $ids
-     *
-     * @return array<int,array<string,mixed>>
-     * @throws \mindstellar\database\DbException
-     */
-    private static function liveRows(array $ids): array
-    {
-        $rows = (new ListingQuery())->findMany($ids);
-        $out  = [];
-        foreach ($ids as $id) {
-            if (isset($rows[$id]) && ListingStatus::isLive($rows[$id])) {
-                $out[] = $rows[$id];
-            }
-        }
-
-        return $out;
     }
 }
