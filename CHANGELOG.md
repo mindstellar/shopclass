@@ -87,6 +87,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Backup files are private from the moment they are created.
 - Installing a language refuses anything that is not a locale code such as `en` or `en_US`.
 - A photo URL that fails to download no longer says why.
+- The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
 
 ### Performance
 
