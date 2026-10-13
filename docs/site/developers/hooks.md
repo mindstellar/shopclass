@@ -142,6 +142,11 @@ Core keeps only `<mark>` in a snippet. Themes read these with `osc_item_search_s
 `osc_search_category_counts()`, `osc_search_suggestion()` and `osc_search_relaxed()`; the REST API
 sends a `snippet` on each listing and the rest in `meta`.
 
+`item_related_ids` lets a plugin pick the listings `osc_related_listings()` and
+`GET /listings/{id}/related` show. Arguments: `null`, the listing id, the limit and the filters
+(`same_category`, `same_country`, `same_region`, `with_photos`, `premium_only`). Return listing ids,
+best first, or `null` for core's choice. Core drops the listing itself and any that are not live.
+
 `page_cache_purge` fires once at the end of a request that changed something every public page
 shows: the theme, settings, a plugin, a category. It runs after the response has gone, and on the
 command line too. Its one argument is the list of reasons, such as `array('theme', 'plugin')`.
@@ -154,7 +159,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 556 names. Generated from the source; do not edit by hand.
+Core fires 557 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -366,7 +371,7 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `hook_email_user_validation` | action | `$user, $input` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_warn_expiration` | action | `$item` | `oc-includes/osclass/cron.php` |
 
-### Item (75)
+### Item (76)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -411,6 +416,7 @@ Core fires 556 names. Generated from the source; do not edit by hand.
 | `item_price` | filter | `$currencyFormat` | `oc-includes/osclass/helpers/hItems.php` |
 | `item_price_null` | filter | `__('Check with seller')` | `oc-includes/osclass/helpers/hItems.php` |
 | `item_price_zero` | filter | `__('Free')` | `oc-includes/osclass/helpers/hItems.php` |
+| `item_related_ids` | filter | `null, $itemId, $limit, $filters` | `oc-includes/osclass/classes/listing/RelatedListings.php` |
 | `item_spam_off` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_spam_on` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_title` | filter | `$v['s_title']` | `oc-includes/osclass/classes/controller/CWebItem.php` |

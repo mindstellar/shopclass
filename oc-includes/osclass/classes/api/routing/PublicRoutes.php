@@ -30,6 +30,7 @@ use mindstellar\api\RouteSpec;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\RelatedListings;
 
 /**
  * The v1 routes anyone, a user or a user's app calls: reads, sign-in, the account and
@@ -87,6 +88,14 @@ final class PublicRoutes
                 summary: 'One listing',
                 response: 'ListingDocument',
                 query: $view + ['include' => self::INCLUDE],
+                errors: [404]
+            ),
+            'GET listings/{id}/related' => RouteSpec::read(
+                handler: [ListingsController::class, 'related'],
+                tag: 'Listings',
+                summary: 'Live listings like this one, best first: same category and shared title words, or what a search plugin picks',
+                response: 'ListingPage',
+                query: $view + ['include' => self::INCLUDE] + self::relatedFilters(),
                 errors: [404]
             ),
             'GET listings/{id}/photos' => RouteSpec::read(
@@ -463,6 +472,21 @@ final class PublicRoutes
                 scope: null
             ),
         ];
+    }
+
+    /**
+     * The query of GET /listings/{id}/related.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private static function relatedFilters(): array
+    {
+        $query = ['limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => RelatedListings::MAX_LIMIT, 'default' => 6]];
+        foreach (RelatedListings::FILTERS as $name => $default) {
+            $query[$name] = ['type' => 'boolean', 'default' => $default];
+        }
+
+        return $query;
     }
 
     /**

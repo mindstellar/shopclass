@@ -21,6 +21,7 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
+use mindstellar\listing\RelatedListings;
 
 /**
  * Listings: search, one listing, its photos and its comments. Search leaves out listings that
@@ -46,6 +47,26 @@ final class ListingsController
         $item    = ProblemException::found($reader->row($call->intArg(), [$call, 'visibleListing']), 'listing');
 
         return Response::ok($reader->view($item, $context));
+    }
+
+    /**
+     * GET /listings/{id}/related: live listings like this one, best first.
+     */
+    public function related(ApiCall $call): Response
+    {
+        $id      = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
+        $request = $call->request();
+        $filters = [];
+        foreach (array_keys(RelatedListings::FILTERS) as $name) {
+            if ($request->queryString($name) !== '') {
+                $filters[$name] = $request->queryBool($name);
+            }
+        }
+        $context = $this->api->context($request, $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
+        $reader  = $this->api->listingReader();
+        $rows    = RelatedListings::rows($id, $request->queryInt('limit', 6), $filters);
+
+        return Page::whole($rows === [] ? [] : $reader->many($reader->extend($rows, $context), $context), $this->api->links(), $call);
     }
 
     public function photos(ApiCall $call): Response

@@ -1495,6 +1495,29 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
 //////////////
 
 /**
+ * Live listings like one listing, best first: same category and shared title words by
+ * default, or what a search plugin picks. Also loads them into the custom loop, so
+ * `while (osc_has_custom_items())` walks them.
+ *
+ * @param int|null            $itemId  the current listing when null
+ * @param int                 $limit   1 to 20
+ * @param array<string,mixed> $filters same_category (default true), same_country, same_region,
+ *                                     with_photos, premium_only
+ *
+ * @return array<int,array<string,mixed>> listing rows
+ * @since 7.0.0
+ */
+function osc_related_listings($itemId = null, $limit = 6, $filters = array())
+{
+    $itemId = $itemId === null ? (int)osc_item_id() : (int)$itemId;
+    $rows   = \mindstellar\listing\RelatedListings::rows($itemId, (int)$limit, (array)$filters);
+    $rows   = $rows === array() ? array() : Item::getInstance()->extendData($rows);
+    View::getInstance()->_exportVariableToView('customItems', $rows);
+
+    return $rows;
+}
+
+/**
  * Gets next item of custom items
  *
  * @return bool False once the loop is exhausted

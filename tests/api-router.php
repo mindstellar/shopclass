@@ -206,6 +206,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET listings/{id}/comments'        => 'public listings:read',
     'GET listings/{id}/photos'          => 'public listings:read',
     'GET listings/{id}/photos/{photo}'  => 'public listings:read',
+    'GET listings/{id}/related'         => 'public listings:read',
     'GET openapi.json'                  => 'none -',
     'GET regions/{id}/cities'           => 'public listings:read',
     'GET users/{id}'                    => 'public listings:read',

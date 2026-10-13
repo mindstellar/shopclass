@@ -34,6 +34,9 @@ final class ListingQuery
         . ' l.fk_c_country_code, l.s_country, l.fk_i_region_id, l.s_region, l.fk_i_city_id, l.s_city, l.s_city_area,'
         . ' l.s_address, l.s_zip, l.d_coord_lat, l.d_coord_long';
 
+    /** How many of the newest candidates related() scores. */
+    public const RELATED_POOL = 500;
+
     private Clock $clock;
 
     public function __construct(?Clock $clock = null)
@@ -261,6 +264,57 @@ final class ListingQuery
     public function photos(array $ids): array
     {
         return $ids === [] ? [] : Db::stringifyRows(PhotoStore::ofItems($ids));
+    }
+
+    /**
+     * Ids of live listings that share the most of $words in their title, then newest. Only
+     * the newest RELATED_POOL listings that pass the filters are scored, so a big category
+     * costs the same as a small one.
+     *
+     * @param array{category?:int,country?:string,region?:int,premium?:bool,photos?:bool} $match
+     * @param string[] $words lower-case title words
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    public function related(int $excludeId, array $match, array $words, int $limit): array
+    {
+        $p      = DB_TABLE_PREFIX;
+        $where  = [...ListingStatus::liveConditions('i.'), 'i.pk_i_id <> ?'];
+        $params = [$excludeId];
+        $join   = '';
+        if (isset($match['category'])) {
+            $where[]  = 'i.fk_i_category_id = ?';
+            $params[] = $match['category'];
+        }
+        foreach (['country' => 'fk_c_country_code', 'region' => 'fk_i_region_id'] as $key => $column) {
+            if (isset($match[$key])) {
+                $join     = ' INNER JOIN ' . $p . 't_item_location l ON l.fk_i_item_id = i.pk_i_id';
+                $where[]  = 'l.' . $column . ' = ?';
+                $params[] = $match[$key];
+            }
+        }
+        if (!empty($match['premium'])) {
+            $where[] = 'i.b_premium = 1';
+        }
+        if (!empty($match['photos'])) {
+            $where[]  = 'EXISTS (SELECT 1 FROM ' . $p . 't_resource r WHERE r.s_owner_type = ? AND r.i_owner_id = i.pk_i_id'
+                . " AND r.s_content_type LIKE '%image%')";
+            $params[] = \ItemResource::OWNER;
+        }
+        $score = $words === [] ? '0' : implode(' + ', array_fill(0, count($words), '(d.s_title LIKE ?)'));
+        $likes = array_map(static fn (string $w): string => '%' . addcslashes($w, '%_\\') . '%', $words);
+
+        $rows = Db::select(
+            'SELECT c.pk_i_id, MAX(' . $score . ') AS score FROM ('
+            . 'SELECT i.pk_i_id, i.dt_pub_date FROM ' . $p . 't_item i' . $join
+            . ' WHERE ' . implode(' AND ', $where) . ' ORDER BY i.dt_pub_date DESC LIMIT ' . self::RELATED_POOL
+            . ') c INNER JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = c.pk_i_id'
+            . ' GROUP BY c.pk_i_id, c.dt_pub_date ORDER BY score DESC, c.dt_pub_date DESC, c.pk_i_id DESC LIMIT ?',
+            [...$likes, ...$params, $limit]
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
     }
 
     /**

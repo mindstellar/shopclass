@@ -688,4 +688,44 @@ pin('osc_item_search_snippet reads the row', '<mark>x</mark>', osc_item_search_s
 $view->_exportVariableToView('item', array('pk_i_id' => 1));
 pin('a row with no snippet gives an empty string', '', osc_item_search_snippet());
 
+harness_section('related listings');
+
+$trucks  = seed_category($admin, 'Trucks', $vehicles, $locale);
+$tSource = seed_item($admin, $trucks, $seller, 'Red sports truck', 10.0, 1, 1, $locale, $country);
+$tTwo    = seed_item($admin, $trucks, $seller, 'Red sports pickup', 10.0, 1, 1, $locale, $country);
+$tOne    = seed_item($admin, $trucks, $seller, 'Blue truck', 10.0, 1, 1, $locale, $country);
+$tNone   = seed_item($admin, $trucks, $seller, 'Tractor', 10.0, 1, 1, $locale, $country);
+$tSpam   = seed_item($admin, $trucks, $seller, 'Red sports truck spam', 10.0, 1, 1, $locale, $country);
+$admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = $tSpam");
+$admin->query("UPDATE {$p}t_item SET dt_pub_date = '2026-01-01 00:00:00' WHERE pk_i_id IN ($tTwo, $tOne)");
+$admin->query("UPDATE {$p}t_item SET dt_pub_date = '2026-02-01 00:00:00', b_premium = 1 WHERE pk_i_id = $tNone");
+scratchdb_forget_cache();
+$relIds = static fn (array $rows): array => array_map(static fn ($r) => (int) $r['pk_i_id'], $rows);
+
+pin('most shared title words first, then newest; never itself or a hidden listing', array($tTwo, $tOne, $tNone), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6)));
+pin('the limit is kept', array($tTwo), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 1)));
+pin('premium_only keeps premium listings', array($tNone), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6, array('premium_only' => '1'))));
+pin('with_photos keeps listings with a photo (none here)', array(), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6, array('with_photos' => true))));
+pin('an unknown listing has none', array(), \mindstellar\listing\RelatedListings::rows(999999, 6));
+
+$relArgs   = array();
+$relPlugin = static function ($ids, $itemId, $limit, $filters) use (&$relArgs, $tSpam, $bike, $tSource, $tOne) {
+    $relArgs = array($itemId, $limit, $filters['same_category']);
+
+    return array($tSpam, $bike, $tSource, 'x', $tOne);
+};
+osc_add_filter('item_related_ids', $relPlugin);
+pin('a plugin picks the ids; hidden ones and the listing itself are dropped', array($bike, $tOne), $relIds(\mindstellar\listing\RelatedListings::rows($tSource, 6)));
+pin('the plugin is told the listing, limit and filters', array($tSource, 6, true), $relArgs);
+osc_remove_filter('item_related_ids', $relPlugin);
+
+$r = $get('listings/' . $tSource . '/related', array(), $publicKey);
+pin('GET /listings/{id}/related answers the same list', array(200, array($tTwo, $tOne, $tNone)), array($r->status(), $ids($r)));
+pin('GET /listings/{id}/related takes a filter', array($tNone), $ids($get('listings/' . $tSource . '/related', array('premium_only' => 'true'), $publicKey)));
+pin('GET /listings/{id}/related is 404 for a hidden listing', 404, $get('listings/' . $tSpam . '/related', array(), $publicKey)->status());
+
+$view->_exportVariableToView('item', array('pk_i_id' => $tSource));
+$helperRows = osc_related_listings(null, 2);
+pin('osc_related_listings uses the current listing and fills the custom loop', array(array($tTwo, $tOne), 2), array($relIds($helperRows), osc_count_custom_items()));
+
 exit(harness_result());

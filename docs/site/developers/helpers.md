@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1165 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1166 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -500,7 +500,7 @@ Core defines 1165 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (117)
+### hItems (118)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -599,6 +599,7 @@ Core defines 1165 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_priv_count_item_resources()` | **Deprecated since 2.4.** Gets number of item resources |
 | `osc_priv_count_items()` | **Deprecated since 2.4.** Gets number of items |
 | `osc_query_item($params = null)` | Perform a search based on custom filters and conditions export the results to a variable to be able to manage it from custom_items' helpers |
+| `osc_related_listings($itemId = null, $limit = 6, $filters = array())` | Live listings like one listing, best first: same category and shared title words by default, or what a search plugin picks. Also loads them into the custom loop, so `while (osc_has_custom_items())` walks them. |
 | `osc_reset_custom_items()` | Set the internal pointer of array customItems to its first element, and return it. |
 | `osc_reset_items()` | Set the internal pointer of array items to its first element, and return it. |
 | `osc_reset_latest_items()` | Set the internal pointer of array latestItems to its first element, and return it. |

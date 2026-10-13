@@ -1088,6 +1088,7 @@ Answers: 200 OK (`CustomFieldList`); 304 Not modified; 401 No valid credential; 
 | POST | `/listings/{id}/photos` | user | `listings:write` | Add a photo to your listing |
 | GET | `/listings/{id}/photos/{photo}` | public | `listings:read` | One photo of a listing |
 | DELETE | `/listings/{id}/photos/{photo}` | user | `listings:write` | Remove a photo from your listing |
+| GET | `/listings/{id}/related` | public | `listings:read` | Live listings like this one, best first: same category and shared title words, or what a search plugin picks |
 | POST | `/photos` | user | `listings:write` | Upload a photo for a listing you are about to post; its token lasts two hours. 200, not 201: the token names no resource to read |
 
 ### GET `/comments/{id}`
@@ -1273,6 +1274,26 @@ Remove a photo from your listing
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/listings/{id}/related`
+
+Live listings like this one, best first: same category and shared title words, or what a search plugin picks
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `locale` | query | string | no |  |
+| `fields` | query | string | no |  |
+| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `limit` | query | integer | no |  |
+| `same_category` | query | boolean | no |  |
+| `same_country` | query | boolean | no |  |
+| `same_region` | query | boolean | no |  |
+| `with_photos` | query | boolean | no |  |
+| `premium_only` | query | boolean | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`ListingPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### POST `/photos`
 

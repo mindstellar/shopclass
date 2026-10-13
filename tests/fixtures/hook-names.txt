@@ -449,6 +449,7 @@ filter item_prepare_data
 filter item_price
 filter item_price_null
 filter item_price_zero
+filter item_related_ids
 filter item_title
 filter item_view_beacon_enabled
 filter items_processing_reported_row
