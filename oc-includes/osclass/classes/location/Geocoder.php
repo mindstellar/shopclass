@@ -23,6 +23,9 @@ final class Geocoder
     /** Seconds a "no match" answer is kept. */
     private const MISS_TTL = 86400;
 
+    /** The longest an answer is kept, so the cache cannot grow without end. */
+    private const MAX_TTL = 31536000;
+
     public function __construct(private GeocodeProvider $provider)
     {
     }
@@ -67,11 +70,12 @@ final class Geocoder
         if ($coords !== null && !self::valid($coords)) {
             $coords = null;
         }
-        $coords = osc_apply_filter('geocode_coordinates', $coords, $address, $country, $this->provider->id());
+        $providerId = $this->provider->id();
+        $coords     = osc_apply_filter('geocode_coordinates', $coords, $address, $country, $providerId);
         $coords = is_array($coords) && self::valid($coords) ? [(float) $coords[0], (float) $coords[1]] : null;
 
-        $ttl = $coords === null ? self::MISS_TTL : $this->provider->cacheTtl();
-        if ($ttl === null || $ttl > 0) {
+        $ttl = $coords === null ? self::MISS_TTL : min($this->provider->cacheTtl() ?? self::MAX_TTL, self::MAX_TTL);
+        if ($ttl > 0) {
             osc_kv_set(self::KV_GROUP, $key, $coords ?? [], $ttl);
         }
 

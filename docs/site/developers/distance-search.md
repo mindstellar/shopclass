@@ -66,8 +66,9 @@ plugin finds the exact position from the listing's street address. The owner pic
 **Settings → General → Maps → Address lookup**.
 
 Core looks the address up from a job after the listing is saved, only when the listing has a
-street and no position. Each answer is kept in the key-value store for as long as the
-provider's `cacheTtl()` allows; an address with no match is kept for a day. A provider that
+street and no position. A picked provider replaces the map-key lookup; it is not tried after
+it. Each answer is kept in the key-value store for as long as the provider's `cacheTtl()`
+allows, at most a year; an address with no match is kept for a day. A provider that
 throws a `RuntimeException` fails the job, and the queue tries again later.
 
 A provider plugin implements `mindstellar\location\GeocodeProvider` and registers it on
@@ -80,6 +81,6 @@ osc_add_hook('register_geocode_providers', static function ($registry): void {
 ```
 
 `geocode()` returns `[lat, lng]` or `null` for no match. `attribution()` returns the credit
-the service requires; themes print it with `osc_geocode_attribution()`. Other code can look an
+the service requires; themes echo `osc_geocode_attribution()` as it is, without escaping. Other code can look an
 address up with `osc_geocode($address, $countryCode)`. The `geocode_address` filter can rewrite
 an address first, and `geocode_coordinates` can change or drop an answer.

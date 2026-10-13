@@ -709,7 +709,7 @@ Core defines 1169 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_country_name()` | Gets country's name |
 | `osc_country_url()` | Gets country's url |
 | `osc_geocode(string $address, ?string $countryCode = null)` | The coordinates of an address through the geocode provider the owner picked, cached. |
-| `osc_geocode_attribution()` | The credit the active geocode provider requires near a map or results, or ''. |
+| `osc_geocode_attribution()` | The credit the active geocode provider requires near a map or results, or ''. Echo it as it is: it is the plugin's own markup, and escaping it would break the required link. |
 | `osc_has_cities($region = '%%%%')` | Iterator for cities, return null if there's no more cities |
 | `osc_has_city_areas($city = '%%%%')` | Iterator for city areas, return null if there's no more city areas |
 | `osc_has_countries()` | Iterator for countries, return null if there's no more countries |

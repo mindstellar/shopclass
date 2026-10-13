@@ -403,6 +403,11 @@ final class MainSettingsScreen extends SettingsScreen
                 ? $provider->label()
                 : sprintf(__('%s (not set up yet)'), $provider->label());
         }
+        // Keep a pick whose plugin is switched off, so saving this screen does not drop it.
+        $current = (string) osc_get_preference(\mindstellar\location\GeocodeProviderRegistry::PREF);
+        if ($current !== '' && !isset($choices[$current])) {
+            $choices[$current] = sprintf(__('%s (plugin not active)'), $current);
+        }
 
         return $choices;
     }

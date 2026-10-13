@@ -72,6 +72,7 @@ final class ListingGeocode
     /**
      * Look the listing's address up and store the coordinates. A listing that is gone or
      * already has coordinates is left alone, as is an address the map service cannot place.
+     * A picked geocode provider replaces the map-key lookup; it is not tried after it.
      *
      * @return bool whether coordinates were written
      */

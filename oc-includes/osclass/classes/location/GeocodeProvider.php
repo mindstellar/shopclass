@@ -38,7 +38,7 @@ interface GeocodeProvider
      */
     public function geocode(string $address, ?string $countryCode = null): ?array;
 
-    /** Seconds core may keep an answer, or null for no limit. Follow the service's terms. */
+    /** Seconds core may keep an answer, or null for as long as core allows (a year). Follow the service's terms. */
     public function cacheTtl(): ?int;
 
     /** Markup the service requires on pages that show its data, or ''. */

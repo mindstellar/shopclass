@@ -403,6 +403,7 @@ msgid "%s (not set up yet)"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "%s (plugin not active)"
 msgstr ""
 

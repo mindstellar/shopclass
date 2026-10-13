@@ -417,13 +417,14 @@ function osc_geocode(string $address, ?string $countryCode = null): ?array
     }
     try {
         return $geocoder->geocode($address, $countryCode);
-    } catch (\RuntimeException $e) {
+    } catch (\Throwable $e) {
         return null;
     }
 }
 
 /**
- * The credit the active geocode provider requires near a map or results, or ''.
+ * The credit the active geocode provider requires near a map or results, or ''. Echo it as
+ * it is: it is the plugin's own markup, and escaping it would break the required link.
  *
  * @return string markup from the provider plugin
  * @since 7.0.0

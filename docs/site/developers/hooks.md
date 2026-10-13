@@ -612,7 +612,7 @@ Core fires 562 names. Generated from the source; do not edit by hand.
 | `form_submitted` | action | `$submissionId, $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
 | `form_validation_errors` | filter | `$result['errors'], $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
 | `geocode_address` | filter | `$address, $countryCode` | `oc-includes/osclass/classes/location/Geocoder.php` |
-| `geocode_coordinates` | filter | `$coords, $address, $country, $this->provider->id()` | `oc-includes/osclass/classes/location/Geocoder.php` |
+| `geocode_coordinates` | filter | `$coords, $address, $country, $providerId` | `oc-includes/osclass/classes/location/Geocoder.php` |
 | `gettext` | filter | `$string` | `oc-includes/osclass/helpers/hTranslations.php` |
 | `header` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `help_box` | action | none | `oc-admin/themes/modern/parts/header.php` |
