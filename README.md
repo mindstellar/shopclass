@@ -133,6 +133,7 @@ php oc-cli.php help          # list every command
 | `user:reset-password --user=\|--email= [--password=]` | Reset an admin's password: the way back in when you're locked out. |
 | `user:2fa-off --user=` | Turn off an admin's two-step sign-in, for one who lost their phone and backup codes. |
 | `plugin:list` | List plugins with their enabled/disabled status, version, and folder. |
+| `plugin:install --plugin=<folder>` | Install and enable a plugin whose folder is already in `oc-content/plugins`. |
 | `plugin:activate --plugin=<folder>` | Enable an installed plugin (accepts the folder name or `folder/index.php`). |
 | `plugin:deactivate --plugin=<folder>` | Disable an active plugin. |
 | `theme:list` | List installed public themes and mark the active one. |

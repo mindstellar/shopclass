@@ -61,6 +61,7 @@ plugin entirely.
 
 ```bash
 php oc-cli.php plugin:list
+php oc-cli.php plugin:install --plugin=better-s3
 php oc-cli.php plugin:deactivate --plugin=better-s3
 php oc-cli.php plugin:activate --plugin=better-s3
 ```

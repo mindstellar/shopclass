@@ -70,6 +70,7 @@ class Cli
         'api:key:list'        => ['cmdApiKeyList', 'List API keys'],
         'api:key:revoke'      => ['cmdApiKeyRevoke', 'Revoke an API key (<id>)'],
         'plugin:list'         => ['cmdPluginList', 'List plugins and their status'],
+        'plugin:install'      => ['cmdPluginInstall', 'Install and enable a plugin already in oc-content/plugins (--plugin=<folder>)'],
         'plugin:activate'     => ['cmdPluginActivate', 'Enable an installed plugin (--plugin=<folder>)'],
         'plugin:deactivate'   => ['cmdPluginDeactivate', 'Disable an active plugin (--plugin=<folder>)'],
         'theme:list'          => ['cmdThemeList', 'List installed public themes'],
@@ -1230,6 +1231,51 @@ class Cli
     }
 
     /**
+     * Install and enable a plugin whose files are in place, as the admin's Install button does.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
+     */
+    private function cmdPluginInstall(array $args): int
+    {
+        $plugin = trim((string) ($args['plugin'] ?? ''));
+        if ($plugin === '') {
+            $this->err("Usage: plugin:install --plugin=<folder>\n");
+
+            return 2;
+        }
+
+        // Plugins::install() treats any output as a failure, so it must land in a buffer.
+        $level = ob_get_level();
+        ob_start();
+        $result = Plugins::install($this->normalisePluginPath($plugin));
+        while (ob_get_level() > $level) {
+            ob_end_clean();
+        }
+
+        if ($result === true) {
+            $this->out(sprintf("Plugin '%s' installed and enabled.\n", $plugin));
+
+            return 0;
+        }
+
+        $this->err(match ($result['error_code'] ?? '') {
+            'error_installed' => sprintf("Plugin '%s' is already installed.\n", $plugin),
+            'error_file'      => sprintf("Plugin '%s' was not found in oc-content/plugins.\n", $plugin),
+            'custom_error'    => sprintf("Could not install plugin '%s': %s\n", $plugin, $result['msg'] ?? ''),
+            'error_output'    => sprintf(
+                "Plugin '%s' was installed, but printed output while installing:\n%s\n",
+                $plugin,
+                $result['output'] ?? ''
+            ),
+            default           => sprintf("Could not install plugin '%s'.\n", $plugin),
+        });
+
+        return 1;
+    }
+
+    /**
      * Enable an installed plugin.
      *
      * @param array<string, mixed> $args
@@ -1247,7 +1293,7 @@ class Cli
 
         $path = $this->normalisePluginPath($plugin);
         if (!Plugins::isInstalled($path)) {
-            $this->err(sprintf("Plugin '%s' is not installed. Install it from the admin first.\n", $plugin));
+            $this->err(sprintf("Plugin '%s' is not installed. Run plugin:install first.\n", $plugin));
 
             return 1;
         }
