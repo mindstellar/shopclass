@@ -230,8 +230,10 @@ class Search extends DAO
     }
 
     /**
-     * Filter by one custom field. $condition is the SQL core runs; $filter is the same rule as
-     * plain values, which filters() shows a search backend.
+     * Filter by one custom field. $condition is the SQL MySQL runs; $filter is the same rule as
+     * plain values, which filters() shows a search backend, so it must describe exactly what
+     * $condition does. One filter per field: a second call replaces the typed rule but both
+     * conditions apply, so filters() then reports raw SQL and a backend leaves the search to MySQL.
      *
      * @param int                 $fieldId
      * @param array<string,mixed> $filter    type, op and its values; see SearchFilters::$meta

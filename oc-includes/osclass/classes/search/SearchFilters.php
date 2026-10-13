@@ -64,9 +64,10 @@ final class SearchFilters
      * - DATE: `between` with `from` and `to`, the start and end of that day as unix times
      * - DATEINTERVAL: `covers` with `from` and `to`: the stored range starts on or before `from`
      *   and ends on or after `to`
-     * - NUMBER: `between` with `from` and `to`, both ends included
+     * - NUMBER: `between` with `from` and `to` as floats, both ends included
      * Only filters core applied are here: a field not searchable in the asked categories, or an
      * empty value, is left out. NUMBER and DATEINTERVAL need both ends, and a 0 end drops the filter.
+     * `value` is the visitor's text: escape or bind it.
      *
      * @var array<int,array<string,mixed>>
      */
@@ -107,7 +108,8 @@ final class SearchFilters
         $c->perPage = (int)$parts->ordering->perPage();
         $metaSql = array();
         foreach ($parts->meta as $fieldId => $meta) {
-            // A condition dropped later (an alert restore clears them) is no longer applied.
+            // SearchRecord::restore() clears conditions but not $parts->meta; a filter whose
+            // condition is gone no longer applies.
             if ($parts->plugin->hasCondition($meta['sql'])) {
                 $c->meta[$fieldId] = $meta['filter'];
                 $metaSql[]         = $meta['sql'];

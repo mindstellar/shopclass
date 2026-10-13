@@ -153,11 +153,19 @@ return `null`: the search holds SQL your engine cannot run.
 | CHECKBOX | `checked` | the value is `1` |
 | DATE | `between`, `from`, `to` | the value is in that day (unix times, both ends included) |
 | DATEINTERVAL | `covers`, `from`, `to` | the stored range starts on or before `from` and ends on or after `to` |
-| NUMBER | `between`, `from`, `to` | the value is in the range, both ends included |
+| NUMBER | `between`, `from`, `to` (floats) | the value is in the range, both ends included |
 
 A field not searchable in the asked categories, or an empty value, is not in `meta`. NUMBER and
-DATEINTERVAL need both ends, and an end of `0` drops the filter. A plugin adds its own typed field
-filter with `$search->addFieldFilter($fieldId, $filter, $sqlCondition)`.
+DATEINTERVAL need both ends, and an end of `0` drops the filter. Every `value` is the visitor's
+text: escape or bind it.
+
+A plugin adds its own custom-field filter with
+`$search->addFieldFilter(int $fieldId, array $filter, string $condition)`. `$condition` is SQL that
+MySQL runs, as with `addConditions()`: escape what goes into it. `$filter` uses the shape in the
+table above and must describe exactly what `$condition` does, because a backend trusts it. Use one
+call per field: a second call replaces the typed rule but keeps both conditions, so `rawSql` turns
+true and backends leave the search to MySQL. A custom-field condition added with plain
+`addConditions()` counts as raw SQL.
 Saved alerts never reach this filter. The answer may also carry `'snippets'` (listing id => text
 with the searched words in `<mark>`), `'facets'` (`array('category' => array(id => count))`),
 `'suggestion'` (a corrected query) and `'relaxed'` (true when a fuzzy search found the results).
