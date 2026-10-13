@@ -1245,6 +1245,11 @@ class Cli
 
             return 2;
         }
+        if (str_contains($plugin, '..')) {
+            $this->err("Give the plugin's folder in oc-content/plugins, not a path outside it.\n");
+
+            return 2;
+        }
 
         // Plugins::install() treats any output as a failure, so it must land in a buffer.
         $level = ob_get_level();

@@ -76,7 +76,7 @@ php oc-cli.php user:create-admin --user=jane --email=jane@example.com
 | Command | What it does |
 |---|---|
 | `plugin:list` | List plugins with status, version and folder. |
-| `plugin:install --plugin=<folder>` | Install and enable a plugin whose folder is already in `oc-content/plugins`. |
+| `plugin:install --plugin=<folder>` | Install and enable a plugin whose folder is already in `oc-content/plugins`. Exits 1 if it is already installed, missing, or its install fails. A plugin that prints output still installs, but the command exits 1. |
 | `plugin:activate --plugin=<folder>` | Enable an installed plugin. Accepts the folder name or `folder/index.php`. |
 | `plugin:deactivate --plugin=<folder>` | Disable an active plugin: the fix when one fatals on load. |
 | `theme:list` | List installed public themes, marking the active one. |

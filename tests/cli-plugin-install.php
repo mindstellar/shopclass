@@ -115,6 +115,10 @@ pin('shows the output', true, str_contains($out, 'hello'));
 [$code] = cli(array('plugin:install'));
 pin('no --plugin: exit code 2', 2, $code);
 
+[$code] = cli(array('plugin:install', '--plugin=../../evil/index.php'));
+pin('a path outside the plugins folder: exit code 2', 2, $code);
+pin('and nothing is installed', array('good/index.php', 'noisy/index.php'), unserialize($GLOBALS['prefs']['installed_plugins']));
+
 foreach (array('good', 'throws', 'noisy') as $dir) {
     unlink($base . $dir . '/index.php');
     rmdir($base . $dir);
