@@ -851,6 +851,49 @@ pin('the attachment limit is saved as a whole number', array('3', 'INTEGER'), pr
 $run = drive('CAdminSettingsMain', 'update', array('attachment_max_mb' => '0') + $main);
 pin('an attachment limit below 1 MB is stored as 1', array('1', 'INTEGER'), pref($admin, 'attachment_max_mb'));
 
+harness_section('address lookup choices');
+\mindstellar\location\GeocodeProviderRegistry::getInstance()->register(new class () implements \mindstellar\location\GeocodeProvider {
+    public function id(): string
+    {
+        return 'unready';
+    }
+
+    public function label(): string
+    {
+        return 'Unready Maps';
+    }
+
+    public function isConfigured(): bool
+    {
+        return false;
+    }
+
+    public function geocode(string $address, ?string $countryCode = null): ?array
+    {
+        return null;
+    }
+
+    public function cacheTtl(): ?int
+    {
+        return null;
+    }
+
+    public function attribution(): string
+    {
+        return '';
+    }
+});
+seed_pref($admin, 'geocode_provider', 'gone');
+osc_reset_preferences();
+// The form is declared once per request, so the choice list is read straight from its builder.
+$builder = new ReflectionMethod(\mindstellar\admin\form\MainSettingsScreen::class, 'geocodeProviders');
+$builder->setAccessible(true);
+$choices = $builder->invoke(null);
+pin('a pick whose plugin is gone stays offered', 'gone (plugin not active)', $choices['gone'] ?? null);
+pin('a provider that is not set up says so', 'Unready Maps (not set up yet)', $choices['unready'] ?? null);
+seed_pref($admin, 'geocode_provider', '');
+osc_reset_preferences();
+
 harness_section('comment settings');
 
 $comments = array(

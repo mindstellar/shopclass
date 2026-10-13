@@ -417,6 +417,9 @@ Billing::handleCallback('fake', array());
 pin('a paid callback on a failed order mints nothing', $balance + 200, Wallet::balance($userId));
 pin('the order stays failed', Order::STATUS_FAILED, OrderStore::find($closed->getId())->getStatus());
 pin('and the log says it was paid after close', 1, $logged($closed->getId()));
+Billing::handleCallback('fake', array());
+pin('a provider retry of the late payment logs once more', 2, $logged($closed->getId()));
+pin('and still mints nothing', $balance + 200, Wallet::balance($userId));
 
 /* A gateway must not be able to settle an order that belongs to another. */
 $rival = new FakeGateway('rival');

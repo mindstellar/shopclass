@@ -67,4 +67,30 @@ try {
 ini_set('error_log', (string) $logged);
 pin('a failure returns false and does not throw', [false, false], [$result, $threw]);
 
+foreach (['Error' => new Error('undefined thing'), 'TypeError' => new TypeError('wrong type')] as $label => $error) {
+    $GLOBALS['contact'] = $error;
+    $logged             = ini_set('error_log', '/dev/null');
+    $threw              = false;
+    try {
+        $result = Mailer::admin('x', ['y']);
+    } catch (Throwable $e) {
+        $threw = true;
+    }
+    ini_set('error_log', (string) $logged);
+    pin($label . ' from the contact lookup is caught too', [false, false], [$result, $threw]);
+}
+
+function osc_add_hook($hook, $callback)
+{
+}
+require_once ABS_PATH . 'oc-includes/osclass/utils.php';
+
+$GLOBALS['contact'] = 'admin@example.com';
+$sent               = [];
+pin('osc_mail_admin() sends through the same path', [true, 1], [DeferredMail::during(static fn () => osc_mail_admin('s', ['l']), $send), count($sent)]);
+
+// A demo install refuses every send, which is the send failing.
+define('DEMO', true);
+pin('osc_mail_admin() is false when the send fails', false, osc_mail_admin('s', ['l']));
+
 exit(harness_result());

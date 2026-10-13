@@ -64,6 +64,11 @@ pin('a zero timeout is refused', 'refused', $refused(fn () => CurlHttpClient::op
 pin('a string max_bytes is refused', 'refused', $refused(fn () => (new CurlHttpClient())->send('GET', 'https://example.com/', [], null, ['max_bytes' => '10'])));
 pin('a refused call never connects', 'refused', $refused(fn () => (new CurlHttpClient())->send('GET', 'http://127.0.0.1:1/')));
 
+pin('https:// with no host is refused', 'refused', $refused(fn () => CurlHttpClient::options('GET', 'https://', [], null, [], $buffer)));
+pin('an https: URL that parses with no host is refused', 'refused', $refused(fn () => CurlHttpClient::options('GET', 'https:example.com/x', [], null, [], $buffer)));
+pin('cURL is told not to use signals, so short timeouts work', true, $o[CURLOPT_NOSIGNAL] ?? null);
+pin('the default cap is 1 MB', 1048576, CurlHttpClient::MAX_BYTES);
+
 harness_section('the size cap');
 $buffer = new ResponseBuffer(10);
 $o      = CurlHttpClient::options('GET', 'https://example.com/', [], null, [], $buffer);
@@ -79,6 +84,39 @@ foreach (["HTTP/1.1 100 Continue\r\n", "X-Early: 1\r\n", "\r\n", "HTTP/1.1 200 O
     $buffer->header($line);
 }
 pin('lower-cased, repeated ones joined, a 100 Continue dropped', ['content-type' => 'application/json', 'set-cookie' => 'a=1, b=2'], $buffer->headers());
+
+harness_section('the request, with a fake transport');
+$fake = static fn (array $chunks, int $status, array $headers = []) => static function (array $o) use ($chunks, $status, $headers): array {
+    foreach ($headers as $line) {
+        $o[CURLOPT_HEADERFUNCTION](null, $line);
+    }
+    foreach ($chunks as $chunk) {
+        if ($o[CURLOPT_WRITEFUNCTION](null, $chunk) !== strlen($chunk)) {
+            return ['ok' => false, 'status' => $status, 'errno' => 23];
+        }
+    }
+
+    return ['ok' => true, 'status' => $status, 'errno' => 0];
+};
+$r = (new CurlHttpClient($fake(['{"a":', '1}'], 201, ["HTTP/1.1 201 Created\r\n", "Content-Type: application/json\r\n"])))->send('POST', 'https://api.example.com/x', [], '{}');
+pin('status, lower-cased headers and body come back', [201, ['content-type' => 'application/json'], '{"a":1}'], [$r['status'], $r['headers'], $r['body']]);
+
+$caught = static function (callable $call): string {
+    try {
+        $call();
+    } catch (HttpException $e) {
+        return $e->getMessage();
+    }
+
+    return '';
+};
+$message = $caught(fn () => (new CurlHttpClient($fake([str_repeat('x', 60), str_repeat('x', 60)], 200)))->send('GET', 'https://api.example.com/v1?key=SECRET', [], null, ['max_bytes' => 100]));
+check('an answer past max_bytes throws, saying the limit', str_contains($message, 'larger than 100 bytes'));
+check('without the query string', $message !== '' && !str_contains($message, 'SECRET'));
+$message = $caught(fn () => (new CurlHttpClient($fake([str_repeat('x', CurlHttpClient::MAX_BYTES), 'x'], 200)))->send('GET', 'https://api.example.com/'));
+check('the default cap applies with no option', str_contains($message, 'larger than 1048576 bytes'));
+$message = $caught(fn () => (new CurlHttpClient($fake([], 0)))->send('GET', 'https://api.example.com/v1?key=SECRET'));
+check('no status is an HttpException', $message !== '' && !str_contains($message, 'SECRET'));
 
 harness_section('errors');
 $message = '';

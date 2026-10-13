@@ -26,32 +26,57 @@ final class CurlHttpClient implements HttpClient
 
     private const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'];
 
+    /** @var \Closure(array<int,mixed>):array{ok:bool,status:int,errno:int} */
+    private \Closure $transport;
+
+    /**
+     * @param callable|null $transport runs the cURL options and returns ok, status and errno; tests pass a fake
+     */
+    public function __construct(?callable $transport = null)
+    {
+        $this->transport = \Closure::fromCallable($transport ?? [self::class, 'curl']);
+    }
+
     public function send(string $method, string $url, array $headers = [], ?string $body = null, array $options = []): array
     {
-        $method = strtoupper($method);
-        $max    = self::option($options, 'max_bytes', self::MAX_BYTES);
-        $buffer = new ResponseBuffer($max);
+        $method      = strtoupper($method);
+        $max         = self::option($options, 'max_bytes', self::MAX_BYTES);
+        $buffer      = new ResponseBuffer($max);
         $curlOptions = self::options($method, $url, $headers, $body, $options, $buffer);
-        if (!Curl::available()) {
-            throw new HttpException('This server cannot make HTTP requests (no cURL)');
-        }
 
-        $curl = curl_init();
-        curl_setopt_array($curl, $curlOptions);
-        $ok     = curl_exec($curl);
-        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-        $errno  = curl_errno($curl);
-        curl_close($curl);
+        ['ok' => $ok, 'status' => $status, 'errno' => $errno] = ($this->transport)($curlOptions);
 
         $host = (string) parse_url($url, PHP_URL_HOST);
         if ($buffer->overflowed()) {
             throw new HttpException(sprintf('The answer from %s was larger than %d bytes', $host, $max));
         }
-        if ($ok === false || $status === 0) {
+        if (!$ok || $status === 0) {
             throw new HttpException(sprintf('%s could not be reached (cURL error %d: %s)', $host, $errno, (string) curl_strerror($errno)));
         }
 
         return ['status' => $status, 'headers' => $buffer->headers(), 'body' => $buffer->body()];
+    }
+
+    /**
+     * Run one request with cURL.
+     *
+     * @param array<int,mixed> $curlOptions
+     *
+     * @return array{ok:bool,status:int,errno:int}
+     */
+    public static function curl(array $curlOptions): array
+    {
+        if (!Curl::available()) {
+            throw new HttpException('This server cannot make HTTP requests (no cURL)');
+        }
+        $curl = curl_init();
+        curl_setopt_array($curl, $curlOptions);
+        $ok     = curl_exec($curl) !== false;
+        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        $errno  = curl_errno($curl);
+        curl_close($curl);
+
+        return ['ok' => $ok, 'status' => $status, 'errno' => $errno];
     }
 
     /**

@@ -85,7 +85,9 @@ class FakeGeocoder implements GeocodeProvider
 }
 
 $fake = new FakeGeocoder();
+$GLOBALS['geocodeHookRuns'] = 0;
 osc_add_hook(GeocodeProviderRegistry::HOOK, static function (GeocodeProviderRegistry $registry) use ($fake): void {
+    $GLOBALS['geocodeHookRuns']++;
     $registry->register($fake);
 });
 
@@ -151,6 +153,10 @@ try {
 }
 check('a bad id is refused', $threw);
 GeocodeProviderRegistry::getInstance()->register($fake);
+GeocodeProviderRegistry::getInstance()->get('fake');
+GeocodeProviderRegistry::getInstance()->all();
+GeocodeProviderRegistry::getInstance()->active();
+pin('register_geocode_providers fires once across get(), all() and active()', 1, $GLOBALS['geocodeHookRuns']);
 
 harness_section('answers are cached');
 $admin->query("DELETE FROM {$p}t_key_value WHERE s_group = 'geocode'");
@@ -176,10 +182,42 @@ $fake->ttl = null;
 $geo->geocode('Forever Road', null);
 $expires = $admin->query("SELECT dt_expires FROM {$p}t_key_value WHERE s_group = 'geocode' AND s_key = '" . hash('sha256', 'fake||forever road') . "'")->fetch_row()[0] ?? null;
 check('an answer with no limit is still kept at most a year', $expires !== null && strtotime($expires) <= time() + 31536000 + 60 && strtotime($expires) > time() + 31536000 - 86400);
+$fake->ttl = 10 * 31536000;
+$geo->geocode('Decade Road', null);
+$expires = $admin->query("SELECT dt_expires FROM {$p}t_key_value WHERE s_group = 'geocode' AND s_key = '" . hash('sha256', 'fake||decade road') . "'")->fetch_row()[0] ?? null;
+check('a provider allowing ten years is still kept at most a year', $expires !== null && strtotime($expires) <= time() + 31536000 + 60);
 $fake->ttl = 3600;
 osc_add_filter('geocode_coordinates', $nudge = static fn ($coords) => is_array($coords) ? [$coords[0] + 1, $coords[1]] : $coords);
 pin('geocode_coordinates may change the answer', [19.6, 73.9], $geo->geocode('Filtered Road', null));
 osc_remove_filter('geocode_coordinates', $nudge);
+foreach (['off the globe' => [91.0, 10.0], 'at zero' => [0, 0], 'NaN' => [NAN, 1]] as $label => $bad) {
+    osc_add_filter('geocode_coordinates', $spoil = static fn () => $bad);
+    $address = 'Spoilt ' . $label;
+    pin('a filter answer ' . $label . ' is no match', null, $geo->geocode($address, null));
+    pin('and only a miss is stored', [], osc_kv_get(Geocoder::KV_GROUP, hash('sha256', 'fake||' . mb_strtolower($address)), false));
+    osc_remove_filter('geocode_coordinates', $spoil);
+}
+$fake->answer = [91.0, 10.0];
+$given        = 'unset';
+osc_add_filter('geocode_coordinates', $peek = static function ($coords) use (&$given) {
+    $given = $coords;
+
+    return $coords;
+});
+$geo->geocode('Off Globe Lane', null);
+pin('a bad provider answer reaches the filter as null', null, $given);
+osc_remove_filter('geocode_coordinates', $peek);
+$fake->answer = [18.6, 73.9];
+
+$fake->calls = [];
+foreach (['India', 'IND', '1N'] as $country) {
+    $geo->geocode('Country Road ' . $country, $country);
+}
+pin('a country that is not two letters reaches the provider as null', [null, null, null], array_column($fake->calls, 1));
+$fake->calls = [];
+$geo->geocode('Same Street', 'IN');
+$geo->geocode('Same Street', 'GB');
+pin('the same address in two countries is two calls', [['Same Street', 'in'], ['Same Street', 'gb']], $fake->calls);
 $fake->fail = true;
 $threw      = false;
 try {
