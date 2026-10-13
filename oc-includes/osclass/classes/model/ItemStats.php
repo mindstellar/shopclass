@@ -112,11 +112,11 @@ class ItemStats extends DAO
         // $column is validated against the fixed allowlist above. dt_date is no
         // longer part of the key; it records when the listing was last active.
         $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_item_id, dt_date, ' . $column . ')
-                VALUES (?, CURDATE(), 1)
-                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = CURDATE()';
+                VALUES (?, ?, 1)
+                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = VALUES(dt_date)';
 
         try {
-            Db::execute($sql, array($itemId));
+            Db::execute($sql, array($itemId, date('Y-m-d')));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -181,14 +181,19 @@ class ItemStats extends DAO
             return true;
         }
 
-        $values = implode(', ', array_fill(0, count($params) / 2, '(?, CURDATE(), ?)'));
+        $today  = date('Y-m-d');
+        $rows   = array();
+        for ($i = 0, $n = count($params); $i < $n; $i += 2) {
+            array_push($rows, $params[$i], $today, $params[$i + 1]);
+        }
+        $values = implode(', ', array_fill(0, count($params) / 2, '(?, ?, ?)'));
 
         $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_item_id, dt_date, ' . $column . ')
                 VALUES ' . $values . '
-                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + VALUES(' . $column . '), dt_date = CURDATE()';
+                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + VALUES(' . $column . '), dt_date = VALUES(dt_date)';
 
         try {
-            Db::execute($sql, $params);
+            Db::execute($sql, $rows);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -212,13 +217,13 @@ class ItemStats extends DAO
     private function increaseDaily($column, $by)
     {
         $sql = 'INSERT INTO ' . $this->dailyTableName() . ' (dt_date, i_bucket, ' . $column . ')
-                VALUES (CURDATE(), ?, ?)
+                VALUES (?, ?, ?)
                 ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + ?';
 
         $bucket = mt_rand(0, self::DAILY_BUCKETS - 1);
 
         try {
-            Db::execute($sql, array($bucket, $by, $by));
+            Db::execute($sql, array(date('Y-m-d'), $bucket, $by, $by));
         } catch (\mindstellar\database\DbException $e) {
             // ignore: a missing chart point is not worth failing a request for
         }

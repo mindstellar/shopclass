@@ -720,46 +720,17 @@ $resetDao();
 pin('numItems counts enabled, active, non-spam, unexpired-or-premium items', '6', $model->numItems(array('pk_i_id' => $cat)));
 
 /* ----------------------------------------------------------------------------
- * findByHourExpiration / findByDayExpiration — the NOW() legacy clock.
+ * findByHourExpiration / findByDayExpiration — PHP's clock, not MySQL's.
+ * PHP runs in a zone hours behind the database here, so a query that used
+ * MySQL NOW() would pick the wrong rows.
  * ------------------------------------------------------------------------- */
 harness_section('Item::findByHourExpiration / findByDayExpiration');
 
-$resetDao();
-// A dedicated item expiring ~24.5h out, so TIMESTAMPDIFF(HOUR, NOW(), dt) == 24
-// for the width of the test run. Active, enabled, not-spam so it survives the
-// default itemType filter.
-$hourItem = seed_item($admin, $cat, $user, 'Expiring soon');
-$admin->query("UPDATE $itemTable SET dt_expiration = DATE_ADD(NOW(), INTERVAL '24:30' HOUR_MINUTE) WHERE pk_i_id = $hourItem");
-$flush();
-$hourHits = $model->findByHourExpiration(24);
-check('findByHourExpiration(24) finds the ~24h item', count($hourHits) >= 1, describe(count($hourHits)));
-$resetDao();
-pin('findByHourExpiration(1) matches nothing here', array(), $model->findByHourExpiration(1));
+$dbOffset = (int)$admin->query('SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), NOW()) AS o')->fetch_assoc()['o'];
+$phpZone  = date_default_timezone_get();
+date_default_timezone_set($dbOffset <= -8 * 3600 ? 'Asia/Kolkata' : 'Pacific/Honolulu');
+$at = static fn (int $seconds): string => "dt_expiration = '" . date('Y-m-d H:i:s', time() + $seconds) . "'";
 
-$resetDao();
-$dayItem = seed_item($admin, $cat, $user, 'Expiring in a day');
-$admin->query("UPDATE $itemTable SET dt_expiration = DATE_ADD(NOW(), INTERVAL '1 12' DAY_HOUR) WHERE pk_i_id = $dayItem");
-$flush();
-$dayHits = $model->findByDayExpiration(1);
-check('findByDayExpiration(1) finds the ~1.5-day item', count($dayHits) >= 1, describe(count($dayHits)));
-
-// Boundary parity: the old TIMESTAMPDIFF(...) = N query and the new dt_expiration
-// range must select the same rows right at the edges. Items sit a few seconds off
-// the exact hour so a slow test run can't flip which side of the boundary they land on.
-$oldTimestampDiffIds = static function (string $unit, int $n, array $ids) use ($admin, $itemTable): array {
-    $idList = implode(',', array_map('intval', $ids));
-    $res    = $admin->query(
-        "SELECT pk_i_id FROM $itemTable WHERE TIMESTAMPDIFF($unit, NOW(), dt_expiration) = $n"
-        . " AND b_active = 1 AND b_spam = 0 AND pk_i_id IN ($idList)"
-    );
-    $out = array();
-    while ($row = $res->fetch_assoc()) {
-        $out[] = (int)$row['pk_i_id'];
-    }
-    sort($out);
-
-    return $out;
-};
 $newFinderIds = static function (array $rows, array $ids): array {
     $ours = array_map(static fn ($r) => (int)$r['pk_i_id'], $rows);
     $out  = array_values(array_intersect($ours, $ids));
@@ -768,37 +739,53 @@ $newFinderIds = static function (array $rows, array $ids): array {
     return $out;
 };
 
+// Items sit a few seconds off the edges so a slow run can't flip a side.
 $resetDao();
 $hb1 = seed_item($admin, $cat, $user, 'Hour boundary -5s under 24h');
 $hb2 = seed_item($admin, $cat, $user, 'Hour boundary +5s over 24h');
 $hb3 = seed_item($admin, $cat, $user, 'Hour boundary -5s under 25h');
 $hb4 = seed_item($admin, $cat, $user, 'Hour boundary +5s over 25h');
-$setItem($hb1, "dt_expiration = DATE_ADD(NOW(), INTERVAL '23:59:55' HOUR_SECOND)");
-$setItem($hb2, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:00:05' HOUR_SECOND)");
-$setItem($hb3, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:59:55' HOUR_SECOND)");
-$setItem($hb4, "dt_expiration = DATE_ADD(NOW(), INTERVAL '25:00:05' HOUR_SECOND)");
+$setItem($hb1, $at(24 * 3600 - 5));
+$setItem($hb2, $at(24 * 3600 + 5));
+$setItem($hb3, $at(25 * 3600 - 5));
+$setItem($hb4, $at(25 * 3600 + 5));
 $hourBoundaryIds = array($hb1, $hb2, $hb3, $hb4);
 $flush();
-$oldHour24 = $oldTimestampDiffIds('HOUR', 24, $hourBoundaryIds);
 $newHour24 = $newFinderIds($model->findByHourExpiration(24), $hourBoundaryIds);
-pin('findByHourExpiration(24) matches TIMESTAMPDIFF(HOUR,...) = 24 at the boundary', $oldHour24, $newHour24);
-check('...and it is exactly the two rows inside [24h, 25h)', $newHour24 === array($hb2, $hb3), describe($newHour24));
+pin('findByHourExpiration(24) is exactly the two rows inside [24h, 25h) by PHP time', array($hb2, $hb3), $newHour24);
+$resetDao();
+pin('findByHourExpiration(1) matches none of them', array(), $newFinderIds($model->findByHourExpiration(1), $hourBoundaryIds));
 
 $resetDao();
 $db1 = seed_item($admin, $cat, $user, 'Day boundary -5s under 1d');
 $db2 = seed_item($admin, $cat, $user, 'Day boundary +5s over 1d');
 $db3 = seed_item($admin, $cat, $user, 'Day boundary -5s under 2d');
 $db4 = seed_item($admin, $cat, $user, 'Day boundary +5s over 2d');
-$setItem($db1, "dt_expiration = DATE_ADD(NOW(), INTERVAL '23:59:55' HOUR_SECOND)");
-$setItem($db2, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:00:05' HOUR_SECOND)");
-$setItem($db3, "dt_expiration = DATE_ADD(NOW(), INTERVAL '47:59:55' HOUR_SECOND)");
-$setItem($db4, "dt_expiration = DATE_ADD(NOW(), INTERVAL '48:00:05' HOUR_SECOND)");
+$setItem($db1, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+1 day') - 5) . "'");
+$setItem($db2, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+1 day') + 5) . "'");
+$setItem($db3, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+2 day') - 5) . "'");
+$setItem($db4, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+2 day') + 5) . "'");
 $dayBoundaryIds = array($db1, $db2, $db3, $db4);
 $flush();
-$oldDay1 = $oldTimestampDiffIds('DAY', 1, $dayBoundaryIds);
 $newDay1 = $newFinderIds($model->findByDayExpiration(1), $dayBoundaryIds);
-pin('findByDayExpiration(1) matches TIMESTAMPDIFF(DAY,...) = 1 at the boundary', $oldDay1, $newDay1);
-check('...and it is exactly the two rows inside [1d, 2d)', $newDay1 === array($db2, $db3), describe($newDay1));
+pin('findByDayExpiration(1) is exactly the two rows inside [1d, 2d) by PHP time', array($db2, $db3), $newDay1);
+
+harness_section('Item::mostViewed — PHP clock and premium');
+
+$resetDao();
+$mvFresh   = seed_item($admin, $cat, $user, 'Viewed, ends in 1h');
+$mvPremium = seed_item($admin, $cat, $user, 'Viewed, premium, past its date');
+$setItem($mvFresh, $at(3600));
+$setItem($mvPremium, "dt_expiration = '2000-01-01 00:00:00', b_premium = 1");
+$admin->query("UPDATE $statsTable SET i_num_views = 500 WHERE fk_i_item_id IN ($mvFresh, $mvPremium)");
+$flush();
+$mvIds = array_map(static fn ($r) => (int)$r['pk_i_id'], $model->mostViewed(10));
+check('a listing live for another hour by PHP time is listed', in_array($mvFresh, $mvIds, true), describe($mvIds));
+check('a premium listing past its date is listed (premium never expires)', in_array($mvPremium, $mvIds, true), describe($mvIds));
+$admin->query("UPDATE $statsTable SET i_num_views = 0 WHERE fk_i_item_id IN ($mvFresh, $mvPremium)");
+$admin->query("UPDATE $itemTable SET b_premium = 0, dt_expiration = '2000-01-01 00:00:00' WHERE pk_i_id IN ($mvFresh, $mvPremium)");
+
+date_default_timezone_set($phpZone);
 
 /* ----------------------------------------------------------------------------
  * metaFields.

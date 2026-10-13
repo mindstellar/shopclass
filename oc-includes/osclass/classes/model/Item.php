@@ -88,8 +88,7 @@ class Item extends DAO
         // visibility filters below are the same ones the public listing queries apply.
         $sql = 'SELECT i.*, s.i_num_views FROM ' . $this->getTableName() . ' i'
             . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats s ON s.fk_i_item_id = i.pk_i_id'
-            . ' WHERE i.b_enabled = 1 AND i.b_active = 1 AND i.b_spam = 0'
-            . ' AND i.dt_expiration >= NOW()'
+            . ' WHERE ' . implode(' AND ', \mindstellar\listing\ListingStatus::liveConditions('i.'))
             . ' ORDER BY s.i_num_views DESC'
             . ' LIMIT ?';
 
@@ -816,10 +815,10 @@ class Item extends DAO
      */
     public function findByHourExpiration($hours = 24)
     {
-        // Same rows as TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) = $hours, as a range an index can use.
+        // Expiring between $hours and $hours + 1 from now, as a range an index can use.
         $hours      = (int)$hours;
         $conditions = [
-            'dt_expiration >= NOW() + INTERVAL ' . $hours . ' HOUR AND dt_expiration < NOW() + INTERVAL ' . ($hours + 1) . ' HOUR',
+            self::expiresBetween(time() + $hours * 3600, time() + ($hours + 1) * 3600),
             'b_active = 1',
             'b_spam = 0'
         ];
@@ -839,12 +838,22 @@ class Item extends DAO
     {
         $days       = (int)$days;
         $conditions = [
-            'dt_expiration >= NOW() + INTERVAL ' . $days . ' DAY AND dt_expiration < NOW() + INTERVAL ' . ($days + 1) . ' DAY',
+            self::expiresBetween(strtotime('+' . $days . ' day'), strtotime('+' . ($days + 1) . ' day')),
             'b_active = 1',
             'b_spam = 0'
         ];
 
         return $this->findItemByTypes($conditions);
+    }
+
+    /**
+     * A bound expiry range from $from up to, not including, $to.
+     *
+     * @return array{0:string,1:array<int,string>}
+     */
+    private static function expiresBetween(int $from, int $to): array
+    {
+        return ['dt_expiration >= ? AND dt_expiration < ?', [date('Y-m-d H:i:s', $from), date('Y-m-d H:i:s', $to)]];
     }
 
     /**

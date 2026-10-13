@@ -87,19 +87,20 @@ class ItemReport extends DAO
         $userId = osc_is_web_user_logged_in() ? (int)osc_logged_user_id() : null;
 
         // A bound null for fk_i_user_id inserts SQL NULL, exactly as the legacy
-        // 'NULL' literal did; NOW() stays literal so MySQL, not PHP, is the clock.
+        // 'NULL' literal did. The time is PHP's, like every other listing date.
         // The write's result was never read, so a failed query stays absorbed.
         try {
             Db::execute(
                 'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_item_report_log'
                 . ' (fk_i_item_id, s_reporter, fk_i_user_id, s_ip, s_reason, dt_date)'
-                . ' VALUES (?, ?, ?, ?, ?, NOW())',
+                . ' VALUES (?, ?, ?, ?, ?, ?)',
                 array(
                     $itemId,
                     $this->reporterKey(),
                     $userId,
                     substr((string)Params::getServerParam('REMOTE_ADDR'), 0, 64),
                     substr((string)$reason, 0, 20),
+                    date('Y-m-d H:i:s'),
                 )
             );
         } catch (\mindstellar\database\DbException $e) {
