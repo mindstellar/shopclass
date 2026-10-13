@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1166 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1167 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1059,7 +1059,7 @@ Core defines 1166 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_sanitize_url($value)` | Sanitize a website URL. |
 | `osc_sanitize_username($value)` | Sanitize a username |
 
-### hSearch (72)
+### hSearch (73)
 
 `oc-includes/osclass/helpers/hSearch.php`
 
@@ -1130,6 +1130,7 @@ Core defines 1166 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_search_show_all_url($params = array())` | Gets for a default search (all categories, noother option) |
 | `osc_search_show_as()` | Gets current search "show as" variable (show the items as a list or as a gallery) |
 | `osc_search_start()` | Gets current search start item record |
+| `osc_search_suggest_attributes($limit = 5)` | The attributes that turn a search input into a suggestion box, with the group headings in the visitor's language. Use it inside the input tag: `<input name="sPattern" <?php echo osc_search_suggest_attributes(); ?>>`. |
 | `osc_search_suggestion()` | A corrected query from a search engine plugin ("Did you mean ..."). Plain text: escape it. |
 | `osc_search_total_items()` | Gets current search total items |
 | `osc_search_total_pages()` | Gets total pages of search |

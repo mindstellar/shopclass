@@ -41257,13 +41257,29 @@
                                         "null"
                                     ],
                                     "description": "The first photo's thumbnail URL."
+                                },
+                                "price": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "The formatted price; null when the listing shows none."
+                                },
+                                "place": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "City and region, comma separated."
                                 }
                             },
                             "required": [
                                 "id",
                                 "title",
                                 "url",
-                                "thumbnail"
+                                "thumbnail",
+                                "price",
+                                "place"
                             ]
                         }
                     },
@@ -41278,11 +41294,16 @@
                                 },
                                 "count": {
                                     "type": "integer"
+                                },
+                                "count_label": {
+                                    "type": "string",
+                                    "description": "The count as text in the request's language, e.g. \"3 listings\"."
                                 }
                             },
                             "required": [
                                 "term",
-                                "count"
+                                "count",
+                                "count_label"
                             ]
                         }
                     }

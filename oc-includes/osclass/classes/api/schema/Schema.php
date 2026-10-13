@@ -426,11 +426,14 @@ final class Schema
                     'title'     => ['type' => 'string'],
                     'url'       => ['type' => 'string', 'format' => 'uri'],
                     'thumbnail' => self::nullable('string', 'The first photo\'s thumbnail URL.'),
-                ], ['id', 'title', 'url', 'thumbnail'])],
+                    'price'     => self::nullable('string', 'The formatted price; null when the listing shows none.'),
+                    'place'     => self::nullable('string', 'City and region, comma separated.'),
+                ], ['id', 'title', 'url', 'thumbnail', 'price', 'place'])],
                 'searches' => ['type' => 'array', 'description' => 'Searches a search plugin suggests; core sends none.', 'items' => self::object([
-                    'term'  => ['type' => 'string'],
-                    'count' => ['type' => 'integer'],
-                ], ['term', 'count'])],
+                    'term'        => ['type' => 'string'],
+                    'count'       => ['type' => 'integer'],
+                    'count_label' => ['type' => 'string', 'description' => 'The count as text in the request\'s language, e.g. "3 listings".'],
+                ], ['term', 'count', 'count_label'])],
             ], ['listings', 'searches']),
             'CategorySuggestions' => self::object([
                 'categories' => ['type' => 'array', 'maxItems' => 3, 'items' => self::object([

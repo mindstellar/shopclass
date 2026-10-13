@@ -46,9 +46,23 @@ final class SearchController
                 'title'     => $l['title'] ?? '',
                 'url'       => $l['url'] ?? '',
                 'thumbnail' => $l['photos'][0]['thumbnail'] ?? null,
+                'price'     => $l['price']['formatted'] ?? null,
+                'place'     => self::place($l['location'] ?? []),
             ], $shaped),
             'searches' => $found['searches'],
         ]);
+    }
+
+    /**
+     * "City, Region", whichever of the two the listing has, or null.
+     *
+     * @param array<string,mixed> $location
+     */
+    private static function place(array $location): ?string
+    {
+        $names = array_filter([$location['city']['name'] ?? null, $location['region']['name'] ?? null], static fn ($n) => is_string($n) && $n !== '');
+
+        return $names === [] ? null : implode(', ', array_unique($names));
     }
 
     /**

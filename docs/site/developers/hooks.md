@@ -152,7 +152,7 @@ not the search itself; that is `search_results`). Arguments: `null`, what was
 typed, the limit and the context (`'api'`). Return `null` for core's title match, or
 `array('listings' => array(ids, best first), 'searches' => array(array('term' => ..., 'count' => ...)))`.
 Either key may be left out; an empty list means "nothing to suggest", not core's choice. Core drops
-listings that are not live and strips tags from terms. Core itself never suggests searches.
+listings that are not live, strips tags from terms and adds each term's `count_label`. Core itself never suggests searches.
 
 `category_suggestions` answers `GET /search/categories`, the post form's category hint. Arguments:
 `null`, the listing title and the limit (3). Return category ids, best first, or `null` for core's

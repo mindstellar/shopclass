@@ -1535,3 +1535,20 @@ function osc_search_relaxed()
 
     return $extras instanceof \mindstellar\search\SearchExtras && $extras->relaxed();
 }
+
+/**
+ * The attributes that turn a search input into a suggestion box, with the group headings
+ * in the visitor's language. Use it inside the input tag:
+ * `<input name="sPattern" <?php echo osc_search_suggest_attributes(); ?>>`.
+ *
+ * @param int $limit listings to suggest, 1 to 10
+ *
+ * @return string
+ * @since 7.0.0
+ */
+function osc_search_suggest_attributes($limit = 5)
+{
+    return 'data-osc-suggest data-osc-suggest-limit="' . max(1, min(10, (int)$limit)) . '"'
+        . ' data-osc-suggest-searches="' . osc_esc_html(__('Searches')) . '"'
+        . ' data-osc-suggest-listings="' . osc_esc_html(__('Listings')) . '"';
+}

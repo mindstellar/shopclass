@@ -128,18 +128,22 @@ no-op for that field, so adopting this is safe and can be done one field at a ti
 ## Search box suggestions without writing JavaScript
 
 Add `data-osc-suggest` to a search input. While someone types, core lists matching listings (a
-thumbnail and the title) from `GET /search/suggest`; a click opens the listing. A search plugin may
+thumbnail, the title, the price and the place) from `GET /search/suggest`; a click opens the listing. A search plugin may
 add suggested searches; a click on one fills the box and submits its form.
 
 ```php
-<input type="search" name="sPattern" data-osc-suggest data-osc-suggest-limit="5">
+<input type="search" name="sPattern" <?php echo osc_search_suggest_attributes(5); ?>>
 ```
+
+`osc_search_suggest_attributes()` prints `data-osc-suggest`, the limit, and the translated "Searches"
+and "Listings" headings shown when both groups are in the list.
 
 `data-osc-suggest-limit` is 1 to 10 (default 5). Core matches listing titles, by word start, once a
 word has three letters. It needs the page token, which `osc_head()` prints, and `osc-ui-common`, which core loads on the home,
 search and post pages. On other pages, call `osc_enqueue_script('osc-ui-common')` and
-`osc_enqueue_style('osc-ui-common')`. Style `.osc-ac-list`, `.osc-ac-option`, `.osc-suggest-thumb`,
-`.osc-suggest-title`, `.osc-suggest-count` and `.osc-ac-option.is-search`.
+`osc_enqueue_style('osc-ui-common')`. Style `.osc-ac-list`, `.osc-ac-option`, `.osc-suggest-heading`,
+`.osc-suggest-thumb`, `.osc-suggest-title`, `.osc-suggest-meta`, `.osc-suggest-count` and
+`.osc-ac-option.is-search`.
 
 ## Cache-busting
 

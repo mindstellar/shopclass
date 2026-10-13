@@ -58,3 +58,21 @@
     float: right;
     font-size: .8125rem;
 }
+
+.osc-ac-option .osc-suggest-heading {
+    color: var(--osc-ink-muted, #6b6560);
+    display: block;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    margin-bottom: .25rem;
+    text-transform: uppercase;
+}
+
+.osc-ac-option .osc-suggest-meta {
+    color: var(--osc-ink-muted, #6b6560);
+    display: block;
+    font-size: .8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

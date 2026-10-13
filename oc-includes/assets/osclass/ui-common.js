@@ -356,8 +356,10 @@ function oscAutocomplete(input, opts) {
 // (thumbnail and title) and any searches a search plugin adds, from the REST API's
 // GET /search/suggest, sent with the page token from <meta name="shopclass-api">.
 // A listing opens its page; a search fills the box and submits its form.
-// Optional data-osc-suggest-limit (1-10). Theme styles: .osc-suggest-thumb,
-// .osc-suggest-title, .osc-suggest-count and .osc-ac-option.is-search.
+// Optional data-osc-suggest-limit (1-10); data-osc-suggest-searches and
+// data-osc-suggest-listings head the groups when both show (osc_search_suggest_attributes()
+// prints all of them). Theme styles: .osc-suggest-thumb, .osc-suggest-title,
+// .osc-suggest-meta, .osc-suggest-count, .osc-suggest-heading and .osc-ac-option.is-search.
 // ---------------------------------------------------------------------------
 (function () {
     function apiMeta() {
@@ -381,25 +383,40 @@ function oscAutocomplete(input, opts) {
         for (var i = 0; i < inputs.length; i++) {
             (function (input) {
                 var limit = Math.min(10, Math.max(1, parseInt(input.getAttribute('data-osc-suggest-limit'), 10) || 5));
+                var headings = {
+                    searches: input.getAttribute('data-osc-suggest-searches'),
+                    listings: input.getAttribute('data-osc-suggest-listings')
+                };
                 oscAutocomplete(input, {
                     minLength: 2,
                     load: function (term) {
                         var url = endpoint + joiner + 'q=' + encodeURIComponent(term) + '&limit=' + limit;
                         var headers = { Accept: 'application/json' };
                         headers[api.header] = api.token;
-                        return fetch(url, { credentials: 'omit', headers: headers })
+                        return fetch(url, { credentials: 'same-origin', headers: headers })
                             .then(function (r) { return r.ok ? r.json() : { data: {} }; })
                             .then(function (body) {
                                 var data = body.data || {};
-                                var out = (data.searches || []).map(function (s) {
-                                    return { kind: 'search', label: s.term, value: s.term, count: s.count };
+                                var searches = (data.searches || []).map(function (s) {
+                                    return { kind: 'search', label: s.term, value: s.term, countLabel: s.count_label };
                                 });
-                                return out.concat((data.listings || []).map(function (l) {
-                                    return { kind: 'listing', label: l.title, value: input.value, url: l.url, thumbnail: l.thumbnail };
-                                }));
+                                var listings = (data.listings || []).map(function (l) {
+                                    return { kind: 'listing', label: l.title, value: input.value, url: l.url, thumbnail: l.thumbnail, price: l.price, place: l.place };
+                                });
+                                var both = searches.length && listings.length;
+                                if (both && headings.searches) { searches[0].heading = headings.searches; }
+                                if (both && headings.listings) { listings[0].heading = headings.listings; }
+                                return searches.concat(listings);
                             });
                     },
                     renderItem: function (item, li) {
+                        if (item.heading) {
+                            var heading = document.createElement('span');
+                            heading.className = 'osc-suggest-heading';
+                            heading.setAttribute('aria-hidden', 'true');
+                            heading.textContent = item.heading;
+                            li.appendChild(heading);
+                        }
                         if (item.kind === 'listing' && item.thumbnail) {
                             var img = document.createElement('img');
                             img.className = 'osc-suggest-thumb';
@@ -412,14 +429,15 @@ function oscAutocomplete(input, opts) {
                         title.className = 'osc-suggest-title';
                         title.textContent = item.label;
                         li.appendChild(title);
+                        var meta = item.kind === 'listing' ? [item.price, item.place].filter(Boolean).join(' · ') : item.countLabel;
+                        if (meta) {
+                            var extra = document.createElement('span');
+                            extra.className = item.kind === 'search' ? 'osc-suggest-count' : 'osc-suggest-meta';
+                            extra.textContent = meta;
+                            li.appendChild(extra);
+                        }
                         if (item.kind === 'search') {
                             li.classList.add('is-search');
-                            if (item.count) {
-                                var count = document.createElement('span');
-                                count.className = 'osc-suggest-count';
-                                count.textContent = item.count;
-                                li.appendChild(count);
-                            }
                         }
                     },
                     onSelect: function (item) {
