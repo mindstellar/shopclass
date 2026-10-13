@@ -172,5 +172,6 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Public pages answer 304 to a list of `If-None-Match` tags or a weak `W/` tag.
 - `osc_validate_url()` no longer contacts private addresses and gives up after 3 seconds.
 - A subcategory under a disabled parent can be disabled, and enabling a category refreshes every cached list that shows it.
+- A photo upload request that carries no file is refused with an error instead of a server error.
 
 Source: https://github.com/mindstellar/shopclass

@@ -38,10 +38,16 @@ class AjaxUploader
     }
 
     /**
+     * The uploaded file's name, or '' when the request carried no file.
+     *
      * @return mixed
      */
     public function getOriginalName()
     {
+        if (!$this->file) {
+            return '';
+        }
+
         return $this->file->getOriginalName();
     }
 
@@ -214,7 +220,7 @@ class AjaxUploadedFileForm
      */
     public function getOriginalName()
     {
-        return $this->file['name'];
+        return $this->file['name'] ?? '';
     }
 
     /**
@@ -222,6 +228,6 @@ class AjaxUploadedFileForm
      */
     public function getSize()
     {
-        return $this->file['size'];
+        return $this->file['size'] ?? 0;
     }
 }
