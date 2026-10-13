@@ -17,6 +17,8 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Watermark opacity, four more positions (top, bottom, left and right centre) and a tiled pattern; a text mark has an outline instead of a solid box.
 - Plugins run their own database migrations with `MigrationRunner::forPlugin()`. See [Database](https://shopclass.org/docs/developers/database/).
 - `oc-cli.php plugin:install --plugin=<folder>` installs and enables a plugin from a shell.
+- Plugins add their own tables to a person's data export with the `personal_data_export` filter.
+- A payment that arrives for an order already closed as failed is logged as "paid after close" for the admin.
 - Geocode provider plugins find a listing's exact position from its street address; pick one in Settings → General → Maps. See [Distance search](https://shopclass.org/docs/developers/distance-search/).
 - `$search->filters()` gives a search plugin what to search for as plain values, custom fields included, so it no longer parses `toJson()`.
 - **REST API** at `/api/v1` for listings, categories, custom fields, locations, currencies and profiles, with API keys, paging and an OpenAPI description. See [REST API](https://shopclass.org/docs/developers/api/).
