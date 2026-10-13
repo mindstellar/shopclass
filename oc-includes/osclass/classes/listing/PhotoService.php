@@ -264,7 +264,7 @@ final class PhotoService
 
         [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
         $img = $imgres->autoRotate()->resizeTo($width, $height);
-        ResourceUploader::writeSizes($img, osc_normal_dimensions(), $files[''], self::smallerSizes($files), $extension, true);
+        ResourceUploader::writeSizes($img, osc_normal_dimensions(), $files[''], self::smallerSizes($files), $extension, true, false, [$files['_thumbnail']]);
         if (osc_keep_original_image()) {
             ResourceUploader::saveOriginal($tmpName, $tmpName . '_original', $extension);
             if (is_file($tmpName . '_original')) {
@@ -598,9 +598,10 @@ final class PhotoService
         $files = array('' => $base . '.' . $resource['s_extension'], '_preview' => $base . '_preview.'
             . $resource['s_extension'], '_thumbnail' => $base . '_thumbnail.' . $resource['s_extension']);
         [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
-        // Without the original, the normal size already carries the mark; it is not stamped twice.
+        // Without the original, the source already carries the mark, and so does every size cut
+        // from it, the thumbnail included; nothing is stamped twice.
         $normal = \ImageProcessing::fromFile($image_tmp)->resizeTo($width, $height);
-        ResourceUploader::writeSizes($normal, osc_normal_dimensions(), $files[''], self::smallerSizes($files), null, $use_original);
+        ResourceUploader::writeSizes($normal, osc_normal_dimensions(), $files[''], self::smallerSizes($files), null, $use_original, false, [$files['_thumbnail']]);
 
         osc_run_hook(
             'regenerated_image',

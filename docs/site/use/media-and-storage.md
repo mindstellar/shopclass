@@ -89,9 +89,9 @@ configured separately.
 - **Opacity** from 10% to 100%. Lower lets the photo show through the mark.
 
 Watermarking is applied as images are processed, so it affects new uploads.
-Each size gets its own mark: it is drawn for the normal size, scaled down for
-the preview and thumbnail, and never covers more than 40% of a photo's width
-or height. A mark on an edge sits a little in from it. A mark too small to
+The normal and preview sizes each get their own mark: it is drawn for the
+normal size, scaled down for the preview, and never covers more than 40% of a
+photo's width or height. Thumbnails stay clean. A mark on an edge sits a little in from it. A mark too small to
 read is left off.
 
 Existing photos change only when you regenerate them, and only if **Keep the

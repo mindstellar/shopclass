@@ -73,6 +73,10 @@ function osc_watermark_place()
 {
     return $GLOBALS['place'];
 }
+function osc_keep_original_image()
+{
+    return false;
+}
 function osc_normal_dimensions()
 {
     return '640x480';
@@ -295,16 +299,27 @@ foreach ($engines as $engine => $imagick) {
 
     $files = array('' => $dir . '/n.png', '_preview' => $dir . '/p.png', '_thumbnail' => $dir . '/t.png');
     $sizes = array($files['_preview'] => '480x360', $files['_thumbnail'] => '240x180');
-    $write = static function (bool $mark) use ($photo, $files, $sizes): void {
-        ResourceUploader::writeSizes(ImageProcessing::fromFile($photo(640, 480)), '640x480', $files[''], $sizes, 'png', $mark);
+    $write = static function (bool $mark, array $unmarked = array()) use ($photo, $files, $sizes): void {
+        ResourceUploader::writeSizes(ImageProcessing::fromFile($photo(640, 480)), '640x480', $files[''], $sizes, 'png', $mark, false, $unmarked);
     };
     $write(true);
     pin('the normal size is stamped', '200x30@430,440', $box($files['']));
     pin('the preview gets its own scaled mark', '150x23@323,330', $box($files['_preview']));
-    pin('the thumbnail gets its own scaled mark', '75x11@161,165', $box($files['_thumbnail']));
+    pin('a size not listed as unmarked gets its own scaled mark', '75x11@161,165', $box($files['_thumbnail']));
+
+    $write(true, array($files['_thumbnail']));
+    pin('the thumbnail listed as unmarked stays clean; the others are stamped', '200x30@430,440|150x23@323,330|none', implode('|', array_map($box, $files)));
 
     $write(false);
     pin('no sizes are stamped when the mark is off', 'none|none|none', implode('|', array_map($box, $files)));
+
+    // A listing photo upload, as PhotoService processes it: the thumbnail stays clean.
+    $process = new ReflectionMethod(\mindstellar\listing\PhotoService::class, 'process');
+    $process->setAccessible(true);
+    $upload = $dir . '/upload-' . ($GLOBALS['imagick'] ? 'imagick' : 'gd');
+    copy($photo(640, 480), $upload);
+    $made = $process->invoke(null, $upload)['files'];
+    pin('a listing photo upload marks the normal and preview sizes but not the thumbnail', '200x30@430,440|150x23@323,330|none', implode('|', array_map($box, $made)));
 }
 
 harness_section('text drawing');

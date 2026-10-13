@@ -58,9 +58,10 @@ final class ResourceUploader
      * Write a photo's sizes from its clean normal image. Each smaller size is cut from it and
      * stamped on its own, so the mark is scaled to each one; the normal image is stamped last.
      *
-     * @param string               $box   the normal size, "WxH", the mark is drawn for
-     * @param array<string,string> $sizes path => "WxH" for each size below normal
-     * @param bool                 $fit   scale down to fit each size, never pad or upscale
+     * @param string               $box      the normal size, "WxH", the mark is drawn for
+     * @param array<string,string> $sizes    path => "WxH" for each size below normal
+     * @param bool                 $fit      scale down to fit each size, never pad or upscale
+     * @param string[]             $unmarked paths in $sizes that never get the mark (thumbnails)
      */
     public static function writeSizes(
         ImageProcessing $normal,
@@ -69,12 +70,13 @@ final class ResourceUploader
         array $sizes,
         ?string $extension,
         bool $mark,
-        bool $fit = false
+        bool $fit = false,
+        array $unmarked = []
     ): void {
         foreach ($sizes as $path => $dims) {
             [$width, $height] = ImageProcessing::parseSize($dims);
             $img = (clone $normal)->resizeTo($width, $height, $fit ? true : null, !$fit);
-            if ($mark) {
+            if ($mark && !in_array($path, $unmarked, true)) {
                 $img->doSiteWatermark($box);
             }
             $img->saveToFile($path, $extension);
@@ -94,7 +96,7 @@ final class ResourceUploader
      *                            Defaults to normal/preview/thumbnail at the
      *                            configured item dimensions.
      *   - 'keep_original' bool   also store the untouched source as {id}_original.
-     *   - 'watermark'     bool   apply the configured watermark to every size.
+     *   - 'watermark'     bool   apply the configured watermark to every size but the thumbnail.
      *   - 'fit'           bool   scale down to fit each size, never pad or upscale.
      *
      * @param string $ownerType
@@ -143,7 +145,7 @@ final class ResourceUploader
                     $sizes[$tmpFile . '_' . $name] = (string) $dims;
                 }
             }
-            self::writeSizes($img, $baseDims, $normalTmp, $sizes, $extension, $watermark, $fit);
+            self::writeSizes($img, $baseDims, $normalTmp, $sizes, $extension, $watermark, $fit, [$tmpFile . '_thumbnail']);
         } catch (Throwable $e) {
             $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
 
