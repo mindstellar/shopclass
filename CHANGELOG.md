@@ -128,6 +128,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 
+- An admin's `?theme=` preview works on the search page; it was lost in the redirect to the friendly URL.
 - Expiry warning e-mails, the most-viewed list, report times and view-count dates use the site's time zone, not the database's. The most-viewed list keeps premium listings past their end date.
 - Docker: `SMTP_FROM` may hold a display name, `SMTP_STARTTLS` takes `0`/`1` as well as `on`/`off`, and port 465 no longer tries STARTTLS ([#552](https://github.com/mindstellar/shopclass/issues/552)).
 - An unattended install with `OSC_LOCALE` or `--locale` set to a published language downloads it first, and an unknown one stops before the database is touched ([#553](https://github.com/mindstellar/shopclass/issues/553)). The web installer now downloads a language's description and e-mail templates too.

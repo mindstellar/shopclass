@@ -77,7 +77,10 @@ class CWebSearch extends BaseModel
         }
 
         $uriParams = Params::getParamsAsArray();
-        $this->redirectToCanonical($uriParams);
+        // An admin's ?theme= preview stays a query string; folded into the friendly URL it was lost.
+        $preview = isset($uriParams['theme']);
+        unset($uriParams['theme']);
+        $this->redirectToCanonical($uriParams, $preview);
 
         $criteria = $this->buildCriteria($uriParams);
         if (Params::existParam('sFeed')) {
@@ -125,13 +128,14 @@ class CWebSearch extends BaseModel
      * 301 to the friendly URL of these params, then export this page's canonical.
      *
      * @param array<string,mixed> $uriParams
+     * @param bool                $preview   a theme preview, which is never redirected
      *
      * @return void
      */
-    private function redirectToCanonical(array $uriParams)
+    private function redirectToCanonical(array $uriParams, bool $preview = false)
     {
         $searchUri = osc_search_url($uriParams);
-        if ($this->uri !== 'feed') {
+        if ($this->uri !== 'feed' && !$preview) {
             $_base_url = WEB_PATH;
             if (str_replace('%20', '+', $searchUri) !== str_replace('%20', '+', $_base_url . $this->uri)
             ) {

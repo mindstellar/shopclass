@@ -488,6 +488,7 @@ $scenarios = array(
     'numeric uri'                        => array('2', array('page' => 'search'), array('rewriteEnabled' => '1')),
     'feed uri'                           => array('feed', array('page' => 'search', 'sFeed' => ''), array('rewriteEnabled' => '1')),
     'bare search with query string'      => array('search?sPattern=x', array('page' => 'search', 'sPattern' => 'x'), array('rewriteEnabled' => '1')),
+    'theme preview is not redirected'    => array('search/pattern,bike?theme=bender', array('page' => 'search', 'sParams' => 'pattern,bike', 'theme' => 'bender'), array('rewriteEnabled' => '1')),
 );
 
 $actual = array();
