@@ -30,6 +30,7 @@ class MemoryCache extends Cache
     public function __construct()
     {
         $this->site_prefix = '';
+        $this->site_root   = '';
     }
 
     /**

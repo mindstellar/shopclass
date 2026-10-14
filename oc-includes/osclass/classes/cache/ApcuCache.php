@@ -121,7 +121,7 @@ class ApcuCache extends Cache
         // store for every other install in the same PHP pool.
         if (extension_loaded('apcu')) {
             if (class_exists('APCUIterator')) {
-                return apcu_delete(new \APCUIterator('/^' . preg_quote($this->site_prefix, '/') . '/'));
+                return apcu_delete(new \APCUIterator('/^' . preg_quote($this->site_root, '/') . '/'));
             }
 
             return apcu_clear_cache();

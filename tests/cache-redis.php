@@ -192,8 +192,11 @@ foreach ($clients as $label => $raw) {
     pin('a key it read is then held for the request', [1, $hits + 1], [$many->get('m1'), $many->cache_hits]);
 
     $raw->command('SET', 'other_site_key', 'theirs');
+    $raw->command('SET', $cache->site_root . 'oldrel_row', 'old');
+    check('each release has its own keys under the site', $cache->site_prefix !== $cache->site_root && str_starts_with($cache->site_prefix, $cache->site_root));
     check('flush clears this site', $cache->flush());
     pin('so its keys are gone', false, $fresh()->get('row'));
+    pin('and so are an older release\'s', null, $raw->command('GET', $cache->site_root . 'oldrel_row'));
     pin('but another site keeps its own', 'theirs', $raw->command('GET', 'other_site_key'));
     $raw->command('DEL', 'other_site_key');
     for ($i = 0; $i < 1200; $i++) {

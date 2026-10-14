@@ -110,7 +110,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Database queries send their values in one trip instead of a prepare and an execute; `define('OSC_DB_REAL_PREPARES', true);` in `config.php` brings back real prepared statements.
 
 ### Changed
-
+- The object cache starts fresh after an upgrade, so pages and sitemaps built by the old release are not served; a flush also clears what older releases left.
 - An account name is at most 50 characters; names already saved are kept, and must be shortened the next time the account is edited.
 - An account description is at most 1000 characters in each language.
 - The `search_results` filter also gets the context (`request` or `api`) and whether to return bare `t_item` rows.

@@ -34,17 +34,22 @@ abstract class Cache implements \mindstellar\cache\CacheDriver
 
     /**
      * Put before every key in a shared store, so several sites can use one server.
+     * It holds the release too, so an upgrade never reads what the old code cached.
      *
      * @var string
      */
     public $site_prefix;
+
+    /** This site's part of the prefix, for every release: a flush clears from here. */
+    public $site_root;
 
     /** @var int Seconds a value lives when the caller gives none. */
     public $default_expiration = 60;
 
     public function __construct()
     {
-        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
+        $this->site_root   = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
+        $this->site_prefix = $this->site_root . substr(md5(defined('OSCLASS_VERSION') ? OSCLASS_VERSION : ''), 0, 6) . '_';
     }
 
     /**

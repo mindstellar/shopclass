@@ -282,7 +282,7 @@ class RedisCache extends Cache
         $this->cache = array();
         $cursor      = '0';
         do {
-            $reply = $this->call('SCAN', $cursor, 'MATCH', $this->site_prefix . '*', 'COUNT', '500');
+            $reply = $this->call('SCAN', $cursor, 'MATCH', $this->site_root . '*', 'COUNT', '500');
             if (!is_array($reply) || count($reply) !== 2) {
                 return false;
             }
