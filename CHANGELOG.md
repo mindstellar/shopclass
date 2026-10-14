@@ -2,13 +2,15 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.0.0.beta2
+## Shopclass 7.0.0.beta3
 
 Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
 
 It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
 
 Beta 2 gives themes search snippets, related listings and search box suggestions, which a search plugin can take over.
+
+Beta 3 gives plugins their own database migrations, an HTTPS client and street address lookup, and carries the security fixes from 6.4.7.
 
 Plugin authors: please read **Breaking** before you upgrade.
 
