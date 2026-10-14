@@ -774,7 +774,7 @@ Core fires 563 names. Generated from the source; do not edit by hand.
 | `actions_manage_users` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `activate_user` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `after_delete_user` | action | `$id` | `oc-includes/osclass/classes/model/User.php` |
-| `after_username_change` | action | `Session::getInstance()->_get('userId'), Params::getParam('s_username')` | `oc-includes/osclass/classes/controller/CWebUser.php` |
+| `after_username_change` | action | `Session::getInstance()->_get('userId'), $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `api_user` | filter | `$data, $context` | `oc-includes/osclass/classes/api/serializer/UserSerializer.php` |
 | `before_user_delete` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `before_user_recover` | action | none | `oc-includes/osclass/classes/controller/CWebLogin.php` |
