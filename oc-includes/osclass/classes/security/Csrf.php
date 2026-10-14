@@ -256,8 +256,8 @@ class Csrf
      */
     public function check()
     {
-        $csrfTokenName = Params::getParam('CSRFName');
-        $csrfToken     = Params::getParam('CSRFToken');
+        $csrfTokenName = Params::getParamString('CSRFName');
+        $csrfToken     = Params::getParamString('CSRFToken');
 
         if (!$csrfTokenName || !$csrfToken) {
             $status = 'missing';

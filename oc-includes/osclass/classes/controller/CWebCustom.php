@@ -42,7 +42,7 @@ class CWebCustom extends BaseModel
         $fromRoute = false;
         if (Params::existParam('route')) {
             $routes = Rewrite::getInstance()->getRoutes();
-            $rid    = Params::getParam('route');
+            $rid    = Params::getParamString('route');
             $file   = '../';
             if (isset($routes[$rid]['file'])) {
                 $file      = $routes[$rid]['file'];
@@ -52,7 +52,7 @@ class CWebCustom extends BaseModel
         } else {
             // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
             // This will be REMOVED in 3.4
-            $file = Params::getParam('file');
+            $file = Params::getParamString('file');
         }
 
         // valid file?

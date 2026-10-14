@@ -63,8 +63,8 @@ class CWebRegister extends BaseModel
                 } elseif ($success == 2) {
                     osc_add_flash_ok_message(_m('Your account has been created successfully'));
                     Params::setParam('action', 'login_post');
-                    Params::setParam('email', Params::getParam('s_email'));
-                    Params::setParam('password', Params::getParam('s_password', false, false));
+                    Params::setParam('email', Params::getParamString('s_email'));
+                    Params::setParam('password', Params::getParamString('s_password', false, false));
                     $do = new CWebLogin();
                     $do->doModel();
                 } else {

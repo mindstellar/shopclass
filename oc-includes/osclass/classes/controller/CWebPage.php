@@ -78,8 +78,8 @@ class CWebPage extends BaseModel
         // export $page content to View
         $this->_exportVariableToView('page', $page);
         $lang = '';
-        if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
-            $lang = Params::getParam('lang');
+        if (Params::getParamString('lang') && (new Validate())->localeCode(Params::getParamString('lang'))) {
+            $lang = Params::getParamString('lang');
             osc_set_current_user_locale($lang);
         }
 

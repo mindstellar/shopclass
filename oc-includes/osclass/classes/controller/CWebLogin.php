@@ -70,8 +70,8 @@ class CWebLogin extends BaseModel
 
         // e-mail or/and password is/are empty or incorrect
         $wrongCredentials = false;
-        $email            = trim(Params::getParam('email'));
-        $password         = Params::getParam('password', false, false);
+        $email            = trim(Params::getParamString('email'));
+        $password         = Params::getParamString('password', false, false);
         if ($email == '') {
             osc_add_flash_error_message(_m('Please provide an email address'));
             $wrongCredentials = true;
@@ -182,10 +182,10 @@ class CWebLogin extends BaseModel
      */
     private function resendActivation(): void
     {
-        $id    = Params::getParam('id');
-        $email = Params::getParam('email');
-        $user  = User::getInstance()->findByPrimaryKey((int) $id);
-        if ($id == '' || $email == '' || !isset($user) || $user['b_active'] == 1
+        $id    = Params::getParamInt('id');
+        $email = Params::getParamString('email');
+        $user  = User::getInstance()->findByPrimaryKey($id);
+        if ($id < 1 || $email == '' || !isset($user) || $user['b_active'] == 1
             || $email != $user['s_email']
         ) {
             osc_add_flash_error_message(_m('Incorrect link'));
@@ -260,7 +260,7 @@ class CWebLogin extends BaseModel
     private function forgotForm(): void
     {
         $user = User::getInstance()
-            ->findByIdPasswordSecret(Params::getParamInt('userId'), Params::getParam('code'));
+            ->findByIdPasswordSecret(Params::getParamInt('userId'), Params::getParamString('code'));
         if ($user) {
             $this->doView(osc_locate_template(array('user-forgot_password.php'), 'user-forgot_password'));
         } else {
@@ -275,8 +275,8 @@ class CWebLogin extends BaseModel
     private function forgotPost(): void
     {
         osc_csrf_check();
-        if ((Params::getParam('new_password', false, false) == '')
-            || (Params::getParam('new_password2', false, false) == '')
+        if ((Params::getParamString('new_password', false, false) == '')
+            || (Params::getParamString('new_password2', false, false) == '')
         ) {
             osc_add_flash_warning_message(_m('Password cannot be blank'));
             $this->redirectTo(osc_forgot_user_password_confirm_url(
@@ -286,10 +286,10 @@ class CWebLogin extends BaseModel
         }
 
         $user = User::getInstance()
-            ->findByIdPasswordSecret(Params::getParamInt('userId'), Params::getParam('code'));
+            ->findByIdPasswordSecret(Params::getParamInt('userId'), Params::getParamString('code'));
         if (!empty($user) && $user['b_enabled'] == 1) {
-            if (Params::getParam('new_password', false, false)
-                == Params::getParam('new_password2', false, false)
+            if (Params::getParamString('new_password', false, false)
+                == Params::getParamString('new_password2', false, false)
             ) {
                 // Matching on the code keeps the link single-use under two posts at once.
                 try {

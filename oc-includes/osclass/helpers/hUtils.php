@@ -971,20 +971,20 @@ function osc_get_subdomain_params()
 {
     $options = array();
     if (osc_subdomain_name() != '') {
-        if (Params::getParam('sCountry') != '') {
-            $options['sCountry'] = Params::getParam('sCountry');
+        if (Params::getParamString('sCountry') != '') {
+            $options['sCountry'] = Params::getParamString('sCountry');
         }
-        if (Params::getParam('sRegion') != '') {
-            $options['sRegion'] = Params::getParam('sRegion');
+        if (Params::getParamString('sRegion') != '') {
+            $options['sRegion'] = Params::getParamString('sRegion');
         }
-        if (Params::getParam('sCity') != '') {
-            $options['sCity'] = Params::getParam('sCity');
+        if (Params::getParamString('sCity') != '') {
+            $options['sCity'] = Params::getParamString('sCity');
         }
         if (Params::getParam('sCategory') != '') {
             $options['sCategory'] = Params::getParam('sCategory');
         }
-        if (Params::getParam('sUser') != '') {
-            $options['sUser'] = Params::getParam('sUser');
+        if (Params::getParamString('sUser') != '') {
+            $options['sUser'] = Params::getParamString('sUser');
         }
     }
 

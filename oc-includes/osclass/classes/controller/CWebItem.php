@@ -494,8 +494,8 @@ class CWebItem extends BaseModel
         // which also removes the "a prefetch/<img> silently marks a listing" vector.
         osc_csrf_check();
 
-        $id = Params::getParam('id');
-        $as = Params::getParam('as');
+        $id = Params::getParamInt('id');
+        $as = Params::getParamString('as');
 
         $item = Item::getInstance()->findByPrimaryKey((int) $id);
         if (count($item) == 0) {
@@ -805,8 +805,8 @@ class CWebItem extends BaseModel
             return;
         }
 
-        if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
-            osc_set_current_user_locale(Params::getParam('lang'));
+        if (Params::getParamString('lang') && (new Validate())->localeCode(Params::getParamString('lang'))) {
+            osc_set_current_user_locale(Params::getParamString('lang'));
         }
 
         $item = osc_apply_filter(

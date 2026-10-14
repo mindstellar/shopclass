@@ -77,11 +77,11 @@ foreach (mindstellar\language\LanguageService::published() ?? array() as $code =
     $jsonLocales[$code] = (string) ($publishedLocale['name'] ?? $code);
 }
 asort($jsonLocales);
-$install_locale = Params::getParam('install_locale');
+$install_locale = Params::getParamString('install_locale');
 
-if (Params::getParam('install_locale') && !(strlen($install_locale) > 5)) {
-    Session::getInstance()->_set('userLocale', Params::getParam('install_locale'));
-    Session::getInstance()->_set('adminLocale', Params::getParam('install_locale'));
+if (Params::getParamString('install_locale') && !(strlen($install_locale) > 5)) {
+    Session::getInstance()->_set('userLocale', Params::getParamString('install_locale'));
+    Session::getInstance()->_set('adminLocale', Params::getParamString('install_locale'));
 }
 
 if (

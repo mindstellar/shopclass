@@ -100,7 +100,7 @@ class CWebAjax extends BaseModel
      */
     private function location(): void
     {
-        $cities = City::getInstance()->ajax(Params::getParam('term'));
+        $cities = City::getInstance()->ajax(Params::getParamString('term'));
         foreach ($cities as $k => $city) {
             $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
         }
@@ -112,7 +112,7 @@ class CWebAjax extends BaseModel
      */
     private function locationCountries(): void
     {
-        $countries = Country::getInstance()->ajax(Params::getParam('term'));
+        $countries = Country::getInstance()->ajax(Params::getParamString('term'));
         AjaxResponse::json($countries);
     }
 
@@ -123,7 +123,7 @@ class CWebAjax extends BaseModel
     {
         AjaxResponse::json($this->customFieldAutocomplete(
             (int) Params::getParam('field'),
-            (string) Params::getParam('term')
+            Params::getParamString('term')
         ));
     }
 
@@ -133,7 +133,7 @@ class CWebAjax extends BaseModel
     private function locationRegions(): void
     {
         $regions = Region::getInstance()
-            ->ajax(Params::getParam('term'), Params::getParam('country'));
+            ->ajax(Params::getParamString('term'), Params::getParamString('country'));
         AjaxResponse::json($regions);
     }
 
@@ -144,7 +144,7 @@ class CWebAjax extends BaseModel
     {
         $cities =
         // @phpstan-ignore argument.type (region may be an id or a name)
-            City::getInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
+            City::getInstance()->ajax(Params::getParamString('term'), Params::getParamString('region'));
         AjaxResponse::json($cities);
     }
 
@@ -277,7 +277,7 @@ class CWebAjax extends BaseModel
     {
         if (Params::existParam('route')) {
             $routes = Rewrite::getInstance()->getRoutes();
-            $rid    = Params::getParam('route');
+            $rid    = Params::getParamString('route');
             $file   = '../';
             if (isset($routes[$rid]['file'])) {
                 $file = $routes[$rid]['file'];
@@ -285,7 +285,7 @@ class CWebAjax extends BaseModel
         } else {
             // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
             // This will be REMOVED in 3.4
-            $file = Params::getParam('ajaxfile');
+            $file = Params::getParamString('ajaxfile');
         }
 
         if ($file == '') {

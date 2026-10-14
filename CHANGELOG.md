@@ -149,6 +149,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 - A search URL that sends several categories as `sCategory[]` no longer fails with an error when friendly URLs are on.
 - A post or edit form link with `catId[]` in it no longer fails with an error.
+- A form or link value sent as a list (`name[]=`) no longer gives a server error on sign-in, CSRF-protected forms, listing and page links, the listing form and many admin screens.
 - An admin's `?theme=` preview works on the search page; it was lost in the redirect to the friendly URL.
 - Expiry warning e-mails, the most-viewed list, report times and view-count dates use the site's time zone, not the database's. The most-viewed list keeps premium listings past their end date.
 - Docker: `SMTP_FROM` may hold a display name, `SMTP_STARTTLS` takes `0`/`1` as well as `on`/`off`, and port 465 no longer tries STARTTLS ([#552](https://github.com/mindstellar/shopclass/issues/552)).

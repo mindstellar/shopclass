@@ -257,7 +257,7 @@ class CWebUser extends WebSecBaseModel
                 osc_run_hook(
                     'after_username_change',
                     Session::getInstance()->_get('userId'),
-                    Params::getParam('s_username')
+                    $username
                 );
                 $this->redirectTo(osc_user_profile_url());
             }
