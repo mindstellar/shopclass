@@ -49,15 +49,21 @@ final class PhpRedisClient implements RedisClient
 
     private function open(): \Redis
     {
-        $host    = (string) ($this->config['host'] ?? '') ?: '127.0.0.1';
-        $timeout = (float) ($this->config['timeout'] ?? 1.0);
-        $redis   = new \Redis();
-        $host[0] === '/'
-            ? $redis->connect($host, 0, $timeout, null, 0, $timeout)
-            : $redis->connect($host, (int) ($this->config['port'] ?? 6379), $timeout, null, 0, $timeout);
-
+        $host     = (string) ($this->config['host'] ?? '') ?: '127.0.0.1';
+        $port     = $host[0] === '/' ? 0 : (int) ($this->config['port'] ?? 6379);
+        $timeout  = (float) ($this->config['timeout'] ?? 1.0);
         $password = (string) ($this->config['password'] ?? '');
         $username = (string) ($this->config['username'] ?? '');
+        $redis    = new \Redis();
+        // A web worker keeps its connection for the next request instead of opening one
+        // per page. The CLI worker does not: its blocking wait needs a connection of its own.
+        if (PHP_SAPI !== 'cli') {
+            $id = 'osc-' . md5(implode('|', array($host, $port, $username, $this->config['database'] ?? 0, $timeout)));
+            $redis->pconnect($host, $port, $timeout, $id, 0, $timeout);
+        } else {
+            $redis->connect($host, $port, $timeout, null, 0, $timeout);
+        }
+
         if ($password !== '' && !$redis->auth($username === '' ? $password : [$username, $password])) {
             throw new \RedisException('the server refused the password');
         }
