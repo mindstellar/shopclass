@@ -2,7 +2,7 @@
  * Admin UI helpers — vanilla JS (migrated off jQuery / jQuery-UI).
  *
  * Provides oscInitTabs() (the segmented locale/section tabs, replacing
- * jQuery-UI .tabs()) and wires the flash-message and help-box close buttons.
+ * jQuery-UI .tabs()) and wires the flash-message close buttons.
  */
 /* global osc */
 /* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat */
@@ -669,8 +669,8 @@ osc.collapse = (function () {
         }
         var group = panel.getAttribute('data-osc-parent');
         if (group) {
-            document.querySelectorAll('.collapse.show[data-osc-parent="' + group + '"]').forEach(function (other) {
-                if (other !== panel) { hide(other); }
+            document.querySelectorAll('.collapse.show[data-osc-parent]').forEach(function (other) {
+                if (other !== panel && other.getAttribute('data-osc-parent') === group) { hide(other); }
             });
         }
         panel.dataset.oscCollapseBusy = '1';
@@ -703,7 +703,11 @@ osc.collapse = (function () {
         var trigger = e.target.closest('[data-osc-collapse]');
         if (!trigger) { return; }
         e.preventDefault();
-        toggle(document.querySelector(trigger.getAttribute('data-osc-collapse')));
+        try {
+            toggle(document.querySelector(trigger.getAttribute('data-osc-collapse')));
+        } catch (err) {
+            // An invalid selector in the markup; nothing to toggle.
+        }
     });
 
     return {show: show, hide: hide, toggle: toggle};
@@ -853,17 +857,23 @@ osc.sidebar = (function () {
         return measure;
     }
 
+    // Scroll the menu so el is in view; a tall el keeps its top edge in view.
+    function scrollIntoMenu(scroller, el) {
+        var gap = 8;
+        var view = scroller.getBoundingClientRect();
+        var box = el.getBoundingClientRect();
+        if (box.bottom + gap > view.bottom) {
+            scroller.scrollTop += Math.ceil(Math.min(box.bottom + gap - view.bottom, box.top - view.top));
+        } else if (box.top - gap < view.top) {
+            scroller.scrollTop -= Math.ceil(view.top - box.top + gap);
+        }
+    }
+
     // An opened section can end below the fold; bring as much of it into view as fits.
     function revealOnOpen(scroller, measure) {
         scroller.addEventListener('osc:collapse:shown', function (e) {
             var section = e.target.closest('.nav-item');
-            if (section && !collapsed()) {
-                var view = scroller.getBoundingClientRect();
-                var box = section.getBoundingClientRect();
-                if (box.bottom > view.bottom) {
-                    scroller.scrollTop += Math.min(box.bottom - view.bottom, box.top - view.top);
-                }
-            }
+            if (section && !collapsed()) { scrollIntoMenu(scroller, section); }
             measure();
         });
     }
@@ -877,18 +887,12 @@ osc.sidebar = (function () {
         initRail(nav, scroller);
         if (frame && scroller) {
             var current = nav.querySelector('.sidebar-submenu .sub-active');
-            if (current && !collapsed()) {
-                var view = scroller.getBoundingClientRect();
-                var box = current.getBoundingClientRect();
-                if (box.bottom > view.bottom || box.top < view.top) {
-                    scroller.scrollTop += box.top - view.top - (view.height - box.height) / 2;
-                }
-            }
+            if (current && !collapsed()) { scrollIntoMenu(scroller, current); }
             revealOnOpen(scroller, initScrollbar(frame, scroller));
         }
     }
 
     document.addEventListener('DOMContentLoaded', init);
 
-    return {init: init, collapsed: collapsed};
+    return {init: init};
 })();

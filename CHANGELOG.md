@@ -111,7 +111,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Database queries send their values in one trip instead of a prepare and an execute; `define('OSC_DB_REAL_PREPARES', true);` in `config.php` brings back real prepared statements.
 
 ### Changed
-- The admin menu opens and closes its sections with core code instead of Bootstrap; a plugin listening for `shown.bs.collapse` on it should listen for `osc:collapse:shown`.
+- The admin menu and the page help box open and close with `osc.collapse` instead of Bootstrap; a plugin listening for `shown.bs.collapse` there should listen for `osc:collapse:shown`, and its own `data-bs-toggle` menu markup no longer joins the menu's accordion.
 - The object cache starts fresh after an upgrade, so pages and sitemaps built by the old release are not served; a flush also clears what older releases left.
 - An account name is at most 50 characters; names already saved are kept, and must be shortened the next time the account is edited.
 - An account description is at most 1000 characters in each language.

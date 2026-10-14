@@ -142,8 +142,9 @@ if (!function_exists('osc_admin_page_header')) {
                 </a>
             <?php } ?>
             <?php if (!empty($opts['help'])) { ?>
-                <a class="bi bi-question-circle" data-bs-target="#help-box" data-bs-toggle="collapse"
-                   href="#help-box" title="<?php echo osc_esc_html(__('Help')); ?>"
+                <a class="bi bi-question-circle" data-osc-collapse="#help-box" href="#help-box"
+                   aria-controls="help-box" aria-expanded="false" role="button"
+                   title="<?php echo osc_esc_html(__('Help')); ?>"
                    aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
             <?php } ?>
         </h1>

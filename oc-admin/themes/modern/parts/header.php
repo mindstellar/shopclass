@@ -113,7 +113,7 @@ if ($oscSidebar !== 'collapsed') {
                             <div class="help-callout-body">
                                 <?php osc_run_hook('help_box'); ?>
                             </div>
-                            <button type="button" class="help-callout-close" data-bs-toggle="collapse" href="#help-box"
+                            <button type="button" class="help-callout-close" data-osc-collapse="#help-box" aria-controls="help-box"
                                     aria-label="<?php echo osc_esc_html(__('Close')); ?>">
                                 <i class="bi bi-x-lg" aria-hidden="true"></i>
                             </button>

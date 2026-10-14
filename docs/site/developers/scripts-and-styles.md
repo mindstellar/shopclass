@@ -156,7 +156,9 @@ the class `collapse`, plus `show` when it starts open:
 <div id="more" class="collapse">…</div>
 ```
 
-The button's `aria-expanded` and its `collapsed` class follow the panel. Panels that share
+The button's `aria-expanded` and its `collapsed` class follow the panel once it is used; a
+panel that starts open needs `aria-expanded="true"` on its button in the markup. Use the
+`osc.*` namespace and `data-osc-*` attributes the same way for new admin components. Panels that share
 a `data-osc-parent` value work as an accordion: opening one closes the others.
 
 From script, call `osc.collapse.show(panel)`, `osc.collapse.hide(panel)` or
