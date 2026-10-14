@@ -145,6 +145,14 @@ class Cli
             return 2;
         }
 
+        // `<command> --help` prints the summary and never runs the command.
+        if (array_intersect(array_slice($argv, 1), ['-h', '--help']) !== []) {
+            $summary = isset($this->added[$command]) ? $this->added[$command]['summary'] : $this->commands[$command][1];
+            $this->out(sprintf("Usage: php oc-cli.php %s [options]\n\n%s\n", $command, $summary));
+
+            return 0;
+        }
+
         $args = $this->parseOptions(array_slice($argv, 1));
 
         try {
