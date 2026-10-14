@@ -44,7 +44,7 @@ class UserForm extends Form
         parent::generic_input_text(
             's_name',
             isset($user['s_name']) ? $user['s_name'] : '',
-            null,
+            \mindstellar\user\AccountService::maxLength('s_name'),
             false
         );
     }

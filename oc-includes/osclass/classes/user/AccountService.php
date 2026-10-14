@@ -46,6 +46,9 @@ final class AccountService
      * Widths of the t_user columns an account form fills, from struct.sql.
      * tests/strict-write-guards.php pins them against the live schema.
      */
+    /** The longest name an account may have, shorter than its column. */
+    public const NAME_MAX_LENGTH = 50;
+
     public const COLUMN_WIDTHS = [
         's_name'         => 100,
         's_username'     => 100,
@@ -946,6 +949,15 @@ final class AccountService
     }
 
     /**
+     * The longest value an account form may send for a t_user column: every form, the API and
+     * the length check read it here.
+     */
+    public static function maxLength(string $column): int
+    {
+        return $column === 's_name' ? self::NAME_MAX_LENGTH : self::COLUMN_WIDTHS[$column];
+    }
+
+    /**
      * A message per value wider than the column that holds it. A relaxed connection would cut
      * it short and a strict one refuse the statement; neither is something to hand a visitor.
      *
@@ -969,7 +981,8 @@ final class AccountService
             's_zip'          => _m('Zip code'),
         ];
         $flash = '';
-        foreach (self::COLUMN_WIDTHS as $column => $width) {
+        foreach (array_keys(self::COLUMN_WIDTHS) as $column) {
+            $width = self::maxLength($column);
             if (!isset($input[$column]) || osc_validate_max((string) $input[$column], $width)) {
                 continue;
             }

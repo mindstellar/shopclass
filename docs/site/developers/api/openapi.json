@@ -40264,7 +40264,7 @@
                     "name": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100
+                        "maxLength": 50
                     },
                     "email": {
                         "type": "string",
@@ -40564,7 +40564,7 @@
                     "name": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100
+                        "maxLength": 50
                     },
                     "email": {
                         "type": "string",
@@ -42162,7 +42162,7 @@
                     "name": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100
+                        "maxLength": 50
                     },
                     "website": {
                         "type": [

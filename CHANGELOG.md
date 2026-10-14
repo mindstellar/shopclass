@@ -111,6 +111,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Changed
 
+- An account name is at most 50 characters; names already saved are kept, and must be shortened the next time the account is edited.
 - The `search_results` filter also gets the context (`request` or `api`) and whether to return bare `t_item` rows.
 - Generated files (Composer packages, vendored assets, admin CSS and JS builds) are no longer in git; run `composer install` and `npm run build` after cloning. Release zips are unchanged.
 - The RSS feed, sitemaps and robots.txt send the same cache headers as public pages.
