@@ -266,6 +266,11 @@ pin(
     $register(array('s_info' => array('en_US' => str_repeat('a', 1001))))
 );
 pin(
+    'a long description in a second language is refused too',
+    "Description is too long, the maximum is 1000 characters\n",
+    $register(array('s_info' => array('en_US' => 'Hi', 'es_ES' => str_repeat('a', 1001))))
+);
+pin(
     'a description of exactly 1000 characters is accepted',
     2,
     $register(array('s_info' => array('en_US' => str_repeat('a', 1000))))
