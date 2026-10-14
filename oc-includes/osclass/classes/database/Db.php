@@ -32,6 +32,9 @@ use Throwable;
  */
 class Db
 {
+    /** Driver errors after which the server has rolled the open transaction back. */
+    public const LOST_TRANSACTION = array(1213, 1020);
+
     /**
      * Current transaction nesting depth.
      *
@@ -347,6 +350,19 @@ class Db
     public static function inTransaction(): bool
     {
         return self::$depth > 0;
+    }
+
+    /**
+     * Throw when a statement failed with a deadlock (1213) or a snapshot conflict (1020) inside
+     * a transaction. The server has rolled the whole transaction back, so the rest must not run.
+     *
+     * @throws DbException
+     */
+    public static function failIfLost(int $errno): void
+    {
+        if (self::$depth > 0 && in_array($errno, self::LOST_TRANSACTION, true)) {
+            throw new DbException('The server rolled the transaction back', $errno);
+        }
     }
 
     /**

@@ -889,6 +889,7 @@ class DBCommandClass
         $this->errorReport();
         if (false === $this->resultId) {
             \mindstellar\database\StrictRefusals::record($this->connId, (int) $this->errorLevel, (string) $this->errorDesc, $sql);
+            \mindstellar\database\Db::failIfLost((int) $this->errorLevel);
             if (OSC_DEBUG_DB) {
                 $this->log->addMessage($sql, 0, $this->errorLevel, $this->errorDesc);
             }

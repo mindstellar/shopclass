@@ -15,6 +15,7 @@ namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
 use mindstellar\database\Db;
+use mindstellar\database\DbException;
 use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
@@ -682,6 +683,13 @@ final class ListingService
                     });
                 }
             );
+        } catch (DbException $e) {
+            // A deadlock or snapshot conflict: the server undid the save, so nothing was written.
+            if (!in_array($e->getCode(), Db::LOST_TRANSACTION, true)) {
+                throw $e;
+            }
+            throw (new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.')))
+                ->withNotices(array_merge($notices, $this->photos->notices()));
         } catch (RefusedException $e) {
             throw $e->withNotices(array_merge($notices, $this->photos->notices()));
         }
@@ -856,7 +864,13 @@ final class ListingService
         $mStats = new \ItemStats();
         $mStats->emptyRow($itemId);
 
-        $item          = $this->items->extendRows(array(Db::stringifyRow((array) ListingStore::find((int) $itemId, array('*')))), null, self::textRows((int) $itemId, $texts))[0];
+        $row = ListingStore::find((int) $itemId, array('*'));
+        if ($row === null) {
+            trigger_error('Item ' . $itemId . ' is gone before posted_item; aborting.', E_USER_WARNING);
+
+            throw new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
+        }
+        $item          = $this->items->extendRows(array(Db::stringifyRow($row)), null, self::textRows((int) $itemId, $texts))[0];
         $aItem['item'] = $item;
 
         if (!$actor->isAdmin()) {

@@ -212,4 +212,29 @@ pin('so is a new listing', '/owner_id', $refused?->errors()[0]['pointer'] ?? nul
 $service->update($edit(['ownerId' => (string) $sue]), $actor, false, false);
 pin('a real account is taken', (string) $sue, $admin->query("SELECT fk_i_user_id FROM {$p}t_item WHERE pk_i_id = $id")->fetch_assoc()['fk_i_user_id'] ?? null);
 
+harness_section('a deadlock mid-save undoes the post and fires no posted_item');
+$legacy = new DBCommandClass(\mindstellar\database\ConnectionManager::getInstance()->getHandle());
+pin('outside a transaction a failed legacy query only returns false', false, @$legacy->query("SIGNAL SQLSTATE '40001' SET MYSQL_ERRNO = 1213, MESSAGE_TEXT = 'test deadlock'"));
+$deadlock = static function () use ($legacy): void {
+    $legacy->query("SIGNAL SQLSTATE '40001' SET MYSQL_ERRNO = 1213, MESSAGE_TEXT = 'test deadlock'");
+};
+osc_add_hook('posted_item', $deadlock, 1);
+$later = 0;
+osc_add_hook('posted_item', static function () use (&$later): void {
+    $later++;
+}, 10);
+$items   = static fn (): int => (int) $admin->query("SELECT COUNT(*) AS n FROM {$p}t_item")->fetch_assoc()['n'];
+$before  = $items();
+$refused = null;
+try {
+    $service->create(ListingInput::fromArray($form(), $actor, true), $actor);
+} catch (InvalidException $e) {
+    $refused = $e;
+}
+osc_remove_hook('posted_item', $deadlock);
+pin('the post is refused with "rejected"', 'rejected', $refused?->errors()[0]['code'] ?? null);
+pin('no listing row is left', $before, $items());
+pin('no later posted_item listener ran', 0, $later);
+pin('the next post works', $before + 1, ($service->create(ListingInput::fromArray($form(), $actor, true), $actor)->id() > 0) ? $items() : -1);
+
 exit(harness_result());
