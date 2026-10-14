@@ -13,6 +13,7 @@
  */
 
 use mindstellar\admin\ListPaging;
+use mindstellar\search\SearchRunner;
 use mindstellar\utility\Sanitize;
 
 /**
@@ -56,9 +57,17 @@ class ItemsDataTable extends DataTable
 
         osc_run_hook('manage_item_search_conditions', $this->mSearch);
 
-        $this->processData(Item::getInstance()->extendCategoryName($this->mSearch->doSearch()));
-        $this->totalFiltered = $this->mSearch->count();
-        $this->total         = $this->mSearch->countAll();
+        // A search backend may answer first; it gets the same full rows doSearch() gives.
+        $answer = SearchRunner::answer($this->mSearch, 'admin', false);
+        if ($answer !== null) {
+            $items               = $answer['items'];
+            $this->totalFiltered = (int)($answer['total'] ?? count($items));
+        } else {
+            $items               = $this->mSearch->doSearch();
+            $this->totalFiltered = $this->mSearch->count();
+        }
+        $this->processData(Item::getInstance()->extendCategoryName($items));
+        $this->total = $this->mSearch->countAll();
 
         return $this->getData();
     }
@@ -167,19 +176,19 @@ class ItemsDataTable extends DataTable
                 $this->withFilters = true;
             }
             if ($k === 'b_premium' && $v != '') {
-                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_premium = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_premium', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'b_active' && $v != '') {
-                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_active = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_active', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'b_enabled' && $v != '') {
-                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_enabled = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_enabled', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'b_spam' && $v != '') {
-                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_spam = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_spam', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'user' && $v != '') {

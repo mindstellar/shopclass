@@ -16,6 +16,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
 
+- A search plugin can answer the admin Listings screen: `search_results` fires with context `admin`, and `SearchFilters` adds `flags`, `itemId` and `contactEmail`.
 - `osc.offcanvas` and `osc.dropdown` in the admin, for slide-in panels and dropdown menus with no Bootstrap.
 - `osc.collapse` in the admin: show and hide a panel with `data-osc-collapse`, as an accordion with `data-osc-parent`, with `osc:collapse:*` events.
 - Watermark opacity, four more positions (top, bottom, left and right centre) and a tiled pattern; a text mark has an outline instead of a solid box.

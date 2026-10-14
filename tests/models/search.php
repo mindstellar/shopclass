@@ -808,6 +808,60 @@ pin('the order without the table prefix', array(array('table' => 't_item', 'colu
 pin('the window', array(40, 20), array($f->offset, $f->perPage));
 pin('no raw SQL', false, $f->rawSql);
 
+$s = new Search(true);
+$s->addFlag('b_spam', false);
+$s->addFlag('b_active', true);
+$s->addContactEmail('anon@example.test');
+$f = $s->filters();
+pin('status flags as 0 or 1', array('b_spam' => 0, 'b_active' => 1), $f->flags);
+pin('the contact e-mail, and no listing id', array('anon@example.test', null), array($f->contactEmail, $f->itemId));
+pin('typed flags are not raw SQL, and an admin search is not live-only', array(false, false), array($f->rawSql, $f->liveOnly));
+$s = new Search(true);
+$s->addItemId(42);
+pin('the listing id', 42, $s->filters()->itemId);
+$threw = false;
+try {
+    (new Search(true))->addFlag('b_premium = 1 OR 1', true);
+} catch (InvalidArgumentException $e) {
+    $threw = true;
+}
+check('a column that is not a flag is refused', $threw);
+
+$spamId = (int)$admin->query("SELECT pk_i_id FROM {$prefix}t_item ORDER BY pk_i_id LIMIT 1")->fetch_row()[0];
+$admin->query("UPDATE {$prefix}t_item SET b_spam = 1 WHERE pk_i_id = {$spamId}");
+$all  = (int)$admin->query("SELECT COUNT(*) FROM {$prefix}t_item")->fetch_row()[0];
+$spam = new Search(true);
+$spam->addFlag('b_spam', true);
+$clean = new Search(true);
+$clean->addFlag('b_spam', false);
+pin('a flag filters the rows', array(1, $all - 1), array((int)$spam->count(), (int)$clean->count()));
+$copy = new Search(true);
+$copy->setJsonAlert(json_decode($spam->toJson(), true));
+pin('and survives a stored search', 1, (int)$copy->count());
+$admin->query("UPDATE {$prefix}t_item SET b_spam = 0 WHERE pk_i_id = {$spamId}");
+
+harness_section('the admin Listings table asks a search backend first');
+if (!function_exists('osc_admin_base_url')) {
+    function osc_admin_base_url($index = false)
+    {
+        return 'http://localhost/oc-admin/' . ($index ? 'index.php' : '');
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
+$asked = array();
+osc_add_filter('search_results', $adminBackend = static function ($answer, $search, $params, $context, $bare) use (&$asked) {
+    $asked[] = array($context, $bare, $search->filters()->flags);
+
+    return $context === 'admin' ? array('items' => array(), 'total' => 99) : $answer;
+});
+$table = (new ItemsDataTable())->table(array('b_spam' => '0'));
+osc_remove_filter('search_results', $adminBackend);
+pin('it is asked with context admin, for full rows, with the typed flags', array(array('admin', false, array('b_spam' => 0))), $asked);
+pin('and its total fills the table', 99, (int)$table['iTotalDisplayRecords']);
+pin('a junk answer is no answer', null, \mindstellar\search\SearchRunner::answer(new Search(true), 'admin', false, array('x' => 1)));
+
+
 $s = new Search();
 $s->orderBy(array(array('b_premium', 'DESC'), array('dt_pub_date', 'asc')));
 pin('orderBy gives each term', array(

@@ -49,6 +49,15 @@ final class SearchFilters
     public ?array $radius = null;
     /** @var array<int,int> */
     public array $userIds = array();
+
+    /** @var array<string,int> status flags to match: b_active, b_enabled, b_spam, b_premium => 0 or 1 */
+    public array $flags = array();
+
+    /** One listing id; when set, core ignores every other filter. */
+    public ?int $itemId = null;
+
+    /** The exact contact e-mail of a listing posted without an account. */
+    public ?string $contactEmail = null;
     /**
      * The order, most significant first. `table` is null for a bare column such as
      * `relevance`, else a name without DB_TABLE_PREFIX such as `t_item`.
@@ -103,6 +112,9 @@ final class SearchFilters
         }
         $c->radius  = $parts->radius->recorded();
         $c->userIds = $parts->users->ids();
+        $c->flags   = $parts->flags;
+        $c->itemId  = $parts->byItemId ? (int)$parts->itemId : null;
+        $c->contactEmail = $parts->byContactEmail ? (string)$parts->contactEmail : null;
         $c->order   = $parts->ordering->terms();
         $c->offset  = max(0, (int)$parts->ordering->offset());
         $c->perPage = (int)$parts->ordering->perPage();

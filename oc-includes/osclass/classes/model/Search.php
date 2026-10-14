@@ -465,6 +465,19 @@ class Search extends DAO
     }
 
     /**
+     * Keep listings whose status flag is $value: b_active, b_enabled, b_spam or b_premium.
+     *
+     * @throws \InvalidArgumentException for any other column
+     */
+    public function addFlag(string $column, bool $value): void
+    {
+        if (!in_array($column, SearchParts::FLAGS, true)) {
+            throw new \InvalidArgumentException('Not a listing flag: ' . $column);
+        }
+        $this->parts->flags[$column] = $value ? 1 : 0;
+    }
+
+    /**
      *  Add joins for future use
      *
      * @param string $key

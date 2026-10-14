@@ -21,7 +21,7 @@ class SearchRunner
     /**
      * @param SearchCriteria                  $criteria
      * @param \Search                         $search
-     * @param string                          $context passed to `search_conditions`: 'request' for the search page, 'api' for the API
+     * @param string                          $context passed to `search_conditions` and `search_results`: 'request' for the search page, 'api' for the API
      * @param callable|null                   $shape   fn(\Search): void, run after sort and page are set and before
      *                                                 `search_conditions`; the API adds its total order and keyset here
      * @param bool                            $count   false skips the total, which the result then gives as null
@@ -48,17 +48,12 @@ class SearchRunner
 
         SearchBuilder::fireConditions($search, $context, $params);
 
-        // A listener on 'search_results' may answer the query itself (an external engine)
-        // with ['items' => array, 'total' => int, 'model' => ?Search], or return null.
-        // Optional keys: 'snippets' [id => html], 'facets' ['category' => [id => count]],
-        // 'suggestion' string, 'relaxed' bool.
         // A backend owns its caching, so core's result cache is skipped when one answers.
-        $bare    = $extend !== null;
-        $backend = SearchBuilder::asRequest($params, static fn () => osc_apply_filter('search_results', null, $search, \Params::getParamsAsArray(), $context, $bare));
+        $backend  = self::answer($search, $context, $extend !== null, $params);
         $model    = $search;
         $extras   = null;
         $snippets = array();
-        if (is_array($backend) && isset($backend['items'])) {
+        if ($backend !== null) {
             $aItems = $backend['items'];
             $total = (int)($backend['total'] ?? count($aItems));
             if (isset($backend['model']) && $backend['model'] instanceof \Search) {
@@ -89,6 +84,26 @@ class SearchRunner
         osc_prime_item_upgrades($aItems);
 
         return new SearchResult($aItems, $total, $model, $extras);
+    }
+
+    /**
+     * A search backend's answer to a built search, or null when none answers.
+     *
+     * A listener on `search_results` may answer with ['items' => array, 'total' => int,
+     * 'model' => ?Search], or return null. Optional keys: 'snippets' [id => html], 'facets'
+     * ['category' => [id => count]], 'suggestion' string, 'relaxed' bool.
+     *
+     * @param string                   $context 'request' (the search page), 'api' or 'admin' (the admin Listings screen)
+     * @param bool                     $bare    true when the caller wants bare t_item rows
+     * @param array<string,mixed>|null $params  the search parameters listeners get; null for the request's
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function answer(\Search $search, string $context, bool $bare, ?array $params = null): ?array
+    {
+        $backend = SearchBuilder::asRequest($params, static fn () => osc_apply_filter('search_results', null, $search, \Params::getParamsAsArray(), $context, $bare));
+
+        return is_array($backend) && isset($backend['items']) && is_array($backend['items']) ? $backend : null;
     }
 
     /**

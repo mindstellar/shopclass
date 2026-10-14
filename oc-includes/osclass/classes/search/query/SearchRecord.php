@@ -49,6 +49,9 @@ final class SearchRecord
         if ($parts->onlyPremium) {
             $data['onlyPremium'] = $parts->onlyPremium;
         }
+        if ($parts->flags !== array()) {
+            $data['flags'] = $parts->flags;
+        }
         if ($parts->radius->used()) {
             $data['radius'] = $parts->radius->recorded();
         }
@@ -125,6 +128,11 @@ final class SearchRecord
         }
         if (isset($data['onlyPremium'])) {
             $search->onlyPremium(true);
+        }
+        foreach (is_array($data['flags'] ?? null) ? $data['flags'] : array() as $column => $value) {
+            if (in_array($column, SearchParts::FLAGS, true)) {
+                $search->addFlag($column, (bool)$value);
+            }
         }
     }
 

@@ -43,6 +43,11 @@ final class SearchParts
     public $itemId = null;
     public bool $byItemId = false;
 
+    /** The t_item status columns addFlag() may filter on. */
+    public const FLAGS = array('b_active', 'b_enabled', 'b_spam', 'b_premium');
+    /** @var array<string,int> status column => 0 or 1 */
+    public array $flags = array();
+
     /** @var array<int,string> the conditions that make a listing public */
     public array $liveConditions = array();
     /** @var mixed the locale a keyword search falls back to */

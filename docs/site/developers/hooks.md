@@ -133,15 +133,21 @@ it back with `Params::getParam()` in your `search_conditions` callback.
 `search_results` lets a plugin answer a search itself, from an outside search engine. Return
 `null` to let core run the search, or `array('items' => $rows, 'total' => $count)`, with an
 optional `'model'` Search. Core then skips its own result cache. Arguments: `null`, the `Search`,
-the search parameters, the context (`'request'` for the search page, `'api'` for the REST API) and
+the search parameters, the context (`'request'` for the search page, `'api'` for the REST API,
+`'admin'` for the admin Listings screen) and
 `$bare`. When `$bare` is true, return plain `t_item` rows: the caller adds the details itself.
 Read what to search for with `$search->filters()` (7.0+). It returns a `SearchFilters` copy with
 `categories`, `priceMin`, `priceMax`, `pattern`, `locales`, `withPicture`, `onlyPremium`,
 `locations` (`city_areas`, `cities`, `regions`, `countries`, each a list of
 `['by' => 'id'|'code'|'name', 'value' => …]`), `radius` (`lat`, `lng`, `km`), `userIds`, `order`
 (a list of `['table', 'column', 'direction']`), `meta`, `offset` and `perPage`. `pattern` and name
-values are the visitor's text: escape or bind them. When `rawSql` is true, or `liveOnly` is false,
-return `null`: the search holds SQL your engine cannot run.
+values are the visitor's text: escape or bind them. When `rawSql` is true, return `null`: the
+search holds SQL your engine cannot run.
+
+When `liveOnly` is false, the search also covers hidden, disabled, spam and expired listings, as
+the admin Listings screen does. Answer only if your index holds them, and match these too:
+`flags` (`b_active`, `b_enabled`, `b_spam`, `b_premium`, each `0` or `1`), `itemId` (one listing;
+when set, ignore every other filter) and `contactEmail` (the exact contact e-mail).
 
 `meta` holds the custom-field filters core applied, by field id. Each has the field's storage
 `type` and an `op`:
