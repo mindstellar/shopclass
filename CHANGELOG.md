@@ -13,6 +13,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 - A photo upload request that carries no file, or a malformed one, is refused with an error instead of a server error.
 - A search URL that sends several categories as `sCategory[]` no longer fails with an error when friendly URLs are on.
+- A banned e-mail address can no longer sign in by typing its username instead.
 
 ## Shopclass 6.4.6
 
