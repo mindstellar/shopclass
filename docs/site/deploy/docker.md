@@ -81,6 +81,7 @@ Everything is set from environment variables:
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx: see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
 | `OSC_PAGE_CACHE_PURGE_URL` | Where core sends one `PURGE` to clear the whole cache after a theme, settings or plugin change. When `OSC_MICROCACHE` is on it defaults to `http://127.0.0.1:8089/` (a server that listens only inside the container), also for `docker exec`, cron and the job worker. Set it only to override that |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
+| `OSC_FPM_MAX_CHILDREN` | How many pages PHP builds at once. Unset is three per CPU, at least 5, and no more than the container's memory holds at about 64 MB each |
 | `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
 
 With no `WEB_PATH`, the address is taken from the request's `Host` header, which a visitor can fake. E-mail links then use `OSC_CLI_URL`. With neither set, mails with a secret link (password reset, e-mail change, account and listing activation) are not sent and a warning is logged; other mails still go out.
