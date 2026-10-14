@@ -157,7 +157,7 @@ class SearchCriteria
     public static function fromRequest(array $params, array $limits = array()): self
     {
         $params['sPattern'] = self::scalar($params['sPattern'] ?? '');
-        $rawPattern         = trim(strip_tags($params['sPattern']));
+        $rawPattern         = self::cleanPattern($params['sPattern']);
 
         $criteria = new self(
             self::splitOrKeep($params['sCategory'] ?? ''),
@@ -167,7 +167,7 @@ class SearchCriteria
             self::splitOrKeep($params['sCountry'] ?? ''),
             self::splitOrKeepScalarEmpty($params['sUser'] ?? ''),
             self::splitOrKeepScalarEmpty($params['sLocale'] ?? ''),
-            osc_apply_filter('search_pattern', trim(strip_tags($params['sPattern'] ?? ''))),
+            osc_apply_filter('search_pattern', $rawPattern),
             $rawPattern,
             ($params['bPic'] ?? '') == 1,
             ($params['bPremium'] ?? '') == 1,
@@ -289,6 +289,16 @@ class SearchCriteria
     private static function scalars(array $values): array
     {
         return array_filter($values, 'is_scalar');
+    }
+
+    /**
+     * The keyword as searched: no tags, no braces (no search gives them a meaning), trimmed.
+     *
+     * @param mixed $value
+     */
+    public static function cleanPattern($value): string
+    {
+        return trim(str_replace(array('{', '}'), '', strip_tags((string) self::scalar($value))));
     }
 
     /**

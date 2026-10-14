@@ -489,6 +489,8 @@ $scenarios = array(
     'feed uri'                           => array('feed', array('page' => 'search', 'sFeed' => ''), array('rewriteEnabled' => '1')),
     'bare search with query string'      => array('search?sPattern=x', array('page' => 'search', 'sPattern' => 'x'), array('rewriteEnabled' => '1')),
     'braces in the keyword redirect'     => array('search/pattern,{bike}', array('page' => 'search', 'sParams' => 'pattern,{bike}'), array('rewriteEnabled' => '1')),
+    'braces only redirect to search'     => array('search/pattern,{}', array('page' => 'search', 'sParams' => 'pattern,{}'), array('rewriteEnabled' => '1')),
+    'braces, rewrite off'                => array('index.php?page=search&sPattern={bike}', array('page' => 'search', 'sPattern' => '{bike}')),
     'theme param from a visitor redirects' => array('search/pattern,bike?theme=bender', array('page' => 'search', 'sParams' => 'pattern,bike', 'theme' => 'bender'), array('rewriteEnabled' => '1')),
 );
 

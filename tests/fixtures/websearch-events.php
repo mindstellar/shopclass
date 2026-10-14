@@ -957,6 +957,17 @@ return array(
       1 => 'filter search_pattern(string("bike"))',
       2 => 'redirect 301 http://localhost/search/pattern,bike',
     ),
+    'braces only redirect to search' =>
+    array(
+      0 => 'hook before_search()',
+      1 => 'redirect 301 http://localhost/search',
+    ),
+    'braces, rewrite off' =>
+    array(
+      0 => 'hook before_search()',
+      1 => 'filter search_pattern(string("bike"))',
+      2 => 'redirect 301 http://localhost/index.php?page=search&sPattern=bike',
+    ),
     'theme param from a visitor redirects' =>
     array(
       0 => 'hook before_search()',
