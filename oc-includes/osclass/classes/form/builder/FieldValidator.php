@@ -248,10 +248,10 @@ final class FieldValidator
                 return in_array($value, $allowed, false) ? null : $invalid;
             case 'URL':
                 if ($set) {
-                    // One link: a second address after a comma or space is refused. The value as
+                    // One link: a second address after a comma, semicolon or space is refused. The value as
                     // typed is checked, since sanitising drops the spaces.
                     $typed = $slugValues[$f['s_slug']] ?? $value;
-                    $more  = preg_match('~[,\s]\s*(?:[a-z][a-z0-9+.-]*://|www\.)~i', is_scalar($typed) ? (string) $typed : '') === 1;
+                    $more  = preg_match('~[,;\s](?:[a-z][a-z0-9+.-]*://|www\.)~i', is_scalar($typed) ? (string) $typed : '') === 1;
 
                     return Validate::httpUrl($value) && !$more ? null : $invalid;
                 }

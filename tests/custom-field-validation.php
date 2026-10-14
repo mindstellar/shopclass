@@ -84,7 +84,7 @@ foreach (array('javascript://comment%0Aalert(1)', 'data://text/html,x', 'http-x:
 $r = FieldValidator::check(array($field(3, 'site', 'URL')), array(3 => 'https://example.com/a'));
 pin('an https address passes', array(), $r['errors']);
 
-foreach (array('https://a.com/,https://b.com', 'https://a.com/, www.b.com', 'https://a.com/ https://b.com') as $url) {
+foreach (array('https://a.com/,https://b.com', 'https://a.com/, www.b.com', 'https://a.com/ https://b.com', 'https://a.com/;https://b.com') as $url) {
     $r = FieldValidator::check(array($field(3, 'site', 'URL')), array(3 => $url));
     pin('two links refused: ' . $url, array(array('field' => 3, 'code' => 'invalid', 'message' => 'Site is invalid.')), $r['errors']);
 }
