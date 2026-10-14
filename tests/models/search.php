@@ -861,7 +861,6 @@ pin('it is asked with context admin, for full rows, with the typed flags', array
 pin('and its total fills the table', 99, (int)$table['iTotalDisplayRecords']);
 pin('a junk answer is no answer', null, \mindstellar\search\SearchRunner::answer(new Search(true), 'admin', false, array('x' => 1)));
 
-
 $s = new Search();
 $s->orderBy(array(array('b_premium', 'DESC'), array('dt_pub_date', 'asc')));
 pin('orderBy gives each term', array(
