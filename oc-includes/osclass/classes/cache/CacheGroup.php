@@ -23,8 +23,14 @@ final class CacheGroup
     /** 30 days, the longest relative expiry memcached accepts. */
     private const GENERATION_TTL = 2592000;
 
+    /** Seconds a web worker keeps its own copy of a group value; see localCopies(). */
+    private const LOCAL_TTL = 15;
+
     /** @var array<string,int> generations read in this request; a page asks for the same one dozens of times */
     private static array $generations = array();
+
+    /** Whether localCopies() is on, decided on first use. */
+    private static ?bool $local = null;
 
     /**
      * The group's current generation, the same on every site locale.
@@ -119,6 +125,20 @@ final class CacheGroup
         return $start;
     }
 
+    /**
+     * Whether a web worker keeps its own copy of a shared cache's group values in APCu.
+     *
+     * A key carries its group's generation, so a dropped group is never read from a copy.
+     * Only a value that lapses on its own time may be read up to LOCAL_TTL seconds late.
+     */
+    private static function localCopies(CacheDriver $cache): bool
+    {
+        return self::$local ??= PHP_SAPI !== 'cli'
+            && function_exists('apcu_fetch')
+            && apcu_enabled()
+            && in_array($cache->_get_cache(), array('redis', 'memcached'), true);
+    }
+
     private static function key(string $group): string
     {
         return 'osc_' . $group . '_cache_gen';
@@ -146,14 +166,25 @@ final class CacheGroup
         $cache = CacheManager::getInstance();
         $base  = defined('WEB_PATH') ? WEB_PATH : '';
         $full  = 'osc_' . $group . ':' . md5($base . '|' . self::generation($group) . '|' . $key);
+        $ttl ??= defined('OSC_CACHE_TTL') ? OSC_CACHE_TTL : 60;
+        $local = self::localCopies($cache);
+        if ($local) {
+            $value = apcu_fetch($full, $found);
+            if ($found) {
+                return $value;
+            }
+        }
         $found = null;
         $value = $cache->get($full, $found);
-        if ($found) {
-            return $value;
+        if (!$found) {
+            $value = $load();
+            if ($value === null) {
+                return null;
+            }
+            $cache->set($full, $value, $ttl);
         }
-        $value = $load();
-        if ($value !== null) {
-            $cache->set($full, $value, $ttl ?? (defined('OSC_CACHE_TTL') ? OSC_CACHE_TTL : 60));
+        if ($local) {
+            apcu_store($full, $value, min($ttl, self::LOCAL_TTL));
         }
 
         return $value;

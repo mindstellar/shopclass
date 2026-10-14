@@ -98,6 +98,12 @@ Run the server as a cache only, with no snapshot to disk (`--save "" --appendonl
 Docker stacks do. A restart then starts empty instead of bringing back old data; it loses
 up to a minute of view counts not yet saved.
 
+When the APCu extension is also loaded, each PHP worker keeps its own copy of the
+settings, categories, pages and other values every page reads, so it asks Redis, Valkey
+or memcached for them at most every 15 seconds. A change still shows on the next page;
+a value that only runs out of time can be read up to 15 seconds late. The Docker image
+loads APCu.
+
 With memcached or APCu, only the REST API's per-minute limits count in the cache: with
 memcached every web server shares one count, with APCu each server counts its own. Everything
 else counts in the database, as it does with no `OSC_CACHE`.

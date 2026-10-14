@@ -229,6 +229,50 @@ pin('a drop counts up atomically', 5, CacheGroup::invalidate('page'));
 $cache->delete('osc_page_cache_gen');
 pin('...and a drop of a missing generation starts from the clock', true, CacheGroup::invalidate('page') > 4);
 
+harness_section('a web worker keeps its own copy of a shared value');
+$GLOBALS['__apcu'] = [];
+if (!function_exists('apcu_fetch')) {
+    function apcu_fetch($key, &$found = null)
+    {
+        $found = array_key_exists($key, $GLOBALS['__apcu']);
+
+        return $found ? $GLOBALS['__apcu'][$key][0] : false;
+    }
+
+    function apcu_store($key, $value, $ttl = 0)
+    {
+        $GLOBALS['__apcu'][$key] = [$value, $ttl];
+
+        return true;
+    }
+}
+$localFlag = new ReflectionProperty(CacheGroup::class, 'local');
+$localFlag->setValue(null, true);
+$swap($cache = new KeepAllCache());
+$loads = 0;
+$loader = static function () use (&$loads) {
+    $loads++;
+
+    return ['rows' => [1, 2, 3]];
+};
+CacheGroup::remember('category', 'tree', $loader);
+$cache->reads = [];
+pin('the second read comes from the copy, not the shared cache', [['rows' => [1, 2, 3]], [], 1], [CacheGroup::remember('category', 'tree', $loader), $cache->reads, $loads]);
+pin('the copy lasts at most 15 seconds', [15], array_values(array_map(static fn ($e) => $e[1], $GLOBALS['__apcu'])));
+CacheGroup::invalidate('category');
+pin('a dropped group is loaded again, not read from the copy', 2, (CacheGroup::remember('category', 'tree', $loader) !== null) ? $loads : -1);
+$GLOBALS['__apcu'] = [];
+$swap($cache = new KeepAllCache());
+CacheGroup::remember('category', 'shared', static fn () => 'from the shared cache');
+$GLOBALS['__apcu'] = [];
+pin('a value only the shared cache holds is copied on read', ['from the shared cache', 1], [CacheGroup::remember('category', 'shared', $loader), count($GLOBALS['__apcu'])]);
+pin('a null load is not copied either', [null, 1], [CacheGroup::remember('category', 'none', static fn () => null), count($GLOBALS['__apcu'])]);
+$localFlag->setValue(null, false);
+$GLOBALS['__apcu'] = [];
+CacheGroup::remember('category', 'off', $loader);
+pin('with copies off nothing is copied', [], $GLOBALS['__apcu']);
+$localFlag->setValue(null, null);
+
 exit(harness_result());
 
 /* file end: ./tests/cache-group.php */
