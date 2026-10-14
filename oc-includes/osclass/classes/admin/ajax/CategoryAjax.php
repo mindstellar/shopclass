@@ -31,7 +31,7 @@ final class CategoryAjax extends AjaxHandler
     /** Save the order of the categories. */
     public function order(): void
     {
-        $aIds  = json_decode(Params::getParam('list'), true);
+        $aIds  = json_decode(Params::getParamString('list'), true);
         $order = array();
         $error = 0;
 

@@ -511,14 +511,14 @@ class ItemsDataTable extends DataTable
         $this->mSearch = new Search(true);
         $this->getDBParams($params);
         // only some fields can be ordered
-        $direction      = Params::getParam('direction');
+        $direction      = Params::getParamString('direction');
         $arrayDirection = array('desc', 'asc');
         if (!in_array($direction, $arrayDirection)) {
             Params::setParam('direction', 'desc');
             $direction = 'desc';
         }
 
-        $sort             = Params::getParam('sort');
+        $sort             = Params::getParamString('sort');
         $arraySortColumns = array(
             'spam'       => 'i_num_spam',
             'bad'        => 'i_num_bad_classified',

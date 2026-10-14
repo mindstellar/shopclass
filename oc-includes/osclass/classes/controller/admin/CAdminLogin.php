@@ -67,7 +67,7 @@ class CAdminLogin extends AdminBaseModel
         osc_run_hook('before_login_admin');
         $url_redirect  = osc_pop_admin_login_redirect();
         $page_redirect = '';
-        $password      = Params::getParam('password', false, false);
+        $password      = Params::getParamString('password', false, false);
         if (preg_match('|[?&]page=([^&]+)|', $url_redirect . '&', $match)) {
             $page_redirect = $match[1];
         }
@@ -75,12 +75,12 @@ class CAdminLogin extends AdminBaseModel
             $url_redirect = osc_admin_base_url();
         }
 
-        if (Params::getParam('user') == '') {
+        if (Params::getParamString('user') == '') {
             osc_add_flash_error_message(_m('The username field is empty'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=login');
         }
 
-        if (Params::getParam('password', false, false) == '') {
+        if (Params::getParamString('password', false, false) == '') {
             osc_add_flash_error_message(_m('The password field is empty'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=login');
         }
@@ -93,13 +93,13 @@ class CAdminLogin extends AdminBaseModel
         // fields are not empty
         // Before the account is looked up and before any password is
         // hashed, so that a refused attempt costs neither.
-        $throttle = \mindstellar\security\LoginThrottle::evaluate('admin', Params::getParam('user'), osc_captcha_enabled());
+        $throttle = \mindstellar\security\LoginThrottle::evaluate('admin', Params::getParamString('user'), osc_captcha_enabled());
         if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
             osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=login');
         }
 
-        $admin = Admin::getInstance()->findByUsername(Params::getParam('user'));
+        $admin = Admin::getInstance()->findByUsername(Params::getParamString('user'));
 
         // An unknown account and a wrong password must answer the same way,
         // and take about as long, or the form tells anyone who asks which
@@ -111,7 +111,7 @@ class CAdminLogin extends AdminBaseModel
         if (!$authenticated) {
             // Counted against the name as submitted, so one nobody holds
             // accumulates exactly like a real one.
-            \mindstellar\security\LoginThrottle::recordFailure('admin', Params::getParam('user'));
+            \mindstellar\security\LoginThrottle::recordFailure('admin', Params::getParamString('user'));
             osc_add_flash_error_message(sprintf(
                 _m('Sorry, incorrect username or password. <a href="%s">Have you lost your password?</a>'),
                 osc_admin_base_url(true) . '?page=login&amp;action=recover'
@@ -129,10 +129,10 @@ class CAdminLogin extends AdminBaseModel
             }
         }
 
-        \mindstellar\security\LoginThrottle::clear('admin', Params::getParam('user'));
+        \mindstellar\security\LoginThrottle::clear('admin', Params::getParamString('user'));
 
         $remember = (bool)Params::getParam('remember');
-        $locale   = (string)Params::getParam('locale');
+        $locale   = Params::getParamString('locale');
         if (\mindstellar\security\AdminTwoFactor::enabled($admin)) {
             // The password is right, but nothing is signed in until the code passes.
             Session::getInstance()->_set('admin2fa', array(
@@ -223,7 +223,7 @@ class CAdminLogin extends AdminBaseModel
         // that match an account: sending mail to an address someone else
         // owns is the abuse being bounded here, and that only happens
         // when the address does match.
-        $recoverAccount = trim((string)Params::getParam('email'));
+        $recoverAccount = trim(Params::getParamString('email'));
         $throttle       = \mindstellar\security\LoginThrottle::evaluate('admin-recover', $recoverAccount, osc_captcha_enabled());
         if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
             osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
@@ -233,9 +233,9 @@ class CAdminLogin extends AdminBaseModel
         }
         \mindstellar\security\LoginThrottle::recordFailure('admin-recover', $recoverAccount);
 
-        $admin = Admin::getInstance()->findByEmail(Params::getParam('email'));
+        $admin = Admin::getInstance()->findByEmail(Params::getParamString('email'));
         if (!isset($admin['pk_i_id'])) {
-            $admin = Admin::getInstance()->findByUsername(Params::getParam('email'));
+            $admin = Admin::getInstance()->findByUsername(Params::getParamString('email'));
         }
         if (isset($admin['pk_i_id'])) {
             // Only a fingerprint is stored; the plaintext code lives solely in the emailed link.
@@ -258,7 +258,7 @@ class CAdminLogin extends AdminBaseModel
     {
         $admin = Admin::getInstance()->findByIdSecret(
             Params::getParamInt('adminId'),
-            \mindstellar\security\ActionToken::hash(Params::getParam('code'))
+            \mindstellar\security\ActionToken::hash(Params::getParamString('code'))
         );
         if (!$admin) {
             osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
@@ -277,14 +277,14 @@ class CAdminLogin extends AdminBaseModel
         osc_csrf_check();
         $admin = Admin::getInstance()->findByIdSecret(
             Params::getParamInt('adminId'),
-            \mindstellar\security\ActionToken::hash(Params::getParam('code'))
+            \mindstellar\security\ActionToken::hash(Params::getParamString('code'))
         );
         if (!$admin) {
             osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
             $this->redirectTo(osc_admin_base_url());
         }
 
-        if (Params::getParam('new_password', false, false) === Params::getParam(
+        if (Params::getParamString('new_password', false, false) === Params::getParamString(
             'new_password2',
             false,
             false
@@ -302,7 +302,7 @@ class CAdminLogin extends AdminBaseModel
             osc_add_flash_error_message(_m("Error, the passwords don't match"), 'admin');
             $this->redirectTo(osc_forgot_admin_password_confirm_url(
                 Params::getParamInt('adminId'),
-                Params::getParam('code')
+                Params::getParamString('code')
             ));
         }
     }

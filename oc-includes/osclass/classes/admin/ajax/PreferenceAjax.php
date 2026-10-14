@@ -24,8 +24,8 @@ final class PreferenceAjax extends AjaxHandler
     public function dateFormat(): void
     {
         AjaxResponse::json(array(
-            'format'        => Params::getParam('format'),
-            'str_formatted' => osc_format_date(date('Y-m-d H:i:s'), Params::getParam('format'))
+            'format'        => Params::getParamString('format'),
+            'str_formatted' => osc_format_date(date('Y-m-d H:i:s'), Params::getParamString('format'))
         ));
     }
 

@@ -52,10 +52,10 @@ final class PluginAjax extends AjaxHandler
     {
         if (Params::existParam('route')) {
             $routes = Rewrite::getInstance()->getRoutes();
-            $rid    = Params::getParam('route');
+            $rid    = Params::getParamString('route');
             $file   = $routes[$rid]['file'] ?? '../';
         } else {
-            $file = Params::getParam('ajaxfile');
+            $file = Params::getParamString('ajaxfile');
         }
 
         if ($file == '') {

@@ -445,7 +445,7 @@ class CAdminAppearance extends AdminSecBaseModel
     {
         if (Params::existParam('route')) {
             $routes = Rewrite::getInstance()->getRoutes();
-            $rid    = Params::getParam('route');
+            $rid    = Params::getParamString('route');
             $file   = '../';
             if (isset($routes[$rid]['file'])) {
                 $file = $routes[$rid]['file'];
@@ -453,7 +453,7 @@ class CAdminAppearance extends AdminSecBaseModel
         } else {
             // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
             // This will be REMOVED in 3.6
-            $file = Params::getParam('file');
+            $file = Params::getParamString('file');
             // We pass the GET variables (in case we have somes)
             if (preg_match('|(.+?)\?(.*)|', $file, $match)) {
                 $file = $match[1];
@@ -463,7 +463,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     }
                 }
             } else {
-                $file = Params::getParam('file');
+                $file = Params::getParamString('file');
             }
         }
 

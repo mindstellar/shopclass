@@ -119,7 +119,7 @@ class UsersDataTable extends DataTable
     private function like(array $columns, $term)
     {
         $value = \mindstellar\database\QueryBuilder::escapeLike((string)$term);
-        $value = strpos($term, '*') === false
+        $value = strpos($value, '*') === false
             ? '%' . $value . '%'
             : str_replace('*', '%', $value);
 

@@ -64,7 +64,7 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
                     <div class="btn-group btn-group-sm">
                         <input
                                 id="fPattern" type="text" name="sSearch"
-                                value="<?php echo osc_esc_html(Params::getParam('sSearch')); ?>"
+                                value="<?php echo osc_esc_html(Params::getParamString('sSearch')); ?>"
                                 class="input-text input-actions"/>
                         <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>"><i
                                     class="bi bi-search"></i></button>

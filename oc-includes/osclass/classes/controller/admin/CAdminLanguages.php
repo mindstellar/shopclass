@@ -200,7 +200,7 @@ class CAdminLanguages extends AdminSecBaseModel
      */
     private function editForm(): void
     {
-        $sLocale = Params::getParam('id');
+        $sLocale = Params::getParamString('id');
         if (!preg_match('/.{2}_.{2}/', $sLocale)) {
             osc_add_flash_error_message(_m('Language id isn\'t in the correct format'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
@@ -224,7 +224,7 @@ class CAdminLanguages extends AdminSecBaseModel
     {
         osc_csrf_check();
         $iUpdated               = 0;
-        $languageCode           = Params::getParam('pk_c_code');
+        $languageCode           = Params::getParamString('pk_c_code');
         $enabledWebstie         = Params::getParam('b_enabled');
         $enabledBackoffice      = Params::getParam('b_enabled_bo');
         $languageDirection      = Params::getParam('s_direction');

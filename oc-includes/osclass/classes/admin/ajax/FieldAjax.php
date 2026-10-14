@@ -191,7 +191,7 @@ final class FieldAjax extends AjaxHandler
 
     public function order(): void
     {
-        $aIds  = json_decode(Params::getParam('list'), true);
+        $aIds  = json_decode(Params::getParamString('list'), true);
         $error = 0;
 
         $fieldManager = Field::getInstance();

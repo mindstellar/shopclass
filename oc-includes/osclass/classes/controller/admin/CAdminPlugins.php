@@ -133,7 +133,7 @@ class CAdminPlugins extends AdminSecBaseModel
             return;
         }
         osc_csrf_check();
-        $pn = Params::getParam('plugin');
+        $pn = Params::getParamString('plugin');
 
         // set header just in case it's triggered some fatal error
         header('Location: ' . osc_admin_base_url(true) . '?page=plugins&error=' . $pn, true, 302);
@@ -184,7 +184,7 @@ class CAdminPlugins extends AdminSecBaseModel
         }
         osc_csrf_check();
 
-        if (Plugins::uninstall(Params::getParam('plugin'))) {
+        if (Plugins::uninstall(Params::getParamString('plugin'))) {
             osc_add_flash_ok_message(_m('Plugin uninstalled'), 'admin');
         } else {
             osc_add_flash_error_message(_m("Plugin couldn't be uninstalled"), 'admin');
@@ -203,7 +203,7 @@ class CAdminPlugins extends AdminSecBaseModel
         }
         osc_csrf_check();
 
-        if (Plugins::activate(Params::getParam('plugin'))) {
+        if (Plugins::activate(Params::getParamString('plugin'))) {
             osc_add_flash_ok_message(_m('Plugin enabled'), 'admin');
         } else {
             osc_add_flash_error_message(_m('Plugin is already enabled'), 'admin');
@@ -222,7 +222,7 @@ class CAdminPlugins extends AdminSecBaseModel
         }
         osc_csrf_check();
 
-        if (Plugins::deactivate(Params::getParam('plugin'))) {
+        if (Plugins::deactivate(Params::getParamString('plugin'))) {
             osc_add_flash_ok_message(_m('Plugin disabled'), 'admin');
         } else {
             osc_add_flash_error_message(_m('Plugin is already disabled'), 'admin');
@@ -236,7 +236,7 @@ class CAdminPlugins extends AdminSecBaseModel
      */
     private function pluginAdmin(): void
     {
-        $plugin = Params::getParam('plugin');
+        $plugin = Params::getParamString('plugin');
         if ($plugin != '') {
             osc_run_hook($plugin . '_configure');
         }
@@ -257,7 +257,7 @@ class CAdminPlugins extends AdminSecBaseModel
     {
         if (Params::existParam('route')) {
             $routes = Rewrite::getInstance()->getRoutes();
-            $rid    = Params::getParam('route');
+            $rid    = Params::getParamString('route');
             $file   = '../';
             if (isset($routes[$rid], $routes[$rid]['file'])) {
                 $file = $routes[$rid]['file'];
@@ -265,7 +265,7 @@ class CAdminPlugins extends AdminSecBaseModel
         } else {
             // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
             // This will be REMOVED in 3.4
-            $file = Params::getParam('file');
+            $file = Params::getParamString('file');
             // We pass the GET variables (in case we have somes)
             if (preg_match('|(.+?)\?(.*)|', $file, $match)) {
                 $file = $match[1];
@@ -275,7 +275,7 @@ class CAdminPlugins extends AdminSecBaseModel
                     }
                 }
             } else {
-                $file = Params::getParam('file');
+                $file = Params::getParamString('file');
             }
         }
         osc_run_hook('renderplugin_controller');
@@ -297,7 +297,7 @@ class CAdminPlugins extends AdminSecBaseModel
      */
     private function configure(): void
     {
-        $plugin = Params::getParam('plugin');
+        $plugin = Params::getParamString('plugin');
         if ($plugin != '') {
             $plugin_data = Plugins::getInfo($plugin);
             $this->_exportVariableToView('categories', Category::getInstance()->toTreeAll());
@@ -328,7 +328,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 osc_add_flash_error_message(_m('No plugin selected'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
             }
-            osc_run_hook('plugin_categories_' . Params::getParam('plugin'), $categories);
+            osc_run_hook('plugin_categories_' . Params::getParamString('plugin'), $categories);
             osc_add_flash_ok_message(_m('Configuration was saved'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
         }
@@ -343,7 +343,7 @@ class CAdminPlugins extends AdminSecBaseModel
     private function deletePlugin(): void
     {
         osc_csrf_check();
-        $plugin = str_replace('/index.php', '', Params::getParam('plugin'));
+        $plugin = str_replace('/index.php', '', Params::getParamString('plugin'));
         $path   = preg_replace('([/]+)', '/', CONTENT_PATH . 'plugins/' . $plugin);
         if ($plugin != '' && strpos($plugin, '../') === false && strpos($plugin, '..\\') === false
             && $path != CONTENT_PATH . 'plugins/'
