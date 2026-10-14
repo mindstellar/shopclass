@@ -230,6 +230,16 @@
         }
         scroller.addEventListener('scroll', flash, {passive: true});
         frame.addEventListener('mouseenter', flash);
+        // An opened section can end below the fold; bring as much of it into view as fits.
+        scroller.addEventListener('shown.bs.collapse', function (e) {
+            var section = e.target.closest('.nav-item');
+            if (!section || document.documentElement.getAttribute('data-osc-sidebar') === 'collapsed') { return; }
+            var view = scroller.getBoundingClientRect();
+            var box = section.getBoundingClientRect();
+            if (box.bottom > view.bottom) {
+                scroller.scrollTop += Math.min(box.bottom - view.bottom, box.top - view.top);
+            }
+        });
         window.addEventListener('resize', measure);
 
         var dragging = false, startY = 0, startScroll = 0;
