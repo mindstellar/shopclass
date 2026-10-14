@@ -80,6 +80,10 @@ class CWebSearch extends BaseModel
         // An admin's ?theme= preview is never redirected.
         $preview = isset($uriParams['theme']) && Session::getInstance()->_get('adminId') != '';
         unset($uriParams['theme']);
+        // Braces mean nothing to a search; a bot's unfilled {query} template redirects to the plain word.
+        if (isset($uriParams['sPattern']) && is_string($uriParams['sPattern'])) {
+            $uriParams['sPattern'] = trim(str_replace(array('{', '}'), '', $uriParams['sPattern']));
+        }
         $this->redirectToCanonical($uriParams, $preview);
 
         $criteria = $this->buildCriteria($uriParams);
