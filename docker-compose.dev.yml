@@ -105,6 +105,7 @@ services:
   valkey:
     image: valkey/valkey:8-alpine
     container_name: shopclass-valkey
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
 
   # Nginx web server
   webserver:

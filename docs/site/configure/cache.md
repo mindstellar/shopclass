@@ -94,6 +94,10 @@ If the server stops answering, both go back to the database on their own. Give t
 enough memory that it never has to drop keys (the Docker compose file gives 128 MB): a
 dropped rate-limit key starts that limit again from zero.
 
+Run the server as a cache only, with no snapshot to disk (`--save "" --appendonly no`), as the
+Docker stacks do. A restart then starts empty instead of bringing back old data; it loses
+up to a minute of view counts not yet saved.
+
 With memcached or APCu, only the REST API's per-minute limits count in the cache: with
 memcached every web server shares one count, with APCu each server counts its own. Everything
 else counts in the database, as it does with no `OSC_CACHE`.
