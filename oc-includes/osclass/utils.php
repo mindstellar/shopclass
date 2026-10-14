@@ -562,7 +562,6 @@ function osc_mail_links_trusted($mail, array $params = array()): bool
  */
 function osc_mailBeauty($text, $params)
 {
-    $text   = str_ireplace($params[0], $params[1], $text);
     // In the order of EmailVariables::COMMON, which the template editor lists.
     $kwords = EmailVariables::COMMON;
     $rwords = array(
@@ -573,9 +572,32 @@ function osc_mailBeauty($text, $params)
         date(osc_time_format() ?: 'H:i'),
         Params::getServerParam('REMOTE_ADDR')
     );
-    $text   = str_ireplace($kwords, $rwords, $text);
 
-    return $text;
+    // One case-insensitive pass, so a placeholder typed into a value stays as typed.
+    // A caller key wins over a site token, and a key without a value is removed.
+    $keys    = array_values((array) $params[0]);
+    $values  = array_slice(array_pad(array_values((array) $params[1]), count($keys), ''), 0, count($keys));
+    $search  = array_merge($keys, $kwords);
+    $replace = array_merge($values, $rwords);
+    $map     = array();
+    $pattern = array();
+    foreach ($search as $i => $key) {
+        $key = (string) $key;
+        $low = strtolower($key);
+        if ($key === '' || isset($map[$low])) {
+            continue;
+        }
+        $map[$low] = (string) $replace[$i];
+        $pattern[] = preg_quote($key, '/');
+    }
+
+    return (string) preg_replace_callback(
+        '/' . implode('|', $pattern) . '/i',
+        static function (array $m) use ($map) {
+            return $map[strtolower($m[0])] ?? $m[0];
+        },
+        (string) $text
+    );
 }
 
 /**

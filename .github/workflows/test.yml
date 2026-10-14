@@ -502,6 +502,14 @@ jobs:
       # remote file execution that still returns a perfectly normal-looking response.
       - name: Plugin ajax file allowlist
         run: php tests/plugin-ajax-file.php
+      - name: Category picker keeps catId inside its script
+        run: php tests/item-form-category-id-xss.php
+      - name: Mail placeholders are filled in one pass
+        run: php tests/mail-placeholder-injection.php
+      - name: Photo upload with no file is refused
+        run: php tests/ajax-upload-no-file.php
+      - name: Search page takes sCategory[]
+        run: php tests/search-category-array.php
       - name: Admin request guards
         run: php tests/admin-request-guards.php
       - name: Every caller of refuseOnDemo() has it

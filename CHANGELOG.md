@@ -2,6 +2,18 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.7
+
+### Security
+
+- The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
+- A placeholder such as `{WEB_LINK}` or `{IP_ADDRESS}` typed into a contact message, name or other text that goes into an e-mail stays as typed.
+
+### Fixed
+
+- A photo upload request that carries no file, or a malformed one, is refused with an error instead of a server error.
+- A search URL that sends several categories as `sCategory[]` no longer fails with an error when friendly URLs are on.
+
 ## Shopclass 6.4.6
 
 This release fixes `php oc-cli.php cron`, which ran the hourly, daily and weekly tasks every time
