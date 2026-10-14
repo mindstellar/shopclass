@@ -171,7 +171,9 @@ final class ListingInput
     private static function build(array $form, Actor $actor, bool $isAdd, array $files): array
     {
         $admin = $actor->isAdmin();
-        $get   = static fn (string $key): mixed => isset($form[$key]) ? Params::purifyText($form[$key]) : '';
+        $get   = static fn (string $key): mixed => isset($form[$key])
+            && (is_scalar($form[$key]) || in_array($key, array('title', 'description'), true))
+            ? Params::purifyText($form[$key]) : '';
         $int   = static fn (string $key): ?int => isset($form[$key]) ? (is_scalar($form[$key]) ? (int) $form[$key] : 0) : null;
         $aItem = array();
 
@@ -225,7 +227,7 @@ final class ListingInput
                 ? osc_sanitize_html($form['description'] ?? '')
                 : $get('description');
         $aItem['photos']       = $files;
-        $ajax_photos           = $get('ajax_photos');
+        $ajax_photos           = isset($form['ajax_photos']) ? Params::purifyText($form['ajax_photos']) : '';
         $aItem['s_ip']         = get_ip();
         $aItem['d_coord_lat']  = $get('d_coord_lat') ?: null;
         $aItem['d_coord_long'] = $get('d_coord_long') ?: null;
