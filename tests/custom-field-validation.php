@@ -88,7 +88,7 @@ foreach (array('https://a.com/,https://b.com', 'https://a.com/, www.b.com', 'htt
     $r = FieldValidator::check(array($field(3, 'site', 'URL')), array(3 => $url));
     pin('two links refused: ' . $url, array(array('field' => 3, 'code' => 'invalid', 'message' => 'Site is invalid.')), $r['errors']);
 }
-foreach (array('https://a.com/ https://b.com', 'https://a.com https://b.com', 'a.com, www.b.com') as $url) {
+foreach (array('https://a.com/ https://b.com', 'https://a.com https://b.com', 'a.com, www.b.com', 'https://a.com/ www.b.com') as $url) {
     $r = FieldValidator::process(array($field(3, 'site', 'URL')), array(3 => $url));
     pin('two links typed with a space or comma refused: ' . $url, array('Site is invalid.'), $r['errors']);
 }
