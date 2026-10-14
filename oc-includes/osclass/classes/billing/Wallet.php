@@ -45,9 +45,6 @@ final class Wallet extends Model
     /** MySQL's duplicate-entry error number. */
     private const ERR_DUPLICATE = 1062;
 
-    /** MySQL's deadlock-detected error number. */
-    private const ERR_DEADLOCK = 1213;
-
     public const REASON_PURCHASE = 'purchase';
     public const REASON_SPEND    = 'spend';
     public const REASON_REFUND   = 'refund';
@@ -349,7 +346,7 @@ final class Wallet extends Model
                 break;
             } catch (DbException $e) {
                 $code = (int) $e->getCode();
-                if ($code === self::ERR_DEADLOCK && $attempt < $attempts) {
+                if (in_array($code, Db::LOST_TRANSACTION, true) && $attempt < $attempts) {
                     // ensureWallet() runs as this transaction's first write, so a
                     // deadlock here means the whole (now-discarded) transaction wrote
                     // nothing yet -- redoing it once from scratch is a retry, not a
