@@ -261,6 +261,17 @@ pin(
 );
 
 pin(
+    'a description over 1000 characters is refused',
+    "Description is too long, the maximum is 1000 characters\n",
+    $register(array('s_info' => array('en_US' => str_repeat('a', 1001))))
+);
+pin(
+    'a description of exactly 1000 characters is accepted',
+    2,
+    $register(array('s_info' => array('en_US' => str_repeat('a', 1000))))
+);
+
+pin(
     'a 16-character postcode is refused — the column holds 15',
     "Zip code is too long, the maximum is 15 characters\n",
     $register(array('zip' => str_repeat('9', 16)))

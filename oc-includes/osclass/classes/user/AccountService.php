@@ -42,13 +42,16 @@ use mindstellar\utility\Sanitize;
  */
 final class AccountService
 {
+    /** The longest name an account may have, shorter than its column. */
+    public const NAME_MAX_LENGTH = 50;
+
+    /** The longest description an account may have, in each language. */
+    public const INFO_MAX_LENGTH = 1000;
+
     /**
      * Widths of the t_user columns an account form fills, from struct.sql.
      * tests/strict-write-guards.php pins them against the live schema.
      */
-    /** The longest name an account may have, shorter than its column. */
-    public const NAME_MAX_LENGTH = 50;
-
     public const COLUMN_WIDTHS = [
         's_name'         => 100,
         's_username'     => 100,
@@ -954,7 +957,11 @@ final class AccountService
      */
     public static function maxLength(string $column): int
     {
-        return $column === 's_name' ? self::NAME_MAX_LENGTH : self::COLUMN_WIDTHS[$column];
+        return match ($column) {
+            's_name' => self::NAME_MAX_LENGTH,
+            's_info' => self::INFO_MAX_LENGTH,
+            default  => self::COLUMN_WIDTHS[$column],
+        };
     }
 
     /**
@@ -988,10 +995,11 @@ final class AccountService
             }
             $flash .= sprintf(_m('%s is too long, the maximum is %d characters'), $labels[$column], $width) . PHP_EOL;
         }
-        // s_info is TEXT, so its limit is 65535 bytes, not characters.
-        foreach ($info as $key => $value) {
-            if (strlen(is_string($value) ? $value : '') > 65535) {
-                $flash .= sprintf(_m('The field %s is too long'), osc_esc_html((string) $key)) . PHP_EOL;
+        $width = self::maxLength('s_info');
+        foreach ($info as $value) {
+            if (!osc_validate_max(is_string($value) ? $value : '', $width)) {
+                $flash .= sprintf(_m('%s is too long, the maximum is %d characters'), _m('Description'), $width) . PHP_EOL;
+                break;
             }
         }
 

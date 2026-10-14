@@ -249,6 +249,7 @@ class UserForm extends Form
             $attributes   = [
                 'id'          => $name,
                 'placeholder' => __('Enter user description') ,
+                'maxlength'   => \mindstellar\user\AccountService::maxLength('s_info'),
             ];
 
             $info = '';
@@ -280,7 +281,11 @@ class UserForm extends Form
      */
     public static function info_textarea($name, $locale = 'en_US', $value = '')
     {
-        parent::generic_textarea($name . '[' . $locale . ']', $value);
+        $name .= '[' . $locale . ']';
+        echo (new self())->textarea($name, $value, [
+            'id'        => preg_replace('|([^_a-zA-Z0-9-]+)|', '', $name),
+            'maxlength' => \mindstellar\user\AccountService::maxLength('s_info'),
+        ]);
     }
 
     /**
