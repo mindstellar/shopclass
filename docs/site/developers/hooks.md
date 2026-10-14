@@ -755,7 +755,7 @@ Core fires 563 names. Generated from the source; do not edit by hand.
 | `save_latest_searches_pattern` | filter | `$p_sPattern` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `search` | action | `$this->mSearch` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `search_conditions` | action | `\Params::getParamsAsArray(), $search, $context` | `oc-includes/osclass/classes/search/SearchBuilder.php` |
-| `search_pattern` | filter | `trim(strip_tags($params['sPattern'] ?? ''))` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
+| `search_pattern` | filter | `$rawPattern` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
 | `search_results` | filter | `null, $search, \Params::getParamsAsArray(), $context, $bare` | `oc-includes/osclass/classes/search/SearchRunner.php` |
 | `search_suggestions` | filter | `null, $q, $limit, $context` | `oc-includes/osclass/classes/search/SearchSuggestions.php` |
 | `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |

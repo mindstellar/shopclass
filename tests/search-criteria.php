@@ -120,6 +120,7 @@ check(
 );
 pin('literal \'0\' preserved', '0', SearchCriteria::fromRequest(array('sPattern' => '0'))->pattern());
 pin('braces dropped, for the web and the API', 'query', SearchCriteria::fromRequest(array('sPattern' => ' {query} '))->pattern());
+pin('a keyword sent as a list is empty', '', SearchCriteria::cleanPattern(array('{a}')));
 
 $GLOBALS['__filterMode'] = 'wrap';
 pin(
