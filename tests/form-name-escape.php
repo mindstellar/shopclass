@@ -32,6 +32,11 @@ class Params
     {
         return '';
     }
+
+    public static function getParamString($key, $a = false, $b = true)
+    {
+        return '';
+    }
 }
 
 class Session
