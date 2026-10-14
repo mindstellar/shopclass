@@ -476,7 +476,10 @@ function oscAutocomplete(input, opts) {
             return;
         }
         setTimeout(function () {
-            if (!e.defaultPrevented) { sending.add(form); }
+            if (e.defaultPrevented) { return; }
+            sending.add(form);
+            // A stopped page load or a post into a frame leaves this page in place; let it send again.
+            setTimeout(function () { sending.delete(form); }, 10000);
         }, 0);
     });
 
