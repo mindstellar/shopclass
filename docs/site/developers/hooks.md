@@ -145,9 +145,11 @@ values are the visitor's text: escape or bind them. When `rawSql` is true, retur
 search holds SQL your engine cannot run.
 
 When `liveOnly` is false, the search also covers hidden, disabled, spam and expired listings, as
-the admin Listings screen does. Answer only if your index holds them, and match these too:
-`flags` (`b_active`, `b_enabled`, `b_spam`, `b_premium`, each `0` or `1`), `itemId` (one listing;
-when set, ignore every other filter) and `contactEmail` (the exact contact e-mail).
+the admin Listings screen does. Return `null` then, unless your index holds those listings and you
+match these too: `flags` (`b_active`, `b_enabled`, `b_spam`, `b_premium`, each `0` or `1`),
+`itemId` (one listing; when set, ignore every other filter) and `contactEmail` (the exact contact
+e-mail). On that screen `manage_item_search_conditions` runs first, so a plugin filter added there
+sets `rawSql`, and only `items` and `total` of the answer are used.
 
 `meta` holds the custom-field filters core applied, by field id. Each has the field's storage
 `type` and an `op`:
