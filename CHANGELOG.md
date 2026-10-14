@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ### Security
 
 - The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
+- A placeholder such as `{WEB_LINK}` or `{IP_ADDRESS}` typed into a contact message, name or other text that goes into an e-mail stays as typed.
 
 ## Shopclass 6.4.6
 

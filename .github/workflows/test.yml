@@ -504,6 +504,8 @@ jobs:
         run: php tests/plugin-ajax-file.php
       - name: Category picker keeps catId inside its script
         run: php tests/item-form-category-id-xss.php
+      - name: Mail placeholders are filled in one pass
+        run: php tests/mail-placeholder-injection.php
       - name: Admin request guards
         run: php tests/admin-request-guards.php
       - name: Every caller of refuseOnDemo() has it
