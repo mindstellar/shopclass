@@ -57,7 +57,9 @@ final class SearchCompiler
             $s->where($p . 't_item.s_contact_email = ?', array(SqlValue::bind($parts->contactEmail)));
         }
         foreach ($parts->flags as $column => $value) {
-            $s->where($p . 't_item.' . $column . ' = ?', array((int)$value));
+            if (in_array($column, SearchParts::FLAGS, true)) {
+                $s->where($p . 't_item.' . $column . ' = ?', array((int)$value));
+            }
         }
 
         $pattern = $parts->pattern;

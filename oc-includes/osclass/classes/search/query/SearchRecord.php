@@ -108,6 +108,7 @@ final class SearchRecord
         $parts->pattern->clear();
         $parts->locations->clear();
         $parts->users->clear();
+        $parts->flags = array();
         $parts->plugin->clearAlertParts();
 
         $price = static function ($value) {
