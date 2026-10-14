@@ -98,6 +98,12 @@ class ConnectionManager
      * @var bool
      */
     private $dbSelected = false;
+    /**
+     * Whether the session statement already set the utf8mb4 character set.
+     *
+     * @var bool
+     */
+    private $namesSet = false;
 
     /**
      * Database error number
@@ -183,7 +189,9 @@ class ConnectionManager
             return false;
         }
 
-        $this->setCharset('utf8mb4');
+        if (!$this->namesSet) {
+            $this->setCharset('utf8mb4');
+        }
 
         if (!$this->dbName || $this->dbSelected) {
             return true;
@@ -222,6 +230,9 @@ class ConnectionManager
             // a PHP worker indefinitely (this matters most for the installer's
             // "Test connection" probe, which dials an arbitrary host:port).
             $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+            // Escaping follows the character set the client was given here, which the
+            // session statement below then sets on the server.
+            $this->connId->options(MYSQLI_SET_CHARSET_NAME, 'utf8mb4');
             // Naming the database in the login saves a select_db() round trip. When the
             // database is missing or refused, log in without it, so select_db() reports
             // that error exactly as before.
@@ -241,6 +252,7 @@ class ConnectionManager
                 }
                 $this->connId = mysqli_init();
                 $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+                $this->connId->options(MYSQLI_SET_CHARSET_NAME, 'utf8mb4');
                 @$this->connId->real_connect(
                     $this->dbHost,
                     $this->dbUser,
@@ -271,8 +283,9 @@ class ConnectionManager
         }
         // Start every connection in a known-clean autocommit state, so no write can be
         // silently swallowed by a transaction state carried over from anywhere else.
-        // setSQLMode() sets it in the same statement when it runs.
-        if (!$this->setSQLMode()) {
+        // setSQLMode() sets it, and the character set, in one statement.
+        $this->namesSet = $this->setSQLMode();
+        if (!$this->namesSet) {
             $this->connId->autocommit(true);
         }
 
@@ -301,11 +314,10 @@ class ConnectionManager
      * inserts and non-aggregated GROUP BY.
      *
      * Define the optional constant OSC_DB_STRICT_MODE (truthy) to opt out of that
-     * loosening: when set, the server's own sql_mode is left exactly as configured
-     * (early return, connection untouched). The installer writes that constant into
-     * a new install's config.php, so a fresh site runs strict; an install upgraded
-     * from an earlier release defines nothing and keeps the historic behaviour
-     * byte-for-byte until an operator adds the line.
+     * loosening: when set, the server's own sql_mode is left exactly as configured.
+     * The installer writes that constant into a new install's config.php, so a fresh
+     * site runs strict; an install upgraded from an earlier release defines nothing and
+     * keeps the historic behaviour byte-for-byte until an operator adds the line.
      *
      * tests/db-strict-mode.php replays three things on a session set strict by hand:
      * the bundled schema and seed data, every migration from the oldest supported
@@ -316,16 +328,19 @@ class ConnectionManager
      * an over-length or out-of-range value gets an error where it used to get a
      * silently altered row.
      *
+     * The same statement sets the utf8mb4 character set and autocommit, so a new
+     * connection costs one round trip before its first query.
+     *
      * @param array<int,string> $modes modes to apply; read from the session when empty
      *
-     * @return bool true when the statement ran, which also set autocommit
+     * @return bool true when the statement ran, which also set the character set and autocommit
      */
     private function setSQLMode($modes = [])
     {
+        $set = 'SET NAMES utf8mb4, autocommit = 1';
         if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
-            return false;
-        }
-        if (!empty($modes)) {
+            $mode = null;
+        } elseif (!empty($modes)) {
             $modes = array_values(array_diff(array_map('strtoupper', $modes), $this->incompatible_modes));
             $mode  = "'" . $this->connId->real_escape_string(implode(',', $modes)) . "'";
         } else {
@@ -338,9 +353,12 @@ class ConnectionManager
             }
             $mode = "TRIM(BOTH ',' FROM $mode)";
         }
+        if ($mode !== null) {
+            $set .= ", SESSION sql_mode = $mode";
+        }
 
         try {
-            $this->connId->query("SET autocommit = 1, SESSION sql_mode = $mode");
+            $this->connId->query($set);
         } catch (Exception $e) {
             $this->errorReport();
 

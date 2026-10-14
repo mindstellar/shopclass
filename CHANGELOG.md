@@ -117,6 +117,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With memcached or Redis, settings and the country list are cached, a page reads its cache groups in one round trip, and no page writes to the cache on a normal view.
 - Database queries send their values in one trip instead of a prepare and an execute; `define('OSC_DB_REAL_PREPARES', true);` in `config.php` brings back real prepared statements.
 - A city or region page reads each linked place once, not once per link.
+- A new database connection sets its character set, autocommit and SQL mode in one statement instead of two.
 
 ### Changed
 - Inside `osc_db_begin()` or `osc_db_transaction()`, a legacy DAO query that hits a deadlock now throws `DbException` instead of returning false, since the server has already rolled the transaction back.
