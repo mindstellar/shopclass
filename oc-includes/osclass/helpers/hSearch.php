@@ -1288,18 +1288,32 @@ function _aux_search_subdomains()
 /**
  * Look one filter value up: by id when it is numeric, otherwise by the spec's finder.
  *
- * @param array<string,string> $spec  A row of _aux_search_subdomains() or _aux_search_places()
+ * A page links the same place many times (every category link on a city page), so a
+ * web request looks each place up once. The long-running CLI worker always asks again.
+ *
+ * @param array<string,string> $spec     A row of _aux_search_subdomains() or _aux_search_places()
  * @param mixed                $value
+ * @param bool|null            $remember Keep the answer for this request; null decides by SAPI
  *
  * @return array<string,mixed>|null
  */
-function _aux_search_find(array $spec, $value)
+function _aux_search_find(array $spec, $value, $remember = null)
 {
+    static $found = array();
+    $remember = $remember ?? PHP_SAPI !== 'cli';
+    $key      = $spec['model'] . ':' . $value;
+    if ($remember && array_key_exists($key, $found)) {
+        return $found[$key];
+    }
     $model = call_user_func(array($spec['model'], 'newInstance'));
-
-    return is_numeric($value)
+    $row   = is_numeric($value)
         ? $model->findByPrimaryKey($value)
         : $model->{$spec['finder']}($value);
+    if ($remember) {
+        $found[$key] = $row;
+    }
+
+    return $row;
 }
 
 /**

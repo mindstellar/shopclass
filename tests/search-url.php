@@ -100,6 +100,8 @@ abstract class FakeModel
 
     public function findByPrimaryKey($id)
     {
+        $GLOBALS['__finds'][] = static::class . ':' . $id;
+
         return static::$rows[(int)$id] ?? null;
     }
 
@@ -407,5 +409,15 @@ pin('counting cities needs no second fetch', 2, osc_count_list_cities(7));
 viewReset();
 pin('cities with no region asked use the wildcard', 2, osc_count_list_cities());
 pin('and say so', array('cities:%%%%'), $GLOBALS['__loads']);
+
+$GLOBALS['__finds'] = array();
+$city = _aux_search_places()['sCity'];
+_aux_search_find($city, 11, true);
+_aux_search_find($city, 11, true);
+pin('a web request looks a place up once', array('City:11'), $GLOBALS['__finds']);
+$GLOBALS['__finds'] = array();
+_aux_search_find($city, 11, false);
+_aux_search_find($city, 11, false);
+pin('the CLI worker asks every time', array('City:11', 'City:11'), $GLOBALS['__finds']);
 
 exit(harness_result());
