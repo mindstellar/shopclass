@@ -147,9 +147,8 @@ CONF
 }
 write_microcache_conf
 
-# PHP worker pool. php-fpm's own default of 5 workers caps a multi-core host at about
-# five pages at once. OSC_FPM_MAX_CHILDREN sets the number; unset, it is three per CPU,
-# at least 5, and no more than the container's memory allows at about 64 MB a worker.
+# PHP worker pool: php-fpm's own default of 5 workers leaves a multi-core host idle.
+# OSC_FPM_MAX_CHILDREN sets it; unset, it is three per CPU, at least 5, at most memory / 64 MB.
 write_fpm_pool_conf() {
     conf=/usr/local/etc/php-fpm.d/zz-osc-pool.conf
     max="${OSC_FPM_MAX_CHILDREN:-}"
