@@ -9,6 +9,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
 - A placeholder such as `{WEB_LINK}` or `{IP_ADDRESS}` typed into a contact message, name or other text that goes into an e-mail stays as typed.
 
+### Fixed
+
+- A photo upload request that carries no file, or a malformed one, is refused with an error instead of a server error.
+
 ## Shopclass 6.4.6
 
 This release fixes `php oc-cli.php cron`, which ran the hourly, daily and weekly tasks every time
