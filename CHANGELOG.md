@@ -148,6 +148,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
+- A search link carrying an extra list value, such as `?a[]=1`, now redirects to the friendly URL instead of being treated as its own page.
 - `db:doctor` lists an extra column or index but no longer exits `1` for it.
 - `php oc-cli.php <command> --help` prints the command's summary and no longer runs it.
 - The city and region type-ahead lists an exact name first, then the places with the most listings, so a big city is no longer hidden by villages.

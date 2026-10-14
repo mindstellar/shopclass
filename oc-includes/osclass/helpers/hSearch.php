@@ -627,9 +627,15 @@ function osc_search_url($params = null)
 
     if (osc_rewrite_enabled()) {
         foreach ($params as $kp => $vp) {
+            // A friendly URL has no place for any other list, so it must not count.
+            if (is_array($vp) && !in_array($kp, array('sCategory', 'sUser', 'meta'), true)) {
+                unset($params[$kp]);
+                continue;
+            }
             $params[$kp] = osc_remove_slash($vp);
         }
-        $url = $base_url . osc_get_preference('rewrite_search_url');
+        $countP = count($params);
+        $url    = $base_url . osc_get_preference('rewrite_search_url');
         // CANONICAL URLS
         if (isset($params['sCategory']) && !is_array($params['sCategory'])
             && strpos($params['sCategory'], ',') === false
