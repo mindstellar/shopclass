@@ -380,7 +380,7 @@ services:
 
   valkey:
     image: valkey/valkey:8-alpine
-    command: ["valkey-server", "--requirepass", "\${VALKEY_PASSWORD}", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    command: ["valkey-server", "--requirepass", "\${VALKEY_PASSWORD}", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
     restart: unless-stopped
 
   db:
