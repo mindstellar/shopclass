@@ -126,14 +126,14 @@ final class CacheGroup
     }
 
     /**
-     * Whether a web worker keeps its own copy of a shared cache's group values in APCu.
-     *
-     * A key carries its group's generation, so a dropped group is never read from a copy.
-     * Only a value that lapses on its own time may be read up to LOCAL_TTL seconds late.
+     * Whether a web worker keeps its own copy of a shared cache's group values in APCu, which
+     * the site turns on with OSC_CACHE_LOCAL. A key carries its group's generation, so a
+     * dropped group is never read from a copy.
      */
     private static function localCopies(CacheDriver $cache): bool
     {
-        return self::$local ??= PHP_SAPI !== 'cli'
+        return self::$local ??= defined('OSC_CACHE_LOCAL') && OSC_CACHE_LOCAL
+            && PHP_SAPI !== 'cli'
             && function_exists('apcu_fetch')
             && apcu_enabled()
             && in_array($cache->_get_cache(), array('redis', 'memcached'), true);
@@ -184,7 +184,7 @@ final class CacheGroup
             $cache->set($full, $value, $ttl);
         }
         if ($local) {
-            apcu_store($full, $value, min($ttl, self::LOCAL_TTL));
+            apcu_store($full, $value, $ttl > 0 ? min($ttl, self::LOCAL_TTL) : self::LOCAL_TTL);
         }
 
         return $value;

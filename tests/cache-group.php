@@ -231,6 +231,10 @@ pin('...and a drop of a missing generation starts from the clock', true, CacheGr
 
 harness_section('a web worker keeps its own copy of a shared value');
 $GLOBALS['__apcu'] = [];
+if (extension_loaded('apcu')) {
+    // The stand-ins below cannot replace the real extension's functions.
+    exit(harness_result());
+}
 if (!function_exists('apcu_fetch')) {
     function apcu_fetch($key, &$found = null)
     {
@@ -259,8 +263,14 @@ CacheGroup::remember('category', 'tree', $loader);
 $cache->reads = [];
 pin('the second read comes from the copy, not the shared cache', [['rows' => [1, 2, 3]], [], 1], [CacheGroup::remember('category', 'tree', $loader), $cache->reads, $loads]);
 pin('the copy lasts at most 15 seconds', [15], array_values(array_map(static fn ($e) => $e[1], $GLOBALS['__apcu'])));
+$GLOBALS['__apcu'] = [];
+CacheGroup::remember('category', 'short', $loader, 5);
+CacheGroup::remember('category', 'forever', $loader, 0);
+pin('...no longer than the value itself, and never for ever', [5, 15], array_values(array_map(static fn ($e) => $e[1], $GLOBALS['__apcu'])));
 CacheGroup::invalidate('category');
-pin('a dropped group is loaded again, not read from the copy', 2, (CacheGroup::remember('category', 'tree', $loader) !== null) ? $loads : -1);
+$before = $loads;
+CacheGroup::remember('category', 'tree', $loader);
+pin('a dropped group is loaded again, not read from the copy', 1, $loads - $before);
 $GLOBALS['__apcu'] = [];
 $swap($cache = new KeepAllCache());
 CacheGroup::remember('category', 'shared', static fn () => 'from the shared cache');
@@ -271,6 +281,11 @@ $localFlag->setValue(null, false);
 $GLOBALS['__apcu'] = [];
 CacheGroup::remember('category', 'off', $loader);
 pin('with copies off nothing is copied', [], $GLOBALS['__apcu']);
+$GLOBALS['__apcu'] = array_fill_keys(array_keys($cache->data), ['stale copy', 15]);
+pin('...and no copy is read', true, CacheGroup::remember('category', 'off', $loader) !== 'stale copy');
+$localFlag->setValue(null, null);
+$swap($cache = new KeepAllCache());
+pin('copies stay off unless the site turns them on', false, (new ReflectionMethod(CacheGroup::class, 'localCopies'))->invoke(null, $cache));
 $localFlag->setValue(null, null);
 
 exit(harness_result());

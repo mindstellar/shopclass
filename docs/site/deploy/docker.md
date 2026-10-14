@@ -79,6 +79,7 @@ Everything is set from environment variables:
 | `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing and updating plugins and themes from the admin market and `oc-cli.php market:*` |
 | `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`): see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/); for Redis also `OSC_CACHE_PASSWORD`, `OSC_CACHE_USERNAME` and `OSC_CACHE_DB` |
+| `OSC_CACHE_LOCAL` | `1` by default in the image: each PHP worker keeps a [copy of the cached values](/docs/configure/cache/#a-copy-in-each-php-worker) for up to 15 seconds. Set to `0` to turn it off |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx: see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
 | `OSC_PAGE_CACHE_PURGE_URL` | Where core sends one `PURGE` to clear the whole cache after a theme, settings or plugin change. When `OSC_MICROCACHE` is on it defaults to `http://127.0.0.1:8089/` (a server that listens only inside the container), also for `docker exec`, cron and the job worker. Set it only to override that |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |

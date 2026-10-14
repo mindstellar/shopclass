@@ -115,11 +115,16 @@ if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_M
     define('OSC_DB_STRICT_MODE', true);
 }
 
-// Persistent database connections (optional). Each PHP worker keeps its connection for
-// the next request. Off unless asked for: on shared hosting every idle worker would hold
-// one of the account's few connections.
+// Persistent database connections (optional): each PHP worker keeps its connection for
+// the next request. Off by default, since on shared hosting each idle worker would hold one.
 if (!defined('OSC_DB_PERSISTENT') && filter_var((string)getenv('OSC_DB_PERSISTENT'), FILTER_VALIDATE_BOOLEAN)) {
     define('OSC_DB_PERSISTENT', true);
+}
+
+// Per-worker APCu copies of cached values (optional). Off by default, since on shared
+// hosting other sites under the same PHP can read and write APCu.
+if (!defined('OSC_CACHE_LOCAL') && filter_var((string)getenv('OSC_CACHE_LOCAL'), FILTER_VALIDATE_BOOLEAN)) {
+    define('OSC_CACHE_LOCAL', true);
 }
 
 // Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',

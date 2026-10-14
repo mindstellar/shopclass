@@ -142,6 +142,7 @@ RUN : > /etc/nginx/real_ip.conf \
 # above.
 ENV OSC_IGNORE_CONFIG_FILE=1 \
     OSC_DISABLE_SELF_UPDATE=1 \
+    OSC_CACHE_LOCAL=1 \
     OSC_BUNDLED_CONTENT_PATH=/usr/src/shopclass/oc-content
 
 EXPOSE 80 443

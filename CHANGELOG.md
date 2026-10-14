@@ -122,7 +122,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_esc_html()` skips its entity passes for text with no `&`, which is most text on a page.
 - A new database connection sets its character set, autocommit and SQL mode in one statement instead of two.
 - With Redis or Valkey and the phpredis extension, each PHP worker keeps its cache connection between pages instead of opening one per page.
-- With Redis, Valkey or memcached and the APCu extension, each PHP worker keeps its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image now loads APCu.
+- With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
 
 ### Changed
 - Inside `osc_db_begin()` or `osc_db_transaction()`, a legacy DAO query that hits a deadlock now throws `DbException` instead of returning false, since the server has already rolled the transaction back.
