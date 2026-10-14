@@ -161,6 +161,13 @@ check('db:repair restores the dropped index', $hasIndex('oc_t_country', 'idx_s_n
 
 pin('db:doctor is clean afterwards', 0, \mindstellar\cli\Cli::run(array('db:doctor')));
 
+$admin->query('ALTER TABLE oc_t_country ADD INDEX idx_site_extra (s_slug, s_name)');
+pin('db:doctor exits 0 when the only difference is an extra index', 0, \mindstellar\cli\Cli::run(array('db:doctor')));
+$admin->query('ALTER TABLE oc_t_country DROP INDEX idx_s_name');
+pin('db:doctor exits 1 when an index is also missing', 1, \mindstellar\cli\Cli::run(array('db:doctor')));
+$admin->query('ALTER TABLE oc_t_country DROP INDEX idx_site_extra');
+$admin->query('ALTER TABLE oc_t_country ADD INDEX idx_s_name (s_name)');
+
 harness_section('db:repair refuses while a migration is pending');
 
 // Un-baseline one migration, the same shape a real upgrade-in-progress leaves the ledger in.

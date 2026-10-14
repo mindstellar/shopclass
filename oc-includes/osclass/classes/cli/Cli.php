@@ -703,7 +703,7 @@ class Cli
      * It cannot fix a nullability difference or an index with the wrong columns, and it
      * leaves an extra column or index alone on purpose. Those need a person to look at them.
      *
-     * @return int 0 when the schema matches, 1 when it does not
+     * @return int 0 when the schema matches or has only extras, 1 otherwise
      */
     private function schemaReport(): int
     {
@@ -773,7 +773,9 @@ class Cli
         $this->out("  db:repair does not change a nullability difference or an index with the wrong\n");
         $this->out("  columns. Ask for help before changing those by hand.\n");
 
-        return 1;
+        $problems = array_filter($findings, static fn (array $f): bool => !in_array($f['kind'], DatabaseTools::EXTRA, true));
+
+        return $problems === [] ? 0 : 1;
     }
 
     /**
