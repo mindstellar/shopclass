@@ -84,6 +84,19 @@ foreach (array('javascript://comment%0Aalert(1)', 'data://text/html,x', 'http-x:
 $r = FieldValidator::check(array($field(3, 'site', 'URL')), array(3 => 'https://example.com/a'));
 pin('an https address passes', array(), $r['errors']);
 
+foreach (array('https://a.com/,https://b.com', 'https://a.com/, www.b.com', 'https://a.com/ https://b.com') as $url) {
+    $r = FieldValidator::check(array($field(3, 'site', 'URL')), array(3 => $url));
+    pin('two links refused: ' . $url, array(array('field' => 3, 'code' => 'invalid', 'message' => 'Site is invalid.')), $r['errors']);
+}
+foreach (array('https://a.com/ https://b.com', 'https://a.com https://b.com', 'a.com, www.b.com') as $url) {
+    $r = FieldValidator::process(array($field(3, 'site', 'URL')), array(3 => $url));
+    pin('two links typed with a space or comma refused: ' . $url, array('Site is invalid.'), $r['errors']);
+}
+foreach (array('https://maps.example.com/@18.5,73.8,15z', 'https://a.com/?next=https://b.com') as $url) {
+    $r = FieldValidator::check(array($field(3, 'site', 'URL')), array(3 => $url));
+    pin('one link with a comma or a link inside passes: ' . $url, array(), $r['errors']);
+}
+
 harness_section('date ranges');
 
 pin('both ends are cast', array('from' => 10, 'to' => 20), FieldValidator::sanitizeValue('DATEINTERVAL', array('from' => '10', 'to' => '20', 'x' => '1')));

@@ -86,7 +86,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Contact form attachments must be a picture, PDF, text or office file whose name matches its content, up to 5 MB (**Settings → General**).
 - A listing edit with the wrong secret no longer attaches or resizes the photos it carried, and a post can never resize more photos than the listing may hold.
 - Flash, form and sign-in redirect cookies are signed and work once.
-- A custom URL field takes only `http` and `https` addresses.
+- A custom URL field takes only one `http` or `https` address; a second link after a comma or space is refused.
 - Backup files are private from the moment they are created.
 - Installing a language refuses anything that is not a locale code such as `en` or `en_US`.
 - A photo URL that fails to download no longer says why.
