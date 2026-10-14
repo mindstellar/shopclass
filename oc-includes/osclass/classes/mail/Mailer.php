@@ -342,8 +342,12 @@ final class Mailer
     }
 
     /**
-     * Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs first, then
-     * the site-wide ones.
+     * Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs, then the
+     * site-wide ones. Case does not matter, and a caller key wins over a site token of
+     * the same name.
+     *
+     * One pass: a replacement is never searched again, so a token typed into a value
+     * (a contact message, a name) stays as typed.
      *
      * @param string                             $text
      * @param array{0:array<int,string>,1:array<int,string>} $params Search list and its replacement list
@@ -352,7 +356,6 @@ final class Mailer
      */
     public static function beauty($text, $params)
     {
-        $text   = str_ireplace($params[0], $params[1], (string) $text);
         // In the order of EmailVariables::COMMON, which the template editor lists.
         $kwords = EmailVariables::COMMON;
         $rwords = array(
@@ -363,9 +366,31 @@ final class Mailer
             date(osc_time_format() ?: 'H:i'),
             Params::getServerParam('REMOTE_ADDR')
         );
-        $text   = str_ireplace($kwords, $rwords, $text);
 
-        return $text;
+        // A key without a value is removed, as str_ireplace() did.
+        $keys    = array_values((array) $params[0]);
+        $values  = array_slice(array_pad(array_values((array) $params[1]), count($keys), ''), 0, count($keys));
+        $search  = array_merge($keys, $kwords);
+        $replace = array_merge($values, $rwords);
+        $map     = array();
+        $pattern = array();
+        foreach ($search as $i => $key) {
+            $key = (string) $key;
+            $low = strtolower($key);
+            if ($key === '' || isset($map[$low])) {
+                continue;
+            }
+            $map[$low] = (string) $replace[$i];
+            $pattern[] = preg_quote($key, '/');
+        }
+
+        return (string) preg_replace_callback(
+            '/' . implode('|', $pattern) . '/i',
+            static function (array $m) use ($map): string {
+                return $map[strtolower($m[0])] ?? $m[0];
+            },
+            (string) $text
+        );
     }
 
     /**

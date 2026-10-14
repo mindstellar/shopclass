@@ -88,6 +88,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Installing a language refuses anything that is not a locale code such as `en` or `en_US`.
 - A photo URL that fails to download no longer says why.
 - The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
+- A placeholder such as `{WEB_LINK}` or `{IP_ADDRESS}` typed into a contact message, name or other text that goes into an e-mail stays as typed; only the template's own placeholders are filled in.
 
 ### Performance
 
