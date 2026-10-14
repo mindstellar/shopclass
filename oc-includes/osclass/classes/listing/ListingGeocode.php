@@ -24,11 +24,11 @@ final class ListingGeocode
 {
     public const JOB = 'listing.geocode';
 
-    /** Looks up listings saved before a provider was set up, a few per run. */
+    /** Queues the lookup of listings saved before a provider was set up, a batch at a time. */
     public const BACKFILL = 'listing.geocode_backfill';
 
-    /** Listings one backfill run looks up. */
-    private const BATCH = 10;
+    /** Listings one backfill run queues, and the most lookups it lets wait at once. */
+    private const BATCH = 50;
 
     /** Seconds the map service gets to answer. */
     private const TIMEOUT = 3;
@@ -99,7 +99,9 @@ final class ListingGeocode
     }
 
     /**
-     * Look up the next few listings after $afterId.
+     * Queue the lookups of the next listings after $afterId. Each lookup is its own job, so it
+     * retries and waits for the provider's allowance like a new listing's; a run queues no more
+     * while a batch still waits.
      *
      * @return array{0:int,1:int}|null where to go on and how many seconds to wait first, or null when done
      */
@@ -108,19 +110,15 @@ final class ListingGeocode
         if (Geocoder::active() === null) {
             return null;
         }
-        $ids = ListingStore::withoutPosition($afterId, self::BATCH);
-        foreach ($ids as $id) {
-            try {
-                $this->run($id);
-            } catch (GeocodeLimitReached $e) {
-                return [$id - 1, $e->retryAfter()];
-            } catch (\RuntimeException $e) {
-                // One address the service cannot take does not stop the rest.
-                error_log('Geocode of listing ' . $id . ' failed: ' . $e->getMessage());
-            }
+        if (osc_job_count('pending', self::JOB) >= self::BATCH) {
+            return [$afterId, 300];
         }
+        $ids = ListingStore::withoutPosition($afterId, self::BATCH);
+        osc_job_enqueue_many(self::JOB, array_map(static fn (int $id): array => ['item' => $id], $ids), [
+            'unique_key' => static fn (array $payload): string => (string) $payload['item'],
+        ]);
 
-        return count($ids) < self::BATCH ? null : [(int) end($ids), 0];
+        return count($ids) < self::BATCH ? null : [(int) end($ids), 60];
     }
 
     /**

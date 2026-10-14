@@ -195,7 +195,8 @@ final class ListingStore extends Model
     }
 
     /**
-     * Ids after $afterId of listings with a street address and no map position of their own, oldest first.
+     * Ids after $afterId of enabled, non-spam listings with a street address and no map position
+     * of their own, oldest first.
      *
      * @return int[]
      * @throws \mindstellar\database\DbException
@@ -203,9 +204,10 @@ final class ListingStore extends Model
     public static function withoutPosition(int $afterId, int $limit): array
     {
         $rows = Db::select(
-            'SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_location WHERE fk_i_item_id > ? AND s_address <> \'\''
-            . ' AND (d_coord_lat IS NULL OR d_coord_lat = 0 OR d_coord_long IS NULL OR d_coord_long = 0)'
-            . ' ORDER BY fk_i_item_id LIMIT ' . max(1, $limit),
+            'SELECT l.fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_location l JOIN ' . self::tableName() . ' i ON i.pk_i_id = l.fk_i_item_id'
+            . ' WHERE l.fk_i_item_id > ? AND TRIM(l.s_address) <> \'\' AND i.b_enabled = 1 AND i.b_spam = 0'
+            . ' AND (l.d_coord_lat IS NULL OR l.d_coord_lat = 0 OR l.d_coord_long IS NULL OR l.d_coord_long = 0)'
+            . ' ORDER BY l.fk_i_item_id LIMIT ' . max(1, $limit),
             array($afterId)
         );
 

@@ -273,6 +273,7 @@ $row = $jobRow(ListingGeocode::JOB);
 pin('the job stays pending, with no failure counted', ['pending', '0'], [$row['s_status'] ?? null, $row['i_attempts'] ?? null]);
 check('and runs again when the allowance renews', (int) ($row['wait'] ?? 0) > 3500 && (int) $row['wait'] <= 3600);
 pin('no position is stored', [null, null], $coords($other));
+pin('a wait is at least a minute and at most two days', [60, 172800], [(new GeocodeLimitReached('x', 1))->retryAfter(), (new GeocodeLimitReached('x', PHP_INT_MAX))->retryAfter()]);
 
 harness_section('older listings');
 $admin->query("DELETE FROM {$p}t_job_queue");
@@ -281,23 +282,18 @@ for ($i = 0; $i < 12; $i++) {
     $old[] = $service->create(ListingInput::fromArray($form(['address' => ($i + 1) . ' Old Road']), $actor, true), $actor)->id();
 }
 $admin->query("DELETE FROM {$p}t_job_queue");
+$admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = " . $old[11]);
 $fake->limitFor = null;
-$fake->calls    = [];
 check('queueing them adds one job', ListingGeocode::queueExisting() && ListingGeocode::queueExisting());
 pin('only one', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . ListingGeocode::BACKFILL . "'")->fetch_row()[0]);
-$next = (new ListingGeocode())->backfill(0);
-pin('a run looks up ten, oldest first, skipping ones with a position or no street', 10, count($fake->calls));
-check('and goes on after the last one at once', is_array($next) && $next[1] === 0 && $next[0] > $id);
-$fake->calls = [];
-pin('the last run finishes the rest', null, (new ListingGeocode())->backfill($next[0]));
-check('every older listing now has a position', array_filter($old, static fn (int $i): bool => $coords($i)[0] === null) === []);
-$admin->query("UPDATE {$p}t_item_location SET d_coord_lat = NULL, d_coord_long = NULL WHERE fk_i_item_id IN (" . implode(',', $old) . ')');
-$admin->query("DELETE FROM {$p}t_key_value WHERE s_group = '" . Geocoder::KV_GROUP . "'");
-$fake->limitFor = 7200;
-$fake->calls    = [];
-$stop  = (new ListingGeocode())->backfill(0);
-$first = min($old);
-pin('a used-up allowance stops the run before that listing, for the wait', [$first - 1, 7200], $stop);
+$queued = static fn (): array => array_map(static fn (array $r): int => (int) json_decode($r[0], true)['item'], $admin->query("SELECT s_payload FROM {$p}t_job_queue WHERE s_type = '" . ListingGeocode::JOB . "' ORDER BY pk_i_id")->fetch_all());
+pin('a run queues a lookup per listing with a street and no position, not spam', array_merge([$other], array_slice($old, 0, 11)), (new ListingGeocode())->backfill(0) === null ? $queued() : 'not done');
+(new ListingGeocode())->backfill(0);
+pin('a second run queues no copies', 12, count($queued()));
+for ($i = 0; $i < 50; $i++) {
+    osc_job_enqueue(ListingGeocode::JOB, ['item' => 0], ['unique_key' => 'filler' . $i]);
+}
+pin('while a batch waits, a run queues nothing and comes back later', [5, 300], (new ListingGeocode())->backfill(5));
 $fake->limitFor = null;
 $fake->answer   = [18.5308, 73.8475];
 $set([GeocodeProviderRegistry::PREF => '']);

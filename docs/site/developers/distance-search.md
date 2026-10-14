@@ -73,8 +73,8 @@ throws a `RuntimeException` fails the job, and the queue tries again later. A pr
 request allowance is used up throws `mindstellar\location\GeocodeLimitReached($message, $seconds)`
 instead: the job waits that long and tries again, with no failure counted.
 
-`ListingGeocode::queueExisting()` queues the lookup of every listing that has a street and no
-position. One job works through them ten at a time, and waits the same way when the allowance runs out.
+`ListingGeocode::queueExisting()` queues the lookup of every enabled listing that has a street
+and no position. One job adds them to the queue 50 at a time, and adds more only once those have run.
 
 A provider plugin implements `mindstellar\location\GeocodeProvider` and registers it on
 `register_geocode_providers` (7.0+):

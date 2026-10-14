@@ -23,9 +23,9 @@ final class GeocodeLimitReached extends \RuntimeException
         parent::__construct($message);
     }
 
-    /** Seconds until the allowance renews; at least one minute. */
+    /** Seconds until the allowance renews; at least a minute, at most two days. */
     public function retryAfter(): int
     {
-        return max(60, $this->retryAfter);
+        return min(172800, max(60, $this->retryAfter));
     }
 }
