@@ -214,7 +214,7 @@ class ItemForm extends Form
                 osc.langs.select_subcategory = '<?php echo osc_esc_js(__('Select subcategory')); ?>';
             }
             osc.item_post = {};
-            osc.item_post.category_id = '<?php echo $categoryID; ?>';
+            osc.item_post.category_id = <?php echo json_encode((string) $categoryID, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
             osc.item_post.category_tree_id = <?php echo json_encode($categories_tree); ?>;
 
             function draw_select(select, categoryID) {
@@ -254,7 +254,7 @@ class ItemForm extends Form
                     <?php } else { ?>
                     draw_select(1, 0);
                         <?php for ($i = 0; $i < count($categories_tree) - 1; $i++) { ?>
-                    draw_select(<?php echo($i + 2); ?>, <?php echo $categories_tree[$i]; ?>);
+                    draw_select(<?php echo($i + 2); ?>, <?php echo (int) $categories_tree[$i]; ?>);
                         <?php } ?>
                     <?php } ?>
                 }

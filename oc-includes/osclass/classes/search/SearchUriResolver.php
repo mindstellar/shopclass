@@ -139,6 +139,11 @@ class SearchUriResolver
         }
         if (array_key_exists('sCategory', $params)) {
             $categorySlug = $params['sCategory'];
+            if (is_array($categorySlug)) {
+                // sCategory[]=3&sCategory[]=4 is a list of categories, not a slug in the
+                // URI. The search reads it as it is, so there is nothing to resolve.
+                return $out;
+            }
             if (strpos($categorySlug, '/') !== false) {
                 $tmp          = explode('/', preg_replace('|/$|', '', $categorySlug));
                 $categorySlug = $tmp[count($tmp) - 1];

@@ -87,6 +87,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Backup files are private from the moment they are created.
 - Installing a language refuses anything that is not a locale code such as `en` or `en_US`.
 - A photo URL that fails to download no longer says why.
+- The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
 
 ### Performance
 
@@ -142,6 +143,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 
+- A search URL that sends several categories as `sCategory[]` no longer fails with an error when friendly URLs are on.
 - An admin's `?theme=` preview works on the search page; it was lost in the redirect to the friendly URL.
 - Expiry warning e-mails, the most-viewed list, report times and view-count dates use the site's time zone, not the database's. The most-viewed list keeps premium listings past their end date.
 - Docker: `SMTP_FROM` may hold a display name, `SMTP_STARTTLS` takes `0`/`1` as well as `on`/`off`, and port 465 no longer tries STARTTLS ([#552](https://github.com/mindstellar/shopclass/issues/552)).
@@ -172,5 +174,6 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Public pages answer 304 to a list of `If-None-Match` tags or a weak `W/` tag.
 - `osc_validate_url()` no longer contacts private addresses and gives up after 3 seconds.
 - A subcategory under a disabled parent can be disabled, and enabling a category refreshes every cached list that shows it.
+- A photo upload request that carries no file is refused with an error instead of a server error.
 
 Source: https://github.com/mindstellar/shopclass
