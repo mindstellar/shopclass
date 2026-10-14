@@ -51,7 +51,7 @@ class ItemForm extends Form
         $attributes = []
     ) {
         // Did user select a specific category to post in?
-        $catId = Params::getParam('catId');
+        $catId = Params::getParamString('catId');
         if (Session::getInstance()->_getForm('catId') != '') {
             $catId = Session::getInstance()->_getForm('catId');
         }
@@ -120,7 +120,7 @@ class ItemForm extends Form
     public static function subcategory_select($categories, $item, $default_item = null, $deep = 0)
     {
         // Did user select a specific category to post in?
-        $catId = Params::getParam('catId');
+        $catId = Params::getParamString('catId');
         if (Session::getInstance()->_getForm('catId') != '') {
             $catId = Session::getInstance()->_getForm('catId');
         }
@@ -159,7 +159,7 @@ class ItemForm extends Form
         $parent_selectable = false
     ) {
 
-        $categoryID = Params::getParam('catId');
+        $categoryID = Params::getParamString('catId');
         if (osc_item_category_id() != null) {
             $categoryID = osc_item_category_id();
         }

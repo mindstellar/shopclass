@@ -78,7 +78,7 @@ $categories = array(
     array('pk_i_id' => 9, 'fk_i_parent_id' => 7, 's_name' => 'Leaf'),
 );
 
-$render = static function (string $catId) use ($categories): string {
+$render = static function ($catId) use ($categories): string {
     $_GET     = array('catId' => $catId);
     $_POST    = array();
     $_REQUEST = $_GET;
@@ -118,5 +118,15 @@ check(
     $html
 );
 check('the category itself gets no extra select', strpos($html, 'draw_select(4,') === false, $html);
+
+harness_section('an array catId');
+$error = '';
+try {
+    $html = $render(array('1'));
+} catch (Throwable $e) {
+    $error = get_class($e) . ': ' . $e->getMessage();
+}
+pin('catId[]=1 is no error', '', $error);
+pin('and counts as no category', '', $categoryId($html));
 
 exit(harness_result());
