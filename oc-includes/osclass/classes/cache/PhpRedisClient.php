@@ -58,7 +58,7 @@ final class PhpRedisClient implements RedisClient
         // A web worker keeps its connection for the next request instead of opening one
         // per page. The CLI worker does not: its blocking wait needs a connection of its own.
         if (PHP_SAPI !== 'cli') {
-            $id = 'osc-' . md5(implode('|', array($host, $port, $username, $this->config['database'] ?? 0, $timeout)));
+            $id = 'osc-' . md5(implode('|', array($host, $port, $username, $password, $this->config['database'] ?? 0, $timeout)));
             $redis->pconnect($host, $port, $timeout, $id, 0, $timeout);
         } else {
             $redis->connect($host, $port, $timeout, null, 0, $timeout);
