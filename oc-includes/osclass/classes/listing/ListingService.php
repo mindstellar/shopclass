@@ -688,13 +688,18 @@ final class ListingService
             if (!in_array($e->getCode(), Db::LOST_TRANSACTION, true)) {
                 throw $e;
             }
-            throw (new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.')))
-                ->withNotices(array_merge($notices, $this->photos->notices()));
+            throw self::notSaved()->withNotices(array_merge($notices, $this->photos->notices()));
         } catch (RefusedException $e) {
             throw $e->withNotices(array_merge($notices, $this->photos->notices()));
         }
 
         return $saved->withNotices(array_merge($notices, $this->photos->notices()));
+    }
+
+    /** The refusal for a save the database did not keep. */
+    private static function notSaved(): InvalidException
+    {
+        return new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
     }
 
     /**
@@ -812,14 +817,14 @@ final class ListingService
                 E_USER_WARNING
             );
 
-            throw new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
+            throw self::notSaved();
         }
 
         // Written first so a refused title or description removes the new row again,
         // rather than leaving a live listing with no text.
         $texts = array();
         if (!$this->writeTexts('ADD', $aItem['title'], $aItem['description'], $itemId, $texts)) {
-            throw new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
+            throw self::notSaved();
         }
 
         if (!$actor->isAdmin()) {
@@ -868,7 +873,7 @@ final class ListingService
         if ($row === null) {
             trigger_error('Item ' . $itemId . ' is gone before posted_item; aborting.', E_USER_WARNING);
 
-            throw new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
+            throw self::notSaved();
         }
         $item          = $this->items->extendRows(array(Db::stringifyRow($row)), null, self::textRows((int) $itemId, $texts))[0];
         $aItem['item'] = $item;
@@ -943,7 +948,7 @@ final class ListingService
         // Text first: when it is refused, nothing else about the listing has changed yet.
         $texts = $this->storedLocales($aItem['idItem']);
         if (!$this->writeTexts('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem'], $texts)) {
-            throw new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
+            throw self::notSaved();
         }
 
         $location = $this->locationRow($aItem);
