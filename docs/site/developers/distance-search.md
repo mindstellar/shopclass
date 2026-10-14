@@ -66,8 +66,8 @@ plugin finds the exact position from the listing's street address. The owner pic
 **Settings → General → Maps → Address lookup**.
 
 Core looks the address up from a job after the listing is saved, only when the listing has a
-street and no position. A picked provider replaces the map-key lookup; it is not tried after
-it. Each answer is kept in the key-value store for as long as the provider's `cacheTtl()`
+street and no position. With no provider picked, nothing is looked up; the map's own key is
+not used for it. Each answer is kept in the key-value store for as long as the provider's `cacheTtl()`
 allows, at most a year; an address with no match is kept for a day. A provider that
 throws a `RuntimeException` fails the job, and the queue tries again later. A provider whose
 request allowance is used up throws `mindstellar\location\GeocodeLimitReached($message, $seconds)`

@@ -57,6 +57,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Breaking
 
+- Core no longer looks addresses up through the map's own key (Google or MapQuest); a listing gets an exact position only from an address lookup plugin such as LocationIQ. The OpenStreetMaps (MapQuest) key setting is gone, since showing that map never needed it, and `osc_openstreet_api_key()`, `osc_openstreet_geocode_url()` and `osc_google_maps_geocode_url()` are deprecated.
 - The admin no longer loads Bootstrap's JavaScript; a plugin that uses `data-bs-toggle`, `bootstrap.Modal` or the like must call `osc_enqueue_script('bootstrap5')`.
 - The text watermark's width, height and offset settings are gone; the mark is sized to its text. `createWatermarkImageFromText()` reads only `background_color` (now the outline colour) from its options.
 - The live listing count of each country, region, city and category is now an `i_num_items` column on `t_country`, `t_region`, `t_city` and `t_category`; the four `t_*_stats` tables are gone. `CityStats` and the other stats classes keep their own methods; the methods they inherit from `DAO` no longer work.

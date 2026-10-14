@@ -506,7 +506,6 @@ pin(
         'attachment_max_mb'            => 'osclass/attachment_max_mb',
         'auto_cron'                    => 'osclass/auto_cron',
         'googlemaps_api_key'           => 'osclass/googlemaps_api_key',
-        'openstreet_api_key'           => 'osclass/openstreet_api_key',
         'geocode_provider'             => 'osclass/geocode_provider',
         'update_channel'               => 'osclass/update_channel',
         'auto_security_updates'        => 'osclass/auto_security_updates',
@@ -790,7 +789,6 @@ $main = array(
     'enabled_attachment'           => '1',
     'auto_cron'                    => '1',
     'googlemaps_api_key'           => ' gmk ',
-    'openstreet_api_key'           => 'osm',
     'update_channel'               => 'beta',
     'auto_security_updates'        => '1',
 );

@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1170 helpers, 16 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1170 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1374,13 +1374,13 @@ Core defines 1170 helpers, 16 of them deprecated. Generated from the source; do 
 | `osc_get_subdomain_params()` | The search parameters the current subdomain pins, as osc_search_url() takes them. |
 | `osc_google_analytics_id()` | **Deprecated since 6.2.0.** Get the Google Analytics measurement ID a previous release stored. |
 | `osc_google_maps_api_key()` | Get Google Maps API key. |
-| `osc_google_maps_geocode_url($address)` | Get Google Maps geocode URL. |
+| `osc_google_maps_geocode_url($address)` | **Deprecated 7.0.0 core looks addresses up only through a geocode provider plugin.** Get Google Maps geocode URL. |
 | `osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</strong>')` | Gets prepared text, with: - higlight search pattern and search city - maxim length of text |
 | `osc_is_bot_request()` | Whether this request came from a crawler rather than a person. |
 | `osc_keep_form(array $values, string $error)` | Keep a failed form's values for the next page, plus the reason as 'contact_error', and show the reason as a flash message. Read them back with osc_gui_kept(). |
 | `osc_local_referer($fallback)` | The page the request came from when it is on this site, else $fallback. The host is compared, not a prefix, so a look-alike host cannot pass. |
-| `osc_openstreet_api_key()` | Get Open Street Maps API key. |
-| `osc_openstreet_geocode_url($address)` | Get OpenStreetMaps geocode URL. |
+| `osc_openstreet_api_key()` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin.** Get Open Street Maps API key. |
+| `osc_openstreet_geocode_url($address)` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin.** Get OpenStreetMaps geocode URL. |
 | `osc_pop_admin_login_redirect()` | Admin counterpart of osc_pop_login_redirect(). Single-use. |
 | `osc_pop_login_redirect()` | Read, validate and clear the login-redirect cookie set by osc_set_login_redirect(). |
 | `osc_pop_signed_redirect($cookieName)` | Read, validate and clear a signed-redirect cookie. Always deletes it (single-use). |

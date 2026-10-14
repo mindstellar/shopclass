@@ -1022,9 +1022,12 @@ function osc_google_maps_api_key()
  * Get Open Street Maps API key.
  *
  * @return string
+ * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin
  */
 function osc_openstreet_api_key()
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '7.0.0');
+
     return osc_get_preference('openstreet_api_key');
 }
 
@@ -1034,9 +1037,12 @@ function osc_openstreet_api_key()
  * @param string $address
  *
  * @return string
+ * @deprecated 7.0.0 core looks addresses up only through a geocode provider plugin
  */
 function osc_google_maps_geocode_url($address)
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '7.0.0');
+
     return 'https://maps.googleapis.com/maps/api/geocode/json?address='
         . urlencode($address) . '&sensor=false&key='.osc_google_maps_api_key();
 }
@@ -1047,9 +1053,12 @@ function osc_google_maps_geocode_url($address)
  * @param string $address
  *
  * @return string
+ * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin
  */
 function osc_openstreet_geocode_url($address)
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '7.0.0');
+
     return 'https://www.mapquestapi.com/geocoding/v1/address?location='
         . urlencode($address) . '&key='.osc_openstreet_api_key();
 }

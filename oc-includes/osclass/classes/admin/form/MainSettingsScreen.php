@@ -162,8 +162,6 @@ final class MainSettingsScreen extends SettingsScreen
             // has to check it.
             ->text('googlemaps_api_key', __('Google Maps key'), __('Add your Google Maps JavaScript API key.'))
                 ->width('key')
-            ->text('openstreet_api_key', __('OpenStreetMaps key'), __('Add your Mapquest Consumer key.'))
-                ->width('key')
             ->select(
                 \mindstellar\location\GeocodeProviderRegistry::PREF,
                 __('Address lookup'),

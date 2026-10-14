@@ -46,7 +46,7 @@ seed_currency($admin);
 seed_country($admin, 'US', 'United States');
 $cat = seed_category($admin, 'Cars', seed_category($admin, 'Vehicles', null, $en), $en);
 $sue = seed_user($admin, 'sue', 'sue@example.test');
-foreach (['moderate_items' => '-1', 'items_wait_time' => '0', 'language' => 'en_US', 'map_type' => 'google',
+foreach (['moderate_items' => '-1', 'items_wait_time' => '0', 'language' => 'en_US', 'map_type' => 'google', 'geocode_provider' => 'savetest',
     'title_character_length' => '100', 'description_character_length' => '5000'] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
@@ -70,6 +70,48 @@ $form    = static fn (array $extra = []): array => $extra + [
     'contactEmail' => 'office@example.test',
     'contactPhone' => '5550199',
 ];
+// A lookup plugin that answers every address with the same point and notes what it was asked.
+class SaveTestGeocoder implements \mindstellar\location\GeocodeProvider
+{
+    /** @var string[] */
+    public array $asked = [];
+
+    public function id(): string
+    {
+        return 'savetest';
+    }
+
+    public function label(): string
+    {
+        return 'Save test';
+    }
+
+    public function isConfigured(): bool
+    {
+        return true;
+    }
+
+    public function geocode(string $address, ?string $countryCode = null): ?array
+    {
+        $this->asked[] = $address;
+
+        return [30.2672, -97.7431];
+    }
+
+    public function cacheTtl(): ?int
+    {
+        return 0;
+    }
+
+    public function attribution(): string
+    {
+        return '';
+    }
+}
+$lookup = new SaveTestGeocoder();
+osc_add_hook(\mindstellar\location\GeocodeProviderRegistry::HOOK, static function ($registry) use ($lookup): void {
+    $registry->register($lookup);
+});
 $jobs   = static fn (): array => DBConnectionClass::newInstance()->getOsclassDb()->query("SELECT s_payload FROM {$p}t_job_queue WHERE s_type = '" . ListingGeocode::JOB . "'")->fetch_all(MYSQLI_ASSOC);
 $coords = static fn (int $id): array => array_values((array) $admin->query("SELECT d_coord_lat, d_coord_long FROM {$p}t_item_location WHERE fk_i_item_id = $id")->fetch_assoc());
 
@@ -97,30 +139,25 @@ try {
 }
 pin('a save that rolls back queues nothing', 1, count($jobs()));
 
-$urls  = [];
-$fetch = static function (string $url) use (&$urls): string {
-    $urls[] = $url;
-
-    return '{"results":[{"geometry":{"location":{"lat":30.2672,"lng":-97.7431}}}]}';
-};
-check('the job writes what the map service answered', (new ListingGeocode($fetch))->run($id));
+check('the job writes what the lookup plugin answered', (new ListingGeocode())->run($id));
 pin('the coordinates are stored', ['30.267200', '-97.743100'], $coords($id));
-check('the address went to the map service', str_contains($urls[0] ?? '', urlencode('1 Main Street, Austin, Texas, United States')));
-check('a listing that has coordinates is not looked up again', !(new ListingGeocode($fetch))->run($id) && count($urls) === 1);
-check('a listing that is gone is skipped', !(new ListingGeocode($fetch))->run(999999));
-pin('a MapQuest answer is read without count() on an object', [40.5, -3.25], ListingGeocode::parse('openstreet', '{"results":[{"locations":[{"latLng":{"lat":40.5,"lng":-3.25}}]}]}'));
-pin('an answer with no place is null', null, ListingGeocode::parse('google', '{"results":[],"status":"ZERO_RESULTS"}'));
-pin('nothing to geocode is null', null, ListingGeocode::parse('google', 'not json'));
+pin('the address went to the plugin', ['1 Main Street, Austin, Texas, United States'], $lookup->asked);
+check('a listing that has coordinates is not looked up again', !(new ListingGeocode())->run($id) && count($lookup->asked) === 1);
+check('a listing that is gone is skipped', !(new ListingGeocode())->run(999999));
 
 $admin->query("DELETE FROM {$p}t_job_queue");
 $given = $service->create(ListingInput::fromArray($form(['ownerId' => '0', 'd_coord_lat' => '10.5', 'd_coord_long' => '20.5']), $actor, true), $actor)->id();
 pin('a listing posted with coordinates queues no job', [], $jobs());
-Preference::getInstance()->set('map_type', 'none');
-scratchdb_forget_cache();
-osc_reset_preferences();
-$service->create(ListingInput::fromArray($form(['ownerId' => '0']), $actor, true), $actor);
-pin('a site with no map queues no job', [], $jobs());
+foreach (['google', 'openstreet'] as $type) {
+    Preference::getInstance()->set('map_type', $type);
+    Preference::getInstance()->set('geocode_provider', '');
+    scratchdb_forget_cache();
+    osc_reset_preferences();
+    $service->create(ListingInput::fromArray($form(['ownerId' => '0']), $actor, true), $actor);
+    pin('a ' . $type . ' map with no lookup plugin queues no job', [], $jobs());
+}
 Preference::getInstance()->set('map_type', 'google');
+Preference::getInstance()->set('geocode_provider', 'savetest');
 scratchdb_forget_cache();
 osc_reset_preferences();
 
@@ -141,12 +178,12 @@ pin('an edit from a form with no map fields keeps the coordinates', ['10.5', '20
 $service->update(ListingInput::fromArray($form(['id' => (string) $given, 'ownerId' => '0', 'address' => '5 Main Street']), $actor, false), $actor, false, false);
 pin('a new address with no coordinates clears them for a new lookup', [null, null], $coords($given));
 $admin->query("DELETE FROM {$p}t_job_queue");
-Preference::getInstance()->set('map_type', 'none');
+Preference::getInstance()->set('geocode_provider', '');
 scratchdb_forget_cache();
 osc_reset_preferences();
 $service->update(ListingInput::fromArray($form(['id' => (string) $noCoords, 'ownerId' => '0', 'address' => '4 Main Street']), $actor, false), $actor, false, false);
-pin('a new address on a site with no map queues none', [], $jobs());
-Preference::getInstance()->set('map_type', 'google');
+pin('a new address on a site with no lookup plugin queues none', [], $jobs());
+Preference::getInstance()->set('geocode_provider', 'savetest');
 scratchdb_forget_cache();
 osc_reset_preferences();
 

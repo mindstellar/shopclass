@@ -243,7 +243,7 @@ $id = $service->create(ListingInput::fromArray($form(), $actor, true), $actor)->
 pin('a listing with a street queues a lookup, with no map set', 1, $jobs());
 $fake->calls  = [];
 $fake->answer = [18.5308, 73.8475];
-check('the job uses the provider', (new ListingGeocode(static fn (): string => 'unused'))->run($id));
+check('the job uses the provider', (new ListingGeocode())->run($id));
 pin('with the address and country', [['12 FC Road, Pune, Maharashtra, India', 'in']], $fake->calls);
 pin('the position is stored', ['18.530800', '73.847500'], $coords($id));
 
