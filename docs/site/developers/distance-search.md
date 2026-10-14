@@ -69,7 +69,12 @@ Core looks the address up from a job after the listing is saved, only when the l
 street and no position. A picked provider replaces the map-key lookup; it is not tried after
 it. Each answer is kept in the key-value store for as long as the provider's `cacheTtl()`
 allows, at most a year; an address with no match is kept for a day. A provider that
-throws a `RuntimeException` fails the job, and the queue tries again later.
+throws a `RuntimeException` fails the job, and the queue tries again later. A provider whose
+request allowance is used up throws `mindstellar\location\GeocodeLimitReached($message, $seconds)`
+instead: the job waits that long and tries again, with no failure counted.
+
+`ListingGeocode::queueExisting()` queues the lookup of every listing that has a street and no
+position. One job works through them ten at a time, and waits the same way when the allowance runs out.
 
 A provider plugin implements `mindstellar\location\GeocodeProvider` and registers it on
 `register_geocode_providers` (7.0+):

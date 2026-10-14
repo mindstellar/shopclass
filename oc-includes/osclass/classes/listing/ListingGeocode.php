@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\database\Db;
+use mindstellar\location\GeocodeLimitReached;
 use mindstellar\location\Geocoder;
 
 /**
@@ -22,6 +23,12 @@ use mindstellar\location\Geocoder;
 final class ListingGeocode
 {
     public const JOB = 'listing.geocode';
+
+    /** Looks up listings saved before a provider was set up, a few per run. */
+    public const BACKFILL = 'listing.geocode_backfill';
+
+    /** Listings one backfill run looks up. */
+    private const BATCH = 10;
 
     /** Seconds the map service gets to answer. */
     private const TIMEOUT = 3;
@@ -64,9 +71,56 @@ final class ListingGeocode
     public static function registerJobs(): void
     {
         osc_job_register_handler(self::JOB, static function ($job): void {
-            (new self())->run((int) ($job->payload()['item'] ?? 0));
+            try {
+                (new self())->run((int) ($job->payload()['item'] ?? 0));
+            } catch (GeocodeLimitReached $e) {
+                $job->repeat($job->payload(), $e->retryAfter());
+            }
         });
         osc_job_describe(self::JOB, __('Listing map position'), static fn (array $payload): string => sprintf(__('Listing #%d'), (int) ($payload['item'] ?? 0)));
+        osc_job_register_handler(self::BACKFILL, static function ($job): void {
+            $next = (new self())->backfill((int) ($job->payload()['after'] ?? 0));
+            if ($next !== null) {
+                $job->repeat(['after' => $next[0]], $next[1]);
+            }
+        });
+        osc_job_describe(self::BACKFILL, __('Map positions of older listings'), static fn (array $payload): string => sprintf(__('After listing #%d'), (int) ($payload['after'] ?? 0)));
+    }
+
+    /**
+     * Queue the lookup of every listing with a street address and no map position, when a
+     * geocode provider is set up.
+     *
+     * @return bool whether the lookup is now queued or running
+     */
+    public static function queueExisting(): bool
+    {
+        return Geocoder::active() !== null && osc_job_ensure(self::BACKFILL, ['after' => 0]);
+    }
+
+    /**
+     * Look up the next few listings after $afterId.
+     *
+     * @return array{0:int,1:int}|null where to go on and how many seconds to wait first, or null when done
+     */
+    public function backfill(int $afterId): ?array
+    {
+        if (Geocoder::active() === null) {
+            return null;
+        }
+        $ids = ListingStore::withoutPosition($afterId, self::BATCH);
+        foreach ($ids as $id) {
+            try {
+                $this->run($id);
+            } catch (GeocodeLimitReached $e) {
+                return [$id - 1, $e->retryAfter()];
+            } catch (\RuntimeException $e) {
+                // One address the service cannot take does not stop the rest.
+                error_log('Geocode of listing ' . $id . ' failed: ' . $e->getMessage());
+            }
+        }
+
+        return count($ids) < self::BATCH ? null : [(int) end($ids), 0];
     }
 
     /**

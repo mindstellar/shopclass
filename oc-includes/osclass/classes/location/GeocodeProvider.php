@@ -34,6 +34,7 @@ interface GeocodeProvider
      * @param string|null $countryCode two-letter code that narrows the search
      *
      * @return array{0:float,1:float}|null latitude and longitude
+     * @throws GeocodeLimitReached when the request allowance is used up; the job waits for it to renew
      * @throws \RuntimeException when the service cannot be reached or refuses the call; the job retries
      */
     public function geocode(string $address, ?string $countryCode = null): ?array;

@@ -195,6 +195,24 @@ final class ListingStore extends Model
     }
 
     /**
+     * Ids after $afterId of listings with a street address and no map position of their own, oldest first.
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    public static function withoutPosition(int $afterId, int $limit): array
+    {
+        $rows = Db::select(
+            'SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_location WHERE fk_i_item_id > ? AND s_address <> \'\''
+            . ' AND (d_coord_lat IS NULL OR d_coord_lat = 0 OR d_coord_long IS NULL OR d_coord_long = 0)'
+            . ' ORDER BY fk_i_item_id LIMIT ' . max(1, $limit),
+            array($afterId)
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['fk_i_item_id'], $rows);
+    }
+
+    /**
      * Store looked-up coordinates, unless the listing got its own in the meantime.
      *
      * @return int rows changed

@@ -16,6 +16,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
 
+- A geocode provider can say its request allowance is used up (`GeocodeLimitReached`); the lookup waits for it to renew instead of failing. `ListingGeocode::queueExisting()` looks up older listings in the background.
 - A search plugin can answer the admin Listings screen: `search_results` fires with context `admin`, and `SearchFilters` adds `flags`, `itemId` and `contactEmail`.
 - `osc.offcanvas` and `osc.dropdown` in the admin, for slide-in panels and dropdown menus with no Bootstrap.
 - `osc.collapse` in the admin: show and hide a panel with `data-osc-collapse`, as an accordion with `data-osc-parent`, with `osc:collapse:*` events.
