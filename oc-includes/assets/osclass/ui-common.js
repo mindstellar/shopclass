@@ -461,3 +461,27 @@ function oscAutocomplete(input, opts) {
         initSuggest();
     }
 })();
+
+// A listing form sends once: a second submit while the first is on its way is dropped, so a
+// double click posts one listing. A submit that a theme's own check stops does not count.
+(function () {
+    var sending = new WeakSet();
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        var action = form.querySelector ? form.querySelector('input[name="action"]') : null;
+        if (!action || (action.value !== 'item_add_post' && action.value !== 'item_edit_post')) { return; }
+        if (sending.has(form)) {
+            e.preventDefault();
+            return;
+        }
+        setTimeout(function () {
+            if (!e.defaultPrevented) { sending.add(form); }
+        }, 0);
+    });
+
+    // Back from the next page restores this one from the browser's cache, so it may send again.
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) { sending = new WeakSet(); }
+    });
+})();
