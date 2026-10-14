@@ -35,11 +35,12 @@ $tmpDir = sys_get_temp_dir() . '/osc-upload-no-file-' . getmypid();
  *
  * @return array{name: mixed, error: string, warnings: string[]}
  */
-$request = static function (array $server, array $files) use ($tmpDir): array {
+$request = static function (array $server, array $files, array $get = array()) use ($tmpDir): array {
     $_SERVER = $server;
     $_FILES  = $files;
-    $_GET    = array();
+    $_GET    = $get;
     $_POST   = array();
+    $_REQUEST = $get;
     Params::init();
 
     $warnings = array();
@@ -78,6 +79,21 @@ $form = $request(
 pin('the name is empty', '', $form['name']);
 pin('the upload is refused as an empty file', 'Exception: File is empty', $form['error']);
 pin('no warning', array(), $form['warnings']);
+
+harness_section('An array-shaped qqfile');
+$xhr = $request(
+    array('REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'application/octet-stream', 'CONTENT_LENGTH' => '10'),
+    array(),
+    array('qqfile' => array('a.png'))
+);
+pin('?qqfile[]= gives an empty name', '', $xhr['name']);
+check('and is refused, not a crash', strpos($xhr['error'], 'Exception: File has an invalid extension') === 0, $xhr['error']);
+$multi = $request(
+    array('REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'multipart/form-data; boundary=x'),
+    array('qqfile' => array('name' => array('a.png'), 'type' => array('image/png'), 'tmp_name' => array('/tmp/x'), 'error' => array(0), 'size' => array(10)))
+);
+pin('a qqfile[] field gives an empty name', '', $multi['name']);
+pin('and is refused as an empty file', 'Exception: File is empty', $multi['error']);
 
 @rmdir($tmpDir);
 

@@ -189,7 +189,7 @@ class AjaxUploadedFileXhr
      */
     public function getOriginalName()
     {
-        return Params::getParam('qqfile');
+        return Params::getParamString('qqfile');
     }
 }
 
@@ -202,7 +202,9 @@ class AjaxUploadedFileForm
 
     public function __construct()
     {
-        $this->file = Params::getFiles('qqfile');
+        $file = Params::getFiles('qqfile');
+        // A qqfile[] field gives arrays here; treat it as no file.
+        $this->file = is_array($file) && is_string($file['name'] ?? null) ? $file : array();
     }
 
     /**
