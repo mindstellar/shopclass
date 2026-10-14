@@ -2,6 +2,31 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.7
+
+This release fixes a script injection in the post form's category picker, stops visitors filling in
+e-mail placeholders, fixes two error pages, and closes a way around e-mail bans.
+
+### Security
+
+- The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
+- A placeholder such as `{WEB_LINK}` or `{IP_ADDRESS}` typed into a contact message, name or other text that goes into an e-mail stays as typed.
+
+### Fixed
+
+- A photo upload request that carries no file, or a malformed one, is refused with an error instead of a server error.
+- A search URL that sends several categories as `sCategory[]` no longer fails with an error when friendly URLs are on.
+- A banned e-mail address can no longer sign in by typing its username instead.
+
+## Shopclass 6.4.6
+
+This release fixes `php oc-cli.php cron`, which ran the hourly, daily and weekly tasks every time
+instead of only the due ones, so a cron line every five minutes sent daily alerts every five minutes.
+
+### Fixed
+
+- `php oc-cli.php cron` with no `--type` runs only the tasks that are due, as the docs say.
+
 ## Shopclass 6.4.5
 
 This release fixes the admin password reset, which ended in an error page after a new

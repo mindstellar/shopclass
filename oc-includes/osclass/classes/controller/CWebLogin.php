@@ -117,9 +117,10 @@ class CWebLogin extends BaseModel
                         );
                     }
                 }
-                // e-mail or/and IP is/are banned
+                // e-mail or/and IP is/are banned. The account's own e-mail, not what was typed:
+                // a username (or another spelling of the address) would never match an e-mail rule.
                 $banned =
-                    osc_is_banned($email); // int 0: not banned or unknown, 1: email is banned, 2: IP is banned, 3: both email & IP are banned
+                    osc_is_banned((string) $user['s_email']); // int 0: not banned or unknown, 1: email is banned, 2: IP is banned
                 if ($banned & 1) {
                     osc_add_flash_error_message(_m('Your current email is not allowed'));
                 }

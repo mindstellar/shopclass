@@ -38,10 +38,16 @@ class AjaxUploader
     }
 
     /**
+     * The uploaded file's name, or '' when the request carried no file.
+     *
      * @return mixed
      */
     public function getOriginalName()
     {
+        if (!$this->file) {
+            return '';
+        }
+
         return $this->file->getOriginalName();
     }
 
@@ -183,7 +189,7 @@ class AjaxUploadedFileXhr
      */
     public function getOriginalName()
     {
-        return Params::getParam('qqfile');
+        return Params::getParamString('qqfile');
     }
 }
 
@@ -196,7 +202,9 @@ class AjaxUploadedFileForm
 
     public function __construct()
     {
-        $this->file = Params::getFiles('qqfile');
+        $file = Params::getFiles('qqfile');
+        // A qqfile[] field gives arrays here; treat it as no file.
+        $this->file = is_array($file) && is_string($file['name'] ?? null) ? $file : array();
     }
 
     /**
@@ -214,7 +222,7 @@ class AjaxUploadedFileForm
      */
     public function getOriginalName()
     {
-        return $this->file['name'];
+        return $this->file['name'] ?? '';
     }
 
     /**
@@ -222,6 +230,6 @@ class AjaxUploadedFileForm
      */
     public function getSize()
     {
-        return $this->file['size'];
+        return $this->file['size'] ?? 0;
     }
 }

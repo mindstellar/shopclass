@@ -23,6 +23,8 @@ $i_now_truncated = strtotime(date('Y-m-d H:i:00'));
 if (!defined('CLI')) {
     define('CLI', PHP_SAPI === 'cli');
 }
+// The CLI names a schedule to force it; with none named it runs what is due, as the web does.
+$forced = CLI ? strtolower((string) Params::getParam('cron-type')) : '';
 
 // Hourly crons
 $cron = Cron::newInstance()->getCronByType('HOURLY');
@@ -30,7 +32,7 @@ if (is_array($cron)) {
     $claimed = false;
     $i_next  = strtotime($cron['d_next_exec']);
 
-    if ((CLI && (Params::getParam('cron-type') === 'hourly')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
+    if ($forced !== '' ? $forced === 'hourly' : ($i_now - $i_next + $shift_seconds) >= 0) {
         // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
         $d_next = date('Y-m-d H:i:s', $i_now_truncated + 3600);
         $claimed = Cron::newInstance()->claim('HOURLY', (string) $cron['d_next_exec'], $d_now, $d_next);
@@ -81,7 +83,7 @@ if (is_array($cron)) {
     $claimed = false;
     $i_next  = strtotime($cron['d_next_exec']);
 
-    if ((CLI && (Params::getParam('cron-type') === 'daily')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
+    if ($forced !== '' ? $forced === 'daily' : ($i_now - $i_next + $shift_seconds) >= 0) {
         // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
         $d_next = date('Y-m-d H:i:s', $i_now_truncated + (24 * 3600));
         $claimed = Cron::newInstance()->claim('DAILY', (string) $cron['d_next_exec'], $d_now, $d_next);
@@ -160,7 +162,7 @@ if (is_array($cron)) {
     $claimed = false;
     $i_next  = strtotime($cron['d_next_exec']);
 
-    if ((CLI && (Params::getParam('cron-type') === 'weekly')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
+    if ($forced !== '' ? $forced === 'weekly' : ($i_now - $i_next + $shift_seconds) >= 0) {
         // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
         $d_next = date('Y-m-d H:i:s', $i_now_truncated + (7 * 24 * 3600));
         $claimed = Cron::newInstance()->claim('WEEKLY', (string) $cron['d_next_exec'], $d_now, $d_next);
