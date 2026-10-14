@@ -12,6 +12,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ### Fixed
 
 - A photo upload request that carries no file, or a malformed one, is refused with an error instead of a server error.
+- A search URL that sends several categories as `sCategory[]` no longer fails with an error when friendly URLs are on.
 
 ## Shopclass 6.4.6
 

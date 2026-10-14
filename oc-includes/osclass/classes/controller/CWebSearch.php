@@ -85,6 +85,9 @@ class CWebSearch extends BaseModel
                     if (preg_match('|(.*?)_.*?-c\d+|', $search_uri, $match)) {
                         Params::setParam('sCategory', $match[1]);
                     }
+                } elseif (is_array(Params::getParam('sCategory'))) {
+                    // sCategory[]=3&sCategory[]=4 is a list of categories, not a slug in the URI;
+                    // the search reads it as it is.
                 } elseif (Params::existParam('sCategory')) {
                     if (strpos(Params::getParam('sCategory'), '/') !== false) {
                         $tmp = explode(
