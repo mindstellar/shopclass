@@ -4,6 +4,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.7
 
+This release fixes a script injection in the post form's category picker, stops visitors filling in
+e-mail placeholders, fixes two error pages, and closes a way around e-mail bans.
+
 ### Security
 
 - The category picker on the post and edit forms keeps a crafted `catId` in the address inside its script, so the link can no longer run code.
