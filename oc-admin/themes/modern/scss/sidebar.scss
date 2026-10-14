@@ -106,8 +106,8 @@ $sidebar-gutter: 2.35rem;
     }
 
     // The disclosure toggle. A real <button> (not an <i role="button">) so it
-    // carries an accessible name and aria-expanded for screen readers; Bootstrap's
-    // collapse plugin flips `.collapsed` on it. `auto` pushes it to the row's end —
+    // carries an accessible name and aria-expanded for screen readers; osc.collapse
+    // (ui-osc.js) flips `.collapsed` on it. `auto` pushes it to the row's end —
     // the inline-end edge in both directions — without the physical float. The
     // padding enlarges the hit area past the icon glyph (the negative inline-end
     // margin pulls that padding back so the row's edge alignment is unchanged).

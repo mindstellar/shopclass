@@ -145,6 +145,33 @@ search and post pages. On other pages, call `osc_enqueue_script('osc-ui-common')
 `.osc-suggest-thumb`, `.osc-suggest-title`, `.osc-suggest-meta`, `.osc-suggest-count` and
 `.osc-ac-option.is-search`.
 
+## Show and hide a panel in the admin
+
+`osc.collapse` (in `admin-ui-osc`, loaded on every admin page) opens and closes a panel with
+no framework. Give the button `data-osc-collapse` with the panel's selector, and the panel
+the class `collapse`, plus `show` when it starts open:
+
+```html
+<button type="button" data-osc-collapse="#more" aria-controls="more" aria-expanded="false">More</button>
+<div id="more" class="collapse">…</div>
+```
+
+The button's `aria-expanded` and its `collapsed` class follow the panel. Panels that share
+a `data-osc-parent` value work as an accordion: opening one closes the others.
+
+From script, call `osc.collapse.show(panel)`, `osc.collapse.hide(panel)` or
+`osc.collapse.toggle(panel)`. The panel fires these events, which bubble:
+
+| Event | When |
+|---|---|
+| `osc:collapse:show` | before it opens; `preventDefault()` stops it |
+| `osc:collapse:shown` | once it is open |
+| `osc:collapse:hide` | before it closes; `preventDefault()` stops it |
+| `osc:collapse:hidden` | once it is closed |
+
+The admin menu uses it, so a plugin can listen for `osc:collapse:shown` on
+`#sidebar-wrapper` to know a section was opened.
+
 ## Cache-busting
 
 Append a version to your asset URL so an update actually reaches returning

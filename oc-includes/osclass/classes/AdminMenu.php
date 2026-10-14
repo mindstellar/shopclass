@@ -753,7 +753,7 @@ class AdminMenu
             if (isset($value['sub']) && !empty($value['sub'])) {
                 $isOpen = ($activeMenu === $menuId);
                 $str    .= ' <button type="button" class="nav-chevron' . ($isOpen ? '' : ' collapsed')
-                           . '" data-bs-target="#' . $menuId . '-submenu" data-bs-toggle="collapse"'
+                           . '" data-osc-collapse="#' . $menuId . '-submenu"'
                            . ' aria-expanded="' . ($isOpen ? 'true' : 'false') . '"'
                            . ' aria-controls="' . $menuId . '-submenu"'
                            . ' aria-label="'
@@ -786,7 +786,7 @@ class AdminMenu
     {
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
-            . '-submenu" data-bs-parent="#dashboard-menu">';
+            . '-submenu" data-osc-parent="#dashboard-menu">';
         // Which items this admin may see. Index 4 is the capability on a submenu entry.
         //
         // A divider is skipped here on purpose. It is a label with no destination, so it can

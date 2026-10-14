@@ -16,6 +16,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
 
+- `osc.collapse` in the admin: show and hide a panel with `data-osc-collapse`, as an accordion with `data-osc-parent`, with `osc:collapse:*` events.
 - Watermark opacity, four more positions (top, bottom, left and right centre) and a tiled pattern; a text mark has an outline instead of a solid box.
 - Plugins run their own database migrations with `MigrationRunner::forPlugin()`. See [Database](https://shopclass.org/docs/developers/database/).
 - `oc-cli.php plugin:install --plugin=<folder>` installs and enables a plugin from a shell.
@@ -110,6 +111,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Database queries send their values in one trip instead of a prepare and an execute; `define('OSC_DB_REAL_PREPARES', true);` in `config.php` brings back real prepared statements.
 
 ### Changed
+- The admin menu opens and closes its sections with core code instead of Bootstrap; a plugin listening for `shown.bs.collapse` on it should listen for `osc:collapse:shown`.
 - The object cache starts fresh after an upgrade, so pages and sitemaps built by the old release are not served; a flush also clears what older releases left.
 - An account name is at most 50 characters; names already saved are kept, and must be shortened the next time the account is edited.
 - An account description is at most 1000 characters in each language.

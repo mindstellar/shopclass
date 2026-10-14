@@ -46,6 +46,7 @@ if ($oscSidebar !== 'collapsed') {
             </div>
             <div class="sidebar-footer">
                 <button type="button" id="oscSidebarToggle" class="sidebar-collapse-toggle"
+                        data-osc-save-url="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=ajax&action=save_sidebar_state&' . osc_csrf_token_url()); ?>"
                         aria-controls="sidebar-wrapper"
                         aria-expanded="<?php echo $oscSidebar === 'collapsed' ? 'false' : 'true'; ?>"
                         aria-label="<?php echo osc_esc_html(__('Collapse or expand the menu')); ?>">

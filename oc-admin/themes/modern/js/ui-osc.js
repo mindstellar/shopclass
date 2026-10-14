@@ -619,3 +619,276 @@ document.addEventListener('change', function (e) {
 document.addEventListener('input', function (e) {
     if (oscDependsIsMaster(e.target)) { oscSyncDepends(document); }
 });
+
+// osc.collapse — show and hide a .collapse panel from a [data-osc-collapse="#panel"] button,
+// an accordion with data-osc-parent. See docs/site/developers/scripts-and-styles.md.
+osc.collapse = (function () {
+    var DURATION = 350;
+
+    function emit(panel, name, cancelable) {
+        return panel.dispatchEvent(new CustomEvent('osc:collapse:' + name, {bubbles: true, cancelable: !!cancelable}));
+    }
+
+    function sync(panel, open) {
+        if (!panel.id) { return; }
+        document.querySelectorAll('[data-osc-collapse="#' + CSS.escape(panel.id) + '"]').forEach(function (t) {
+            t.setAttribute('aria-expanded', open ? 'true' : 'false');
+            t.classList.toggle('collapsed', !open);
+        });
+    }
+
+    function animate(panel, from, to, done) {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            done();
+            return;
+        }
+        var finished = false;
+        function finish() {
+            if (finished) { return; }
+            finished = true;
+            panel.style.transition = panel.style.height = panel.style.overflow = '';
+            done();
+        }
+        panel.style.overflow = 'hidden';
+        panel.style.height = from + 'px';
+        void panel.offsetHeight;
+        panel.style.transition = 'height ' + DURATION + 'ms ease';
+        panel.style.height = to + 'px';
+        panel.addEventListener('transitionend', function end(e) {
+            if (e.target === panel && e.propertyName === 'height') {
+                panel.removeEventListener('transitionend', end);
+                finish();
+            }
+        });
+        setTimeout(finish, DURATION + 50);
+    }
+
+    function show(panel) {
+        if (!panel || panel.classList.contains('show') || panel.dataset.oscCollapseBusy || !emit(panel, 'show', true)) {
+            return;
+        }
+        var group = panel.getAttribute('data-osc-parent');
+        if (group) {
+            document.querySelectorAll('.collapse.show[data-osc-parent="' + group + '"]').forEach(function (other) {
+                if (other !== panel) { hide(other); }
+            });
+        }
+        panel.dataset.oscCollapseBusy = '1';
+        panel.classList.add('show');
+        sync(panel, true);
+        animate(panel, 0, panel.scrollHeight, function () {
+            delete panel.dataset.oscCollapseBusy;
+            emit(panel, 'shown');
+        });
+    }
+
+    function hide(panel) {
+        if (!panel || !panel.classList.contains('show') || panel.dataset.oscCollapseBusy || !emit(panel, 'hide', true)) {
+            return;
+        }
+        panel.dataset.oscCollapseBusy = '1';
+        sync(panel, false);
+        animate(panel, panel.scrollHeight, 0, function () {
+            panel.classList.remove('show');
+            delete panel.dataset.oscCollapseBusy;
+            emit(panel, 'hidden');
+        });
+    }
+
+    function toggle(panel) {
+        if (panel) { (panel.classList.contains('show') ? hide : show)(panel); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-osc-collapse]');
+        if (!trigger) { return; }
+        e.preventDefault();
+        toggle(document.querySelector(trigger.getAttribute('data-osc-collapse')));
+    });
+
+    return {show: show, hide: hide, toggle: toggle};
+})();
+
+// osc.sidebar — the admin menu: the rail (collapsed) mode with its flyouts, the ghost
+// scrollbar, and bringing an opened section into view. Runs once on DOMContentLoaded;
+// the collapse button saves the state to the URL in its data-osc-save-url.
+osc.sidebar = (function () {
+    var root = document.documentElement;
+    var desktop = window.matchMedia('(min-width: 1025px)');
+
+    function collapsed() {
+        return root.getAttribute('data-osc-sidebar') === 'collapsed' && desktop.matches;
+    }
+
+    // A collapsed row needs the label the rail cannot show: a parent reuses its submenu
+    // as the flyout, under an added title; a leaf gets a small flyout element. Both are
+    // children of the <li>, so the CSS :hover/:focus-within reveal still works.
+    function addFlyouts(items) {
+        items.forEach(function (item) {
+            var anchor = item.querySelector('.nav-link a');
+            if (!anchor) { return; }
+            var label = anchor.textContent.trim();
+            var submenu = item.querySelector('.sidebar-submenu');
+            if (submenu) {
+                if (!submenu.querySelector('.rail-flyout-title')) {
+                    var head = document.createElement('li');
+                    head.className = 'rail-flyout-title';
+                    head.setAttribute('aria-hidden', 'true');
+                    head.textContent = label;
+                    submenu.insertBefore(head, submenu.firstChild);
+                }
+            } else if (!item.querySelector('.sidebar-flyout')) {
+                var chip = document.createElement('span');
+                chip.className = 'sidebar-flyout';
+                chip.setAttribute('aria-hidden', 'true');
+                chip.textContent = label;
+                item.appendChild(chip);
+            }
+        });
+    }
+
+    // Flyouts leave the scroll frame with position:fixed, so their place is worked out
+    // here from the row; the CSS owns when they show.
+    function place(item) {
+        var link = item.querySelector('.nav-link');
+        var fly = item.querySelector('.sidebar-submenu') || item.querySelector('.sidebar-flyout');
+        if (!link || !fly) { return; }
+        var r = link.getBoundingClientRect();
+        fly.style.top = Math.min(r.top, Math.max(8, window.innerHeight - fly.offsetHeight - 8)) + 'px';
+        if (getComputedStyle(root).direction === 'rtl') {
+            fly.style.right = (window.innerWidth - r.left + 6) + 'px';
+            fly.style.left = 'auto';
+        } else {
+            fly.style.left = (r.right + 6) + 'px';
+            fly.style.right = 'auto';
+        }
+    }
+
+    function initRail(nav, scroller) {
+        var items = Array.prototype.slice.call(nav.querySelectorAll('#dashboard-menu > li.nav-item'));
+        var open = null;
+        addFlyouts(items);
+        items.forEach(function (item) {
+            function enter() { if (collapsed()) { open = item; place(item); } }
+            function leave() { if (open === item) { open = null; } }
+            item.addEventListener('mouseenter', enter);
+            item.addEventListener('mouseleave', leave);
+            item.addEventListener('focusin', enter);
+            item.addEventListener('focusout', leave);
+        });
+        if (scroller) {
+            scroller.addEventListener('scroll', function () { if (open && collapsed()) { place(open); } }, {passive: true});
+        }
+        window.addEventListener('resize', function () { if (open && collapsed()) { place(open); } });
+
+        var toggle = document.getElementById('oscSidebarToggle');
+        if (!toggle) { return; }
+        toggle.addEventListener('click', function () {
+            var next = root.getAttribute('data-osc-sidebar') === 'collapsed' ? 'expanded' : 'collapsed';
+            root.setAttribute('data-osc-sidebar', next);
+            toggle.setAttribute('aria-expanded', next === 'collapsed' ? 'false' : 'true');
+            var url = toggle.getAttribute('data-osc-save-url');
+            if (url) {
+                fetch(url + '&state=' + next, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            }
+        });
+    }
+
+    // The native scrollbar is hidden; this thin overlay tracks it, shows on scroll or
+    // hover and fades when idle, and its thumb can be dragged.
+    function initScrollbar(frame, scroller) {
+        var bar = document.createElement('div');
+        bar.className = 'ghost-scrollbar';
+        var thumb = document.createElement('div');
+        thumb.className = 'ghost-scrollbar-thumb';
+        bar.appendChild(thumb);
+        frame.appendChild(bar);
+
+        var hideTimer, dragging = false, startY = 0, startScroll = 0;
+        function measure() {
+            var ch = scroller.clientHeight;
+            var sh = scroller.scrollHeight;
+            if (sh - ch <= 1) {
+                bar.classList.remove('is-active');
+                bar.style.display = 'none';
+                return null;
+            }
+            bar.style.display = '';
+            var thumbH = Math.max(28, Math.round(ch * ch / sh));
+            var maxThumb = ch - thumbH;
+            thumb.style.height = thumbH + 'px';
+            thumb.style.transform = 'translateY(' + (maxThumb > 0 ? Math.round(scroller.scrollTop / (sh - ch) * maxThumb) : 0) + 'px)';
+            return {ch: ch, sh: sh, maxThumb: maxThumb};
+        }
+        function flash() {
+            if (!measure()) { return; }
+            bar.classList.add('is-active');
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(function () {
+                if (!dragging && !bar.matches(':hover')) { bar.classList.remove('is-active'); }
+            }, 1000);
+        }
+        scroller.addEventListener('scroll', flash, {passive: true});
+        frame.addEventListener('mouseenter', flash);
+        window.addEventListener('resize', measure);
+        thumb.addEventListener('mousedown', function (e) {
+            if (!measure()) { return; }
+            dragging = true;
+            startY = e.clientY;
+            startScroll = scroller.scrollTop;
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        window.addEventListener('mousemove', function (e) {
+            if (!dragging) { return; }
+            var m = measure();
+            if (m && m.maxThumb > 0) { scroller.scrollTop = startScroll + (e.clientY - startY) / m.maxThumb * (m.sh - m.ch); }
+        });
+        window.addEventListener('mouseup', function () {
+            if (dragging) { dragging = false; document.body.style.userSelect = ''; flash(); }
+        });
+        bar.addEventListener('mouseenter', function () { clearTimeout(hideTimer); if (measure()) { bar.classList.add('is-active'); } });
+        bar.addEventListener('mouseleave', flash);
+        measure();
+        return measure;
+    }
+
+    // An opened section can end below the fold; bring as much of it into view as fits.
+    function revealOnOpen(scroller, measure) {
+        scroller.addEventListener('osc:collapse:shown', function (e) {
+            var section = e.target.closest('.nav-item');
+            if (section && !collapsed()) {
+                var view = scroller.getBoundingClientRect();
+                var box = section.getBoundingClientRect();
+                if (box.bottom > view.bottom) {
+                    scroller.scrollTop += Math.min(box.bottom - view.bottom, box.top - view.top);
+                }
+            }
+            measure();
+        });
+    }
+
+    function init() {
+        var nav = document.getElementById('sidebar-wrapper');
+        if (!nav || nav.dataset.oscSidebarInit) { return; }
+        nav.dataset.oscSidebarInit = '1';
+        var frame = nav.querySelector('.sidebar-scroll-frame');
+        var scroller = frame ? frame.querySelector('.sidebar-scroll') : null;
+        initRail(nav, scroller);
+        if (frame && scroller) {
+            var current = nav.querySelector('.sidebar-submenu .sub-active');
+            if (current && !collapsed()) {
+                var view = scroller.getBoundingClientRect();
+                var box = current.getBoundingClientRect();
+                if (box.bottom > view.bottom || box.top < view.top) {
+                    scroller.scrollTop += box.top - view.top - (view.height - box.height) / 2;
+                }
+            }
+            revealOnOpen(scroller, initScrollbar(frame, scroller));
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    return {init: init, collapsed: collapsed};
+})();
