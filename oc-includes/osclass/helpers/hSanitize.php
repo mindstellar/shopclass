@@ -147,6 +147,10 @@ function osc_esc_html($str = '')
     if ($str === '') {
         return '';
     }
+    // With no "&" there is no entity to keep, so the four passes below would change nothing.
+    if (is_string($str) && strpos($str, '&') === false) {
+        return str_replace(array("'", '"'), array('&#39;', '&quot;'), htmlspecialchars($str));
+    }
 
     $temp = '__TEMP_AMPERSANDS__';
 

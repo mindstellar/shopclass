@@ -119,6 +119,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With memcached or Redis, settings and the country list are cached, a page reads its cache groups in one round trip, and no page writes to the cache on a normal view.
 - Database queries send their values in one trip instead of a prepare and an execute; `define('OSC_DB_REAL_PREPARES', true);` in `config.php` brings back real prepared statements.
 - A city or region page reads each linked place once, not once per link.
+- `osc_esc_html()` skips its entity passes for text with no `&`, which is most text on a page.
 - A new database connection sets its character set, autocommit and SQL mode in one statement instead of two.
 - With Redis or Valkey and the phpredis extension, each PHP worker keeps its cache connection between pages instead of opening one per page.
 - With Redis, Valkey or memcached and the APCu extension, each PHP worker keeps its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image now loads APCu.
