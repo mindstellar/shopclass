@@ -146,6 +146,15 @@
     min-width: 0;
   }
 
+  // A row with no label, such as a checkbox that carries its own, lines up with the
+  // controls above it rather than running under the label column.
+  // On a phone the label sits above the control, so no column needs clearing.
+  @media (min-width: 577px) {
+    .form-row:not(.form-row-stacked) > .form-controls:first-child {
+      margin-inline-start: 170px;
+    }
+  }
+
   .form-actions {
     padding-inline-start: 170px;
   }

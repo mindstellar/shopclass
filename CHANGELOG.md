@@ -158,6 +158,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
+- On settings pages, a checkbox with no label beside it lines up with the other fields.
 - Opening a section in the admin sidebar scrolls it into view, so entries below the bottom edge are no longer hidden.
 - The Docker stacks run Valkey as a cache only, with no snapshot to disk, so a restart no longer brings back stale cached data.
 - The Docker image turns off the PHP JIT, which on PHP 8.5 built wrong search and sitemap links in long-running workers.
