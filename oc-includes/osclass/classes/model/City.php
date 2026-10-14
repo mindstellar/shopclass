@@ -80,7 +80,9 @@ class City extends DAO
             }
             $params[] = $regionId;
         }
-        $sql .= ' LIMIT 10';
+        // A big city must not be pushed out by villages that sort before it.
+        $sql     .= ' ORDER BY a.s_name = ? DESC, a.i_num_items DESC, a.s_name LIMIT 10';
+        $params[] = $query;
 
         try {
             $rows = Db::select($sql, $params);

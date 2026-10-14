@@ -148,7 +148,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
-
+- The city and region type-ahead lists an exact name first, then the places with the most listings, so a big city is no longer hidden by villages.
 - A search URL that sends several categories as `sCategory[]` no longer fails with an error when friendly URLs are on.
 - A post or edit form link with `catId[]` in it no longer fails with an error.
 - A form or link value sent as a list (`name[]=`) no longer gives a server error on sign-in, CSRF-protected forms, listing and page links, the listing form and many admin screens.

@@ -145,7 +145,9 @@ class Region extends DAO
             $params[] = $pattern;
         }
 
-        $sql .= ' LIMIT 5';
+        // A big region must not be pushed out by small ones that sort before it.
+        $sql     .= ' ORDER BY a.s_name = ? DESC, a.i_num_items DESC, a.s_name LIMIT 5';
+        $params[] = trim((string) $query);
 
         try {
             $rows = Db::select($sql, $params);

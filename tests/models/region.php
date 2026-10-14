@@ -334,6 +334,15 @@ $names = array_column($rows, 'label');
 sort($names);
 pin('both AlphaUS and AlphaFR are present', array('AlphaFR', 'AlphaUS'), $names);
 pin('label and value carry the same region name', $rows[0]['label'], $rows[0]['value']);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_region SET i_num_items = 5 WHERE pk_i_id = ' . (int) $alphaUs);
+$exact = seed_region($admin, $fr, 'Alpha');
+pin(
+    'an exact name comes first, then the region with the most listings',
+    array('Alpha', 'AlphaUS', 'AlphaFR'),
+    array_column($model->ajax('Alpha'), 'label')
+);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_region WHERE pk_i_id = ' . (int) $exact);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_region SET i_num_items = 0 WHERE pk_i_id = ' . (int) $alphaUs);
 
 harness_section('Region::ajax — country filter, 2-letter code (fk_c_country_code)');
 

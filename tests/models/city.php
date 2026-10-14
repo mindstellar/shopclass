@@ -259,6 +259,14 @@ for ($i = 1; $i <= 12; $i++) {
     seed_city($admin, $zedRegionId, sprintf('Zed %02d', $i), $country);
 }
 pin('no more than 10 rows come back with 12 matches available', 10, count($model->ajax('Zed')));
+seed_city($admin, $zedRegionId, 'Zed', $country);
+$big = seed_city($admin, $zedRegionId, 'Zed Town', $country);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_city SET i_num_items = 9 WHERE pk_i_id = ' . (int) $big);
+pin(
+    'an exact name comes first, then the city with the most listings, then by name',
+    array('Zed', 'Zed Town', 'Zed 01'),
+    array_slice(array_column($model->ajax('Zed'), 'label'), 0, 3)
+);
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_city WHERE fk_i_region_id = ' . (int) $zedRegionId);
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_region WHERE pk_i_id = ' . (int) $zedRegionId);
 
