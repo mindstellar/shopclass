@@ -10,7 +10,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/* global osc, bootstrap */
+/* global osc */
 /* exported oscEscapeHTML, setJsMessage, bulkActionsSubmit */
 
 /* ===================================================
@@ -145,8 +145,6 @@ function toggleBulkActionsModal() {
         if (submit) { submit.textContent = opt.text; }
         if (typeof modal.showModal === 'function') {
             modal.showModal();
-        } else if (window.bootstrap) {
-            (new bootstrap.Modal(modal)).show();
         }
     }
     return false;

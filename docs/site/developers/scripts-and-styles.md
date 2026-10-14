@@ -174,6 +174,32 @@ From script, call `osc.collapse.show(panel)`, `osc.collapse.hide(panel)` or
 The admin menu uses it, so a plugin can listen for `osc:collapse:shown` on
 `#sidebar-wrapper` to know a section was opened.
 
+## Slide-in panels and dropdowns in the admin
+
+`osc.offcanvas` slides in a panel with class `offcanvas offcanvas-start` from a button with
+`data-osc-offcanvas="#panel"`. Escape or a click on the backdrop closes it. From script, call
+`osc.offcanvas.show(panel)` or `osc.offcanvas.hide(panel)`. The panel fires
+`osc:offcanvas:show`, `shown`, `hide` and `hidden`.
+
+`osc.dropdown` opens the `.dropdown-menu` beside a button with `data-osc-dropdown`, inside a
+`.dropdown` wrapper. An outside click or Escape closes it, and the arrow keys move between its
+`.dropdown-item` links. Add `dropdown-menu-end` to align the menu to the button's end edge.
+
+```html
+<div class="dropdown">
+    <button type="button" data-osc-dropdown aria-expanded="false">Actions</button>
+    <div class="dropdown-menu dropdown-menu-end">
+        <a class="dropdown-item" href="…">Edit</a>
+    </div>
+</div>
+```
+
+## Bootstrap's JavaScript
+
+The admin does not load Bootstrap's JavaScript. A plugin that still uses `data-bs-toggle`
+or `bootstrap.Modal` calls `osc_enqueue_script('bootstrap5')` on its own screens. Bootstrap's
+CSS classes are still there.
+
 ## Cache-busting
 
 Append a version to your asset URL so an update actually reaches returning

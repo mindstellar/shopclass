@@ -16,48 +16,6 @@
     </div><!-- #content -->
     <?php osc_run_hook('admin_footer'); ?>
 <script>
-    window.onresize = resetSidebar;
-    function resetSidebar() {
-        var eT = document.querySelector("#header .toggle-icon");
-        var sC;
-        var eH;
-        var eS;
-        if (window.matchMedia("(max-width: 1024px)").matches) {
-            eH = document.getElementById("header");
-            eS = document.getElementById("sidebar-wrapper");
-            eS.classList.add('offcanvas');
-            eS.classList.add('offcanvas-start');
-            // The header now lives inside the content column, so the off-canvas
-            // sidebar spans the full height from the top — no header offset.
-            eS.style.marginTop = "0px";
-            eS.addEventListener('show.bs.offcanvas', function () {
-                eT.classList.add('open');
-            })
-            eS.addEventListener('hide.bs.offcanvas', function () {
-                eT.classList.remove('open');
-            })
-            /* The viewport is less than, or equal to, 768 pixels wide */
-        } else {
-            eS = document.querySelector("#sidebar-wrapper.offcanvas");
-            if (eS !== null) {
-                sC = bootstrap.Offcanvas.getOrCreateInstance(eS);
-                if (sC) {
-                    sC.dispose();
-                    eS.classList.remove('offcanvas');
-                    eS.classList.remove('offcanvas-start');
-                    eS.classList.remove('show');
-                    eS.removeAttribute('style');
-                    eS.removeAttribute('aria-hidden');
-                    document.querySelector('body').removeAttribute('style');
-                    eT.classList.remove('open')
-                }
-            }
-            /* The viewport is greater than 1024 pixels wide */
-        }
-    }
-    resetSidebar();
-</script>
-<script>
     // Admin-shell controls. Placed at the end of the document so the sidebar and
     // its footer (the theme toggle) already exist when this runs.
     (function () {

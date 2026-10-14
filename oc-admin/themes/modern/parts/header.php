@@ -57,7 +57,7 @@ if ($oscSidebar !== 'collapsed') {
         </nav>
         <main id="content-render" class="col">
             <header id="header" class="admin-topbar navbar navbar-expand-md">
-                <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar-wrapper"
+                <button class="navbar-toggler" type="button" data-osc-offcanvas="#sidebar-wrapper" aria-controls="sidebar-wrapper"
                         aria-label="<?php echo osc_esc_html(__('Menu')); ?>">
                     <div class="toggle-icon"><span></span><span></span><span></span></div>
                 </button>
@@ -73,7 +73,7 @@ if ($oscSidebar !== 'collapsed') {
                     </li>
                     <li class="nav-item dropdown admin-topbar-account">
                         <button type="button" id="userDropdown" class="admin-topbar-btn admin-topbar-account-btn"
-                                data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false"
+                                data-osc-dropdown aria-haspopup="true" aria-expanded="false"
                                 title="<?php echo osc_esc_html(__('User Menu')); ?>">
                             <i class="bi bi-person-circle admin-topbar-avatar" aria-hidden="true"></i>
                             <span class="admin-topbar-account-name"><?php echo osc_esc_html(osc_logged_admin_username()); ?></span>

@@ -16,6 +16,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
 
+- `osc.offcanvas` and `osc.dropdown` in the admin, for slide-in panels and dropdown menus with no Bootstrap.
 - `osc.collapse` in the admin: show and hide a panel with `data-osc-collapse`, as an accordion with `data-osc-parent`, with `osc:collapse:*` events.
 - Watermark opacity, four more positions (top, bottom, left and right centre) and a tiled pattern; a text mark has an outline instead of a solid box.
 - Plugins run their own database migrations with `MigrationRunner::forPlugin()`. See [Database](https://shopclass.org/docs/developers/database/).
@@ -52,6 +53,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Breaking
 
+- The admin no longer loads Bootstrap's JavaScript; a plugin that uses `data-bs-toggle`, `bootstrap.Modal` or the like must call `osc_enqueue_script('bootstrap5')`.
 - The text watermark's width, height and offset settings are gone; the mark is sized to its text. `createWatermarkImageFromText()` reads only `background_color` (now the outline colour) from its options.
 - The live listing count of each country, region, city and category is now an `i_num_items` column on `t_country`, `t_region`, `t_city` and `t_category`; the four `t_*_stats` tables are gone. `CityStats` and the other stats classes keep their own methods; the methods they inherit from `DAO` no longer work.
 - `t_category_slug_history` and `t_location_slug_history` are now one table, `t_slug_history`, with an `e_type` column (`CATEGORY`, `REGION` or `CITY`).

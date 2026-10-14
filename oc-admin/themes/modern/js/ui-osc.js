@@ -713,6 +713,142 @@ osc.collapse = (function () {
     return {show: show, hide: hide, toggle: toggle};
 })();
 
+// osc.offcanvas — slide a .offcanvas panel in from a [data-osc-offcanvas="#panel"] button,
+// over a backdrop; Escape, the backdrop or osc.offcanvas.hide(panel) close it.
+osc.offcanvas = (function () {
+    var open = null, backdrop = null, opener = null;
+
+    function emit(panel, name, cancelable) {
+        return panel.dispatchEvent(new CustomEvent('osc:offcanvas:' + name, {bubbles: true, cancelable: !!cancelable}));
+    }
+
+    function settle(panel, done) {
+        var finished = false;
+        function finish() { if (!finished) { finished = true; done(); } }
+        panel.addEventListener('transitionend', function end(e) {
+            if (e.target === panel) { panel.removeEventListener('transitionend', end); finish(); }
+        });
+        setTimeout(finish, 400);
+    }
+
+    function show(panel, trigger) {
+        if (!panel || open || !emit(panel, 'show', true)) { return; }
+        open = panel;
+        opener = trigger || document.activeElement;
+        backdrop = document.createElement('div');
+        backdrop.className = 'offcanvas-backdrop fade';
+        backdrop.addEventListener('click', function () { hide(panel); });
+        document.body.appendChild(backdrop);
+        document.body.style.overflow = 'hidden';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        panel.classList.add('showing');
+        void panel.offsetHeight;
+        backdrop.classList.add('show');
+        settle(panel, function () {
+            panel.classList.remove('showing');
+            panel.classList.add('show');
+            var focusable = panel.querySelector('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+            if (focusable) { focusable.focus(); }
+            emit(panel, 'shown');
+        });
+    }
+
+    function hide(panel) {
+        if (!panel || open !== panel || !emit(panel, 'hide', true)) { return; }
+        panel.classList.add('hiding');
+        if (backdrop) { backdrop.classList.remove('show'); }
+        settle(panel, function () {
+            panel.classList.remove('show', 'hiding');
+            panel.removeAttribute('role');
+            panel.removeAttribute('aria-modal');
+            if (backdrop) { backdrop.remove(); backdrop = null; }
+            document.body.style.overflow = '';
+            open = null;
+            if (opener && opener.focus) { opener.focus(); }
+            emit(panel, 'hidden');
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-osc-offcanvas]');
+        if (!trigger) { return; }
+        e.preventDefault();
+        var panel = document.querySelector(trigger.getAttribute('data-osc-offcanvas'));
+        if (panel) { (open === panel ? hide(panel) : show(panel, trigger)); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && open) { hide(open); }
+    });
+
+    return {show: show, hide: hide, isOpen: function (panel) { return open === panel; }};
+})();
+
+// osc.dropdown — open the .dropdown-menu next to a [data-osc-dropdown] button. An outside
+// click or Escape closes it; the arrow keys move between its .dropdown-item links.
+osc.dropdown = (function () {
+    var open = null;
+
+    function menuOf(trigger) {
+        return trigger.parentElement ? trigger.parentElement.querySelector('.dropdown-menu') : null;
+    }
+
+    function emit(trigger, name) {
+        trigger.dispatchEvent(new CustomEvent('osc:dropdown:' + name, {bubbles: true}));
+    }
+
+    function show(trigger) {
+        var menu = menuOf(trigger);
+        if (!menu || open === trigger) { return; }
+        if (open) { hide(open); }
+        menu.classList.add('show');
+        trigger.classList.add('show');
+        trigger.setAttribute('aria-expanded', 'true');
+        open = trigger;
+        emit(trigger, 'shown');
+    }
+
+    function hide(trigger) {
+        var menu = menuOf(trigger);
+        if (!menu || open !== trigger) { return; }
+        menu.classList.remove('show');
+        trigger.classList.remove('show');
+        trigger.setAttribute('aria-expanded', 'false');
+        open = null;
+        emit(trigger, 'hidden');
+    }
+
+    function move(step) {
+        var items = Array.prototype.slice.call(menuOf(open).querySelectorAll('.dropdown-item:not(.disabled)'));
+        if (!items.length) { return; }
+        var at = items.indexOf(document.activeElement);
+        items[(at + step + items.length) % items.length].focus();
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-osc-dropdown]');
+        if (trigger) {
+            e.preventDefault();
+            (open === trigger ? hide : show)(trigger);
+            return;
+        }
+        if (open && !menuOf(open).contains(e.target)) { hide(open); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (!open) { return; }
+        if (e.key === 'Escape') {
+            var trigger = open;
+            hide(trigger);
+            trigger.focus();
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            move(e.key === 'ArrowDown' ? 1 : -1);
+        }
+    });
+
+    return {show: show, hide: hide};
+})();
+
 // osc.sidebar — the admin menu: the rail (collapsed) mode with its flyouts, the ghost
 // scrollbar, and bringing an opened section into view. Runs once on DOMContentLoaded;
 // the collapse button saves the state to the URL in its data-osc-save-url.
@@ -878,10 +1014,26 @@ osc.sidebar = (function () {
         });
     }
 
+    // At 1024px and below the menu is an off-canvas panel opened from the top bar.
+    function initMobile(nav) {
+        var icon = document.querySelector('#header .toggle-icon');
+        function apply() {
+            var small = !desktop.matches;
+            if (!small && osc.offcanvas.isOpen(nav)) { osc.offcanvas.hide(nav); }
+            nav.classList.toggle('offcanvas', small);
+            nav.classList.toggle('offcanvas-start', small);
+        }
+        nav.addEventListener('osc:offcanvas:show', function () { if (icon) { icon.classList.add('open'); } });
+        nav.addEventListener('osc:offcanvas:hide', function () { if (icon) { icon.classList.remove('open'); } });
+        desktop.addEventListener('change', apply);
+        apply();
+    }
+
     function init() {
         var nav = document.getElementById('sidebar-wrapper');
         if (!nav || nav.dataset.oscSidebarInit) { return; }
         nav.dataset.oscSidebarInit = '1';
+        initMobile(nav);
         var frame = nav.querySelector('.sidebar-scroll-frame');
         var scroller = frame ? frame.querySelector('.sidebar-scroll') : null;
         initRail(nav, scroller);

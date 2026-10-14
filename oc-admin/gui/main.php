@@ -42,7 +42,6 @@ if (!defined('ABS_PATH')) {
             </div>
             <?php require_once osc_admin_base_path() . View::getInstance()->_get('login_admin_form'); ?>
         </div>
-        <script type="text/javascript" src="<?php echo osc_assets_url('bootstrap/bootstrap.min.js'); ?>"></script>
         <script type="text/javascript">
             // The login shell renders its flash message as `.alert` (see the
             // osc_show_flash_message call above), not `.flashmessage`, so the admin theme's

@@ -613,6 +613,11 @@ $sidebar-gutter: 2.35rem;
     opacity: .75;
   }
 
+  // osc.dropdown places a menu with CSS only: .dropdown-menu-end aligns it to the button's end edge.
+  .dropdown > .dropdown-menu-end {
+    inset-inline: auto 0;
+  }
+
   // The account dropdown: a titled header block over the action items.
   .admin-topbar-account .dropdown-menu {
     --bs-dropdown-min-width: 14rem;
