@@ -69,6 +69,7 @@ Everything is set from environment variables:
 | Variable | Purpose |
 |---|---|
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
+| `OSC_DB_PERSISTENT` | Set to `1` so each PHP worker keeps its database connection between pages instead of opening one per page. Make sure the database allows one connection per worker. Outside Docker, `define('OSC_DB_PERSISTENT', true);` in `config.php` does the same |
 | `WEB_PATH` | The site's public base URL |
 | `OSC_CLI_URL` | The site's address for `oc-cli.php`, when `WEB_PATH` is left unset so web pages keep the address they were opened on. Also the address e-mail links use in that case. Use the exact address visitors use |
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | The first admin account. Leave the password unset and a strong one is generated and printed to the logs |

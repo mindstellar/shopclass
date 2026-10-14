@@ -115,6 +115,13 @@ if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_M
     define('OSC_DB_STRICT_MODE', true);
 }
 
+// Persistent database connections (optional). Each PHP worker keeps its connection for
+// the next request. Off unless asked for: on shared hosting every idle worker would hold
+// one of the account's few connections.
+if (!defined('OSC_DB_PERSISTENT') && filter_var((string)getenv('OSC_DB_PERSISTENT'), FILTER_VALIDATE_BOOLEAN)) {
+    define('OSC_DB_PERSISTENT', true);
+}
+
 // Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',
 // 'redis' ('memcache' now means memcached) — and the memcached and redis drivers read their server from the
 // $_cache_config global. Bridge both from the environment so a containerised deploy can

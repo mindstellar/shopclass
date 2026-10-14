@@ -237,10 +237,15 @@ class ConnectionManager
             // database is missing or refused, log in without it, so select_db() reports
             // that error exactly as before.
             $this->dbSelected = false;
+            // A web worker may keep its connection for the next request when the site asks
+            // for it. mysqli resets the session when it hands the connection back out.
+            $host = defined('OSC_DB_PERSISTENT') && OSC_DB_PERSISTENT && PHP_SAPI !== 'cli'
+                ? 'p:' . $this->dbHost
+                : $this->dbHost;
             try {
                 // An unknown host also raises a PHP warning; the exception carries the same error.
                 $this->dbSelected = @$this->connId->real_connect(
-                    $this->dbHost,
+                    $host,
                     $this->dbUser,
                     $this->dbPassword,
                     (string)$this->dbName,
