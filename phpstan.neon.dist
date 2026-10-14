@@ -21,6 +21,8 @@ parameters:
         - OSC_DEBUG_DB_LOG
         - OSC_DEBUG_DB_EXPLAIN
         - OSC_DB_STRICT_MODE
+        - OSC_DB_PERSISTENT
+        - OSC_CACHE_LOCAL
         - OSC_WEB_PATH_FROM_REQUEST
         - OSC_WEB_PATH_FROM_CLI_URL
         - WEB_PATH
