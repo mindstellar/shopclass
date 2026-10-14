@@ -11,7 +11,7 @@
 /**
  * Every core aggregate, run on a connection with the strict SQL modes ON.
  *
- * ConnectionManager::setSQLMode() strips five modes from every connection —
+ * ConnectionManager::setSession() strips five modes from every connection —
  * NO_ZERO_DATE, ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, STRICT_ALL_TABLES and
  * TRADITIONAL — unless OSC_DB_STRICT_MODE is defined. ONLY_FULL_GROUP_BY is the
  * dangerous one: it does not degrade a query, it rejects it outright, and every
@@ -227,9 +227,9 @@ seed_exec(
 );
 
 /* ----------------------------------------------------------------------------
- * setSQLMode()'s default: the five modes it takes off every connection.
+ * setSession()'s default: the five modes it takes off every connection.
  * ------------------------------------------------------------------------- */
-harness_section('setSQLMode — what a default install strips');
+harness_section('setSession — what a default install strips');
 
 $reflected = new ReflectionClass('mindstellar\database\ConnectionManager');
 $stripList = $reflected->getProperty('incompatible_modes');
@@ -247,7 +247,7 @@ pin(
  * it had on first: a server with none of these configured would make the pin below
  * pass for the wrong reason.
  *
- * Both branches of setSQLMode() are covered, whichever way the process was started.
+ * Both branches of setSession() are covered, whichever way the process was started.
  * Run plainly the constant is undefined and the modes must be gone; run with
  * OSC_DB_STRICT_MODE already defined (which is how a new install runs) the method
  * returns early and every one of them must have survived.

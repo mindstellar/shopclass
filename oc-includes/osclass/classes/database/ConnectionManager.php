@@ -99,11 +99,11 @@ class ConnectionManager
      */
     private $dbSelected = false;
     /**
-     * Whether the session statement already set the utf8mb4 character set.
+     * Whether setSession() already set the utf8mb4 character set.
      *
      * @var bool
      */
-    private $namesSet = false;
+    private $sessionSet = false;
 
     /**
      * Database error number
@@ -189,7 +189,7 @@ class ConnectionManager
             return false;
         }
 
-        if (!$this->namesSet) {
+        if (!$this->sessionSet) {
             $this->setCharset('utf8mb4');
         }
 
@@ -230,8 +230,7 @@ class ConnectionManager
             // a PHP worker indefinitely (this matters most for the installer's
             // "Test connection" probe, which dials an arbitrary host:port).
             $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
-            // Escaping follows the character set the client was given here, which the
-            // session statement below then sets on the server.
+            // The client escapes in this charset; setSession() sets the same one on the server.
             $this->connId->options(MYSQLI_SET_CHARSET_NAME, 'utf8mb4');
             // Naming the database in the login saves a select_db() round trip. When the
             // database is missing or refused, log in without it, so select_db() reports
@@ -288,9 +287,9 @@ class ConnectionManager
         }
         // Start every connection in a known-clean autocommit state, so no write can be
         // silently swallowed by a transaction state carried over from anywhere else.
-        // setSQLMode() sets it, and the character set, in one statement.
-        $this->namesSet = $this->setSQLMode();
-        if (!$this->namesSet) {
+        // setSession() sets it, with the character set and sql_mode, in one statement.
+        $this->sessionSet = $this->setSession();
+        if (!$this->sessionSet) {
             $this->connId->autocommit(true);
         }
 
@@ -310,7 +309,7 @@ class ConnectionManager
     }
 
     /**
-     * Set sql_mode
+     * Set the session's character set, autocommit and sql_mode in one statement
      *
      * By default this reads the server's session sql_mode and strips a list of
      * strict modes ($incompatible_modes: NO_ZERO_DATE, ONLY_FULL_GROUP_BY,
@@ -340,7 +339,7 @@ class ConnectionManager
      *
      * @return bool true when the statement ran, which also set the character set and autocommit
      */
-    private function setSQLMode($modes = [])
+    private function setSession($modes = [])
     {
         $set = 'SET NAMES utf8mb4, autocommit = 1';
         if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
