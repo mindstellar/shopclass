@@ -1288,8 +1288,8 @@ function _aux_search_subdomains()
 /**
  * Look one filter value up: by id when it is numeric, otherwise by the spec's finder.
  *
- * A page links the same place many times (every category link on a city page), so a
- * web request looks each place up once. The long-running CLI worker always asks again.
+ * A page links the same place many times (every category link on a city page), so a web
+ * request remembers each place it found. The long-running CLI worker always asks again.
  *
  * @param array<string,string> $spec     A row of _aux_search_subdomains() or _aux_search_places()
  * @param mixed                $value
@@ -1309,7 +1309,7 @@ function _aux_search_find(array $spec, $value, $remember = null)
     $row   = is_numeric($value)
         ? $model->findByPrimaryKey($value)
         : $model->{$spec['finder']}($value);
-    if ($remember) {
+    if ($remember && $row) {
         $found[$key] = $row;
     }
 

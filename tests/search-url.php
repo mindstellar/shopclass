@@ -419,5 +419,19 @@ $GLOBALS['__finds'] = array();
 _aux_search_find($city, 11, false);
 _aux_search_find($city, 11, false);
 pin('the CLI worker asks every time', array('City:11', 'City:11'), $GLOBALS['__finds']);
+$GLOBALS['__finds'] = array();
+_aux_search_find($city, 11, true);
+_aux_search_find(_aux_search_places()['sRegion'], 11, true);
+_aux_search_find($city, 99, true);
+_aux_search_find($city, 99, true);
+pin(
+    'a region is not taken for the city with its id, and a missing place is asked again',
+    array('Region:11', 'City:99', 'City:99'),
+    $GLOBALS['__finds']
+);
+$GLOBALS['__finds'] = array();
+_aux_search_find($city, 13);
+_aux_search_find($city, 13);
+pin('on the command line nothing is remembered by default', array('City:13', 'City:13'), $GLOBALS['__finds']);
 
 exit(harness_result());
