@@ -60,6 +60,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The `api_listing`, `api_user` and `api_category` filters get `$data, $context` instead of the database row.
 - Listing Import 0.3 needs Shopclass 7.0: its API moved to `/api/v1/ext/listing-import/`, old plugin keys stop working (make new ones in **Settings → API**), and a record it cannot import is a `422 validation_failed`.
 - `/api/` is reserved: rename any page or category with the slug `api`. System info and `doctor` list them.
+- `osc_mailBeauty()` no longer fills in a placeholder such as `{WEB_URL}` that a plugin passes inside a value; put it in the template text instead.
 - `osc_count_premium_comments()` and `osc_has_premium_comments()` are removed; they always ended in a fatal error.
 - `osc_sanitize_phone()` keeps a leading `+`, spaces and dashes; `osc_sanitize_username()` keeps dots and `Sanitize::username()` turns spaces into `_`; `osc_sanitize_int()` returns an int ("1.5" is 1).
 - `oc-includes/osclass/mimes.php` is removed, and core uploads take image types only (see `UploadMimes`): extensions such as pdf or zip in the allowed list no longer pass.
