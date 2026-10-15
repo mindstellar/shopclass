@@ -334,6 +334,9 @@ class CWebBilling extends WebSecBaseModel
      */
     private function accountUpgradePost()
     {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            $this->redirectTo(osc_billing_wallet_url());
+        }
         osc_csrf_check();
 
         $userId    = (int) osc_logged_user_id();
@@ -345,7 +348,7 @@ class CWebBilling extends WebSecBaseModel
         }
 
         if (Billing::spend($userId, $featureId, array('ref_type' => 'user', 'ref_id' => $userId))) {
-            osc_add_flash_ok_message(sprintf(_m('%s added to your account'), (string) $offer['label']));
+            osc_add_flash_ok_message(sprintf(_m('%s added to your account'), osc_esc_html((string) $offer['label'])));
         } else {
             self::notEnoughCreditsFlash();
         }
