@@ -36,6 +36,7 @@ harness_section('a newer release needs a newer core');
 $card = $row(array($v030, $v021));
 pin('the card shows the release this site can run', '0.2.1', $card['version']);
 check('...and does not block it', $card['compatibility']['blocked'] === false, $card['compatibility']['status']);
+pin('the badge facts are that release\'s', array('requires' => '6.4.0', 'requires_php' => '8.0', 'tested_up_to' => '6.4'), $card['offer']);
 
 harness_section('no release runs here');
 $card = $row(array($v030));
@@ -44,5 +45,6 @@ pin('...and blocks it', array(Compatibility::INCOMPATIBLE, true), array($card['c
 
 harness_section('no release data');
 pin('the index row is kept', '0.3.0', $row(array())['version']);
+pin('...with no release facts, so the badge falls back to the range', array(), $row(array())['offer']);
 
 exit(harness_result());

@@ -307,7 +307,7 @@ later without breaking old installs.
 | File | Purpose | Fetched by core |
 |---|---|---|
 | `v1/updates.json` | `{slug: [{version, requires, requires_php, tested, url, sha256, size, published_at, downloads}]}` for **every** package, versions newest-first | Once per 24h, conditional GET |
-| `v1/index.json` | Slim browse rows — slug, name, short description, author, latest version, icon URL, categories, tags, `updated_at`, `downloads`, `requires_min`, `tested_max` — published as a **JSON array**, not an object; `Catalog::index()` re-keys it by slug on read so nothing downstream has to | On first open of Browse, then cached 24h |
+| `v1/index.json` | Slim browse rows — slug, name, short description, author, latest version (Browse shows the newest release this install can run instead, from `updates.json`), icon URL, categories, tags, `updated_at`, `downloads`, `requires_min`, `tested_max` — published as a **JSON array**, not an object; `Catalog::index()` re-keys it by slug on read so nothing downstream has to | On first open of Browse, then cached 24h |
 | `v1/packages/<slug>.json` | Full detail: rendered README (`description_html`), screenshots, `versions[]` with per-version `requires`/`requires_php`/`tested`/`downloads`, a package-level `downloads` total, `requires_min`/`tested_max`, `links` (homepage/repo/issues) | Lazily, when a detail view opens |
 | `v1/categories.json` | Category vocabulary + counts, as a JSON array of `{id, label, description, count}` | With `index.json` |
 | `v1/manifest.json` | Catalog-level build metadata — `core_version` the build was validated against, `generated_at`, `package_count`, `resolved_version_count`, `schema_version` | Not fetched by core; an operator/debugging artifact of the catalog build |

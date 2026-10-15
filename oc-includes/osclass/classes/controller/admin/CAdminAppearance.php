@@ -472,7 +472,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     // what it needs, how far it was tested, or the version it works with.
                     'badge'   => \mindstellar\market\Compatibility::verdictLabel(
                         $row['compatibility']['status'],
-                        array(
+                        $row['offer'] !== array() ? $row['offer'] : array(
                             'requires'     => is_string($row['requires_min'] ?? null) ? $row['requires_min'] : '',
                             'tested_up_to' => is_string($row['tested_max'] ?? null) ? $row['tested_max'] : '',
                         )

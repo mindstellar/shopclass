@@ -640,11 +640,12 @@
             dLinks.hidden = !ready || dLinks.children.length === 0;
         }
 
-        function applyDetail(detail, placeholderNode) {
-            // What the newest published version asks of this install, said once in words
-            // rather than read out of the version table below.
+        function applyDetail(detail, placeholderNode, version) {
+            // What the release on the card asks of this install, said once in words rather
+            // than read out of the version table below.
             if (dRequiresRow && dRequires) {
-                var newest = (detail.versions || [])[0] || {};
+                var versions = detail.versions || [];
+                var newest = versions.filter(function (v) { return v.version === version; })[0] || versions[0] || {};
                 var needs = [];
                 if (newest.requires) {
                     needs.push((i18n.requiresCore || 'Shopclass %s or newer').replace('%s', newest.requires));
@@ -676,10 +677,10 @@
             setDetailState('ready');
         }
 
-        function loadDetail(slug, placeholderNode) {
+        function loadDetail(slug, placeholderNode, version) {
             setDetailState('loading');
             if (Object.prototype.hasOwnProperty.call(detailCache, slug)) {
-                applyDetail(detailCache[slug], placeholderNode);
+                applyDetail(detailCache[slug], placeholderNode, version);
                 return;
             }
             if (!detailUrl || !slug) {
@@ -695,7 +696,7 @@
             }).then(function (res) {
                 if (res && res.ok && res.detail) {
                     detailCache[slug] = res.detail;
-                    applyDetail(res.detail, placeholderNode);
+                    applyDetail(res.detail, placeholderNode, version);
                 } else {
                     setDetailState('error', res && res.message);
                 }
@@ -770,7 +771,7 @@
             // The richer content (screenshots, README, version table, links) is not in the
             // row JSON at all (docs/MARKET.md \u00a78.2) \u2014 fetched here, on open, not baked into
             // page render, and cached per slug so reopening the same card is instant.
-            loadDetail(data.slug, placeholderNode);
+            loadDetail(data.slug, placeholderNode, data.new_version || data.version);
 
             lastTrigger = document.activeElement;
             if (typeof dialog.showModal === 'function') {
