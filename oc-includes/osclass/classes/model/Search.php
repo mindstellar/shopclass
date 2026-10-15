@@ -587,11 +587,15 @@ class Search extends DAO
      */
     public function getPremiums($max = 2)
     {
-        try {
-            $items = SearchExecutor::rows(SearchCompiler::premiums($this->parts, $max));
-        } catch (DbException $e) {
-            return array();
-        }
+        // The order holds for the rotation window, so the rows can be kept that long.
+        $query = SearchCompiler::premiums($this->parts, $max);
+        $items = \mindstellar\cache\CacheGroup::remember('search', 'premiums:' . md5(serialize($query)), static function () use ($query): ?array {
+            try {
+                return SearchExecutor::rows($query);
+            } catch (DbException $e) {
+                return null;
+            }
+        }, SearchCompiler::PREMIUM_ROTATION) ?? array();
 
         if (!empty($items)) {
             // This block shows on the home, category and search pages: one write for all

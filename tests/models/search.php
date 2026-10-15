@@ -316,6 +316,10 @@ if (PHP_VERSION_ID < 80100) {
 }
 check('the order is a seeded RAND(), not a fresh one', (bool) preg_match('/ORDER BY RAND\(\d+\)/', (string) $premiumSql->invoke(new Search(), 2)));
 pin('and holds between calls, so the page can be cached', $ids($premiums), $ids((new Search())->getPremiums(10)));
+\mindstellar\cache\CacheGroup::invalidate('search');
+$coldPremiums = harness_query_count(static fn () => (new Search())->getPremiums(10));
+$warmPremiums = harness_query_count(static fn () => (new Search())->getPremiums(10));
+pin('within the rotation the rows come from the cache: one query fewer', 1, $coldPremiums - $warmPremiums);
 
 /* ----------------------------------------------------------------------------
  * Sorting.

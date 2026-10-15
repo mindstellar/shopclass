@@ -22,7 +22,7 @@ namespace mindstellar\search\query;
 final class SearchCompiler
 {
     /** Seconds the featured block keeps one random order. */
-    private const PREMIUM_ROTATION = 300;
+    public const PREMIUM_ROTATION = 300;
 
     /**
      * The result page, or with $count the unordered, unlimited match list a COUNT wraps.
@@ -168,8 +168,6 @@ final class SearchCompiler
         $s = $parts->newStatement();
         $s->select($p . 't_item.*, ' . $p . 't_item.s_contact_name as s_user_name');
         $s->from($p . 't_item');
-        $s->from($p . 't_item_stats');
-        $s->where($p . 't_item_stats.fk_i_item_id = ' . $p . 't_item.pk_i_id');
         $s->where($p . 't_item.b_premium = 1');
         $s->where($p . 't_item.b_enabled = 1 ');
         $s->where($p . 't_item.b_active = 1 ');

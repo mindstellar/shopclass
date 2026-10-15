@@ -126,6 +126,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With Redis or Valkey and the phpredis extension, each PHP worker keeps its cache connection between pages instead of opening one per page.
 - With memcached, each PHP worker keeps its connection between pages instead of opening one per page.
 - Region and city lookups in the location boxes may be cached for five minutes by the browser and by a page cache; `AjaxResponse::shared()` sends such JSON.
+- The featured listings block is cached for its five-minute rotation and no longer joins the stats table.
 - Widgets for every page area load in one query instead of one per area.
 - Listing cover images reuse the photos the page already read instead of querying them again.
 - Related listings on a listing page reuse the listing already loaded instead of reading it again (3 fewer queries).
