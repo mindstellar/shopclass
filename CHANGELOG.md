@@ -130,6 +130,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - A keyword search sorted by relevance lets the full-text index pick the listings instead of reading every live one (680 ms to 28 ms on 229,000 listings).
 - The Docker image compresses pages, CSS and JS with gzip and lets browsers keep static files (1 hour for CSS/JS, 7 days for images and fonts, 1 year with `?v=`).
 - The `.htaccess` core writes now compresses responses and lets browsers keep static files; an older core-written file is updated on upgrade.
+- With Redis, Valkey or memcached, custom fields find a category's parents from a small cached list instead of reading every category in every language.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
 
 ### Changed

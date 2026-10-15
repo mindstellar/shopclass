@@ -157,9 +157,9 @@ final class FieldQuery
     }
 
     /**
-     * The category and its ancestors, leaf first. The enabled-category rows the page already
-     * loaded answer it; a disabled category on the path falls back to the cached parent map.
-     * A parent cycle stops at the first repeat.
+     * The category and its ancestors, leaf first. With only the in-request cache, the enabled-category
+     * rows the page already loaded answer it; with a shared cache the small parent map is cheaper to
+     * read than those rows. A parent cycle stops at the first repeat.
      *
      * @return int[]
      */
@@ -168,13 +168,15 @@ final class FieldQuery
         if ($categoryId <= 0) {
             return [];
         }
-        $enabled = [];
-        foreach (\mindstellar\category\CategoryQuery::enabledRows() ?? [] as $row) {
-            $enabled[(int) $row['pk_i_id']] = (int) $row['fk_i_parent_id'];
-        }
-        $path = self::walk($categoryId, $enabled);
-        if ($path !== null) {
-            return $path;
+        if (\mindstellar\cache\CacheManager::getInstance() instanceof \mindstellar\cache\MemoryCache) {
+            $enabled = [];
+            foreach (\mindstellar\category\CategoryQuery::enabledRows() ?? [] as $row) {
+                $enabled[(int) $row['pk_i_id']] = (int) $row['fk_i_parent_id'];
+            }
+            $path = self::walk($categoryId, $enabled);
+            if ($path !== null) {
+                return $path;
+            }
         }
 
         $parents = CacheGroup::remember('category', 'parents', static function () {

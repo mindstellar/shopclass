@@ -379,6 +379,68 @@ pin('with the category tree loaded, a walk costs no query', 0, harness_query_cou
     $model->categoryPath($cLeaf);
 }));
 
+harness_section('Field::categoryPath — with a shared cache, the small parent map');
+
+$sharedCache = new class () implements \mindstellar\cache\CacheDriver {
+    /** @var array<string,mixed> */
+    public array $data = [];
+    public static function is_supported()
+    {
+        return true;
+    }
+    public function add($key, $data, $expire = 0)
+    {
+        return isset($this->data[$key]) ? false : $this->set($key, $data, $expire);
+    }
+    public function set($key, $data, $expire = 0)
+    {
+        $this->data[$key] = $data;
+
+        return true;
+    }
+    public function get($key, &$found = null)
+    {
+        $found = array_key_exists($key, $this->data);
+
+        return $found ? $this->data[$key] : false;
+    }
+    public function delete($key)
+    {
+        unset($this->data[$key]);
+
+        return true;
+    }
+    public function flush()
+    {
+        $this->data = [];
+
+        return true;
+    }
+    public function stats()
+    {
+    }
+    public function _get_cache()
+    {
+        return 'shared';
+    }
+    public function __destruct()
+    {
+    }
+};
+$driverProp = new ReflectionProperty('mindstellar\\cache\\CacheManager', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $driverProp->setAccessible(true);
+}
+$memoryDriver = $driverProp->getValue();
+scratchdb_forget_cache();
+$driverProp->setValue(null, $sharedCache);
+\mindstellar\cache\CacheGroup::forgetGenerations();
+$sharedPath = $model->categoryPath($cLeaf);
+$driverProp->setValue(null, $memoryDriver);
+\mindstellar\cache\CacheGroup::forgetGenerations();
+$storedRows = array_filter($sharedCache->data, static fn ($v) => is_array($v) && isset(reset($v)['s_name']));
+pin('the same path, without storing or reading the enabled category rows', array(array($cLeaf, $cMid, $cRoot), array()), array($sharedPath, $storedRows));
+
 $cOff   = seed_category($admin, 'Hidden', null, 'en_US', 0);
 $cUnder = seed_category($admin, 'Under hidden', $cOff);
 scratchdb_forget_cache();
