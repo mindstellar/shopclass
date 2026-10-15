@@ -358,13 +358,22 @@ function osc_format_date($date, $dateformat = null)
     }
     [$month, $month_short, $day, $day_short, $ampm] = $names[$locale];
 
-    $time       = strtotime($date);
-    $dateformat = preg_replace('|(?<!\\\)F|', osc_escape_string($month[date('n', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)M|', osc_escape_string($month_short[date('n', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)l|', osc_escape_string($day[date('N', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)D|', osc_escape_string($day_short[date('N', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)A|', osc_escape_string($ampm[date('A', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)a|', osc_escape_string($ampm[date('a', $time)]), $dateformat);
+    $time = strtotime($date);
+    // Only the letters the format holds are translated; most formats hold one or two.
+    foreach (array('F', 'M', 'l', 'D', 'A', 'a') as $letter) {
+        if (strpos($dateformat, $letter) === false) {
+            continue;
+        }
+        $name       = match ($letter) {
+            'F' => $month[date('n', $time)],
+            'M' => $month_short[date('n', $time)],
+            'l' => $day[date('N', $time)],
+            'D' => $day_short[date('N', $time)],
+            'A' => $ampm[date('A', $time)],
+            'a' => $ampm[date('a', $time)],
+        };
+        $dateformat = preg_replace('|(?<!\\\)' . $letter . '|', osc_escape_string($name), $dateformat);
+    }
 
     return date($dateformat, $time);
 }

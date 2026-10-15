@@ -115,6 +115,9 @@ $GLOBALS['trCalls'] = 0;
 osc_format_date('2026-09-15 06:14:00', 'l, F j');
 check('a second date in the same language does not translate every name again', $GLOBALS['trCalls'] <= 3,
     $GLOBALS['trCalls'] . ' calls');
+foreach (array('D, d M Y g:i a', 'l \\t\\h\\e jS \\o\\f F Y h:i:s A', 'Y-m-d H:i', 'M', 'a A \\M\\a\\y') as $fmt) {
+    pin('in English "' . $fmt . '" matches date()', date($fmt, strtotime('2026-05-03 18:07:09')), osc_format_date('2026-05-03 18:07:09', $fmt));
+}
 $GLOBALS['tr'] = array('Monday' => 'Maandag');
 $GLOBALS['locale'] = 'nl_NL';
 pin('another language whose sample words match still gets its own names', 'Maandag, September 14',
