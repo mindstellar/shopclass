@@ -69,7 +69,11 @@ class MemcachedCache extends Cache
             }
         }
 
-        $this->memcached = new \Memcached();
+        // A web worker keeps its connections for the next request, as with Redis.
+        $this->memcached = \mindstellar\utility\Utils::isWebRequest() ? new \Memcached('osc-' . md5(serialize($cache_server))) : new \Memcached();
+        if ($this->memcached->getServerList() !== array()) {
+            return;
+        }
         // Short limits so a hung server costs about a second per request, not a hang.
         $this->memcached->setOption(\Memcached::OPT_CONNECT_TIMEOUT, 1000);
         $this->memcached->setOption(\Memcached::OPT_POLL_TIMEOUT, 1000);
