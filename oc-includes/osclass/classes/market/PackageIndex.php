@@ -112,23 +112,34 @@ final class PackageIndex
                 continue;
             }
 
-            // index.json does not carry `requires` — pull it from the newest entry in
-            // updates.json (newest-first) so the browse badge reflects real compatibility
-            // instead of guessing from the slim row alone.
-            $versions = $updates[$slug] ?? [];
-            $latest   = $versions[0] ?? null;
-            $compatInfo = $latest !== null
-                ? [
-                    'requires'     => $latest['requires'],
-                    'requires_php' => $latest['requires_php'],
-                    'tested_up_to' => $latest['tested'],
-                ]
-                : [];
-
-            $rows[$slug] = $row + ['compatibility' => Compatibility::evaluate($compatInfo)];
+            $rows[$slug] = self::browseRow($row, $updates[$slug] ?? []);
         }
 
         return $rows;
+    }
+
+    /**
+     * A Browse row for the version Install would fetch: the newest this site can run, else
+     * the newest. index.json does not carry `requires`, so it comes from updates.json.
+     *
+     * @param array<string,mixed>             $row      the index.json row
+     * @param array<int,array<string,mixed>> $versions updates.json entries, newest first
+     *
+     * @return array<string,mixed>
+     */
+    private static function browseRow(array $row, array $versions): array
+    {
+        $offer = Compatibility::pickBestVersion($versions) ?? ($versions[0] ?? null);
+        if ($offer === null) {
+            return $row + ['compatibility' => Compatibility::evaluate([])];
+        }
+        $row['version'] = (string) $offer['version'];
+
+        return $row + ['compatibility' => Compatibility::evaluate([
+            'requires'     => $offer['requires'],
+            'requires_php' => $offer['requires_php'],
+            'tested_up_to' => $offer['tested'],
+        ])];
     }
 
     /**
