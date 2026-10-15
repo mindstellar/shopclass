@@ -35,6 +35,24 @@ final class EntitlementStore extends Model
     protected const TABLE = 't_user_entitlement';
 
     /**
+     * Grant $feature only when the user holds no row for it yet; false when one exists.
+     * uq_user_feature refuses the second of two purchases sent at once, so a level like
+     * extra photos cannot be stacked by a double click.
+     *
+     * @since 6.4.9
+     */
+    public static function grantOnce(int $userId, string $feature, ?int $quantity = null, string $source = self::SOURCE_PURCHASE): bool
+    {
+        $now = date('Y-m-d H:i:s');
+
+        return Db::execute(
+            'INSERT IGNORE INTO ' . self::tableName()
+            . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date) VALUES (?, ?, ?, NULL, ?, ?)',
+            array($userId, $feature, $quantity, $source, $now)
+        ) === 1;
+    }
+
+    /**
      * Add to or extend a user's entitlement for $feature, creating the row if none
      * exists yet.
      *

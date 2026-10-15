@@ -1252,7 +1252,7 @@ function osc_register_billing_seller_limits(): void
             // callable already happened once; this only mints the entitlement
             // EntitlementStore::capacity() will read back as the raised cap.
             'apply'    => static function (int $userId, array $ctx): bool {
-                return EntitlementStore::grant($userId, 'listing.photos', osc_billing_photos_quantity(), null);
+                return EntitlementStore::grantOnce($userId, 'listing.photos', osc_billing_photos_quantity());
             },
         ));
     }
@@ -1286,7 +1286,7 @@ function osc_register_billing_seller_limits(): void
             // Capacity again: the granted quantity IS the number of extra days
             // over the category ceiling, read by osc_item_extra_runtime_days().
             'apply'    => static function (int $userId, array $ctx): bool {
-                return EntitlementStore::grant($userId, 'listing.runtime', osc_billing_runtime_days(), null);
+                return EntitlementStore::grantOnce($userId, 'listing.runtime', osc_billing_runtime_days());
             },
         ));
     }
