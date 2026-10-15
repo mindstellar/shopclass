@@ -110,6 +110,9 @@ class CWebBilling extends WebSecBaseModel
             case ('upgrade'):
                 $this->upgradePost();
                 break;
+            case ('account_upgrade'):
+                $this->accountUpgradePost();
+                break;
             default:
                 $this->walletView();
                 break;
@@ -325,6 +328,50 @@ class CWebBilling extends WebSecBaseModel
         }
 
         $this->redirectTo(osc_user_list_items_url());
+    }
+
+    /**
+     * Buy an upgrade for the user's own account, such as an extra listing slot. Only a
+     * feature osc_account_upgrade_offers() lists right now can be bought here.
+     *
+     * @return void
+     */
+    private function accountUpgradePost()
+    {
+        osc_csrf_check();
+
+        $userId    = osc_logged_user_id();
+        $featureId = Params::getParamString('feature');
+        $offer     = self::accountOffer($featureId);
+        if ($offer === null) {
+            osc_add_flash_error_message(_m('That upgrade is not available'));
+            $this->redirectTo(osc_billing_wallet_url());
+        }
+
+        if (Billing::spend($userId, $featureId, array('ref_type' => 'user', 'ref_id' => $userId))) {
+            osc_add_flash_ok_message(sprintf(_m('%s added to your account'), (string) $offer['label']));
+        } else {
+            osc_add_flash_error_message(sprintf(
+                _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
+                osc_esc_html(osc_billing_buy_url())
+            ));
+        }
+
+        $this->redirectTo(osc_billing_wallet_url());
+    }
+
+    /**
+     * The offer for $featureId when it is on sale now and is an account upgrade, else null.
+     * The feature id comes from the request, so only a listed, registered account feature passes.
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function accountOffer(string $featureId): ?array
+    {
+        $offered = array_column(osc_account_upgrade_offers(), null, 'feature');
+        $feature = isset($offered[$featureId]) ? FeatureRegistry::getInstance()->get($featureId) : null;
+
+        return $feature !== null && $feature->getScope() === Feature::SCOPE_USER ? $offered[$featureId] : null;
     }
 
     /**

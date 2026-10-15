@@ -281,6 +281,7 @@ action user_register_form
 action user_register_form_after
 action user_signout_all_after
 action validate_user
+filter account_upgrade_offers
 filter action_throttle_limit
 filter actions_manage_alerts
 filter actions_manage_items

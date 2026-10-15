@@ -45,6 +45,18 @@ msgid_plural "%d log entries have been removed"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "%d more day before a listing expires"
+msgid_plural "%d more days before a listing expires"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "%d more listing live at once"
+msgid_plural "%d more listings live at once"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
 msgid "%d view"
 msgid_plural "%d views"
@@ -53,6 +65,10 @@ msgstr[1] ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
 msgid "%s (free)"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "%s added to your account"
 msgstr ""
 
 #: oc-includes/osclass/classes/location/LocationService.php
@@ -439,6 +455,12 @@ msgstr ""
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Buy credits"
 msgstr ""
+
+#: oc-includes/osclass/gui/billing/wallet-content.php
+msgid "Buy for %d credit"
+msgid_plural "Buy for %d credits"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Buy more credits"
@@ -913,6 +935,14 @@ msgstr ""
 msgid "Expired"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Extra listing slot"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Extra photos"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Failed"
 msgstr ""
@@ -946,6 +976,12 @@ msgstr ""
 msgid "Filter by status"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "For %d day"
+msgid_plural "For %d days"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/user-login-content.php
 msgid "Forgotten your password?"
 msgstr ""
@@ -976,6 +1012,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
 msgid "General settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/wallet-content.php
+msgid "Get it free"
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -1194,6 +1234,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "Logged in as %s successfully"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Longer listings"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMailserver.php
@@ -2125,6 +2169,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
 msgid "Sitemap settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Skip the posting wait"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
@@ -3119,12 +3167,22 @@ msgid ""
 "%d days."
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Up to %d photo per listing"
+msgid_plural "Up to %d photos per listing"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Up to %s KB."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
 msgid "Upgrade settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/wallet-content.php
+msgid "Upgrades for your account"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -3273,6 +3331,12 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Write to %s"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid ""
+"You are at your listing limit. Buy an extra listing slot on your credits "
+"page, or free up a listing -- delete one or let one expire -- to post again."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hBilling.php

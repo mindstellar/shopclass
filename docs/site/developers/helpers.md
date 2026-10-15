@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1171 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1173 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -172,12 +172,14 @@ Core defines 1171 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (65)
+### hBilling (67)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_account_upgrade_offers()` | Upgrades a seller can buy for their account with credits: each is ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`. |
+| `osc_account_upgrade_url(string $feature)` | The POST target for buying the account upgrade $feature. |
 | `osc_billing_bump_cooldown_hours()` | Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. |
 | `osc_billing_bump_credits()` | Credit price of a bump. 0 with billing_bump_enabled on means free, not off. |
 | `osc_billing_bump_enabled()` | Whether bump-to-top is registered as a purchasable upgrade at all. |
