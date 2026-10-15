@@ -12,8 +12,8 @@ namespace mindstellar\upgrade;
 
 use mindstellar\admin\DatabaseTools;
 use mindstellar\security\Demo;
-use Throwable;
 use mindstellar\utility\Utils;
+use Throwable;
 
 /**
  * Installs a security release on its own from the daily cron when switched on, and e-mails the

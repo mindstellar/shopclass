@@ -15,9 +15,9 @@
 namespace mindstellar\database;
 
 use Exception;
+use mindstellar\utility\Utils;
 use mysqli;
 use mysqli_sql_exception;
-use mindstellar\utility\Utils;
 
 /**
  * Manages the physical mysqli connection: opens it (with a bounded connect
