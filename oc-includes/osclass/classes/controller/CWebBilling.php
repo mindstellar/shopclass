@@ -119,8 +119,8 @@ class CWebBilling extends WebSecBaseModel
     }
 
     /**
-     * Balance and ledger history. The template this renders is a theme's own
-     * (user-billing-wallet.php) or core's fallback -- neither exists yet.
+     * Balance, account upgrades and ledger history: a theme's own user-billing-wallet.php,
+     * or core's gui/billing/wallet-content.php.
      *
      * @return void
      */
