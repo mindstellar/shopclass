@@ -258,7 +258,7 @@ Core defines 1171 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_cache_get($key, &$found)` | Read the value stored under $key. |
 | `osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)` | Atomically increment a numeric cache key, creating it at $initial on first sighting, and return the new value. This is what a lock-free hit counter needs: concurrent callers do not clobber one another the way a get()/set() would. |
 | `osc_cache_init()` | Initialize Cache factory instance using singleton |
-| `osc_cache_remember($group, $key, callable $load, $expire = null)` | The cached value of $key in $group, or what $load returns (unless null), stored for $expire seconds. Core drops a whole group when its data changes, such as 'category' when a category is edited. |
+| `osc_cache_remember($group, $key, callable $load, $expire = null)` | The cached value of $key in $group, or what $load returns (unless null), stored for $expire seconds. Core drops a whole group when its data changes, such as 'category' when a category is edited. Like the other osc_cache_* helpers, it adds the current locale to the key. |
 | `osc_cache_search_generation()` | Current generation number for the search/latest-items cache. Callers fold it into their cache key so a bump (see osc_invalidate_search_cache) makes every previously stored entry unreachable at once — the practical way to invalidate a key space whose members are not enumerable (one entry per filter combination). |
 | `osc_cache_set($key, $data, $expire = 0)` | Store a value under $key, overwriting any existing entry. |
 | `osc_cache_stats()` | Normalised statistics for the active cache driver, or null when it has none. |

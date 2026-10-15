@@ -167,6 +167,7 @@ function osc_cache_set($key, $data, $expire = 0)
 /**
  * The cached value of $key in $group, or what $load returns (unless null), stored for $expire seconds.
  * Core drops a whole group when its data changes, such as 'category' when a category is edited.
+ * Like the other osc_cache_* helpers, it adds the current locale to the key.
  *
  * @param string   $group  'category', 'page', 'search', or your own name
  * @param string   $key
