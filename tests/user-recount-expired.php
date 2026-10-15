@@ -40,6 +40,7 @@ $users   = array($recent, $right, $nulled, $old, $ancient, $low, $high);
 
 $listing = static function (?int $user, string $expires, array $set = array()) use ($admin, $cat, $locale, $country, $p): int {
     $id = seed_item($admin, $cat, $user, 'A listing', 10.0, 1, 1, $locale, $country);
+    $set += array('dt_pub_date' => date('Y-m-d H:i:s', strtotime('-60 days')), 'dt_mod_date' => date('Y-m-d H:i:s', strtotime('-60 days')));
     $set['dt_expiration'] = $expires;
     foreach ($set as $column => $value) {
         $admin->query("UPDATE {$p}t_item SET $column = '" . $admin->real_escape_string((string) $value) . "' WHERE pk_i_id = $id");
@@ -100,5 +101,19 @@ pin('so both sellers go to 0', array(3, 1, 0, 9, 9, 0, 0), $items());
 harness_section('a long break');
 UserStore::recountExpired('1000-01-01 00:00:00', date('Y-m-d H:i:s'));
 pin('the window goes back 30 days at most', array(3, 1, 0, 1, 9, 0, 0), $items());
+
+harness_section('a listing posted or edited already expired');
+$imported = seed_user($admin, 'imported', 'imported@example.test');
+$edited   = seed_user($admin, 'edited', 'edited@example.test');
+$listing($imported, $later);
+$listing($imported, $ago('10 days'), array('dt_pub_date' => $ago('1 hour')));
+$listing($edited, $ago('5 days'), array('dt_mod_date' => $ago('1 hour')));
+$admin->query("UPDATE {$p}t_user SET i_items = 2 WHERE pk_i_id IN ($imported, $edited)");
+UserStore::recountExpired($ago('1 day'), date('Y-m-d H:i:s'));
+pin('posted already expired, or edited to a past expiry, is recounted too', array(1, 0), array(
+    (int) $admin->query("SELECT i_items FROM {$p}t_user WHERE pk_i_id = $imported")->fetch_row()[0],
+    (int) $admin->query("SELECT i_items FROM {$p}t_user WHERE pk_i_id = $edited")->fetch_row()[0],
+));
+pin('the other sellers are untouched', array(3, 1, 0, 1, 9, 0, 0), $items());
 
 exit(harness_result());
