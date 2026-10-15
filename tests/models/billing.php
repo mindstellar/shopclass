@@ -2835,6 +2835,17 @@ check('a second purchase that skips the offer check is refused by the database',
 pin('...so the cap stays at one purchase and only one price was taken', array(10, 8), array(Entitlements::capacity($photoBuyer, 'listing.photos', 0), osc_user_credits($photoBuyer)));
 pin('grantOnce() refuses a row that already exists', false, Entitlements::grantOnce($photoBuyer, 'listing.photos', 10));
 
+osc_set_preference('billing_runtime_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_runtime_credits', '3', 'osclass', 'INTEGER');
+osc_set_preference('billing_runtime_days', '15', 'osclass', 'INTEGER');
+osc_register_billing_seller_limits();
+$runtimeBuyer = seed_user($admin, 'runtimebuyer', 'runtimebuyer@example.test');
+Wallet::credit($runtimeBuyer, 10, Wallet::REASON_PURCHASE);
+$runtimeCtx = array('ref_type' => 'user', 'ref_id' => $runtimeBuyer);
+check('longer listings can be bought once', Billing::spend($runtimeBuyer, 'listing.runtime', $runtimeCtx));
+check('a second purchase of longer listings is refused too', !Billing::spend($runtimeBuyer, 'listing.runtime', $runtimeCtx));
+pin('...so the days stay at one purchase and only one price was taken', array(15, 7), array(Entitlements::capacity($runtimeBuyer, 'listing.runtime', 0), osc_user_credits($runtimeBuyer)));
+
 foreach ($accountPrefs as $pref) {
     osc_set_preference($pref, '0', 'osclass', 'BOOLEAN');
 }
