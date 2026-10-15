@@ -283,7 +283,8 @@ data, for a list you draw yourself. `osc_account_upgrade_offers()` gives the acc
 upgrades (extra slots, photos, runtime, no wait) as `['feature', 'label', 'detail', 'credits']`;
 core's Credits page lists them with a POST button to `osc_account_upgrade_url($feature)`. A theme
 with its own `user-billing-wallet.php` should show them too. A plugin adds its own through the
-`account_upgrade_offers` filter, which must return the list. `osc_gui_listing_list($context, $owned)` prints
+`account_upgrade_offers` filter, which gets the list and the user id (or null) and must return
+the list; only a registered account-scoped feature can be bought this way. `osc_gui_listing_list($context, $owned)` prints
 core's list for the current `items` loop, filters included.
 
 To draw the whole list yourself, return a string from `listing_list_html`. It

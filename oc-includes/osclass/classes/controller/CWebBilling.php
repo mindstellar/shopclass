@@ -336,9 +336,9 @@ class CWebBilling extends WebSecBaseModel
     {
         osc_csrf_check();
 
-        $userId    = osc_logged_user_id();
+        $userId    = (int) osc_logged_user_id();
         $featureId = Params::getParamString('feature');
-        $offer     = self::accountOffer($featureId);
+        $offer     = self::accountOffer($featureId, $userId);
         if ($offer === null) {
             osc_add_flash_error_message(_m('That upgrade is not available'));
             $this->redirectTo(osc_billing_wallet_url());
@@ -365,14 +365,14 @@ class CWebBilling extends WebSecBaseModel
     }
 
     /**
-     * The offer for $featureId when it is on sale now and is an account upgrade, else null.
+     * The offer for $featureId when $userId may buy it now and it is an account upgrade, else null.
      * The feature id comes from the request, so only a listed, registered account feature passes.
      *
      * @return array<string,mixed>|null
      */
-    private static function accountOffer(string $featureId): ?array
+    private static function accountOffer(string $featureId, int $userId): ?array
     {
-        $offered = array_column(osc_account_upgrade_offers(), null, 'feature');
+        $offered = array_column(osc_account_upgrade_offers($userId), null, 'feature');
         $feature = isset($offered[$featureId]) ? FeatureRegistry::instance()->get($featureId) : null;
 
         return $feature !== null && $feature->getScope() === Feature::SCOPE_USER ? $offered[$featureId] : null;

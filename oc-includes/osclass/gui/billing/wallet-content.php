@@ -48,7 +48,7 @@ if (!osc_is_web_user_logged_in()) {
     $total   = Wallet::historyCount($userId);
     $limit   = osc_user_listing_limit($userId);
     $canBuy  = osc_billing_can_buy();
-    $offers  = osc_account_upgrade_offers();
+    $offers  = osc_account_upgrade_offers($userId);
 }
 
 $reasonWords = array(
