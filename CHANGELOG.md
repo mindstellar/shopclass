@@ -2,6 +2,12 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.8
+
+### Fixed
+
+- The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
+
 ## Shopclass 6.4.7
 
 This release fixes a script injection in the post form's category picker, stops visitors filling in

@@ -527,6 +527,8 @@ jobs:
       # the only channel that carries it.
       - name: Market compatibility badge
         run: php tests/market-compat-badge.php
+      - name: Market browse card offers the installable release
+        run: php tests/market-browse-offer.php
       # A search that forgets what was typed into half its boxes looks like a broken filter.
       - name: Custom field range values
         run: php tests/custom-field-range-values.php
