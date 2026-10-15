@@ -565,10 +565,12 @@ check(
     in_array('export items = items[4]', $actual['cache: repeat is served cached'], true)
 );
 pin(
-    'after osc_invalidate_search_cache() the search runs again',
-    $queries($actual['cache: first run queries']),
+    'after osc_invalidate_search_cache() the search runs again: the rows and the total',
+    2,
     $queries($actual['cache: new generation recomputes'])
 );
+
+pin('page 2 reuses the total page 1 counted: only its rows are read', 1, $queries($actual['page 2 of 2']));
 
 harness_section('websearch: side effects');
 pin('latest searches: one row from the page-1 pattern search', $expected['latest_searches'], $latest);

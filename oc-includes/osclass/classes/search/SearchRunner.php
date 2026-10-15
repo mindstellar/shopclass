@@ -64,14 +64,10 @@ class SearchRunner
         } else {
             // The search-cache generation is bumped on every item lifecycle event, so a
             // deleted or disabled listing is never served from a stored result.
-            // An uncounted result is cached apart, so a counting search never reads its null total.
-            $key    = osc_current_user_locale() . '|' . $search->toJson() . ($count ? '' : '|uncounted') . ($extend === null ? '' : '|bare');
-            $cache  = CacheGroup::remember('search', $key, static fn (): array => array(
-                'aItems'      => $search->doSearch($extend === null, $count),
-                'iTotalItems' => $count ? $search->count() : null,
-            ));
-            $aItems = $cache['aItems'];
-            $total  = $cache['iTotalItems'];
+            // The rows are kept per page and sort; the total is kept once, by countMatches().
+            $key    = 'rows|' . osc_current_user_locale() . '|' . $search->toJson() . ($extend === null ? '' : '|bare');
+            $aItems = CacheGroup::remember('search', $key, static fn (): array => $search->doSearch($extend === null, false));
+            $total  = $count ? $search->countMatches(true) : null;
         }
         if ($extend !== null && $aItems !== array()) {
             $aItems = $extend($aItems);

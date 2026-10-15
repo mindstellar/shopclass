@@ -305,6 +305,11 @@ pin('a plugin join that repeats a listing still lists it once', array($car1, $ca
 /* ----------------------------------------------------------------------------
  * Premium only.
  * ------------------------------------------------------------------------- */
+harness_section('Search: count() reads only the total');
+$s = new Search();
+$s->addCategory($catCars);
+pin('count() before a search runs the COUNT alone, not the rows as well', 1, harness_query_count(static fn () => $s->count()));
+
 harness_section('Search: premium');
 
 $s = new Search();

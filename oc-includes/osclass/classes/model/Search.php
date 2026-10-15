@@ -501,10 +501,33 @@ class Search extends DAO
     public function count()
     {
         if (null === $this->total_results) {
-            $this->doSearch();
+            $this->countMatches();
         }
 
         return $this->total_results;
+    }
+
+    /**
+     * How many listings match, without reading them; count() then returns it too.
+     *
+     * @param bool $cached keep the total in the search cache apart from the page and the sort, under the
+     *                     key SearchRunner keeps the rows by; off for a search built with settings that key does not hold
+     *
+     * @return int
+     */
+    public function countMatches(bool $cached = false): int
+    {
+        // Only a builder a plugin has already read; reading $this->dao here would build one.
+        $dao   = array_key_exists('dao', get_object_vars($this)) ? $this->dao : null;
+        $total = fn (): int => SearchExecutor::total(SearchCompiler::count(SearchCompiler::results($this->parts, $dao, true)));
+        if (!$cached) {
+            return $this->total_results = $total();
+        }
+        $record = json_decode(SearchRecord::encode($this->parts), true);
+        unset($record['order_column'], $record['order_direction'], $record['limit_init'], $record['results_per_page']);
+        $key = 'total|' . osc_current_user_locale() . '|' . json_encode($record);
+
+        return $this->total_results = (int) \mindstellar\cache\CacheGroup::remember('search', $key, $total);
     }
 
     /**
@@ -529,9 +552,7 @@ class Search extends DAO
         }
 
         // COUNT(*) over the unlimited match list: exact, and one row on the wire.
-        $this->total_results = $count
-            ? SearchExecutor::total(SearchCompiler::count(SearchCompiler::results($this->parts, $dao, true)))
-            : 0;
+        $this->total_results = $count ? $this->countMatches() : 0;
 
         if ($mainError) {
             return array();
