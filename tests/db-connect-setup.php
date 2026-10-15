@@ -10,8 +10,8 @@
 
 /**
  * Pins what ConnectionManager does after the login: the database is selected, autocommit
- * is on, the relaxed sql_mode drops exactly its five modes, and all of it costs one round
- * trip. A missing database or a bad password still reports the same error codes.
+ * is on, the charset is utf8mb4, the relaxed sql_mode drops exactly its five modes, and all
+ * of it costs one round trip. A missing database or a bad password still reports the same error codes.
  *
  * Runs itself a second time with OSC_DB_STRICT_MODE, the branch a new install takes.
  * Env:    DRIFT_DB_HOST DRIFT_DB_PORT DRIFT_DB_USER DRIFT_DB_PASS
@@ -57,6 +57,17 @@ register_shutdown_function(static function () use ($admin, $previousMode) {
 $admin->query("SET GLOBAL sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,"
     . "ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
 
+/** A login whose server runs SET NAMES latin1 first, so only the setup's own SET NAMES gives utf8mb4. */
+$latinUser = 'osc_latin_' . getmypid();
+$previousInit = $admin->query('SELECT @@GLOBAL.init_connect')->fetch_row()[0];
+register_shutdown_function(static function () use ($admin, $latinUser, $previousInit) {
+    $admin->query("SET GLOBAL init_connect = '" . $admin->real_escape_string($previousInit) . "'");
+    $admin->query("DROP USER IF EXISTS '$latinUser'@'%'");
+});
+$admin->query("CREATE USER '$latinUser'@'%' IDENTIFIED BY 'latin-pass'");
+$admin->query("GRANT ALL ON `$name`.* TO '$latinUser'@'%'");
+$admin->query("SET GLOBAL init_connect = 'SET NAMES latin1'");
+
 harness_section($strict ? 'strict install' : 'relaxed install');
 
 $before = mysqli_get_client_stats();
@@ -68,14 +79,14 @@ foreach ($after as $k => $v) {
         $trips += $v - $before[$k];
     }
 }
-$row = $cm->getHandle()->query('SELECT DATABASE(), @@SESSION.autocommit, @@SESSION.sql_mode, @@character_set_connection,'
-    . ' @@character_set_client, @@character_set_results')
-    ->fetch_row();
+$row = $cm->getHandle()->query('SELECT DATABASE(), @@SESSION.autocommit, @@SESSION.sql_mode')->fetch_row();
 pin('the database is selected', $name, $row[0]);
 pin('autocommit is on', '1', (string) $row[1]);
-pin('the connection charset is utf8mb4', 'utf8mb4', $row[3]);
-pin('... and so are the client and results charsets', array('utf8mb4', 'utf8mb4'), array($row[4], $row[5]));
-pin('escaping uses utf8mb4 too', 'utf8mb4', $cm->getHandle()->character_set_name());
+$latin = new ConnectionManager($host, $latinUser, 'latin-pass', $name, $port);
+$cs    = $latin->getHandle()->query('SELECT @@character_set_connection, @@character_set_client, @@character_set_results')
+    ->fetch_row();
+pin('the charset is utf8mb4 even when the server starts the session in latin1', array('utf8mb4', 'utf8mb4', 'utf8mb4'), $cs);
+pin('escaping uses utf8mb4 too', 'utf8mb4', $latin->getHandle()->character_set_name());
 pin('sql_mode', $strict
     ? 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'
     : 'NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', $row[2]);
