@@ -355,10 +355,10 @@ pin('a finished job is removed', 0, $queue->count(JobQueue::STATUS_PENDING));
 $generations = array();
 JobRegistry::register('test.gen', static function () use (&$generations) {
     $generations[] = CacheGroup::generation('jobtest');
-    CacheManager::getInstance()->set('osc_jobtest_cache_gen', end($generations) + 1, 0);
+    CacheManager::getInstance()->set('shared:osc_jobtest_cache_gen', end($generations) + 1, 0);
 });
 CacheGroup::generation('jobtest');
-CacheManager::getInstance()->set('osc_jobtest_cache_gen', 7, 0);
+CacheManager::getInstance()->set('shared:osc_jobtest_cache_gen', 7, 0);
 $queue->enqueue('test.gen');
 $queue->enqueue('test.gen');
 JobWorker::run(10);
@@ -821,7 +821,7 @@ $truncate();
 $listenTicks = 0;
 $tickGen     = null;
 CacheGroup::generation('ticktest');
-CacheManager::getInstance()->set('osc_ticktest_cache_gen', 3, 0);
+CacheManager::getInstance()->set('shared:osc_ticktest_cache_gen', 3, 0);
 try {
     JobWorker::listen(60, static function (): void {
     }, $listenStop, static function () use (&$listenTicks, &$tickGen): void {
