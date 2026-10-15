@@ -334,7 +334,7 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
         }
     } else {
         $stamp = _osc_auto_cron_stamp(osc_uploads_path());
-        if (!file_exists($stamp) || (time() - (int)@filemtime($stamp)) >= $window) {
+        if (!@file_exists($stamp) || (time() - (int)@filemtime($stamp)) >= $window) {
             @touch($stamp);
             $fire = true;
         }
