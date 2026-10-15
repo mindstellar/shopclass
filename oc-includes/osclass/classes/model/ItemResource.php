@@ -147,10 +147,7 @@ class ItemResource
             return;
         }
         try {
-            $rows = Db::stringifyRows($this->rows(
-                'i_owner_id IN (' . implode(', ', array_fill(0, count($itemIds), '?')) . ')',
-                $itemIds
-            ));
+            $rows = Db::stringifyRows(\mindstellar\listing\PhotoStore::ofItems($itemIds));
         } catch (\mindstellar\database\DbException $e) {
             // Nothing is kept, so each listing's own read retries.
             return;
