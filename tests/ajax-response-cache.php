@@ -20,9 +20,12 @@ require_once __DIR__ . '/lib/harness.php';
 
 if (isset($_GET['mode'])) {
     require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
-    $_GET['mode'] === 'shared'
-        ? \mindstellar\utility\AjaxResponse::shared(array('ok' => 1))
-        : \mindstellar\utility\AjaxResponse::json(array('ok' => 1));
+    if ($_GET['mode'] === 'cookie') {
+        setcookie('signed_out', '', 1);
+    }
+    $_GET['mode'] === 'json'
+        ? \mindstellar\utility\AjaxResponse::json(array('ok' => 1))
+        : \mindstellar\utility\AjaxResponse::shared(array('ok' => 1));
 
     return;
 }
@@ -54,6 +57,7 @@ $cacheControl = static function (string $mode) use ($port): string {
 harness_section('AjaxResponse cache headers');
 pin('json() is private', 'private, no-store', $cacheControl('json'));
 pin('shared() may be kept five minutes by any cache', 'public, max-age=300, s-maxage=300', $cacheControl('shared'));
+pin('...unless the answer also sets a cookie', 'private, no-store', $cacheControl('cookie'));
 
 proc_terminate($server);
 proc_close($server);

@@ -49,7 +49,8 @@ final class AjaxResponse
      */
     public static function shared($data): void
     {
-        self::send($data, 200, 0, 'public, max-age=300, s-maxage=300');
+        $setsCookie = preg_grep('/^Set-Cookie:/i', headers_list()) !== array();
+        self::send($data, 200, 0, $setsCookie ? 'private, no-store' : 'public, max-age=300, s-maxage=300');
     }
 
     /**
@@ -68,8 +69,8 @@ final class AjaxResponse
             header('Content-Type: application/json; charset=UTF-8');
             // The Content-Type above is only worth having if the browser believes it.
             header('X-Content-Type-Options: nosniff');
-            // Front ajax skips osc_send_response_cache_headers(), so without this a JSON
-            // answer carrying somebody's data is heuristically cacheable by a shared cache.
+            // Front ajax skips osc_send_response_cache_headers(), so every answer states its own
+            // cache rule; without one a shared cache may guess.
             header('Cache-Control: ' . $cacheControl);
         }
 
