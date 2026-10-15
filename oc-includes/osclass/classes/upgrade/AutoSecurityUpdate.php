@@ -13,6 +13,7 @@ namespace mindstellar\upgrade;
 use mindstellar\admin\DatabaseTools;
 use mindstellar\security\Demo;
 use Throwable;
+use mindstellar\utility\Utils;
 
 /**
  * Installs a security release on its own from the daily cron when switched on, and e-mails the
@@ -128,7 +129,7 @@ final class AutoSecurityUpdate
         $reason = rtrim($reason, '. ');
         if ($stage === 'done') {
             $subject = sprintf(__('[%1$s] Security update %2$s installed'), $site, $to);
-            $body    = PHP_SAPI === 'cli'
+            $body    = !Utils::isWebRequest()
                 ? sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Restart PHP (PHP-FPM) so the site runs the new files.'), $site, $to, $from)
                 : sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing needs doing.'), $site, $to, $from);
         } else {

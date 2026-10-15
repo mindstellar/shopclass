@@ -11,6 +11,7 @@
 namespace mindstellar\logger;
 
 use Exception;
+use mindstellar\utility\Utils;
 
 /**
  * Registers PHP's error, exception and shutdown handlers, logs what they catch and shows the error page.
@@ -113,7 +114,7 @@ class ErrorHandler
             ));
         }
 
-        if (PHP_SAPI === 'cli') {
+        if (!Utils::isWebRequest()) {
             fwrite(STDERR, $this->formattedError(
                 $e->getMessage(),
                 (int)$e->getCode(),
@@ -182,7 +183,7 @@ class ErrorHandler
             return;
         }
 
-        if (PHP_SAPI === 'cli') {
+        if (!Utils::isWebRequest()) {
             fwrite(
                 STDERR,
                 $this->formattedError($error['message'], $error['type'], $error['file'], $error['line'], '') . PHP_EOL
@@ -261,7 +262,7 @@ class ErrorHandler
         error_log('Shopclass: database unavailable. ' . $detailMessage);
 
         // On the command line the log line above is the whole message.
-        if (PHP_SAPI === 'cli') {
+        if (!Utils::isWebRequest()) {
             exit(1);
         }
         if (headers_sent()) {
@@ -432,7 +433,7 @@ class ErrorHandler
             $message = $this->formattedError($message, $type, $file, $line, $context);
             $this->writeToFile($message);
         } else {
-            $message = PHP_SAPI === 'cli'
+            $message = !Utils::isWebRequest()
                 ? $this->formattedError($message, $type, $file, $line, $context)
                 : $this->htmlFormattedError($message, $type, $file, $line, $context);
 
