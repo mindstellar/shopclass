@@ -83,7 +83,7 @@ class CWebAjax extends BaseModel
     private function regions(): void
     {
         $regions = Region::getInstance()->findByCountry(Params::getParam('countryId'));
-        AjaxResponse::json($regions);
+        AjaxResponse::shared($regions);
     }
 
     /**
@@ -92,7 +92,7 @@ class CWebAjax extends BaseModel
     private function cities(): void
     {
         $cities = City::getInstance()->findByRegion(Params::getParamInt('regionId'));
-        AjaxResponse::json($cities);
+        AjaxResponse::shared($cities);
     }
 
     /**
@@ -104,7 +104,7 @@ class CWebAjax extends BaseModel
         foreach ($cities as $k => $city) {
             $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
         }
-        AjaxResponse::json($cities);
+        AjaxResponse::shared($cities);
     }
 
     /**
@@ -113,7 +113,7 @@ class CWebAjax extends BaseModel
     private function locationCountries(): void
     {
         $countries = Country::getInstance()->ajax(Params::getParamString('term'));
-        AjaxResponse::json($countries);
+        AjaxResponse::shared($countries);
     }
 
     /**
@@ -134,7 +134,7 @@ class CWebAjax extends BaseModel
     {
         $regions = Region::getInstance()
             ->ajax(Params::getParamString('term'), Params::getParamString('country'));
-        AjaxResponse::json($regions);
+        AjaxResponse::shared($regions);
     }
 
     /**
@@ -145,7 +145,7 @@ class CWebAjax extends BaseModel
         $cities =
         // @phpstan-ignore argument.type (region may be an id or a name)
             City::getInstance()->ajax(Params::getParamString('term'), Params::getParamString('region'));
-        AjaxResponse::json($cities);
+        AjaxResponse::shared($cities);
     }
 
     /**
