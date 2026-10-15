@@ -66,7 +66,6 @@ register_shutdown_function(static function () use ($admin, $latinUser, $previous
 });
 $admin->query("CREATE USER '$latinUser'@'%' IDENTIFIED BY 'latin-pass'");
 $admin->query("GRANT ALL ON `$name`.* TO '$latinUser'@'%'");
-$admin->query("SET GLOBAL init_connect = 'SET NAMES latin1'");
 
 harness_section($strict ? 'strict install' : 'relaxed install');
 
@@ -82,7 +81,10 @@ foreach ($after as $k => $v) {
 $row = $cm->getHandle()->query('SELECT DATABASE(), @@SESSION.autocommit, @@SESSION.sql_mode')->fetch_row();
 pin('the database is selected', $name, $row[0]);
 pin('autocommit is on', '1', (string) $row[1]);
+// Server-wide while it is set, so it is set only around this one login.
+$admin->query("SET GLOBAL init_connect = 'SET NAMES latin1'");
 $latin = new ConnectionManager($host, $latinUser, 'latin-pass', $name, $port);
+$admin->query("SET GLOBAL init_connect = '" . $admin->real_escape_string($previousInit) . "'");
 $cs    = $latin->getHandle()->query('SELECT @@character_set_connection, @@character_set_client, @@character_set_results')
     ->fetch_row();
 pin('the charset is utf8mb4 even when the server starts the session in latin1', array('utf8mb4', 'utf8mb4', 'utf8mb4'), $cs);
