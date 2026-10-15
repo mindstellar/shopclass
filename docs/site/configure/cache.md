@@ -56,6 +56,10 @@ $_cache_config = array(
 
 Each PHP worker keeps its connection between pages, as it does with Redis and phpredis.
 
+If PHP has the **igbinary** extension, Redis, Valkey and memcached store values in its format:
+smaller and faster to read. The Docker image includes it. A server without it treats such a value
+as missing and rebuilds it, so mixed servers are safe.
+
 ## Redis or Valkey
 
 **Redis** and **Valkey** are cache servers like memcached. Use them if your host

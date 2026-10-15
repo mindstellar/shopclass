@@ -79,6 +79,10 @@ class MemcachedCache extends Cache
         $this->memcached->setOption(\Memcached::OPT_POLL_TIMEOUT, 1000);
         $this->memcached->setOption(\Memcached::OPT_SEND_TIMEOUT, 1000000);
         $this->memcached->setOption(\Memcached::OPT_RECV_TIMEOUT, 1000000);
+        // A server without igbinary reads such a value as a miss, never as an error.
+        if (\Memcached::HAVE_IGBINARY) {
+            $this->memcached->setOption(\Memcached::OPT_SERIALIZER, \Memcached::SERIALIZER_IGBINARY);
+        }
         foreach ($cache_server as $_config) {
             $this->memcached->addServer($_config['hostname'], $_config['port'], $_config['weight']);
         }
