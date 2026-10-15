@@ -21,6 +21,9 @@ use mindstellar\base\Cache;
  */
 class RedisCache extends Cache
 {
+    /** The first bytes of an igbinary value; PHP's own serialize() never starts with them. */
+    private const IGBINARY = "\x00\x00\x00\x02";
+
     private RedisClient $client;
 
     /** @var array<string,mixed> */
@@ -304,9 +307,9 @@ class RedisCache extends Cache
     protected function fetch(string $storeKey, &$found)
     {
         $reply = $this->call('GET', $storeKey);
-        $found = is_string($reply);
+        $found = false;
 
-        return $found ? $this->decode($reply) : false;
+        return is_string($reply) ? $this->decode($reply, $found) : false;
     }
 
     /**
@@ -333,11 +336,13 @@ class RedisCache extends Cache
         }
         $reply = $this->call('MGET', ...array_map(fn (string $key): string => $this->_key($key), $fetch));
         foreach ($fetch as $i => $key) {
-            if (!is_array($reply) || !is_string($reply[$i] ?? null)) {
+            $readable = false;
+            $value    = is_array($reply) && is_string($reply[$i] ?? null) ? $this->decode($reply[$i], $readable) : false;
+            if (!$readable) {
                 ++$this->cache_misses;
                 continue;
             }
-            $values[$key]      = $this->decode($reply[$i]);
+            $values[$key]      = $value;
             $this->cache[$key] = self::copy($values[$key]);
             ++$this->cache_hits;
         }
@@ -456,16 +461,32 @@ class RedisCache extends Cache
     private function encode($data): string
     {
         // A whole number is stored as bare digits, so increment() can count on top of it.
-        return is_int($data) ? (string) $data : serialize($data);
+        if (is_int($data)) {
+            return (string) $data;
+        }
+
+        return function_exists('igbinary_serialize') ? (string) igbinary_serialize($data) : serialize($data);
     }
 
     /**
+     * The stored value; $readable is false for an igbinary value on a server without the extension.
+     *
      * @return mixed
      */
-    private function decode(string $reply)
+    private function decode(string $reply, ?bool &$readable = null)
     {
+        $readable = true;
         if (preg_match('/^-?\d+$/', $reply)) {
             return (int) $reply;
+        }
+        if (strncmp($reply, self::IGBINARY, 4) === 0) {
+            if (!function_exists('igbinary_unserialize')) {
+                $readable = false;
+
+                return false;
+            }
+
+            return igbinary_unserialize($reply);
         }
 
         return unserialize($reply);

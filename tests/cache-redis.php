@@ -127,6 +127,43 @@ $sent = array();
 (new RedisCache($scripted))->hashTake('h');
 pin('a taken hash expires before it is read, in case the request dies', array('RENAME', 'EXPIRE', 'HGETALL', 'DEL'), $sent);
 
+harness_section('igbinary values');
+
+$stored   = array();
+$recorder = new class ($stored) implements mindstellar\cache\RedisClient {
+    public function __construct(private array &$stored)
+    {
+    }
+
+    public function command(string ...$args): mixed
+    {
+        if ($args[0] === 'SET') {
+            $this->stored[$args[1]] = $args[2];
+
+            return true;
+        }
+
+        return $this->stored[$args[1]] ?? null;
+    }
+};
+$codec = new RedisCache($recorder);
+$codec->set('row', array('a' => 1));
+if (function_exists('igbinary_serialize')) {
+    check('with igbinary a value is stored in its format', strncmp((string) reset($stored), "\x00\x00\x00\x02", 4) === 0);
+}
+$found = null;
+pin('and reads back whole', array(array('a' => 1), true), array((new RedisCache($recorder))->get('row', $found), $found));
+$stored[key($stored)] = serialize(array('old' => true));
+pin('a value an older release stored with serialize() still reads', array('old' => true), (new RedisCache($recorder))->get('row'));
+$noIgbinary = shell_exec(escapeshellarg(PHP_BINARY) . ' -n -r ' . escapeshellarg(
+    'require ' . var_export(ABS_PATH . 'oc-includes/vendor/autoload.php', true) . ';'
+    . ' $c = new class implements mindstellar\\cache\\RedisClient { public function command(string ...$a): mixed { return $a[0] === "GET" ? "\x00\x00\x00\x02\x14\x01" : null; } };'
+    . ' $f = null; $v = (new mindstellar\\cache\\RedisCache($c))->get("k", $f);'
+    . ' $m = (new mindstellar\\cache\\RedisCache($c))->getMany(["k"]);'
+    . ' echo json_encode([function_exists("igbinary_unserialize"), $v, $f, $m]);'
+));
+pin('without igbinary such a value is a miss, not an error', '[false,false,false,[]]', trim((string) $noIgbinary));
+
 $server = getenv('OSC_TEST_REDIS');
 if (!$server) {
     echo "  (no OSC_TEST_REDIS server: the server checks were not run)\n";
