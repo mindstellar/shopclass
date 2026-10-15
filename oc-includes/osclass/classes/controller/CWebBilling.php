@@ -320,10 +320,7 @@ class CWebBilling extends WebSecBaseModel
         } elseif ($featureId === 'item.bump' && osc_billing_bump_paused($userId, true)) {
             osc_add_flash_warning_message(osc_billing_bump_paused_message($userId));
         } else {
-            osc_add_flash_error_message(sprintf(
-                _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
-                osc_esc_html(osc_billing_buy_url())
-            ));
+            self::notEnoughCreditsFlash();
         }
 
         $this->redirectTo(osc_user_list_items_url());
@@ -350,13 +347,21 @@ class CWebBilling extends WebSecBaseModel
         if (Billing::spend($userId, $featureId, array('ref_type' => 'user', 'ref_id' => $userId))) {
             osc_add_flash_ok_message(sprintf(_m('%s added to your account'), (string) $offer['label']));
         } else {
-            osc_add_flash_error_message(sprintf(
-                _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
-                osc_esc_html(osc_billing_buy_url())
-            ));
+            self::notEnoughCreditsFlash();
         }
 
         $this->redirectTo(osc_billing_wallet_url());
+    }
+
+    /**
+     * The flash a spend that the wallet could not cover shows, with a link to buy credits.
+     */
+    private static function notEnoughCreditsFlash(): void
+    {
+        osc_add_flash_error_message(sprintf(
+            _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
+            osc_esc_html(osc_billing_buy_url())
+        ));
     }
 
     /**
