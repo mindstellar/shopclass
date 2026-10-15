@@ -90,14 +90,15 @@ final class PackageIndex
      * Catalog entries that are not present locally — what the Browse screen renders for
      * "not yet installed".
      *
-     * `$row + [...]` carries every field `Catalog::index()` publishes straight through,
-     * including `requires_min`/`tested_max` (the package's supported range) — the badge
-     * text a caller renders from this row, not `compatibility` below.
+     * Each row describes the release Install would fetch: `version` and `offer` (its
+     * requires, requires_php and tested_up_to) are that release's, and `compatibility` is
+     * judged on it. The other index fields pass through, `requires_min`/`tested_max` being
+     * the range across every release.
      *
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
      *              tags:array<int,string>, updated_at:string, requires_min:?string,
-     *              tested_max:?string,
+     *              tested_max:?string, offer:array<string,string>,
      *              compatibility:array{status:string, blocked:bool, reason:string}}>
      */
     public function available(): array
@@ -130,16 +131,17 @@ final class PackageIndex
     private static function browseRow(array $row, array $versions): array
     {
         $offer = Compatibility::pickBestVersion($versions) ?? ($versions[0] ?? null);
-        if ($offer === null) {
-            return $row + ['compatibility' => Compatibility::evaluate([])];
+        $info  = [];
+        if ($offer !== null) {
+            $row['version'] = (string) $offer['version'];
+            $info           = [
+                'requires'     => (string) ($offer['requires'] ?? ''),
+                'requires_php' => (string) ($offer['requires_php'] ?? ''),
+                'tested_up_to' => (string) ($offer['tested'] ?? ''),
+            ];
         }
-        $row['version'] = (string) $offer['version'];
 
-        return $row + ['compatibility' => Compatibility::evaluate([
-            'requires'     => $offer['requires'],
-            'requires_php' => $offer['requires_php'],
-            'tested_up_to' => $offer['tested'],
-        ])];
+        return $row + ['offer' => $info, 'compatibility' => Compatibility::evaluate($info)];
     }
 
     /**
