@@ -288,6 +288,26 @@ $swap($cache = new KeepAllCache());
 pin('copies stay off unless the site turns them on', false, (new ReflectionMethod(CacheGroup::class, 'localCopies'))->invoke(null, $cache));
 $localFlag->setValue(null, null);
 
+harness_section('osc_cache_remember');
+$GLOBALS['__locale'] = 'en_US';
+function osc_add_hook()
+{
+}
+function osc_current_user_locale()
+{
+    return $GLOBALS['__locale'];
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+$swap($cache = new KeepAllCache());
+$loads = 0;
+osc_cache_remember('category', 'name:7', $load('Cars'), 600);
+pin('a stored value is a hit', ['Cars', 1], [osc_cache_remember('category', 'name:7', $load('other')), $loads]);
+pin('...kept for the given seconds', [600], array_values(array_filter($cache->ttl, static fn ($t) => $t === 600)));
+$GLOBALS['__locale'] = 'es_ES';
+pin('each locale has its own copy', 'Coches', osc_cache_remember('category', 'name:7', $load('Coches')));
+CacheGroup::invalidate('category');
+pin('dropping the group loads again', 'Autos', osc_cache_remember('category', 'name:7', $load('Autos')));
+
 exit(harness_result());
 
 /* file end: ./tests/cache-group.php */

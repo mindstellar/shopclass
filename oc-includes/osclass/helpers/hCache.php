@@ -165,6 +165,27 @@ function osc_cache_set($key, $data, $expire = 0)
 }
 
 /**
+ * The cached value of $key in $group, or what $load returns (unless null), stored for $expire seconds.
+ * Core drops a whole group when its data changes, such as 'category' when a category is edited.
+ *
+ * @param string   $group  'category', 'page', 'search', or your own name
+ * @param string   $key
+ * @param callable $load
+ * @param int|null $expire Seconds, null for OSC_CACHE_TTL
+ *
+ * @return mixed
+ */
+function osc_cache_remember($group, $key, callable $load, $expire = null)
+{
+    return \mindstellar\cache\CacheGroup::remember(
+        (string)$group,
+        $key . osc_current_user_locale(),
+        $load,
+        $expire === null ? null : (int)$expire
+    );
+}
+
+/**
  * Invalidate cached data that is a pure function of an item id (currently the
  * item's resource/photo list). Without this the object cache is TTL-only, so a
  * persistent backend (memcached, redis, apcu) serves a stale copy of an item the user

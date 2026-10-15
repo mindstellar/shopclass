@@ -42,6 +42,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `oc-cli.php jobs:work --listen` runs background jobs as soon as they are due and runs the scheduled tasks too, so it replaces the cron line. The Docker image runs it and its compose file adds Valkey.
 - The Docker image sizes its PHP worker pool to the host (three per CPU, within memory) instead of php-fpm's fixed 5; `OSC_FPM_MAX_CHILDREN` sets it.
 - `OSC_DB_PERSISTENT` (environment) or `define('OSC_DB_PERSISTENT', true);` keeps each PHP worker's database connection between pages. Off by default.
+- `osc_cache_remember($group, $key, $load, $expire)` caches a theme's or plugin's value in a group core drops when that data changes, and uses the per-worker copies of `OSC_CACHE_LOCAL`.
 - With Redis or Valkey, listing views and rate limits count in the cache instead of writing to the database on every visit.
 - A premium upgrade ends exactly at its end time, not up to an hour later.
 - Theme JavaScript can call the API as the signed-in user with `osc_api_session_meta()`.

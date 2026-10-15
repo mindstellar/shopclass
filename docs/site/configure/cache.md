@@ -116,6 +116,9 @@ seconds late.
 Turn it on only when no other site runs under the same PHP: other sites there can read
 and change APCu. The Docker image turns it on.
 
+Themes and plugins get the same copies when they cache through `osc_cache_remember()`; see
+[Helper functions](/docs/developers/helpers/).
+
 ## APCu (one server only)
 
 **APCu** keeps the cache inside PHP itself. It is simpler and faster, but each
