@@ -75,7 +75,7 @@ each has its own price in credits and, where relevant, its own duration.
 
 Sellers buy listing upgrades from **My listings**, next to each listing. They buy account
 upgrades (extra slots, extra photos, longer listings, skip the posting wait) from their
-**Credits** page, under "Upgrades for your account".
+**Credits** page, under "Upgrades for your account". That box shows only the upgrades you turn on.
 
 ### Credit bundles
 

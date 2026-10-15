@@ -2850,35 +2850,61 @@ $accountOffer = new ReflectionMethod(CWebBilling::class, 'accountOffer');
 if (PHP_VERSION_ID < 80100) {
     $accountOffer->setAccessible(true);
 }
+// Every account feature core registers, not a hand-kept list, so a new one cannot be missed.
 $userScoped = array();
 foreach (FeatureRegistry::getInstance()->all() as $id => $feature) {
-    if ($feature->getScope() === Feature::SCOPE_USER && isset($accountPrefs[$id])) {
+    if ($feature->getScope() === Feature::SCOPE_USER && strncmp((string) $id, 'listing.', 8) === 0) {
         $userScoped[] = $id;
     }
 }
 sort($userScoped);
-$buyable = array_keys(array_filter(array_flip($userScoped), static fn ($i, $id) => $accountOffer->invoke(null, $id) !== null, ARRAY_FILTER_USE_BOTH));
+$buyable = array_keys(array_filter(array_flip($userScoped), static fn ($i, $id) => $accountOffer->invoke(null, $id, 0) !== null, ARRAY_FILTER_USE_BOTH));
 $expectedScoped = array_keys($accountPrefs);
 sort($expectedScoped);
 pin('every account upgrade an admin can sell is registered', $expectedScoped, $userScoped);
 pin('...and every one of them can be bought', $userScoped, $buyable);
 pin('the offers name each one with its price', array('listing.slot' => 3), array_intersect_key(array_column(osc_account_upgrade_offers(), 'credits', 'feature'), array('listing.slot' => 1)));
 
-pin('a listing upgrade, an unknown name or a switched-off one is refused', array(null, null, null), array(
-    $accountOffer->invoke(null, 'listing.premium'),
-    $accountOffer->invoke(null, 'no.such.feature'),
-    (static function () use ($accountOffer) {
-        osc_set_preference('billing_photos_enabled', '0', 'osclass', 'BOOLEAN');
+pin('a listing upgrade is refused', null, $accountOffer->invoke(null, 'listing.premium', 0));
+pin('an unknown name is refused', null, $accountOffer->invoke(null, 'no.such.feature', 0));
+$addItemOffer = static function (array $offers): array {
+    $offers[] = array('feature' => 'item.bump', 'label' => 'Bump', 'detail' => '', 'credits' => 1);
 
-        return $accountOffer->invoke(null, 'listing.photos');
-    })(),
+    return $offers;
+};
+osc_set_preference('billing_bump_enabled', '1', 'osclass', 'BOOLEAN');
+osc_register_billing_item_upgrades();
+osc_add_filter('account_upgrade_offers', $addItemOffer);
+pin('a listing upgrade a plugin lists as an account offer is still refused', null, $accountOffer->invoke(null, 'item.bump', 0));
+osc_remove_filter('account_upgrade_offers', $addItemOffer);
+osc_set_preference('billing_bump_enabled', '0', 'osclass', 'BOOLEAN');
+$photoOwner = seed_user($admin, 'photoowner', 'photoowner@example.test');
+EntitlementStore::grant($photoOwner, 'listing.photos', 10, null);
+pin('extra photos already held are not offered again, so they cannot stack', array(false, null), array(
+    in_array('listing.photos', array_column(osc_account_upgrade_offers($photoOwner), 'feature'), true),
+    $accountOffer->invoke(null, 'listing.photos', $photoOwner),
 ));
+check('...while extra slots stay on offer, since each one adds a slot', in_array('listing.slot', array_column(osc_account_upgrade_offers($photoOwner), 'feature'), true));
+osc_set_preference('billing_photos_enabled', '0', 'osclass', 'BOOLEAN');
+pin('a switched-off one is refused', null, $accountOffer->invoke(null, 'listing.photos', 0));
+$defaultLimitMessage = '';
+$captureLimitMessage = static function ($message) use (&$defaultLimitMessage) {
+    $defaultLimitMessage = (string) $message;
+
+    return $message;
+};
+osc_add_filter('billing_listing_limit_message', $captureLimitMessage, 1);
+osc_listing_limit_message(0);
+osc_remove_filter('billing_listing_limit_message', $captureLimitMessage);
+check('with slots on sale, the limit message names buying one', strpos($defaultLimitMessage, 'Buy an extra listing slot') !== false, $defaultLimitMessage);
 
 $slotBuyer = seed_user($admin, 'slotbuyer', 'slotbuyer@example.test');
 Wallet::credit($slotBuyer, 5, Wallet::REASON_PURCHASE);
 $slotsBefore = EntitlementStore::capacity($slotBuyer, 'listing.slot', 0);
 check('buying a slot with credits succeeds', Billing::spend($slotBuyer, 'listing.slot', array('ref_type' => 'user', 'ref_id' => $slotBuyer)));
 pin('...takes its price and grants the slot', array(2, $slotsBefore + 1), array(osc_user_credits($slotBuyer), EntitlementStore::capacity($slotBuyer, 'listing.slot', 0)));
+check('with too few credits the purchase fails', !Billing::spend($slotBuyer, 'listing.slot', array('ref_type' => 'user', 'ref_id' => $slotBuyer)));
+pin('...and takes nothing and grants nothing', array(2, $slotsBefore + 1), array(osc_user_credits($slotBuyer), EntitlementStore::capacity($slotBuyer, 'listing.slot', 0)));
 
 foreach ($accountPrefs as $pref) {
     osc_set_preference($pref, '0', 'osclass', 'BOOLEAN');

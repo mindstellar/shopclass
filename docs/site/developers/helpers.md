@@ -178,7 +178,7 @@ Core defines 1173 helpers, 19 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_account_upgrade_offers()` | Upgrades a seller can buy for their account with credits: each is ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`. |
+| `osc_account_upgrade_offers(?int $userId = null)` | Upgrades a seller can buy for their account with credits: each is ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`. With $userId, extra photos and runtime that seller already holds are left out: they raise a limit to a level, so buying them again would only stack it. |
 | `osc_account_upgrade_url(string $feature)` | The POST target for buying the account upgrade $feature. |
 | `osc_billing_bump_cooldown_hours()` | Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. |
 | `osc_billing_bump_credits()` | Credit price of a bump. 0 with billing_bump_enabled on means free, not off. |

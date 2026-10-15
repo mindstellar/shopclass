@@ -977,11 +977,13 @@ function osc_item_upgrade_url(int $itemId, string $feature): string
 /**
  * Upgrades a seller can buy for their account with credits: each is
  * ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`.
+ * With $userId, extra photos and runtime that seller already holds are left out: they raise a
+ * limit to a level, so buying them again would only stack it.
  *
  * @return array<int,array<string,mixed>>
  * @since 6.4.8
  */
-function osc_account_upgrade_offers(): array
+function osc_account_upgrade_offers(?int $userId = null): array
 {
     if (!osc_billing_enabled()) {
         return array();
@@ -1021,7 +1023,12 @@ function osc_account_upgrade_offers(): array
         );
     }
 
-    return (array) osc_apply_filter('account_upgrade_offers', $offers);
+    if ($userId !== null && $userId > 0) {
+        $offers = array_values(array_filter($offers, static fn (array $offer): bool => !in_array($offer['feature'], array('listing.photos', 'listing.runtime'), true)
+            || EntitlementStore::capacity($userId, $offer['feature'], 0) === 0));
+    }
+
+    return (array) osc_apply_filter('account_upgrade_offers', $offers, $userId);
 }
 
 /**

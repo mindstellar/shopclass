@@ -509,7 +509,7 @@ Core fires 564 names. Generated from the source; do not edit by hand.
 |---|---|---|---|
 | `account_page_after` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
 | `account_page_before` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
-| `account_upgrade_offers` | filter | `$offers` | `oc-includes/osclass/helpers/hBilling.php` |
+| `account_upgrade_offers` | filter | `$offers, $userId` | `oc-includes/osclass/helpers/hBilling.php` |
 | `action_throttle_limit` | filter | `array('max' => $max, 'window' => $window), $context` | `oc-includes/osclass/classes/security/ActionThrottle.php` |
 | `actions_manage_alerts` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `actions_manage_keyword_block` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |

@@ -321,10 +321,7 @@ class CWebBilling extends WebSecBaseModel
         } elseif ($featureId === 'item.bump' && osc_billing_bump_paused($userId, true)) {
             osc_add_flash_warning_message(osc_billing_bump_paused_message($userId));
         } else {
-            osc_add_flash_error_message(sprintf(
-                _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
-                osc_esc_html(osc_billing_buy_url())
-            ));
+            self::notEnoughCreditsFlash();
         }
 
         $this->redirectTo(osc_user_list_items_url());
@@ -338,37 +335,48 @@ class CWebBilling extends WebSecBaseModel
      */
     private function accountUpgradePost()
     {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            $this->redirectTo(osc_billing_wallet_url());
+        }
         osc_csrf_check();
 
-        $userId    = osc_logged_user_id();
+        $userId    = (int) osc_logged_user_id();
         $featureId = Params::getParamString('feature');
-        $offer     = self::accountOffer($featureId);
+        $offer     = self::accountOffer($featureId, $userId);
         if ($offer === null) {
             osc_add_flash_error_message(_m('That upgrade is not available'));
             $this->redirectTo(osc_billing_wallet_url());
         }
 
         if (Billing::spend($userId, $featureId, array('ref_type' => 'user', 'ref_id' => $userId))) {
-            osc_add_flash_ok_message(sprintf(_m('%s added to your account'), (string) $offer['label']));
+            osc_add_flash_ok_message(sprintf(_m('%s added to your account'), osc_esc_html((string) $offer['label'])));
         } else {
-            osc_add_flash_error_message(sprintf(
-                _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
-                osc_esc_html(osc_billing_buy_url())
-            ));
+            self::notEnoughCreditsFlash();
         }
 
         $this->redirectTo(osc_billing_wallet_url());
     }
 
     /**
-     * The offer for $featureId when it is on sale now and is an account upgrade, else null.
+     * The flash a spend that the wallet could not cover shows, with a link to buy credits.
+     */
+    private static function notEnoughCreditsFlash(): void
+    {
+        osc_add_flash_error_message(sprintf(
+            _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
+            osc_esc_html(osc_billing_buy_url())
+        ));
+    }
+
+    /**
+     * The offer for $featureId when $userId may buy it now and it is an account upgrade, else null.
      * The feature id comes from the request, so only a listed, registered account feature passes.
      *
      * @return array<string,mixed>|null
      */
-    private static function accountOffer(string $featureId): ?array
+    private static function accountOffer(string $featureId, int $userId): ?array
     {
-        $offered = array_column(osc_account_upgrade_offers(), null, 'feature');
+        $offered = array_column(osc_account_upgrade_offers($userId), null, 'feature');
         $feature = isset($offered[$featureId]) ? FeatureRegistry::getInstance()->get($featureId) : null;
 
         return $feature !== null && $feature->getScope() === Feature::SCOPE_USER ? $offered[$featureId] : null;
