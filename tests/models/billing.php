@@ -2898,6 +2898,18 @@ osc_listing_limit_message(0);
 osc_remove_filter('billing_listing_limit_message', $captureLimitMessage);
 check('with slots on sale, the limit message names buying one', strpos($defaultLimitMessage, 'Buy an extra listing slot') !== false, $defaultLimitMessage);
 
+$enabledPackages = array_column(PackageStore::enabled(), 'pk_i_id');
+$packageTable    = DB_TABLE_PREFIX . 't_billing_package';
+$admin->query("UPDATE $packageTable SET b_enabled = 0");
+$menuLinks = array_column((array) osc_apply_filter('user_menu_filter', array()), 'class');
+pin('with nothing to buy credits with and no credits held, the Credits link still leads to the account upgrades', array(false, true), array(
+    osc_billing_can_buy(),
+    in_array('opt_billing_wallet', $menuLinks, true),
+));
+if ($enabledPackages !== array()) {
+    $admin->query("UPDATE $packageTable SET b_enabled = 1 WHERE pk_i_id IN (" . implode(',', array_map('intval', $enabledPackages)) . ')');
+}
+
 $slotBuyer = seed_user($admin, 'slotbuyer', 'slotbuyer@example.test');
 Wallet::credit($slotBuyer, 5, Wallet::REASON_PURCHASE);
 $slotsBefore = EntitlementStore::capacity($slotBuyer, 'listing.slot', 0);
@@ -2917,6 +2929,17 @@ check('extra photos can be bought once', Billing::spend($photoBuyer, 'listing.ph
 check('a second purchase that skips the offer check is refused by the database', !Billing::spend($photoBuyer, 'listing.photos', $photoCtx));
 pin('...so the cap stays at one purchase and only one price was taken', array(10, 8), array(EntitlementStore::capacity($photoBuyer, 'listing.photos', 0), osc_user_credits($photoBuyer)));
 pin('grantOnce() refuses a row that already exists', false, EntitlementStore::grantOnce($photoBuyer, 'listing.photos', 10));
+
+osc_set_preference('billing_runtime_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_runtime_credits', '3', 'osclass', 'INTEGER');
+osc_set_preference('billing_runtime_days', '15', 'osclass', 'INTEGER');
+osc_register_billing_seller_limits();
+$runtimeBuyer = seed_user($admin, 'runtimebuyer', 'runtimebuyer@example.test');
+Wallet::credit($runtimeBuyer, 10, Wallet::REASON_PURCHASE);
+$runtimeCtx = array('ref_type' => 'user', 'ref_id' => $runtimeBuyer);
+check('longer listings can be bought once', Billing::spend($runtimeBuyer, 'listing.runtime', $runtimeCtx));
+check('a second purchase of longer listings is refused too', !Billing::spend($runtimeBuyer, 'listing.runtime', $runtimeCtx));
+pin('...so the days stay at one purchase and only one price was taken', array(15, 7), array(EntitlementStore::capacity($runtimeBuyer, 'listing.runtime', 0), osc_user_credits($runtimeBuyer)));
 
 foreach ($accountPrefs as $pref) {
     osc_set_preference($pref, '0', 'osclass', 'BOOLEAN');

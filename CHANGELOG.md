@@ -181,6 +181,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 ### Fixed
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
+- The Credits menu link also shows when a free account upgrade is on offer, not only when credits can be bought or are held.
 - Sellers can buy account upgrades (extra slots, photos, longer listings, skip the wait) from their Credits page (#561).
 - The daily seller recount also catches a listing posted or edited with an expiry date already past, such as an import.
 - With no cache server and an `oc-content/uploads/` folder PHP cannot write to, auto-cron no longer runs on every page; its throttle stamp moves to the temp folder.

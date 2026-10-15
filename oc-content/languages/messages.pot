@@ -3333,6 +3333,10 @@ msgstr ""
 msgid "Write to %s"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "You already have this upgrade"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hBilling.php
 msgid ""
 "You are at your listing limit. Buy an extra listing slot on your credits "
