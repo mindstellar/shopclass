@@ -51,7 +51,7 @@ final class UserStore extends Model
 
     /**
      * Recount i_items, the live listing count, of each seller who had a listing expire from $since
-     * to $until, or post or edit one that had already expired. An expiry is the one change that does not lower the count when it happens; a
+     * to $until, or posted or edited one already expired. An expiry is the one change that does not lower the count when it happens; a
      * renewal raises it again. $since goes back 30 days at most, so a long break stays cheap.
      *
      * @return int sellers whose count changed
@@ -61,7 +61,7 @@ final class UserStore extends Model
     {
         $since = max($since, date('Y-m-d H:i:s', time() - 30 * 86400));
         $p     = DB_TABLE_PREFIX;
-        // Also a listing posted or edited in the window that had already expired, such as an import.
+        // An expiry in the window, then a post or edit in it of a listing that expired before it.
         $ids = array_map('intval', array_column(Db::select(
             'SELECT fk_i_user_id AS id FROM ' . $p . 't_item'
             . ' WHERE dt_expiration >= ? AND dt_expiration <= ? AND fk_i_user_id IS NOT NULL'
