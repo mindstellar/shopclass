@@ -2,6 +2,12 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.9
+
+### Fixed
+
+- Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
+
 ## Shopclass 6.4.8
 
 This release lets sellers spend their credits on the account upgrades you sell, such as extra
