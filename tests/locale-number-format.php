@@ -32,7 +32,7 @@ $row = static fn (string $code, string $dec, string $sep, int $num, string $form
     's_thousands_sep'   => $sep,
     'i_num_dec'         => $num,
     's_currency_format' => $format,
-    's_direction'       => 'ltr',
+    's_direction'       => $code === 'de_DE' ? 'rtl-test' : 'ltr',
 );
 View::getInstance()->_exportVariableToView('locales', array(
     $row('en_US', '.', ',', 2, '{CURRENCY} {NUMBER}'),
@@ -41,11 +41,12 @@ View::getInstance()->_exportVariableToView('locales', array(
 
 harness_section('the visitor\'s language');
 $_COOKIE['oc_userLocale'] = 'de_DE';
-pin('every helper reads the visitor\'s row', array(',', '.', 0, '{NUMBER} {CURRENCY}'), array(
+pin('every helper reads the visitor\'s row', array(',', '.', 0, '{NUMBER} {CURRENCY}', 'rtl-test'), array(
     osc_locale_dec_point(),
     osc_locale_thousands_sep(),
     osc_locale_num_dec(),
     osc_locale_currency_format(),
+    osc_locale_text_direction(),
 ));
 
 harness_section('a language that is not enabled');

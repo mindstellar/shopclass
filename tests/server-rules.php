@@ -45,7 +45,8 @@ check('...and pass the header now', ServerRules::passesAuthorization($file));
 $withAuth = str_replace("RewriteBase /shop/\n", "RewriteBase /shop/\n" . ServerRules::AUTHORIZATION . "\n", $older);
 file_put_contents($file, $withAuth . "\n<IfModule mod_mime.c>\nAddType text/xsl .xsl\n</IfModule>");
 pin('7.0 beta rules without compression and caching are refreshed', [ServerRules::OLD, ServerRules::UPDATED], [ServerRules::status($file, $base), ServerRules::refresh($file, $base)]);
-check('...and now compress and cache static files', str_contains((string) file_get_contents($file), 'mod_deflate.c') && str_contains((string) file_get_contents($file), 'max-age=604800'));
+pin('...to exactly the current rules, which compress and cache static files', ServerRules::apache($base), file_get_contents($file));
+check('code keeps an hour and media a week, for real files only', (bool) preg_match('/<FilesMatch "\\\\\.\(css\|js\|mjs\)\$">\nHeader set Cache-Control "max-age=3600"\n<\/FilesMatch>\n<FilesMatch "\\\\\.\(png[^"]*\)\$">\nHeader set Cache-Control "max-age=604800"/', ServerRules::apache($base)));
 
 harness_section('a hand-edited file');
 $edited = $older . "\n# Block a bot\nSetEnvIf User-Agent BadBot deny\n";
