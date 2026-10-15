@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\fields;
 
+use mindstellar\cache\CacheGroup;
 use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 
@@ -113,6 +114,17 @@ final class FieldQuery
      */
     public static function forCategory(int $categoryId): array
     {
+        $key = 'category:' . $categoryId . ':' . CacheGroup::generation('category');
+
+        return CacheGroup::remember('field_group', $key, static fn (): array => self::loadForCategory($categoryId));
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    private static function loadForCategory(int $categoryId): array
+    {
         $path = self::categoryPath($categoryId);
         if ($path === []) {
             return [];
@@ -161,7 +173,7 @@ final class FieldQuery
             return $path;
         }
 
-        $parents = \mindstellar\cache\CacheGroup::remember('category', 'parents', static function () {
+        $parents = CacheGroup::remember('category', 'parents', static function () {
             try {
                 $rows = Db::select('SELECT pk_i_id, fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category');
             } catch (\mindstellar\database\DbException $e) {

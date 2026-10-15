@@ -106,6 +106,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Performance
 
+- A category's custom fields are cached and dropped when a field or form changes, so category and listing pages skip that query.
 - A page that never asks for payment methods no longer builds the payment gateways.
 - The e-mail code moved to `mindstellar\mail\Mailer` and `CoreEmails`, so a page that sends no e-mail no longer loads it. The old `osc_sendMail()`, `osc_mail_*` and `fn_email_*` functions keep working.
 - Saving a listing runs fewer queries (an edit 19 instead of 24) and resizes photos before it locks any rows; `posted_item` and `edited_item` get the saved row and texts instead of reading them again.

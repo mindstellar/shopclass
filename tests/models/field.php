@@ -485,6 +485,28 @@ $linkFieldToCat($hChild, $fOnChild);
 pin('inheritance runs downwards only — the parent sees nothing', array(), $model->findByCategory($hRoot));
 pin('the child sees the field', array((string)$fOnChild), array_column($model->findByCategory($hChild), 'pk_i_id'));
 
+harness_section('Field::findByCategory — cached, and dropped by every field write');
+
+scratchdb_truncate_all($admin);
+$kCat   = seed_category($admin, 'Cached');
+$kField = $seedField('Cached field', 'cached-field', 'TEXT', 0, 0, null, null, 0);
+pin('no field yet', array(), $model->findByCategory($kCat));
+pin('a second read is served from the cache', 0, harness_query_count(static function () use ($model, $kCat) {
+    $model->findByCategory($kCat);
+}));
+$model->insertCategories($kField, array($kCat));
+pin('linking the field shows it at once', array((string)$kField), array_column($model->findByCategory($kCat), 'pk_i_id'));
+$model->cleanCategoriesFromField($kField);
+pin('unlinking it hides it at once', array(), $model->findByCategory($kCat));
+$kForm = $seedGroup('Cached form', 'cached-form', 0);
+$linkGroupToCat($kForm, $kCat);
+scratchdb_forget_cache();
+pin('an empty form adds nothing', array(), $model->findByCategory($kCat));
+\mindstellar\form\builder\FormFieldLinkStore::replace($kForm, array($kField));
+pin('placing the field in the form shows it at once', array((string)$kField), array_column($model->findByCategory($kCat), 'pk_i_id'));
+$model->update(array('i_position' => 3), array('pk_i_id' => $kField));
+pin('editing the field shows the edit at once', '3', $model->findByCategory($kCat)[0]['i_position']);
+
 /* ----------------------------------------------------------------------------
  * findIDSearchableByCategories() — searchable ids across the inheritance path.
  * ------------------------------------------------------------------------- */

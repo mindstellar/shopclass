@@ -24,6 +24,9 @@ class Field extends DAO
 {
     use \mindstellar\base\SharedInstance;
 
+    /** Shared with FieldGroup: the fields of a category depend on both. */
+    protected $cacheGroup = 'field_group';
+
     /**
      * Current locale code
      *
@@ -146,6 +149,7 @@ class Field extends DAO
             // raises a RuntimeException, and callers expect false either way.
             return false;
         }
+        $this->cacheChanged();
 
         osc_run_hook('after_delete_field', $id);
 
@@ -597,6 +601,8 @@ class Field extends DAO
             }
         }
 
+        $this->cacheChanged();
+
         // Return the new field id on success (0 if a category link failed), so the caller
         // never has to read it back off the shared connection.
         return $return ? (int) $id : 0;
@@ -650,6 +656,7 @@ class Field extends DAO
                     $return = false;
                 }
             }
+            $this->cacheChanged();
 
             return $return;
         }
@@ -678,6 +685,8 @@ class Field extends DAO
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {
             return false;
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -766,6 +775,8 @@ class Field extends DAO
             return Db::table($this->getTableName())->where('pk_i_id', $metaId)->update(array('s_meta' => $meta));
         } catch (\mindstellar\database\DbException $e) {
             return false;
+        } finally {
+            $this->cacheChanged();
         }
     }
 
