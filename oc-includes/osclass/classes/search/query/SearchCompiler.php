@@ -69,11 +69,9 @@ final class SearchCompiler
             if ($pattern->fullTextUsable()) {
                 if ($relevance) {
                     $s->selectBound(...$pattern->relevanceSelect());
+                    // The MATCH in WHERE lets the full-text index pick the rows; HAVING alone reads every listing.
+                    $s->where(...$pattern->matchCondition());
                     $s->having('relevance > 0');
-                    $short = $pattern->shortWordCondition();
-                    if ($short !== null) {
-                        $s->where(...$short);
-                    }
                 } else {
                     $s->where(...$pattern->matchCondition());
                 }

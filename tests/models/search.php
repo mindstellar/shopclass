@@ -754,6 +754,12 @@ $s = new Search();
 $s->addPattern('tv lamp');
 $s->order('relevance');
 pin('so must it when sorted by relevance', array($tvLamp), $sorted($ids($s->doSearch())));
+$relParts = new ReflectionProperty(Search::class, 'parts');
+if (PHP_VERSION_ID < 80100) {
+    $relParts->setAccessible(true);
+}
+$relSql = \mindstellar\search\query\SearchCompiler::results($relParts->getValue($s), null)[0];
+check('a relevance search filters by MATCH in WHERE, so the full-text index picks the rows', (bool)preg_match('/WHERE .*MATCH\(d\.s_description, d\.s_title\)/s', $relSql), $relSql);
 
 /* A custom stopword table replaces the default list. */
 $stopDb = (string)$admin->query('SELECT DATABASE()')->fetch_row()[0];
