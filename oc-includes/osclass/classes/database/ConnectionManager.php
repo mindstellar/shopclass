@@ -17,6 +17,7 @@ namespace mindstellar\database;
 use Exception;
 use mysqli;
 use mysqli_sql_exception;
+use mindstellar\utility\Utils;
 
 /**
  * Manages the physical mysqli connection: opens it (with a bounded connect
@@ -238,7 +239,7 @@ class ConnectionManager
             $this->dbSelected = false;
             // A web worker may keep its connection for the next request when the site asks
             // for it. mysqli resets the session when it hands the connection back out.
-            $host = defined('OSC_DB_PERSISTENT') && OSC_DB_PERSISTENT && PHP_SAPI !== 'cli'
+            $host = defined('OSC_DB_PERSISTENT') && OSC_DB_PERSISTENT && Utils::isWebRequest()
                 ? 'p:' . $this->dbHost
                 : $this->dbHost;
             try {

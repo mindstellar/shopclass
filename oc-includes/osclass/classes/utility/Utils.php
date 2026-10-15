@@ -477,6 +477,16 @@ class Utils
     }
 
     /**
+     * True when PHP answers a web request, false on the command line (the job worker, cron, tests).
+     *
+     * @return bool
+     */
+    public static function isWebRequest(): bool
+    {
+        return PHP_SAPI !== 'cli';
+    }
+
+    /**
      * Used to encode a field for Amazon Auth
      * (taken from the Amazon S3 PHP example library)
      *

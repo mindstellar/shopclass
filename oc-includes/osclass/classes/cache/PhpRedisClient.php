@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\cache;
 
+use mindstellar\utility\Utils;
+
 /**
  * A Redis-protocol client through the phpredis extension, which is faster than RespClient. It
  * connects on the first command and answers exactly as RespClient does.
@@ -57,7 +59,7 @@ final class PhpRedisClient implements RedisClient
         $redis    = new \Redis();
         // A web worker keeps its connection for the next request instead of opening one
         // per page. The CLI worker does not: its blocking wait needs a connection of its own.
-        if (PHP_SAPI !== 'cli') {
+        if (Utils::isWebRequest()) {
             $id = 'osc-' . md5(implode('|', array($host, $port, $username, $password, $this->config['database'] ?? 0, $timeout)));
             $redis->pconnect($host, $port, $timeout, $id, 0, $timeout);
         } else {

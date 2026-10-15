@@ -1300,7 +1300,7 @@ function _aux_search_subdomains()
 function _aux_search_find(array $spec, $value, $remember = null)
 {
     static $found = array();
-    $remember = $remember ?? PHP_SAPI !== 'cli';
+    $remember = $remember ?? \mindstellar\utility\Utils::isWebRequest();
     $key      = $spec['model'] . ':' . $value;
     if ($remember && array_key_exists($key, $found)) {
         return $found[$key];

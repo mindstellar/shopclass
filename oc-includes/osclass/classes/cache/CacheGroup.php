@@ -10,6 +10,8 @@
 
 namespace mindstellar\cache;
 
+use mindstellar\utility\Utils;
+
 /**
  * Cached lookups grouped by a generation number. Every key in a group carries the group's
  * generation, so bumping it drops the whole group at once, however many keys it holds.
@@ -133,7 +135,7 @@ final class CacheGroup
     private static function localCopies(CacheDriver $cache): bool
     {
         return self::$local ??= defined('OSC_CACHE_LOCAL') && OSC_CACHE_LOCAL
-            && PHP_SAPI !== 'cli'
+            && Utils::isWebRequest()
             && function_exists('apcu_fetch')
             && apcu_enabled()
             && in_array($cache->_get_cache(), array('redis', 'memcached'), true);
