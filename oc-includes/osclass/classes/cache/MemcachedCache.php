@@ -79,7 +79,7 @@ class MemcachedCache extends Cache
         $this->memcached->setOption(\Memcached::OPT_POLL_TIMEOUT, 1000);
         $this->memcached->setOption(\Memcached::OPT_SEND_TIMEOUT, 1000000);
         $this->memcached->setOption(\Memcached::OPT_RECV_TIMEOUT, 1000000);
-        // A server without igbinary reads such a value as a miss, never as an error.
+        // A node without igbinary reads such a value as a miss.
         if (\Memcached::HAVE_IGBINARY) {
             $this->memcached->setOption(\Memcached::OPT_SERIALIZER, \Memcached::SERIALIZER_IGBINARY);
         }
@@ -160,7 +160,8 @@ class MemcachedCache extends Cache
         if ($this->down) {
             return false;
         }
-        $value = $this->memcached->get($storeKey);
+        // @: a node without igbinary warns on a value written with it; that read is a miss.
+        $value = @$this->memcached->get($storeKey);
         // Only a real answer is a hit: a dead or unreachable server reports a miss, so the
         // caller loads from the database instead of getting false as if it were the value.
         if ($this->memcached->getResultCode() !== \Memcached::RES_SUCCESS) {
@@ -195,7 +196,7 @@ class MemcachedCache extends Cache
         if ($fetch === array() || $this->down) {
             return $values;
         }
-        $reply = $this->memcached->getMulti(array_keys($fetch));
+        $reply = @$this->memcached->getMulti(array_keys($fetch));
         $this->answered();
         foreach ($fetch as $storeKey => $key) {
             if (!is_array($reply) || !array_key_exists($storeKey, $reply)) {
