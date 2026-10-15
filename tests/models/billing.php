@@ -2739,6 +2739,68 @@ osc_set_preference(Receipts::PREF_EMAIL, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 Receipts::$mailer = null;
 
+harness_section('Account upgrades can be bought (issue #561)');
+
+if (!function_exists('_mn')) {
+    function _mn($single, $plural, $count)
+    {
+        return (int) $count === 1 ? $single : $plural;
+    }
+}
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+$accountPrefs = array(
+    'listing.slot'    => 'billing_slot_enabled',
+    'listing.photos'  => 'billing_photos_enabled',
+    'listing.no_wait' => 'billing_no_wait_enabled',
+    'listing.runtime' => 'billing_runtime_enabled',
+);
+foreach ($accountPrefs as $pref) {
+    osc_set_preference($pref, '1', 'osclass', 'BOOLEAN');
+}
+osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
+osc_set_preference('billing_slot_quantity', '1', 'osclass', 'INTEGER');
+osc_register_billing_slot();
+osc_register_billing_seller_limits();
+
+$accountOffer = new ReflectionMethod(CWebBilling::class, 'accountOffer');
+if (PHP_VERSION_ID < 80100) {
+    $accountOffer->setAccessible(true);
+}
+$userScoped = array();
+foreach (FeatureRegistry::instance()->all() as $id => $feature) {
+    if ($feature->getScope() === Feature::SCOPE_USER && isset($accountPrefs[$id])) {
+        $userScoped[] = $id;
+    }
+}
+sort($userScoped);
+$buyable = array_keys(array_filter(array_flip($userScoped), static fn ($i, $id) => $accountOffer->invoke(null, $id) !== null, ARRAY_FILTER_USE_BOTH));
+$expectedScoped = array_keys($accountPrefs);
+sort($expectedScoped);
+pin('every account upgrade an admin can sell is registered', $expectedScoped, $userScoped);
+pin('...and every one of them can be bought', $userScoped, $buyable);
+pin('the offers name each one with its price', array('listing.slot' => 3), array_intersect_key(array_column(osc_account_upgrade_offers(), 'credits', 'feature'), array('listing.slot' => 1)));
+
+pin('a listing upgrade, an unknown name or a switched-off one is refused', array(null, null, null), array(
+    $accountOffer->invoke(null, 'listing.premium'),
+    $accountOffer->invoke(null, 'no.such.feature'),
+    (static function () use ($accountOffer) {
+        osc_set_preference('billing_photos_enabled', '0', 'osclass', 'BOOLEAN');
+
+        return $accountOffer->invoke(null, 'listing.photos');
+    })(),
+));
+
+$slotBuyer = seed_user($admin, 'slotbuyer', 'slotbuyer@example.test');
+Wallet::credit($slotBuyer, 5, Wallet::REASON_PURCHASE);
+$slotsBefore = Entitlements::capacity($slotBuyer, 'listing.slot', 0);
+check('buying a slot with credits succeeds', Billing::spend($slotBuyer, 'listing.slot', array('ref_type' => 'user', 'ref_id' => $slotBuyer)));
+pin('...takes its price and grants the slot', array(2, $slotsBefore + 1), array(osc_user_credits($slotBuyer), Entitlements::capacity($slotBuyer, 'listing.slot', 0)));
+
+foreach ($accountPrefs as $pref) {
+    osc_set_preference($pref, '0', 'osclass', 'BOOLEAN');
+}
+
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 
 if (!defined('MODELS_RUNNER')) {
