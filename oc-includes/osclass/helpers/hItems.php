@@ -1320,11 +1320,7 @@ function osc_item_cover_urls(array $itemIds, string $variant = 'thumbnail'): arr
     if (!in_array($variant, array('', 'thumbnail', 'preview', 'original'), true) || $ids === array()) {
         return array();
     }
-    try {
-        $rows = \mindstellar\listing\PhotoStore::ofItems($ids);
-    } catch (\mindstellar\database\DbException $e) {
-        return array();
-    }
+    $rows = ItemResource::getInstance()->ofItems($ids);
 
     $out = array();
     foreach ($rows as $row) {

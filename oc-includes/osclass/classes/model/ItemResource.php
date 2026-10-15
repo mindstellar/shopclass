@@ -142,7 +142,7 @@ class ItemResource
      */
     public function primeResourcesCache($itemIds)
     {
-        $itemIds = array_values(array_unique(array_map('intval', (array) $itemIds)));
+        $itemIds = array_values(array_diff(array_unique(array_map('intval', (array) $itemIds)), array_keys($this->primed)));
         if (empty($itemIds)) {
             return;
         }
@@ -160,6 +160,24 @@ class ItemResource
             $byItem[(int) $row['fk_i_item_id']][] = $row;
         }
         $this->primed = $byItem + $this->primed;
+    }
+
+    /**
+     * The photos of many listings, in upload order, reading only those not kept for this request.
+     *
+     * @param int[] $itemIds
+     *
+     * @return array<int,array<string,string|null>>
+     */
+    public function ofItems(array $itemIds): array
+    {
+        $this->primeResourcesCache($itemIds);
+        $rows = array();
+        foreach (array_unique(array_map('intval', $itemIds)) as $itemId) {
+            array_push($rows, ...($this->primed[$itemId] ?? array()));
+        }
+
+        return $rows;
     }
 
     /**

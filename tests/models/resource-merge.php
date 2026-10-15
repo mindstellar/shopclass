@@ -159,6 +159,7 @@ pin('osc_item_cover_urls gives each listing its first image in one query', array
     $itemA => osc_base_url() . $root . 'item/1_thumbnail.jpg',
     $itemB => osc_base_url() . $root . 'item/3_thumbnail.jpg',
 ), osc_item_cover_urls(array($itemA, $itemB, 999)));
+pin('a second cover read of the same listings runs no query', 0, harness_query_count(static fn () => osc_item_cover_urls(array($itemA, $itemB))));
 $next = ItemResource::getInstance()->insertGetId(array('fk_i_item_id' => $itemA));
 pin('a new photo takes an id after every existing row', true, $next > (int) max($user['pk_i_id'], $setting['pk_i_id']));
 

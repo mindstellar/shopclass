@@ -293,6 +293,7 @@ pin(
         'getTableName',
         'insertGetId',
         'newInstance',
+        'ofItems',
         'primeResourcesCache',
         'update',
         'updateByPrimaryKey',
