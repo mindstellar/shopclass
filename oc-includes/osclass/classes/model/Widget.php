@@ -51,11 +51,20 @@ class Widget extends DAO
      */
     public function findByLocation($location)
     {
-        return \mindstellar\cache\CacheGroup::remember('widget', 'location:' . $location, function () use ($location) {
+        return $this->byLocation()[(string) $location] ?? array();
+    }
+
+    /**
+     * Every widget grouped by location, read once: a page shows several locations.
+     *
+     * @return array<string,array<int,array<string,string|null>>>
+     */
+    private function byLocation(): array
+    {
+        return \mindstellar\cache\CacheGroup::remember('widget', 'by-location', function () {
             try {
-                return Db::stringifyRows(Db::table($this->getTableName())
+                $rows = Db::stringifyRows(Db::table($this->getTableName())
                     ->select(...$this->getFields())
-                    ->where('s_location', $location)
                     // i_order ascending, then primary key ascending as a tiebreak so
                     // legacy rows (all i_order = 0) keep their current relative order.
                     ->orderBy('i_order', 'ASC')
@@ -64,6 +73,12 @@ class Widget extends DAO
             } catch (\mindstellar\database\DbException $e) {
                 return null;
             }
+            $out = array();
+            foreach ($rows as $row) {
+                $out[(string) $row['s_location']][] = $row;
+            }
+
+            return $out;
         }) ?? array();
     }
 

@@ -141,6 +141,19 @@ $sidebarOne = seed_widget($admin, 'sidebar', 'Sidebar widget', '<p>s</p>', 0);
 pin('the other location still has exactly one widget', 1, count($model->findByLocation('sidebar')));
 pin('the header location is unaffected by the other location\'s widget', 3, count($model->findByLocation('header')));
 
+harness_section('Widget::findByLocation — one query for every location');
+
+\mindstellar\cache\CacheGroup::invalidate('widget');
+pin(
+    'reading three locations costs one statement',
+    1,
+    harness_query_count(static function () use ($model): void {
+        $model->findByLocation('header');
+        $model->findByLocation('sidebar');
+        $model->findByLocation('footer');
+    })
+);
+
 harness_section('Widget::findByLocation — no match');
 
 pin('an unused location returns an empty array', array(), $model->findByLocation('footer'));
