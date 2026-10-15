@@ -279,7 +279,11 @@ in the same entry shape. Core's key is `unsubscribe`. To show an alert yourself,
 `osc_alert_summary()` gives it as one line.
 
 `osc_item_upgrade_offers($item)` gives the upgrades as `['feature', 'label', 'credits']`
-data, for a list you draw yourself. `osc_gui_listing_list($context, $owned)` prints
+data, for a list you draw yourself. `osc_account_upgrade_offers()` gives the account
+upgrades (extra slots, photos, runtime, no wait) as `['feature', 'label', 'detail', 'credits']`;
+core's Credits page lists them with a POST button to `osc_account_upgrade_url($feature)`. A theme
+with its own `user-billing-wallet.php` should show them too. A plugin adds its own through the
+`account_upgrade_offers` filter, which must return the list. `osc_gui_listing_list($context, $owned)` prints
 core's list for the current `items` loop, filters included.
 
 To draw the whole list yourself, return a string from `listing_list_html`. It

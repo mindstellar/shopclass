@@ -6,7 +6,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### Fixed
 
-- Sellers can buy the account upgrades an admin puts on sale (extra listing slots, extra photos, longer listings, skip the posting wait) from their Credits page; before, credits could not be spent on them (#561).
+- Sellers can buy account upgrades (extra slots, photos, longer listings, skip the wait) from their Credits page (#561).
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
 
 ## Shopclass 6.4.7
