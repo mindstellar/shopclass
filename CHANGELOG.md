@@ -174,6 +174,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
+- A setting changed from the command line reaches web pages at once with Redis, Valkey or memcached, even when the command line uses another site address.
 - On settings pages, a checkbox with no label beside it lines up with the other fields.
 - Opening a section in the admin sidebar scrolls it into view, so entries below the bottom edge are no longer hidden.
 - The Docker stacks run Valkey as a cache only, with no snapshot to disk, so a restart no longer brings back stale cached data.

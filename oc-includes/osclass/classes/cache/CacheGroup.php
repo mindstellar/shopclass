@@ -157,7 +157,7 @@ final class CacheGroup
 
     private static function key(string $group): string
     {
-        return 'osc_' . $group . '_cache_gen';
+        return \mindstellar\base\Cache::SHARED . 'osc_' . $group . '_cache_gen';
     }
 
     /** Milliseconds now: above any generation counted up from an older start. */

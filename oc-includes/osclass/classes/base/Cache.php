@@ -43,6 +43,17 @@ abstract class Cache implements \mindstellar\cache\CacheDriver
     /** This site's part of the prefix, for every release: a flush clears from here. */
     public $site_root;
 
+    /** A key that starts with this is one per database, not per address, e.g. a group's generation. */
+    public const SHARED = 'shared:';
+
+    /**
+     * Prefix of SHARED keys. The address comes from the Host header or OSC_CLI_URL, so the web
+     * and the command line can differ; a change made under one must still reach the other.
+     *
+     * @var string
+     */
+    public $shared_prefix;
+
     /** @var int Seconds a value lives when the caller gives none. */
     public $default_expiration = 60;
 
@@ -50,6 +61,8 @@ abstract class Cache implements \mindstellar\cache\CacheDriver
     {
         $this->site_root   = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
         $this->site_prefix = $this->site_root . substr(md5(defined('OSCLASS_VERSION') ? OSCLASS_VERSION : ''), 0, 6) . '_';
+        $database = defined('DB_NAME') ? (defined('DB_HOST') ? DB_HOST : '') . '|' . DB_NAME . '|' . (defined('DB_TABLE_PREFIX') ? DB_TABLE_PREFIX : '') : $this->site_root;
+        $this->shared_prefix = 'osc_' . substr(md5($database), 0, 12) . '_db_';
     }
 
     /**
@@ -128,7 +141,7 @@ abstract class Cache implements \mindstellar\cache\CacheDriver
      */
     protected function _key($key)
     {
-        return $this->site_prefix . $key;
+        return (str_starts_with((string) $key, self::SHARED) ? $this->shared_prefix : $this->site_prefix) . $key;
     }
 
     /**

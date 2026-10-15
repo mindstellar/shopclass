@@ -127,15 +127,15 @@ $cache->reads = [];
 CacheGroup::remember('grp', 'k', $load('x'));
 CacheGroup::remember('grp', 'k', $load('x'));
 CacheGroup::remember('grp', 'other', $load('y'));
-pin('three reads in a group ask for its generation once', 1, $cache->reads['osc_grp_cache_gen'] ?? 0);
+pin('three reads in a group ask for its generation once', 1, $cache->reads['shared:osc_grp_cache_gen'] ?? 0);
 $before = CacheGroup::generation('grp');
-$cache->set('osc_grp_cache_gen', $before + 5, 0);
+$cache->set('shared:osc_grp_cache_gen', $before + 5, 0);
 pin('a drop by another process is not seen in this request', $before, CacheGroup::generation('grp'));
 CacheGroup::forgetGenerations();
 pin('it is seen once the generations are forgotten, as the job worker does per job', $before + 5, CacheGroup::generation('grp'));
-$reads = $cache->reads['osc_grp_cache_gen'];
+$reads = $cache->reads['shared:osc_grp_cache_gen'];
 pin('a drop in this request is seen at once, with no extra read after it', [$before + 6, $before + 6], [CacheGroup::invalidate('grp'), CacheGroup::generation('grp')]);
-pin('...it reads the generation once, to count up from the latest', $reads + 1, $cache->reads['osc_grp_cache_gen']);
+pin('...it reads the generation once, to count up from the latest', $reads + 1, $cache->reads['shared:osc_grp_cache_gen']);
 
 /** Reads many keys at once and counts up atomically, as the Redis and memcached drivers do. */
 final class ManyCache extends KeepAllCache
@@ -180,19 +180,19 @@ $swap = static function (\mindstellar\cache\CacheDriver $driver) use ($factory):
 harness_section('a missing generation is stored, so the next request finds it');
 $swap($cache = new KeepAllCache());
 $first = CacheGroup::generation('grp');
-pin('it is stored with a long expiry, not the 60 second default', [$first, 2592000], [$cache->data['osc_grp_cache_gen'] ?? null, $cache->ttl['osc_grp_cache_gen'] ?? null]);
+pin('it is stored with a long expiry, not the 60 second default', [$first, 2592000], [$cache->data['shared:osc_grp_cache_gen'] ?? null, $cache->ttl['shared:osc_grp_cache_gen'] ?? null]);
 pin('...and starts from the clock, not 0', true, $first >= (int)floor(microtime(true) * 1000) - 60000);
 CacheGroup::forgetGenerations();
 $cache->reads = [];
-pin('the next request reads it as a hit, with no write', [$first, 1, 1], [CacheGroup::generation('grp'), $cache->reads['osc_grp_cache_gen'], $cache->adds]);
+pin('the next request reads it as a hit, with no write', [$first, 1, 1], [CacheGroup::generation('grp'), $cache->reads['shared:osc_grp_cache_gen'], $cache->adds]);
 
 harness_section('a generation that expired or was evicted never returns to an old number');
 $swap($cache = new KeepAllCache());
-$cache->set('osc_grp_cache_gen', 0, 0);
+$cache->set('shared:osc_grp_cache_gen', 0, 0);
 CacheGroup::remember('grp', 'k', $load('before'));
 CacheGroup::invalidate('grp');
 CacheGroup::remember('grp', 'k', $load('after'));
-$cache->delete('osc_grp_cache_gen');
+$cache->delete('shared:osc_grp_cache_gen');
 CacheGroup::forgetGenerations();
 pin('the entries stored before it went are not served', 'reloaded', CacheGroup::remember('grp', 'k', $load('reloaded')));
 CacheGroup::invalidate('grp');
@@ -201,32 +201,32 @@ pin('...nor after the next drop', 'again', CacheGroup::remember('grp', 'k', $loa
 harness_section('a drop after the store was flushed mid-request still moves forward');
 $swap($cache = new KeepAllCache());
 $ahead = (int) floor(microtime(true) * 1000) + 1000000;
-$cache->set('osc_grp_cache_gen', $ahead, 0);
+$cache->set('shared:osc_grp_cache_gen', $ahead, 0);
 CacheGroup::forgetGenerations();
 CacheGroup::generation('grp');
-$cache->delete('osc_grp_cache_gen');
+$cache->delete('shared:osc_grp_cache_gen');
 pin('the new generation is above the one this request was using', true, CacheGroup::invalidate('grp') > $ahead);
 
 harness_section('two requests creating the generation at once agree on it');
 $swap($cache = new RaceCache());
 pin('the one that loses the add takes the winner\'s number', 42, CacheGroup::generation('grp'));
 $swap($cache = new KeepAllCache());
-$cache->set('osc_grp_cache_gen', 'junk', 0);
+$cache->set('shared:osc_grp_cache_gen', 'junk', 0);
 $fixed = CacheGroup::generation('grp');
-pin('a stored value that is not a number is replaced', $fixed, $cache->data['osc_grp_cache_gen']);
+pin('a stored value that is not a number is replaced', $fixed, $cache->data['shared:osc_grp_cache_gen']);
 
 harness_section('a driver that reads many keys at once');
 $swap($cache = new ManyCache());
-$cache->set('osc_category_cache_gen', 3, 0);
-$cache->set('osc_page_cache_gen', 4, 0);
+$cache->set('shared:osc_category_cache_gen', 3, 0);
+$cache->set('shared:osc_page_cache_gen', 4, 0);
 CacheGroup::generation('preference');
 pin('the first generation read fetches the common groups in one call', [1, 7], [count($cache->many), count($cache->many[0])]);
 pin('...and later ones need no read', [3, 4, [], 1], [CacheGroup::generation('category'), CacheGroup::generation('page'), $cache->reads, count($cache->many)]);
-pin('a group it did not find is created without reading it again', [true, []], [isset($cache->data['osc_preference_cache_gen']), $cache->reads]);
+pin('a group it did not find is created without reading it again', [true, []], [isset($cache->data['shared:osc_preference_cache_gen']), $cache->reads]);
 CacheGroup::generation('field_group');
-pin('another group reads itself and the common ones still missing, nothing more', ['osc_field_group_cache_gen'], array_values(array_diff(end($cache->many), ['osc_locale_cache_gen', 'osc_currency_cache_gen', 'osc_widget_cache_gen', 'osc_search_cache_gen'])));
+pin('another group reads itself and the common ones still missing, nothing more', ['shared:osc_field_group_cache_gen'], array_values(array_diff(end($cache->many), ['shared:osc_locale_cache_gen', 'shared:osc_currency_cache_gen', 'shared:osc_widget_cache_gen', 'shared:osc_search_cache_gen'])));
 pin('a drop counts up atomically', 5, CacheGroup::invalidate('page'));
-$cache->delete('osc_page_cache_gen');
+$cache->delete('shared:osc_page_cache_gen');
 pin('...and a drop of a missing generation starts from the clock', true, CacheGroup::invalidate('page') > 4);
 
 harness_section('a web worker keeps its own copy of a shared value');
@@ -327,6 +327,19 @@ $GLOBALS['__locale'] = 'es_ES';
 pin('each locale has its own copy', 'Coches', osc_cache_remember('category', 'name:7', $load('Coches')));
 CacheGroup::invalidate('category');
 pin('dropping the group loads again', 'Autos', osc_cache_remember('category', 'name:7', $load('Autos')));
+
+harness_section('a generation is one per database, not per address');
+$driver = (new ReflectionClass(\mindstellar\cache\RedisCache::class))->newInstanceWithoutConstructor();
+(new ReflectionMethod(\mindstellar\base\Cache::class, '__construct'))->invoke($driver);
+$storeKey = new ReflectionMethod($driver, '_key');
+if (PHP_VERSION_ID < 80100) {
+    $storeKey->setAccessible(true);
+}
+$web = [$storeKey->invoke($driver, 'shared:osc_preference_cache_gen'), $storeKey->invoke($driver, 'osc_preference:map')];
+$driver->site_prefix = 'osc_' . substr(md5('http://localhost:8000/'), 0, 12) . '_';
+$cli = [$storeKey->invoke($driver, 'shared:osc_preference_cache_gen'), $storeKey->invoke($driver, 'osc_preference:map')];
+pin('the command line under another address bumps the generation the web reads', $web[0], $cli[0]);
+check('...while values stay apart per address, so a spoofed Host never fills another\'s', $web[1] !== $cli[1]);
 
 exit(harness_result());
 
