@@ -733,6 +733,14 @@ pin('GET /listings/{id}/related is 404 for a hidden listing', 404, $get('listing
 $view->_exportVariableToView('item', array('pk_i_id' => $tSource));
 $helperRows = osc_related_listings(null, 2);
 pin('osc_related_listings uses the current listing and fills the custom loop', array(array($tTwo, $tOne), 2), array($relIds($helperRows), osc_count_custom_items()));
+$view->_exportVariableToView('item', Item::getInstance()->extendDataSingle(Item::getInstance()->findByPrimaryKey($tSource)));
+$fullRows = array();
+$fullCost = harness_query_count(static function () use (&$fullRows, $relIds): void {
+    $fullRows = $relIds(osc_related_listings(null, 2));
+});
+$view->_exportVariableToView('item', array('pk_i_id' => $tSource));
+$bareCost = harness_query_count(static fn () => osc_related_listings(null, 2));
+pin('with the page\'s full listing row it gives the same list and skips the 3 reloads', array(array($tTwo, $tOne), 3), array($fullRows, $bareCost - $fullCost));
 
 harness_section('search box and category suggestions');
 

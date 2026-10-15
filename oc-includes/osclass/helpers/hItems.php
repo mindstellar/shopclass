@@ -1506,7 +1506,8 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
 function osc_related_listings($itemId = null, $limit = 6, $filters = array())
 {
     $itemId = $itemId === null ? (int)osc_item_id() : (int)$itemId;
-    $rows   = \mindstellar\listing\RelatedListings::rows($itemId, (int)$limit, (array)$filters);
+    $source = View::getInstance()->_exists('item') ? (array) View::getInstance()->_get('item') : null;
+    $rows   = \mindstellar\listing\RelatedListings::rows($itemId, (int)$limit, (array)$filters, $source);
     $rows   = $rows === array() ? array() : Item::getInstance()->extendData($rows);
     View::getInstance()->_exportVariableToView('customItems', $rows);
 

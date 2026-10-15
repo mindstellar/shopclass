@@ -33,18 +33,19 @@ final class RelatedListings
     /**
      * Live listing rows like $itemId, best first, without the listing itself.
      *
-     * @param array<string,mixed> $filters names from FILTERS; unknown names are ignored
+     * @param array<string,mixed>      $filters names from FILTERS; unknown names are ignored
+     * @param array<string,mixed>|null $source  the listing's row with its place and title, when the page has it
      *
      * @return array<int,array<string,mixed>> bare t_item rows
      * @throws \mindstellar\database\DbException
      */
-    public static function rows(int $itemId, int $limit = 6, array $filters = []): array
+    public static function rows(int $itemId, int $limit = 6, array $filters = [], ?array $source = null): array
     {
         $limit   = max(1, min(self::MAX_LIMIT, $limit));
         $filters = self::filters($filters);
 
         $picked = osc_apply_filter('item_related_ids', null, $itemId, $limit, $filters);
-        $ids    = is_array($picked) ? ListingQuery::cleanIds($picked, $itemId) : self::defaultIds($itemId, $limit, $filters);
+        $ids    = is_array($picked) ? ListingQuery::cleanIds($picked, $itemId) : self::defaultIds($itemId, $limit, $filters, $source);
 
         return array_slice((new ListingQuery())->findLive($ids), 0, $limit);
     }
@@ -65,19 +66,22 @@ final class RelatedListings
     }
 
     /**
-     * @param array<string,bool> $filters
+     * @param array<string,bool>       $filters
+     * @param array<string,mixed>|null $source
      *
      * @return int[]
      * @throws \mindstellar\database\DbException
      */
-    private static function defaultIds(int $itemId, int $limit, array $filters): array
+    private static function defaultIds(int $itemId, int $limit, array $filters, ?array $source): array
     {
-        $query  = new ListingQuery();
-        $source = $query->find($itemId);
-        if ($source === null) {
-            return [];
+        $query = new ListingQuery();
+        if (!isset($source['fk_i_category_id']) || (int) ($source['pk_i_id'] ?? 0) !== $itemId) {
+            $source = $query->find($itemId);
+            if ($source === null) {
+                return [];
+            }
         }
-        $place = $query->statsAndLocations([$itemId])[0] ?? [];
+        $place = array_key_exists('fk_c_country_code', $source) ? $source : ($query->statsAndLocations([$itemId])[0] ?? []);
         $match = [
             'premium' => $filters['premium_only'],
             'photos'  => $filters['with_photos'],
@@ -92,7 +96,9 @@ final class RelatedListings
             $match['region'] = (int) $place['fk_i_region_id'];
         }
 
-        return $query->related($itemId, $match, ListingQuery::titleWords(self::title($query, $itemId)), $limit);
+        $title = (string) ($source['s_title'] ?? '');
+
+        return $query->related($itemId, $match, ListingQuery::titleWords($title !== '' ? $title : self::title($query, $itemId)), $limit);
     }
 
     /**
