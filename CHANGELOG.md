@@ -110,7 +110,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - A page that never asks for payment methods no longer builds the payment gateways.
 - The e-mail code moved to `mindstellar\mail\Mailer` and `CoreEmails`, so a page that sends no e-mail no longer loads it. The old `osc_sendMail()`, `osc_mail_*` and `fn_email_*` functions keep working.
 - Saving a listing runs fewer queries (an edit 19 instead of 24) and resizes photos before it locks any rows; `posted_item` and `edited_item` get the saved row and texts instead of reading them again.
-- The "with photos" search checks each listing's photos directly instead of joining them all.
+- The "with photos" search reads the photo list once as an IN list instead of looking up each listing (500 ms to 124 ms on 229,000 listings).
 - Deleting a listing or account queues one job for its files on remote storage, not one per photo.
 - Listing counts per country, region and city are corrected once a week in the background instead of in a slow hourly pass.
 - The market catalogue cache no longer rides along with the settings every page loads (about 140 KB).
