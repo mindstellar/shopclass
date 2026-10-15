@@ -38,6 +38,32 @@ final class ServerRules
      */
     public static function apache(string $base): string
     {
+        return self::routing($base) . "\n" . self::CACHING;
+    }
+
+    /**
+     * Compression, and browser caching for real files only: FilesMatch never matches a page
+     * PHP answers. Each block needs only the override the rewrite rules already need.
+     */
+    private const CACHING = "<IfModule mod_deflate.c>\n"
+        . "<IfModule mod_filter.c>\n"
+        . "AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml text/javascript application/javascript application/json application/xml application/rss+xml image/svg+xml\n"
+        . "</IfModule>\n"
+        . "</IfModule>\n"
+        . "<IfModule mod_headers.c>\n"
+        . "<FilesMatch \"\\.(css|js|mjs)$\">\n"
+        . "Header set Cache-Control \"max-age=3600\"\n"
+        . "</FilesMatch>\n"
+        . "<FilesMatch \"\\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot)$\">\n"
+        . "Header set Cache-Control \"max-age=604800\"\n"
+        . "</FilesMatch>\n"
+        . '</IfModule>';
+
+    /**
+     * The friendly-URL rules, as releases before the caching blocks wrote them.
+     */
+    private static function routing(string $base): string
+    {
         return "<IfModule mod_rewrite.c>\n"
                . "RewriteEngine On\n"
                . "RewriteBase {$base}\n"
@@ -96,16 +122,16 @@ final class ServerRules
     }
 
     /**
-     * The rules earlier releases wrote: before the Authorization line, and before that
-     * without the mod_mime block.
+     * The rules earlier releases wrote: without the caching blocks, before the Authorization
+     * line, and before that without the mod_mime block.
      *
      * @return string[]
      */
     private static function older(string $base): array
     {
-        $noAuth = str_replace(self::AUTHORIZATION . "\n", '', self::apache($base));
+        $noAuth = str_replace(self::AUTHORIZATION . "\n", '', self::routing($base));
 
-        return [$noAuth, substr($noAuth, 0, (int) strpos($noAuth, "</IfModule>\n") + strlen('</IfModule>'))];
+        return [self::routing($base), $noAuth, substr($noAuth, 0, (int) strpos($noAuth, "</IfModule>\n") + strlen('</IfModule>'))];
     }
 
     private static function normalize(string $text): string
