@@ -338,6 +338,11 @@ class CoreRoutes
                 'params' => array('id' => array()),
                 'rule'   => false,
             ),
+            'billing_account_upgrade' => array(
+                'to'     => array('page' => 'billing', 'action' => 'account_upgrade'),
+                'params' => array('feature' => array('enc' => 'raw')),
+                'rule'   => false,
+            ),
             'billing_upgrade' => array(
                 'to'     => array('page' => 'billing', 'action' => 'upgrade'),
                 'params' => array(

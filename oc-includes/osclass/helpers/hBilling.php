@@ -543,9 +543,7 @@ function osc_user_can_publish(?int $userId = null): bool
  * and the submit path both use. $item carries the listing being posted where there is one
  * (the submit path), and is empty where there is not (opening the form).
  *
- * Core sells no listing slot -- listing.slot is user-scoped and the only public spend
- * route takes item-scoped features -- so the default names the only two remedies that
- * exist. Filterable for a plugin that does sell them.
+ * When extra slots are on sale the default names that remedy too. Filterable.
  *
  * @param int|null            $userId
  * @param array<string,mixed> $item
@@ -556,7 +554,9 @@ function osc_listing_limit_message(?int $userId = null, array $item = array()): 
 {
     return (string) osc_apply_filter(
         'billing_listing_limit_message',
-        _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'),
+        osc_billing_slot_enabled()
+            ? _m('You are at your listing limit. Buy an extra listing slot on your credits page, or free up a listing -- delete one or let one expire -- to post again.')
+            : _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'),
         $userId ?? osc_logged_user_id(),
         $item
     );
@@ -1005,6 +1005,73 @@ function osc_item_upgrade_offers(?array $item = null): array
 function osc_item_upgrade_url(int $itemId, string $feature): string
 {
     return osc_core_url('billing_upgrade', array('itemId' => $itemId, 'feature' => $feature));
+}
+
+/**
+ * Upgrades a seller can buy for their account with credits: each is
+ * ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`.
+ * With $userId, extra photos and runtime that seller already holds are left out: they raise a
+ * limit to a level, so buying them again would only stack it.
+ *
+ * @return array<int,array<string,mixed>>
+ * @since 6.4.8
+ */
+function osc_account_upgrade_offers(?int $userId = null): array
+{
+    if (!osc_billing_enabled()) {
+        return array();
+    }
+
+    $offers = array();
+    if (osc_billing_slot_enabled()) {
+        $offers[] = array(
+            'feature' => 'listing.slot',
+            'label'   => _m('Extra listing slot'),
+            'detail'  => sprintf(_mn('%d more listing live at once', '%d more listings live at once', osc_billing_slot_quantity()), osc_billing_slot_quantity()),
+            'credits' => osc_billing_slot_credits(),
+        );
+    }
+    if (osc_billing_photos_enabled()) {
+        $offers[] = array(
+            'feature' => 'listing.photos',
+            'label'   => _m('Extra photos'),
+            'detail'  => sprintf(_mn('Up to %d photo per listing', 'Up to %d photos per listing', osc_billing_photos_quantity()), osc_billing_photos_quantity()),
+            'credits' => osc_billing_photos_credits(),
+        );
+    }
+    if (osc_billing_no_wait_enabled()) {
+        $offers[] = array(
+            'feature' => 'listing.no_wait',
+            'label'   => _m('Skip the posting wait'),
+            'detail'  => sprintf(_mn('For %d day', 'For %d days', osc_billing_no_wait_days()), osc_billing_no_wait_days()),
+            'credits' => osc_billing_no_wait_credits(),
+        );
+    }
+    if (osc_billing_runtime_enabled()) {
+        $offers[] = array(
+            'feature' => 'listing.runtime',
+            'label'   => _m('Longer listings'),
+            'detail'  => sprintf(_mn('%d more day before a listing expires', '%d more days before a listing expires', osc_billing_runtime_days()), osc_billing_runtime_days()),
+            'credits' => osc_billing_runtime_credits(),
+        );
+    }
+
+    if ($userId !== null && $userId > 0) {
+        $offers = array_values(array_filter($offers, static fn (array $offer): bool => !in_array($offer['feature'], array('listing.photos', 'listing.runtime'), true)
+            || Entitlements::capacity($userId, $offer['feature'], 0) === 0));
+    }
+
+    return (array) osc_apply_filter('account_upgrade_offers', $offers, $userId);
+}
+
+/**
+ * The POST target for buying the account upgrade $feature.
+ *
+ * @since 6.4.8
+ */
+function osc_account_upgrade_url(string $feature): string
+{
+    return osc_core_url('billing_account_upgrade', array('feature' => $feature));
 }
 
 /**

@@ -48,6 +48,7 @@ if (!osc_is_web_user_logged_in()) {
     $total   = Wallet::historyCount($userId);
     $limit   = osc_user_listing_limit($userId);
     $canBuy  = osc_billing_can_buy();
+    $offers  = osc_account_upgrade_offers($userId);
 }
 
 $reasonWords = array(
@@ -99,6 +100,30 @@ $col = array(
             </a>
         </div>
     </div>
+
+    <?php if ($offers !== array()) { ?>
+        <div class="oe-panel oe-bill-card">
+            <h2><?php echo osc_esc_html(_m('Upgrades for your account')); ?></h2>
+            <ul class="oe-list">
+                <?php foreach ($offers as $offer) {
+                    $rowActions = array(array(
+                        'label'  => $offer['credits'] > 0
+                            ? sprintf(_mn('Buy for %d credit', 'Buy for %d credits', (int) $offer['credits']), (int) $offer['credits'])
+                            : _m('Get it free'),
+                        'url'    => osc_account_upgrade_url((string) $offer['feature']),
+                        'method' => 'post',
+                    )); ?>
+                    <li class="oe-list-item">
+                        <div class="oe-list-body">
+                            <h3><?php echo osc_esc_html((string) $offer['label']); ?></h3>
+                            <p class="oe-meta"><?php echo osc_esc_html((string) ($offer['detail'] ?? '')); ?></p>
+                            <?php require ABS_PATH . 'oc-includes/osclass/gui/account/parts/row-actions.php'; ?>
+                        </div>
+                    </li>
+                <?php } ?>
+            </ul>
+        </div>
+    <?php } ?>
 
     <div class="oe-panel oe-bill-card">
         <h2><?php echo osc_esc_html(_m('History')); ?></h2>

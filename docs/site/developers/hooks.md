@@ -142,7 +142,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 532 names. Generated from the source; do not edit by hand.
+Core fires 533 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -430,12 +430,13 @@ Core fires 532 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (199)
+### Other (200)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
 | `account_page_after` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
 | `account_page_before` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
+| `account_upgrade_offers` | filter | `$offers, $userId` | `oc-includes/osclass/helpers/hBilling.php` |
 | `action_throttle_limit` | filter | `array('max' => $max, 'window' => $window), $context` | `oc-includes/osclass/classes/security/ActionThrottle.php` |
 | `actions_manage_alerts` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `actions_manage_keyword_block` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
@@ -492,7 +493,7 @@ Core fires 532 names. Generated from the source; do not edit by hand.
 | `billing_feature_applied` | action | `$featureId, $userId, $price` | `oc-includes/osclass/classes/billing/Billing.php` |
 | `billing_feature_duration` | filter | `$days, $this->id, $userId` | `oc-includes/osclass/classes/billing/Feature.php` |
 | `billing_feature_price` | filter | `$price, $this->id, $userId` | `oc-includes/osclass/classes/billing/Feature.php` |
-| `billing_listing_limit_message` | filter | `_m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'), $userId ?? osc_logged_user_id(), $item` | `oc-includes/osclass/helpers/hBilling.php` |
+| `billing_listing_limit_message` | filter | `osc_billing_slot_enabled() ? _m('You are at your listing limit. Buy an extra listing slot on your credits page, or free up a listing -- delete one or let one expire -- to post again.') : _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'), $userId ?? osc_logged_user_id(), $item` | `oc-includes/osclass/helpers/hBilling.php` |
 | `billing_order_paid` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |

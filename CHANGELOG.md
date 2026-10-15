@@ -2,6 +2,16 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.8
+
+This release lets sellers spend their credits on the account upgrades you sell, such as extra
+listing slots, and shows the right plugin release on the Browse cards.
+
+### Fixed
+
+- Sellers can buy account upgrades (extra slots, photos, longer listings, skip the wait) from their Credits page (#561).
+- The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
+
 ## Shopclass 6.4.7
 
 This release fixes a script injection in the post form's category picker, stops visitors filling in
