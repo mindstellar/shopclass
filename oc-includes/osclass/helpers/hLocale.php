@@ -132,23 +132,32 @@ function osc_locale_name()
 }
 
 /**
+ * The visitor's language row, or the first enabled language when theirs is not listed.
+ *
+ * @return array<string,mixed>
+ * @internal
+ */
+function _osc_user_locale_row(): array
+{
+    $locales = osc_get_locales();
+    $code    = osc_current_user_locale();
+    foreach ($locales as $locale) {
+        if ($locale['pk_c_code'] === $code) {
+            return $locale;
+        }
+    }
+
+    return $locales[0];
+}
+
+/**
  * Gets current locale's currency format
  *
  * @return string
  */
 function osc_locale_currency_format()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] == osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_currency_format'];
+    return _osc_user_locale_row()['s_currency_format'];
 }
 
 /**
@@ -158,17 +167,7 @@ function osc_locale_currency_format()
  */
 function osc_locale_dec_point()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] == osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_dec_point'];
+    return _osc_user_locale_row()['s_dec_point'];
 }
 
 /**
@@ -178,17 +177,7 @@ function osc_locale_dec_point()
  */
 function osc_locale_thousands_sep()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] === osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_thousands_sep'];
+    return _osc_user_locale_row()['s_thousands_sep'];
 }
 
 /**
@@ -198,17 +187,7 @@ function osc_locale_thousands_sep()
  */
 function osc_locale_text_direction()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] === osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_direction'];
+    return _osc_user_locale_row()['s_direction'];
 }
 
 /**
@@ -218,17 +197,7 @@ function osc_locale_text_direction()
  */
 function osc_locale_num_dec()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] == osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['i_num_dec'];
+    return _osc_user_locale_row()['i_num_dec'];
 }
 /**
  * Gets list of enabled admin locales
