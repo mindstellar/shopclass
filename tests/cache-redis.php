@@ -150,6 +150,8 @@ $codec = new RedisCache($recorder);
 $codec->set('row', array('a' => 1));
 if (function_exists('igbinary_serialize')) {
     check('with igbinary a value is stored in its format', strncmp((string) reset($stored), "\x00\x00\x00\x02", 4) === 0);
+} else {
+    echo "  (igbinary is not loaded: the stored-format check was not run)\n";
 }
 $found = null;
 pin('and reads back whole', array(array('a' => 1), true), array((new RedisCache($recorder))->get('row', $found), $found));

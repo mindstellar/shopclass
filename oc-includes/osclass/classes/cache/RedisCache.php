@@ -307,9 +307,9 @@ class RedisCache extends Cache
     protected function fetch(string $storeKey, &$found)
     {
         $reply = $this->call('GET', $storeKey);
-        $found = false;
+        $found = is_string($reply) && self::readable($reply);
 
-        return is_string($reply) ? $this->decode($reply, $found) : false;
+        return $found ? $this->decode($reply) : false;
     }
 
     /**
@@ -336,13 +336,11 @@ class RedisCache extends Cache
         }
         $reply = $this->call('MGET', ...array_map(fn (string $key): string => $this->_key($key), $fetch));
         foreach ($fetch as $i => $key) {
-            $readable = false;
-            $value    = is_array($reply) && is_string($reply[$i] ?? null) ? $this->decode($reply[$i], $readable) : false;
-            if (!$readable) {
+            if (!is_array($reply) || !is_string($reply[$i] ?? null) || !self::readable($reply[$i])) {
                 ++$this->cache_misses;
                 continue;
             }
-            $values[$key]      = $value;
+            $values[$key]      = $this->decode($reply[$i]);
             $this->cache[$key] = self::copy($values[$key]);
             ++$this->cache_hits;
         }
@@ -465,31 +463,34 @@ class RedisCache extends Cache
             return (string) $data;
         }
 
-        return function_exists('igbinary_serialize') ? (string) igbinary_serialize($data) : serialize($data);
+        return self::igbinary() ? (string) igbinary_serialize($data) : serialize($data);
     }
 
     /**
-     * The stored value; $readable is false for an igbinary value on a server without the extension.
-     *
      * @return mixed
      */
-    private function decode(string $reply, ?bool &$readable = null)
+    private function decode(string $reply)
     {
-        $readable = true;
         if (preg_match('/^-?\d+$/', $reply)) {
             return (int) $reply;
         }
-        if (strncmp($reply, self::IGBINARY, 4) === 0) {
-            if (!function_exists('igbinary_unserialize')) {
-                $readable = false;
 
-                return false;
-            }
+        return strncmp($reply, self::IGBINARY, 4) === 0 ? igbinary_unserialize($reply) : unserialize($reply);
+    }
 
-            return igbinary_unserialize($reply);
-        }
+    /**
+     * False for an igbinary value on a server without the extension, which then counts as a miss.
+     */
+    private static function readable(string $reply): bool
+    {
+        return self::igbinary() || strncmp($reply, self::IGBINARY, 4) !== 0;
+    }
 
-        return unserialize($reply);
+    private static function igbinary(): bool
+    {
+        static $loaded = null;
+
+        return $loaded ??= function_exists('igbinary_serialize');
     }
 
     /**
