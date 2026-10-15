@@ -70,6 +70,10 @@ through the `cache_relevant_cookies` filter.
 |---|---|
 | Anonymous, cacheable GET | `public, s-maxage=30, max-age=0, must-revalidate` |
 | Personalised, POST, or any allowlisted cookie present | `private, no-store` |
+| Region and city lookups for the location boxes | `public, max-age=300, s-maxage=300` |
+
+A plugin sends JSON that is the same for every visitor with `AjaxResponse::shared($data)`;
+`AjaxResponse::json()` stays `private, no-store`. A reply that also sets a cookie is always private.
 
 `s-maxage` lets a **shared** cache hold the page for about 30 seconds;
 `max-age=0, must-revalidate` makes **browsers** revalidate every time, so a

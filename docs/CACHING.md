@@ -53,6 +53,7 @@ this list, and the reference config together.
 |---|---|
 | Anonymous, cacheable GET (no cache-relevant cookie) | `public, s-maxage=30, max-age=0, must-revalidate` |
 | Personalized, POST, or any cache-relevant cookie present | `private, no-store` |
+| Region and city lookups (`AjaxResponse::shared()`), unless the reply sets a cookie | `public, max-age=300, s-maxage=300` |
 
 - `s-maxage` lets a **shared** cache (proxy/CDN) hold the page ~30s; `max-age=0, must-revalidate`
   makes **browsers** revalidate every time, so a page is never served stale from disk cache.

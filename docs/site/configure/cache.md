@@ -54,6 +54,8 @@ $_cache_config = array(
 );
 ```
 
+Each PHP worker keeps its connection between pages, as it does with Redis and phpredis.
+
 ## Redis or Valkey
 
 **Redis** and **Valkey** are cache servers like memcached. Use them if your host
@@ -104,6 +106,9 @@ else counts in the database, as it does with no `OSC_CACHE`.
 
 Settings, including secret keys, are stored in the cache. Use a Redis or
 memcached server that only this site can reach.
+
+A change made from the command line reaches web pages at once, even when `OSC_CLI_URL` names
+another address than visitors use: the "this changed" markers are kept per database.
 
 ## A copy in each PHP worker
 

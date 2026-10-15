@@ -130,6 +130,11 @@ avoiding.
 **"Allowed memory size of X bytes exhausted".**
 See [increase the PHP memory limit](/docs/configure/memory-limit/).
 
+**What the `.htaccess` holds.** Core writes the friendly-URL rules, then compression
+(`mod_deflate`) and browser cache times for static files (`mod_headers`: CSS and JavaScript an
+hour, images and fonts a week). Each block is skipped when its module is missing. An older
+file core wrote is updated on upgrade; a file you edited is left alone.
+
 **The site loads but every link 404s.**
 Your web server is not rewriting URLs. On Apache, confirm `mod_rewrite` is
 enabled and that `AllowOverride All` applies to your web root so the shipped

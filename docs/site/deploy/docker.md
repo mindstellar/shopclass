@@ -316,6 +316,12 @@ the contract is the three settings above plus a proxy that sends
 [security](/docs/deploy/security/) and the
 [caching contract](/docs/developers/caching/).
 
+### Compression and browser caching
+
+nginx compresses pages, CSS, JavaScript, JSON and SVG with gzip. Browsers keep CSS and JavaScript
+for an hour and images and fonts for a week; a URL with `?v=` changes with its file and keeps for a
+year. A static file that does not exist still reaches PHP, so a plugin can answer it.
+
 ### With page caching on
 
 Nothing changes. The container's cache key does not include the scheme, so the
