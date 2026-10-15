@@ -340,6 +340,17 @@ $driver->site_prefix = 'osc_' . substr(md5('http://localhost:8000/'), 0, 12) . '
 $cli = [$storeKey->invoke($driver, 'shared:osc_preference_cache_gen'), $storeKey->invoke($driver, 'osc_preference:map')];
 pin('the command line under another address bumps the generation the web reads', $web[0], $cli[0]);
 check('...while values stay apart per address, so a spoofed Host never fills another\'s', $web[1] !== $cli[1]);
+$sharedKeyIn = static function (string $webPath, string $dbName): string {
+    $code = 'define("WEB_PATH", ' . var_export($webPath, true) . '); define("DB_HOST", "db"); define("DB_NAME", ' . var_export($dbName, true) . ');'
+        . ' define("DB_TABLE_PREFIX", "oc_"); require ' . var_export(__DIR__ . '/../oc-includes/vendor/autoload.php', true) . ';'
+        . ' $d = (new ReflectionClass(\\mindstellar\\cache\\RedisCache::class))->newInstanceWithoutConstructor();'
+        . ' (new ReflectionMethod(\\mindstellar\\base\\Cache::class, "__construct"))->invoke($d);'
+        . ' $k = new ReflectionMethod($d, "_key"); $k->setAccessible(true); echo $k->invoke($d, "shared:g");';
+
+    return (string) shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code));
+};
+pin('two addresses of one database share the key', $sharedKeyIn('http://a.test/', 'shop'), $sharedKeyIn('http://b.test/', 'shop'));
+check('two databases never share it', $sharedKeyIn('http://a.test/', 'shop') !== $sharedKeyIn('http://a.test/', 'other'));
 
 exit(harness_result());
 

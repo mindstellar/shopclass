@@ -47,12 +47,11 @@ abstract class Cache implements \mindstellar\cache\CacheDriver
     public const SHARED = 'shared:';
 
     /**
-     * Prefix of SHARED keys. The address comes from the Host header or OSC_CLI_URL, so the web
-     * and the command line can differ; a change made under one must still reach the other.
+     * Prefix of SHARED keys: the database, since the web and the command line may see different addresses.
      *
      * @var string
      */
-    public $shared_prefix;
+    protected $shared_prefix;
 
     /** @var int Seconds a value lives when the caller gives none. */
     public $default_expiration = 60;
