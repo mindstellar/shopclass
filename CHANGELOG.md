@@ -180,7 +180,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 
 ### Fixed
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
-- The daily seller recount also catches a listing posted or edited with an expiry date already past, such as an import, so the seller's listing count does not stay too high.
+- The daily seller recount also catches a listing posted or edited with an expiry date already past, such as an import.
 - With no cache server and an `oc-content/uploads/` folder PHP cannot write to, auto-cron no longer runs on every page; its throttle stamp moves to the temp folder.
 - A setting changed from the command line reaches web pages at once with Redis, Valkey or memcached, even when the command line uses another site address.
 - On settings pages, a checkbox with no label beside it lines up with the other fields.

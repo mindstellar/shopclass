@@ -28,9 +28,8 @@ LABEL org.opencontainers.image.title="Shopclass" \
 RUN apk add --no-cache nginx nginx-mod-http-cache-purge supervisor curl unzip tzdata msmtp ca-certificates acme.sh
 
 # PHP extensions Shopclass uses in production (superset of composer's ext-*
-# requires, plus opcache, and memcached and phpredis for the object cache; igbinary makes
-# cached values smaller and faster to read). APCu lets each PHP worker keep its own copy of
-# the cached values every page reads. imagick keeps photo
+# requires, plus opcache, and memcached, phpredis and igbinary for the object cache). APCu lets each
+# PHP worker keep its own copy of the cached values every page reads. imagick keeps photo
 # colours; its policy allows only photo formats, with size limits.
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions \
