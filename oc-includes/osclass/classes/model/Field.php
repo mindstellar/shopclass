@@ -25,7 +25,7 @@ class Field extends DAO
     use \mindstellar\base\SharedInstance;
 
     /** Shared with FieldGroup: the fields of a category depend on both. */
-    protected $cacheGroup = 'field_group';
+    protected $cacheGroup = FieldGroup::CACHE_GROUP;
 
     /**
      * Current locale code

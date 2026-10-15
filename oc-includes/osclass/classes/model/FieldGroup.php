@@ -26,7 +26,10 @@ class FieldGroup extends DAO
 {
     use \mindstellar\base\SharedInstance;
 
-    protected $cacheGroup = 'field_group';
+    /** Cached reads of fields, forms and their links; every write to those tables drops it. */
+    public const CACHE_GROUP = 'field_group';
+
+    protected $cacheGroup = self::CACHE_GROUP;
 
     /**
      * Set data related to t_meta_group table
@@ -56,7 +59,7 @@ class FieldGroup extends DAO
      */
     public function findByPrimaryKey($id)
     {
-        return \mindstellar\cache\CacheGroup::remember('field_group', 'id:' . (int)$id, function () use ($id) {
+        return \mindstellar\cache\CacheGroup::remember(self::CACHE_GROUP, 'id:' . (int)$id, function () use ($id) {
             try {
                 $row = Db::table($this->getTableName())->where('pk_i_id', $id)->first();
             } catch (\mindstellar\database\DbException $e) {

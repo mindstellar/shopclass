@@ -54,7 +54,7 @@ final class FormFieldLinkStore extends Model
             ));
             $position++;
         }
-        \mindstellar\cache\CacheGroup::invalidate('field_group');
+        \mindstellar\cache\CacheGroup::changed(\FieldGroup::CACHE_GROUP);
     }
 
     /**

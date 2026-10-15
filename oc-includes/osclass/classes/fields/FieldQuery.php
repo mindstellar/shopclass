@@ -107,27 +107,31 @@ final class FieldQuery
      * The fields that apply to a category, honouring inheritance: loose fields and the fields
      * of forms assigned to the category or any ancestor, once each, in form order. The union
      * is grouped in its own subquery to satisfy ONLY_FULL_GROUP_BY; MIN() sorts a field that is
-     * both loose and in a form as loose.
+     * both loose and in a form as loose. Cached in FieldGroup::CACHE_GROUP under the category
+     * generation, so a write to the field, form or link tables must drop that group.
      *
      * @return array<int,array<string,mixed>> t_meta_fields rows with cf_group_position
      * @throws \mindstellar\database\DbException
      */
     public static function forCategory(int $categoryId): array
     {
+        if ($categoryId <= 0) {
+            return [];
+        }
         $key = 'category:' . $categoryId . ':' . CacheGroup::generation('category');
 
-        return CacheGroup::remember('field_group', $key, static fn (): array => self::loadForCategory($categoryId));
+        return CacheGroup::remember(\FieldGroup::CACHE_GROUP, $key, static fn (): ?array => self::loadForCategory($categoryId)) ?? [];
     }
 
     /**
-     * @return array<int,array<string,mixed>>
+     * @return array<int,array<string,mixed>>|null null when the category path cannot be read, so it is not cached
      * @throws \mindstellar\database\DbException
      */
-    private static function loadForCategory(int $categoryId): array
+    private static function loadForCategory(int $categoryId): ?array
     {
         $path = self::categoryPath($categoryId);
         if ($path === []) {
-            return [];
+            return null;
         }
         $in = implode(', ', array_fill(0, count($path), '?'));
         $p  = DB_TABLE_PREFIX;
