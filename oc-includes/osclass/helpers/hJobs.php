@@ -283,6 +283,23 @@ osc_add_hook('cron', static function () {
 });
 
 /**
+ * The file whose mtime throttles auto-cron: a dotfile in uploads/, which a "deny hidden files"
+ * rule keeps unreadable. When PHP cannot write there, one in the temp folder, so a failed touch
+ * does not run cron on every page.
+ *
+ * @internal
+ */
+function _osc_auto_cron_stamp(string $uploads): string
+{
+    $stamp = $uploads . '.autocron_tick';
+    if (is_writable(file_exists($stamp) ? $stamp : $uploads)) {
+        return $stamp;
+    }
+
+    return rtrim(sys_get_temp_dir(), '/\\') . '/osc-autocron-' . md5($uploads);
+}
+
+/**
  * Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes.
  * Web pages queue the work to run at shutdown; an API response is already sent, so it runs now.
  *
@@ -316,9 +333,7 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
             $fire = true;
         }
     } else {
-        // A dotfile, so a "deny hidden files" web-server rule keeps it unreadable; it carries no
-        // data anyway, only its mtime matters.
-        $stamp = osc_uploads_path() . '.autocron_tick';
+        $stamp = _osc_auto_cron_stamp(osc_uploads_path());
         if (!file_exists($stamp) || (time() - (int)@filemtime($stamp)) >= $window) {
             @touch($stamp);
             $fire = true;
