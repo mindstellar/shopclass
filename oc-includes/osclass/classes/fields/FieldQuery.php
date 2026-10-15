@@ -157,9 +157,8 @@ final class FieldQuery
     }
 
     /**
-     * The category and its ancestors, leaf first. With only the in-request cache, the enabled-category
-     * rows the page already loaded answer it; with a shared cache the small parent map is cheaper to
-     * read than those rows. A parent cycle stops at the first repeat.
+     * The category and its ancestors, leaf first, from the page's enabled-category rows with the
+     * in-request cache and from the small cached parent map otherwise. A parent cycle stops at the first repeat.
      *
      * @return int[]
      */
@@ -168,7 +167,7 @@ final class FieldQuery
         if ($categoryId <= 0) {
             return [];
         }
-        if (\mindstellar\cache\CacheManager::getInstance() instanceof \mindstellar\cache\MemoryCache) {
+        if (!\mindstellar\cache\CacheManager::isShared()) {
             $enabled = [];
             foreach (\mindstellar\category\CategoryQuery::enabledRows() ?? [] as $row) {
                 $enabled[(int) $row['pk_i_id']] = (int) $row['fk_i_parent_id'];

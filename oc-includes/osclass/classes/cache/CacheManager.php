@@ -40,6 +40,18 @@ final class CacheManager
     }
 
     /**
+     * Whether cached values outlive the request; false for the default in-request cache.
+     */
+    public static function isShared(): bool
+    {
+        try {
+            return !(self::getInstance() instanceof MemoryCache);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
      * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance(): CacheDriver

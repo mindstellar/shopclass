@@ -14,7 +14,6 @@
 
 use mindstellar\cache\CacheGroup;
 use mindstellar\cache\CacheManager;
-use mindstellar\cache\MemoryCache;
 use mindstellar\database\Db;
 
 /**
@@ -118,11 +117,7 @@ class Preference extends DAO
      */
     private static function sharedCache(): bool
     {
-        try {
-            return !(CacheManager::getInstance() instanceof MemoryCache);
-        } catch (\Throwable $e) {
-            return false;
-        }
+        return CacheManager::isShared();
     }
 
     /**
