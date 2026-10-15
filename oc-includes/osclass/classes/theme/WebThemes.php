@@ -23,6 +23,9 @@ class WebThemes extends Themes
      */
     private $path;
 
+    /** @var array<string,array<string,mixed>|false> theme info by index.php path and mtime */
+    private array $themeInfo = array();
+
     /**
      * Starts out looking for themes in oc-content/themes/.
      */
@@ -110,6 +113,15 @@ class WebThemes extends Themes
             return false;
         }
 
+        // A page asks several times, once per asset the theme lacks; a replaced file has a new mtime.
+        return $this->themeInfo[$path . '|' . filemtime($path)] ??= $this->readThemeInfo((string) $theme, $path);
+    }
+
+    /**
+     * @return array<string,mixed>|false
+     */
+    private function readThemeInfo(string $theme, string $path)
+    {
         // NEW CODE FOR THEME INFO
         $s_info = file_get_contents($path);
         $info   = array();
