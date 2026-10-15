@@ -34,7 +34,9 @@ final class RelatedListings
      * Live listing rows like $itemId, best first, without the listing itself.
      *
      * @param array<string,mixed>      $filters names from FILTERS; unknown names are ignored
-     * @param array<string,mixed>|null $source  the listing's row with its place and title, when the page has it
+     * @param array<string,mixed>|null $source  the page's row for $itemId, such as Item::extendData() gives
+     *                                          (pk_i_id, fk_i_category_id, fk_c_country_code, fk_i_region_id,
+     *                                          s_title); anything missing is read from the database
      *
      * @return array<int,array<string,mixed>> bare t_item rows
      * @throws \mindstellar\database\DbException
