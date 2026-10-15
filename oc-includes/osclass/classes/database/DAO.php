@@ -667,7 +667,7 @@ class DAO
     protected function cacheChanged()
     {
         if ($this->cacheGroup !== null) {
-            \mindstellar\cache\CacheGroup::invalidate($this->cacheGroup);
+            \mindstellar\cache\CacheGroup::changed($this->cacheGroup);
         }
     }
 

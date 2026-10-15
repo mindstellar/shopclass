@@ -72,6 +72,20 @@ final class CacheGroup
     }
 
     /**
+     * Drop the group after a write. Inside a transaction it is dropped again once the write
+     * commits, so a request that reads between the two cannot keep the old rows.
+     */
+    public static function changed(string $group): void
+    {
+        self::invalidate($group);
+        if (\mindstellar\database\Db::inTransaction()) {
+            \mindstellar\database\Db::afterCommit(static function () use ($group): void {
+                self::invalidate($group);
+            });
+        }
+    }
+
+    /**
      * Drop every cached entry in the group.
      *
      * @param string $group

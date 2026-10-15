@@ -288,6 +288,26 @@ $swap($cache = new KeepAllCache());
 pin('copies stay off unless the site turns them on', false, (new ReflectionMethod(CacheGroup::class, 'localCopies'))->invoke(null, $cache));
 $localFlag->setValue(null, null);
 
+harness_section('a change inside a transaction is dropped again at commit');
+$swap($cache = new KeepAllCache());
+$depth   = new ReflectionProperty(\mindstellar\database\Db::class, 'depth');
+$pending = new ReflectionProperty(\mindstellar\database\Db::class, 'afterCommit');
+$depth->setAccessible(true);
+$pending->setAccessible(true);
+$start = CacheGroup::generation('grp');
+$depth->setValue(null, 1);
+CacheGroup::changed('grp');
+pin('the group is dropped at once', $start + 1, CacheGroup::generation('grp'));
+$queued = $pending->getValue()[1] ?? [];
+$depth->setValue(null, 0);
+$pending->setValue(null, []);
+foreach ($queued as $fn) {
+    $fn();
+}
+pin('...and again once the write commits', $start + 2, CacheGroup::generation('grp'));
+CacheGroup::changed('grp');
+pin('outside a transaction it is dropped once', $start + 3, CacheGroup::generation('grp'));
+
 harness_section('osc_cache_remember');
 $GLOBALS['__locale'] = 'en_US';
 function osc_add_hook()
