@@ -2815,6 +2815,18 @@ osc_listing_limit_message(0);
 osc_remove_filter('billing_listing_limit_message', $captureLimitMessage);
 check('with slots on sale, the limit message names buying one', strpos($defaultLimitMessage, 'Buy an extra listing slot') !== false, $defaultLimitMessage);
 
+$enabledPackages = array_column(Packages::enabled(), 'pk_i_id');
+$packageTable    = DB_TABLE_PREFIX . 't_billing_package';
+$admin->query("UPDATE $packageTable SET b_enabled = 0");
+$menuLinks = array_column((array) osc_apply_filter('user_menu_filter', array()), 'class');
+pin('with nothing to buy credits with and no credits held, the Credits link still leads to the account upgrades', array(false, true), array(
+    osc_billing_can_buy(),
+    in_array('opt_billing_wallet', $menuLinks, true),
+));
+if ($enabledPackages !== array()) {
+    $admin->query("UPDATE $packageTable SET b_enabled = 1 WHERE pk_i_id IN (" . implode(',', array_map('intval', $enabledPackages)) . ')');
+}
+
 $slotBuyer = seed_user($admin, 'slotbuyer', 'slotbuyer@example.test');
 Wallet::credit($slotBuyer, 5, Wallet::REASON_PURCHASE);
 $slotsBefore = Entitlements::capacity($slotBuyer, 'listing.slot', 0);
