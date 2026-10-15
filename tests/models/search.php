@@ -320,6 +320,10 @@ pin('and holds between calls, so the page can be cached', $ids($premiums), $ids(
 $coldPremiums = harness_query_count(static fn () => (new Search())->getPremiums(10));
 $warmPremiums = harness_query_count(static fn () => (new Search())->getPremiums(10));
 pin('within the rotation the rows come from the cache: one query fewer', 1, $coldPremiums - $warmPremiums);
+foreach (array('activate_item', 'deactivate_item', 'item_premium_on', 'item_premium_off') as $statusHook) {
+    osc_run_hook($statusHook, $car2);
+    pin('a listing change through ' . $statusHook . ' reads the featured rows again', $coldPremiums, harness_query_count(static fn () => (new Search())->getPremiums(10)));
+}
 
 /* ----------------------------------------------------------------------------
  * Sorting.
