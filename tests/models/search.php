@@ -309,6 +309,27 @@ harness_section('Search: count() reads only the total');
 $s = new Search();
 $s->addCategory($catCars);
 pin('count() before a search runs the COUNT alone, not the rows as well', 1, harness_query_count(static fn () => $s->count()));
+\mindstellar\cache\CacheGroup::invalidate('search');
+$cached = static function (string $order, ?array $price = null): Search {
+    $s = new Search();
+    $s->addCategory($GLOBALS['catCarsForCount']);
+    $s->order($order, 'ASC');
+    if ($price !== null) {
+        $s->priceRange(...$price);
+    }
+
+    return $s;
+};
+$GLOBALS['catCarsForCount'] = $catCars;
+$first = $cached('dt_pub_date')->countMatches(true);
+$priceTotal = null;
+pin('another sort reuses the cached total, with no query', array($first, 0), array(
+    &$priceTotal,
+    harness_query_count(static function () use ($cached, &$priceTotal): void {
+        $priceTotal = $cached('i_price')->countMatches(true);
+    }),
+));
+check('another price range gets its own total', $cached('dt_pub_date', array(1000, 6000))->countMatches(true) !== $first);
 
 harness_section('Search: premium');
 

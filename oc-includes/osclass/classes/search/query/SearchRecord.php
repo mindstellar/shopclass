@@ -35,6 +35,29 @@ final class SearchRecord
      */
     public static function encode(SearchParts $parts): string
     {
+        $data = self::matching($parts);
+
+        $data['order_column']     = $parts->ordering->column();
+        $data['order_direction']  = $parts->ordering->direction();
+        $data['limit_init']       = $parts->ordering->offset();
+        $data['results_per_page'] = $parts->ordering->perPage();
+
+        return (string)json_encode($data);
+    }
+
+    /**
+     * What decides which listings match, without the sort and the page: the key of a cached total.
+     */
+    public static function encodeMatching(SearchParts $parts): string
+    {
+        return (string)json_encode(self::matching($parts));
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private static function matching(SearchParts $parts): array
+    {
         $data['price_min']   = $parts->priceMin / Money::MICROS;
         $data['price_max']   = $parts->priceMax / Money::MICROS;
         $data['aCategories'] = $parts->categories->ids();
@@ -68,12 +91,7 @@ final class SearchRecord
         $data['no_catched_conditions'] = $parts->plugin->conditions();
         $data['user_ids']              = $parts->users->recorded();
 
-        $data['order_column']     = $parts->ordering->column();
-        $data['order_direction']  = $parts->ordering->direction();
-        $data['limit_init']       = $parts->ordering->offset();
-        $data['results_per_page'] = $parts->ordering->perPage();
-
-        return (string)json_encode($data);
+        return $data;
     }
 
     /**
