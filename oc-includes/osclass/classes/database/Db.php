@@ -262,8 +262,11 @@ class Db
         }
 
         try {
-            // A lost transaction is rolled back, never committed; the server has dropped it already.
-            $result = self::$lost === null ? self::conn()->commit() : !self::conn()->rollback();
+            $result = self::$lost === null && self::conn()->commit();
+            if (self::$lost !== null) {
+                // A lost transaction is rolled back, never committed; the server has dropped it already.
+                self::conn()->rollback();
+            }
         } catch (Throwable $e) {
             $result = false;
         } finally {

@@ -882,7 +882,10 @@ class DBCommandClass
         if (OSC_DEBUG_DB) {
             $this->queries[] = $sql;
         }
-        \mindstellar\database\Db::assertIntact();
+        $shared = $this->connId === \mindstellar\database\ConnectionManager::getInstance()->getHandle();
+        if ($shared) {
+            \mindstellar\database\Db::assertIntact();
+        }
         $timeStart = microtime(true);
 
         $this->resultId = $this->execute($sql);
@@ -890,7 +893,9 @@ class DBCommandClass
         $this->errorReport();
         if (false === $this->resultId) {
             \mindstellar\database\StrictRefusals::record($this->connId, (int) $this->errorLevel, (string) $this->errorDesc, $sql);
-            \mindstellar\database\Db::failIfLost((int) $this->errorLevel);
+            if ($shared) {
+                \mindstellar\database\Db::failIfLost((int) $this->errorLevel);
+            }
             if (OSC_DEBUG_DB) {
                 $this->log->addMessage($sql, 0, $this->errorLevel, $this->errorDesc);
             }
