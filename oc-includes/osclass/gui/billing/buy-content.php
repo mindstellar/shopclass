@@ -63,6 +63,8 @@ $formatMoney = static function (int $micros, string $currency): string {
         <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
+    <?php $billingTab = 'buy';
+    require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
     <?php if ($checkoutHtml !== '' && $order !== null) { ?>
         <div class="oe-panel oe-bill-card">
             <h2><?php echo osc_esc_html(sprintf(_m('Order #%d'), $order->getId())); ?></h2>
@@ -129,10 +131,6 @@ $formatMoney = static function (int $micros, string $currency): string {
             </form>
         </div>
     <?php } ?>
-
-    <p class="oe-muted oe-bill-sub">
-        <a href="<?php echo osc_esc_html(osc_billing_orders_url()); ?>"><?php echo osc_esc_html(_m('View your past orders')); ?></a>
-    </p>
 <?php } ?>
 </div>
 <?php osc_run_hook('account_page_after', 'billing-buy'); ?>
