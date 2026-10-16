@@ -53,6 +53,7 @@
   --osc-ink:           #e6ebf2; // body/heading/data — 13.81:1 on bench
   --osc-ink-muted:     #a6b0be; // secondary, placeholders — 7.54:1 on bench
   --osc-ink-emphasis:  #c6cdd8; // neutral-badge ink — 11.12:1 on bench-sunk
+  --osc-tab-indicator: var(--osc-ink-muted); // current tab underline — a soft grey that does not glare
   // The ink that sits ON a bright fill flips: in light mode it is white, here it is the
   // dark bench, because the fills below are luminous. This is the divergence the token was
   // created for (see --osc-ink-inverse in _brand.scss).

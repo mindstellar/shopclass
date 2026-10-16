@@ -96,7 +96,7 @@
   }
 
   // Each tab wears the .osc-tab button (label type, small radius on top, a hover shade);
-  // the current one is the raised bench face with the teal underline as its indicator.
+  // the current one is the raised bench face with a slate underline as its indicator.
   a {
     border-block-end: 2px solid transparent;
     border-start-end-radius: $border-radius-sm;
@@ -121,7 +121,7 @@
 
     &.is-active {
       background-color: var(--osc-bench);
-      border-block-end-color: var(--osc-bronze);
+      border-block-end-color: var(--osc-tab-indicator);
       color: var(--osc-ink);
       font-weight: 600;
     }
