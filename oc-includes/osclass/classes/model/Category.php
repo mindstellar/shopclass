@@ -825,7 +825,7 @@ class Category extends DAO
      *
      * @param int $category_id
      *
-     * @return array<int,array<string,mixed>> From the root down to the category
+     * @return array<int,array<string,mixed>> From the category up to the root
      */
     public function hierarchy($category_id)
     {
@@ -838,7 +838,7 @@ class Category extends DAO
      *
      * @param int|null $cat
      *
-     * @return array<int,array<string,mixed>> From the category up to the root
+     * @return array<int,array<string,mixed>> From the root down to the category
      */
     public function toRootTree($cat = null)
     {
