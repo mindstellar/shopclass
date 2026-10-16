@@ -440,7 +440,7 @@ expiring or being deleted, with no sweep and no bookkeeping on either side.
 never expires, disables or deletes anything already live — it only changes whether the
 *next* post is allowed. A seller who is already over a newly-lowered limit keeps every
 listing they have; they simply cannot post another one until they free a slot themselves,
-by deletion or expiry.
+by deletion or expiry, or buy enough slots. The slot box tells them how many purchases that takes.
 
 Premium fulfilment reuses `ItemActions::premium($id, $on)` unchanged. Everything
 downstream of that method — search ranking, the premium home/category blocks, expiry
@@ -542,7 +542,8 @@ until an admin turns it on.
 ## 7. Public routes
 
 Everything a buyer does lives under `?page=billing`, and every one of those actions needs a
-logged-in user except the one route a payment provider's own server hits directly:
+logged-in user except the one route a payment provider's own server hits directly. The
+wallet, `buy` and `orders` pages share one row of tabs (`gui/billing/tabs.php`).
 
 | `action` | Method | Auth | What |
 |---|---|---|---|
@@ -551,7 +552,7 @@ logged-in user except the one route a payment provider's own server hits directl
 | `checkout` | POST, CSRF | logged in | Start paying for a package |
 | `orders` | GET | logged in | The buyer's own past orders |
 | `upgrade` | POST, CSRF | logged in | Apply an item-scoped feature (`feature`, default `listing.premium`) to one of the buyer's own listings (`itemId`) |
-| `account_upgrade` | POST, CSRF | logged in | Buy an account upgrade (`feature`) that `osc_account_upgrade_offers()` lists, such as `listing.slot` |
+| `account_upgrade` | POST, CSRF | logged in | Buy an account upgrade (`feature`) that `osc_account_upgrade_offers()` lists, such as `listing.slot`; with `next=post` a bought slot opens the post form |
 | `callback` | GET/POST | **none** — no session, no CSRF | A gateway's webhook or return-URL hit |
 
 Every logged-in action checks `osc_billing_enabled()` first and bounces to the site root

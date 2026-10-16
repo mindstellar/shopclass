@@ -258,6 +258,7 @@ final class Receipts
             'email'    => (string) ($user['s_email'] ?? ''),
             'name'     => (string) ($user['s_name'] ?? ''),
             'url'      => self::url($order->getId()),
+            'wallet'   => osc_billing_wallet_url(),
             'business' => self::businessDetails(),
             'refunded' => $order->getStatus() === Order::STATUS_REFUNDED,
         );
@@ -293,6 +294,10 @@ final class Receipts
         $html .= '</table>'
                  . '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['url']) . '">'
                  . osc_esc_html(__('View or print your receipt')) . '</a></p>';
+        if (($vars['wallet'] ?? '') !== '') {
+            $html .= '<p><a href="' . osc_esc_html($vars['wallet']) . '">'
+                     . osc_esc_html(__('Use your credits')) . '</a></p>';
+        }
         if ($vars['business'] !== '') {
             $html .= '<p style="color:#666">' . nl2br(osc_esc_html($vars['business']), false) . '</p>';
         }

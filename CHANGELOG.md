@@ -8,6 +8,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
 - The Credits menu link also shows when a free account upgrade is on offer, not only when credits can be bought or are held.
+- A seller at the listing limit sees a button on My listings, Credits and Orders that buys an extra slot and opens the post form, or a link to buy credits (#567).
+- A seller over the listing limit sees how many slots to buy, not only an error.
+- Credits, Buy credits and Orders are tabs on one page.
+- The payment receipt e-mail links to the Credits page.
 
 ## Shopclass 6.4.8
 
