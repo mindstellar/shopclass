@@ -30,6 +30,7 @@ use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingGeocode;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\model\Resource;
 
 $admin = api_admin_boot('osc_models_listing_save_writes');
 if (!function_exists('osc_item_map_type')) {
@@ -294,5 +295,20 @@ osc_remove_hook('pre_item_add', $conflict);
 pin('the post is refused with "rejected"', 'rejected', $refused?->errors()[0]['code'] ?? null);
 pin('no listing row is written outside the transaction', $before, $items());
 pin('the next post works', $before + 1, ($service->create(ListingInput::fromArray($form(), $actor, true), $actor)->id() > 0) ? $items() : -1);
+
+harness_section('a swallowed snapshot conflict also blocks a photo row and a queued job');
+// Called directly, not through a post: on prod a failed location write went on to the photo step.
+$noOwner = 999999;
+$photo   = static fn (): int|false => (new Resource())->insertResource('item', $noOwner, ['s_name' => 'x', 's_extension' => 'webp', 's_content_type' => 'image/webp', 's_path' => 'oc-content/uploads/0/']);
+$job     = static fn (): int => osc_job_enqueue('storage.offload', ['id' => $noOwner]);
+Db::beginTransaction();
+$works = [$photo() > 0, $job() > 0];
+Db::rollBack();
+pin('in an intact transaction both are written', [true, true], $works);
+Db::beginTransaction();
+$conflict();
+$refused = [$photo(), $job()];
+Db::rollBack();
+pin('after the conflict both are refused', [false, 0], $refused);
 
 exit(harness_result());
