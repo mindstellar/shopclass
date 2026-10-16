@@ -17,6 +17,7 @@ Beta 4 drops Bootstrap's JavaScript from the admin, lets a search plugin answer 
 Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
+- `osc_admin_count($n)` draws a count as a small badge beside a tab, filter or button label, and `osc_admin_link_group()` takes a `count` per link and then draws a tab strip that scrolls on a phone.
 
 - A `category_modes` settings field sets a mode per category, with an Off switch per main category and subcategories that follow their parent; `osc_category_mode()` reads it.
 - A geocode provider can say its request allowance is used up (`GeocodeLimitReached`); the lookup waits for it to renew instead of failing. `ListingGeocode::queueExisting()` looks up older listings in the background.
@@ -140,6 +141,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
 
 ### Changed
+- Counts on the Market Updates tab, the Update all button, System info and the Locations filter are badges instead of a number in brackets.
 - The category checkbox tree (`osc_admin_tree_picker()`) shows a card per main category with folded subcategories and a live count; a main category with only some subcategories ticked shows a dash and is not saved itself. Its posted names, ids and Check all / Uncheck all still work.
 - A seller at the listing limit sees a button on My listings, Credits and Orders that buys an extra slot and opens the post form, or a link to buy credits.
 - Inside `osc_db_begin()` or `osc_db_transaction()`, a legacy DAO query that hits a deadlock now throws `DbException` instead of returning false, since the server has already rolled the transaction back.

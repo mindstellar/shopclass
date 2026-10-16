@@ -499,7 +499,7 @@ function osc_market_render_updates($rows, $meta, $type)
         <?php if (!empty($rows)) : ?>
             <button type="button" class="btn btn-sm btn-primary market-update-all"
                     <?php echo empty($updatable) ? 'disabled' : ''; ?>>
-                <?php echo osc_esc_html(sprintf(__('Update all (%d)'), count($updatable))); ?>
+                <?php _e('Update all'); ?><?php echo $updatable !== array() ? osc_admin_count(count($updatable)) : ''; ?>
             </button>
         <?php endif; ?>
         <button type="button" class="btn btn-sm btn-secondary market-refresh-btn">

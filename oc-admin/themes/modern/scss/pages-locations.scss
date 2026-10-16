@@ -754,16 +754,6 @@ a.loc-hit-name {
   }
 }
 
-.loc-segmented-count {
-  color: var(--osc-ink-muted);
-  font-variant-numeric: tabular-nums;
-  font-weight: 400;
-}
-
-.loc-segmented input:checked + label .loc-segmented-count {
-  color: inherit;
-}
-
 .loc-busy-note {
   align-items: center;
   background-color: var(--osc-info-tint);

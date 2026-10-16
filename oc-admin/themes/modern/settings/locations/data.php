@@ -125,7 +125,7 @@ if ($data['release'] !== '') {
                             <?php echo $data['show'] === $key ? 'checked' : ''; ?>/>
                         <label for="<?php echo $id; ?>">
                             <?php echo osc_esc_html($label); ?>
-                            <span class="loc-segmented-count"><?php echo number_format($count); ?></span>
+                            <?php echo osc_admin_count((int)$count); ?>
                         </label>
                     <?php } ?>
                 </fieldset>

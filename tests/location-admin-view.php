@@ -226,6 +226,10 @@ function osc_admin_form_close($a = null, array $o = array())
 {
     echo '</form>';
 }
+function osc_admin_count(int $count, string $id = ''): string
+{
+    return ' <span class="osc-count">' . number_format($count) . '</span>';
+}
 function osc_admin_status($state, $word)
 {
     echo '<span class="osc-status status-' . $state . '">' . $word . '</span>';

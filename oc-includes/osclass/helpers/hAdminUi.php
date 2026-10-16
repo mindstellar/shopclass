@@ -923,6 +923,28 @@ if (!function_exists('osc_admin_status')) {
     }
 }
 
+if (!function_exists('osc_admin_count')) {
+    /**
+     * A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather
+     * than "Pending (3)". Returns the markup, led by a space so the label and number never run
+     * together; a zero is drawn muted.
+     *
+     * @param int    $count
+     * @param string $id    Optional id, for a script that updates the number
+     *
+     * @return string
+     * @since 7.0.0
+     */
+    function osc_admin_count(int $count, string $id = ''): string
+    {
+        $sep = function_exists('osc_locale_thousands_sep') ? (string)osc_locale_thousands_sep() : ',';
+
+        return ' <span class="osc-count' . ($count === 0 ? ' is-zero' : '') . '"'
+            . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '') . '>'
+            . osc_esc_html(number_format($count, 0, '.', $sep)) . '</span>';
+    }
+}
+
 if (!function_exists('osc_admin_definition')) {
     /**
      * Label/value rows -- the read-only counterpart to a form. A row may set 'html' => true

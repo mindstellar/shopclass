@@ -32,7 +32,7 @@ osc_add_hook('admin_footer', static function () { ?>
 <?php });
 ?>
     <details class="sysinfo-details">
-        <summary><?php printf(__('All loaded PHP extensions (%d)'), count($extLoaded)); ?></summary>
+        <summary><?php _e('All loaded PHP extensions'); ?><?php echo osc_admin_count(count($extLoaded)); ?></summary>
         <div class="sysinfo-chips">
             <?php foreach ($extLoaded as $ext) { ?><span class="sysinfo-chip"><?php echo osc_esc_html((string) $ext); ?></span><?php } ?>
         </div>

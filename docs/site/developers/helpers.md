@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1175 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -104,7 +104,7 @@ Core defines 1175 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (43)
+### hAdminUi (44)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -114,6 +114,7 @@ Core defines 1175 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_action_section(array $opts = array())` | A titled block of actions — the "do a thing" panel (connection test, queue, migration, cleanup, maintenance) that is not a label\|control form. Renders a heading, an optional intro, optional body content, and each action as a button with its own help line. |
 | `osc_admin_category_picker(array $opts = array())` | The category chooser: a control showing the chosen path, and a searchable list of the whole tree behind it. |
 | `osc_admin_checkbox(array $opts)` | A checkbox with its label on one line and its hint underneath. |
+| `osc_admin_count(int $count, string $id = '')` | A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather than "Pending (3)". Returns the markup, led by a space so the label and number never run together; a zero is drawn muted. |
 | `osc_admin_definition(array $rows)` | Label/value rows -- the read-only counterpart to a form. A row may set 'html' =&gt; true to pass markup through, which is why the default escapes. |
 | `osc_admin_disclosure_close()` | Close what osc_admin_disclosure_open() opened. |
 | `osc_admin_disclosure_open($title, array $opts = array())` | A collapsible group, for the settings a screen has to offer and nobody changes twice a year. A &lt;details&gt;, so it works with no JavaScript and is findable by the browser's own in-page search. |

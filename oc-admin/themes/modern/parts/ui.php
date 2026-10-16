@@ -248,7 +248,8 @@ if (!function_exists('osc_admin_action_button')) {
 if (!function_exists('osc_admin_link_group')) {
     /**
      * A segmented group of links where exactly one is current -- a range switch, a view
-     * switch. Each link: label, url, active (bool).
+     * switch. Each link: label, url, active (bool), and optionally count, drawn as a badge;
+     * a group with counts is drawn as a tab strip.
      *
      * The four statistics screens each rebuilt this loop verbatim, inside their own
      * hand-written two-column grid. The grid is `osc_admin_page_head()`'s job; this is the
@@ -260,6 +261,21 @@ if (!function_exists('osc_admin_link_group')) {
      */
     function osc_admin_link_group(array $links)
     {
+        // Links with counts are status filters: an underline strip that scrolls on a phone
+        // rather than a button group that cannot wrap.
+        if (array_filter($links, static fn ($link) => isset($link['count'])) !== array()) {
+            echo '<nav class="osc-tabnav-scroll"><ul class="osc-tabnav">';
+            foreach ($links as $link) {
+                $active = !empty($link['active']);
+                echo '<li><a href="' . osc_esc_html($link['url'] ?? '#') . '"' . ($active ? ' class="is-active" aria-current="page"' : '') . '>'
+                    . osc_esc_html($link['label'] ?? '')
+                    . (isset($link['count']) ? osc_admin_count((int)$link['count']) : '') . '</a></li>';
+            }
+            echo '</ul></nav>';
+
+            return;
+        }
+
         echo '<div class="btn-group btn-group-sm" role="group">';
         foreach ($links as $link) {
             $classes = 'btn btn-outline-primary' . (!empty($link['active']) ? ' active' : '');
