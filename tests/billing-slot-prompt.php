@@ -22,24 +22,86 @@ if (!defined('ABS_PATH')) {
 require_once __DIR__ . '/lib/harness.php';
 
 $S = array();
-function osc_is_web_user_logged_in() { global $S; return $S['in']; }
-function osc_billing_enabled() { global $S; return $S['on']; }
-function osc_logged_user_id() { return 7; }
-function osc_user_can_publish() { global $S; return $S['limit'] === -1 || $S['used'] < $S['limit']; }
-function osc_user_listing_limit($id = null) { global $S; return $S['limit']; }
-function osc_user_listings_used($id = null) { global $S; return $S['used']; }
-function osc_user_credits($id = null) { global $S; return $S['credits']; }
-function osc_billing_slot_quantity() { global $S; return $S['qty']; }
-function osc_billing_can_buy() { global $S; return $S['canBuy']; }
-function osc_account_upgrade_offers($id) { return array(array('feature' => 'listing.slot', 'label' => 'Extra listing slot', 'credits' => 5)); }
-function osc_account_upgrade_url($f) { return 'https://s.test/upgrade/' . $f; }
-function osc_billing_buy_url() { return 'https://s.test/buy'; }
-function osc_billing_wallet_url() { return 'https://s.test/credits'; }
-function osc_billing_orders_url() { return 'https://s.test/orders'; }
-function osc_csrf_token_form() { return ''; }
-function osc_esc_html($s) { return htmlspecialchars((string) $s, ENT_QUOTES); }
-function _m($s) { return $s; }
-function _mn($one, $many, $n) { return $n === 1 ? $one : $many; }
+function osc_is_web_user_logged_in()
+{
+    global $S;
+    return $S['in'];
+}
+function osc_billing_enabled()
+{
+    global $S;
+    return $S['on'];
+}
+function osc_logged_user_id()
+{
+    return 7;
+}
+function osc_user_can_publish()
+{
+    global $S;
+    return $S['limit'] === -1 || $S['used'] < $S['limit'];
+}
+function osc_user_listing_limit($id = null)
+{
+    global $S;
+    return $S['limit'];
+}
+function osc_user_listings_used($id = null)
+{
+    global $S;
+    return $S['used'];
+}
+function osc_user_credits($id = null)
+{
+    global $S;
+    return $S['credits'];
+}
+function osc_billing_slot_quantity()
+{
+    global $S;
+    return $S['qty'];
+}
+function osc_billing_can_buy()
+{
+    global $S;
+    return $S['canBuy'];
+}
+function osc_account_upgrade_offers($id)
+{
+    return array(array('feature' => 'listing.slot', 'label' => 'Extra listing slot', 'credits' => 5));
+}
+function osc_account_upgrade_url($f)
+{
+    return 'https://s.test/upgrade/' . $f;
+}
+function osc_billing_buy_url()
+{
+    return 'https://s.test/buy';
+}
+function osc_billing_wallet_url()
+{
+    return 'https://s.test/credits';
+}
+function osc_billing_orders_url()
+{
+    return 'https://s.test/orders';
+}
+function osc_csrf_token_form()
+{
+    return '';
+}
+function osc_esc_html($s)
+{
+    return htmlspecialchars((string) $s, ENT_QUOTES);
+}
+function _m($s)
+{
+    return $s;
+}
+function _mn($one, $many, $n)
+{
+    return $n === 1 ? $one : $many;
+}
 
 $render = static function (string $file, array $state, array $vars = array()): string {
     global $S;
