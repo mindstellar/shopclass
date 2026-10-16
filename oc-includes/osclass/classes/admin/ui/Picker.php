@@ -417,7 +417,7 @@ class Picker
             }
             self::segmented($labelId, $name . '[' . $catId . ']', $off, $current, 'osc-segmented');
             if ($children !== array()) {
-                echo '<ul class="osc-catmatrix" style="--osc-catmatrix-cols: ' . (count($modes) + 2) . '">'
+                echo '<ul class="osc-catmatrix" role="presentation">'
                     . '<li class="osc-catmatrix-head" aria-hidden="true"><span></span>';
                 foreach (self::subChoices($modes) as $value => $label) {
                     echo '<span' . ($value === '' ? ' data-osc-catmatrix-same' : '') . '>' . osc_esc_html((string)$label) . '</span>';
@@ -448,13 +448,14 @@ class Picker
             $catId    = (int)$node['pk_i_id'];
             $children = self::childrenOf($node);
             $labelId  = $id . '-cat-' . $catId;
-            $current  = $saved[$catId] ?? '';
+            $choices  = self::subChoices($modes);
+            // A saved mode no longer offered reads as following the parent, as it saves.
+            $current  = isset($choices[$saved[$catId] ?? '']) ? $saved[$catId] : '';
 
             echo '<li class="osc-catmatrix-row" role="radiogroup" data-depth="' . (int)$depth . '" aria-labelledby="' . osc_esc_html($labelId) . '">'
-                . '<span class="osc-catcard-subname" id="' . osc_esc_html($labelId) . '"'
-                . ($depth > 0 ? ' style="padding-inline-start: ' . ($depth * 1.25) . 'rem"' : '') . '>'
+                . '<span class="osc-catcard-subname" id="' . osc_esc_html($labelId) . '">'
                 . osc_esc_html((string)($node['s_name'] ?? '')) . '</span>';
-            foreach (self::subChoices($modes) as $value => $label) {
+            foreach ($choices as $value => $label) {
                 echo '<label class="osc-catmatrix-cell"><input type="radio" name="' . osc_esc_html($name . '[' . $catId . ']') . '"'
                     . ' value="' . osc_esc_html((string)$value) . '"' . ((string)$value === (string)$current ? ' checked' : '') . ' />'
                     . '<span class="osc-catmatrix-label">' . osc_esc_html((string)$label) . '</span></label>';

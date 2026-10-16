@@ -255,7 +255,7 @@ function oscTreeview(root, opts) {
             toggle.className = 'osc-tree-toggle';
             toggle.innerHTML = '<i class="bi bi-chevron-down" aria-hidden="true"></i>';
             toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-            var named = li.querySelector(':scope > label, :scope > .osc-catcard-name, :scope > .osc-catcard-row > label');
+            var named = li.querySelector(':scope > label, :scope > .osc-catcard-name');
             toggle.setAttribute('aria-label', oscFill(opts.toggleLabel || root.getAttribute('data-toggle-label') || 'Toggle',
                 [named ? named.textContent : '']));
             if (!childUl.id) { childUl.id = (root.id || 'osc-tree') + '-sub-' + i; }
