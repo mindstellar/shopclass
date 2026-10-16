@@ -157,16 +157,22 @@ final class MainSettingsScreen extends SettingsScreen
                     __('It is <b>recommended</b> to have this option enabled, because some features require it.')
                 )
             ->group(__('Maps'))
+            ->select('map_type', __('Map on listings'), array(
+                '0'          => __('None'),
+                'google'     => __('Google Maps'),
+                'openstreet' => __('OpenStreetMap'),
+            ), __('The map your theme shows on a listing page. It does not find addresses.'))
+                ->default('0')
             // Not a secret: a Maps JavaScript key is public by design -- it ships in the
             // page source -- so masking it would only hide it from the administrator who
             // has to check it.
-            ->text('googlemaps_api_key', __('Google Maps key'), __('Add your Google Maps JavaScript API key.'))
+            ->text('googlemaps_api_key', __('Google Maps key'), __('Needed only for Google Maps. Use a Maps JavaScript API key.'))
                 ->width('key')
             ->select(
                 \mindstellar\location\GeocodeProviderRegistry::PREF,
                 __('Address lookup'),
                 self::geocodeProviders(),
-                __('Finds the exact map position of a listing from its street address. Without one, listings use their city centre. Providers come from plugins.')
+                __('A plugin that finds the exact map position of a listing from its street address. It works with any map. Without one, a listing is placed at its city centre.')
             )
                 ->default('')
             ->group(__('Software updates'))

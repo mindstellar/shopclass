@@ -175,14 +175,7 @@ final class ItemSettingsScreen extends SettingsScreen
                 ->default(0);
         self::rowClose($form, 'optional');
 
-        $form
-            ->select('map_type', __('Maps'), array(
-                '0'          => __('None'),
-                'google'     => __('Google Maps'),
-                'openstreet' => __('OpenStreetMaps'),
-            ), __('Set the API key in Settings -> General.'))
-                ->default('0')
-            ->register();
+        $form->register();
     }
 
     /**

@@ -505,6 +505,7 @@ pin(
         'enabled_attachment'           => 'osclass/contact_attachment',
         'attachment_max_mb'            => 'osclass/attachment_max_mb',
         'auto_cron'                    => 'osclass/auto_cron',
+        'map_type'                     => 'osclass/map_type',
         'googlemaps_api_key'           => 'osclass/googlemaps_api_key',
         'geocode_provider'             => 'osclass/geocode_provider',
         'update_channel'               => 'osclass/update_channel',
@@ -551,7 +552,6 @@ pin(
         'enableField#f_price@items'   => 'osclass/enableField#f_price@items',
         'enableField#images@items'    => 'osclass/enableField#images@items',
         'numImages@items'             => 'osclass/numImages@items',
-        'map_type'                    => 'osclass/map_type',
     ),
     keymap(ItemSettingsScreen::register())
 );
@@ -976,7 +976,6 @@ $items = array(
     'num_moderate_items'        => '4',
     'max_chars_per_title'       => '80',
     'max_chars_per_description' => '4000',
-    'map_type'                  => '0',
 );
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = 'reg_user_can_send_friend'");
 osc_reset_preferences();
