@@ -13,7 +13,8 @@ if (!defined('ABS_PATH')) {
  */
 /**
  * The next step for a seller at their listing limit: buy an extra listing slot and go
- * straight to the post form, or buy credits first. Renders nothing otherwise.
+ * straight to the post form, or buy credits first. A seller who needs several slots buys
+ * them one at a time. Renders nothing otherwise.
  */
 
 if (!osc_is_web_user_logged_in() || !osc_billing_enabled() || osc_user_can_publish()) {
@@ -23,12 +24,11 @@ if (!osc_is_web_user_logged_in() || !osc_billing_enabled() || osc_user_can_publi
 $slotUserId = (int) osc_logged_user_id();
 $slotOffer  = array_column(osc_account_upgrade_offers($slotUserId), null, 'feature')['listing.slot'] ?? null;
 $slotLimit  = osc_user_listing_limit($slotUserId);
-// Show it only when one purchase lets the seller post again.
-if ($slotOffer === null || $slotLimit === -1
-    || osc_user_listings_used($slotUserId) >= $slotLimit + osc_billing_slot_quantity()
-) {
+if ($slotOffer === null || $slotLimit === -1) {
     return;
 }
+// Purchases needed before the seller can post one more listing.
+$slotsNeeded = (int) ceil((osc_user_listings_used($slotUserId) - $slotLimit + 1) / osc_billing_slot_quantity());
 
 $slotPrice   = (int) $slotOffer['credits'];
 $slotCredits = osc_user_credits($slotUserId);
@@ -45,14 +45,26 @@ if (!$slotCanPay && !osc_billing_can_buy()) {
         $slotPrice > 0 ? sprintf(_mn('%d credit', '%d credits', $slotPrice), $slotPrice) : _m('free'),
         sprintf(_mn('%d credit', '%d credits', $slotCredits), $slotCredits)
     )); ?></p>
+    <?php if ($slotsNeeded > 1) { ?>
+        <p class="oe-meta"><?php echo osc_esc_html(sprintf(
+            _m('You are over your listing limit. Buy this %d times, or close some listings, to post again.'),
+            $slotsNeeded
+        )); ?></p>
+    <?php } ?>
     <div class="oe-actions">
         <?php if ($slotCanPay) { ?>
             <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html(osc_account_upgrade_url('listing.slot')); ?>">
                 <?php echo osc_csrf_token_form(); ?>
-                <input type="hidden" name="next" value="post">
-                <button type="submit" class="oe-btn"><?php echo osc_esc_html($slotPrice > 0
-                    ? sprintf(_mn('Use %d credit and post', 'Use %d credits and post', $slotPrice), $slotPrice)
-                    : _m('Get it free and post')); ?></button>
+                <?php if ($slotsNeeded === 1) { ?>
+                    <input type="hidden" name="next" value="post">
+                    <button type="submit" class="oe-btn"><?php echo osc_esc_html($slotPrice > 0
+                        ? sprintf(_mn('Use %d credit and post', 'Use %d credits and post', $slotPrice), $slotPrice)
+                        : _m('Get it free and post')); ?></button>
+                <?php } else { ?>
+                    <button type="submit" class="oe-btn"><?php echo osc_esc_html($slotPrice > 0
+                        ? sprintf(_mn('Use %d credit', 'Use %d credits', $slotPrice), $slotPrice)
+                        : _m('Get it free')); ?></button>
+                <?php } ?>
             </form>
         <?php } else { ?>
             <a class="oe-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>"><?php

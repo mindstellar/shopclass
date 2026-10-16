@@ -440,7 +440,7 @@ expiring or being deleted, with no sweep and no bookkeeping on either side.
 never expires, disables or deletes anything already live — it only changes whether the
 *next* post is allowed. A seller who is already over a newly-lowered limit keeps every
 listing they have; they simply cannot post another one until they free a slot themselves,
-by deletion or expiry.
+by deletion or expiry, or buy enough slots. The slot box tells them how many purchases that takes.
 
 Premium fulfilment reuses `ItemActions::premium($id, $on)` unchanged. Everything
 downstream of that method — search ranking, the premium home/category blocks, expiry
