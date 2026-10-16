@@ -625,8 +625,8 @@ class Connection
      */
     private function run(callable $fn, string $sql)
     {
-        if ($this === self::$shared && ($lost = Db::lostError()) !== null) {
-            throw new DbException('The server rolled the transaction back', $lost);
+        if ($this === self::$shared) {
+            Db::assertIntact();
         }
         try {
             $result = $fn();

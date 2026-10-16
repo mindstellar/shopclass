@@ -882,6 +882,7 @@ class DBCommandClass
         if (OSC_DEBUG_DB) {
             $this->queries[] = $sql;
         }
+        \mindstellar\database\Db::assertIntact();
         $timeStart = microtime(true);
 
         $this->resultId = $this->execute($sql);

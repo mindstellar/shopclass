@@ -227,7 +227,6 @@ class Db
             return true;
         }
 
-        self::$lost = null;
         try {
             $result = self::conn()->begin_transaction();
         } catch (Throwable $e) {
@@ -263,7 +262,8 @@ class Db
         }
 
         try {
-            $result = self::$lost === null && self::conn()->commit();
+            // A lost transaction is rolled back, never committed; the server has dropped it already.
+            $result = self::$lost === null ? self::conn()->commit() : !self::conn()->rollback();
         } catch (Throwable $e) {
             $result = false;
         } finally {
@@ -366,10 +366,8 @@ class Db
      */
     public static function failIfLost(int $errno): void
     {
-        if (self::$depth > 0 && in_array($errno, self::LOST_TRANSACTION, true)) {
-            self::$lost = $errno;
-            throw new DbException('The server rolled the transaction back', $errno);
-        }
+        self::noteError($errno);
+        self::assertIntact();
     }
 
     /**
@@ -386,13 +384,16 @@ class Db
     }
 
     /**
-     * The error that rolled the open transaction back, or null while it is intact.
+     * Throw while the server has rolled the open transaction back and the caller has not.
      *
-     * @internal Connection calls it
+     * @internal Connection and DBCommandClass call it before each query
+     * @throws DbException
      */
-    public static function lostError(): ?int
+    public static function assertIntact(): void
     {
-        return self::$lost;
+        if (self::$lost !== null) {
+            throw new DbException('The server rolled the transaction back', self::$lost);
+        }
     }
 
     /**
@@ -517,9 +518,7 @@ class Db
         }
         try {
             $result = $fn();
-            if (self::$lost !== null) {
-                throw new DbException('The server rolled the transaction back', self::$lost);
-            }
+            self::assertIntact();
             self::commit();
 
             return $result;
