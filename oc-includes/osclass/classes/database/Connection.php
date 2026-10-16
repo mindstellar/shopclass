@@ -625,6 +625,9 @@ class Connection
      */
     private function run(callable $fn, string $sql)
     {
+        if ($this === self::$shared && ($lost = Db::lostError()) !== null) {
+            throw new DbException('The server rolled the transaction back', $lost);
+        }
         try {
             $result = $fn();
             if ($result === false) {
@@ -639,6 +642,9 @@ class Connection
             // Capped, so a failed statement carrying user rows does not copy them into the log.
             $logged = strlen($sql) > 300 ? substr($sql, 0, 300) . '… (' . strlen($sql) . ' bytes)' : $sql;
             error_log('Db query failed: ' . $logged . ' -- ' . $e->getMessage());
+            if ($this === self::$shared) {
+                Db::noteError((int) $e->getCode());
+            }
             if ($e instanceof DbException) {
                 throw $e;
             }

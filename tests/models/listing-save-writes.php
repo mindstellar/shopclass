@@ -274,4 +274,25 @@ pin('no listing row is left', $before, $items());
 pin('no later posted_item listener ran', 0, $later);
 pin('the next post works', $before + 1, ($service->create(ListingInput::fromArray($form(), $actor, true), $actor)->id() > 0) ? $items() : -1);
 
+harness_section('a snapshot conflict a caller swallows still undoes the post');
+$conflict = static function (): void {
+    try {
+        \mindstellar\database\Db::execute("SIGNAL SQLSTATE 'HY000' SET MYSQL_ERRNO = 1020, MESSAGE_TEXT = 'test snapshot conflict'");
+    } catch (\mindstellar\database\DbException $e) {
+        // swallowed, as the DAO write helpers do
+    }
+};
+osc_add_hook('pre_item_add', $conflict);
+$before  = $items();
+$refused = null;
+try {
+    @$service->create(ListingInput::fromArray($form(), $actor, true), $actor);
+} catch (InvalidException $e) {
+    $refused = $e;
+}
+osc_remove_hook('pre_item_add', $conflict);
+pin('the post is refused with "rejected"', 'rejected', $refused?->errors()[0]['code'] ?? null);
+pin('no listing row is written outside the transaction', $before, $items());
+pin('the next post works', $before + 1, ($service->create(ListingInput::fromArray($form(), $actor, true), $actor)->id() > 0) ? $items() : -1);
+
 exit(harness_result());

@@ -42,6 +42,9 @@ class Db
      */
     private static $depth = 0;
 
+    /** The error that rolled the open transaction back, until the caller rolls back too. */
+    private static ?int $lost = null;
+
     /**
      * Whether the end-of-request leaked-transaction guard has been registered.
      *
@@ -224,6 +227,7 @@ class Db
             return true;
         }
 
+        self::$lost = null;
         try {
             $result = self::conn()->begin_transaction();
         } catch (Throwable $e) {
@@ -259,10 +263,11 @@ class Db
         }
 
         try {
-            $result = self::conn()->commit();
+            $result = self::$lost === null && self::conn()->commit();
         } catch (Throwable $e) {
             $result = false;
         } finally {
+            self::$lost = null;
             if (self::$depth > 0) {
                 self::$depth--;
             }
@@ -298,6 +303,7 @@ class Db
         } catch (Throwable $e) {
             return false;
         } finally {
+            self::$lost = null;
             if (self::$depth > 0) {
                 self::$depth--;
             }
@@ -361,8 +367,32 @@ class Db
     public static function failIfLost(int $errno): void
     {
         if (self::$depth > 0 && in_array($errno, self::LOST_TRANSACTION, true)) {
+            self::$lost = $errno;
             throw new DbException('The server rolled the transaction back', $errno);
         }
+    }
+
+    /**
+     * Note a statement error; after a deadlock or snapshot conflict every later query fails
+     * until rollBack(), so a caller that swallowed the error cannot write outside the transaction.
+     *
+     * @internal Connection calls it
+     */
+    public static function noteError(int $errno): void
+    {
+        if (self::$depth > 0 && in_array($errno, self::LOST_TRANSACTION, true)) {
+            self::$lost = $errno;
+        }
+    }
+
+    /**
+     * The error that rolled the open transaction back, or null while it is intact.
+     *
+     * @internal Connection calls it
+     */
+    public static function lostError(): ?int
+    {
+        return self::$lost;
     }
 
     /**
@@ -487,6 +517,9 @@ class Db
         }
         try {
             $result = $fn();
+            if (self::$lost !== null) {
+                throw new DbException('The server rolled the transaction back', self::$lost);
+            }
             self::commit();
 
             return $result;

@@ -197,6 +197,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The Docker stacks run Valkey as a cache only, with no snapshot to disk, so a restart no longer brings back stale cached data.
 - The Docker image turns off the PHP JIT, which on PHP 8.5 built wrong search and sitemap links in long-running workers.
 - A post that hit a database deadlock is refused with "please try again", instead of showing success for a listing that was not saved.
+- A post that hit a snapshot conflict in a write that hides its error is now refused too, instead of writing the rest outside the save.
 - A double click on the listing form's submit button sends one post, not two.
 - Search drops braces from a keyword, on the web and in the API; `/search/pattern,{query}` redirects to `/search/pattern,query`.
 - A search link carrying an extra list value, such as `?a[]=1`, now redirects to the friendly URL instead of being treated as its own page.
