@@ -95,22 +95,35 @@
     margin: 0;
   }
 
+  // Each tab wears the .osc-tab button (label type, small radius on top, a hover shade);
+  // the current one is the raised bench face with the teal underline as its indicator.
   a {
     border-block-end: 2px solid transparent;
+    border-start-end-radius: $border-radius-sm;
+    border-start-start-radius: $border-radius-sm;
     color: var(--osc-ink-muted);
     display: block;
+    font-size: $font-size-label;
     font-weight: 500;
     margin-block-end: -1px;
-    padding: .5rem .9rem;
+    padding: .4rem .85rem;
     text-decoration: none;
 
     &:hover {
+      background-color: var(--osc-chrome-hover);
       color: var(--osc-ink);
     }
 
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: 2px;
+    }
+
     &.is-active {
+      background-color: var(--osc-bench);
       border-block-end-color: var(--osc-bronze);
-      color: var(--osc-bronze);
+      color: var(--osc-ink);
+      font-weight: 600;
     }
   }
 }

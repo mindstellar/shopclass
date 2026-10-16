@@ -34,12 +34,6 @@
   color: var(--osc-count-on-fill-ink);
 }
 
-// The current tab's count takes the tab's colour.
-.osc-tabnav a.is-active .osc-count {
-  border-color: currentColor;
-  color: inherit;
-}
-
 // A segment spaces its children with a gap, and a selected one is tinted, not filled.
 .loc-segmented label .osc-count,
 .osc-segmented label .osc-count {
