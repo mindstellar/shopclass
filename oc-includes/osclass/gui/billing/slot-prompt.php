@@ -1,0 +1,64 @@
+<?php
+if (!defined('ABS_PATH')) {
+    exit('Direct access is not allowed.');
+}
+
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/**
+ * The next step for a seller at their listing limit: buy an extra listing slot and go
+ * straight to the post form, or buy credits first. Renders nothing otherwise.
+ */
+
+if (!osc_is_web_user_logged_in() || !osc_billing_enabled() || osc_user_can_publish()) {
+    return;
+}
+
+$slotUserId = (int) osc_logged_user_id();
+$slotOffer  = null;
+foreach (osc_account_upgrade_offers($slotUserId) as $offer) {
+    if (($offer['feature'] ?? '') === 'listing.slot') {
+        $slotOffer = $offer;
+        break;
+    }
+}
+if ($slotOffer === null) {
+    return;
+}
+
+$slotPrice   = (int) $slotOffer['credits'];
+$slotCredits = osc_user_credits($slotUserId);
+$slotCanPay  = $slotCredits >= $slotPrice;
+if (!$slotCanPay && !osc_billing_can_buy()) {
+    return;
+}
+?>
+<div class="oe-panel oe-bill-card oe-slot-prompt">
+    <h2><?php echo osc_esc_html(_m('Post another listing')); ?></h2>
+    <p class="oe-meta"><?php echo osc_esc_html(sprintf(
+        _m('%1$s: %2$s. You have %3$s.'),
+        (string) $slotOffer['label'],
+        $slotPrice > 0 ? sprintf(_mn('%d credit', '%d credits', $slotPrice), $slotPrice) : _m('free'),
+        sprintf(_mn('%d credit', '%d credits', $slotCredits), $slotCredits)
+    )); ?></p>
+    <div class="oe-actions">
+        <?php if ($slotCanPay) { ?>
+            <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html(osc_account_upgrade_url('listing.slot')); ?>">
+                <?php echo osc_csrf_token_form(); ?>
+                <input type="hidden" name="next" value="post">
+                <button type="submit" class="oe-btn"><?php echo osc_esc_html($slotPrice > 0
+                    ? sprintf(_mn('Use %d credit and post', 'Use %d credits and post', $slotPrice), $slotPrice)
+                    : _m('Get it free and post')); ?></button>
+            </form>
+        <?php } else { ?>
+            <a class="oe-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>"><?php
+                echo osc_esc_html(_m('Buy credits')); ?></a>
+        <?php } ?>
+    </div>
+</div>

@@ -48,7 +48,8 @@ $listingLimit = osc_user_listing_limit();
                     : sprintf(_m('You are using %1$d of your %2$d listings.'), $listingsUsed, $listingLimit)); ?></p>
             <?php if (!osc_user_can_publish()) { ?>
                 <p class="oe-muted"><?php echo osc_esc_html(osc_listing_limit_message()); ?></p>
-            <?php }
+                <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php';
+            }
             $bumpPaused = osc_billing_bump_paused_message();
             if ($bumpPaused !== '') { ?>
                 <p class="oe-muted"><?php echo osc_esc_html($bumpPaused); ?></p>
