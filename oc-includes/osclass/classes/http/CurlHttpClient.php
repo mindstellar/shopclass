@@ -147,20 +147,32 @@ final class CurlHttpClient implements HttpClient
         if ($method === 'HEAD') {
             $curl[CURLOPT_NOBODY] = true;
         }
-        // 'resolve' pins the URL's host to an address the caller has already checked, so a
-        // second DNS answer cannot send the connection somewhere else.
+        // 'resolve' pins the URL's host and port to addresses the caller has already checked, so a
+        // second DNS answer cannot send the connection elsewhere. Any entry curl would skip is refused.
         if (isset($options['resolve'])) {
-            $host = strtolower((string) parse_url($url, PHP_URL_HOST));
-            foreach ((array) $options['resolve'] as $entry) {
-                if (!is_string($entry)
-                    || preg_match('/^([A-Za-z0-9.-]+):(\d{1,5}):(\[[0-9A-Fa-f:.]+\]|[0-9.]+)$/', $entry, $m) !== 1
-                    || strtolower($m[1]) !== $host
-                    || filter_var(trim($m[3], '[]'), FILTER_VALIDATE_IP) === false
+            $host    = strtolower((string) parse_url($url, PHP_URL_HOST));
+            $port    = (int) (parse_url($url, PHP_URL_PORT) ?? 443);
+            $entries = (array) $options['resolve'];
+            if ($entries === [] || count($entries) > 1) {
+                throw new \InvalidArgumentException('resolve must be one host:port:address[,address] entry for the URL');
+            }
+            $entry = $entries[array_key_first($entries)];
+            if (!is_string($entry)
+                || preg_match('/^([A-Za-z0-9][A-Za-z0-9.-]*):(\d{1,5}):([0-9A-Fa-f:.\[\],]+)$/', $entry, $m) !== 1
+                || strtolower($m[1]) !== $host
+                || (int) $m[2] !== $port
+            ) {
+                throw new \InvalidArgumentException('resolve must be one host:port:address[,address] entry for the URL');
+            }
+            foreach (explode(',', $m[3]) as $address) {
+                $bare = preg_match('/^\[(.+)\]$/', $address, $v6) === 1 ? $v6[1] : $address;
+                if (filter_var($bare, FILTER_VALIDATE_IP) === false
+                    || ($bare !== $address) !== (filter_var($bare, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false)
                 ) {
-                    throw new \InvalidArgumentException('resolve must list host:port:address entries for the URL\'s host');
+                    throw new \InvalidArgumentException('resolve must be one host:port:address[,address] entry for the URL');
                 }
             }
-            $curl[CURLOPT_RESOLVE] = array_values((array) $options['resolve']);
+            $curl[CURLOPT_RESOLVE] = [$entry];
         }
         if ($body !== null) {
             $curl[CURLOPT_POSTFIELDS] = $body;

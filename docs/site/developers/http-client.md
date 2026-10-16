@@ -41,8 +41,9 @@ Any HTTP status is an answer, not an exception: check `status` yourself.
 
 It does **not** check where a URL points. If the URL comes from a user, check it against
 your own allow-list first. After you resolve the host and check its addresses, pass
-`'resolve' => ['host:443:203.0.113.5']` (an IPv6 address in brackets) so the connection uses the
-address you checked and not a second DNS answer.
+`'resolve' => ['host:443:203.0.113.5,[2001:db8::5]']`: one entry for the URL's host and port, its
+addresses separated by commas, an IPv6 address in brackets. The connection then uses only those
+addresses, not a second DNS answer.
 
 ## What throws
 
