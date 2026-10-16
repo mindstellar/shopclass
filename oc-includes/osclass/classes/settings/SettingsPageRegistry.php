@@ -52,6 +52,7 @@ final class SettingsPageRegistry extends Registry
         'hidden',
         'image',
         'richtext',
+        'category_modes',
         'custom',
     );
 
@@ -83,6 +84,9 @@ final class SettingsPageRegistry extends Registry
      * declaration could write whatever it liked into the page's section.
      */
     private const PREFERENCE_KEY = '/^[A-Za-z0-9_]+(@[A-Za-z0-9_]+)?$/';
+
+    /** A category_modes field's mode value; "off" is reserved for a subcategory switched off. */
+    public const CATEGORY_MODE = '/^[A-Za-z0-9_-]+$/';
 
     /** Core menu sections a page may ask to appear under. */
     public const MENUS = array(
@@ -584,6 +588,22 @@ final class SettingsPageRegistry extends Registry
                     throw new InvalidArgumentException(
                         'SettingsPageRegistry: page "' . $id . '" field "' . $field['name'] . '" needs options'
                     );
+                }
+                if ($type === 'category_modes') {
+                    $modes = $field['modes'] ?? null;
+                    if (!is_array($modes) || $modes === array()) {
+                        throw new InvalidArgumentException(
+                            'SettingsPageRegistry: page "' . $id . '" field "' . $field['name'] . '" needs modes'
+                        );
+                    }
+                    foreach (array_keys($modes) as $mode) {
+                        if (!preg_match(self::CATEGORY_MODE, (string)$mode) || $mode === 'off') {
+                            throw new InvalidArgumentException(
+                                'SettingsPageRegistry: page "' . $id . '" field "' . $field['name']
+                                . '" has mode "' . $mode . '": use letters, digits, - or _, and not "off"'
+                            );
+                        }
+                    }
                 }
                 if ($type === 'custom' && (!isset($field['render']) || !is_callable($field['render']))) {
                     throw new InvalidArgumentException(

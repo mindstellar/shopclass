@@ -129,59 +129,6 @@
   display: none;
 }
 
-// Two radios drawn as one segmented switch; the checked one carries tint, weight and a dot.
-.loc-scope,
-.loc-segmented {
-  border: 1px solid var(--osc-rule-strong);
-  border-radius: $border-radius-sm;
-  display: inline-flex;
-  margin: 0;
-  min-inline-size: 0;
-  padding: 2px;
-
-  input {
-    opacity: 0;
-    pointer-events: none;
-    position: absolute;
-  }
-
-  label {
-    align-items: center;
-    border-radius: $border-radius-sm;
-    color: var(--osc-ink-muted);
-    cursor: pointer;
-    display: inline-flex;
-    font-size: .875rem;
-    gap: .35rem;
-    padding: .3rem .7rem;
-    white-space: nowrap;
-
-    &:hover {
-      background-color: var(--osc-chrome-hover);
-      color: var(--osc-ink);
-    }
-  }
-
-  input:checked + label {
-    background-color: var(--osc-bronze-tint);
-    color: var(--osc-bronze);
-    font-weight: 600;
-
-    &::before {
-      background-color: currentColor;
-      border-radius: 50%;
-      block-size: .4rem;
-      content: "";
-      inline-size: .4rem;
-    }
-  }
-
-  input:focus-visible + label {
-    outline: 2px solid var(--osc-bronze);
-    outline-offset: 1px;
-  }
-}
-
 .loc-az ol {
   display: flex;
   flex-wrap: wrap;

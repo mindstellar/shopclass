@@ -5,7 +5,7 @@
  * jQuery-UI .tabs()) and wires the flash-message close buttons.
  */
 /* global osc */
-/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat */
+/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat, oscCatcardsSummary, oscFill */
 
 // Initialise every .osc-tab within `root` (default: document). Works on the
 // existing markup: a .osc-tab container holding `> ul > li > a[href="#panel"]`
@@ -248,13 +248,18 @@ function oscTreeview(root, opts) {
                 return;
             }
             li.classList.add('osc-tree-parent');
-            if (startCollapsed) { li.classList.add('is-collapsed'); }
+            var collapsed = startCollapsed && !li.hasAttribute('data-osc-tree-open');
+            if (collapsed) { li.classList.add('is-collapsed'); }
             var toggle = document.createElement('button');
             toggle.type = 'button';
             toggle.className = 'osc-tree-toggle';
             toggle.innerHTML = '<i class="bi bi-chevron-down" aria-hidden="true"></i>';
-            toggle.setAttribute('aria-expanded', startCollapsed ? 'false' : 'true');
-            toggle.setAttribute('aria-label', opts.toggleLabel || 'Toggle');
+            toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            var named = li.querySelector(':scope > label, :scope > .osc-catcard-name, :scope > .osc-catcard-row > label');
+            toggle.setAttribute('aria-label', oscFill(opts.toggleLabel || root.getAttribute('data-toggle-label') || 'Toggle',
+                [named ? named.textContent : '']));
+            if (!childUl.id) { childUl.id = (root.id || 'osc-tree') + '-sub-' + i; }
+            toggle.setAttribute('aria-controls', childUl.id);
             toggle.addEventListener('click', function (e) {
                 e.preventDefault();
                 var collapsed = li.classList.toggle('is-collapsed');
@@ -284,6 +289,85 @@ function oscTreeview(root, opts) {
 
     root.addEventListener('change', oscTreeSyncParents);
     oscTreeSyncParents();
+    if (root.hasAttribute('data-osc-catcards')) {
+        root.addEventListener('change', function () { oscCatcardsSummary(root); });
+        oscCatcardsSummary(root);
+    }
+}
+
+// Fill %s / %1$s placeholders in a translated template.
+function oscFill(tpl, values) {
+    var i = 0;
+    return String(tpl || '').replace(/%(\d\$)?s/g, function (m, pos) {
+        var v = values[pos ? parseInt(pos, 10) - 1 : i++];
+        return v === undefined ? '' : String(v);
+    });
+}
+
+// The live line above a category card list, and each card's count of chosen subcategories.
+function oscCatcardsSummary(root) {
+    var summary = document.querySelector('[data-osc-catcards-summary="' + root.id + '"]');
+    var cards = root.querySelectorAll(':scope > .osc-catcard');
+    var label = function (key) { return root.getAttribute('data-label-' + key); };
+    var setMeta = function (card, extra) {
+        var meta = card.querySelector(':scope > [data-osc-catcard-meta]');
+        if (!meta) { return; }
+        if (!meta.hasAttribute('data-base')) { meta.setAttribute('data-base', meta.textContent); }
+        meta.textContent = meta.getAttribute('data-base') + (extra ? ' · ' + extra : '');
+    };
+
+    if (root.getAttribute('data-osc-catcards') === 'modes') {
+        var on = [];
+        cards.forEach(function (card) {
+            var picked = card.querySelector(':scope > .osc-segmented input:checked');
+            var pickedLabel = picked ? card.querySelector('label[for="' + picked.id + '"]') : null;
+            var topMode = picked && picked.value !== '' ? pickedLabel.textContent : '';
+            var offWord = card.querySelector(':scope > .osc-segmented input[value=""] + label');
+            var cardName = card.querySelector('.osc-catcard-name').textContent;
+            if (topMode) { on.push(oscFill(label('item'), [cardName, topMode])); }
+
+            // Walk the subcategories in tree order, each "Same as parent" naming what it inherits.
+            var apart = 0;
+            var walk = function (ul, inherited, path) {
+                if (!ul) { return; }
+                ul.querySelectorAll(':scope > li').forEach(function (li) {
+                    var select = li.querySelector(':scope > .osc-catcard-row > select');
+                    if (!select) { return; }
+                    var same = select.querySelector('option[value=""]');
+                    if (same) { same.textContent = oscFill(label('inherit'), [inherited]); }
+                    var own = select.value !== '';
+                    var mode = own ? select.options[select.selectedIndex].textContent : inherited;
+                    var name = li.querySelector(':scope > .osc-catcard-row > label').textContent;
+                    if (own) {
+                        apart++;
+                        if (select.value !== 'off') { on.push(oscFill(label('item'), [oscFill(label('path'), [path, name]), mode])); }
+                    }
+                    walk(li.querySelector(':scope > ul'), mode, path + ' › ' + name);
+                });
+            };
+            walk(card.querySelector(':scope > ul'), topMode || (offWord ? offWord.textContent : ''), cardName);
+            setMeta(card, apart ? oscFill(label('apart'), [apart]) : label('same'));
+        });
+        if (summary) { summary.textContent = on.length ? oscFill(label('on'), [on.join(', ')]) : label('off'); }
+        return;
+    }
+
+    var boxes = root.querySelectorAll('input[type=checkbox]');
+    var checked = root.querySelectorAll('input[type=checkbox]:checked').length;
+    if (summary) { summary.textContent = oscFill(label('count'), [checked, boxes.length]); }
+    cards.forEach(function (card) {
+        var inside = card.querySelectorAll(':scope > ul input[type=checkbox]:checked').length;
+        setMeta(card, inside ? oscFill(label('selected'), [inside]) : '');
+    });
+}
+
+function oscCatcardsInit() {
+    document.querySelectorAll('[data-osc-catcards]').forEach(function (root) { oscTreeview(root); });
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', oscCatcardsInit);
+} else {
+    oscCatcardsInit();
 }
 
 // Global so third-party plugins calling checkAll(id, check) by name keep working.

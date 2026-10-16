@@ -72,6 +72,14 @@ $reset->setValue(null, null);
 Category::getInstance('en_US');
 pin('and switching back needs no cache drop', 'motors/cars', CoreRoutes::categoryPath($child));
 
+harness_section('osc_category_mode()');
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
+$grandchild = seed_category($admin, 'Electric', $child, $locale);
+pin('a category takes its parent\'s mode', 'nights', osc_category_mode('{"' . $parent . '":"nights"}', $grandchild));
+pin('the nearest mode decides', 'slots', osc_category_mode(array($parent => 'nights', $child => 'slots'), $grandchild));
+pin('a subcategory switched off is off', '', osc_category_mode(array($parent => 'nights', $child => 'off'), $grandchild));
+pin('nothing set is off', '', osc_category_mode('{}', $child));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

@@ -319,6 +319,21 @@ check('translate on a textarea is accepted', register_error('x15', array('title'
     array('name' => 'a', 'type' => 'textarea', 'translate' => true),
 ))) === null);
 
+// A category_modes field names its modes; "off" is the reserved word for a subcategory
+// switched off, so a mode spelled that way could never be told apart from it.
+check('category_modes with no modes is refused', register_error('x40', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes'),
+))) !== null);
+check('a mode named "off" is refused', register_error('x41', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes', 'modes' => array('off' => 'Off')),
+))) !== null);
+check('a mode with a space is refused', register_error('x42', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes', 'modes' => array('two words' => 'X')),
+))) !== null);
+pin('a category_modes field with modes registers', null, register_error('x43', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes', 'modes' => array('nights' => 'Nights', 'slots' => 'Time slots')),
+))));
+
 // Same rule for the flag that turns purification off: only free-typed values are purified,
 // so setting it anywhere else reads as a decision that was taken and is not.
 check(
@@ -798,6 +813,13 @@ pin('an absent checkbox is false', false, osc_settings_sanitize($fields['verbose
 // the only thing that can be relied on.
 $GLOBALS['params'] = array('verbose' => 'on');
 pin("a checkbox is read by presence, not by its value", true, osc_settings_sanitize($fields['verbose']));
+$modesField = array('name' => 'cats', 'type' => 'category_modes', 'modes' => array('nights' => 'Nights', 'slots' => 'Time slots'));
+$GLOBALS['params'] = array('cats' => array('9' => 'slots', '4' => 'nights', '7' => '', '12' => 'weekly', 'x' => 'nights', '20' => 'off', '21' => array('nights')));
+pin('category modes keep known modes and "off", sorted by id, as JSON', '{"4":"nights","9":"slots","20":"off"}', osc_settings_sanitize($modesField));
+$GLOBALS['params'] = array('cats' => 'nights');
+pin('a category_modes value that is not a list stores an empty object', '{}', osc_settings_sanitize($modesField));
+pin('a stored category_modes value reads back as id => mode', array(4 => 'nights', 20 => 'off'), osc_category_modes_parse('{"4":"nights","20":"off","x":"slots","5":"bad mode"}'));
+pin('a broken stored value reads as no modes', array(), osc_category_modes_parse('{not json'));
 // An array where a scalar was declared is the shape an attacker reaches for first.
 $GLOBALS['params'] = array('api_key' => array('a', 'b'));
 pin('an array submitted for a scalar field is dropped', '', osc_settings_sanitize($fields['api_key']));

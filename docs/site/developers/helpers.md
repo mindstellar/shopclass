@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1173 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1175 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -150,7 +150,7 @@ Core defines 1173 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_status($state, $word)` | A status pill: a tint, a shape, and the word. An unmapped state still renders, in the neutral tint, so a plugin's own word degrades instead of vanishing. |
 | `osc_admin_text(array $opts)` | Single-line text. Keys: the shared set, plus 'placeholder', 'width', 'prefix', 'suffix'. |
 | `osc_admin_textarea(array $opts)` | Multi-line text. Keys: the shared set, plus 'rows', 'monospace'. |
-| `osc_admin_tree_picker(array $opts)` | A category checkbox tree with "Check all / Uncheck all" toggles, shared by every screen that assigns fields, groups or plugin config to categories. |
+| `osc_admin_tree_picker(array $opts)` | A category checkbox tree with "Check all / Uncheck all" toggles, shared by every screen that assigns fields, groups or plugin config to categories. Each main category is a card; its subcategories fold below it. |
 | `osc_admin_user_picker(array $opts = array())` | Who a record belongs to: the card when a registered user matches, and a search that fills the named fields when one is picked. |
 | `osc_admin_when($datetime)` | A date as "5 minutes ago" or "in 5 minutes", with the full date as a tooltip. |
 
@@ -1172,13 +1172,15 @@ Core defines 1173 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_set_alert_private_key()` | Mint the install's persistent alert private key if it has none yet. |
 | `osc_verify_password($password, $hash)` | Verify an user's password |
 
-### hSettings (20)
+### hSettings (22)
 
 `oc-includes/osclass/helpers/hSettings.php`
 
 | Helper | What it does |
 |---|---|
 | `osc_admin_form($id)` | A fluent builder over the same spec osc_register_settings_page() takes. |
+| `osc_category_mode($value, int $categoryId)` | The mode a category_modes value gives $categoryId: its own, or the nearest parent's. '' when it is off or nothing above it is set. |
+| `osc_category_modes_parse($value)` | A category_modes value as category id =&gt; mode: the stored JSON or an array of the same shape. Anything that is not a positive id with a mode-shaped value is dropped. |
 | `osc_register_settings_page($id, $spec)` | Declare a settings page. Thin wrapper over SettingsPageRegistry::register(). |
 | `osc_settings_cast($type, $value)` | Turn a stored preference string back into the shape its field type implies. |
 | `osc_settings_depends_met(array $fields, $name, array $values, array $seen = array())` | Whether a field's 'depends' chain is satisfied by the submitted values. |

@@ -136,7 +136,7 @@ harness_section('every field type has a builder method');
 foreach (SettingsPageRegistry::FIELD_TYPES as $type) {
     check('the builder can declare a ' . $type, method_exists(FormSpec::class, $type));
 }
-pin('and no type is missing from the registry list', 15, count(SettingsPageRegistry::FIELD_TYPES));
+pin('and no type is missing from the registry list', 16, count(SettingsPageRegistry::FIELD_TYPES));
 
 harness_section('one field of each type is the array a hand writes');
 
@@ -671,6 +671,7 @@ $handSpec = array(
                 array('type' => 'checkbox', 'name' => 'verbose', 'label' => 'Log everything', 'row_label' => 'Logging'),
                 array('type' => 'textarea', 'name' => 'notes', 'label' => 'Notes', 'help' => 'Freeform.'),
                 array('type' => 'richtext', 'name' => 'body', 'label' => 'Body'),
+                array('type' => 'category_modes', 'name' => 'cats', 'label' => 'Cats', 'modes' => array('on' => 'On')),
                 array('type' => 'custom', 'name' => 'widget', 'label' => 'Widget', 'render' => $renderer),
                 array('type' => 'email', 'name' => 'notify', 'label' => 'Notify', 'sanitize' => $sanitizer, 'validate' => $validator),
                 array('type' => 'text', 'name' => 'tag', 'label' => 'Tag', 'prefix' => 'Tagged', 'attrs' => array('maxlength' => '20')),
@@ -702,6 +703,7 @@ $built = osc_admin_form('myplugin-built')
     ->checkbox('verbose', 'Log everything')->rowLabel('Logging')
     ->textarea('notes', 'Notes', 'Freeform.')
     ->richtext('body', 'Body')
+    ->category_modes('cats', 'Cats', array('on' => 'On'))
     ->custom('widget', $renderer, 'Widget')
     ->email('notify', 'Notify')->sanitize($sanitizer)->validate($validator)
     ->text('tag', 'Tag')->prefix('Tagged')->attrs(array('maxlength' => '20'))
@@ -721,7 +723,7 @@ check('the hand-written page registered', SettingsPageRegistry::getInstance()->g
 check('the built page registered', SettingsPageRegistry::getInstance()->get('myplugin-built') !== null);
 pin('both declare the same field names', array_keys($handFields), array_keys($builtFields));
 pin('and the same normalised field specs', $handFields, $builtFields);
-pin('nothing is lost on the way through the groups', 15, count($builtFields));
+pin('nothing is lost on the way through the groups', 16, count($builtFields));
 $builtTypes = array_values(array_unique(array_column($builtFields, 'type')));
 sort($builtTypes);
 $allTypes = SettingsPageRegistry::FIELD_TYPES;

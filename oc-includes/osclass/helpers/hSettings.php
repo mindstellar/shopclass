@@ -436,6 +436,21 @@ if (!function_exists('osc_settings_sanitize')) {
             return Params::getParam($name) !== '';
         }
 
+        if ($field['type'] === 'category_modes') {
+            $modes  = (array)($field['modes'] ?? array());
+            $posted = Params::getParam($name, false, false);
+            $value  = array();
+            foreach (is_array($posted) ? $posted : array() as $catId => $mode) {
+                if ((int)$catId > 0 && is_string($mode) && ($mode === 'off' || isset($modes[$mode]))) {
+                    $value[(int)$catId] = $mode;
+                }
+            }
+            ksort($value);
+            $value = (string)json_encode((object)$value);
+
+            return isset($field['sanitize']) ? call_user_func($field['sanitize'], $value) : $value;
+        }
+
         // Raw on purpose: a secret may legitimately contain characters osc_sanitize_string
         // would strip, and every value here is escaped again on output.
         $value = Params::getParam($name, false, false);
@@ -928,5 +943,64 @@ if (!function_exists('osc_settings_menu_init')) {
 }
 
 osc_add_hook('admin_menu_init', 'osc_settings_menu_init');
+
+
+if (!function_exists('osc_category_modes_parse')) {
+    /**
+     * A category_modes value as category id => mode: the stored JSON or an array of the same
+     * shape. Anything that is not a positive id with a mode-shaped value is dropped.
+     *
+     * @param mixed $value
+     *
+     * @return array<int,string>
+     * @since 7.0.0
+     */
+    function osc_category_modes_parse($value): array
+    {
+        if (is_string($value)) {
+            $value = json_decode($value, true);
+        }
+        $modes = array();
+        foreach (is_array($value) ? $value : array() as $catId => $mode) {
+            if ((int)$catId > 0 && is_string($mode) && preg_match(SettingsPageRegistry::CATEGORY_MODE, $mode)) {
+                $modes[(int)$catId] = $mode;
+            }
+        }
+
+        return $modes;
+    }
+}
+
+if (!function_exists('osc_category_mode')) {
+    /**
+     * The mode a category_modes value gives $categoryId: its own, or the nearest parent's.
+     * '' when it is off or nothing above it is set.
+     *
+     * @param mixed $value the stored JSON or an id => mode array
+     * @param int   $categoryId
+     *
+     * @return string
+     * @since 7.0.0
+     */
+    function osc_category_mode($value, int $categoryId): string
+    {
+        $modes = osc_category_modes_parse($value);
+        if ($modes === array() || $categoryId <= 0) {
+            return '';
+        }
+        // hierarchy() runs from the category up to the root, so the nearest mode is met first.
+        $chain = array($categoryId);
+        foreach ((array)Category::getInstance()->hierarchy($categoryId) as $row) {
+            $chain[] = (int)($row['pk_i_id'] ?? 0);
+        }
+        foreach ($chain as $id) {
+            if (isset($modes[$id])) {
+                return $modes[$id] === 'off' ? '' : $modes[$id];
+            }
+        }
+
+        return '';
+    }
+}
 
 /* file end: ./oc-includes/osclass/helpers/hSettings.php */

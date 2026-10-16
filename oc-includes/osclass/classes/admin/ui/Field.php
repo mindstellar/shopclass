@@ -279,6 +279,15 @@ class Field
                 }
                 break;
 
+            case 'category_modes':
+                Picker::categoryModes(array(
+                    'id'    => $id,
+                    'name'  => $name,
+                    'modes' => $spec['modes'] ?? array(),
+                    'value' => $value,
+                ) + (isset($spec['categories']) ? array('categories' => $spec['categories']) : array()));
+                break;
+
             case 'select':
                 echo '<select' . $common . ' class="' . self::cssClass($type, $spec) . '"' . $attrs . '>';
                 if (isset($spec['placeholder'])) {

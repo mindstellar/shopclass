@@ -1006,11 +1006,12 @@ if (!function_exists('osc_admin_checkbox')) {
 if (!function_exists('osc_admin_tree_picker')) {
     /**
      * A category checkbox tree with "Check all / Uncheck all" toggles, shared by every
-     * screen that assigns fields, groups or plugin config to categories.
+     * screen that assigns fields, groups or plugin config to categories. Each main category
+     * is a card; its subcategories fold below it.
      *
-     * Keys: 'id' (required, the <ul> id and the toggles' target), 'intro', 'categories',
-     * 'selected' (passed straight to CategoryForm::categories_tree()), 'wrapper_id'
-     * (id on the outer .form-row).
+     * Keys: 'id' (required, the <ul> id and the toggles' target), 'intro', 'categories'
+     * (a Category::toTree() tree), 'selected' (checked ids), 'wrapper_id' (id on the outer
+     * .form-row), 'name' (posted name, default categories[]).
      *
      * @param array $opts
      *
@@ -1018,25 +1019,7 @@ if (!function_exists('osc_admin_tree_picker')) {
      */
     function osc_admin_tree_picker(array $opts)
     {
-        $id = osc_esc_html($opts['id'] ?? '');
-
-        echo '<div class="form-row"'
-            . (!empty($opts['wrapper_id']) ? ' id="' . osc_esc_html($opts['wrapper_id']) . '"' : '')
-            . '>';
-        echo '<div>' . osc_esc_html($opts['intro'] ?? '') . '</div>';
-        echo '<div class="separate-top">';
-        echo '<div class="form-label">';
-        echo '<a href="#" data-tree-toggle="' . $id . '" data-tree-check="1">' . osc_esc_html(__('Check all')) . '</a>';
-        echo ' &middot; ';
-        echo '<a href="#" data-tree-toggle="' . $id . '" data-tree-check="0">' . osc_esc_html(__('Uncheck all')) . '</a>';
-        echo '</div>';
-        echo '<div class="form-controls">';
-        echo '<ul id="' . $id . '">';
-        CategoryForm::categories_tree($opts['categories'] ?? array(), $opts['selected'] ?? array());
-        echo '</ul>';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
+        \mindstellar\admin\ui\Picker::categoryChecks($opts);
     }
 }
 
