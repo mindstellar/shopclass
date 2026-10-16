@@ -46,9 +46,15 @@ $listingLimit = osc_user_listing_limit();
                 echo osc_esc_html($listingsUsed > $listingLimit
                     ? sprintf(_m('You have %1$d live listings, which is over your limit of %2$d.'), $listingsUsed, $listingLimit)
                     : sprintf(_m('You are using %1$d of your %2$d listings.'), $listingsUsed, $listingLimit)); ?></p>
-            <?php if (!osc_user_can_publish()) { ?>
-                <p class="oe-muted"><?php echo osc_esc_html(osc_listing_limit_message()); ?></p>
-                <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php';
+            <?php if (!osc_user_can_publish()) {
+                // The slot box says what to do, so the plain message shows only without it.
+                ob_start();
+                require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php';
+                $slotBox = (string) ob_get_clean();
+                if ($slotBox === '') { ?>
+                    <p class="oe-muted"><?php echo osc_esc_html(osc_listing_limit_message()); ?></p>
+                <?php }
+                echo $slotBox;
             }
             $bumpPaused = osc_billing_bump_paused_message();
             if ($bumpPaused !== '') { ?>

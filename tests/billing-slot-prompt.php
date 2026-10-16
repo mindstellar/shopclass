@@ -149,4 +149,7 @@ foreach (array('wallet', 'buy', 'orders') as $page) {
     check("the {$page} page shows the tabs", strpos($src, "\$billingTab = '{$page}';") !== false && strpos($src, 'billing/tabs.php') !== false);
 }
 
+$items = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/account/user-items-content.php');
+check('My listings shows the limit message only without the slot box', strpos($items, "if (\$slotBox === '') { ?>") !== false);
+
 exit(harness_result());
