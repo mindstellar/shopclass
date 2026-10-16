@@ -1027,6 +1027,7 @@ msgstr ""
 msgid "General settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/slot-prompt.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Get it free"
 msgstr ""
@@ -3220,6 +3221,12 @@ msgid "Urgent"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Use %d credit"
+msgid_plural "Use %d credits"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
 msgid "Use %d credit and post"
 msgid_plural "Use %d credits and post"
 msgstr[0] ""
@@ -3378,6 +3385,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "You are not allowed to add this widget type"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid ""
+"You are over your listing limit. Buy this %d times, or close some listings, "
+"to post again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
