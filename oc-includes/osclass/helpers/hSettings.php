@@ -937,7 +937,6 @@ if (!function_exists('osc_settings_menu_init')) {
 
 osc_add_hook('admin_menu_init', 'osc_settings_menu_init');
 
-
 if (!function_exists('osc_category_modes_parse')) {
     /**
      * A category_modes value as category id => mode: the stored JSON or an array of the same
