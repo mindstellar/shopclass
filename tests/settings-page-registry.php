@@ -34,6 +34,7 @@ if (!defined('ABS_PATH')) {
 
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/category/CategoryModes.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';
@@ -816,8 +817,10 @@ pin("a checkbox is read by presence, not by its value", true, osc_settings_sanit
 $modesField = array('name' => 'cats', 'type' => 'category_modes', 'modes' => array('nights' => 'Nights', 'slots' => 'Time slots'));
 $GLOBALS['params'] = array('cats' => array('9' => 'slots', '4' => 'nights', '7' => '', '12' => 'weekly', 'x' => 'nights', '20' => 'off', '21' => array('nights')));
 pin('category modes keep known modes and "off", sorted by id, as JSON', '{"4":"nights","9":"slots","20":"off"}', osc_settings_sanitize($modesField));
-$GLOBALS['params'] = array('cats' => 'nights');
+$GLOBALS['params'] = array('cats' => '5');
 pin('a category_modes value that is not a list stores an empty object', '{}', osc_settings_sanitize($modesField));
+$GLOBALS['params'] = array('cats' => array('4' => 'nights'));
+pin('a category_modes sanitize callback gets the JSON', '{"4":"nights"}!', osc_settings_sanitize($modesField + array('sanitize' => static fn ($v) => $v . '!')));
 pin('a stored category_modes value reads back as id => mode', array(4 => 'nights', 20 => 'off'), osc_category_modes_parse('{"4":"nights","20":"off","x":"slots","5":"bad mode"}'));
 pin('a broken stored value reads as no modes', array(), osc_category_modes_parse('{not json'));
 // An array where a scalar was declared is the shape an attacker reaches for first.

@@ -5,7 +5,7 @@
  * jQuery-UI .tabs()) and wires the flash-message close buttons.
  */
 /* global osc */
-/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat, oscCatcardsSummary, oscFill */
+/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat, oscCatcardsSummary, oscCatcardsLive, oscCatcardsCascade, oscFill */
 
 // Initialise every .osc-tab within `root` (default: document). Works on the
 // existing markup: a .osc-tab container holding `> ul > li > a[href="#panel"]`
@@ -289,16 +289,47 @@ function oscTreeview(root, opts) {
 
     root.addEventListener('change', oscTreeSyncParents);
     oscTreeSyncParents();
-    if (root.hasAttribute('data-osc-catcards')) {
-        root.addEventListener('change', function () { oscCatcardsSummary(root); });
+    oscCatcardsLive(root);
+}
+
+// Keep a card list's summary and counts current. Idempotent per root.
+function oscCatcardsLive(root) {
+    if (!root.hasAttribute('data-osc-catcards') || root.hasAttribute('data-osc-catcards-live')) {
+        return;
+    }
+    root.setAttribute('data-osc-catcards-live', '1');
+    root.addEventListener('change', function (e) {
+        if (root.getAttribute('data-osc-catcards') === 'checks') { oscCatcardsCascade(root, e.target); }
         oscCatcardsSummary(root);
+    });
+    oscCatcardsSummary(root);
+}
+
+// After a box changes, each category above it is ticked when all its subcategories are,
+// empty when none are, and shows the dash (unticked, so not saved) when only some are.
+function oscCatcardsCascade(root, box) {
+    if (!box || box.type !== 'checkbox') { return; }
+    var li = box.closest('li');
+    while (li && root.contains(li)) {
+        var parentLi = li.parentElement ? li.parentElement.closest('li') : null;
+        if (!parentLi || !root.contains(parentLi)) { return; }
+        var parentBox = parentLi.querySelector(':scope > input[type=checkbox]');
+        var sub = parentLi.querySelector(':scope > ul');
+        if (parentBox && sub) {
+            var all = sub.querySelectorAll('input[type=checkbox]').length;
+            var on = sub.querySelectorAll('input[type=checkbox]:checked').length;
+            parentBox.checked = all > 0 && on === all;
+            parentBox.indeterminate = on > 0 && on < all;
+        }
+        li = parentLi;
     }
 }
 
-// Fill %s / %1$s placeholders in a translated template.
+// Fill a translated template the way the server's sprintf() reads it: %s, %1$s and %%.
 function oscFill(tpl, values) {
     var i = 0;
-    return String(tpl || '').replace(/%(\d\$)?s/g, function (m, pos) {
+    return String(tpl || '').replace(/%%|%(\d+\$)?s/g, function (m, pos) {
+        if (m === '%%') { return '%'; }
         var v = values[pos ? parseInt(pos, 10) - 1 : i++];
         return v === undefined ? '' : String(v);
     });
@@ -306,7 +337,7 @@ function oscFill(tpl, values) {
 
 // The live line above a category card list, and each card's count of chosen subcategories.
 function oscCatcardsSummary(root) {
-    var summary = document.querySelector('[data-osc-catcards-summary="' + root.id + '"]');
+    var summary = document.querySelector('[data-osc-catcards-summary="' + CSS.escape(root.id) + '"]');
     var cards = root.querySelectorAll(':scope > .osc-catcard');
     var label = function (key) { return root.getAttribute('data-label-' + key); };
     var setMeta = function (card, extra) {
@@ -320,7 +351,7 @@ function oscCatcardsSummary(root) {
         var on = [];
         cards.forEach(function (card) {
             var picked = card.querySelector(':scope > .osc-segmented input:checked');
-            var pickedLabel = picked ? card.querySelector('label[for="' + picked.id + '"]') : null;
+            var pickedLabel = picked ? card.querySelector('label[for="' + CSS.escape(picked.id) + '"]') : null;
             var topMode = picked && picked.value !== '' ? pickedLabel.textContent : '';
             var offWord = card.querySelector(':scope > .osc-segmented input[value=""] + label');
             var cardName = card.querySelector('.osc-catcard-name').textContent;
@@ -361,8 +392,16 @@ function oscCatcardsSummary(root) {
     });
 }
 
+// A category_modes field folds on its own. A checkbox tree folds only when its page calls
+// oscTreeview(), as it always has, so a page passing its own options keeps them.
 function oscCatcardsInit() {
-    document.querySelectorAll('[data-osc-catcards]').forEach(function (root) { oscTreeview(root); });
+    document.querySelectorAll('[data-osc-catcards]').forEach(function (root) {
+        if (root.getAttribute('data-osc-catcards') === 'modes') {
+            oscTreeview(root);
+        } else {
+            oscCatcardsLive(root);
+        }
+    });
 }
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', oscCatcardsInit);

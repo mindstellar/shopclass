@@ -7,6 +7,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/* global oscFill */
+
 /*
  * Locations screen (settings/locations.php). Every link and form works as plain GET/POST;
  * this swaps the list in place, searches as you type, edits in a drawer, confirms
@@ -62,15 +64,13 @@
         let listStale = false;
 
         // ---- Small helpers --------------------------------------------------------
+        // oscFill() (ui-osc.js) reads %s, %1$s and %% as the server's sprintf() does.
         function format(template, value) {
-            return String(template || '').replace('%s', value);
+            return oscFill(template, [value]);
         }
 
-        // Numbered placeholders (%1$s, %2$s) and %% as the server's sprintf() reads them.
         function formatN(template, values) {
-            return String(template || '').replace(/%(\d)\$s|%%/g, function (match, index) {
-                return match === '%%' ? '%' : String(values[Number(index) - 1]);
-            });
+            return oscFill(template, values);
         }
 
         function postForm(url, body) {

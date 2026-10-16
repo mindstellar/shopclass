@@ -40,6 +40,7 @@ if (!defined('ABS_PATH')) {
 
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/category/CategoryModes.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';

@@ -79,6 +79,32 @@ pin('a category takes its parent\'s mode', 'nights', osc_category_mode('{"' . $p
 pin('the nearest mode decides', 'slots', osc_category_mode(array($parent => 'nights', $child => 'slots'), $grandchild));
 pin('a subcategory switched off is off', '', osc_category_mode(array($parent => 'nights', $child => 'off'), $grandchild));
 pin('nothing set is off', '', osc_category_mode('{}', $child));
+pin('a category with its own mode uses it', 'slots', osc_category_mode(array($parent => 'nights', $grandchild => 'slots'), $grandchild));
+
+harness_section('category card pickers');
+require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Picker.php';
+$admin->query("UPDATE {$p}t_category_description SET s_name = 'Cars <b>' WHERE fk_i_category_id = $child");
+$tree = array(array('pk_i_id' => $parent, 's_name' => 'Vehicles', 'categories' => array(
+    array('pk_i_id' => $child, 's_name' => 'Cars <b>', 'categories' => array(
+        array('pk_i_id' => $grandchild, 's_name' => 'Electric', 'categories' => array()),
+    )),
+)));
+ob_start();
+\mindstellar\admin\ui\Picker::categoryChecks(array('id' => 'cat_tree', 'categories' => $tree, 'selected' => array($child)));
+$html = (string)ob_get_clean();
+check('the tree keeps its root id', strpos($html, '<ul id="cat_tree"') !== false);
+check('each box posts categories[]', substr_count($html, 'name="categories[]"') === 3);
+check('a branch keeps its ul#cat<id> for checkCat()', strpos($html, '<ul id="cat' . $parent . '">') !== false && strpos($html, 'checkCat(\'' . $parent . '\'') !== false);
+check('a selected id is checked', (bool)preg_match('/value="' . $child . '"[^>]*checked/', $html));
+check('Check all and Uncheck all target the root', substr_count($html, 'data-tree-toggle="cat_tree"') === 2);
+check('a category name is escaped', strpos($html, 'Cars &lt;b&gt;') !== false && strpos($html, 'Cars <b>') === false);
+ob_start();
+\mindstellar\admin\ui\Picker::categoryModes(array('id' => 'cats', 'name' => 'cats', 'modes' => array('nights' => 'Nights'), 'categories' => $tree, 'value' => '{"' . $child . '":"off"}'));
+$html = (string)ob_get_clean();
+check('every category posts under the field name', substr_count($html, 'name="cats[') === 4 && strpos($html, 'name="cats[' . $grandchild . ']"') !== false);
+check('a main category off checks the empty value', (bool)preg_match('/name="cats\[' . $parent . '\]" value="" checked/', $html));
+check('a saved subcategory mode is selected', (bool)preg_match('/<option value="off" selected>/', $html));
+check('a card with a subcategory set apart starts open', strpos($html, '<li class="osc-catcard" data-osc-tree-open>') !== false);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

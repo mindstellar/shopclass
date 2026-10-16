@@ -11,6 +11,7 @@
 use mindstellar\admin\form\store\StoreException;
 use mindstellar\admin\form\store\StoreFactory;
 use mindstellar\admin\ui\Field;
+use mindstellar\category\CategoryModes;
 use mindstellar\database\DbException;
 use mindstellar\settings\SettingsImage;
 use mindstellar\settings\SettingsPageRegistry;
@@ -437,16 +438,8 @@ if (!function_exists('osc_settings_sanitize')) {
         }
 
         if ($field['type'] === 'category_modes') {
-            $modes  = (array)($field['modes'] ?? array());
             $posted = Params::getParam($name, false, false);
-            $value  = array();
-            foreach (is_array($posted) ? $posted : array() as $catId => $mode) {
-                if ((int)$catId > 0 && is_string($mode) && ($mode === 'off' || isset($modes[$mode]))) {
-                    $value[(int)$catId] = $mode;
-                }
-            }
-            ksort($value);
-            $value = (string)json_encode((object)$value);
+            $value  = (string)json_encode((object)CategoryModes::parse(is_array($posted) ? $posted : array(), (array)($field['modes'] ?? array())));
 
             return isset($field['sanitize']) ? call_user_func($field['sanitize'], $value) : $value;
         }
@@ -957,17 +950,7 @@ if (!function_exists('osc_category_modes_parse')) {
      */
     function osc_category_modes_parse($value): array
     {
-        if (is_string($value)) {
-            $value = json_decode($value, true);
-        }
-        $modes = array();
-        foreach (is_array($value) ? $value : array() as $catId => $mode) {
-            if ((int)$catId > 0 && is_string($mode) && preg_match(SettingsPageRegistry::CATEGORY_MODE, $mode)) {
-                $modes[(int)$catId] = $mode;
-            }
-        }
-
-        return $modes;
+        return CategoryModes::parse($value);
     }
 }
 
@@ -984,22 +967,7 @@ if (!function_exists('osc_category_mode')) {
      */
     function osc_category_mode($value, int $categoryId): string
     {
-        $modes = osc_category_modes_parse($value);
-        if ($modes === array() || $categoryId <= 0) {
-            return '';
-        }
-        // hierarchy() runs from the category up to the root, so the nearest mode is met first.
-        $chain = array($categoryId);
-        foreach ((array)Category::getInstance()->hierarchy($categoryId) as $row) {
-            $chain[] = (int)($row['pk_i_id'] ?? 0);
-        }
-        foreach ($chain as $id) {
-            if (isset($modes[$id])) {
-                return $modes[$id] === 'off' ? '' : $modes[$id];
-            }
-        }
-
-        return '';
+        return CategoryModes::modeFor($value, $categoryId);
     }
 }
 

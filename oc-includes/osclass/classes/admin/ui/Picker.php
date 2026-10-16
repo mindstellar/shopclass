@@ -299,8 +299,9 @@ class Picker
         echo '<div class="form-row osc-catcards-row"'
             . (!empty($opts['wrapper_id']) ? ' id="' . osc_esc_html((string)$opts['wrapper_id']) . '"' : '') . '>';
         if (($opts['intro'] ?? '') !== '') {
-            echo '<p class="osc-catcards-intro">' . osc_esc_html((string)$opts['intro']) . '</p>';
+            echo '<div class="form-label" id="' . osc_esc_html($id . '-intro') . '">' . osc_esc_html((string)$opts['intro']) . '</div>';
         }
+        echo '<div class="form-controls">';
         echo '<div class="osc-catcards-bar">'
             . '<span class="osc-catcards-summary" data-osc-catcards-summary="' . osc_esc_html($id) . '" aria-live="polite"></span>'
             . '<span class="osc-catcards-actions">'
@@ -310,11 +311,16 @@ class Picker
             . osc_esc_html(__('Uncheck all')) . '</button>'
             . '</span></div>';
         echo '<ul id="' . osc_esc_html($id) . '" class="osc-catcards" data-osc-catcards="checks"'
+            . (($opts['intro'] ?? '') !== '' ? ' aria-labelledby="' . osc_esc_html($id . '-intro') . '"' : '')
             . ' data-toggle-label="' . osc_esc_html(__('Subcategories of %s')) . '"'
             . ' data-label-count="' . osc_esc_html(__('%1$s of %2$s selected')) . '"'
             . ' data-label-selected="' . osc_esc_html(__('%s selected')) . '">';
         self::categoryCheckItems($tree, $id, $name, $selected, 0);
-        echo '</ul></div>';
+        echo '</ul>';
+        if ($tree === array()) {
+            echo '<p class="osc-catcards-intro">' . osc_esc_html(__('There are no categories yet.')) . '</p>';
+        }
+        echo '</div></div>';
     }
 
     /**
@@ -333,7 +339,7 @@ class Picker
     {
         foreach ($nodes as $node) {
             $catId    = (int)$node['pk_i_id'];
-            $children = !empty($node['categories']) && is_array($node['categories']) ? $node['categories'] : array();
+            $children = self::childrenOf($node);
             $boxId    = $id . '-cat-' . $catId;
 
             echo '<li' . ($depth === 0 ? ' class="osc-catcard"' : '') . '>'
@@ -363,7 +369,7 @@ class Picker
      *
      * @param array<string,mixed> $opts 'id', 'name', 'modes' (value => label), 'value' (the
      *                                  stored JSON or an id => mode array), 'categories'
-     *                                  (defaults to the whole tree), 'label'
+     *                                  (defaults to the whole tree)
      *
      * @return void
      */
@@ -372,7 +378,7 @@ class Picker
         $id    = (string)($opts['id'] ?? '');
         $name  = (string)($opts['name'] ?? '');
         $modes = array_map('strval', (array)($opts['modes'] ?? array()));
-        $saved = osc_category_modes_parse($opts['value'] ?? array());
+        $saved = \mindstellar\category\CategoryModes::parse($opts['value'] ?? array());
         $tree  = $opts['categories'] ?? \Category::getInstance()->toTree(true);
 
         if (!is_array($tree) || $tree === array()) {
@@ -396,7 +402,7 @@ class Picker
         $off = array('' => __('Off')) + $modes;
         foreach ($tree as $node) {
             $catId    = (int)$node['pk_i_id'];
-            $children = !empty($node['categories']) && is_array($node['categories']) ? $node['categories'] : array();
+            $children = self::childrenOf($node);
             $current  = isset($modes[$saved[$catId] ?? '']) ? $saved[$catId] : '';
             $labelId  = $id . '-cat-' . $catId;
             $setApart = $children !== array() ? self::countSetApart($children, $saved) : 0;
@@ -446,7 +452,7 @@ class Picker
         $choices = array('' => __('Same as parent'), 'off' => __('Off')) + $modes;
         foreach ($nodes as $node) {
             $catId    = (int)$node['pk_i_id'];
-            $children = !empty($node['categories']) && is_array($node['categories']) ? $node['categories'] : array();
+            $children = self::childrenOf($node);
             $current  = $saved[$catId] ?? '';
             $selectId = $id . '-cat-' . $catId;
 
@@ -470,6 +476,36 @@ class Picker
     }
 
     /**
+     * A tree node's children.
+     *
+     * @param array<string,mixed> $node
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function childrenOf(array $node)
+    {
+        return !empty($node['categories']) && is_array($node['categories']) ? $node['categories'] : array();
+    }
+
+    /**
+     * Every category id at every level under these nodes.
+     *
+     * @param array<int,array<string,mixed>> $nodes
+     *
+     * @return int[]
+     */
+    private static function descendantIds(array $nodes)
+    {
+        $ids = array();
+        foreach ($nodes as $node) {
+            $ids[] = (int)$node['pk_i_id'];
+            $ids   = array_merge($ids, self::descendantIds(self::childrenOf($node)));
+        }
+
+        return $ids;
+    }
+
+    /**
      * "N subcategories", counting every level below a main category.
      *
      * @param array<int,array<string,mixed>> $children
@@ -478,16 +514,7 @@ class Picker
      */
     private static function subcategoryCount(array $children)
     {
-        $count = 0;
-        $walk  = static function (array $nodes) use (&$walk, &$count) {
-            foreach ($nodes as $node) {
-                $count++;
-                if (!empty($node['categories']) && is_array($node['categories'])) {
-                    $walk($node['categories']);
-                }
-            }
-        };
-        $walk($children);
+        $count = count(self::descendantIds($children));
 
         return sprintf(_n('%d subcategory', '%d subcategories', $count), $count);
     }
@@ -502,17 +529,7 @@ class Picker
      */
     private static function countSetApart(array $nodes, array $saved)
     {
-        $count = 0;
-        foreach ($nodes as $node) {
-            if (isset($saved[(int)$node['pk_i_id']])) {
-                $count++;
-            }
-            if (!empty($node['categories']) && is_array($node['categories'])) {
-                $count += self::countSetApart($node['categories'], $saved);
-            }
-        }
-
-        return $count;
+        return count(array_intersect_key(array_flip(self::descendantIds($nodes)), $saved));
     }
 
     /**
