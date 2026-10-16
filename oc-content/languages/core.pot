@@ -11991,6 +11991,10 @@ msgstr ""
 msgid "Use this for a private bucket. Leave off for a public bucket or CDN."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Use your credits"
+msgstr ""
+
 #: oc-admin/themes/modern/media/index.php
 msgid "Used in"
 msgstr ""

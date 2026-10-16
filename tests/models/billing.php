@@ -2712,6 +2712,7 @@ $hostile = array(
     'email'    => 'Mail <b>x</b>&',
     'name'     => 'Name',
     'url'      => 'https://example.test/r?a=1&b="2"',
+    'wallet'   => 'https://example.test/w?a=1&b="2"',
     'business' => '',
     'refunded' => false,
 );
@@ -2721,6 +2722,9 @@ foreach (array('Site', 'Date', 'Credits', 'Amount', 'Gateway', 'Ref', 'Mail') as
 }
 check('the e-mail has no raw tag from a value', strpos($hostileBody, '<b>x') === false);
 check('the e-mail escapes the receipt link', strpos($hostileBody, 'href="https://example.test/r?a=1&amp;b=&quot;2&quot;"') !== false);
+check('the e-mail links to the credits page', strpos($hostileBody, 'href="https://example.test/w?a=1&amp;b=&quot;2&quot;"') !== false);
+$paidBody = Receipts::emailBody(Receipts::vars(OrderStore::find($bought->getId())));
+check('a paid order\'s e-mail links to the credits page', strpos($paidBody, 'href="' . osc_esc_html(osc_billing_wallet_url()) . '"') !== false);
 
 $receipt   = $hostile;
 $backUrl   = 'https://example.test/back?a=1&b="2"';
