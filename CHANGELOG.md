@@ -87,6 +87,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Removed methods and classes: `Params::_view()`, `PageForm::multilanguage_name_description()`, `Object_Cache_Factory::getCache()` (use `getInstance()`), `LocationsTmp`, `StorageQueue` and `StorageWorker` (use the job queue), and `oc-includes/osclass/timezones.php` (use `DateTimeZone::listIdentifiers()`).
 
 ### Security
+- `CurlHttpClient` takes a `resolve` option that pins a host to an address the caller checked, so a plugin fetching a user's URL can close the DNS rebinding gap.
 
 - The admin Languages list escapes each language's name and description, and the installer escapes its language error.
 - API keys and refresh tokens are stored hashed, and a browser cookie alone never signs in to the API.

@@ -66,6 +66,10 @@ pin('a refused call never connects', 'refused', $refused(fn () => (new CurlHttpC
 
 pin('https:// with no host is refused', 'refused', $refused(fn () => CurlHttpClient::options('GET', 'https://', [], null, [], $buffer)));
 pin('an https: URL that parses with no host is refused', 'refused', $refused(fn () => CurlHttpClient::options('GET', 'https:example.com/x', [], null, [], $buffer)));
+pin('resolve pins the host to a checked address', ['example.com:443:93.184.215.14', 'example.com:443:[2606:2800:21f:cb07:6820:80da:af6b:8b2c]'], CurlHttpClient::options('GET', 'https://example.com/', [], null, ['resolve' => ['example.com:443:93.184.215.14', 'example.com:443:[2606:2800:21f:cb07:6820:80da:af6b:8b2c]']], $buffer)[CURLOPT_RESOLVE] ?? null);
+pin('no resolve, no pinning', false, array_key_exists(CURLOPT_RESOLVE, $o));
+pin('resolve for another host is refused', 'refused', $refused(fn () => CurlHttpClient::options('GET', 'https://example.com/', [], null, ['resolve' => ['other.test:443:1.2.3.4']], $buffer)));
+pin('resolve with no address is refused', 'refused', $refused(fn () => CurlHttpClient::options('GET', 'https://example.com/', [], null, ['resolve' => ['example.com:443:not-an-ip']], $buffer)));
 pin('cURL is told not to use signals, so short timeouts work', true, $o[CURLOPT_NOSIGNAL] ?? null);
 pin('the default cap is 1 MB', 1048576, CurlHttpClient::MAX_BYTES);
 

@@ -147,6 +147,21 @@ final class CurlHttpClient implements HttpClient
         if ($method === 'HEAD') {
             $curl[CURLOPT_NOBODY] = true;
         }
+        // 'resolve' pins the URL's host to an address the caller has already checked, so a
+        // second DNS answer cannot send the connection somewhere else.
+        if (isset($options['resolve'])) {
+            $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+            foreach ((array) $options['resolve'] as $entry) {
+                if (!is_string($entry)
+                    || preg_match('/^([A-Za-z0-9.-]+):(\d{1,5}):(\[[0-9A-Fa-f:.]+\]|[0-9.]+)$/', $entry, $m) !== 1
+                    || strtolower($m[1]) !== $host
+                    || filter_var(trim($m[3], '[]'), FILTER_VALIDATE_IP) === false
+                ) {
+                    throw new \InvalidArgumentException('resolve must list host:port:address entries for the URL\'s host');
+                }
+            }
+            $curl[CURLOPT_RESOLVE] = array_values((array) $options['resolve']);
+        }
         if ($body !== null) {
             $curl[CURLOPT_POSTFIELDS] = $body;
         }
