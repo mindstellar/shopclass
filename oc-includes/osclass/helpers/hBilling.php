@@ -1028,6 +1028,15 @@ function osc_account_upgrade_offers(?int $userId = null): array
             || EntitlementStore::capacity($userId, $offer['feature'], 0) === 0));
     }
 
+    // Show the price the spend will charge, after billing_feature_price.
+    foreach ($offers as &$offer) {
+        $feature = osc_billing_feature($offer['feature']);
+        if ($feature !== null) {
+            $offer['credits'] = $feature->price($userId);
+        }
+    }
+    unset($offer);
+
     return (array) osc_apply_filter('account_upgrade_offers', $offers, $userId);
 }
 

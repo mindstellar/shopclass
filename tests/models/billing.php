@@ -2864,6 +2864,10 @@ sort($expectedScoped);
 pin('every account upgrade an admin can sell is registered', $expectedScoped, $userScoped);
 pin('...and every one of them can be bought', $userScoped, $buyable);
 pin('the offers name each one with its price', array('listing.slot' => 3), array_intersect_key(array_column(osc_account_upgrade_offers(), 'credits', 'feature'), array('listing.slot' => 1)));
+$doubleSlotPrice = static fn ($price, $featureId) => $featureId === 'listing.slot' ? $price * 2 : $price;
+osc_add_filter('billing_feature_price', $doubleSlotPrice);
+pin('...the price the spend charges, after billing_feature_price', 6, array_column(osc_account_upgrade_offers(), 'credits', 'feature')['listing.slot'] ?? null);
+osc_remove_filter('billing_feature_price', $doubleSlotPrice);
 
 pin('a listing upgrade is refused', null, $accountOffer->invoke(null, 'listing.premium', 0));
 pin('an unknown name is refused', null, $accountOffer->invoke(null, 'no.such.feature', 0));
