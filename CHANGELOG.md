@@ -4,6 +4,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.9
 
+This release makes buying an extra listing slot one clear step: a seller at the limit gets a button
+that spends the credits and opens the post form.
+
 ### Fixed
 
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
