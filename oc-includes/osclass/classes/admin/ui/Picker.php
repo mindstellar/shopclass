@@ -449,7 +449,7 @@ class Picker
      */
     private static function categoryModeItems(array $nodes, $id, $name, array $modes, array $saved)
     {
-        $choices = array('' => __('Same as parent'), 'off' => __('Off')) + $modes;
+        $choices = array('' => __('Same as parent'), \mindstellar\category\CategoryModes::OFF => __('Off')) + $modes;
         foreach ($nodes as $node) {
             $catId    = (int)$node['pk_i_id'];
             $children = self::childrenOf($node);
