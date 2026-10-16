@@ -440,6 +440,8 @@ jobs:
       # theme styling the published name.
       - name: Account fallback views
         run: php tests/account-views.php
+      - name: Listing slot box and credits tabs
+        run: php tests/billing-slot-prompt.php
       # GET ?page=user&action=delete&id=&secret= used to remove the account as soon
       # as the page was requested. The confirm view must not call deleteUser.
       - name: Account delete is POST
