@@ -78,6 +78,8 @@ $col = array(
         <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
+    <?php $billingTab = 'orders';
+    require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
     <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php'; ?>
     <div class="oe-panel oe-bill-card">
         <?php if (empty($orders)) { ?>

@@ -463,6 +463,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/gui/billing/slot-prompt.php
+#: oc-includes/osclass/gui/billing/tabs.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Buy credits"
 msgstr ""
@@ -685,6 +686,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/tabs.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Credits"
 msgstr ""
@@ -1653,6 +1655,10 @@ msgstr ""
 msgid ""
 "Order #%d was marked failed and is now marked paid; the credits have been "
 "added"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/tabs.php
+msgid "Orders"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
@@ -3271,10 +3277,6 @@ msgstr ""
 msgid "Validation email re-sent"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/buy-content.php
-msgid "View your past orders"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid ""
 "We have just sent you an email to validate your account, you will have to "
@@ -3659,7 +3661,6 @@ msgid "Your new key"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
-#: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Your orders"
 msgstr ""
 

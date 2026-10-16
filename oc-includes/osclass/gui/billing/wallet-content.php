@@ -77,6 +77,8 @@ $col = array(
         <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
+    <?php $billingTab = 'wallet';
+    require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
     <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php'; ?>
     <div class="oe-panel oe-bill-card">
         <p class="oe-bill-balance<?php echo $balance < 0 ? ' neg' : ''; ?>">
@@ -89,16 +91,13 @@ $col = array(
             </p>
             <p class="oe-muted oe-bill-sub"><?php echo osc_esc_html(_m('listings used')); ?></p>
         <?php } ?>
-        <div class="oe-bill-actions">
-            <?php if ($canBuy) { ?>
+        <?php if ($canBuy) { ?>
+            <div class="oe-bill-actions">
                 <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>">
                     <?php echo osc_esc_html(_m('Buy more credits')); ?>
                 </a>
-            <?php } ?>
-            <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html(osc_billing_orders_url()); ?>">
-                <?php echo osc_esc_html(_m('Your orders')); ?>
-            </a>
-        </div>
+            </div>
+        <?php } ?>
     </div>
 
     <?php if ($offers !== array()) { ?>

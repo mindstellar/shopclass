@@ -542,7 +542,8 @@ until an admin turns it on.
 ## 7. Public routes
 
 Everything a buyer does lives under `?page=billing`, and every one of those actions needs a
-logged-in user except the one route a payment provider's own server hits directly:
+logged-in user except the one route a payment provider's own server hits directly. The
+wallet, `buy` and `orders` pages share one row of tabs (`gui/billing/tabs.php`).
 
 | `action` | Method | Auth | What |
 |---|---|---|---|

@@ -149,6 +149,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The category checkbox tree (`osc_admin_tree_picker()`) shows a card per main category with folded subcategories and a live count; a main category with only some subcategories ticked shows a dash and is not saved itself. Its posted names, ids and Check all / Uncheck all still work.
 - A seller at the listing limit sees a button on My listings, Credits and Orders that buys an extra slot and opens the post form, or a link to buy credits.
 - The payment receipt e-mail links to the Credits page.
+- Credits, Buy credits and Orders are tabs on one page.
 - Inside `osc_db_begin()` or `osc_db_transaction()`, a legacy DAO query that hits a deadlock now throws `DbException` instead of returning false, since the server has already rolled the transaction back.
 - The admin menu and the page help box open and close with `osc.collapse` instead of Bootstrap; a plugin listening for `shown.bs.collapse` there should listen for `osc:collapse:shown`, and its own `data-bs-toggle` menu markup no longer joins the menu's accordion.
 - The object cache starts fresh after an upgrade, so pages and sitemaps built by the old release are not served; a flush also clears what older releases left.
