@@ -21,14 +21,12 @@ if (!osc_is_web_user_logged_in() || !osc_billing_enabled() || osc_user_can_publi
 }
 
 $slotUserId = (int) osc_logged_user_id();
-$slotOffer  = null;
-foreach (osc_account_upgrade_offers($slotUserId) as $offer) {
-    if (($offer['feature'] ?? '') === 'listing.slot') {
-        $slotOffer = $offer;
-        break;
-    }
-}
-if ($slotOffer === null) {
+$slotOffer  = array_column(osc_account_upgrade_offers($slotUserId), null, 'feature')['listing.slot'] ?? null;
+$slotLimit  = osc_user_listing_limit($slotUserId);
+// Show it only when one purchase lets the seller post again.
+if ($slotOffer === null || $slotLimit === -1
+    || osc_user_listings_used($slotUserId) >= $slotLimit + osc_billing_slot_quantity()
+) {
     return;
 }
 
