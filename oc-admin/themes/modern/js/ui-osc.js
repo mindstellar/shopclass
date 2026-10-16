@@ -696,8 +696,15 @@ function oscDirtySync(bar) {
     if (!form) { return; }
     var controls = oscDirtyControls(form);
     var changed = 0;
+    var radios = {};
     for (var i = 0; i < controls.length; i++) {
-        if (controls[i].getAttribute('data-osc-was') !== oscControlValue(controls[i])) { changed++; }
+        if (controls[i].getAttribute('data-osc-was') === oscControlValue(controls[i])) { continue; }
+        // Picking another radio changes two buttons but one setting.
+        if (controls[i].type === 'radio') {
+            if (radios[controls[i].name]) { continue; }
+            radios[controls[i].name] = true;
+        }
+        changed++;
     }
     var status = bar.querySelector('.form-actions-status');
     if (status) {
