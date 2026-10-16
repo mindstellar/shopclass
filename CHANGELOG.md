@@ -2,7 +2,7 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.0.0.beta4
+## Shopclass 7.0.0.beta5
 
 Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
 
@@ -13,6 +13,8 @@ Beta 2 gives themes search snippets, related listings and search box suggestions
 Beta 3 gives plugins their own database migrations, an HTTPS client and street address lookup, and carries the security fixes from 6.4.7.
 
 Beta 4 drops Bootstrap's JavaScript from the admin, lets a search plugin answer the admin Listings screen, stops a double click from posting a listing twice, and lets address lookups wait for a provider's daily limit.
+
+Beta 5 makes pages faster, with more caching, kept connections and compressed files, and lets sellers buy account upgrades such as extra listing slots with credits. Address lookup now needs a lookup plugin such as LocationIQ.
 
 Plugin authors: please read **Breaking** before you upgrade.
 
