@@ -77,6 +77,7 @@ $col = array(
         <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
+    <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php'; ?>
     <div class="oe-panel oe-bill-card">
         <p class="oe-bill-balance<?php echo $balance < 0 ? ' neg' : ''; ?>">
             <?php echo osc_esc_html(number_format($balance)); ?>

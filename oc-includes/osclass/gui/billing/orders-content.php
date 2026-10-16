@@ -78,6 +78,7 @@ $col = array(
         <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
+    <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php'; ?>
     <div class="oe-panel oe-bill-card">
         <?php if (empty($orders)) { ?>
             <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('You have not bought any credits yet.')); ?></p>

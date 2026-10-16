@@ -139,6 +139,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
 
 ### Changed
+- A seller at the listing limit sees a button on My listings, Credits and Orders that buys an extra slot and opens the post form, or a link to buy credits.
 - Inside `osc_db_begin()` or `osc_db_transaction()`, a legacy DAO query that hits a deadlock now throws `DbException` instead of returning false, since the server has already rolled the transaction back.
 - The admin menu and the page help box open and close with `osc.collapse` instead of Bootstrap; a plugin listening for `shown.bs.collapse` there should listen for `osc:collapse:shown`, and its own `data-bs-toggle` menu markup no longer joins the menu's accordion.
 - The object cache starts fresh after an upgrade, so pages and sitemaps built by the old release are not served; a flush also clears what older releases left.

@@ -350,6 +350,9 @@ class CWebBilling extends WebSecBaseModel
 
         if (Billing::spend($userId, $featureId, array('ref_type' => 'user', 'ref_id' => $userId))) {
             osc_add_flash_ok_message(sprintf(_m('%s added to your account'), osc_esc_html((string) $offer['label'])));
+            if ($featureId === 'listing.slot' && Params::getParamString('next') === 'post') {
+                $this->redirectTo(osc_item_post_url());
+            }
         } elseif (osc_user_credits($userId) >= (int) $offer['credits']) {
             // The credits were there, so the grant refused it: a second purchase of a one-time upgrade.
             osc_add_flash_warning_message(_m('You already have this upgrade'));

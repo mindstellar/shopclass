@@ -551,7 +551,7 @@ logged-in user except the one route a payment provider's own server hits directl
 | `checkout` | POST, CSRF | logged in | Start paying for a package |
 | `orders` | GET | logged in | The buyer's own past orders |
 | `upgrade` | POST, CSRF | logged in | Apply an item-scoped feature (`feature`, default `listing.premium`) to one of the buyer's own listings (`itemId`) |
-| `account_upgrade` | POST, CSRF | logged in | Buy an account upgrade (`feature`) that `osc_account_upgrade_offers()` lists, such as `listing.slot` |
+| `account_upgrade` | POST, CSRF | logged in | Buy an account upgrade (`feature`) that `osc_account_upgrade_offers()` lists, such as `listing.slot`; with `next=post` a bought slot opens the post form |
 | `callback` | GET/POST | **none** — no session, no CSRF | A gateway's webhook or return-URL hit |
 
 Every logged-in action checks `osc_billing_enabled()` first and bounces to the site root
