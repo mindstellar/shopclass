@@ -12,6 +12,7 @@
 namespace mindstellar\job;
 
 use mindstellar\cache\CacheGroup;
+use mindstellar\database\Db;
 use Throwable;
 
 /**
@@ -237,9 +238,15 @@ final class JobWorker
         try {
             $handler($job);
         } catch (Throwable $e) {
+            Db::unwind('the end of job ' . $type);
             $retry = $e instanceof JobRetry ? $e : null;
 
             return self::failed($queue, $id, $type, $payload, $e->getMessage(), $retry?->delay(), $retry?->maxAttempts());
+        }
+
+        // A begin() the handler left open is undone, so it cannot hold or block the jobs after it.
+        if (Db::unwind('the end of job ' . $type)) {
+            return self::failed($queue, $id, $type, $payload, 'The job left a transaction open, so its writes were rolled back');
         }
 
         $repeat = $job->repeatRequest();

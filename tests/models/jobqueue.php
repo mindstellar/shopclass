@@ -421,6 +421,15 @@ pin('a spent budget stops after the job that spent it', 1, JobWorker::run(1));
 pin('and hands the unrun jobs back', array('pending:a0:wNULL:lkNULL', 'pending:a0:wNULL:lkNULL'), array_map($rowState, $rest));
 
 $truncate();
+JobRegistry::register('test.leak', static function () {
+    \mindstellar\database\Db::beginTransaction();
+});
+$id = $queue->enqueue('test.leak', array());
+@JobWorker::run(10);
+pin('a job that leaves a transaction open does not leave it to the next job', false, \mindstellar\database\Db::inTransaction());
+pin('and it fails, since its writes were undone', 'pending:a1:wNULL:lkNULL', $rowState($id));
+
+$truncate();
 pin('an empty queue costs nothing and runs nothing', 0, JobWorker::run(10));
 
 harness_section('During a restore');

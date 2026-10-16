@@ -418,21 +418,36 @@ class Db
         self::$leakGuardArmed = true;
 
         register_shutdown_function(static function (): void {
-            if (self::$depth <= 0) {
-                return;
-            }
-            error_log(sprintf(
-                'Db: transaction still open at request end (depth=%d) — rolling back. A begin() '
-                . 'without a matching commit()/rollBack() discards every write since it; find the '
-                . 'unbalanced begin (likely a raw osc_db_begin or an escaped exception).',
-                self::$depth
-            ));
-            // Unwind every open level so the connection is not left mid-transaction.
-            $guard = 0;
-            while (self::$depth > 0 && $guard++ < 1024) {
-                self::rollBack();
-            }
+            self::unwind('request end');
         });
+    }
+
+    /**
+     * Roll back a transaction left open, and log it. A long-running worker calls this after each
+     * job, so one job's leaked begin() cannot hold, or block, the jobs after it.
+     *
+     * @param string $where for the log line, e.g. 'request end'
+     *
+     * @return bool true when a transaction was left open
+     */
+    public static function unwind(string $where): bool
+    {
+        if (self::$depth <= 0) {
+            return false;
+        }
+        error_log(sprintf(
+            'Db: transaction still open at %s (depth=%d) — rolling back. A begin() '
+            . 'without a matching commit()/rollBack() discards every write since it; find the '
+            . 'unbalanced begin (likely a raw osc_db_begin or an escaped exception).',
+            $where,
+            self::$depth
+        ));
+        $guard = 0;
+        while (self::$depth > 0 && $guard++ < 1024) {
+            self::rollBack();
+        }
+
+        return true;
     }
 
     /**
