@@ -19,6 +19,16 @@ msgid_plural "%1$s (%2$d credits)"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "%1$s: %2$s. You have %3$s."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "%d credit"
+msgid_plural "%d credits"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "%d credits added"
 msgstr ""
@@ -411,6 +421,8 @@ msgid "Business"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+#: oc-includes/osclass/gui/billing/tabs.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Buy credits"
 msgstr ""
@@ -613,6 +625,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/tabs.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Credits"
 msgstr ""
@@ -932,8 +945,13 @@ msgstr ""
 msgid "General settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/slot-prompt.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Get it free"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Get it free and post"
 msgstr ""
 
 #: oc-includes/osclass/gui/contact-message-content.php
@@ -1496,6 +1514,10 @@ msgid ""
 "added"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/tabs.php
+msgid "Orders"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Orders are not available on this site."
 msgstr ""
@@ -1674,6 +1696,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Plugin uninstalled"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Post another listing"
 msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php
@@ -2922,6 +2948,18 @@ msgstr ""
 msgid "Urgent"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Use %d credit"
+msgid_plural "Use %d credits"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Use %d credit and post"
+msgid_plural "Use %d credits and post"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "User id isn't in the correct format"
 msgstr ""
@@ -2973,10 +3011,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid "Validation email re-sent"
-msgstr ""
-
-#: oc-includes/osclass/gui/billing/buy-content.php
-msgid "View your past orders"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -3058,6 +3092,10 @@ msgstr ""
 msgid "Write to %s"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "You already have this upgrade"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hBilling.php
 msgid ""
 "You are at your listing limit. Buy an extra listing slot on your credits "
@@ -3072,6 +3110,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "You are not allowed to add this widget type"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid ""
+"You are over your listing limit. Buy this %d times, or close some listings, "
+"to post again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
@@ -3314,7 +3358,6 @@ msgid "Your name (optional)"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
-#: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Your orders"
 msgstr ""
 
@@ -3353,6 +3396,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "credits available"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "free"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php

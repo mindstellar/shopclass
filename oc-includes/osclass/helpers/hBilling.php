@@ -1293,7 +1293,7 @@ function osc_register_billing_seller_limits(): void
             // callable already happened once; this only mints the entitlement
             // Entitlements::capacity() will read back as the raised cap.
             'apply'    => static function (int $userId, array $ctx): bool {
-                return Entitlements::grant($userId, 'listing.photos', osc_billing_photos_quantity(), null);
+                return Entitlements::grantOnce($userId, 'listing.photos', osc_billing_photos_quantity());
             },
         ));
     }
@@ -1327,7 +1327,7 @@ function osc_register_billing_seller_limits(): void
             // Capacity again: the granted quantity IS the number of extra days
             // over the category ceiling, read by osc_item_extra_runtime_days().
             'apply'    => static function (int $userId, array $ctx): bool {
-                return Entitlements::grant($userId, 'listing.runtime', osc_billing_runtime_days(), null);
+                return Entitlements::grantOnce($userId, 'listing.runtime', osc_billing_runtime_days());
             },
         ));
     }
@@ -1376,8 +1376,9 @@ osc_add_hook('user_menu_filter', static function (array $options): array {
         return $options;
     }
 
-    // Nothing on sale, but credits already held (or owed) still need somewhere to be read.
-    if (osc_user_credits() !== 0) {
+    // No credits on sale, but credits held (or owed) need somewhere to be read, and a free
+    // account upgrade needs somewhere to be taken.
+    if (osc_user_credits() !== 0 || osc_account_upgrade_offers((int) osc_logged_user_id()) !== array()) {
         $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
     }
 
