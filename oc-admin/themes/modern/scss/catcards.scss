@@ -186,36 +186,7 @@
 }
 
 // A subcategory with a select of its own (category_modes).
-.osc-catcard-row {
-  align-items: center;
-  display: inline-flex;
-  flex: 1;
-  gap: .75rem;
-  justify-content: space-between;
-  min-inline-size: 0;
-
-  label {
-    margin: 0;
-  }
-
-  .field-select {
-    flex: none;
-    inline-size: auto;
-    min-inline-size: 11rem;
-  }
-}
-
-.osc-catcard li:has(> .osc-catcard-row) {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-
-  > ul {
-    flex-basis: 100%;
-  }
-}
-
-// "Off" chosen reads as resting, not as an active choice.
+// Off reads as resting: no tint and no dot, only the weight.
 .osc-segmented input[value=""]:checked + label {
   background-color: var(--osc-chrome-hover);
   color: var(--osc-ink);
@@ -225,14 +196,107 @@
   }
 }
 
+// The subcategories of a modes card: one header naming each choice, then a row of radios
+// per subcategory, every column lined up.
+.osc-catcards .osc-catmatrix > li {
+  align-items: center;
+  column-gap: .5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(var(--osc-catmatrix-cols), 7rem);
+  padding: .35rem 0;
+}
+
+.osc-catmatrix-head {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.osc-catmatrix-row {
+  border-block-start: 1px solid var(--osc-rule);
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+  }
+
+  // A subcategory with a choice of its own is named in bold.
+  &.is-set .osc-catcard-subname {
+    font-weight: 600;
+  }
+}
+
+.osc-catmatrix-cell {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: .35rem;
+  justify-content: center;
+  margin: 0;
+  min-block-size: 2rem;
+
+  input {
+    accent-color: var(--osc-bronze);
+    block-size: 1rem;
+    inline-size: 1rem;
+    margin: 0;
+  }
+}
+
+// The header names the columns; each radio keeps its own label for a screen reader.
+.osc-catmatrix-label {
+  block-size: 1px;
+  clip-path: inset(50%);
+  inline-size: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .osc-catcards .osc-catmatrix > li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+  }
+
+  .osc-catmatrix-head {
+    display: none !important;
+  }
+
+  .osc-catcard-subname {
+    flex-basis: 100%;
+  }
+
+  .osc-catmatrix-label {
+    block-size: auto;
+    clip-path: none;
+    font-size: .875rem;
+    inline-size: auto;
+    position: static;
+  }
+}
+
+// The help above a category list explains its choices; the summary follows after a gap.
+.help-box + .osc-catcards-bar {
+  margin-block-start: .75rem;
+}
+
+// The modes summary is the page's answer to "where is this on?", so it reads as text, not a hint.
+[data-osc-catcards-summary] {
+  color: var(--osc-ink);
+  font-weight: 600;
+
+  &.is-off {
+    color: var(--osc-ink-muted);
+    font-weight: 400;
+  }
+}
+
 @media (max-width: 575.98px) {
   .osc-catcards > .osc-catcard > .osc-segmented {
     flex-wrap: wrap;
     margin-inline-start: 0;
-  }
-
-  .osc-catcard-row {
-    flex-wrap: wrap;
   }
 
   .osc-catcards .osc-segmented label {

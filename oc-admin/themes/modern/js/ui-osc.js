@@ -357,28 +357,33 @@ function oscCatcardsSummary(root) {
             var cardName = card.querySelector('.osc-catcard-name').textContent;
             if (topMode) { on.push(oscFill(label('item'), [cardName, topMode])); }
 
-            // Walk the subcategories in tree order, each "Same as parent" naming what it inherits.
+            // Rows come in tree order with their depth; each "Same as parent" names what it inherits.
             var apart = 0;
-            var walk = function (ul, inherited, path) {
-                if (!ul) { return; }
-                ul.querySelectorAll(':scope > li').forEach(function (li) {
-                    var select = li.querySelector(':scope > .osc-catcard-row > select');
-                    if (!select) { return; }
-                    var same = select.querySelector('option[value=""]');
-                    if (same) { same.textContent = oscFill(label('inherit'), [inherited]); }
-                    var own = select.value !== '';
-                    var mode = own ? select.options[select.selectedIndex].textContent : inherited;
-                    var name = li.querySelector(':scope > .osc-catcard-row > label').textContent;
-                    if (own) {
-                        apart++;
-                        if (select.value !== 'off') { on.push(oscFill(label('item'), [oscFill(label('path'), [path, name]), mode])); }
-                    }
-                    walk(li.querySelector(':scope > ul'), mode, path + ' › ' + name);
-                });
-            };
-            walk(card.querySelector(':scope > ul'), topMode || (offWord ? offWord.textContent : ''), cardName);
-            setMeta(card, apart ? oscFill(label('apart'), [apart]) : label('same'));
+            var topValue = topMode || (offWord ? offWord.textContent : '');
+            var modes = [topValue];
+            var paths = [cardName];
+            var head = card.querySelector('[data-osc-catmatrix-same]');
+            if (head) { head.textContent = oscFill(label('inherit'), [topValue]); }
+            card.querySelectorAll('.osc-catmatrix-row').forEach(function (row) {
+                var depth = parseInt(row.getAttribute('data-depth') || '0', 10);
+                var inherited = modes[depth];
+                var same = row.querySelector('input[value=""] + .osc-catmatrix-label');
+                if (same) { same.textContent = oscFill(label('inherit'), [inherited]); }
+                var chosen = row.querySelector('input:checked');
+                var own = chosen && chosen.value !== '';
+                var mode = own ? chosen.nextElementSibling.textContent : inherited;
+                var name = row.querySelector('.osc-catcard-subname').textContent;
+                row.classList.toggle('is-set', !!own);
+                if (own) {
+                    apart++;
+                    if (chosen.value !== 'off') { on.push(oscFill(label('item'), [oscFill(label('path'), [paths[depth], name]), mode])); }
+                }
+                modes[depth + 1] = mode;
+                paths[depth + 1] = paths[depth] + ' › ' + name;
+            });
+            setMeta(card, apart ? oscFill(label('apart'), [apart]) : '');
         });
+        if (summary) { summary.classList.toggle('is-off', on.length === 0); }
         if (summary) { summary.textContent = on.length ? oscFill(label('on'), [on.join(', ')]) : label('off'); }
         return;
     }

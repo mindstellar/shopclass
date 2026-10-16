@@ -146,6 +146,10 @@ class Field
                 echo '<label class="field-prefix"' . $affixFor . '>' . osc_esc_html($prefix) . '</label>';
             }
 
+            // The help explains the choices, so a category list reads it before its cards.
+            if ($type === 'category_modes') {
+                self::help($spec);
+            }
             self::control($type, $id, $spec);
 
             if ($suffix !== '') {
@@ -157,7 +161,9 @@ class Field
 
             if ($type !== 'hidden') {
                 self::errorText($id, $spec);
-                self::help($spec);
+                if ($type !== 'category_modes') {
+                    self::help($spec);
+                }
             }
         }
 

@@ -101,9 +101,11 @@ check('a category name is escaped', strpos($html, 'Cars &lt;b&gt;') !== false &&
 ob_start();
 \mindstellar\admin\ui\Picker::categoryModes(array('id' => 'cats', 'name' => 'cats', 'modes' => array('nights' => 'Nights'), 'categories' => $tree, 'value' => '{"' . $child . '":"off"}'));
 $html = (string)ob_get_clean();
-check('every category posts under the field name', substr_count($html, 'name="cats[') === 4 && strpos($html, 'name="cats[' . $grandchild . ']"') !== false);
+preg_match_all('/name="cats\[(\d+)\]"/', $html, $posted);
+pin('every category posts under the field name', array($parent, $child, $grandchild), array_map('intval', array_values(array_unique($posted[1]))));
 check('a main category off checks the empty value', (bool)preg_match('/name="cats\[' . $parent . '\]" value="" checked/', $html));
-check('a saved subcategory mode is selected', (bool)preg_match('/<option value="off" selected>/', $html));
+check('a saved subcategory mode is checked', (bool)preg_match('/name="cats\[' . $child . '\]" value="off" checked/', $html));
+check('a subcategory row is a labelled radio group', strpos($html, 'role="radiogroup" data-depth="1" aria-labelledby="cats-cat-' . $grandchild . '"') !== false);
 check('a card with a subcategory set apart starts open', strpos($html, '<li class="osc-catcard" data-osc-tree-open>') !== false);
 
 if (!defined('MODELS_RUNNER')) {

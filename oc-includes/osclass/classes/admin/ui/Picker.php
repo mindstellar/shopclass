@@ -396,7 +396,6 @@ class Picker
             . ' data-label-item="' . osc_esc_html(__('%1$s (%2$s)')) . '"'
             . ' data-label-path="' . osc_esc_html(__('%1$s › %2$s')) . '"'
             . ' data-label-apart="' . osc_esc_html(__('%s set differently')) . '"'
-            . ' data-label-same="' . osc_esc_html(__('all use this setting')) . '"'
             . ' data-label-inherit="' . osc_esc_html(__('Same as parent (%s)')) . '">';
 
         $off = array('' => __('Off')) + $modes;
@@ -413,21 +412,17 @@ class Picker
             if ($children !== array()) {
                 $count = self::subcategoryCount($children);
                 echo '<span class="osc-catcard-meta" data-osc-catcard-meta data-base="' . osc_esc_html($count) . '">'
-                    . osc_esc_html($count . ' · ' . ($setApart > 0
-                        ? sprintf(__('%s set differently'), $setApart)
-                        : __('all use this setting'))) . '</span>';
+                    . osc_esc_html($count . ($setApart > 0 ? ' · ' . sprintf(__('%s set differently'), $setApart) : ''))
+                    . '</span>';
             }
-            echo '<fieldset class="osc-segmented" aria-labelledby="' . osc_esc_html($labelId) . '">';
-            $i = 0;
-            foreach ($off as $value => $label) {
-                $optId = $labelId . '-' . $i++;
-                echo '<input type="radio" id="' . osc_esc_html($optId) . '" name="' . osc_esc_html($name . '[' . $catId . ']') . '"'
-                    . ' value="' . osc_esc_html((string)$value) . '"' . ((string)$value === $current ? ' checked' : '') . ' />'
-                    . '<label for="' . osc_esc_html($optId) . '">' . osc_esc_html((string)$label) . '</label>';
-            }
-            echo '</fieldset>';
+            self::segmented($labelId, $name . '[' . $catId . ']', $off, $current, 'osc-segmented');
             if ($children !== array()) {
-                echo '<ul>';
+                echo '<ul class="osc-catmatrix" style="--osc-catmatrix-cols: ' . (count($modes) + 2) . '">'
+                    . '<li class="osc-catmatrix-head" aria-hidden="true"><span></span>';
+                foreach (self::subChoices($modes) as $value => $label) {
+                    echo '<span' . ($value === '' ? ' data-osc-catmatrix-same' : '') . '>' . osc_esc_html((string)$label) . '</span>';
+                }
+                echo '</li>';
                 self::categoryModeItems($children, $id, $name, $modes, $saved);
                 echo '</ul>';
             }
@@ -447,32 +442,64 @@ class Picker
      *
      * @return void
      */
-    private static function categoryModeItems(array $nodes, $id, $name, array $modes, array $saved)
+    private static function categoryModeItems(array $nodes, $id, $name, array $modes, array $saved, $depth = 0)
     {
-        $choices = array('' => __('Same as parent'), \mindstellar\category\CategoryModes::OFF => __('Off')) + $modes;
         foreach ($nodes as $node) {
             $catId    = (int)$node['pk_i_id'];
             $children = self::childrenOf($node);
+            $labelId  = $id . '-cat-' . $catId;
             $current  = $saved[$catId] ?? '';
-            $selectId = $id . '-cat-' . $catId;
 
-            echo '<li' . ($children !== array() && self::countSetApart($children, $saved) > 0 ? ' data-osc-tree-open' : '') . '>'
-                . '<span class="osc-catcard-row"><label for="' . osc_esc_html($selectId) . '">'
-                . osc_esc_html((string)($node['s_name'] ?? '')) . '</label>'
-                . '<select id="' . osc_esc_html($selectId) . '" name="' . osc_esc_html($name . '[' . $catId . ']') . '"'
-                . ' class="field-select">';
-            foreach ($choices as $value => $label) {
-                echo '<option value="' . osc_esc_html((string)$value) . '"' . ((string)$value === $current ? ' selected' : '') . '>'
-                    . osc_esc_html((string)$label) . '</option>';
-            }
-            echo '</select></span>';
-            if ($children !== array()) {
-                echo '<ul>';
-                self::categoryModeItems($children, $id, $name, $modes, $saved);
-                echo '</ul>';
+            echo '<li class="osc-catmatrix-row" role="radiogroup" data-depth="' . (int)$depth . '" aria-labelledby="' . osc_esc_html($labelId) . '">'
+                . '<span class="osc-catcard-subname" id="' . osc_esc_html($labelId) . '"'
+                . ($depth > 0 ? ' style="padding-inline-start: ' . ($depth * 1.25) . 'rem"' : '') . '>'
+                . osc_esc_html((string)($node['s_name'] ?? '')) . '</span>';
+            foreach (self::subChoices($modes) as $value => $label) {
+                echo '<label class="osc-catmatrix-cell"><input type="radio" name="' . osc_esc_html($name . '[' . $catId . ']') . '"'
+                    . ' value="' . osc_esc_html((string)$value) . '"' . ((string)$value === (string)$current ? ' checked' : '') . ' />'
+                    . '<span class="osc-catmatrix-label">' . osc_esc_html((string)$label) . '</span></label>';
             }
             echo '</li>';
+            if ($children !== array()) {
+                self::categoryModeItems($children, $id, $name, $modes, $saved, $depth + 1);
+            }
         }
+    }
+
+    /**
+     * A subcategory's choices: follow the parent, off, or one of the modes.
+     *
+     * @param array<string,string> $modes
+     *
+     * @return array<string,string>
+     */
+    private static function subChoices(array $modes)
+    {
+        return array('' => __('Same as parent'), \mindstellar\category\CategoryModes::OFF => __('Off')) + $modes;
+    }
+
+    /**
+     * One radio switch, labelled by the element with id $labelId.
+     *
+     * @param string               $labelId
+     * @param string               $name
+     * @param array<string,string> $choices value => label
+     * @param string               $current
+     * @param string               $class
+     *
+     * @return void
+     */
+    private static function segmented($labelId, $name, array $choices, $current, $class)
+    {
+        echo '<fieldset class="' . osc_esc_html($class) . '" aria-labelledby="' . osc_esc_html($labelId) . '">';
+        $i = 0;
+        foreach ($choices as $value => $label) {
+            $optId = $labelId . '-' . $i++;
+            echo '<input type="radio" id="' . osc_esc_html($optId) . '" name="' . osc_esc_html($name) . '"'
+                . ' value="' . osc_esc_html((string)$value) . '"' . ((string)$value === (string)$current ? ' checked' : '') . ' />'
+                . '<label for="' . osc_esc_html($optId) . '">' . osc_esc_html((string)$label) . '</label>';
+        }
+        echo '</fieldset>';
     }
 
     /**
