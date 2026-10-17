@@ -156,6 +156,12 @@ class CAdminUsers extends AdminSecBaseModel
     private function editForm(): void
     {
         $aUser      = $this->userManager->findByPrimaryKey(Params::getParam('id'));
+        if (empty($aUser['pk_i_id'])) {
+            osc_add_flash_error_message(_m('That user does not exist.'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=users');
+
+            return;
+        }
         $aCountries = Country::getInstance()->listAll();
         $aRegions   = array();
         if ($aUser['fk_c_country_code'] != '') {
@@ -205,6 +211,7 @@ class CAdminUsers extends AdminSecBaseModel
         }
 
         $this->_exportVariableToView('actions', $actions);
+        $this->_exportVariableToView('userMoves', $this->userStateMoves($aUser));
 
         $this->_exportVariableToView('user', $aUser);
         $this->_exportVariableToView('countries', $aCountries);
@@ -266,6 +273,63 @@ class CAdminUsers extends AdminSecBaseModel
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=users');
+    }
+
+    /**
+     * The moves the user editor's status panel offers, split into routine ones and the ones
+     * that lock the account or remove it, which ask first.
+     *
+     * @param array<string,mixed> $user
+     *
+     * @return array{routine:array<int,array<string,mixed>>,danger:array<int,array<string,mixed>>}
+     */
+    private function userStateMoves(array $user): array
+    {
+        // Plain ampersands: an action spec's url is escaped where it is drawn.
+        $url = static fn (string $action, string $extra = '') => osc_admin_base_url(true) . '?page=users&action=' . $action
+            . '&id[]=' . (int) $user['pk_i_id'] . '&' . osc_csrf_token_url() . $extra;
+        $ask = static fn (string $title, string $text, string $label) => array(
+            'data-osc-confirm'        => $text,
+            'data-osc-confirm-title'  => $title,
+            'data-osc-confirm-label'  => $label,
+            'data-osc-confirm-cancel' => __('Cancel'),
+        );
+
+        $routine = array(
+            !empty($user['b_active'])
+                ? array('label' => __('Deactivate'), 'url' => $url('deactivate', '&value=INACTIVE'))
+                : array('label' => __('Activate'), 'url' => $url('activate', '&value=ACTIVE')),
+            array(
+                'label' => __('Log in as user'),
+                'url'   => osc_admin_base_url(true) . '?page=users&action=user_login&id=' . (int) $user['pk_i_id'] . '&' . osc_csrf_token_url(),
+                'attrs' => array('target' => '_blank'),
+            ),
+        );
+        if (empty($user['b_active'])) {
+            $routine[] = array('label' => __('Resend activation e-mail'), 'url' => $url('resend_activation'));
+        }
+        $routine[] = array(
+            'label' => __('Sign out everywhere'),
+            'url'   => $url('sign_out_all'),
+            'attrs' => $ask(__('Sign this user out everywhere?'), __('Every browser and app this user is signed in on is signed out.'), __('Sign out')),
+        );
+
+        $danger = array(
+            !empty($user['b_enabled'])
+                ? array(
+                    'label' => __('Block user'),
+                    'url'   => $url('disable', '&value=DISABLE'),
+                    'attrs' => $ask(__('Block this user?'), __('The user cannot sign in, and their listings are hidden until unblocked.'), __('Block user')),
+                )
+                : array('label' => __('Unblock user'), 'url' => $url('enable', '&value=ENABLE')),
+            array(
+                'label' => __('Delete user'),
+                'url'   => $url('delete'),
+                'attrs' => $ask(__('Delete this user?'), __('The account and its listings are removed for good.'), __('Delete user')),
+            ),
+        );
+
+        return array('routine' => $routine, 'danger' => $danger);
     }
 
     /**
