@@ -110,7 +110,7 @@ if (!function_exists('osc_admin_page_header')) {
      * upload), then where to configure it, then help last.
      *
      * Each action: icon (bootstrap-icon name), url, title, and optionally onclick or
-     * attrs (associative, escaped). The title is both the tooltip and the accessible name
+     * attrs (associative, escaped). An action with a plus icon shows its title as text. The title is both the tooltip and the accessible name
      * -- an icon with neither is a button that a screen reader announces as nothing.
      * `attrs` is how a header action keeps the id its page's JavaScript binds to.
      *
@@ -134,8 +134,8 @@ if (!function_exists('osc_admin_page_header')) {
                 foreach (($action['attrs'] ?? array()) as $name => $value) {
                     $attrs .= ' ' . osc_esc_html($name) . '="' . osc_esc_html($value) . '"';
                 }
-                // An add action is the page's main job, so it shows its label next to the icon.
-                $isAdd = strpos((string) ($action['icon'] ?? ''), 'bi-plus') === 0; ?>
+                // A plus icon marks the page's add action, which shows its title as text.
+                $isAdd = in_array($action['icon'] ?? '', array('bi-plus', 'bi-plus-lg', 'bi-plus-circle', 'bi-plus-circle-fill'), true); ?>
                 <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"<?php echo $isAdd ? ' class="osc-head-add"' : ''; ?>
                    <?php if (!empty($action['onclick'])) { ?>onclick="<?php echo osc_esc_html($action['onclick']); ?>"<?php } ?>
                    title="<?php echo osc_esc_html($label); ?>"
