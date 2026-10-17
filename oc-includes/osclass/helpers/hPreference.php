@@ -1424,6 +1424,16 @@ function osc_watermark_opacity(): int
 }
 
 /**
+ * What the site is for: 'classifieds' (the default), 'shop' or 'both'.
+ *
+ * @return string
+ */
+function osc_site_mode(): string
+{
+    return \mindstellar\market\SiteMode::normalize((string) getPreference('site_mode'));
+}
+
+/**
  * Return subdomain type
  *
  * @return string

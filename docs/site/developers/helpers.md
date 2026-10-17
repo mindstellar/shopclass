@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1178 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1179 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -840,7 +840,7 @@ Core defines 1178 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (134)
+### hPreference (135)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -954,6 +954,7 @@ Core defines 1178 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_save_webp()` | Whether new photos are stored as WebP. Only when the server can write WebP. |
 | `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not |
 | `osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')` | generic function to insert/update preferences |
+| `osc_site_mode()` | What the site is for: 'classifieds' (the default), 'shop' or 'both'. |
 | `osc_subdomain_host()` | Return subdomain host |
 | `osc_subdomain_type()` | Return subdomain type |
 | `osc_theme()` | Gets current theme |
