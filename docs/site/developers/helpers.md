@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1179 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1181 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -175,7 +175,7 @@ Core defines 1179 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (67)
+### hBilling (69)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -237,6 +237,8 @@ Core defines 1179 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_items_wait_time_for_user(?int $userId = null)` | Seconds $userId must wait between posts -- 0 while a listing.no_wait entitlement is held, osc_items_wait_time() otherwise. Defaults to osc_logged_user_id(). Guests (no user id) always read the global wait: this is an anti-flood control and anonymous posting has no entitlements to check. |
 | `osc_listing_limit_message(?int $userId = null, array $item = array())` | The message a seller is shown at their listing limit, in the one wording the post form and the submit path both use. $item carries the listing being posted where there is one (the submit path), and is empty where there is not (opening the form). |
 | `osc_max_images_for_user(?int $userId = null)` | The photo cap in force for $userId, raised by a listing.photos entitlement. Defaults to osc_logged_user_id(). -1 means unlimited -- treat it that way, never compare it numerically. Falls back to osc_max_images_per_item() (where 0, not -1, is that helper's own "unlimited") whenever billing is off, no user is known, or the user holds nothing. |
+| `osc_order_bought(int $userId, int $itemId)` | Whether the user has a paid, shipped or delivered order with this listing on it. |
+| `osc_order_lines(int $orderId)` | The lines of one order: {id, order_id, kind, item_id, variant_id, title, options, sku, qty, unit, amount, meta}, amounts in micros. Empty for a credits order. |
 | `osc_prime_item_upgrades(array $items)` | Batch-load item-upgrade state for $items into the request cache ItemUpgradeStore::prime() fills, so osc_item_upgrades()/osc_item_is_highlighted()/ osc_item_is_urgent() called inside a listing loop cost one query for the whole page rather than one per card. Call this where a result set is built (core already does, for search/category/home); a theme working a custom loop can call it too. |
 | `osc_register_billing_feature(string $id, array $spec)` | Register a feature so credits can be spent on it. Thin wrapper over FeatureRegistry::register() -- see that method for the $spec shape. |
 | `osc_register_billing_item_upgrades()` | Register the three built-in item upgrades, each gated on its own *_enabled preference so a disabled upgrade is not merely unpriced but absent from the registry entirely. Called once below, and callable again by anything that changes those preferences without a fresh request (the admin settings save). |

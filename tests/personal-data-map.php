@@ -56,6 +56,9 @@ foreach ($personal as $table) {
     pin($table . ' appears in the map', true, in_array($table, $mapped, true));
 }
 
+// Order lines name no account; they belong to one through their order.
+pin('t_billing_order_line appears in the map', true, in_array('t_billing_order_line', $mapped, true));
+
 harness_section('the map does not describe tables that no longer exist');
 $schemaTables = array_column($tables, 1);
 foreach ($mapped as $table) {

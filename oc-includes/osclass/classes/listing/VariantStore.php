@@ -108,6 +108,28 @@ final class VariantStore extends Model
     }
 
     /**
+     * These variants, by id. Unknown ids have no entry.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public static function byIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        if ($ids === array()) {
+            return array();
+        }
+        $out = array();
+        foreach (Db::select('SELECT * FROM ' . self::tableName() . ' WHERE pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')', $ids) as $row) {
+            $out[(int) $row['pk_i_id']] = $row;
+        }
+
+        return $out;
+    }
+
+    /**
      * The listing's default row (the one with no options), or null.
      *
      * @return array<string,mixed>|null

@@ -270,6 +270,33 @@ final class ListingQuery
     }
 
     /**
+     * The live ones of these listings for a cart, in one query: price, currency, category, city
+     * and the title, one row per language (a listing with no text has one row, title null).
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> pk_i_id, fk_i_category_id, i_price, fk_c_currency_code, s_city, fk_c_locale_code, s_title
+     * @throws \mindstellar\database\DbException
+     */
+    public function liveWithTitles(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $p = DB_TABLE_PREFIX;
+
+        return Db::select(
+            'SELECT i.pk_i_id, i.fk_i_category_id, i.i_price, i.fk_c_currency_code, l.s_city, d.fk_c_locale_code, d.s_title'
+            . ' FROM ' . self::tableName() . ' i'
+            . ' LEFT JOIN ' . $p . 't_item_location l ON l.fk_i_item_id = i.pk_i_id'
+            . ' LEFT JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = i.pk_i_id'
+            . ' WHERE i.pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ') AND '
+            . implode(' AND ', ListingStatus::liveConditions('i.', $this->clock->now())),
+            array_values($ids)
+        );
+    }
+
+    /**
      * Title and description rows of some listings, in one query.
      *
      * @param int[]       $ids
