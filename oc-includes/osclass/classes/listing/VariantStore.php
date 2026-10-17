@@ -31,7 +31,15 @@ final class VariantStore extends Model
     public const MAX_WEIGHT = 4294967295;
 
     /** The columns a write may set on the default row. */
-    private const FIELDS = array('s_sku', 'i_price', 'i_stock', 'i_weight', 's_shipping_class');
+    private const FIELDS = array('s_sku', 'i_price', 'i_compare_price', 'i_stock', 'i_weight', 's_shipping_class');
+
+    /**
+     * The prefixed table name, for the search compiler's SQL fragments.
+     */
+    public static function tableName(): string
+    {
+        return parent::tableName();
+    }
 
     /**
      * Every variant of one listing, default row first.
@@ -96,7 +104,7 @@ final class VariantStore extends Model
      * Create or change the listing's default row. A key left out of $values keeps its stored
      * value; null clears it.
      *
-     * @param array{s_sku?:?string,i_price?:?int,i_stock?:?int,i_weight?:?int,s_shipping_class?:?string} $values
+     * @param array{s_sku?:?string,i_price?:?int,i_compare_price?:?int,i_stock?:?int,i_weight?:?int,s_shipping_class?:?string} $values
      *
      * @return int the row's id
      * @throws \mindstellar\database\DbException

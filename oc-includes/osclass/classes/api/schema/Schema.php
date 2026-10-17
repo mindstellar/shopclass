@@ -113,6 +113,8 @@ final class Schema
             'PageMeta'     => self::object([
                 'total' => self::nullable('integer', 'Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list. A list that is not paged always has it, equal to its size.'),
                 'limit' => ['type' => 'integer'],
+                'page'  => ['type' => 'integer', 'description' => 'The page number, when the request sent `page`.'],
+                'pages' => ['type' => 'integer', 'description' => 'How many pages the matches fill, when the request sent `page` and `count=true`.'],
                 'truncated' => ['type' => 'boolean', 'description' => 'Present and true when more matches exist but paging stops here: links.next is null. Narrow the filters, or sort by created or id.'],
                 'facets'     => self::object([
                     'category' => ['type' => 'object', 'additionalProperties' => ['type' => 'integer'], 'description' => 'Category id => listings found in it, as the search engine counted them.'],
@@ -340,13 +342,16 @@ final class Schema
                     'sku'            => self::nullable('string'),
                     'options'        => ['type' => ['object', 'null'], 'additionalProperties' => ['type' => 'string'], 'description' => 'Option name => value; null for the default variant.'],
                     'price'          => self::nullable('string', 'A decimal such as "12.50"; null uses the listing price.'),
+                    'compare_at'     => self::nullable('string', 'The "was" price, a decimal such as "20.00"; null when none is set.'),
+                    'on_sale'        => ['type' => 'boolean', 'description' => 'true when compare_at is above the price the variant sells at.'],
                     'in_stock'       => ['type' => 'boolean', 'description' => 'true when stock is not tracked.'],
+                    'low_stock'      => self::nullable('integer', 'The units left when 1 to 5 are, for everyone; null otherwise or when stock is not tracked.'),
                     'stock'          => self::nullable('integer', 'Owner and admin view. Null when stock is not tracked.'),
                     'weight'         => self::nullable('integer', 'Grams.'),
                     'shipping_class' => self::nullable('string'),
                     'photo_id'       => self::nullable('integer'),
                     'position'       => ['type' => 'integer'],
-                ], ['id', 'sku', 'options', 'price', 'in_stock', 'weight', 'shipping_class', 'photo_id', 'position'])],
+                ], ['id', 'sku', 'options', 'price', 'compare_at', 'on_sale', 'in_stock', 'low_stock', 'weight', 'shipping_class', 'photo_id', 'position'])],
             ], ['buyable', 'variants']) + ['description' => 'Left out when the listing is not for sale.'],
             'premium'      => ['type' => 'boolean'],
             'views'        => ['type' => 'integer'],
@@ -421,6 +426,13 @@ final class Schema
             'price_enabled'  => ['type' => 'boolean'],
             'children'       => ['type' => 'array', 'items' => self::ref('Category'), 'description' => 'With `tree=1`.'],
             'custom_fields'  => ['type' => 'array', 'items' => self::ref('CustomField'), 'description' => 'On a single category.'],
+            'cover'          => array_merge(self::object([
+                'id'        => ['type' => 'integer'],
+                'thumbnail' => ['type' => 'string'],
+                'preview'   => ['type' => 'string'],
+                'normal'    => ['type' => 'string'],
+                'original'  => self::nullable('string', 'Only when the site keeps original images.'),
+            ], ['id', 'thumbnail', 'preview', 'normal', 'original']), ['type' => ['object', 'null'], 'description' => 'With `include=cover`: a photo, shaped as a listing\'s, of the newest live listing in the category or below it; null when none has one.']),
             'ext'            => $ext->schemaFor('category'),
         ], ['id', 'parent_id', 'slug', 'name']);
     }

@@ -34,15 +34,23 @@ final class CategoriesController
         $this->serializer = new CategorySerializer($api->extensions(), new CustomFieldSerializer());
     }
 
+    /**
+     * GET /categories; `include=cover` adds each category's cover photo.
+     */
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
-        $context = $this->api->context($request, $call->credential(), 'category', CategorySerializer::MEMBERS);
+        $context = $this->api->context($request, $call->credential(), 'category', CategorySerializer::MEMBERS, CategorySerializer::INCLUDES);
         $catalog = CategoryCatalog::fromSite();
+        $covers  = null;
+        if ($context->includes('cover') && $context->wants('cover')) {
+            $listings = $this->api->listingSerializer();
+            $covers   = array_map(static fn (array $photo): array => $listings->photos([$photo])[0], $catalog->covers());
+        }
 
         return Page::whole($request->queryBool('tree')
-            ? $this->serializer->tree($catalog, $context)
-            : $this->serializer->flat($catalog, $context), $this->api->links(), $call);
+            ? $this->serializer->tree($catalog, $context, 0, $covers)
+            : $this->serializer->flat($catalog, $context, $covers), $this->api->links(), $call);
     }
 
     public function show(ApiCall $call): Response

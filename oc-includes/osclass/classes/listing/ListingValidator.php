@@ -191,9 +191,11 @@ final class ListingValidator
                 $errors[] = self::entry($capped[$column][0], 'too_long', $capped[$column][1]);
             }
         }
-        $price = $fields['i_price'] ?? null;
-        if (is_string($price) || (is_int($price) && ($price < 0 || $price > 999999999999999999))) {
-            $errors[] = self::entry('/product/price', 'invalid', _m('Price must be a positive number.'));
+        foreach (array('i_price' => array('/product/price', _m('Price must be a positive number.')), 'i_compare_price' => array('/product/compare_at', _m('Was price must be a positive number.'))) as $column => $failure) {
+            $price = $fields[$column] ?? null;
+            if (is_string($price) || (is_int($price) && ($price < 0 || $price > 999999999999999999))) {
+                $errors[] = self::entry($failure[0], 'invalid', $failure[1]);
+            }
         }
         $stock = $fields['i_stock'] ?? null;
         if ($stock !== null && (!is_int($stock) || $stock < 0 || $stock > VariantStore::MAX_STOCK)) {

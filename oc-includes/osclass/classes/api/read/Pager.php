@@ -24,7 +24,7 @@ use mindstellar\api\serializer\Links;
  */
 final class Pager
 {
-    private function __construct(private ListSpec $spec, private Cursor $cursor, private int $limit, private string $hash, private ?CursorState $state, private Request $request, private string $path)
+    private function __construct(private ListSpec $spec, private Cursor $cursor, private int $limit, private string $hash, private ?CursorState $state, private Request $request, private string $path, private ?int $page = null)
     {
     }
 
@@ -32,16 +32,30 @@ final class Pager
      * @param string                   $path    the endpoint, below /api/{version}/, for the page links
      * @param array<string,mixed>|null $filters what the list is filtered by; a cursor works only for these. Null means the path and the query.
      *
-     * @throws ProblemException 422 for a limit out of range, 400 for a cursor this request cannot use
+     * @param bool                     $pages   whether `page` numbers the pages of this list
+     * @throws ProblemException 422 for a limit out of range, or a page past the deepest offset (`page_too_deep`), 400 for a cursor this request cannot use
      */
-    public static function fromRequest(Request $request, Cursor $cursor, ListSpec $spec, string $path, ?array $filters = null): self
+    public static function fromRequest(Request $request, Cursor $cursor, ListSpec $spec, string $path, ?array $filters = null, bool $pages = false): self
     {
         $filters ??= ['list' => $path] + $request->query();
         $limit = $request->queryInt('limit', $spec->defaultLimit());
         if ($limit < 1 || $limit > $spec->maxLimit()) {
             throw ProblemException::field('/limit', 'maximum', 'must be between 1 and ' . $spec->maxLimit(), 'query');
         }
-        unset($filters['sort'], $filters['order'], $filters['cursor'], $filters['limit']);
+        unset($filters['sort'], $filters['order'], $filters['cursor'], $filters['limit'], $filters['page']);
+        $page = null;
+        if ($pages && $request->queryString('page') !== '') {
+            $page = $request->queryInt('page');
+            if ($page < 1) {
+                throw ProblemException::field('/page', 'minimum', 'must be 1 or more', 'query');
+            }
+            if ($request->queryString('cursor') !== '') {
+                throw ProblemException::field('/page', 'invalid', 'cannot be used with a cursor', 'query');
+            }
+            if (($page - 1) * $limit > $spec->maxOffset()) {
+                throw ProblemException::of('page_too_deep', 'Page ' . $page . ' is past the ' . $spec->maxOffset() . ' listings a list reaches by page number. Narrow the filters.');
+            }
+        }
         $hash  = Cursor::filterHash($filters + ['sort' => $spec->sort(), 'order' => $spec->direction()]);
         $state = null;
         $raw   = $request->queryString('cursor');
@@ -54,7 +68,7 @@ final class Pager
             }
         }
 
-        return new self($spec, $cursor, $limit, $hash, $state, $request, $path);
+        return new self($spec, $cursor, $limit, $hash, $state, $request, $path, $page);
     }
 
     public function limit(): int
@@ -84,11 +98,19 @@ final class Pager
         $rows  = $fetch();
         $count = $total !== null && $this->counts() ? $total() : null;
 
-        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows), $meta))->response($links, $this->path, $this->request->query(), $this->request->version());
+        if ($this->page !== null) {
+            $meta = ['page' => $this->page] + ($count === null ? [] : ['pages' => (int) ceil($count / $this->limit)]) + $meta;
+        }
+
+        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows), $meta, $this->nextPage($rows)))->response($links, $this->path, $this->request->query(), $this->request->version());
     }
 
     public function offset(): int
     {
+        if ($this->page !== null) {
+            return ($this->page - 1) * $this->limit;
+        }
+
         return $this->state !== null && $this->state->kind() === CursorState::OFFSET ? $this->state->offsetValue() : 0;
     }
 
@@ -130,7 +152,7 @@ final class Pager
      */
     public function next(array $rows): ?string
     {
-        if (count($rows) <= $this->limit) {
+        if (count($rows) <= $this->limit || $this->page !== null) {
             return null;
         }
         $sort      = $this->spec->sort();
@@ -144,12 +166,26 @@ final class Pager
     }
 
     /**
+     * The number of the next page when the request asked by page number, or null on the last page.
+     *
+     * @param array<int,array<string,mixed>> $rows what the query returned, up to limit + 1
+     */
+    private function nextPage(array $rows): ?int
+    {
+        return $this->page !== null && count($rows) > $this->limit && $this->page * $this->limit <= $this->spec->maxOffset() ? $this->page + 1 : null;
+    }
+
+    /**
      * Whether more rows exist but offset paging stops here, so there is no next page.
      *
      * @param array<int,array<string,mixed>> $rows what the query returned, up to limit + 1
      */
     public function truncated(array $rows): bool
     {
+        if ($this->page !== null) {
+            return count($rows) > $this->limit && $this->nextPage($rows) === null;
+        }
+
         return count($rows) > $this->limit && Cursor::modeFor($this->spec->sort()) !== CursorState::KEYSET
             && $this->offset() + $this->limit > $this->spec->maxOffset();
     }

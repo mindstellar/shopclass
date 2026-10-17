@@ -47,6 +47,7 @@ mindstellar\api\Problem code maintenance = 503
 mindstellar\api\Problem code method_not_allowed = 405
 mindstellar\api\Problem code not_found = 404
 mindstellar\api\Problem code not_owner = 403
+mindstellar\api\Problem code page_too_deep = 422
 mindstellar\api\Problem code precondition_failed = 412
 mindstellar\api\Problem code rate_limited = 429
 mindstellar\api\Problem code server_error = 500

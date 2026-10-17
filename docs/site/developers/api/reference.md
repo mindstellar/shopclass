@@ -1042,6 +1042,7 @@ Every category, flat or as a tree
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
 | `tree` | query | boolean | no |  |
+| `include` | query | string | no | Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`CategoryList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1132,6 +1133,8 @@ Search listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `in_stock` | query | boolean | no | true: only listings with a variant in stock (stock not tracked, or above 0). |
+| `on_sale` | query | boolean | no | true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both. |
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
@@ -1140,6 +1143,7 @@ Search listings
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
+| `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
 | `include` | query | string | no | Comma list: custom_fields, translations. |
@@ -1550,6 +1554,8 @@ A user's live listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `in_stock` | query | boolean | no | true: only listings with a variant in stock (stock not tracked, or above 0). |
+| `on_sale` | query | boolean | no | true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both. |
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
@@ -1558,6 +1564,7 @@ A user's live listings
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
+| `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
 | `include` | query | string | no | Comma list: custom_fields, translations. |

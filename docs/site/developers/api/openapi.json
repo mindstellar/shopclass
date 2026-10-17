@@ -27374,6 +27374,16 @@
                         }
                     },
                     {
+                        "name": "include",
+                        "in": "query",
+                        "required": false,
+                        "description": "Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
                         "name": "If-None-Match",
                         "in": "header",
                         "required": false,
@@ -30436,6 +30446,24 @@
                         }
                     },
                     {
+                        "name": "in_stock",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant in stock (stock not tracked, or above 0).",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "on_sale",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "name": "lat",
                         "in": "query",
                         "required": false,
@@ -30531,6 +30559,16 @@
                         "schema": {
                             "type": "string",
                             "maxLength": 1024
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "description": "Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
                         }
                     },
                     {
@@ -38871,6 +38909,24 @@
                         }
                     },
                     {
+                        "name": "in_stock",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant in stock (stock not tracked, or above 0).",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "on_sale",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "name": "lat",
                         "in": "query",
                         "required": false,
@@ -38966,6 +39022,16 @@
                         "schema": {
                             "type": "string",
                             "maxLength": 1024
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "description": "Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
                         }
                     },
                     {
@@ -40128,6 +40194,7 @@
                             "validation_failed",
                             "idempotency_key_reused",
                             "listing_limit",
+                            "page_too_deep",
                             "rate_limited",
                             "login_blocked",
                             "too_many_failures",
@@ -40214,6 +40281,14 @@
                     },
                     "limit": {
                         "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "The page number, when the request sent `page`."
+                    },
+                    "pages": {
+                        "type": "integer",
+                        "description": "How many pages the matches fill, when the request sent `page` and `count=true`."
                     },
                     "truncated": {
                         "type": "boolean",
@@ -40712,9 +40787,27 @@
                                             ],
                                             "description": "A decimal such as \"12.50\"; null uses the listing price."
                                         },
+                                        "compare_at": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "description": "The \"was\" price, a decimal such as \"20.00\"; null when none is set."
+                                        },
+                                        "on_sale": {
+                                            "type": "boolean",
+                                            "description": "true when compare_at is above the price the variant sells at."
+                                        },
                                         "in_stock": {
                                             "type": "boolean",
                                             "description": "true when stock is not tracked."
+                                        },
+                                        "low_stock": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "description": "The units left when 1 to 5 are, for everyone; null otherwise or when stock is not tracked."
                                         },
                                         "stock": {
                                             "type": [
@@ -40751,7 +40844,10 @@
                                         "sku",
                                         "options",
                                         "price",
+                                        "compare_at",
+                                        "on_sale",
                                         "in_stock",
+                                        "low_stock",
                                         "weight",
                                         "shipping_class",
                                         "photo_id",
@@ -41106,6 +41202,41 @@
                             "$ref": "#/components/schemas/CustomField"
                         },
                         "description": "On a single category."
+                    },
+                    "cover": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "thumbnail": {
+                                "type": "string"
+                            },
+                            "preview": {
+                                "type": "string"
+                            },
+                            "normal": {
+                                "type": "string"
+                            },
+                            "original": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "Only when the site keeps original images."
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "thumbnail",
+                            "preview",
+                            "normal",
+                            "original"
+                        ],
+                        "description": "With `include=cover`: a photo, shaped as a listing's, of the newest live listing in the category or below it; null when none has one."
                     },
                     "ext": {
                         "type": "object",
@@ -43661,6 +43792,16 @@
                                 "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
                                 "minimum": 0,
                                 "description": "A decimal such as \"12.50\"; null sells at the listing price."
+                            },
+                            "compare_at": {
+                                "type": [
+                                    "string",
+                                    "number",
+                                    "null"
+                                ],
+                                "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
+                                "minimum": 0,
+                                "description": "The \"was\" price, a decimal such as \"20.00\"; null clears it."
                             },
                             "stock": {
                                 "type": [

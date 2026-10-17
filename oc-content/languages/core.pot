@@ -13324,6 +13324,10 @@ msgstr ""
 msgid "Warn about expiration"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Was price (blank for none)"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Watermark"
 msgstr ""

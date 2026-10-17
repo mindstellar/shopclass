@@ -68,6 +68,11 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Search snippets: on a keyword search each listing gets its text with the searched words marked, from `osc_item_search_snippet()` and the API's `snippet`. A search plugin can also send category counts, a "did you mean" query and a fuzzy-match flag (`osc_search_category_counts()`, `osc_search_suggestion()`, `osc_search_relaxed()`, and `meta` in the API).
 - Related listings: `osc_related_listings()` and `GET /listings/{id}/related` show live listings like one listing (same category, shared title words). A search plugin can pick them with the `item_related_ids` filter.
 - Search box and post form suggestions: `GET /search/suggest` lists listings whose titles match, with a thumbnail, and `GET /search/categories` suggests up to three categories for a title. A search plugin can answer either through the `search_suggestions` and `category_suggestions` filters, and may add suggested searches. Themes add `osc_search_suggest_attributes()` to a search input to show the list.
+- `GET /listings` takes `page` for numbered pages with any sort, and answers `meta.page` and `meta.pages`.
+- A product variant can have a "was" price (`compare_at`, set by an admin); listings answer `compare_at` and `on_sale`.
+- Variants answer `low_stock`, the units left when 1 to 5 are, so a shop can say "Only 3 left".
+- `GET /listings` takes `in_stock=true` and `on_sale=true` to list only what a shop can sell now or has marked down.
+- `GET /categories?include=cover` adds each category's cover: the first photo of the newest live listing in it or below it.
 
 ### Breaking
 

@@ -59,6 +59,9 @@ pin('stock past the column', ['/product/stock'], $codes($v->product(['sell' => t
 pin('stock at the column limit passes', [], $v->product(['sell' => true, 'fields' => ['i_stock' => VariantStore::MAX_STOCK]]));
 pin('negative weight', ['/product/weight'], $codes($v->product(['sell' => true, 'fields' => ['i_weight' => -5]])));
 pin('weight past the column', ['/product/weight'], $codes($v->product(['sell' => true, 'fields' => ['i_weight' => VariantStore::MAX_WEIGHT + 1]])));
+pin('a negative was price', ['/product/compare_at'], $codes($v->product(['sell' => true, 'fields' => ['i_compare_price' => -1]])));
+pin('a was price that is not a number', ['/product/compare_at'], $codes($v->product(['sell' => true, 'fields' => ['i_compare_price' => 'cheap']])));
+pin('a good was price passes', [], $v->product(['sell' => true, 'fields' => ['i_compare_price' => 9500000]]));
 pin('the widths match the columns', ['s_sku' => 64, 's_shipping_class' => 40], ListingValidator::VARIANT_WIDTHS);
 $cols = [];
 foreach ($admin->query("SELECT COLUMN_NAME, CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$p}t_item_variant' AND CHARACTER_MAXIMUM_LENGTH IS NOT NULL AND COLUMN_NAME IN ('s_sku', 's_shipping_class')") as $c) {
@@ -186,6 +189,32 @@ pin('a listing with no row shows an unticked form', [false, ''], [ListingInput::
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => null], $boss);
 pin('product null stops selling', [200, []], [$r->status(), $rows($plain)]);
 
+harness_section('was price');
+$variant = static fn (int $id): array => $call('GET', 'listings/' . $id, null, $tomKey)->body()['data']['product']['variants'][0] ?? [];
+$r = $call('PATCH', 'admin/listings/' . $plain, ['product' => ['price' => '7.25', 'compare_at' => '9.50']], $boss);
+pin('an admin saves compare_at', [200, '9500000'], [$r->status(), $rows($plain)[0]['i_compare_price']]);
+pin('the public view shows it, on sale', ['9.50', true], [$variant($plain)['compare_at'] ?? null, $variant($plain)['on_sale'] ?? null]);
+pin('the response matches the schema', [], api_admin_schema_errors('ListingDocument', $call('GET', 'admin/listings/' . $plain, null, $boss)));
+$call('PATCH', 'admin/listings/' . $plain, ['product' => ['compare_at' => '7.25']], $boss);
+pin('equal to the price is not on sale', ['7.25', false], [$variant($plain)['compare_at'] ?? null, $variant($plain)['on_sale'] ?? null]);
+$call('PATCH', 'admin/listings/' . $plain, ['product' => ['compare_at' => '5']], $boss);
+pin('below the price is not on sale', false, $variant($plain)['on_sale'] ?? null);
+$call('PATCH', 'admin/listings/' . $plain, ['product' => ['price' => null, 'compare_at' => '12']], $boss);
+pin('a variant with no price compares to the listing price (10)', [null, '12.00', true], [$variant($plain)['price'], $variant($plain)['compare_at'], $variant($plain)['on_sale']]);
+$r = $call('PATCH', 'admin/listings/' . $plain, ['product' => ['compare_at' => 'cheap']], $boss);
+pin('a bad compare_at is refused', 422, $r->status());
+$call('PATCH', 'admin/listings/' . $plain, ['product' => ['compare_at' => null]], $boss);
+pin('null clears it', [null, false, null], [$variant($plain)['compare_at'], $variant($plain)['on_sale'], $rows($plain)[0]['i_compare_price']]);
+$r = $call('PATCH', 'listings/' . $mine, ['product' => ['compare_at' => '99']], $userKey);
+pin('a user cannot set it', [422, []], [$r->status(), $rows($mine)]);
+$data = ListingInput::fromArray($form(['product' => $sell + ['compareAt' => '12.00']]), $userActor, true);
+pin('a user\'s form carries no product, so no was price', false, array_key_exists('product', $data));
+$data = ListingInput::fromArray($form(['ownerId' => '0', 'product' => $sell + ['compareAt' => '12.00']]), $adminActor, true);
+pin('an admin\'s form carries it', 12000000, $data['product']['fields']['i_compare_price'] ?? null);
+VariantStore::saveDefault($mine, ['i_price' => 5000000, 'i_compare_price' => 8000000]);
+pin('the admin form reads it back', '8.00', ListingInput::productForm($mine)['compareAt']);
+VariantStore::removeDefault($mine);
+
 harness_section('shop mode');
 if (!function_exists('osc_content_path')) {
     function osc_content_path(): string
@@ -270,8 +299,12 @@ $fresh = [$ddl(), $idx(), $fks()];
 $admin->query("DROP TABLE {$p}t_item_variant");
 $migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0076_item_variant.php';
 $migration->up(\mindstellar\database\Connection::getInstance());
-pin('the migration builds the table struct.sql builds', $fresh, [$ddl(), $idx(), $fks()]);
+pin('the first migration leaves the table without the was price', false, in_array('i_compare_price', array_column($ddl(), 0), true));
+$compare = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0078_item_variant_compare_price.php';
+$compare->up(\mindstellar\database\Connection::getInstance());
+pin('the migrations build the table struct.sql builds', $fresh, [$ddl(), $idx(), $fks()]);
 $migration->up(\mindstellar\database\Connection::getInstance());
-pin('and runs again without error', $fresh, [$ddl(), $idx(), $fks()]);
+$compare->up(\mindstellar\database\Connection::getInstance());
+pin('and run again without error', $fresh, [$ddl(), $idx(), $fks()]);
 
 exit(harness_result());

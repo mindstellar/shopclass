@@ -233,7 +233,7 @@ final class PublicRoutes
                 tag: 'Categories',
                 summary: 'Every category, flat or as a tree',
                 response: 'CategoryList',
-                query: $view + ['tree' => ['type' => 'boolean']]
+                query: $view + ['tree' => ['type' => 'boolean'], 'include' => ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none.']]
             ),
             'GET categories/{category}' => RouteSpec::read(
                 handler: [CategoriesController::class, 'show'],
@@ -570,6 +570,8 @@ final class PublicRoutes
             'price_max'   => ['type' => 'integer', 'minimum' => 0],
             'with_photos' => ['type' => 'boolean'],
             'premium'     => ['type' => 'boolean'],
+            'in_stock'    => ['type' => 'boolean', 'description' => 'true: only listings with a variant in stock (stock not tracked, or above 0).'],
+            'on_sale'     => ['type' => 'boolean', 'description' => 'true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both.'],
             'lat'         => ['type' => 'number', 'minimum' => -90, 'maximum' => 90, 'description' => 'Measure distances from this point, with lng. Needs distance search switched on.'],
             'lng'         => ['type' => 'number', 'minimum' => -180, 'maximum' => 180],
             'radius'      => ['type' => 'number', 'minimum' => 1, 'maximum' => 1000, 'description' => 'Only listings within this many km of lat/lng.'],
@@ -578,6 +580,7 @@ final class PublicRoutes
             'order'       => ['type' => 'string', 'enum' => ['asc', 'desc']],
             'limit'       => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
             'cursor'      => self::CURSOR,
+            'page'        => ['type' => 'integer', 'minimum' => 1, 'description' => 'Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are.'],
             'count'       => self::COUNT,
             'fields'      => ['type' => 'string', 'maxLength' => 500],
             'include'     => self::INCLUDE,

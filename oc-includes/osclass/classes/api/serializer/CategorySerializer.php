@@ -22,8 +22,11 @@ final class CategorySerializer
 {
     public const MEMBERS = [
         'id', 'parent_id', 'slug', 'name', 'description', 'position', 'listings_count', 'price_enabled', 'children', 'custom_fields',
-        'ext',
+        'cover', 'ext',
     ];
+
+    /** The `include` values a category list takes. */
+    public const INCLUDES = ['cover'];
 
     public function __construct(private Extensions $extensions, private CustomFieldSerializer $fields)
     {
@@ -49,28 +52,32 @@ final class CategorySerializer
     /**
      * Every category, flat in display order.
      *
+     * @param array<int,array<string,mixed>>|null $covers category id => shaped photo, sent as `cover` when given
+     *
      * @return array<int,array<string,mixed>>
      */
-    public function flat(CategoryCatalog $catalog, ViewContext $context): array
+    public function flat(CategoryCatalog $catalog, ViewContext $context, ?array $covers = null): array
     {
         $context = self::viewed($context);
 
-        return array_map(fn (array $c): array => $this->finish($this->shape($c, $context), $context), $catalog->all());
+        return array_map(fn (array $c): array => $this->finish($this->shape($c, $context, $covers), $context), $catalog->all());
     }
 
     /**
      * The roots, each with its `children`, to any depth.
      *
+     * @param array<int,array<string,mixed>>|null $covers category id => shaped photo, sent as `cover` when given
+     *
      * @return array<int,array<string,mixed>>
      */
-    public function tree(CategoryCatalog $catalog, ViewContext $context, int $parent = 0): array
+    public function tree(CategoryCatalog $catalog, ViewContext $context, int $parent = 0, ?array $covers = null): array
     {
         $context = self::viewed($context);
         $out     = [];
         foreach ($catalog->childIds($parent) as $id) {
             $category         = (array) $catalog->find($id);
-            $data             = $this->shape($category, $context);
-            $data['children'] = $this->tree($catalog, $context, $id);
+            $data             = $this->shape($category, $context, $covers);
+            $data['children'] = $this->tree($catalog, $context, $id, $covers);
             $out[]            = $this->finish($data, $context);
         }
 
@@ -99,13 +106,15 @@ final class CategorySerializer
     }
 
     /**
-     * @param array<string,mixed> $category
+     * @param array<string,mixed>                 $category
+     * @param array<int,array<string,mixed>>|null $covers category id => shaped photo
      *
      * @return array<string,mixed>
      */
-    private function shape(array $category, ViewContext $context): array
+    private function shape(array $category, ViewContext $context, ?array $covers = null): array
     {
         $locale = $context->locale();
+        $cover  = $covers === null ? [] : ['cover' => $covers[Format::int($category['pk_i_id'] ?? 0)] ?? null];
 
         return [
             'id'             => Format::int($category['pk_i_id'] ?? 0),
@@ -116,7 +125,7 @@ final class CategorySerializer
             'position'       => Format::int($category['i_position'] ?? 0),
             'listings_count' => Format::int($category['i_num_items'] ?? 0),
             'price_enabled'  => Format::bool($category['b_price_enabled'] ?? 1),
-        ];
+        ] + $cover;
     }
 
     /**

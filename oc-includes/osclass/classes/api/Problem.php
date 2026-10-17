@@ -70,6 +70,7 @@ final class Problem
         'validation_failed'      => [422, 'The request is not valid.'],
         'idempotency_key_reused' => [422, 'This Idempotency-Key was used for a different request.'],
         'listing_limit'          => [422, 'The listing limit is reached.'],
+        'page_too_deep'          => [422, 'The page is past the deepest page a list reaches.'],
         'rate_limited'           => [429, 'Too many requests.'],
         'login_blocked'          => [429, 'Too many failed sign-ins.'],
         'too_many_failures'      => [429, 'Too many failed attempts from this address.'],
