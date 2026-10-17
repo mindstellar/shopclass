@@ -147,6 +147,9 @@ final class PluginDependencies
         ));
         $offer  = Compatibility::pickBestVersion($meets, $this->coreVersion, $this->phpVersion);
         $manual = (string) (($offer ?? $meets[0] ?? $versions[0] ?? [])['url'] ?? '');
+        if (!preg_match('#^https://#i', $manual)) {
+            $manual = '';
+        }
 
         $row = [
             'slug'              => $slug,
