@@ -67,7 +67,7 @@
 
 // When the page prints its own title, the header's section name steps down to a small label,
 // so each screen has one large title. A page with no title of its own keeps the large name.
-#content-render:has(#content-page .render-title) #content-head h1 {
+#content-render:has(#content-page .osc-page-title) #content-head h1 {
   color: var(--osc-ink-muted);
   font-size: .8125rem;
   font-weight: 600;

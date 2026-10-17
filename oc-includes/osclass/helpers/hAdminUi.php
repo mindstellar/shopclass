@@ -701,7 +701,7 @@ if (!function_exists('osc_admin_page_head')) {
      */
     function osc_admin_page_head($title, array $actions = array(), array $opts = array())
     {
-        $class = 'render-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        $class = 'render-title osc-page-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
         if ($actions === array()) {
             echo '<h2 class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h2>';
