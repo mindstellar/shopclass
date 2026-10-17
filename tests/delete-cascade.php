@@ -25,7 +25,7 @@
  *    what t_meta_categories did to category deletion, and what
  *    t_form_submission_value did to custom-field deletion.
  *  - A child table with no foreign key at all, which nothing blocks and nothing
- *    cleans up: t_item_report_log, t_item_moderation_log, t_slug_history.
+ *    cleans up: t_item_report_log, t_item_moderation_log, t_item_variant, t_slug_history.
  *    t_alerts and t_form_submission were in this list until 0054 gave them keys;
  *    their models still delete them for installs without the keys.
  *  - t_billing_ledger and t_billing_order carry no foreign key either, but for the
@@ -249,6 +249,12 @@ seed_exec(
     'i',
     array($item)
 );
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_item_variant (fk_i_item_id, s_sku, i_stock) VALUES (?, 'SKU-1', 3)",
+    'i',
+    array($item)
+);
 // t_item_upgrade's FK is ON DELETE CASCADE, but nothing exercises it unless a row is
 // seeded here -- an empty table would pass the orphan sweep below vacuously.
 seed_exec(
@@ -272,6 +278,7 @@ foreach (
         't_item_meta',
         't_item_report_log',
         't_item_moderation_log',
+        't_item_variant',
         't_item_upgrade',
     ) as $child
 ) {
@@ -553,6 +560,11 @@ pin('no report log for a missing item', 0, $count(
 pin('no moderation log for a missing item', 0, $count(
     "SELECT COUNT(*) c FROM {$prefix}t_item_moderation_log m
        LEFT JOIN {$prefix}t_item i ON m.fk_i_item_id = i.pk_i_id
+      WHERE i.pk_i_id IS NULL"
+));
+pin('no variant for a missing item', 0, $count(
+    "SELECT COUNT(*) c FROM {$prefix}t_item_variant v
+       LEFT JOIN {$prefix}t_item i ON v.fk_i_item_id = i.pk_i_id
       WHERE i.pk_i_id IS NULL"
 ));
 pin('no listing photo for a missing item', 0, $count(

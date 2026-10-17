@@ -1255,7 +1255,7 @@ class Item extends DAO
         // stranding it with none.
         $resources = ItemResource::getInstance()->getAllResourcesFromItem($id);
 
-        // t_item_moderation_log, t_item_report_log and the photos in t_resource carry no
+        // t_item_moderation_log, t_item_report_log, t_item_variant and the photos in t_resource carry no
         // foreign key to the item, so only this removes them. t_item_comment is RESTRICT
         // and must go first; the rest cascade, and stay listed for installs whose foreign
         // keys were never created.
@@ -1267,6 +1267,7 @@ class Item extends DAO
             't_item_meta',
             't_item_moderation_log',
             't_item_report_log',
+            't_item_variant',
         );
 
         try {
