@@ -772,3 +772,18 @@
 #adminItemForm #error_list:not(:empty) {
   display: block;
 }
+
+// The user editor's avatar panel: the current picture, the file box, and the remove tick.
+.user-editor-avatar {
+  border-radius: $border-radius;
+  display: block;
+  margin-block-end: .75rem;
+  object-fit: cover;
+}
+
+.user-editor-remove {
+  align-items: center;
+  display: flex;
+  gap: .4rem;
+  margin-block-start: .6rem;
+}
