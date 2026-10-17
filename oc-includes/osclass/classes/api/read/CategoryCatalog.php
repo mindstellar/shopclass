@@ -14,7 +14,12 @@ namespace mindstellar\api\read;
 
 use mindstellar\api\ProblemException;
 use mindstellar\api\RowId;
+use mindstellar\cache\CacheGroup;
 use mindstellar\category\CategoryQuery;
+use mindstellar\database\Db;
+use mindstellar\listing\ListingQuery;
+use mindstellar\listing\ListingStatus;
+use mindstellar\listing\PhotoStore;
 
 /**
  * Every enabled category, with its translations, read once and looked up by id or slug.
@@ -23,6 +28,9 @@ use mindstellar\category\CategoryQuery;
  */
 final class CategoryCatalog
 {
+    /** Characters of a publish time in a cover stamp, before the listing id. */
+    private const STAMP = 14;
+
     /** @var array<int,array<string,mixed>> id => row, in display order */
     private array $byId = [];
 
@@ -188,6 +196,73 @@ final class CategoryCatalog
             }
         };
         $walk(0);
+
+        return $out;
+    }
+
+    /**
+     * Each category's cover: the first photo of the newest live listing with a photo in the
+     * category or any category below it. A category with none has no entry. Two queries for
+     * the whole list; the first is kept until a listing changes.
+     *
+     * @return array<int,array<string,mixed>> category id => photo row
+     * @throws \mindstellar\database\DbException
+     */
+    public function covers(): array
+    {
+        $this->load();
+        $newest = CacheGroup::remember('search', 'category-covers', static fn (): array => self::newestByCategory());
+        $best   = [];
+        $find   = function (int $id) use (&$find, &$best, $newest): string {
+            if (!isset($best[$id])) {
+                $best[$id] = $newest[$id] ?? '';
+                foreach ($this->childIds($id) as $child) {
+                    $best[$id] = max($best[$id], $find($child));
+                }
+            }
+
+            return $best[$id];
+        };
+        $items = [];
+        foreach (array_keys($this->byId) as $id) {
+            if ($find($id) !== '') {
+                $items[$id] = (int) substr($best[$id], self::STAMP);
+            }
+        }
+        $photos = [];
+        foreach (PhotoStore::ofItems(array_values(array_unique($items))) as $photo) {
+            if (str_starts_with((string) ($photo['s_content_type'] ?? ''), 'image/')) {
+                $photos[(int) $photo['fk_i_item_id']] ??= Db::stringifyRows([$photo])[0];
+            }
+        }
+        $covers = [];
+        foreach ($items as $category => $item) {
+            if (isset($photos[$item])) {
+                $covers[$category] = $photos[$item];
+            }
+        }
+
+        return $covers;
+    }
+
+    /**
+     * category id => the newest live listing with a photo in it, as a sortable string: the
+     * publish time as 14 digits, then the id padded to 10.
+     *
+     * @return array<int,string>
+     * @throws \mindstellar\database\DbException
+     */
+    private static function newestByCategory(): array
+    {
+        $rows = Db::select(
+            'SELECT i.fk_i_category_id AS category, MAX(CONCAT(DATE_FORMAT(i.dt_pub_date, \'%Y%m%d%H%i%s\'), LPAD(i.pk_i_id, 10, \'0\'))) AS stamp'
+            . ' FROM ' . ListingQuery::tableName() . ' i WHERE ' . implode(' AND ', ListingStatus::liveConditions('i.'))
+            . ' AND ' . PhotoStore::hasImageSql('i.pk_i_id') . ' GROUP BY i.fk_i_category_id'
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int) $row['category']] = (string) $row['stamp'];
+        }
 
         return $out;
     }

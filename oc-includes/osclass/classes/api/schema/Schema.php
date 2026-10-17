@@ -426,6 +426,13 @@ final class Schema
             'price_enabled'  => ['type' => 'boolean'],
             'children'       => ['type' => 'array', 'items' => self::ref('Category'), 'description' => 'With `tree=1`.'],
             'custom_fields'  => ['type' => 'array', 'items' => self::ref('CustomField'), 'description' => 'On a single category.'],
+            'cover'          => array_merge(self::object([
+                'id'        => ['type' => 'integer'],
+                'thumbnail' => ['type' => 'string'],
+                'preview'   => ['type' => 'string'],
+                'normal'    => ['type' => 'string'],
+                'original'  => self::nullable('string', 'Only when the site keeps original images.'),
+            ], ['id', 'thumbnail', 'preview', 'normal', 'original']), ['type' => ['object', 'null'], 'description' => 'With `include=cover`: a photo, shaped as a listing\'s, of the newest live listing in the category or below it; null when none has one.']),
             'ext'            => $ext->schemaFor('category'),
         ], ['id', 'parent_id', 'slug', 'name']);
     }

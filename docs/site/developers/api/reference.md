@@ -1042,6 +1042,7 @@ Every category, flat or as a tree
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
 | `tree` | query | boolean | no |  |
+| `include` | query | string | no | Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`CategoryList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.

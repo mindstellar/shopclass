@@ -27374,6 +27374,16 @@
                         }
                     },
                     {
+                        "name": "include",
+                        "in": "query",
+                        "required": false,
+                        "description": "Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
                         "name": "If-None-Match",
                         "in": "header",
                         "required": false,
@@ -41192,6 +41202,41 @@
                             "$ref": "#/components/schemas/CustomField"
                         },
                         "description": "On a single category."
+                    },
+                    "cover": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "thumbnail": {
+                                "type": "string"
+                            },
+                            "preview": {
+                                "type": "string"
+                            },
+                            "normal": {
+                                "type": "string"
+                            },
+                            "original": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "Only when the site keeps original images."
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "thumbnail",
+                            "preview",
+                            "normal",
+                            "original"
+                        ],
+                        "description": "With `include=cover`: a photo, shaped as a listing's, of the newest live listing in the category or below it; null when none has one."
                     },
                     "ext": {
                         "type": "object",
