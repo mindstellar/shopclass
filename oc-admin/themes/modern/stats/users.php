@@ -62,6 +62,16 @@ function customHead()
     $item             = __get('item');
     $users_by_country = __get('users_by_country');
     $users_by_region  = __get('users_by_region');
+    // Pie rows as [label, count]; an empty and a missing place are one "Unknown" slice.
+    $pieRows = static function (array $rows, string $key): array {
+        $out = array();
+        foreach ($rows as $row) {
+            $label       = (string) ($row[$key] ?? '') !== '' ? (string) $row[$key] : __('Unknown');
+            $out[$label] = ($out[$label] ?? 0) + (int) $row['num'];
+        }
+
+        return array_map(static fn ($label, $num) => array($label, $num), array_keys($out), $out);
+    };
     $latest_users     = __get('latest_users');
     ?>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
@@ -102,12 +112,7 @@ function customHead()
             var data_country = new google.visualization.DataTable();
             data_country.addColumn('string', '<?php _e('Country'); ?>');
             data_country.addColumn('number', '<?php _e('Users per country'); ?>');
-            data_country.addRows(<?php echo count($users_by_country); ?>);
-            <?php foreach ($users_by_country as $k => $v) {
-                echo "data_country.setValue(" . $k . ", 0, '" . (($v['s_country'] == null) ? __('Unknown')
-                    : osc_esc_js($v['s_country'])) . "');";
-                echo "data_country.setValue(" . $k . ", 1, " . $v['num'] . ");";
-            } ?>
+            data_country.addRows(<?php echo json_encode($pieRows($users_by_country, 's_country')); ?>);
 
             // Create and draw the visualization.
             new google.visualization.PieChart(document.getElementById('by_country')).draw(data_country, oscPieOpts({
@@ -118,12 +123,7 @@ function customHead()
             var data_region = new google.visualization.DataTable();
             data_region.addColumn('string', '<?php _e('Region'); ?>');
             data_region.addColumn('number', '<?php _e('Users per region'); ?>');
-            data_region.addRows(<?php echo count($users_by_region); ?>);
-            <?php foreach ($users_by_region as $k => $v) {
-                echo "data_region.setValue(" . $k . ", 0, '" . (($v['s_region'] == null) ? __('Unknown') : osc_esc_js($v['s_region']))
-                 . "');";
-                echo "data_region.setValue(" . $k . ", 1, " . $v['num'] . ");";
-            } ?>
+            data_region.addRows(<?php echo json_encode($pieRows($users_by_region, 's_region')); ?>);
 
             // Create and draw the visualization.
             new google.visualization.PieChart(document.getElementById('by_region')).draw(data_region, oscPieOpts({
@@ -182,7 +182,7 @@ osc_admin_page_head(__('User Statistics'), array(), array(
                 </div>
                 <div class="widget-box-content">
                     <b class="stats-title"></b>
-                    <div id="by_country" class="graph-placeholder" style="height:150px">
+                    <div id="by_country" class="graph-placeholder" style="height:200px">
                         <?php if (count($users_by_country) == 0) {
                             _e("There are no statistics yet");
                         } ?>
@@ -197,7 +197,7 @@ osc_admin_page_head(__('User Statistics'), array(), array(
                 </div>
                 <div class="widget-box-content">
                     <b class="stats-title"></b>
-                    <div id="by_region" class="graph-placeholder" style="height:150px">
+                    <div id="by_region" class="graph-placeholder" style="height:200px">
                         <?php if (count($users_by_region) == 0) {
                             _e("There are no statistics yet");
                         } ?>

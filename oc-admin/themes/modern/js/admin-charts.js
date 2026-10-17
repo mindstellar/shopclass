@@ -56,9 +56,12 @@
         var muted = tok('--osc-ink-muted', '#67635d');
         var base = {
             backgroundColor: { fill: 'transparent' },
-            legend: { textStyle: { color: muted } },
+            colors: [tok('--osc-bronze', '#8f5d00'), tok('--osc-info', '#2f6f8f'), tok('--osc-success', '#2e7d4f'),
+                tok('--osc-warning', '#a86b00'), tok('--osc-ink-muted', '#67635d'), tok('--osc-danger', '#b42318')],
+            // Labels sit outside the slices, so they read on any slice colour in both themes.
+            legend: { position: 'labeled', textStyle: { color: muted } },
+            pieSliceText: 'none',
             titleTextStyle: { color: muted, bold: false },
-            pieSliceTextStyle: { color: tok('--osc-bench', '#ffffff') },
             chartArea: { left: 8, top: 16, width: '92%', height: '78%' }
         };
         if (overrides) {
