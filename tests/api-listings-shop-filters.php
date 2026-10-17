@@ -10,7 +10,7 @@
 
 /**
  * What a shop reads from GET /listings: `low_stock` (the count when 1 to 5 are left, else null,
- * for every caller) and the `in_stock` and `on_sale` filters.
+ * for every caller) and the `in_stock`, `on_sale`, `option`, `ids` and `custom_field` list filters.
  * Usage: php tests/api-listings-shop-filters.php
  */
 
@@ -134,5 +134,113 @@ foreach ([
     }
 }
 pin('the variant price wins over the listing price, and a missing one falls back to it', ['Fallback below was', 'Variant below was'], $names($list(['on_sale' => 'true', 'category' => (string) $cups])));
+
+harness_section('option');
+$tees = seed_category($admin, 'Tees', null, $locale);
+// title => rows of [colour, size, stock].
+$shirts = [
+    'Tee'      => [['Sunflower', 'S', 5], ['Sunflower', 'M', 0], ['Cherry', 'S', 0], ['Cherry', 'M', 7]],
+    'Polo'     => [['Cherry', 'L', 4], ['Navy', 'L', 2]],
+    'Percent'  => [['100%', 'S', 3], ['A_B', 'S', 3]],
+    'Quote'    => [['Say "hi"', 'S', 1], ['Back\\slash', 'S', 1], ['Rose', 'S', 1]],
+];
+$shirt = [];
+foreach ($shirts as $title => $rows) {
+    $shirt[$title] = seed_item($admin, $tees, $sue, $title, 10.0);
+    VariantStore::saveSet($shirt[$title], array_map(static fn (array $r): array => ['options' => ['Colour' => $r[0], 'Size' => $r[1], 'Fit' => 'Slim'], 'fields' => ['i_price' => 10000000, 'i_stock' => $r[2]]], $rows));
+}
+$inTees = static fn (array $query): array => $names($list($query + ['category' => (string) $tees]));
+pin('one value', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['Cherry']]]));
+pin('values of one name are OR', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['Navy', 'Sunflower']]]));
+pin('names are AND, on one variant', ['Tee'], $inTees(['option' => ['Colour' => ['Cherry'], 'Size' => ['M']]]));
+pin('both values on different variants do not match', [], $inTees(['option' => ['Colour' => ['Sunflower'], 'Size' => ['L']]]));
+pin('a single value may be sent without a list', ['Polo'], $inTees(['option' => ['Size' => 'L']]));
+pin('with in_stock, the same variant must be in stock', ['Tee'], $inTees(['option' => ['Colour' => ['Cherry'], 'Size' => ['M']], 'in_stock' => 'true']));
+pin('Sunflower M is sold out', [], $inTees(['option' => ['Colour' => ['Sunflower'], 'Size' => ['M']], 'in_stock' => 'true']));
+pin('a % in a value matches only itself', ['Percent'], $inTees(['option' => ['Colour' => ['100%']]]));
+pin('a bare % matches nothing', [], $inTees(['option' => ['Colour' => ['%']]]));
+pin('an _ in a value matches only itself', ['Percent'], $inTees(['option' => ['Colour' => ['A_B']]]));
+pin('a _ is not any one character', [], $inTees(['option' => ['Colour' => ['A_']]]));
+pin('a quote in a value matches', ['Quote'], $inTees(['option' => ['Colour' => ['Say "hi"']]]));
+pin('a backslash in a value matches', ['Quote'], $inTees(['option' => ['Colour' => ['Back\\slash']]]));
+pin('SQL in a value matches nothing and breaks nothing', [], $inTees(['option' => ['Colour' => ["x') OR 1=1 -- "]]]));
+pin('an unknown value matches nothing', [], $inTees(['option' => ['Colour' => ['Mauve']]]));
+pin('a name over 30 characters is dropped, the filter is then off', ['Percent', 'Polo', 'Quote', 'Tee'], $inTees(['option' => [str_repeat('n', 31) => ['x']]]));
+pin('a value over 40 characters is dropped, the filter is then off', ['Percent', 'Polo', 'Quote', 'Tee'], $inTees(['option' => ['Colour' => [str_repeat('v', 41)]]]));
+pin('the 4th name is dropped, not a 500', ['Tee'], $inTees(['option' => ['Colour' => ['Cherry'], 'Size' => ['M'], 'Fit' => ['Slim'], 'Extra' => ['none']]]));
+pin('values past the 10th are dropped', [], $inTees(['option' => ['Colour' => array_merge(array_map(static fn (int $i): string => 'v' . $i, range(1, 10)), ['Cherry'])]]));
+pin('Cherry as the 10th value still counts', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => array_merge(array_map(static fn (int $i): string => 'v' . $i, range(1, 9)), ['Cherry'])]]));
+pin('a listing with no option rows never matches', [], $names($list(['option' => ['Colour' => ['Red']], 'category' => (string) $cat])));
+$r = $list(['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'count' => 'true']);
+pin('the total follows the filter', 2, $r->body()['meta']['total'] ?? null);
+pin('option filters keep paging', ['Polo', 'Tee'], (static function () use ($call, $key, $tees): array {
+    $q     = ['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'limit' => 1];
+    $first = $call('GET', 'listings', null, $key, [], $q);
+    $next  = [];
+    parse_str((string) parse_url((string) $first->body()['links']['next'], PHP_URL_QUERY), $next);
+    $titles = array_merge(array_column($first->body()['data'], 'title'), array_column($call('GET', 'listings', null, $key, [], $next)->body()['data'], 'title'));
+    sort($titles);
+
+    return $titles;
+})());
+pin('option filters work with page numbers', ['Polo', 'Tee'], (static function () use ($call, $key, $tees): array {
+    $titles = [];
+    foreach ([1, 2] as $page) {
+        $titles = array_merge($titles, array_column($call('GET', 'listings', null, $key, [], ['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'limit' => 1, 'page' => $page])->body()['data'], 'title'));
+    }
+    sort($titles);
+
+    return $titles;
+})());
+
+harness_section('ids');
+pin('ids lists those listings', ['Deal', 'Low'], $names($list(['ids' => $id['Low'] . ',' . $id['Deal']])));
+pin('ids may be sent as a list', ['Deal', 'Low'], $names($list(['ids' => [(string) $id['Low'], (string) $id['Deal']]])));
+$ordered = static fn (string $order): array => array_column($list(['ids' => $id['Low'] . ',' . $id['Deal'], 'sort' => 'created', 'order' => $order])->body()['data'], 'title');
+pin('the sort is the one asked for', [['Low', 'Deal'], ['Deal', 'Low']], [$ordered('asc'), $ordered('desc')]);
+pin('an id that is not a listing adds nothing', ['Low'], $names($list(['ids' => $id['Low'] . ',999999'])));
+pin('ids with no valid id match nothing', [], $names($list(['ids' => 'abc,-1'])));
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0 WHERE pk_i_id = {$id['Deal']}");
+pin('a disabled listing stays out', ['Low'], $names($list(['ids' => $id['Low'] . ',' . $id['Deal'], 'limit' => 48])));
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1 WHERE pk_i_id = {$id['Deal']}");
+$many = implode(',', array_merge([$id['Low']], range(900000, 900060)));
+pin('past 50 ids, the extra are dropped', ['Low'], $names($list(['ids' => $many])));
+$tail = implode(',', array_merge(range(900000, 900049), [$id['Low']]));
+pin('the 51st id is not read', [], $names($list(['ids' => $tail, 'limit' => 47])));
+pin('ids paging by cursor', ['Deal', 'Low'], (static function () use ($call, $key, $id): array {
+    $first = $call('GET', 'listings', null, $key, [], ['ids' => $id['Low'] . ',' . $id['Deal'], 'limit' => 1]);
+    $next  = [];
+    parse_str((string) parse_url((string) $first->body()['links']['next'], PHP_URL_QUERY), $next);
+    $titles = array_merge(array_column($first->body()['data'], 'title'), array_column($call('GET', 'listings', null, $key, [], $next)->body()['data'], 'title'));
+    sort($titles);
+
+    return $titles;
+})());
+
+harness_section('custom_field lists');
+$field = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type, b_required, b_searchable, i_position) VALUES ('Material', 'material', 'DROPDOWN', 0, 1, 0)", '', []);
+seed_exec($admin, "INSERT INTO {$p}t_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)", 'ii', [$tees, $field]);
+foreach (['Tee' => 'Cotton', 'Polo' => 'Linen', 'Percent' => 'Wool'] as $title => $value) {
+    seed_exec($admin, "INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) VALUES (?, ?, ?, '')", 'iis', [$shirt[$title], $field, $value]);
+}
+$byField = static fn (mixed $value): array => $inTees(['custom_field' => [(string) $field => $value]]);
+pin('the scalar form still works', ['Tee'], $byField('Cotton'));
+pin('a list is OR', ['Polo', 'Tee'], $byField(['Cotton', 'Linen']));
+pin('a list of one is the same as the scalar', ['Tee'], $byField(['Cotton']));
+pin('empty and repeated values are ignored', ['Tee'], $byField(['', 'Cotton', 'Cotton']));
+pin('an empty list is no filter', ['Percent', 'Polo', 'Quote', 'Tee'], $byField(['']));
+pin('a value with a quote does not break the query', [], $byField(["Cot'ton", 'x" OR "1"="1']));
+pin('values past the 20th are dropped', [], $byField(array_merge(array_map(static fn (int $i): string => 'v' . $i, range(1, 20)), ['Cotton'])));
+pin('a list is OR with paging', ['Polo', 'Tee'], (static function () use ($call, $key, $tees, $field): array {
+    $q     = ['custom_field' => [(string) $field => ['Cotton', 'Linen']], 'category' => (string) $tees, 'limit' => 1];
+    $first = $call('GET', 'listings', null, $key, [], $q);
+    $next  = [];
+    parse_str((string) parse_url((string) $first->body()['links']['next'], PHP_URL_QUERY), $next);
+    $titles = array_merge(array_column($first->body()['data'], 'title'), array_column($call('GET', 'listings', null, $key, [], $next)->body()['data'], 'title'));
+    sort($titles);
+
+    return $titles;
+})());
+pin('the response still matches the schema', [], api_admin_schema_errors('ListingPage', $call('GET', 'listings', null, $key, [], ['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees])));
 
 exit(harness_result());
