@@ -101,7 +101,7 @@ final class BillingSettingsScreen
             ->number(
                 'billing_free_live_listings',
                 __('Free listings per seller'),
-                __('Live listings a seller may have at once. 0 means no limit. Lowering it never removes a listing.')
+                __('Live listings a seller may have at once. 0 means no limit. Pending listings count; only expiry or deletion frees a slot.')
             )
                 ->clampMin(0)
                 ->default(0)

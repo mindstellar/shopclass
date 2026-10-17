@@ -96,12 +96,12 @@ final class MediaSettingsScreen extends SettingsScreen
             ->checkbox(
                 'browser_resize',
                 __('Shrink photos in the browser before upload.'),
-                __('Large phone photos upload faster and stay under the maximum size.')
+                __('Photos upload faster. With full size kept, only photos over the maximum size are shrunk.')
             )
                 ->rowLabel(__('Browser resize'))
                 ->set('id', 'browser_resize')
             ->group(__('Restrictions'))
-            ->select('image_format', __('Photo format'), self::formats(), __('For new photos. WebP is about a third smaller than JPEG and keeps transparency.'))
+            ->select('image_format', __('Photo format'), self::formats(), __('For new photos only. WebP is about a third smaller than JPEG and keeps transparency.'))
                 ->default('original')
             ->number(
                 'jpeg_quality',
@@ -118,7 +118,7 @@ final class MediaSettingsScreen extends SettingsScreen
             ->checkbox(
                 'force_aspect_image',
                 __('Keep each photo\'s own shape (recommended)'),
-                __('Photos are only made smaller. When off, they are padded to the exact size.')
+                __('Photos are only made smaller. When off, empty space is white in JPEG and see-through in PNG and WebP.')
             )
                 ->rowLabel(__('Photo shape'))
                 ->set('id', 'force_aspect_image')
@@ -202,7 +202,7 @@ final class MediaSettingsScreen extends SettingsScreen
                             osc_base_url() . str_replace(osc_base_path(), '', osc_uploads_path()) . 'watermark.png'
                         ) . '"><br>'
                         : '')
-                        . osc_esc_html(__('PNG only. It covers at most 40% of a photo.')),
+                        . osc_esc_html(__('PNG only. It covers at most 40% of a photo\'s width or height.')),
                 ));
             })
                 ->set('row', false)

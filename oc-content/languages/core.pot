@@ -4147,10 +4147,6 @@ msgstr ""
 msgid "E-mail user whenever"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "E-mails the seller this many days before the listing expires. 0 sends none."
-msgstr ""
-
 #: oc-includes/osclass/classes/Dependencies.php
 msgid "ERROR: Some dependencies could not be loaded (%s)"
 msgstr ""
@@ -4342,6 +4338,10 @@ msgstr ""
 #: oc-includes/osclass/classes/form/SendFriendForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Email: this field is required"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Emails the seller this many days before the listing expires. 0 sends none."
 msgstr ""
 
 #: oc-includes/osclass/classes/job/CategoryJobs.php
@@ -4869,7 +4869,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid ""
-"For new photos. WebP is about a third smaller than JPEG and keeps "
+"For new photos only. WebP is about a third smaller than JPEG and keeps "
 "transparency."
 msgstr ""
 
@@ -5910,10 +5910,6 @@ msgstr ""
 msgid "Languages"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Large phone photos upload faster and stay under the maximum size."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Largest attached file"
 msgstr ""
@@ -6361,8 +6357,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
-"Live listings a seller may have at once. 0 means no limit. Lowering it "
-"never removes a listing."
+"Live listings a seller may have at once. 0 means no limit. Pending listings "
+"count; only expiry or deletion frees a slot."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -7566,7 +7562,7 @@ msgid "No room for more photos."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
-msgid "No saved backups yet."
+msgid "No saved backups yet. Downloads are not kept."
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
@@ -8202,7 +8198,7 @@ msgid "PM"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "PNG only. It covers at most 40% of a photo."
+msgid "PNG only. It covers at most 40% of a photo's width or height."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
@@ -8477,7 +8473,9 @@ msgid "Photos allowed per listing while the entitlement is held."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "Photos are only made smaller. When off, they are padded to the exact size."
+msgid ""
+"Photos are only made smaller. When off, empty space is white in JPEG and "
+"see-through in PNG and WebP."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -8492,6 +8490,12 @@ msgstr ""
 msgid ""
 "Photos live in your S3 bucket and are not copied. They stay there. Turn on "
 "versioning in the bucket to keep old copies."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid ""
+"Photos upload faster. With full size kept, only photos over the maximum "
+"size are shrunk."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php

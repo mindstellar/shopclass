@@ -331,7 +331,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             : __('The bucket could not be read, so backups saved there are not listed. Check the connection in Settings > Storage.')); ?></p>
     <?php } ?>
     <?php if ($list === array()) { ?>
-        <p class="text-muted mb-0" id="backup-list-empty"><?php _e('No saved backups yet.'); ?></p>
+        <p class="text-muted mb-0" id="backup-list-empty"><?php _e('No saved backups yet. Downloads are not kept.'); ?></p>
     <?php } else { ?>
         <div class="table-responsive">
             <table class="table" id="backup-list">

@@ -130,7 +130,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->number(
                 'warn_expiration',
                 __('Warn about expiration'),
-                __('E-mails the seller this many days before the listing expires. 0 sends none.')
+                __('Emails the seller this many days before the listing expires. 0 sends none.')
             )
                 ->suffix(__('days'))
                 ->clampMin(0)
