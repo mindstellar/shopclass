@@ -227,7 +227,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 564 names. Generated from the source; do not edit by hand.
+Core fires 565 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -521,7 +521,7 @@ Core fires 564 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (221)
+### Other (222)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -566,6 +566,7 @@ Core fires 564 names. Generated from the source; do not edit by hand.
 | `api_listing` | filter | `$data, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
 | `api_listing_input` | filter | `$input, $request, $credential` | `oc-includes/osclass/classes/api/write/ListingWriter.php` |
 | `api_listings_prefetch` | action | `$ids, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
+| `api_menus` | filter | `['main' => $main, 'footer' => $footer], $locale` | `oc-includes/osclass/classes/api/serializer/PageSerializer.php` |
 | `api_problem_codes` | filter | `[]` | `oc-includes/osclass/classes/api/Problem.php` |
 | `api_rate_limit` | filter | `$limit, $credential, $route` | `oc-includes/osclass/classes/api/ratelimit/RatePolicy.php` |
 | `api_request_before` | action | `$request, $route, $credential` | `oc-includes/osclass/classes/api/Kernel.php` |
@@ -734,7 +735,7 @@ Core fires 564 names. Generated from the source; do not edit by hand.
 | `settings_page_saved` | action | `$pageId, $exposed` | `oc-includes/osclass/helpers/hSettings.php` |
 | `shutdown_functions` | filter | `[$injectCsrf]` | `oc-includes/osclass/classes/security/Csrf.php` |
 | `slug` | filter | `trim($fieldsDescription['s_slug'])` | `oc-includes/osclass/classes/model/Category.php` |
-| `static_page_text` | filter | `osc_static_page_field('s_text', $locale), $locale` | `oc-includes/osclass/helpers/hPage.php` |
+| `static_page_text` | filter | `(string) ($texts[$shown]['s_text'] ?? ''), $shown` | `oc-includes/osclass/classes/api/serializer/PageSerializer.php` |
 | `style_url` | filter | `$css` | `oc-includes/osclass/classes/Styles.php` |
 | `template_candidates` | filter | `$candidates, $context` | `oc-includes/osclass/helpers/hTheme.php` |
 | `tinymce_config` | filter | `$config, $preset` | `oc-includes/osclass/helpers/hUtils.php` |
@@ -790,7 +791,7 @@ Core fires 564 names. Generated from the source; do not edit by hand.
 | `mo_theme_messages_path` | filter | `osc_themes_path() . $domain . '/languages/' . $locale . '/messages.mo', $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
 | `mo_theme_path` | filter | `osc_themes_path() . $domain . '/languages/' . $locale . '/theme.mo', $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
 | `theme` | filter | `osc_theme()` | `oc-includes/osclass/classes/Translation.php` |
-| `theme_activate` | action | `$theme` | `oc-includes/osclass/classes/cli/Cli.php` |
+| `theme_activate` | action | `$theme` | `oc-includes/osclass/classes/market/PluginDependencies.php` |
 | `theme_screenshot_url` | filter | `$url, $theme` | `oc-includes/osclass/helpers/hTheme.php` |
 | `theme_url` | filter | `$script` | `oc-includes/osclass/classes/Scripts.php` |
 
