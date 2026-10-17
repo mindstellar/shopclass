@@ -97,7 +97,7 @@ final class SeoController
         $row   = ProblemException::found($query->find($id), 'page');
         $texts = $query->texts([(int) $row['pk_i_id']])[(int) $row['pk_i_id']] ?? [];
         $one   = ProblemException::found(
-            (new PageSerializer($this->api->facts()->defaultLocale(), PageSerializer::siteUrl(...)))->one($row, $texts, $locale),
+            (new PageSerializer($this->api->facts()->defaultLocale(), \Closure::fromCallable([PageSerializer::class, 'siteUrl'])))->one($row, $texts, $locale),
             'page'
         );
 

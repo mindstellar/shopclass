@@ -29,7 +29,7 @@ final class PagesController
 
     public function __construct(private ApiServices $api)
     {
-        $this->serializer = new PageSerializer($api->facts()->defaultLocale(), PageSerializer::siteUrl(...));
+        $this->serializer = new PageSerializer($api->facts()->defaultLocale(), \Closure::fromCallable([PageSerializer::class, 'siteUrl']));
     }
 
     public function index(ApiCall $call): Response
