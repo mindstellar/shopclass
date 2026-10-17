@@ -615,7 +615,19 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
-msgid "0 keeps it forever. This is the history behind the statistics charts, which "
+msgid "0 keeps it forever. The statistics charts use up to ten months."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "0 means every listing needs validation."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "0 means no limit."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "0 means no wait."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -624,6 +636,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/functions.php
 msgid "1 day"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "1 is the smallest file, 100 the best quality. 82 is a good balance."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Editor.php
@@ -707,10 +723,6 @@ msgstr ""
 msgid ""
 "<p>Your site at {WEB_LINK} has been updated automatically to Shopclass "
 "{VERSION}</p>"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "<strong>Remember</strong> that you must configure reCAPTCHA first"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -804,6 +816,14 @@ msgid ""
 "A plugin that finds the exact map position of a listing from its street "
 "address. It works with any map. Without one, a listing is placed at its "
 "city centre."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "A price of 0 makes extra slots free."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "A price of 0 makes featuring free."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
@@ -1564,10 +1584,6 @@ msgstr ""
 msgid "An update is ready for this theme. "
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "An user has to wait"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "And %d more."
 msgid_plural "And %d more."
@@ -1676,6 +1692,10 @@ msgstr ""
 msgid ""
 "Applies to the contact form, contact the seller, contact a user and share a "
 "listing. 0 allows none."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Applies with or without a payment plugin."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
@@ -2027,16 +2047,6 @@ msgstr ""
 msgid "Backups kept"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
-msgid "Backups you save on the server are listed here. Downloads are not kept."
-msgstr ""
-
-#: oc-admin/themes/modern/tools/backup.php
-msgid ""
-"Backups you save on the server or in the bucket are listed here. Downloads "
-"are not kept."
-msgstr ""
-
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "Backups, imports and upgrades run inside %s. Raise it if they time out."
 msgstr ""
@@ -2076,10 +2086,6 @@ msgstr ""
 msgid ""
 "Ban rules block registration, listings or comments matching an IP or e-mail "
 "pattern."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Bank details, or wherever a buyer sends the money. Shown to the "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -2258,12 +2264,6 @@ msgid "Bump to top"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid ""
-"Bump, highlight and urgent are optional item upgrades, each priced and "
-"switched "
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Business details on receipts"
 msgstr ""
 
@@ -2273,12 +2273,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "By"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/permalinks.php
-msgid ""
-"By default Shopclass uses web URLs which have question marks and lots of "
-"numbers in them. "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -2955,12 +2949,6 @@ msgstr ""
 msgid "Complete"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid ""
-"Compression quality for saved JPEG and WebP photos, from 1 (smallest file) "
-"to "
-msgstr ""
-
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Computer"
 msgstr ""
@@ -3128,10 +3116,6 @@ msgstr ""
 msgid "Core finds the template by this name, so it cannot change."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Core's built-in payment method — no card processor, no API keys. A buyer "
-msgstr ""
-
 #: oc-admin/themes/modern/settings/locations.php
 msgid "Could not be counted"
 msgstr ""
@@ -3212,6 +3196,10 @@ msgid ""
 "where it stopped."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
+msgid "Counting views writes on every page view. Turn it off if you do not use it."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -3252,6 +3240,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 msgid "Cover"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
+msgid "Crawlers are most of the traffic on a busy site and inflate the numbers."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -4089,12 +4081,6 @@ msgstr ""
 msgid "Drawn around the text, so it reads on light and dark photos."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid ""
-"Drawn for the normal image size, then scaled down for smaller sizes. It "
-"never covers more than 40% of a photo's width or height."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Driver"
 msgstr ""
@@ -4161,6 +4147,10 @@ msgstr ""
 msgid "E-mail user whenever"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "E-mails the seller this many days before the listing expires. 0 sends none."
+msgstr ""
+
 #: oc-includes/osclass/classes/Dependencies.php
 msgid "ERROR: Some dependencies could not be loaded (%s)"
 msgstr ""
@@ -4185,6 +4175,10 @@ msgstr ""
 msgid ""
 "Each section is a place your theme renders widgets. Drag a type in from the "
 "right, and drag widgets to reorder them or move them between sections."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Each upgrade is off until you turn it on. A price of 0 makes it free."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/packages.php
@@ -4350,10 +4344,6 @@ msgstr ""
 msgid "Email: this field is required"
 msgstr ""
 
-#: oc-admin/themes/modern/emails/index.php
-msgid "Emails templates"
-msgstr ""
-
 #: oc-includes/osclass/classes/job/CategoryJobs.php
 msgid "Empty and delete a category"
 msgstr ""
@@ -4429,14 +4419,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Enabled rules run once a day. The last cleanup finished %s."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Enabled with a price of 0 means every seller can feature a listing for free."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Enabled with a price of 0 means every seller can raise their "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
@@ -4728,6 +4710,10 @@ msgstr ""
 msgid "Failures per account"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Faster and lighter than GD."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Featured listing duration (days)"
 msgstr ""
@@ -4881,6 +4867,12 @@ msgstr ""
 msgid "For Babies - Infants"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid ""
+"For new photos. WebP is about a third smaller than JPEG and keeps "
+"transparency."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "For sale"
 msgstr ""
@@ -4975,6 +4967,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Friendly URLs"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/permalinks.php
+msgid "Friendly URLs use words instead of question marks and numbers."
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -5127,6 +5123,10 @@ msgstr ""
 msgid "Hidden"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Hidden at checkout until you write instructions."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid ""
 "Hidden locations are no longer in the catalog and hold no listings. They "
@@ -5252,18 +5252,10 @@ msgstr ""
 msgid "How many credits"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "How many of a seller's listings may be live "
-msgstr ""
-
 #: oc-admin/themes/modern/settings/spamNbots.php
 msgid ""
 "How many times one visitor address may use each public form or upload in an "
 "hour."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "How new photos are saved. "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -5315,24 +5307,12 @@ msgstr ""
 msgid "Identifier name"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "If the value is set to zero, there is no wait period"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "If the value is zero all comments are shown"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "If the value is zero, an administrator must always approve comments"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "If the value is zero, it means an unlimited number of images is allowed"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "If the value is zero, it means that each listing must be validated"
 msgstr ""
 
 #: oc-includes/osclass/classes/security/AdminTwoFactor.php
@@ -5691,10 +5671,6 @@ msgstr ""
 msgid "It filtered on a condition added by a plugin or theme."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "It has to be a .PNG image"
-msgstr ""
-
 #: oc-includes/osclass/classes/search/AlertStore.php
 msgid "It held a value that could not be read safely."
 msgstr ""
@@ -5731,10 +5707,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
 msgid "It stopped and did not finish. Nothing was saved."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid "It's faster and consumes less resources than GD library."
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
@@ -5938,6 +5910,10 @@ msgstr ""
 msgid "Languages"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Large phone photos upload faster and stay under the maximum size."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Largest attached file"
 msgstr ""
@@ -6032,12 +6008,12 @@ msgstr ""
 msgid "Latest listings shown: this field must only contain numeric characters"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/searches.php
 #: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "Latest searches"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/searches.php
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "Latest searches Settings"
 msgstr ""
@@ -6094,6 +6070,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Let users make personal API keys"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Lets a seller buy a higher limit. Everyone else keeps the global limit."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -6377,6 +6357,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/package-ui.php
 msgid "Live"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"Live listings a seller may have at once. 0 means no limit. Lowering it "
+"never removes a listing."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -7185,6 +7171,10 @@ msgstr ""
 msgid "Needs attention"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Needs reCAPTCHA keys first."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/billing.php
 msgid "Needs setting up"
 msgstr ""
@@ -7888,10 +7878,6 @@ msgstr ""
 msgid "Off"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
-msgid "Off by default. Search-engine and AI crawlers are usually most of a busy "
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid ""
 "Off by default. Turn on only to send webhooks to a server on your own "
@@ -7909,6 +7895,10 @@ msgstr ""
 msgid ""
 "Off by default: a match is quarantined (flagged spam and hidden) so it can "
 "be "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Off by default: it can be abused to send spam."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Picker.php
@@ -8211,6 +8201,10 @@ msgstr ""
 msgid "PM"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "PNG only. It covers at most 40% of a photo."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
 msgid "POP"
 msgstr ""
@@ -8453,10 +8447,6 @@ msgstr ""
 msgid "Photo cap"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Photo count, the posting wait, and listing runtime are global limits by "
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Photo format"
 msgstr ""
@@ -8487,10 +8477,7 @@ msgid "Photos allowed per listing while the entitlement is held."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid ""
-"Photos are only made smaller, never filled out to the sizes above. Your "
-"theme decides how to frame them. When off, the empty space is filled with "
-"white in JPEG and left see-through in PNG and WebP."
+msgid "Photos are only made smaller. When off, they are padded to the exact size."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -8499,12 +8486,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Photos fetched by address, per user"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid ""
-"Photos larger than the normal size are shrunk to it first, so large phone "
-"photos "
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -9963,6 +9944,12 @@ msgid "Sell featured listings"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"Sell featured listings, posting credits or plugin extras. While off, "
+"posting stays free and the Billing menu is hidden."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Sell highlighting"
 msgstr ""
 
@@ -10413,6 +10400,10 @@ msgid ""
 "the default message."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Shown to the buyer as written."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Shrink photos in the browser before upload."
 msgstr ""
@@ -10668,10 +10659,6 @@ msgid ""
 "also see a breakdown of the "
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Stays hidden at checkout until instructions are written below — "
-msgstr ""
-
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Step"
 msgstr ""
@@ -10719,12 +10706,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "Store 1000 queries"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid ""
-"Stored alongside the resized copies, so uploads take more space. It is "
-"re-saved rather than kept byte for byte, which drops camera metadata."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Picker.php
@@ -10818,10 +10799,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/footer.php
 msgid "Switch to light mode"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Switching this off later hides the Billing menu but keeps every order "
 msgstr ""
 
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -11100,6 +11077,12 @@ msgstr ""
 msgid "The bucket did not answer; its backups are not listed right now."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"The buyer sees your instructions at checkout and pays outside the site. You "
+"mark the order paid."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "The cache is working."
 msgstr ""
@@ -11254,6 +11237,10 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "The language %s is not installed."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "The largest <b>width</b> × <b>height</b> in pixels for each size."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
@@ -11469,12 +11456,6 @@ msgstr ""
 msgid ""
 "The sitemap is cached for a few hours after it is first requested. Use this "
 "if you need "
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
-msgid ""
-"The sizes listed below determine the maximum dimensions in pixels to use "
-"when uploading a image."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -11780,13 +11761,6 @@ msgstr ""
 msgid "This folder isn't writable, so nothing can be installed from here."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid ""
-"This form emails a listing to a recipient the visitor types in. Off by "
-"default because it can be abused to relay mail; enable it only if you need "
-"it."
-msgstr ""
-
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid ""
 "This installation runs from a container image. Update by deploying a newer "
@@ -11838,12 +11812,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/packages.php
 msgid "This only removes it from checkout. Orders already placed against it "
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid ""
-"This option will send an email X days before an ad expires to the author. 0 "
-"for no email."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -12246,9 +12214,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid ""
-"Turn this on to sell things on your site — featured listings, posting "
-"credits, "
+msgid "Turning it off later keeps every order and balance."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
@@ -12885,6 +12851,10 @@ msgstr ""
 msgid "Users, listings and comments matching this rule will no longer be blocked."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+msgid "Uses more disk space. Camera metadata is dropped."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-database.php
 msgid ""
 "Usually 'localhost'. If your host gave you a different one, add a port as "
@@ -12934,10 +12904,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
 msgid "View counting"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
-msgid "View counts are written on every page render, so they are the busiest "
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -13019,6 +12985,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Volunteers"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Wait"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
@@ -13172,10 +13142,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "What it should look like"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "What posting costs once the free quota runs out, and what a featured "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
@@ -14064,7 +14030,7 @@ msgid "seconds"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "seconds between each listing added"
+msgid "seconds between two listings from one user"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
