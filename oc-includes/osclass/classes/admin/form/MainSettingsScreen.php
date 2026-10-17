@@ -12,6 +12,7 @@
 namespace mindstellar\admin\form;
 
 use mindstellar\base\SettingsScreen;
+use mindstellar\market\SiteMode;
 use mindstellar\security\Demo;
 use mindstellar\utility\Utils;
 
@@ -75,6 +76,16 @@ final class MainSettingsScreen extends SettingsScreen
         }
 
         $form
+            ->select('site_mode', __('Site is a'), array(
+                SiteMode::CLASSIFIEDS => __('Classifieds site'),
+                SiteMode::SHOP        => __('Shop (only admins add products)'),
+                SiteMode::BOTH        => __('Shop and classifieds'),
+            ), __('Your theme and plugins say which of these they work for.'))
+                ->default(SiteMode::CLASSIFIEDS)
+            ->custom('site_mode_notice', static function () {
+                self::drawModeNotice();
+            })
+                ->set('row', false)
             ->select('language', __('Default language'), self::locales())
             ->select('currency', __('Default currency'), self::currencies())
                 // The one id on this screen that is not the control's own name, so it is
@@ -292,6 +303,42 @@ final class MainSettingsScreen extends SettingsScreen
         return static function ($value) {
             return (int)$value;
         };
+    }
+
+    /**
+     * Names the theme and active plugins that do not declare the saved site mode.
+     *
+     * @return void
+     */
+    private static function drawModeNotice()
+    {
+        $lacking = SiteMode::lacking(osc_site_mode(), self::declaredModes());
+        if ($lacking === array()) {
+            return;
+        }
+        echo '<div class="alert alert-warning" role="alert">'
+            . osc_esc_html(sprintf(__('These do not say they work with this site type: %s'), implode(', ', $lacking)))
+            . '</div>';
+    }
+
+    /**
+     * The modes the active theme and each active plugin declare, by name.
+     *
+     * @return array<string,list<string>>
+     */
+    private static function declaredModes(): array
+    {
+        $declared = array();
+        $theme    = \WebThemes::newInstance()->loadThemeInfo((string) osc_theme());
+        if (is_array($theme)) {
+            $declared[(string) ($theme['name'] ?? osc_theme())] = (array) ($theme['modes'] ?? array());
+        }
+        foreach (\Plugins::listEnabled() as $path) {
+            $info = \Plugins::getInfo($path);
+            $declared[(string) ($info['plugin_name'] ?? $path)] = (array) ($info['modes'] ?? array());
+        }
+
+        return $declared;
     }
 
     /**

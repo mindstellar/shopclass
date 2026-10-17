@@ -226,6 +226,12 @@ foreach (array('premium', 'slot', 'item_upgrades', 'seller_limits') as $product)
     }
 }
 
+if (!function_exists('osc_themes_path')) {
+    function osc_themes_path()
+    {
+        return sys_get_temp_dir() . '/osc-no-themes/';
+    }
+}
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 if (!function_exists('osc_current_admin_theme_path')) {
     function osc_current_admin_theme_path($file = '')
@@ -490,6 +496,7 @@ pin(
         'pageTitle'                    => 'osclass/pageTitle',
         'pageDesc'                     => 'osclass/pageDesc',
         'contactEmail'                 => 'osclass/contactEmail',
+        'site_mode'                    => 'osclass/site_mode',
         'language'                     => 'osclass/language',
         'currency'                     => 'osclass/currency',
         'weekStart'                    => 'osclass/weekStart',
