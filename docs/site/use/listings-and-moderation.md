@@ -52,6 +52,22 @@ photos. This cannot be undone.* To take something down reversibly,
 **disable** it instead.
 :::
 
+## Selling a listing
+
+On a listing's edit screen, **Sell this item** makes it a product. Tick **Buyers can add this
+item to a cart**, then set:
+
+| Field | What it does |
+|---|---|
+| **SKU** | Your stock code, up to 64 characters. |
+| **Price** | What the item sells for. Blank sells it at the listing price. |
+| **Stock** | How many you have. Each sale takes one; at 0 it is out of stock. Blank does not count stock. |
+| **Weight in grams** | For shipping. |
+| **Shipping class** | A name your shipping plugin groups items by, such as `bulky`. |
+
+Untick it to stop selling. Only admins see this section. When **Settings → General → Site is a**
+is set to shop, only admins can add listings at all.
+
 ## Reported listings
 
 **Listings → Reported listings** collects what visitors have flagged. Each
