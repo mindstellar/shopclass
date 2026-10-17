@@ -179,7 +179,7 @@ foreach (array('login_throttle_unblock', 'login_throttle_reset') as $action) {
     check("...which the Security tab posts to", strpos($security, "'action'     => '$action'") !== false || strpos($security, "'action' => '$action'") !== false);
 }
 check('Security tab URL', strpos($spamCtl, "'?page=tools&action=system-info&tab=security#signin-activity'") !== false);
-check('Spam and bots keeps its settings form', strpos($spamView, "\$forms['login_throttle']") !== false);
+check('Spam and bots keeps its settings form', strpos($spamView, "'signin'   => array(") !== false && strpos($spamView, "'login_throttle'") !== false && strpos($spamView, 'osc_admin_settings_form($forms[$form][\'id\']') !== false);
 check('...but no longer lists who is blocked', strpos($spamView, 'login_throttle_activity') === false && strpos($spamView, 'login_throttle_unblock') === false);
 check('...and links to the Security tab instead', strpos($spamView, 'tab=security#signin-activity') !== false);
 
