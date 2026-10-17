@@ -165,7 +165,7 @@ final class WishlistService
     }
 
     /**
-     * The ids among $ids that are live listings, in one primary-key lookup.
+     * The ids among $ids that are live listings.
      *
      * @param int[] $ids
      *
@@ -174,15 +174,6 @@ final class WishlistService
      */
     private static function live(array $ids): array
     {
-        if ($ids === array()) {
-            return array();
-        }
-        $rows = Db::select(
-            'SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')'
-            . ' AND ' . implode(' AND ', ListingStatus::liveConditions()),
-            $ids
-        );
-
-        return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
+        return $ids === array() ? array() : array_map(static fn (array $row): int => (int) $row['pk_i_id'], (new ListingQuery())->findLive($ids));
     }
 }
