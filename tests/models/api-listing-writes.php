@@ -861,13 +861,13 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
 pin('POST /listings, no photos: 25 queries (the variants read is one; one checks the sign-in is live, one checks the places and one reads them, one sets the search point; ban rules and the category custom fields come from the cache)', 25, $qPost);
-pin('PATCH /listings/{id}, no photos: 18 queries (the variants read is one; an unchanged location and custom field are not rewritten; edited_item reuses the locked row and the texts; the custom fields come from the cache)', 18, $qPatch);
+pin('PATCH /listings/{id}, no photos: 19 queries (the variants read is one, and a price change reads the variants with no price of their own; an unchanged location and custom field are not rewritten; edited_item reuses the locked row and the texts; the custom fields come from the cache)', 19, $qPatch);
 $qGet     = harness_query_count(static fn () => $call('GET', 'listings/' . $qMade, null, $sueToken));
 $qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header('ETag');
 $qMatched = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '998'), $sueToken, array('If-Match' => $qEtag)));
 echo "  GET /listings/{id} as its owner: $qGet queries, PATCH with If-Match: $qMatched\n";
 pin('GET /listings/{id} as its owner: 7 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos, variants; the seller is the signed-in user)', 7, $qGet);
-pin('PATCH with If-Match: 27 queries, the 18 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 27, $qMatched);
+pin('PATCH with If-Match: 28 queries, the 19 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 28, $qMatched);
 $sellerOf = static function (?\mindstellar\api\auth\MemoisedRows $known) use ($qMade): mixed {
     $reader = new \mindstellar\api\read\ListingReader(\mindstellar\api\read\CategoryCatalog::fromSite(), $GLOBALS['lw_services']->listingSerializer(), $known);
 
