@@ -3849,7 +3849,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: custom_fields, translations.",
+                        "description": "Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star).",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -30593,7 +30593,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: custom_fields, translations.",
+                        "description": "Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star).",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -31359,7 +31359,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: custom_fields, translations.",
+                        "description": "Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star).",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -32523,7 +32523,7 @@
         "/listings/{id}/comments": {
             "get": {
                 "operationId": "getListingsByIdComments",
-                "summary": "A listing's approved comments, oldest first",
+                "summary": "A listing's approved comments, oldest first or newest first",
                 "tags": [
                     "Listings"
                 ],
@@ -32562,6 +32562,19 @@
                         "description": "true: also count every match for meta.total; skipped otherwise, as it costs a query.",
                         "schema": {
                             "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "description": "Default oldest.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "oldest",
+                                "newest"
+                            ]
                         }
                     },
                     {
@@ -32898,7 +32911,7 @@
                     }
                 ],
                 "requestBody": {
-                    "required": true,
+                    "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -34846,7 +34859,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: custom_fields, translations.",
+                        "description": "Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star).",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -39056,7 +39069,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: custom_fields, translations.",
+                        "description": "Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star).",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -40187,6 +40200,7 @@
                             "not_found",
                             "method_not_allowed",
                             "conflict",
+                            "already_reviewed",
                             "idempotency_in_flight",
                             "precondition_failed",
                             "too_large",
@@ -40920,6 +40934,33 @@
                         ],
                         "description": "Left out when the listing is not for sale."
                     },
+                    "rating": {
+                        "type": "object",
+                        "properties": {
+                            "average": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ],
+                                "description": "The average of the approved ratings to one decimal; null when there is none."
+                            },
+                            "count": {
+                                "type": "integer"
+                            },
+                            "distribution": {
+                                "type": "object",
+                                "description": "One listing only: star (\"5\" to \"1\") => how many gave it.",
+                                "additionalProperties": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "required": [
+                            "average",
+                            "count"
+                        ],
+                        "description": "With `include=rating`."
+                    },
                     "premium": {
                         "type": "boolean"
                     },
@@ -41549,6 +41590,13 @@
                             "user_id"
                         ]
                     },
+                    "rating": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Stars from 1 to 5; null for a comment with no rating."
+                    },
                     "published_at": {
                         "type": [
                             "string",
@@ -41564,6 +41612,7 @@
                     "title",
                     "body",
                     "author",
+                    "rating",
                     "published_at"
                 ]
             },
@@ -42622,13 +42671,17 @@
                     },
                     "body": {
                         "type": "string",
-                        "minLength": 1,
-                        "maxLength": 5000
+                        "minLength": 0,
+                        "maxLength": 5000,
+                        "description": "Needed unless `rating` is sent."
+                    },
+                    "rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5,
+                        "description": "Stars. Needs a signed-in user, one rated comment per listing (409 `already_reviewed`)."
                     }
                 },
-                "required": [
-                    "body"
-                ],
                 "additionalProperties": false
             },
             "SavedComment": {
@@ -44080,6 +44133,13 @@
                             "user_id"
                         ]
                     },
+                    "rating": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Stars from 1 to 5; null for a comment with no rating."
+                    },
                     "published_at": {
                         "type": [
                             "string",
@@ -44098,6 +44158,7 @@
                     "title",
                     "body",
                     "author",
+                    "rating",
                     "published_at"
                 ]
             },

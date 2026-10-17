@@ -63,6 +63,7 @@ final class Problem
         'not_found'              => [404, 'Not found.'],
         'method_not_allowed'     => [405, 'This method is not allowed here.'],
         'conflict'               => [409, 'The request conflicts with the current state.'],
+        'already_reviewed'       => [409, 'The user has already rated this listing.'],
         'idempotency_in_flight'  => [409, 'A request with this Idempotency-Key is still running.'],
         'precondition_failed'    => [412, 'The resource has changed.'],
         'too_large'              => [413, 'The request body is too large.'],
@@ -216,7 +217,7 @@ final class Problem
     {
         return match (true) {
             $e instanceof NotFoundException  => self::make('not_found', $e->getMessage()),
-            $e instanceof ConflictException  => self::make('conflict', $e->getMessage()),
+            $e instanceof ConflictException  => self::make($e->reason() === ConflictException::ALREADY_REVIEWED ? 'already_reviewed' : 'conflict', $e->getMessage()),
             $e instanceof ForbiddenException => self::make(self::REFUSALS[$e->reason()] ?? 'forbidden', $e->getMessage()),
             $e instanceof BlockedException   => self::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
             $e instanceof InvalidException   => self::validation($e->errors()),

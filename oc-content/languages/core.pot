@@ -346,6 +346,10 @@ msgid_plural "%d more changes"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+msgid "%d out of 5"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/ui.php
 msgid "%d per page"
 msgstr ""
@@ -9002,6 +9006,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Rate limits"
+msgstr ""
+
+#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+msgid "Rating"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php

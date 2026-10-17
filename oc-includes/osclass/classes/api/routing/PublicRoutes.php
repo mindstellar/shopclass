@@ -44,7 +44,7 @@ final class PublicRoutes
 {
     private const LOCALE = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$'];
 
-    private const INCLUDE = ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: custom_fields, translations.'];
+    private const INCLUDE = ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star).'];
 
     private const COUNT = ['type' => 'boolean', 'description' => 'true: also count every match for meta.total; skipped otherwise, as it costs a query.'];
 
@@ -137,9 +137,9 @@ final class PublicRoutes
             'GET listings/{id}/comments' => RouteSpec::read(
                 handler: [ListingsController::class, 'comments'],
                 tag: 'Listings',
-                summary: 'A listing\'s approved comments, oldest first',
+                summary: 'A listing\'s approved comments, oldest first or newest first',
                 response: 'CommentPage',
-                query: $paging + ['count' => self::COUNT],
+                query: $paging + ['count' => self::COUNT, 'sort' => ['type' => 'string', 'enum' => ['oldest', 'newest'], 'description' => 'Default oldest.']],
                 errors: [403, 404]
             ),
             'POST listings' => RouteSpec::write(
@@ -210,7 +210,7 @@ final class PublicRoutes
                 body: 'CommentInput',
                 response: 'SavedComment',
                 status: 201,
-                errors: [403, 404, 429]
+                errors: [403, 404, 409, 429]
             ),
             'GET comments/{id}' => RouteSpec::read(
                 handler: [CommentsController::class, 'show'],

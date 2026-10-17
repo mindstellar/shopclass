@@ -97,6 +97,7 @@ class CommentsDataTable extends DataTable
         $this->addColumn('status', __('Status'));
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
         $this->addColumn('author', __('Author'));
+        $this->addColumn('rating', __('Rating'));
         $this->addColumn('comment', __('Comment'));
         $this->addColumn('date', __('Date'));
 
@@ -212,6 +213,7 @@ class CommentsDataTable extends DataTable
                 $row['author']  =
                     osc_esc_html($aRow['s_author_name']) . ' (<a target="_blank" href="' . osc_esc_html(osc_item_url()) . '">'
                     . osc_esc_html(osc_item_title()) . '</a>)' . $actions;
+                $row['rating']  = self::stars($aRow['i_rating'] ?? null);
                 $row['comment'] = osc_esc_html($aRow['s_body']);
                 $row['date']    = osc_admin_date($aRow['dt_pub_date'], true);
 
@@ -221,6 +223,22 @@ class CommentsDataTable extends DataTable
                 $this->rawRows[] = $aRow;
             }
         }
+    }
+
+    /**
+     * A rating as filled and empty stars with the number for screen readers, or '' for none.
+     *
+     * @param mixed $rating
+     */
+    private static function stars($rating): string
+    {
+        $stars = (int) $rating;
+        if ($stars < 1 || $stars > 5) {
+            return '';
+        }
+
+        return '<span title="' . osc_esc_html(sprintf(__('%d out of 5'), $stars)) . '" aria-label="'
+            . osc_esc_html(sprintf(__('%d out of 5'), $stars)) . '">' . str_repeat('★', $stars) . str_repeat('☆', 5 - $stars) . '</span>';
     }
 
     /**

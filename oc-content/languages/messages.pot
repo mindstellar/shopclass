@@ -2831,6 +2831,14 @@ msgstr ""
 msgid "The plugins this theme needs are active."
 msgstr ""
 
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "The rating must be a whole number from 1 to 5"
+msgstr ""
+
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "The rating must be from 1 to 5"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "The refund was not made: %s"
 msgstr ""
@@ -3512,6 +3520,10 @@ msgstr ""
 msgid "You have %1$d live listings, which is over your limit of %2$d."
 msgstr ""
 
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "You have already rated this item"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "You have no alerts yet."
 msgstr ""
@@ -3543,6 +3555,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "You need to be logged to comment"
+msgstr ""
+
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "You need to be logged to rate"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php

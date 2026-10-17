@@ -153,7 +153,7 @@ Your own listings in any status, newest first
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1083,7 +1083,7 @@ Answers: 200 OK (`CustomFieldList`); 304 Not modified; 401 No valid credential; 
 | GET | `/listings/{id}` | public | `listings:read` | One listing |
 | PATCH | `/listings/{id}` | user | `listings:write` | Edit your listing; members not sent keep their values |
 | DELETE | `/listings/{id}` | user | `listings:delete` | Delete your listing |
-| GET | `/listings/{id}/comments` | public | `listings:read` | A listing's approved comments, oldest first |
+| GET | `/listings/{id}/comments` | public | `listings:read` | A listing's approved comments, oldest first or newest first |
 | POST | `/listings/{id}/comments` | user | `comments:write` | Comment on a listing; it may wait for approval |
 | GET | `/listings/{id}/photos` | public | `listings:read` | A listing's photos |
 | POST | `/listings/{id}/photos` | user | `listings:write` | Add a photo to your listing |
@@ -1146,7 +1146,7 @@ Search listings
 | `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingPage`); 304 Not modified; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1172,7 +1172,7 @@ One listing
 | `id` | path | integer | yes |  |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1205,7 +1205,7 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 
 ### GET `/listings/{id}/comments`
 
-A listing's approved comments, oldest first
+A listing's approved comments, oldest first or newest first
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -1213,6 +1213,7 @@ A listing's approved comments, oldest first
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
+| `sort` | query | string: `oldest`, `newest` | no | Default oldest. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`CommentPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1226,7 +1227,7 @@ Comment on a listing; it may wait for approval
 | `id` | path | integer | yes |  |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
-Body: `CommentInput` as JSON.
+Body: `CommentInput` as JSON, optional.
 
 Answers: 201 Created (`SavedComment`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
@@ -1288,7 +1289,7 @@ Live listings like this one, best first: same category and shared title words, o
 | `id` | path | integer | yes |  |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `limit` | query | integer | no |  |
 | `same_category` | query | boolean | no |  |
 | `same_country` | query | boolean | no |  |
@@ -1567,7 +1568,7 @@ A user's live listings
 | `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.

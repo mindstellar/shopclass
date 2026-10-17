@@ -750,6 +750,7 @@ class CWebItem extends BaseModel
             'author_email' => Params::getParamString('authorEmail'),
             'title'        => Params::getParamString('title'),
             'body'         => Params::getParamString('body'),
+            'rating'       => Params::getParamString('rating'),
         );
         try {
             $saved = (new CommentService())->post($itemId, $input, Actor::visitor());

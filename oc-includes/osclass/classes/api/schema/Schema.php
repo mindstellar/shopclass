@@ -198,8 +198,9 @@ final class Schema
                 'title'        => self::nullable('string'),
                 'body'         => ['type' => 'string'],
                 'author'       => self::object(['name' => self::nullable('string'), 'user_id' => self::nullable('integer')], ['name', 'user_id']),
+                'rating'       => self::nullable('integer', 'Stars from 1 to 5; null for a comment with no rating.'),
                 'published_at' => self::time(),
-            ], ['id', 'listing_id', 'title', 'body', 'author', 'published_at']),
+            ], ['id', 'listing_id', 'title', 'body', 'author', 'rating', 'published_at']),
             'Site'         => self::site(),
             'OpenApiDocument' => ['type' => 'object', 'description' => 'An OpenAPI 3.1 document.'],
         ] + self::account() + self::writes() + self::suggestions() + self::pages();
@@ -371,6 +372,11 @@ final class Schema
                     'values' => ['type' => 'array', 'items' => ['type' => 'string']],
                 ], ['name', 'values'])],
             ], ['buyable', 'options', 'variants']) + ['description' => 'Left out when the listing is not for sale.'],
+            'rating'       => self::object([
+                'average'      => self::nullable('number', 'The average of the approved ratings to one decimal; null when there is none.'),
+                'count'        => ['type' => 'integer'],
+                'distribution' => ['type' => 'object', 'description' => 'One listing only: star ("5" to "1") => how many gave it.', 'additionalProperties' => ['type' => 'integer']],
+            ], ['average', 'count']) + ['description' => 'With `include=rating`.'],
             'premium'      => ['type' => 'boolean'],
             'views'        => ['type' => 'integer'],
             'published_at' => self::time(),
@@ -683,7 +689,7 @@ final class Schema
                 'token'      => ['type' => 'string', 'description' => 'Send it in photo_tokens when making the listing.'],
                 'expires_at' => self::time(),
             ], ['token', 'expires_at']),
-            'CommentInput' => $input(['title' => $text(200), 'body' => $text(5000, 1)], ['body']),
+            'CommentInput' => $input(['title' => $text(200), 'body' => $text(5000) + ['description' => 'Needed unless `rating` is sent.'], 'rating' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5, 'description' => 'Stars. Needs a signed-in user, one rated comment per listing (409 `already_reviewed`).']]),
             'SavedComment' => $saved('Comment'),
             'AlertFilters' => $input([
                 'q'           => $text(200),

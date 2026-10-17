@@ -17,4 +17,16 @@ namespace mindstellar\exception;
  */
 final class ConflictException extends RefusedException
 {
+    /** The user already rated this listing. */
+    public const ALREADY_REVIEWED = 'already_reviewed';
+
+    public function __construct(string $message = '', private string $reason = '')
+    {
+        parent::__construct($message);
+    }
+
+    public function reason(): string
+    {
+        return $this->reason;
+    }
 }

@@ -15,6 +15,7 @@ namespace mindstellar\api\read;
 use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\comment\CommentQuery;
 use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
 use mindstellar\fields\FieldQuery;
@@ -33,6 +34,8 @@ final class ListingReader
 
     private ListingRows $rows;
 
+    private CommentQuery $comments;
+
     private ?CurrencyService $currencies = null;
 
     /**
@@ -42,6 +45,7 @@ final class ListingReader
     {
         $this->listings = new ListingQuery();
         $this->rows     = new ListingRows($this->listings);
+        $this->comments = new CommentQuery();
     }
 
     /**
@@ -89,7 +93,7 @@ final class ListingReader
      */
     public function view(array $item, ViewContext $context): array
     {
-        return $this->serializer->one($item, $this->load([$item], ListingSerializer::lookups($context)), $context);
+        return $this->serializer->one($item, $this->load([$item], ListingSerializer::lookups($context), true), $context);
     }
 
     /**
@@ -125,9 +129,10 @@ final class ListingReader
 
     /**
      * @param array<int,array<string,mixed>> $items   extended listing rows
-     * @param array<string,bool>             $lookups which of seller, photos, fields, product to load
+     * @param array<string,bool>             $lookups which of seller, photos, fields, product, rating to load
+     * @param bool                           $single  one listing: its rating also comes with the count of each star
      */
-    private function load(array $items, array $lookups): ListingRelations
+    private function load(array $items, array $lookups, bool $single = false): ListingRelations
     {
         $ids     = [];
         $userIds = [];
@@ -150,13 +155,17 @@ final class ListingReader
             $currencies         = $this->currencies->findMany(array_keys($codes));
         }
 
+        $rating = $lookups['rating'] ?? false;
+
         return new ListingRelations(
             $this->categories,
             ($lookups['photos'] ?? false) ? $this->photoRows($ids) : [],
             ($lookups['seller'] ?? false) ? $this->users(array_values(array_unique($userIds))) : [],
             ($lookups['fields'] ?? false) ? $this->fieldValues($ids) : [],
             $currencies,
-            ($lookups['product'] ?? false) ? VariantStore::ofItems($ids) : []
+            ($lookups['product'] ?? false) ? VariantStore::ofItems($ids) : [],
+            $rating ? $this->comments->summary($ids) : [],
+            $rating && $single ? [$ids[0] => $this->comments->distribution($ids[0])] : []
         );
     }
 

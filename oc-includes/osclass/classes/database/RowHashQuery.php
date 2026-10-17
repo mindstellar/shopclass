@@ -35,7 +35,7 @@ final class RowHashQuery extends Model
         't_resource'             => ['pk_i_id', 's_owner_type', 'i_owner_id', 's_name', 's_extension', 's_content_type', 's_path', 's_storage',
             'dt_created', 'dt_updated', 's_base_name'],
         't_item_comment'         => ['pk_i_id', 'fk_i_item_id', 'dt_pub_date', 's_title', 's_author_name', 's_author_email', 's_body', 'b_enabled', 'b_active',
-            'b_spam', 'fk_i_user_id'],
+            'b_spam', 'fk_i_user_id', 'i_rating'],
         't_api_credential'       => ['pk_i_id', 'e_kind', 's_token_id', 's_secret_hash', 's_name', 's_scopes', 'fk_i_user_id', 'fk_i_admin_id', 's_family',
             'i_rate_limit', 'b_enabled', 'dt_expires', 'dt_revoked', 'dt_created', 'i_auth_stamp'],
         't_user'                 => ['pk_i_id', 'dt_reg_date', 'dt_mod_date', 's_name', 's_username', 's_password', 's_secret', 's_email', 's_website',
