@@ -30499,7 +30499,7 @@
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
-                        "description": "custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422.",
+                        "description": "custom_field[<id>]=<value>, or custom_field[<id>][]=A&custom_field[<id>][]=B for a dropdown or radio field: any of up to 20 values. Needs a category filter; each id must be a searchable field of that category, else 422.",
                         "style": "deepObject",
                         "explode": true,
                         "schema": {
@@ -30512,6 +30512,43 @@
                                 "items": {
                                     "type": "string"
                                 }
+                            }
+                        }
+                    },
+                    {
+                        "name": "option",
+                        "in": "query",
+                        "required": false,
+                        "description": "option[<name>][]=<value>: only listings with one variant that has, for every name given, one of its values (OR within a name, AND across names). At most 3 names and 10 values each, names up to 30 and values up to 40 characters; anything over is ignored. With in_stock or on_sale, the same variant must meet them too.",
+                        "style": "deepObject",
+                        "explode": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "array"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "ids",
+                        "in": "query",
+                        "required": false,
+                        "description": "One value, a comma list, or repeated.",
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "array"
+                            ],
+                            "items": {
+                                "type": "string"
                             }
                         }
                     },
@@ -38975,7 +39012,7 @@
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
-                        "description": "custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422.",
+                        "description": "custom_field[<id>]=<value>, or custom_field[<id>][]=A&custom_field[<id>][]=B for a dropdown or radio field: any of up to 20 values. Needs a category filter; each id must be a searchable field of that category, else 422.",
                         "style": "deepObject",
                         "explode": true,
                         "schema": {
@@ -38988,6 +39025,43 @@
                                 "items": {
                                     "type": "string"
                                 }
+                            }
+                        }
+                    },
+                    {
+                        "name": "option",
+                        "in": "query",
+                        "required": false,
+                        "description": "option[<name>][]=<value>: only listings with one variant that has, for every name given, one of its values (OR within a name, AND across names). At most 3 names and 10 values each, names up to 30 and values up to 40 characters; anything over is ignored. With in_stock or on_sale, the same variant must meet them too.",
+                        "style": "deepObject",
+                        "explode": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "array"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "ids",
+                        "in": "query",
+                        "required": false,
+                        "description": "One value, a comma list, or repeated.",
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "array"
+                            ],
+                            "items": {
+                                "type": "string"
                             }
                         }
                     },

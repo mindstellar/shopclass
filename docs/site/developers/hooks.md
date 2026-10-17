@@ -158,6 +158,7 @@ sets `rawSql`, and only `items` and `total` of the answer are used.
 |---|---|---|
 | TEXT, TEXTAREA, URL | `contains`, `value` | the value contains `value` (core uses LIKE, so `%` and `_` act as wildcards) |
 | DROPDOWN, RADIO | `eq`, `value` | the value is `value` |
+| DROPDOWN, RADIO, several values | `in`, `values` (strings, at most 20) | the value is one of `values` |
 | CHECKBOX | `checked` | the value is `1` |
 | DATE | `between`, `from`, `to` | the value is in that day (unix times, both ends included) |
 | DATEINTERVAL | `covers`, `from`, `to` | the stored range starts on or before `from` and ends on or after `to` |
