@@ -345,7 +345,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
         <input type="hidden" name="action" value="bulk"/>
         <input type="hidden" name="type" value="<?php echo osc_esc_html($mediaType); ?>"/>
         <div id="media-table" class="table-contains-actions">
-            <?php // The grid is the same table drawn as cards, so selection and actions work the same. ?>
+            <?php // The grid is the same table drawn as cards, so selection and actions work the same.?>
             <table class="table<?php echo $mediaView === 'grid' ? ' media-grid' : ''; ?>" cellpadding="0" cellspacing="0">
                 <thead>
                     <tr>
