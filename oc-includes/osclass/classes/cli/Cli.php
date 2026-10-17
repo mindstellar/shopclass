@@ -1276,17 +1276,7 @@ class Cli
             return 0;
         }
 
-        $this->err(match ($result['error_code'] ?? '') {
-            'error_installed' => sprintf("Plugin '%s' is already installed.\n", $plugin),
-            'error_file'      => sprintf("Plugin '%s' was not found in oc-content/plugins.\n", $plugin),
-            'custom_error'    => sprintf("Could not install plugin '%s': %s\n", $plugin, $result['msg'] ?? ''),
-            'error_output'    => sprintf(
-                "Plugin '%s' was installed, but printed output while installing:\n%s\n",
-                $plugin,
-                $result['output'] ?? ''
-            ),
-            default           => sprintf("Could not install plugin '%s'.\n", $plugin),
-        });
+        $this->err(sprintf("Plugin '%s': %s\n", $plugin, Plugins::installError($result)));
 
         return 1;
     }

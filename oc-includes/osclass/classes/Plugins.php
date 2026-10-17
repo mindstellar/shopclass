@@ -441,6 +441,27 @@ class Plugins
     }
 
     /**
+     * What went wrong in an install() result, or null when it worked. An install that printed
+     * output is installed and on, but still reported.
+     *
+     * @param true|array<string,string> $result what install() returned
+     */
+    public static function installError($result): ?string
+    {
+        if ($result === true) {
+            return null;
+        }
+
+        return match (is_array($result) ? (string) ($result['error_code'] ?? '') : '') {
+            'error_installed' => __('Plugin is already installed'),
+            'error_file'      => __("Plugin couldn't be installed because their files are missing"),
+            'custom_error'    => sprintf(__("Plugin couldn't be installed because of: %s"), (string) ($result['msg'] ?? '')),
+            'error_output'    => sprintf(__('Plugin was installed, but printed this output while installing: %s'), (string) ($result['output'] ?? '')),
+            default           => __("Plugin couldn't be installed"),
+        };
+    }
+
+    /**
      * Run every callback registered on an action hook, in priority order.
      *
      * @param string $hook

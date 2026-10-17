@@ -385,18 +385,10 @@ final class PluginDependencies
         $path = $slug . '/index.php';
         if (!\Plugins::isInstalled($path)) {
             $installed = \Plugins::install($path);
-            if ($installed === true) {
-                return null;
-            }
-            $code = is_array($installed) ? (string) ($installed['error_code'] ?? '') : '';
-            if ($code === 'error_file') {
-                return __("The plugin's files are missing.");
-            }
-            if ($code === 'custom_error') {
-                return sprintf(__("The plugin couldn't be installed because of: %s"), (string) $installed['msg']);
-            }
-            if ($code !== 'error_installed') {
-                return __("The plugin couldn't be installed. Open Plugins to see why.");
+            $code      = is_array($installed) ? (string) ($installed['error_code'] ?? '') : '';
+            // Already installed, or installed but noisy: go on and make sure it is on.
+            if ($installed !== true && $code !== 'error_installed' && $code !== 'error_output') {
+                return \Plugins::installError($installed);
             }
         }
         if (!\Plugins::isEnabled($path)) {
