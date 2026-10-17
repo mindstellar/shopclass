@@ -309,6 +309,7 @@ pin('31 values under one name', ['/product/options'], $codes($v->product($tee(ar
 pin('30 pass', [], $v->product($tee(array_map(static fn (int $i): array => $row(['Size' => 'S' . $i]), range(1, 30)))));
 pin('a row missing a name', ['/product/variants/1/options'], $codes($v->product($tee([$row(['Colour' => 'Red', 'Size' => 'S']), $row(['Colour' => 'Red'])]))));
 pin('a row with a name the first lacks', ['/product/variants/1/options'], $codes($v->product($tee([$row(['Colour' => 'Red']), $row(['Colour' => 'Red', 'Size' => 'S'])]))));
+pin('a row with an extra name is a mismatch, not a duplicate', [['/product/variants/1/options', 'mismatch']], array_map(static fn (array $e): array => [$e['pointer'], $e['code']], $v->product($tee([$row(['Colour' => 'Red', 'Size' => 'S']), $row(['Colour' => 'Blue', 'Size' => 'M', 'Fit' => 'Slim'])]))));
 pin('a duplicate combination, whatever the key order', ['/product/variants/2/options'], $codes($v->product($tee([$row(['Colour' => 'Red', 'Size' => 'S']), $row(['Colour' => 'Red', 'Size' => 'M']), $row(['Size' => 'S', 'Colour' => 'Red'])]))));
 pin('a bad row field names its row', ['/product/variants/1/sku', '/product/variants/1/stock'], $codes($v->product($tee([$row(['Size' => 'S']), $row(['Size' => 'M'], ['s_sku' => str_repeat('x', 65), 'i_stock' => -1])]))));
 pin('a photo that is not the listing\'s', ['/product/variants/0/photo_id'], $codes($v->product($tee([$row(['Size' => 'S'], ['fk_i_resource_id' => 77])]), [5, 6])));
