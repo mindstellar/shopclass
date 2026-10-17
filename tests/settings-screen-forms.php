@@ -1774,6 +1774,14 @@ $redraw = StorageSettingsScreen::formVars(array('storage_s3_secret_key' => 'type
 osc_admin_settings_form($redraw['id'], $redraw);
 check('nor is a typed one on a refused redraw', strpos((string)ob_get_clean(), 'typed-then-refused') === false);
 
+$pricing = \mindstellar\admin\form\BillingSettingsScreen::formVars()['pricing'];
+ob_start();
+osc_admin_settings_form($pricing['id'], $pricing);
+check('a settings form prints its group heading', strpos((string)ob_get_clean(), '>Pricing</h2>') !== false);
+ob_start();
+osc_admin_settings_form($pricing['id'], array('titles' => false) + $pricing);
+check('and leaves it out on a tab that names it', strpos((string)ob_get_clean(), '>Pricing</h2>') === false);
+
 // Corrected rather than refused, exactly as the hand-written save did.
 foreach (array(
     array('storage_active', 'local', 'local', 'local stays local'),
