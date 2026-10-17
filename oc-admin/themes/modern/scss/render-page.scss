@@ -126,6 +126,11 @@ h3.render-title.separate-top {
   margin-block-start: 20px;
 }
 
+// The page title opens the page; a script or hidden field before it is not content to clear.
+h2.osc-page-title:first-of-type {
+  margin-block-start: 0;
+}
+
 .render-title a.btn-mini, .form-controls a.btn-mini {
   float: none;
   height: 24px;
