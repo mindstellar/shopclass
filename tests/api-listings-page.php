@@ -11,7 +11,8 @@
 /**
  * GET /listings?page=N: page 1 is the cursor's first page, page 2 equals the cursor's second
  * page, any sort pages, meta.page and meta.pages with count=true, links.next carries page=N+1,
- * a page past the cap is 422 page_too_deep, and page with cursor or page 0 is 422.
+ * a page past the cap is 422 page_too_deep, the last page inside the cap has no next and says
+ * truncated, and page with cursor or page 0 is 422.
  * Usage: php tests/api-listings-page.php
  */
 
@@ -79,5 +80,30 @@ pin('the last page inside the cap answers', 200, $list(['limit' => 5, 'page' => 
 pin('page 0 is 422', 422, $list(['page' => 0])->status());
 pin('page with a cursor is 422', 422, $list(['limit' => 5, 'page' => 2, 'cursor' => $cursor['cursor']])->status());
 pin('page that is not a number is 422', 422, $list(['page' => 'x'])->status());
+
+harness_section('the cap ends paging');
+// 10 060 more rows, so rows remain past the deepest page offset paging reaches (offset 10 000).
+$admin->query('SET SESSION cte_max_recursion_depth = 20000');
+$admin->query("INSERT INTO {$p}t_item (fk_i_user_id, fk_i_category_id, dt_pub_date, dt_first_pub_date, dt_mod_date, f_price, i_price,
+    fk_c_currency_code, s_contact_name, s_contact_email, s_ip, b_premium, b_enabled, b_active, b_spam, s_secret, dt_expiration)
+    WITH RECURSIVE n (i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 10060)
+    SELECT $sue, $cat, DATE_SUB('2026-09-01 12:00:00', INTERVAL i MINUTE), NOW(), NOW(), 1, 1000000,
+        'USD', 'Contact', 'contact@example.test', '127.0.0.1', 0, 1, 1, 0, 'bulk', DATE_ADD(NOW(), INTERVAL 30 DAY) FROM n");
+$admin->query("INSERT INTO {$p}t_item_description (fk_i_item_id, fk_c_locale_code, s_title, s_description)
+    SELECT pk_i_id, 'en_US', 'Bulk', 'Bulk body' FROM {$p}t_item WHERE s_secret = 'bulk'");
+$admin->query("INSERT INTO {$p}t_item_location (fk_i_item_id, fk_c_country_code, s_country)
+    SELECT pk_i_id, 'US', 'United States' FROM {$p}t_item WHERE s_secret = 'bulk'");
+$admin->query("INSERT INTO {$p}t_item_stats (fk_i_item_id, dt_date) SELECT pk_i_id, CURDATE() FROM {$p}t_item WHERE s_secret = 'bulk'");
+scratchdb_forget_cache();
+
+$last = $list(['limit' => 50, 'page' => 201]);
+pin('the last page inside the cap is full', 50, count($of($last)));
+pin('and has no next link', null, $last->body()['links']['next']);
+pin('and says the list is truncated', true, $last->body()['meta']['truncated'] ?? false);
+$before = $list(['limit' => 50, 'page' => 200]);
+$next   = [];
+parse_str((string) parse_url((string) $before->body()['links']['next'], PHP_URL_QUERY), $next);
+pin('the page before it links to it', '201', $next['page'] ?? null);
+pin('and is not truncated', false, $before->body()['meta']['truncated'] ?? false);
 
 exit(harness_result());
