@@ -159,7 +159,7 @@ $cases = array(
     'proxy_mismatch'       => array('security', array('proxy' => array('header' => 'X-Forwarded-For', 'proxy' => '10.0.0.1')), 'danger', SystemChecks::DOCS_PROXY),
     'backups_open'         => array('security', array('backup_probe' => true), 'danger', SystemChecks::DOCS_BACKUPS),
     'config_writable'      => array('security', array('config_writable' => true), 'warning', null),
-    'signin_protection_off' => array('security', array('throttle' => array('enabled' => false)), 'warning', $base . '?page=settings&action=spamNbots#login-throttle-settings'),
+    'signin_protection_off' => array('security', array('throttle' => array('enabled' => false)), 'warning', $base . '?page=settings&action=spamNbots&tab=signin'),
     'admins_no_2fa'        => array('security', array('admins' => array(array('id' => 2, 'username' => 'ed', 'two_factor' => false))), 'warning', $base . '?page=admins'),
     'signin_blocked'       => array('security', array('throttle' => array('enabled' => true, 'blocked' => 3)), 'info', '#signin-activity'),
     'cache_unsupported'    => array('cache', array('cache_driver' => 'redis', 'cache_supported' => false), 'warning', $base . '?page=tools&action=system-info&tab=server#server-help'),
@@ -269,7 +269,7 @@ pin('an admin without it is sent to their own profile', $base . '?page=admins&ac
 check('everyone with 2FA: no line', $issue('security', $env(), 'admins_no_2fa') === null);
 $groups = SystemChecks::report('security', $env(array('admins' => $admins, 'web_restore_off' => true, 'package_installs_off' => true)))['groups'];
 pin('the groups', array('Sign-in protection', 'Admins', 'Site'), array_column($groups, 'title'));
-pin('sign-in protection links to its settings', $base . '?page=settings&action=spamNbots#login-throttle-settings', $groups[0]['link']['url']);
+pin('sign-in protection links to its settings', $base . '?page=settings&action=spamNbots&tab=signin', $groups[0]['link']['url']);
 pin('one row per admin, saying only on or off', array('owner' => 'two-step sign-in', 'ed' => 'password only', 'jo' => 'password only'), array_column($groups[1]['rows'], 'value', 'label'));
 check('no row carries a secret', strpos(json_encode($groups), 'secret') === false);
 $site = array_column($groups[2]['rows'], 'value', 'label');

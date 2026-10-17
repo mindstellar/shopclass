@@ -24,6 +24,9 @@ use mindstellar\admin\form\SpamSettingsScreen;
  */
 class CAdminSettingsSpamnBots extends AdminSecBaseModel
 {
+    /** The screen's tabs, one form each. */
+    private const TABS = array('akismet', 'captcha', 'alerts', 'messages', 'limits', 'signin');
+
     /**
      * Boots the admin controller and fires the init_admin_settings_spam hook.
      */
@@ -52,7 +55,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
 
                 $result = CoreSettings::attempt(SpamSettingsScreen::registerAkismet());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_AKISMET, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_AKISMET, $result['values'], 'akismet');
                     break;
                 }
 
@@ -63,7 +66,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 } else {
                     osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('akismet'));
                 break;
             case ('recaptcha_post'):
                 // updating the captcha provider and its keys
@@ -71,7 +74,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
 
                 $result = CoreSettings::attempt(SpamSettingsScreen::registerCaptcha());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_CAPTCHA, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_CAPTCHA, $result['values'], 'captcha');
                     break;
                 }
 
@@ -80,7 +83,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 } else {
                     osc_add_flash_ok_message(_m('Your reCAPTCHA key has been updated'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('captcha'));
                 break;
             case ('alerts_post'):
                 // updating search-alert subscription option
@@ -88,12 +91,12 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
 
                 $result = CoreSettings::attempt(SpamSettingsScreen::registerAlerts());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_ALERTS, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_ALERTS, $result['values'], 'alerts');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Search alert settings have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('alerts'));
                 break;
             case ('login_throttle_post'):
                 // updating the sign-in rate limit
@@ -101,36 +104,36 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
 
                 $result = CoreSettings::attempt(SpamSettingsScreen::registerLoginThrottle());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_LOGIN_THROTTLE, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_LOGIN_THROTTLE, $result['values'], 'signin');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('signin'));
                 break;
             case ('messages_post'):
                 osc_csrf_check();
 
                 $result = CoreSettings::attempt(SpamSettingsScreen::registerMessages());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_MESSAGES, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_MESSAGES, $result['values'], 'messages');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Message settings have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('messages'));
                 break;
             case ('limits_post'):
                 osc_csrf_check();
 
                 $result = CoreSettings::attempt(SpamSettingsScreen::registerLimits());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_LIMITS, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_LIMITS, $result['values'], 'limits');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Limits have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('limits'));
                 break;
             case ('login_throttle_unblock'):
                 if ($this->refuseOnDemo(self::securityUrl())) {
@@ -166,6 +169,18 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
     }
 
     /**
+     * The screen opened on one tab.
+     *
+     * @param string $tab one of TABS
+     *
+     * @return string
+     */
+    private static function tabUrl(string $tab): string
+    {
+        return osc_admin_base_url(true) . '?page=settings&action=spamNbots&tab=' . $tab;
+    }
+
+    /**
      * System info > Security, where the list of failed sign-ins lives.
      *
      * @return string
@@ -181,11 +196,16 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
      *
      * @param string     $rejected the page id of the form that was refused, if any
      * @param array|null $values   that form's submitted values
+     * @param string     $tab      the tab to open; the request's, when empty
      *
      * @return void
      */
-    private function drawForms(string $rejected = '', ?array $values = null)
+    private function drawForms(string $rejected = '', ?array $values = null, string $tab = '')
     {
+        if ($tab === '') {
+            $tab = Params::getParamString('tab');
+        }
+        $this->_exportVariableToView('spam_tab', in_array($tab, self::TABS, true) ? $tab : self::TABS[0]);
         // Whether the stored key is one Akismet recognises. A request to their service, so
         // it is made only for the screen that shows the answer.
         $akismetKey    = osc_akismet_key();

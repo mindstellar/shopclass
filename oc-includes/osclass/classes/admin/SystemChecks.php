@@ -1124,7 +1124,7 @@ final class SystemChecks
      */
     private static function spamSettingsUrl(array $env): string
     {
-        return (string) ($env['admin_url'] ?? '') . '?page=settings&action=spamNbots#login-throttle-settings';
+        return (string) ($env['admin_url'] ?? '') . '?page=settings&action=spamNbots&tab=signin';
     }
 
     /**

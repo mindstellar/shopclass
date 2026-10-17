@@ -1120,6 +1120,7 @@ $run = drive('CAdminSettingsSpamnBots', 'limits_post', array('throttle_send_frie
 pin('a limit of 0 is stored, switching it off', array('0', 'INTEGER'), pref($admin, 'throttle_send_friend'));
 pin('a negative limit is floored at 0', array('0', 'INTEGER'), pref($admin, 'throttle_form_submit'));
 pin('the limits save reports itself once', array('ok:Limits have been updated'), flashed($run));
+check('a spam save returns to its tab', str_ends_with((string) end($run['redirects']), '&tab=limits'), (string) end($run['redirects']));
 
 $run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_require_login' => '1'));
 pin('the alert rule is a boolean', array('1', 'BOOLEAN'), pref($admin, 'alerts_require_login'));
