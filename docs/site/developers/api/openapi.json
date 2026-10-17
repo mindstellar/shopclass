@@ -40835,6 +40835,40 @@
                                                 "null"
                                             ]
                                         },
+                                        "photo": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "description": "The variant's photo, one of the listing's `photos`; null when it has none.",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "thumbnail": {
+                                                    "type": "string"
+                                                },
+                                                "preview": {
+                                                    "type": "string"
+                                                },
+                                                "normal": {
+                                                    "type": "string"
+                                                },
+                                                "original": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "thumbnail",
+                                                "preview",
+                                                "normal",
+                                                "original"
+                                            ]
+                                        },
                                         "position": {
                                             "type": "integer"
                                         }
@@ -40851,13 +40885,37 @@
                                         "weight",
                                         "shipping_class",
                                         "photo_id",
+                                        "photo",
                                         "position"
+                                    ]
+                                }
+                            },
+                            "options": {
+                                "type": "array",
+                                "description": "The option names and their values, in first-seen order; empty for a plain product.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "values": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "name",
+                                        "values"
                                     ]
                                 }
                             }
                         },
                         "required": [
                             "buyable",
+                            "options",
                             "variants"
                         ],
                         "description": "Left out when the listing is not for sale."
@@ -43827,10 +43885,91 @@
                                     "null"
                                 ],
                                 "maxLength": 40
+                            },
+                            "variants": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "maxItems": 100,
+                                "description": "Option rows (Colour x Size ...), replacing every row the listing has; the other members are then ignored. A row whose options match a stored one keeps its id. A member left out of a row is null.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "options": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string",
+                                                "maxLength": 40
+                                            },
+                                            "description": "Option name => value. Every row names the same options, at most 3, each name at most 30 characters."
+                                        },
+                                        "sku": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "maxLength": 64
+                                        },
+                                        "price": {
+                                            "type": [
+                                                "string",
+                                                "number",
+                                                "null"
+                                            ],
+                                            "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
+                                            "minimum": 0
+                                        },
+                                        "compare_at": {
+                                            "type": [
+                                                "string",
+                                                "number",
+                                                "null"
+                                            ],
+                                            "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
+                                            "minimum": 0
+                                        },
+                                        "stock": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "minimum": 0,
+                                            "maximum": 2147483647
+                                        },
+                                        "weight": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "minimum": 0,
+                                            "maximum": 4294967295
+                                        },
+                                        "shipping_class": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "maxLength": 40
+                                        },
+                                        "photo_id": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "minimum": 1,
+                                            "description": "One of the listing's photos."
+                                        }
+                                    },
+                                    "required": [
+                                        "options"
+                                    ],
+                                    "additionalProperties": false
+                                }
                             }
                         },
                         "additionalProperties": false,
-                        "description": "Sell this item: sets the default variant, sending only the members to change. null stops selling it."
+                        "description": "Sell this item: sets the default variant, sending only the members to change, or the option rows with `variants`. Without `variants` a listing with option rows goes back to one default row. null stops selling it."
                     },
                     "owner_id": {
                         "type": [

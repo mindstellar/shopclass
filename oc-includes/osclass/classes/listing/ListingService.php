@@ -1151,7 +1151,8 @@ final class ListingService
     }
 
     /**
-     * Errors for the `product` member, which only an admin's save carries.
+     * Errors for the `product` member, which only an admin's save carries. A variant photo
+     * must be one the listing already has, so a new listing's rows take none.
      *
      * @param array<string,mixed> $aItem
      *
@@ -1159,12 +1160,20 @@ final class ListingService
      */
     private function productErrors(array $aItem, Actor $actor): array
     {
-        return $actor->isAdmin() && is_array($aItem['product'] ?? null) ? $this->validator->product($aItem['product']) : array();
+        if (!$actor->isAdmin() || !is_array($aItem['product'] ?? null)) {
+            return array();
+        }
+        $itemId = (int) ($aItem['idItem'] ?? 0);
+        $photos = $itemId > 0 && is_array($aItem['product']['variants'] ?? null)
+            ? array_map(static fn (array $photo): int => (int) $photo['pk_i_id'], PhotoStore::ofItems(array($itemId)))
+            : array();
+
+        return $this->validator->product($aItem['product'], $photos);
     }
 
     /**
-     * Save or remove the listing's default variant row from the `product` member. Ignored
-     * unless an admin saves, whatever the data holds.
+     * Save the listing's default row or its option rows from the `product` member, or remove
+     * every row when it is not for sale. Ignored unless an admin saves, whatever the data holds.
      *
      * @param array<string,mixed> $aItem
      */
@@ -1174,7 +1183,12 @@ final class ListingService
             return;
         }
         if (empty($aItem['product']['sell'])) {
-            VariantStore::removeDefault($itemId);
+            VariantStore::deleteForItem($itemId);
+
+            return;
+        }
+        if (is_array($aItem['product']['variants'] ?? null)) {
+            VariantStore::saveSet($itemId, $aItem['product']['variants']);
 
             return;
         }

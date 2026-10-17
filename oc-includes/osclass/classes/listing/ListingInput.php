@@ -89,33 +89,74 @@ final class ListingInput
 
     /**
      * The values of the admin "Sell this item" section: what a refused save posted, or the
-     * listing's default variant. Prices are in the site's locale format.
+     * listing's variants. Prices are in the site's locale format. `options` and `variants`
+     * fill the option editor, `photos` its photo choice (id => label), and `errors` holds a
+     * refused save's messages by row index, or under 'options' for the option names.
      *
      * @param int $itemId 0 for a new listing
      *
-     * @return array{sell:bool,sku:string,price:string,compareAt:string,stock:string,weight:string,shippingClass:string}
+     * @return array{sell:bool,sku:string,price:string,compareAt:string,stock:string,weight:string,shippingClass:string,hasOptions:bool,options:array<int,array{name:string,values:array<int,string>}>,variants:array<int,array<string,mixed>>,photos:array<int,string>,errors:array<int|string,array<int,string>>}
      */
     public static function productForm(int $itemId): array
     {
-        $kept = Session::getInstance()->_getForm('product');
+        $photoIds = $itemId > 0 ? array_map(static fn (array $photo): int => (int) $photo['pk_i_id'], PhotoStore::ofItems(array($itemId))) : array();
+        $kept     = Session::getInstance()->_getForm('product');
+        $errors   = array();
         if (is_array($kept)) {
             $row  = (array) ($kept['fields'] ?? array());
             $sell = !empty($kept['sell']);
+            $rows = is_array($kept['variants'] ?? null) ? array_values($kept['variants']) : null;
+            foreach ((new ListingValidator())->product($kept, $photoIds) as $error) {
+                $at            = preg_match('#^/product/variants/(\d+)/#', $error['pointer'], $m) === 1 ? (int) $m[1] : 'options';
+                $errors[$at][] = $error['message'];
+            }
         } else {
-            $row  = $itemId > 0 ? VariantStore::defaultRow($itemId) : null;
-            $sell = $row !== null;
-            $row  = $row ?? array();
+            $stored = $itemId > 0 ? VariantStore::ofItem($itemId) : array();
+            $sell   = $stored !== array();
+            $row    = array();
+            $rows   = null;
+            foreach ($stored as $one) {
+                if ($one['s_options'] === null) {
+                    $row = $one;
+                } else {
+                    $options = json_decode((string) $one['s_options'], true);
+                    $rows[]  = array('options' => is_array($options) ? $options : array(), 'fields' => $one);
+                }
+            }
         }
-        $text = static fn ($value): string => $value === null ? '' : (string) $value;
-
-        return array(
-            'sell'          => $sell,
+        $text  = static fn ($value): string => $value === null ? '' : (string) $value;
+        $price = static fn ($value): string => is_numeric($value) ? (string) osc_prepare_price($value) : $text($value);
+        $shown = static fn (array $row): array => array(
             'sku'           => $text($row['s_sku'] ?? null),
-            'price'         => is_numeric($row['i_price'] ?? null) ? (string) osc_prepare_price($row['i_price']) : $text($row['i_price'] ?? null),
-            'compareAt'     => is_numeric($row['i_compare_price'] ?? null) ? (string) osc_prepare_price($row['i_compare_price']) : $text($row['i_compare_price'] ?? null),
+            'price'         => $price($row['i_price'] ?? null),
+            'compareAt'     => $price($row['i_compare_price'] ?? null),
             'stock'         => $text($row['i_stock'] ?? null),
             'weight'        => $text($row['i_weight'] ?? null),
             'shippingClass' => $text($row['s_shipping_class'] ?? null),
+        );
+
+        $options  = VariantStore::optionsOf($rows ?? array());
+        $names    = array_column($options, 'name');
+        $variants = array();
+        foreach ($rows ?? array() as $one) {
+            $values = array();
+            foreach ($names as $name) {
+                $values[] = (string) ($one['options'][$name] ?? '');
+            }
+            $fields     = (array) ($one['fields'] ?? array());
+            $variants[] = array('values' => $values, 'photoId' => $text($fields['fk_i_resource_id'] ?? null)) + $shown($fields);
+        }
+        $photos = array();
+        foreach ($photoIds as $n => $id) {
+            $photos[$id] = sprintf(__('Photo %d'), $n + 1);
+        }
+
+        return array('sell' => $sell) + $shown($row) + array(
+            'hasOptions' => $rows !== null,
+            'options'    => $options,
+            'variants'   => $variants,
+            'photos'     => $photos,
+            'errors'     => $errors,
         );
     }
 
@@ -183,15 +224,62 @@ final class ListingInput
     /**
      * The "Sell this item" members of a form: `sell` (a checkbox) and the columns the form
      * sent, each as the validator reads them. A number that is not one stays text, so
-     * ListingValidator::product() can refuse it. Null when the form has no such members.
+     * ListingValidator::product() can refuse it. With `hasOptions` set it also carries
+     * `variants`, the option rows: each row's `options` is a map of name => value, or a list
+     * matched to `optionNames` as the admin form posts it. Null when the form has no such members.
      *
-     * @return array{sell:bool,fields:array<string,int|string|null>}|null
+     * @return array{sell:bool,fields:array<string,int|string|null>,variants?:array<int,array{options:array<string,string>,fields:array<string,int|string|null>}>}|null
      */
     private static function product(mixed $raw): ?array
     {
         if (!is_array($raw)) {
             return null;
         }
+        $product = array('sell' => !empty($raw['sell']), 'fields' => self::variantFields($raw));
+        if (empty($raw['hasOptions'])) {
+            return $product;
+        }
+        $names = null;
+        if (is_array($raw['optionNames'] ?? null)) {
+            $names = array_map(static fn ($name): string => self::optionText($name), array_values(array_slice($raw['optionNames'], 0, VariantStore::MAX_OPTIONS + 1)));
+        }
+        $rows = array();
+        // One past the cap, so the validator can still say there are too many.
+        foreach (array_slice(is_array($raw['variants'] ?? null) ? $raw['variants'] : array(), 0, VariantStore::MAX_ROWS + 1) as $row) {
+            $row     = is_array($row) ? $row : array();
+            $given   = is_array($row['options'] ?? null) ? $row['options'] : array();
+            $options = array();
+            if ($names !== null) {
+                $given = array_values($given);
+                foreach ($names as $k => $name) {
+                    $options[$name] = self::optionText($given[$k] ?? '');
+                }
+            } else {
+                foreach (array_slice($given, 0, VariantStore::MAX_OPTIONS + 1, true) as $name => $value) {
+                    $options[self::optionText($name)] = self::optionText($value);
+                }
+            }
+            $fields = self::variantFields($row);
+            if (array_key_exists('photoId', $row)) {
+                $photo                      = is_scalar($row['photoId']) ? trim((string) $row['photoId']) : '';
+                $fields['fk_i_resource_id'] = $photo === '' ? null : (preg_match('/^\d{1,10}$/', $photo) === 1 ? (int) $photo : $photo);
+            }
+            $rows[] = array('options' => $options, 'fields' => $fields);
+        }
+        $product['variants'] = $rows;
+
+        return $product;
+    }
+
+    /**
+     * One row's columns, each as the validator reads them.
+     *
+     * @param array<string,mixed> $raw
+     *
+     * @return array<string,int|string|null>
+     */
+    private static function variantFields(array $raw): array
+    {
         $text = static function (string $key) use ($raw): ?string {
             $value = isset($raw[$key]) && is_scalar($raw[$key]) ? trim((string) Params::purifyText($raw[$key])) : '';
 
@@ -218,7 +306,18 @@ final class ListingInput
             }
         }
 
-        return array('sell' => !empty($raw['sell']), 'fields' => $fields);
+        return $fields;
+    }
+
+    /**
+     * An option name or value as stored: tags stripped, spaces trimmed and collapsed. Not
+     * entity-encoded, so "Black & White" matches as typed; every output escapes it.
+     */
+    private static function optionText(mixed $value): string
+    {
+        $value = is_scalar($value) ? strip_tags(mb_scrub((string) $value, 'UTF-8')) : '';
+
+        return trim((string) preg_replace('/\s+/u', ' ', $value));
     }
 
     private static function sessionActor(bool $admin): Actor

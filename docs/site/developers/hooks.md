@@ -227,7 +227,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 565 names. Generated from the source; do not edit by hand.
+Core fires 567 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -521,7 +521,7 @@ Core fires 565 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (222)
+### Other (224)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -743,6 +743,8 @@ Core fires 565 names. Generated from the source; do not edit by hand.
 | `upload_image_mime` | filter | `$imgres->getMime()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_file` | action | `$stored` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_resource` | action | `$row` | `oc-includes/osclass/classes/storage/ResourceUploader.php` |
+| `variant_price_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/VariantStore.php` |
+| `variant_stock_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/VariantStore.php` |
 | `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `watermark_font_size` | filter | `30` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `watermark_text_value` | filter | `$watermark_text` | `oc-includes/osclass/classes/ImageProcessing.php` |

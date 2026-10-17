@@ -1047,6 +1047,10 @@ msgid ""
 "your phone."
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Add a value, then press Enter"
+msgstr ""
+
 #: oc-admin/themes/modern/admins/index.php
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Add admin"
@@ -1125,6 +1129,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 msgid "Add new user"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Add option"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
@@ -5089,6 +5097,10 @@ msgstr ""
 msgid "General Settings"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Generate combinations"
+msgstr ""
+
 #: oc-admin/gui/recover.php
 msgid "Get new password"
 msgstr ""
@@ -5105,6 +5117,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Give %s credits without a payment — to settle something off-site, "
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Give each option a name and at least one value first."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -7723,6 +7739,7 @@ msgstr ""
 msgid "Non-profit - Volunteer"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -8068,6 +8085,10 @@ msgid_plural "%s locations have been deleted"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "One row per combination. Generating again keeps the rows you filled in."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "One week"
 msgstr ""
@@ -8164,6 +8185,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Option map"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Option name, such as Colour"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
@@ -8558,12 +8583,17 @@ msgstr ""
 msgid "Phone numbers"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Photo"
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
 msgid "Photo #%1$d of listing #%2$d"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingInput.php
+msgid "Photo %d"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -9259,11 +9289,16 @@ msgid "Remote downloads (allow_url_fopen)"
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
+#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/settings/sitemap.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Remove"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Remove %s"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
@@ -9280,6 +9315,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupJobs.php
 msgid "Remove old backups"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Remove option"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -9760,6 +9799,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "Save the latest user searches"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Save the listing with photos to pick a photo per row."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/searches.php
@@ -10925,6 +10968,10 @@ msgid "Still to do"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgid "Stock"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
 msgid "Stock (blank does not track)"
 msgstr ""
 
@@ -11147,6 +11194,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "That form does not name a record that can be saved."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "That makes %%d rows; an item has at most %d."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/Billing.php
@@ -12065,6 +12116,10 @@ msgstr ""
 msgid ""
 "This is an example page description. This is a good place to put your Terms "
 "of Service or any other help information."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "This item comes in options"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -13325,6 +13380,10 @@ msgid "Warn about expiration"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgid "Was price"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
 msgid "Was price (blank for none)"
 msgstr ""
 
@@ -13424,6 +13483,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php
 msgid "Weekly"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Weight (g)"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php

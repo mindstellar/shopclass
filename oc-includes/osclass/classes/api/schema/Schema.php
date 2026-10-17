@@ -350,9 +350,27 @@ final class Schema
                     'weight'         => self::nullable('integer', 'Grams.'),
                     'shipping_class' => self::nullable('string'),
                     'photo_id'       => self::nullable('integer'),
+                    // C1: the variant's photo.
+                    'photo'          => [
+                        'type'        => ['object', 'null'],
+                        'description' => 'The variant\'s photo, one of the listing\'s `photos`; null when it has none.',
+                        'properties'  => [
+                            'id'        => ['type' => 'integer'],
+                            'thumbnail' => ['type' => 'string'],
+                            'preview'   => ['type' => 'string'],
+                            'normal'    => ['type' => 'string'],
+                            'original'  => ['type' => ['string', 'null']],
+                        ],
+                        'required'    => ['id', 'thumbnail', 'preview', 'normal', 'original'],
+                    ],
                     'position'       => ['type' => 'integer'],
-                ], ['id', 'sku', 'options', 'price', 'compare_at', 'on_sale', 'in_stock', 'low_stock', 'weight', 'shipping_class', 'photo_id', 'position'])],
-            ], ['buyable', 'variants']) + ['description' => 'Left out when the listing is not for sale.'],
+                ], ['id', 'sku', 'options', 'price', 'compare_at', 'on_sale', 'in_stock', 'low_stock', 'weight', 'shipping_class', 'photo_id', 'photo', 'position'])],
+                // C1: option names and values.
+                'options'  => ['type' => 'array', 'description' => 'The option names and their values, in first-seen order; empty for a plain product.', 'items' => self::object([
+                    'name'   => ['type' => 'string'],
+                    'values' => ['type' => 'array', 'items' => ['type' => 'string']],
+                ], ['name', 'values'])],
+            ], ['buyable', 'options', 'variants']) + ['description' => 'Left out when the listing is not for sale.'],
             'premium'      => ['type' => 'boolean'],
             'views'        => ['type' => 'integer'],
             'published_at' => self::time(),

@@ -281,6 +281,8 @@ action user_register_form
 action user_register_form_after
 action user_signout_all_after
 action validate_user
+action variant_price_changed
+action variant_stock_changed
 filter account_upgrade_offers
 filter action_throttle_limit
 filter actions_manage_alerts
