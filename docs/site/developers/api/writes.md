@@ -137,6 +137,7 @@ Plugins can change the body before it is saved with the `api_listing_input` filt
 | `422 listing_limit` | The user has reached the site's listing limit. `detail` says which. |
 | `403 banned` | The account or address is banned from posting. |
 | `403 wrong_credential` | The site lets only signed-in users post, and the caller is not one. |
+| `403 feature_disabled` | The site is a shop: only an admin adds listings. |
 | `429 rate_limited` | Over the [hourly cap](#limits). |
 
 ## Edit a listing

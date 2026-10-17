@@ -97,7 +97,7 @@ Each code's `type` link points at its anchor here.
 | <a id="invalid_cursor"></a>`invalid_cursor` | 400 | The `cursor` is forged, over a week old, or made for other filters, sort or order. Start again and follow `links.next`. |
 | <a id="invalid_header"></a>`invalid_header` | 400 | A malformed header: an `Idempotency-Key` that is empty, over 255 characters, or not plain visible ASCII. |
 | <a id="banned"></a>`banned` | 403 | A ban rule matches the account, its e-mail or the address. Covers every call with a user's token, key or session, sign-up, and posting. |
-| <a id="feature_disabled"></a>`feature_disabled` | 403 | The site has user accounts, API sign-up, personal keys or comments switched off. |
+| <a id="feature_disabled"></a>`feature_disabled` | 403 | The site has user accounts, API sign-up, personal keys or comments switched off, or is a shop, where only an admin adds listings. |
 | <a id="forbidden"></a>`forbidden` | 403 | Any other refusal: making or rotating a key with a known scope the admin key lacks, rotating another admin's key, or an account that cannot save alerts. |
 | <a id="insufficient_scope"></a>`insufficient_scope` | 403 | The key lacks the endpoint's scope. `WWW-Authenticate` names it: `Bearer error="insufficient_scope", scope="admin:users"`. |
 | <a id="not_owner"></a>`not_owner` | 403 | The resource is real and live but belongs to someone else, such as another user's listing or comment. |
