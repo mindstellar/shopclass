@@ -111,6 +111,13 @@
   }
 }
 
+// An empty table has no columns to read and no rows to act on: drop its header and the
+// page's bulk actions.
+table:has(> tbody > .osc-table-empty-row) > thead,
+#content-page:has(.osc-table-empty-row) #bulk-actions {
+  display: none;
+}
+
 // ---- Definition rows --------------------------------------------------------
 // The read-only counterpart to a form. A grid rather than a table so it collapses
 // to stacked rows on narrow screens without a horizontal scrollbar.
