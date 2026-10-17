@@ -192,6 +192,21 @@ final class Catalog
     }
 
     /**
+     * Fetch the catalog when its last check is over a day old, unless market changes are
+     * blocked on this site.
+     */
+    public function refreshIfDue(): void
+    {
+        if (osc_market_changes_blocked()) {
+            return;
+        }
+        if (time() - $this->lastChecked() > 24 * 3600) {
+            $this->updates(true);
+            $this->index(true);
+        }
+    }
+
+    /**
      * Message from the most recent failed updates.json check, or null when the last check was clean.
      *
      * @return string|null

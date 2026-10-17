@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminAppearance
  */
+use mindstellar\market\Catalog;
 use mindstellar\market\PluginDependencies;
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
@@ -461,7 +462,7 @@ class CAdminAppearance extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
             return;
         }
-        \mindstellar\admin\ajax\MarketAjax::refreshCatalogIfDue('plugin');
+        Catalog::forPlugins()->refreshIfDue();
 
         $info = WebThemes::getInstance()->loadThemeInfo($theme);
         $this->_exportVariableToView('theme', $theme);

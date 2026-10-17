@@ -163,8 +163,7 @@ final class MarketAjax extends AjaxHandler
     }
 
     /**
-     * Fetch the catalog when its last check is over a day old. The daily update check in the
-     * admin footer calls this; without it the catalog only changed on "Check now".
+     * Fetch the catalog when its last check is over a day old. Use Catalog::refreshIfDue().
      *
      * @param string $type 'plugin' or 'theme'
      *
@@ -172,14 +171,7 @@ final class MarketAjax extends AjaxHandler
      */
     public static function refreshCatalogIfDue($type)
     {
-        if (osc_market_changes_blocked()) {
-            return;
-        }
-        $catalog = self::marketCatalog($type);
-        if (time() - $catalog->lastChecked() > 24 * 3600) {
-            $catalog->updates(true);
-            $catalog->index(true);
-        }
+        self::marketCatalog($type)->refreshIfDue();
     }
 
     /**
