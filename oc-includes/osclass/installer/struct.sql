@@ -397,6 +397,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_variant (
     s_sku VARCHAR(64) NULL,
     s_options TEXT NULL,
     i_price BIGINT(20) NULL,
+    i_compare_price BIGINT(20) NULL,
     i_stock INT NULL,
     i_weight INT UNSIGNED NULL,
     s_shipping_class VARCHAR(40) NULL,

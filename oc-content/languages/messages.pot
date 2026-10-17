@@ -3300,6 +3300,10 @@ msgstr ""
 msgid "Validation email re-sent"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Was price must be a positive number."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid ""
 "We have just sent you an email to validate your account, you will have to "

@@ -197,8 +197,10 @@ final class ListingBody
                 $form[$field] = is_scalar($product[$member]) ? (string) $product[$member] : '';
             }
         }
-        if (array_key_exists('price', $product)) {
-            $form['price'] = $product['price'] === null ? '' : $this->price(self::decimal($product['price']));
+        foreach (['price' => 'price', 'compare_at' => 'compareAt'] as $member => $field) {
+            if (array_key_exists($member, $product)) {
+                $form[$field] = $product[$member] === null ? '' : $this->price(self::decimal($product[$member]));
+            }
         }
 
         return $form;

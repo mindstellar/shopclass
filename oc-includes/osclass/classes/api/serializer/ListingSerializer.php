@@ -103,7 +103,7 @@ final class ListingSerializer
             'photos'       => fn () => $this->photos($relations->photos($id)),
             'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
-            'product'      => fn () => self::product($relations->variants($id), $view !== ViewContext::PUBLIC),
+            'product'      => fn () => self::product($relations->variants($id), $view !== ViewContext::PUBLIC, $item['i_price'] ?? null),
             'premium'      => static fn () => Format::bool($item['b_premium'] ?? 0),
             'views'        => static fn () => Format::int($item['i_num_views'] ?? 0),
             'published_at' => static fn () => Format::time($item['dt_pub_date'] ?? null),
@@ -150,11 +150,12 @@ final class ListingSerializer
      * What makes the listing buyable, or null when it has no variant. The stock count is for the
      * owner and admins; everyone sees whether a variant is in stock.
      *
-     * @param array<int,array<string,mixed>> $rows t_item_variant rows
+     * @param array<int,array<string,mixed>> $rows         t_item_variant rows
+     * @param mixed                          $listingPrice the listing's own price, which a variant with none sells at
      *
      * @return array{buyable:bool,variants:array<int,array<string,mixed>>}|null
      */
-    private static function product(array $rows, bool $withStock): ?array
+    private static function product(array $rows, bool $withStock, mixed $listingPrice = null): ?array
     {
         if ($rows === []) {
             return null;
@@ -163,11 +164,15 @@ final class ListingSerializer
         foreach ($rows as $row) {
             $options  = is_string($row['s_options'] ?? null) ? json_decode($row['s_options'], true) : null;
             $stock    = is_numeric($row['i_stock'] ?? null) ? (int) $row['i_stock'] : null;
+            $sells    = $row['i_price'] ?? $listingPrice;
+            $was      = $row['i_compare_price'] ?? null;
             $variant  = [
                 'id'             => Format::int($row['pk_i_id'] ?? 0),
                 'sku'            => Format::text($row['s_sku'] ?? null),
                 'options'        => is_array($options) && $options !== [] ? $options : null,
                 'price'          => Format::amount($row['i_price'] ?? null),
+                'compare_at'     => Format::amount($was),
+                'on_sale'        => is_numeric($was) && is_numeric($sells) && (int) $was > (int) $sells,
                 'in_stock'       => $stock === null || $stock > 0,
                 'weight'         => is_numeric($row['i_weight'] ?? null) ? (int) $row['i_weight'] : null,
                 'shipping_class' => Format::text($row['s_shipping_class'] ?? null),

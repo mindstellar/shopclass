@@ -74,6 +74,7 @@ final class AdminSchema
                 'product'       => array_merge(Schema::object([
                     'sku'            => ['type' => ['string', 'null'], 'maxLength' => 64],
                     'price'          => ['type' => ['string', 'number', 'null'], 'pattern' => '^[0-9]{1,15}([.][0-9]{1,6})?$', 'minimum' => 0, 'description' => 'A decimal such as "12.50"; null sells at the listing price.'],
+                    'compare_at'     => ['type' => ['string', 'number', 'null'], 'pattern' => '^[0-9]{1,15}([.][0-9]{1,6})?$', 'minimum' => 0, 'description' => 'The "was" price, a decimal such as "20.00"; null clears it.'],
                     'stock'          => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 2147483647, 'description' => 'null does not track stock.'],
                     'weight'         => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 4294967295, 'description' => 'Grams.'],
                     'shipping_class' => ['type' => ['string', 'null'], 'maxLength' => 40],

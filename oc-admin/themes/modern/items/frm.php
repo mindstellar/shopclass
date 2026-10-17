@@ -329,7 +329,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     echo '</div>';
 
     // Sell this item: the default variant, the row that makes a listing buyable.
-    $sellValues = is_array(__get('itemProduct')) ? __get('itemProduct') : array_fill_keys(array('sku', 'price', 'stock', 'weight', 'shippingClass'), '') + array('sell' => false);
+    $sellValues = is_array(__get('itemProduct')) ? __get('itemProduct') : array_fill_keys(array('sku', 'price', 'compareAt', 'stock', 'weight', 'shippingClass'), '') + array('sell' => false);
     echo '<fieldset class="osc-field osc-sell-fields">';
     echo '<legend class="form-label">' . osc_esc_html(__('Sell this item')) . '</legend>';
     echo '<input type="hidden" name="product[sell]" value="0">';
@@ -346,6 +346,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         array(
             'sku'           => array(__('SKU'), 'text', 64, ''),
             'price'         => array(__('Price (blank uses the listing price)'), 'text', 0, 'decimal'),
+            'compareAt'     => array(__('Was price (blank for none)'), 'text', 0, 'decimal'),
             'stock'         => array(__('Stock (blank does not track)'), 'text', 0, 'numeric'),
             'weight'        => array(__('Weight in grams'), 'text', 0, 'numeric'),
             'shippingClass' => array(__('Shipping class'), 'text', 40, ''),

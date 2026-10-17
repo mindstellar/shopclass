@@ -93,7 +93,7 @@ final class ListingInput
      *
      * @param int $itemId 0 for a new listing
      *
-     * @return array{sell:bool,sku:string,price:string,stock:string,weight:string,shippingClass:string}
+     * @return array{sell:bool,sku:string,price:string,compareAt:string,stock:string,weight:string,shippingClass:string}
      */
     public static function productForm(int $itemId): array
     {
@@ -112,6 +112,7 @@ final class ListingInput
             'sell'          => $sell,
             'sku'           => $text($row['s_sku'] ?? null),
             'price'         => is_numeric($row['i_price'] ?? null) ? (string) osc_prepare_price($row['i_price']) : $text($row['i_price'] ?? null),
+            'compareAt'     => is_numeric($row['i_compare_price'] ?? null) ? (string) osc_prepare_price($row['i_compare_price']) : $text($row['i_compare_price'] ?? null),
             'stock'         => $text($row['i_stock'] ?? null),
             'weight'        => $text($row['i_weight'] ?? null),
             'shippingClass' => $text($row['s_shipping_class'] ?? null),
@@ -205,9 +206,11 @@ final class ListingInput
                 $fields[$column] = $text($key);
             }
         }
-        if (array_key_exists('price', $raw)) {
-            $price             = $text('price');
-            $fields['i_price'] = $price === null ? null : (Money::parse($price) ?? $price);
+        foreach (array('price' => 'i_price', 'compareAt' => 'i_compare_price') as $key => $column) {
+            if (array_key_exists($key, $raw)) {
+                $price           = $text($key);
+                $fields[$column] = $price === null ? null : (Money::parse($price) ?? $price);
+            }
         }
         foreach (array('stock' => 'i_stock', 'weight' => 'i_weight') as $key => $column) {
             if (array_key_exists($key, $raw)) {
