@@ -83,6 +83,18 @@ foreach ([0, 6, -1] as $bad) {
 foreach (['five', 4.5, true, [3]] as $bad) {
     pin('rating ' . json_encode($bad) . ' is refused', '422 validation_failed', api_admin_code($post($sueKey, $mug, ['body' => 'x', 'rating' => $bad])));
 }
+$service = new \mindstellar\comment\CommentService();
+$before  = (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_item_comment")->fetch_assoc()['c'];
+foreach ([0, 6, -1, 4.5, 'five', '9'] as $bad) {
+    try {
+        $service->post($mug, ['body' => 'x', 'rating' => $bad], \mindstellar\auth\Actor::user($sue));
+        $got = 'saved';
+    } catch (\mindstellar\exception\InvalidException $e) {
+        $got = $e->pointer();
+    }
+    pin('the service refuses rating ' . json_encode($bad) . ' at /rating', '/rating', $got);
+}
+pin('and wrote no row', $before, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_item_comment")->fetch_assoc()['c']);
 pin('a second rated comment by the same user is a 409', '409 already_reviewed', api_admin_code($post($sueKey, $tee, ['body' => 'Again', 'rating' => 1])));
 pin('a rating-less comment by that user is still allowed', 201, $post($sueKey, $tee, ['body' => 'More words'])->status());
 pin('another listing takes a rating from the same user', 201, $post($sueKey, $mug, ['body' => 'Good', 'rating' => 3])->status());
