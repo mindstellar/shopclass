@@ -163,6 +163,26 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         );
         ?>
         <?php osc_admin_page_head(__('Current theme')); ?>
+        <?php
+        $themeNeeds     = \mindstellar\market\PluginDependencies::themeRequirements(osc_theme());
+        $missingPlugins = empty($themeNeeds['required']) ? array()
+            : \mindstellar\market\PluginDependencies::forSite()->missingRequired($themeNeeds);
+        if ($missingPlugins !== array()) : ?>
+            <div class="callout-warning callout-block">
+                <span>
+                    <?php echo osc_esc_html(sprintf(
+                        _n(
+                            'Your theme needs a plugin that is missing or off: %s.',
+                            'Your theme needs plugins that are missing or off: %s.',
+                            count($missingPlugins)
+                        ),
+                        implode(', ', array_column($missingPlugins, 'name'))
+                    )); ?>
+                    <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=appearance&action=dependencies&theme='
+                        . urlencode(osc_theme())); ?>"><?php _e('Fix it'); ?></a>
+                </span>
+            </div>
+        <?php endif; ?>
         <?php osc_package_list_open('osc-pkg-list--themes'); ?>
         <?php osc_package_row(array(
             'art'         => array('src' => osc_theme_screenshot_url(), 'has' => osc_theme_has_screenshot()),

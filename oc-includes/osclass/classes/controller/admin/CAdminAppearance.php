@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminAppearance
  */
+use mindstellar\market\PluginDependencies;
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\widgets\WidgetStore;
@@ -42,6 +43,7 @@ class CAdminAppearance extends AdminSecBaseModel
         'widget_move_post'     => 'moveWidgetPost',
         'reorder_widgets_post' => 'reorderWidgetsPost',
         'activate'             => 'activateTheme',
+        'dependencies'         => 'dependencies',
         'render'               => 'render',
     );
 
@@ -417,25 +419,56 @@ class CAdminAppearance extends AdminSecBaseModel
     }
 
     /**
-     * Make a theme the site's theme.
+     * Make a theme the site's theme. A theme whose plugins are not ready goes to the plugins screen first.
      */
     private function activateTheme(): void
     {
         osc_csrf_check();
-        // Only an installed theme, the same rule theme:activate applies on the CLI.
+        $back  = osc_admin_base_url(true) . '?page=appearance';
         $theme = Params::getParamString('theme');
-        if (!in_array($theme, WebThemes::getInstance()->getListThemes(), true)) {
+        // Only an installed theme, the same rule theme:activate applies on the CLI.
+        $requires = PluginDependencies::themeRequirements($theme);
+        if ($requires === null) {
+            osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
+            $this->redirectTo($back);
+            return;
+        }
+        $deps = PluginDependencies::forSite();
+        if ($theme === osc_theme()) {
+            if ($deps->missingRequired($requires) === array()) {
+                osc_add_flash_ok_message(_m('The plugins this theme needs are active.'), 'admin');
+            }
+            $this->redirectTo($back);
+            return;
+        }
+        if ($deps->activateTheme($theme, $requires, Params::getParamInt('plugins_seen') === 1) === 'held') {
+            $this->redirectTo($back . '&action=dependencies&theme=' . urlencode($theme));
+            return;
+        }
+        osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
+        $this->redirectTo($back);
+    }
+
+    /**
+     * The plugins a theme asks for, with one button that installs and turns them all on.
+     */
+    private function dependencies(): void
+    {
+        $theme    = Params::getParamString('theme');
+        $requires = PluginDependencies::themeRequirements($theme);
+        if ($requires === null) {
             osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
             return;
         }
-        osc_set_preference('theme', $theme);
-        // Clear opcache so the new theme's code runs at once even with
-        // opcache.validate_timestamps=Off (see Plugins::resetOpcache).
-        Plugins::resetOpcache();
-        osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
-        osc_run_hook('theme_activate', $theme);
-        $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+        \mindstellar\admin\ajax\MarketAjax::refreshCatalogIfDue('plugin');
+
+        $info = WebThemes::getInstance()->loadThemeInfo($theme);
+        $this->_exportVariableToView('theme', $theme);
+        $this->_exportVariableToView('themeName', is_array($info) && $info['name'] !== '' ? ucfirst((string) $info['name']) : $theme);
+        $this->_exportVariableToView('isActiveTheme', $theme === osc_theme());
+        $this->_exportVariableToView('dependencies', PluginDependencies::forSite()->resolve($requires));
+        $this->doView('appearance/dependencies.php');
     }
 
     /**
