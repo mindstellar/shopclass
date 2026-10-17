@@ -292,3 +292,15 @@ table.table-small td {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+// API keys that no longer work, folded under the live ones.
+.api-keys-old {
+  margin-block-start: 1rem;
+
+  > summary {
+    color: var(--osc-ink-muted);
+    cursor: pointer;
+    font-size: $font-size-label;
+    margin-block-end: .75rem;
+  }
+}

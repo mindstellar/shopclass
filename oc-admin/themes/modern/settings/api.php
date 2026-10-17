@@ -141,9 +141,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php osc_admin_form_section(__('Keys'), array(
             'intro' => __('Admin keys act as you, with the scopes you give them. Public keys only read public data and are safe to put in an app or a web page.'),
         )); ?>
-        <?php if ($keys === array()) { ?>
-            <p class="text-muted"><?php _e('No keys yet.'); ?></p>
-        <?php } else { ?>
+        <?php
+        // Live keys first; revoked and expired ones fold away below, so New key stays near.
+        $liveKeys = array_values(array_filter($keys, static fn ($k) => $k['status'] === ApiKeyService::STATUS_ACTIVE));
+        $oldKeys  = array_values(array_filter($keys, static fn ($k) => $k['status'] !== ApiKeyService::STATUS_ACTIVE));
+        $keyTable = static function (array $rows) use ($statusWords, $kindWords, $adminId, $when) { ?>
             <div class="table-contains-actions">
                 <table class="table api-keys-table osc-table-stack" cellpadding="0" cellspacing="0">
                     <thead>
@@ -160,7 +162,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($keys as $key) {
+                    <?php foreach ($rows as $key) {
                         [$state, $word] = $statusWords[$key['status']] ?? array('inactive', $key['status']);
                         $active    = $key['status'] === ApiKeyService::STATUS_ACTIVE;
                         $canRotate = $active && ($key['kind'] === 'public' || $key['owner_admin'] === $adminId); ?>
@@ -201,6 +203,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </tbody>
                 </table>
             </div>
+        <?php };
+
+        if ($liveKeys === array()) { ?>
+            <p class="text-muted"><?php $keys === array() ? _e('No keys yet.') : _e('No active keys.'); ?></p>
+        <?php } else {
+            $keyTable($liveKeys);
+        }
+        if ($oldKeys !== array()) { ?>
+            <details class="api-keys-old">
+                <summary><?php echo osc_esc_html(sprintf(__('Revoked and expired keys (%d)'), count($oldKeys))); ?></summary>
+                <?php $keyTable($oldKeys); ?>
+            </details>
         <?php } ?>
     </div>
 
