@@ -209,14 +209,16 @@ harness_section('batches');
 $admin->query("DELETE FROM {$p}t_alerts WHERE e_type = 'CUSTOM'");
 $values = [];
 $json   = $admin->real_escape_string(AlertEnvelope::product($mug, null, 'stock'));
-for ($i = 0; $i < ProductAlerts::BATCH + 3; $i++) {
+for ($i = 0; $i < 30; $i++) {
     $values[] = "($ann, 'ann@example.test', '$json', 's', 1, 'CUSTOM', NOW())";
 }
 $admin->query("INSERT INTO {$p}t_alerts (fk_i_user_id, s_email, s_search, s_secret, b_active, e_type, dt_date) VALUES " . implode(', ', $values));
 $mails = [];
 VariantStore::adjustStock($mugRow, 4);
-osc_job_run(10);
-pin('more than one batch of alerts are all mailed, each once', [ProductAlerts::BATCH + 3, ProductAlerts::BATCH + 3], [count($mails), count(array_unique(array_column($mails, 0)))]);
+$runs = osc_job_run(10);
+pin('a batch is 25 alerts', 25, ProductAlerts::BATCH);
+pin('30 waiting alerts take two job runs', 2, $runs);
+pin('more than one batch of alerts are all mailed, each once', [30, 30], [count($mails), count(array_unique(array_column($mails, 0)))]);
 pin('and all are stopped', 0, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_alerts WHERE e_type = 'CUSTOM' AND dt_unsub_date IS NULL")->fetch_assoc()['c']);
 
 harness_section('the e-mail');

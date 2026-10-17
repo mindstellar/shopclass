@@ -120,6 +120,20 @@ harness_section('summary and distribution');
 $query = new CommentQuery();
 pin('the tee has two ratings, 5 and 4', ['count' => 2, 'average' => 4.5], $query->summary([$tee])[$tee]);
 pin('pending, blocked and spam rows are left out, an unrated listing is a zero', [['count' => 0, 'average' => null], ['count' => 0, 'average' => null]], [$query->summary([$mug])[$mug], $query->summary([$other])[$other]]);
+$ratedBy = static function (int $listing, array $stars) use ($admin, $p): void {
+    foreach ($stars as $n) {
+        $admin->query("INSERT INTO {$p}t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, b_enabled, b_active, b_spam, fk_i_user_id, i_rating)
+            VALUES ($listing, NOW(), '', 'x', 'x@example.test', 'r', 1, 1, 0, NULL, $n)");
+    }
+};
+$round = [];
+foreach ([array_merge(array_fill(0, 7, 4), array_fill(0, 13, 5)), array_merge(array_fill(0, 9, 4), array_fill(0, 16, 5)), [5, 5, 5]] as $k => $stars) {
+    $round[$k] = seed_item($admin, $cat, $sue, 'Round' . $k, 5.0);
+    $ratedBy($round[$k], $stars);
+}
+$sum = $query->summary($round);
+pin('the average is rounded to one decimal, no float noise (4.65, 4.64, 5)', [4.7, 4.6, 5.0], [$sum[$round[0]]['average'], $sum[$round[1]]['average'], $sum[$round[2]]['average']]);
+pin('and it prints as a short number', ['4.7', '4.6', '5'], [json_encode($sum[$round[0]]['average']), json_encode($sum[$round[1]]['average']), json_encode($sum[$round[2]]['average'])]);
 pin('no ids, no query', [], $query->summary([]));
 pin('the distribution sums to the count', [5 => 1, 4 => 1, 3 => 0, 2 => 0, 1 => 0], $query->distribution($tee));
 pin('one listing is not mixed into another', [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0], $query->distribution($other));
