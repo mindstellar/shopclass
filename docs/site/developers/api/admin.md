@@ -73,7 +73,7 @@ is refused, nothing is saved.
 |---|---|
 | `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`; a comma list or repeated), `user` (ids) and `category` (ids or slugs, subcategories included; an id may name a category that is off), each a comma list or repeated as in search, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/listings/{id}` | One listing. |
-| `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (a day or an RFC 3339 date-time, which names its day in UTC; `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. |
+| `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (a day or an RFC 3339 date-time, which names its day in UTC; `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. `product` sells it; see [Selling a listing](#selling-a-listing). |
 | `DELETE /admin/listings/{id}` | Delete. |
 | `POST /admin/listings/{id}/bump` | Move to the top of "newest first". |
 
@@ -88,6 +88,24 @@ curl -X PATCH $API/admin/listings/412 -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" -d '{"approved": true}'
 
 curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KEY"
+```
+
+### Selling a listing
+
+`product` on `PATCH /admin/listings/{id}` makes a listing buyable. An object sets its default
+variant with the members sent: `sku` (up to 64 characters), `price` (a decimal such as `"12.50"`;
+`null` sells at the listing price), `stock` (`null` does not track it), `weight` in grams and
+`shipping_class` (up to 40 characters). A member left out keeps its value. `product: null` stops
+selling and removes the row.
+
+Only an admin writes `product`. A user's `POST` or `PATCH` that sends it is a `422`. The admin view
+reads the stock count back as `product.variants[].stock`; everyone else sees only `in_stock`.
+A sale takes stock in one statement that refuses to go below zero, so two buyers cannot both take
+the last unit.
+
+```bash
+curl -X PATCH $API/admin/listings/412 -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" -d '{"product": {"sku": "MUG-1", "price": "9.50", "stock": 4}}'
 ```
 
 ## Comments
