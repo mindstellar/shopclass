@@ -1184,15 +1184,13 @@ osc.sidebar = (function () {
     return {init: init};
 })();
 
-// A tab strip that scrolls on a phone opens with its current tab in view.
+// A tab strip that scrolls on a phone opens with its current tab in view. "nearest" moves the
+// strip only as far as needed, in either reading direction, and leaves a strip that fits alone.
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.osc-tabnav, #content-render .nav-tabs').forEach(function (strip) {
         var current = strip.querySelector('.is-active, .active, [aria-current="page"]');
-        if (!current) { return; }
-        // Scroll only as far as the current tab needs, so the strip still starts at its edge when it can.
-        var end = current.offsetLeft - strip.offsetLeft + current.offsetWidth;
-        if (end > strip.clientWidth) {
-            strip.scrollLeft = end - strip.clientWidth + 24;
+        if (current) {
+            current.scrollIntoView({block: 'nearest', inline: 'nearest'});
         }
     });
 });
