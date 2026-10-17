@@ -6958,6 +6958,10 @@ msgstr ""
 msgid "Monthly"
 msgstr ""
 
+#: oc-admin/themes/modern/users/frm.php
+msgid "More"
+msgstr ""
+
 #: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
