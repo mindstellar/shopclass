@@ -1053,6 +1053,10 @@ msgstr ""
 msgid "Add admin"
 msgstr ""
 
+#: oc-admin/themes/modern/users/ban.php
+msgid "Add ban rule"
+msgstr ""
+
 #: oc-admin/themes/modern/categories/index.php
 msgid "Add category"
 msgstr ""
@@ -1089,6 +1093,10 @@ msgstr ""
 msgid "Add field"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/keywordBlock.php
+msgid "Add keyword"
+msgstr ""
+
 #: oc-admin/themes/modern/languages/add.php
 msgid "Add language"
 msgstr ""
@@ -1096,11 +1104,6 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
 msgid "Add listing"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/keywordBlock.php
-#: oc-admin/themes/modern/users/ban.php
-msgid "Add new"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BanRuleForm.php
@@ -7326,6 +7329,10 @@ msgstr ""
 msgid "No"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "No active keys."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/logs.php
 msgid "No activity has been logged yet."
 msgstr ""
@@ -9369,6 +9376,10 @@ msgstr ""
 msgid "Revoked"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Revoked and expired keys (%d)"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Rich Edit"
 msgstr ""
@@ -9598,6 +9609,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Save upgrade settings"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/mailserver.php
+msgid "Save your changes first. The test uses the saved settings."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -12128,16 +12143,8 @@ msgstr ""
 msgid "Total number of listings' views"
 msgstr ""
 
-#: oc-admin/themes/modern/main/index.php
-msgid "Total number of listings: %s"
-msgstr ""
-
 #: oc-admin/themes/modern/stats/reports.php
 msgid "Total number of reports"
-msgstr ""
-
-#: oc-admin/themes/modern/main/index.php
-msgid "Total number of users: %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
