@@ -505,6 +505,11 @@ document.addEventListener('click', function (e) {
         if (target && typeof target.showModal === 'function') {
             e.preventDefault();
             target.showModal();
+            // Chrome focuses a scrolling body first; the first field is where typing should go.
+            if (document.activeElement && document.activeElement.classList.contains('osc-dialog-body')) {
+                var first = target.querySelector('[autofocus], input:not([type="hidden"]), select, textarea, button');
+                if (first) { first.focus(); }
+            }
         }
         return;
     }
