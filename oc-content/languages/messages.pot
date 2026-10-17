@@ -404,6 +404,10 @@ msgstr ""
 msgid "Awaiting validation"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Back in stock"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-recover-content.php
 msgid "Back to sign in"
 msgstr ""
@@ -436,6 +440,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
 msgid "Bank transfer settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Below"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php
@@ -1250,6 +1258,10 @@ msgstr ""
 msgid "Links are not allowed in messages."
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Listing #%d"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Listing counts are recalculated"
 msgstr ""
@@ -1678,6 +1690,10 @@ msgstr ""
 msgid "Oops! you can not do that"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Option"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Option %1$s has more than %2$d values."
 msgstr ""
@@ -1886,6 +1902,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Price"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Price drop"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
@@ -2638,6 +2658,10 @@ msgstr ""
 msgid "The keyword must be at least %d characters long"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "The kind is stock or price."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "The language has been installed correctly"
 msgstr ""
@@ -2728,6 +2752,11 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The listing is marked as spam. Unmark it in order to make it public"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+#: oc-includes/osclass/classes/listing/WishlistStore.php
+msgid "The listing was not found."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
@@ -2975,6 +3004,10 @@ msgstr ""
 msgid "The username was updated"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "The variant is not one of this listing's."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "The watermark image has to be a .PNG file"
 msgstr ""
@@ -3132,6 +3165,14 @@ msgstr ""
 #: oc-includes/osclass/classes/comment/CommentService.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "This listing doesn't exist"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "This listing has no price to drop."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "This listing is not for sale."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php

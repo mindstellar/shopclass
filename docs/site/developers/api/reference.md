@@ -19,7 +19,7 @@ endpoints, at `/api/v1/openapi.json`.
 | GET | `/account` | user | `account:read` | The signed-in user's own profile |
 | PATCH | `/account` | user | `account:write` | Edit the profile; a new e-mail address is confirmed by a link first |
 | GET | `/account/alerts` | user | `alerts:read` | Your saved searches |
-| POST | `/account/alerts` | user | `alerts:write` | Save a search, with the filters GET /listings takes; an existing one is answered as it is |
+| POST | `/account/alerts` | user | `alerts:write` | Save a search, with the filters GET /listings takes, or a back-in-stock or price-drop alert on a product; an existing one is answered as it is |
 | GET | `/account/alerts/{id}` | user | `alerts:read` | One of your saved searches |
 | DELETE | `/account/alerts/{id}` | user | `alerts:write` | Stop a saved search |
 | GET | `/account/keys` | user | `account:write` | Personal API keys, when the site allows them |
@@ -31,6 +31,10 @@ endpoints, at `/api/v1/openapi.json`.
 | GET | `/account/sessions` | user | `account:read` | Your live sign-ins; personal keys are at /account/keys |
 | DELETE | `/account/sessions/{session}` | user | `account:write` | End one sign-in |
 | POST | `/account/sign-out-everywhere` | user | `account:write` | Sign out of every device: web sign-ins, every API sign-in including this one, and personal keys |
+| GET | `/account/wishlist` | user | `wishlist:read` | Your wishlist: listing ids, newest first |
+| PUT | `/account/wishlist` | user | `wishlist:write` | Replace your wishlist; listings that are not live are dropped |
+| POST | `/account/wishlist/{listing}` | user | `wishlist:write` | Put a live listing at the top of your wishlist |
+| DELETE | `/account/wishlist/{listing}` | user | `wishlist:write` | Take a listing off your wishlist |
 
 ### GET `/account`
 
@@ -69,15 +73,15 @@ Answers: 200 OK (`AlertList`); 304 Not modified; 401 No valid credential; 403 No
 
 ### POST `/account/alerts`
 
-Save a search, with the filters GET /listings takes; an existing one is answered as it is
+Save a search, with the filters GET /listings takes, or a back-in-stock or price-drop alert on a product; an existing one is answered as it is
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
-Body: `AlertInput` as JSON.
+Body: `AlertInput` as JSON, optional.
 
-Answers: 200 OK (`AlertDocument`); 201 Created (`AlertDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`AlertDocument`); 201 Created (`AlertDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/account/alerts/{id}`
 
@@ -195,6 +199,51 @@ Sign out of every device: web sign-ins, every API sign-in including this one, an
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/account/wishlist`
+
+Your wishlist: listing ids, newest first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`WishlistDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### PUT `/account/wishlist`
+
+Replace your wishlist; listings that are not live are dropped
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `WishlistInput` as JSON.
+
+Answers: 204 No content; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 412 Precondition failed; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/wishlist/{listing}`
+
+Put a live listing at the top of your wishlist
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `listing` | path | string | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### DELETE `/account/wishlist/{listing}`
+
+Take a listing off your wishlist
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `listing` | path | string | yes |  |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.

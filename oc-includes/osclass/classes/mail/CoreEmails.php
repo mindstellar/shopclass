@@ -1876,6 +1876,64 @@ final class CoreEmails
     }
 
     /**
+     * Tell a product alert's owner the listing is back in stock, or its price went down.
+     *
+     * @param array<string,mixed> $alert t_alerts row; fk_i_user_id and s_email are read
+     * @param array<string,mixed> $item  the listing row, with its title
+     * @param string              $kind  stock or price
+     * @param int|null            $price for a price alert, the new price in micros
+     *
+     * @return void
+     */
+    public static function productAlert($alert, $item, $kind, $price = null)
+    {
+        $user = !empty($alert['fk_i_user_id']) ? User::getInstance()->findByPrimaryKey((int) $alert['fk_i_user_id']) : false;
+        $to   = is_array($user) && !empty($user['s_email']) ? (string) $user['s_email'] : (string) ($alert['s_email'] ?? '');
+        $name = is_array($user) && !empty($user['s_name']) ? (string) $user['s_name'] : $to;
+        if ($to === '') {
+            return;
+        }
+
+        View::getInstance()->_exportVariableToView('item', $item);
+        $url = osc_item_url();
+        if ($kind === 'price') {
+            $title = __('Price drop: {ITEM_TITLE}');
+            $body  = __('<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} now sells for {ITEM_PRICE}.</p><p>{ITEM_LINK}</p>');
+        } else {
+            $title = __('Back in stock: {ITEM_TITLE}');
+            $body  = __('<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} is back in stock.</p><p>{ITEM_LINK}</p>');
+        }
+        $body .= __('<p>You asked {WEB_TITLE} to tell you once; this alert is now off.</p>');
+
+        [$words, $htmlWords] = self::words(
+            array(
+                '{USER_NAME}'  => $name,
+                '{ITEM_TITLE}' => (string) ($item['s_title'] ?? ''),
+                '{ITEM_PRICE}' => $price === null ? '' : osc_format_price($price),
+                '{ITEM_URL}'   => $url,
+                '{ITEM_LINK}'  => '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($url) . '</a>',
+            ),
+            array('{USER_NAME}', '{ITEM_TITLE}', '{ITEM_PRICE}')
+        );
+        $title = osc_apply_filter('email_product_alert_title_after', osc_mailBeauty(osc_apply_filter(
+            'email_title',
+            osc_apply_filter('email_product_alert_title', $title, $alert, $item, $kind)
+        ), $words), $alert, $item, $kind);
+        $body  = osc_apply_filter('email_product_alert_description_after', osc_mailBeauty(osc_apply_filter(
+            'email_description',
+            osc_apply_filter('email_product_alert_description', $body, $alert, $item, $kind)
+        ), $htmlWords), $alert, $item, $kind);
+
+        osc_sendMail(array(
+            'from'    => self::fromAddress(),
+            'to'      => $to,
+            'to_name' => $name,
+            'subject' => $title,
+            'body'    => $body,
+        ));
+    }
+
+    /**
      * Report the outcome of an automatic core upgrade to every administrator.
      *
      * @param array<string,mixed> $result Upgrade outcome: error code, message and version

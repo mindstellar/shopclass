@@ -21,13 +21,15 @@ use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AlertSerializer;
 use mindstellar\apikey\Credential;
+use mindstellar\listing\ProductAlerts;
 use mindstellar\search\AlertEnvelope;
 use mindstellar\search\UserAlerts;
 
 /**
  * The user's saved searches at `/account/alerts`. A new one takes the filters of
  * `GET /listings`; the server builds the alert from them as the search page does and saves
- * it through UserAlerts, as the search page's alert form does.
+ * it through UserAlerts, as the search page's alert form does. A body with `product` instead
+ * saves a back-in-stock or price-drop alert through ProductAlerts.
  */
 final class AlertsController
 {
@@ -53,22 +55,37 @@ final class AlertsController
 
     public function create(ApiCall $call): Response
     {
-        $userId  = $call->userId();
-        $filters = (array) ($call->input()['filters'] ?? []);
-        $search  = $call->request()->withQuery(array_map(static fn ($v) => is_bool($v) ? ($v ? '1' : '0') : $v, $filters));
-        $values  = ListingSearch::params($search, $this->categories, $this->api->locale($search));
-        $alert   = AlertEnvelope::fromValues($values, $values);
-        if ($alert === '' || !AlertEnvelope::validate($alert)) {
-            throw ProblemException::field('/filters', 'minProperties', 'must name at least one filter');
+        $userId = $call->userId();
+        $input  = $call->input();
+        if (isset($input['product']) === isset($input['filters'])) {
+            throw ProblemException::field('/', 'required', 'send either filters or product');
         }
-
-        $saved = $this->alerts->subscribe($userId, $alert);
+        if (isset($input['product'])) {
+            $product = (array) $input['product'];
+            $saved   = (new ProductAlerts($this->alerts))->subscribe(
+                $userId,
+                (int) ($product['listing'] ?? 0),
+                isset($product['variant']) ? (int) $product['variant'] : null,
+                (string) ($product['kind'] ?? '')
+            );
+        } else {
+            $filters = (array) $input['filters'];
+            $search  = $call->request()->withQuery(array_map(static fn ($v) => is_bool($v) ? ($v ? '1' : '0') : $v, $filters));
+            $values  = ListingSearch::params($search, $this->categories, $this->api->locale($search));
+            $alert   = AlertEnvelope::fromValues($values, $values);
+            if ($alert === '' || !AlertEnvelope::validate($alert)) {
+                throw ProblemException::field('/filters', 'minProperties', 'must name at least one filter');
+            }
+            $saved = $this->alerts->subscribe($userId, $alert);
+        }
 
         return match ($saved['status']) {
             UserAlerts::EXISTS  => Response::ok($this->serializer->one((array) $saved['alert'])),
             UserAlerts::CREATED => $this->api->created($call, $this->serializer->one((array) $saved['alert']), 'account/alerts/' . (int) ($saved['alert']['pk_i_id'] ?? 0)),
             UserAlerts::REFUSED => throw ProblemException::of('forbidden', 'This account cannot save alerts.'),
-            UserAlerts::LIMIT   => throw ProblemException::field('/', 'maxItems', sprintf('the account already keeps the most saved searches allowed (%d); delete one first', UserAlerts::maxPerUser())),
+            UserAlerts::LIMIT   => throw ProblemException::field('/', 'maxItems', isset($input['product'])
+                ? sprintf('the account already keeps the most product alerts allowed (%d); delete one first', UserAlerts::MAX_PRODUCT_PER_USER)
+                : sprintf('the account already keeps the most saved searches allowed (%d); delete one first', UserAlerts::maxPerUser())),
             UserAlerts::THROTTLED => throw ProblemException::tooMany('Too many saved searches in an hour. Try again later.', 3600),
             default             => throw ProblemException::of('server_error', 'The alert could not be saved.'),
         };

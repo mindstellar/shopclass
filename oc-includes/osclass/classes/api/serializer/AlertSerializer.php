@@ -15,7 +15,8 @@ namespace mindstellar\api\serializer;
 use mindstellar\search\AlertEnvelope;
 
 /**
- * A saved search, with its filters in the names `GET /listings` takes.
+ * A saved search, with its filters in the names `GET /listings` takes, or a product alert with
+ * its `product` and no filters.
  */
 final class AlertSerializer
 {
@@ -44,6 +45,7 @@ final class AlertSerializer
     public function one(array $row): array
     {
         $params  = AlertEnvelope::validate((string) ($row['s_search'] ?? '')) ?? [];
+        $product = $params['product'] ?? null;
         $filters = [];
         foreach (self::FILTERS as $key => $name) {
             if (!array_key_exists($key, $params)) {
@@ -62,6 +64,12 @@ final class AlertSerializer
         return [
             'id'         => Format::int($row['pk_i_id'] ?? 0),
             'filters'    => $filters,
+            'product'    => $product === null ? null : [
+                'listing' => $product['listing'],
+                'variant' => $product['variant'],
+                'kind'    => $product['kind'],
+                'below'   => Format::amount($product['below']),
+            ],
             'type'       => strtolower((string) ($row['e_type'] ?? '')),
             'active'     => Format::bool($row['b_active'] ?? 0),
             'created_at' => Format::time($row['dt_date'] ?? null),

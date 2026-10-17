@@ -31,6 +31,9 @@ final class UserAlerts
     /** Live saved searches a user may keep when the site has set no number. */
     public const DEFAULT_MAX_PER_USER = 20;
 
+    /** Live product alerts (back in stock, price drop) a user may keep. */
+    public const MAX_PRODUCT_PER_USER = 50;
+
     private \Alerts $alerts;
 
     public function __construct(?\Alerts $alerts = null)
@@ -83,37 +86,47 @@ final class UserAlerts
 
     /**
      * Save a stored search for a user. The same live search is not saved twice; the one there
-     * is answered. An alert of an account that is not confirmed and enabled is kept but not
-     * switched on. A user who already keeps maxPerUser() live searches, or whose address is over
-     * the alert_subscribe throttle, gets LIMIT.
+     * is answered. A product alert (type \Alerts::PRODUCT, an AlertEnvelope::product()) counts as
+     * the same when it waits for the same listing, variant and kind, whatever its price. An alert
+     * of an account that is not confirmed and enabled is kept but not switched on. A user who
+     * already keeps the most live alerts of that family (maxPerUser() saved searches, or
+     * MAX_PRODUCT_PER_USER product alerts), gets LIMIT; one over the alert_subscribe throttle
+     * gets THROTTLED.
      *
      * @param string $alert a stored search, as AlertEnvelope makes it
+     * @param string $type  DAILY or WEEKLY for a saved search, \Alerts::PRODUCT for a product alert
      *
      * @return array{status:string,alert:array<string,mixed>|null} status is one of the constants;
      *                                                            alert is the live row for CREATED and EXISTS
      */
-    public function subscribe(int $userId, string $alert): array
+    public function subscribe(int $userId, string $alert, string $type = 'DAILY'): array
     {
-        $user  = $userId > 0 ? \User::getInstance()->findByPrimaryKey($userId) : false;
-        $email = is_array($user) ? (string) ($user['s_email'] ?? '') : '';
-        if ($alert === '' || $email === '') {
+        $user    = $userId > 0 ? \User::getInstance()->findByPrimaryKey($userId) : false;
+        $email   = is_array($user) ? (string) ($user['s_email'] ?? '') : '';
+        $product = AlertEnvelope::productOf($alert);
+        if ($alert === '' || $email === '' || ($product !== null) !== ($type === \Alerts::PRODUCT)) {
             return ['status' => self::FAILED, 'alert' => null];
         }
-        $existing = $this->matching($alert, $userId);
-        if ($existing !== []) {
-            return ['status' => self::EXISTS, 'alert' => $existing[0]];
+        $live = $this->live($userId);
+        $same = $product === null ? $this->matching($alert, $userId) : array_values(array_filter(
+            $live,
+            static fn (array $row): bool => self::sameProduct(AlertEnvelope::productOf((string) $row['s_search']), $product)
+        ));
+        if ($same !== []) {
+            return ['status' => self::EXISTS, 'alert' => $same[0]];
         }
         if (!osc_validate_email($email)) {
             return ['status' => self::REFUSED, 'alert' => null];
         }
-        $max = self::maxPerUser();
-        if ($max > 0 && count($this->live($userId)) >= $max) {
+        $max    = $product === null ? self::maxPerUser() : self::MAX_PRODUCT_PER_USER;
+        $family = array_filter($live, static fn (array $row): bool => (AlertEnvelope::productOf((string) $row['s_search']) === null) === ($product === null));
+        if ($max > 0 && count($family) >= $max) {
             return ['status' => self::LIMIT, 'alert' => null];
         }
         if (ActionThrottle::exceededFor('alert_subscribe')) {
             return ['status' => self::THROTTLED, 'alert' => null];
         }
-        $id = $this->alerts->createAlert($userId, $email, $alert, osc_genRandomPassword());
+        $id = $this->alerts->createAlert($userId, $email, $alert, osc_genRandomPassword(), $type);
         if (!$id) {
             return ['status' => self::FAILED, 'alert' => null];
         }
@@ -182,6 +195,17 @@ final class UserAlerts
     public function setActive(int $id, bool $active): bool
     {
         return (bool) ($active ? $this->alerts->activate($id) : $this->alerts->deactivate($id));
+    }
+
+    /**
+     * Whether two product alerts wait for the same thing; the price they go under does not count.
+     *
+     * @param array<string,mixed>|null $a
+     * @param array<string,mixed>      $b
+     */
+    private static function sameProduct(?array $a, array $b): bool
+    {
+        return $a !== null && $a['listing'] === $b['listing'] && $a['variant'] === $b['variant'] && $a['kind'] === $b['kind'];
     }
 
     /**

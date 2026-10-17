@@ -1009,6 +1009,13 @@ osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class,
 // Catches city and region centres edited in the admin or the API, which no import queues.
 osc_add_hook('cron_weekly', array(\mindstellar\listing\ListingPointJobs::class, 'queue'));
 
+// Back-in-stock and price-drop alerts are mailed by a job queued on these changes.
+osc_add_hook('variant_stock_changed', array(\mindstellar\listing\ProductAlerts::class, 'stockChanged'));
+osc_add_hook('variant_price_changed', array(\mindstellar\listing\ProductAlerts::class, 'priceChanged'));
+// The wishlist lives in t_key_value, which has no user column: export and erase it here.
+osc_add_filter('personal_data_export', array(\mindstellar\listing\WishlistStore::class, 'export'));
+osc_add_hook('delete_user', array(\mindstellar\listing\WishlistStore::class, 'erase'));
+
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.
  *

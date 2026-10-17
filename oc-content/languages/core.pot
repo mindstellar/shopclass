@@ -703,7 +703,23 @@ msgid "<p>Dear {WEB_TITLE} admin,</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
+"<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} is back in "
+"stock.</p><p>{ITEM_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
+"<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} now sells for "
+"{ITEM_PRICE}.</p><p>{ITEM_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid "<p>There were some minor errors removing temporary files. "
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "<p>You asked {WEB_TITLE} to tell you once; this alert is now off.</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -1942,6 +1958,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Babysitter - Nanny"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Back in stock: {ITEM_TITLE}"
 msgstr ""
 
 #: oc-admin/gui/forgot_password.php
@@ -6226,6 +6246,7 @@ msgid "Listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingGeocode.php
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
 msgid "Listing #%d"
 msgstr ""
 
@@ -8847,6 +8868,10 @@ msgstr ""
 msgid "Price (credits)"
 msgstr ""
 
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Price drop: {ITEM_TITLE}"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Price: no more than 50 characters"
 msgstr ""
@@ -8875,6 +8900,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
 msgid "Process queue now"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "Product alerts"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php

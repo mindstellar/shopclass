@@ -28,6 +28,7 @@ use mindstellar\api\controller\SearchController;
 use mindstellar\api\controller\SeoController;
 use mindstellar\api\controller\SiteController;
 use mindstellar\api\controller\UsersController;
+use mindstellar\api\controller\WishlistController;
 use mindstellar\api\read\ListingSort;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\schema\OpenApi;
@@ -484,13 +485,13 @@ final class PublicRoutes
             'POST account/alerts' => RouteSpec::write(
                 handler: [AlertsController::class, 'create'],
                 tag: 'Account',
-                summary: 'Save a search, with the filters GET /listings takes; an existing one is answered as it is',
+                summary: 'Save a search, with the filters GET /listings takes, or a back-in-stock or price-drop alert on a product; an existing one is answered as it is',
                 auth: RouteSpec::AUTH_USER,
                 scope: 'alerts:write',
                 body: 'AlertInput',
                 response: 'AlertDocument',
                 status: 201,
-                errors: [403],
+                errors: [403, 404],
                 alsoStatuses: [200]
             ),
             'GET account/alerts/{id}' => RouteSpec::read(
@@ -510,6 +511,41 @@ final class PublicRoutes
                 scope: 'alerts:write',
                 status: 204,
                 errors: [404]
+            ),
+            // C4: the wishlist.
+            'GET account/wishlist' => RouteSpec::read(
+                handler: [WishlistController::class, 'show'],
+                tag: 'Account',
+                summary: 'Your wishlist: listing ids, newest first',
+                response: 'WishlistDocument',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'wishlist:read'
+            ),
+            'PUT account/wishlist' => RouteSpec::write(
+                handler: [WishlistController::class, 'replace'],
+                tag: 'Account',
+                summary: 'Replace your wishlist; listings that are not live are dropped',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'wishlist:write',
+                body: 'WishlistInput',
+                status: 204
+            ),
+            'POST account/wishlist/{listing}' => RouteSpec::write(
+                handler: [WishlistController::class, 'add'],
+                tag: 'Account',
+                summary: 'Put a live listing at the top of your wishlist',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'wishlist:write',
+                status: 204,
+                errors: [404]
+            ),
+            'DELETE account/wishlist/{listing}' => RouteSpec::write(
+                handler: [WishlistController::class, 'remove'],
+                tag: 'Account',
+                summary: 'Take a listing off your wishlist',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'wishlist:write',
+                status: 204
             ),
             'POST users' => RouteSpec::write(
                 handler: [RegistrationController::class, 'register'],

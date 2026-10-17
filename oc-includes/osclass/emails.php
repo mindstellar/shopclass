@@ -312,6 +312,7 @@ function fn_email_warn_expiration($aItem)
 }
 
 osc_add_hook('hook_email_warn_expiration', 'fn_email_warn_expiration');
+osc_add_hook('hook_email_product_alert', array(\mindstellar\mail\CoreEmails::class, 'productAlert'));
 
 /**
  * Report the outcome of an automatic core upgrade to every administrator.

@@ -227,7 +227,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 567 names. Generated from the source; do not edit by hand.
+Core fires 572 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -342,7 +342,7 @@ Core fires 567 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 
-### Email (93)
+### Email (98)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -400,6 +400,10 @@ Core fires 567 names. Generated from the source; do not edit by hand.
 | `email_new_item_non_register_user_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_product_alert_description` | filter | `$body, $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_product_alert_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_product_alert_description', $body, $alert, $item, $kind) ), $htmlWords), $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_product_alert_title` | filter | `$title, $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_product_alert_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_product_alert_title', $title, $alert, $item, $kind) ), $words), $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_send_friend_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_send_friend_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_send_friend_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
@@ -434,6 +438,7 @@ Core fires 567 names. Generated from the source; do not edit by hand.
 | `hook_email_new_comment_user` | action | `$mail` | `oc-includes/osclass/classes/comment/CommentService.php` |
 | `hook_email_new_email` | action | `$newEmail, osc_change_user_email_confirm_url($userId, $code)` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_new_item_non_register_user` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
+| `hook_email_product_alert` | action | `$row, $item, $kind, $price` | `oc-includes/osclass/classes/listing/ProductAlerts.php` |
 | `hook_email_send_friend` | action | `$args` | `oc-includes/osclass/classes/security/MessageHold.php` |
 | `hook_email_user_forgot_password` | action | `$admin, $password_url` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `hook_email_user_registration` | action | `$user` | `oc-includes/osclass/classes/controller/CWebRegister.php` |
