@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1178 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -155,14 +155,16 @@ Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_user_picker(array $opts = array())` | Who a record belongs to: the card when a registered user matches, and a search that fills the named fields when one is picked. |
 | `osc_admin_when($datetime)` | A date as "5 minutes ago" or "in 5 minutes", with the full date as a tooltip. |
 
-### hApi (11)
+### hApi (13)
 
 `oc-includes/osclass/helpers/hApi.php`
 
 | Helper | What it does |
 |---|---|
 | `osc_api_admin_session_meta()` | The `<meta name="shopclass-api">` tag for an admin panel page, with the signed-in admin's page token. Admin JavaScript sends it to call admin endpoints as that admin. |
+| `osc_api_call(string $method, string $path, array $query = [], array $body = [])` | Call an API route from PHP, in this process, with any method. It acts as osc_api_get() does; a problem comes back as its status and problem body, never as an exception. |
 | `osc_api_enabled()` | Whether the REST API answers at all. |
+| `osc_api_get(string $path, array $query = [])` | Read an API route from PHP, in this process: no HTTP request, no rate limit, and it works while the API is switched off. It acts as the signed-in web user, as the admin on an admin page, or else as a visitor reading public data. An admin route called from a public page answers 403. |
 | `osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ['public'])` | Declare a field a plugin adds to a listing, user or category, so the OpenAPI document shows it and `?fields=ext.<slug>.<name>` selects it. The plugin sends the value under `ext.<slug>.<name>` from the `api_listing`, `api_user` or `api_category` filter. A public field reaches everyone, an owner field the owner and admins, an admin field admins only. |
 | `osc_api_register_route(string $method, string $path, array $spec)` | Add an API endpoint, through the `api_routes` filter. The path is below /api/v1/ and must start with `ext/<plugin-slug>/`; other paths are refused when the table is built, except a route with both `deprecated` and `sunset`, which may keep a plugin's old path until its sunset day. A second route with the same method and path is refused and logged. |
 | `osc_api_register_schema(string $slug, string $name, array $schema)` | Add a component schema for a plugin's routes, through the `api_schemas` filter. It is named `Ext<Slug><Name>` (`acme-ratings`, `Rating`: `ExtAcmeRatingsRating`), so it never clashes with core's components, which are not part of the plugin contract. A second, different schema under the same name is refused and logged; the first one stays. |

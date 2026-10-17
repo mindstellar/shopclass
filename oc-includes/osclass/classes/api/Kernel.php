@@ -144,8 +144,9 @@ final class Kernel
         $cors        = Cors::fromSettings($this->settings, $request);
         $rateHeaders = [];
         $route       = null;
+        $internal    = $request->isInternal();
         try {
-            if ($request->method() === 'OPTIONS') {
+            if ($request->method() === 'OPTIONS' && !$internal) {
                 $methods  = $this->methodsForOptions($request);
                 $response = $cors->preflight($request, $methods);
                 if (in_array('PATCH', $methods, true)) {
@@ -162,13 +163,16 @@ final class Kernel
             if ($route->oauth()) {
                 $request = $request->withFormAsJson();
             }
-            $credential = $this->credentialFor($request, $route);
+            // An in-process call already runs as the page's own user or admin, so nothing is counted or taken on.
+            $credential = $request->caller() ?? $this->credentialFor($request, $route);
             self::authorize($route, $credential);
             if ($route->needsUserKeys() && !$this->settings->userKeys()) {
                 throw ProblemException::of('feature_disabled', _m('This site does not let users make API keys.'));
             }
-            $rateHeaders = $this->countRequest($request, $route, $credential);
-            $this->assumeIdentity($credential, $route);
+            if (!$internal) {
+                $rateHeaders = $this->countRequest($request, $route, $credential);
+                $this->assumeIdentity($credential, $route);
+            }
             osc_run_hook('api_request_before', $request, $route, $credential);
             $version = null;
             $run     = function () use (&$request, &$version, $route, $credential, $match): Response {
@@ -187,10 +191,11 @@ final class Kernel
             if ($version !== null) {
                 $response = $response->withVersion($version);
             }
-            if ($credential->isSession() || $credential->isAdminSession()) {
+            // No browser or shared cache ever sees an in-process answer, so it gets no Cache-Control.
+            if (!$internal && ($credential->isSession() || $credential->isAdminSession())) {
                 // Never stored anywhere, whatever a handler or filter asked for.
                 $response = $response->withHeader('Cache-Control', $this->cachePolicy->header($request, $credential));
-            } elseif (!$response->isProblem()) {
+            } elseif (!$internal && !$response->isProblem()) {
                 $response = $response->withDefaultHeaders(['Cache-Control' => $this->cachePolicy->header($request, $credential)]);
                 if ($this->cachePolicy->isPublic($request, $credential)) {
                     // A shared cache serves this to everyone, so one caller's counters do not belong in it.
@@ -210,6 +215,9 @@ final class Kernel
         $response = $response->withDefaultHeaders($rateHeaders + self::lifecycleHeaders($route));
         if ($route !== null && $route->method() === 'PATCH') {
             $response = $response->withDefaultHeaders(['Accept-Patch' => Request::MERGE_PATCH]);
+        }
+        if ($internal) {
+            return self::withInstance($response->withHeader(RequestId::HEADER, $requestId), $requestId);
         }
         if (PageTokenAuth::applies($request)) {
             $response = $response->withDefaultHeaders(['Vary' => implode(', ', CachePolicy::SESSION_VARY)]);
@@ -422,12 +430,12 @@ final class Kernel
     /**
      * The request's path below the version, e.g. `listings/12`.
      *
-     * @throws ProblemException 403 when the API is off and this is not a page-token call, 404 for a
+     * @throws ProblemException 403 when the API is off and this is neither a page-token nor an in-process call, 404 for a
      *                    refused path or a version the site does not answer
      */
     private function routePath(Request $request): string
     {
-        if (!$this->settings->enabled() && !PageTokenAuth::applies($request)) {
+        if (!$this->settings->enabled() && !PageTokenAuth::applies($request) && !$request->isInternal()) {
             throw ProblemException::apiDisabled();
         }
         if ($request->path() === null) {
