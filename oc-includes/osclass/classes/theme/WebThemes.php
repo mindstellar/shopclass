@@ -205,8 +205,11 @@ class WebThemes extends Themes
             $info['requires_php'] = '';
         }
 
-        $info['filename'] = $path;
-        $info['int_name'] = $theme;
+        $manifest                 = \mindstellar\market\PackageManifest::read(dirname($path), $s_info);
+        $info['modes']            = $manifest['modes'];
+        $info['requires_plugins'] = $manifest['plugins'];
+        $info['filename']         = $path;
+        $info['int_name']         = $theme;
 
         if ($info['name'] != '') {
             return $info;
@@ -220,6 +223,8 @@ class WebThemes extends Themes
         }
         $result             = $fxName();
         $result['int_name'] = $theme;
+        $manifest           = \mindstellar\market\PackageManifest::read(dirname($path), $s_info);
+        $result += ['modes' => $manifest['modes'], 'requires_plugins' => $manifest['plugins']];
 
         return $result;
     }

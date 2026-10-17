@@ -41,6 +41,15 @@ clearstatcache();
 pin('a replaced file is read again', '2.0', $themes->loadThemeInfo('demo')['version']);
 pin('a missing theme is false', false, $themes->loadThemeInfo('nope'));
 
+harness_section('manifest fields');
+pin('modes default', array('classifieds'), $themes->loadThemeInfo('demo')['modes']);
+file_put_contents($GLOBALS['themesDir'] . 'demo/shopclass.json', '{"modes":["shop"],"plugins":{"required":{"stripe":">=1.0"}}}');
+$themes2 = new WebThemes();
+$mi = $themes2->loadThemeInfo('demo');
+pin('modes from JSON', array('shop'), $mi['modes']);
+pin('required plugins from JSON', array('stripe' => '>=1.0'), $mi['requires_plugins']['required']);
+unlink($GLOBALS['themesDir'] . 'demo/shopclass.json');
+
 unlink($index);
 rmdir($GLOBALS['themesDir'] . 'demo');
 rmdir($GLOBALS['themesDir']);
