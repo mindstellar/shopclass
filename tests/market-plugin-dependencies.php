@@ -12,6 +12,7 @@
  * Pins PluginDependencies: the state of each plugin a theme asks for, that a missing
  * required plugin holds the theme back, that recommended ones can be skipped, that only a
  * slug in the theme's manifest is installed, and that theme_activate fires once, when live.
+ * Also the guards on installs, switchOn() against fixture plugins, and the admin ajax action.
  *
  * DB-free.  Usage: php tests/market-plugin-dependencies.php
  */
@@ -19,12 +20,55 @@
 define('ABS_PATH', dirname(__DIR__) . '/');
 define('OSCLASS_VERSION', '7.0.0');
 
-$GLOBALS['prefs'] = array();
-$GLOBALS['fired'] = array();
+// The harness prints as it goes, so AjaxResponse's headers-already-sent notice is expected.
+error_reporting(E_ALL & ~E_USER_NOTICE);
+
+$pluginsDir = sys_get_temp_dir() . '/osc-deps-plugins-' . bin2hex(random_bytes(4)) . '/';
+foreach (array('fresh', 'off') as $dir) {
+    mkdir($pluginsDir . $dir, 0777, true);
+    file_put_contents($pluginsDir . $dir . '/index.php', '<?php');
+}
+define('PLUGINS_PATH', $pluginsDir);
+
+$GLOBALS['prefs']       = array();
+$GLOBALS['fired']       = array();
+$GLOBALS['pluginPrefs'] = array('installed_plugins' => serialize(array('off/index.php')), 'active_plugins' => serialize(array()));
+$GLOBALS['installsOff'] = false;
 
 function osc_set_preference($key, $value)
 {
-    $GLOBALS['prefs'][] = array($key, $value);
+    $GLOBALS['prefs'][]          = array($key, $value);
+    $GLOBALS['pluginPrefs'][$key] = $value;
+}
+
+function osc_installed_plugins()
+{
+    return $GLOBALS['pluginPrefs']['installed_plugins'];
+}
+
+function osc_active_plugins()
+{
+    return $GLOBALS['pluginPrefs']['active_plugins'];
+}
+
+function osc_reset_preferences()
+{
+}
+
+function osc_plugins_path()
+{
+    return PLUGINS_PATH;
+}
+
+// An empty cached catalog, so no test reaches the network.
+function osc_kv_get(string $group, string $key, $default = null)
+{
+    return str_ends_with($key, '_json') ? '{}' : $default;
+}
+
+function _m($text)
+{
+    return $text;
 }
 
 function osc_run_hook($hook, ...$args)
@@ -34,7 +78,7 @@ function osc_run_hook($hook, ...$args)
 
 function osc_package_installs_disabled()
 {
-    return false;
+    return $GLOBALS['installsOff'];
 }
 
 function osc_themes_path()
@@ -47,6 +91,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 
 use mindstellar\market\PluginDependencies as Deps;
+use mindstellar\admin\ajax\MarketAjax;
 use mindstellar\market\VersionConstraint;
 
 $entry = static fn (string $v, string $requires = '6.0') => array(
@@ -163,6 +208,25 @@ check('...keeping the installer message', strpos($r['message'], 'not writable') 
 $r = $live->ensure(array('required' => array('nowhere' => '')), 'nowhere');
 pin('a plugin not in the market is refused with what to do', array(false, Deps::NOT_IN_CATALOG), array($r['ok'], $r['status']));
 
+$calls = array();
+$live->ensure(array('required' => array('shipping' => '>=1.0')), 'shipping');
+pin('a plugin too old is fetched as an update', array(array('fetch', 'update', 'shipping', '1.1.0'), array('switch', 'shipping')), $calls);
+
+$calls                  = array();
+$GLOBALS['installsOff'] = true;
+$r                      = $live->ensure($manifest, 'digital-goods');
+$GLOBALS['installsOff'] = false;
+pin('with package installs off nothing is fetched', array(false, array()), array($r['ok'], $calls));
+
+harness_section('switching a plugin on');
+pin('an installed plugin that is off is activated', array(null, array('off/index.php')), array(Deps::switchOn('off'), unserialize($GLOBALS['pluginPrefs']['active_plugins'])));
+pin('a plugin only on disk is installed and on', null, Deps::switchOn('fresh'));
+pin('...in both lists', array(true, true), array(
+    in_array('fresh/index.php', unserialize($GLOBALS['pluginPrefs']['installed_plugins']), true),
+    in_array('fresh/index.php', unserialize($GLOBALS['pluginPrefs']['active_plugins']), true),
+));
+check('a plugin with no files says so', str_contains((string) Deps::switchOn('gone'), 'files are missing'));
+
 harness_section('theme manifest');
 $GLOBALS['themesDir'] = sys_get_temp_dir() . '/osc-deps-' . bin2hex(random_bytes(4)) . '/';
 mkdir($GLOBALS['themesDir'] . 'aisle', 0777, true);
@@ -170,8 +234,34 @@ file_put_contents($GLOBALS['themesDir'] . 'aisle/index.php', "<?php\n/*\nTheme N
 file_put_contents($GLOBALS['themesDir'] . 'aisle/shopclass.json', '{"plugins":{"required":{"stripe":">=1.2"},"recommended":{"tax":""}}}');
 pin('an installed theme lists its plugins', array('required' => array('stripe' => '>=1.2'), 'recommended' => array('tax' => '')), Deps::themeRequirements('aisle'));
 pin('a theme that is not installed is null', null, Deps::themeRequirements('../aisle'));
+
+$ajax = (new ReflectionClass(MarketAjax::class))->newInstanceWithoutConstructor();
+$send = static function (string $theme, string $slug) use ($ajax): array {
+    Params::setParam('theme', $theme);
+    Params::setParam('slug', $slug);
+    ob_start();
+    $ajax->installDependency();
+
+    return (array) json_decode((string) ob_get_clean(), true);
+};
+$r = $send('ghost', 'stripe');
+pin('ajax: an unknown theme is refused', array(false, 'That theme is not installed.'), array($r['ok'] ?? null, $r['message'] ?? null));
+$r = $send('aisle', 'evil');
+pin('ajax: a slug outside the manifest is refused', array(false, 'The theme does not ask for this plugin.'), array($r['ok'] ?? null, $r['message'] ?? null));
 array_map('unlink', glob($GLOBALS['themesDir'] . 'aisle/*'));
 rmdir($GLOBALS['themesDir'] . 'aisle');
 rmdir($GLOBALS['themesDir']);
+
+harness_section('demo site');
+define('DEMO', true);
+$calls = array();
+$r     = $live->ensure($manifest, 'digital-goods');
+pin('a demo site fetches nothing', array(false, array()), array($r['ok'], $calls));
+
+foreach (array('fresh', 'off') as $dir) {
+    unlink($pluginsDir . $dir . '/index.php');
+    rmdir($pluginsDir . $dir);
+}
+rmdir($pluginsDir);
 
 exit(harness_result());
