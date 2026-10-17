@@ -9,8 +9,8 @@
  */
 
 /**
- * The media library's reads: the "Not attached" filter finds files whose owner was deleted and
- * nothing else, the summary counts them, and search matches the file name.
+ * The media library's reads: the summary counts files by owner and storage, and search matches
+ * the file name, alone or with a filter.
  *
  * Usage:  php tests/models/media-query.php       (standalone, own scratch database)
  *         php tests/run-models.php media-query   (as part of the suite)
@@ -42,32 +42,21 @@ $add = static function (string $type, int $owner, string $name): int {
 
     return (int) Db::scalar('SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_resource');
 };
-$lostItem = $add(\ItemResource::OWNER, 999991, 'lost-listing');
-$lostUser = $add('user', 999992, 'lost-user');
+$add(\ItemResource::OWNER, 999991, 'listing-photo');
+$add('user', 999992, 'user-photo');
 $library  = $add('library', 0, 'logo-upload');
-$onPage   = $add('page', $pageId, 'page-image');
-
-harness_section('Not attached');
-$ids = array_map(static fn (array $r): int => (int) $r['id'], MediaQuery::page('unattached', 1, 25)['rows']);
-sort($ids);
-pin('lists the files whose listing or user is gone', array($lostItem, $lostUser), $ids);
-check('never a library upload, which has no owner row', !in_array($library, $ids, true));
-check('nor a file whose page still exists', !in_array($onPage, $ids, true));
-pin('the summary counts them', 2, MediaQuery::summary()['unattached']);
-$picks = MediaQuery::unattachedPicks(10);
-sort($picks);
-pin('each comes back as the pick the delete path takes', array('item:' . $lostItem, 'resource:' . $lostUser), $picks);
-pin('a pick limit holds', 1, count(MediaQuery::unattachedPicks(1)));
+$add('page', $pageId, 'page-image');
 
 harness_section('Summary');
 $summary = MediaQuery::summary();
 pin('counts every file', 4, $summary['total']);
+pin('by owner', array('item' => 1, 'library' => 1, 'page' => 1, 'user' => 1), $summary['owners']);
 pin('by storage', array('local' => 4), $summary['storage']);
 
 harness_section('Search');
 $found = array_map(static fn (array $r): int => (int) $r['id'], MediaQuery::page('all', 1, 25, 'logo')['rows']);
 pin('matches the file name', array($library), $found);
 pin('a wildcard is searched as text', 0, MediaQuery::page('all', 1, 25, '%')['total']);
-pin('search and a filter combine', 0, MediaQuery::page('unattached', 1, 25, 'logo')['total']);
+pin('search and a filter combine', 0, MediaQuery::page('user', 1, 25, 'logo')['total']);
 
 exit(harness_result());

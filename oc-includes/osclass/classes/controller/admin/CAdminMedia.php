@@ -78,17 +78,6 @@ class CAdminMedia extends AdminSecBaseModel
                 }
                 $this->redirectTo($this->libraryUrl(Params::getParam('type')));
                 break;
-            case ('delete_unattached'):
-                osc_csrf_check();
-                // In batches, so a large backlog cannot run past the request time limit in one go.
-                $picks = \mindstellar\storage\MediaQuery::unattachedPicks(500);
-                foreach ($picks as $pick) {
-                    [$src, $id] = explode(':', $pick, 2);
-                    $this->deleteMedia($src, (int) $id);
-                }
-                osc_add_flash_ok_message(sprintf(_mn('One unattached file deleted', '%d unattached files deleted', count($picks)), count($picks)), 'admin');
-                $this->redirectTo($this->libraryUrl('unattached'));
-                break;
             default:
                 $type    = $this->resolveType(Params::getParam('type'));
                 $search  = Params::getParamString('q');
@@ -106,7 +95,7 @@ class CAdminMedia extends AdminSecBaseModel
                 $this->_exportVariableToView('mediaSearch', $search);
                 $this->_exportVariableToView('mediaSummary', $summary);
                 $this->_exportVariableToView('mediaView', Params::getParamString('view') === 'grid' ? 'grid' : 'list');
-                $this->_exportVariableToView('mediaFilters', $this->getFilters($summary['unattached']));
+                $this->_exportVariableToView('mediaFilters', $this->getFilters());
                 $this->_exportVariableToView('mediaRows', $data['rows']);
                 $this->_exportVariableToView('mediaTotal', $data['total']);
                 $this->_exportVariableToView('mediaPerPage', $perPage);
@@ -147,7 +136,7 @@ class CAdminMedia extends AdminSecBaseModel
     private function resolveType($type)
     {
         $type  = (string) $type;
-        $valid = array_merge(array("all", "item", "unattached"), osc_media_owner_types());
+        $valid = array_merge(array("all", "item"), osc_media_owner_types());
 
         return in_array($type, $valid, true) ? $type : 'all';
     }
@@ -156,11 +145,9 @@ class CAdminMedia extends AdminSecBaseModel
      * Filter pills for the library: All, Listings (item), then a pill per owner
      * type in t_resource (Users, Pages, or a plugin-defined type).
      *
-     * @param int $unattached how many files lost their owner, shown on the last tab
-     *
      * @return array<int,array<string,mixed>>
      */
-    private function getFilters(int $unattached)
+    private function getFilters()
     {
         $filters = array(
             array('type' => 'all', 'label' => __('All')),
@@ -173,11 +160,6 @@ class CAdminMedia extends AdminSecBaseModel
                 'label' => $labels[$ownerType] ?? ucfirst($ownerType),
             );
         }
-        $filters[] = array(
-            'type'  => 'unattached',
-            'label' => __('Not attached'),
-            'count' => $unattached,
-        );
 
         return $filters;
     }

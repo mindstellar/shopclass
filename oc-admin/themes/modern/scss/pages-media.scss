@@ -193,7 +193,7 @@
 }
 
 
-// ---- Library summary, search, the unattached note and the size list ---------
+// ---- Library summary, search and the size list ------------------------------
 .media-summary {
   color: var(--osc-ink-muted);
   font-size: $font-size-label;
@@ -202,19 +202,6 @@
 
 .media-search .form-control {
   min-width: 14rem;
-}
-
-.media-unattached-note {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem 1rem;
-  margin-block-end: 1rem;
-
-  p {
-    color: var(--osc-ink-muted);
-    margin: 0;
-  }
 }
 
 .media-preview-sizes {

@@ -319,15 +319,6 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 
     osc_admin_toolbar_close();
 
-    if ($mediaType === 'unattached' && $mediaTotal > 0) { ?>
-        <div class="media-unattached-note">
-            <p><?php _e('These files belong to a listing, user or page that no longer exists. Nothing on the site shows them.'); ?></p>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-osc-dialog-open="#media-unattached-dialog">
-                <?php echo osc_esc_html(sprintf(__('Delete all %d'), $mediaTotal)); ?>
-            </button>
-        </div>
-    <?php }
-
     if (count($mediaRows) === 0) {
         osc_admin_empty(array(
             'icon'  => 'bi-images',
@@ -378,7 +369,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     $usageName  = $usage !== null
                         ? ($usage['name'] !== '' ? $usage['name'] : '#' . (int) $usage['id'])
                         : '';
-                    $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not attached');
+                    $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not used in a page');
                     $typeLabel  = strtoupper((string) $row['s_extension']);
                     $imageSize  = mediaImageSize($row);
                     $uploaded   = !empty($row['dt']) ? osc_admin_date((string) $row['dt'], true) : '—';
@@ -411,7 +402,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                                     <?php echo osc_esc_html($usageName); ?>
                                 <?php } ?>
                             <?php } else { ?>
-                                <span class="media-owner-unattached"><?php _e('Not attached'); ?></span>
+                                <span class="media-owner-unattached"><?php _e('Not used in a page'); ?></span>
                             <?php } ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Type')); ?>"><?php echo osc_esc_html($typeLabel); ?></td>
@@ -447,14 +438,6 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
         ));
     } ?>
 </div>
-<?php osc_admin_confirm_dialog(array(
-    'id'      => 'media-unattached-dialog',
-    'method'  => 'post',
-    'fields'  => array('page' => 'media', 'action' => 'delete_unattached'),
-    'title'   => __('Delete every unattached file?'),
-    'text'    => __('Files whose listing, user or page was deleted are removed from the server. Up to 500 go at a time.'),
-    'confirm' => __('Delete files'),
-)); ?>
 <?php osc_admin_confirm_dialog(array(
     'id'      => 'media-delete-dialog',
     'method'  => 'post',
