@@ -30534,6 +30534,16 @@
                         }
                     },
                     {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "description": "Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
                         "name": "count",
                         "in": "query",
                         "required": false,
@@ -38969,6 +38979,16 @@
                         }
                     },
                     {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "description": "Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
                         "name": "count",
                         "in": "query",
                         "required": false,
@@ -40128,6 +40148,7 @@
                             "validation_failed",
                             "idempotency_key_reused",
                             "listing_limit",
+                            "page_too_deep",
                             "rate_limited",
                             "login_blocked",
                             "too_many_failures",
@@ -40214,6 +40235,14 @@
                     },
                     "limit": {
                         "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "The page number, when the request sent `page`."
+                    },
+                    "pages": {
+                        "type": "integer",
+                        "description": "How many pages the matches fill, when the request sent `page` and `count=true`."
                     },
                     "truncated": {
                         "type": "boolean",

@@ -166,6 +166,9 @@ done
 
 - A cursor is signed and only works with the filters, sort and order it was made for. Any
   other use is a `400` `invalid_cursor`.
+- `GET /listings` also takes `page` (1 or more) for numbered pages, with any sort and not with `cursor`.
+  `meta.page` is the page and, with `count=true`, `meta.pages` is how many there are. Past the
+  deepest page (10,000 listings) it is a `422` `page_too_deep`.
 - `meta.total` is `null` unless you send `count=true`, which counts all matches on the first
   page (it costs a query). Later pages of a `created`, `id` or `price` sort leave it `null`.
 - A cursor is good for a week and its expiry is rounded up to the hour, so a page's

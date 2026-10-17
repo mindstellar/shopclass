@@ -113,6 +113,8 @@ final class Schema
             'PageMeta'     => self::object([
                 'total' => self::nullable('integer', 'Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list. A list that is not paged always has it, equal to its size.'),
                 'limit' => ['type' => 'integer'],
+                'page'  => ['type' => 'integer', 'description' => 'The page number, when the request sent `page`.'],
+                'pages' => ['type' => 'integer', 'description' => 'How many pages the matches fill, when the request sent `page` and `count=true`.'],
                 'truncated' => ['type' => 'boolean', 'description' => 'Present and true when more matches exist but paging stops here: links.next is null. Narrow the filters, or sort by created or id.'],
                 'facets'     => self::object([
                     'category' => ['type' => 'object', 'additionalProperties' => ['type' => 'integer'], 'description' => 'Category id => listings found in it, as the search engine counted them.'],

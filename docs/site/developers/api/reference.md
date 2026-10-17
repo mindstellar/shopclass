@@ -1140,6 +1140,7 @@ Search listings
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
+| `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
 | `include` | query | string | no | Comma list: custom_fields, translations. |
@@ -1558,6 +1559,7 @@ A user's live listings
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
+| `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
 | `include` | query | string | no | Comma list: custom_fields, translations. |

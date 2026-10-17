@@ -86,7 +86,7 @@ final class ListingSearch
         if ($userId !== null) {
             $filters['user'] = (string) $userId;
         }
-        $pager = Pager::fromRequest($request, $this->cursor, $sort->spec($this->facts->defaultLimit(), $this->facts->maxLimit()), $path, $filters);
+        $pager = Pager::fromRequest($request, $this->cursor, $sort->spec($this->facts->defaultLimit(), $this->facts->maxLimit()), $path, $filters, true);
 
         $params = self::params($request, $this->reader->categories(), $context->locale(), $userId) + [
             'sOrder'     => $sort->searchOrder(),

@@ -578,6 +578,7 @@ final class PublicRoutes
             'order'       => ['type' => 'string', 'enum' => ['asc', 'desc']],
             'limit'       => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
             'cursor'      => self::CURSOR,
+            'page'        => ['type' => 'integer', 'minimum' => 1, 'description' => 'Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are.'],
             'count'       => self::COUNT,
             'fields'      => ['type' => 'string', 'maxLength' => 500],
             'include'     => self::INCLUDE,
