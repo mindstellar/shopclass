@@ -87,7 +87,19 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         }
 
         osc_add_flash_ok_message(self::saved($action), 'admin');
-        $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing&tab=' . self::FORMS[$action]);
+        $this->redirectTo(self::tabUrl(self::FORMS[$action]));
+    }
+
+    /**
+     * The screen opened on one tab.
+     *
+     * @param string $tab a value of FORMS, or 'methods'
+     *
+     * @return string
+     */
+    private static function tabUrl(string $tab): string
+    {
+        return osc_admin_base_url(true) . '?page=settings&action=billing&tab=' . $tab;
     }
 
     /**

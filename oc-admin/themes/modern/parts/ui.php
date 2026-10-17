@@ -248,6 +248,29 @@ if (!function_exists('osc_admin_action_button')) {
     }
 }
 
+if (!function_exists('osc_admin_tab_nav')) {
+    /**
+     * A row of page tabs, each a link with one current; it scrolls sideways on a phone.
+     * Each link: label, url, active (bool), and optionally count, drawn as a badge.
+     *
+     * @param array<int,array<string,mixed>> $links
+     * @param string                         $class an extra class on the list
+     *
+     * @return void
+     */
+    function osc_admin_tab_nav(array $links, $class = '')
+    {
+        echo '<nav class="osc-tabnav-scroll"><ul class="osc-tabnav' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">';
+        foreach ($links as $link) {
+            $active = !empty($link['active']);
+            echo '<li><a href="' . osc_esc_html($link['url'] ?? '#') . '"' . ($active ? ' class="is-active" aria-current="page"' : '') . '>'
+                . osc_esc_html($link['label'] ?? '')
+                . (isset($link['count']) ? osc_admin_count((int)$link['count']) : '') . '</a></li>';
+        }
+        echo '</ul></nav>';
+    }
+}
+
 if (!function_exists('osc_admin_link_group')) {
     /**
      * A segmented group of links where exactly one is current -- a range switch, a view
@@ -267,14 +290,7 @@ if (!function_exists('osc_admin_link_group')) {
         // Links with counts are status filters: an underline strip that scrolls on a phone
         // rather than a button group that cannot wrap.
         if (array_filter($links, static fn ($link) => isset($link['count'])) !== array()) {
-            echo '<nav class="osc-tabnav-scroll"><ul class="osc-tabnav">';
-            foreach ($links as $link) {
-                $active = !empty($link['active']);
-                echo '<li><a href="' . osc_esc_html($link['url'] ?? '#') . '"' . ($active ? ' class="is-active" aria-current="page"' : '') . '>'
-                    . osc_esc_html($link['label'] ?? '')
-                    . (isset($link['count']) ? osc_admin_count((int)$link['count']) : '') . '</a></li>';
-            }
-            echo '</ul></nav>';
+            osc_admin_tab_nav($links);
 
             return;
         }
