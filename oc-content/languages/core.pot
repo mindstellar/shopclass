@@ -49,10 +49,6 @@ msgid_plural "%1$s (%2$d rows)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-includes/osclass/classes/admin/ui/Picker.php
-msgid "%1$s (%2$s)"
-msgstr ""
-
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "%1$s and %2$s stay as they are."
 msgstr ""
@@ -137,10 +133,6 @@ msgstr ""
 msgid ""
 "%1$s surfaces errors while you diagnose a problem; %2$s sends them to a log "
 "file instead of the page. Both belong off on a live site."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/ui/Picker.php
-msgid "%1$s › %2$s"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -7908,10 +7900,6 @@ msgstr ""
 msgid "Off by default: it can be abused to send spam."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/ui/Picker.php
-msgid "Off in every category"
-msgstr ""
-
 #: oc-admin/themes/modern/stats/reports.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Offensive"
@@ -7940,10 +7928,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
 msgid "On a match"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/ui/Picker.php
-msgid "On in: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
