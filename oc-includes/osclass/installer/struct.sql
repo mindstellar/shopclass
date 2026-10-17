@@ -324,23 +324,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_location (
         FOREIGN KEY (fk_i_city_area_id) REFERENCES /*TABLE_PREFIX*/t_city_area (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_item_variant (
-    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    fk_i_item_id INT UNSIGNED NOT NULL,
-    s_sku VARCHAR(64) NULL,
-    s_options TEXT NULL,
-    i_price BIGINT(20) NULL,
-    i_stock INT NULL,
-    i_weight INT UNSIGNED NULL,
-    s_shipping_class VARCHAR(40) NULL,
-    fk_i_resource_id INT UNSIGNED NULL,
-    i_position SMALLINT NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (pk_i_id),
-        INDEX idx_item (fk_i_item_id),
-        INDEX idx_sku (s_sku)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_item_stats (
     fk_i_item_id INT UNSIGNED NOT NULL,
     i_num_views INT UNSIGNED NOT NULL DEFAULT 0,
@@ -406,6 +389,25 @@ CREATE TABLE /*TABLE_PREFIX*/t_resource (
         PRIMARY KEY (pk_i_id),
         INDEX idx_owner (s_owner_type, i_owner_id),
         INDEX idx_storage (s_storage)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_variant (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_sku VARCHAR(64) NULL,
+    s_options TEXT NULL,
+    i_price BIGINT(20) NULL,
+    i_stock INT NULL,
+    i_weight INT UNSIGNED NULL,
+    s_shipping_class VARCHAR(40) NULL,
+    fk_i_resource_id INT UNSIGNED NULL,
+    i_position SMALLINT NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_item (fk_i_item_id),
+        INDEX idx_sku (s_sku),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_resource_id) REFERENCES /*TABLE_PREFIX*/t_resource (pk_i_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_comment (

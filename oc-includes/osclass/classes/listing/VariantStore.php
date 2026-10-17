@@ -18,7 +18,7 @@ use mindstellar\database\Db;
 /**
  * Reads and writes of t_item_variant. A listing is buyable when it has at least one row. The
  * default row (no options) holds a plain product; rows with options are for size, colour and
- * the like. The table has no foreign key: Item::deleteByPrimaryKey() removes a listing's rows.
+ * the like. Rows go with their listing (ON DELETE CASCADE).
  */
 final class VariantStore extends Model
 {

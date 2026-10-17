@@ -257,15 +257,21 @@ VariantStore::saveDefault($one, ['s_sku' => 'DEL-1']);
 pin('the listing has a row to lose', 1, count($rows($one)));
 Item::getInstance()->deleteByPrimaryKey($one);
 pin('deleting the listing removes its variants', [], $rows($one));
+$gone = $service->create(ListingInput::fromArray($form(['ownerId' => '0']), $adminActor, true), $adminActor)->id();
+VariantStore::saveDefault($gone, ['s_sku' => 'DEL-2']);
+\mindstellar\database\Db::execute('DELETE FROM ' . $p . 't_item WHERE pk_i_id = ?', [$gone]);
+pin('a listing deleted in SQL takes its variants too', [], $rows($gone));
 
 $ddl = static fn (): array => array_map('array_values', $admin->query("SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$p}t_item_variant' ORDER BY ORDINAL_POSITION")->fetch_all(MYSQLI_ASSOC));
 $idx = static fn (): array => array_map('array_values', $admin->query("SELECT INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$p}t_item_variant' ORDER BY INDEX_NAME, SEQ_IN_INDEX")->fetch_all(MYSQLI_ASSOC));
-$fresh = [$ddl(), $idx()];
+$fks   = static fn (): array => array_map('array_values', $admin->query("SELECT k.COLUMN_NAME, k.REFERENCED_TABLE_NAME, r.DELETE_RULE FROM information_schema.KEY_COLUMN_USAGE k JOIN information_schema.REFERENTIAL_CONSTRAINTS r ON r.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME WHERE k.TABLE_SCHEMA = DATABASE() AND k.TABLE_NAME = '{$p}t_item_variant' ORDER BY k.COLUMN_NAME")->fetch_all(MYSQLI_ASSOC));
+pin('rows cascade with the listing and a photo delete clears the link', [['fk_i_item_id', $p . 't_item', 'CASCADE'], ['fk_i_resource_id', $p . 't_resource', 'SET NULL']], $fks());
+$fresh = [$ddl(), $idx(), $fks()];
 $admin->query("DROP TABLE {$p}t_item_variant");
 $migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0076_item_variant.php';
 $migration->up(\mindstellar\database\Connection::getInstance());
-pin('the migration builds the table struct.sql builds', $fresh, [$ddl(), $idx()]);
+pin('the migration builds the table struct.sql builds', $fresh, [$ddl(), $idx(), $fks()]);
 $migration->up(\mindstellar\database\Connection::getInstance());
-pin('and runs again without error', $fresh, [$ddl(), $idx()]);
+pin('and runs again without error', $fresh, [$ddl(), $idx(), $fks()]);
 
 exit(harness_result());

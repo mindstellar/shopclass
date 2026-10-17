@@ -37,7 +37,9 @@ return new class () implements MigrationInterface {
             . ' s_shipping_class VARCHAR(40) NULL,'
             . ' fk_i_resource_id INT UNSIGNED NULL,'
             . ' i_position SMALLINT NOT NULL DEFAULT 0,'
-            . ' PRIMARY KEY (pk_i_id), INDEX idx_item (fk_i_item_id), INDEX idx_sku (s_sku))'
+            . ' PRIMARY KEY (pk_i_id), INDEX idx_item (fk_i_item_id), INDEX idx_sku (s_sku),'
+            . ' FOREIGN KEY (fk_i_item_id) REFERENCES ' . DB_TABLE_PREFIX . 't_item (pk_i_id) ON DELETE CASCADE,'
+            . ' FOREIGN KEY (fk_i_resource_id) REFERENCES ' . DB_TABLE_PREFIX . 't_resource (pk_i_id) ON DELETE SET NULL)'
             . " ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
         );
     }
