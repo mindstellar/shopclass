@@ -93,7 +93,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 osc_admin_page(array(
     'section' => __('Settings'),
-    'title'   => __('Latest searches Settings'),
+    'title'   => __('Latest searches'),
     'help'    => __("Save the searches users do on your site. In this way, you can get information on what they're most "
                     . 'interested in. From here, you can manage the options on how much information you want to save.'),
 ));
@@ -102,7 +102,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-setting">
     <!-- settings form -->
     <div id="general-settings">
-        <?php osc_admin_page_head(__('Latest searches Settings')); ?>
+        <?php osc_admin_page_head(__('Latest searches')); ?>
         <ul id="error_list"></ul>
         <?php osc_admin_settings_form($form['id'], $form); ?>
     </div>
