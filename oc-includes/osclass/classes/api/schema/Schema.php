@@ -38,7 +38,7 @@ final class Schema
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
         'AlertFilters', 'Alert', 'AlertInput', 'SearchSuggestions', 'CategorySuggestions',
-        'PageSummary', 'Page', 'Menu',
+        'PageSummary', 'Page', 'Menu', 'Seo',
     ];
 
     /** `<name>List`: every item at once. */
@@ -51,7 +51,7 @@ final class Schema
     private const PAGES = ['Listing', 'Comment'];
 
     /** `<name>Document`: one resource. */
-    private const DOCUMENTS = ['Page', 'Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions'];
+    private const DOCUMENTS = ['Page', 'Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions', 'Seo'];
 
     private function __construct()
     {
@@ -520,6 +520,25 @@ final class Schema
                 'id'    => ['type' => 'string', 'description' => '`main`, `footer` or a plugin\'s menu.'],
                 'items' => ['type' => 'array', 'items' => $link],
             ], ['id', 'items']),
+            'Seo'         => self::object([
+                'for'         => ['type' => 'string', 'enum' => ['home', 'listing', 'category', 'page', 'search']],
+                'locale'      => ['type' => 'string', 'description' => 'The language of the title and description.'],
+                'canonical'   => ['type' => 'string'],
+                'title'       => ['type' => 'string', 'description' => 'Plain text, ending with the site title except on the home page.'],
+                'description' => ['type' => 'string', 'description' => 'Plain text, at most 160 characters.'],
+                'robots'      => ['type' => 'string', 'description' => 'A robots meta value such as `index, follow`.'],
+                'breadcrumbs' => ['type' => 'array', 'items' => $link, 'description' => 'Home first, the current page last.'],
+                'hreflang'    => ['type' => 'array', 'items' => self::object(['locale' => ['type' => 'string'], 'url' => ['type' => 'string']], ['locale', 'url']), 'description' => 'Listings and pages with text in more than one language only; ends with `x-default`.'],
+                'og'          => self::object([
+                    'type'        => ['type' => 'string'],
+                    'title'       => ['type' => 'string'],
+                    'description' => ['type' => 'string'],
+                    'url'         => ['type' => 'string'],
+                    'site_name'   => ['type' => 'string'],
+                    'locale'      => ['type' => 'string'],
+                    'image'       => self::nullable('string', 'The first photo of a listing.'),
+                ], ['type', 'title', 'description', 'url', 'site_name', 'locale', 'image']),
+            ], ['for', 'locale', 'canonical', 'title', 'description', 'robots', 'breadcrumbs', 'hreflang', 'og']),
         ];
     }
 

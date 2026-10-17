@@ -1394,6 +1394,7 @@ Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too ma
 | GET | `/menus` | public | `listings:read` | The site's menus: main (top categories) and footer (linked pages); a plugin may add more |
 | GET | `/pages` | public | `listings:read` | The pages shown as links, in order, in the asked language |
 | GET | `/pages/{page}` | public | `listings:read` | One page by id or internal name, linked or not, with its text and meta |
+| GET | `/seo` | public | `listings:read` | The head data of a public page: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph |
 
 ### GET `/menus`
 
@@ -1428,6 +1429,20 @@ One page by id or internal name, linked or not, with its text and meta
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`PageDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/seo`
+
+The head data of a public page: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `for` | query | string: `home`, `listing`, `category`, `page`, `search` | no | The kind of page. |
+| `id` | query | string | no | A listing id, a category id or slug, or a page id or internal name. Not used for home and search. |
+| `q` | query | string | no | Search only: the search words. |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`SeoDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ## Search
 

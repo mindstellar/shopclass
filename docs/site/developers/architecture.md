@@ -132,6 +132,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `privacy` | Where a person's data lives, so a copy can be handed back |
 | `routing` | URLs: routes, the front controller and reserved slugs |
 | `search` | Search and saved-search alerts; the SQL is built in `query/` |
+| `seo` | The head data of a public page: canonical URL, title, robots, breadcrumbs, hreflang |
 | `security` | CSRF, rate limits, captcha, ban rules, two-factor sign-in, signed links |
 | `settings` | The registry plugins add settings pages to, and image fields on those pages |
 | `storage` | File storage (local, S3), uploads and the media library |
