@@ -90,8 +90,8 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 
-use mindstellar\market\PluginDependencies as Deps;
 use mindstellar\admin\ajax\MarketAjax;
+use mindstellar\market\PluginDependencies as Deps;
 use mindstellar\market\VersionConstraint;
 
 $entry = static fn (string $v, string $requires = '6.0') => array(
