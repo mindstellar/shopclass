@@ -640,7 +640,7 @@ if (!function_exists('osc_admin_col_name')) {
     {
         $name = trim(html_entity_decode(strip_tags((string) ($columns[$key] ?? '')), ENT_QUOTES, 'UTF-8'));
 
-        return osc_esc_html($name !== '' ? $name : ucfirst((string) $key));
+        return osc_esc_html($name !== '' ? $name : ucfirst(str_replace('_', ' ', (string) $key)));
     }
 }
 

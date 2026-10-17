@@ -402,8 +402,8 @@
   position: relative;
 }
 
-// A visually-hidden header label is absolutely positioned; without this it escapes the
-// scrolling box and widens the whole page on a phone.
+// A visually-hidden header label is absolutely positioned; without a positioned box it
+// escapes the scrolling wrapper and widens the whole page on a phone.
 .table-responsive {
   position: relative;
 }

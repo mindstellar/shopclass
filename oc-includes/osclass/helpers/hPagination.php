@@ -185,8 +185,9 @@ function osc_show_pagination_admin($aData)
                 . osc_pagination_showing($from, $from + $shown - 1, $filtered, $total)
                 . '</span></li></ul>';
         }
-        // The number list shows 11 pages at most; the jump box is only for longer lists.
-        if ($pageTotal > 11) { ?>
+        $sides = 5;
+        // The jump box is only for lists longer than the page links can show.
+        if ($pageTotal > 2 * $sides + 1) { ?>
             <form method="get" action="<?php echo osc_esc_html(strtok($urlActual, '?')); ?>" style="display:inline;" nocsrf>
                 <?php foreach ($hidden as [$key, $value]) { ?>
                     <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
@@ -209,7 +210,7 @@ function osc_show_pagination_admin($aData)
                 'total'    => $pageTotal,
                 'selected' => $pageActual - 1,
                 'url'      => $urlActual . '&iPage={PAGE}',
-                'sides'    => 5
+                'sides'    => $sides
             ));
             echo $pagination->doPagination();
         }
