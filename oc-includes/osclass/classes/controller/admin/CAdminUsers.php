@@ -191,7 +191,7 @@ class CAdminUsers extends AdminSecBaseModel
         }
         $actions[] = '<a class="btn btn-outline-secondary" href="' . osc_admin_base_url(true)
             . '?page=users&action=user_login&id=' . $aUser['pk_i_id'] . '&' . $csrf_token . '" target="_blank">'
-            . __('Login') . '</a>';
+            . __('Log in as user') . '</a>';
 
         $aLocale = $aUser['locale'];
         foreach ($aLocale as $locale => $aInfo) {

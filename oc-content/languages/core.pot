@@ -6447,6 +6447,11 @@ msgstr ""
 msgid "Log in"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+#: oc-includes/osclass/classes/datatables/UsersDataTable.php
+msgid "Log in as user"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Logged in users don't need to validate their listings"
 msgstr ""
@@ -6456,8 +6461,6 @@ msgid "Logging"
 msgstr ""
 
 #: oc-includes/osclass/classes/Breadcrumb.php
-#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
-#: oc-includes/osclass/classes/datatables/UsersDataTable.php
 #: oc-includes/osclass/functions.php
 msgid "Login"
 msgstr ""

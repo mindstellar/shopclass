@@ -241,7 +241,7 @@ class UsersDataTable extends DataTable
                     . __('Public profile') . '</a>';
 
                 $options[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=user_login&id='
-                    . $aRow['pk_i_id'] . '&' . $csrf_token_url . '" target="_blank">' . __('Login') . '</a>';
+                    . $aRow['pk_i_id'] . '&' . $csrf_token_url . '" target="_blank">' . __('Log in as user') . '</a>';
 
                 if ($aRow['b_active'] == 1) {
                     $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=deactivate&amp;id[]='
