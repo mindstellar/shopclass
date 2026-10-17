@@ -712,8 +712,8 @@
 }
 
 // ---- Inline editor contents (field + form) ----------------------------------
-// Both editors reuse the legacy .form-horizontal geometry — a 150px right-aligned
-// label well beside its control. Inline the rows stack instead: label above a
+// Both editors reuse the .form-horizontal geometry — a right-aligned label column
+// beside its control. Inline the rows stack instead: label above a
 // full-width control, so the two editors read as one clean vertical form.
 .field-chip-editor .custom-field-frame,
 .form-card-editor .custom-field-frame {
