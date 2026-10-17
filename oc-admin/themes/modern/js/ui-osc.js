@@ -348,14 +348,12 @@ function oscCatcardsSummary(root) {
     };
 
     if (root.getAttribute('data-osc-catcards') === 'modes') {
-        var on = [];
         cards.forEach(function (card) {
             var picked = card.querySelector(':scope > .osc-segmented input:checked');
             var pickedLabel = picked ? card.querySelector('label[for="' + CSS.escape(picked.id) + '"]') : null;
             var topMode = picked && picked.value !== '' ? pickedLabel.textContent : '';
             var offWord = card.querySelector(':scope > .osc-segmented input[value=""] + label');
             var cardName = card.querySelector('.osc-catcard-name').textContent;
-            if (topMode) { on.push(oscFill(label('item'), [cardName, topMode])); }
 
             // Rows come in tree order with their depth; each "Same as parent" names what it inherits.
             var apart = 0;
@@ -376,15 +374,12 @@ function oscCatcardsSummary(root) {
                 row.classList.toggle('is-set', !!own);
                 if (own) {
                     apart++;
-                    if (chosen.value !== 'off') { on.push(oscFill(label('item'), [oscFill(label('path'), [paths[depth], name]), mode])); }
                 }
                 modes[depth + 1] = mode;
                 paths[depth + 1] = paths[depth] + ' › ' + name;
             });
             setMeta(card, apart ? oscFill(label('apart'), [apart]) : '');
         });
-        if (summary) { summary.classList.toggle('is-off', on.length === 0); }
-        if (summary) { summary.textContent = on.length ? oscFill(label('on'), [on.join(', ')]) : label('off'); }
         return;
     }
 

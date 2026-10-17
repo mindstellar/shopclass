@@ -301,6 +301,18 @@
   }
 }
 
+// Equal segments, so the mode switches line up from card to card.
+.osc-catcards > .osc-catcard > .osc-segmented {
+  display: inline-grid;
+  grid-auto-columns: 7.5rem;
+  grid-auto-flow: column;
+
+  label {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 @media (max-width: 575.98px) {
   .osc-catcards > .osc-catcard > .osc-segmented {
     flex-wrap: wrap;

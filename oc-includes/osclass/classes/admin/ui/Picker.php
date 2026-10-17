@@ -387,14 +387,9 @@ class Picker
             return;
         }
 
-        echo '<div class="osc-catcards-bar"><span class="osc-catcards-summary" data-osc-catcards-summary="'
-            . osc_esc_html($id) . '"></span></div>';
+        // No summary line: each card already shows its own mode.
         echo '<ul id="' . osc_esc_html($id) . '" class="osc-catcards" data-osc-catcards="modes"'
             . ' data-toggle-label="' . osc_esc_html(__('Subcategories of %s')) . '"'
-            . ' data-label-off="' . osc_esc_html(__('Off in every category')) . '"'
-            . ' data-label-on="' . osc_esc_html(__('On in: %s')) . '"'
-            . ' data-label-item="' . osc_esc_html(__('%1$s (%2$s)')) . '"'
-            . ' data-label-path="' . osc_esc_html(__('%1$s › %2$s')) . '"'
             . ' data-label-apart="' . osc_esc_html(__('%s set differently')) . '"'
             . ' data-label-inherit="' . osc_esc_html(__('Same as parent (%s)')) . '">';
 
