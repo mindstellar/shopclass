@@ -135,7 +135,7 @@ final class CommentService
             throw BlockedException::rateLimit(_m('Too many comments in an hour. Try again later.'), CommentPolicy::retryAfter());
         }
 
-        $status = $this->status($user, $authorName, $authorEmail, $body, $item);
+        $status = $this->status($user, $authorName, $authorEmail, trim($title . "\n" . $body), $item);
         $row    = [
             'dt_pub_date'    => date('Y-m-d H:i:s'),
             'fk_i_item_id'   => (int) $item['pk_i_id'],
@@ -254,23 +254,23 @@ final class CommentService
     }
 
     /**
-     * LIVE or PENDING by the site's moderation setting, SPAM when Akismet says so. The
-     * Akismet call runs before the write, so no transaction waits on it.
+     * LIVE or PENDING by the site's moderation setting, SPAM when Akismet says so of the
+     * title and body. The Akismet call runs before the write, so no transaction waits on it.
      *
      * @param array<string,mixed>|null $user
      * @param array<string,mixed>      $item
      */
-    private function status(?array $user, string $name, string $email, string $body, array $item): int
+    private function status(?array $user, string $name, string $email, string $text, array $item): int
     {
         $threshold = (int) osc_moderate_comments();
         $approved  = (int) ($user['i_comments'] ?? 0);
         $status    = $threshold === -1 || ($threshold !== 0 && $approved >= $threshold) ? SavedComment::LIVE : SavedComment::PENDING;
 
-        if (osc_akismet_key() && $body !== '') {
+        if (osc_akismet_key() && $text !== '') {
             $akismet = new \Akismet(osc_base_url(), osc_akismet_key());
             $akismet->setCommentAuthor($name);
             $akismet->setCommentAuthorEmail($email);
-            $akismet->setCommentContent($body);
+            $akismet->setCommentContent($text);
             $akismet->setPermalink(osc_item_url_from_item($item));
             if ($akismet->isCommentSpam()) {
                 $status = SavedComment::SPAM;
