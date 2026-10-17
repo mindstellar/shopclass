@@ -752,6 +752,7 @@ final class ListingService
         }
         [$meta, $metaErrors] = $this->customFields($aItem);
         $errors              = array_merge($errors, $metaErrors);
+        $errors              = array_merge($errors, $this->productErrors($aItem, $actor));
 
         $text = self::errorText($errors);
         osc_run_hook('pre_item_add', $aItem, $text);
@@ -864,6 +865,7 @@ final class ListingService
         \Item::getInstance()->updateExpirationDate($itemId, $aItem['dt_expiration']);
 
         $this->writeMeta($meta, $itemId);
+        $this->writeProduct((int) $itemId, $aItem, $actor);
 
         // We need at least one record in t_item_stats
         $mStats = new \ItemStats();
@@ -936,6 +938,7 @@ final class ListingService
 
         [$meta, $metaErrors] = $this->customFields($aItem);
         $errors              = array_merge($errors, $metaErrors);
+        $errors              = array_merge($errors, $this->productErrors($aItem, $actor));
 
         $text = self::errorText($errors);
         osc_run_hook('pre_item_edit', $aItem, $text);
@@ -1025,6 +1028,7 @@ final class ListingService
         );
 
         $this->writeMeta($meta, $aItem['idItem'], $meta ? FieldQuery::lockedListingValues($aItem['idItem']) : array());
+        $this->writeProduct($aItem['idItem'], $aItem, $actor);
 
         // Premium keeps an expired listing counted, as the recount does.
         $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
@@ -1139,6 +1143,37 @@ final class ListingService
         $aItem['contactPhone'] = $this->sanitize->phone($aItem['contactPhone']);
 
         return $aItem;
+    }
+
+    /**
+     * Errors for the `product` member, which only an admin's save carries.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    private function productErrors(array $aItem, Actor $actor): array
+    {
+        return $actor->isAdmin() && is_array($aItem['product'] ?? null) ? $this->validator->product($aItem['product']) : array();
+    }
+
+    /**
+     * Save or remove the listing's default variant row from the `product` member. Ignored
+     * unless an admin saves, whatever the data holds.
+     *
+     * @param array<string,mixed> $aItem
+     */
+    private function writeProduct(int $itemId, array $aItem, Actor $actor): void
+    {
+        if (!$actor->isAdmin() || !is_array($aItem['product'] ?? null)) {
+            return;
+        }
+        if (empty($aItem['product']['sell'])) {
+            VariantStore::removeDefault($itemId);
+
+            return;
+        }
+        VariantStore::saveDefault($itemId, (array) ($aItem['product']['fields'] ?? array()));
     }
 
     private static function place(mixed $value): string

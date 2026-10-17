@@ -148,6 +148,45 @@ final class ListingInput
         return self::fromArray($input, $actor ?? self::sessionActor($admin), $isAdd);
     }
 
+    /**
+     * The "Sell this item" members of a form: `sell` (a checkbox) and the columns the form
+     * sent, each as the validator reads them. A number that is not one stays text, so
+     * ListingValidator::product() can refuse it. Null when the form has no such members.
+     *
+     * @return array{sell:bool,fields:array<string,int|string|null>}|null
+     */
+    private static function product(mixed $raw): ?array
+    {
+        if (!is_array($raw)) {
+            return null;
+        }
+        $text = static function (string $key) use ($raw): ?string {
+            $value = isset($raw[$key]) && is_scalar($raw[$key]) ? trim((string) Params::purifyText($raw[$key])) : '';
+
+            return $value === '' ? null : $value;
+        };
+        $whole = static fn (?string $value): int|string|null => $value === null ? null
+            : (preg_match('/^-?\d{1,15}$/', $value) === 1 ? (int) $value : $value);
+
+        $fields = array();
+        foreach (array('sku' => 's_sku', 'shippingClass' => 's_shipping_class') as $key => $column) {
+            if (array_key_exists($key, $raw)) {
+                $fields[$column] = $text($key);
+            }
+        }
+        if (array_key_exists('price', $raw)) {
+            $price             = $text('price');
+            $fields['i_price'] = $price === null ? null : (Money::parse($price) ?? $price);
+        }
+        foreach (array('stock' => 'i_stock', 'weight' => 'i_weight') as $key => $column) {
+            if (array_key_exists($key, $raw)) {
+                $fields[$column] = $whole($text($key));
+            }
+        }
+
+        return array('sell' => !empty($raw['sell']) && $raw['sell'] !== '0', 'fields' => $fields);
+    }
+
     private static function sessionActor(bool $admin): Actor
     {
         if ($admin) {
@@ -359,6 +398,12 @@ final class ListingInput
 
         if ($aItem['catId'] == '') {
             $aItem['catId'] = 0;
+        }
+
+        // Only an admin sells a listing; for anyone else the member is ignored.
+        $product = $admin ? self::product($form['product'] ?? null) : null;
+        if ($product !== null) {
+            $aItem['product'] = $product;
         }
 
         if ($aItem['currency'] == '') {

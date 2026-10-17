@@ -37,6 +37,12 @@ final class ListingValidator
         's_contact_phone' => 40,
     );
 
+    /** Widths of the t_item_variant columns the "Sell this item" section fills, from struct.sql. */
+    public const VARIANT_WIDTHS = array(
+        's_sku'            => 64,
+        's_shipping_class' => 40,
+    );
+
     /** Widths of the t_item contact columns a listing form fills. */
     public const CONTACT_WIDTHS = array(
         's_contact_name'  => 100,
@@ -155,6 +161,47 @@ final class ListingValidator
         // plus, so this is the format of what would be stored, not of what was typed.
         if (!osc_validate_phone((string)($aItem['contactPhone'] ?? ''), 4)) {
             $errors[] = self::entry('/contact_phone', 'invalid', _m('Phone invalid.'));
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Errors for the "Sell this item" members of an admin's edit: SKU and shipping class widths,
+     * and a price, stock and weight that are whole, in range numbers. A listing that is not sold
+     * has nothing to check.
+     *
+     * @param array<string,mixed> $product the `product` member ListingInput::read() built
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    public function product(array $product): array
+    {
+        if (empty($product['sell'])) {
+            return array();
+        }
+        $fields = (array) ($product['fields'] ?? array());
+        $errors = array();
+        $capped = array(
+            's_sku'            => array('/product/sku', _m('SKU too long.')),
+            's_shipping_class' => array('/product/shipping_class', _m('Shipping class too long.')),
+        );
+        foreach (self::VARIANT_WIDTHS as $column => $width) {
+            if (!osc_validate_max((string) ($fields[$column] ?? ''), $width)) {
+                $errors[] = self::entry($capped[$column][0], 'too_long', $capped[$column][1]);
+            }
+        }
+        $price = $fields['i_price'] ?? null;
+        if (is_string($price) || (is_int($price) && ($price < 0 || $price > 999999999999999999))) {
+            $errors[] = self::entry('/product/price', 'invalid', _m('Price must be a positive number.'));
+        }
+        $stock = $fields['i_stock'] ?? null;
+        if ($stock !== null && (!is_int($stock) || $stock < 0 || $stock > VariantStore::MAX_STOCK)) {
+            $errors[] = self::entry('/product/stock', 'invalid', _m('Stock must be a whole number, 0 or more.'));
+        }
+        $weight = $fields['i_weight'] ?? null;
+        if ($weight !== null && (!is_int($weight) || $weight < 0 || $weight > VariantStore::MAX_WEIGHT)) {
+            $errors[] = self::entry('/product/weight', 'invalid', _m('Weight must be a whole number of grams, 0 or more.'));
         }
 
         return $errors;
