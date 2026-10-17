@@ -11,7 +11,8 @@
 /**
  * Product variants (t_item_variant): the validator's widths and types, that only an admin
  * writes `product`, the admin PATCH, the serializer's `product` member, the stock change that
- * cannot go below zero, the row cleanup on delete, and a fresh install matching an upgrade.
+ * cannot go below zero, the shop-mode refusal in the service and the API, the row cleanup on
+ * delete, and a fresh install matching an upgrade.
  * Usage: php tests/item-variant.php
  */
 
@@ -184,6 +185,30 @@ pin('a listing with no row shows an unticked form', [false, ''], [ItemForm::prod
 
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => null], $boss);
 pin('product null stops selling', [200, []], [$r->status(), $rows($plain)]);
+
+harness_section('shop mode');
+if (!function_exists('osc_content_path')) {
+    function osc_content_path(): string
+    {
+        return sys_get_temp_dir() . '/osc-item-variant/';
+    }
+}
+Preference::getInstance()->set('site_mode', 'shop');
+$refused = null;
+try {
+    (new ListingService())->create(ListingInput::fromArray($form(), $userActor, true), $userActor);
+} catch (\mindstellar\exception\ForbiddenException $e) {
+    $refused = $e->reason();
+}
+pin('the service refuses a user', \mindstellar\exception\ForbiddenException::DISABLED, $refused);
+check('the service lets an admin post', (new ListingService())->create(ListingInput::fromArray($form(['ownerId' => '0']), $adminActor, true), $adminActor)->id() > 0);
+$region = seed_region($admin, 'US', 'Texas');
+$r      = $call('POST', 'listings', [
+    'category_id' => $cat, 'title' => 'Shop mug', 'description' => 'A hand made ceramic mug, dishwasher safe.', 'price' => '12',
+    'currency'    => 'USD', 'country' => 'US', 'region_id' => $region, 'city_id' => seed_city($admin, $region, 'Austin', 'US'),
+], $userKey);
+pin('the API refuses a user key with 403', '403 feature_disabled', api_admin_code($r));
+Preference::getInstance()->set('site_mode', 'classifieds');
 
 harness_section('stock changes');
 $id = VariantStore::saveDefault($mine, ['i_stock' => 1]);
