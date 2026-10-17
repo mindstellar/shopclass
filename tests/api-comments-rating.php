@@ -159,4 +159,32 @@ $admin->query("INSERT INTO {$p}t_item_comment (fk_i_item_id, dt_pub_date, s_titl
 pin('a rating marked spam does not stop the next one', 201, $post($tomKey, $cap, ['rating' => 5])->status());
 pin('a pending rating does', '409 already_reviewed', api_admin_code($post($key($ann, 'ann'), $cap, ['rating' => 5])));
 
+// Two rated posts by one user in two processes. Holding the user's row here makes both wait
+// where the write checks again, so they run one after the other once it is released.
+$dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
+$admin->begin_transaction();
+$admin->query("SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = $bob FOR UPDATE");
+$posts = [];
+$outs  = [];
+for ($i = 0; $i < 2; $i++) {
+    $posts[] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/comment-rating-child.php', $dbName, (string) $cap, (string) $bob], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    $outs[$i] = $pipes;
+}
+$watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
+$waiting = 0;
+for ($try = 0; $try < 400 && $waiting < 2; $try++) {
+    usleep(50000);
+    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND INFO LIKE 'SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = % FOR UPDATE'")->fetch_row()[0];
+}
+$watch->close();
+$admin->commit();
+$printed = '';
+foreach ($posts as $i => $proc) {
+    $printed .= stream_get_contents($outs[$i][1]) . stream_get_contents($outs[$i][2]);
+    proc_close($proc);
+}
+pin('both posts waited on the user', 2, $waiting);
+pin('two rated posts at once: one is saved, one is refused', [1, 1], [substr_count($printed, 'won'), substr_count($printed, 'lost')]);
+pin('and one rated row is written', 1, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_item_comment WHERE fk_i_item_id = $cap AND fk_i_user_id = $bob")->fetch_assoc()['c']);
+
 exit(harness_result());

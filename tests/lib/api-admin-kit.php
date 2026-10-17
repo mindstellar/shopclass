@@ -67,6 +67,16 @@ function api_admin_boot(string $scratch): mysqli
 {
     require_once __DIR__ . '/scratchdb.php';
     $admin = scratchdb_session($scratch);
+    api_admin_env();
+
+    return $admin;
+}
+
+/**
+ * The constants, helpers and stand-ins the API needs, for a process already on its database.
+ */
+function api_admin_env(): void
+{
     foreach ([
         'OSC_CACHE_TTL'   => 60,
         'WEB_PATH'        => 'http://localhost/',
@@ -129,8 +139,6 @@ function api_admin_boot(string $scratch): mysqli
     require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
     require_once __DIR__ . '/api-doubles.php';
-
-    return $admin;
 }
 
 /**
