@@ -773,22 +773,27 @@
   display: block;
 }
 
-// The user editor: the photo beside the profile fields, and a small remove tick under it.
-.user-editor-profile {
-  align-items: start;
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: auto minmax(0, 1fr);
-
-  @media (max-width: 576px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
+// The user form, laid out as a settings page: plain values, status pills and the action buttons
+// sit on the same baseline as the inputs in other rows.
+.user-editor-text {
+  padding-block-start: 6px;
 }
 
+.user-editor-status,
+.user-editor-actions,
 .user-editor-photo {
-  display: grid;
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
   gap: .5rem;
-  justify-items: start;
+}
+
+.user-editor-status {
+  padding-block-start: 4px;
+}
+
+.user-editor-photo .form-control {
+  max-width: 20rem;
 }
 
 .user-editor-avatar {
@@ -803,23 +808,12 @@
   gap: .35rem;
 }
 
-// The user editor's short fields sit two to a row; each control fills its cell.
-.user-editor-grid {
-  column-gap: 1.25rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+// The About box keeps the width of the other fields and a few lines of height.
+#register .osc-tab {
+  max-width: 40rem;
 
-  .form-control,
-  .form-select {
-    max-width: none !important;
-    width: 100%;
-  }
-}
-
-// The About box is a few lines, not a page.
-.user-editor-main {
   textarea {
-    min-height: 7rem;
     height: 7rem;
+    min-height: 7rem;
   }
 }

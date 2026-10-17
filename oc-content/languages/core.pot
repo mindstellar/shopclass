@@ -317,6 +317,7 @@ msgid "%d km"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
+#: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/functions.php
 msgid "%d listing"
 msgid_plural "%d listings"
@@ -901,6 +902,7 @@ msgstr ""
 msgid "Access key"
 msgstr ""
 
+#: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/Breadcrumb.php
 msgid "Account"
 msgstr ""
@@ -1935,10 +1937,6 @@ msgstr ""
 msgid "Back to themes"
 msgstr ""
 
-#: oc-admin/themes/modern/users/frm.php
-msgid "Back to users"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid "Back up first"
 msgstr ""
@@ -2478,10 +2476,6 @@ msgstr ""
 
 #: oc-admin/gui/forgot_password.php
 msgid "Change password"
-msgstr ""
-
-#: oc-admin/themes/modern/users/frm.php
-msgid "Change photo"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php
@@ -8431,6 +8425,10 @@ msgstr ""
 msgid "Phone numbers"
 msgstr ""
 
+#: oc-admin/themes/modern/users/frm.php
+msgid "Photo"
+msgstr ""
+
 #: oc-includes/osclass/classes/storage/StorageJobs.php
 msgid "Photo #%1$d of listing #%2$d"
 msgstr ""
@@ -11961,6 +11959,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "This theme extends \"%s\", which is not installed. "
+msgstr ""
+
+#: oc-admin/themes/modern/users/frm.php
+msgid "This user has no alerts."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php

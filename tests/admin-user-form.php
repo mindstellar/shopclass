@@ -100,27 +100,33 @@ function render_add_user_form(): string
     return (string)ob_get_clean();
 }
 
-/** Where the field wrapping the control named $name starts, or null if absent. */
+/** Where the "form-row" enclosing the control named $name starts, or null if absent. */
 function row_start(string $html, string $name): ?int
 {
     $namePos = strpos($html, 'name="' . $name . '"');
     if ($namePos === false) {
         return null;
     }
-    $rowStart = strrpos(substr($html, 0, $namePos), '<div class="osc-field">');
+    $rowStart = strrpos(substr($html, 0, $namePos), '<div class="form-row">');
 
     return $rowStart === false ? null : $rowStart;
 }
 
-/** The label of the field wrapping the control named $name, stripped of tags. */
+/** The label of the "form-row" enclosing the control named $name, stripped of tags. */
 function row_label(string $html, string $name): ?string
 {
+    $namePos  = strpos($html, 'name="' . $name . '"');
     $rowStart = row_start($html, $name);
-    if ($rowStart === null || !preg_match('#<label class="form-label[^"]*" for="([^"]*)">(.*?)</label>#s', $html, $m, 0, $rowStart)) {
+    if ($namePos === false || $rowStart === null) {
+        return null;
+    }
+    $labelStart = strpos($html, '<div class="form-label">', $rowStart);
+    $labelEnd   = ($labelStart !== false) ? strpos($html, '</div>', $labelStart) : false;
+    if ($labelStart === false || $labelEnd === false || $labelStart > $namePos) {
         return null;
     }
 
-    return trim(strip_tags($m[2]));
+    return trim(strip_tags(substr($html, $labelStart + strlen('<div class="form-label">'), $labelEnd - $labelStart - strlen('<div class="form-label">'))));
 }
 
 $html = render_add_user_form();
@@ -129,7 +135,7 @@ harness_section('the e-mail row has its own field back');
 
 check('an s_email input is drawn', strpos($html, 'name="s_email"') !== false, $html);
 pin('labelled E-mail', 'E-mail', row_label($html, 's_email'));
-check('and marked required', (bool) preg_match('#osc-field-required" for="s_email"#', $html));
+check('and marked required', strpos($html, 'E-mail <span class="osc-field-required"></span>') !== false);
 // The bug put mobile_text() under the E-mail label instead of email_text(), so the
 // e-mail row never carried an s_email input at all.
 check(
