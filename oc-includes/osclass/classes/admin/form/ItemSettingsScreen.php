@@ -50,10 +50,10 @@ final class ItemSettingsScreen extends SettingsScreen
         $form
             ->checkbox('reg_user_post', __('Only logged in users can post listings'))
                 ->set('row', false)
-            ->number('items_wait_time', __('Wait time'), __('If the value is set to zero, there is no wait period'))
+            ->number('items_wait_time', __('Wait time'), __('0 means no wait.'))
                 ->set('row', false)
-                ->prefix(__('An user has to wait'))
-                ->suffix(__('seconds between each listing added'))
+                ->prefix(__('Wait'))
+                ->suffix(__('seconds between two listings from one user'))
                 ->clampMin(0)
                 ->default(0)
             ->checkbox('moderate_admin_post', __('Hold new listings for admin moderation'))
@@ -75,7 +75,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->number(
                 'num_moderate_items',
                 __('Number of moderated listings'),
-                __('If the value is zero, it means that each listing must be validated')
+                __('0 means every listing needs validation.')
             )
                 ->set('row', false)
                 ->prefix(__('After'))
@@ -90,9 +90,8 @@ final class ItemSettingsScreen extends SettingsScreen
                 echo '</div>';
             })
                 ->set('row', false)
-            ->checkbox('enabled_recaptcha_items', __('Show reCAPTCHA in add/edit listing form'))
-                ->set('row', false)
-                ->set('help_html', __('<strong>Remember</strong> that you must configure reCAPTCHA first'));
+            ->checkbox('enabled_recaptcha_items', __('Show reCAPTCHA in add/edit listing form'), __('Needs reCAPTCHA keys first.'))
+                ->set('row', false);
         self::rowClose($form, 'settings');
 
         self::rowOpen($form, 'contact', __('Contact publisher'));
@@ -108,7 +107,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->checkbox(
                 'enable_send_friend',
                 __('Enable the "send to a friend" form'),
-                __('This form emails a listing to a recipient the visitor types in. Off by default because it can be abused to relay mail; enable it only if you need it.')
+                __('Off by default: it can be abused to send spam.')
             )
                 ->set('row', false)
             ->checkbox('reg_user_can_send_friend', __('Only allow registered users to share listings'))
@@ -131,7 +130,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->number(
                 'warn_expiration',
                 __('Warn about expiration'),
-                __('This option will send an email X days before an ad expires to the author. 0 for no email.')
+                __('E-mails the seller this many days before the listing expires. 0 sends none.')
             )
                 ->suffix(__('days'))
                 ->clampMin(0)
@@ -166,7 +165,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->number(
                 'numImages@items',
                 __('Images per listing'),
-                __('If the value is zero, it means an unlimited number of images is allowed')
+                __('0 means no limit.')
             )
                 ->set('row', false)
                 ->prefix(__('Attach'))
