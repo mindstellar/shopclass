@@ -62,15 +62,12 @@ final class BillingSettingsScreen
             })
             ->group(
                 __('Billing'),
-                __('Turn this on to sell things on your site — featured listings, posting credits, '
-                   . 'or whatever a payment plugin offers. Leave it off and nothing changes: posting '
-                   . 'stays free and unlimited, and the Billing menu stays hidden.')
+                __('Sell featured listings, posting credits or plugin extras. While off, posting stays free and the Billing menu is hidden.')
             )
             ->checkbox(
                 Billing::PREF_ENABLED,
                 __('Enable billing'),
-                __('Switching this off later hides the Billing menu but keeps every order '
-                   . 'and balance exactly as it is. Nothing is deleted.')
+                __('Turning it off later keeps every order and balance.')
             )
                 ->rowLabel(__('Selling on this site'))
             ->register();
@@ -99,27 +96,19 @@ final class BillingSettingsScreen
             })
             ->group(
                 __('Pricing'),
-                __('What posting costs once the free quota runs out, and what a featured '
-                   . 'listing costs. These apply whether a payment plugin is installed or an '
-                   . 'admin grants credits by hand.')
+                __('Applies with or without a payment plugin.')
             )
             ->number(
                 'billing_free_live_listings',
                 __('Free listings per seller'),
-                __('How many of a seller\'s listings may be live '
-                   . '(published, not yet expired) at once. 0 means '
-                   . 'unlimited. A pending or admin-disabled listing '
-                   . 'still counts -- only expiry or deletion frees a slot. '
-                   . 'Lowering this never touches a listing a seller already '
-                   . 'has -- it only changes whether their next post is allowed.')
+                __('Live listings a seller may have at once. 0 means no limit. Lowering it never removes a listing.')
             )
                 ->clampMin(0)
                 ->default(0)
             ->checkbox(
                 'billing_slot_enabled',
                 __('Sell extra listing slots'),
-                __('Enabled with a price of 0 means every seller can raise their '
-                   . 'own slot ceiling for free.')
+                __('A price of 0 makes extra slots free.')
             )
                 ->rowLabel(__('Extra slots'))
             ->number('billing_slot_credits', __('Slot price in credits'))
@@ -131,7 +120,7 @@ final class BillingSettingsScreen
             ->checkbox(
                 'billing_premium_enabled',
                 __('Sell featured listings'),
-                __('Enabled with a price of 0 means every seller can feature a listing for free.')
+                __('A price of 0 makes featuring free.')
             )
                 ->rowLabel(__('Featured listings'))
             ->number('billing_premium_credits', __('Featured listing price (credits)'))
@@ -173,22 +162,18 @@ final class BillingSettingsScreen
             })
             ->group(
                 __('Bank transfer'),
-                __('Core\'s built-in payment method — no card processor, no API keys. A buyer '
-                   . 'sees these instructions at checkout and pays outside the site; you settle '
-                   . 'the order by hand once the money arrives.')
+                __('The buyer sees your instructions at checkout and pays outside the site. You mark the order paid.')
             )
             ->checkbox(
                 'billing_offline_enabled',
                 __('Accept bank transfer / cash payment'),
-                __('Stays hidden at checkout until instructions are written below — '
-                   . 'there is nothing for a buyer to pay if they do not know where to send it.')
+                __('Hidden at checkout until you write instructions.')
             )
                 ->rowLabel(__('Availability'))
             ->textarea(
                 'billing_offline_instructions',
                 __('Payment instructions'),
-                __('Bank details, or wherever a buyer sends the money. Shown to the '
-                   . 'buyer exactly as written here.')
+                __('Shown to the buyer as written.')
             )
                 ->set('rows', 5)
                 ->width('key')
@@ -217,9 +202,7 @@ final class BillingSettingsScreen
             })
             ->group(
                 __('Upgrades'),
-                __('Bump, highlight and urgent are optional item upgrades, each priced and switched '
-                   . 'on separately. Every one ships off — turning it on with a price of 0 makes it '
-                   . 'free to every seller, not the same as leaving it off.')
+                __('Each upgrade is off until you turn it on. A price of 0 makes it free.')
             )
             ->checkbox('billing_bump_enabled', __('Sell bump to top'))
                 ->rowLabel(__('Bump to top'))
@@ -274,9 +257,7 @@ final class BillingSettingsScreen
             })
             ->group(
                 __('Seller limits'),
-                __('Photo count, the posting wait, and listing runtime are global limits by '
-                   . 'default. Turning one of these on lets a seller raise their own ceiling by '
-                   . 'buying it — everyone else keeps the global limit unchanged.')
+                __('Lets a seller buy a higher limit. Everyone else keeps the global limit.')
             )
             ->checkbox('billing_photos_enabled', __('Sell a raised photo cap'))
                 ->rowLabel(__('Extra photos'))
