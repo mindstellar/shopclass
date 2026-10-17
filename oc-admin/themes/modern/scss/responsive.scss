@@ -194,9 +194,8 @@
       padding: 1rem 1rem;
     }
   }
-  // Simple content tables (no bulk-actions column) collapse to labelled cards on
-  // phones, mirroring the datatables pattern: drop the header row, make the first
-  // cell the card title, and prefix every other cell with its column name.
+  // Simple content tables (no bulk-actions column) collapse to compact cards on phones:
+  // the first cell is the bold title, the others follow as labelled values on wrapping lines.
   // .osc-table-stack is the same layout for a table of a plugin's own.
   #upload-plugins,
   #email-templates,
@@ -205,18 +204,42 @@
     thead {
       display: none;
     }
+    tbody tr {
+      border-block-end: 1px solid var(--osc-rule);
+      display: flex;
+      flex-wrap: wrap;
+      gap: .125rem 1rem;
+      padding: .625rem .75rem;
+    }
     td {
+      background: none;
+      border: 0;
       display: block;
+      font-size: .8125rem;
+      max-width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      padding: 0;
+
       &:empty {
         display: none;
       }
       &:first-child {
+        flex-basis: 100%;
+        font-size: inherit;
         font-weight: 600;
       }
       &:not(:first-child)[data-col-name]::before {
-        content: attr(data-col-name) ": ";
-        padding-inline-end: 0.5rem;
-        font-weight: 500;
+        color: var(--osc-ink-muted);
+        content: attr(data-col-name) " ";
+      }
+      // The actions cell needs no label; it sits at the end of the last line.
+      &.text-end:last-child {
+        margin-inline-start: auto;
+
+        &::before {
+          content: none;
+        }
       }
     }
   }
