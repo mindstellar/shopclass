@@ -116,6 +116,7 @@ $controllers = array(
         'add_widget_post'      => 'addWidgetPost',
         'delete'               => 'deleteTheme',
         'delete_widget'        => 'deleteWidget',
+        'dependencies'         => 'dependencies',
         'edit_widget'          => 'editWidgetForm',
         'edit_widget_post'     => 'editWidgetPost',
         'render'               => 'render',
