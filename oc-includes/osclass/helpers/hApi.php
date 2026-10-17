@@ -269,11 +269,11 @@ if (!function_exists('osc_api_get')) {
 if (!function_exists('osc_api_call')) {
     /**
      * Call an API route from PHP, in this process, with any method. It acts as osc_api_get() does;
-     * a problem comes back as its status and problem body, never as an exception.
+     * a signed-in user or admin may only read, and a problem comes back as its status and body.
      *
      * @api
      *
-     *     $sent = osc_api_call('POST', 'listings/12/comments', [], ['body' => 'Still for sale?']);
+     *     $seo = osc_api_call('GET', 'seo', ['for' => 'listing', 'id' => 12]);
      *
      * @param string              $method GET, POST, PUT, PATCH or DELETE
      * @param string              $path   below the version, e.g. 'listings/12'

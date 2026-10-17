@@ -46,6 +46,7 @@ $routes = [
     'GET me'          => ['handler' => $echo, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'account:read'],
     'PATCH me'        => ['handler' => $echo, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'account:write'],
     'POST me/alerts'  => ['handler' => $echo, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'alerts:write'],
+    'POST contact'    => ['handler' => $echo, 'auth' => RouteSpec::AUTH_NONE],
     'GET admin/users' => ['handler' => $echo, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'admin:users'],
 ];
 $hits   = 0;
@@ -129,7 +130,6 @@ pin('a visitor reads public data only', [CredentialKind::ANONYMOUS, Scopes::PUBL
 $me = $client($on, $user)->call('GET', 'me');
 pin('an AUTH_USER route acts as the web user', [200, 'session', 7], [$me['status'], $me['body']['data']['kind'], $me['body']['data']['user']]);
 pin('a visitor gets 403 there', 403, $client($on, $visitor)->call('GET', 'me')['status']);
-pin('the web user never holds account:write', 403, $client($on, $user)->call('PATCH', 'me', [], ['name' => 'x'])['status']);
 pin('an admin route from a public page answers 403, for the web user', 403, $client($on, $user)->call('GET', 'admin/users')['status']);
 pin('and for a visitor', 403, $client($on, $visitor)->call('GET', 'admin/users')['status']);
 $asAdmin = $client($on, $admin)->call('GET', 'admin/users');
@@ -138,8 +138,15 @@ $moderator = InternalClient::callerFor($scopes, 0, ['pk_i_id' => '4', 'b_moderat
 check('a moderator is a moderator', $moderator->isModerator() && !$moderator->has('admin:users'));
 pin('an admin row wins over a web user', 3, InternalClient::callerFor($scopes, 7, ['pk_i_id' => '3', 'b_moderator' => '0'])->adminId());
 
+harness_section('a signed-in caller only reads');
+$write = static fn (Credential $as, string $method, string $path): array => (static fn (array $r): array => [$r['status'], $r['body']['code'] ?? null])($client($on, $as)->call($method, $path, [], ['pattern' => 'bike']));
+pin('the web user cannot POST', [403, 'wrong_credential'], $write($user, 'POST', 'me/alerts'));
+pin('nor PATCH', [403, 'wrong_credential'], $write($user, 'patch', 'me'));
+pin('nor the admin on an admin page', [403, 'wrong_credential'], $write($admin, 'DELETE', 'admin/users'));
+pin('a visitor still writes to a public route', [200, null], $write($visitor, 'POST', 'contact'));
+
 harness_section('query and body');
-$sent = $client($on, $user)->call('POST', 'me/alerts', ['a' => '1'], ['pattern' => 'bike', 'é' => "\xff"]);
+$sent = $client($on, $visitor)->call('POST', 'contact', ['a' => '1'], ['pattern' => 'bike', 'é' => "\xff"]);
 pin('the body arrives as JSON input', 'bike', $sent['body']['data']['input']['pattern'] ?? null);
 pin('the query arrives', ['a' => '1'], $sent['body']['data']['query']);
 pin('a query string on the path is read, the query array winning', ['limit' => '5', 'q' => 'x'], $client($on, $visitor)->call('GET', 'listings?limit=9&q=x', ['limit' => '5'])['body']['data']['query']);
@@ -164,7 +171,7 @@ ApiAccess::connect(static function (): void {
 $got = osc_api_get('me');
 pin('osc_api_get() answers status, body and headers', [200, 7], [$got['status'], $got['body']['data']['user']]);
 check('with headers as an array', is_array($got['headers']));
-pin('osc_api_call() sends method and body', 'bike', osc_api_call('POST', 'me/alerts', [], ['pattern' => 'bike'])['body']['data']['input']['pattern']);
+pin('osc_api_call() refuses a signed-in write', 403, osc_api_call('POST', 'me/alerts', [], ['pattern' => 'bike'])['status']);
 check('the client never forgets the web identity', !str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/InternalClient.php'), 'forget('));
 
 exit(harness_result());

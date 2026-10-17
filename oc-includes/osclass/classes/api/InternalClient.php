@@ -20,7 +20,8 @@ use Params;
 
 /**
  * Calls an API route from PHP in this process, as the page's own visitor: no HTTP, no CORS, no
- * rate limit, and it works while the API is switched off. A theme renders from it.
+ * rate limit, and it works while the API is switched off. A theme renders from it. A signed-in
+ * user or admin only reads here, since a write needs the page token the browser sends.
  */
 final class InternalClient
 {
@@ -94,7 +95,13 @@ final class InternalClient
      */
     public function call(string $method, string $path, array $query = [], array $body = []): array
     {
-        $response = $this->kernel->handle(Request::internal($method, $path, $query, $body, ($this->caller)(), $this->ip));
+        $caller = ($this->caller)();
+        if ($caller->kind() === CredentialKind::SESSION && !in_array(strtoupper($method), ['GET', 'HEAD'], true)) {
+            $response = Problem::make('wrong_credential', 'A signed-in write must come from the browser with its page token.');
+
+            return ['status' => $response->status(), 'body' => $response->body() ?? [], 'headers' => $response->headers()];
+        }
+        $response = $this->kernel->handle(Request::internal($method, $path, $query, $body, $caller, $this->ip));
 
         return ['status' => $response->status(), 'body' => $response->body() ?? [], 'headers' => $response->headers()];
     }

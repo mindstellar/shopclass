@@ -162,7 +162,7 @@ Core defines 1179 helpers, 19 of them deprecated. Generated from the source; do 
 | Helper | What it does |
 |---|---|
 | `osc_api_admin_session_meta()` | The `<meta name="shopclass-api">` tag for an admin panel page, with the signed-in admin's page token. Admin JavaScript sends it to call admin endpoints as that admin. |
-| `osc_api_call(string $method, string $path, array $query = [], array $body = [])` | Call an API route from PHP, in this process, with any method. It acts as osc_api_get() does; a problem comes back as its status and problem body, never as an exception. |
+| `osc_api_call(string $method, string $path, array $query = [], array $body = [])` | Call an API route from PHP, in this process, with any method. It acts as osc_api_get() does; a signed-in user or admin may only read, and a problem comes back as its status and body. |
 | `osc_api_enabled()` | Whether the REST API answers at all. |
 | `osc_api_get(string $path, array $query = [])` | Read an API route from PHP, in this process: no HTTP request, no rate limit, and it works while the API is switched off. It acts as the signed-in web user, as the admin on an admin page, or else as a visitor reading public data. An admin route called from a public page answers 403. |
 | `osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ['public'])` | Declare a field a plugin adds to a listing, user or category, so the OpenAPI document shows it and `?fields=ext.<slug>.<name>` selects it. The plugin sends the value under `ext.<slug>.<name>` from the `api_listing`, `api_user` or `api_category` filter. A public field reaches everyone, an owner field the owner and admins, an admin field admins only. |

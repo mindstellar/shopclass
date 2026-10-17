@@ -277,14 +277,16 @@ More: comments, saved searches, photo uploads, limits and warnings are in
 
 A theme or plugin can call any route without HTTP with `osc_api_get()` and `osc_api_call()`.
 They work with the API switched off, need no key, and act as the signed-in visitor (or the
-admin on an admin page). Admin routes from a public page answer 403.
+admin on an admin page). Admin routes from a public page answer 403. A signed-in visitor or admin
+only reads this way: a write answers 403 `wrong_credential`, so it must come from the browser
+with its page token.
 
 ```php
 $page = osc_api_get('listings', ['limit' => 12]);
 if ($page['status'] === 200) {
     foreach ($page['body']['data'] as $listing) { /* ... */ }
 }
-$sent = osc_api_call('POST', 'listings/12/comments', [], ['body' => 'Still for sale?']);
+$seo = osc_api_call('GET', 'seo', ['for' => 'listing', 'id' => 12]);
 ```
 
 Both return `['status' => int, 'body' => array, 'headers' => array]`. A problem comes back as its
