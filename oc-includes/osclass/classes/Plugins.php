@@ -316,6 +316,10 @@ class Plugins
             $info['requires_php'] = '';
         }
 
+        $manifest                 = \mindstellar\market\PackageManifest::read(dirname(osc_plugins_path() . $plugin), $s_info);
+        $info['modes']            = $manifest['modes'];
+        $info['requires_plugins'] = $manifest['plugins'];
+
         $info['filename']             = $plugin;
         self::$plugins_infos[$plugin] = $info;
 
