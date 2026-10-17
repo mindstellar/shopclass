@@ -25,6 +25,7 @@ use mindstellar\api\controller\PagesController;
 use mindstellar\api\controller\PhotosController;
 use mindstellar\api\controller\RegistrationController;
 use mindstellar\api\controller\SearchController;
+use mindstellar\api\controller\SeoController;
 use mindstellar\api\controller\SiteController;
 use mindstellar\api\controller\UsersController;
 use mindstellar\api\read\ListingSort;
@@ -265,6 +266,19 @@ final class PublicRoutes
                 response: 'MenuList',
                 query: ['locale' => self::LOCALE],
                 errors: [422]
+            ),
+            'GET seo' => RouteSpec::read(
+                handler: [SeoController::class, 'show'],
+                tag: 'Pages',
+                summary: 'The head data of a public page: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph',
+                response: 'SeoDocument',
+                query: [
+                    'for'    => ['type' => 'string', 'enum' => ['home', 'listing', 'category', 'page', 'search'], 'description' => 'The kind of page.'],
+                    'id'     => ['type' => 'string', 'maxLength' => 200, 'description' => 'A listing id, a category id or slug, or a page id or internal name. Not used for home and search.'],
+                    'q'      => ['type' => 'string', 'maxLength' => 200, 'description' => 'Search only: the search words.'],
+                    'locale' => self::LOCALE,
+                ],
+                errors: [404, 422]
             ),
             'GET custom-fields' => RouteSpec::read(
                 handler: [CategoriesController::class, 'fields'],
