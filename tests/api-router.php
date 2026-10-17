@@ -181,6 +181,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'DELETE account/alerts/{id}'        => 'user alerts:write',
     'DELETE account/keys/{id}'          => 'user account:write',
     'DELETE account/sessions/{session}' => 'user account:write',
+    'DELETE account/wishlist/{listing}' => 'user wishlist:write',
     'DELETE comments/{id}'              => 'user comments:write',
     'DELETE listings/{id}'              => 'user listings:delete',
     'DELETE listings/{id}/photos/{photo}' => 'user listings:write',
@@ -192,6 +193,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET account/keys/{id}'             => 'user account:write',
     'GET account/listings'              => 'user account:read',
     'GET account/sessions'              => 'user account:read',
+    'GET account/wishlist'              => 'user wishlist:read',
     'GET auth/session'                  => 'user account:read',
     'GET categories'                    => 'public listings:read',
     'GET categories/{category}'         => 'public listings:read',
@@ -223,6 +225,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST account/keys'                 => 'user account:write',
     'POST account/password'             => 'user account:write',
     'POST account/sign-out-everywhere'  => 'user account:write',
+    'POST account/wishlist/{listing}'   => 'user wishlist:write',
     'POST auth/sign-out'                => 'user -',
     'POST auth/token'                   => 'none -',
     'POST listings'                     => 'user listings:write',
@@ -230,6 +233,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST listings/{id}/photos'         => 'user listings:write',
     'POST photos'                       => 'user listings:write',
     'POST users'                        => 'none -',
+    'PUT account/wishlist'              => 'user wishlist:write',
 ], $routeTable);
 pin('every admin route needs an admin key and names an admin scope', [
     'DELETE admin/areas/{id}'                     => 'admin admin:taxonomy',

@@ -273,6 +273,7 @@ osc_add_hook('register_jobs', static function () {
     \mindstellar\listing\ListingGeocode::registerJobs();
     \mindstellar\listing\ListingPointJobs::registerJobs();
     \mindstellar\listing\ListingCounters::registerJobs();
+    \mindstellar\listing\ProductAlerts::registerJobs();
     \mindstellar\webhook\Delivery::register();
 });
 

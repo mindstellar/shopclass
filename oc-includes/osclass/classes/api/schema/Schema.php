@@ -18,6 +18,7 @@ use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\api\Warning;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\WishlistStore;
 use mindstellar\location\CountryCode;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserStatus;
@@ -37,7 +38,7 @@ final class Schema
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
-        'AlertFilters', 'Alert', 'AlertInput', 'SearchSuggestions', 'CategorySuggestions',
+        'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'SearchSuggestions', 'CategorySuggestions',
         'PageSummary', 'Page', 'Menu', 'Seo',
     ];
 
@@ -709,11 +710,37 @@ final class Schema
             'Alert'        => self::object([
                 'id'         => ['type' => 'integer'],
                 'filters'    => self::ref('AlertFilters'),
-                'type'       => ['type' => 'string', 'description' => 'How often it mails: daily or weekly.'],
+                'type'       => ['type' => 'string', 'description' => 'How often it mails: daily or weekly; custom for a product alert, which mails once.'],
                 'active'     => ['type' => 'boolean'],
                 'created_at' => self::time(),
-            ], ['id', 'filters', 'type', 'active']),
-            'AlertInput'   => $input(['filters' => self::ref('AlertFilters')], ['filters']),
+                // C4: a product alert.
+                'product'    => [
+                    'type'        => ['object', 'null'],
+                    'description' => 'What a back-in-stock or price-drop alert waits for; null for a saved search, whose filters are empty here.',
+                    'properties'  => [
+                        'listing' => ['type' => 'integer'],
+                        'variant' => self::nullable('integer', 'null: any variant of the listing.'),
+                        'kind'    => ['type' => 'string', 'enum' => ['stock', 'price']],
+                        'below'   => self::nullable('string', 'A price alert mails when the price goes under this decimal, the price when it was set; null for a stock alert.'),
+                    ],
+                    'required'    => ['listing', 'variant', 'kind', 'below'],
+                ],
+            ], ['id', 'filters', 'type', 'active', 'product']),
+            'AlertInput'   => $input(['filters' => self::ref('AlertFilters'), 'product' => self::ref('AlertProductInput')]) + ['description' => 'Send filters for a saved search, or product for a product alert.'],
+            // C4: product alerts and the wishlist.
+            'AlertProductInput' => $input([
+                'listing' => ['type' => 'integer', 'minimum' => 1, 'description' => 'A live listing that is for sale.'],
+                'variant' => ['type' => ['integer', 'null'], 'minimum' => 1, 'description' => 'One of the listing\'s variants; leave out for any.'],
+                'kind'    => ['type' => 'string', 'enum' => ['stock', 'price'], 'description' => 'stock: mail once when it is back in stock. price: mail once when it sells below today\'s price.'],
+            ], ['listing', 'kind']),
+            'Wishlist'          => self::object([
+                'ids'   => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Listing ids, newest first.'],
+                'count' => ['type' => 'integer'],
+            ], ['ids', 'count']),
+            'WishlistInput'     => $input([
+                'ids' => ['type' => 'array', 'maxItems' => WishlistStore::MAX, 'items' => ['type' => 'integer', 'minimum' => 1], 'description' => 'Newest first. Listings that are not live are dropped.'],
+            ], ['ids']),
+            'WishlistDocument'  => self::object(['data' => self::ref('Wishlist')], ['data']),
         ];
     }
 
