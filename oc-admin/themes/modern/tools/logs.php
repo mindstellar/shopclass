@@ -66,7 +66,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </form>
         </div>
         <div class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
+            <table class="table osc-table-stack" cellpadding="0" cellspacing="0">
                 <thead>
                 <tr>
                     <?php foreach ($columns as $k => $v) {
@@ -80,7 +80,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php foreach ($rows as $row) { ?>
                         <tr>
                             <?php foreach ($row as $k => $v) { ?>
-                                <td class="col-<?php echo osc_esc_html($k); ?>" data-col-name="<?php echo osc_esc_html(ucfirst($k)); ?>"><?php echo $v; ?></td>
+                                <td class="col-<?php echo osc_esc_html($k); ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php echo $v; ?></td>
                             <?php } ?>
                         </tr>
                     <?php } ?>

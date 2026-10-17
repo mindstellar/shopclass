@@ -402,6 +402,12 @@
   position: relative;
 }
 
+// A visually-hidden header label is absolutely positioned; without this it escapes the
+// scrolling box and widens the whole page on a phone.
+.table-responsive {
+  position: relative;
+}
+
 // Empty state: filter-aware, and quiet. Not a bordered "no data" cell — just a calm line and,
 // when a filter is what emptied the table, the one control that brings the listings back.
 .empty-listings {
