@@ -211,7 +211,8 @@ final class CategoryCatalog
     public function covers(): array
     {
         $this->load();
-        $newest = CacheGroup::remember('search', 'category-covers', static fn (): array => self::newestByCategory());
+        $ids    = array_keys($this->byId);
+        $newest = CacheGroup::remember('search', 'category-covers', static fn (): array => self::newestByCategory($ids));
         $best   = [];
         $find   = function (int $id) use (&$find, &$best, $newest): string {
             if (!isset($best[$id])) {
@@ -247,21 +248,28 @@ final class CategoryCatalog
 
     /**
      * category id => the newest live listing with a photo in it, as a sortable string: the
-     * publish time as 14 digits, then the id padded to 10.
+     * publish time as 14 digits, then the id padded to 10. One LIMIT 1 per category on the
+     * category index, joined with UNION ALL, so no query scans every listing.
+     *
+     * @param int[] $ids
      *
      * @return array<int,string>
      * @throws \mindstellar\database\DbException
      */
-    private static function newestByCategory(): array
+    private static function newestByCategory(array $ids): array
     {
-        $rows = Db::select(
-            'SELECT i.fk_i_category_id AS category, MAX(CONCAT(DATE_FORMAT(i.dt_pub_date, \'%Y%m%d%H%i%s\'), LPAD(i.pk_i_id, 10, \'0\'))) AS stamp'
-            . ' FROM ' . ListingQuery::tableName() . ' i WHERE ' . implode(' AND ', ListingStatus::liveConditions('i.'))
-            . ' AND ' . PhotoStore::hasImageSql('i.pk_i_id') . ' GROUP BY i.fk_i_category_id'
-        );
-        $out = [];
-        foreach ($rows as $row) {
-            $out[(int) $row['category']] = (string) $row['stamp'];
+        $live = implode(' AND ', ListingStatus::liveConditions('i.')) . ' AND ' . PhotoStore::hasImageSql('i.pk_i_id', true);
+        $out  = [];
+        foreach (array_chunk(array_map('intval', $ids), 200) as $chunk) {
+            $parts = array_map(
+                static fn (int $id): string => '(SELECT ' . $id . ' AS category, CONCAT(DATE_FORMAT(i.dt_pub_date, \'%Y%m%d%H%i%s\'), LPAD(i.pk_i_id, 10, \'0\')) AS stamp'
+                    . ' FROM ' . ListingQuery::tableName() . ' i WHERE i.fk_i_category_id = ' . $id . ' AND ' . $live
+                    . ' ORDER BY i.dt_pub_date DESC, i.pk_i_id DESC LIMIT 1)',
+                $chunk
+            );
+            foreach (Db::select(implode(' UNION ALL ', $parts)) as $row) {
+                $out[(int) $row['category']] = (string) $row['stamp'];
+            }
         }
 
         return $out;
