@@ -304,6 +304,8 @@ pin('a name of 30 passes', [], $v->product($tee([$row([str_repeat('n', 30) => 'x
 pin('an empty name', ['/product/options'], $codes($v->product($tee([$row(['' => 'x'])]))));
 pin('a value over 40 characters', ['/product/variants/0/options'], $codes($v->product($tee([$row(['Size' => str_repeat('v', 41)])]))));
 pin('a value of 40 passes, counted in characters', [], $v->product($tee([$row(['Size' => str_repeat('é', 40)])])));
+pin('a spaces-only name', ['/product/options'], $codes($v->product($tee([$row(['  ' => 'x'])]))));
+pin('names and values are trimmed before they are compared', [['/product/variants/1/options', 'taken']], array_map(static fn (array $e): array => [$e['pointer'], $e['code']], $v->product($tee([$row(['Size' => 'S']), $row([' Size ' => ' S '])]))));
 pin('an empty value', ['/product/variants/0/options'], $codes($v->product($tee([$row(['Size' => ' '])]))));
 pin('31 values under one name', ['/product/options'], $codes($v->product($tee(array_map(static fn (int $i): array => $row(['Size' => 'S' . $i]), range(1, 31))))));
 pin('30 pass', [], $v->product($tee(array_map(static fn (int $i): array => $row(['Size' => 'S' . $i]), range(1, 30)))));
@@ -359,6 +361,17 @@ pin('a row sent with its keys in another order keeps its id too', true, isset($a
 pin('the dropped row is deleted', [8, false], [count($after), isset($after['{"Colour":"Cherry","Size":"XL"}'])]);
 pin('positions renumber to the new order', [0, 6], [(int) $after['{"Colour":"Cherry","Size":"L"}']['i_position'], (int) $after['{"Colour":"Sunflower","Size":"S"}']['i_position']]);
 pin('the hooks fire once per changed row, with from and to', [['stock', $ids[6], $set, 6, 9], ['price', $ids[5], $set, 20000000, 15000000]], $fired);
+
+$ids3 = VariantStore::saveSet($set, array_map(static fn (array $r): array => ['options' => array_reverse($r['options'], true)] + $r, $edit2));
+pin('rows sent with their options in another key order keep their ids', array_map('intval', $ids2), array_map('intval', $ids3));
+$was = array_keys($after);
+sort($was);
+$ids4 = VariantStore::saveSet($set, array_map(static fn (array $r): array => ['options' => array_combine(array_map(static fn (string $k): string => " $k ", array_keys($r['options'])), array_map(static fn (string $v): string => " $v ", $r['options']))] + $r, $edit2));
+pin('padded names and values are stored trimmed, on the same rows', [array_map('intval', $ids3), $was], [array_map('intval', $ids4), (static function () use ($rows, $set): array {
+$o = array_column($rows($set), 's_options');
+sort($o);
+return $o;
+})()]);
 
 $fired = [];
 VariantStore::saveSet($set, $edit2);

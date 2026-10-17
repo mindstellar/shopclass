@@ -204,7 +204,8 @@ final class ListingValidator
         if (count($rows) > VariantStore::MAX_ROWS) {
             return array(self::entry('/product/variants', 'maxItems', sprintf(_m('An item has at most %d option rows.'), VariantStore::MAX_ROWS)));
         }
-        $first = is_array($rows[0]['options'] ?? null) ? array_map('strval', array_keys($rows[0]['options'])) : array();
+        $rows  = array_map(static fn ($row): array => is_array($row) ? array('options' => VariantStore::trimOptions($row['options'] ?? null)) + $row : array(), array_values($rows));
+        $first = array_map('strval', array_keys($rows[0]['options']));
         $names = array();
         foreach ($first as $name) {
             $names[$name] = true;
@@ -232,7 +233,7 @@ final class ListingValidator
         foreach ($rows as $n => $row) {
             $base    = '/product/variants/' . $n;
             $label   = sprintf(_m('Variant %d:'), $n + 1) . ' ';
-            $options = is_array($row) && is_array($row['options'] ?? null) ? $row['options'] : array();
+            $options = $row['options'];
             if (array_diff_key($names, $options) !== array() || array_diff_key($options, $names) !== array()) {
                 $errors[] = self::entry($base . '/options', 'mismatch', $label . sprintf(_m('give a value for each option: %s.'), implode(', ', array_keys($names))));
                 continue;

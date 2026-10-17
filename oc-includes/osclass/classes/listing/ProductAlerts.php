@@ -29,7 +29,7 @@ final class ProductAlerts
     public const JOB = 'shop.product_alert';
 
     /** Alerts read and mailed per job run. */
-    public const BATCH = 200;
+    public const BATCH = 25;
 
     private UserAlerts $alerts;
 

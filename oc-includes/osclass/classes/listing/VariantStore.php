@@ -162,6 +162,23 @@ final class VariantStore extends Model
     }
 
     /**
+     * An option map with its names and values trimmed; anything else is an empty map.
+     *
+     * @param mixed $options
+     *
+     * @return array<string,string>
+     */
+    public static function trimOptions($options): array
+    {
+        $out = array();
+        foreach (is_array($options) ? $options : array() as $name => $value) {
+            $out[trim((string) $name)] = is_scalar($value) ? trim((string) $value) : '';
+        }
+
+        return $out;
+    }
+
+    /**
      * Replace the listing's option rows with $rows, in that order, and remove its default row.
      * A row whose options match a stored one keeps that row's id, so what points at a variant
      * survives an edit; the rest are inserted and stored rows not sent are deleted. Each row
@@ -175,8 +192,8 @@ final class VariantStore extends Model
      */
     public static function saveSet(int $itemId, array $rows): array
     {
-        $rows  = array_values($rows);
-        $names = $rows === array() ? array() : array_map('strval', array_keys((array) $rows[0]['options']));
+        $rows = array_map(static fn (array $row): array => array('options' => self::trimOptions($row['options'] ?? null)) + $row, array_values($rows));
+        $names = $rows === array() ? array() : array_map('strval', array_keys($rows[0]['options']));
 
         return Db::transaction(static function () use ($itemId, $rows, $names): array {
             $stored = Db::select(
