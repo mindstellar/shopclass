@@ -241,7 +241,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 : '')),
                     'note_variant' => ($clashes !== array() || $isParent) ? 'warning' : 'update',
                     'actions'     => array(
-                        'primary' => array(
+                        // A theme that clashes with its parent cannot run, so it offers no Activate.
+                        'primary' => $clashes !== array() ? null : array(
                             'label' => __('Activate'),
                             'url'   => osc_admin_base_url(true) . '?page=appearance&amp;action=activate&amp;theme='
                                 . urlencode($theme) . '&amp;' . $csrf_token,
