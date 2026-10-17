@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\database\Db;
+use mindstellar\search\AlertEnvelope;
 
 /**
  * The reads behind product alerts: a listing with its variants' prices, and the alerts that
@@ -41,8 +42,7 @@ final class ProductAlertStore
      * The live product alerts of one kind on a listing, by id after $after. The range is on
      * idx_type (e_type, b_active, dt_unsub_date), so the LIKE reads product alerts only, never the
      * saved searches; ordering by the index's columns keeps the planner on it, since ORDER BY
-     * pk_i_id alone made it walk the primary key through the whole table. The pattern ends at
-     * the listing id, so listing 12 never matches 123.
+     * pk_i_id alone made it walk the primary key through the whole table.
      *
      * @return array<int,array<string,mixed>>
      * @throws \mindstellar\database\DbException
@@ -52,7 +52,7 @@ final class ProductAlertStore
         return Db::select(
             'SELECT * FROM ' . DB_TABLE_PREFIX . 't_alerts WHERE e_type = ? AND b_active = 1 AND dt_unsub_date IS NULL'
             . ' AND s_search LIKE ? AND pk_i_id > ? ORDER BY e_type, b_active, dt_unsub_date, pk_i_id LIMIT ' . max(1, $limit),
-            array(\Alerts::PRODUCT, '%"kind":"' . $kind . '","listing":' . $itemId . ',"variant":%', $after)
+            array(\Alerts::PRODUCT, AlertEnvelope::productPattern($itemId, $kind), $after)
         );
     }
 }

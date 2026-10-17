@@ -213,6 +213,8 @@ pin('a price alert keeps its variant and price', '{"v":2,"params":{"product":{"b
 pin('the same alert gives the same bytes, so it dedupes', $stock, AlertEnvelope::product(12, null, 'stock'));
 pin('validate() accepts it', array('product' => array('below' => null, 'kind' => 'stock', 'listing' => 12, 'variant' => null)), AlertEnvelope::validate($stock));
 pin('productOf() reads it back', array('below' => 699000000, 'kind' => 'price', 'listing' => 12, 'variant' => 7), AlertEnvelope::productOf($price));
+pin('productPattern() is cut from the stored envelope', '%"kind":"price","listing":12,"variant":%', AlertEnvelope::productPattern(12, 'price'));
+pin('and matches that envelope', 1, preg_match('/^' . str_replace('%', '.*', preg_quote(AlertEnvelope::productPattern(12, 'price'), '/')) . '$/', $price));
 pin('productOf() is null for a saved search', null, AlertEnvelope::productOf('{"v":2,"params":{"sPattern":"bike"}}'));
 pin('the job finds a listing by a pattern that stops at its id', true, strpos($stock, '"kind":"stock","listing":12,"variant":') !== false && strpos($stock, '"listing":1,') === false);
 foreach (array(

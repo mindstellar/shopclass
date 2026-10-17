@@ -40,6 +40,9 @@ class AlertEnvelope
     /** What a product alert waits for. */
     public const PRODUCT_KINDS = array('stock', 'price');
 
+    /** How every product alert envelope starts, as encode() writes it. */
+    private const PRODUCT_PREFIX = '{"v":2,"params":{"product":';
+
     /** Keys of the old SQL-fragment format; never valid in an envelope. */
     public const LEGACY_KEYS = array(
         'aCategories', 'cities', 'city_areas', 'countries', 'limit_init', 'no_catched_conditions',
@@ -123,6 +126,25 @@ class AlertEnvelope
     }
 
     /**
+     * A LIKE pattern for s_search that finds the product alerts of one kind on a listing, cut
+     * from the envelope product() writes so both keep one key order. It ends at the listing id,
+     * so listing 12 never matches 123.
+     *
+     * @throws \LogicException when the envelope no longer has kind, listing and variant in that order
+     */
+    public static function productPattern(int $listing, string $kind): string
+    {
+        $json = self::product($listing, null, $kind, $kind === 'price' ? 1 : null);
+        $from = strpos($json, '"kind":');
+        $to   = strpos($json, '"variant":');
+        if ($json === '' || strncmp($json, self::PRODUCT_PREFIX, strlen(self::PRODUCT_PREFIX)) !== 0 || $from === false || $to === false || $to < $from) {
+            throw new \LogicException('A product alert envelope must start with its prefix and hold kind, listing and variant in that order.');
+        }
+
+        return '%' . addcslashes(substr($json, $from, $to + strlen('"variant":') - $from), '%_\\') . '%';
+    }
+
+    /**
      * The product of a product alert's envelope, or null for any other row.
      *
      * @param string $json the t_alerts.s_search column
@@ -131,7 +153,7 @@ class AlertEnvelope
      */
     public static function productOf(string $json): ?array
     {
-        if (strncmp($json, '{"v":2,"params":{"product":', 27) !== 0) {
+        if (strncmp($json, self::PRODUCT_PREFIX, strlen(self::PRODUCT_PREFIX)) !== 0) {
             return null;
         }
         $params = self::validate($json);
