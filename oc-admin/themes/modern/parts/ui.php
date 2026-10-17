@@ -626,6 +626,24 @@ if (!function_exists('osc_admin_form_actions')) {
     }
 }
 
+if (!function_exists('osc_admin_col_name')) {
+    /**
+     * A list column's header as plain text, escaped for a data-col-name attribute. The phone
+     * layout prints it before a date or count; a header can hold a sort link.
+     *
+     * @param array<string,string> $columns the datatable's aColumns
+     * @param string               $key     the column id
+     *
+     * @return string
+     */
+    function osc_admin_col_name(array $columns, $key)
+    {
+        $name = trim(html_entity_decode(strip_tags((string) ($columns[$key] ?? '')), ENT_QUOTES, 'UTF-8'));
+
+        return osc_esc_html($name !== '' ? $name : ucfirst((string) $key));
+    }
+}
+
 if (!function_exists('osc_admin_table_empty')) {
     /**
      * The "nothing here" row inside a table that has already drawn its header.

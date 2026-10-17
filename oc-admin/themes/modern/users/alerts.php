@@ -120,7 +120,7 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
                         <?php foreach ($rows as $key => $row) { ?>
                             <tr>
                                 <?php foreach ($row as $k => $v) { ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php echo $v; ?></td>
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php echo $v; ?></td>
                                 <?php } ?>
                             </tr>
                         <?php } ?>

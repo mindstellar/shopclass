@@ -138,7 +138,7 @@ $withFilters = __get('withFilters');
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
                                               // `users_processing_row` filter still hands plugins the plain word.?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
                                             echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>
                                 <?php } ?>

@@ -44,40 +44,91 @@
   #content-page {
     padding-block: 0.5rem 3rem;
   }
-  #datatablesForm {
-    .table {
-      .col-title {
-        min-width: 100px;
+  // A list row becomes one compact card: checkbox, the main cell in bold with its actions,
+  // the status badge on the right, then the other cells as one muted line.
+  #datatablesForm .table {
+    thead {
+      display: none;
+    }
+    tbody tr {
+      align-items: flex-start;
+      border-block-end: 1px solid var(--osc-rule);
+      column-gap: .5rem;
+      display: flex;
+      flex-wrap: wrap;
+      padding: .75rem .75rem .75rem 2.5rem;
+      position: relative;
+      row-gap: .125rem;
+
+      // Ends the first line after the status badge; the remaining cells wrap below it.
+      &::after {
+        content: "";
+        flex-basis: 100%;
+        order: 1;
       }
-      .col-status {
-        border-inline-start: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    td {
+      background: none;
+      border: 0;
+      display: block;
+      max-width: 100%;
+      min-width: 0;
+      order: 2;
+      overflow-wrap: anywhere;
+      padding: 0;
+
+      &:empty,
+      &.col-status-border {
+        display: none;
       }
-      .col-bulkactions {
-        & ~ {
-          td:not(.col-order) {
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: block;
-          }
-        }
-        & + {
-          td {
-            position: relative;
-            ~ td:not(.col-order) {
-              max-width: 100%;
-              &:before {
-                content: attr(data-col-name) ": ";
-                padding-inline-end: 0.5rem;
-                font-weight: 500;
-              }
-            }
-          }
-          th ~ th:not(.col-order) {
-            display: none;
-          }
-        }
+    }
+    // Undo the tablet rule that cuts every cell to 4rem.
+    .col-bulkactions + td,
+    .col-bulkactions + td ~ td {
+      max-width: 100%;
+      min-width: 0;
+      overflow: visible;
+    }
+    .col-bulkactions {
+      inset-block-start: .8rem;
+      inset-inline-start: .75rem;
+      position: absolute;
+    }
+    .col-image {
+      flex: 0 0 3rem;
+      order: 0;
+    }
+    .col-bulkactions + td:not(.col-image),
+    .col-image + td {
+      flex: 1 1 0;
+      font-weight: 600;
+      order: 0;
+
+      .actions {
+        font-weight: 400;
       }
+    }
+    .col-status {
+      order: 1;
+    }
+    .col-bulkactions + td:not(.col-image) ~ td,
+    .col-image + td ~ td {
+      color: var(--osc-ink-muted);
+      font-size: .8125rem;
+    }
+    // A dot between the muted cells; the first one after the main cell has none.
+    .col-bulkactions + td:not(.col-image) ~ td ~ td::before,
+    .col-image + td ~ td ~ td::before {
+      content: "·";
+      padding-inline-end: .5rem;
+    }
+    // Dates and counts mean nothing without their column name.
+    tbody tr td:is(.col-date, .col-expiration, .col-update_date, .col-items, .col-reporters)[data-col-name]::before {
+      content: "· " attr(data-col-name) " ";
+    }
+    .actions a {
+      display: inline-block;
+      padding-block: .375rem;
     }
   }
   .table-contains-actions {
@@ -166,21 +217,6 @@
         content: attr(data-col-name) ": ";
         padding-inline-end: 0.5rem;
         font-weight: 500;
-      }
-    }
-  }
-  #datatablesForm {
-    .table {
-      // Moderation status is core information — on phones show it as a labelled
-      // card row ("Status: …") instead of hiding it.
-      .col-status {
-        display: block;
-        border-inline-start: 0;
-        &::before {
-          content: attr(data-col-name) ": ";
-          padding-inline-end: 0.5rem;
-          font-weight: 500;
-        }
       }
     }
   }

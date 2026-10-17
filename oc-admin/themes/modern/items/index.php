@@ -170,7 +170,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
                                         // word for any plugin hooked on the `items_processing_row` filter.
                                     ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
                                                                                                                     echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>
                                 <?php } ?>
