@@ -96,7 +96,8 @@ $cats = $flat();
 pin('the rug and its parent take the newest photo', [$rugPhoto, $rugPhoto, $firstPhoto], [$cats['rugs']['cover']['id'] ?? null, $cats['home']['cover']['id'] ?? null, $cats['lamps']['cover']['id'] ?? null]);
 
 harness_section('queries');
-$questions = static fn (): int => (int) $admin->query("SHOW GLOBAL STATUS LIKE 'Questions'")->fetch_row()[1];
+// The API's own session: a global count also sees the tests the suite runs alongside.
+$questions = static fn (): int => (int) (\mindstellar\database\Db::selectOne("SHOW SESSION STATUS LIKE 'Questions'")['Value'] ?? 0);
 // Queries one call costs with the category tree warm and the cover cache cold.
 $cost = static function (array $query) use ($call, $key, $questions): int {
     \mindstellar\cache\CacheGroup::invalidate('category');
