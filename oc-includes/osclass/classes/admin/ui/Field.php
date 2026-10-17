@@ -598,8 +598,9 @@ class Field
         if (!empty($spec['media'])) {
             // The library picker and the paste/drop upload are the script's to wire, since
             // both are callbacks; what it cannot invent is the signed endpoint.
-            $overrides['osc_media']      = true;
-            $overrides['osc_upload_url'] = (string)($spec['upload_url'] ?? '');
+            $overrides['osc_media']         = true;
+            $overrides['osc_upload_url']    = (string)($spec['upload_url'] ?? '');
+            $overrides['osc_library_label'] = __('Insert from media library');
         }
 
         if (!function_exists('osc_tinymce_config')) {
