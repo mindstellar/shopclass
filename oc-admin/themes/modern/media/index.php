@@ -223,17 +223,18 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                . osc_csrf_token_url()); ?>"/>
     <?php
 
-    osc_admin_toolbar_open();
-
+    // The filters are page tabs, as on the other list screens.
     $filterLinks = array();
     foreach ($mediaFilters as $filter) {
         $filterLinks[] = array(
             'label'  => $filter['label'],
-            'url'    => osc_admin_base_url(true) . '?page=media&amp;type=' . urlencode($filter['type']),
+            'url'    => osc_admin_base_url(true) . '?page=media&type=' . urlencode($filter['type']),
             'active' => $filter['type'] === $mediaType,
-        );
+        ) + (isset($filter['count']) ? array('count' => (int) $filter['count']) : array());
     }
-    osc_admin_link_group($filterLinks);
+    osc_admin_tab_nav($filterLinks);
+
+    osc_admin_toolbar_open(array('align' => 'end'));
 
     osc_admin_per_page(array(
         'label'   => __('%d files'),
