@@ -250,14 +250,6 @@ if (!empty($numItemsPerCategory)) { ?>
                 </div>
                 <div class="widget-box-content widget-box-content-stats">
                     <div id="widget-box-stats-listings" class="widget-box-stats">
-                        <div class="stats-detail"><?php printf(
-                            __('Total number of listings: %s'),
-                            $numItems
-                        ); ?></div>
-                        <div class="stats-detail"><?php printf(
-                            __('Total number of users: %s'),
-                            $numUsers
-                        ); ?></div>
                         <div id="placeholder-listing" class="graph-placeholder" height="120"></div>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=items" class="btn btn-sm btn-dim"><?php _e('Listing statistics'); ?></a>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=users" class="btn btn-sm btn-dim"><?php _e('User statistics'); ?></a>

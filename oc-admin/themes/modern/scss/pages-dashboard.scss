@@ -118,6 +118,16 @@
     radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, .13), rgba(0, 0, 0, 0)) bottom / 100% .5rem scroll no-repeat;
 }
 
+// The card is the frame; the table inside it draws no second border.
+.dash-category-scroll .table {
+  border: 0;
+  margin: 0;
+
+  td {
+    border-color: var(--osc-rule);
+  }
+}
+
 // ---- System status list -----------------------------------------------------
 .dash-system {
   list-style: none;
