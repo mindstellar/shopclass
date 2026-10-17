@@ -6,6 +6,7 @@ filter api_cors_origins 2
 filter api_fields 1
 filter api_listing 2
 filter api_listing_input 3
+filter api_menus 2
 filter api_problem_codes 1
 filter api_rate_limit 3
 filter api_response 3

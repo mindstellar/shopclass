@@ -323,6 +323,7 @@ filter api_cors_origins
 filter api_fields
 filter api_listing
 filter api_listing_input
+filter api_menus
 filter api_problem_codes
 filter api_rate_limit
 filter api_response
