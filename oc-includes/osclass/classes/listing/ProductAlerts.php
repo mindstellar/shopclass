@@ -55,7 +55,7 @@ final class ProductAlerts
         if (!in_array($kind, AlertEnvelope::PRODUCT_KINDS, true)) {
             throw new InvalidException('/product/kind', 'enum', _m('The kind is stock or price.'));
         }
-        $rows = $listingId > 0 ? ProductAlertStore::listingPrices($listingId) : array();
+        $rows = $listingId > 0 ? ProductAlertQuery::listingPrices($listingId) : array();
         if ($rows === array() || !ListingStatus::isLive($rows[0])) {
             throw new NotFoundException(_m('The listing was not found.'));
         }
@@ -130,7 +130,7 @@ final class ProductAlerts
         if (!in_array($kind, AlertEnvelope::PRODUCT_KINDS, true) || $itemId <= 0 || ($kind === 'price' && $price === null)) {
             return;
         }
-        $rows = ProductAlertStore::waiting($kind, $itemId, $after, self::BATCH);
+        $rows = ProductAlertQuery::waiting($kind, $itemId, $after, self::BATCH);
         if ($rows === array()) {
             return;
         }

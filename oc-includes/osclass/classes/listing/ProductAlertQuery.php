@@ -19,7 +19,7 @@ use mindstellar\search\AlertEnvelope;
  * The reads behind product alerts: a listing with its variants' prices, and the alerts that
  * wait on a listing.
  */
-final class ProductAlertStore
+final class ProductAlertQuery
 {
     /**
      * A listing's live-rule columns and price, one row per variant (variant_id null when it
