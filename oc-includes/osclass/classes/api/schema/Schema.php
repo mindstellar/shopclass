@@ -38,10 +38,11 @@ final class Schema
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
         'AlertFilters', 'Alert', 'AlertInput', 'SearchSuggestions', 'CategorySuggestions',
+        'PageSummary', 'Page', 'Menu',
     ];
 
     /** `<name>List`: every item at once. */
-    private const LISTS = ['Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert'];
+    private const LISTS = ['PageSummary', 'Menu', 'Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert'];
 
     /** `<name>List` that is paged: the location lists keep their List names. */
     private const PAGED_LISTS = ['Country', 'Region', 'City', 'CityArea'];
@@ -50,7 +51,7 @@ final class Schema
     private const PAGES = ['Listing', 'Comment'];
 
     /** `<name>Document`: one resource. */
-    private const DOCUMENTS = ['Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions'];
+    private const DOCUMENTS = ['Page', 'Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions'];
 
     private function __construct()
     {
@@ -199,7 +200,7 @@ final class Schema
             ], ['id', 'listing_id', 'title', 'body', 'author', 'published_at']),
             'Site'         => self::site(),
             'OpenApiDocument' => ['type' => 'object', 'description' => 'An OpenAPI 3.1 document.'],
-        ] + self::account() + self::writes() + self::suggestions();
+        ] + self::account() + self::writes() + self::suggestions() + self::pages();
 
         $page = static fn (string $name): array => self::wholeList($name);
         foreach (self::LISTS as $name) {
@@ -465,6 +466,7 @@ final class Schema
             'name'           => ['type' => 'string'],
             'description'    => self::nullable('string'),
             'url'            => ['type' => 'string', 'format' => 'uri'],
+            'mode'           => ['type' => 'string', 'enum' => ['classifieds', 'shop', 'both'], 'description' => 'What the site is for.'],
             'api_version'    => ['type' => 'string'],
             'default_locale' => ['type' => 'string'],
             'locales'        => ['type' => 'array', 'items' => self::object([
@@ -479,14 +481,46 @@ final class Schema
                 'users'        => ['type' => 'boolean', 'description' => 'Whether the site has user accounts.'],
                 'registration' => ['type' => 'boolean', 'description' => 'Whether the site\'s own sign-up form is open.'],
                 'comments'     => ['type' => 'boolean', 'description' => 'Whether listings take comments.'],
-            ], ['users', 'registration', 'comments']) + ['description' => 'What the site itself offers.'],
+                'shop'         => ['type' => 'boolean', 'description' => 'Whether the site sells products: its mode is shop or both.'],
+            ], ['users', 'registration', 'comments', 'shop']) + ['description' => 'What the site itself offers.'],
             'api'            => self::object([
                 'registration'  => ['type' => 'boolean', 'description' => 'Whether POST /users signs up new accounts.'],
                 'personal_keys' => ['type' => 'boolean', 'description' => 'Whether users may make their own keys at /account/keys.'],
                 'photo_urls'    => ['type' => 'boolean', 'description' => 'Whether a listing may name photos by URL in photo_urls.'],
             ], ['registration', 'personal_keys', 'photo_urls']) + ['description' => 'What the API allows on this site.'],
             'links'          => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
-        ], ['name', 'url', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
+        ], ['name', 'url', 'mode', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
+    }
+
+    /**
+     * Static pages and menus.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private static function pages(): array
+    {
+        $summary = [
+            'id'       => ['type' => 'integer'],
+            'slug'     => self::nullable('string', 'The page\'s internal name.'),
+            'title'    => ['type' => 'string'],
+            'url'      => ['type' => 'string'],
+            'locale'   => ['type' => 'string', 'description' => 'The language shown: the asked one, else the site\'s default, else the first the page has.'],
+            'position' => ['type' => 'integer'],
+        ];
+        $link = self::object(['label' => ['type' => 'string'], 'url' => ['type' => 'string']], ['label', 'url']);
+
+        return [
+            'PageSummary' => self::object($summary, array_keys($summary)),
+            'Page'        => self::object($summary + [
+                'text'       => ['type' => 'string', 'description' => 'HTML, after the static_page_text filter.'],
+                'meta'       => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
+                'updated_at' => self::nullable('string', 'RFC 3339.'),
+            ], [...array_keys($summary), 'text', 'meta', 'updated_at']),
+            'Menu'        => self::object([
+                'id'    => ['type' => 'string', 'description' => '`main`, `footer` or a plugin\'s menu.'],
+                'items' => ['type' => 'array', 'items' => $link],
+            ], ['id', 'items']),
+        ];
     }
 
     /**

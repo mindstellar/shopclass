@@ -71,6 +71,7 @@ use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoRoom;
 use mindstellar\location\LocationQuery;
 use mindstellar\moderation\ListingModeration;
+use mindstellar\pages\PageQuery;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\Clock;
@@ -527,6 +528,11 @@ final class ApiServices
     public function locationQuery(): LocationQuery
     {
         return $this->once(__FUNCTION__, static fn (): LocationQuery => new LocationQuery());
+    }
+
+    public function pageQuery(): PageQuery
+    {
+        return $this->once(__FUNCTION__, static fn (): PageQuery => new PageQuery());
     }
 
     public function currencies(): CurrencyService

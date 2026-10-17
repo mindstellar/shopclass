@@ -1387,6 +1387,48 @@ This API described in OpenAPI 3.1, with the site's plugin endpoints
 
 Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
+## Pages
+
+| Method | Path | Auth | Scope | Summary |
+|---|---|---|---|---|
+| GET | `/menus` | public | `listings:read` | The site's menus: main (top categories) and footer (linked pages); a plugin may add more |
+| GET | `/pages` | public | `listings:read` | The pages shown as links, in order, in the asked language |
+| GET | `/pages/{page}` | public | `listings:read` | One page by id or internal name, linked or not, with its text and meta |
+
+### GET `/menus`
+
+The site's menus: main (top categories) and footer (linked pages); a plugin may add more
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`MenuList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/pages`
+
+The pages shown as links, in order, in the asked language
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`PageSummaryList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/pages/{page}`
+
+One page by id or internal name, linked or not, with its text and meta
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `page` | path | string | yes |  |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`PageDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
 ## Search
 
 | Method | Path | Auth | Scope | Summary |

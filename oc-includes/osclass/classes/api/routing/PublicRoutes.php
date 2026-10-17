@@ -21,6 +21,7 @@ use mindstellar\api\controller\CommentsController;
 use mindstellar\api\controller\ListingsController;
 use mindstellar\api\controller\ListingWritesController;
 use mindstellar\api\controller\LocationsController;
+use mindstellar\api\controller\PagesController;
 use mindstellar\api\controller\PhotosController;
 use mindstellar\api\controller\RegistrationController;
 use mindstellar\api\controller\SearchController;
@@ -240,6 +241,30 @@ final class PublicRoutes
                 response: 'CategoryDocument',
                 query: $view,
                 errors: [404]
+            ),
+            'GET pages' => RouteSpec::read(
+                handler: [PagesController::class, 'index'],
+                tag: 'Pages',
+                summary: 'The pages shown as links, in order, in the asked language',
+                response: 'PageSummaryList',
+                query: ['locale' => self::LOCALE],
+                errors: [422]
+            ),
+            'GET pages/{page}' => RouteSpec::read(
+                handler: [PagesController::class, 'show'],
+                tag: 'Pages',
+                summary: 'One page by id or internal name, linked or not, with its text and meta',
+                response: 'PageDocument',
+                query: ['locale' => self::LOCALE],
+                errors: [404, 422]
+            ),
+            'GET menus' => RouteSpec::read(
+                handler: [PagesController::class, 'menus'],
+                tag: 'Pages',
+                summary: 'The site\'s menus: main (top categories) and footer (linked pages); a plugin may add more',
+                response: 'MenuList',
+                query: ['locale' => self::LOCALE],
+                errors: [422]
             ),
             'GET custom-fields' => RouteSpec::read(
                 handler: [CategoriesController::class, 'fields'],
