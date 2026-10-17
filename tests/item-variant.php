@@ -237,9 +237,9 @@ for ($i = 0; $i < 2; $i++) {
 }
 $watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
 $waiting = 0;
-for ($try = 0; $try < 100 && $waiting < 2; $try++) {
+for ($try = 0; $try < 400 && $waiting < 2; $try++) {
     usleep(50000);
-    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'")->fetch_row()[0];
+    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT' AND trx_query LIKE '%{$p}t_item_variant%'")->fetch_row()[0];
 }
 $watch->close();
 $admin->commit();
