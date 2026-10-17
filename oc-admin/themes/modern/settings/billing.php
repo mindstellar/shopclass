@@ -52,7 +52,7 @@ $tab = isset($tabs[$tab]) ? $tab : 'switch';
     </ul>
 
     <?php if ($tab !== 'methods') {
-        osc_admin_settings_form($forms[$tab]['id'], $forms[$tab]);
+        osc_admin_settings_form($forms[$tab]['id'], array('titles' => false) + $forms[$tab]);
     } else {
 
     if (empty($gateways)) {

@@ -41,6 +41,8 @@ final class SettingsForm
      *                                                 osc_admin_form_actions() takes it;
      *                                    'name'    => the form's name attribute;
      *                                    'url'     => the form's action attribute;
+     *                                    'titles'  => false to skip the group headings, for a
+     *                                                 form on a tab that already names it;
      *                                    'upload'  => true to post multipart/form-data,
      *                                                 for a page drawing a file control; a
      *                                                 page with an image field always does
@@ -69,7 +71,7 @@ final class SettingsForm
         ));
 
         foreach ($page['groups'] as $index => $group) {
-            if ($group['title'] !== '') {
+            if ($group['title'] !== '' && ($opts['titles'] ?? true)) {
                 osc_admin_page_head($group['title']);
             }
             if ($group['intro'] !== '') {

@@ -54,7 +54,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php if ($tab === 'akismet') { ?>
     <div id="akismet-settings">
         <p><?php _e('Akismet checks new comments for spam. It needs a key from akismet.com.'); ?></p>
-        <?php osc_admin_settings_form($forms['akismet']['id'], $forms['akismet']); ?>
+        <?php osc_admin_settings_form($forms['akismet']['id'], array('titles' => false) + $forms['akismet']); ?>
     </div>
     <?php } elseif ($tab === 'captcha') { ?>
     <div id="recaptcha-settings">
@@ -64,22 +64,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'https://www.google.com/recaptcha/admin#whyrecaptcha',
             'https://dash.cloudflare.com/?to=/:account/turnstile'
         ); ?></p>
-        <?php osc_admin_settings_form($forms['captcha']['id'], $forms['captcha']); ?>
+        <?php osc_admin_settings_form($forms['captcha']['id'], array('titles' => false) + $forms['captcha']); ?>
     </div>
     <?php } elseif ($tab === 'alerts') { ?>
     <div id="alerts-settings">
         <p><?php _e('Search alerts e-mail visitors about new listings that match a saved search. Requiring sign-in stops strangers subscribing other people.'); ?></p>
-        <?php osc_admin_settings_form($forms['alerts']['id'], $forms['alerts']); ?>
+        <?php osc_admin_settings_form($forms['alerts']['id'], array('titles' => false) + $forms['alerts']); ?>
     </div>
     <?php } elseif ($tab === 'messages') { ?>
     <div id="messages-settings">
         <p><?php _e('Limits for the forms that send e-mail: contact, contact the seller, contact a user and share a listing.'); ?></p>
-        <?php osc_admin_settings_form($forms['messages']['id'], $forms['messages']); ?>
+        <?php osc_admin_settings_form($forms['messages']['id'], array('titles' => false) + $forms['messages']); ?>
     </div>
     <?php } elseif ($tab === 'limits') { ?>
     <div id="limits-settings">
         <p><?php _e('How many times one visitor address may use each public form or upload in an hour.'); ?></p>
-        <?php osc_admin_settings_form($forms['limits']['id'], $forms['limits']); ?>
+        <?php osc_admin_settings_form($forms['limits']['id'], array('titles' => false) + $forms['limits']); ?>
     </div>
     <?php } else { ?>
     <div id="login-throttle-settings">
@@ -88,7 +88,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <p class="text-muted"><?php _e('A captcha is set up, so the per-account limit is off. '
                                            . 'Nobody can lock another person out of their account.'); ?></p>
         <?php } ?>
-        <?php osc_admin_settings_form($forms['login_throttle']['id'], $forms['login_throttle']); ?>
+        <?php osc_admin_settings_form($forms['login_throttle']['id'], array('titles' => false) + $forms['login_throttle']); ?>
 
         <p class="text-muted"><?php printf(
             __('See who is blocked right now, and unblock them, under <a href="%s">Tools > System info > Security</a>.'),
