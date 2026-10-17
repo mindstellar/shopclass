@@ -65,6 +65,21 @@
   background-color: var(--osc-bench-sunk);
 }
 
+// When the page prints its own title, the header's section name steps down to a small label,
+// so each screen has one large title. A page with no title of its own keeps the large name.
+#content-render:has(#content-page .render-title) #content-head h1 {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+
+  a {
+    letter-spacing: normal;
+    text-transform: none;
+  }
+}
+
 #content-head,
 #message-wrapper,
 #help-wrapper,
