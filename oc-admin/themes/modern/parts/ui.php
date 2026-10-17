@@ -133,12 +133,15 @@ if (!function_exists('osc_admin_page_header')) {
                 $attrs = '';
                 foreach (($action['attrs'] ?? array()) as $name => $value) {
                     $attrs .= ' ' . osc_esc_html($name) . '="' . osc_esc_html($value) . '"';
-                } ?>
-                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"
+                }
+                // An add action is the page's main job, so it shows its label next to the icon.
+                $isAdd = strpos((string) ($action['icon'] ?? ''), 'bi-plus') === 0; ?>
+                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"<?php echo $isAdd ? ' class="osc-head-add"' : ''; ?>
                    <?php if (!empty($action['onclick'])) { ?>onclick="<?php echo osc_esc_html($action['onclick']); ?>"<?php } ?>
                    title="<?php echo osc_esc_html($label); ?>"
-                   aria-label="<?php echo osc_esc_html($label); ?>"<?php echo $attrs; ?>>
+                   <?php if (!$isAdd) { ?>aria-label="<?php echo osc_esc_html($label); ?>"<?php } ?><?php echo $attrs; ?>>
                     <i class="bi <?php echo osc_esc_html($action['icon'] ?? 'bi-circle'); ?>" aria-hidden="true"></i>
+                    <?php if ($isAdd) { ?><span><?php echo osc_esc_html($label); ?></span><?php } ?>
                 </a>
             <?php } ?>
             <?php if (!empty($opts['help'])) { ?>
