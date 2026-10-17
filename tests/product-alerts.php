@@ -175,6 +175,28 @@ osc_job_run(5);
 pin('a rise sends nothing', [], $mails);
 pin('the saved search is still untouched', true, $live($searchId));
 
+harness_section('a variant with no price of its own');
+$cap = seed_item($admin, $cat, $sue, 'Cap', 20.0);
+VariantStore::saveDefault($cap, ['i_stock' => 3]);
+$r        = $post($annK, ['product' => ['listing' => $cap, 'kind' => 'price']]);
+$capAlert = (int) ($r->body()['data']['id'] ?? 0);
+pin('a price alert on it goes under the listing\'s price', '20.00', $r->body()['data']['product']['below'] ?? null);
+if (!function_exists('osc_content_path')) {
+    // A listing edit reads the upload staging folder; this test sends no photos.
+    function osc_content_path()
+    {
+        return sys_get_temp_dir() . '/';
+    }
+}
+$owner = $keys->create('key', 'owner', ['listings:write'], \mindstellar\apikey\KeyOwner::user($sue))->token();
+$mails = [];
+pin('the edit is saved', 200, $call('PATCH', 'listings/' . $cap, ['price' => '25'], $owner)->status());
+osc_job_run(5);
+pin('a rise of the listing\'s price sends nothing', [[], true], [$mails, $live($capAlert)]);
+$call('PATCH', 'listings/' . $cap, ['price' => '15'], $owner);
+osc_job_run(5);
+pin('a drop of the listing\'s price mails it', [[$capAlert, $cap, 'price', $micros(15)]], $mails);
+
 harness_section('a listing that is hidden sends nothing');
 $admin->query("UPDATE {$p}t_item SET b_enabled = 0 WHERE pk_i_id = $tee");
 $mails = [];

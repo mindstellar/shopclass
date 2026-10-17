@@ -21,7 +21,8 @@ use mindstellar\database\Db;
  * never both. Rows go with their listing (ON DELETE CASCADE).
  *
  * A kept row whose stock or selling price changes fires `variant_stock_changed` or
- * `variant_price_changed` ($variantId, $itemId, $from, $to) once the write commits.
+ * `variant_price_changed` ($variantId, $itemId, $from, $to) once the write commits; a row
+ * with no price of its own fires the price one when the listing's price changes.
  */
 final class VariantStore extends Model
 {
@@ -344,6 +345,40 @@ final class VariantStore extends Model
         ksort($options, SORT_STRING);
 
         return self::optionsJson($options);
+    }
+
+    /**
+     * The ids of a listing's variants with no price of their own, which sell at the listing's.
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    public static function inheriting(int $itemId): array
+    {
+        return array_map('intval', array_column(Db::select('SELECT pk_i_id FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND i_price IS NULL', array($itemId)), 'pk_i_id'));
+    }
+
+    /**
+     * The listing's own price went from $from to $to: fires `variant_price_changed` once the write
+     * commits for each of $before that still has no price of its own.
+     *
+     * @param int[] $before inheriting() read before the edit
+     * @throws \mindstellar\database\DbException
+     */
+    public static function listingPriceChanged(int $itemId, array $before, ?int $from, ?int $to): void
+    {
+        if ($from === $to || $before === array()) {
+            return;
+        }
+        $ids = array_values(array_intersect($before, self::inheriting($itemId)));
+        if ($ids === array()) {
+            return;
+        }
+        Db::afterCommit(static function () use ($itemId, $ids, $from, $to): void {
+            foreach ($ids as $variantId) {
+                osc_run_hook('variant_price_changed', $variantId, $itemId, $from, $to);
+            }
+        });
     }
 
     /**

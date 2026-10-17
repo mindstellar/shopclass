@@ -1017,7 +1017,11 @@ final class ListingService
         if ($matchSecret) {
             $where['s_secret'] = $aItem['secret'];
         }
-        $result = $this->items->update($aUpdate, $where);
+        // Variants with no price of their own sell at the listing's, so its change is theirs.
+        $oldPrice   = is_numeric($old_item['i_price'] ?? null) ? (int) $old_item['i_price'] : null;
+        $newPrice   = is_numeric($aUpdate['i_price']) ? (int) round((float) $aUpdate['i_price']) : null;
+        $inheriting = $oldPrice !== $newPrice ? VariantStore::inheriting((int) $aItem['idItem']) : array();
+        $result     = $this->items->update($aUpdate, $where);
         // A wrong secret changes no row, so it must not attach photos either.
         if (!$matchSecret || hash_equals((string) ($old_item['s_secret'] ?? ''), (string) $aItem['secret'])) {
             $this->photos->store($aItem['photos'], $aItem['idItem']);
@@ -1034,6 +1038,9 @@ final class ListingService
 
         $this->writeMeta($meta, $aItem['idItem'], $meta ? FieldQuery::lockedListingValues($aItem['idItem']) : array());
         $this->writeProduct($aItem['idItem'], $aItem, $actor);
+        if ($result) {
+            VariantStore::listingPriceChanged((int) $aItem['idItem'], $inheriting, $oldPrice, $newPrice);
+        }
 
         // Premium keeps an expired listing counted, as the recount does.
         $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
