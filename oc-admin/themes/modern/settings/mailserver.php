@@ -72,7 +72,7 @@ function customHead()
                         msg.classList.add(ok ? 'flashmessage-ok' : 'flashmessage-error');
                     }
                     if (edited) {
-                        show(<?php echo json_encode(__('Save your changes first. The test uses the saved settings.')); ?>, false);
+                        show(<?php echo json_encode(__('Save your changes first. The test uses the saved settings.'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, false);
                         return;
                     }
                     var controller = (typeof AbortController === 'function') ? new AbortController() : null;
