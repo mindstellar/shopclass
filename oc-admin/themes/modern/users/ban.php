@@ -21,7 +21,7 @@ osc_admin_page(array(
         array(
             'icon'  => 'bi-plus-circle-fill',
             'url'   => osc_admin_base_url(true) . '?page=users&action=create_ban_rule',
-            'title' => __('Add new'),
+            'title' => __('Add ban rule'),
         ),
         array(
             'icon'  => 'bi-gear-fill',
@@ -99,7 +99,7 @@ $rows    = $aData['aRows'];
                             'title'  => __('No ban rules yet'),
                             'text'   => __('Ban rules block registration, listings or comments matching an IP or e-mail pattern.'),
                             'action' => array(
-                                'label'   => __('Add new'),
+                                'label'   => __('Add ban rule'),
                                 'url'     => osc_admin_base_url(true) . '?page=users&action=create_ban_rule',
                                 'variant' => 'primary',
                             ),
