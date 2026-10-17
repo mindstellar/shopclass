@@ -268,7 +268,8 @@ $watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mys
 $waiting = 0;
 for ($try = 0; $try < 400 && $waiting < 2; $try++) {
     usleep(50000);
-    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT' AND trx_query LIKE '%{$p}t_item_variant%'")->fetch_row()[0];
+    // The process list, not INNODB_TRX: that one can drop rows while other tests run beside this one.
+    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE 'UPDATE {$p}t_item_variant%'")->fetch_row()[0];
 }
 $watch->close();
 $admin->commit();
