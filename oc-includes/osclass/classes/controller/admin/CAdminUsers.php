@@ -176,7 +176,7 @@ class CAdminUsers extends AdminSecBaseModel
                 . '?page=users&action=deactivate&id[]=' . $aUser['pk_i_id'] . '&' . $csrf_token
                 . '&value=INACTIVE">' . __('Deactivate') . '</a>';
         } else {
-            $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
+            $actions[] = '<a class="btn btn-outline-secondary" href="' . osc_admin_base_url(true)
                 . '?page=users&action=activate&id[]=' . $aUser['pk_i_id'] . '&' . $csrf_token
                 . '&value=ACTIVE">' . __('Activate') . '</a>';
         }
@@ -185,7 +185,7 @@ class CAdminUsers extends AdminSecBaseModel
                 . '?page=users&action=disable&id[]=' . $aUser['pk_i_id'] . '&' . $csrf_token
                 . '&value=DISABLE">' . __('Block') . '</a>';
         } else {
-            $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
+            $actions[] = '<a class="btn btn-outline-secondary" href="' . osc_admin_base_url(true)
                 . '?page=users&action=enable&id[]=' . $aUser['pk_i_id'] . '&' . $csrf_token . '&value=ENABLE">'
                 . __('Unblock') . '</a>';
         }
