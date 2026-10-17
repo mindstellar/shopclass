@@ -160,6 +160,9 @@ final class ListingBody
             }
         }
         $form = PlaceBody::apply($form, $body);
+        if (array_key_exists('product', $body)) {
+            $form['product'] = $this->product($body['product']);
+        }
         if (array_key_exists('show_email', $body)) {
             $form['showEmail'] = $body['show_email'] === true ? '1' : '0';
         }
@@ -172,6 +175,30 @@ final class ListingBody
             } else {
                 $form['meta'][(int) $field] = is_bool($value) ? ($value ? '1' : '0') : (is_array($value) ? $value : (string) $value);
             }
+        }
+
+        return $form;
+    }
+
+    /**
+     * The "Sell this item" members of an admin's edit: null stops selling, an object sets the
+     * default variant with the members sent. ListingInput drops it for anyone but an admin.
+     *
+     * @return array<string,string>
+     */
+    private function product(mixed $product): array
+    {
+        if (!is_array($product)) {
+            return ['sell' => '0'];
+        }
+        $form = ['sell' => '1'];
+        foreach (['sku' => 'sku', 'stock' => 'stock', 'weight' => 'weight', 'shipping_class' => 'shippingClass'] as $member => $field) {
+            if (array_key_exists($member, $product)) {
+                $form[$field] = is_scalar($product[$member]) ? (string) $product[$member] : '';
+            }
+        }
+        if (array_key_exists('price', $product)) {
+            $form['price'] = $product['price'] === null ? '' : $this->price(self::decimal($product['price']));
         }
 
         return $form;

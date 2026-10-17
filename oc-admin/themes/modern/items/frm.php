@@ -328,6 +328,48 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     echo '</div>';
 
+    // Sell this item: the default variant, the row that makes a listing buyable.
+    $sellValues = is_array(__get('itemProduct')) ? __get('itemProduct') : array_fill_keys(array('sku', 'price', 'stock', 'weight', 'shippingClass'), '') + array('sell' => false);
+    echo '<fieldset class="osc-field osc-sell-fields">';
+    echo '<legend class="form-label">' . osc_esc_html(__('Sell this item')) . '</legend>';
+    echo '<input type="hidden" name="product[sell]" value="0">';
+    osc_admin_field(array(
+        'type'    => 'checkbox',
+        'id'      => 'product-sell',
+        'name'    => 'product[sell]',
+        'value'   => '1',
+        'label'   => __('Buyers can add this item to a cart'),
+        'checked' => $sellValues['sell'],
+        'error'   => $itemErrors['product'] ?? '',
+    ));
+    foreach (
+        array(
+            'sku'           => array(__('SKU'), 'text', 64, ''),
+            'price'         => array(__('Price (blank uses the listing price)'), 'text', 0, 'decimal'),
+            'stock'         => array(__('Stock (blank does not track)'), 'text', 0, 'numeric'),
+            'weight'        => array(__('Weight in grams'), 'text', 0, 'numeric'),
+            'shippingClass' => array(__('Shipping class'), 'text', 40, ''),
+        ) as $sellKey => $sellSpec
+    ) {
+        $sellAttrs = array('autocomplete' => 'off');
+        if ($sellSpec[3] !== '') {
+            $sellAttrs['inputmode'] = $sellSpec[3];
+        }
+        if ($sellSpec[2] > 0) {
+            $sellAttrs['maxlength'] = (string) $sellSpec[2];
+        }
+        osc_admin_field(array(
+            'type'  => $sellSpec[1],
+            'id'    => 'product-' . $sellKey,
+            'name'  => 'product[' . $sellKey . ']',
+            'label' => $sellSpec[0],
+            'width' => $sellSpec[3] === '' ? 'text' : 'num',
+            'value' => $sellValues[$sellKey],
+            'attrs' => $sellAttrs,
+        ));
+    }
+    echo '</fieldset>';
+
     // Neither preset: a listing description wants tables and a colour picker but no
     // embedded image or media, so the pair is passed here rather than earning a preset of
     // its own for one caller.

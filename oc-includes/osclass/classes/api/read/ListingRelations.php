@@ -23,13 +23,15 @@ final class ListingRelations
      * @param array<int,array<string,mixed>>            $users      user id => t_user row
      * @param array<int,array<int,array<string,mixed>>> $fields     item id => field value rows
      * @param array<string,array<string,mixed>>         $currencies code => t_currency row
+     * @param array<int,array<int,array<string,mixed>>> $variants   item id => t_item_variant rows
      */
     public function __construct(
         private CategoryCatalog $categories,
         private array $photos = [],
         private array $users = [],
         private array $fields = [],
-        private array $currencies = []
+        private array $currencies = [],
+        private array $variants = []
     ) {
     }
 
@@ -60,6 +62,14 @@ final class ListingRelations
     public function fields(int $itemId): array
     {
         return $this->fields[$itemId] ?? [];
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    public function variants(int $itemId): array
+    {
+        return $this->variants[$itemId] ?? [];
     }
 
     /**

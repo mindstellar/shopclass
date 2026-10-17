@@ -436,6 +436,7 @@ class CAdminItems extends AdminSecBaseModel
             Session::getInstance()->_dropKeepForm();
         }
 
+        $this->_exportVariableToView('itemProduct', ItemForm::product_values(array()));
         $this->_exportVariableToView('new_item', true);
         osc_run_hook('post_item');
         $this->doView('items/frm.php');
@@ -657,6 +658,7 @@ class CAdminItems extends AdminSecBaseModel
     {
         $this->_exportVariableToView('actions', $this->itemStateActions($item));
         $this->_exportVariableToView('itemStatus', $this->itemStatePills($item));
+        $this->_exportVariableToView('itemProduct', ItemForm::product_values($item));
         $this->_exportVariableToView('itemActions', $this->itemStateMoves($item));
 
         $expired = osc_isExpired($item['dt_expiration'] ?? '');
@@ -798,6 +800,7 @@ class CAdminItems extends AdminSecBaseModel
         $this->_exportVariableToView('editorErrors', $errors);
 
         if ($isNew) {
+            $this->_exportVariableToView('itemProduct', ItemForm::product_values(array()));
             $this->_exportVariableToView('new_item', true);
             osc_run_hook('post_item');
             $this->doView('items/frm.php');

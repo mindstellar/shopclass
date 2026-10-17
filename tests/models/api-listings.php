@@ -624,15 +624,15 @@ $five   = $count(array('category' => 'cars', 'limit' => 5));
 $twenty = $count(array('category' => 'cars', 'limit' => 20));
 echo "  a 20-listing page, warm: $twenty queries\n";
 pin('a 20-listing page costs the same queries as a 5-listing page', $five, $twenty);
-pin('a warm 20-listing page costs 6 queries: key, search, texts in the asked language, stats and locations, photos, sellers', 6, $twenty);
+pin('a warm 20-listing page costs 7 queries: key, search, texts in the asked language, stats and locations, photos, variants, sellers', 7, $twenty);
 $get('listings/' . $live[0], array(), $publicKey);
-pin('GET /listings/{id} with a public key: 6 queries (key, t_item, texts, stats and location, photos, seller)', 6, harness_query_count(static fn () => $get('listings/' . $live[0], array(), $publicKey)));
+pin('GET /listings/{id} with a public key: 7 queries (key, t_item, texts, stats and location, photos, variants, seller)', 7, harness_query_count(static fn () => $get('listings/' . $live[0], array(), $publicKey)));
 pin('a listing it may not see: 2 queries (key, t_item), its texts are not read', 2, harness_query_count(static fn () => $get('listings/' . $spam, array(), $publicKey)));
 pin('count=true adds the count query', $twenty + 1, $count(array('category' => 'cars', 'limit' => 20, 'count' => 'true')));
 pin('include=custom_fields adds one query, whatever the page size', array($twenty + 1, $twenty + 1), array(
     $count(array('category' => 'cars', 'limit' => 5, 'include' => 'custom_fields')), $count(array('category' => 'cars', 'limit' => 20, 'include' => 'custom_fields')),
 ));
-pin('fields=id,title skips photos and sellers', $twenty - 2, $count(array('category' => 'cars', 'limit' => 20, 'fields' => 'id,title')));
+pin('fields=id,title skips photos, variants and sellers', $twenty - 3, $count(array('category' => 'cars', 'limit' => 20, 'fields' => 'id,title')));
 $r = $get('listings', array('category' => 'cars', 'limit' => 20), $publicKey);
 parse_str((string) parse_url((string) $r->body()['links']['next'], PHP_URL_QUERY), $nextQuery);
 pin('a keyset page after the first skips the count, even when asked', $twenty, $count($nextQuery + array('count' => 'true')));
@@ -659,7 +659,7 @@ $cold = static function () use ($admin, $makeKernel, $publicKey): int {
 };
 $coldCount = $cold();
 echo "  a 20-listing page, cold: $coldCount queries\n";
-pin('a cold 20-listing page adds the category rows (one read for the catalog and search) and the currencies: 8 queries', 8, $coldCount);
+pin('a cold 20-listing page adds the category rows (one read for the catalog and search) and the currencies: 9 queries', 9, $coldCount);
 
 harness_section('text language');
 // A title only in French and a description only in English: both come from French, the language with the title.

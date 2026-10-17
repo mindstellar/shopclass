@@ -19,6 +19,7 @@ use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
 use mindstellar\fields\FieldQuery;
 use mindstellar\listing\ListingQuery;
+use mindstellar\listing\VariantStore;
 use mindstellar\user\UserQuery;
 use mindstellar\user\UserStore;
 
@@ -124,7 +125,7 @@ final class ListingReader
 
     /**
      * @param array<int,array<string,mixed>> $items   extended listing rows
-     * @param array<string,bool>             $lookups which of seller, photos, fields to load
+     * @param array<string,bool>             $lookups which of seller, photos, fields, product to load
      */
     private function load(array $items, array $lookups): ListingRelations
     {
@@ -154,7 +155,8 @@ final class ListingReader
             ($lookups['photos'] ?? false) ? $this->photoRows($ids) : [],
             ($lookups['seller'] ?? false) ? $this->users(array_values(array_unique($userIds))) : [],
             ($lookups['fields'] ?? false) ? $this->fieldValues($ids) : [],
-            $currencies
+            $currencies,
+            ($lookups['product'] ?? false) ? VariantStore::ofItems($ids) : []
         );
     }
 
