@@ -27,6 +27,7 @@ use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
+use mindstellar\market\SiteMode;
 use mindstellar\security\Captcha;
 use mindstellar\utility\Validate;
 
@@ -102,6 +103,12 @@ class CWebItem extends BaseModel
      */
     private function itemAdd(): void
     {
+        // The public form posts as a visitor, never as an admin, so in shop mode nobody here may post.
+        if (osc_site_mode() === SiteMode::SHOP) {
+            osc_add_flash_warning_message(ListingService::refusalMessage(ListingPolicy::SHOP_MODE));
+            $this->redirectTo(osc_base_url(true));
+        }
+
         if (ListingPolicy::requiresSignIn(Actor::visitor())) {
             osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
             // Remember to bring them back to the post form after login — in a signed
