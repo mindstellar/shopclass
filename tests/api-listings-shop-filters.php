@@ -170,6 +170,12 @@ pin('a value over 40 characters is dropped, the filter is then off', ['Percent',
 pin('the 4th name is dropped, not a 500', ['Tee'], $inTees(['option' => ['Colour' => ['Cherry'], 'Size' => ['M'], 'Fit' => ['Slim'], 'Extra' => ['none']]]));
 pin('values past the 10th are dropped', [], $inTees(['option' => ['Colour' => array_merge(array_map(static fn (int $i): string => 'v' . $i, range(1, 10)), ['Cherry'])]]));
 pin('Cherry as the 10th value still counts', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => array_merge(array_map(static fn (int $i): string => 'v' . $i, range(1, 9)), ['Cherry'])]]));
+pin('an empty value is dropped, the filter is then off', ['Percent', 'Polo', 'Quote', 'Tee'], $inTees(['option' => ['Colour' => ['']]]));
+pin('an empty value beside a real one is dropped', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['', 'Cherry']]]));
+$legs = seed_category($admin, 'Legwear', null, $locale);
+VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Jeans', 10.0), [['options' => ['Waist Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
+VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Shorts', 10.0), [['options' => ['Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
+pin('a name matches whole, not the end of a longer name', ['Shorts'], $names($list(['option' => ['Size' => ['M']], 'category' => (string) $legs])));
 pin('a listing with no option rows never matches', [], $names($list(['option' => ['Colour' => ['Red']], 'category' => (string) $cat])));
 $r = $list(['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'count' => 'true']);
 pin('the total follows the filter', 2, $r->body()['meta']['total'] ?? null);
