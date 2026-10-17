@@ -150,4 +150,13 @@ parse_str((string) parse_url((string) ($first->body()['links']['next'] ?? ''), P
 pin('a newest cursor goes on to the older ones', ['Fits well'], $titles($call('GET', 'listings/' . $tee . '/comments', null, $sueKey, [], $next)));
 pin('an unknown sort is refused', 422, $call('GET', 'listings/' . $tee . '/comments', null, $sueKey, [], ['sort' => 'best'])->status());
 
+harness_section('one rating per user');
+$cap = seed_item($admin, $cat, $sue, 'Cap', 8.0);
+$ann = seed_user($admin, 'ann', 'ann@example.test');
+$bob = seed_user($admin, 'bob', 'bob@example.test');
+$admin->query("INSERT INTO {$p}t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, b_enabled, b_active, b_spam, fk_i_user_id, i_rating)
+    VALUES ($cap, NOW(), '', 'Tom', 'tom@example.test', 'spam', 1, 1, 1, $tom, 2), ($cap, NOW(), '', 'Ann', 'ann@example.test', 'pending', 1, 0, 0, $ann, 3)");
+pin('a rating marked spam does not stop the next one', 201, $post($tomKey, $cap, ['rating' => 5])->status());
+pin('a pending rating does', '409 already_reviewed', api_admin_code($post($key($ann, 'ann'), $cap, ['rating' => 5])));
+
 exit(harness_result());
