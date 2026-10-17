@@ -137,7 +137,7 @@
       }
     }
     // Dates and counts mean nothing without their column name.
-    tbody tr td:is(.col-date, .col-expiration, .col-update_date, .col-items, .col-reporters)[data-col-name]::before {
+    tbody tr td:is(.col-date, .col-expiration, .col-update_date, .col-items, .col-reporters, .col-spam, .col-bad, .col-rep, .col-exp, .col-off)[data-col-name]::before {
       content: "· " attr(data-col-name) " ";
     }
     .actions a {

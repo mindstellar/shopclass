@@ -749,11 +749,12 @@ class ItemsDataTable extends DataTable
                 $row['user']        = osc_esc_html($aRow['s_user_name']);
                 $row['reporters']   = $this->reportersCell((int) $aRow['pk_i_id']);
                 $row['reason']      = $this->reasonCell((int) $aRow['pk_i_id']);
-                $row['spam']        = $aRow['i_num_spam'];
-                $row['bad']         = $aRow['i_num_bad_classified'];
-                $row['rep']         = $aRow['i_num_repeated'];
-                $row['exp']         = $aRow['i_num_expired'];
-                $row['off']         = $aRow['i_num_offensive'];
+                // A reason nobody reported stays blank, so the counts that matter stand out.
+                $row['spam']        = (int) $aRow['i_num_spam'] ?: '';
+                $row['bad']         = (int) $aRow['i_num_bad_classified'] ?: '';
+                $row['rep']         = (int) $aRow['i_num_repeated'] ?: '';
+                $row['exp']         = (int) $aRow['i_num_expired'] ?: '';
+                $row['off']         = (int) $aRow['i_num_offensive'] ?: '';
                 $row['date']        = osc_admin_date($aRow['dt_pub_date']);
                 $row['expiration']  =
                     ($aRow['dt_expiration'] !== '9999-12-31 23:59:59')
