@@ -1183,3 +1183,13 @@ osc.sidebar = (function () {
 
     return {init: init};
 })();
+
+// A tab strip that scrolls on a phone opens with its current tab in view.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.osc-tabnav, #content-render .nav-tabs').forEach(function (strip) {
+        var current = strip.querySelector('.is-active, .active, [aria-current="page"]');
+        if (current && strip.scrollWidth > strip.clientWidth) {
+            strip.scrollLeft = current.offsetLeft - strip.offsetLeft - 16;
+        }
+    });
+});

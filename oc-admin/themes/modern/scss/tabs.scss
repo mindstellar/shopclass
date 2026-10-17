@@ -139,3 +139,21 @@
   vertical-align: middle;
   width: .375rem;
 }
+
+// On a phone a tab strip stays one row and scrolls sideways, so tabs never wrap into
+// uneven rows. Covers core's tab nav and the Bootstrap tabs plugins print.
+@media (max-width: 576px) {
+  .osc-tabnav,
+  #content-render .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+
+    a,
+    .nav-link {
+      margin-block-end: 0;
+      white-space: nowrap;
+    }
+  }
+}
