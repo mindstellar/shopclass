@@ -75,7 +75,7 @@
   // A core list row becomes one compact card: checkbox, the main cell in bold with its actions,
   // the status badge on the right, then the other cells as one muted line. Scoped to tables
   // with a bulk-actions column, so a plugin's own table in the form keeps its header.
-  #datatablesForm .table:has(.col-bulkactions) {
+  #datatablesForm .table:not(.media-grid):has(.col-bulkactions) {
     @include phone-card-rows;
 
     tbody tr {

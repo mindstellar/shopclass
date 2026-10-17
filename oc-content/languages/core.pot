@@ -33,6 +33,10 @@ msgid_plural "%1$d linked folders were skipped: %2$s (they point outside oc-cont
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "%1$s %2$s"
+msgstr ""
+
 #: oc-admin/themes/modern/functions.php
 msgid ""
 "%1$s %2$s does not fully work on this version of Shopclass. Update it to "
@@ -467,6 +471,12 @@ msgstr ""
 #: oc-admin/themes/modern/parts/market.php
 msgid "%s downloads"
 msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "%s file"
+msgid_plural "%s files"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/ImageProcessing.php
 msgid "%s has too many pixels to process."
@@ -3683,6 +3693,10 @@ msgstr ""
 msgid "Delete all"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "Delete all %d"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/logs.php
 msgid "Delete all entries"
 msgstr ""
@@ -3711,6 +3725,10 @@ msgstr ""
 msgid "Delete currency"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "Delete every unattached file?"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/fields/index.php
 msgid "Delete field"
@@ -3720,6 +3738,7 @@ msgstr ""
 msgid "Delete file"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/plugins/index.php
 msgid "Delete files"
 msgstr ""
@@ -4770,6 +4789,10 @@ msgstr ""
 msgid "File is too large"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "File, listing or user"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/backup/BackupJobs.php
 msgid "Files"
@@ -4789,6 +4812,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Files per request"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid ""
+"Files whose listing, user or page was deleted are removed from the server. "
+"Up to 500 go at a time."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -5063,6 +5092,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Google reCAPTCHA"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "Grid"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -6103,6 +6136,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "Links to the old address keep working."
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "List"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -7439,6 +7476,10 @@ msgstr ""
 msgid "No file was uploaded"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "No files match your search"
+msgstr ""
+
 #: oc-includes/AjaxUploader.php
 msgid "No files were uploaded."
 msgstr ""
@@ -7648,11 +7689,16 @@ msgstr ""
 msgid "None. Deliveries that got an answer leave the queue."
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "Normal"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Normal size"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
+#: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 msgid "Not attached"
 msgstr ""
 
@@ -8021,6 +8067,10 @@ msgstr ""
 msgid "Open Plugins"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "Open image"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Open storage settings"
 msgstr ""
@@ -8104,6 +8154,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 msgid "Orders appear here as soon as a payment plugin takes its first payment."
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "Original"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -9662,6 +9716,7 @@ msgstr ""
 msgid "Screenshots"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/frm.php
@@ -9760,6 +9815,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Search keyword user"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "Search media"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -11666,6 +11725,12 @@ msgstr ""
 msgid "These bring your existing data in line with the new version."
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid ""
+"These files belong to a listing, user or page that no longer exists. "
+"Nothing on the site shows them."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "These stopped retrying. Fix the cause the reason names, then try them again."
 msgstr ""
@@ -12003,6 +12068,10 @@ msgstr ""
 msgid "Thu"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "Thumbnail"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Thumbnail size"
 msgstr ""
@@ -12200,6 +12269,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "Try all again"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "Try another word, or clear the search."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -12976,10 +13049,6 @@ msgstr ""
 msgid "View or print your receipt"
 msgstr ""
 
-#: oc-admin/themes/modern/media/index.php
-msgid "View original"
-msgstr ""
-
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
 msgid "View page"
@@ -13666,6 +13735,10 @@ msgstr ""
 msgid "as reported"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "as uploaded"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "at most"
 msgstr ""
@@ -13846,6 +13919,14 @@ msgstr ""
 msgid "last %s ago"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "library uploads"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "listing photos"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "listings at most"
 msgstr ""
@@ -13963,11 +14044,16 @@ msgstr ""
 msgid "on"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "on %s"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/backup/BackupJobs.php
 msgid "on the server"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "on this server"
 msgstr ""
@@ -13982,6 +14068,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "osclass@example.com"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "page images"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -14095,6 +14185,10 @@ msgstr ""
 msgid "set"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
+msgid "settings images"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "strict"
 msgstr ""
@@ -14150,6 +14244,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid "unsubscribe alert"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "user photos"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
