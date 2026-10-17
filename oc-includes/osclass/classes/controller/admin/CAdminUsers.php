@@ -452,8 +452,8 @@ class CAdminUsers extends AdminSecBaseModel
             if (Params::getParam('user_id') == '') {
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=alerts');
             } else {
-                $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&id='
-                    . Params::getParam('user_id'));
+                $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&tab=alerts&id='
+                    . (int) Params::getParam('user_id'));
             }
         }
 
@@ -473,8 +473,8 @@ class CAdminUsers extends AdminSecBaseModel
         if (Params::getParam('user_id') == '') {
             $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=alerts');
         } else {
-            $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&id='
-                . Params::getParam('user_id'));
+            $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&tab=alerts&id='
+                . (int) Params::getParam('user_id'));
         }
     }
 
@@ -492,8 +492,8 @@ class CAdminUsers extends AdminSecBaseModel
             if (Params::getParam('user_id') == '') {
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=alerts');
             } else {
-                $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&id='
-                    . Params::getParam('user_id'));
+                $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&tab=alerts&id='
+                    . (int) Params::getParam('user_id'));
             }
         }
 
@@ -517,8 +517,8 @@ class CAdminUsers extends AdminSecBaseModel
         if (Params::getParam('user_id') == '') {
             $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=alerts');
         } else {
-            $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&id='
-                . Params::getParam('user_id'));
+            $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&tab=alerts&id='
+                . (int) Params::getParam('user_id'));
         }
     }
 
