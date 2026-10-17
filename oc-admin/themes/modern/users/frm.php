@@ -231,11 +231,19 @@ osc_admin_panel_open(__('Password')); ?>
     </div>
 <?php osc_admin_panel_close();
 
+// Plugin fields get the same label column as core's, in a panel drawn only when one prints.
+ob_start();
 if (!$aux['edit']) {
     osc_run_hook('user_register_form');
 } else {
     osc_run_hook('user_profile_form', $user);
     osc_run_hook('user_form', $user);
+}
+$pluginFields = (string) ob_get_clean();
+if (trim($pluginFields) !== '') {
+    osc_admin_panel_open(__('More'));
+    echo '<div class="form-horizontal">' . $pluginFields . '</div>';
+    osc_admin_panel_close();
 }
 
 osc_admin_editor_rail(array('id' => 'right-side'));
