@@ -198,32 +198,34 @@ pin('an unknown variant is refused', false, VariantStore::adjustStock(999999, 1)
 $untracked = VariantStore::saveDefault($byUser, ['i_stock' => null]);
 pin('a variant that does not track stock accepts a change and keeps no count', [true, null], [VariantStore::adjustStock($untracked, -3), $rows($byUser)[0]['i_stock']]);
 
-// Two buyers at stock 1 on two connections: the second statement waits for the first one's
-// row lock, then finds the stock gone.
-$race = VariantStore::saveDefault($plain, ['i_stock' => 1]);
+// Two buyers at stock 1 in two processes, both calling adjustStock(). A row lock held here
+// makes both wait, so they run against the same stock once it is released.
+$race   = VariantStore::saveDefault($plain, ['i_stock' => 1]);
 $dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
-$pass   = getenv('DRIFT_DB_PASS');
-$conn   = static fn (): mysqli => new mysqli(getenv('DRIFT_DB_HOST') ?: '127.0.0.1', getenv('DRIFT_DB_USER') ?: 'root', $pass === false ? 'root' : $pass, $dbName, (int) (getenv('DRIFT_DB_PORT') ?: 33061));
-$first  = $conn();
-$second = $conn();
-$take   = "UPDATE {$p}t_item_variant SET i_stock = i_stock + -1 WHERE pk_i_id = $race AND i_stock IS NOT NULL AND i_stock + -1 >= 0";
-$first->begin_transaction();
-$second->begin_transaction();
-$first->query($take);
-$firstWon = $first->affected_rows;
-$second->query($take, MYSQLI_ASYNC);
-usleep(200000);
-$first->commit();
-$reaped = [$second];
-$none   = [];
-$err    = [];
-mysqli_poll($reaped, $none, $err, 5);
-$second->reap_async_query();
-$secondWon = $second->affected_rows;
-$second->commit();
-pin('two decrements at stock 1: one wins', [1, 0, '0'], [$firstWon, $secondWon, $admin->query("SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id = $race")->fetch_row()[0]]);
-$first->close();
-$second->close();
+$admin->begin_transaction();
+$admin->query("SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id = $race FOR UPDATE");
+$buyers = [];
+$outs   = [];
+for ($i = 0; $i < 2; $i++) {
+    $buyers[] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/variant-stock-child.php', $dbName, (string) $race], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    $outs[$i] = $pipes;
+}
+$watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
+$waiting = 0;
+for ($try = 0; $try < 100 && $waiting < 2; $try++) {
+    usleep(50000);
+    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'")->fetch_row()[0];
+}
+$watch->close();
+$admin->commit();
+$printed = '';
+foreach ($buyers as $i => $proc) {
+    $printed .= stream_get_contents($outs[$i][1]) . stream_get_contents($outs[$i][2]);
+    proc_close($proc);
+}
+pin('both buyers waited on the row', 2, $waiting);
+pin('two buyers at stock 1: one wins, one is refused', [1, 1], [substr_count($printed, 'won'), substr_count($printed, 'lost')]);
+pin('and the stock ends at 0', '0', (string) $admin->query("SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id = $race")->fetch_row()[0]);
 
 harness_section('delete and upgrade');
 VariantStore::saveDefault($one, ['s_sku' => 'DEL-1']);
