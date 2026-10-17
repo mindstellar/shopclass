@@ -15,7 +15,8 @@
 \mindstellar\apikey\ApiAccess::connect(
     static fn () => \mindstellar\api\Kernel::serve(),
     static fn () => \mindstellar\api\identity\WebIdentity::forget(),
-    static fn () => \mindstellar\api\Problem::maintenance()->send()
+    static fn () => \mindstellar\api\Problem::maintenance()->send(),
+    static fn (string $method, string $path, array $query, array $body): array => \mindstellar\api\InternalClient::site()->call($method, $path, $query, $body)
 );
 
 // Core events (a listing posted, a user registered ...) become webhooks for the endpoints

@@ -1,5 +1,7 @@
 function osc_api_admin_session_meta(): string
+function osc_api_call(string $method, string $path, array $query = [], array $body = []): array
 function osc_api_enabled(): bool
+function osc_api_get(string $path, array $query = []): array
 function osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ["public"]): void
 function osc_api_register_route(string $method, string $path, array $spec): void
 function osc_api_register_schema(string $slug, string $name, array $schema): array

@@ -14,6 +14,9 @@ namespace mindstellar\api;
 
 use mindstellar\api\identity\SignInCookie;
 use mindstellar\api\identity\WebIdentity;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\Scopes;
 use Params;
 
 /**
@@ -47,6 +50,9 @@ final class Request
 
     /** The most body bytes read: MAX_BODY, or MAX_UPLOAD once the route takes an upload. */
     private int $cap = self::MAX_BODY;
+
+    /** Who an in-process call acts as; only internal() sets it, so no HTTP request carries one. */
+    private ?Credential $caller = null;
 
     /**
      * @param string|null          $path    below /api/, already decoded; null for a path that was refused
@@ -125,6 +131,52 @@ final class Request
             },
             WebIdentity::signInCookie()
         );
+    }
+
+    /**
+     * A call made from PHP in this process, not over HTTP. The kernel skips CORS, the rate limit,
+     * the API switch and cache headers for it, and acts as $as instead of reading a token.
+     *
+     * @param string              $path  below the version, e.g. `listings/12`; may carry a query string
+     * @param array<string,mixed> $query wins over the path's query string
+     * @param array<mixed>        $body  sent as JSON; none when empty
+     * @param Credential|null     $as    a visitor reading public data when null
+     */
+    public static function internal(string $method, string $path, array $query = [], array $body = [], ?Credential $as = null, string $ip = ''): self
+    {
+        $parts = explode('?', ltrim($path, '/'), 2);
+        if (isset($parts[1])) {
+            parse_str($parts[1], $fromPath);
+            $query += $fromPath;
+        }
+        $json    = $body === [] ? '' : (string) json_encode($body, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_SLASHES);
+        $request = new self(
+            $method,
+            ApiSettings::PINNED_VERSION . ($parts[0] === '' ? '' : '/' . $parts[0]),
+            $query,
+            $json === '' ? [] : ['Content-Type' => 'application/json'],
+            $ip,
+            $json
+        );
+        $request->caller = $as ?? Credential::anonymous(Scopes::PUBLIC);
+
+        return $request;
+    }
+
+    /**
+     * Whether this call came from PHP in this process (internal()) rather than over HTTP.
+     */
+    public function isInternal(): bool
+    {
+        return $this->caller !== null;
+    }
+
+    /**
+     * Who an internal call acts as; null for an HTTP request.
+     */
+    public function caller(): ?Credential
+    {
+        return $this->caller;
     }
 
     /**

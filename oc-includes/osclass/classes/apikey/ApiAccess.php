@@ -24,7 +24,7 @@ final class ApiAccess
 {
     private static ?self $site = null;
 
-    /** @var array<string,\Closure(): void> what the REST API registered with connect() */
+    /** @var array<string,\Closure> what the REST API registered with connect() */
     private static array $api = [];
 
     /** @var array<string,object> service name => instance */
@@ -60,10 +60,28 @@ final class ApiAccess
      * @param \Closure(): void $serve       answers this API request and stops
      * @param \Closure(): void $begin       forgets the browser's identity at the start of an API request
      * @param \Closure(): void $maintenance answers 503 while the site is in maintenance, and stops
+     * @param \Closure|null    $call        fn(method, path, query, body): array, one in-process call
      */
-    public static function connect(\Closure $serve, \Closure $begin, \Closure $maintenance): void
+    public static function connect(\Closure $serve, \Closure $begin, \Closure $maintenance, ?\Closure $call = null): void
     {
-        self::$api = ['serve' => $serve, 'begin' => $begin, 'maintenance' => $maintenance];
+        self::$api = ['serve' => $serve, 'begin' => $begin, 'maintenance' => $maintenance] + ($call === null ? [] : ['call' => $call]);
+    }
+
+    /**
+     * Call an API route from PHP in this process, as the page's own user, admin or visitor.
+     *
+     * @param array<string,mixed> $query
+     * @param array<mixed>        $body
+     *
+     * @return array{status:int,body:array<mixed>,headers:array<string,string>}
+     */
+    public static function call(string $method, string $path, array $query = [], array $body = []): array
+    {
+        if (!isset(self::$api['call'])) {
+            throw new \LogicException('The REST API is not loaded.');
+        }
+
+        return (self::$api['call'])($method, $path, $query, $body);
     }
 
     /**
