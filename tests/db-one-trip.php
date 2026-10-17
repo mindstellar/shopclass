@@ -29,7 +29,9 @@ $t     = DB_TABLE_PREFIX . 't_one_trip';
 $admin->query("DROP TABLE IF EXISTS $t");
 $admin->query("CREATE TABLE $t (id INT AUTO_INCREMENT PRIMARY KEY, s MEDIUMTEXT NULL, n INT NULL, f DOUBLE NULL) DEFAULT CHARSET=utf8mb4");
 
-$prepares = static fn (): int => (int) $admin->query("SHOW GLOBAL STATUS LIKE 'Com_stmt_prepare'")->fetch_row()[1];
+// The session count on the test's own connection: a global count also sees the tests the
+// suite runs alongside, and one of their prepares made this check fail at random.
+$prepares = static fn (): int => (int) $db->handle()->query("SHOW SESSION STATUS LIKE 'Com_stmt_prepare'")->fetch_row()[1];
 
 harness_section('one trip, no prepared statement');
 
