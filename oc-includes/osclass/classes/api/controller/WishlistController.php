@@ -14,7 +14,7 @@ namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\Response;
-use mindstellar\listing\WishlistStore;
+use mindstellar\listing\WishlistService;
 
 /**
  * The signed-in user's wishlist at `/account/wishlist`: listing ids, newest first. Every call
@@ -22,35 +22,35 @@ use mindstellar\listing\WishlistStore;
  */
 final class WishlistController
 {
-    private WishlistStore $store;
+    private WishlistService $wishlist;
 
     public function __construct()
     {
-        $this->store = new WishlistStore();
+        $this->wishlist = new WishlistService();
     }
 
     public function show(ApiCall $call): Response
     {
-        return Response::ok($this->document($this->store->all($call->userId())));
+        return Response::ok($this->document($this->wishlist->all($call->userId())));
     }
 
     public function replace(ApiCall $call): Response
     {
-        $this->store->replace($call->userId(), array_values((array) ($call->input()['ids'] ?? [])));
+        $this->wishlist->replace($call->userId(), array_values((array) ($call->input()['ids'] ?? [])));
 
         return Response::noContent();
     }
 
     public function add(ApiCall $call): Response
     {
-        $this->store->add($call->userId(), $call->intArg('listing'));
+        $this->wishlist->add($call->userId(), $call->intArg('listing'));
 
         return Response::noContent();
     }
 
     public function remove(ApiCall $call): Response
     {
-        $this->store->remove($call->userId(), $call->intArg('listing'));
+        $this->wishlist->remove($call->userId(), $call->intArg('listing'));
 
         return Response::noContent();
     }

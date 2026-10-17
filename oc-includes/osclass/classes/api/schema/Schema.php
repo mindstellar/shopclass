@@ -18,7 +18,7 @@ use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\api\Warning;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
-use mindstellar\listing\WishlistStore;
+use mindstellar\listing\WishlistService;
 use mindstellar\location\CountryCode;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserStatus;
@@ -738,7 +738,7 @@ final class Schema
                 'count' => ['type' => 'integer'],
             ], ['ids', 'count']),
             'WishlistInput'     => $input([
-                'ids' => ['type' => 'array', 'maxItems' => WishlistStore::MAX, 'items' => ['type' => 'integer', 'minimum' => 1], 'description' => 'Newest first. Listings that are not live are dropped.'],
+                'ids' => ['type' => 'array', 'maxItems' => WishlistService::MAX, 'items' => ['type' => 'integer', 'minimum' => 1], 'description' => 'Newest first. Listings that are not live are dropped.'],
             ], ['ids']),
             'WishlistDocument'  => self::object(['data' => self::ref('Wishlist')], ['data']),
         ];
