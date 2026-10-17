@@ -82,7 +82,7 @@
 }
 
 // A tall dialog keeps its title and buttons in view; only the fields between them scroll.
-.osc-dialog[open] {
+.osc-dialog[open]:has(.osc-dialog-body) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
