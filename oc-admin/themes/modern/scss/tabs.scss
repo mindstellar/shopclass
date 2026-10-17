@@ -20,69 +20,10 @@
   float: inline-end;
 }
 
-// .osc-tab — the ARIA tabs widget oscInitTabs() wires (ui-osc.js). Same segmented-control
-// look as .ui-osc-tabs above (bench-sunk track, pill-free 4px-radius pills), kept as a
-// separate ruleset because the two are driven by different scripts with different markup
-// contracts and neither should have to match the other's DOM shape to share a look.
-.osc-tab {
-  margin-bottom: 1rem;
-
-  > ul {
-    background-color: var(--osc-bench-sunk);
-    border-radius: $border-radius;
-    display: flex;
-    flex-wrap: wrap;
-    gap: .15rem;
-    list-style: none;
-    margin: 0 0 1rem;
-    padding: .2rem;
-
-    li {
-      margin: 0;
-    }
-
-    a {
-      border-radius: $border-radius-sm;
-      color: var(--osc-ink-muted);
-      cursor: pointer;
-      display: block;
-      font-size: $font-size-label;
-      font-weight: 500;
-      padding: .4rem .85rem;
-      text-decoration: none;
-
-      &:hover {
-        color: var(--osc-ink);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--osc-bronze);
-        outline-offset: 2px;
-      }
-    }
-
-    li.is-active a {
-      background-color: var(--osc-bench);
-      color: var(--osc-ink);
-      font-weight: 600;
-    }
-  }
-}
-
-[role="tabpanel"]:focus {
-  outline: 0;
-}
-
-[role="tabpanel"]:focus-visible {
-  border-radius: $border-radius;
-  outline: 2px solid var(--osc-bronze);
-  outline-offset: 4px;
-}
-
-// .osc-tabnav — a row of navigation tabs (each an <a> to another URL, one current),
-// styled as a quiet underline strip. The URL-navigation sibling of .osc-tab above,
-// which is the JS-driven in-page panel widget; this one has no script.
-.osc-tabnav {
+// The one admin tab look: a strip with a hairline under it; each tab is a label-size button
+// with a hover shade, and the current one is the raised bench face with a slate underline.
+// $link is the tab element and $current the selector that marks the current one.
+@mixin tab-strip($link, $current) {
   border-block-end: 1px solid var(--osc-rule);
   display: flex;
   flex-wrap: wrap;
@@ -95,13 +36,14 @@
     margin: 0;
   }
 
-  // Each tab wears the .osc-tab button (label type, small radius on top, a hover shade);
-  // the current one is the raised bench face with a slate underline as its indicator.
-  a {
+  #{$link} {
+    background: none;
+    border: 0;
     border-block-end: 2px solid transparent;
     border-start-end-radius: $border-radius-sm;
     border-start-start-radius: $border-radius-sm;
     color: var(--osc-ink-muted);
+    cursor: pointer;
     display: block;
     font-size: $font-size-label;
     font-weight: 500;
@@ -118,14 +60,35 @@
       outline: 2px solid var(--osc-bronze);
       outline-offset: 2px;
     }
-
-    &.is-active {
-      background-color: var(--osc-bench);
-      border-block-end-color: var(--osc-tab-indicator);
-      color: var(--osc-ink);
-      font-weight: 600;
-    }
   }
+
+  #{$current} {
+    background-color: var(--osc-bench);
+    border-block-end-color: var(--osc-tab-indicator);
+    color: var(--osc-ink);
+    font-weight: 600;
+  }
+}
+
+// .osc-tab — the in-page panel tabs oscInitTabs() wires (ui-osc.js).
+.osc-tab {
+  margin-bottom: 1rem;
+
+  > ul {
+    @include tab-strip("a", "li.is-active > a");
+    margin-block-end: 1rem;
+  }
+}
+
+// .osc-tabnav — navigation tabs, each an <a> to another URL; no script.
+.osc-tabnav {
+  @include tab-strip("a", "a.is-active");
+}
+
+// Bootstrap tabs a plugin prints wear the same look.
+#content-render .nav-tabs {
+  @include tab-strip(".nav-link", ".nav-link.active");
+  margin-block-end: 1rem;
 }
 
 // The admin's own language: the tab a locale strip opens on, marked with a dot.
