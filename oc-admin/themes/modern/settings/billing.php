@@ -26,14 +26,34 @@ osc_admin_page(array(
 
 $forms    = __get('billing_forms');
 $gateways = __get('gateways');
+// One form per tab, so the screen has one Save button at a time.
+$tabs = array(
+    'switch'   => __('Billing'),
+    'pricing'  => __('Pricing'),
+    'offline'  => __('Bank transfer'),
+    'upgrades' => __('Upgrades'),
+    'limits'   => __('Seller limits'),
+    'receipts' => __('Receipts'),
+    'methods'  => __('Payment methods'),
+);
+$tab = (string) __get('billing_tab');
+$tab = isset($tabs[$tab]) ? $tab : 'switch';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-settings">
-    <?php foreach (array('switch', 'pricing', 'offline', 'upgrades', 'limits', 'receipts') as $part) {
-        osc_admin_settings_form($forms[$part]['id'], $forms[$part]);
-    } ?>
+    <?php osc_admin_page_head(__('Billing settings')); ?>
+    <ul class="osc-tabnav billing-tabs">
+        <?php foreach ($tabs as $key => $label) { ?>
+            <li>
+                <a<?php echo $key === $tab ? ' class="is-active" aria-current="page"' : ''; ?>
+                    href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=settings&action=billing&tab=' . $key); ?>"><?php echo osc_esc_html($label); ?></a>
+            </li>
+        <?php } ?>
+    </ul>
 
-    <?php osc_admin_page_head(__('Payment methods'));
+    <?php if ($tab !== 'methods') {
+        osc_admin_settings_form($forms[$tab]['id'], $forms[$tab]);
+    } else {
 
     if (empty($gateways)) {
         osc_admin_empty(array(
@@ -79,6 +99,7 @@ $gateways = __get('gateways');
                 </tbody>
             </table>
         </div>
-    <?php } ?>
+    <?php }
+    } ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -28,14 +28,14 @@ use mindstellar\billing\PaymentGatewayRegistry;
  */
 class CAdminSettingsBilling extends AdminSecBaseModel
 {
-    /** The six forms on the screen, by the action each posts to. */
+    /** The six forms on the screen: the action each posts to, and the tab it sits on. */
     private const FORMS = array(
-        'billing_post',
-        'billing_pricing_post',
-        'billing_offline_post',
-        'billing_upgrades_post',
-        'billing_limits_post',
-        'billing_receipts_post',
+        'billing_post'          => 'switch',
+        'billing_pricing_post'  => 'pricing',
+        'billing_offline_post'  => 'offline',
+        'billing_upgrades_post' => 'upgrades',
+        'billing_limits_post'   => 'limits',
+        'billing_receipts_post' => 'receipts',
     );
 
     /**
@@ -55,7 +55,7 @@ class CAdminSettingsBilling extends AdminSecBaseModel
      */
     public function doModel()
     {
-        if (in_array($this->action, self::FORMS, true)) {
+        if (isset(self::FORMS[$this->action])) {
             $this->save($this->action);
 
             return;
@@ -81,13 +81,13 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         $result = CoreSettings::attempt($pageId);
         if ($result['errors'] !== array()) {
             // Redrawn with what was typed rather than thrown away with a redirect.
-            $this->drawForms($pageId, $result['values']);
+            $this->drawForms($pageId, $result['values'], self::FORMS[$action]);
 
             return;
         }
 
         osc_add_flash_ok_message(self::saved($action), 'admin');
-        $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing&tab=' . self::FORMS[$action]);
     }
 
     /**
@@ -146,11 +146,16 @@ class CAdminSettingsBilling extends AdminSecBaseModel
      *
      * @param string     $rejected the page id of the form that was refused, if any
      * @param array|null $values   that form's submitted values
+     * @param string     $tab      the tab to open; the request's, when empty
      *
      * @return void
      */
-    private function drawForms(string $rejected = '', ?array $values = null)
+    private function drawForms(string $rejected = '', ?array $values = null, string $tab = '')
     {
+        if ($tab === '') {
+            $tab = Params::getParamString('tab');
+        }
+        $this->_exportVariableToView('billing_tab', in_array($tab, self::FORMS, true) || $tab === 'methods' ? $tab : 'switch');
         // Exported under the name it has always had as well: a replaced admin theme's own
         // view reads it, and View::_get() answers '' for a key nobody exported -- so the
         // switch would draw unticked and the next save would turn billing off.

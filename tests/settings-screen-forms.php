@@ -1150,6 +1150,7 @@ $pricing = array(
 );
 $run = drive('CAdminSettingsBilling', 'billing_pricing_post', $pricing);
 pin('a currency is stored upper-cased', array('EUR', 'STRING'), pref($admin, 'billing_currency'));
+check('a save returns to the tab it came from', str_ends_with((string) end($run['redirects']), '&tab=pricing'), (string) end($run['redirects']));
 pin('a negative price is floored', array('0', 'INTEGER'), pref($admin, 'billing_slot_credits'));
 pin('and a zero quantity at one', array('1', 'INTEGER'), pref($admin, 'billing_slot_quantity'));
 pin('the products are re-registered once each', array('billing:premium', 'billing:slot'), $run['effects']);
@@ -1168,6 +1169,7 @@ pin(
 );
 pin('nothing is re-registered for a save that did not happen', array(), $run['effects']);
 pin('and the stored currency is untouched', array('EUR', 'STRING'), pref($admin, 'billing_currency'));
+pin('a refused save redraws its own tab', 'pricing', __get('billing_tab'));
 
 $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' => '1'));
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
