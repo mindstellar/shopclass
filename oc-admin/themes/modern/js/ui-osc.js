@@ -1188,8 +1188,11 @@ osc.sidebar = (function () {
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.osc-tabnav, #content-render .nav-tabs').forEach(function (strip) {
         var current = strip.querySelector('.is-active, .active, [aria-current="page"]');
-        if (current && strip.scrollWidth > strip.clientWidth) {
-            strip.scrollLeft = current.offsetLeft - strip.offsetLeft - 16;
+        if (!current) { return; }
+        // Scroll only as far as the current tab needs, so the strip still starts at its edge when it can.
+        var end = current.offsetLeft - strip.offsetLeft + current.offsetWidth;
+        if (end > strip.clientWidth) {
+            strip.scrollLeft = end - strip.clientWidth + 24;
         }
     });
 });
