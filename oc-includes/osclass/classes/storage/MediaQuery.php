@@ -43,24 +43,40 @@ final class MediaQuery
     /**
      * A page of media rows and the total, newest first.
      *
-     * @param string $type 'all', 'item', or a t_resource owner type
+     * @param string $type   'all', 'item', 'unattached' (the owner was deleted), or a t_resource owner type
+     * @param string $search words in the file name, the listing title, or the user's name or e-mail
      *
      * @return array{rows:array<int,array<string,mixed>>,total:int}
      * @throws \mindstellar\database\DbException
      */
-    public static function page(string $type, int $iPage, int $perPage): array
+    public static function page(string $type, int $iPage, int $perPage, string $search = ''): array
     {
         $resT   = DB_TABLE_PREFIX . 't_resource';
         $offset = max(0, ($iPage - 1) * $perPage);
 
-        $columns = 'pk_i_id AS id, i_owner_id AS owner_id, s_owner_type AS owner_type,'
-            . ' s_name, s_extension, s_content_type, s_path, s_storage, dt_created AS dt, s_base_name';
-        $base    = "SELECT IF(s_owner_type = ?, 'item', 'resource') AS src, $columns FROM $resT";
+        $columns = 'r.pk_i_id AS id, r.i_owner_id AS owner_id, r.s_owner_type AS owner_type,'
+            . ' r.s_name, r.s_extension, r.s_content_type, r.s_path, r.s_storage, r.dt_created AS dt, r.s_base_name';
+        $base    = "SELECT IF(r.s_owner_type = ?, 'item', 'resource') AS src, $columns FROM $resT r";
 
         $params = array(\ItemResource::OWNER);
-        if ($type !== 'all') {
-            $base    .= ' WHERE s_owner_type = ?';
+        $where  = array();
+        if ($type === 'unattached') {
+            $where[] = self::unattachedSql();
+        } elseif ($type !== 'all') {
+            $where[]  = 'r.s_owner_type = ?';
             $params[] = $type;
+        }
+        $search = trim($search);
+        if ($search !== '') {
+            $like     = '%' . addcslashes($search, '%_\\') . '%';
+            $p        = DB_TABLE_PREFIX;
+            $where[]  = "(r.s_name LIKE ?"
+                . " OR (r.s_owner_type = 'item' AND r.i_owner_id IN (SELECT fk_i_item_id FROM {$p}t_item_description WHERE s_title LIKE ?))"
+                . " OR (r.s_owner_type = 'user' AND r.i_owner_id IN (SELECT pk_i_id FROM {$p}t_user WHERE s_name LIKE ? OR s_email LIKE ?)))";
+            array_push($params, $like, $like, $like, $like);
+        }
+        if ($where !== array()) {
+            $base .= ' WHERE ' . implode(' AND ', $where);
         }
 
         $total = (int) Db::scalar("SELECT COUNT(*) FROM ($base) AS m", $params);
@@ -71,6 +87,66 @@ final class MediaQuery
         );
 
         return array('rows' => $rows, 'total' => $total);
+    }
+
+    /**
+     * Files whose listing, user or page no longer exists. Library and settings uploads have
+     * no owner row and are never counted here.
+     *
+     * @return string a WHERE condition on the alias r
+     */
+    private static function unattachedSql(): string
+    {
+        $p   = DB_TABLE_PREFIX;
+        $out = array();
+        foreach (array('item' => array('t_item', 'pk_i_id'), 'user' => array('t_user', 'pk_i_id'), 'page' => array('t_pages', 'pk_i_id')) as $owner => [$table, $key]) {
+            $out[] = "(r.s_owner_type = '{$owner}' AND NOT EXISTS (SELECT 1 FROM {$p}{$table} o WHERE o.{$key} = r.i_owner_id))";
+        }
+
+        return '(' . implode(' OR ', $out) . ')';
+    }
+
+    /**
+     * Counts for the summary line: files by owner type, by storage, and how many are unattached.
+     *
+     * @return array{total:int,owners:array<string,int>,storage:array<string,int>,unattached:int}
+     * @throws \mindstellar\database\DbException
+     */
+    public static function summary(): array
+    {
+        $resT    = DB_TABLE_PREFIX . 't_resource';
+        $owners  = array();
+        $storage = array();
+        foreach (Db::select("SELECT s_owner_type AS k, COUNT(*) AS c FROM $resT GROUP BY s_owner_type") as $row) {
+            $owners[(string) $row['k']] = (int) $row['c'];
+        }
+        foreach (Db::select("SELECT s_storage AS k, COUNT(*) AS c FROM $resT GROUP BY s_storage") as $row) {
+            $storage[(string) $row['k']] = (int) $row['c'];
+        }
+
+        return array(
+            'total'      => array_sum($owners),
+            'owners'     => $owners,
+            'storage'    => $storage,
+            'unattached' => (int) Db::scalar("SELECT COUNT(*) FROM $resT r WHERE " . self::unattachedSql()),
+        );
+    }
+
+    /**
+     * Ids of up to $limit unattached files, as "src:id" picks the delete path takes.
+     *
+     * @return string[]
+     * @throws \mindstellar\database\DbException
+     */
+    public static function unattachedPicks(int $limit): array
+    {
+        $rows = Db::select(
+            "SELECT IF(r.s_owner_type = ?, 'item', 'resource') AS src, r.pk_i_id AS id FROM " . DB_TABLE_PREFIX
+            . 't_resource r WHERE ' . self::unattachedSql() . ' LIMIT ' . max(1, $limit),
+            array(\ItemResource::OWNER)
+        );
+
+        return array_map(static fn (array $r): string => $r['src'] . ':' . (int) $r['id'], $rows);
     }
 
     /**

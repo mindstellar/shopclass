@@ -215,19 +215,20 @@ function osc_media_owner_types(): array
 
 /**
  * A page of normalised media rows plus the total for a filter. $type is 'all',
- * 'item' (listing photos), or a t_resource owner type ('user', 'page',
- * 'library', a plugin type). Each row carries: src ('item'|'resource'), id,
- * owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage, s_base_name.
+ * 'item' (listing photos), 'unattached' (the owner was deleted), or a t_resource owner
+ * type ('user', 'page', 'library', a plugin type). Each row carries: src ('item'|'resource'),
+ * id, owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage, s_base_name.
  *
  * @param string $type
  * @param int    $iPage    1-based page number
  * @param int    $perPage
+ * @param string $search   words in the file name, listing title, or user name or e-mail
  *
  * @return array{rows:array<int,array>,total:int}
  */
-function osc_media_library_query(string $type, int $iPage, int $perPage): array
+function osc_media_library_query(string $type, int $iPage, int $perPage, string $search = ''): array
 {
-    return \mindstellar\storage\MediaQuery::page($type, $iPage, $perPage);
+    return \mindstellar\storage\MediaQuery::page($type, $iPage, $perPage, $search);
 }
 
 /**
