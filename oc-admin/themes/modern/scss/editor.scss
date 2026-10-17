@@ -780,11 +780,17 @@
 }
 
 .user-editor-status,
-.user-editor-actions,
-.user-editor-photo {
+.user-editor-actions {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
+  gap: .5rem;
+}
+
+// The photo, its file box and the remove tick stack in one column.
+.user-editor-photo {
+  display: flex;
+  flex-direction: column;
   gap: .5rem;
 }
 
