@@ -203,6 +203,24 @@ command line too. Its one argument is the list of reasons, such as `array('theme
 Clear your cache there. Do not print, send headers or read the session. To ask for one yourself,
 call `osc_purge_page_cache('my_reason')`. See [the caching contract](/docs/developers/caching/).
 
+## Cart hooks (reserved)
+
+These names are reserved for the cart in a later 7.x release. They are not fired yet, so they
+are not in the reference below. `$cart` is the cart array; a line is
+`{id, label, amount (minor units), currency, meta}`.
+
+| Hook | Kind | Arguments |
+|---|---|---|
+| `cart_shipping_methods` | filter | `$methods, $cart` |
+| `cart_shipping_lines` | filter | `$lines, $cart` |
+| `cart_tax_lines` | filter | `$lines, $cart` |
+| `cart_discount_lines` | filter | `$lines, $cart` |
+| `cart_totals` | filter | `$totals, $cart` |
+| `cart_item_add_after` | action | `$cart, $line` |
+| `cart_checkout_before` | action | `$cart` |
+
+A paid order fires `billing_order_paid`, as it does today.
+
 ## Reference
 
 Every name core fires, with where it is fired and what it passes.

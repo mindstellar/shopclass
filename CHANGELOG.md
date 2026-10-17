@@ -19,6 +19,13 @@ Beta 5 makes pages faster, with more caching, kept connections and compressed fi
 Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
+- `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key, and work with the API switched off. See [REST API](https://shopclass.org/docs/developers/api/).
+- A theme or plugin can declare `modes` (`classifieds`, `shop`) and the plugins it needs, in `shopclass.json` or the `Modes:` and `Requires Plugins:` headers. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
+- **Settings → General → Site is a** sets classifieds, shop or both; in shop mode only admins post. `osc_site_mode()` reads it.
+- Activating a theme that needs plugins opens one screen that installs and activates them, and Appearance warns if one is later removed.
+- The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
+- Listings have a `product` member with variants (SKU, price, stock, weight, shipping class), set by an admin.
+- The cart hook names (`cart_shipping_methods`, `cart_totals` and others) are reserved; they are not fired yet. See [Hooks](https://shopclass.org/docs/developers/hooks/).
 - `osc_admin_count($n)` draws a count as a small badge beside a tab, filter or button label, and `osc_admin_link_group()` takes a `count` per link and then draws a tab strip that scrolls on a phone.
 
 - A `category_modes` settings field sets a mode per category, with an Off switch per main category and subcategories that follow their parent; `osc_category_mode()` reads it.
