@@ -20,7 +20,7 @@ osc_admin_page(array(
         array(
             'icon'  => 'bi-plus-circle-fill',
             'url'   => osc_admin_base_url(true) . '?page=settings&action=keyword_block_add',
-            'title' => __('Add new'),
+            'title' => __('Add keyword'),
         ),
     ),
 ));
