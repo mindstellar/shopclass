@@ -25,8 +25,6 @@ final class PackageManifest
 {
     public const MODES = ['classifieds', 'shop'];
 
-    private const VERSION_PATTERN = '/^(?:>=|<=|>|<|=|\^|~)?\s*\d+(?:\.\d+){0,3}(?:-[0-9A-Za-z.]+)?$/';
-
     /**
      * @param string $dir    Package directory (with or without trailing slash).
      * @param string $header Text holding the package's header comment.
@@ -121,7 +119,7 @@ final class PackageManifest
                 continue;
             }
             $constraint = is_string($constraint) ? trim($constraint) : '';
-            $out[$slug] = preg_match(self::VERSION_PATTERN, $constraint) === 1 ? $constraint : '';
+            $out[$slug] = VersionConstraint::isValid($constraint) ? $constraint : '';
         }
 
         return $out;

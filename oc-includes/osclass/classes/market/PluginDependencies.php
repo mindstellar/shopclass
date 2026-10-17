@@ -143,7 +143,7 @@ final class PluginDependencies
         $versions = $this->versions[$slug] ?? [];
         $meets    = array_values(array_filter(
             $versions,
-            static fn ($v) => self::satisfies((string) ($v['version'] ?? ''), $constraint)
+            static fn ($v) => VersionConstraint::satisfies((string) ($v['version'] ?? ''), $constraint)
         ));
         $offer  = Compatibility::pickBestVersion($meets, $this->coreVersion, $this->phpVersion);
         $manual = (string) (($offer ?? $meets[0] ?? $versions[0] ?? [])['url'] ?? '');
@@ -162,7 +162,7 @@ final class PluginDependencies
             'message'           => '',
         ];
 
-        if ($local !== null && self::satisfies($row['installed_version'], $constraint)) {
+        if ($local !== null && VersionConstraint::satisfies($row['installed_version'], $constraint)) {
             if (empty($local['enabled'])) {
                 $row['status'] = self::INACTIVE;
                 $row['action'] = 'activate';
@@ -313,66 +313,6 @@ final class PluginDependencies
         }
 
         return self::answer(true, __('Plugin installed and active.'), $slug, self::ACTIVE, '');
-    }
-
-    /**
-     * Whether $version meets $constraint: `>=1.2`, `<2`, `=1.0`, `^1.2`, `~1.2`, or a bare
-     * version, read as a minimum. An empty constraint accepts any version.
-     */
-    public static function satisfies(string $version, string $constraint): bool
-    {
-        $constraint = trim($constraint);
-        if ($constraint === '') {
-            return true;
-        }
-        if ($version === '' || preg_match('/^(>=|<=|>|<|=|\^|~)?\s*(\d+(?:\.\d+)*)/', $constraint, $m) !== 1) {
-            return false;
-        }
-        $op      = $m[1];
-        $base    = self::pad($m[2]);
-        $version = self::pad($version);
-
-        switch ($op) {
-            case '':
-            case '>=':
-                return version_compare($version, $base, '>=');
-            case '=':
-                return version_compare($version, $base, '==');
-            case '>':
-            case '<':
-            case '<=':
-                return version_compare($version, $base, $op);
-            case '^':
-                $parts = array_map('intval', explode('.', $base));
-                $upper = $parts[0] > 0 ? ($parts[0] + 1) . '.0.0' : '0.' . (($parts[1] ?? 0) + 1) . '.0';
-
-                return version_compare($version, $base, '>=') && version_compare($version, $upper, '<');
-            default:
-                $parts = array_map('intval', explode('.', $m[2]));
-                if (count($parts) > 1) {
-                    array_pop($parts);
-                }
-                $parts[count($parts) - 1]++;
-                $upper = self::pad(implode('.', $parts));
-
-                return version_compare($version, $base, '>=') && version_compare($version, $upper, '<');
-        }
-    }
-
-    /**
-     * A version with at least three numeric parts, so 1.0 and 1.0.0 compare equal.
-     */
-    private static function pad(string $version): string
-    {
-        if (preg_match('/^(\d+(?:\.\d+)*)(.*)$/', trim($version), $m) !== 1) {
-            return $version;
-        }
-        $parts = explode('.', $m[1]);
-        while (count($parts) < 3) {
-            $parts[] = '0';
-        }
-
-        return implode('.', $parts) . $m[2];
     }
 
     /**

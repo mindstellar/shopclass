@@ -47,6 +47,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 
 use mindstellar\market\PluginDependencies as Deps;
+use mindstellar\market\VersionConstraint;
 
 $entry = static fn (string $v, string $requires = '6.0') => array(
     'version' => $v, 'requires' => $requires, 'requires_php' => '8.0', 'tested' => '7.0',
@@ -71,14 +72,17 @@ $index = array('digital-goods' => array('name' => 'Digital Goods', 'short_descri
 $deps = new Deps($installed, $versions, $index);
 
 harness_section('version constraints');
-pin('a bare version is a minimum', array(true, false), array(Deps::satisfies('1.3', '1.2'), Deps::satisfies('1.1', '1.2')));
-pin('>= and <', array(true, false), array(Deps::satisfies('1.2.0', '>=1.2.0'), Deps::satisfies('2.0', '<2.0')));
-pin('= is exact', array(true, false), array(Deps::satisfies('1.0.0', '=1.0'), Deps::satisfies('1.0.1', '=1.0')));
-pin('^ stays below the next major', array(true, false), array(Deps::satisfies('1.9', '^1.2'), Deps::satisfies('2.0', '^1.2')));
-pin('^0.x stays below the next minor', array(true, false), array(Deps::satisfies('0.3.5', '^0.3'), Deps::satisfies('0.4.0', '^0.3')));
-pin('~ stays below the next minor of a patch', array(true, false), array(Deps::satisfies('1.2.9', '~1.2.3'), Deps::satisfies('1.3.0', '~1.2.3')));
-pin('empty accepts any version', true, Deps::satisfies('0.1', ''));
-pin('no version meets a constraint', false, Deps::satisfies('', '>=1.0'));
+pin('a bare version is a minimum', array(true, false), array(VersionConstraint::satisfies('1.3', '1.2'), VersionConstraint::satisfies('1.1', '1.2')));
+pin('>= and <', array(true, false), array(VersionConstraint::satisfies('1.2.0', '>=1.2.0'), VersionConstraint::satisfies('2.0', '<2.0')));
+pin('= is exact', array(true, false), array(VersionConstraint::satisfies('1.0.0', '=1.0'), VersionConstraint::satisfies('1.0.1', '=1.0')));
+pin('^ stays below the next major', array(true, false), array(VersionConstraint::satisfies('1.9', '^1.2'), VersionConstraint::satisfies('2.0', '^1.2')));
+pin('^0.x stays below the next minor', array(true, false), array(VersionConstraint::satisfies('0.3.5', '^0.3'), VersionConstraint::satisfies('0.4.0', '^0.3')));
+pin('~ stays below the next minor of a patch', array(true, false), array(VersionConstraint::satisfies('1.2.9', '~1.2.3'), VersionConstraint::satisfies('1.3.0', '~1.2.3')));
+pin('empty accepts any version', true, VersionConstraint::satisfies('0.1', ''));
+pin('no version meets a constraint', false, VersionConstraint::satisfies('', '>=1.0'));
+pin('a suffix in the constraint counts', array(true, false), array(VersionConstraint::satisfies('1.2.0-rc1', '>=1.2.0-beta'), VersionConstraint::satisfies('1.2.0-alpha', '>=1.2.0-beta')));
+pin('four parts are read', array(true, false), array(VersionConstraint::satisfies('1.2.3.5', '>=1.2.3.4'), VersionConstraint::satisfies('1.2.3.3', '>=1.2.3.4')));
+pin('a constraint the manifest refuses is met by nothing', array(false, false), array(VersionConstraint::isValid('>=1.2 junk'), VersionConstraint::satisfies('9.0', '>=1.2 junk')));
 
 harness_section('resolver states');
 $state = static fn (string $slug, string $c = '') => $deps->row($slug, $c, true);
