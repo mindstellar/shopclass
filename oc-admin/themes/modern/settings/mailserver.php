@@ -56,6 +56,11 @@ function customHead()
 
             var testBtn = document.getElementById('testMail');
             if (testBtn) {
+                // The test sends with the saved settings, so an unsaved edit would not be tested.
+                var edited = false;
+                if (testBtn.form) {
+                    testBtn.form.addEventListener('input', function () { edited = true; });
+                }
                 testBtn.addEventListener('click', function () {
                     var msg = document.getElementById('testMail_message');
                     var pEl = msg ? msg.querySelector('p') : null;
@@ -65,6 +70,10 @@ function customHead()
                         msg.style.display = 'block';
                         msg.classList.remove('flashmessage-ok', 'flashmessage-error');
                         msg.classList.add(ok ? 'flashmessage-ok' : 'flashmessage-error');
+                    }
+                    if (edited) {
+                        show(<?php echo json_encode(__('Save your changes first. The test uses the saved settings.')); ?>, false);
+                        return;
                     }
                     var controller = (typeof AbortController === 'function') ? new AbortController() : null;
                     var timer = window.setTimeout(function () {
