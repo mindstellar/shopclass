@@ -157,7 +157,8 @@ final class ListingSearch
     /**
      * The condition for `in_stock` and `on_sale`: the listing has one variant that is in stock
      * (stock not tracked, or above 0) and/or on sale (a was price above the price it sells at).
-     * With both, one variant must be both.
+     * With both, one variant must be both. A per-row probe, not EXISTS: the planner would turn
+     * EXISTS into a scan of every variant before the sort (0.2 s against 0.4 ms on 232k listings).
      */
     private static function variantCondition(bool $inStock, bool $onSale): ?string
     {
@@ -174,7 +175,7 @@ final class ListingSearch
             $where[] = $variants . '.i_compare_price > COALESCE(' . $variants . '.i_price, ' . $item . '.i_price)';
         }
 
-        return 'EXISTS (SELECT 1 FROM ' . $variants . ' WHERE ' . implode(' AND ', $where) . ')';
+        return '(SELECT 1 FROM ' . $variants . ' WHERE ' . implode(' AND ', $where) . ' LIMIT 1) IS NOT NULL';
     }
 
     /**
