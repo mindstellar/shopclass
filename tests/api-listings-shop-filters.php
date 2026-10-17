@@ -118,4 +118,21 @@ pin('filters keep paging', ['Deal', 'Sold out'], (static function () use ($call,
 })());
 pin('a value that is not a boolean is refused', 422, $list(['on_sale' => 'maybe'])->status());
 
+harness_section('on_sale compares the variant price first');
+// title => [listing price, variant price, was price], in micros; a null variant price falls back to the listing's.
+$cups = seed_category($admin, 'Cups', null, $locale);
+foreach ([
+    'Variant below was'   => [20000000, 10000000, 15000000],
+    'Variant above was'   => [5000000, 10000000, 8000000],
+    'Fallback below was'  => [9000000, null, 12000000],
+    'Fallback above was'  => [14000000, null, 12000000],
+] as $title => [$listing, $price, $was]) {
+    $cup = seed_item($admin, $cups, $sue, $title, $listing / 1000000);
+    VariantStore::saveDefault($cup, ['i_price' => $price ?? $listing, 'i_stock' => 5, 'i_compare_price' => $was]);
+    if ($price === null) {
+        $admin->query("UPDATE {$p}t_item_variant SET i_price = NULL WHERE fk_i_item_id = $cup");
+    }
+}
+pin('the variant price wins over the listing price, and a missing one falls back to it', ['Fallback below was', 'Variant below was'], $names($list(['on_sale' => 'true', 'category' => (string) $cups])));
+
 exit(harness_result());
