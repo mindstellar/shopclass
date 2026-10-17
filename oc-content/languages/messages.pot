@@ -1625,6 +1625,10 @@ msgstr ""
 msgid "Only registered users can share listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingService.php
+msgid "Only the shop owner can add products"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "Oops! That internal name is already in use. We can't make the changes"
 msgstr ""
@@ -1869,6 +1873,10 @@ msgid "Price must be a number."
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Price must be a positive number."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Price must be positive number."
 msgstr ""
 
@@ -2044,6 +2052,10 @@ msgstr ""
 msgid "Rule updated correctly"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "SKU too long."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "Save"
 msgstr ""
@@ -2129,6 +2141,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Sharing listings by email has been disabled by the administrator"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Shipping class too long."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
@@ -2257,6 +2273,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Status"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Stock must be a whole number, 0 or more."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
@@ -2791,6 +2811,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "The plugin has been uploaded correctly"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The plugins this theme needs are active."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -3345,6 +3369,10 @@ msgstr ""
 #: oc-includes/osclass/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Website"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Weight must be a whole number of grams, 0 or more."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php

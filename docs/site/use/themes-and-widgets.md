@@ -49,6 +49,16 @@ php oc-cli.php market:install storefront --type=theme
 `theme:activate` is the way back when a theme breaks the site badly enough that
 you cannot reach the admin panel.
 
+## Plugins a theme needs
+
+A theme can ask for plugins, such as a payment plugin for a shop theme. When you activate it and
+one is missing, **Plugins for this theme** lists them with what each does. **Install and activate
+all** installs them one at a time, and the theme goes live once every required plugin is on.
+Recommended plugins can be skipped.
+
+If you later turn off or remove a required plugin, **Appearance** shows a notice with a **Fix it**
+link back to the same screen. Nothing installs until you click.
+
 ## Before you switch
 
 Themes are not interchangeable. Check three things:

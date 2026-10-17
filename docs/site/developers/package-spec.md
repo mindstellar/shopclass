@@ -58,6 +58,8 @@ version `2`. Values also end at the end of the line; they cannot wrap.
 | `Requires Shopclass` | recommended | Minimum core version. |
 | `Tested up to` | recommended | Highest core version you have verified. |
 | `Requires PHP` | recommended | Minimum PHP version. |
+| `Modes` | optional | Site types it works for: `classifieds`, `shop`. Absent means `classifieds`. |
+| `Requires Plugins` | optional | Plugins it needs, such as `stripe >=1.2.0, digital-goods`. |
 | `Author URI` | optional | |
 | `Plugin update URI` | optional | Legacy self-hosted updates: see [auto-update](/docs/developers/auto-update/). |
 
@@ -76,8 +78,31 @@ Same idea, different names, because theme parsing is a separate function:
 | `Tested up to` | recommended | |
 | `Parent Theme` | optional | Slug of the theme this one extends. See [Child themes](/docs/developers/child-themes/). |
 | `Widgets` | optional | Comma-separated widget location ids. |
+| `Modes` | optional | Site types it works for: `classifieds`, `shop`. Absent means `classifieds`. |
+| `Requires Plugins` | optional | Plugins the theme needs. Activating the theme offers to install and activate them. |
 | `Author URI` | optional | |
 | `Theme update URI` | optional | Legacy self-hosted updates. |
+
+### Modes and required plugins
+
+The site owner picks a site type in **Settings → General**: classifieds, shop, or both. A theme
+or plugin that does not declare that type gets a warning there.
+
+A package in the catalog can say the same in `shopclass.json`, which wins over the header:
+
+```json
+{
+  "modes": ["shop"],
+  "plugins": {
+    "required": { "stripe": ">=1.2.0" },
+    "recommended": { "digital-goods": "*" }
+  }
+}
+```
+
+A theme's required plugins are installed and activated from one screen before the theme goes
+live. Recommended ones can be skipped. A bad slug is ignored, and bad JSON reads as if the
+file had no `modes` or `plugins`.
 
 ## Versioning
 

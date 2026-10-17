@@ -121,6 +121,8 @@ Support URI: https://github.com/mindstellar/shopclass-plugin-digital-goods/issue
 | `Requires Shopclass` | recommended | `requires` | §4 |
 | `Tested up to` | recommended | `tested_up_to` | §4 |
 | `Requires PHP` | recommended | `requires_php` | §4 |
+| `Modes` | optional | `modes` | Site types the plugin works for: `classifieds`, `shop`. Absent means `classifieds`. JSON `modes` wins (§7) |
+| `Requires Plugins` | optional | `requires_plugins` | `stripe >=1.2.0, digital-goods`: slugs the plugin needs, each with an optional minimum version. JSON `plugins.required` wins (§7) |
 
 ### 3.3 Theme fields
 
@@ -140,6 +142,8 @@ Identical in spirit; the names differ because theme parsing is a separate functi
 | `Requires Shopclass` | recommended | `requires` |
 | `Tested up to` | recommended | `tested_up_to` |
 | `Requires PHP` | recommended | `requires_php` |
+| `Modes` | optional | `modes` — as for plugins; a theme made for a shop declares `shop` |
+| `Requires Plugins` | optional | `requires_plugins` — plugins the theme needs. Activating the theme offers to install and activate them |
 
 ### 3.4 Hooks a theme must emit
 
@@ -285,7 +289,7 @@ no before/after collages.
 
 ---
 
-## 7. `shopclass.json` (registry only)
+## 7. `shopclass.json` (registry, plus `modes` and `plugins`)
 
 Required for a package hosted **inside** `shopclass-plugins` / `shopclass-themes`. It
 carries what a one-line header field cannot; it never duplicates the header. Validated in
@@ -306,6 +310,19 @@ CI against `schema/package.schema.json` in the registry repo.
   "support": { "issues": "https://…/issues", "docs": "https://…" },
   "funding": "https://github.com/sponsors/…",
   "license": "GPL-3.0-or-later"
+}
+```
+
+Core reads two keys from `shopclass.json` at run time; every other key is registry-only.
+When both the file and the header give one, the file wins. A bad slug or bad JSON reads as absent.
+
+```jsonc
+{
+  "modes": ["shop"],                       // "classifieds" | "shop"; absent = ["classifieds"]
+  "plugins": {
+    "required":    { "stripe": ">=1.2.0" },   // theme goes live only once these are active
+    "recommended": { "digital-goods": "*" }   // offered, can be skipped
+  }
 }
 ```
 

@@ -626,6 +626,22 @@ than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/funct
 | `billing_feature_price` | filter | Override a feature's credit price. Receives `($price, $featureId, $userId)` — `$userId` is who the price is being resolved for, and is `null` when no user is in scope (e.g. listing a feature's price with nobody buying yet) |
 | `billing_feature_duration` | filter | Override a duration feature's granted days. Receives `($days, $featureId, $userId)`, same `$userId` convention as `billing_feature_price` |
 
+### Cart hooks (reserved)
+
+Named now, fired from the 7.x cart. A plugin may register on them today; nothing calls them yet.
+`$cart` is the cart array. A line is `{id, label, amount (minor units), currency, meta}`.
+A paid order reuses `billing_order_paid`.
+
+| Hook | Kind | Returns or receives |
+|---|---|---|
+| `cart_shipping_methods` | filter | `($methods, $cart)` the shipping methods on offer |
+| `cart_shipping_lines` | filter | `($lines, $cart)` the shipping lines |
+| `cart_tax_lines` | filter | `($lines, $cart)` the tax lines |
+| `cart_discount_lines` | filter | `($lines, $cart)` the discount lines |
+| `cart_totals` | filter | `($totals, $cart)` the totals |
+| `cart_item_add_after` | action | `($cart, $line)` after a line is added |
+| `cart_checkout_before` | action | `($cart)` before checkout starts |
+
 ---
 
 ## 10. Out of scope

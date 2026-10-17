@@ -557,6 +557,10 @@ msgstr ""
 msgid "%s must be a whole number"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "%s needs these plugins"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -811,6 +815,10 @@ msgid ""
 "above. "
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "A recommended plugin could not be installed."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/logs.php
 msgid "A record of admin and listing activity — who did what, and when. "
 msgstr ""
@@ -960,6 +968,14 @@ msgstr ""
 msgid "Activate"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Activate the theme"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Activate the theme without it"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/permalinks.php
 msgid ""
 "Activate this option if you want your site's URLs to be more attractive to "
@@ -970,6 +986,7 @@ msgstr ""
 msgid "Activation e-mail"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/parts/package-ui.php
@@ -1123,6 +1140,7 @@ msgstr ""
 msgid "Add photos"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/plugins/add.php
 #: oc-admin/themes/modern/plugins/index.php
 msgid "Add plugin"
@@ -1430,6 +1448,10 @@ msgstr ""
 msgid "All sections"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "All set. Activating the theme…"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "All submissions for this form have been deleted"
 msgstr ""
@@ -1646,6 +1668,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/add.php
 #: oc-admin/themes/modern/appearance/add_widget.php
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/appearance/view.php
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -1915,6 +1938,10 @@ msgstr ""
 msgid "Back to %s"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Back to Appearance"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Back to all countries"
 msgstr ""
@@ -2068,6 +2095,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Barter"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Before %s goes live"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
@@ -2254,6 +2285,10 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Buy credits"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Buyers can add this item to a cart"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -2695,6 +2730,10 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Classified ads in %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Classifieds site"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
@@ -4027,6 +4066,10 @@ msgstr ""
 msgid "Download now"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Download the zip"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Download to this computer"
 msgstr ""
@@ -4689,6 +4732,7 @@ msgstr ""
 msgid "Extra slots"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -4852,6 +4896,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/Pagination.php
 msgid "First page"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/index.php
+msgid "Fix it"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -5191,6 +5239,7 @@ msgid "Hold new listings for admin moderation"
 msgstr ""
 
 #: oc-includes/osclass/classes/Breadcrumb.php
+#: oc-includes/osclass/classes/seo/SeoResolver.php
 msgid "Home"
 msgstr ""
 
@@ -5525,6 +5574,7 @@ msgstr ""
 msgid "Insert from media library"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -5558,6 +5608,10 @@ msgstr ""
 msgid "Install a missing extension"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Install and activate all"
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "Install failed: %s"
 msgstr ""
@@ -5589,6 +5643,11 @@ msgstr ""
 msgid "Installed"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Installed: %s"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -7197,6 +7256,10 @@ msgstr ""
 msgid "Needs setting up"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Needs version %s"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
 "Neither Imagick nor GD is installed, so photos cannot be resized and image "
@@ -7575,6 +7638,12 @@ msgstr ""
 msgid "No regions in %s yet"
 msgstr ""
 
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid ""
+"No release of this plugin that the theme accepts runs on this version of "
+"Shopclass or PHP."
+msgstr ""
+
 #: oc-admin/themes/modern/items/reported.php
 msgid "No reported listings"
 msgstr ""
@@ -7690,6 +7759,10 @@ msgstr ""
 msgid "Not attached to a category — it won't appear on listings yet"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Not available"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Not available on the demo site."
 msgstr ""
@@ -7713,6 +7786,11 @@ msgid ""
 "saved."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Not in the market"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -7904,6 +7982,7 @@ msgid "October"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
+#: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
@@ -8248,7 +8327,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 #: oc-includes/osclass/classes/market/Installer.php
+#: oc-includes/osclass/classes/market/PluginDependencies.php
 msgid "Package installs are disabled on this deployment."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid ""
+"Package installs are disabled on this deployment. Install the plugins by "
+"hand, then come back."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
@@ -8581,8 +8667,16 @@ msgid ""
 "error</strong>"
 msgstr ""
 
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid "Plugin installed and active."
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "Plugin installed."
+msgstr ""
+
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid "Plugin is active."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/add.php
@@ -8614,6 +8708,10 @@ msgstr ""
 msgid ""
 "Plugins extend what the panel and your site can do. Install one from "
 "Browse, or upload its zip file."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Plugins for this theme"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -8685,6 +8783,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/osclass/classes/form/admin/Item.php
 msgid "Price"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Price (blank uses the listing price)"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -8943,6 +9045,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/media.php
 msgid "Recommendation"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Recommended"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -9279,6 +9385,10 @@ msgstr ""
 msgid "Require login for alerts"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Required"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid "Required by MinIO and most self-hosted setups; leave off for AWS."
 msgstr ""
@@ -9512,6 +9622,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "S3 bucket \"%s\" (local copies kept)"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "SKU"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
@@ -9826,11 +9940,13 @@ msgid "Search regions in %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/Breadcrumb.php
+#: oc-includes/osclass/classes/seo/SeoResolver.php
 #: oc-includes/osclass/functions.php
 msgid "Search results"
 msgstr ""
 
 #: oc-includes/osclass/classes/Breadcrumb.php
+#: oc-includes/osclass/classes/seo/SeoResolver.php
 msgid "Search results: %s"
 msgstr ""
 
@@ -10028,6 +10144,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Sell marking a listing urgent"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Sell this item"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -10260,6 +10380,18 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Share listing"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Shipping class"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Shop (only admins add products)"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Shop and classifieds"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -10556,6 +10688,10 @@ msgstr ""
 msgid "Site home page url."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Site is a"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/sitemap.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Sitemap"
@@ -10571,6 +10707,10 @@ msgstr ""
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Size"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Skip and activate the theme"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
@@ -10762,6 +10902,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid "Still to do"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Stock (blank does not track)"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
@@ -10999,6 +11143,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "That settings page is not registered."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
+msgid "That theme is not installed."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -11427,12 +11575,28 @@ msgstr ""
 msgid "The photo is too large. It can have at most %s megapixels."
 msgstr ""
 
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid "The plugin couldn't be installed because of: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid "The plugin couldn't be installed. Open Plugins to see why."
+msgstr ""
+
 #: oc-admin/themes/modern/plugins/add.php
 msgid "The plugin folder is not writable on your server so you cannot upload "
 msgstr ""
 
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid "The plugin's files are missing."
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/Billing.php
 msgid "The refund could not be started. Try again."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "The request failed. Check your connection and try again."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
@@ -11575,10 +11739,18 @@ msgstr ""
 msgid "The table prefix can only contain letters, numbers and underscores."
 msgstr ""
 
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid "The theme does not ask for this plugin."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/add.php
 msgid ""
 "The theme folder is not writable on your server so you can't upload themes "
 "from "
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "The theme is not active yet: a required plugin is still missing."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/add.php
@@ -11711,6 +11883,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "These bring your existing data in line with the new version."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "These do not say they work with this site type: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
@@ -11972,6 +12148,12 @@ msgstr ""
 msgid "This permanently removes the page and any link to it in the footer."
 msgstr ""
 
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid ""
+"This plugin is not in the market. Get its zip file from the theme author "
+"and upload it under Plugins, Add plugin."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "This removes %1$s along with %2$s and %3$s."
 msgstr ""
@@ -12016,6 +12198,16 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "This theme extends \"%s\", which is not installed. "
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid ""
+"This theme needs the required plugins below. It goes live once they are "
+"installed and active. Recommended ones are optional."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "This theme works better with the plugins below. They are optional."
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
@@ -12189,6 +12381,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "Too many locations selected"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Too old"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -12982,6 +13178,12 @@ msgstr ""
 msgid "Version"
 msgstr ""
 
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid ""
+"Version %1$s is installed; the theme needs %2$s and no release this site "
+"can run meets that."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/plugins/index.php
 msgid "Version %s"
@@ -13212,6 +13414,10 @@ msgstr ""
 msgid "Weekly"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Weight in grams"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Welcome to Shopclass"
 msgstr ""
@@ -13343,6 +13549,10 @@ msgstr ""
 msgid "Widgets"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "Will install %s"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/index.php
 msgid ""
 "With Shopclass you can create static pages on which information can be "
@@ -13409,6 +13619,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
 msgid "You are about to delete the files of the plugin. Do you want to continue?"
+msgstr ""
+
+#: oc-includes/osclass/classes/market/PluginDependencies.php
+msgid "You can also download the zip file and upload it under Plugins, Add plugin."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/locations.php
@@ -13497,6 +13711,12 @@ msgid ""
 "Your Shopclass installation can be auto-upgraded. %1$s: the database and "
 "oc-content. You can also upgrade Shopclass manually, more information in "
 "the %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid ""
+"Your active theme needs a plugin that is missing or turned off. The parts "
+"that use it stay hidden until it is back."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Field.php
@@ -13646,6 +13866,16 @@ msgstr ""
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid "Your site is ready."
 msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Your theme and plugins say which of these they work for."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/index.php
+msgid "Your theme needs a plugin that is missing or off: %s."
+msgid_plural "Your theme needs plugins that are missing or off: %s."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid ""

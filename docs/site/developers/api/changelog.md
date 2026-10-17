@@ -75,6 +75,15 @@ None.
 
 ## Changes
 
+### v1: pages, menus, SEO and products
+
+Added to v1.
+
+- `GET /pages`, `GET /pages/{id|name}` and `GET /menus`: linked pages, one page with its text, and the site menus (`main`, `footer`). A plugin adds or edits menus with the `api_menus` filter. All take `locale`.
+- `GET /seo?for=home|listing|category|page|search`: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph. A hidden or unknown target is a 404.
+- The site document carries `mode` and `features.shop`.
+- A listing has a `product` member with its `variants` (SKU, price, stock, weight, shipping class) when it is for sale. Only an admin writes them.
+
 ### v1: search extras
 
 Added to v1.
