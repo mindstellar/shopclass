@@ -88,6 +88,37 @@ final class ListingInput
     }
 
     /**
+     * The values of the admin "Sell this item" section: what a refused save posted, or the
+     * listing's default variant. Prices are in the site's locale format.
+     *
+     * @param int $itemId 0 for a new listing
+     *
+     * @return array{sell:bool,sku:string,price:string,stock:string,weight:string,shippingClass:string}
+     */
+    public static function productForm(int $itemId): array
+    {
+        $kept = Session::getInstance()->_getForm('product');
+        if (is_array($kept)) {
+            $row  = (array) ($kept['fields'] ?? array());
+            $sell = !empty($kept['sell']);
+        } else {
+            $row  = $itemId > 0 ? VariantStore::defaultRow($itemId) : null;
+            $sell = $row !== null;
+            $row  = $row ?? array();
+        }
+        $text = static fn ($value): string => $value === null ? '' : (string) $value;
+
+        return array(
+            'sell'          => $sell,
+            'sku'           => $text($row['s_sku'] ?? null),
+            'price'         => is_numeric($row['i_price'] ?? null) ? (string) osc_prepare_price($row['i_price']) : $text($row['i_price'] ?? null),
+            'stock'         => $text($row['i_stock'] ?? null),
+            'weight'        => $text($row['i_weight'] ?? null),
+            'shippingClass' => $text($row['s_shipping_class'] ?? null),
+        );
+    }
+
+    /**
      * Stop keeping the custom field values keep() kept.
      *
      * @param mixed $meta the posted custom field values, by field id

@@ -522,48 +522,6 @@ class ItemForm extends Form
     }
 
     /**
-     * The values of the "Sell this item" section: the listing's default variant, or what a
-     * rejected save posted. Prices are in the site's locale format.
-     *
-     * @param array<string,mixed>|null $item Defaults to the current item
-     *
-     * @return array{sell:bool,sku:string,price:string,stock:string,weight:string,shippingClass:string}
-     */
-    public static function product_values($item = null)
-    {
-        $kept = Session::getInstance()->_getForm('product');
-        if (is_array($kept)) {
-            $fields = (array) ($kept['fields'] ?? array());
-            $row    = array(
-                's_sku'            => $fields['s_sku'] ?? null,
-                'i_price'          => $fields['i_price'] ?? null,
-                'i_stock'          => $fields['i_stock'] ?? null,
-                'i_weight'         => $fields['i_weight'] ?? null,
-                's_shipping_class' => $fields['s_shipping_class'] ?? null,
-            );
-            $sell = !empty($kept['sell']);
-        } else {
-            if ($item === null) {
-                $item = osc_item();
-            }
-            $id   = (int) ($item['pk_i_id'] ?? 0);
-            $row  = $id > 0 ? \mindstellar\listing\VariantStore::defaultRow($id) : null;
-            $sell = $row !== null;
-            $row  = $row ?? array();
-        }
-        $text = static fn ($value): string => $value === null ? '' : (string) $value;
-
-        return array(
-            'sell'          => $sell,
-            'sku'           => $text($row['s_sku'] ?? null),
-            'price'         => is_numeric($row['i_price'] ?? null) ? (string) osc_prepare_price($row['i_price']) : $text($row['i_price'] ?? null),
-            'stock'         => $text($row['i_stock'] ?? null),
-            'weight'        => $text($row['i_weight'] ?? null),
-            'shippingClass' => $text($row['s_shipping_class'] ?? null),
-        );
-    }
-
-    /**
      * Echo the currency select, or a hidden input when only one currency exists.
      *
      * @param array<int,array<string,mixed>>|null $currencies Defaults to the enabled currencies

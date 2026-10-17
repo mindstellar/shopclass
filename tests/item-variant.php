@@ -179,9 +179,9 @@ $r    = $call('PATCH', 'listings/' . $mine, ['product' => ['sku' => 'HACK']], $u
 pin('a user\'s PATCH with product is refused', 422, $r->status());
 pin('and no row is written', [], $rows($mine));
 
-$shown = ItemForm::product_values(['pk_i_id' => $plain]);
+$shown = ListingInput::productForm($plain);
 pin('the admin form reads the default row', [true, 'P-1', '7.25', '2', '120', 'letter'], [$shown['sell'], $shown['sku'], $shown['price'], $shown['stock'], $shown['weight'], $shown['shippingClass']]);
-pin('a listing with no row shows an unticked form', [false, ''], [ItemForm::product_values(['pk_i_id' => $mine])['sell'], ItemForm::product_values([])['sku']]);
+pin('a listing with no row shows an unticked form', [false, ''], [ListingInput::productForm($mine)['sell'], ListingInput::productForm(0)['sku']]);
 
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => null], $boss);
 pin('product null stops selling', [200, []], [$r->status(), $rows($plain)]);
