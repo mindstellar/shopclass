@@ -103,7 +103,11 @@ final class ListingService
         }
         $refusal = ListingPolicy::mayPost($actor, $email);
         if ($refusal !== ListingPolicy::ALLOWED) {
-            throw new ForbiddenException(self::refusalMessage($refusal), $refusal === ListingPolicy::REGISTERED_ONLY ? ForbiddenException::SIGN_IN : ForbiddenException::BANNED);
+            throw new ForbiddenException(self::refusalMessage($refusal), match ($refusal) {
+                ListingPolicy::REGISTERED_ONLY => ForbiddenException::SIGN_IN,
+                ListingPolicy::SHOP_MODE       => ForbiddenException::DISABLED,
+                default                        => ForbiddenException::BANNED,
+            });
         }
         $this->allowed = $key;
     }
@@ -652,6 +656,7 @@ final class ListingService
     public static function refusalMessage(string $refusal): string
     {
         return match ($refusal) {
+            ListingPolicy::SHOP_MODE       => _m('Only the shop owner can add products'),
             ListingPolicy::REGISTERED_ONLY => _m('Only registered users are allowed to post listings'),
             ListingPolicy::BANNED_EMAIL    => _m('Your current email is not allowed'),
             default                        => _m('Your current IP is not allowed'),

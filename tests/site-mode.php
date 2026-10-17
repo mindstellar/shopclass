@@ -1,0 +1,78 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * The site mode: osc_site_mode() and its default, ListingPolicy::mayPost() in shop mode, the
+ * list of packages that do not declare the chosen mode, and the preference migration.
+ *
+ * Usage: php tests/site-mode.php
+ */
+
+require_once __DIR__ . '/lib/harness.php';
+require_once __DIR__ . '/lib/api-admin-kit.php';
+
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingPolicy;
+use mindstellar\market\SiteMode;
+
+$admin = api_admin_boot('osc_site_mode');
+$p     = DB_TABLE_PREFIX;
+$mode  = static function (string $value): void {
+    Preference::getInstance()->set('site_mode', $value);
+};
+$guest = Actor::guest('192.0.2.80');
+$user  = Actor::user(7, '192.0.2.80');
+$root  = Actor::admin(1, '192.0.2.80');
+Preference::getInstance()->set('reg_user_post', '0');
+
+harness_section('the setting');
+pin('unset reads classifieds', 'classifieds', osc_site_mode());
+$mode('shop');
+pin('shop', 'shop', osc_site_mode());
+$mode('both');
+pin('both', 'both', osc_site_mode());
+$mode('nonsense');
+pin('an unknown value reads classifieds', 'classifieds', osc_site_mode());
+
+harness_section('posting');
+$mode('classifieds');
+pin('classifieds: a guest may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($guest, 'a@example.test'));
+pin('classifieds: a user may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($user, 'a@example.test'));
+$mode('shop');
+pin('shop: a user is refused', ListingPolicy::SHOP_MODE, ListingPolicy::mayPost($user, 'a@example.test'));
+pin('shop: a guest is refused', ListingPolicy::SHOP_MODE, ListingPolicy::mayPost($guest, 'a@example.test'));
+pin('shop: an admin may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($root, 'a@example.test'));
+$mode('both');
+pin('both: a user may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($user, 'a@example.test'));
+pin('both: a guest may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($guest, 'a@example.test'));
+check('the refusal has a message', \mindstellar\listing\ListingService::refusalMessage(ListingPolicy::SHOP_MODE) !== '');
+
+harness_section('packages that do not declare the mode');
+$packages = ['Aisle' => ['shop'], 'Bender' => ['classifieds'], 'Both' => ['classifieds', 'shop'], 'Plain' => ['classifieds']];
+pin('classifieds', ['Aisle'], SiteMode::lacking('classifieds', $packages));
+pin('shop', ['Bender', 'Plain'], SiteMode::lacking('shop', $packages));
+pin('both needs both', ['Aisle', 'Bender', 'Plain'], SiteMode::lacking('both', $packages));
+pin('nothing lacks when nothing is active', [], SiteMode::lacking('shop', []));
+
+harness_section('the migration');
+$run = static function () use ($p): void {
+    (require ABS_PATH . 'oc-includes/osclass/installer/migrations/0077_site_mode.php')->up(\mindstellar\database\Connection::getInstance());
+};
+$row = static fn (): array => $admin->query("SELECT s_value, e_type FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = 'site_mode'")->fetch_all(MYSQLI_NUM);
+$admin->query("DELETE FROM {$p}t_preference WHERE s_name = 'site_mode'");
+$run();
+pin('adds the default', [['classifieds', 'STRING']], $row());
+$run();
+pin('runs again without a second row', [['classifieds', 'STRING']], $row());
+$admin->query("UPDATE {$p}t_preference SET s_value = 'shop' WHERE s_name = 'site_mode'");
+$run();
+pin('keeps a value the admin chose', [['shop', 'STRING']], $row());
+
+exit(harness_result());
