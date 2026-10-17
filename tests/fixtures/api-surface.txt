@@ -26,6 +26,7 @@ mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
 mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array
 mindstellar\api\ApiKit::public listingContext(mindstellar\api\ApiCall $call): mindstellar\api\serializer\ViewContext
 mindstellar\api\ApiKit::public listingsById(mindstellar\api\ApiCall $call, array $ids, mindstellar\api\serializer\ViewContext $context): array
+mindstellar\api\Problem code already_reviewed = 409
 mindstellar\api\Problem code api_disabled = 403
 mindstellar\api\Problem code banned = 403
 mindstellar\api\Problem code conflict = 409

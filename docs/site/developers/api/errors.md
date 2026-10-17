@@ -105,6 +105,7 @@ Each code's `type` link points at its anchor here.
 | <a id="api_disabled"></a>`api_disabled` | 403 | The site owner switched the API off. |
 | <a id="not_found"></a>`not_found` | 404 | No such endpoint, API version or record. Also a pending, disabled or spam listing, a disabled user, an unapproved comment that is not the caller's, and a photo, key or saved search that is not the caller's. |
 | <a id="method_not_allowed"></a>`method_not_allowed` | 405 | The path exists but not for this method. `Allow` lists the methods that work. |
+| <a id="already_reviewed"></a>`already_reviewed` | 409 | The signed-in user already has a rated comment on this listing. A comment with no rating is still accepted. |
 | <a id="idempotency_in_flight"></a>`idempotency_in_flight` | 409 | A request with the same `Idempotency-Key` is still running. `Retry-After: 1`. |
 | <a id="too_large"></a>`too_large` | 413 | The body is over 1 MB, or a photo is over the site's largest photo size or 16 MB. |
 | <a id="unsupported_media_type"></a>`unsupported_media_type` | 415 | The body is not `application/json` (or `application/merge-patch+json` on `PATCH`). A photo is `multipart/form-data` in a field named `photo`, or the image itself. |

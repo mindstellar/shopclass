@@ -87,7 +87,7 @@ final class ListingsController
     }
 
     /**
-     * Approved comments, oldest first, paged by id.
+     * Approved comments, oldest first or with `sort=newest` newest first, paged by id.
      */
     public function comments(ApiCall $call): Response
     {
@@ -97,12 +97,17 @@ final class ListingsController
         }
         $id    = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $facts = $this->api->facts();
-        $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), 'listings/' . $id . '/comments', ['listing' => $id] + $request->query());
+        $sort  = $request->queryString('sort', 'oldest');
+        if (!in_array($sort, ['oldest', 'newest'], true)) {
+            throw ProblemException::field('/sort', 'enum', 'must be oldest or newest', 'query');
+        }
+        $newest = $sort === 'newest';
+        $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId($newest ? 'desc' : 'asc', $facts->commentsPerPage(), $facts->maxLimit()), 'listings/' . $id . '/comments', ['listing' => $id] + $request->query());
 
         $comments = $this->api->commentQuery();
 
         return $pager->respond(
-            fn (): array => $comments->approved($id, $pager->afterId() ?? 0, $pager->limit() + 1),
+            fn (): array => $comments->approved($id, $pager->afterId() ?? 0, $pager->limit() + 1, $newest),
             fn (): int => $comments->countApproved($id),
             static fn (array $page): array => array_map([new CommentSerializer(), 'one'], $page),
             $this->api->links()

@@ -30,7 +30,7 @@ final class ListingSerializer
 
     public const PUBLIC_MEMBERS = [
         'id', 'url', 'status', 'title', 'description', 'snippet', 'locale', 'category', 'price', 'location', 'contact', 'seller',
-        'photos', 'custom_fields', 'translations', 'product', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
+        'photos', 'custom_fields', 'translations', 'product', 'rating', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
     ];
 
     /** Sent to the owner and admins. */
@@ -42,7 +42,7 @@ final class ListingSerializer
     public const MEMBERS = [...self::PUBLIC_MEMBERS, ...self::OWNER_MEMBERS, ...self::ADMIN_MEMBERS, 'ext'];
 
     /** The members `?include=` switches on. */
-    public const INCLUDES = ['custom_fields', 'translations'];
+    public const INCLUDES = ['custom_fields', 'translations', 'rating'];
 
     public function __construct(
         private Links $links,
@@ -107,6 +107,7 @@ final class ListingSerializer
             'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
             'product'      => fn () => self::product($relations->variants($id), $view !== ViewContext::PUBLIC, $item['i_price'] ?? null),
+            'rating'       => $context->includes('rating') ? fn () => self::rating($relations, $id) : null,
             'premium'      => static fn () => Format::bool($item['b_premium'] ?? 0),
             'views'        => static fn () => Format::int($item['i_num_views'] ?? 0),
             'published_at' => static fn () => Format::time($item['dt_pub_date'] ?? null),
@@ -137,7 +138,7 @@ final class ListingSerializer
     /**
      * The members a page needs looked up: sellers, photos, custom field values.
      *
-     * @return array{seller:bool,photos:bool,fields:bool,product:bool}
+     * @return array{seller:bool,photos:bool,fields:bool,product:bool,rating:bool}
      */
     public static function lookups(ViewContext $context): array
     {
@@ -146,7 +147,26 @@ final class ListingSerializer
             'photos' => $context->wants('photos'),
             'fields' => $context->includes('custom_fields') && $context->wants('custom_fields'),
             'product' => $context->wants('product'),
+            'rating' => $context->includes('rating') && $context->wants('rating'),
         ];
+    }
+
+    /**
+     * The listing's approved ratings: how many, their average to one decimal, and on a single
+     * listing how many gave each star.
+     *
+     * @return array<string,mixed>
+     */
+    private static function rating(ListingRelations $relations, int $id): array
+    {
+        $rating = $relations->rating($id);
+        $stars  = $relations->stars($id);
+        $out    = ['average' => $rating['average'], 'count' => $rating['count']];
+        if ($stars !== null) {
+            $out['distribution'] = array_combine(array_map('strval', array_keys($stars)), array_values($stars));
+        }
+
+        return $out;
     }
 
     /**

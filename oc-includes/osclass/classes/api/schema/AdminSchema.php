@@ -101,8 +101,9 @@ final class AdminSchema
                     'email'   => Schema::nullable('string'),
                     'user_id' => Schema::nullable('integer'),
                 ], ['name', 'email', 'user_id']),
+                'rating'       => Schema::nullable('integer', 'Stars from 1 to 5; null for a comment with no rating.'),
                 'published_at' => Schema::time(),
-            ], ['id', 'listing_id', 'status', 'approved', 'blocked', 'title', 'body', 'author', 'published_at']),
+            ], ['id', 'listing_id', 'status', 'approved', 'blocked', 'title', 'body', 'author', 'rating', 'published_at']),
             'AdminCommentPatch'     => $input([
                 'title'        => $text(200),
                 'body'         => $text(5000, 1),

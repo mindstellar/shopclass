@@ -423,6 +423,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     b_active TINYINT(1) NOT NULL DEFAULT 0,
     b_spam TINYINT(1) NOT NULL DEFAULT 0,
     fk_i_user_id INT UNSIGNED NULL,
+    i_rating TINYINT UNSIGNED NULL,
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_item_id (fk_i_item_id),
