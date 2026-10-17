@@ -25,6 +25,9 @@ use mindstellar\utility\SystemClock;
  */
 final class ListingSerializer
 {
+    /** The most units left that a variant still reports as `low_stock`. */
+    private const LOW_STOCK = 5;
+
     public const PUBLIC_MEMBERS = [
         'id', 'url', 'status', 'title', 'description', 'snippet', 'locale', 'category', 'price', 'location', 'contact', 'seller',
         'photos', 'custom_fields', 'translations', 'product', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
@@ -148,7 +151,7 @@ final class ListingSerializer
 
     /**
      * What makes the listing buyable, or null when it has no variant. The stock count is for the
-     * owner and admins; everyone sees whether a variant is in stock.
+     * owner and admins; everyone sees whether a variant is in stock and, from 1 to 5 left, the count as `low_stock`.
      *
      * @param array<int,array<string,mixed>> $rows         t_item_variant rows
      * @param mixed                          $listingPrice the listing's own price, which a variant with none sells at
@@ -174,6 +177,7 @@ final class ListingSerializer
                 'compare_at'     => Format::amount($was),
                 'on_sale'        => is_numeric($was) && is_numeric($sells) && (int) $was > (int) $sells,
                 'in_stock'       => $stock === null || $stock > 0,
+                'low_stock'      => $stock !== null && $stock >= 1 && $stock <= self::LOW_STOCK ? $stock : null,
                 'weight'         => is_numeric($row['i_weight'] ?? null) ? (int) $row['i_weight'] : null,
                 'shipping_class' => Format::text($row['s_shipping_class'] ?? null),
                 'photo_id'       => is_numeric($row['fk_i_resource_id'] ?? null) ? (int) $row['fk_i_resource_id'] : null,

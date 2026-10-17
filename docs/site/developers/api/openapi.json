@@ -40756,6 +40756,13 @@
                                             "type": "boolean",
                                             "description": "true when stock is not tracked."
                                         },
+                                        "low_stock": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "description": "The units left when 1 to 5 are, for everyone; null otherwise or when stock is not tracked."
+                                        },
                                         "stock": {
                                             "type": [
                                                 "integer",
@@ -40794,6 +40801,7 @@
                                         "compare_at",
                                         "on_sale",
                                         "in_stock",
+                                        "low_stock",
                                         "weight",
                                         "shipping_class",
                                         "photo_id",

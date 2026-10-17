@@ -70,6 +70,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Search box and post form suggestions: `GET /search/suggest` lists listings whose titles match, with a thumbnail, and `GET /search/categories` suggests up to three categories for a title. A search plugin can answer either through the `search_suggestions` and `category_suggestions` filters, and may add suggested searches. Themes add `osc_search_suggest_attributes()` to a search input to show the list.
 - `GET /listings` takes `page` for numbered pages with any sort, and answers `meta.page` and `meta.pages`.
 - A product variant can have a "was" price (`compare_at`, set by an admin); listings answer `compare_at` and `on_sale`.
+- Variants answer `low_stock`, the units left when 1 to 5 are, so a shop can say "Only 3 left".
 
 ### Breaking
 
