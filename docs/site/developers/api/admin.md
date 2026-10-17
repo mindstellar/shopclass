@@ -108,6 +108,23 @@ curl -X PATCH $API/admin/listings/412 -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" -d '{"product": {"sku": "MUG-1", "price": "9.50", "stock": 4}}'
 ```
 
+For options such as Colour and Size, send `product.variants`: one row per combination, each with
+`options` (name => value) and the same members as above plus `photo_id` (one of the listing's
+photos). The rows replace every row the listing has; a row whose options match a stored one keeps
+its id. Limits: 3 option names of up to 30 characters, 30 values of up to 40 characters per name,
+100 rows, every row names every option, and no combination twice. Sending the default members
+without `variants` turns the listing back into one default row.
+
+```bash
+curl -X PATCH $API/admin/listings/412 -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" -d '{"product": {"variants": [
+    {"options": {"Colour": "Sunflower", "Size": "M"}, "price": "25", "stock": 3},
+    {"options": {"Colour": "Cherry", "Size": "M"}, "price": "25", "stock": 0}]}}'
+```
+
+A kept row whose stock or selling price changes fires `variant_stock_changed` or
+`variant_price_changed` with the variant id, listing id, old and new value.
+
 ## Comments
 
 `admin:comments`.

@@ -12,7 +12,8 @@
  * Product variants (t_item_variant): the validator's widths and types, that only an admin
  * writes `product`, the admin PATCH, the serializer's `product` member, the stock change that
  * cannot go below zero, the shop-mode refusal in the service and the API, the row cleanup on
- * delete, and a fresh install matching an upgrade.
+ * delete, option rows (rules, ids kept across an edit, the stock and price hooks, the admin form
+ * and API), and a fresh install matching an upgrade.
  * Usage: php tests/item-variant.php
  */
 
@@ -20,6 +21,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\auth\Actor;
+use mindstellar\database\Db;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingValidator;
@@ -281,6 +283,178 @@ foreach ($buyers as $i => $proc) {
 pin('both buyers waited on the row', 2, $waiting);
 pin('two buyers at stock 1: one wins, one is refused', [1, 1], [substr_count($printed, 'won'), substr_count($printed, 'lost')]);
 pin('and the stock ends at 0', '0', (string) $admin->query("SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id = $race")->fetch_row()[0]);
+
+harness_section('option rows: the rules');
+$tee    = static fn (array $extra = []): array => ['sell' => true, 'fields' => [], 'variants' => $extra];
+$row    = static fn (array $options, array $fields = []): array => ['options' => $options, 'fields' => $fields];
+$combos = [];
+foreach (['Sunflower', 'Cherry'] as $colour) {
+    foreach (['S', 'M', 'L', 'XL'] as $size) {
+        $combos[] = $row(['Colour' => $colour, 'Size' => $size]);
+    }
+}
+pin('eight good rows pass', [], $v->product($tee($combos)));
+pin('no rows', ['/product/variants'], $codes($v->product($tee([]))));
+pin('more than 100 rows', ['/product/variants'], $codes($v->product($tee(array_map(static fn (int $i): array => $row(['Size' => 'S' . $i]), range(1, 101))))));
+pin('100 rows pass', [], $v->product($tee(array_map(static fn (int $i): array => $row(['Size' => 'S' . ($i % 30), 'Fit' => 'F' . intdiv($i, 30)]), range(0, 99)))));
+pin('four option names', ['/product/options'], $codes($v->product($tee([$row(['A' => '1', 'B' => '1', 'C' => '1', 'D' => '1'])]))));
+pin('three pass', [], $v->product($tee([$row(['A' => '1', 'B' => '1', 'C' => '1'])])));
+pin('a name over 30 characters', ['/product/options'], $codes($v->product($tee([$row([str_repeat('n', 31) => 'x'])]))));
+pin('a name of 30 passes', [], $v->product($tee([$row([str_repeat('n', 30) => 'x'])])));
+pin('an empty name', ['/product/options'], $codes($v->product($tee([$row(['' => 'x'])]))));
+pin('a value over 40 characters', ['/product/variants/0/options'], $codes($v->product($tee([$row(['Size' => str_repeat('v', 41)])]))));
+pin('a value of 40 passes, counted in characters', [], $v->product($tee([$row(['Size' => str_repeat('é', 40)])])));
+pin('an empty value', ['/product/variants/0/options'], $codes($v->product($tee([$row(['Size' => ' '])]))));
+pin('31 values under one name', ['/product/options'], $codes($v->product($tee(array_map(static fn (int $i): array => $row(['Size' => 'S' . $i]), range(1, 31))))));
+pin('30 pass', [], $v->product($tee(array_map(static fn (int $i): array => $row(['Size' => 'S' . $i]), range(1, 30)))));
+pin('a row missing a name', ['/product/variants/1/options'], $codes($v->product($tee([$row(['Colour' => 'Red', 'Size' => 'S']), $row(['Colour' => 'Red'])]))));
+pin('a row with a name the first lacks', ['/product/variants/1/options'], $codes($v->product($tee([$row(['Colour' => 'Red']), $row(['Colour' => 'Red', 'Size' => 'S'])]))));
+pin('a duplicate combination, whatever the key order', ['/product/variants/2/options'], $codes($v->product($tee([$row(['Colour' => 'Red', 'Size' => 'S']), $row(['Colour' => 'Red', 'Size' => 'M']), $row(['Size' => 'S', 'Colour' => 'Red'])]))));
+pin('a bad row field names its row', ['/product/variants/1/sku', '/product/variants/1/stock'], $codes($v->product($tee([$row(['Size' => 'S']), $row(['Size' => 'M'], ['s_sku' => str_repeat('x', 65), 'i_stock' => -1])]))));
+pin('a photo that is not the listing\'s', ['/product/variants/0/photo_id'], $codes($v->product($tee([$row(['Size' => 'S'], ['fk_i_resource_id' => 77])]), [5, 6])));
+pin('a photo that is passes', [], $v->product($tee([$row(['Size' => 'S'], ['fk_i_resource_id' => 6])]), [5, 6]));
+pin('a photo id that is not a number', ['/product/variants/0/photo_id'], $codes($v->product($tee([$row(['Size' => 'S'], ['fk_i_resource_id' => 'six'])]), [5, 6])));
+pin('a row message says which row', 'Variant 2: SKU too long.', $v->product($tee([$row(['Size' => 'S']), $row(['Size' => 'M'], ['s_sku' => str_repeat('x', 65)])]))[0]['message'] ?? null);
+
+harness_section('option rows: saveSet');
+$fired = [];
+osc_add_hook('variant_stock_changed', static function (int $id, int $item, ?int $from, ?int $to) use (&$fired): void {
+    $fired[] = ['stock', $id, $item, $from, $to];
+});
+osc_add_hook('variant_price_changed', static function (int $id, int $item, ?int $from, ?int $to) use (&$fired): void {
+    $fired[] = ['price', $id, $item, $from, $to];
+});
+$set = seed_item($admin, $cat, $sue, 'Tee', 10.0);
+VariantStore::saveDefault($set, ['i_stock' => 4]);
+$set8 = array_map(static fn (array $r, int $i): array => ['options' => $r['options'], 'fields' => ['s_sku' => 'TEE-' . $i, 'i_price' => 20000000, 'i_stock' => $i]], $combos, array_keys($combos));
+$ids  = VariantStore::saveSet($set, $set8);
+$got  = $rows($set);
+pin('eight rows saved, the default row gone', [8, 0], [count($got), count(array_filter($got, static fn (array $r): bool => $r['s_options'] === null))]);
+pin('options stored in the listing\'s order', '{"Colour":"Sunflower","Size":"S"}', $got[0]['s_options']);
+pin('positions follow the row order', range(0, 7), array_map('intval', array_column($got, 'i_position')));
+pin('ids come back in order', array_map('intval', array_column($got, 'pk_i_id')), $ids);
+pin('new rows fire no hooks', [], $fired);
+pin('optionsOf, first-seen order', [['name' => 'Colour', 'values' => ['Sunflower', 'Cherry']], ['name' => 'Size', 'values' => ['S', 'M', 'L', 'XL']]], VariantStore::optionsOf($got));
+
+// Reorder, drop Sunflower XL, add Navy M, change two rows.
+$edit2 = array_reverse($set8);
+array_shift($edit2);
+$edit2[0]['fields']['i_stock'] = 9;
+$edit2[1]['fields']['i_price'] = 15000000;
+$edit2[] = ['options' => ['Size' => 'M', 'Colour' => 'Navy'], 'fields' => ['i_stock' => 1]];
+$fired   = [];
+$ids2    = VariantStore::saveSet($set, $edit2);
+$byOpt   = static function (int $item) use ($rows): array {
+    $out = [];
+    foreach ($rows($item) as $r) {
+        $out[$r['s_options']] = $r;
+    }
+
+    return $out;
+};
+$after = $byOpt($set);
+pin('an unchanged combination keeps its id', $ids[1], (int) $after['{"Colour":"Sunflower","Size":"M"}']['pk_i_id']);
+pin('a row sent with its keys in another order keeps its id too', true, isset($after['{"Colour":"Navy","Size":"M"}']) && !in_array((int) $after['{"Colour":"Navy","Size":"M"}']['pk_i_id'], $ids, true));
+pin('the dropped row is deleted', [8, false], [count($after), isset($after['{"Colour":"Cherry","Size":"XL"}'])]);
+pin('positions renumber to the new order', [0, 6], [(int) $after['{"Colour":"Cherry","Size":"L"}']['i_position'], (int) $after['{"Colour":"Sunflower","Size":"S"}']['i_position']]);
+pin('the hooks fire once per changed row, with from and to', [['stock', $ids[6], $set, 6, 9], ['price', $ids[5], $set, 20000000, 15000000]], $fired);
+
+$fired = [];
+VariantStore::saveSet($set, $edit2);
+pin('saving the same rows again fires nothing', [], $fired);
+$edit3                         = $edit2;
+$edit3[0]['fields']['i_price'] = null;
+VariantStore::saveSet($set, $edit3);
+pin('a price cleared to the listing price reports the price it sells at', [['price', $ids[6], $set, 20000000, 10000000]], $fired);
+
+$fired = [];
+VariantStore::adjustStock($ids[6], -2);
+pin('adjustStock fires the stock hook', [['stock', $ids[6], $set, 9, 7]], $fired);
+$fired = [];
+VariantStore::adjustStock($ids[6], -99);
+pin('a refused change fires nothing', [], $fired);
+
+$fired = [];
+VariantStore::saveDefault($set, ['i_stock' => 3]);
+pin('saveDefault removes the option rows', [1, null], [count($rows($set)), $rows($set)[0]['s_options']]);
+pin('a new default row fires nothing', [], $fired);
+VariantStore::saveDefault($set, ['i_stock' => 0]);
+pin('a kept default row fires the stock hook', [['stock', (int) $rows($set)[0]['pk_i_id'], $set, 3, 0]], $fired);
+
+harness_section('option rows: the admin form and API');
+$photoA = (int) Db::table($p . 't_resource')->insert(['s_owner_type' => \ItemResource::OWNER, 'i_owner_id' => $set, 's_name' => 'a', 's_extension' => 'jpg', 's_content_type' => 'image/jpeg', 's_path' => 'oc-content/uploads/0/', 'dt_created' => date('Y-m-d H:i:s')]);
+$photoB = (int) Db::table($p . 't_resource')->insert(['s_owner_type' => \ItemResource::OWNER, 'i_owner_id' => $set, 's_name' => 'b', 's_extension' => 'jpg', 's_content_type' => 'image/jpeg', 's_path' => 'oc-content/uploads/0/', 'dt_created' => date('Y-m-d H:i:s')]);
+$other  = (int) Db::table($p . 't_resource')->insert(['s_owner_type' => \ItemResource::OWNER, 'i_owner_id' => $plain, 's_name' => 'c', 's_extension' => 'jpg', 's_content_type' => 'image/jpeg', 's_path' => 'oc-content/uploads/0/', 'dt_created' => date('Y-m-d H:i:s')]);
+$posted = ['sell' => '1', 'hasOptions' => '1', 'optionNames' => [' Colour ', 'Size'], 'variants' => [
+    ['options' => ['Sunflower', 'S'], 'sku' => 'T-1', 'price' => '25', 'stock' => '12', 'photoId' => (string) $photoA],
+    ['options' => ['Sunflower', ' M  '], 'sku' => 'T-2', 'price' => '25', 'stock' => '3', 'photoId' => (string) $photoA],
+    ['options' => ['Cherry', 'S'], 'sku' => 'T-3', 'stock' => '0', 'photoId' => (string) $photoB, 'compareAt' => '30'],
+]];
+$data = ListingInput::fromArray($form(['ownerId' => '0', 'product' => $posted]), $adminActor, true);
+pin('the form posts names and aligned values; spaces trimmed and collapsed', [['Colour' => 'Sunflower', 'Size' => 'S'], ['Colour' => 'Sunflower', 'Size' => 'M']], array_column(array_slice($data['product']['variants'] ?? [], 0, 2), 'options'));
+$third = $data['product']['variants'][2]['fields'] ?? [];
+ksort($third);
+pin('and the row fields as the default row reads them', ['fk_i_resource_id' => $photoB, 'i_compare_price' => 30000000, 'i_stock' => 0, 's_sku' => 'T-3'], $third);
+pin('a user\'s form carries no rows', false, array_key_exists('product', ListingInput::fromArray($form(['product' => $posted]), $userActor, true)));
+$edit($set, ['product' => $posted]);
+pin('an admin edit saves the option rows', ['{"Colour":"Sunflower","Size":"S"}', '{"Colour":"Sunflower","Size":"M"}', '{"Colour":"Cherry","Size":"S"}'], array_column($rows($set), 's_options'));
+$bad = null;
+try {
+    $edit($set, ['product' => ['variants' => [['options' => ['Red', 'S'], 'photoId' => (string) $other]]] + $posted]);
+} catch (\mindstellar\exception\InvalidException $e) {
+    $bad = $codes($e->errors());
+}
+pin('a photo of another listing refuses the save', ['/product/variants/0/photo_id'], $bad);
+pin('and the rows are as they were', 3, count($rows($set)));
+$bad = null;
+try {
+    (new ListingService())->create(ListingInput::fromArray($form(['ownerId' => '0', 'product' => $posted]), $adminActor, true), $adminActor);
+} catch (\mindstellar\exception\InvalidException $e) {
+    $bad = $codes($e->errors());
+}
+pin('a new listing has no photos for a row to name', ['/product/variants/0/photo_id', '/product/variants/1/photo_id', '/product/variants/2/photo_id'], $bad);
+
+$shown = ListingInput::productForm($set);
+pin('the admin form reads the rows back', [true, ['Colour', 'Size'], ['Cherry', 'S'], 'T-3', '30.00', (string) $photoB], [$shown['hasOptions'], array_column($shown['options'], 'name'), $shown['variants'][2]['values'], $shown['variants'][2]['sku'], $shown['variants'][2]['compareAt'], $shown['variants'][2]['photoId']]);
+pin('and offers the listing\'s photos', [$photoA, $photoB], array_keys($shown['photos']));
+pin('a plain listing shows no options', [false, []], [ListingInput::productForm($plain)['hasOptions'], ListingInput::productForm($plain)['variants']]);
+
+$r       = $call('GET', 'listings/' . $set, null, $tomKey);
+$product = $r->body()['data']['product'] ?? [];
+pin('the API shows options in first-seen order', [['name' => 'Colour', 'values' => ['Sunflower', 'Cherry']], ['name' => 'Size', 'values' => ['S', 'M']]], $product['options'] ?? null);
+pin('each variant carries its photo', [$photoA, $photoA, $photoB], array_map(static fn (array $v): ?int => $v['photo']['id'] ?? null, $product['variants'] ?? []));
+pin('beside photo_id', [$photoA, $photoA, $photoB], array_column($product['variants'] ?? [], 'photo_id'));
+pin('the response matches the schema', [], api_admin_schema_errors('ListingDocument', $r));
+$r = $call('GET', 'listings/' . $plain, null, $tomKey);
+pin('a plain product has options []', [], $r->body()['data']['product']['options'] ?? null);
+$first = $r->body()['data']['product']['variants'][0] ?? [];
+pin('and a variant with no photo has photo null', [true, null], [array_key_exists('photo', $first), $first['photo'] ?? null]);
+$r = $call('GET', 'listings/' . $set, null, $tomKey, [], ['fields' => 'id,product']);
+pin('a fieldset with product but not photos still gets the photo', [$photoA, false], [$r->body()['data']['product']['variants'][0]['photo']['id'] ?? null, array_key_exists('photos', $r->body()['data'] ?? [])]);
+
+$keep = (int) $rows($set)[1]['pk_i_id'];
+$r    = $call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [
+    ['options' => ['Colour' => 'Sunflower', 'Size' => 'M'], 'sku' => 'T-2', 'price' => '22.50', 'stock' => 5, 'photo_id' => $photoA],
+    ['options' => ['Colour' => 'Navy', 'Size' => 'M'], 'stock' => 2],
+]]], $boss);
+pin('an admin PATCH replaces the rows', [200, 2], [$r->status(), count($rows($set))]);
+pin('and keeps the id of a kept combination', $keep, (int) $rows($set)[0]['pk_i_id']);
+pin('with the sent values', ['T-2', '22500000', '5', (string) $photoA], [$rows($set)[0]['s_sku'], $rows($set)[0]['i_price'], $rows($set)[0]['i_stock'], $rows($set)[0]['fk_i_resource_id']]);
+$r = $call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [['options' => ['Colour' => 'Navy']], ['options' => ['Colour' => 'Navy']]]]], $boss);
+pin('a duplicate combination is a 422 with its path', [422, ['/product/variants/1/options']], [$r->status(), array_column($r->body()['errors'] ?? [], 'pointer')]);
+$r = $call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [['options' => ['Colour' => 'Navy'], 'photo_id' => $other]]]], $boss);
+pin('a photo of another listing is a 422 with its path', [422, ['/product/variants/0/photo_id']], [$r->status(), array_column($r->body()['errors'] ?? [], 'pointer')]);
+$r = $call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [['sku' => 'no options']]]], $boss);
+pin('a row without options is a 422', 422, $r->status());
+pin('and the rows are as they were', 2, count($rows($set)));
+$before = $rows($mine);
+$r      = $call('PATCH', 'listings/' . $mine, ['product' => ['variants' => [['options' => ['Colour' => 'Navy']]]]], $userKey);
+pin('a user\'s PATCH with rows is refused', [422, $before], [$r->status(), $rows($mine)]);
+$r = $call('PATCH', 'admin/listings/' . $set, ['product' => ['sku' => 'ONE']], $boss);
+pin('the default members turn it back into one default row', [200, 1, null, 'ONE'], [$r->status(), count($rows($set)), $rows($set)[0]['s_options'], $rows($set)[0]['s_sku']]);
+$call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [['options' => ['Colour' => 'Navy']]]]], $boss);
+$r = $call('PATCH', 'admin/listings/' . $set, ['product' => null], $boss);
+pin('product null removes the option rows too', [200, []], [$r->status(), $rows($set)]);
 
 harness_section('delete and upgrade');
 VariantStore::saveDefault($one, ['s_sku' => 'DEL-1']);

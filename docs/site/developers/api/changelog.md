@@ -83,6 +83,7 @@ Added to v1.
 - `GET /seo?for=home|listing|category|page|search`: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph. A hidden or unknown target is a 404.
 - The site document carries `mode` and `features.shop`. In shop mode `POST /listings` answers `403 feature_disabled`.
 - A listing has a `product` member with its `variants` (SKU, price, stock, weight, shipping class) when it is for sale. Only an admin writes them.
+- `product.options` lists the option names and values (Colour, Size); `variants[].photo` is the variant's photo. An admin sends option rows as `product.variants`.
 
 ### v1: search extras
 

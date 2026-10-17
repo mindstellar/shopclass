@@ -15,6 +15,7 @@ namespace mindstellar\api\serializer;
 use mindstellar\api\read\ListingRelations;
 use mindstellar\api\read\ListingText;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\VariantStore;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
 
@@ -106,7 +107,7 @@ final class ListingSerializer
             'photos'       => fn () => $this->photos($relations->photos($id)),
             'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
-            'product'      => fn () => self::product($relations->variants($id), $view !== ViewContext::PUBLIC, $item['i_price'] ?? null),
+            'product'      => fn () => $this->product($relations->variants($id), $relations->photos($id), $view !== ViewContext::PUBLIC, $item['i_price'] ?? null),
             'premium'      => static fn () => Format::bool($item['b_premium'] ?? 0),
             'views'        => static fn () => Format::int($item['i_num_views'] ?? 0),
             'published_at' => static fn () => Format::time($item['dt_pub_date'] ?? null),
@@ -135,7 +136,8 @@ final class ListingSerializer
     }
 
     /**
-     * The members a page needs looked up: sellers, photos, custom field values.
+     * The members a page needs looked up: sellers, photos, custom field values, variants.
+     * Variant photos come from the listing's photos, so `product` loads those too.
      *
      * @return array{seller:bool,photos:bool,fields:bool,product:bool}
      */
@@ -143,7 +145,7 @@ final class ListingSerializer
     {
         return [
             'seller' => $context->wants('seller'),
-            'photos' => $context->wants('photos'),
+            'photos' => $context->wants('photos') || $context->wants('product'),
             'fields' => $context->includes('custom_fields') && $context->wants('custom_fields'),
             'product' => $context->wants('product'),
         ];
@@ -154,14 +156,19 @@ final class ListingSerializer
      * owner and admins; everyone sees whether a variant is in stock and, from 1 to 5 left, the count as `low_stock`.
      *
      * @param array<int,array<string,mixed>> $rows         t_item_variant rows
+     * @param array<int,array<string,mixed>> $photos       the listing's photo rows, which a variant's photo is one of
      * @param mixed                          $listingPrice the listing's own price, which a variant with none sells at
      *
-     * @return array{buyable:bool,variants:array<int,array<string,mixed>>}|null
+     * @return array{buyable:bool,options:array<int,array{name:string,values:array<int,string>}>,variants:array<int,array<string,mixed>>}|null
      */
-    private static function product(array $rows, bool $withStock, mixed $listingPrice = null): ?array
+    private function product(array $rows, array $photos, bool $withStock, mixed $listingPrice = null): ?array
     {
         if ($rows === []) {
             return null;
+        }
+        $photoById = [];
+        foreach ($photos as $photo) {
+            $photoById[Format::int($photo['pk_i_id'] ?? 0)] = $photo;
         }
         $variants = [];
         foreach ($rows as $row) {
@@ -169,6 +176,7 @@ final class ListingSerializer
             $stock    = is_numeric($row['i_stock'] ?? null) ? (int) $row['i_stock'] : null;
             $sells    = $row['i_price'] ?? $listingPrice;
             $was      = $row['i_compare_price'] ?? null;
+            $photoId  = is_numeric($row['fk_i_resource_id'] ?? null) ? (int) $row['fk_i_resource_id'] : null;
             $variant  = [
                 'id'             => Format::int($row['pk_i_id'] ?? 0),
                 'sku'            => Format::text($row['s_sku'] ?? null),
@@ -180,7 +188,8 @@ final class ListingSerializer
                 'low_stock'      => $stock !== null && $stock >= 1 && $stock <= self::LOW_STOCK ? $stock : null,
                 'weight'         => is_numeric($row['i_weight'] ?? null) ? (int) $row['i_weight'] : null,
                 'shipping_class' => Format::text($row['s_shipping_class'] ?? null),
-                'photo_id'       => is_numeric($row['fk_i_resource_id'] ?? null) ? (int) $row['fk_i_resource_id'] : null,
+                'photo_id'       => $photoId,
+                'photo'          => $photoId !== null && isset($photoById[$photoId]) ? $this->photos([$photoById[$photoId]])[0] : null,
                 'position'       => Format::int($row['i_position'] ?? 0),
             ];
             if ($withStock) {
@@ -189,7 +198,7 @@ final class ListingSerializer
             $variants[] = $variant;
         }
 
-        return ['buyable' => true, 'variants' => $variants];
+        return ['buyable' => true, 'options' => VariantStore::optionsOf($rows), 'variants' => $variants];
     }
 
     /**

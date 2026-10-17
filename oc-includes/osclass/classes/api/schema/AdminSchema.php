@@ -17,6 +17,7 @@ use mindstellar\api\serializer\CustomFieldSerializer;
 use mindstellar\apikey\ApiKeyService;
 use mindstellar\comment\CommentStatus;
 use mindstellar\currency\CurrencyCode;
+use mindstellar\listing\VariantStore;
 use mindstellar\user\AccountService;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\Events;
@@ -78,7 +79,27 @@ final class AdminSchema
                     'stock'          => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 2147483647, 'description' => 'null does not track stock.'],
                     'weight'         => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 4294967295, 'description' => 'Grams.'],
                     'shipping_class' => ['type' => ['string', 'null'], 'maxLength' => 40],
-                ]), ['type' => ['object', 'null'], 'additionalProperties' => false, 'description' => 'Sell this item: sets the default variant, sending only the members to change. null stops selling it.']),
+                    // C1: option rows.
+                    'variants'       => [
+                        'type'        => ['array', 'null'],
+                        'maxItems'    => VariantStore::MAX_ROWS,
+                        'description' => 'Option rows (Colour x Size ...), replacing every row the listing has; the other members are then ignored. A row whose options match a stored one keeps its id. A member left out of a row is null.',
+                        'items'       => Schema::object([
+                            'options'        => [
+                                'type'                 => 'object',
+                                'additionalProperties' => ['type' => 'string', 'maxLength' => VariantStore::MAX_VALUE],
+                                'description'          => 'Option name => value. Every row names the same options, at most 3, each name at most 30 characters.',
+                            ],
+                            'sku'            => ['type' => ['string', 'null'], 'maxLength' => 64],
+                            'price'          => ['type' => ['string', 'number', 'null'], 'pattern' => '^[0-9]{1,15}([.][0-9]{1,6})?$', 'minimum' => 0],
+                            'compare_at'     => ['type' => ['string', 'number', 'null'], 'pattern' => '^[0-9]{1,15}([.][0-9]{1,6})?$', 'minimum' => 0],
+                            'stock'          => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 2147483647],
+                            'weight'         => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 4294967295],
+                            'shipping_class' => ['type' => ['string', 'null'], 'maxLength' => 40],
+                            'photo_id'       => ['type' => ['integer', 'null'], 'minimum' => 1, 'description' => 'One of the listing\'s photos.'],
+                        ], ['options']) + ['additionalProperties' => false],
+                    ],
+                ]), ['type' => ['object', 'null'], 'additionalProperties' => false, 'description' => 'Sell this item: sets the default variant, sending only the members to change, or the option rows with `variants`. Without `variants` a listing with option rows goes back to one default row. null stops selling it.']),
                 'owner_id'      => ['type' => ['integer', 'null'], 'minimum' => 1, 'description' => 'The user the listing belongs to; null for none.'],
                 'contact_name'  => $text(100) + ['description' => 'Used when the listing has no owner.'],
                 'contact_email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 100, 'description' => 'Used when the listing has no owner.'],

@@ -16,9 +16,12 @@ use mindstellar\base\Model;
 use mindstellar\database\Db;
 
 /**
- * Reads and writes of t_item_variant. A listing is buyable when it has at least one row. The
- * default row (no options) holds a plain product; rows with options are for size, colour and
- * the like. Rows go with their listing (ON DELETE CASCADE).
+ * Reads and writes of t_item_variant. A listing is buyable when it has at least one row. It has
+ * either one default row (no options), for a plain product, or option rows (Colour x Size ...),
+ * never both. Rows go with their listing (ON DELETE CASCADE).
+ *
+ * A kept row whose stock or selling price changes fires `variant_stock_changed` or
+ * `variant_price_changed` ($variantId, $itemId, $from, $to) once the write commits.
  */
 final class VariantStore extends Model
 {
@@ -30,8 +33,32 @@ final class VariantStore extends Model
     /** Widest value a weight in grams can hold. */
     public const MAX_WEIGHT = 4294967295;
 
+    /** Most option names a listing has. */
+    public const MAX_OPTIONS = 3;
+
+    /** Most values one option name has. */
+    public const MAX_VALUES = 30;
+
+    /** Most option rows a listing has. */
+    public const MAX_ROWS = 100;
+
+    /** Longest option name, in characters. */
+    public const MAX_NAME = 30;
+
+    /** Longest option value, in characters. */
+    public const MAX_VALUE = 40;
+
+    /**
+     * How s_options is encoded. A search that matches `"Colour":"Sunflower"` inside it must
+     * json_encode the name and value with the same flags.
+     */
+    public const JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+
     /** The columns a write may set on the default row. */
     private const FIELDS = array('s_sku', 'i_price', 'i_compare_price', 'i_stock', 'i_weight', 's_shipping_class');
+
+    /** The columns a write may set on an option row. */
+    private const ROW_FIELDS = array('s_sku', 'i_price', 'i_compare_price', 'i_stock', 'i_weight', 's_shipping_class', 'fk_i_resource_id');
 
     /**
      * The prefixed table name, for the search compiler's SQL fragments.
@@ -101,8 +128,8 @@ final class VariantStore extends Model
     }
 
     /**
-     * Create or change the listing's default row. A key left out of $values keeps its stored
-     * value; null clears it.
+     * Create or change the listing's default row, and remove any option rows. A key left out
+     * of $values keeps its stored value; null clears it.
      *
      * @param array{s_sku?:?string,i_price?:?int,i_compare_price?:?int,i_stock?:?int,i_weight?:?int,s_shipping_class?:?string} $values
      *
@@ -114,14 +141,16 @@ final class VariantStore extends Model
         $values = array_intersect_key($values, array_flip(self::FIELDS));
 
         return Db::transaction(static function () use ($itemId, $values): int {
+            Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_options IS NOT NULL', array($itemId));
             $row = Db::selectOne(
-                'SELECT pk_i_id FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_options IS NULL ORDER BY pk_i_id LIMIT 1 FOR UPDATE',
+                'SELECT pk_i_id, i_price, i_stock FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_options IS NULL ORDER BY pk_i_id LIMIT 1 FOR UPDATE',
                 array($itemId)
             );
             if ($row !== null) {
                 $id = (int) $row['pk_i_id'];
                 if ($values !== array()) {
                     self::table()->where('pk_i_id', $id)->update($values);
+                    self::announce($itemId, array(array($id, $row, $values + $row)));
                 }
 
                 return $id;
@@ -129,6 +158,115 @@ final class VariantStore extends Model
 
             return self::table()->insert(array('fk_i_item_id' => $itemId, 'i_position' => 0) + $values);
         });
+    }
+
+    /**
+     * Replace the listing's option rows with $rows, in that order, and remove its default row.
+     * A row whose options match a stored one keeps that row's id, so what points at a variant
+     * survives an edit; the rest are inserted and stored rows not sent are deleted. Each row
+     * is written whole: a column left out of its fields is null. Check the rows with
+     * ListingValidator::product() first.
+     *
+     * @param array<int,array{options:array<string,string>,fields?:array<string,mixed>}> $rows
+     *
+     * @return int[] the rows' ids, in order
+     * @throws \mindstellar\database\DbException
+     */
+    public static function saveSet(int $itemId, array $rows): array
+    {
+        $rows  = array_values($rows);
+        $names = $rows === array() ? array() : array_map('strval', array_keys((array) $rows[0]['options']));
+
+        return Db::transaction(static function () use ($itemId, $rows, $names): array {
+            $stored = Db::select(
+                'SELECT * FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? ORDER BY i_position, pk_i_id FOR UPDATE',
+                array($itemId)
+            );
+            $byKey = array();
+            $drop  = array();
+            foreach ($stored as $row) {
+                $options = is_string($row['s_options'] ?? null) ? json_decode($row['s_options'], true) : null;
+                $key     = is_array($options) && $options !== array() ? self::matchKey($options) : null;
+                if ($key === null || isset($byKey[$key])) {
+                    $drop[] = (int) $row['pk_i_id'];
+                } else {
+                    $byKey[$key] = $row;
+                }
+            }
+
+            $ids     = array();
+            $changes = array();
+            foreach ($rows as $position => $row) {
+                $options = array();
+                foreach ($names as $name) {
+                    $options[$name] = (string) ($row['options'][$name] ?? '');
+                }
+                $fields = array_fill_keys(self::ROW_FIELDS, null);
+                $fields = array_intersect_key((array) ($row['fields'] ?? array()), $fields) + $fields;
+                $values = $fields + array('s_options' => self::optionsJson($options), 'i_position' => $position);
+                $key    = self::matchKey($options);
+                if (isset($byKey[$key])) {
+                    $old = $byKey[$key];
+                    unset($byKey[$key]);
+                    $id = (int) $old['pk_i_id'];
+                    self::table()->where('pk_i_id', $id)->update($values);
+                    $changes[] = array($id, $old, $values);
+                } else {
+                    $id = self::table()->insert(array('fk_i_item_id' => $itemId) + $values);
+                }
+                $ids[] = $id;
+            }
+            foreach ($byKey as $row) {
+                $drop[] = (int) $row['pk_i_id'];
+            }
+            if ($drop !== array()) {
+                Db::execute(
+                    'DELETE FROM ' . self::tableName() . ' WHERE pk_i_id IN (' . implode(', ', array_fill(0, count($drop), '?')) . ')',
+                    $drop
+                );
+            }
+            self::announce($itemId, $changes);
+
+            return $ids;
+        });
+    }
+
+    /**
+     * The listing's options from its rows, in first-seen order: [{name, values}]. Takes stored
+     * rows (s_options) or rows as saveSet() takes them (options). Empty for a plain product.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     *
+     * @return array<int,array{name:string,values:array<int,string>}>
+     */
+    public static function optionsOf(array $rows): array
+    {
+        $values = array();
+        foreach ($rows as $row) {
+            $options = $row['options'] ?? (is_string($row['s_options'] ?? null) ? json_decode($row['s_options'], true) : null);
+            if (!is_array($options)) {
+                continue;
+            }
+            foreach ($options as $name => $value) {
+                $values[(string) $name][(string) $value] = true;
+            }
+        }
+        $out = array();
+        foreach ($values as $name => $seen) {
+            $out[] = array('name' => (string) $name, 'values' => array_map('strval', array_keys($seen)));
+        }
+
+        return $out;
+    }
+
+    /**
+     * A row's options as s_options stores them.
+     *
+     * @param array<string,string> $options name => value, in the listing's option order
+     */
+    public static function optionsJson(array $options): string
+    {
+        return (string) json_encode((object) $options, self::JSON_FLAGS);
     }
 
     /**
@@ -164,12 +302,25 @@ final class VariantStore extends Model
     public static function adjustStock(int $variantId, int $delta): bool
     {
         if ($delta !== 0) {
-            $changed = Db::execute(
-                'UPDATE ' . self::tableName() . ' SET i_stock = i_stock + ? WHERE pk_i_id = ? AND i_stock IS NOT NULL'
-                . ' AND i_stock + ? >= 0 AND i_stock + ? <= ' . self::MAX_STOCK,
-                array($delta, $variantId, $delta, $delta)
-            );
-            if ($changed === 1) {
+            // The read after the write sees this change alone: the row stays locked until commit.
+            $after = Db::transaction(static function () use ($variantId, $delta): ?array {
+                $changed = Db::execute(
+                    'UPDATE ' . self::tableName() . ' SET i_stock = i_stock + ? WHERE pk_i_id = ? AND i_stock IS NOT NULL'
+                    . ' AND i_stock + ? >= 0 AND i_stock + ? <= ' . self::MAX_STOCK,
+                    array($delta, $variantId, $delta, $delta)
+                );
+                if ($changed !== 1) {
+                    return null;
+                }
+                $row = Db::selectOne('SELECT fk_i_item_id, i_stock FROM ' . self::tableName() . ' WHERE pk_i_id = ?', array($variantId));
+                if ($row !== null) {
+                    $to = (int) $row['i_stock'];
+                    self::announce((int) $row['fk_i_item_id'], array(array($variantId, array('i_stock' => $to - $delta), array('i_stock' => $to))));
+                }
+
+                return $row;
+            });
+            if ($after !== null) {
                 return true;
             }
         }
@@ -180,5 +331,58 @@ final class VariantStore extends Model
         }
 
         return $row['i_stock'] === null || $delta === 0;
+    }
+
+    /**
+     * A key for a row's options that ignores their order, so a renamed order still matches.
+     *
+     * @param array<string,mixed> $options
+     */
+    private static function matchKey(array $options): string
+    {
+        $options = array_map('strval', $options);
+        ksort($options, SORT_STRING);
+
+        return self::optionsJson($options);
+    }
+
+    /**
+     * Fire the stock and price hooks, once the write commits, for each kept row that changed.
+     * The price is the one the row sells at: its own, else the listing's.
+     *
+     * @param array<int,array{0:int,1:array<string,mixed>,2:array<string,mixed>}> $changes id, old row, new values
+     * @throws \mindstellar\database\DbException
+     */
+    private static function announce(int $itemId, array $changes): void
+    {
+        $stock = array();
+        $price = array();
+        $whole = static fn ($value): ?int => is_numeric($value) ? (int) $value : null;
+        foreach ($changes as [$id, $old, $new]) {
+            if (array_key_exists('i_stock', $new) && $whole($old['i_stock'] ?? null) !== $whole($new['i_stock'])) {
+                $stock[] = array($id, $whole($old['i_stock'] ?? null), $whole($new['i_stock']));
+            }
+            if (array_key_exists('i_price', $new) && $whole($old['i_price'] ?? null) !== $whole($new['i_price'])) {
+                $price[] = array($id, $whole($old['i_price'] ?? null), $whole($new['i_price']));
+            }
+        }
+        if ($price !== array() && in_array(null, array_merge(array_column($price, 1), array_column($price, 2)), true)) {
+            $listing = $whole(Db::selectOne('SELECT i_price FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?', array($itemId))['i_price'] ?? null);
+            foreach ($price as $i => $change) {
+                $price[$i] = array($change[0], $change[1] ?? $listing, $change[2] ?? $listing);
+            }
+            $price = array_values(array_filter($price, static fn (array $change): bool => $change[1] !== $change[2]));
+        }
+        if ($stock === array() && $price === array()) {
+            return;
+        }
+        Db::afterCommit(static function () use ($itemId, $stock, $price): void {
+            foreach ($stock as [$variantId, $from, $to]) {
+                osc_run_hook('variant_stock_changed', $variantId, $itemId, $from, $to);
+            }
+            foreach ($price as [$variantId, $from, $to]) {
+                osc_run_hook('variant_price_changed', $variantId, $itemId, $from, $to);
+            }
+        });
     }
 }

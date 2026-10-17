@@ -19,6 +19,10 @@ msgid_plural "%1$s (%2$d credits)"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "%1$s is longer than %2$d characters."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/slot-prompt.php
 msgid "%1$s: %2$s. You have %3$s."
 msgstr ""
@@ -131,6 +135,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "%s has been updated"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "%s has no value."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -301,6 +309,10 @@ msgstr ""
 msgid "Activity log settings saved"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Add at least one option row, or turn options off."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Added by admin"
 msgstr ""
@@ -354,6 +366,14 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "An error has occurred"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "An item has at most %d option rows."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "An item has at most %d options."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
@@ -935,6 +955,10 @@ msgstr ""
 msgid "Error, the passwords don't match"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Every option needs a name."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Existing email"
 msgstr ""
@@ -1339,6 +1363,10 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Name at least one option, such as Colour or Size."
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingService.php
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Name too long."
@@ -1648,6 +1676,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "Oops! you can not do that"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Option %1$s has more than %2$d values."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Option name %1$s is longer than %2$d characters."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -3301,6 +3337,10 @@ msgid "Validation email re-sent"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Variant %d:"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Was price must be a positive number."
 msgstr ""
 
@@ -3750,6 +3790,10 @@ msgstr ""
 msgid "free"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "give a value for each option: %s."
+msgstr ""
+
 #: oc-includes/osclass/classes/category/CategoryService.php
 msgid "is not a category"
 msgstr ""
@@ -3814,6 +3858,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SitemapSettingsScreen.php
 msgid "robots.txt is not writable. Fix the file or folder permissions and try again"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "the photo must be one of this listing's photos."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "the same options as variant %d."
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
