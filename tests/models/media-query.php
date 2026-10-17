@@ -59,4 +59,9 @@ pin('matches the file name', array($library), $found);
 pin('a wildcard is searched as text', 0, MediaQuery::page('all', 1, 25, '%')['total']);
 pin('search and a filter combine', 0, MediaQuery::page('user', 1, 25, 'logo')['total']);
 
+harness_section('Site images');
+$site = array_map(static fn (array $r): string => (string) $r['owner_type'], MediaQuery::page('site', 1, 25)['rows']);
+sort($site);
+pin('are library and page files, never listing or user photos', array('library', 'page'), $site);
+
 exit(harness_result());

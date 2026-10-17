@@ -43,7 +43,7 @@ final class MediaQuery
     /**
      * A page of media rows and the total, newest first.
      *
-     * @param string $type   'all', 'item', or a t_resource owner type
+     * @param string $type   'all', 'item', 'site' (every file but listing and user photos), or a t_resource owner type
      * @param string $search words in the file name, the listing title, or the user's name or e-mail
      *
      * @return array{rows:array<int,array<string,mixed>>,total:int}
@@ -60,7 +60,10 @@ final class MediaQuery
 
         $params = array(\ItemResource::OWNER);
         $where  = array();
-        if ($type !== 'all') {
+        if ($type === 'site') {
+            $where[]  = "r.s_owner_type NOT IN (?, 'user')";
+            $params[] = \ItemResource::OWNER;
+        } elseif ($type !== 'all') {
             $where[]  = 'r.s_owner_type = ?';
             $params[] = $type;
         }

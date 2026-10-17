@@ -215,7 +215,7 @@ function osc_media_owner_types(): array
 
 /**
  * A page of normalised media rows plus the total for a filter. $type is 'all',
- * 'item' (listing photos), or a t_resource owner type ('user', 'page', 'library', a
+ * 'item' (listing photos), 'site' (all but listing and user photos), or a t_resource owner type ('user', 'page', 'library', a
  * plugin type). Each row carries: src ('item'|'resource'),
  * id, owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage, s_base_name.
  *

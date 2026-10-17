@@ -31,7 +31,7 @@ final class MediaAjax extends AjaxHandler
         if ($type === '' || $type === null) {
             $type = 'all';
         }
-        if (!in_array($type, array_merge(array('all', 'item'), osc_media_owner_types()), true)) {
+        if (!in_array($type, array_merge(array('all', 'item', 'site'), osc_media_owner_types()), true)) {
             $type = 'all';
         }
         $iPage   = ListPaging::page();
