@@ -184,7 +184,15 @@ $table = $render(static fn () => osc_admin_pagination(array(
 pin('both names draw the same markup', $table, $pager);
 check('the range line is stated', strpos($pager, 'Showing 51 to 75 of 240 results') !== false, $pager);
 check('page links carry iPage', strpos($pager, 'status=paid&amp;iPage=4') !== false, $pager);
-check('the go-to form keeps the list filters', strpos($pager, 'name="status"') !== false && strpos($pager, 'name="page"') !== false, $pager);
+check('ten pages need no go-to form', strpos($pager, 'gotoPage') === false, $pager);
+$long = $render(static fn () => osc_admin_pager(array(
+    'total'    => 400,
+    'per_page' => 25,
+    'page'     => 3,
+    'base_url' => 'https://example.test/oc-admin/index.php?page=billing',
+    'params'   => array('status' => 'paid'),
+)));
+check('the go-to form keeps the list filters', strpos($long, 'gotoPage') !== false && strpos($long, 'name="status"') !== false && strpos($long, 'name="page"') !== false, $long);
 check('no pageNum goes out', strpos($pager, 'pageNum') === false, $pager);
 
 $_SERVER['QUERY_STRING'] = 'page=items&pageNum=2&iDisplayLength=10';
