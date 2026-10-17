@@ -185,7 +185,8 @@ function osc_show_pagination_admin($aData)
                 . osc_pagination_showing($from, $from + $shown - 1, $filtered, $total)
                 . '</span></li></ul>';
         }
-        if ($pageTotal > 1) { ?>
+        // The number list shows 11 pages at most; the jump box is only for longer lists.
+        if ($pageTotal > 11) { ?>
             <form method="get" action="<?php echo osc_esc_html(strtok($urlActual, '?')); ?>" style="display:inline;" nocsrf>
                 <?php foreach ($hidden as [$key, $value]) { ?>
                     <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
@@ -202,6 +203,8 @@ function osc_show_pagination_admin($aData)
                 </ul>
             </form>
             <?php
+        }
+        if ($pageTotal > 1) {
             $pagination = new Pagination(array(
                 'total'    => $pageTotal,
                 'selected' => $pageActual - 1,
