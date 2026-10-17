@@ -81,6 +81,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
                                           // `items_processing_row` filter still hands plugins the plain word.?>
+                                    <?php // A report count of 0 stays blank, so the reasons that matter stand out.
+                                    if (in_array($k, array('spam', 'bad', 'rep', 'exp', 'off'), true) && (int) $v === 0) {
+                                        $v = '';
+                                    } ?>
                                     <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
                                         echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>
