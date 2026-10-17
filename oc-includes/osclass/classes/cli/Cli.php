@@ -22,6 +22,7 @@ use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
 use mindstellar\market\PackageReconciler;
+use mindstellar\market\PluginDependencies;
 use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
@@ -1415,10 +1416,17 @@ class Cli
             return 0;
         }
 
-        osc_set_preference('theme', $theme);
-        \Plugins::resetOpcache();
-        // Mirror the admin activation hook so plugins/themes can react.
-        osc_run_hook('theme_activate', $theme);
+        $deps     = PluginDependencies::forSite();
+        $requires = PluginDependencies::themeRequirements($theme) ?? [];
+        if ($deps->activateTheme($theme, $requires, true) === 'held') {
+            $this->err(sprintf("Theme '%s' needs these plugins installed and enabled first:\n", $theme));
+            foreach ($deps->missingRequired($requires) as $row) {
+                $this->err(sprintf("  %s %s (%s)\n", $row['slug'], $row['constraint'], $row['status']));
+            }
+            $this->err("Get them with market:install <slug> or plugin:activate --plugin=<folder>, then try again.\n");
+
+            return 1;
+        }
 
         $this->out(sprintf("Theme '%s' activated.\n", $theme));
 
