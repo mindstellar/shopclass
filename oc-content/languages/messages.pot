@@ -19,8 +19,16 @@ msgid_plural "%1$s (%2$d credits)"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "%1$s and %2$d more"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "%1$s is longer than %2$d characters."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "%1$s × %2$d"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/slot-prompt.php
@@ -32,6 +40,10 @@ msgid "%d credit"
 msgid_plural "%d credits"
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/classes/billing/Order.php
+msgid "%d credits"
+msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "%d credits added"
@@ -557,8 +569,16 @@ msgstr ""
 msgid "Check your inbox to validate your listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Choose 1 to %d of each item."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Choose a country and save; the regions for it load on the next screen."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Choose a delivery method."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
@@ -1174,6 +1194,10 @@ msgstr ""
 msgid "Keep me signed in"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Keep this under %d characters."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "Key"
 msgstr ""
@@ -1258,6 +1282,7 @@ msgstr ""
 msgid "Links are not allowed in messages."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/CartPricer.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Listing #%d"
 msgstr ""
@@ -1558,6 +1583,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "Not enough credits for this upgrade. <a href=\"%s\">Buy more credits</a>"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Not enough left in stock."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -2206,6 +2235,10 @@ msgstr ""
 msgid "Sign in to message"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Sign in to place an order."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid "Sign in to save a search."
 msgstr ""
@@ -2309,6 +2342,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Spent"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/CartPricer.php
+msgid "Standard delivery"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
@@ -2755,7 +2792,7 @@ msgid "The listing is marked as spam. Unmark it in order to make it public"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ProductAlerts.php
-#: oc-includes/osclass/classes/listing/WishlistStore.php
+#: oc-includes/osclass/classes/listing/WishlistService.php
 msgid "The listing was not found."
 msgstr ""
 
@@ -3136,8 +3173,16 @@ msgstr ""
 msgid "This alert could not be kept after an update. Save the search again."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This field is needed."
+msgstr ""
+
 #: oc-includes/osclass/classes/currency/CurrencyService.php
 msgid "This is the site's default currency."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This item is no longer for sale."
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -3190,6 +3235,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "This message was already sent, or its link has expired."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This payment method is not available right now. Try another."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This payment method is not available."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
@@ -3651,6 +3704,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Your account is not deleted yet. Enter your password and click Delete my "
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Your cart is empty."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php

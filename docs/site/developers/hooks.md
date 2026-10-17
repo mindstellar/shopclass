@@ -204,11 +204,13 @@ command line too. Its one argument is the list of reasons, such as `array('theme
 Clear your cache there. Do not print, send headers or read the session. To ask for one yourself,
 call `osc_purge_page_cache('my_reason')`. See [the caching contract](/docs/developers/caching/).
 
-## Cart hooks (reserved)
+## Cart hooks
 
-These names are reserved for the cart in a later 7.x release. They are not fired yet, so they
-are not in the reference below. `$cart` is the cart array; a line is
-`{id, label, amount (minor units), currency, meta}`.
+Core prices every cart through these filters, in this order, and fires `cart_checkout_before`
+when an order is placed. `$cart` is the cart array; a line is
+`{id, label, amount (micros), currency, meta}`. A filter adds lines and core does the sums, so
+no filter sets an item's price. `cart_totals` adds fee lines under `fees`; the total never goes
+below zero. `cart_item_add_after` is fired by a theme's cart, not by core.
 
 | Hook | Kind | Arguments |
 |---|---|---|
@@ -220,7 +222,9 @@ are not in the reference below. `$cart` is the cart array; a line is
 | `cart_item_add_after` | action | `$cart, $line` |
 | `cart_checkout_before` | action | `$cart` |
 
-A paid order fires `billing_order_paid`, as it does today.
+A paid order fires `billing_order_paid`, as it does today. A goods order also fires
+`billing_order_placed`, `billing_order_shipped`, `billing_order_delivered` and
+`billing_order_cancelled`, each with `$orderId, $userId`.
 
 ## Reference
 
@@ -228,7 +232,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 572 names. Generated from the source; do not edit by hand.
+Core fires 582 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -527,7 +531,7 @@ Core fires 572 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (224)
+### Other (234)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -607,10 +611,20 @@ Core fires 572 names. Generated from the source; do not edit by hand.
 | `billing_feature_duration` | filter | `$days, $this->id, $userId` | `oc-includes/osclass/classes/billing/Feature.php` |
 | `billing_feature_price` | filter | `$price, $this->id, $userId` | `oc-includes/osclass/classes/billing/Feature.php` |
 | `billing_listing_limit_message` | filter | `osc_billing_slot_enabled() ? _m('You are at your listing limit. Buy an extra listing slot on your credits page, or free up a listing -- delete one or let one expire -- to post again.') : _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'), $userId ?? osc_logged_user_id(), $item` | `oc-includes/osclass/helpers/hBilling.php` |
+| `billing_order_cancelled` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
+| `billing_order_delivered` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
 | `billing_order_paid` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
+| `billing_order_placed` | action | `$order->getId(), $userId` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
+| `billing_order_shipped` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
+| `cart_checkout_before` | action | `$cart` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
+| `cart_discount_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
+| `cart_shipping_lines` | filter | `$default, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
+| `cart_shipping_methods` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
+| `cart_tax_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
+| `cart_totals` | filter | `$totals, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `change_email_confirm` | action | `Params::getParam('userId'), $change['old'], $change['new']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `cli_commands` | filter | `array()` | `oc-includes/osclass/classes/cli/Cli.php` |
 | `contact_form` | action | none | `oc-includes/osclass/gui/contact-content.php` |

@@ -93,8 +93,13 @@ action before_username_change
 action before_validating_login
 action billing_credits_changed
 action billing_feature_applied
+action billing_order_cancelled
+action billing_order_delivered
 action billing_order_paid
+action billing_order_placed
 action billing_order_refunded
+action billing_order_shipped
+action cart_checkout_before
 action change_email_confirm
 action comment_form
 action contact_form
@@ -346,6 +351,11 @@ filter billing_listing_limit_message
 filter body_class
 filter bot_user_agents
 filter cache_relevant_cookies
+filter cart_discount_lines
+filter cart_shipping_lines
+filter cart_shipping_methods
+filter cart_tax_lines
+filter cart_totals
 filter category_suggestions
 filter cli_commands
 filter comment_bulk_filter

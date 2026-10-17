@@ -107,7 +107,7 @@ s_external_ref    VARCHAR(191)  NULL             -- gateway's own id
 i_amount          BIGINT        NOT NULL         -- micros
 s_currency        CHAR(3)       NOT NULL
 i_credits         INT UNSIGNED  NOT NULL         -- minted on payment
-s_status          VARCHAR(16)   NOT NULL         -- pending|paid|failed|refunded|cancelled
+s_status          VARCHAR(16)   NOT NULL         -- pending|paid|shipped|delivered|failed|refunded|cancelled
 s_meta            TEXT          NULL             -- JSON, plugin-owned
 dt_date           DATETIME      NOT NULL
 dt_paid_date      DATETIME      NULL
@@ -120,6 +120,32 @@ The `(s_status, dt_date)` index exists for the admin orders screen (§6): three 
 summary counts filter on `s_status` alone, and `search()`'s default listing orders by
 `dt_date DESC, pk_i_id DESC` — both table scans without it once an install has any real
 order volume.
+
+A goods order has `i_credits = 0` and `_kind = goods` in `s_meta`. Its address, buyer and
+shipping details live in `s_meta` too (`_address`, `_buyer`, `_shipping`). `shipped` and
+`delivered` follow `paid`; `Order::isPaid()` is true for all three.
+
+### `t_billing_order_line`
+
+What a goods order holds: item lines, then shipping, tax, discount and fee lines. No foreign
+keys, like the order. A discount's amount is negative.
+
+```
+pk_i_id           INT UNSIGNED  PK AUTO_INCREMENT
+fk_i_order_id     INT UNSIGNED  NOT NULL
+s_kind            VARCHAR(16)   NOT NULL         -- item|shipping|tax|discount|fee
+fk_i_item_id      INT UNSIGNED  NULL             -- item lines
+fk_i_variant_id   INT UNSIGNED  NULL             -- item lines
+s_title           VARCHAR(200)  NOT NULL
+s_options         TEXT          NULL             -- JSON, the variant's options
+s_sku             VARCHAR(64)   NULL
+i_qty             INT UNSIGNED  NOT NULL DEFAULT 1
+i_unit            BIGINT        NOT NULL         -- micros
+i_amount          BIGINT        NOT NULL         -- micros
+s_meta            TEXT          NULL             -- JSON
+INDEX idx_order (fk_i_order_id)
+INDEX idx_item (fk_i_item_id)
+```
 
 ### `t_user_entitlement`
 
@@ -619,6 +645,10 @@ than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/funct
 |---|---|---|
 | `billing_order_paid` | action | Order transitions to paid, after credits are minted |
 | `billing_order_refunded` | action | Reversal recorded |
+| `billing_order_placed` | action | `($orderId, $userId)` a goods order is placed and its gateway answered |
+| `billing_order_shipped` | action | `($orderId, $userId)` paid → shipped, after commit |
+| `billing_order_delivered` | action | `($orderId, $userId)` shipped → delivered, after commit |
+| `billing_order_cancelled` | action | `($orderId, $userId)` pending → cancelled, after commit |
 | `billing_credits_changed` | action | Any ledger write |
 | `billing_feature_applied` | action | `Billing::spend()` succeeds, after the feature's effect lands |
 | `item_bumped` | action | `item.bump`'s `apply` succeeds, after `dt_pub_date` moves. Receives the item id, the same way `item_premium_on` does |
@@ -626,11 +656,17 @@ than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/funct
 | `billing_feature_price` | filter | Override a feature's credit price. Receives `($price, $featureId, $userId)` — `$userId` is who the price is being resolved for, and is `null` when no user is in scope (e.g. listing a feature's price with nobody buying yet) |
 | `billing_feature_duration` | filter | Override a duration feature's granted days. Receives `($days, $featureId, $userId)`, same `$userId` convention as `billing_feature_price` |
 
-### Cart hooks (reserved)
+### Cart hooks
 
-Named now, fired from the 7.x cart. A plugin may register on them today; nothing calls them yet.
-`$cart` is the cart array. A line is `{id, label, amount (minor units), currency, meta}`.
-A paid order reuses `billing_order_paid`.
+`CartPricer::quote()` fires the five filters in table order on every quote and placement.
+`$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal}`; later
+filters also see `shipping_lines`, `tax_lines` and `discount_lines`. A line is
+`{id, label, amount (micros), currency, meta}`; one in another currency is dropped. A filter
+adds lines; core sums them, so no filter sets an item's price. `cart_totals` adds fee lines
+under `fees`; its other values are ignored and the total never goes below zero. Core's
+"Standard delivery" is a `cart_shipping_methods` listener at priority 5.
+`GoodsCheckout::place()` fires `cart_checkout_before`. `cart_item_add_after` is fired by
+the theme's cart, not core. A paid order reuses `billing_order_paid`.
 
 | Hook | Kind | Returns or receives |
 |---|---|---|

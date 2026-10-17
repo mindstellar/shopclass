@@ -31,6 +31,8 @@ final class Order
     public const STATUS_FAILED    = 'failed';
     public const STATUS_REFUNDED  = 'refunded';
     public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_SHIPPED   = 'shipped';
+    public const STATUS_DELIVERED = 'delivered';
 
     public const STATUSES = array(
         self::STATUS_PENDING,
@@ -38,7 +40,15 @@ final class Order
         self::STATUS_FAILED,
         self::STATUS_REFUNDED,
         self::STATUS_CANCELLED,
+        self::STATUS_SHIPPED,
+        self::STATUS_DELIVERED,
     );
+
+    /** The statuses where the money is in: a goods order moves on to shipped and delivered. */
+    public const SETTLED = array(self::STATUS_PAID, self::STATUS_SHIPPED, self::STATUS_DELIVERED);
+
+    /** s_meta `_kind` of an order for goods, not credits. */
+    public const KIND_GOODS = 'goods';
 
     /** @var array<string,mixed> */
     private array $meta;
@@ -230,13 +240,65 @@ final class Order
     }
 
     /**
-     * Whether the money is in and the credits are minted.
+     * Whether the money is in: paid, or a goods order since shipped or delivered.
      *
      * @return bool
      */
     public function isPaid(): bool
     {
-        return $this->status === self::STATUS_PAID;
+        return in_array($this->status, self::SETTLED, true);
+    }
+
+    /**
+     * Whether this order sells goods (lines in t_billing_order_line) rather than credits.
+     *
+     * @return bool
+     */
+    public function isGoods(): bool
+    {
+        return $this->meta('_kind') === self::KIND_GOODS;
+    }
+
+    /**
+     * What the order is for, in a line a gateway can show: "Tee × 2 and 1 more", or "100 credits".
+     *
+     * @return string
+     */
+    public function getLabel(): string
+    {
+        $label = $this->meta('_label');
+        if (is_string($label) && $label !== '') {
+            return $label;
+        }
+
+        return sprintf(_m('%d credits'), $this->credits);
+    }
+
+    /**
+     * Where a goods order goes and how far it got: method, address, carrier, tracking,
+     * tracking_url, shipped_at, delivered_at. Null for a credits order.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function fulfilment(): ?array
+    {
+        if (!$this->isGoods()) {
+            return null;
+        }
+        $shipping = $this->meta('_shipping');
+        $shipping = is_array($shipping) ? $shipping : array();
+        $address  = $this->meta('_address');
+
+        return array(
+            'method'       => isset($shipping['method']) ? (string) $shipping['method'] : null,
+            'label'        => isset($shipping['label']) ? (string) $shipping['label'] : null,
+            'address'      => is_array($address) ? $address : null,
+            'carrier'      => isset($shipping['carrier']) ? (string) $shipping['carrier'] : null,
+            'tracking'     => isset($shipping['tracking']) ? (string) $shipping['tracking'] : null,
+            'tracking_url' => isset($shipping['url']) ? (string) $shipping['url'] : null,
+            'shipped_at'   => isset($shipping['shipped_at']) ? (string) $shipping['shipped_at'] : null,
+            'delivered_at' => isset($shipping['delivered_at']) ? (string) $shipping['delivered_at'] : null,
+        );
     }
 
     /**

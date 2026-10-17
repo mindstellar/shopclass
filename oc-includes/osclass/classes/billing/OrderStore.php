@@ -215,7 +215,7 @@ final class OrderStore extends Model
             }
 
             return $meta;
-        }, Order::STATUS_PAID);
+        }, Order::SETTLED);
     }
 
     /**
@@ -277,16 +277,19 @@ final class OrderStore extends Model
      *
      * @param int                   $orderId
      * @param callable(array):array $change
-     * @param string|null           $status  Only an order in this status is changed
+     * @param string[]|null         $statuses Only an order in one of these statuses is changed
+     * @param string|null           $to       Also move the order to this status, in the same write
+     * @param-out array<string,mixed>|null $row
+     * @param array<string,mixed>|null $row   Set to the order's user id and status as read
      *
      * @return bool whether the change is stored
      */
-    private static function changeMeta(int $orderId, callable $change, ?string $status = null): bool
+    private static function changeMeta(int $orderId, callable $change, ?array $statuses = null, ?string $to = null, ?array &$row = null): bool
     {
         for ($try = 0; $try < 2; $try++) {
-            $read = self::table()->select('s_meta')->where('pk_i_id', $orderId);
-            if ($status !== null) {
-                $read = $read->where('s_status', $status);
+            $read = self::table()->select('s_meta', 'fk_i_user_id', 's_status')->where('pk_i_id', $orderId);
+            if ($statuses !== null) {
+                $read = $read->whereIn('s_status', $statuses);
             }
             $row = $read->first();
             if ($row === null) {
@@ -300,16 +303,17 @@ final class OrderStore extends Model
             }
             $new = $change($meta);
             $new = $new === array() ? null : json_encode($new);
-            if ($new === $old) {
+            if ($new === $old && $to === null) {
                 return true;
             }
 
-            $write = self::table()->where('pk_i_id', $orderId);
-            if ($status !== null) {
-                $write = $write->where('s_status', $status);
-            }
+            $write = self::table()->where('pk_i_id', $orderId)->where('s_status', $row['s_status']);
             $write = $old === null ? $write->whereNull('s_meta') : $write->where('s_meta', $old);
-            if ($write->update(array('s_meta' => $new)) === 1) {
+            $data  = array('s_meta' => $new);
+            if ($to !== null) {
+                $data['s_status'] = $to;
+            }
+            if ($write->update($data) === 1) {
                 return true;
             }
         }
@@ -318,8 +322,8 @@ final class OrderStore extends Model
     }
 
     /**
-     * A refund arrives after settlement, so it is the one transition that starts
-     * from paid rather than pending.
+     * A refund arrives after settlement, so it starts from a settled status (paid,
+     * shipped or delivered) rather than pending.
      *
      * @param int $id
      *
@@ -329,29 +333,125 @@ final class OrderStore extends Model
     {
         $changed = self::table()
             ->where('pk_i_id', $id)
-            ->where('s_status', Order::STATUS_PAID)
+            ->whereIn('s_status', Order::SETTLED)
             ->update(array('s_status' => Order::STATUS_REFUNDED));
 
         return $changed === 1;
     }
 
     /**
-     * One user's order history.
+     * A paid goods order was sent. Fires `billing_order_shipped` ($orderId, $userId) once
+     * the write commits.
      *
-     * @param int $userId
-     * @param int $limit
-     * @param int $offset
+     * @param int    $id
+     * @param string $carrier  Up to 100 characters
+     * @param string $tracking Up to 100 characters
+     * @param string $url      The parcel's tracking page; the caller checks it is https
+     *
+     * @return bool false when the order is not paid
+     */
+    public static function ship(int $id, string $carrier, string $tracking, string $url): bool
+    {
+        $at     = date('Y-m-d H:i:s');
+        $userId = self::move($id, Order::STATUS_PAID, Order::STATUS_SHIPPED, static function (array $meta) use ($carrier, $tracking, $url, $at): array {
+            $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
+            $meta['_shipping'] = array(
+                'carrier'    => mb_substr(trim($carrier), 0, 100, 'UTF-8'),
+                'tracking'   => mb_substr(trim($tracking), 0, 100, 'UTF-8'),
+                'url'        => mb_substr(trim($url), 0, 500, 'UTF-8'),
+                'shipped_at' => $at,
+            ) + $shipping;
+
+            return $meta;
+        });
+        if ($userId === null) {
+            return false;
+        }
+        Db::afterCommit(static fn () => osc_run_hook('billing_order_shipped', $id, $userId));
+
+        return true;
+    }
+
+    /**
+     * A shipped order arrived. Fires `billing_order_delivered` ($orderId, $userId) once the
+     * write commits.
+     *
+     * @param int $id
+     *
+     * @return bool false when the order is not shipped
+     */
+    public static function deliver(int $id): bool
+    {
+        $at     = date('Y-m-d H:i:s');
+        $userId = self::move($id, Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, static function (array $meta) use ($at): array {
+            $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
+            $meta['_shipping'] = array('delivered_at' => $at) + $shipping;
+
+            return $meta;
+        });
+        if ($userId === null) {
+            return false;
+        }
+        Db::afterCommit(static fn () => osc_run_hook('billing_order_delivered', $id, $userId));
+
+        return true;
+    }
+
+    /**
+     * Close a pending order unpaid. Fires `billing_order_cancelled` ($orderId, $userId) once
+     * the write commits.
+     *
+     * @param int $id
+     *
+     * @return bool false when the order is not pending
+     */
+    public static function cancel(int $id): bool
+    {
+        $userId = self::move($id, Order::STATUS_PENDING, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
+        if ($userId === null) {
+            return false;
+        }
+        Db::afterCommit(static fn () => osc_run_hook('billing_order_cancelled', $id, $userId));
+
+        return true;
+    }
+
+    /**
+     * Move an order from one status to the next with its meta changed in the same write.
+     *
+     * @param callable(array):array $change
+     *
+     * @return int|null the order's user id, or null when the order was not in $from
+     */
+    private static function move(int $id, string $from, string $to, callable $change): ?int
+    {
+        $row = null;
+
+        return self::changeMeta($id, $change, array($from), $to, $row) && $row !== null ? (int) $row['fk_i_user_id'] : null;
+    }
+
+    /**
+     * One user's order history, newest first. Pass the last id of a page as $before for the
+     * next one.
+     *
+     * @param int      $userId
+     * @param int      $limit
+     * @param int      $offset
+     * @param int|null $before Only orders with a lower id
      *
      * @return Order[] newest first
      */
-    public static function forUser(int $userId, int $limit = 25, int $offset = 0): array
+    public static function forUser(int $userId, int $limit = 25, int $offset = 0, ?int $before = null): array
     {
-        $rows = self::table()
-            ->where('fk_i_user_id', $userId)
-            ->orderBy('dt_date', 'DESC')
-            ->limit($limit)
-            ->offset($offset)
-            ->get();
+        // Read through idx_user_status: walking the primary key backwards reads the whole table
+        // for a buyer whose orders are old.
+        $params = array($userId);
+        $sql    = 'SELECT * FROM ' . self::tableName() . ' IGNORE INDEX FOR ORDER BY (PRIMARY) WHERE fk_i_user_id = ?';
+        if ($before !== null) {
+            $sql     .= ' AND pk_i_id < ?';
+            $params[] = $before;
+        }
+        $rows = Db::select($sql . ' ORDER BY pk_i_id DESC LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset), $params);
 
         return array_map(static fn (array $row): Order => Order::fromRow($row), $rows);
     }
@@ -395,7 +495,7 @@ final class OrderStore extends Model
     /**
      * The admin orders list: filter by status, gateway and user, newest first.
      *
-     * @param array $filters 'status', 'gateway', 'user_id' — any may be omitted
+     * @param array $filters 'status', 'gateway', 'user_id', 'goods' (true: goods orders only) — any may be omitted
      * @param int   $limit
      * @param int   $offset
      *
@@ -477,6 +577,9 @@ final class OrderStore extends Model
         }
         if (!empty($filters['user_id'])) {
             $q = $q->where('fk_i_user_id', (int) $filters['user_id']);
+        }
+        if (!empty($filters['goods'])) {
+            $q = $q->where('i_credits', 0);
         }
 
         return $q;

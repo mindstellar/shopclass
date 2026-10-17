@@ -10,11 +10,13 @@
  */
 
 use mindstellar\billing\Billing;
+use mindstellar\billing\CartPricer;
 use mindstellar\billing\EntitlementStore;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\gateway\OfflineGateway;
 use mindstellar\billing\ItemUpgradeStore;
+use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
@@ -646,6 +648,32 @@ function osc_billing_buy_url(): string
 function osc_billing_orders_url(): string
 {
     return osc_core_url('billing_orders');
+}
+
+/**
+ * Whether the user has a paid, shipped or delivered order with this listing on it.
+ *
+ * @param int $userId
+ * @param int $itemId
+ *
+ * @return bool
+ */
+function osc_order_bought(int $userId, int $itemId): bool
+{
+    return OrderLineStore::bought($userId, $itemId);
+}
+
+/**
+ * The lines of one order: {id, order_id, kind, item_id, variant_id, title, options, sku, qty,
+ * unit, amount, meta}, amounts in micros. Empty for a credits order.
+ *
+ * @param int $orderId
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function osc_order_lines(int $orderId): array
+{
+    return OrderLineStore::ofOrder($orderId);
 }
 
 /**
@@ -1312,6 +1340,11 @@ osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegist
         $registry->register(new OfflineGateway());
     }
 });
+
+/*
+ * Core's own delivery method, "Standard delivery" at the flat amount from the billing settings.
+ */
+osc_add_filter('cart_shipping_methods', array(CartPricer::class, 'standardMethod'), 5);
 
 /*
  * The content of the wallet/buy/orders pages, registered as render targets so a
