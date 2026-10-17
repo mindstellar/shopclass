@@ -235,7 +235,7 @@ class Plugins
      *
      * @param string $plugin 'dir/index.php' path
      *
-     * @return array<string,string>
+     * @return array<string,mixed> header strings, plus modes and requires_plugins arrays
      */
     public static function getInfo($plugin)
     {

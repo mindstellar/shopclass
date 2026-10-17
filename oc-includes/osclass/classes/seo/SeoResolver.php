@@ -67,7 +67,7 @@ final class SeoResolver
     private static function pageUrl(int $id, string $slug, string $title, string $locale): string
     {
         if (osc_rewrite_enabled()) {
-            return osc_base_url() . ($locale !== '' ? $locale . '/' : '') . CoreRoutes::expand('page', ['PAGE_ID' => $id, 'PAGE_SLUG' => $slug, 'PAGE_TITLE' => $title]);
+            return osc_base_url() . ($locale !== '' ? $locale . '/' : '') . CoreRoutes::expand('page', ['PAGE_ID' => (string) $id, 'PAGE_SLUG' => $slug, 'PAGE_TITLE' => $title]);
         }
 
         return (string) osc_core_url('page', ['id' => $id, 'lang' => $locale]);

@@ -215,7 +215,7 @@ final class ListingInput
             }
         }
 
-        return array('sell' => !empty($raw['sell']) && $raw['sell'] !== '0', 'fields' => $fields);
+        return array('sell' => !empty($raw['sell']), 'fields' => $fields);
     }
 
     private static function sessionActor(bool $admin): Actor

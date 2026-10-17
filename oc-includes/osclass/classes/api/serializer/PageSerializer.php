@@ -35,7 +35,7 @@ final class PageSerializer
     public static function siteUrl(int $id, string $slug, string $title, string $locale): string
     {
         if (osc_rewrite_enabled()) {
-            $path = CoreRoutes::expand('page', ['PAGE_ID' => $id, 'PAGE_SLUG' => $slug, 'PAGE_TITLE' => $title]);
+            $path = CoreRoutes::expand('page', ['PAGE_ID' => (string) $id, 'PAGE_SLUG' => $slug, 'PAGE_TITLE' => $title]);
 
             return osc_base_url() . ($locale !== '' ? $locale . '/' : '') . $path;
         }
