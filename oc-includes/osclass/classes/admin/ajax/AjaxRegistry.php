@@ -91,6 +91,7 @@ final class AjaxRegistry
         'market_install'         => array(MarketAjax::class, 'install', true),
         'market_update'          => array(MarketAjax::class, 'update', true),
         'market_detail'          => array(MarketAjax::class, 'detail', true),
+        'market_install_dependency' => array(MarketAjax::class, 'installDependency', true),
     );
 
     private function __construct()

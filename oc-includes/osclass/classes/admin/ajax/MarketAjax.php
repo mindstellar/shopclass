@@ -22,6 +22,7 @@ use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
+use mindstellar\market\PluginDependencies;
 use mindstellar\security\Demo;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\FileSystem;
@@ -57,6 +58,25 @@ final class MarketAjax extends AjaxHandler
             Params::getParamString('slug'),
             Params::getParamString('version')
         ));
+    }
+
+    /**
+     * action=market_install_dependency -- installs and turns on one plugin the theme asks for.
+     * The slug must be in that theme's manifest.
+     */
+    public function installDependency(): void
+    {
+        $slug     = Params::getParamString('slug');
+        $requires = PluginDependencies::themeRequirements(Params::getParamString('theme'));
+        if ($requires === null) {
+            AjaxResponse::json(array(
+                'ok' => false, 'message' => __('That theme is not installed.'),
+                'slug' => $slug, 'status' => '', 'manual_url' => '',
+            ));
+
+            return;
+        }
+        AjaxResponse::json(PluginDependencies::forSite()->ensure($requires, $slug));
     }
 
     public function detail(): void

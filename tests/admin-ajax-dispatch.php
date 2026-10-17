@@ -122,7 +122,7 @@ $csrf = array(
     'form_submission_delete', 'form_submissions_purge', 'enable_category', 'delete_category',
     'edit_category_post', 'test_mail', 'test_mail_template', 'order_pages', 'market_refresh',
     'market_install', 'market_update', 'market_detail', 'upgrade', 'reinstall_osclass', 'upgrade_db',
-    'location_stats', 'backup_status',
+    'location_stats', 'backup_status', 'market_install_dependency',
 );
 $open = array(
     'bulk_actions', 'regions', 'cities', 'location_catalog', 'location', 'userajax', 'date_format',
@@ -134,7 +134,7 @@ $open = array(
 
 harness_section('every action still has a handler');
 $all = array_merge($csrf, $open);
-pin('55 actions, none added or lost', 55, count($all));
+pin('56 actions, none added or lost', 56, count($all));
 $registered = AjaxRegistry::actions();
 sort($registered);
 $expected = $all;
