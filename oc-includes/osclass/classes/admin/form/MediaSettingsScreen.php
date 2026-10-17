@@ -80,8 +80,7 @@ final class MediaSettingsScreen extends SettingsScreen
             ->group(__('Image sizes'))
             ->custom('sizes_intro', static function () {
                 echo '<p class="form-intro">';
-                _e('The sizes listed below determine the maximum dimensions in pixels to use when uploading a image.'
-                   . ' Format: <b>Width</b> x <b>Height</b>.');
+                _e('The largest <b>width</b> × <b>height</b> in pixels for each size.');
                 echo '</p>';
             })
                 ->set('row', false);
@@ -91,28 +90,23 @@ final class MediaSettingsScreen extends SettingsScreen
         self::dimension($form, 'dimNormal', __('Normal size'));
 
         $form
-            ->checkbox('keep_original_image', __('Keep the photo at its full size.'), __('Stored alongside the resized copies, so uploads take more space. It is re-saved rather than kept byte for byte, which drops camera metadata.'))
+            ->checkbox('keep_original_image', __('Keep the photo at its full size.'), __('Uses more disk space. Camera metadata is dropped.'))
                 ->rowLabel(__('Original size'))
                 ->set('id', 'keep_original_image')
             ->checkbox(
                 'browser_resize',
                 __('Shrink photos in the browser before upload.'),
-                __('Photos larger than the normal size are shrunk to it first, so large phone photos '
-                   . 'upload quickly and stay under the maximum size. While the full size is kept, '
-                   . 'only photos over the maximum size are shrunk.')
+                __('Large phone photos upload faster and stay under the maximum size.')
             )
                 ->rowLabel(__('Browser resize'))
                 ->set('id', 'browser_resize')
             ->group(__('Restrictions'))
-            ->select('image_format', __('Photo format'), self::formats(), __('How new photos are saved. '
-                   . 'JPEG is small but has no transparent background. WebP is about a third smaller than JPEG and '
-                   . 'keeps transparency. Photos already uploaded keep their format.'))
+            ->select('image_format', __('Photo format'), self::formats(), __('For new photos. WebP is about a third smaller than JPEG and keeps transparency.'))
                 ->default('original')
             ->number(
                 'jpeg_quality',
                 __('Photo quality'),
-                __('Compression quality for saved JPEG and WebP photos, from 1 (smallest file) to '
-                   . '100 (best quality). 82 is a good balance.')
+                __('1 is the smallest file, 100 the best quality. 82 is a good balance.')
             )
                 ->set('min', 1)
                 ->set('max', 100)
@@ -124,7 +118,7 @@ final class MediaSettingsScreen extends SettingsScreen
             ->checkbox(
                 'force_aspect_image',
                 __('Keep each photo\'s own shape (recommended)'),
-                __('Photos are only made smaller, never filled out to the sizes above. Your theme decides how to frame them. When off, the empty space is filled with white in JPEG and left see-through in PNG and WebP.')
+                __('Photos are only made smaller. When off, they are padded to the exact size.')
             )
                 ->rowLabel(__('Photo shape'))
                 ->set('id', 'force_aspect_image')
@@ -148,7 +142,7 @@ final class MediaSettingsScreen extends SettingsScreen
                     ($imagick
                         ? ''
                         : '<span class="callout-danger">' . osc_esc_html(__('ImageMagick library is not loaded')) . '</span> ')
-                    . osc_esc_html(__("It's faster and consumes less resources than GD library."))
+                    . osc_esc_html(__('Faster and lighter than GD.'))
                 )
                 // A checkbox ignores a sanitiser, so the switch is held off here instead: a
                 // library that is not loaded cannot be the one images are made with.
@@ -208,8 +202,7 @@ final class MediaSettingsScreen extends SettingsScreen
                             osc_base_url() . str_replace(osc_base_path(), '', osc_uploads_path()) . 'watermark.png'
                         ) . '"><br>'
                         : '')
-                        . osc_esc_html(__('It has to be a .PNG image')) . '<br>'
-                        . osc_esc_html(__("Drawn for the normal image size, then scaled down for smaller sizes. It never covers more than 40% of a photo's width or height.")),
+                        . osc_esc_html(__('PNG only. It covers at most 40% of a photo.')),
                 ));
             })
                 ->set('row', false)
