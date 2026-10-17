@@ -16,13 +16,13 @@ declare(strict_types=1);
 namespace mindstellar\comment;
 
 use mindstellar\auth\Actor;
-use mindstellar\database\Db;
 use mindstellar\exception\BlockedException;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\listing\ListingPolicy;
+use mindstellar\user\UserStore;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\ViewScope;
 
@@ -162,8 +162,8 @@ final class CommentService
 
         return DeferredMail::transaction(function () use ($row, $mail, $status, $actor): SavedComment {
             if ($row['i_rating'] !== null) {
-                // The author's row lock makes two ratings sent at once wait, so the second sees the first.
-                Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_user WHERE pk_i_id = ? FOR UPDATE', [$row['fk_i_user_id']]);
+                // Two ratings sent at once wait here, so the second sees the first.
+                UserStore::lock((int) $row['fk_i_user_id']);
                 if ($this->query->hasRated($row['fk_i_item_id'], (int) $row['fk_i_user_id'])) {
                     throw new ConflictException(_m('You have already rated this item'), ConflictException::ALREADY_REVIEWED);
                 }

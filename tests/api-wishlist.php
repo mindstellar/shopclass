@@ -82,6 +82,38 @@ $admin->query("UPDATE {$p}t_key_value SET s_value = '[\"x\",{\"a\":1},$b,$b]' WH
 pin('a damaged row reads as its clean ids', [$b], $wishlist->all($sue));
 $wishlist->replace($sue, []);
 
+// Two adds by one user in two processes. Holding the user's row here makes both wait, so
+// each reads the list the other wrote once it is released.
+$dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
+$admin->begin_transaction();
+$admin->query("SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = $sue FOR UPDATE");
+$adds = [];
+$outs = [];
+foreach ([$a, $b] as $i => $listing) {
+    $adds[] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/wishlist-add-child.php', $dbName, (string) $sue, (string) $listing], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    $outs[$i] = $pipes;
+}
+$watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
+$waiting = 0;
+for ($try = 0; $try < 400 && $waiting < 2; $try++) {
+    usleep(50000);
+    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND INFO LIKE 'SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = % FOR UPDATE'")->fetch_row()[0];
+}
+$watch->close();
+$admin->commit();
+$printed = '';
+foreach ($adds as $i => $proc) {
+    $printed .= stream_get_contents($outs[$i][1]) . stream_get_contents($outs[$i][2]);
+    proc_close($proc);
+}
+pin('both adds waited on the user', 2, $waiting);
+pin('two adds at once keep both', [2, [$a, $b]], [substr_count($printed, 'added'), (static function (array $ids): array {
+    sort($ids);
+
+    return $ids;
+})($wishlist->all($sue))]);
+$wishlist->replace($sue, []);
+
 harness_section('scopes');
 $scopes = new Scopes();
 foreach ([CredentialKind::KEY => 'a user key', CredentialKind::SESSION => 'a page-token session', CredentialKind::USER => 'an access token'] as $kind => $label) {

@@ -14,10 +14,12 @@ namespace mindstellar\listing;
 
 use mindstellar\database\Db;
 use mindstellar\exception\NotFoundException;
+use mindstellar\user\UserStore;
 
 /**
- * A user's wishlist: live listing ids, newest first, at most MAX. The rows have no user
- * column, so the list is exported on `personal_data_export` and removed on `delete_user` here.
+ * A user's wishlist: live listing ids, newest first, at most MAX. Each change locks the user's
+ * row, so two taps at once both land. The rows have no user column, so the list is exported on
+ * `personal_data_export` and removed on `delete_user` here.
  */
 final class WishlistService
 {
@@ -56,7 +58,7 @@ final class WishlistService
         $ids  = self::clean($ids);
         $live = array_flip(self::live($ids));
         $ids  = array_values(array_filter($ids, static fn (int $id): bool => isset($live[$id])));
-        $this->store->save($userId, $ids);
+        $this->change($userId, static fn (array $old): array => $ids);
 
         return $ids;
     }
@@ -72,8 +74,7 @@ final class WishlistService
         if (self::live(array($listingId)) === array()) {
             throw new NotFoundException(_m('The listing was not found.'));
         }
-        $ids = $this->all($userId);
-        $this->store->save($userId, array_slice(array_merge(array($listingId), array_values(array_diff($ids, array($listingId)))), 0, self::MAX));
+        $this->change($userId, static fn (array $ids): array => array_slice(array_merge(array($listingId), array_values(array_diff($ids, array($listingId)))), 0, self::MAX));
     }
 
     /**
@@ -81,11 +82,7 @@ final class WishlistService
      */
     public function remove(int $userId, int $listingId): void
     {
-        $ids  = $this->all($userId);
-        $kept = array_values(array_diff($ids, array($listingId)));
-        if ($kept !== $ids) {
-            $this->store->save($userId, $kept);
-        }
+        $this->change($userId, static fn (array $ids): array => array_values(array_diff($ids, array($listingId))));
     }
 
     /**
@@ -117,6 +114,29 @@ final class WishlistService
     public static function erase($userId): void
     {
         (new WishlistStore())->delete((int) $userId);
+    }
+
+    /**
+     * Read, change and write the list with the user's row locked; nothing is written when
+     * the list stays the same.
+     *
+     * @param callable(int[]):int[] $edit
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    private function change(int $userId, callable $edit): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+        Db::transaction(function () use ($userId, $edit): void {
+            UserStore::lock($userId);
+            $ids  = $this->all($userId);
+            $next = $edit($ids);
+            if ($next !== $ids) {
+                $this->store->save($userId, $next);
+            }
+        });
     }
 
     /**
