@@ -592,10 +592,6 @@ msgstr ""
 msgid "(no values)"
 msgstr ""
 
-#: oc-admin/themes/modern/users/frm.php
-msgid "(required)"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
 "/api/ belongs to the site's API, so these static pages or categories cannot "
@@ -1897,10 +1893,6 @@ msgstr ""
 msgid "Available widgets"
 msgstr ""
 
-#: oc-admin/themes/modern/users/frm.php
-msgid "Avatar"
-msgstr ""
-
 #: oc-includes/osclass/classes/Cleanup.php
 msgid "Avatars of deleted users"
 msgstr ""
@@ -2494,6 +2486,10 @@ msgstr ""
 
 #: oc-admin/gui/forgot_password.php
 msgid "Change password"
+msgstr ""
+
+#: oc-admin/themes/modern/users/frm.php
+msgid "Change photo"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php
@@ -9109,6 +9105,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/functions.php
 #: oc-admin/themes/modern/settings/sitemap.php
+#: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Remove"
@@ -9116,10 +9113,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Remove credits"
-msgstr ""
-
-#: oc-admin/themes/modern/users/frm.php
-msgid "Remove current avatar"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php

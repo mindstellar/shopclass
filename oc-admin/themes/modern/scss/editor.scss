@@ -773,17 +773,53 @@
   display: block;
 }
 
-// The user editor's avatar panel: the current picture, the file box, and the remove tick.
+// The user editor: the photo beside the profile fields, and a small remove tick under it.
+.user-editor-profile {
+  align-items: start;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: auto minmax(0, 1fr);
+
+  @media (max-width: 576px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.user-editor-photo {
+  display: grid;
+  gap: .5rem;
+  justify-items: start;
+}
+
 .user-editor-avatar {
-  border-radius: $border-radius;
-  display: block;
-  margin-block-end: .75rem;
+  border-radius: 50%;
   object-fit: cover;
 }
 
 .user-editor-remove {
   align-items: center;
   display: flex;
-  gap: .4rem;
-  margin-block-start: .6rem;
+  font-size: $font-size-label;
+  gap: .35rem;
+}
+
+// The user editor's short fields sit two to a row; each control fills its cell.
+.user-editor-grid {
+  column-gap: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+
+  .form-control,
+  .form-select {
+    max-width: none !important;
+    width: 100%;
+  }
+}
+
+// The About box is a few lines, not a page.
+.user-editor-main {
+  textarea {
+    min-height: 7rem;
+    height: 7rem;
+  }
 }

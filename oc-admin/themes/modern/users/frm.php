@@ -155,7 +155,8 @@ osc_admin_editor_open(array(
     'page'    => 'users',
     'action'  => $aux['action_frm'],
     'upload'  => true,
-    'main_id' => 'left-side',
+    'main_id'    => 'left-side',
+    'main_class' => 'user-editor-main',
 ));
 UserForm::primary_input_hidden($user);
 if ($aux['edit']) { ?>
@@ -163,75 +164,75 @@ if ($aux['edit']) { ?>
     <input type="hidden" name="b_active" value="<?php echo (int) $user['b_active']; ?>"/>
 <?php }
 
-osc_admin_panel_open(__('Profile')); ?>
-    <div class="form-horizontal">
-        <?php osc_admin_form_row_open(__('Name')); ?>
-            <?php UserForm::name_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Username')); ?>
-            <?php UserForm::username_text($user); ?>
-            <div id="available"></div>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open('', array('label_html' => sprintf('%s <em>%s</em>', __('E-mail'), __('(required)')))); ?>
-            <?php UserForm::email_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Cell phone')); ?>
-            <?php UserForm::mobile_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Phone')); ?>
-            <?php UserForm::phone_land_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Website')); ?>
-            <?php UserForm::website_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('User type')); ?>
-            <?php UserForm::is_company_select($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-    </div>
-<?php osc_admin_panel_close();
+// One stacked field, as the listing editor draws them: the label above, the control under it.
+$field = static function (string $label, string $for, callable $control, bool $required = false, string $help = ''): void {
+    echo '<div class="osc-field"><label class="form-label' . ($required ? ' osc-field-required' : '') . '" for="' . osc_esc_html($for) . '">'
+        . osc_esc_html($label) . '</label>';
+    $control();
+    if ($help !== '') {
+        echo '<p class="help-box">' . osc_esc_html($help) . '</p>';
+    }
+    echo '</div>';
+};
 
-osc_admin_panel_open(__('About')); ?>
-    <?php UserForm::multilanguage_info($locales, $user); ?>
-<?php osc_admin_panel_close();
-
-osc_admin_panel_open(__('Location')); ?>
-    <div class="form-horizontal">
-        <?php osc_admin_form_row_open(__('Country')); ?>
-            <?php UserForm::country_select($countries, $user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Region')); ?>
-            <?php UserForm::region_select($regions, $user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('City')); ?>
-            <?php UserForm::city_select($cities, $user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('City area')); ?>
-            <?php UserForm::city_area_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Zip code')); ?>
-            <?php UserForm::zip_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Address')); ?>
-            <?php UserForm::address_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
-    </div>
-<?php osc_admin_panel_close();
-
-osc_admin_panel_open(__('Password')); ?>
-    <div class="form-horizontal">
-        <?php osc_admin_form_row_open($aux['edit'] ? __('New password') : __('Password')); ?>
-            <?php UserForm::password_text($user); ?>
-            <?php if ($aux['edit']) { ?>
-                <p class="help-inline"><?php _e('Leave blank to keep the current password.'); ?></p>
+// One plain form: section headings, no boxes. The avatar sits beside the profile fields.
+osc_admin_form_section(__('Profile')); ?>
+    <div class="user-editor-profile">
+        <div class="user-editor-photo">
+            <?php if ($aux['edit'] && function_exists('osc_user_avatar_url')) { ?>
+                <img class="user-editor-avatar" src="<?php echo osc_esc_html(osc_user_avatar_url($user['pk_i_id'], 'normal')); ?>"
+                     alt="<?php echo osc_esc_html(__('Current avatar')); ?>" width="96" height="96"/>
             <?php } ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Repeat password')); ?>
-            <?php UserForm::check_password_text($user); ?>
-        <?php osc_admin_form_row_close(); ?>
+            <label class="btn btn-sm btn-dim" for="avatar"><?php _e('Change photo'); ?></label>
+            <input type="file" name="avatar" id="avatar" accept="image/*" class="visually-hidden"/>
+            <?php if ($aux['edit']) { ?>
+                <label class="user-editor-remove">
+                    <input type="checkbox" name="remove_avatar" id="remove_avatar" value="1"/>
+                    <?php _e('Remove'); ?>
+                </label>
+            <?php } ?>
+        </div>
+    <div class="user-editor-grid">
+        <?php
+        $field(__('Name'), 's_name', static fn () => UserForm::name_text($user));
+        $field(__('Username'), 's_username', static function () use ($user) {
+            UserForm::username_text($user);
+            echo '<div id="available"></div>';
+        });
+        $field(__('E-mail'), 's_email', static fn () => UserForm::email_text($user), true);
+        $field(__('Website'), 's_website', static fn () => UserForm::website_text($user));
+        $field(__('Cell phone'), 's_phone_mobile', static fn () => UserForm::mobile_text($user));
+        $field(__('Phone'), 's_phone_land', static fn () => UserForm::phone_land_text($user));
+        $field(__('User type'), 'b_company', static fn () => UserForm::is_company_select($user));
+        ?>
     </div>
-<?php osc_admin_panel_close();
+    </div>
+    <div class="osc-field">
+        <span class="form-label"><?php _e('About'); ?></span>
+        <?php UserForm::multilanguage_info($locales, $user); ?>
+    </div>
+<?php osc_admin_form_section(__('Location')); ?>
+    <div class="user-editor-grid">
+        <?php
+        $field(__('Country'), 'countryId', static fn () => UserForm::country_select($countries, $user));
+        $field(__('Region'), 'regionId', static fn () => UserForm::region_select($regions, $user));
+        $field(__('City'), 'cityId', static fn () => UserForm::city_select($cities, $user));
+        $field(__('City area'), 'cityArea', static fn () => UserForm::city_area_text($user));
+        $field(__('Zip code'), 'zip', static fn () => UserForm::zip_text($user));
+        $field(__('Address'), 'address', static fn () => UserForm::address_text($user));
+        ?>
+    </div>
+<?php osc_admin_form_section(__('Password')); ?>
+    <div class="user-editor-grid">
+        <?php
+        $field($aux['edit'] ? __('New password') : __('Password'), 's_password', static fn () => UserForm::password_text($user), !$aux['edit'],
+            $aux['edit'] ? __('Leave blank to keep the current password.') : '');
+        $field(__('Repeat password'), 's_password2', static fn () => UserForm::check_password_text($user), !$aux['edit']);
+        ?>
+    </div>
+<?php
 
-// Plugin fields get the same label column as core's, in a panel drawn only when one prints.
+// Plugin fields get core's label column under their own heading, drawn only when one prints.
 ob_start();
 if (!$aux['edit']) {
     osc_run_hook('user_register_form');
@@ -241,9 +242,8 @@ if (!$aux['edit']) {
 }
 $pluginFields = (string) ob_get_clean();
 if (trim($pluginFields) !== '') {
-    osc_admin_panel_open(__('More'));
+    osc_admin_form_section(__('More'));
     echo '<div class="form-horizontal">' . $pluginFields . '</div>';
-    osc_admin_panel_close();
 }
 
 osc_admin_editor_rail(array('id' => 'right-side'));
@@ -277,19 +277,6 @@ if ($aux['edit']) {
     ));
 }
 
-osc_admin_panel_open(__('Avatar'));
-if ($aux['edit'] && function_exists('osc_user_avatar_url')) { ?>
-    <img class="user-editor-avatar" src="<?php echo osc_esc_html(osc_user_avatar_url($user['pk_i_id'], 'normal')); ?>"
-         alt="<?php echo osc_esc_html(__('Current avatar')); ?>" width="96" height="96"/>
-<?php } ?>
-    <input type="file" name="avatar" id="avatar" accept="image/*" class="form-control form-control-sm"/>
-<?php if ($aux['edit']) { ?>
-    <label class="user-editor-remove">
-        <input type="checkbox" name="remove_avatar" id="remove_avatar" value="1"/>
-        <?php _e('Remove current avatar'); ?>
-    </label>
-<?php }
-osc_admin_panel_close();
 
 osc_admin_editor_close(array(
     array('label' => $aux['btn_text'], 'type' => 'submit', 'variant' => 'primary'),
