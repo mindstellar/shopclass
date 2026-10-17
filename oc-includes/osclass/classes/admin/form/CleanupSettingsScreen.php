@@ -115,8 +115,7 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
             ->custom('stats_open', static function (): void {
                 osc_admin_form_section(__('Listing statistics'), array(
                     'spaced' => true,
-                    'intro'  => __('View counts are written on every page render, so they are the busiest '
-                                   . 'write on a large site. Turn them off if you do not use them.'),
+                    'intro'  => __('Counting views writes on every page view. Turn it off if you do not use it.'),
                 ));
                 osc_admin_form_row_open(__('View counting'));
             })
@@ -128,9 +127,7 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
             ->checkbox(
                 'count_bot_views',
                 __('Count crawler visits as views'),
-                __('Off by default. Search-engine and AI crawlers are usually most of a busy '
-                   . "site's traffic, so counting them both inflates the numbers and multiplies "
-                   . 'the writes.')
+                __('Crawlers are most of the traffic on a busy site and inflate the numbers.')
             )
                 ->set('row', false)
                 ->set('id', 'count_bot_views')
@@ -142,8 +139,7 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
             ->number(
                 'item_stats_retention_days',
                 __('Keep daily statistics history for'),
-                __('0 keeps it forever. This is the history behind the statistics charts, which '
-                   . 'look back up to ten months; it is a few rows per day for the whole site.')
+                __('0 keeps it forever. The statistics charts use up to ten months.')
             )
                 ->set('id', 'item_stats_retention_days')
                 ->suffix(__('days'))
