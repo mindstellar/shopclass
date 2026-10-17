@@ -1809,18 +1809,6 @@ msgid "Please type a comment"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin couldn't be installed"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin couldn't be installed because of: %s"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin couldn't be installed because their files are missing"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Plugin couldn't be uninstalled"
 msgstr ""
 
@@ -1842,10 +1830,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Plugin is already enabled"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin is already installed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -2801,12 +2785,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "The plugin folder is not writable"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid ""
-"The plugin generated %d characters of <strong>unexpected output</strong> "
-"during the installation. Output: \"%s\""
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php

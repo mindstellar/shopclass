@@ -8661,10 +8661,22 @@ msgstr ""
 msgid "Plugin and theme installs"
 msgstr ""
 
+#: oc-includes/osclass/classes/Plugins.php
+msgid "Plugin couldn't be installed"
+msgstr ""
+
 #: oc-admin/themes/modern/plugins/index.php
 msgid ""
 "Plugin couldn't be installed because it triggered a <strong>fatal "
 "error</strong>"
+msgstr ""
+
+#: oc-includes/osclass/classes/Plugins.php
+msgid "Plugin couldn't be installed because of: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/Plugins.php
+msgid "Plugin couldn't be installed because their files are missing"
 msgstr ""
 
 #: oc-includes/osclass/classes/market/PluginDependencies.php
@@ -8679,6 +8691,10 @@ msgstr ""
 msgid "Plugin is active."
 msgstr ""
 
+#: oc-includes/osclass/classes/Plugins.php
+msgid "Plugin is already installed"
+msgstr ""
+
 #: oc-admin/themes/modern/plugins/add.php
 msgid "Plugin package (.zip)"
 msgstr ""
@@ -8689,6 +8705,10 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Plugin updates"
+msgstr ""
+
+#: oc-includes/osclass/classes/Plugins.php
+msgid "Plugin was installed, but printed this output while installing: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/add.php
@@ -11575,20 +11595,8 @@ msgstr ""
 msgid "The photo is too large. It can have at most %s megapixels."
 msgstr ""
 
-#: oc-includes/osclass/classes/market/PluginDependencies.php
-msgid "The plugin couldn't be installed because of: %s"
-msgstr ""
-
-#: oc-includes/osclass/classes/market/PluginDependencies.php
-msgid "The plugin couldn't be installed. Open Plugins to see why."
-msgstr ""
-
 #: oc-admin/themes/modern/plugins/add.php
 msgid "The plugin folder is not writable on your server so you cannot upload "
-msgstr ""
-
-#: oc-includes/osclass/classes/market/PluginDependencies.php
-msgid "The plugin's files are missing."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/Billing.php
