@@ -30436,6 +30436,24 @@
                         }
                     },
                     {
+                        "name": "in_stock",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant in stock (stock not tracked, or above 0).",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "on_sale",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "name": "lat",
                         "in": "query",
                         "required": false,
@@ -38876,6 +38894,24 @@
                         "name": "premium",
                         "in": "query",
                         "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "in_stock",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant in stock (stock not tracked, or above 0).",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "on_sale",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both.",
                         "schema": {
                             "type": "boolean"
                         }

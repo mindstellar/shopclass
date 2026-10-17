@@ -34,6 +34,14 @@ final class VariantStore extends Model
     private const FIELDS = array('s_sku', 'i_price', 'i_compare_price', 'i_stock', 'i_weight', 's_shipping_class');
 
     /**
+     * The prefixed table name, for the search compiler's SQL fragments.
+     */
+    public static function tableName(): string
+    {
+        return parent::tableName();
+    }
+
+    /**
      * Every variant of one listing, default row first.
      *
      * @return array<int,array<string,mixed>>

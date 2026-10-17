@@ -1132,6 +1132,8 @@ Search listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `in_stock` | query | boolean | no | true: only listings with a variant in stock (stock not tracked, or above 0). |
+| `on_sale` | query | boolean | no | true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both. |
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
@@ -1551,6 +1553,8 @@ A user's live listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `in_stock` | query | boolean | no | true: only listings with a variant in stock (stock not tracked, or above 0). |
+| `on_sale` | query | boolean | no | true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both. |
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |

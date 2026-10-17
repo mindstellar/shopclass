@@ -86,4 +86,36 @@ $seen = $call('GET', 'listings/' . $id['Low'], null, $visitor)->body()['data']['
 pin('another caller sees low_stock but not stock', [3, false], [$seen['low_stock'] ?? null, array_key_exists('stock', $seen)]);
 pin('the response matches the schema', [], api_admin_schema_errors('ListingDocument', $call('GET', 'listings/' . $id['Low'], null, $key)));
 
+harness_section('in_stock');
+$all = ['Cheaper', 'Deal', 'Edge five', 'Edge six', 'Low', 'No variant', 'Plenty', 'Same price', 'Sold out', 'Untracked'];
+pin('no filter lists everything', $all, $names($list([])));
+pin('in_stock=true drops stock 0 and listings with no variant', array_values(array_diff($all, ['Sold out', 'No variant'])), $names($list(['in_stock' => 'true'])));
+pin('in_stock=false is the same as no filter', $all, $names($list(['in_stock' => 'false'])));
+$r = $list(['in_stock' => 'true', 'count' => 'true']);
+pin('the total follows the filter', 8, $r->body()['meta']['total'] ?? null);
+
+harness_section('on_sale');
+pin('on_sale=true keeps rows whose was price is above the price', ['Deal', 'Sold out'], $names($list(['on_sale' => 'true'])));
+pin('with in_stock too, one variant must be both', ['Deal'], $names($list(['on_sale' => 'true', 'in_stock' => 'true'])));
+pin('the total follows the filter', 2, $list(['on_sale' => 'true', 'count' => 'true'])->body()['meta']['total'] ?? null);
+pin('a variant with no price compares to the listing price, here above the was price', ['Sold out'], (static function () use ($admin, $p, $id, $names, $list): array {
+    $admin->query("UPDATE {$p}t_item_variant SET i_price = NULL WHERE fk_i_item_id = {$id['Deal']}");
+    $admin->query("UPDATE {$p}t_item SET i_price = 13000000 WHERE pk_i_id = {$id['Deal']}");
+
+    // A different page size, as the search cache does not see a raw SQL change.
+    return $names($list(['on_sale' => 'true', 'limit' => 49]));
+})());
+$admin->query("UPDATE {$p}t_item SET i_price = 11000000 WHERE pk_i_id = {$id['Deal']}");
+pin('filters keep paging', ['Deal', 'Sold out'], (static function () use ($call, $key): array {
+    $first = $call('GET', 'listings', null, $key, [], ['on_sale' => 'true', 'limit' => 1]);
+    $next  = [];
+    parse_str((string) parse_url((string) $first->body()['links']['next'], PHP_URL_QUERY), $next);
+    $titles = array_column($first->body()['data'], 'title');
+    $titles = array_merge($titles, array_column($call('GET', 'listings', null, $key, [], $next)->body()['data'], 'title'));
+    sort($titles);
+
+    return $titles;
+})());
+pin('a value that is not a boolean is refused', 422, $list(['on_sale' => 'maybe'])->status());
+
 exit(harness_result());

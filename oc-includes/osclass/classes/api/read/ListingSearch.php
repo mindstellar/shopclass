@@ -20,6 +20,7 @@ use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\apikey\Credential;
 use mindstellar\listing\ListingQuery;
+use mindstellar\listing\VariantStore;
 use mindstellar\search\Distance;
 use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
@@ -97,7 +98,7 @@ final class ListingSearch
             SearchCriteria::fromRequest($params, ['pageSize' => $pager->limit(), 'maxPageSize' => $pager->limit()]),
             new \Search(),
             'api',
-            fn (\Search $search) => $this->shape($sort, $pager, $search, $near),
+            fn (\Search $search) => $this->shape($sort, $pager, $search, $near, $request->queryBool('in_stock'), $request->queryBool('on_sale')),
             $pager->counts(),
             $params,
             fn (array $rows): array => $this->reader->extend($rows, $context)
@@ -130,8 +131,12 @@ final class ListingSearch
      * Finish the search after SearchRunner set its sort and page: a total order (the id
      * breaks ties), the keyset condition, and one row more than the page.
      */
-    private function shape(ListingSort $sort, Pager $pager, \Search $search, ?array $near): void
+    private function shape(ListingSort $sort, Pager $pager, \Search $search, ?array $near, bool $inStock = false, bool $onSale = false): void
     {
+        $variant = self::variantCondition($inStock, $onSale);
+        if ($variant !== null) {
+            $search->addCondition($variant);
+        }
         if ($near !== null) {
             $search->near(...$near);
             if ($sort->name() === 'distance') {
@@ -147,6 +152,29 @@ final class ListingSearch
             $search->addCondition(...$sort->after(ListingQuery::tableName(), $after));
         }
         $search->limit($pager->offset(), $pager->limit() + 1);
+    }
+
+    /**
+     * The condition for `in_stock` and `on_sale`: the listing has one variant that is in stock
+     * (stock not tracked, or above 0) and/or on sale (a was price above the price it sells at).
+     * With both, one variant must be both.
+     */
+    private static function variantCondition(bool $inStock, bool $onSale): ?string
+    {
+        if (!$inStock && !$onSale) {
+            return null;
+        }
+        $variants = VariantStore::tableName();
+        $item     = ListingQuery::tableName();
+        $where    = array($variants . '.fk_i_item_id = ' . $item . '.pk_i_id');
+        if ($inStock) {
+            $where[] = '(' . $variants . '.i_stock IS NULL OR ' . $variants . '.i_stock > 0)';
+        }
+        if ($onSale) {
+            $where[] = $variants . '.i_compare_price > COALESCE(' . $variants . '.i_price, ' . $item . '.i_price)';
+        }
+
+        return 'EXISTS (SELECT 1 FROM ' . $variants . ' WHERE ' . implode(' AND ', $where) . ')';
     }
 
     /**

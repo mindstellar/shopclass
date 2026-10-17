@@ -71,6 +71,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `GET /listings` takes `page` for numbered pages with any sort, and answers `meta.page` and `meta.pages`.
 - A product variant can have a "was" price (`compare_at`, set by an admin); listings answer `compare_at` and `on_sale`.
 - Variants answer `low_stock`, the units left when 1 to 5 are, so a shop can say "Only 3 left".
+- `GET /listings` takes `in_stock=true` and `on_sale=true` to list only what a shop can sell now or has marked down.
 
 ### Breaking
 

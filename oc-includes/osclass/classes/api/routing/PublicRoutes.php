@@ -570,6 +570,8 @@ final class PublicRoutes
             'price_max'   => ['type' => 'integer', 'minimum' => 0],
             'with_photos' => ['type' => 'boolean'],
             'premium'     => ['type' => 'boolean'],
+            'in_stock'    => ['type' => 'boolean', 'description' => 'true: only listings with a variant in stock (stock not tracked, or above 0).'],
+            'on_sale'     => ['type' => 'boolean', 'description' => 'true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both.'],
             'lat'         => ['type' => 'number', 'minimum' => -90, 'maximum' => 90, 'description' => 'Measure distances from this point, with lng. Needs distance search switched on.'],
             'lng'         => ['type' => 'number', 'minimum' => -180, 'maximum' => 180],
             'radius'      => ['type' => 'number', 'minimum' => 1, 'maximum' => 1000, 'description' => 'Only listings within this many km of lat/lng.'],
