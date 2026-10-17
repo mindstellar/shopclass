@@ -2221,6 +2221,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
+#: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -3774,6 +3775,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "Delete submission"
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "Delete the selected files? Listings, users and pages lose them for good."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -9854,6 +9859,7 @@ msgstr ""
 msgid "See why"
 msgstr ""
 
+#: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/classes/form/FieldForm.php
 msgid "Select"
 msgstr ""
@@ -9898,6 +9904,10 @@ msgstr ""
 #: oc-includes/osclass/classes/form/ItemForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Select a region..."
+msgstr ""
+
+#: oc-admin/themes/modern/media/index.php
+msgid "Select all"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php

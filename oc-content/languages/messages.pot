@@ -1413,6 +1413,10 @@ msgstr ""
 msgid "No file was uploaded"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
+msgid "No files were selected"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "No keywords have been deleted"
 msgstr ""
@@ -1570,6 +1574,12 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
 msgid "One currency has been deleted"
 msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
+msgid "One file deleted"
+msgid_plural "%d files deleted"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/listing/PhotoService.php
 msgid "One of the files you tried to upload exceeds the maximum size"

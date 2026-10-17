@@ -58,6 +58,26 @@ class CAdminMedia extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
                 $this->redirectTo($this->libraryUrl(Params::getParam('type')));
                 break;
+            case ('bulk'):
+                osc_csrf_check();
+                $deleted = 0;
+                if (Params::getParamString('bulk_actions') === 'delete') {
+                    // Each pick is "src:id", the same pair the single delete takes.
+                    foreach (Params::getParamArray('media') as $pick) {
+                        [$src, $id] = array_pad(explode(':', (string) $pick, 2), 2, '');
+                        if (in_array($src, array('item', 'resource'), true) && (int) $id > 0) {
+                            $this->deleteMedia($src, (int) $id);
+                            $deleted++;
+                        }
+                    }
+                }
+                if ($deleted > 0) {
+                    osc_add_flash_ok_message(sprintf(_mn('One file deleted', '%d files deleted', $deleted), $deleted), 'admin');
+                } else {
+                    osc_add_flash_info_message(_m('No files were selected'), 'admin');
+                }
+                $this->redirectTo($this->libraryUrl(Params::getParam('type')));
+                break;
             default:
                 $type = $this->resolveType(Params::getParam('type'));
                 $perPage = ListPaging::length(25);

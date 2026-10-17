@@ -234,7 +234,17 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
     }
     osc_admin_tab_nav($filterLinks);
 
-    osc_admin_toolbar_open(array('align' => 'end'));
+    osc_admin_toolbar_open(array('align' => count($mediaRows) > 0 ? 'between' : 'end'));
+    if (count($mediaRows) > 0) {
+        osc_admin_bulk_actions(array(
+            'name'    => 'bulk_actions',
+            'form'    => 'datatablesForm',
+            'options' => array(
+                array('value' => '', 'label' => __('Bulk actions')),
+                array('value' => 'delete', 'label' => __('Delete'), 'data-dialog-content' => __('Delete the selected files? Listings, users and pages lose them for good.')),
+            ),
+        ));
+    }
 
     osc_admin_per_page(array(
         'label'   => __('%d files'),
@@ -256,10 +266,15 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
     } else {
         // Resolve where every row is used up front, in a fixed number of queries.
         $usageMap = mediaResolveUsageBatch($mediaRows); ?>
+        <form id="datatablesForm" method="post" action="<?php echo osc_admin_base_url(true); ?>">
+        <input type="hidden" name="page" value="media"/>
+        <input type="hidden" name="action" value="bulk"/>
+        <input type="hidden" name="type" value="<?php echo osc_esc_html($mediaType); ?>"/>
         <div id="media-table" class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
                     <tr>
+                        <th class="col-bulkactions"><input id="check_all" type="checkbox" aria-label="<?php echo osc_esc_html(__('Select all')); ?>"/></th>
                         <th class="media-col-preview"><?php _e('Preview'); ?></th>
                         <th><?php _e('Used in'); ?></th>
                         <th><?php _e('Type'); ?></th>
@@ -296,7 +311,8 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                         . '&id=' . (int) $row['id'] . '&type=' . urlencode($mediaType) . '&' . osc_csrf_token_url();
                     ?>
                     <tr>
-                        <td class="media-col-preview" data-col-name="<?php echo osc_esc_html(__('Preview')); ?>">
+                        <td class="col-bulkactions"><input type="checkbox" name="media[]" value="<?php echo osc_esc_html($row['src'] . ':' . (int) $row['id']); ?>" aria-label="<?php echo osc_esc_html(__('Select')); ?>"/></td>
+                        <td class="media-col-preview col-image" data-col-name="<?php echo osc_esc_html(__('Preview')); ?>">
                             <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener"
                                data-media-preview
                                data-full="<?php echo osc_esc_html($full); ?>"
@@ -344,6 +360,8 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                 </tbody>
             </table>
         </div>
+        </form>
+        <?php osc_admin_bulk_confirm_dialog(); ?>
 
         <?php osc_admin_pagination(array(
             'aRows'                => $mediaRows,
