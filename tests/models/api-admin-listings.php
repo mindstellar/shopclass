@@ -228,6 +228,6 @@ $two  = $count(2);
 $six  = $count(6);
 echo "  a page of 2: $two queries, of 6: $six\n";
 pin('a page of 6 costs the same queries as a page of 2', $two, $six);
-pin('a page of admin listings: 8 queries, the count is skipped', 8, $six);
+pin('a page of admin listings: 9 queries, the count is skipped', 9, $six);
 
 exit(harness_result());

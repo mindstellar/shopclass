@@ -27,7 +27,7 @@ final class ListingSerializer
 {
     public const PUBLIC_MEMBERS = [
         'id', 'url', 'status', 'title', 'description', 'snippet', 'locale', 'category', 'price', 'location', 'contact', 'seller',
-        'photos', 'custom_fields', 'translations', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
+        'photos', 'custom_fields', 'translations', 'product', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
     ];
 
     /** Sent to the owner and admins. */
@@ -103,6 +103,7 @@ final class ListingSerializer
             'photos'       => fn () => $this->photos($relations->photos($id)),
             'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
+            'product'      => fn () => self::product($relations->variants($id), $view !== ViewContext::PUBLIC),
             'premium'      => static fn () => Format::bool($item['b_premium'] ?? 0),
             'views'        => static fn () => Format::int($item['i_num_views'] ?? 0),
             'published_at' => static fn () => Format::time($item['dt_pub_date'] ?? null),
@@ -118,7 +119,11 @@ final class ListingSerializer
         $data = ['id' => $id];
         foreach ($build as $member => $make) {
             if ($make !== null && $context->wants($member)) {
-                $data[$member] = $make();
+                $value = $make();
+                // A listing nobody can buy has no `product`.
+                if ($member !== 'product' || $value !== null) {
+                    $data[$member] = $value;
+                }
             }
         }
         $filtered = osc_apply_filter('api_listing', $data, $context);
@@ -129,7 +134,7 @@ final class ListingSerializer
     /**
      * The members a page needs looked up: sellers, photos, custom field values.
      *
-     * @return array{seller:bool,photos:bool,fields:bool}
+     * @return array{seller:bool,photos:bool,fields:bool,product:bool}
      */
     public static function lookups(ViewContext $context): array
     {
@@ -137,7 +142,45 @@ final class ListingSerializer
             'seller' => $context->wants('seller'),
             'photos' => $context->wants('photos'),
             'fields' => $context->includes('custom_fields') && $context->wants('custom_fields'),
+            'product' => $context->wants('product'),
         ];
+    }
+
+    /**
+     * What makes the listing buyable, or null when it has no variant. The stock count is for the
+     * owner and admins; everyone sees whether a variant is in stock.
+     *
+     * @param array<int,array<string,mixed>> $rows t_item_variant rows
+     *
+     * @return array{buyable:bool,variants:array<int,array<string,mixed>>}|null
+     */
+    private static function product(array $rows, bool $withStock): ?array
+    {
+        if ($rows === []) {
+            return null;
+        }
+        $variants = [];
+        foreach ($rows as $row) {
+            $options  = is_string($row['s_options'] ?? null) ? json_decode($row['s_options'], true) : null;
+            $stock    = is_numeric($row['i_stock'] ?? null) ? (int) $row['i_stock'] : null;
+            $variant  = [
+                'id'             => Format::int($row['pk_i_id'] ?? 0),
+                'sku'            => Format::text($row['s_sku'] ?? null),
+                'options'        => is_array($options) && $options !== [] ? $options : null,
+                'price'          => Format::amount($row['i_price'] ?? null),
+                'in_stock'       => $stock === null || $stock > 0,
+                'weight'         => is_numeric($row['i_weight'] ?? null) ? (int) $row['i_weight'] : null,
+                'shipping_class' => Format::text($row['s_shipping_class'] ?? null),
+                'photo_id'       => is_numeric($row['fk_i_resource_id'] ?? null) ? (int) $row['fk_i_resource_id'] : null,
+                'position'       => Format::int($row['i_position'] ?? 0),
+            ];
+            if ($withStock) {
+                $variant['stock'] = $stock;
+            }
+            $variants[] = $variant;
+        }
+
+        return ['buyable' => true, 'variants' => $variants];
     }
 
     /**

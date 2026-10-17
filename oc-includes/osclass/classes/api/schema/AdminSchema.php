@@ -71,6 +71,13 @@ final class AdminSchema
 
         return [
             'AdminListingPatch'     => $input(array_diff_key(Schema::listingMembers(), ['photo_tokens' => true, 'photo_urls' => true]) + [
+                'product'       => array_merge(Schema::object([
+                    'sku'            => ['type' => ['string', 'null'], 'maxLength' => 64],
+                    'price'          => ['type' => ['string', 'number', 'null'], 'pattern' => '^[0-9]{1,15}([.][0-9]{1,6})?$', 'minimum' => 0, 'description' => 'A decimal such as "12.50"; null sells at the listing price.'],
+                    'stock'          => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 2147483647, 'description' => 'null does not track stock.'],
+                    'weight'         => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 4294967295, 'description' => 'Grams.'],
+                    'shipping_class' => ['type' => ['string', 'null'], 'maxLength' => 40],
+                ]), ['type' => ['object', 'null'], 'additionalProperties' => false, 'description' => 'Sell this item: sets the default variant, sending only the members to change. null stops selling it.']),
                 'owner_id'      => ['type' => ['integer', 'null'], 'minimum' => 1, 'description' => 'The user the listing belongs to; null for none.'],
                 'contact_name'  => $text(100) + ['description' => 'Used when the listing has no owner.'],
                 'contact_email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 100, 'description' => 'Used when the listing has no owner.'],
