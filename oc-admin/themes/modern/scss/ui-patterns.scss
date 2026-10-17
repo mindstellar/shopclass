@@ -113,8 +113,9 @@
 
 // An empty table has no columns to read and no rows to act on: drop its header and the
 // page's bulk actions.
+// The bulk bar only hides when no table on the page has a row to act on.
 table:has(> tbody > .osc-table-empty-row) > thead,
-#content-page:has(.osc-table-empty-row) #bulk-actions {
+#content-page:has(.osc-table-empty-row):not(:has(tbody > tr:not(.osc-table-empty-row))) #bulk-actions {
   display: none;
 }
 
