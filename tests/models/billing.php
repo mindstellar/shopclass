@@ -1661,6 +1661,50 @@ osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------
+ * A held listing (never published, so no dt_first_pub_date) takes no slot, and
+ * osc_billing_pay_at_post() is the switch for holding instead of refusing.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: a held listing takes no slot');
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+
+$heldUserId = seed_user($admin, 'heldslot', 'heldslot@example.test');
+$heldLiveId = seed_item($admin, $categoryId, $heldUserId, 'Live, takes the slot');
+$heldRowId  = seed_item($admin, $categoryId, $heldUserId, 'Held, unpaid');
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL'
+    . ' WHERE pk_i_id = ' . $heldRowId
+);
+pin('a held row is not counted next to a live one', 1, EntitlementStore::liveListings($heldUserId));
+check('the slot is taken by the live listing alone', EntitlementStore::withinFreeQuota($heldUserId) === false);
+Item::getInstance()->deleteByPrimaryKey($heldLiveId);
+pin('with the live one gone, the held row still counts for nothing', 0, EntitlementStore::liveListings($heldUserId));
+check('the free slot is open again', EntitlementStore::withinFreeQuota($heldUserId));
+Item::getInstance()->deleteByPrimaryKey($heldRowId);
+
+$slotSwitchBefore = osc_get_preference('billing_slot_enabled', 'osclass');
+osc_set_preference('billing_slot_enabled', '1', 'osclass', 'BOOLEAN');
+osc_delete_preference('billing_pay_at_post', 'osclass');
+osc_reset_preferences();
+check('pay at post is on by default', osc_billing_pay_at_post());
+osc_set_preference('billing_pay_at_post', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+check('pay at post is off when the preference is 0', osc_billing_pay_at_post() === false);
+osc_set_preference('billing_pay_at_post', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_slot_enabled', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+check('pay at post is off when slot sales are off', osc_billing_pay_at_post() === false);
+osc_set_preference('billing_slot_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+check('pay at post is off when billing is off', osc_billing_pay_at_post() === false);
+osc_delete_preference('billing_pay_at_post', 'osclass');
+osc_set_preference('billing_slot_enabled', (string) $slotSwitchBefore, 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
  * Entitlements: a listing.slot capacity entitlement raises the ceiling
  * (osc_billing_free_live_listings() + capacity()), and an unlimited one (NULL
  * quantity, read back as -1) means unlimited -- never folded into the

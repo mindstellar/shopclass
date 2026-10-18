@@ -82,6 +82,22 @@ function osc_billing_slot_enabled(): bool
 }
 
 /**
+ * Whether a listing over the free limit is held until its slot is paid, instead of refused.
+ * Needs billing and slot sales on; the billing_pay_at_post preference defaults to on.
+ *
+ * @return bool
+ */
+function osc_billing_pay_at_post(): bool
+{
+    if (!osc_billing_enabled() || !osc_billing_slot_enabled()) {
+        return false;
+    }
+    $v = osc_get_preference('billing_pay_at_post', 'osclass');
+
+    return $v === '' || $v === null ? true : (bool) (int) $v;
+}
+
+/**
  * Credit price of one listing.slot purchase. 0 with billing_slot_enabled on means free.
  *
  * @return int
@@ -532,7 +548,7 @@ function osc_user_listing_limit(?int $userId = null): int
  * How many live listings $userId currently holds -- what osc_user_listing_limit() is
  * spent against. Counts listings awaiting moderation and admin-disabled ones too (see
  * EntitlementStore::liveListings()), so it matches the gate rather than what is publicly
- * visible. 0 while billing is off or no user is known.
+ * visible. Held (unpaid) listings are not counted. 0 while billing is off or no user is known.
  *
  * @param int|null $userId
  *

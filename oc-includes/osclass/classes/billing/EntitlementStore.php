@@ -398,6 +398,9 @@ final class EntitlementStore extends Model
      * which is the whole point of a slot model: deletion frees the slot by
      * construction, with no sweep and no bookkeeping.
      *
+     * A held listing (dt_first_pub_date IS NULL, not yet paid for) is not counted: it has
+     * not published, so it must not raise the price of the seller's next one.
+     *
      * Rides the plain fk_i_user_id index on t_item: the WHERE clause leads with
      * an equality match on it, narrowing to one seller's rows before the OR on
      * b_premium/dt_expiration is ever evaluated.
@@ -410,7 +413,8 @@ final class EntitlementStore extends Model
     {
         return (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
-            . ' WHERE fk_i_user_id = ? AND (b_premium = 1 OR dt_expiration >= ?)',
+            . ' WHERE fk_i_user_id = ? AND dt_first_pub_date IS NOT NULL'
+            . ' AND (b_premium = 1 OR dt_expiration >= ?)',
             array($userId, date('Y-m-d H:i:s'))
         );
     }
