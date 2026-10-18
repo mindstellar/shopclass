@@ -97,6 +97,7 @@ $ship = new CartShipping($cart);
 $ship->addMethod('express', 'Express', 9000000, '2 days');
 pin('a method is kept', [['id' => 'express', 'label' => 'Express', 'eta' => '2 days', 'amount' => 9000000]], $ship->methods());
 check('a method with a bad id is refused', $refuses(static fn () => $ship->addMethod('No Good', 'X', 1)));
+check('a method with an empty label is refused', $refuses(static fn () => $ship->addMethod('x', '  ', 1)));
 check('a method below zero is refused', $refuses(static fn () => $ship->addMethod('free', 'Free', -1)));
 
 $problems = new CartProblems($cart);
