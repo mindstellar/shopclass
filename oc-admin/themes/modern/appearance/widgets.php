@@ -135,8 +135,11 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                             $type     = (!empty($w['s_type']) && isset($allTypes[$w['s_type']]))
                                 ? $allTypes[$w['s_type']]
                                 : null;
-                            $label = $w['s_description'] !== '' ? $w['s_description'] : sprintf(__('Widget %d'), $wid); ?>
-                            <li class="field-chip widget-row" data-widget-id="<?php echo $wid; ?>">
+                            $label = $w['s_description'] !== '' ? $w['s_description'] : sprintf(__('Widget %d'), $wid);
+                            $canHide = $type !== null && !(osc_is_moderator() && $type['capability'] === 'super_admin');
+                            $rowCfg  = $type !== null ? json_decode((string)$w['s_config'], true) : null;
+                            $hidden  = $canHide && is_array($rowCfg) && !\mindstellar\widgets\WidgetConfig::enabled($rowCfg); ?>
+                            <li class="field-chip widget-row<?php echo $hidden ? ' is-hidden' : ''; ?>" data-widget-id="<?php echo $wid; ?>">
                                 <div class="field-chip-row">
                                     <button type="button" class="chip-grip widget-drag-handle" draggable="true" tabindex="0"
                                             title="<?php echo osc_esc_html(__('Drag to reorder or move, or focus and use the arrow keys')); ?>"
@@ -144,6 +147,13 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                                     <span class="chip-name"><?php echo osc_esc_html($label); ?></span>
                                     <span class="chip-type"><?php echo osc_esc_html($type !== null ? $type['label'] : __('Custom HTML')); ?></span>
                                     <span class="chip-actions">
+                                        <?php if ($canHide) { ?>
+                                            <button type="button" class="chip-btn js-widget-toggle"
+                                                    data-widget-id="<?php echo $wid; ?>"
+                                                    aria-pressed="<?php echo $hidden ? 'true' : 'false'; ?>"
+                                                    title="<?php echo osc_esc_html($hidden ? __('Show widget') : __('Hide widget')); ?>"
+                                                    aria-label="<?php echo osc_esc_html($hidden ? sprintf(__('Show %s'), $label) : sprintf(__('Hide %s'), $label)); ?>"><i class="bi <?php echo $hidden ? 'bi-eye-slash-fill' : 'bi-eye-fill'; ?>" aria-hidden="true"></i></button>
+                                        <?php } ?>
                                         <button type="button" class="chip-btn js-widget-edit"
                                                 data-widget-id="<?php echo $wid; ?>"
                                                 data-location="<?php echo osc_esc_html($location); ?>"
@@ -258,6 +268,12 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
     .widget-row.widget-row-dragging {
         opacity: 0.5;
     }
+
+    .widget-row.is-hidden .chip-name,
+    .widget-row.is-hidden .chip-type {
+        text-decoration: line-through;
+        opacity: 0.55;
+    }
 </style>
 <script type="text/javascript">
 (function () {
@@ -269,7 +285,10 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         failed:  '<?php echo osc_esc_js(__('Could not save the new order. Reload and try again.')); ?>',
         loading: '<?php echo osc_esc_js(__('Loading…')); ?>',
         moved:   '<?php echo osc_esc_js(__('Moved to position %1$d of %2$d in %3$s.')); ?>',
-        pick:    '<?php echo osc_esc_js(__('Add to which section?')); ?>'
+        pick:    '<?php echo osc_esc_js(__('Add to which section?')); ?>',
+        toggleFailed: '<?php echo osc_esc_js(__('Could not change the widget. Reload and try again.')); ?>',
+        show:    '<?php echo osc_esc_js(__('Show widget')); ?>',
+        hide:    '<?php echo osc_esc_js(__('Hide widget')); ?>'
     };
 
     function announce(msg) {
@@ -398,6 +417,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                 + '  <span class="chip-name"></span>'
                 + '  <span class="chip-type"></span>'
                 + '  <span class="chip-actions">'
+                + '    <button type="button" class="chip-btn js-widget-toggle" data-widget-id="' + o.id + '" aria-pressed="false" title="' + TXT.hide + '" aria-label="' + TXT.hide + '"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>'
                 + '    <button type="button" class="chip-btn js-widget-edit" data-widget-id="' + o.id + '" data-location="' + (section.getAttribute('data-location') || '') + '"><i class="bi bi-pencil-fill"></i></button>'
                 + '    <button type="button" class="chip-btn chip-danger" onclick="return delete_dialog(\'' + o.id + '\');"><i class="bi bi-trash-fill"></i></button>'
                 + '  </span>'
@@ -470,6 +490,32 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
 
     // ---- Clicks --------------------------------------------------------------
     document.addEventListener('click', function (e) {
+        var toggle = e.target.closest('.js-widget-toggle');
+        if (toggle) {
+            e.preventDefault();
+            var trow = toggle.closest('.widget-row');
+            var tsec = sectionOf(toggle);
+            var tbody = new URLSearchParams();
+            tbody.set('id', toggle.dataset.widgetId);
+            fetch(ADMIN + '?page=appearance&action=widget_toggle_post&' + CSRF, {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: tbody
+            }).then(function (r) { return r.json(); }).then(function (o) {
+                if (!o || o.error !== 0) { throw new Error('toggle'); }
+                var hidden = !o.enabled;
+                trow.classList.toggle('is-hidden', hidden);
+                toggle.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+                toggle.title = hidden ? TXT.show : TXT.hide;
+                toggle.setAttribute('aria-label', toggle.title);
+                var icon = toggle.querySelector('i');
+                if (icon) { icon.className = 'bi ' + (hidden ? 'bi-eye-slash-fill' : 'bi-eye-fill'); }
+                clearError(tsec);
+            }).catch(function () {
+                var box = tsec.querySelector('.widget-reorder-error');
+                if (box) { box.textContent = TXT.toggleFailed; box.classList.remove('d-none'); }
+            });
+            return;
+        }
         var edit = e.target.closest('.js-widget-edit');
         if (edit) {
             e.preventDefault();
