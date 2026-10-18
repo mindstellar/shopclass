@@ -22,6 +22,7 @@ use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
+use mindstellar\model\KeyValue;
 
 /**
  * Persistence for t_billing_order.
@@ -41,6 +42,9 @@ final class OrderStore extends Model
 
     /** s_meta key core sets once the order's receipt e-mail went out. */
     public const RECEIPT_SENT = '_receipt_sent';
+
+    /** Key-value group linking an unpaid listing to its open order. */
+    private const LISTING_GROUP = 'listing_unpaid';
 
     /**
      * Record a new pending order.
@@ -98,6 +102,43 @@ final class OrderStore extends Model
         $row = self::table()->where('pk_i_id', $id)->first();
 
         return $row === null ? null : Order::fromRow($row);
+    }
+
+    /**
+     * Remember the open order that will publish a held listing, until the hold ends.
+     *
+     * @param int $itemId
+     * @param int $orderId
+     * @param int $expiresAt Unix time the link lapses
+     */
+    public static function linkListing(int $itemId, int $orderId, int $expiresAt): void
+    {
+        (new KeyValue())->set(self::LISTING_GROUP, (string) $itemId, json_encode(array('order' => $orderId)), $expiresAt);
+    }
+
+    /**
+     * The open order linked to a held listing, or null when the link lapsed or the order is gone.
+     *
+     * @param int $itemId
+     *
+     * @return Order|null
+     */
+    public static function listingOrder(int $itemId): ?Order
+    {
+        $row  = (new KeyValue())->get(self::LISTING_GROUP, (string) $itemId);
+        $data = $row === null || $row['value'] === null ? null : json_decode($row['value'], true);
+
+        return is_array($data) && isset($data['order']) ? self::find((int) $data['order']) : null;
+    }
+
+    /**
+     * Drop the link once the listing is published or gone.
+     *
+     * @param int $itemId
+     */
+    public static function unlinkListing(int $itemId): void
+    {
+        (new KeyValue())->delete(self::LISTING_GROUP, (string) $itemId);
     }
 
     /**
