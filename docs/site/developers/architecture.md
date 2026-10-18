@@ -110,6 +110,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `category` | Categories: `CategoryService`, `CategoryStore`, `CategoryQuery` |
 | `cli` | `oc-cli.php` commands |
 | `comment` | Listing comments: posting, rules and reads |
+| `container` | `Container`: the site-wide service container, in the PSR-11 shape |
 | `controller` | Web and admin page controllers (`CWeb*`, `admin/CAdmin*`) and their base classes |
 | `currency` | Currencies and `Money` |
 | `database` | The database connection, `Db` and `QueryBuilder`, the legacy `DAO`, schema checks, row hashes that tell when a row changed |
