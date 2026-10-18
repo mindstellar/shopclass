@@ -1655,8 +1655,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
-"An unpaid bank transfer or cash on delivery order is cancelled after this "
-"many days and its stock goes back on sale."
+"An unpaid order is cancelled after this many days. A bank transfer or cash "
+"on delivery order's stock goes back on sale."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
@@ -2477,12 +2477,12 @@ msgstr ""
 msgid "Cancel this order"
 msgstr ""
 
-#: oc-includes/osclass/classes/billing/Billing.php
-msgid "Cancel unpaid bank transfer and cash on delivery orders"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Cancel unpaid orders after (days)"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Billing.php
+msgid "Cancel unpaid shop orders"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
