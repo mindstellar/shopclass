@@ -527,6 +527,10 @@ final class Schema
                 'personal_keys' => ['type' => 'boolean', 'description' => 'Whether users may make their own keys at /account/keys.'],
                 'photo_urls'    => ['type' => 'boolean', 'description' => 'Whether a listing may name photos by URL in photo_urls.'],
             ], ['registration', 'personal_keys', 'photo_urls']) + ['description' => 'What the API allows on this site.'],
+            'cart'           => self::object([
+                'max_lines' => ['type' => 'integer', 'description' => 'The most lines a cart takes.'],
+                'max_qty'   => ['type' => 'integer', 'description' => 'The most of one variant a cart line takes.'],
+            ], ['max_lines', 'max_qty']) + ['description' => 'The limits a cart is held to.'],
             'links'          => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
         ], ['name', 'url', 'mode', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
     }

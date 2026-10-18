@@ -50,6 +50,7 @@ curl -H "Authorization: Bearer $KEY" $API/
     "friendly_urls": true,
     "features": { "users": true, "registration": true, "comments": true },
     "api": { "registration": false, "personal_keys": true, "photo_urls": false },
+    "cart": { "max_lines": 50, "max_qty": 20 },
     "links": {
       "listings": "https://example.com/api/v1/listings",
       "categories": "https://example.com/api/v1/categories",
