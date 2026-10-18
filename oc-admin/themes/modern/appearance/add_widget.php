@@ -65,28 +65,6 @@ if ($currentTypeId !== '' && !empty($widget['s_config'])) {
     }
 }
 
-/**
- * The value a config field should show: the widget's saved config when this
- * is the widget's current type, otherwise the field's declared default.
- *
- * @param array  $field
- * @param string $typeId
- * @param string $currentTypeId
- * @param array  $currentWidgetConfig
- *
- * @return mixed
- */
-function widgetConfigFieldValue($field, $typeId, $currentTypeId, $currentWidgetConfig)
-{
-    $name    = isset($field['name']) && is_string($field['name']) ? $field['name'] : '';
-    $default = $field['default'] ?? '';
-    if ($typeId === $currentTypeId && array_key_exists($name, $currentWidgetConfig)) {
-        return $currentWidgetConfig[$name];
-    }
-
-    return $default;
-}
-
 // Type id => description, used by the client-side toggle to show a help line
 // under the picker without re-fetching anything from the server.
 $widgetTypeDescriptions = array('' => '');
@@ -197,27 +175,7 @@ if (!$inline) {
                         )); ?>
                     </div>
                     <div id="widget-type-fields">
-                        <?php foreach ($widgetTypes as $typeId => $typeSpec) {
-                            $fields = isset($typeSpec['fields']) && is_array($typeSpec['fields'])
-                                ? $typeSpec['fields'] : array();
-                            if (empty($fields)) {
-                                continue;
-                            }
-                            $isActive = ($typeId === $currentTypeId);
-                            ?>
-                            <div class="widget-type-fieldset" data-type-id="<?php echo osc_esc_html($typeId); ?>"
-                                <?php echo $isActive ? '' : 'hidden'; ?>>
-                                <?php foreach ($fields as $field) {
-                                    $fieldValue = widgetConfigFieldValue(
-                                        $field,
-                                        $typeId,
-                                        $currentTypeId,
-                                        $currentWidgetConfig
-                                    );
-                                    osc_widget_config_field($typeId, $field, $fieldValue, !$isActive);
-                                } ?>
-                            </div>
-                        <?php } ?>
+                        <?php require __DIR__ . '/parts/widget-fields.php'; ?>
                     </div>
                     <?php osc_admin_form_actions(array(
                         array('label' => $button, 'type' => 'submit'),
