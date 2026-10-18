@@ -312,13 +312,6 @@ function fn_email_warn_expiration($aItem)
 }
 
 osc_add_hook('hook_email_warn_expiration', 'fn_email_warn_expiration');
-osc_add_hook('hook_email_product_alert', array(\mindstellar\mail\CoreEmails::class, 'productAlert'));
-osc_add_hook('hook_email_order_placed', array(\mindstellar\mail\CoreEmails::class, 'orderPlaced'));
-osc_add_hook('hook_email_order_shipped', array(\mindstellar\mail\CoreEmails::class, 'orderShipped'));
-osc_add_hook('hook_email_order_delivered', array(\mindstellar\mail\CoreEmails::class, 'orderDelivered'));
-osc_add_hook('hook_email_order_cancelled', array(\mindstellar\mail\CoreEmails::class, 'orderCancelled'));
-osc_add_hook('hook_email_order_refunded', array(\mindstellar\mail\CoreEmails::class, 'orderRefunded'));
-osc_add_hook('hook_email_admin_new_order', array(\mindstellar\mail\CoreEmails::class, 'adminNewOrder'));
 osc_add_hook('billing_order_placed', array(\mindstellar\billing\Receipts::class, 'afterPlaced'));
 osc_add_hook('billing_order_shipped', array(\mindstellar\billing\Receipts::class, 'afterShipped'));
 osc_add_hook('billing_order_delivered', array(\mindstellar\billing\Receipts::class, 'afterDelivered'));

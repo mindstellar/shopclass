@@ -17,6 +17,8 @@ use mindstellar\event\Bridged;
 use mindstellar\event\Dispatcher;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\event\HookBridge;
+use mindstellar\mail\CoreEmails;
+use mindstellar\mail\event\MailComposing;
 
 /**
  * The services core puts in the site-wide container at start-up. Plugins may add their own on init.
@@ -37,9 +39,23 @@ final class CoreServices
         $c->instance(Dispatcher::class, $events);
         $c->instance(DispatcherInterface::class, $events);
         $c->instance(HookBridge::class, $bridge);
+        $c->set(CoreEmails::class, static fn (Container $c): CoreEmails => new CoreEmails($c->get(DispatcherInterface::class)));
         foreach (self::events() as $event) {
             $bridge->own($event);
         }
+    }
+
+    /**
+     * The site's dispatcher. Core's services are registered first when start-up has not done it.
+     */
+    public static function dispatcher(): DispatcherInterface
+    {
+        $c = Container::root();
+        if (!$c->has(DispatcherInterface::class)) {
+            self::register($c);
+        }
+
+        return $c->get(DispatcherInterface::class);
     }
 
     /**
@@ -49,6 +65,8 @@ final class CoreServices
      */
     public static function events(): array
     {
-        return [];
+        return [
+            MailComposing::class,
+        ];
     }
 }

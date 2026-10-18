@@ -81,7 +81,7 @@ foreach ($added as $name) {
 pin('shims found', 38, $shims);
 
 harness_section('the hooks still name the old functions');
-pin('hooks registered', 34, count($GLOBALS['mail_hooks']));
+pin('hooks registered', 27, count($GLOBALS['mail_hooks']));
 pin('item inquiry hook', 'fn_email_item_inquiry', $GLOBALS['mail_hooks']['hook_email_item_inquiry']);
 pin('auto upgrade hook', 'fn_email_auto_upgrade', $GLOBALS['mail_hooks']['after_auto_upgrade']);
 

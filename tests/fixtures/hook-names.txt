@@ -146,7 +146,6 @@ action form_submitted
 action header
 action help_box
 action hook_email_admin_new_item
-action hook_email_admin_new_order
 action hook_email_admin_new_user
 action hook_email_alert_validation
 action hook_email_comment_validated
@@ -159,12 +158,6 @@ action hook_email_new_comment_admin
 action hook_email_new_comment_user
 action hook_email_new_email
 action hook_email_new_item_non_register_user
-action hook_email_order_cancelled
-action hook_email_order_delivered
-action hook_email_order_placed
-action hook_email_order_refunded
-action hook_email_order_shipped
-action hook_email_product_alert
 action hook_email_send_friend
 action hook_email_user_forgot_password
 action hook_email_user_registration

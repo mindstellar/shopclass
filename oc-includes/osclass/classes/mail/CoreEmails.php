@@ -21,7 +21,12 @@ use Item;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\Receipts;
+use mindstellar\boot\CoreServices;
+use mindstellar\container\Container;
 use mindstellar\currency\Money;
+use mindstellar\event\DispatcherInterface;
+use mindstellar\mail\event\MailComposing;
+use mindstellar\mail\event\MailSent;
 use OSCLocale;
 use Page;
 use Params;
@@ -30,13 +35,25 @@ use User;
 use View;
 
 /**
- * The e-mails core sends. Each one runs on its hook; emails.php adds the hooks and keeps the old
- * fn_email_* names, so a plugin can still remove or call them.
+ * The e-mails core sends. The older ones run on their hooks (emails.php keeps the fn_email_* names).
+ * The shop mails (orders, product alerts) are sent by an instance that fires MailComposing and MailSent.
  */
 final class CoreEmails
 {
+    private DispatcherInterface $events;
+
     /** Set by the order mails when a send fails, so the caller can try again later. */
     private static bool $orderMailFailed = false;
+
+    public function __construct(?DispatcherInterface $events = null)
+    {
+        $this->events = $events ?? CoreServices::dispatcher();
+    }
+
+    private static function instance(): self
+    {
+        return Container::root()->get(self::class);
+    }
 
     /**
      * Forget an earlier failed order mail, before firing a new one.
@@ -1914,6 +1931,87 @@ final class CoreEmails
      */
     public static function productAlert($alert, $item, $kind, $price = null)
     {
+        self::instance()->mailProductAlert($alert, $item, (string) $kind, $price);
+    }
+
+    /**
+     * Tell the buyer a goods order that waits for payment (bank transfer, cash on delivery) was received.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderPlaced($order)
+    {
+        self::instance()->mailOrder('order_placed', $order);
+    }
+
+    /**
+     * Tell the buyer their order is on its way, with the tracking link when there is a safe one.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderShipped($order)
+    {
+        self::instance()->mailOrder('order_shipped', $order);
+    }
+
+    /**
+     * Tell the buyer their order arrived, with a link to rate each product.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderDelivered($order)
+    {
+        self::instance()->mailOrder('order_delivered', $order);
+    }
+
+    /**
+     * Tell the buyer their order was cancelled and what happens to a payment.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderCancelled($order)
+    {
+        self::instance()->mailOrder('order_cancelled', $order);
+    }
+
+    /**
+     * Tell the buyer their order was refunded: how much, and how.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderRefunded($order)
+    {
+        self::instance()->mailOrder('order_refunded', $order);
+    }
+
+    /**
+     * Tell the shop owner a goods order came in that is paid or will be paid on delivery.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function adminNewOrder($order)
+    {
+        self::instance()->mailOrder('admin_new_order', $order);
+    }
+
+    /**
+     * @param array<string,mixed> $alert
+     * @param array<string,mixed> $item
+     */
+    public function mailProductAlert(array $alert, array $item, string $kind, ?int $price = null): void
+    {
         $user = !empty($alert['fk_i_user_id']) ? User::getInstance()->findByPrimaryKey((int) $alert['fk_i_user_id']) : false;
         $to   = is_array($user) && !empty($user['s_email']) ? (string) $user['s_email'] : (string) ($alert['s_email'] ?? '');
         $name = is_array($user) && !empty($user['s_name']) ? (string) $user['s_name'] : $to;
@@ -1942,179 +2040,99 @@ final class CoreEmails
             ),
             array('{USER_NAME}', '{ITEM_TITLE}', '{ITEM_PRICE}')
         );
-        $title = osc_apply_filter('email_product_alert_title_after', osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_product_alert_title', $title, $alert, $item, $kind)
-        ), $words), $alert, $item, $kind);
-        $body  = osc_apply_filter('email_product_alert_description_after', osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_product_alert_description', $body, $alert, $item, $kind)
-        ), $htmlWords), $alert, $item, $kind);
-
-        osc_sendMail(array(
-            'from'    => self::fromAddress(),
-            'to'      => $to,
-            'to_name' => $name,
-            'subject' => $title,
-            'body'    => $body,
-        ));
+        $this->deliver(new MailComposing('product_alert', $to, $name, $title, $body, $words, $htmlWords, null, $alert, $item, array($alert, $item, $kind)));
     }
 
-    /**
-     * Tell the buyer a goods order that waits for payment (bank transfer, cash on delivery) was received.
-     *
-     * @param Order $order
-     *
-     * @return void
-     */
-    public static function orderPlaced($order)
+    public function mailOrder(string $kind, Order $order): void
     {
-        $mail = self::orderMail($order, false);
-        if ($mail === null) {
-            return;
-        }
-        $title = osc_apply_filter('email_order_placed_title_after', osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_order_placed_title', __('We received your order {ORDER_NUMBER}'), $order)
-        ), $mail['words']), $order);
-        $body  = osc_apply_filter('email_order_placed_description_after', osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_order_placed_description', __('<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order)
-        ), $mail['htmlWords']), $order);
-        self::sendOrderMail($mail, $title, $body);
-    }
-
-    /**
-     * Tell the buyer their order is on its way, with the tracking link when there is a safe one.
-     *
-     * @param Order $order
-     *
-     * @return void
-     */
-    public static function orderShipped($order)
-    {
-        $mail = self::orderMail($order, false);
-        if ($mail === null) {
-            return;
-        }
-        $title = osc_apply_filter('email_order_shipped_title_after', osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_order_shipped_title', __('Your order {ORDER_NUMBER} has shipped'), $order)
-        ), $mail['words']), $order);
-        $body  = osc_apply_filter('email_order_shipped_description_after', osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_order_shipped_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order)
-        ), $mail['htmlWords']), $order);
-        self::sendOrderMail($mail, $title, $body);
-    }
-
-    /**
-     * Tell the buyer their order arrived, with a link to rate each product.
-     *
-     * @param Order $order
-     *
-     * @return void
-     */
-    public static function orderDelivered($order)
-    {
-        $rate  = '';
-        $seen  = array();
-        foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
-            $itemId = (int) ($line['item_id'] ?? 0);
-            if ($line['kind'] !== OrderLineStore::KIND_ITEM || $itemId < 1 || isset($seen[$itemId])) {
-                continue;
+        $extra = array();
+        if ($kind === 'order_delivered') {
+            $rate = '';
+            $seen = array();
+            foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+                $itemId = (int) ($line['item_id'] ?? 0);
+                if ($line['kind'] !== OrderLineStore::KIND_ITEM || $itemId < 1 || isset($seen[$itemId])) {
+                    continue;
+                }
+                $seen[$itemId] = true;
+                $rate .= '<li>' . osc_esc_html((string) $line['title']) . ' - <a href="' . osc_esc_html(osc_item_url_ns($itemId)) . '">'
+                    . osc_esc_html(__('Rate it')) . '</a></li>';
             }
-            $seen[$itemId] = true;
-            $rate .= '<li>' . osc_esc_html((string) $line['title']) . ' - <a href="' . osc_esc_html(osc_item_url_ns($itemId)) . '">'
-                . osc_esc_html(__('Rate it')) . '</a></li>';
+            $extra = array('{ORDER_PRODUCTS}' => $rate === '' ? '' : '<ul>' . $rate . '</ul>');
+        } elseif ($kind === 'order_refunded') {
+            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())));
         }
-        $mail = self::orderMail($order, false, array('{ORDER_PRODUCTS}' => $rate === '' ? '' : '<ul>' . $rate . '</ul>'));
+        $mail = self::orderMail($order, $kind === 'admin_new_order', $extra);
         if ($mail === null) {
             return;
         }
-        $title = osc_apply_filter('email_order_delivered_title_after', osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_order_delivered_title', __('Your order {ORDER_NUMBER} was delivered'), $order)
-        ), $mail['words']), $order);
-        $body  = osc_apply_filter('email_order_delivered_description_after', osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_order_delivered_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'), $order)
-        ), $mail['htmlWords']), $order);
-        self::sendOrderMail($mail, $title, $body);
+        [$title, $body] = self::orderTemplates($kind);
+        $this->deliver(new MailComposing($kind, $mail['to'], $mail['toName'], $title, $body, $mail['words'], $mail['htmlWords'], $order, null, null, array($order)));
     }
 
     /**
-     * Tell the buyer their order was cancelled and what happens to a payment.
+     * The subject and body templates of an order mail.
      *
-     * @param Order $order
-     *
-     * @return void
+     * @return array{0:string,1:string}
      */
-    public static function orderCancelled($order)
+    private static function orderTemplates(string $kind): array
     {
-        $mail = self::orderMail($order, false);
-        if ($mail === null) {
+        switch ($kind) {
+            case 'order_placed':
+                return array(
+                    __('We received your order {ORDER_NUMBER}'),
+                    __('<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_shipped':
+                return array(
+                    __('Your order {ORDER_NUMBER} has shipped'),
+                    __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_delivered':
+                return array(
+                    __('Your order {ORDER_NUMBER} was delivered'),
+                    __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_cancelled':
+                return array(
+                    __('Your order {ORDER_NUMBER} was cancelled'),
+                    __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_refunded':
+                return array(
+                    __('Your order {ORDER_NUMBER} was refunded'),
+                    __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),
+                );
+            default:
+                return array(
+                    __('New order {ORDER_NUMBER} on {WEB_TITLE}'),
+                    __('<p>Order {ORDER_NUMBER} came in from {USER_NAME} ({USER_EMAIL}). Payment: {PAYMENT_METHOD}.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'),
+                );
+        }
+    }
+
+    /**
+     * Let listeners shape the mail, send it unless one suppressed it, and announce the result. A
+     * failed order mail is flagged for the caller.
+     */
+    private function deliver(MailComposing $composing): void
+    {
+        $composing = $this->events->dispatch($composing);
+        if ($composing->isSuppressed()) {
             return;
         }
-        $title = osc_apply_filter('email_order_cancelled_title_after', osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_order_cancelled_title', __('Your order {ORDER_NUMBER} was cancelled'), $order)
-        ), $mail['words']), $order);
-        $body  = osc_apply_filter('email_order_cancelled_description_after', osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_order_cancelled_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order)
-        ), $mail['htmlWords']), $order);
-        self::sendOrderMail($mail, $title, $body);
-    }
-
-    /**
-     * Tell the buyer their order was refunded: how much, and how.
-     *
-     * @param Order $order
-     *
-     * @return void
-     */
-    public static function orderRefunded($order)
-    {
-        $mail = self::orderMail($order, false, array(
-            '{REFUND_AMOUNT}' => osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())),
+        $mail = $composing->render();
+        $sent = (bool) osc_sendMail(array(
+            'from'    => self::fromAddress(),
+            'to'      => $composing->recipient(),
+            'to_name' => $composing->recipientName(),
+            'subject' => $mail['subject'],
+            'body'    => $mail['body'],
         ));
-        if ($mail === null) {
-            return;
+        if (!$sent && $composing->order() !== null) {
+            self::$orderMailFailed = true;
         }
-        $title = osc_apply_filter('email_order_refunded_title_after', osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_order_refunded_title', __('Your order {ORDER_NUMBER} was refunded'), $order)
-        ), $mail['words']), $order);
-        $body  = osc_apply_filter('email_order_refunded_description_after', osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_order_refunded_description', __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order)
-        ), $mail['htmlWords']), $order);
-        self::sendOrderMail($mail, $title, $body);
-    }
-
-    /**
-     * Tell the shop owner a goods order came in that is paid or will be paid on delivery.
-     *
-     * @param Order $order
-     *
-     * @return void
-     */
-    public static function adminNewOrder($order)
-    {
-        $mail = self::orderMail($order, true);
-        if ($mail === null) {
-            return;
-        }
-        $title = osc_apply_filter('email_admin_new_order_title_after', osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_admin_new_order_title', __('New order {ORDER_NUMBER} on {WEB_TITLE}'), $order)
-        ), $mail['words']), $order);
-        $body  = osc_apply_filter('email_admin_new_order_description_after', osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_admin_new_order_description', __('<p>Order {ORDER_NUMBER} came in from {USER_NAME} ({USER_EMAIL}). Payment: {PAYMENT_METHOD}.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order)
-        ), $mail['htmlWords']), $order);
-        self::sendOrderMail($mail, $title, $body);
+        $this->events->dispatch(new MailSent($composing->kind(), $composing->order(), $composing->recipient(), $mail['subject'], $mail['body'], $sent));
     }
 
     /**
@@ -2171,29 +2189,6 @@ final class CoreEmails
         );
 
         return array('to' => $to, 'toName' => $toAdmin ? '' : $uname, 'words' => $words, 'htmlWords' => $htmlWords);
-    }
-
-    /**
-     * Send a finished order mail, and flag a failure for the caller.
-     *
-     * @param array<string,mixed> $mail  From orderMail()
-     * @param string              $title
-     * @param string              $body
-     *
-     * @return void
-     */
-    private static function sendOrderMail(array $mail, string $title, string $body): void
-    {
-        $sent = osc_sendMail(array(
-            'from'    => self::fromAddress(),
-            'to'      => $mail['to'],
-            'to_name' => $mail['toName'],
-            'subject' => $title,
-            'body'    => $body,
-        ));
-        if (!$sent) {
-            self::$orderMailFailed = true;
-        }
     }
 
     /**

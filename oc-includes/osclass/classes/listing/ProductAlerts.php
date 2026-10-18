@@ -115,7 +115,7 @@ final class ProductAlerts
     }
 
     /**
-     * One batch of the alerts a change answers: each is mailed through `hook_email_product_alert`
+     * One batch of the alerts a change answers: each is mailed through CoreEmails::productAlert()
      * and stopped. Nothing goes out while the listing is not live.
      *
      * @throws \mindstellar\database\DbException
@@ -145,7 +145,7 @@ final class ProductAlerts
             ) {
                 continue;
             }
-            osc_run_hook('hook_email_product_alert', $row, $item, $kind, $price);
+            \mindstellar\mail\CoreEmails::productAlert($row, $item, $kind, $price);
             \Alerts::getInstance()->unsub((int) $row['pk_i_id']);
         }
         if (count($rows) === self::BATCH) {
