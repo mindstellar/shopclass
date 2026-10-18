@@ -18,6 +18,7 @@ use mindstellar\billing\gateway\CashOnDeliveryGateway;
 use mindstellar\billing\gateway\OfflineGateway;
 use mindstellar\billing\ItemUpgradeStore;
 use mindstellar\billing\OrderLineStore;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
@@ -734,6 +735,20 @@ function osc_billing_orders_url(): string
 function osc_order_bought(int $userId, int $itemId): bool
 {
     return OrderLineStore::bought($userId, $itemId);
+}
+
+/**
+ * How many goods orders the user has in these statuses, e.g. a promotion's first-order check
+ * with array('pending', 'paid', 'shipped', 'delivered'). Credits orders are not counted.
+ *
+ * @param int      $userId
+ * @param string[] $statuses Order::STATUS_* values
+ *
+ * @return int
+ */
+function osc_billing_user_order_count(int $userId, array $statuses): int
+{
+    return OrderStore::countForUser($userId, $statuses);
 }
 
 /**

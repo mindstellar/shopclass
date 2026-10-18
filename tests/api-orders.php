@@ -149,13 +149,70 @@ pin('without it the totals leave the fee out but the gateway still shows it', ['
 osc_remove_filter('cart_totals', $fee);
 
 $q = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $small . ':1,' . $medium . ':9,999999:1,' . $mugV . ':30'])->body()['data'];
-pin('an out of stock, a short, an unknown and an over-limit line are problems, not errors', [['line' => 0, 'code' => 'out_of_stock'], ['line' => 1, 'code' => 'out_of_stock'], ['line' => 2, 'code' => 'not_buyable'], ['line' => 3, 'code' => 'qty']], $q['problems']);
+pin('an out of stock, a short, an unknown and an over-limit line are problems, not errors', [['line' => 0, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null], ['line' => 1, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null], ['line' => 2, 'code' => 'not_buyable', 'pointer' => null, 'message' => null], ['line' => 3, 'code' => 'qty', 'pointer' => null, 'message' => null]], $q['problems']);
 pin('a line short of stock is marked and left out of the subtotal', [false, 0, '180.00'], [$q['lines'][0]['available'], $q['lines'][0]['stock_left'], $q['totals']['subtotal']['amount']]);
 pin('the quantity is capped at 20', 20, $q['lines'][2]['qty']);
 pin('an empty cart is a quote of nothing', [200, []], (static fn ($r) => [$r->status(), $r->body()['data']['lines']])($call('GET', 'cart/quote', null, null, $guest)));
 pin('more than 50 lines is a 422', '422 validation_failed', api_admin_code($call('GET', 'cart/quote', null, null, $guest, ['lines' => implode(',', array_fill(0, 51, '1:1'))])));
 pin('a malformed lines value is a 422', '422 validation_failed', api_admin_code($call('GET', 'cart/quote', null, null, $guest, ['lines' => '1-2;3'])));
 pin('a price in the query is not a parameter', '422 validation_failed', api_admin_code($call('GET', 'cart/quote', null, null, $guest, ['lines' => $mugV . ':1', 'price' => '1'])));
+
+harness_section('what the quote hands plugins');
+$saw = [];
+$spy = static function ($lines, $cart) use (&$saw) {
+    $saw = [$cart['address'], $cart['coupon']];
+
+    return $lines;
+};
+osc_add_filter('cart_tax_lines', $spy);
+$r = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $mugV . ':1', 'postcode' => '110017', 'country' => 'IN', 'coupon' => 'welcome10']);
+pin('postcode, country and the code reach the filters', [200, ['country' => 'IN', 'postcode' => '110017'], 'WELCOME10'], [$r->status(), $saw[0] ?? null, $saw[1] ?? null]);
+$r = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $mugV . ':1', 'coupon' => 'bad code!', 'country' => 'India', 'state' => str_repeat('s', 150)]);
+pin('a bad code, country or state is dropped, not refused', [200, [], null], [$r->status(), $saw[0] ?? null, $saw[1] ?? null]);
+osc_remove_filter('cart_tax_lines', $spy);
+
+$extras = static function ($lines) use ($m) {
+    $lines[] = ['id' => 'tax.gst.18', 'label' => 'GST 18%', 'amount' => $m(1.37), 'meta' => ['included' => true]];
+    $lines[] = ['id' => 'tax.levy', 'label' => 'Levy', 'amount' => $m(1)];
+
+    return $lines;
+};
+$problem = static fn ($problems) => array_merge($problems, [
+    ['code' => 'not_serviceable', 'pointer' => '/address/postcode', 'message' => 'We do not deliver to this PIN code yet.'],
+    ['code' => 'nope', 'pointer' => '/somewhere', 'message' => 'dropped'],
+]);
+$free = static fn ($core) => ['amount' => $m(100), 'remaining' => 0];
+osc_add_filter('cart_tax_lines', $extras);
+osc_add_filter('cart_problems', $problem);
+osc_add_filter('cart_free_over', $free);
+$r = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $mugV . ':1']);
+$q = $r->body()['data'];
+pin('it still matches the schema', [], api_admin_schema_errors('QuoteDocument', $r));
+pin('an included tax line is marked and not added; an additive one is', [[true, false], '1.00', '1.37', '59.00'], [array_column($q['taxes'], 'included'), $q['totals']['tax']['amount'], $q['totals']['tax_included']['amount'], $q['totals']['total']['amount']]);
+pin('a plugin problem carries its pointer and words', [['line' => null, 'code' => 'not_serviceable', 'pointer' => '/address/postcode', 'message' => 'We do not deliver to this PIN code yet.']], $q['problems']);
+pin('cart_free_over sets the meter', ['100.00', '91.00'], [$q['free_over']['amount']['amount'], $q['free_over']['remaining']['amount']]);
+$kim    = seed_user($admin, 'kim', 'kim@example.test');
+$kimKey = $key($kim, ['orders:write']);
+$r      = $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]]), $kimKey);
+pin('placing refuses at 422 with the plugin\'s pointer and words', [422, [['pointer' => '/address/postcode', 'code' => 'rejected', 'message' => 'We do not deliver to this PIN code yet.']]], [$r->status(), array_map(static fn ($e) => ['pointer' => $e['pointer'], 'code' => $e['code'], 'message' => $e['message']], $r->body()['errors'] ?? [])]);
+osc_remove_filter('cart_problems', $problem);
+$coupon = null;
+$couponSpy = static function ($lines, $cart) use (&$coupon) {
+    $coupon = $cart['coupon'];
+
+    return $lines;
+};
+osc_add_filter('cart_discount_lines', $couponSpy);
+$r = $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]], ['coupon' => ' save5 ']), $kimKey);
+pin('a placement hands the filters its code', [201, 'SAVE5'], [$r->status(), $coupon]);
+pin('and matches the schema', [], api_admin_schema_errors('OrderPlaced', $r));
+$taxRows = array_values(array_filter($r->body()['data']['lines'], static fn ($l) => $l['kind'] === 'tax'));
+pin('an included tax line shows its tax as the unit, amount 0', [['GST 18%', true, '1.37', '0.00'], ['Levy', false, '1.00', '1.00']], array_map(static fn ($l) => [$l['title'], $l['included'], $l['unit']['amount'], $l['amount']['amount']], $taxRows));
+pin('and the order total leaves it out', '59.00', $r->body()['data']['total']['amount']);
+osc_remove_filter('cart_discount_lines', $couponSpy);
+osc_remove_filter('cart_tax_lines', $extras);
+osc_remove_filter('cart_free_over', $free);
+OrderStore::cancel((int) $r->body()['data']['id']);
 
 harness_section('placing an order');
 pin('anonymous cannot place', 401, $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]]))->status());

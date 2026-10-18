@@ -28,7 +28,7 @@ final class OrderSchema
         'Amount', 'OrderAddress', 'OrderAddressInput', 'OrderLineInput', 'OrderInput',
         'OrderLine', 'OrderGateway', 'Order', 'OrderNext',
         'OrderDocument', 'OrderPage', 'OrderPlaced',
-        'QuoteLine', 'QuoteMethod', 'QuoteAdjustment', 'QuoteTotals', 'QuoteGateway', 'QuoteProblem',
+        'QuoteLine', 'QuoteMethod', 'QuoteAdjustment', 'QuoteTax', 'QuoteTotals', 'QuoteGateway', 'QuoteProblem',
         'Quote', 'QuoteDocument',
     ];
 
@@ -90,6 +90,7 @@ final class OrderSchema
                 'shipping_method' => $text(64, 1),
                 'gateway'         => $text(64, 1),
                 'note'            => $text(500),
+                'coupon'          => $text(200) + ['description' => 'A coupon code, read as GET cart/quote reads it.'],
             ], ['lines', 'address', 'shipping_method', 'gateway']) + ['description' => 'Prices, totals and stock are worked out on the server; an amount sent is ignored.'],
 
             'OrderLine' => Schema::object([
@@ -101,7 +102,8 @@ final class OrderSchema
                 'unit'    => $amount,
                 'amount'  => $amount,
                 'listing' => $sold,
-            ], ['kind', 'title', 'options', 'sku', 'qty', 'unit', 'amount', 'listing']) + ['description' => 'A discount line\'s amount is negative.'],
+                'included' => ['type' => 'boolean', 'description' => 'True on a tax line for tax already in the prices: its amount is 0 and its unit is the tax.'],
+            ], ['kind', 'title', 'options', 'sku', 'qty', 'unit', 'amount', 'listing', 'included']) + ['description' => 'A discount line\'s amount is negative.'],
             'OrderGateway' => Schema::object(['id' => ['type' => 'string'], 'name' => ['type' => 'string']], ['id', 'name']),
             'Order'        => Schema::object([
                 'id'          => ['type' => 'integer'],
@@ -153,23 +155,32 @@ final class OrderSchema
                 'label'  => ['type' => 'string'],
                 'amount' => $amount,
             ], ['id', 'label', 'amount']) + ['description' => 'A discount\'s amount is negative.'],
+            'QuoteTax' => Schema::object([
+                'id'       => ['type' => 'string'],
+                'label'    => ['type' => 'string'],
+                'amount'   => $amount,
+                'included' => ['type' => 'boolean', 'description' => 'True when the tax is already in the prices: shown, not added to the total.'],
+            ], ['id', 'label', 'amount', 'included']),
             'QuoteTotals' => Schema::object([
-                'subtotal' => $amount,
-                'shipping' => $amount,
-                'discount' => $amount + ['description' => 'What comes off, not negative.'],
-                'tax'      => $amount,
-                'fee'      => $amount,
-                'total'    => $amount + ['description' => 'What the gateway charges.'],
-            ], ['subtotal', 'shipping', 'discount', 'tax', 'fee', 'total']),
+                'subtotal'     => $amount,
+                'shipping'     => $amount,
+                'discount'     => $amount + ['description' => 'What comes off, not negative.'],
+                'tax'          => $amount + ['description' => 'Tax added on top of the prices.'],
+                'tax_included' => $amount + ['description' => 'Tax already in the prices; the total does not add it again.'],
+                'fee'          => $amount,
+                'total'        => $amount + ['description' => 'What the gateway charges.'],
+            ], ['subtotal', 'shipping', 'discount', 'tax', 'tax_included', 'fee', 'total']),
             'QuoteGateway' => Schema::object([
                 'id'   => ['type' => 'string'],
                 'name' => ['type' => 'string'],
                 'fee'  => $maybe($money, 'What paying this way adds; null for none.'),
             ], ['id', 'name', 'fee']),
             'QuoteProblem' => Schema::object([
-                'line' => ['type' => 'integer', 'description' => 'The position in the request\'s lines.'],
-                'code' => ['type' => 'string', 'enum' => ['not_buyable', 'out_of_stock', 'qty']],
-            ], ['line', 'code']),
+                'line'    => Schema::nullable('integer', 'The position in the request\'s lines; null for a problem with the address, coupon or delivery.'),
+                'code'    => ['type' => 'string', 'pattern' => '^[a-z_]{1,32}$', 'description' => 'For a line: not_buyable, out_of_stock or qty. Plugins add their own, such as coupon_expired.'],
+                'pointer' => ['type' => ['string', 'null'], 'enum' => array_merge(CartPricer::PROBLEM_POINTERS, [null]), 'description' => 'The field a plugin\'s problem is about; null for a line problem.'],
+                'message' => Schema::nullable('string', 'What to show the shopper, for a plugin\'s problem; null for a line problem.'),
+            ], ['line', 'code', 'pointer', 'message']),
             'Quote' => Schema::object([
                 'currency'         => ['type' => 'string'],
                 'lines'            => ['type' => 'array', 'items' => Schema::ref('QuoteLine')],
@@ -177,7 +188,7 @@ final class OrderSchema
                 'shipping_methods' => ['type' => 'array', 'items' => Schema::ref('QuoteMethod')],
                 'shipping'         => $maybe(Schema::object(['method' => ['type' => 'string'], 'amount' => $amount], ['method', 'amount']), 'The chosen method.'),
                 'discounts'        => ['type' => 'array', 'items' => Schema::ref('QuoteAdjustment')],
-                'taxes'            => ['type' => 'array', 'items' => Schema::ref('QuoteAdjustment')],
+                'taxes'            => ['type' => 'array', 'items' => Schema::ref('QuoteTax')],
                 'fees'             => ['type' => 'array', 'items' => Schema::ref('QuoteAdjustment')],
                 'totals'           => Schema::ref('QuoteTotals'),
                 'free_over'        => $maybe(Schema::object(['amount' => $amount, 'remaining' => $amount], ['amount', 'remaining']), 'Free delivery from this subtotal, and how much is left to reach it.'),

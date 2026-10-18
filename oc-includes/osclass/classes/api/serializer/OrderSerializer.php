@@ -114,15 +114,21 @@ final class OrderSerializer
             ), $quote->shippingMethods()),
             'shipping'         => $chosen === null ? null : array('method' => (string) $chosen['id'], 'amount' => $money((int) $chosen['amount'])),
             'discounts'        => $adjust($withAmount($quote->extraLines(OrderLineStore::KIND_DISCOUNT))),
-            'taxes'            => $adjust($withAmount($quote->extraLines(OrderLineStore::KIND_TAX))),
+            'taxes'            => array_map(static fn (array $row): array => array(
+                'id'       => (string) $row['id'],
+                'label'    => (string) $row['label'],
+                'amount'   => $money((int) $row['amount']),
+                'included' => ($row['included'] ?? false) === true,
+            ), $quote->extraLines(OrderLineStore::KIND_TAX)),
             'fees'             => $adjust($withAmount($quote->extraLines(OrderLineStore::KIND_FEE))),
             'totals'           => array_map($money, array(
-                'subtotal' => $totals['subtotal'],
-                'shipping' => $totals['shipping'],
-                'discount' => $totals['discount'],
-                'tax'      => $totals['tax'],
-                'fee'      => $totals['fee'],
-                'total'    => $totals['total'],
+                'subtotal'     => $totals['subtotal'],
+                'shipping'     => $totals['shipping'],
+                'discount'     => $totals['discount'],
+                'tax'          => $totals['tax'],
+                'tax_included' => $totals['tax_included'],
+                'fee'          => $totals['fee'],
+                'total'        => $totals['total'],
             )),
             'free_over'        => $freeOver === null ? null : array('amount' => $money($freeOver['amount']), 'remaining' => $money($freeOver['remaining'])),
             'gateways'         => array_map(static fn (array $g): array => array(
@@ -130,7 +136,12 @@ final class OrderSerializer
                 'name' => $g['name'],
                 'fee'  => $g['fee'] > 0 ? $money($g['fee']) : null,
             ), $gateways),
-            'problems'         => array_values($quote->problems()),
+            'problems'         => array_map(static fn (array $p): array => array(
+                'line'    => $p['line'],
+                'code'    => $p['code'],
+                'pointer' => $p['pointer'],
+                'message' => $p['message'],
+            ), array_values($quote->problems())),
         );
     }
 
@@ -169,6 +180,7 @@ final class OrderSerializer
         $out      = array();
         foreach ($lines as $line) {
             $item  = $line['kind'] === OrderLineStore::KIND_ITEM;
+            $meta  = is_array($line['meta'] ?? null) ? $line['meta'] : array();
             $out[] = array(
                 'kind'    => (string) $line['kind'],
                 'title'   => (string) $line['title'],
@@ -178,6 +190,7 @@ final class OrderSerializer
                 'unit'    => $this->amount((int) $line['unit'], $currency),
                 'amount'  => $this->amount((int) $line['amount'], $currency),
                 'listing' => $item && !empty($line['item_id']) ? ($refs[(int) $line['item_id']] ?? null) : null,
+                'included' => $line['kind'] === OrderLineStore::KIND_TAX && ($meta['included'] ?? false) === true,
             );
         }
         $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());

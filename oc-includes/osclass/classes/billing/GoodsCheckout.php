@@ -53,13 +53,15 @@ final class GoodsCheckout
      * @param array<int,mixed>    $lines   {variant, qty} each
      * @param array<string,mixed> $address ADDRESS keys
      * @param string              $note    what the buyer asked of the seller, kept with the order
+     * @param string|null         $coupon  the code the buyer entered; the cart filters see CartPricer::coupon() of it
      *
      * @return array{order:Order,next:CheckoutIntent}
      * @throws InvalidException with `/lines/n` (not_buyable, out_of_stock, qty), `/lines` (empty),
-     *                          `/address/<field>`, `/shipping_method` (unknown) or `/gateway` (unavailable)
+     *                          `/address/<field>`, `/shipping_method` (unknown), `/gateway` (unavailable),
+     *                          or `rejected` at a `cart_problems` entry's pointer, with its message
      * @throws \mindstellar\database\DbException
      */
-    public function place(int $userId, array $lines, array $address, string $shippingMethod, string $gatewayId, string $note = ''): array
+    public function place(int $userId, array $lines, array $address, string $shippingMethod, string $gatewayId, string $note = '', ?string $coupon = null): array
     {
         $user = $userId > 0 ? UserStore::find($userId) : null;
         if ($user === null) {
@@ -76,6 +78,7 @@ final class GoodsCheckout
             'shipping_method' => $shippingMethod,
             'gateway'         => $gatewayId,
             'user_id'         => $userId,
+            'coupon'          => $coupon,
         ));
         $ships = $quote->needsShipping();
         if ($ships) {
@@ -83,7 +86,9 @@ final class GoodsCheckout
         }
         $errors = array();
         foreach ($quote->problems() as $problem) {
-            $errors[] = array('pointer' => '/lines/' . $problem['line'], 'code' => $problem['code'], 'message' => self::problemText($problem['code']));
+            $errors[] = $problem['pointer'] === null
+                ? array('pointer' => '/lines/' . $problem['line'], 'code' => $problem['code'], 'message' => self::problemText($problem['code']))
+                : array('pointer' => $problem['pointer'], 'code' => 'rejected', 'message' => (string) $problem['message']);
         }
         if ($errors === array() && $quote->lines() === array()) {
             $errors[] = array('pointer' => '/lines', 'code' => 'empty', 'message' => _m('Your cart is empty.'));
@@ -229,7 +234,9 @@ final class GoodsCheckout
     }
 
     /**
-     * The order's lines: the goods, then shipping, tax, discount and fee.
+     * The order's lines: the goods, then shipping, tax, discount and fee. A tax already in the
+     * prices is stored with amount 0 and the tax as its unit, meta `included`, so the lines
+     * still add up to the order's total.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -251,13 +258,14 @@ final class GoodsCheckout
         }
         foreach (array(OrderLineStore::KIND_SHIPPING, OrderLineStore::KIND_TAX, OrderLineStore::KIND_DISCOUNT, OrderLineStore::KIND_FEE) as $kind) {
             foreach ($quote->extraLines($kind) as $line) {
-                $out[] = array(
+                $included = ($line['included'] ?? false) === true;
+                $out[]    = array(
                     'kind'   => $kind,
                     'title'  => $line['label'],
                     'qty'    => 1,
                     'unit'   => $line['amount'],
-                    'amount' => $line['amount'],
-                    'meta'   => array('id' => $line['id']) + $line['meta'],
+                    'amount' => $included ? 0 : $line['amount'],
+                    'meta'   => array('id' => $line['id']) + ($included ? array('included' => true) : array()) + $line['meta'],
                 );
             }
         }

@@ -20,10 +20,11 @@ use mindstellar\listing\VariantStore;
  * Prices a cart from the database. The request names variants and quantities only; every unit
  * price, stock check and total is read or worked out here. Three queries (variants, listings,
  * photos), then the cart filters in this order: `cart_needs_shipping`, `cart_shipping_methods`,
- * `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`. A cart that
- * needs no shipping (all downloads) skips the two shipping filters. A filter adds lines; the sums are
- * always core's, so no filter can change an item's price. Only discount lines take off, and the
- * total never goes below zero.
+ * `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`, `cart_free_over`,
+ * `cart_problems`. A cart that needs no shipping (all downloads) skips the shipping filters and
+ * `cart_free_over`. A filter adds lines; the sums are always core's, so no filter can change an
+ * item's price. Only discount lines take off, a tax line marked `included` is shown but not added,
+ * and the total never goes below zero.
  */
 final class CartPricer
 {
@@ -42,11 +43,19 @@ final class CartPricer
     /** Id of core's own shipping method. */
     public const STANDARD = 'standard';
 
+    /** Where a `cart_problems` entry may point; any other entry is dropped. */
+    public const PROBLEM_POINTERS = array('/coupon', '/address/postcode', '/address/state', '/address/country', '/shipping_method');
+
+    /** Longest text of a `cart_problems` entry. */
+    private const MAX_PROBLEM_TEXT = 200;
+
     /**
      * Price the cart.
      *
      * @param array<int,mixed>    $lines {variant, qty} each
-     * @param array<string,mixed> $ctx   address, shipping_method, gateway, user_id, locale; all optional
+     * @param array<string,mixed> $ctx   address, shipping_method, gateway, user_id, locale, coupon; all
+     *                                  optional. address is the full GoodsCheckout::ADDRESS set when
+     *                                  placing, or quoteAddress()'s country, state and postcode
      *
      * @throws \mindstellar\database\DbException
      */
@@ -112,6 +121,7 @@ final class CartPricer
             $currency = strtoupper((string) osc_currency());
         }
         usort($problems, static fn (array $a, array $b): int => $a['line'] <=> $b['line']);
+        $problems = array_map(static fn (array $p): array => $p + array('pointer' => null, 'message' => null), $problems);
 
         $cart = array(
             'lines'           => array_values(array_map(static fn (array $l): array => array_diff_key($l, array('listing' => true)), array_filter($items, static fn (array $l): bool => $l['available']))),
@@ -121,6 +131,7 @@ final class CartPricer
             'currency'        => $currency,
             'user_id'         => (int) ($ctx['user_id'] ?? 0),
             'subtotal'        => $subtotal,
+            'coupon'          => self::coupon($ctx['coupon'] ?? null),
         );
 
         $cart['needs_shipping'] = osc_apply_filter('cart_needs_shipping', true, $cart) !== false;
@@ -151,8 +162,51 @@ final class CartPricer
 
         $extra['fee'] = self::fees($cart, $subtotal, $extra);
         $totals       = self::sum($subtotal, $extra);
+        $freeOver     = $cart['needs_shipping'] ? self::freeOver($subtotal, $cart) : null;
+        $problems     = array_merge($problems, self::problems(osc_apply_filter('cart_problems', array(), $cart)));
 
-        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $cart['needs_shipping'] ? self::freeOver($subtotal) : null, $problems, $cart);
+        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $freeOver, $problems, $cart);
+    }
+
+    /**
+     * A coupon code as the cart filters see it: trimmed and upper-cased, 1-40 of A-Z, 0-9 and
+     * `-`. Anything else is no code.
+     *
+     * @param mixed $code
+     */
+    public static function coupon($code): ?string
+    {
+        if (!is_string($code)) {
+            return null;
+        }
+        $code = strtoupper(trim($code));
+
+        return preg_match('/^[A-Z0-9-]{1,40}$/', $code) === 1 ? $code : null;
+    }
+
+    /**
+     * The part of an address a shopper gives before checkout, for a quote: a two-letter
+     * country code, a state of up to 100 characters and a postcode of up to 20. A value that
+     * does not fit, or is empty, is left out.
+     *
+     * @return array{country?:string,state?:string,postcode?:string}
+     */
+    public static function quoteAddress(string $country, string $state, string $postcode): array
+    {
+        $clean   = static fn (string $v): string => trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $v) ?? '');
+        $out     = array();
+        $country = strtoupper($clean($country));
+        if (preg_match('/^[A-Z]{2}$/', $country) === 1) {
+            $out['country'] = $country;
+        }
+        foreach (array('state' => array($state, 100), 'postcode' => array($postcode, 20)) as $field => [$value, $max]) {
+            $value = $clean($value);
+            if ($value !== '' && mb_strlen($value, 'UTF-8') <= $max) {
+                $out[$field] = $value;
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -381,34 +435,74 @@ final class CartPricer
                 $amount = -abs($amount);
             }
             $id    = is_string($line['id'] ?? null) && preg_match('/^[a-z0-9_.-]{1,64}$/', $line['id']) ? $line['id'] : $kind . '.' . $n;
-            $out[] = array(
+            $meta  = is_array($line['meta'] ?? null) ? $line['meta'] : array();
+            $row   = array(
                 'id'       => $id,
                 'label'    => mb_substr($label, 0, 200, 'UTF-8'),
                 'amount'   => $amount,
                 'currency' => $currency,
-                'meta'     => is_array($line['meta'] ?? null) ? $line['meta'] : array(),
+                'meta'     => $meta,
             );
+            if ($kind === OrderLineStore::KIND_TAX) {
+                $row['included'] = ($meta['included'] ?? false) === true;
+            }
+            $out[] = $row;
         }
 
         return $out;
     }
 
     /**
-     * The totals from the lines. The discount is what comes off; the total is never below zero.
+     * The entries a `cart_problems` filter returned, kept when well formed: a code of 1-32 of
+     * a-z and `_`, a pointer from PROBLEM_POINTERS and a message of 1-200 characters.
+     *
+     * @param mixed $problems
+     *
+     * @return array<int,array{line:null,code:string,pointer:string,message:string}>
+     */
+    private static function problems($problems): array
+    {
+        $out = array();
+        foreach (is_array($problems) ? $problems : array() as $problem) {
+            if (!is_array($problem) || count($out) >= self::MAX_EXTRA) {
+                continue;
+            }
+            $code    = $problem['code'] ?? null;
+            $pointer = $problem['pointer'] ?? null;
+            $message = is_string($problem['message'] ?? null) ? trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $problem['message']) ?? '') : '';
+            if (!is_string($code) || preg_match('/^[a-z_]{1,32}$/', $code) !== 1 || !in_array($pointer, self::PROBLEM_POINTERS, true)
+                || $message === '' || mb_strlen($message, 'UTF-8') > self::MAX_PROBLEM_TEXT) {
+                continue;
+            }
+            $out[] = array('line' => null, 'code' => $code, 'pointer' => $pointer, 'message' => $message);
+        }
+
+        return $out;
+    }
+
+    /**
+     * The totals from the lines. The discount is what comes off; `tax` is the tax added on top
+     * and `tax_included` the tax already in the prices, which the total leaves alone. The total is
+     * never below zero.
      *
      * @param array<string,array<int,array<string,mixed>>> $extra
      *
-     * @return array{subtotal:int,shipping:int,discount:int,tax:int,fee:int,total:int}
+     * @return array{subtotal:int,shipping:int,discount:int,tax:int,tax_included:int,fee:int,total:int}
      */
     private static function sum(int $subtotal, array $extra): array
     {
         $add = static fn (string $kind): int => (int) array_sum(array_column($extra[$kind] ?? array(), 'amount'));
+        $tax = array(0, 0);
+        foreach ($extra['tax'] ?? array() as $line) {
+            $tax[($line['included'] ?? false) === true ? 1 : 0] += (int) $line['amount'];
+        }
         $totals = array(
-            'subtotal' => $subtotal,
-            'shipping' => $add('shipping'),
-            'discount' => -$add('discount'),
-            'tax'      => $add('tax'),
-            'fee'      => $add('fee'),
+            'subtotal'     => $subtotal,
+            'shipping'     => $add('shipping'),
+            'discount'     => -$add('discount'),
+            'tax'          => $tax[0],
+            'tax_included' => $tax[1],
+            'fee'          => $add('fee'),
         );
         $totals['total'] = max(0, $subtotal + $totals['shipping'] + $totals['tax'] + $totals['fee'] - $totals['discount']);
 
@@ -416,18 +510,28 @@ final class CartPricer
     }
 
     /**
-     * Free delivery from the settings' amount, while core's flat rate is set.
+     * Free delivery from the settings' amount while core's flat rate is set, or from the amount a
+     * `cart_free_over` filter returns: {amount, remaining} to replace it, null for none. A
+     * malformed answer keeps core's; `remaining` is always worked out here from the subtotal.
+     *
+     * @param array<string,mixed> $cart
      *
      * @return array{amount:int,remaining:int}|null
      */
-    private static function freeOver(int $subtotal): ?array
+    private static function freeOver(int $subtotal, array $cart): ?array
     {
-        $freeOver = osc_billing_free_over();
-        if ($freeOver <= 0 || osc_billing_shipping_flat() <= 0) {
+        $amount   = osc_billing_free_over();
+        $freeOver = $amount <= 0 || osc_billing_shipping_flat() <= 0 ? null : array('amount' => $amount, 'remaining' => max(0, $amount - $subtotal));
+        $asked    = osc_apply_filter('cart_free_over', $freeOver, $cart);
+        if ($asked === null) {
             return null;
         }
+        $amount = is_array($asked) ? self::micros($asked['amount'] ?? null) : null;
+        if ($amount === null || $amount <= 0) {
+            return $freeOver;
+        }
 
-        return array('amount' => $freeOver, 'remaining' => max(0, $freeOver - $subtotal));
+        return array('amount' => $amount, 'remaining' => max(0, $amount - $subtotal));
     }
 
     /**

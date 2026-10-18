@@ -18,7 +18,9 @@ namespace mindstellar\billing;
  * available, stock_left, weight, shipping_class, listing: {id, title, item, photo}}; `item` is
  * the listing row a link is built from and `photo` its photo row or null. Shipping, tax,
  * discount and fee lines are {id, label, amount, currency, meta}; a discount's amount is
- * negative. A problem is {line, code}: `line` is the position in the request.
+ * negative, and a tax line also carries `included` (true when the tax is already in the prices).
+ * A problem is {line, code, pointer, message}: core's own name the request's line by position,
+ * with pointer and message null; a `cart_problems` one has line null, a pointer and a message.
  */
 final class Quote
 {
@@ -27,9 +29,9 @@ final class Quote
      * @param array<int,array<string,mixed>>     $shippingMethods {id, label, eta, amount}
      * @param array<string,mixed>|null           $shipping        the chosen method, or null
      * @param array<string,array<int,array<string,mixed>>> $extra shipping, tax, discount and fee lines by kind
-     * @param array<string,int>                  $totals          subtotal, shipping, discount, tax, fee, total
+     * @param array<string,int>                  $totals          subtotal, shipping, discount, tax, tax_included, fee, total
      * @param array{amount:int,remaining:int}|null $freeOver      free delivery from this subtotal
-     * @param array<int,array{line:int,code:string}> $problems
+     * @param array<int,array{line:?int,code:string,pointer:?string,message:?string}> $problems
      * @param array<string,mixed>                $cart            what the cart filters were given
      */
     public function __construct(
@@ -101,7 +103,8 @@ final class Quote
     }
 
     /**
-     * subtotal, shipping, discount (what comes off, not negative), tax, fee and total.
+     * subtotal, shipping, discount (what comes off, not negative), tax (added on top),
+     * tax_included (already in the prices, not added), fee and total.
      *
      * @return array<string,int>
      */
@@ -127,7 +130,9 @@ final class Quote
     }
 
     /**
-     * @return array<int,array{line:int,code:string}>
+     * Core's line problems by position, then those the `cart_problems` filter added.
+     *
+     * @return array<int,array{line:?int,code:string,pointer:?string,message:?string}>
      */
     public function problems(): array
     {

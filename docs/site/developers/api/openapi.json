@@ -30374,6 +30374,46 @@
                         }
                     },
                     {
+                        "name": "country",
+                        "in": "query",
+                        "required": false,
+                        "description": "The delivery country's two-letter code, for delivery and tax plugins; anything else is ignored.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 200
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "required": false,
+                        "description": "The delivery state, up to 100 characters; a longer one is ignored.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 200
+                        }
+                    },
+                    {
+                        "name": "postcode",
+                        "in": "query",
+                        "required": false,
+                        "description": "The delivery postcode, up to 20 characters; a longer one is ignored.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 200
+                        }
+                    },
+                    {
+                        "name": "coupon",
+                        "in": "query",
+                        "required": false,
+                        "description": "A coupon code: trimmed and upper-cased, 1-40 of A-Z, 0-9 and -. Anything else is ignored, not refused.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 200
+                        }
+                    },
+                    {
                         "name": "locale",
                         "in": "query",
                         "required": false,
@@ -49651,6 +49691,12 @@
                         "type": "string",
                         "minLength": 0,
                         "maxLength": 500
+                    },
+                    "coupon": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 200,
+                        "description": "A coupon code, read as GET cart/quote reads it."
                     }
                 },
                 "required": [
@@ -49745,6 +49791,10 @@
                             "photo"
                         ],
                         "description": "The listing the line sold, while it is live."
+                    },
+                    "included": {
+                        "type": "boolean",
+                        "description": "True on a tax line for tax already in the prices: its amount is 0 and its unit is the tax."
                     }
                 },
                 "required": [
@@ -49755,7 +49805,8 @@
                     "qty",
                     "unit",
                     "amount",
-                    "listing"
+                    "listing",
+                    "included"
                 ],
                 "description": "A discount line's amount is negative."
             },
@@ -50198,6 +50249,30 @@
                 ],
                 "description": "A discount's amount is negative."
             },
+            "QuoteTax": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "included": {
+                        "type": "boolean",
+                        "description": "True when the tax is already in the prices: shown, not added to the total."
+                    }
+                },
+                "required": [
+                    "id",
+                    "label",
+                    "amount",
+                    "included"
+                ]
+            },
             "QuoteTotals": {
                 "type": "object",
                 "properties": {
@@ -50212,7 +50287,12 @@
                         "description": "What comes off, not negative."
                     },
                     "tax": {
-                        "$ref": "#/components/schemas/Amount"
+                        "$ref": "#/components/schemas/Amount",
+                        "description": "Tax added on top of the prices."
+                    },
+                    "tax_included": {
+                        "$ref": "#/components/schemas/Amount",
+                        "description": "Tax already in the prices; the total does not add it again."
                     },
                     "fee": {
                         "$ref": "#/components/schemas/Amount"
@@ -50227,6 +50307,7 @@
                     "shipping",
                     "discount",
                     "tax",
+                    "tax_included",
                     "fee",
                     "total"
                 ]
@@ -50274,21 +50355,45 @@
                 "type": "object",
                 "properties": {
                     "line": {
-                        "type": "integer",
-                        "description": "The position in the request's lines."
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "The position in the request's lines; null for a problem with the address, coupon or delivery."
                     },
                     "code": {
                         "type": "string",
+                        "pattern": "^[a-z_]{1,32}$",
+                        "description": "For a line: not_buyable, out_of_stock or qty. Plugins add their own, such as coupon_expired."
+                    },
+                    "pointer": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "enum": [
-                            "not_buyable",
-                            "out_of_stock",
-                            "qty"
-                        ]
+                            "/coupon",
+                            "/address/postcode",
+                            "/address/state",
+                            "/address/country",
+                            "/shipping_method",
+                            null
+                        ],
+                        "description": "The field a plugin's problem is about; null for a line problem."
+                    },
+                    "message": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "What to show the shopper, for a plugin's problem; null for a line problem."
                     }
                 },
                 "required": [
                     "line",
-                    "code"
+                    "code",
+                    "pointer",
+                    "message"
                 ]
             },
             "Quote": {
@@ -50341,7 +50446,7 @@
                     "taxes": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/QuoteAdjustment"
+                            "$ref": "#/components/schemas/QuoteTax"
                         }
                     },
                     "fees": {

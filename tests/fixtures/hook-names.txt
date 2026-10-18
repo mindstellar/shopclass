@@ -351,11 +351,15 @@ filter billing_can_publish
 filter billing_feature_duration
 filter billing_feature_price
 filter billing_listing_limit_message
+filter billing_receipt_details
+filter billing_tracking_url
 filter body_class
 filter bot_user_agents
 filter cache_relevant_cookies
 filter cart_discount_lines
+filter cart_free_over
 filter cart_needs_shipping
+filter cart_problems
 filter cart_shipping_lines
 filter cart_shipping_methods
 filter cart_tax_lines
