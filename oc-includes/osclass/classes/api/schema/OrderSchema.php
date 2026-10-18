@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\schema;
 
 use mindstellar\billing\CartPricer;
+use mindstellar\billing\event\CartProblems;
 use mindstellar\billing\GoodsCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
@@ -178,7 +179,7 @@ final class OrderSchema
             'QuoteProblem' => Schema::object([
                 'line'    => Schema::nullable('integer', 'The position in the request\'s lines; null for a problem with the address, coupon or delivery.'),
                 'code'    => ['type' => 'string', 'pattern' => '^[a-z_]{1,32}$', 'description' => 'For a line: not_buyable, out_of_stock or qty. Plugins add their own, such as coupon_expired.'],
-                'pointer' => ['type' => ['string', 'null'], 'enum' => array_merge(CartPricer::PROBLEM_POINTERS, [null]), 'description' => 'The field a plugin\'s problem is about; null for a line problem.'],
+                'pointer' => ['type' => ['string', 'null'], 'enum' => array_merge(CartProblems::POINTERS, [null]), 'description' => 'The field a plugin\'s problem is about; null for a line problem.'],
                 'message' => Schema::nullable('string', 'What to show the shopper, for a plugin\'s problem; null for a line problem.'),
             ], ['line', 'code', 'pointer', 'message']),
             'Quote' => Schema::object([

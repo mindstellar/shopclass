@@ -53,11 +53,8 @@ final class CartPricer
     /** Id of core's own shipping method. */
     public const STANDARD = 'standard';
 
-    /** Where a `cart_problems` entry may point; any other entry is dropped. */
-    public const PROBLEM_POINTERS = array('/coupon', '/address/postcode', '/address/state', '/address/country', '/shipping_method');
-
-    /** Longest text of a `cart_problems` entry. */
-    private const MAX_PROBLEM_TEXT = 200;
+    /** Where a `cart_problems` entry may point; the list lives on CartProblems. */
+    public const PROBLEM_POINTERS = CartProblems::POINTERS;
 
     private ?DispatcherInterface $events;
 
@@ -445,8 +442,7 @@ final class CartPricer
     }
 
     /**
-     * The entries a `cart_problems` filter returned, kept when well formed: a code of 1-32 of
-     * a-z and `_`, a pointer from PROBLEM_POINTERS and a message of 1-200 characters.
+     * The entries a `cart_problems` filter returned, kept when well formed. See CartProblems::clean().
      *
      * @param mixed $problems
      *
@@ -454,22 +450,7 @@ final class CartPricer
      */
     public static function problems($problems): array
     {
-        $out = array();
-        foreach (is_array($problems) ? $problems : array() as $problem) {
-            if (!is_array($problem) || count($out) >= self::MAX_EXTRA) {
-                continue;
-            }
-            $code    = $problem['code'] ?? null;
-            $pointer = $problem['pointer'] ?? null;
-            $message = is_string($problem['message'] ?? null) ? trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $problem['message']) ?? '') : '';
-            if (!is_string($code) || preg_match('/^[a-z_]{1,32}$/', $code) !== 1 || !in_array($pointer, self::PROBLEM_POINTERS, true)
-                || $message === '' || mb_strlen($message, 'UTF-8') > self::MAX_PROBLEM_TEXT) {
-                continue;
-            }
-            $out[] = array('line' => null, 'code' => $code, 'pointer' => $pointer, 'message' => $message);
-        }
-
-        return $out;
+        return CartProblems::clean($problems);
     }
 
     /**
