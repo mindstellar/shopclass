@@ -6975,6 +6975,12 @@ msgid "Mark shipped"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
+msgid ""
+"Mark this delivered once the courier has collected the cash. That also "
+"marks it paid."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
 msgid "Mark this delivered once the parcel has arrived."
 msgstr ""
 
@@ -9292,7 +9298,7 @@ msgid "Receipt"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/receipt.php
-msgid "Receipt #%d"
+msgid "Receipt %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -11661,7 +11667,9 @@ msgid "The buyer is not charged. This cannot be undone."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "The buyer pays the courier. You mark the order paid once it is delivered."
+msgid ""
+"The buyer pays the courier. Ship the order unpaid; marking it delivered "
+"marks it paid."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php

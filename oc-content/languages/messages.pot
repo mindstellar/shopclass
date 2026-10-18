@@ -1679,11 +1679,11 @@ msgid "One page has been deleted correctly"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
-msgid "Only a paid order can be marked shipped"
+msgid "Only a paid order can be refunded"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
-msgid "Only a paid order can be refunded"
+msgid "Only a paid order, or an unpaid cash on delivery one, can be marked shipped"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -1765,6 +1765,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Order #%d is marked delivered"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is marked paid"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -2072,7 +2076,7 @@ msgid "Recount category stats has been successful"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/gateway/OfflineGateway.php
-msgid "Reference: #%d"
+msgid "Reference: %s"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
