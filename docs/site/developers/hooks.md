@@ -231,24 +231,26 @@ reference below have the kind `event` and name the event class.
 
 ## Cart hooks
 
-Core prices every cart through these filters, in this order, and fires `cart_checkout_before`
-when an order is placed. `$cart` is the cart array; a line is
+Core prices every cart through these events, in this order, and fires `CheckoutStarting`
+when an order is placed. Each name below is owned by the event class beside it (namespace
+`mindstellar\billing\event`): a callback typed with that class gets the event, any other gets the
+old arguments listed. `$cart` is the cart array; a line is
 `{id, label, amount (micros), currency, meta}`. A filter adds lines and core does the sums, so
 no filter sets an item's price. `cart_totals` adds fee lines under `fees`; the total never goes
 below zero. `cart_item_add_after` is fired by `PUT account/cart` for each variant new to the saved cart.
 
-| Hook | Kind | Arguments |
+| Hook | Event | Old arguments |
 |---|---|---|
-| `cart_needs_shipping` | filter | `$needs, $cart` |
-| `cart_shipping_methods` | filter | `$methods, $cart` |
-| `cart_shipping_lines` | filter | `$lines, $cart` |
-| `cart_tax_lines` | filter | `$lines, $cart` |
-| `cart_discount_lines` | filter | `$lines, $cart` |
-| `cart_totals` | filter | `$totals, $cart` |
-| `cart_free_over` | filter | `$freeOver, $cart` |
-| `cart_problems` | filter | `$problems, $cart` |
-| `cart_item_add_after` | action | `$cart, $line` |
-| `cart_checkout_before` | action | `$cart` |
+| `cart_needs_shipping` | `CartShipping` | `$needs, $cart` |
+| `cart_shipping_methods` | `CartShipping` | `$methods, $cart` |
+| `cart_shipping_lines` | `CartShippingLines` | `$lines, $cart` |
+| `cart_tax_lines` | `CartTaxLines` | `$lines, $cart` |
+| `cart_discount_lines` | `CartDiscountLines` | `$lines, $cart` |
+| `cart_totals` | `CartFees` | `$totals, $cart` |
+| `cart_free_over` | `CartFreeOver` | `$freeOver, $cart` |
+| `cart_problems` | `CartProblems` | `$problems, $cart` |
+| `cart_item_add_after` | `CartItemAdded` | `$cart, $line` |
+| `cart_checkout_before` | `CheckoutStarting` | `$cart` |
 
 `$cart` also holds `coupon` (the code, upper-cased, or null) and `address`. On a quote,
 `address` has only the `country`, `state` and `postcode` the shopper gave; when an order is
@@ -268,9 +270,12 @@ $tracking`) gives a parcel its tracking link when the admin left it empty; only 
 kept. `billing_receipt_details` (`$details, $order`) may set the receipt's `title`, `extra` and
 `summary` rows (`{label, value}`, plain text) and `footer`; core keeps every other key as it was.
 
-A paid order fires `billing_order_paid`, as it does today. A goods order also fires
-`billing_order_placed`, `billing_order_shipped`, `billing_order_delivered` and
-`billing_order_cancelled`, each with `$orderId, $userId`.
+A paid order fires `OrderPaid` (`billing_order_paid`; old arguments `$orderId, $userId,
+$credits`). A goods order also fires `OrderPlaced`, `OrderShipped`, `OrderDelivered` and
+`OrderCancelled` (`billing_order_placed`, `_shipped`, `_delivered`, `_cancelled`; old arguments
+`$orderId, $userId`). A failed payment fires `OrderFailed` (`billing_order_failed`). Every order
+event extends `OrderEvent`. `billing_tracking_url` is `TrackingUrlResolving` and
+`billing_receipt_details` is `ReceiptComposing`.
 
 ## Order mails
 
