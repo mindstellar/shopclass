@@ -48,7 +48,7 @@ final class CustomiserDraft
     /**
      * The stored draft, or null when there is none, it expired, or it is for another theme.
      *
-     * @return array{theme:string,locations:array<string,array<int,array<string,mixed>>>,settings:array<string,mixed>,updated_at:int}|null
+     * @return array{theme:string,locations:array<string,array<int,array<string,mixed>>>,settings:array<string,mixed>,base:array<string,string>,updated_at:int}|null
      */
     public function read(): ?array
     {
@@ -68,6 +68,7 @@ final class CustomiserDraft
             'theme'      => $this->theme,
             'locations'  => is_array($draft['locations'] ?? null) ? $draft['locations'] : array(),
             'settings'   => is_array($draft['settings'] ?? null) ? $draft['settings'] : array(),
+            'base'       => is_array($draft['base'] ?? null) ? $draft['base'] : array(),
             'updated_at' => (int) ($draft['updated_at'] ?? 0),
         );
     }
@@ -88,6 +89,7 @@ final class CustomiserDraft
             'theme'      => $this->theme,
             'locations'  => (array) ($draft['locations'] ?? array()),
             'settings'   => (array) ($draft['settings'] ?? array()),
+            'base'       => (array) ($draft['base'] ?? array()),
             'updated_at' => $now,
         );
         if (self::bytes($value) > self::MAX_BYTES) {

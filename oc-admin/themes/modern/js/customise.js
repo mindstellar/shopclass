@@ -730,7 +730,10 @@
     }
 
     var publishBtn = document.getElementById('cz-publish');
-    publishBtn.addEventListener('click', function () {
+    var staleDialog = document.getElementById('cz-stale-dialog');
+    var staleConfirm = document.getElementById('cz-stale-confirm');
+
+    function publish(force) {
         publishBtn.disabled = true;
         flush().then(function (ok) {
             if (ok === false) {
@@ -738,11 +741,20 @@
                 return null;
             }
             setStatus(t.publishing);
-            return postAction(state.urls.publish).then(function (r) {
+            return postAction(state.urls.publish + (force ? '&force=1' : '')).then(function (r) {
                 if (r.status === 200 && r.json.error === 0) {
+                    var note = document.getElementById('cz-stale');
+                    if (note) {
+                        note.remove();
+                    }
                     setStatus(t.published);
                     message('ok', t.publishedOk);
                     return refresh().then(reloadFrame);
+                }
+                if (r.status === 409 && r.json && r.json.stale && staleDialog && typeof staleDialog.showModal === 'function') {
+                    setStatus(t.kept);
+                    staleDialog.showModal();
+                    return null;
                 }
                 var text = (r.json && r.json.errors && r.json.errors[0]) || t.failed;
                 setStatus(text, r.status !== 409);
@@ -755,7 +767,17 @@
         }).then(function () {
             publishBtn.disabled = false;
         });
+    }
+
+    publishBtn.addEventListener('click', function () {
+        publish(false);
     });
+    if (staleConfirm) {
+        staleConfirm.addEventListener('click', function () {
+            staleDialog.close();
+            publish(true);
+        });
+    }
 
     var discardConfirm = document.getElementById('cz-discard-confirm');
     discardConfirm.addEventListener('click', function () {

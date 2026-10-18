@@ -299,6 +299,27 @@ drive('customise_draft_post', array('settings' => array('brand' => 'raspberry'))
 drive('customise_discard_post');
 pin('neither the 409 nor a discard runs customiser_published', array('aisle'), $publishedThemes);
 
+harness_section('publish after the live rows changed');
+
+$live = $rowsAt('home');
+$draftRows = array_map(static fn ($r) => array('id' => $r['pk_i_id'], 'type' => $r['s_type'], 'config' => json_decode($r['s_config'], true)), array_reverse($live));
+drive('customise_draft_post', array('locations' => array('home' => $draftRows)));
+pin('the toggle on the Widgets screen still works', 200, drive('widget_toggle_post', array('id' => $live[0]['pk_i_id']))['status']);
+$toggled = $rowsAt('home');
+$r = drive('customise_publish_post');
+pin('publish refuses a draft whose location changed since it began', array(409, true), array($r['status'], $r['json']['stale'] ?? null));
+pin('...and writes nothing', $toggled, $rowsAt('home'));
+check('...and keeps the draft', $draftKv() !== null);
+pin('publish with force replaces them', 200, drive('customise_publish_post', array('force' => '1'))['status']);
+pin('...in the drafted order', array_column(array_reverse($live), 'pk_i_id'), array_column($rowsAt('home'), 'pk_i_id'));
+drive('customise_draft_post', array('settings' => array('footer_note' => 'Look only')));
+drive('widget_toggle_post', array('id' => $live[0]['pk_i_id']));
+pin('a draft of look values alone is not refused', 200, drive('customise_publish_post')['status']);
+$live = $rowsAt('home');
+drive('widget_toggle_post', array('id' => $live[0]['pk_i_id']));
+drive('customise_draft_post', array('locations' => array('home' => array_map(static fn ($r) => array('id' => $r['pk_i_id'], 'type' => $r['s_type'], 'config' => array()), $live))));
+pin('a change made before the draft began does not refuse it', 200, drive('customise_publish_post')['status']);
+
 harness_section('settings images');
 
 $png = tempnam(sys_get_temp_dir(), 'osccust');

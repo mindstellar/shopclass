@@ -121,7 +121,9 @@ Customise entry; use **Manage widgets** instead.
   the preview.
 - **Draft and publish.** Every change is saved as your private draft, kept for
   seven days. Visitors see nothing until you press **Publish**. **Discard**
-  throws the draft away and returns to the published page.
+  throws the draft away and returns to the published page. If the sections
+  change elsewhere after your draft began, for example on the Widgets screen,
+  Publish asks before it replaces those changes.
 - **Hidden sections.** A hidden section stays in the list, struck through, and
   can be shown again. It is the same hide switch as on **Manage widgets**.
 - **The preview is for you only.** It works for a signed-in administrator who has

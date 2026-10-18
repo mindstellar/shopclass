@@ -67,10 +67,11 @@ final class Customiser
      */
     public function saveDraft(array $locations, array $locationsRaw, array $settings): array
     {
-        $current = $this->draft->read() ?? array('locations' => array(), 'settings' => array());
+        $current = $this->draft->read() ?? array('locations' => array(), 'settings' => array(), 'base' => array());
         $errors  = array();
 
         $drafted = $current['locations'];
+        $base    = $current['base'];
         foreach ($locations as $slug => $rows) {
             $slug = (string) $slug;
             if (!isset($this->spec['locations'][$slug])) {
@@ -80,6 +81,9 @@ final class Customiser
             $raw = is_array($locationsRaw[$slug] ?? null) ? $locationsRaw[$slug] : array();
             $out = $this->rows($slug, is_array($rows) ? $rows : array(), $raw, $errors);
             if ($out !== null) {
+                if (!isset($drafted[$slug])) {
+                    $base[$slug] = $this->liveHash($slug);
+                }
                 $drafted[$slug] = $out;
             }
         }
@@ -90,7 +94,7 @@ final class Customiser
             return array('status' => 422, 'errors' => $errors, 'saved_at' => 0);
         }
 
-        $next = array('locations' => $drafted, 'settings' => $look['values']);
+        $next = array('locations' => $drafted, 'settings' => $look['values'], 'base' => $base);
         if (CustomiserDraft::bytes($next + array('theme' => $this->draft->theme(), 'updated_at' => time())) > CustomiserDraft::MAX_BYTES) {
             return array('status' => 422, 'errors' => array(__('The draft is too large to save.')), 'saved_at' => 0);
         }
@@ -131,15 +135,23 @@ final class Customiser
 
     /**
      * Make the draft live: each drafted location is replaced, each drafted look value is
-     * stored, and the draft is forgotten.
+     * stored, and the draft is forgotten. When a drafted location changed since the draft took
+     * it (the Widgets screen, another admin), nothing is written unless $force is true.
      *
-     * @return array{status:int,errors:string[]}
+     * @return array{status:int,errors:string[],stale?:bool}
      */
-    public function publish(): array
+    public function publish(bool $force = false): array
     {
         $draft = $this->draft->read();
         if ($draft === null) {
             return array('status' => 409, 'errors' => array(__('There are no changes to publish.')));
+        }
+        if (!$force && $this->staleLocations($draft) !== array()) {
+            return array(
+                'status' => 409,
+                'stale'  => true,
+                'errors' => array(__('The sections were changed elsewhere, such as on the Widgets screen, after this draft began. Publishing replaces those changes.')),
+            );
         }
 
         try {
@@ -198,6 +210,34 @@ final class Customiser
         osc_run_hook('customiser_published', $theme);
 
         return array('status' => 200, 'errors' => array());
+    }
+
+    /**
+     * Drafted locations whose live rows differ from when the draft took them.
+     *
+     * @param array<string,mixed> $draft
+     *
+     * @return string[]
+     */
+    public function staleLocations(array $draft): array
+    {
+        $stale = array();
+        foreach ((array) ($draft['base'] ?? array()) as $slug => $hash) {
+            if (isset($draft['locations'][$slug]) && $this->liveHash((string) $slug) !== (string) $hash) {
+                $stale[] = (string) $slug;
+            }
+        }
+
+        return $stale;
+    }
+
+    private function liveHash(string $slug): string
+    {
+        try {
+            return WidgetStore::locationHash($slug);
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**

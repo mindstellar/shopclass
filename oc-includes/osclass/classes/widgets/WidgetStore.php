@@ -203,6 +203,19 @@ final class WidgetStore extends Model
     }
 
     /**
+     * A fingerprint of one location's rows, so a draft can tell when the live rows changed under it.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function locationHash(string $location): string
+    {
+        $rows = self::table()->select('pk_i_id', 's_type', 's_description', 's_config', 'i_order')
+            ->where('s_location', $location)->orderBy('pk_i_id')->get();
+
+        return md5((string) json_encode(array_map(array(Db::class, 'stringifyRow'), $rows)));
+    }
+
+    /**
      * Flip a row's hide switch (WidgetConfig::ENABLED) and store it.
      *
      * @return bool the row's new state: true when shown

@@ -487,8 +487,10 @@ class CAdminAppearance extends AdminSecBaseModel
 
             return;
         }
-        $draft = (new CustomiserDraft(osc_theme(), osc_logged_admin_id()))->read();
+        $store  = new CustomiserDraft(osc_theme(), osc_logged_admin_id());
+        $draft  = $store->read();
         $screen = CustomiserScreen::build($spec, $draft);
+        $screen['stale'] = $draft !== null && (new Customiser($spec, $store))->staleLocations($draft) !== array();
         $info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
         $screen['theme_name'] = is_array($info) && $info['name'] !== '' ? ucfirst((string) $info['name']) : osc_theme();
         $this->_exportVariableToView('customiser', $screen);
@@ -531,12 +533,12 @@ class CAdminAppearance extends AdminSecBaseModel
         if ($customiser === null) {
             return;
         }
-        $result = $customiser->publish();
+        $result = $customiser->publish(Params::getParamString('force') === '1');
         if ($result['status'] === 200) {
             osc_purge_page_cache('widget');
         }
 
-        AjaxResponse::json(array('error' => $result['status'] === 200 ? 0 : 1, 'errors' => $result['errors']), $result['status']);
+        AjaxResponse::json(array('error' => $result['status'] === 200 ? 0 : 1, 'errors' => $result['errors'], 'stale' => !empty($result['stale'])), $result['status']);
     }
 
     /**

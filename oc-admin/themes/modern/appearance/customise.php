@@ -96,6 +96,9 @@ $currentWidgetConfig = array();
         <div class="cz-list">
             <h2 class="cz-h" id="cz-rows-title"><?php _e('Page sections'); ?></h2>
             <p class="visually-hidden" id="cz-grip-help"><?php _e('Press the up or down arrow key to move this section.'); ?></p>
+            <?php if (!empty($customiser['stale'])) { ?>
+                <p class="cz-note" id="cz-stale"><?php _e('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes; Discard starts again from what is live.'); ?></p>
+            <?php } ?>
             <ol class="cz-rows" id="cz-rows" aria-labelledby="cz-rows-title"></ol>
             <p class="cz-note" id="cz-other" hidden
                data-text-one="<?php echo osc_esc_html(__('1 widget here is not a section this page offers. Publishing removes it.')); ?>"
@@ -213,6 +216,17 @@ $currentWidgetConfig = array();
     <div class="osc-dialog-actions">
         <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Keep editing'); ?></button>
         <button type="button" class="btn btn-red btn-sm" id="cz-discard-confirm"><?php _e('Discard'); ?></button>
+    </div>
+</dialog>
+
+<dialog id="cz-stale-dialog" class="osc-dialog osc-dialog-danger" aria-labelledby="cz-stale-title">
+    <div class="osc-dialog-body">
+        <p class="osc-dialog-title" id="cz-stale-title"><?php _e('Replace changes made elsewhere?'); ?></p>
+        <p><?php _e('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes with your draft.'); ?></p>
+    </div>
+    <div class="osc-dialog-actions">
+        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Keep editing'); ?></button>
+        <button type="button" class="btn btn-red btn-sm" id="cz-stale-confirm"><?php _e('Publish anyway'); ?></button>
     </div>
 </dialog>
 
