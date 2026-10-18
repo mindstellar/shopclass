@@ -203,7 +203,7 @@ final class CategoryCatalog
     /**
      * Each category's cover: the first photo of the newest live listing with a photo in the
      * category or any category below it. A category with none has no entry. Two queries for
-     * the whole list; the first is kept until a listing changes.
+     * the whole list, both cached until a listing changes.
      *
      * @return array<int,array<string,mixed>> category id => photo row
      * @throws \mindstellar\database\DbException
@@ -230,12 +230,17 @@ final class CategoryCatalog
                 $items[$id] = (int) substr($best[$id], self::STAMP);
             }
         }
-        $photos = [];
-        foreach (PhotoStore::ofItems(array_values(array_unique($items))) as $photo) {
-            if (str_starts_with((string) ($photo['s_content_type'] ?? ''), 'image/')) {
-                $photos[(int) $photo['fk_i_item_id']] ??= Db::stringifyRows([$photo])[0];
+        $itemIds = array_values(array_unique($items));
+        $photos  = CacheGroup::remember('search', 'category-cover-photos|' . implode(',', $itemIds), static function () use ($itemIds): array {
+            $photos = [];
+            foreach (PhotoStore::ofItems($itemIds) as $photo) {
+                if (str_starts_with((string) ($photo['s_content_type'] ?? ''), 'image/')) {
+                    $photos[(int) $photo['fk_i_item_id']] ??= Db::stringifyRows([$photo])[0];
+                }
             }
-        }
+
+            return $photos;
+        }) ?? [];
         $covers = [];
         foreach ($items as $category => $item) {
             if (isset($photos[$item])) {
