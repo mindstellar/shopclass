@@ -93,6 +93,18 @@ on `<html>`, for example `data-osc-allow-data-brand="raspberry ocean"`.
 The admin screen and the preview talk with `postMessage`. Both sides check
 `event.origin === location.origin`. Every message has `type: 'osc-customiser'`.
 
+Core ships only the admin side. The theme writes the preview side: a script it
+enqueues only while `osc_customiser_preview()` is true. That script must:
+
+- listen for `message` events of type `osc-customiser` from its own origin;
+- apply `set`, `text` and `select` as in the table below;
+- send `{ ready: true }` to `window.parent` once loaded;
+- on a click inside a `[data-sec]` element, stop the click and send
+  `{ picked: <its data-sec> }`, so links do not navigate while editing;
+- send `{ missed: true }` when a `text` message finds no matching node.
+
+Aisle's `js/aisle-preview.js` is a working example.
+
 Admin to preview:
 
 | Message | Effect |
@@ -107,6 +119,7 @@ Preview to admin:
 |---|---|
 | `{ ready: true }` | The page has loaded. |
 | `{ picked: section }` | The owner clicked a section. |
+| `{ missed: true }` | A `text` message had no node to change. The admin reloads the preview after saving. |
 
 Any other change (order, hide, add, remove, images) saves the draft and
 reloads the preview.
