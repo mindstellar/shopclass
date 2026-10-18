@@ -108,6 +108,44 @@ final class KeyValue extends Model
     }
 
     /**
+     * One page of a group's live rows in key order, for walking a group in batches.
+     *
+     * @param int         $limit         at most this many rows
+     * @param string|null $updatedBefore UTC 'Y-m-d H:i:s'; keeps rows last written before it
+     * @param string|null $afterKey      the last key of the previous page
+     *
+     * @return list<array{key:string, value:?string, updated_at:?int, expires_at:?int}>
+     * @throws \InvalidArgumentException on a malformed group or key
+     * @throws \mindstellar\database\DbException
+     */
+    public function page(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null, ?int $now = null): array
+    {
+        self::check($group, $afterKey ?? 'any');
+        $query = $this->table()->where('s_group', $group)
+            ->whereGroup(static fn ($q) => $q->whereNull('dt_expires')->orWhere('dt_expires', '>', self::datetime($now ?? time())));
+        if ($afterKey !== null) {
+            $query = $query->where('s_key', '>', $afterKey);
+        }
+        if ($updatedBefore !== null) {
+            if (UtcDatetime::parse($updatedBefore) === null) {
+                throw new \InvalidArgumentException('updatedBefore is a UTC datetime, Y-m-d H:i:s.');
+            }
+            $query = $query->whereRaw('COALESCE(dt_updated, dt_created) < ?', [$updatedBefore]);
+        }
+        $out = [];
+        foreach ($query->orderBy('s_key')->limit(max(1, min(1000, $limit)))->get() as $row) {
+            $out[] = [
+                'key'        => (string) $row['s_key'],
+                'value'      => $row['s_value'] === null ? null : (string) $row['s_value'],
+                'updated_at' => self::time($row['dt_updated'] ?? $row['dt_created']),
+                'expires_at' => self::time($row['dt_expires']),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * Write a key, replacing whatever was there (its value, state and expiry).
      *
      * @param int|null $expiresAt Unix time the key expires; null keeps it until deleted

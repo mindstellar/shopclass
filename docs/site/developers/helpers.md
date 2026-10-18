@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1201 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1202 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -665,7 +665,7 @@ Core defines 1201 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_job_stats(?string $type = null)` | Pending, running and failed counts, when the oldest pending job was created, and how many pending jobs are due now and since when. |
 | `osc_job_summary()` | Jobs per status as status =&gt; count, with every status present. |
 
-### hKv (6)
+### hKv (7)
 
 `oc-includes/osclass/helpers/hKv.php`
 
@@ -676,6 +676,7 @@ Core defines 1201 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_kv_delete_group(string $group)` | Remove every key of a group, e.g. a plugin's own when it is uninstalled. |
 | `osc_kv_get(string $group, string $key, $default = null)` | Read a key. |
 | `osc_kv_increment(string $group, string $key, int $by = 1, ?int $ttl = null)` | Add to a counter in one statement and return its new value. An absent or expired key starts from 0; the value never goes below 0, so a negative $by takes back at most what is there. osc_kv_get() reads it as an int. |
+| `osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null)` | One page of a group's live keys, in key order. Pass the last key of a page as $afterKey for the next. A row never rewritten counts as updated when it was created. |
 | `osc_kv_set(string $group, string $key, $value, ?int $ttl = null)` | Write a key, replacing any value, state and expiry it had. |
 
 ### hLocale (20)

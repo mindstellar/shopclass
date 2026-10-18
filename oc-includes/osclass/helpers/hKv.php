@@ -78,6 +78,28 @@ if (!function_exists('osc_kv_set')) {
     }
 }
 
+if (!function_exists('osc_kv_list')) {
+    /**
+     * One page of a group's live keys, in key order. Pass the last key of a page as
+     * $afterKey for the next. A row never rewritten counts as updated when it was created.
+     *
+     * @param string|null $updatedBefore UTC 'Y-m-d H:i:s'; only keys last written before it
+     *
+     * @return list<array{key:string, value:mixed, updated_at:?int, expires_at:?int}> value decoded as osc_kv_get() does
+     * @throws InvalidArgumentException on a malformed group, key or date
+     * @throws \mindstellar\database\DbException
+     */
+    function osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null): array
+    {
+        $rows = (new KeyValue())->page($group, $limit, $updatedBefore, $afterKey);
+        foreach ($rows as &$row) {
+            $row['value'] = $row['value'] === null ? null : json_decode($row['value'], true);
+        }
+
+        return $rows;
+    }
+}
+
 if (!function_exists('osc_kv_delete')) {
     /**
      * Remove a key.
