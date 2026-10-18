@@ -21,6 +21,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 
 use mindstellar\auth\Actor;
+use mindstellar\database\QueryBuilder;
 use mindstellar\listing\ListingStatus;
 
 $now  = strtotime('2026-06-01 12:00:00');
@@ -37,6 +38,20 @@ pin('spam before blocked before pending before expired', array('spam', 'disabled
     ListingStatus::of(array('b_active' => '0', 'dt_expiration' => null) + $live, $now),
 ));
 check('isLive() is of() === active', ListingStatus::isLive($live, $now) && !ListingStatus::isLive(array('b_active' => 0) + $live, $now));
+
+harness_section('held for payment');
+$held = array('b_enabled' => '0', 'b_active' => '0', 'b_spam' => '0', 'dt_first_pub_date' => null) + $live;
+pin('a held row reads unpaid', ListingStatus::UNPAID, ListingStatus::of($held, $now));
+pin('an empty string is held too', ListingStatus::UNPAID, ListingStatus::of(array('dt_first_pub_date' => '') + $held, $now));
+pin('the same row once published reads disabled', ListingStatus::DISABLED, ListingStatus::of(array('dt_first_pub_date' => '2026-05-01 00:00:00') + $held, $now));
+pin('held wins over spam', ListingStatus::UNPAID, ListingStatus::of(array('b_spam' => '1') + $held, $now));
+pin('a row with no dt_first_pub_date key is not held', ListingStatus::DISABLED, ListingStatus::of(array('b_enabled' => '0', 'b_active' => '0') + $live, $now));
+pin('an enabled row with a NULL first date is not held', ListingStatus::PENDING, ListingStatus::of(array('b_enabled' => '1') + $held, $now));
+check('ALL lists unpaid', in_array('unpaid', ListingStatus::ALL, true));
+$where = static fn (string $status): string => ListingStatus::condition(new QueryBuilder('t_item'), array($status), $now)->toSql();
+check('unpaid SQL', strpos($where(ListingStatus::UNPAID), 'b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL') !== false);
+check('disabled SQL excludes held rows', strpos($where(ListingStatus::DISABLED), 'b_spam = 0 AND b_enabled = 0 AND dt_first_pub_date IS NOT NULL') !== false);
+check('pending SQL excludes held rows', strpos($where(ListingStatus::PENDING), 'b_enabled = 1 AND b_active = 0 AND dt_first_pub_date IS NOT NULL') !== false);
 
 harness_section('the SQL');
 $sql = ListingStatus::liveConditions('i.', $now);
