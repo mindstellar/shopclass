@@ -30,6 +30,16 @@ final class OrderStock
     public const SHORT = '_short';
 
     /**
+     * The lines of an order that could not be taken, line id => qty.
+     *
+     * @return array<int,int>
+     */
+    public static function short(Order $order): array
+    {
+        return self::quantities($order->meta(self::SHORT));
+    }
+
+    /**
      * Take the order's stock, unless it already holds it.
      *
      * @return array<int,int> the lines that were short, line id => qty; empty when every line was taken

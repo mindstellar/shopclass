@@ -11,6 +11,7 @@
  */
 
 use mindstellar\billing\Order;
+use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\Receipts;
 
@@ -30,7 +31,7 @@ $lines      = is_array(__get('lines')) ? __get('lines') : array();
 $fulfil     = $order->fulfilment() ?? array();
 $address    = is_array($fulfil['address'] ?? null) ? $fulfil['address'] : array();
 $buyer      = is_array($order->meta('_buyer')) ? $order->meta('_buyer') : array();
-$short      = is_array($order->meta('_short')) ? array_filter($order->meta('_short')) : array();
+$short      = OrderStock::short($order);
 $trackUrl   = Receipts::httpsUrl((string) ($fulfil['tracking_url'] ?? ''));
 $refundSent = $order->isPaid() && $order->meta(OrderStore::REFUND_REQUESTED) !== null;
 
