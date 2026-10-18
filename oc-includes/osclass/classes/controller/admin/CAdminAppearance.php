@@ -45,6 +45,7 @@ class CAdminAppearance extends AdminSecBaseModel
         'widget_create_post'   => 'createWidgetPost',
         'widget_move_post'     => 'moveWidgetPost',
         'reorder_widgets_post' => 'reorderWidgetsPost',
+        'widget_toggle_post'   => 'toggleWidgetPost',
         'customise_draft_post'   => 'customiseDraftPost',
         'customise_publish_post' => 'customisePublishPost',
         'customise_discard_post' => 'customiseDiscardPost',
@@ -433,6 +434,47 @@ class CAdminAppearance extends AdminSecBaseModel
 
         AjaxResponse::json(array('error' => $ok ? 0 : 1));
         exit;
+    }
+
+    /**
+     * Hide or show a typed widget, answered in JSON.
+     */
+    private function toggleWidgetPost(): void
+    {
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+
+        try {
+            $row = WidgetStore::find(Params::getParamInt('id'));
+        } catch (Throwable $e) {
+            $row = null;
+        }
+        // A legacy row has no type and so nothing to hide.
+        if ($row === null || (string) ($row['s_type'] ?? '') === '') {
+            AjaxResponse::json(array('error' => 1), 404);
+            return;
+        }
+        $type = \mindstellar\widgets\WidgetRegistry::getInstance()->get((string) $row['s_type']);
+        if ($type !== null && $type['capability'] === 'super_admin' && osc_is_moderator()) {
+            AjaxResponse::json(array('error' => 1), 403);
+            return;
+        }
+
+        $config  = json_decode((string) $row['s_config'], true);
+        $config  = is_array($config) ? $config : array();
+        $enabled = !WidgetConfig::enabled($config);
+        $config[WidgetConfig::ENABLED] = $enabled;
+        try {
+            WidgetStore::update((int) $row['pk_i_id'], array('s_config' => json_encode($config)));
+            osc_purge_page_cache('widget');
+            $ok = true;
+        } catch (Throwable $e) {
+            $ok = false;
+        }
+
+        AjaxResponse::json(array('error' => $ok ? 0 : 1, 'enabled' => $enabled), $ok ? 200 : 500);
     }
 
     /**

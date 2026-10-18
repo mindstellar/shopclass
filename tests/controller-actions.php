@@ -126,6 +126,7 @@ $controllers = array(
         'reorder_widgets_post' => 'reorderWidgetsPost',
         'widget_create_post'   => 'createWidgetPost',
         'widget_move_post'     => 'moveWidgetPost',
+        'widget_toggle_post'   => 'toggleWidgetPost',
         'widgets'              => 'widgets',
     ), 'themes'),
     'CWebUser' => array('CWebUser.php', array(

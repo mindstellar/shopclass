@@ -3297,6 +3297,10 @@ msgstr ""
 msgid "Could not be counted"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/widgets.php
+msgid "Could not change the widget. Reload and try again."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "Could not check for updates"
 msgstr ""
@@ -5386,8 +5390,16 @@ msgstr ""
 msgid "Hide"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/widgets.php
+msgid "Hide %s"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Hide password"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/widgets.php
+msgid "Hide widget"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hSearch.php
@@ -10892,6 +10904,10 @@ msgstr ""
 msgid "Show"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/widgets.php
+msgid "Show %s"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "Show a link in the footer"
@@ -10942,6 +10958,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/alerts.php
 msgid "Show them"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/widgets.php
+msgid "Show widget"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php

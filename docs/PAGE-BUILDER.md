@@ -84,6 +84,10 @@ Nothing new is invented on the data/render side. It reuses:
 - `findByLocation` + `i_order` + `reorder` (drag-drop),
 - `osc_render_widget()` dispatch and the deactivated-plugin safety.
 
+The home page works the same way: a theme that supports the customiser keeps its
+home sections as widgets at the location `home`, and a hidden section is a row
+with the config key `_enabled` set to false.
+
 Classic WYSIWYG pages are untouched: they are simply the `default` template and
 never get a page location. A `core.rich_text` widget type (wrapping `osc_autop()`)
 becomes the default block so builder pages and classic pages ultimately share one
