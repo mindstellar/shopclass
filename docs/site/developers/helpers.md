@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1203 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1205 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -175,7 +175,7 @@ Core defines 1203 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (80)
+### hBilling (82)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -202,7 +202,7 @@ Core defines 1203 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_highlight_credits()` | Credit price of highlighting a listing. |
 | `osc_billing_highlight_days()` | Days a highlight runs for. |
 | `osc_billing_highlight_enabled()` | Whether highlighting is registered as a purchasable upgrade at all. |
-| `osc_billing_hold_days()` | Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled. |
+| `osc_billing_hold_days()` | Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled, and days a listing saved over the limit waits for payment before it is deleted. |
 | `osc_billing_no_wait_credits()` | Credit price of waiving the flood wait. |
 | `osc_billing_no_wait_days()` | Days the waiver holds once bought. |
 | `osc_billing_no_wait_enabled()` | Whether waiving the flood wait is registered as a purchasable limit at all. |
@@ -214,12 +214,14 @@ Core defines 1203 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
 | `osc_billing_packages()` | The packages a buyer can choose from at checkout. |
+| `osc_billing_pay_at_post()` | Whether a listing over the free limit is held until its slot is paid, instead of refused. Needs billing and slot sales on; the billing_pay_at_post preference defaults to on. |
 | `osc_billing_photos_credits()` | Credit price of the raised photo cap. |
 | `osc_billing_photos_enabled()` | Whether raising a seller's photo cap is registered as a purchasable limit at all. |
 | `osc_billing_photos_quantity()` | Photo cap granted while the entitlement is held. |
 | `osc_billing_premium_credits()` | Credit price of featuring a listing. 0 with billing_premium_enabled on means free, not off. |
 | `osc_billing_premium_days()` | Days a featured listing runs for. (int) '' is 0, so an unset preference defaults to 30. |
 | `osc_billing_premium_enabled()` | Whether featuring a listing is registered as a purchasable feature at all. |
+| `osc_billing_publish_url(int $itemId)` | The pay step for a held listing: the page where the seller pays for it and it goes live. |
 | `osc_billing_runtime_credits()` | Credit price of the extra runtime. |
 | `osc_billing_runtime_days()` | Extra days over the category ceiling granted while the entitlement is held. |
 | `osc_billing_runtime_enabled()` | Whether extra listing runtime is registered as a purchasable limit at all. |
@@ -260,7 +262,7 @@ Core defines 1203 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_credits(?int $userId = null)` | A user's credit balance -- the logged-in buyer's own by default. Callers that pass $userId explicitly must own that decision themselves; the wallet page never does, so it can only ever read osc_logged_user_id()'s balance. |
 | `osc_user_listing_limit(?int $userId = null)` | How many listings $userId may hold live at once. -1 means unlimited -- treat it that way, never compare it numerically -- which is what billing being off, an unknown user, or a site that never set a cap all read back. Defaults to osc_logged_user_id(). |
 | `osc_user_listings_remaining(?int $userId = null)` | Listings $userId may still publish before hitting the ceiling. -1 means unlimited, the same sentinel osc_user_listing_limit() uses; otherwise never below 0, so a seller already over the line reads back 0 rather than a negative. |
-| `osc_user_listings_used(?int $userId = null)` | How many live listings $userId currently holds -- what osc_user_listing_limit() is spent against. Counts listings awaiting moderation and admin-disabled ones too (see EntitlementStore::liveListings()), so it matches the gate rather than what is publicly visible. 0 while billing is off or no user is known. |
+| `osc_user_listings_used(?int $userId = null)` | How many live listings $userId currently holds -- what osc_user_listing_limit() is spent against. Counts listings awaiting moderation and admin-disabled ones too (see EntitlementStore::liveListings()), so it matches the gate rather than what is publicly visible. Held (unpaid) listings are not counted. 0 while billing is off or no user is known. |
 
 ### hCache (17)
 

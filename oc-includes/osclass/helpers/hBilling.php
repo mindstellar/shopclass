@@ -222,7 +222,8 @@ function osc_billing_cod_fee(): int
 }
 
 /**
- * Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled.
+ * Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled,
+ * and days a listing saved over the limit waits for payment before it is deleted.
  *
  * @return int
  */
