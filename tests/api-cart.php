@@ -22,7 +22,6 @@ use mindstellar\apikey\ApiKeys;
 use mindstellar\apikey\CredentialKind;
 use mindstellar\apikey\KeyOwner;
 use mindstellar\apikey\Scopes;
-use mindstellar\billing\CartPricer;
 use mindstellar\billing\CartStore;
 use mindstellar\listing\VariantStore;
 use mindstellar\model\KeyValue;
@@ -97,8 +96,12 @@ pin('a repeated variant is merged', [204, $lines([$teeV, 5])], [$call('PUT', 'ac
 $call('PUT', 'account/cart', ['lines' => $lines([$teeV, 2], [$mugV, 1])], $sueKey);
 
 harness_section('limits');
-pin('51 lines is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/cart', ['lines' => array_map(static fn (int $i): array => ['variant' => $i, 'qty' => 1], range(1, CartPricer::MAX_LINES + 1))], $sueKey)));
-pin('a quantity of 21 is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/cart', ['lines' => $lines([$teeV, CartPricer::MAX_QTY + 1])], $sueKey)));
+$many = static fn (int $n): array => array_map(static fn (int $i): array => ['variant' => $i, 'qty' => 1], range(1, $n));
+pin('50 lines is saved', 204, $call('PUT', 'account/cart', ['lines' => $many(50)], $sueKey)->status());
+pin('51 lines is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/cart', ['lines' => $many(51)], $sueKey)));
+pin('a quantity of 20 is saved', [204, $lines([$teeV, 20])], [$call('PUT', 'account/cart', ['lines' => $lines([$teeV, 20])], $sueKey)->status(), CartStore::read($sue)['lines']]);
+pin('a quantity of 21 is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/cart', ['lines' => $lines([$teeV, 21])], $sueKey)));
+$call('PUT', 'account/cart', ['lines' => $lines([$teeV, 2], [$mugV, 1])], $sueKey);
 pin('a quantity of 0 is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/cart', ['lines' => $lines([$teeV, 0])], $sueKey)));
 pin('a price in the body is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/cart', ['lines' => [['variant' => $teeV, 'qty' => 1, 'amount' => 1]]], $sueKey)));
 pin('lines are needed', '422 validation_failed', api_admin_code($call('PUT', 'account/cart', [], $sueKey)));
