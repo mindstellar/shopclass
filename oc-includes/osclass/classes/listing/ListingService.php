@@ -257,12 +257,13 @@ final class ListingService
 
     /**
      * Mark a listing validated: the owner confirmed it. One the admin has not enabled yet is
-     * still marked validated and stays hidden until enabled. Fires `activate_item`.
+     * still marked validated and stays hidden until enabled. A listing waiting for payment
+     * is left alone. Fires `activate_item`.
      *
      * @param string|null $secret the listing's edit secret, when the caller must match it
      *
-     * @return bool|null null when there is no such listing, the secret is wrong or it was
-     *                   already validated
+     * @return bool|null null when there is no such listing, the secret is wrong, it was
+     *                   already validated or it is waiting for payment
      */
     public function activate(int $id, ?string $secret = null): ?bool
     {
@@ -273,6 +274,7 @@ final class ListingService
         $item = $this->items->findByPrimaryKey($id);
         if (!is_array($item) || !isset($item['b_active']) || (int) $item['b_active'] !== 0
             || ($secret !== null && !hash_equals((string) $item['s_secret'], $secret))
+            || ListingStatus::isHeld(Db::stringifyRow($item))
         ) {
             return null;
         }
@@ -307,10 +309,15 @@ final class ListingService
     }
 
     /**
-     * Put a listing back on the site after moderation. Fires `enable_item`.
+     * Put a listing back on the site after moderation. A listing waiting for payment is left
+     * alone: only publish() puts it live. Fires `enable_item`.
      */
     public function enable(int $id): bool
     {
+        $row = ListingStore::find($id, array('b_enabled', 'b_active', 'dt_first_pub_date'));
+        if ($row !== null && ListingStatus::isHeld(Db::stringifyRow($row))) {
+            return false;
+        }
         $result = $this->items->update(
             array('b_enabled' => 1),
             array('pk_i_id' => $id)

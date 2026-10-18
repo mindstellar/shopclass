@@ -26,6 +26,8 @@ if (api_admin_isolated(__FILE__)) {
 use mindstellar\job\JobQueue;
 use mindstellar\job\JobWorker;
 use mindstellar\listing\ListingHoldJobs;
+use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStatus;
 
 $admin = api_admin_boot('osc_models_listing_hold');
 $p     = DB_TABLE_PREFIX;
@@ -102,6 +104,18 @@ pin('the reminder job ran and left the listing', true, $exists($other));
 pin('nothing is left waiting', 0, $queue->count(JobQueue::STATUS_PENDING));
 pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
 $clear();
+
+harness_section('Activate and enable leave it held');
+$stuck = seed_item($admin, seed_category($admin, 'Boats'), $user, 'Unpaid boat');
+$hold($stuck);
+$status = static function (int $id) use ($admin, $p): string {
+    return ListingStatus::of($admin->query("SELECT * FROM {$p}t_item WHERE pk_i_id = {$id}")->fetch_assoc());
+};
+$secret = (string) $admin->query("SELECT s_secret FROM {$p}t_item WHERE pk_i_id = {$stuck}")->fetch_row()[0];
+pin('the owner cannot activate it', null, (new ListingService())->activate($stuck));
+pin('nor with its secret', null, (new ListingService())->activate($stuck, $secret));
+pin('an admin enable does nothing', false, (new ListingService())->enable($stuck));
+pin('it still waits for payment', ListingStatus::UNPAID, $status($stuck));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
