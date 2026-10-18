@@ -93,6 +93,22 @@ final class ListingStore extends Model
     }
 
     /**
+     * Listings held for payment whose deadline passed before $before, oldest id first.
+     *
+     * @return array<int,array<string,mixed>> pk_i_id and s_secret of each
+     * @throws \mindstellar\database\DbException
+     */
+    public static function heldPast(string $before, int $limit): array
+    {
+        return Db::select(
+            'SELECT pk_i_id, s_secret FROM ' . self::tableName()
+            . ' WHERE b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL AND dt_expiration < ?'
+            . ' ORDER BY pk_i_id LIMIT ' . $limit,
+            array($before)
+        );
+    }
+
+    /**
      * @param int[] $ids
      *
      * @throws \mindstellar\database\DbException

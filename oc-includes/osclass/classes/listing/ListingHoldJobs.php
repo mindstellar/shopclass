@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
-use mindstellar\database\Db;
 use mindstellar\job\Job;
 
 /**
@@ -68,12 +67,7 @@ final class ListingHoldJobs
      */
     public static function sweep(): int
     {
-        $rows = Db::select(
-            'SELECT pk_i_id, s_secret FROM ' . DB_TABLE_PREFIX . 't_item'
-            . ' WHERE b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL AND dt_expiration < ?'
-            . ' ORDER BY pk_i_id LIMIT ' . self::SWEEP_BATCH,
-            array(date('Y-m-d H:i:s', time() - 86400))
-        );
+        $rows    = ListingStore::heldPast(date('Y-m-d H:i:s', time() - 86400), self::SWEEP_BATCH);
         $service = new ListingService();
         foreach ($rows as $row) {
             $service->delete((int) $row['pk_i_id'], (string) $row['s_secret'], Actor::admin(0));
