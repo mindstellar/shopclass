@@ -114,6 +114,7 @@ $controllers = array(
         'add_post'             => 'addPost',
         'add_widget'           => 'addWidgetForm',
         'add_widget_post'      => 'addWidgetPost',
+        'customise'              => 'customiseScreen',
         'customise_discard_post' => 'customiseDiscardPost',
         'customise_draft_post'   => 'customiseDraftPost',
         'customise_publish_post' => 'customisePublishPost',

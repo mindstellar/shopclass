@@ -161,6 +161,7 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
                     window.oscMediaPicker.open(function (url) {
                         input.value = url;
                         sync(field);
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
                     });
                 }
                 return;
@@ -170,7 +171,11 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
                 e.preventDefault();
                 var f = clear.closest('.widget-image-field');
                 var inp = f && f.querySelector('.widget-image-input');
-                if (inp) { inp.value = ''; sync(f); }
+                if (inp) {
+                    inp.value = '';
+                    sync(f);
+                    inp.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
         });
     })();

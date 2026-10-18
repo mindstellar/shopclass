@@ -290,6 +290,18 @@ class AdminMenu
             'appearance_widgets',
             'administrator'
         );
+        // Shown only for a theme that declares a customiser, which it does on init.
+        osc_add_hook('init_admin', static function () {
+            if (osc_customiser_spec() !== null) {
+                AdminMenu::getInstance()->add_submenu(
+                    'appearance',
+                    __('Customise'),
+                    osc_admin_base_url(true) . '?page=appearance&action=customise',
+                    'appearance_customise',
+                    'administrator'
+                );
+            }
+        });
 
         // "Manage plugins" points at the same page as the section row, which looks like
         // duplication until a plugin registers a screen of its own here — then it is the
