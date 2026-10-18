@@ -13,8 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
-use mindstellar\site\SiteMode;
 use mindstellar\security\ActionThrottle;
+use mindstellar\site\SiteMode;
 
 /**
  * Who may see, change and post listings, for the web pages and the API alike.
