@@ -4574,10 +4574,11 @@
                                     "pending",
                                     "disabled",
                                     "expired",
-                                    "spam"
+                                    "spam",
+                                    "unpaid"
                                 ]
                             },
-                            "pattern": "^\\s*(?:active|pending|disabled|expired|spam)?\\s*(?:,\\s*(?:active|pending|disabled|expired|spam)?\\s*)*$"
+                            "pattern": "^\\s*(?:active|pending|disabled|expired|spam|unpaid)?\\s*(?:,\\s*(?:active|pending|disabled|expired|spam|unpaid)?\\s*)*$"
                         }
                     },
                     {
@@ -20652,10 +20653,11 @@
                                     "pending",
                                     "disabled",
                                     "expired",
-                                    "spam"
+                                    "spam",
+                                    "unpaid"
                                 ]
                             },
-                            "pattern": "^\\s*(?:active|pending|disabled|expired|spam)?\\s*(?:,\\s*(?:active|pending|disabled|expired|spam)?\\s*)*$"
+                            "pattern": "^\\s*(?:active|pending|disabled|expired|spam|unpaid)?\\s*(?:,\\s*(?:active|pending|disabled|expired|spam|unpaid)?\\s*)*$"
                         }
                     },
                     {
@@ -44647,7 +44649,8 @@
                             "pending",
                             "disabled",
                             "expired",
-                            "spam"
+                            "spam",
+                            "unpaid"
                         ]
                     },
                     "title": {
