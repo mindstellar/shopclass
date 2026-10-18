@@ -4068,6 +4068,10 @@ msgstr ""
 msgid "Delete this widget?"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingHoldJobs.php
+msgid "Delete unpaid listing"
+msgstr ""
+
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "Delete user"
@@ -6488,6 +6492,7 @@ msgid "Listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingGeocode.php
+#: oc-includes/osclass/classes/listing/ListingHoldJobs.php
 #: oc-includes/osclass/classes/listing/ProductAlerts.php
 msgid "Listing #%d"
 msgstr ""
@@ -9696,6 +9701,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/AdvancedSettingsScreen.php
 msgid "Remember to enable cookies for the subdomains too."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingHoldJobs.php
+msgid "Remind to pay for listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
