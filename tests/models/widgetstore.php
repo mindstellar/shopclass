@@ -128,6 +128,24 @@ $cachedIds('cache.b');
 WidgetStore::deleteByLocation('cache.b');
 pin('deleteByLocation invalidates the widget cache', array(), $cachedIds('cache.b'));
 
+harness_section('WidgetStore: toggleEnabled, keepEnabled');
+
+$t1 = WidgetStore::add($row(array('s_location' => 'toggle', 's_type' => 'core.html', 's_config' => '{"title":"T"}')));
+pin('a row with no switch is shown, so the first toggle hides it', false, WidgetStore::toggleEnabled($t1));
+pin('the hidden state is stored beside the config', array('title' => 'T', '_enabled' => false), json_decode(WidgetStore::find($t1)['s_config'], true));
+pin('a second toggle shows it again', true, WidgetStore::toggleEnabled($t1));
+WidgetStore::toggleEnabled($t1);
+pin('keepEnabled carries a hidden row\'s switch into a new config', array('title' => 'New', '_enabled' => false), WidgetStore::keepEnabled($t1, array('title' => 'New')));
+$t2 = WidgetStore::add($row(array('s_location' => 'toggle', 's_type' => 'core.html', 's_config' => '{"title":"U"}')));
+pin('keepEnabled adds no switch when the row has none', array('title' => 'New'), WidgetStore::keepEnabled($t2, array('title' => 'New')));
+pin('keepEnabled leaves the config alone for an unknown id', array('title' => 'New'), WidgetStore::keepEnabled(999999, array('title' => 'New')));
+$cachedIds('toggle');
+$hiddenNow = array_column(Widget::getInstance()->findByLocation('toggle'), 's_config', 'pk_i_id');
+WidgetStore::toggleEnabled($t1);
+$after = array_column(Widget::getInstance()->findByLocation('toggle'), 's_config', 'pk_i_id');
+check('toggleEnabled invalidates the widget cache', ($hiddenNow[$t1] ?? '') !== ($after[$t1] ?? ''));
+WidgetStore::deleteByLocation('toggle');
+
 harness_section('WidgetStore: delete');
 
 pin('delete removes one row', 1, WidgetStore::delete($w2));

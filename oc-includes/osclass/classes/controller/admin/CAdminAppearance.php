@@ -250,17 +250,7 @@ class CAdminAppearance extends AdminSecBaseModel
         $type = $this->resolveWidgetType(Params::getParam('s_type'));
 
         if ($type !== null) {
-            $config = $this->buildWidgetConfig($type);
-            // A row hidden in the customiser stays hidden when edited here.
-            try {
-                $current = WidgetStore::find(Params::getParamInt('id'));
-            } catch (Throwable $e) {
-                $current = null;
-            }
-            $stored = $current !== null ? json_decode((string) $current['s_config'], true) : null;
-            if (is_array($stored) && array_key_exists(WidgetConfig::ENABLED, $stored)) {
-                $config[WidgetConfig::ENABLED] = $stored[WidgetConfig::ENABLED] !== false;
-            }
+            $config = WidgetStore::keepEnabled(Params::getParamInt('id'), $this->buildWidgetConfig($type));
             $values = array(
                 's_description' => Params::getParam('description'),
                 's_content'     => '',
@@ -465,12 +455,9 @@ class CAdminAppearance extends AdminSecBaseModel
             return;
         }
 
-        $config  = json_decode((string) $row['s_config'], true);
-        $config  = is_array($config) ? $config : array();
-        $enabled = !WidgetConfig::enabled($config);
-        $config[WidgetConfig::ENABLED] = $enabled;
+        $enabled = false;
         try {
-            WidgetStore::update((int) $row['pk_i_id'], array('s_config' => json_encode($config)));
+            $enabled = WidgetStore::toggleEnabled((int) $row['pk_i_id']);
             osc_purge_page_cache('widget');
             $ok = true;
         } catch (Throwable $e) {

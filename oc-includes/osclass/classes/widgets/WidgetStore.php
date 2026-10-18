@@ -203,6 +203,46 @@ final class WidgetStore extends Model
     }
 
     /**
+     * Flip a row's hide switch (WidgetConfig::ENABLED) and store it.
+     *
+     * @return bool the row's new state: true when shown
+     * @throws \mindstellar\database\DbException
+     */
+    public static function toggleEnabled(int $id): bool
+    {
+        $row     = self::find($id);
+        $config  = $row === null ? array() : json_decode((string) $row['s_config'], true);
+        $config  = is_array($config) ? $config : array();
+        $enabled = !WidgetConfig::enabled($config);
+        $config[WidgetConfig::ENABLED] = $enabled;
+        self::update($id, array('s_config' => json_encode($config)));
+
+        return $enabled;
+    }
+
+    /**
+     * $config with the stored row's hide switch carried over, so editing a hidden row keeps it hidden.
+     *
+     * @param array<string,mixed> $config
+     *
+     * @return array<string,mixed>
+     */
+    public static function keepEnabled(int $id, array $config): array
+    {
+        try {
+            $row = self::find($id);
+        } catch (\Throwable $e) {
+            $row = null;
+        }
+        $stored = $row !== null ? json_decode((string) $row['s_config'], true) : null;
+        if (is_array($stored) && array_key_exists(WidgetConfig::ENABLED, $stored)) {
+            $config[WidgetConfig::ENABLED] = $stored[WidgetConfig::ENABLED] !== false;
+        }
+
+        return $config;
+    }
+
+    /**
      * MAX(i_order) + 1 for a location, or 0 when it holds no widgets.
      *
      * @throws \mindstellar\database\DbException
