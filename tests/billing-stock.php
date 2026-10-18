@@ -346,6 +346,10 @@ pin('another buyer is not affected', true, $place([['variant' => $a, 'qty' => 1]
 OrderStore::cancel($kimOrders[0]->getId());
 $again = $placeKim('offline');
 pin('cancelling one frees a slot', true, $again->getId() > 0);
+pin('at the limit again', ['/gateway too_many_open'], $refused(static fn () => $placeKim('offline')));
+Billing::markPaid(OrderStore::find($kimOrders[2]->getId()));
+$afterPaid = $placeKim('offline');
+pin('a paid offline order does not count toward the limit', [3, true], [OrderStore::countForUser($kim, [Order::STATUS_PENDING], Billing::HOLDS_STOCK), $afterPaid->getId() > 0]);
 $setLimit('0');
 $more = [$placeKim('offline'), $placeKim('cod')];
 pin('a limit of 0 never refuses', true, $more[1]->getId() > 0);
