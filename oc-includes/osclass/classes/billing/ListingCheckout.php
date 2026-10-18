@@ -57,7 +57,7 @@ final class ListingCheckout
     /**
      * Spend the credits and put the listing live. Nothing is spent when it is not held, the
      * balance is short or a plugin refuses it through `billing_can_publish` (reason `refused`).
-     * The row lock makes two simultaneous calls spend once.
+     * Locking the seller makes two simultaneous calls, for one listing or two, spend once.
      *
      * @return array{published: bool, reason: ?string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}}
      *
@@ -68,11 +68,13 @@ final class ListingCheckout
         $userId = (int) $actor->userId();
 
         return Db::transaction(static function () use ($itemId, $actor, $userId): array {
+            // The seller first, then the listing: the price depends on the seller's other listings.
+            EntitlementStore::lockSeller($userId);
             $row = ListingStore::find($itemId, array('*'), true);
             if ($row === null || $userId <= 0 || (int) $row['fk_i_user_id'] !== $userId) {
                 throw new ForbiddenException('', ForbiddenException::NOT_OWNER);
             }
-            $quote = self::price(Db::stringifyRow($row), $userId);
+            $quote = self::price(Db::stringifyRow($row), $userId, true);
 
             if (!$quote['held']) {
                 return array('published' => false, 'reason' => 'not_held', 'quote' => $quote);
@@ -202,16 +204,17 @@ final class ListingCheckout
 
     /**
      * @param array<string,string|null> $row
+     * @param bool                      $current count the seller's listings as committed now, under lockSeller()
      *
      * @return array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}
      */
-    private static function price(array $row, int $userId): array
+    private static function price(array $row, int $userId, bool $current = false): array
     {
         $held    = ListingStatus::isHeld($row);
         $ceiling = EntitlementStore::listingCeiling($userId);
         $slots   = 0;
         if ($held && $ceiling !== -1) {
-            $over  = EntitlementStore::liveListings($userId) - $ceiling + 1;
+            $over  = EntitlementStore::liveListings($userId, $current) - $ceiling + 1;
             $slots = max(0, (int) ceil($over / osc_billing_slot_quantity()));
         }
         $feature = FeatureRegistry::getInstance()->get(self::FEATURE);

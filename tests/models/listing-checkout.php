@@ -210,30 +210,44 @@ harness_section('Pay step: two at once');
 
 [$uid, , $held] = $seller(10);
 $dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
+// The parent holds the seller's lock: both children must wait for it, then spend once.
 $admin->begin_transaction();
-$admin->query("SELECT pk_i_id FROM {$p}t_item WHERE pk_i_id = {$held} FOR UPDATE");
+$admin->query("SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = {$uid} FOR UPDATE");
 $procs = [];
 $pipes = [];
 foreach ([0, 1] as $i) {
     $procs[$i] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/../lib/listing-publish-child.php', $dbName, (string) $held, (string) $uid], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp);
     $pipes[$i] = $pp;
 }
-$watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
-$waiting = 0;
-for ($try = 0; $try < 400 && $waiting < 2; $try++) {
-    usleep(50000);
-    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE 'SELECT * FROM %t_item WHERE pk_i_id%FOR UPDATE'")->fetch_row()[0];
-}
-$watch->close();
+usleep(1500000);
+$waiting = count(array_filter($procs, static fn ($proc): bool => proc_get_status($proc)['running']));
 $admin->commit();
 $printed = '';
 foreach ($procs as $i => $proc) {
     $printed .= stream_get_contents($pipes[$i][1]) . stream_get_contents($pipes[$i][2]);
     proc_close($proc);
 }
-pin('both waited on the listing row', 2, $waiting);
+pin('both waited for the seller lock', 2, $waiting);
 pin('one publishes, the other finds it not held, none throws', [1, 1, 0], [substr_count($printed, 'published'), substr_count($printed, 'not_held'), substr_count($printed, 'threw')]);
 pin('one debit and seven credits left', [1, 7], [$debits($uid), Wallet::balance($uid)]);
+
+harness_section('Pay step: one free slot, two listings');
+
+// The parent takes the seller's lock and the last free slot without committing; the child,
+// publishing another listing of the same seller, must wait and then find the slot gone.
+[$uid, $first, $second] = $seller(0);
+holdItem($first);
+$admin->begin_transaction();
+$admin->query("SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = {$uid} FOR UPDATE");
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1, b_active = 1, dt_first_pub_date = NOW(), dt_expiration = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE pk_i_id = {$first}");
+$child = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/../lib/listing-publish-child.php', $dbName, (string) $second, (string) $uid], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $cp);
+usleep(1500000);
+$waited = proc_get_status($child)['running'];
+$admin->commit();
+$printed = stream_get_contents($cp[1]) . stream_get_contents($cp[2]);
+proc_close($child);
+pin('the second publish waits for the first', true, $waited);
+pin('then finds the free slot taken and spends nothing', ['insufficient_credits', null], [trim($printed), $row($second)['dt_first_pub_date']]);
 
 harness_section('Listing order: start');
 

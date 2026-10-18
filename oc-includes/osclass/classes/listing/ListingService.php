@@ -864,7 +864,9 @@ final class ListingService
         // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
         // checked, so there is nothing left to spend once a post is allowed through.
         if ((!$actor->isAdmin() || $import) && osc_billing_enabled() && !empty($aItem['userId'])) {
-            $withinFreeQuota = \mindstellar\billing\EntitlementStore::withinFreeQuota($aItem['userId']);
+            // Locked, so two posts or a post and a publish cannot both take the last free slot.
+            \mindstellar\billing\EntitlementStore::lockSeller((int) $aItem['userId']);
+            $withinFreeQuota = \mindstellar\billing\EntitlementStore::withinFreeQuota((int) $aItem['userId'], true);
             if (!\mindstellar\billing\EntitlementStore::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
                 // Over the limit the listing is saved hidden until it is paid for. Admins, imports
                 // and a plugin's billing_can_publish refusal are refused.

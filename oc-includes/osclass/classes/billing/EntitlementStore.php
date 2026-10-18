@@ -346,18 +346,29 @@ final class EntitlementStore extends Model
      * Whether $userId is still inside the free listing quota: a slot model, measured
      * against listingCeiling().
      *
-     * @param int $userId
+     * @param int  $userId
+     * @param bool $current count the latest committed rows, as liveListings() does with it
      *
      * @return bool
      */
-    public static function withinFreeQuota(int $userId): bool
+    public static function withinFreeQuota(int $userId, bool $current = false): bool
     {
         $ceiling = self::listingCeiling($userId);
         if ($ceiling === -1) {
             return true;
         }
 
-        return self::liveListings($userId) < $ceiling;
+        return self::liveListings($userId, $current) < $ceiling;
+    }
+
+    /**
+     * Hold the seller's user row until the transaction ends, so two saves or publishes for
+     * one seller cannot both take the last free slot. Call it inside a transaction, then
+     * count with liveListings(..., true).
+     */
+    public static function lockSeller(int $userId): void
+    {
+        Db::scalar('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_user WHERE pk_i_id = ? FOR UPDATE', array($userId));
     }
 
     /**
@@ -405,16 +416,19 @@ final class EntitlementStore extends Model
      * an equality match on it, narrowing to one seller's rows before the OR on
      * b_premium/dt_expiration is ever evaluated.
      *
-     * @param int $userId
+     * @param int  $userId
+     * @param bool $current read the latest committed rows (a locking read) rather than the
+     *                      transaction's snapshot; for a caller holding lockSeller()
      *
      * @return int
      */
-    public static function liveListings(int $userId): int
+    public static function liveListings(int $userId, bool $current = false): int
     {
         return (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
             . ' WHERE fk_i_user_id = ? AND dt_first_pub_date IS NOT NULL'
-            . ' AND (b_premium = 1 OR dt_expiration >= ?)',
+            . ' AND (b_premium = 1 OR dt_expiration >= ?)'
+            . ($current ? ' LOCK IN SHARE MODE' : ''),
             array($userId, date('Y-m-d H:i:s'))
         );
     }
