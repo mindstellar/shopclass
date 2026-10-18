@@ -162,6 +162,47 @@ final class WidgetStore extends Model
     }
 
     /**
+     * Make one location hold exactly $rows, in that order, in one transaction. A row whose id
+     * already lives there is updated in place; any other row is inserted; rows left out are
+     * deleted. Other locations are never touched.
+     *
+     * @param array<int,array{id?:int|null,type:string,config:array<string,mixed>,description:string}> $rows
+     *
+     * @throws \Throwable when the write fails; nothing is changed
+     */
+    public static function replaceLocation(string $location, array $rows): void
+    {
+        try {
+            Db::transaction(static function () use ($location, $rows): void {
+                $existing = array_flip(self::idsAt($location));
+                $kept     = array();
+                foreach (array_values($rows) as $position => $row) {
+                    $values = array(
+                        's_description' => (string) $row['description'],
+                        's_content'     => '',
+                        's_type'        => (string) $row['type'],
+                        's_config'      => json_encode($row['config'], JSON_THROW_ON_ERROR),
+                        'i_order'       => $position,
+                    );
+                    $id = (int) ($row['id'] ?? 0);
+                    if ($id > 0 && isset($existing[$id]) && !isset($kept[$id])) {
+                        self::table()->where('pk_i_id', $id)->update($values);
+                        $kept[$id] = true;
+                        continue;
+                    }
+                    self::table()->insert($values + array('s_location' => $location, 'e_kind' => 'html'));
+                }
+                $dropped = array_keys(array_diff_key($existing, $kept));
+                if ($dropped !== array()) {
+                    self::table()->whereIn('pk_i_id', $dropped)->delete();
+                }
+            });
+        } finally {
+            CacheGroup::invalidate('widget');
+        }
+    }
+
+    /**
      * MAX(i_order) + 1 for a location, or 0 when it holds no widgets.
      *
      * @throws \mindstellar\database\DbException

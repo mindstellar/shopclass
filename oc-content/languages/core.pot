@@ -512,6 +512,18 @@ msgstr ""
 msgid "%s is invalid."
 msgstr ""
 
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "%s is not a place this theme lets you customise."
+msgstr ""
+
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "%s is not a section this page can hold."
+msgstr ""
+
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "%s is not a setting this theme lets you customise."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "%s is not a valid URL"
 msgstr ""
@@ -521,6 +533,7 @@ msgid "%s is not a valid email address"
 msgstr ""
 
 #: oc-includes/osclass/classes/settings/SettingsImage.php
+#: oc-includes/osclass/classes/widgets/Customiser.php
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "%s is not a valid image"
 msgstr ""
@@ -533,6 +546,7 @@ msgstr ""
 msgid "%s is not in the expected format"
 msgstr ""
 
+#: oc-includes/osclass/classes/widgets/Customiser.php
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "%s is not one of the available options"
 msgstr ""
@@ -11809,6 +11823,14 @@ msgstr ""
 msgid "The downloads directory is not writable."
 msgstr ""
 
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "The draft could not be saved."
+msgstr ""
+
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "The draft is too large to save."
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "The existing package directory is not writable."
 msgstr ""
@@ -11873,6 +11895,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "The location catalog could not be reached"
+msgstr ""
+
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "The look settings could not be published."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -12024,6 +12050,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php
 msgid "The search page shows: this field must only contain numeric characters"
+msgstr ""
+
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "The sections could not be published."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -12195,6 +12225,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "There are no categories yet."
+msgstr ""
+
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid "There are no changes to publish."
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php

@@ -1700,6 +1700,10 @@ msgid ""
 "browser, then open the link again."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "Only an administrator can customise the theme."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Only an order that is not paid yet can be cancelled"
 msgstr ""
@@ -3321,6 +3325,10 @@ msgstr ""
 #: oc-includes/osclass/classes/api/controller/AccountKeysController.php
 #: oc-includes/osclass/classes/apikey/PersonalKeys.php
 msgid "This site does not let users make API keys."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "This theme has nothing to customise."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php

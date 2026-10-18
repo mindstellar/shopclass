@@ -799,6 +799,14 @@ function osc_head(): void
         echo osc_api_session_meta();
     }
 
+    if (function_exists('osc_customiser_preview') && osc_customiser_preview()) {
+        // The origin the preview frame accepts customiser messages from.
+        $admin  = (string) parse_url(osc_admin_base_url(), PHP_URL_SCHEME) . '://' . (string) parse_url(osc_admin_base_url(), PHP_URL_HOST);
+        $port   = parse_url(osc_admin_base_url(), PHP_URL_PORT);
+        $admin .= $port !== null && $port !== false ? ':' . (int) $port : '';
+        echo '<meta name="osc-customiser" content="' . osc_esc_html($admin) . '">' . PHP_EOL;
+    }
+
     // Enqueued styles and scripts, robots meta, and everything plugins add.
     osc_run_hook('header');
 }
