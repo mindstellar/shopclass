@@ -50,6 +50,9 @@ final class Order
     /** s_meta `_kind` of an order for goods, not credits. */
     public const KIND_GOODS = 'goods';
 
+    /** s_meta `_kind` of an order that pays for a listing held at the end of posting. */
+    public const KIND_LISTING = 'listing';
+
     /** @var array<string,mixed> */
     private array $meta;
 
@@ -282,6 +285,28 @@ final class Order
     public function isGoods(): bool
     {
         return $this->meta('_kind') === self::KIND_GOODS;
+    }
+
+    /**
+     * Whether this order pays for a held listing.
+     *
+     * @return bool
+     */
+    public function isListing(): bool
+    {
+        return $this->meta('_kind') === self::KIND_LISTING;
+    }
+
+    /**
+     * The listing a listing order pays for, or null for any other order.
+     *
+     * @return int|null
+     */
+    public function listingId(): ?int
+    {
+        $id = $this->isListing() ? (int) $this->meta('_item', 0) : 0;
+
+        return $id > 0 ? $id : null;
     }
 
     /**
