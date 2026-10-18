@@ -64,6 +64,7 @@ Worth knowing before you port something:
 | Style the e-mails the site sends, or e-mail the site owner | [E-mail layout](/docs/developers/email-layout/) |
 | Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |
 | Keep a small value, flag or lock without a table | [Key-value store](/docs/developers/kv-store/) |
+| Price a cart, add shipping, tax or discounts, hear order events | [Cart hooks in Billing](https://github.com/mindstellar/shopclass/blob/develop/docs/BILLING.md#cart-hooks) |
 | Keep a search filter working in saved alerts | [Saved-search alerts](/docs/developers/alerts/) |
 | Bring listings in from elsewhere | [Importing listings](/docs/developers/importing-listings/) |
 | Call the site from another program | [REST API](/docs/developers/api/) |

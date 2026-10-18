@@ -6,7 +6,9 @@ sidebar:
 ---
 
 Plugins add what your particular site needs and core deliberately does not carry:
-payment gateways, map providers, storage backends, import tools.
+payment gateways, map providers, storage backends, import tools. For a shop, the
+Shipping, Tax, Promotions, Shop emails and Analytics plugins are described in
+[running a shop](/docs/use/shop/).
 
 **Plugins** in the admin panel.
 
