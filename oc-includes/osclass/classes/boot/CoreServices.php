@@ -12,6 +12,17 @@ declare(strict_types=1);
 
 namespace mindstellar\boot;
 
+use mindstellar\billing\CartPricer;
+use mindstellar\billing\event\CartDiscountLines;
+use mindstellar\billing\event\CartFees;
+use mindstellar\billing\event\CartFreeOver;
+use mindstellar\billing\event\CartItemAdded;
+use mindstellar\billing\event\CartProblems;
+use mindstellar\billing\event\CartShipping;
+use mindstellar\billing\event\CartShippingLines;
+use mindstellar\billing\event\CartTaxLines;
+use mindstellar\billing\event\CheckoutStarting;
+use mindstellar\billing\GoodsCheckout;
 use mindstellar\container\Container;
 use mindstellar\event\Bridged;
 use mindstellar\event\Dispatcher;
@@ -28,7 +39,7 @@ final class CoreServices
     }
 
     /**
-     * Put the dispatcher and the hook bridge in $c, and give the bridge core's events.
+     * Put the dispatcher, the hook bridge and the services that fire events in $c, and give the bridge core's events.
      */
     public static function register(Container $c): void
     {
@@ -37,6 +48,8 @@ final class CoreServices
         $c->instance(Dispatcher::class, $events);
         $c->instance(DispatcherInterface::class, $events);
         $c->instance(HookBridge::class, $bridge);
+        $c->set(CartPricer::class, static fn (Container $c): CartPricer => new CartPricer($c->get(DispatcherInterface::class)));
+        $c->set(GoodsCheckout::class, static fn (Container $c): GoodsCheckout => new GoodsCheckout($c->get(CartPricer::class), $c->get(DispatcherInterface::class)));
         foreach (self::events() as $event) {
             $bridge->own($event);
         }
@@ -49,6 +62,16 @@ final class CoreServices
      */
     public static function events(): array
     {
-        return [];
+        return [
+            CartShipping::class,
+            CartShippingLines::class,
+            CartTaxLines::class,
+            CartDiscountLines::class,
+            CartFees::class,
+            CartFreeOver::class,
+            CartProblems::class,
+            CartItemAdded::class,
+            CheckoutStarting::class,
+        ];
     }
 }

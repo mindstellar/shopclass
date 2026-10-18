@@ -14,6 +14,8 @@ namespace mindstellar\billing\gateway;
 
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
+use mindstellar\billing\event\CartFees;
+use mindstellar\billing\event\Line;
 use mindstellar\billing\Order;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\currency\Money;
@@ -70,25 +72,17 @@ final class CashOnDeliveryGateway implements PaymentGateway
     /**
      * Core's `cart_totals` listener: the cash on delivery fee as a fee line when the cart pays
      * by cash on delivery in the billing currency.
-     *
-     * @param mixed               $totals
-     * @param array<string,mixed> $cart
-     *
-     * @return mixed
      */
-    public static function feeLine($totals, $cart = array())
+    public static function feeLine(CartFees $event): void
     {
-        $fee = osc_billing_cod_fee();
+        $fee  = osc_billing_cod_fee();
+        $cart = $event->cart();
         if (
-            !is_array($totals) || !is_array($cart) || $fee <= 0 || !osc_billing_cod_enabled()
-            || ($cart['gateway'] ?? null) !== self::ID || ($cart['currency'] ?? '') !== osc_billing_currency()
-            || ($cart['needs_shipping'] ?? true) === false
+            $fee <= 0 || !osc_billing_cod_enabled() || $cart->gateway() !== self::ID
+            || $cart->currency() !== osc_billing_currency() || !$cart->needsShipping()
         ) {
-            return $totals;
+            return;
         }
-        $totals['fees']   = is_array($totals['fees'] ?? null) ? $totals['fees'] : array();
-        $totals['fees'][] = array('id' => 'fee.cod', 'label' => _m('Cash on delivery fee'), 'amount' => $fee);
-
-        return $totals;
+        $event->addFee(new Line('fee.cod', _m('Cash on delivery fee'), $fee, $cart->currency()));
     }
 }

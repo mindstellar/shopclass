@@ -139,6 +139,7 @@ function api_admin_env(): void
     require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
     require_once __DIR__ . '/api-doubles.php';
+    \mindstellar\boot\Boot::services();
 }
 
 /**

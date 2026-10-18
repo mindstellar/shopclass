@@ -12,7 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\billing;
 
+use mindstellar\billing\event\CheckoutStarting;
+use mindstellar\container\Container;
 use mindstellar\database\Db;
+use mindstellar\event\DispatcherInterface;
 use mindstellar\exception\InvalidException;
 use mindstellar\user\UserStore;
 
@@ -42,9 +45,12 @@ final class GoodsCheckout
 
     private CartPricer $pricer;
 
-    public function __construct(?CartPricer $pricer = null)
+    private ?DispatcherInterface $events;
+
+    public function __construct(?CartPricer $pricer = null, ?DispatcherInterface $events = null)
     {
-        $this->pricer = $pricer ?? new CartPricer();
+        $this->pricer = $pricer ?? Container::root()->get(CartPricer::class);
+        $this->events = $events;
     }
 
     /**
@@ -109,7 +115,11 @@ final class GoodsCheckout
         }
 
         $cart = $quote->cart();
-        osc_run_hook('cart_checkout_before', $cart);
+        $events  = $this->events ??= Container::root()->get(DispatcherInterface::class);
+        $started = $events->dispatch(new CheckoutStarting($cart));
+        if ($started->refusals() !== array()) {
+            throw InvalidException::all($started->refusals());
+        }
 
         $meta = array(
             '_kind'     => Order::KIND_GOODS,

@@ -24,6 +24,7 @@ use mindstellar\billing\CartPricer;
 use mindstellar\billing\GoodsCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
+use mindstellar\container\Container;
 use mindstellar\currency\CurrencyService;
 
 /**
@@ -42,8 +43,8 @@ final class OrdersController
 
     public function __construct(private ApiServices $api)
     {
-        $this->pricer     = new CartPricer();
-        $this->checkout   = new GoodsCheckout($this->pricer);
+        $this->pricer     = Container::root()->get(CartPricer::class);
+        $this->checkout   = Container::root()->get(GoodsCheckout::class);
         $this->serializer = new OrderSerializer($api->links(), $api->listingSerializer(), CurrencyService::make());
     }
 
