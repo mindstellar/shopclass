@@ -204,6 +204,31 @@ command line too. Its one argument is the list of reasons, such as `array('theme
 Clear your cache there. Do not print, send headers or read the session. To ask for one yourself,
 call `osc_purge_page_cache('my_reason')`. See [the caching contract](/docs/developers/caching/).
 
+## Typed events
+
+The shop hooks (cart, orders, receipts, shop mails, variants, the customiser) are event objects.
+Names stay the same and you still use `osc_add_hook()` and `osc_add_filter()`. What changes is the
+callback: if its first parameter is typed with an event class, it gets the event; any other
+callback gets the old arguments and return value.
+
+```php
+osc_add_filter('cart_tax_lines', static function (CartTaxLines $e): void {
+    $e->addLine(new Line('tax.vat', 'VAT', 2000000, $e->cart()->currency()));
+}, 10);
+```
+
+An old callback and a typed one on one name run in one list, ordered by priority (lower first,
+default 5, same registration order on a tie). `$e->stopPropagation()` ends the run, so later
+callbacks do not fire. A listener typed with a parent class, such as `OrderEvent`, runs for every
+subclass.
+
+Pass `[ClassName::class, 'method']` to have core build the class on its first event. A static
+method is called as is; any other is called on the shared instance from `Container::root()`. Nothing
+is built when you register, so a plugin's `index.php` stays cheap.
+
+Core never fires these names through `osc_run_hook()` or `osc_apply_filter()`. Their entries in the
+reference below have the kind `event` and name the event class.
+
 ## Cart hooks
 
 Core prices every cart through these filters, in this order, and fires `cart_checkout_before`
