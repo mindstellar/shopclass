@@ -15,6 +15,7 @@ namespace mindstellar\api\controller;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
+use mindstellar\api\read\ListingRows;
 use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
@@ -54,11 +55,12 @@ final class ListingsController
      */
     public function related(ApiCall $call): Response
     {
-        $id      = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $request = $call->request();
         $context = $this->api->context($request, $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $reader  = $this->api->listingReader();
-        $rows    = RelatedListings::rows($id, $request->queryInt('limit', 6), $request->query());
+        $item    = ProblemException::found($reader->row($call->intArg(), [$call, 'visibleListing']), 'listing');
+        $id      = (int) $item['pk_i_id'];
+        $rows    = RelatedListings::rows($id, $request->queryInt('limit', 6), $request->query(), $item);
 
         return Page::whole($rows === [] ? [] : $reader->many($reader->extend($rows, $context), $context), $this->api->links(), $call);
     }
@@ -115,13 +117,14 @@ final class ListingsController
     }
 
     /**
-     * The bare listing row, when the caller may see it, expired or not.
+     * The bare listing row, when the caller may see it, expired or not. A row this request
+     * read already is not read again.
      *
      * @return array<string,mixed>
      * @throws ProblemException 404
      */
     private function visibleRow(ApiCall $call, int $id): array
     {
-        return ProblemException::found($call->visibleListing($this->api->listingQuery()->statusRow($id)), 'listing');
+        return ProblemException::found($call->visibleListing(ListingRows::held($id) ?? $this->api->listingQuery()->statusRow($id)), 'listing');
     }
 }

@@ -186,7 +186,7 @@ final class ListingReader
      */
     private function photoRows(array $ids): array
     {
-        return self::byItem($this->listings->photos($ids));
+        return $this->rows->photos($ids);
     }
 
     /**
