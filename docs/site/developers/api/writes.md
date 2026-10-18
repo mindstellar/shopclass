@@ -365,10 +365,21 @@ curl "$API/cart/quote?lines=12:2,15:1&gateway=offline"
 
 `lines` is `variant:qty` pairs, at most 50, a quantity of 1 to 20. A variant that is gone, hidden or out of stock does not fail the call: it is listed in `problems` (`not_buyable`, `out_of_stock`, `qty`) with its position in `lines`, and an out-of-stock line stays out of the totals. `shipping` picks a delivery method from `shipping_methods`; `gateway` adds that payment method's fee. Every amount is `{amount, currency, formatted}`. A quote is never cached.
 
+Before checkout a shopper may add `country` (two letters), `state` (up to 100 characters), `postcode` (up to 20) and `coupon` (letters, digits and `-`, up to 40, read in upper case). Delivery, tax and discount plugins use them; a value that does not fit is left out, not refused.
+
+| Field | Detail |
+|---|---|
+| `needs_shipping` | `false` when every line is a download: no address, delivery or cash on delivery. |
+| `free_over` | `{amount, remaining}`: free delivery from this subtotal and what is left to reach it, or `null`. A delivery plugin may set its own. |
+| `taxes[].included` | `true` for tax already in the prices: shown, not added to `total`. |
+| `totals.tax` / `totals.tax_included` | Tax added on top of the prices, and tax already in them. |
+| `problems` | Each has `line`, `code`, `pointer` and `message`. A line problem has a `line` and a `null` pointer. A plugin's problem has `line` `null`, a `pointer` (`/coupon`, `/address/postcode`, `/address/state`, `/address/country` or `/shipping_method`) and a `message` to show the shopper. |
+
 ```bash
 curl -i -X POST $API/account/orders \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "lines": [{ "variant": 12, "qty": 2 }], "shipping_method": "standard", "gateway": "offline",
+        "coupon": "WELCOME10",
         "address": { "name": "Tom Lee", "phone": "5550100", "line1": "1 Main St", "city": "Austin", "state": "TX", "postcode": "73301", "country": "US" } }'
 ```
 
@@ -377,7 +388,9 @@ The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redire
 | Rule | Detail |
 |---|---|
 | Who | A signed-in user. A guest page token can price a cart but not place one. |
-| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`, `too_many_open`), `/address/<field>` (`required`, `maxLength`). Nothing is written. |
+| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`, `too_many_open`), `/address/<field>` (`required`, `maxLength`). A plugin's problem (a bad coupon, a postcode outside every delivery zone) is `rejected` at its pointer, with its message. Nothing is written. |
+| `coupon` | Optional, the same rule as on the quote. |
+| Included tax | A tax line already in the prices is stored with `amount` 0, `unit` the tax and `included` true, so the lines still add up to `total`. |
 | Retry | Send an `Idempotency-Key`: a repeat gets the first order back and does not ask the gateway again. |
 | Limit | 20 orders an hour per user: `429 rate_limited`. A refused request (`422`) is not counted. |
 | `status` | `pending`, `paid`, `shipped`, `delivered`, `failed`, `refunded`, `cancelled`. |
