@@ -355,6 +355,7 @@ filter body_class
 filter bot_user_agents
 filter cache_relevant_cookies
 filter cart_discount_lines
+filter cart_needs_shipping
 filter cart_shipping_lines
 filter cart_shipping_methods
 filter cart_tax_lines
