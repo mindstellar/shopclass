@@ -68,7 +68,8 @@ final class GoodsCheckout
         if (!osc_billing_enabled()) {
             throw new InvalidException('/gateway', 'unavailable', _m('This payment method is not available.'));
         }
-        $address = self::address($address);
+        $raw     = $address;
+        $address = self::address($raw, false);
 
         $quote  = $this->pricer->quote($lines, array(
             'address'         => $address,
@@ -76,6 +77,10 @@ final class GoodsCheckout
             'gateway'         => $gatewayId,
             'user_id'         => $userId,
         ));
+        $ships = $quote->needsShipping();
+        if ($ships) {
+            self::address($raw, true);
+        }
         $errors = array();
         foreach ($quote->problems() as $problem) {
             $errors[] = array('pointer' => '/lines/' . $problem['line'], 'code' => $problem['code'], 'message' => self::problemText($problem['code']));
@@ -84,10 +89,10 @@ final class GoodsCheckout
             $errors[] = array('pointer' => '/lines', 'code' => 'empty', 'message' => _m('Your cart is empty.'));
         }
         $chosen = $quote->shipping();
-        if ($quote->shippingMethods() === array() ? $shippingMethod !== '' : ($chosen === null || $chosen['id'] !== $shippingMethod)) {
+        if ($ships && ($quote->shippingMethods() === array() ? $shippingMethod !== '' : ($chosen === null || $chosen['id'] !== $shippingMethod))) {
             $errors[] = array('pointer' => '/shipping_method', 'code' => 'unknown', 'message' => _m('Choose a delivery method.'));
         }
-        $gateways = PaymentGatewayRegistry::getInstance()->available($quote->currency());
+        $gateways = self::gateways($quote);
         if (!isset($gateways[$gatewayId])) {
             $errors[] = array('pointer' => '/gateway', 'code' => 'unavailable', 'message' => _m('This payment method is not available.'));
         }
@@ -101,7 +106,6 @@ final class GoodsCheckout
         $meta = array(
             '_kind'     => Order::KIND_GOODS,
             '_label'    => self::label($quote->lines()),
-            '_address'  => $address,
             '_shipping' => array('method' => $chosen['id'] ?? null, 'label' => $chosen['label'] ?? null),
             '_buyer'    => array(
                 'email' => (string) ($user['s_email'] ?? ''),
@@ -109,6 +113,9 @@ final class GoodsCheckout
                 'phone' => (string) ($user['s_phone_mobile'] ?? ''),
             ),
         );
+        if ($ships) {
+            $meta['_address'] = $address;
+        }
         $note = mb_substr(trim($note), 0, 500, 'UTF-8');
         if ($note !== '') {
             $meta['_note'] = $note;
@@ -131,6 +138,22 @@ final class GoodsCheckout
         osc_run_hook('billing_order_placed', $order->getId(), $userId);
 
         return array('order' => $order, 'next' => $intent);
+    }
+
+    /**
+     * The payment methods a quote may pay through, by id. Cash on delivery needs something to
+     * deliver.
+     *
+     * @return array<string,PaymentGateway>
+     */
+    public static function gateways(Quote $quote): array
+    {
+        $gateways = PaymentGatewayRegistry::getInstance()->available($quote->currency());
+        if (!$quote->needsShipping()) {
+            unset($gateways[gateway\CashOnDeliveryGateway::ID]);
+        }
+
+        return $gateways;
     }
 
     /**
@@ -177,21 +200,21 @@ final class GoodsCheckout
     }
 
     /**
-     * The address trimmed to ADDRESS; every field but line2 is needed.
+     * The address trimmed to ADDRESS; with $required, every field but line2 is needed.
      *
      * @param array<string,mixed> $address
      *
      * @return array<string,string>
      * @throws InvalidException
      */
-    private static function address(array $address): array
+    private static function address(array $address, bool $required): array
     {
         $out    = array();
         $errors = array();
         foreach (self::ADDRESS as $field => $max) {
             $value = $address[$field] ?? '';
             $value = is_string($value) ? trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $value) ?? '') : '';
-            if ($value === '' && $field !== 'line2') {
+            if ($value === '' && $field !== 'line2' && $required) {
                 $errors[] = array('pointer' => '/address/' . $field, 'code' => 'required', 'message' => _m('This field is needed.'));
             } elseif (mb_strlen($value, 'UTF-8') > $max) {
                 $errors[] = array('pointer' => '/address/' . $field, 'code' => 'maxLength', 'message' => sprintf(_m('Keep this under %d characters.'), $max + 1));

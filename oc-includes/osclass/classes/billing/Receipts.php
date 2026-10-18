@@ -492,6 +492,9 @@ final class Receipts
      */
     public static function addressHtml(array $details): string
     {
+        if ($details['address'] === array()) {
+            return '';
+        }
         $html = '<p><strong>' . osc_esc_html(__('Delivery address')) . '</strong><br>'
                 . implode('<br>', array_map('osc_esc_html', $details['address'])) . '</p>';
         if ($details['shipping'] !== '') {

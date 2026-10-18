@@ -695,6 +695,7 @@ the theme's cart, not core. A paid order reuses `billing_order_paid`.
 
 | Hook | Kind | Returns or receives |
 |---|---|---|
+| `cart_needs_shipping` | filter | `($needs, $cart)` false when nothing in the cart is sent: no address, delivery or cash on delivery |
 | `cart_shipping_methods` | filter | `($methods, $cart)` the shipping methods on offer |
 | `cart_shipping_lines` | filter | `($lines, $cart)` the shipping lines |
 | `cart_tax_lines` | filter | `($lines, $cart)` the tax lines |

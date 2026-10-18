@@ -24,7 +24,6 @@ use mindstellar\billing\CartPricer;
 use mindstellar\billing\GoodsCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
-use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\currency\CurrencyService;
 
 /**
@@ -73,7 +72,7 @@ final class OrdersController
 
         $gateways = array();
         if (osc_billing_enabled()) {
-            foreach (PaymentGatewayRegistry::getInstance()->available($quote->currency()) as $id => $gateway) {
+            foreach (GoodsCheckout::gateways($quote) as $id => $gateway) {
                 $gateways[] = array('id' => (string) $id, 'name' => $gateway->getName(), 'fee' => $this->pricer->feeFor($quote, (string) $id));
             }
         }

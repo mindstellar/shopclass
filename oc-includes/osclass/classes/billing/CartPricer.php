@@ -19,8 +19,9 @@ use mindstellar\listing\VariantStore;
 /**
  * Prices a cart from the database. The request names variants and quantities only; every unit
  * price, stock check and total is read or worked out here. Three queries (variants, listings,
- * photos), then the cart filters in this order: `cart_shipping_methods`, `cart_shipping_lines`,
- * `cart_tax_lines`, `cart_discount_lines`, `cart_totals`. A filter adds lines; the sums are
+ * photos), then the cart filters in this order: `cart_needs_shipping`, `cart_shipping_methods`,
+ * `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`. A cart that
+ * needs no shipping (all downloads) skips the two shipping filters. A filter adds lines; the sums are
  * always core's, so no filter can change an item's price. Only discount lines take off, and the
  * total never goes below zero.
  */
@@ -122,7 +123,8 @@ final class CartPricer
             'subtotal'        => $subtotal,
         );
 
-        $methods = self::methods(osc_apply_filter('cart_shipping_methods', array(), $cart), $currency);
+        $cart['needs_shipping'] = osc_apply_filter('cart_needs_shipping', true, $cart) !== false;
+        $methods = $cart['needs_shipping'] ? self::methods(osc_apply_filter('cart_shipping_methods', array(), $cart), $currency) : array();
         $asked   = (string) ($ctx['shipping_method'] ?? '');
         $chosen  = null;
         foreach ($methods as $method) {
@@ -140,7 +142,7 @@ final class CartPricer
             'meta'     => array('method' => $chosen['id']),
         ));
         $extra                   = array();
-        $extra['shipping']       = self::extra(osc_apply_filter('cart_shipping_lines', $default, $cart), 'shipping', $currency);
+        $extra['shipping']       = $cart['needs_shipping'] ? self::extra(osc_apply_filter('cart_shipping_lines', $default, $cart), 'shipping', $currency) : array();
         $cart['shipping_lines']  = $extra['shipping'];
         $extra['tax']            = self::extra(osc_apply_filter('cart_tax_lines', array(), $cart), 'tax', $currency);
         $cart['tax_lines']       = $extra['tax'];
@@ -150,7 +152,7 @@ final class CartPricer
         $extra['fee'] = self::fees($cart, $subtotal, $extra);
         $totals       = self::sum($subtotal, $extra);
 
-        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, self::freeOver($subtotal), $problems, $cart);
+        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $cart['needs_shipping'] ? self::freeOver($subtotal) : null, $problems, $cart);
     }
 
     /**

@@ -82,6 +82,7 @@ final class CashOnDeliveryGateway implements PaymentGateway
         if (
             !is_array($totals) || !is_array($cart) || $fee <= 0 || !osc_billing_cod_enabled()
             || ($cart['gateway'] ?? null) !== self::ID || ($cart['currency'] ?? '') !== osc_billing_currency()
+            || ($cart['needs_shipping'] ?? true) === false
         ) {
             return $totals;
         }

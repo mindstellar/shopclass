@@ -72,6 +72,15 @@ final class Quote
     }
 
     /**
+     * Whether anything in the cart is sent. False when every line is a download, so the
+     * checkout asks for no address, delivery or cash on delivery.
+     */
+    public function needsShipping(): bool
+    {
+        return ($this->cart['needs_shipping'] ?? true) !== false;
+    }
+
+    /**
      * The chosen shipping method {id, label, eta, amount}, or null.
      *
      * @return array<string,mixed>|null

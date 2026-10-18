@@ -173,6 +173,7 @@ final class OrderSchema
             'Quote' => Schema::object([
                 'currency'         => ['type' => 'string'],
                 'lines'            => ['type' => 'array', 'items' => Schema::ref('QuoteLine')],
+                'needs_shipping'   => ['type' => 'boolean', 'description' => 'False when every line is a download: no address, delivery or cash on delivery.'],
                 'shipping_methods' => ['type' => 'array', 'items' => Schema::ref('QuoteMethod')],
                 'shipping'         => $maybe(Schema::object(['method' => ['type' => 'string'], 'amount' => $amount], ['method', 'amount']), 'The chosen method.'),
                 'discounts'        => ['type' => 'array', 'items' => Schema::ref('QuoteAdjustment')],
@@ -182,7 +183,7 @@ final class OrderSchema
                 'free_over'        => $maybe(Schema::object(['amount' => $amount, 'remaining' => $amount], ['amount', 'remaining']), 'Free delivery from this subtotal, and how much is left to reach it.'),
                 'gateways'         => ['type' => 'array', 'items' => Schema::ref('QuoteGateway')],
                 'problems'         => ['type' => 'array', 'items' => Schema::ref('QuoteProblem')],
-            ], ['currency', 'lines', 'shipping_methods', 'shipping', 'discounts', 'taxes', 'fees', 'totals', 'free_over', 'gateways', 'problems']),
+            ], ['currency', 'lines', 'needs_shipping', 'shipping_methods', 'shipping', 'discounts', 'taxes', 'fees', 'totals', 'free_over', 'gateways', 'problems']),
             'QuoteDocument' => Schema::object(['data' => Schema::ref('Quote')], ['data']),
         ];
     }

@@ -319,6 +319,26 @@ pin('the checkout tells the buyer what to pay', [CheckoutIntent::KIND_HTML, true
     str_contains($placed['next']->getPayload(), 'Pay 7.00 USD when it arrives.'),
     str_contains($placed['next']->getPayload(), 'Order #' . $placed['order']->getId()),
 ]);
+
+harness_section('a cart of downloads');
+Preference::getInstance()->set('billing_shipping_flat', (string) $m(3));
+scratchdb_forget_cache();
+osc_reset_preferences();
+$download = static fn ($needs, $cart) => false;
+osc_add_filter('cart_needs_shipping', $download);
+$q = $pricer->quote([['variant' => $u, 'qty' => 1]], ['gateway' => 'cod']);
+pin('needs no shipping: no methods, no delivery charge, no meter, no cash fee', [false, [], [], null, $m(5)], [$q->needsShipping(), $q->shippingMethods(), $q->extraLines('shipping'), $q->freeOver(), $q->total()]);
+pin('cash on delivery is not offered', [false, true], [isset(GoodsCheckout::gateways($q)['cod']), isset(GoodsCheckout::gateways($q)['offline'])]);
+pin('placing with cash on delivery is refused', ['/gateway unavailable'], $refused(static fn () => $checkout->place($tom, [['variant' => $u, 'qty' => 1]], [], '', 'cod')));
+$dl = $checkout->place($tom, [['variant' => $u, 'qty' => 1]], [], 'standard', 'offline')['order'];
+pin('placed with no address and no delivery', [$m(5), null, null, ['item']], [$dl->getAmount(), $dl->meta('_address'), $dl->fulfilment()['method'], array_column(OrderLineStore::ofOrder($dl->getId()), 'kind')]);
+OrderStore::cancel($dl->getId());
+osc_remove_filter('cart_needs_shipping', $download);
+$q = $pricer->quote([['variant' => $u, 'qty' => 1]], ['gateway' => 'cod']);
+pin('a parcel still needs the address and pays delivery', [true, $m(3), ['/address/name required']], [$q->needsShipping(), $q->totals()['shipping'], array_slice($refused(static fn () => $checkout->place($tom, [['variant' => $u, 'qty' => 1]], [], 'standard', 'offline')), 0, 1)]);
+Preference::getInstance()->set('billing_shipping_flat', '0');
+scratchdb_forget_cache();
+osc_reset_preferences();
 Preference::getInstance()->set('billing_order_prefix', 'KC-<b>');
 scratchdb_forget_cache();
 osc_reset_preferences();

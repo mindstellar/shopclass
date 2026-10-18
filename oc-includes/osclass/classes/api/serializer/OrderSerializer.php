@@ -105,6 +105,7 @@ final class OrderSerializer
         return array(
             'currency'         => $currency,
             'lines'            => $lines,
+            'needs_shipping'   => $quote->needsShipping(),
             'shipping_methods' => array_map(static fn (array $m): array => array(
                 'id'     => (string) $m['id'],
                 'label'  => (string) $m['label'],

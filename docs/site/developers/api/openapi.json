@@ -50303,6 +50303,10 @@
                             "$ref": "#/components/schemas/QuoteLine"
                         }
                     },
+                    "needs_shipping": {
+                        "type": "boolean",
+                        "description": "False when every line is a download: no address, delivery or cash on delivery."
+                    },
                     "shipping_methods": {
                         "type": "array",
                         "items": {
@@ -50384,6 +50388,7 @@
                 "required": [
                     "currency",
                     "lines",
+                    "needs_shipping",
                     "shipping_methods",
                     "shipping",
                     "discounts",

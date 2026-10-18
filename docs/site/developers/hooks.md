@@ -242,7 +242,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 597 names. Generated from the source; do not edit by hand.
+Core fires 598 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -556,7 +556,7 @@ Core fires 597 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (234)
+### Other (235)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -646,6 +646,7 @@ Core fires 597 names. Generated from the source; do not edit by hand.
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `cart_checkout_before` | action | `$cart` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
 | `cart_discount_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
+| `cart_needs_shipping` | filter | `true, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `cart_shipping_lines` | filter | `$default, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `cart_shipping_methods` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `cart_tax_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
