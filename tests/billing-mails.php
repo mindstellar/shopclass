@@ -23,6 +23,7 @@ require_once __DIR__ . '/lib/api-admin-kit.php';
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
+use mindstellar\billing\event\OrderPlaced;
 use mindstellar\billing\GoodsCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
@@ -30,6 +31,7 @@ use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
+use mindstellar\boot\CoreServices;
 use PHPMailer\PHPMailer\PHPMailer;
 
 $admin = api_admin_boot('osc_billing_mails');
@@ -181,18 +183,18 @@ check('the page prints them', (static function () use ($row): bool {
 
 harness_section('placed mail');
 $held = $make('offline');
-osc_run_hook('billing_order_placed', $held->getId(), $tom);
+CoreServices::dispatcher()->dispatch(new OrderPlaced($held->getId(), $tom));
 $sent = $mails();
 pin('a bank-transfer order tells the buyer and the owner', ['tom@example.test', 'owner@shop.test'], array_column($sent, 'to'));
 check('the placed mail lists the lines', str_contains($sent[0]['body'], 'TEE-M') && str_contains($sent[0]['body'], '1 Main St'));
-osc_run_hook('billing_order_placed', $held->getId(), $tom);
+CoreServices::dispatcher()->dispatch(new OrderPlaced($held->getId(), $tom));
 pin('firing it again sends nothing', [], $mails());
 Billing::markPaid(OrderStore::find($held->getId()), null);
 $sent = $mails();
 pin('paying it later sends the confirmation, not a second owner mail', ['tom@example.test'], array_column($sent, 'to'));
 
 $cod = $make('cod');
-osc_run_hook('billing_order_placed', $cod->getId(), $tom);
+CoreServices::dispatcher()->dispatch(new OrderPlaced($cod->getId(), $tom));
 pin('cash on delivery is held too', 2, count($mails()));
 
 $checkout = new GoodsCheckout();

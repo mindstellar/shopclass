@@ -674,16 +674,16 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `billing_feature_duration` | filter | `$days, $this->id, $userId` | `oc-includes/osclass/classes/billing/Feature.php` |
 | `billing_feature_price` | filter | `$price, $this->id, $userId` | `oc-includes/osclass/classes/billing/Feature.php` |
 | `billing_listing_limit_message` | filter | `osc_billing_slot_enabled() ? _m('You are at your listing limit. Buy an extra listing slot on your credits page, or free up a listing -- delete one or let one expire -- to post again.') : _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'), $userId ?? osc_logged_user_id(), $item` | `oc-includes/osclass/helpers/hBilling.php` |
-| `billing_order_cancelled` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
-| `billing_order_delivered` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
-| `billing_order_failed` | action | `$order->getId(), $order->getUserId()` | `oc-includes/osclass/classes/billing/Billing.php` |
-| `billing_order_paid` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
-| `billing_order_placed` | action | `$order->getId(), $userId` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
+| `billing_order_cancelled` | event | `OrderCancelled` | `oc-includes/osclass/classes/billing/event/OrderCancelled.php` |
+| `billing_order_delivered` | event | `OrderDelivered` | `oc-includes/osclass/classes/billing/event/OrderDelivered.php` |
+| `billing_order_failed` | event | `OrderFailed` | `oc-includes/osclass/classes/billing/event/OrderFailed.php` |
+| `billing_order_paid` | event | `OrderPaid` | `oc-includes/osclass/classes/billing/event/OrderPaid.php` |
+| `billing_order_placed` | event | `OrderPlaced` | `oc-includes/osclass/classes/billing/event/OrderPlaced.php` |
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
-| `billing_order_return_url` | filter | `osc_billing_orders_url(), $orderId` | `oc-includes/osclass/helpers/hBilling.php` |
-| `billing_order_shipped` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
-| `billing_receipt_details` | filter | `$details, $order` | `oc-includes/osclass/classes/billing/Receipts.php` |
-| `billing_tracking_url` | filter | `$url, $carrier, $tracking` | `oc-includes/osclass/classes/billing/OrderStore.php` |
+| `billing_order_return_url` | event | `OrderReturnUrlResolving` | `oc-includes/osclass/classes/billing/event/OrderReturnUrlResolving.php` |
+| `billing_order_shipped` | event | `OrderShipped` | `oc-includes/osclass/classes/billing/event/OrderShipped.php` |
+| `billing_receipt_details` | event | `ReceiptComposing` | `oc-includes/osclass/classes/billing/event/ReceiptComposing.php` |
+| `billing_tracking_url` | event | `TrackingUrlResolving` | `oc-includes/osclass/classes/billing/event/TrackingUrlResolving.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `change_email_confirm` | action | `Params::getParam('userId'), $change['old'], $change['new']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |

@@ -13,6 +13,11 @@ namespace mindstellar\billing;
 
 use InvalidArgumentException;
 use mindstellar\base\Model;
+use mindstellar\billing\event\OrderCancelled;
+use mindstellar\billing\event\OrderDelivered;
+use mindstellar\billing\event\OrderShipped;
+use mindstellar\billing\event\TrackingUrlResolving;
+use mindstellar\boot\CoreServices;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
@@ -392,9 +397,8 @@ final class OrderStore extends Model
 
     /**
      * A paid goods order was sent, or a cash on delivery one before it is paid. With no URL
-     * given, the `billing_tracking_url` filter ($url, $carrier, $tracking) may supply one, kept
-     * only when it is https. Fires `billing_order_shipped` ($orderId, $userId) once the write
-     * commits.
+     * given, a `TrackingUrlResolving` listener may supply one, kept only when it
+     * is https. Fires `OrderShipped` once the write commits.
      *
      * @param int    $id
      * @param string $carrier  Up to 100 characters
@@ -413,8 +417,9 @@ final class OrderStore extends Model
         $tracking = mb_substr(trim($tracking), 0, 100, 'UTF-8');
         $url      = trim($url);
         if ($url === '') {
-            $found = osc_apply_filter('billing_tracking_url', $url, $carrier, $tracking);
-            $url   = is_string($found) ? Receipts::httpsUrl($found) : '';
+            $found = new TrackingUrlResolving($carrier, $tracking);
+            CoreServices::dispatcher()->dispatch($found);
+            $url = $found->url();
         }
         $at     = date('Y-m-d H:i:s');
         $userId = self::move($id, $order->getStatus(), Order::STATUS_SHIPPED, static function (array $meta) use ($carrier, $tracking, $url, $at): array {
@@ -431,15 +436,14 @@ final class OrderStore extends Model
         if ($userId === null) {
             return false;
         }
-        Db::afterCommit(static fn () => osc_run_hook('billing_order_shipped', $id, $userId));
+        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderShipped($id, $userId)));
 
         return true;
     }
 
     /**
      * A shipped order arrived. A cash on delivery order not paid yet is paid now, as the
-     * courier collected. Fires `billing_order_delivered` ($orderId, $userId) once the write
-     * commits.
+     * courier collected. Fires `OrderDelivered` once the write commits.
      *
      * @param int       $id
      * @param bool|null $collected Set to whether this delivery also marked the order paid
@@ -466,15 +470,14 @@ final class OrderStore extends Model
         if ($userId === null) {
             return false;
         }
-        Db::afterCommit(static fn () => osc_run_hook('billing_order_delivered', $id, $userId));
+        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderDelivered($id, $userId)));
 
         return true;
     }
 
     /**
      * Close a pending order unpaid, or a cash on delivery parcel the buyer refused, giving back
-     * any stock it holds. Fires `billing_order_cancelled` ($orderId, $userId) once the write
-     * commits.
+     * any stock it holds. Fires `OrderCancelled` once the write commits.
      *
      * @param int $id
      *
@@ -495,7 +498,7 @@ final class OrderStore extends Model
         if ($userId === null) {
             return false;
         }
-        Db::afterCommit(static fn () => osc_run_hook('billing_order_cancelled', $id, $userId));
+        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderCancelled($id, $userId)));
 
         return true;
     }
