@@ -90,7 +90,7 @@ $tee   = seed_item($admin, $cat, $sue, 'Tee', 699.0);
 $mug   = seed_item($admin, $cat, $sue, 'Mug', 9.0);
 $photo = seed_photo($admin, $tee);
 $row   = static fn (string $size, ?int $stock, ?int $price): array => ['options' => ['Size' => $size], 'fields' => ['i_stock' => $stock, 'i_price' => $price, 's_sku' => 'TEE-' . $size]];
-[$small, $medium] = VariantStore::saveSet($tee, [$row('S', 0, $m(699)), $row('M', 3, $m(699))]);
+[$small, $medium, $large] = VariantStore::saveSet($tee, [$row('S', 0, $m(699)), $row('M', 3, $m(699)), $row('L', null, $m(799))]);
 $mugV = VariantStore::saveDefault($mug, ['i_stock' => null]);
 
 $scopes = new Scopes();
@@ -129,6 +129,8 @@ pin('the line names its listing, options and photo', [$tee, 'Tee', 'http://local
 pin('standard delivery is on offer and chosen', [[['id' => 'standard', 'label' => 'Standard delivery']], ['method' => 'standard', 'amount' => $q['totals']['shipping']]], [array_map(static fn ($x) => ['id' => $x['id'], 'label' => $x['label']], $q['shipping_methods']), $q['shipping']]);
 pin('the free-delivery meter', ['5000.00', '3602.00'], [$q['free_over']['amount']['amount'], $q['free_over']['remaining']['amount']]);
 pin('the payment methods on offer', [['id' => 'fake', 'name' => 'Fake pay', 'fee' => null]], $q['gateways']);
+$big = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $large . ':1'])->body()['data'];
+pin('a variant\'s own price beats the listing price', ['799.00', '799.00', '848.00'], [$big['lines'][0]['unit']['amount'], $big['lines'][0]['amount']['amount'], $big['totals']['total']['amount']]);
 check('a quote is not cached', str_contains((string) $r->header('Cache-Control'), 'no-store'));
 
 $fee = static function ($totals, $cart) use ($m) {
@@ -238,6 +240,12 @@ OrderStore::ship($paidId, 'DHL', 'JD0001', 'http://insecure.example.test/t');
 $show = $call('GET', 'account/orders/' . $paidId, null, $tomKey)->body()['data'];
 pin('shipped: carrier and tracking, an http tracking link is withheld', ['shipped', 'DHL', 'JD0001', null, true], [$show['status'], $show['shipping']['carrier'], $show['shipping']['tracking'], $show['shipping']['tracking_url'], $show['shipping']['shipped_at'] !== null]);
 pin('and it still matches the schema', [], api_admin_schema_errors('OrderDocument', $call('GET', 'account/orders/' . $paidId, null, $tomKey)));
+
+harness_section('a variant price');
+$rL = $call('POST', 'account/orders', $body([['variant' => $large, 'qty' => 1, 'unit' => '1.00']]), $tomKey);
+$oL = $rL->body()['data'];
+pin('an order for a pricier variant is charged its own price', [201, '848.00', '799.00', $m(848)], [$rL->status(), $oL['total']['amount'], $oL['lines'][0]['unit']['amount'], OrderStore::find($oL['id'])->getAmount()]);
+OrderStore::cancel($oL['id']);
 
 harness_section('listings that are gone, and credit orders');
 $admin->query("UPDATE {$p}t_item SET b_active = 0 WHERE pk_i_id = $mug");

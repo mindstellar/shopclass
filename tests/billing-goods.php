@@ -118,6 +118,8 @@ pin('unit and amount come from the variant row', [$m(699), $m(1398)], [$q->lines
 pin('the subtotal too', $m(1398), $q->totals()['subtotal']);
 pin('in the listing currency', 'USD', $q->currency());
 pin('the title, options, sku and listing photo', ['Tee', ['Size' => 'M'], 'TEE-M', $photo], [$q->lines()[0]['title'], $q->lines()[0]['options'], $q->lines()[0]['sku'], (int) $q->lines()[0]['listing']['photo']['pk_i_id']]);
+$q = $quote([['variant' => $l, 'qty' => 2]]);
+pin('a variant\'s own price beats the listing price', [$m(799), $m(1598)], [$q->lines()[0]['unit'], $q->lines()[0]['amount']]);
 $q = $quote([['variant' => $mugV, 'qty' => 1]]);
 pin('a variant with no price sells at the listing price', $m(9), $q->lines()[0]['unit']);
 pin('untracked stock is available and shows no count', [true, null], [$q->lines()[0]['available'], $q->lines()[0]['stock_left']]);
@@ -274,6 +276,10 @@ pin('itemLines() leaves out shipping', 2, count(OrderLineStore::itemLines($order
 pin('osc_order_lines() reads them', 3, count(osc_order_lines($order->getId())));
 pin('the hooks fired once each', [['before', 2], ['placed', $order->getId(), $tom]], $fired);
 pin('the fulfilment reads the address', ['standard', 'Austin', null], [$order->fulfilment()['method'], $order->fulfilment()['address']['city'], $order->fulfilment()['shipped_at']]);
+$placedL = $checkout->place($tom, [['variant' => $l, 'qty' => 1, 'price' => 1, 'unit' => 1]], $address, 'standard', 'fake');
+$linesL  = OrderLineStore::itemLines($placedL['order']->getId());
+pin('an order for a pricier variant is charged its own price', [$m(799 + 49), $m(799), $m(799)], [OrderStore::find($placedL['order']->getId())->getAmount(), $linesL[0]['unit'], $linesL[0]['amount']]);
+OrderStore::cancel($placedL['order']->getId());
 
 $before = [$orders(), $lineRows()];
 pin('a line short of stock refuses with its path', ['/lines/0 out_of_stock'], $refused(static fn () => $checkout->place($tom, [['variant' => $md, 'qty' => 4]], $address, 'standard', 'fake')));
