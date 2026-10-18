@@ -142,6 +142,8 @@ final class GoodsCheckout
 
         $intent = Billing::checkout($order);
         if ($intent === null) {
+            // The buyer never saw this order placed, so no cancel mail goes for it.
+            OrderStore::markMailSent($order->getId(), Receipts::MAIL_CANCELLED);
             OrderStore::cancel($order->getId());
             throw new InvalidException('/gateway', 'unavailable', _m('This payment method is not available right now. Try another.'));
         }

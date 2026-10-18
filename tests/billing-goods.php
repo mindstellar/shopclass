@@ -317,6 +317,7 @@ $gateway->throws = false;
 $failed = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_billing_order")->fetch_row()[0];
 pin('and leaves the order cancelled, not pending', Order::STATUS_CANCELLED, OrderStore::find($failed)->getStatus());
 pin('announced as cancelled, never placed', [['before', 1], ['cancelled', $failed, $tom]], $fired);
+pin('and marked so no cancel mail goes for an order the buyer never saw', true, OrderStore::find($failed)->meta('_mail_cancelled') !== null);
 
 $admin->query("RENAME TABLE {$p}t_billing_order_line TO {$p}t_billing_order_line_off");
 $before = $orders();
