@@ -419,6 +419,35 @@ pin(
 Plugins::addHook('ed_plain', static fn ($v) => $v . '!', 5);
 pin('a name no event owns keeps the old path', 'hi!', Plugins::applyFilter('ed_plain', 'hi'));
 
+harness_section('Bridge: one callback on two names');
+
+foreach (['ed_words', 'ed_ping'] as $name) {
+    foreach (Plugins::callbacks($name) as $fn) {
+        Plugins::removeHook($name, $fn);
+    }
+}
+$runs  = [];
+$typed = static function (EdWords $e) use (&$runs): void {
+    $runs[] = 'typed';
+};
+$old = static function ($v = null) use (&$runs) {
+    $runs[] = 'old';
+
+    return $v;
+};
+foreach (['ed_words', 'ed_ping'] as $name) {
+    osc_add_filter_like($name, $typed);
+    osc_add_filter_like($name, $old);
+}
+$events->dispatch(new EdWords());
+pin('a typed callback on two names of one event runs once; an old one runs per name', ['typed', 'old', 'old'], $runs);
+check('both names still list the typed callback', in_array($typed, Plugins::callbacks('ed_words'), true) && in_array($typed, Plugins::callbacks('ed_ping'), true));
+Plugins::removeHook('ed_ping', $typed);
+$runs = [];
+$events->dispatch(new EdWords());
+pin('removing it from one name removes it from both', ['old', 'old'], $runs);
+check('and neither name lists it', !in_array($typed, Plugins::callbacks('ed_words'), true) && !in_array($typed, Plugins::callbacks('ed_ping'), true));
+
 Container::use($root);
 
 /**
