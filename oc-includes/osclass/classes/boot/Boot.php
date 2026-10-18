@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace mindstellar\boot;
 
+use mindstellar\container\Container;
+
 /**
- * Parts of oc-load.php's start-up: the helper list it requires, and the session step.
+ * Parts of oc-load.php's start-up: the helper list it requires, the core services, and the session step.
  */
 final class Boot
 {
@@ -70,6 +72,14 @@ final class Boot
 
     private function __construct()
     {
+    }
+
+    /**
+     * Fill the site-wide container with core's services; runs once the helpers are loaded, before any plugin.
+     */
+    public static function services(): void
+    {
+        CoreServices::register(Container::root());
     }
 
     /**

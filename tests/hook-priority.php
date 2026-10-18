@@ -11,7 +11,8 @@
 /**
  * Pins hook priority. Any integer is a valid priority, negative included, and the
  * callbacks run lowest first. Before 6.4 a hardcoded 0-10 loop stored anything
- * outside that range and never ran it.
+ * outside that range and never ran it. The typed event dispatcher keeps the same
+ * order, also when old and typed callbacks share a name an event owns.
  *
  * DB-free.  Usage: php tests/hook-priority.php
  */
@@ -110,6 +111,57 @@ Plugins::addHook('hp_cast', hp_mark('word'), 'high');
 Plugins::addHook('hp_cast', hp_mark('five'), 5);
 Plugins::runHook('hp_cast');
 pin('a non-numeric priority lands at 0, so it runs first', array('word', 'five'), $GLOBALS['order']);
+
+harness_section('Typed events');
+
+final class HpEvent extends \mindstellar\event\Event implements \mindstellar\event\Bridged
+{
+    public static function legacyNames(): array
+    {
+        return array('hp_typed');
+    }
+
+    public function applyLegacy(string $name, callable $fn): void
+    {
+        $fn();
+    }
+}
+
+$events = new \mindstellar\event\Dispatcher(new \mindstellar\container\Container());
+$GLOBALS['order'] = array();
+$events->listen(HpEvent::class, hp_mark('at20'), 20);
+$events->listen(HpEvent::class, hp_mark('at5'));
+$events->listen(HpEvent::class, hp_mark('atminus1'), -1);
+$events->listen(HpEvent::class, hp_mark('first7'), 7);
+$events->listen(HpEvent::class, hp_mark('second7'), 7);
+$events->dispatch(new HpEvent());
+pin(
+    'the dispatcher runs lowest first, default 5, and keeps registration order at one priority',
+    array('atminus1', 'at5', 'first7', 'second7', 'at20'),
+    $GLOBALS['order']
+);
+
+$root      = \mindstellar\container\Container::root();
+$container = new \mindstellar\container\Container();
+\mindstellar\boot\CoreServices::register($container);
+\mindstellar\container\Container::use($container);
+$container->get(\mindstellar\event\HookBridge::class)->own(HpEvent::class);
+$GLOBALS['order'] = array();
+Plugins::addHook('hp_typed', hp_mark('old30'), 30);
+Plugins::addHook('hp_typed', static function (HpEvent $e) {
+    $GLOBALS['order'][] = 'typed-10';
+}, -10);
+Plugins::addHook('hp_typed', hp_mark('old5'));
+Plugins::addHook('hp_typed', static function (HpEvent $e) {
+    $GLOBALS['order'][] = 'typed5';
+}, 5);
+$container->get(\mindstellar\event\Dispatcher::class)->dispatch(new HpEvent());
+pin(
+    'old and typed callbacks on one name run in one list, by priority, then registration order',
+    array('typed-10', 'old5', 'typed5', 'old30'),
+    $GLOBALS['order']
+);
+\mindstellar\container\Container::use($root);
 
 harness_section('DataTable columns');
 

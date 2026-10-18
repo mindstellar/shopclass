@@ -228,6 +228,20 @@ if (!function_exists('harness_section')) {
     }
 }
 
+if (!function_exists('harness_reset_container')) {
+    /**
+     * Make a fresh site-wide container with core's services in it, so a section starts with no
+     * listeners or fakes left by the one before. Returns the container it replaced.
+     */
+    function harness_reset_container(): \mindstellar\container\Container
+    {
+        $fresh = new \mindstellar\container\Container();
+        \mindstellar\boot\CoreServices::register($fresh);
+
+        return \mindstellar\container\Container::use($fresh);
+    }
+}
+
 if (!function_exists('harness_method_signature')) {
     /**
      * Build a stable, comparable signature string for one public method.

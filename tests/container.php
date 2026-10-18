@@ -11,7 +11,8 @@
 /**
  * Pins the service container: factories run once and are shared, instance() puts a fake in,
  * a class with a no-argument constructor is built without registering, anything else throws
- * NotFoundException, and Container::use() swaps the site-wide one.
+ * NotFoundException, and Container::use() swaps the site-wide one. Also pins that start-up
+ * registers the dispatcher and the hook bridge before any plugin loads.
  *
  * DB-free.  Usage: php tests/container.php
  */
@@ -25,9 +26,14 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
+use mindstellar\boot\Boot;
+use mindstellar\boot\CoreServices;
 use mindstellar\container\Container;
 use mindstellar\container\ContainerInterface;
 use mindstellar\container\NotFoundException;
+use mindstellar\event\Dispatcher;
+use mindstellar\event\DispatcherInterface;
+use mindstellar\event\HookBridge;
 
 final class CtPlain
 {
@@ -129,5 +135,29 @@ $previous = Container::use($fresh);
 check('use() returns the container it replaces', $previous === $root);
 check('use() makes the new one the root', Container::root() === $fresh);
 Container::use($root);
+
+harness_section('Start-up');
+
+$c = new Container();
+CoreServices::register($c);
+check('the dispatcher is registered', $c->get(Dispatcher::class) instanceof Dispatcher);
+check('the PSR-14 id gives the same dispatcher', $c->get(DispatcherInterface::class) === $c->get(Dispatcher::class));
+check('the hook bridge is registered', $c->get(HookBridge::class) instanceof HookBridge);
+Container::use(new Container());
+check('without start-up there is no bridge, so hooks keep the old path', HookBridge::active() === null);
+Container::use($c);
+check('after start-up the bridge is the active one', HookBridge::active() === $c->get(HookBridge::class));
+Container::use($root);
+
+$load      = (string) file_get_contents(ABS_PATH . 'oc-load.php');
+$helpersAt = strpos($load, 'foreach (Boot::HELPERS');
+$servicesAt = strpos($load, 'Boot::services();');
+$pluginsAt = strpos($load, 'Plugins::init();');
+check(
+    'oc-load.php registers the services after the helpers and before the plugins load',
+    $helpersAt !== false && $servicesAt !== false && $pluginsAt !== false && $helpersAt < $servicesAt && $servicesAt < $pluginsAt
+);
+Boot::services();
+check('Boot::services() fills the root container', Container::root()->get(HookBridge::class) instanceof HookBridge);
 
 exit(harness_result());
