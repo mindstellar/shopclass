@@ -88,6 +88,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Variants answer `low_stock`, the units left when 1 to 5 are, so a shop can say "Only 3 left".
 - `GET /listings` takes `in_stock=true` and `on_sale=true` to list only what a shop can sell now or has marked down.
 - `GET /categories?include=cover` adds each category's cover: the first photo of the newest live listing in it or below it.
+- `GET /categories?roots=true` lists only the top-level categories.
 
 ### Breaking
 
@@ -170,6 +171,10 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The `.htaccess` core writes now compresses responses and lets browsers keep static files; an older core-written file is updated on upgrade.
 - With Redis, Valkey or memcached, custom fields find a category's parents from a small cached list instead of reading every category in every language.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
+- API calls a theme makes on one page share their work: the route table builds only the routes a call tries, the category tree is read once, and each listing's row, photos, stats and location are read once.
+- API listing searches cache the finished rows, without description text when the response asks for none, so the Aisle home page runs 10 statements instead of 21 and a product page 19 instead of 36.
+- `GET /menus` caches the linked pages and top category links, and `Currency::listAll()` reads the cached table.
+- One listing's rating summary and stars come from one query.
 
 ### Changed
 - `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
@@ -222,6 +227,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
+- The API main menu no longer links a top category to a subcategory that has the same slug.
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
 - The Credits menu link also shows when a free account upgrade is on offer, not only when credits can be bought or are held.
