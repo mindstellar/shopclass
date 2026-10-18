@@ -38,6 +38,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The widgets screen has an eye button that hides and shows a widget without deleting it.
 - `osc_kv_list()` pages through a key-value group, and `osc_kv_increment()` adds to a counter in one statement.
 - `osc_billing_user_order_count()` counts a user's goods orders by status.
+- `osc_billing_order_return_url()` (filter `billing_order_return_url`) is where a gateway sends the buyer after paying; `OrderStore::pendingBefore()` lists one gateway's old pending orders.
 - `billing_order_failed` fires when a card payment fails, and the daily job closes card orders left unpaid past the hold days.
 - `billing_tracking_url` and `billing_receipt_details` let a plugin set an order's tracking link and add to its receipt, and the order mails take their text from the `email_order_<kind>_title` and `_description` filters.
 - `osc_admin_count($n)` draws a count as a small badge beside a tab, filter or button label, and `osc_admin_link_group()` takes a `count` per link and then draws a tab strip that scrolls on a phone.
