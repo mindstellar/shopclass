@@ -2032,7 +2032,15 @@ final class CoreEmails
         if ($mail === null) {
             return;
         }
-        self::sendStatusMail('delivered', $order, $mail, __('Your order {ORDER_NUMBER} was delivered'), __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'));
+        $title = osc_apply_filter('email_order_delivered_title_after', osc_mailBeauty(osc_apply_filter(
+            'email_title',
+            osc_apply_filter('email_order_delivered_title', __('Your order {ORDER_NUMBER} was delivered'), $order)
+        ), $mail['words']), $order);
+        $body  = osc_apply_filter('email_order_delivered_description_after', osc_mailBeauty(osc_apply_filter(
+            'email_description',
+            osc_apply_filter('email_order_delivered_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'), $order)
+        ), $mail['htmlWords']), $order);
+        self::sendOrderMail($mail, $title, $body);
     }
 
     /**
@@ -2048,7 +2056,15 @@ final class CoreEmails
         if ($mail === null) {
             return;
         }
-        self::sendStatusMail('cancelled', $order, $mail, __('Your order {ORDER_NUMBER} was cancelled'), __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'));
+        $title = osc_apply_filter('email_order_cancelled_title_after', osc_mailBeauty(osc_apply_filter(
+            'email_title',
+            osc_apply_filter('email_order_cancelled_title', __('Your order {ORDER_NUMBER} was cancelled'), $order)
+        ), $mail['words']), $order);
+        $body  = osc_apply_filter('email_order_cancelled_description_after', osc_mailBeauty(osc_apply_filter(
+            'email_description',
+            osc_apply_filter('email_order_cancelled_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order)
+        ), $mail['htmlWords']), $order);
+        self::sendOrderMail($mail, $title, $body);
     }
 
     /**
@@ -2066,29 +2082,13 @@ final class CoreEmails
         if ($mail === null) {
             return;
         }
-        self::sendStatusMail('refunded', $order, $mail, __('Your order {ORDER_NUMBER} was refunded'), __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'));
-    }
-
-    /**
-     * Run a status mail's title and body through the usual filters and send it.
-     *
-     * @param string              $kind  delivered, cancelled or refunded; names the email_order_<kind>_* filters
-     * @param Order               $order
-     * @param array<string,mixed> $mail  From orderMail()
-     * @param string              $title
-     * @param string              $body
-     *
-     * @return void
-     */
-    private static function sendStatusMail(string $kind, Order $order, array $mail, string $title, string $body): void
-    {
-        $title = osc_apply_filter('email_order_' . $kind . '_title_after', osc_mailBeauty(osc_apply_filter(
+        $title = osc_apply_filter('email_order_refunded_title_after', osc_mailBeauty(osc_apply_filter(
             'email_title',
-            osc_apply_filter('email_order_' . $kind . '_title', $title, $order)
+            osc_apply_filter('email_order_refunded_title', __('Your order {ORDER_NUMBER} was refunded'), $order)
         ), $mail['words']), $order);
-        $body  = osc_apply_filter('email_order_' . $kind . '_description_after', osc_mailBeauty(osc_apply_filter(
+        $body  = osc_apply_filter('email_order_refunded_description_after', osc_mailBeauty(osc_apply_filter(
             'email_description',
-            osc_apply_filter('email_order_' . $kind . '_description', $body, $order)
+            osc_apply_filter('email_order_refunded_description', __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order)
         ), $mail['htmlWords']), $order);
         self::sendOrderMail($mail, $title, $body);
     }
