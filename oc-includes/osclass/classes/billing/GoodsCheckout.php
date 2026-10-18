@@ -51,13 +51,14 @@ final class GoodsCheckout
      *
      * @param array<int,mixed>    $lines   {variant, qty} each
      * @param array<string,mixed> $address ADDRESS keys
+     * @param string              $note    what the buyer asked of the seller, kept with the order
      *
      * @return array{order:Order,next:CheckoutIntent}
      * @throws InvalidException with `/lines/n` (not_buyable, out_of_stock, qty), `/lines` (empty),
      *                          `/address/<field>`, `/shipping_method` (unknown) or `/gateway` (unavailable)
      * @throws \mindstellar\database\DbException
      */
-    public function place(int $userId, array $lines, array $address, string $shippingMethod, string $gatewayId): array
+    public function place(int $userId, array $lines, array $address, string $shippingMethod, string $gatewayId, string $note = ''): array
     {
         $user = $userId > 0 ? UserStore::find($userId) : null;
         if ($user === null) {
@@ -107,6 +108,10 @@ final class GoodsCheckout
                 'phone' => (string) ($user['s_phone_mobile'] ?? ''),
             ),
         );
+        $note = mb_substr(trim($note), 0, 500, 'UTF-8');
+        if ($note !== '') {
+            $meta['_note'] = $note;
+        }
         $order = Db::transaction(static function () use ($userId, $gatewayId, $quote, $meta): Order {
             $order = OrderStore::create($userId, $gatewayId, $quote->total(), $quote->currency(), 0, $meta);
             OrderLineStore::add($order->getId(), self::lines($quote));

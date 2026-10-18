@@ -146,13 +146,44 @@ final class CartPricer
         $extra['discount']       = self::extra(osc_apply_filter('cart_discount_lines', array(), $cart), 'discount', $currency);
         $cart['discount_lines']  = $extra['discount'];
 
+        $extra['fee'] = self::fees($cart, $subtotal, $extra);
+        $totals       = self::sum($subtotal, $extra);
+
+        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, self::freeOver($subtotal), $problems, $cart);
+    }
+
+    /**
+     * What paying through this gateway adds, in micros: the fee lines `cart_totals` returns
+     * for the quote's cart with the gateway swapped in. No queries of its own.
+     */
+    public function feeFor(Quote $quote, string $gatewayId): int
+    {
+        $cart            = $quote->cart();
+        $cart['gateway'] = $gatewayId;
+        $extra           = array(
+            'shipping' => $cart['shipping_lines'] ?? array(),
+            'tax'      => $cart['tax_lines'] ?? array(),
+            'discount' => $cart['discount_lines'] ?? array(),
+        );
+
+        return (int) array_sum(array_column(self::fees($cart, (int) ($cart['subtotal'] ?? 0), $extra), 'amount'));
+    }
+
+    /**
+     * The fee lines the `cart_totals` filter adds, given the totals the other lines make.
+     *
+     * @param array<string,mixed>                          $cart
+     * @param array<string,array<int,array<string,mixed>>> $extra shipping, tax and discount lines
+     *
+     * @return array<int,array{id:string,label:string,amount:int,currency:string,meta:array<string,mixed>}>
+     */
+    private static function fees(array $cart, int $subtotal, array $extra): array
+    {
         $totals         = self::sum($subtotal, $extra + array('fee' => array()));
         $totals['fees'] = array();
         $filtered       = osc_apply_filter('cart_totals', $totals, $cart);
-        $extra['fee']   = self::extra(is_array($filtered) && is_array($filtered['fees'] ?? null) ? $filtered['fees'] : array(), 'fee', $currency);
-        $totals         = self::sum($subtotal, $extra);
 
-        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, self::freeOver($subtotal), $problems, $cart);
+        return self::extra(is_array($filtered) && is_array($filtered['fees'] ?? null) ? $filtered['fees'] : array(), 'fee', (string) $cart['currency']);
     }
 
     /**
@@ -227,7 +258,7 @@ final class CartPricer
      * @return array<int,array<string,mixed>>
      * @throws \mindstellar\database\DbException
      */
-    private static function listings(array $ids, string $locale): array
+    public static function listings(array $ids, string $locale): array
     {
         if ($ids === array()) {
             return array();
@@ -260,7 +291,7 @@ final class CartPricer
      * @return array<int,array<int,array<string,mixed>>> photo rows by listing id, in upload order
      * @throws \mindstellar\database\DbException
      */
-    private static function photos(array $itemIds): array
+    public static function photos(array $itemIds): array
     {
         $out = array();
         foreach (PhotoStore::ofItems($itemIds) as $row) {
