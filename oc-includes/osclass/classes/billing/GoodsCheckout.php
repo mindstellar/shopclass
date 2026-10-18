@@ -123,6 +123,8 @@ final class GoodsCheckout
         );
         if ($ships) {
             $meta['_address'] = $address;
+        } elseif ($address['country'] !== '' || $address['state'] !== '') {
+            $meta['_address'] = array_filter(array_intersect_key($address, array('state' => 1, 'country' => 1)), static fn (string $v): bool => $v !== '');
         }
         $note = mb_substr(trim($note), 0, 500, 'UTF-8');
         if ($note !== '') {

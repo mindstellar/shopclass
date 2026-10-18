@@ -381,6 +381,9 @@ pin('placing with cash on delivery is refused', ['/gateway unavailable'], $refus
 $dl = $checkout->place($tom, [['variant' => $u, 'qty' => 1]], [], 'standard', 'offline')['order'];
 pin('placed with no address and no delivery', [$m(5), null, null, ['item']], [$dl->getAmount(), $dl->meta('_address'), $dl->fulfilment()['method'], array_column(OrderLineStore::ofOrder($dl->getId()), 'kind')]);
 OrderStore::cancel($dl->getId());
+$dl = $checkout->place($tom, [['variant' => $u, 'qty' => 1]], ['country' => 'DE', 'state' => 'Berlin', 'line1' => '1 Main St', 'city' => 'Berlin'], '', 'offline')['order'];
+pin('a downloads order keeps the buyer\'s country and state, and no street', ['DE', 'Berlin', ['state' => 'Berlin', 'country' => 'DE']], [$dl->meta('_address')['country'], $dl->meta('_address')['state'], $dl->meta('_address')]);
+OrderStore::cancel($dl->getId());
 osc_remove_filter('cart_needs_shipping', $download);
 $q = $pricer->quote([['variant' => $u, 'qty' => 1]], ['gateway' => 'cod']);
 pin('a parcel still needs the address and pays delivery', [true, $m(3), ['/address/name required']], [$q->needsShipping(), $q->totals()['shipping'], array_slice($refused(static fn () => $checkout->place($tom, [['variant' => $u, 'qty' => 1]], [], 'standard', 'offline')), 0, 1)]);
