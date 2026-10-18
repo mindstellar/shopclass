@@ -33,7 +33,7 @@ final class PackageManifest
      */
     public static function read(string $dir, string $header = ''): array
     {
-        $json = self::readJson($dir);
+        $json = self::json($dir);
 
         $modes = array_key_exists('modes', $json)
             ? self::cleanModes($json['modes'])
@@ -51,9 +51,11 @@ final class PackageManifest
     }
 
     /**
+     * The package's shopclass.json as an array; empty when it is missing or not an object.
+     *
      * @return array<string,mixed>
      */
-    private static function readJson(string $dir): array
+    public static function json(string $dir): array
     {
         $file = rtrim($dir, '/') . '/shopclass.json';
         if (!is_file($file)) {
