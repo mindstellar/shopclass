@@ -687,7 +687,7 @@ final class ListingService
     {
         return (bool) DeferredMail::transaction(function () use ($id, $actor): bool {
             $row = ListingStore::find($id, array('*'), true);
-            if ($row === null || !ListingHoldJobs::isHeld(Db::stringifyRow($row))) {
+            if ($row === null || !ListingStatus::isHeld(Db::stringifyRow($row))) {
                 return false;
             }
             $ownerId = (int) $row['fk_i_user_id'];
@@ -1014,7 +1014,7 @@ final class ListingService
         $old_item = ListingStore::find($aItem['idItem'], array('*'), true);
         $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
         // A listing waiting for payment keeps its hold and its deadline through an edit.
-        $unpaid = $old_item !== array() && ListingHoldJobs::isHeld($old_item);
+        $unpaid = $old_item !== array() && ListingStatus::isHeld($old_item);
 
         // Validate
         $errors = array_merge(

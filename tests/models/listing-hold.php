@@ -53,13 +53,6 @@ $due = static function () use ($admin, $p): void {
     $admin->query("UPDATE {$p}t_job_queue SET dt_next_run = DATE_SUB(NOW(), INTERVAL 1 DAY)");
 };
 
-harness_section('isHeld');
-pin('both flags off and never live is held', true, ListingHoldJobs::isHeld(['b_enabled' => 0, 'b_active' => 0, 'dt_first_pub_date' => null]));
-pin('a live row is not', false, ListingHoldJobs::isHeld(['b_enabled' => 1, 'b_active' => 1, 'dt_first_pub_date' => '2026-01-01 00:00:00']));
-pin('a blocked row that once went live is not', false, ListingHoldJobs::isHeld(['b_enabled' => 0, 'b_active' => 0, 'dt_first_pub_date' => '2026-01-01 00:00:00']));
-pin('a row with only one flag off is not', false, ListingHoldJobs::isHeld(['b_enabled' => 1, 'b_active' => 0, 'dt_first_pub_date' => null]));
-pin('a row without the column is not', false, ListingHoldJobs::isHeld(['b_enabled' => 0, 'b_active' => 0]));
-
 harness_section('Queueing');
 $clear();
 ListingHoldJobs::queue(11, 7);

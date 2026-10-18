@@ -39,19 +39,6 @@ final class ListingHoldJobs
     }
 
     /**
-     * Whether a listing row was saved and never went live.
-     *
-     * @param array<string,mixed> $row
-     */
-    public static function isHeld(array $row): bool
-    {
-        return (int) ($row['b_enabled'] ?? 1) === 0
-            && (int) ($row['b_active'] ?? 1) === 0
-            && array_key_exists('dt_first_pub_date', $row)
-            && $row['dt_first_pub_date'] === null;
-    }
-
-    /**
      * The reminder to the seller.
      *
      * @param array<string,mixed> $row
@@ -84,6 +71,6 @@ final class ListingHoldJobs
     {
         $row = ListingStore::find((int) $job->get('item', 0), array('*'));
 
-        return $row !== null && self::isHeld($row) ? $row : null;
+        return $row !== null && ListingStatus::isHeld($row) ? $row : null;
     }
 }

@@ -47,6 +47,12 @@ pin('the same row once published reads disabled', ListingStatus::DISABLED, Listi
 pin('held wins over spam', ListingStatus::UNPAID, ListingStatus::of(array('b_spam' => '1') + $held, $now));
 pin('a row with no dt_first_pub_date key is not held', ListingStatus::DISABLED, ListingStatus::of(array('b_enabled' => '0', 'b_active' => '0') + $live, $now));
 pin('an enabled row with a NULL first date is not held', ListingStatus::PENDING, ListingStatus::of(array('b_enabled' => '1') + $held, $now));
+pin('isHeld(): held', true, ListingStatus::isHeld($held));
+pin('isHeld(): an empty first date is held, as of() reads it', true, ListingStatus::isHeld(array('dt_first_pub_date' => '') + $held));
+pin('isHeld(): a row that once went live is not', false, ListingStatus::isHeld(array('dt_first_pub_date' => '2026-01-01 00:00:00') + $held));
+pin('isHeld(): one flag off is not', false, ListingStatus::isHeld(array('b_enabled' => '1') + $held));
+pin('isHeld(): a row without the column is not', false, ListingStatus::isHeld(array('b_enabled' => 0, 'b_active' => 0)));
+pin('the jobs class keeps no copy of the rule', false, method_exists(\mindstellar\listing\ListingHoldJobs::class, 'isHeld'));
 check('ALL lists unpaid', in_array('unpaid', ListingStatus::ALL, true));
 $where = static fn (string $status): string => ListingStatus::condition(new QueryBuilder('t_item'), array($status), $now)->toSql();
 check('unpaid SQL', strpos($where(ListingStatus::UNPAID), 'b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL') !== false);

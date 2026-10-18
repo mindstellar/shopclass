@@ -123,11 +123,12 @@ final class ListingStatus
     }
 
     /**
-     * Hidden and never published. A row without a dt_first_pub_date key is not held.
+     * Saved and waiting for payment: hidden and never published. A row without a
+     * dt_first_pub_date key is not held.
      *
      * @param array<string,mixed> $item a t_item row
      */
-    private static function isHeld(array $item): bool
+    public static function isHeld(array $item): bool
     {
         return array_key_exists('dt_first_pub_date', $item)
             && ($item['dt_first_pub_date'] === null || $item['dt_first_pub_date'] === '')

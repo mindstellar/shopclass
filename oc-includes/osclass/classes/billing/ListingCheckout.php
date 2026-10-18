@@ -19,9 +19,9 @@ use mindstellar\billing\event\OrderReturnUrlResolving;
 use mindstellar\database\Db;
 use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
-use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStatus;
 use mindstellar\listing\ListingStore;
 use RuntimeException;
 use Throwable;
@@ -151,7 +151,7 @@ final class ListingCheckout
             return;
         }
         $row = ListingStore::find($itemId, array('fk_i_user_id', 'b_enabled', 'b_active', 'dt_first_pub_date'));
-        if ($row === null || !ListingHoldJobs::isHeld(Db::stringifyRow($row))) {
+        if ($row === null || !ListingStatus::isHeld(Db::stringifyRow($row))) {
             return;
         }
         if ((int) $row['fk_i_user_id'] !== $order->getUserId()) {
@@ -202,7 +202,7 @@ final class ListingCheckout
      */
     private static function price(array $row, int $userId): array
     {
-        $held    = ListingHoldJobs::isHeld($row);
+        $held    = ListingStatus::isHeld($row);
         $ceiling = EntitlementStore::listingCeiling($userId);
         $slots   = 0;
         if ($held && $ceiling !== -1) {
