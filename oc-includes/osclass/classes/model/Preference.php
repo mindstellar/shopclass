@@ -210,6 +210,19 @@ class Preference extends DAO
     }
 
     /**
+     * Whether any preference holds exactly this value. The table is small, so no index is used.
+     *
+     * @param string $value
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
+     */
+    public function hasValue(string $value): bool
+    {
+        return Db::table($this->getTableName())->where('s_value', $value)->first() !== null;
+    }
+
+    /**
      * Find array preference for a given section
      *
      * @param string $name

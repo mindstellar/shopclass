@@ -8,7 +8,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Db;
 use mindstellar\model\Resource;
 use mindstellar\storage\ResourceLocator;
 use mindstellar\storage\ResourceUploader;
@@ -183,13 +182,9 @@ function osc_setting_resource_in_use(array $row): bool
         'ctype_digit'
     ));
     foreach ($ids as $id) {
-        $found = Db::count(DB_TABLE_PREFIX . 't_preference', 's_value = ?', array($id))
-            + Db::count(
-                DB_TABLE_PREFIX . 't_key_value',
-                's_group = ? AND (s_value LIKE ? OR s_value LIKE ? OR s_value LIKE ?)',
-                array('customiser', '%:' . $id . ',%', '%:' . $id . '}%', '%"' . $id . '"%')
-            );
-        if ($found > 0) {
+        $found = \Preference::getInstance()->hasValue($id)
+            || (new \mindstellar\model\KeyValue())->groupMentions('customiser', array(':' . $id . ',', ':' . $id . '}', '"' . $id . '"'));
+        if ($found) {
             return true;
         }
     }

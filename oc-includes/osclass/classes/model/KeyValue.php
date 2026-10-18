@@ -243,6 +243,32 @@ final class KeyValue extends Model
     }
 
     /**
+     * Whether any live value of a group contains one of the given texts. Meant for small groups.
+     *
+     * @param string[] $needles
+     *
+     * @throws \InvalidArgumentException on a malformed group
+     * @throws \mindstellar\database\DbException
+     */
+    public function groupMentions(string $group, array $needles, ?int $now = null): bool
+    {
+        self::check($group, 'any');
+        $now = self::datetime($now ?? time());
+
+        return $this->table()->where('s_group', $group)
+            ->whereGroup(static fn ($q) => $q->whereNull('dt_expires')->orWhere('dt_expires', '>', $now))
+            ->whereGroup(static function ($q) use ($needles) {
+                foreach (array_values($needles) as $i => $needle) {
+                    $like = ['%' . addcslashes($needle, '%_\\') . '%'];
+                    $q    = $i === 0 ? $q->whereRaw('s_value LIKE ?', $like) : $q->orWhereRaw('s_value LIKE ?', $like);
+                }
+
+                return $q;
+            })
+            ->first() !== null;
+    }
+
+    /**
      * Take a key for this caller: write it when absent, or take over a row that has
      * expired. Of several callers racing for one key, exactly one gets true.
      *
