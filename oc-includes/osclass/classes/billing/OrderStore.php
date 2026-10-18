@@ -235,6 +235,27 @@ final class OrderStore extends Model
     }
 
     /**
+     * Record that one of an order's notice e-mails (placed, shipped, admin) was sent.
+     *
+     * @param int    $orderId
+     * @param string $kind    Letters only, e.g. "shipped"
+     *
+     * @return bool whether the mark is stored
+     */
+    public static function markMailSent(int $orderId, string $kind): bool
+    {
+        if (!preg_match('/^[a-z]{1,20}$/', $kind)) {
+            return false;
+        }
+
+        return self::changeMeta($orderId, static function (array $meta) use ($kind): array {
+            $meta['_mail_' . $kind] = date('Y-m-d H:i:s');
+
+            return $meta;
+        });
+    }
+
+    /**
      * Store one metadata value on an order, for a gateway plugin. Other keys are kept.
      *
      * Keys starting with an underscore belong to core and are refused.
