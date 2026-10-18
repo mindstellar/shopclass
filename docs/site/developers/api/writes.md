@@ -377,9 +377,9 @@ The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redire
 | Rule | Detail |
 |---|---|
 | Who | A signed-in user. A guest page token can price a cart but not place one. |
-| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`), `/address/<field>` (`required`, `maxLength`). Nothing is written. |
+| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`, `too_many_open`), `/address/<field>` (`required`, `maxLength`). Nothing is written. |
 | Retry | Send an `Idempotency-Key`: a repeat gets the first order back and does not ask the gateway again. |
-| Limit | 20 orders an hour per user: `429 rate_limited`. |
+| Limit | 20 orders an hour per user: `429 rate_limited`. A refused request (`422`) is not counted. |
 | `status` | `pending`, `paid`, `shipped`, `delivered`, `failed`, `refunded`, `cancelled`. |
 | Lines | `kind` is `item`, `shipping`, `tax`, `discount` or `fee`; a discount's amount is negative. `listing` links the live listing and is `null` once it is gone. |
 | Cancel | Only while `can_cancel` is true (pending): `200` with the order, else `409 conflict`. |

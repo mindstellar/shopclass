@@ -339,6 +339,8 @@ $limiter = new \mindstellar\api\ratelimit\RateLimiter(static fn (): int => 1, ne
     $count[$name . $key] = ($count[$name . $key] ?? 0) + 1;
 
     return $name === 'api_checkout' ? $count[$name . $key] : 1;
+}, null, static function (string $name, string $key) use (&$count): int {
+    return $count[$name . $key] ?? 0;
 });
 $services = new \mindstellar\api\ApiServices(new \mindstellar\apikey\ApiSettings(true, userKeys: true), $scopes, new \mindstellar\model\ApiCredential(), new \mindstellar\api\auth\UserRows(), new \mindstellar\utility\SystemClock(), $limiter, null, new class () implements \mindstellar\api\serializer\Links {
     public function listing(array $item): string
@@ -379,10 +381,22 @@ $send   = static function () use ($kernel, $body, $mugV, $annKey): int {
 
     return $kernel->handle(new \mindstellar\api\Request('POST', 'v1/account/orders', [], ['Authorization' => 'Bearer ' . $annKey, 'Content-Type' => 'application/json'], '192.0.2.70', (string) json_encode($body([['variant' => $mugV, 'qty' => 1]]))))->status();
 };
+$sendEmpty = static function () use ($kernel, $body, $annKey): int {
+    $_GET = [];
+    Params::init();
+    \mindstellar\api\identity\WebIdentity::forget();
+
+    return $kernel->handle(new \mindstellar\api\Request('POST', 'v1/account/orders', [], ['Authorization' => 'Bearer ' . $annKey, 'Content-Type' => 'application/json'], '192.0.2.70', (string) json_encode($body([]))))->status();
+};
+$refusedCodes = [];
+for ($i = 0; $i < 25; $i++) {
+    $refusedCodes[] = $sendEmpty();
+}
+pin('25 refused placements are all 422 and spend none of the hour', [25, 0], [count(array_keys($refusedCodes, 422, true)), $count['api_checkout' . $ann] ?? 0]);
 $codes = [];
 for ($i = 0; $i < 21; $i++) {
     $codes[] = $send();
 }
-pin('the 21st placement in an hour is a 429', [20, 429], [count(array_keys($codes, 201, true)), $codes[20]]);
+pin('20 valid placements after them still go through, the 21st is a 429', [20, 429], [count(array_keys($codes, 201, true)), $codes[20]]);
 
 exit(harness_result());

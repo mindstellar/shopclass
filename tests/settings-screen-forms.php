@@ -1203,6 +1203,7 @@ $shop = array(
     'billing_cod_enabled'   => '1',
     'billing_cod_fee'       => '-5',
     'billing_hold_days'     => '0',
+    'billing_open_hold_orders' => '-2',
     'billing_order_prefix'  => 'KC 1!',
 );
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', $shop);
@@ -1212,6 +1213,7 @@ check('and returns to its tab', str_ends_with((string) end($run['redirects']), '
 pin('amounts are stored as micros', array(array('49500000', 'STRING'), array('999000000', 'STRING')), array(pref($admin, 'billing_shipping_flat'), pref($admin, 'billing_free_over')));
 pin('a negative fee is floored', array('0', 'STRING'), pref($admin, 'billing_cod_fee'));
 pin('the hold is at least a day', array('1', 'INTEGER'), pref($admin, 'billing_hold_days'));
+pin('the open order limit is never negative', array('0', 'INTEGER'), pref($admin, 'billing_open_hold_orders'));
 pin('cash on delivery is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_cod_enabled'));
 pin('the prefix keeps letters, digits and dashes', array('KC1', 'STRING'), pref($admin, 'billing_order_prefix'));
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shipping_flat' => 'lots') + $shop);

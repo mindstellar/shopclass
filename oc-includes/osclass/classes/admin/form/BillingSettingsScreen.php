@@ -376,6 +376,13 @@ final class BillingSettingsScreen
             )
                 ->clampMin(1)
                 ->default(7)
+            ->number(
+                'billing_open_hold_orders',
+                __('Open unpaid orders per buyer'),
+                __('Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit.')
+            )
+                ->clampMin(0)
+                ->default(3)
             ->text('billing_order_prefix', __('Order number prefix'), __('Optional. Letters, digits and dashes, e.g. KC- gives #KC-1042.'))
                 ->width('num')
                 ->attrs(array('maxlength' => '10'))

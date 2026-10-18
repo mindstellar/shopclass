@@ -544,6 +544,7 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_cod_enabled` | `0` | Whether cash on delivery is offered at checkout |
 | `billing_cod_fee` | `0` | Fee added to a cash on delivery order, micros |
 | `billing_hold_days` | `7` | Days an unpaid bank transfer or cash on delivery order holds its stock |
+| `billing_open_hold_orders` | `3` | Most pending `offline` + `cod` orders one buyer may hold; 0 = no limit. Past it `place()` refuses `/gateway` `too_many_open` |
 | `billing_order_prefix` | *(empty)* | Printed before the id in an order number (`osc_billing_order_number()`) |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
@@ -651,6 +652,11 @@ than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/funct
 The daily tick queues `billing.release_stock` while billing is on. It cancels pending goods
 orders of `Billing::HOLDS_STOCK` (`offline`, `cod`) placed more than `billing_hold_days`
 ago, 100 per run, and gives their stock back; each fires `billing_order_cancelled`.
+
+`GoodsCheckout::place()` counts a buyer's pending `HOLDS_STOCK` orders (one count on
+`idx_user_status`, both gateways together) and refuses a new one at `billing_open_hold_orders`.
+`POST account/orders` checks the `api_checkout` bucket before `place()` and counts it after, so a
+refused placement does not spend the hour.
 
 ### Goods stock
 

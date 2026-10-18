@@ -87,7 +87,7 @@ final class Problem
         'type', 'enum', 'minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'format',
         'minItems', 'maxItems', 'minProperties', 'required', 'additionalProperties',
         'invalid', 'unknown', 'taken', 'mismatch', 'limit', 'rejected',
-        'out_of_stock', 'not_buyable', 'unavailable',
+        'out_of_stock', 'not_buyable', 'unavailable', 'too_many_open',
     ];
 
     /** Core service reasons that answer as another field code. */

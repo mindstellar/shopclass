@@ -44411,7 +44411,8 @@
                                         "rejected",
                                         "out_of_stock",
                                         "not_buyable",
-                                        "unavailable"
+                                        "unavailable",
+                                        "too_many_open"
                                     ]
                                 },
                                 "message": {
