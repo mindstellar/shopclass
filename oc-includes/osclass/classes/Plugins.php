@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\event\HookBridge;
+
 /**
  * Class Plugins
  */
@@ -359,7 +361,8 @@ class Plugins
     }
 
     /**
-     * Register a callback on a hook, unless that exact callback is already on it.
+     * Register a callback on a hook, unless that exact callback is already on it. On a name a typed
+     * event owns, the callback becomes a listener of that event instead.
      *
      * @param string   $hook
      * @param callable $function
@@ -373,6 +376,12 @@ class Plugins
         $plugin_path  = str_replace('\\', '/', osc_plugins_path());
         $hook         = str_replace($plugin_path, '', $hook);
         $priority     = (int)$priority;
+        $bridge       = HookBridge::active();
+        if ($bridge !== null && $bridge->eventFor($hook) !== null) {
+            $bridge->add($hook, $function, $priority);
+
+            return;
+        }
         $found_plugin = false;
         if (isset(self::$hooks[$hook])) {
             foreach (self::$hooks[$hook] as $bucket) {
@@ -601,6 +610,10 @@ class Plugins
      */
     public static function hasHook($hook)
     {
+        $bridge = HookBridge::active();
+        if ($bridge !== null && $bridge->eventFor($hook) !== null) {
+            return $bridge->has($hook);
+        }
         if (!isset(self::$hooks[$hook])) {
             return false;
         }
@@ -623,6 +636,10 @@ class Plugins
      */
     public static function callbacks(string $hook): array
     {
+        $bridge = HookBridge::active();
+        if ($bridge !== null && $bridge->eventFor($hook) !== null) {
+            return $bridge->callbacks($hook);
+        }
         $callbacks = array();
         foreach (self::$hooks[$hook] ?? array() as $bucket) {
             foreach ((array)$bucket as $callback) {
@@ -831,6 +848,12 @@ class Plugins
      */
     public static function removeHook($hook, $function)
     {
+        $bridge = HookBridge::active();
+        if ($bridge !== null && $bridge->eventFor($hook) !== null) {
+            $bridge->remove($hook, $function);
+
+            return;
+        }
         if (!isset(self::$hooks[$hook])) {
             return;
         }
@@ -841,6 +864,20 @@ class Plugins
                 }
             }
         }
+    }
+
+    /**
+     * Take every callback off a hook and return them, as priority => list of callbacks. Used when a
+     * typed event starts owning the name, so callbacks added before that move over to it.
+     *
+     * @return array<int,array<int,callable|string>>
+     */
+    public static function detach(string $hook): array
+    {
+        $callbacks = self::$hooks[$hook] ?? array();
+        unset(self::$hooks[$hook]);
+
+        return $callbacks;
     }
 
     /**

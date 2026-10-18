@@ -105,15 +105,17 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `backup` | Making, storing and restoring backups |
 | `base` | Abstract base classes and traits other classes extend: `Model`, `Registry`, `SettingsScreen`, `Cache` (the object-cache drivers), `ActionMap`, `SharedInstance` (the one shared object behind `getInstance()`) |
 | `billing` | Packages, orders, entitlements, payment gateways and receipts |
-| `boot` | The start-up steps `oc-load.php` runs: the helper file list and the session stage |
+| `boot` | The start-up steps `oc-load.php` runs: the helper file list, the core services and the session stage |
 | `cache` | The object cache: `CacheManager`, the drivers (`MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`), the Redis clients they use, and page-cache purges |
 | `category` | Categories: `CategoryService`, `CategoryStore`, `CategoryQuery` |
 | `cli` | `oc-cli.php` commands |
 | `comment` | Listing comments: posting, rules and reads |
+| `container` | `Container`: the site-wide service container, in the PSR-11 shape |
 | `controller` | Web and admin page controllers (`CWeb*`, `admin/CAdmin*`) and their base classes |
 | `currency` | Currencies and `Money` |
 | `database` | The database connection, `Db` and `QueryBuilder`, the legacy `DAO`, schema checks, row hashes that tell when a row changed |
 | `datatables` | The admin list tables |
+| `event` | Typed events: `Dispatcher` (PSR-14 shape), the `Event` base, and `HookBridge`, which turns `osc_add_hook()` callbacks on a name an event owns into listeners |
 | `exception` | The refusals every service throws (below) |
 | `fields` | Custom fields and their types |
 | `form` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
