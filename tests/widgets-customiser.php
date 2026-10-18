@@ -359,6 +359,40 @@ $shown = WidgetStore::add(array('s_location' => 'home', 'e_kind' => 'html', 's_d
 drive('edit_widget_post', array('id' => (string) $shown, 'description' => 'Shown', 's_type' => 'aisle.promise', 'config' => array('text' => 'b')));
 pin('a row with no key gains none', '{"text":"b"}', WidgetStore::find($shown)['s_config']);
 
+harness_section('a database error is not "no draft"');
+
+drive('customise_draft_post', array('settings' => array('brand' => 'ocean')));
+$before = $draftKv();
+$kv     = DB_TABLE_PREFIX . 't_key_value';
+$admin->query("RENAME TABLE $kv TO {$kv}_away");
+$threw = false;
+try {
+    $draftKv();
+} catch (\mindstellar\database\DbException $e) {
+    $threw = true;
+}
+check('CustomiserDraft::read() throws instead of answering null', $threw);
+$r = drive('customise_draft_post', array('settings' => array('footer_note' => 'Hi')));
+pin('a draft save answers 500', 500, $r['status']);
+$r = drive('customise_publish_post');
+pin('a publish answers 500', 500, $r['status']);
+$admin->query("RENAME TABLE {$kv}_away TO $kv");
+pin('...and the stored draft is untouched', $before, $draftKv());
+
+$away = WidgetStore::add(array('s_location' => 'home', 'e_kind' => 'html', 's_description' => 'Away', 's_content' => '', 's_type' => 'aisle.promise', 's_config' => '{}', 'i_order' => 9));
+$wt   = DB_TABLE_PREFIX . 't_widget';
+$admin->query("RENAME TABLE $wt TO {$wt}_away");
+$threw = false;
+try {
+    (new \mindstellar\widgets\Customiser(osc_customiser_spec(), new CustomiserDraft('aisle', $GLOBALS['adminId'])))
+        ->saveDraft(array('home' => array(array('id' => (string) $away, 'type' => 'aisle.promise', 'config' => array()))), array(), array());
+} catch (\Throwable $e) {
+    $threw = true;
+}
+$admin->query("RENAME TABLE {$wt}_away TO $wt");
+check('a failed lookup of the live ids is thrown, not read as "all rows are new"', $threw);
+drive('customise_discard_post');
+
 $code = harness_result();
 ob_end_flush();
 exit($code);

@@ -506,11 +506,17 @@ class CAdminAppearance extends AdminSecBaseModel
         if ($customiser === null) {
             return;
         }
-        $result = $customiser->saveDraft(
-            Params::getParamArray('locations'),
-            Params::getParamArray('locations', false, false, false),
-            Params::getParamArray('settings', false, false, false)
-        );
+        try {
+            $result = $customiser->saveDraft(
+                Params::getParamArray('locations'),
+                Params::getParamArray('locations', false, false, false),
+                Params::getParamArray('settings', false, false, false)
+            );
+        } catch (Throwable $e) {
+            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('The draft could not be saved.'))), 500);
+
+            return;
+        }
         if ($result['status'] !== 200) {
             AjaxResponse::json(array('error' => 1, 'errors' => $result['errors']), $result['status']);
 
@@ -533,7 +539,13 @@ class CAdminAppearance extends AdminSecBaseModel
         if ($customiser === null) {
             return;
         }
-        $result = $customiser->publish(Params::getParamString('force') === '1');
+        try {
+            $result = $customiser->publish(Params::getParamString('force') === '1');
+        } catch (Throwable $e) {
+            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('The sections could not be published.')), 'stale' => false), 500);
+
+            return;
+        }
         if ($result['status'] === 200) {
             osc_purge_page_cache('widget');
         }

@@ -47,7 +47,9 @@ final class CustomiserDraft
 
     /**
      * The stored draft, or null when there is none, it expired, or it is for another theme.
+     * A database error is thrown, never read as "no draft".
      *
+     * @throws \mindstellar\database\DbException
      * @return array{theme:string,locations:array<string,array<int,array<string,mixed>>>,settings:array<string,mixed>,base:array<string,string>,updated_at:int}|null
      */
     public function read(): ?array
@@ -57,7 +59,7 @@ final class CustomiserDraft
         }
         try {
             $draft = osc_kv_get(self::GROUP, $this->key());
-        } catch (\Throwable $e) {
+        } catch (\InvalidArgumentException $e) {
             return null;
         }
         if (!is_array($draft) || ($draft['theme'] ?? null) !== $this->theme) {

@@ -284,11 +284,7 @@ final class Customiser
             $id = isset($row['id']) && is_scalar($row['id']) ? (int) $row['id'] : 0;
             if ($id > 0) {
                 if ($existing === null) {
-                    try {
-                        $existing = array_flip(WidgetStore::idsAt($slug));
-                    } catch (\Throwable $e) {
-                        $existing = array();
-                    }
+                    $existing = array_flip(WidgetStore::idsAt($slug));
                 }
                 if (!isset($existing[$id])) {
                     $id = 0;
