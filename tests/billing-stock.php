@@ -42,6 +42,7 @@ seed_currency($admin);
 $cat = seed_category($admin, 'Tees', seed_category($admin, 'Goods', null, $locale), $locale);
 $sue = seed_user($admin, 'sue', 'sue@example.test');
 $tom = seed_user($admin, 'tom', 'tom@example.test');
+$kim = seed_user($admin, 'kim', 'kim@example.test');
 foreach ([
     'enabled_users'                => '1',
     'language'                     => 'en_US',
@@ -53,6 +54,7 @@ foreach ([
     'billing_offline_instructions' => 'Pay to account 123',
     'billing_cod_enabled'          => '1',
     'billing_cod_fee'              => '2000000',
+    'billing_open_hold_orders'     => '0',
 ] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
@@ -196,6 +198,9 @@ pin('the stock ends at 0', '0', $stock($r));
 $both = [OrderStore::find($first->getId()), OrderStore::find($second->getId())];
 pin('both orders are paid', [true, true], [$both[0]->isPaid(), $both[1]->isPaid()]);
 $shortOne = $both[0]->meta(OrderStock::SHORT) !== null ? $both[0] : $both[1];
+$otherOne = $shortOne === $both[0] ? $both[1] : $both[0];
+$oversold = static fn (int $orderId): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_log WHERE s_section = 'billing' AND s_action = 'oversold' AND fk_i_id = $orderId")->fetch_row()[0];
+pin('the short order logs billing/oversold once, the other order logs nothing', [1, 0], [$oversold($shortOne->getId()), $oversold($otherOne->getId())]);
 pin('the short line is recorded with its quantity', [OrderLineStore::itemLines($shortOne->getId())[0]['id'] => 1], $shortOne->meta(OrderStock::SHORT));
 pin('refunding the short order gives back nothing', [true, '0'], [Billing::refund($shortOne), $stock($r)]);
 $setStock($r, 1);
@@ -304,6 +309,33 @@ check('the job has a handler', osc_job_has_handler(Billing::JOB_RELEASE));
 Billing::queueRelease();
 Billing::queueRelease();
 pin('the daily tick queues it once', 1, osc_job_count('pending', Billing::JOB_RELEASE));
+
+harness_section('open held orders per buyer');
+$setLimit = static function (string $limit): void {
+    Preference::getInstance()->set('billing_open_hold_orders', $limit);
+    scratchdb_forget_cache();
+    osc_reset_preferences();
+};
+$setStock($a, 50);
+$placeKim = static fn (string $gateway) => $checkout->place($kim, [['variant' => $a, 'qty' => 1]], $address, 'standard', $gateway)['order'];
+$setLimit('3');
+$kimOrders = [$placeKim('offline'), $placeKim('cod'), $placeKim('offline')];
+pin('the buyer holds three open orders', 3, OrderStore::countForUser($kim, [Order::STATUS_PENDING], Billing::HOLDS_STOCK));
+pin('a fourth cash on delivery order is refused on the gateway', ['/gateway too_many_open'], $refused(static fn () => $placeKim('cod')));
+pin('and a fourth bank transfer order, so switching gateways does not get round it', ['/gateway too_many_open'], $refused(static fn () => $placeKim('offline')));
+pin('the refused orders wrote nothing', 3, OrderStore::countForUser($kim, [Order::STATUS_PENDING]));
+$cardOrder = $placeKim('card');
+pin('a card order is not counted and not refused', [3, 'card'], [OrderStore::countForUser($kim, [Order::STATUS_PENDING], Billing::HOLDS_STOCK), $cardOrder->getGateway()]);
+pin('another buyer is not affected', true, $place([['variant' => $a, 'qty' => 1]], 'offline')->getId() > 0);
+OrderStore::cancel($kimOrders[0]->getId());
+$again = $placeKim('offline');
+pin('cancelling one frees a slot', true, $again->getId() > 0);
+$setLimit('0');
+$more = [$placeKim('offline'), $placeKim('cod')];
+pin('a limit of 0 never refuses', true, $more[1]->getId() > 0);
+$setLimit('3');
+pin('and the limit applies again once set', ['/gateway too_many_open'], $refused(static fn () => $placeKim('cod')));
+$setLimit('0');
 
 harness_section('cash on delivery');
 $pricer = new CartPricer();

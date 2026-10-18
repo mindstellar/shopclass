@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1188 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1189 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -175,7 +175,7 @@ Core defines 1188 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (76)
+### hBilling (77)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -208,6 +208,7 @@ Core defines 1188 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_no_wait_enabled()` | Whether waiving the flood wait is registered as a purchasable limit at all. |
 | `osc_billing_offline_enabled()` | Whether the bundled bank-transfer gateway is switched on. |
 | `osc_billing_offline_instructions()` | Admin-authored payment instructions shown on the offline checkout screen. |
+| `osc_billing_open_hold_orders()` | Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit. |
 | `osc_billing_order_number(int $orderId)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
 | `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |

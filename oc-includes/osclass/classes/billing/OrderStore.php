@@ -534,6 +534,30 @@ final class OrderStore extends Model
     }
 
     /**
+     * How many orders a user holds in these statuses, optionally through these gateways. Reads
+     * idx_user_status.
+     *
+     * @param string[]      $statuses
+     * @param string[]|null $gateways null counts every gateway
+     *
+     * @throws DbException
+     */
+    public static function countForUser(int $userId, array $statuses, ?array $gateways = null): int
+    {
+        if ($statuses === array() || $gateways === array()) {
+            return 0;
+        }
+        $params = array_merge(array($userId), array_values($statuses));
+        $sql    = 'SELECT COUNT(*) FROM ' . self::tableName() . ' WHERE fk_i_user_id = ? AND s_status IN (' . implode(',', array_fill(0, count($statuses), '?')) . ')';
+        if ($gateways !== null) {
+            $sql   .= ' AND s_gateway IN (' . implode(',', array_fill(0, count($gateways), '?')) . ')';
+            $params = array_merge($params, array_values($gateways));
+        }
+
+        return (int) Db::scalar($sql, $params);
+    }
+
+    /**
      * Pending goods orders of these gateways placed before $before, oldest first. Reads a
      * range of idx_status_date.
      *

@@ -63,6 +63,9 @@ The **Shop** tab holds the settings a goods checkout needs:
 - **Cancel unpaid orders after (days)**: bank transfer and cash on delivery orders keep
   their stock from the moment they are placed. Left unpaid this long (7 days by default),
   they are cancelled once a day and the stock goes back on sale.
+- **Open unpaid orders per buyer**: the most bank transfer and cash on delivery orders one
+  buyer may hold unpaid at once (3 by default, 0 for no limit). Past it, checkout asks them to
+  pay for or cancel an open order first.
 - **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`.
 
 A card payment takes the stock when the payment comes in. If two buyers pay for the last

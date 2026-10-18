@@ -215,6 +215,16 @@ function osc_billing_hold_days(): int
 }
 
 /**
+ * Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit.
+ *
+ * @return int
+ */
+function osc_billing_open_hold_orders(): int
+{
+    return osc_get_int_preference('billing_open_hold_orders', 3, 0);
+}
+
+/**
  * Text printed before an order's id in its number, e.g. "KC-". Empty by default.
  *
  * @return string

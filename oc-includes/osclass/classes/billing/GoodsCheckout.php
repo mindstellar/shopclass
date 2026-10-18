@@ -56,7 +56,7 @@ final class GoodsCheckout
      *
      * @return array{order:Order,next:CheckoutIntent}
      * @throws InvalidException with `/lines/n` (not_buyable, out_of_stock, qty), `/lines` (empty),
-     *                          `/address/<field>`, `/shipping_method` (unknown) or `/gateway` (unavailable)
+     *                          `/address/<field>`, `/shipping_method` (unknown) or `/gateway` (unavailable, too_many_open)
      * @throws \mindstellar\database\DbException
      */
     public function place(int $userId, array $lines, array $address, string $shippingMethod, string $gatewayId, string $note = ''): array
@@ -95,6 +95,9 @@ final class GoodsCheckout
         $gateways = self::gateways($quote);
         if (!isset($gateways[$gatewayId])) {
             $errors[] = array('pointer' => '/gateway', 'code' => 'unavailable', 'message' => _m('This payment method is not available.'));
+        }
+        if (isset($gateways[$gatewayId]) && self::holdsTooMany($userId, $gatewayId)) {
+            $errors[] = array('pointer' => '/gateway', 'code' => 'too_many_open', 'message' => _m('Pay for or cancel your open orders first, or choose another way to pay.'));
         }
         if ($errors !== array()) {
             throw InvalidException::all($errors);
@@ -138,6 +141,19 @@ final class GoodsCheckout
         osc_run_hook('billing_order_placed', $order->getId(), $userId);
 
         return array('order' => $order, 'next' => $intent);
+    }
+
+    /**
+     * Whether the buyer already holds the most unpaid orders that keep stock aside, counting every
+     * such gateway together so switching between them does not get round the limit.
+     */
+    private static function holdsTooMany(int $userId, string $gatewayId): bool
+    {
+        $limit = osc_billing_open_hold_orders();
+
+        return $limit > 0
+            && in_array($gatewayId, Billing::HOLDS_STOCK, true)
+            && OrderStore::countForUser($userId, array(Order::STATUS_PENDING), Billing::HOLDS_STOCK) >= $limit;
     }
 
     /**
