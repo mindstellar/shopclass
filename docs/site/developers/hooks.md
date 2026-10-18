@@ -249,9 +249,11 @@ A paid order fires `billing_order_paid`, as it does today. A goods order also fi
 
 ## Order mails
 
-A goods order sends three mails, each on its own action with the `Order` object as its only
+A goods order sends these mails, each on its own action with the `Order` object as its only
 argument: `hook_email_order_placed` (the buyer, when a bank transfer or cash on delivery order
-is received), `hook_email_order_shipped` (the buyer, with the carrier and tracking link) and
+is received), `hook_email_order_shipped` (the buyer, with the carrier and tracking link),
+`hook_email_order_delivered` (the buyer, with a "Rate it" link per product),
+`hook_email_order_cancelled`, `hook_email_order_refunded` (the buyer, with the amount) and
 `hook_email_admin_new_order` (the shop's contact address, once the order is paid or held).
 Remove core's handler from the hook to send your own. Each mail also has the usual
 `email_<name>_title`, `_description` and `_after` filters. A mail that cannot be sent is tried
@@ -263,7 +265,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 605 names. Generated from the source; do not edit by hand.
+Core fires 608 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -378,7 +380,7 @@ Core fires 605 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 
-### Email (113)
+### Email (116)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -487,7 +489,10 @@ Core fires 605 names. Generated from the source; do not edit by hand.
 | `hook_email_new_comment_user` | action | `$mail` | `oc-includes/osclass/classes/comment/CommentService.php` |
 | `hook_email_new_email` | action | `$newEmail, osc_change_user_email_confirm_url($userId, $code)` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_new_item_non_register_user` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
+| `hook_email_order_cancelled` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
+| `hook_email_order_delivered` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
 | `hook_email_order_placed` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
+| `hook_email_order_refunded` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
 | `hook_email_order_shipped` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
 | `hook_email_product_alert` | action | `$row, $item, $kind, $price` | `oc-includes/osclass/classes/listing/ProductAlerts.php` |
 | `hook_email_send_friend` | action | `$args` | `oc-includes/osclass/classes/security/MessageHold.php` |

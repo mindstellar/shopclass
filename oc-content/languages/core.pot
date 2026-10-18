@@ -751,8 +751,28 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
+"<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order "
+"{ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can "
+"take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
 "<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on "
 "its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
+"<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was "
+"cancelled. If you paid for it, you are not charged: any amount taken is "
+"returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
+"<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was "
+"delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -9381,6 +9401,10 @@ msgstr ""
 msgid "Raise memory without touching php.ini"
 msgstr ""
 
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Rate it"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Rate limits"
 msgstr ""
@@ -14446,6 +14470,18 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid "Your order {ORDER_NUMBER} has shipped"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Your order {ORDER_NUMBER} was cancelled"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Your order {ORDER_NUMBER} was delivered"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Your order {ORDER_NUMBER} was refunded"
 msgstr ""
 
 #: oc-includes/osclass/functions.php

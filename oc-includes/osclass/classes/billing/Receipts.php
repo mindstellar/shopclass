@@ -32,12 +32,15 @@ final class Receipts
     /** Job type that retries a receipt that could not be sent at once. */
     public const JOB = 'billing.receipt';
 
-    /** Job type that retries a placed, shipped or admin order mail that could not be sent at once. */
+    /** Job type that retries a placed, shipped, delivered, cancelled, refunded or admin order mail that could not be sent at once. */
     public const MAIL_JOB = 'billing.order_mail';
 
     public const MAIL_PLACED  = 'placed';
     public const MAIL_SHIPPED = 'shipped';
     public const MAIL_ADMIN   = 'admin';
+    public const MAIL_DELIVERED = 'delivered';
+    public const MAIL_CANCELLED = 'cancelled';
+    public const MAIL_REFUNDED  = 'refunded';
 
     /** Gateways that leave an order unpaid until the shop hears the money came in. */
     private const HELD_GATEWAYS = array('offline', 'cod');
@@ -166,6 +169,46 @@ final class Receipts
     }
 
     /**
+     * `billing_order_delivered`: tell the buyer the order arrived.
+     *
+     * @param int $orderId
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function afterDelivered($orderId, $userId = 0): void
+    {
+        self::notify(self::MAIL_DELIVERED, (int) $orderId);
+    }
+
+    /**
+     * `billing_order_cancelled`: tell the buyer the order was cancelled.
+     *
+     * @param int $orderId
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function afterCancelled($orderId, $userId = 0): void
+    {
+        self::notify(self::MAIL_CANCELLED, (int) $orderId);
+    }
+
+    /**
+     * `billing_order_refunded`: tell the buyer the money is on its way back.
+     *
+     * @param int $orderId
+     * @param int $userId
+     * @param int $credits
+     *
+     * @return void
+     */
+    public static function afterRefunded($orderId, $userId = 0, $credits = 0): void
+    {
+        self::notify(self::MAIL_REFUNDED, (int) $orderId);
+    }
+
+    /**
      * Send one order mail, or queue it when that fails. Never throws.
      *
      * @param string $kind One of the MAIL_* constants
@@ -207,11 +250,14 @@ final class Receipts
     {
         $order = OrderStore::find($orderId);
         $mark  = '_mail_' . $kind;
-        if (!in_array($kind, array(self::MAIL_PLACED, self::MAIL_SHIPPED, self::MAIL_ADMIN), true) || $order === null || !$order->isGoods() || $order->meta($mark) !== null) {
+        if (!in_array($kind, array(self::MAIL_PLACED, self::MAIL_SHIPPED, self::MAIL_ADMIN, self::MAIL_DELIVERED, self::MAIL_CANCELLED, self::MAIL_REFUNDED), true) || $order === null || !$order->isGoods() || $order->meta($mark) !== null) {
             return true;
         }
         if (($kind === self::MAIL_SHIPPED && $order->getStatus() !== Order::STATUS_SHIPPED && $order->getStatus() !== Order::STATUS_DELIVERED)
             || ($kind === self::MAIL_PLACED && !$order->isPending() && !$order->isPaid())
+            || ($kind === self::MAIL_DELIVERED && $order->getStatus() !== Order::STATUS_DELIVERED)
+            || ($kind === self::MAIL_CANCELLED && $order->getStatus() !== Order::STATUS_CANCELLED)
+            || ($kind === self::MAIL_REFUNDED && $order->getStatus() !== Order::STATUS_REFUNDED)
         ) {
             return true;
         }
@@ -221,6 +267,12 @@ final class Receipts
             osc_run_hook('hook_email_order_placed', $order);
         } elseif ($kind === self::MAIL_SHIPPED) {
             osc_run_hook('hook_email_order_shipped', $order);
+        } elseif ($kind === self::MAIL_DELIVERED) {
+            osc_run_hook('hook_email_order_delivered', $order);
+        } elseif ($kind === self::MAIL_CANCELLED) {
+            osc_run_hook('hook_email_order_cancelled', $order);
+        } elseif ($kind === self::MAIL_REFUNDED) {
+            osc_run_hook('hook_email_order_refunded', $order);
         } else {
             osc_run_hook('hook_email_admin_new_order', $order);
         }

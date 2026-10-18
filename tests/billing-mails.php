@@ -9,7 +9,7 @@
  */
 
 /**
- * The mails of a goods order. A paid order sends one confirmation with every line and the
+ * The mails of a goods order (placed, paid, shipped, delivered, cancelled, refunded). A paid order sends one confirmation with every line and the
  * address, never a second on a replay; the placed mail goes only for gateways that wait for
  * the money; the shipped mail carries the tracking link and only an https one; the admin
  * hears once per order; titles from a seller are escaped; a failed send is queued and tried
@@ -51,6 +51,13 @@ require_once ABS_PATH . 'oc-includes/osclass/emails.php';
 foreach (['osc_get_domain' => 'shop.test', 'osc_mailserver_name_from' => '', 'osc_mailserver_mail_from' => 'noreply@shop.test', 'osc_themes_path' => ABS_PATH . 'oc-content/themes/', 'osc_theme' => ''] as $fn => $value) {
     if (!function_exists($fn)) {
         eval('function ' . $fn . '() { return ' . var_export($value, true) . '; }');
+    }
+}
+
+if (!function_exists('osc_item_url_ns')) {
+    function osc_item_url_ns($id, $locale = '')
+    {
+        return 'https://shop.test/item/' . (int) $id;
     }
 }
 
@@ -204,7 +211,12 @@ pin('the buyer is told it shipped', ['tom@example.test'], array_column($sent, 't
 check('with the carrier, number and link', str_contains($sent[0]['body'], 'DHL') && str_contains($sent[0]['body'], 'JD0123') && str_contains($sent[0]['body'], 'href="https://track.example.test/JD0123"'));
 check('and the address', str_contains($sent[0]['body'], '1 Main St'));
 OrderStore::deliver($ship->getId());
-pin('delivering sends nothing', [], $mails());
+$sent = $mails();
+pin('delivering tells the buyer once', ['tom@example.test'], array_column($sent, 'to'));
+
+$ship = OrderStore::find($ship->getId());
+check('the delivered mail names the order and offers a rating link', str_contains($sent[0]['subject'], 'was delivered') && str_contains($sent[0]['subject'], Receipts::number($ship)) && str_contains($sent[0]['body'], 'Rate it'));
+check('it is marked sent and a replay sends nothing', $ship->meta('_mail_delivered') !== null && Receipts::sendNotice(Receipts::MAIL_DELIVERED, $ship->getId()) && $mails() === []);
 
 $bad = $make('fake');
 Billing::markPaid($bad, 'ext-3');
@@ -214,6 +226,26 @@ $sent = $mails();
 check('a link that is not https is left out of the mail', count($sent) === 1 && !str_contains($sent[0]['body'], 'javascript') && !str_contains($sent[0]['body'], 'href="j') && str_contains($sent[0]['body'], 'X1'));
 pin('and the page data says so', '', Receipts::details(OrderStore::find($bad->getId()))['tracking_url']);
 pin('only full https addresses pass', ['', '', '', 'https://a.test/x?y=1'], [Receipts::httpsUrl('http://a.test'), Receipts::httpsUrl('https://a.test/ "x"'), Receipts::httpsUrl('//a.test'), Receipts::httpsUrl(' https://a.test/x?y=1 ')]);
+
+harness_section('cancelled and refunded mails');
+$cancel = $make('offline');
+OrderStore::cancel($cancel->getId());
+$sent = $mails();
+pin('cancelling tells the buyer, not the owner', ['tom@example.test'], array_column($sent, 'to'));
+check('with the order number and the lines', str_contains($sent[0]['subject'], 'was cancelled') && str_contains($sent[0]['subject'], Receipts::number($cancel)) && str_contains($sent[0]['body'], 'TEE-M'));
+Receipts::afterCancelled($cancel->getId(), $tom);
+pin('a second hook call sends nothing', [], $mails());
+$gone = $make('fake', 'Mug');
+Billing::markPaid($gone, 'ext-7');
+$mails();
+Billing::refund(OrderStore::find($gone->getId()));
+$sent = $mails();
+pin('refunding tells the buyer', ['tom@example.test'], array_column($sent, 'to'));
+check('with the amount, the method and the wait', str_contains($sent[0]['subject'], 'was refunded') && str_contains($sent[0]['body'], '1447.00 USD') && str_contains($sent[0]['body'], 'Fake') && str_contains($sent[0]['body'], '3-5 working days'));
+Receipts::afterRefunded($gone->getId(), $tom, 0);
+pin('a second refund hook sends nothing', [], $mails());
+$unpaid = $make('fake');
+check('a mail for the wrong status is nothing to send', Receipts::sendNotice(Receipts::MAIL_DELIVERED, $unpaid->getId()) && Receipts::sendNotice(Receipts::MAIL_REFUNDED, $unpaid->getId()) && $mails() === []);
 
 harness_section('a failed send is queued and tried again');
 $retry = $make('fake');
@@ -231,6 +263,16 @@ MailsRecorder::$fail = true;
 OrderStore::ship($late->getId(), 'DHL', '1', '');
 $first = Receipts::sendNotice(Receipts::MAIL_SHIPPED, $late->getId());
 MailsRecorder::$fail = false;
+$gone2 = $make('fake');
+Billing::markPaid($gone2, 'ext-8');
+$mails();
+MailsRecorder::$fail = true;
+Billing::refund(OrderStore::find($gone2->getId()));
+Receipts::afterRefunded($gone2->getId(), 0, 0);
+MailsRecorder::$fail = false;
+pin('a failed refund mail is queued once, even when the hook runs again', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_unique = 'order:" . $gone2->getId() . ":refunded'")->fetch_row()[0]);
+pin('and the retry sends it', true, Receipts::sendNotice(Receipts::MAIL_REFUNDED, $gone2->getId()));
+$mails();
 pin('a failed shipped mail is reported, not thrown, and goes on the retry', [false, 1], [$first, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = 'billing.order_mail' AND s_unique = 'order:" . $late->getId() . ":shipped'")->fetch_row()[0]]);
 pin('the retry sends it', true, Receipts::sendNotice(Receipts::MAIL_SHIPPED, $late->getId()));
 $mails();
@@ -250,9 +292,9 @@ pin('with the old subject', 'Your receipt from ' . osc_page_title() . ', order #
 
 harness_section('the hooks');
 $names = [];
-foreach (['hook_email_order_placed', 'hook_email_order_shipped', 'hook_email_admin_new_order'] as $hook) {
+foreach (['hook_email_order_placed', 'hook_email_order_shipped', 'hook_email_order_delivered', 'hook_email_order_cancelled', 'hook_email_order_refunded', 'hook_email_admin_new_order'] as $hook) {
     $names[$hook] = Plugins::hasHook($hook);
 }
-pin('core listens on the three mail hooks', [true, true, true], array_values($names));
+pin('core listens on the six mail hooks', [true, true, true, true, true, true], array_values($names));
 
 exit(harness_result());
