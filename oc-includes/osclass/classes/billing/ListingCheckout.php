@@ -135,16 +135,23 @@ final class ListingCheckout
             '_item'  => $itemId,
             '_label' => mb_substr(sprintf(_m('Listing: %s'), self::title($itemId)), 0, 200, 'UTF-8'),
         ));
+        // Linked before the gateway runs, so a buyer who never comes back still leaves the link.
+        $deadline = ListingStore::find($itemId, array('dt_expiration'))['dt_expiration'] ?? null;
+        $ends     = ($deadline === null ? time() + osc_billing_hold_days() * 86400 : (int) strtotime((string) $deadline)) + 86400;
+        $previous = OrderStore::listingOrder($itemId);
+        OrderStore::linkListing($itemId, $order->getId(), $ends);
+
         $intent = Billing::checkout($order);
         if ($intent === null) {
+            if ($previous !== null) {
+                OrderStore::linkListing($itemId, $previous->getId(), $ends);
+            } else {
+                OrderStore::unlinkListing($itemId);
+            }
             OrderStore::markMailSent($order->getId(), Receipts::MAIL_CANCELLED);
             OrderStore::cancel($order->getId());
             throw new InvalidException('/gateway', 'unavailable', _m('That payment method is not available right now. Try again or choose another.'));
         }
-
-        $deadline = ListingStore::find($itemId, array('dt_expiration'))['dt_expiration'] ?? null;
-        $ends     = $deadline === null ? time() + osc_billing_hold_days() * 86400 : (int) strtotime((string) $deadline);
-        OrderStore::linkListing($itemId, $order->getId(), $ends + 86400);
 
         return array('order' => $order, 'next' => $intent);
     }

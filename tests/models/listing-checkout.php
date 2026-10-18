@@ -264,6 +264,8 @@ harness_section('Listing order: start');
 final class ListingOrderGateway implements PaymentGateway
 {
     public bool $fail = false;
+    /** @var array<int,int|null> the order each checkout found linked to its listing */
+    public array $linked = [];
 
     public function __construct(private string $id)
     {
@@ -291,6 +293,7 @@ final class ListingOrderGateway implements PaymentGateway
 
     public function createCheckout(Order $order): CheckoutIntent
     {
+        $this->linked[] = OrderStore::listingOrder((int) $order->listingId())?->getId();
         if ($this->fail) {
             throw new RuntimeException('down');
         }
@@ -337,6 +340,7 @@ pin('the order is a listing order for the held listing', [true, $held, 'Listing:
 pin('amount, currency and credits are the package row', [2_000_000, 'USD', 5, 'lcgw'], [$stored->getAmount(), $stored->getCurrency(), $stored->getCredits(), $stored->getGateway()]);
 pin('the gateway sends the buyer on', true, $started['next']->isRedirect());
 pin('the listing links to its order', $order->getId(), OrderStore::listingOrder($held)?->getId());
+pin('the link is there before the gateway runs', [$order->getId()], $gw->linked);
 $kvEnds = (int) $admin->query("SELECT UNIX_TIMESTAMP(dt_expires) - UNIX_TIMESTAMP(i.dt_expiration) FROM {$p}t_key_value k JOIN {$p}t_item i ON i.pk_i_id = {$held} WHERE k.s_group = 'listing_unpaid' AND k.s_key = '{$held}'")->fetch_row()[0];
 pin('the link lapses a day after the hold', 86400, $kvEnds);
 
@@ -347,6 +351,7 @@ pin('an unknown gateway is refused', '/gateway unavailable', $refusal(fn () => L
 pin('and none of them wrote an order', $before, $orders($uid));
 pin("another seller's listing is refused", 'forbidden', $refusal(fn () => ListingCheckout::startOrder($held, $uid + 1000, $pkg, 'lcgw')));
 pin('a gateway that fails is refused', '/gateway unavailable', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'lcdown')));
+pin('and the listing keeps the order it had', $order->getId(), OrderStore::listingOrder($held)?->getId());
 $last = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_billing_order WHERE fk_i_user_id = {$uid}")->fetch_row()[0];
 pin('and its order is cancelled', Order::STATUS_CANCELLED, OrderStore::find($last)->getStatus());
 
