@@ -534,6 +534,34 @@ final class OrderStore extends Model
     }
 
     /**
+     * How many goods orders one user has in these statuses, optionally through these gateways
+     * only. Credits orders are not counted. Reads idx_user_status.
+     *
+     * @param string[]      $statuses Order::STATUS_* values; none counts nothing
+     * @param string[]|null $gateways gateway ids; null counts every gateway
+     *
+     * @throws DbException
+     */
+    public static function countForUser(int $userId, array $statuses, ?array $gateways = null): int
+    {
+        $statuses = array_values(array_unique(array_map('strval', $statuses)));
+        if ($userId <= 0 || $statuses === array() || $gateways === array()) {
+            return 0;
+        }
+        $in     = static fn (array $values): string => '(' . implode(', ', array_fill(0, count($values), '?')) . ')';
+        $sql    = 'SELECT COUNT(*) FROM ' . self::tableName()
+            . ' WHERE fk_i_user_id = ? AND s_status IN ' . $in($statuses) . ' AND i_credits = 0';
+        $params = array_merge(array($userId), $statuses);
+        if ($gateways !== null) {
+            $gateways = array_values(array_unique(array_map('strval', $gateways)));
+            $sql     .= ' AND s_gateway IN ' . $in($gateways);
+            $params   = array_merge($params, $gateways);
+        }
+
+        return (int) Db::scalar($sql, $params);
+    }
+
+    /**
      * Pending goods orders of these gateways placed before $before, oldest first. Reads a
      * range of idx_status_date.
      *

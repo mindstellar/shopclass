@@ -446,6 +446,30 @@ $page = array_map(static fn (Order $o): int => $o->getId(), OrderStore::forUser(
 pin('forUser() is newest first and pages by id', array_slice($all, 2, 2), $page);
 pin('the statuses include shipped and delivered', true, in_array(Order::STATUS_SHIPPED, Order::STATUSES, true) && in_array(Order::STATUS_DELIVERED, Order::STATUSES, true));
 
+harness_section('counting a user\'s orders');
+$ann   = seed_user($admin, 'ann', 'ann@example.test');
+$annId = static fn (string $gateway, string $status = Order::STATUS_PENDING, int $credits = 0): int => (static function () use ($ann, $gateway, $status, $credits, $m, $admin, $p): int {
+    $o = OrderStore::create($ann, $gateway, $m(9), 'USD', $credits, $credits > 0 ? [] : ['_kind' => 'goods']);
+    $admin->query("UPDATE {$p}t_billing_order SET s_status = '" . $status . "' WHERE pk_i_id = " . $o->getId());
+
+    return $o->getId();
+})();
+$annId('cod');
+$annId('cod');
+$annId('offline');
+$annId('fake');
+$annId('cod', Order::STATUS_CANCELLED);
+$annId('fake', Order::STATUS_PAID);
+$annId('fake', Order::STATUS_PENDING, 100);
+OrderStore::create($sue, 'cod', $m(9), 'USD', 0, ['_kind' => 'goods']);
+pin('pending goods orders of one user, credits orders and other users left out', 4, OrderStore::countForUser($ann, [Order::STATUS_PENDING]));
+pin('through some gateways only', [3, 2], [OrderStore::countForUser($ann, [Order::STATUS_PENDING], Billing::HOLDS_STOCK), OrderStore::countForUser($ann, [Order::STATUS_PENDING], ['cod'])]);
+pin('several statuses', 6, OrderStore::countForUser($ann, [Order::STATUS_PENDING, Order::STATUS_CANCELLED, Order::STATUS_PAID]));
+pin('no status, no gateway or no user counts nothing', [0, 0, 0], [OrderStore::countForUser($ann, []), OrderStore::countForUser($ann, [Order::STATUS_PENDING], []), OrderStore::countForUser(0, [Order::STATUS_PENDING])]);
+pin('osc_billing_user_order_count reads the same', 5, osc_billing_user_order_count($ann, [Order::STATUS_PENDING, Order::STATUS_PAID, Order::STATUS_SHIPPED, Order::STATUS_DELIVERED]));
+$n = harness_query_count(static fn () => OrderStore::countForUser($ann, [Order::STATUS_PENDING], ['cod']));
+pin('in one query', $n < 0 ? $n : 1, $n);
+
 harness_section('the personal data export');
 $export = \mindstellar\privacy\PersonalData::export($tom);
 $mine   = array_column($export['data']['t_billing_order']['lines'] ?? [], 'order_id');
