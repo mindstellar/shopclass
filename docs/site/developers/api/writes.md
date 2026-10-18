@@ -34,6 +34,8 @@ TOKEN=sca_…        # an access token, or a personal key
 | `GET /account/orders/{id}` | `orders:read` | One of your orders. The `Location` of a new one. |
 | `POST /account/orders/{id}/pay` | `orders:write` | Start paying a pending card order again; `next` says where to go. |
 | `POST /account/orders/{id}/cancel` | `orders:write` | Cancel a pending bank transfer or cash on delivery order. |
+| `GET /account/cart` | `cart:read` | Your saved cart: variant ids and quantities, never prices. |
+| `PUT /account/cart` | `cart:write` | Replace your saved cart. A variant that cannot be bought is dropped. Up to 50 lines, 20 of each. `204`. |
 | `POST /users` | none | Sign up, when the site allows it. `201`. The password needs at least 5 characters. |
 
 A write that is not allowed gets `403`. A user who is not the owner of a live listing gets

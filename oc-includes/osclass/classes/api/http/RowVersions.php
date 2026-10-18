@@ -15,6 +15,7 @@ namespace mindstellar\api\http;
 use mindstellar\admin\ExposedSettings;
 use mindstellar\admin\form\store\PreferenceStore;
 use mindstellar\apikey\Credential;
+use mindstellar\billing\CartStore;
 use mindstellar\database\Db;
 use mindstellar\database\RowHashQuery;
 use mindstellar\listing\WishlistStore;
@@ -72,7 +73,7 @@ final class RowVersions implements ResourceVersions
      * Resources stored as rows named by a compound key: the exposed settings' preferences, and a
      * webhook endpoint's key-value row.
      */
-    private const KEYED = ['admin/settings', 'admin/webhooks/{webhook}', 'account/wishlist'];
+    private const KEYED = ['admin/settings', 'admin/webhooks/{webhook}', 'account/wishlist', 'account/cart'];
 
     /** The columns each version hashes, and those left out; see RowHashQuery. */
     public const COLUMNS = RowHashQuery::COLUMNS;
@@ -89,6 +90,10 @@ final class RowVersions implements ResourceVersions
         if ($path === 'admin/settings') {
             // Always there: a setting never saved reads as its default.
             return self::sign([RowHashQuery::keyedHashes('t_preference', self::settingKeys(), $lock)]);
+        }
+        if ($path === 'account/cart') {
+            // No row reads as an empty cart.
+            return self::sign([CartStore::rowHashes((int) $credential->userId(), $lock)]);
         }
         if ($path === 'account/wishlist') {
             // Always there: no row reads as an empty list.

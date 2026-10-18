@@ -693,7 +693,8 @@ adds lines; core sums them, so no filter sets an item's price. `cart_totals` add
 under `fees`; its other values are ignored and the total never goes below zero. Core's
 "Standard delivery" is a `cart_shipping_methods` listener at priority 5.
 `GoodsCheckout::place()` fires `cart_checkout_before`. `cart_item_add_after` is fired by
-the theme's cart, not core. A paid order reuses `billing_order_paid`.
+core's `PUT account/cart`, once for each variant new to the saved cart, with the quoted line
+`{id: item.<variant>, label: title, amount, currency, meta: {variant, qty, item_id}}`. A paid order reuses `billing_order_paid`.
 
 | Hook | Kind | Returns or receives |
 |---|---|---|
@@ -705,7 +706,7 @@ the theme's cart, not core. A paid order reuses `billing_order_paid`.
 | `cart_totals` | filter | `($totals, $cart)` the totals |
 | `cart_free_over` | filter | `($freeOver, $cart)` `{amount, remaining}` to replace the free-delivery meter, null for none; core works out `remaining` |
 | `cart_problems` | filter | `($problems, $cart)` entries `{code, pointer, message}` that stop the order |
-| `cart_item_add_after` | action | `($cart, $line)` after a line is added |
+| `cart_item_add_after` | action | `($cart, $line)` after `PUT account/cart` adds a variant to the saved cart |
 | `cart_checkout_before` | action | `($cart)` before checkout starts |
 
 **Address and coupon.** `GET cart/quote` takes `country` (two letters), `state` (up to 100) and

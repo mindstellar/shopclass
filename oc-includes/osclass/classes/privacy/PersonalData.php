@@ -145,7 +145,7 @@ class PersonalData
                     . 'stored answers to repeated API writes here; an answer can hold the profile it returned, '
                     . 'and each is deleted within a day. A pending email change is also kept here; it is '
                     . 'exported as pending_email_change and deleted with the account. The wishlist is kept here too; '
-                    . 'it is exported as wishlist and deleted with the account.',
+                    . 'it is exported as wishlist and deleted with the account. So is the saved cart, as saved_cart.',
             ),
             't_item_report_log' => array(
                 'user_key' => null,

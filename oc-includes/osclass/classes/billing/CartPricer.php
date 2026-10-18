@@ -278,7 +278,7 @@ final class CartPricer
      *
      * @return array{0:array<int,array{0:int,1:int}>,1:array<int,array{line:int,code:string}>}
      */
-    private static function normalise(array $lines): array
+    public static function normalise(array $lines): array
     {
         $wanted   = array();
         $problems = array();

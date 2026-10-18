@@ -16,6 +16,7 @@ use mindstellar\api\Problem;
 use mindstellar\api\serializer\CustomFieldSerializer;
 use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\api\Warning;
+use mindstellar\billing\CartPricer;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\WishlistService;
@@ -38,7 +39,7 @@ final class Schema
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
-        'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'SearchSuggestions', 'CategorySuggestions',
+        'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'CartLine', 'Cart', 'CartInput', 'CartDocument', 'SearchSuggestions', 'CategorySuggestions',
         'PageSummary', 'Page', 'Menu', 'Seo',
     ];
 
@@ -742,6 +743,18 @@ final class Schema
                 'ids' => ['type' => 'array', 'maxItems' => WishlistService::MAX, 'items' => ['type' => 'integer', 'minimum' => 1], 'description' => 'Newest first. Listings that are not live are dropped.'],
             ], ['ids']),
             'WishlistDocument'  => self::object(['data' => self::ref('Wishlist')], ['data']),
+            'CartLine'          => self::object([
+                'variant' => ['type' => 'integer', 'minimum' => 1],
+                'qty'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => CartPricer::MAX_QTY],
+            ], ['variant', 'qty']) + ['additionalProperties' => false],
+            'Cart'              => self::object([
+                'lines'      => ['type' => 'array', 'items' => self::ref('CartLine')],
+                'updated_at' => self::nullable('string', 'When the cart was last saved; null when it is empty.'),
+            ], ['lines', 'updated_at']),
+            'CartInput'         => $input([
+                'lines' => ['type' => 'array', 'maxItems' => CartPricer::MAX_LINES, 'items' => self::ref('CartLine'), 'description' => 'Variant ids and quantities. A variant that cannot be bought is dropped.'],
+            ], ['lines']),
+            'CartDocument'      => self::object(['data' => self::ref('Cart')], ['data']),
         ];
     }
 
