@@ -126,8 +126,8 @@ Customise entry; use **Manage widgets** instead.
   Publish asks before it replaces those changes.
 - **Hidden sections.** A hidden section stays in the list, struck through, and
   can be shown again. It is the same hide switch as on **Manage widgets**.
-- **The preview is for you only.** It works for a signed-in administrator who has
-  a draft, is never cached and is hidden from search engines. Moderators cannot
+- **The preview is for you only.** It works only for a signed-in administrator,
+  is never cached and is hidden from search engines. Moderators cannot
   customise; they keep **Manage widgets**.
 
 ## Page builder
