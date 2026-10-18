@@ -1006,6 +1006,7 @@ function osc_run_cleanup()
 }
 osc_add_hook('cron_daily', array(\mindstellar\job\CleanupJobs::class, 'queue'));
 osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class, 'run'));
+osc_add_hook('cron_daily', array(\mindstellar\listing\ListingHoldJobs::class, 'queueSweep'));
 // Catches city and region centres edited in the admin or the API, which no import queues.
 osc_add_hook('cron_weekly', array(\mindstellar\listing\ListingPointJobs::class, 'queue'));
 

@@ -105,6 +105,25 @@ pin('nothing is left waiting', 0, $queue->count(JobQueue::STATUS_PENDING));
 pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
 $clear();
 
+harness_section('The daily sweep');
+$clear();
+$cat2   = seed_category($admin, 'Vans');
+$lost   = seed_item($admin, $cat2, $user, 'Unpaid, its job lost');
+$fresh  = seed_item($admin, $cat2, $user, 'Unpaid, still in time');
+$old    = seed_item($admin, $cat2, $user, 'Live, long expired');
+$hold($lost);
+$hold($fresh);
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id IN ({$lost}, {$old})");
+ListingHoldJobs::queueSweep();
+pin('cron_daily queues one sweep', 1, $count(ListingHoldJobs::SWEEP));
+JobWorker::resetRegistration();
+JobWorker::run(10);
+check('a held listing past its deadline with no job is gone', !$exists($lost));
+check('a held listing still in time stays', $exists($fresh));
+check('an expired live listing stays', $exists($old));
+pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
+$clear();
+
 harness_section('Activate and enable leave it held');
 $stuck = seed_item($admin, seed_category($admin, 'Boats'), $user, 'Unpaid boat');
 $hold($stuck);

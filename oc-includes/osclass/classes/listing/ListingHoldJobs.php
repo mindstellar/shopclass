@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
+use mindstellar\database\Db;
 use mindstellar\job\Job;
 
 /**
@@ -23,6 +24,10 @@ final class ListingHoldJobs
 {
     public const EXPIRE = 'listing.unpaid_expire';
     public const REMIND = 'listing.unpaid_remind';
+    public const SWEEP  = 'listing.unpaid_sweep';
+
+    /** How many held listings past their deadline one sweep run deletes. */
+    public const SWEEP_BATCH = 100;
 
     /** Queue the delete after $holdDays days, and the reminder one day earlier. */
     public static function queue(int $itemId, int $holdDays): void
@@ -47,8 +52,43 @@ final class ListingHoldJobs
     {
     }
 
+    /**
+     * Queue the daily sweep, which deletes held listings whose own delete job never ran;
+     * called from `cron_daily`.
+     */
+    public static function queueSweep(): void
+    {
+        osc_job_ensure(self::SWEEP);
+    }
+
+    /**
+     * Delete one batch of held listings more than a day past their deadline.
+     *
+     * @return int how many it found
+     */
+    public static function sweep(): int
+    {
+        $rows = Db::select(
+            'SELECT pk_i_id, s_secret FROM ' . DB_TABLE_PREFIX . 't_item'
+            . ' WHERE b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL AND dt_expiration < ?'
+            . ' ORDER BY pk_i_id LIMIT ' . self::SWEEP_BATCH,
+            array(date('Y-m-d H:i:s', time() - 86400))
+        );
+        $service = new ListingService();
+        foreach ($rows as $row) {
+            $service->delete((int) $row['pk_i_id'], (string) $row['s_secret'], Actor::admin(0));
+        }
+
+        return count($rows);
+    }
+
     public static function registerJobs(): void
     {
+        osc_job_register_handler(self::SWEEP, static function (Job $job): void {
+            if (self::sweep() === self::SWEEP_BATCH) {
+                $job->repeat(array());
+            }
+        });
         osc_job_register_handler(self::EXPIRE, static function (Job $job): void {
             $row = self::heldRow($job);
             if ($row !== null) {
@@ -64,6 +104,7 @@ final class ListingHoldJobs
         $describe = static fn (array $payload): string => sprintf(__('Listing #%d'), (int) ($payload['item'] ?? 0));
         osc_job_describe(self::EXPIRE, __('Delete unpaid listing'), $describe);
         osc_job_describe(self::REMIND, __('Remind to pay for listing'), $describe);
+        osc_job_describe(self::SWEEP, __('Delete unpaid listings past their deadline'));
     }
 
     /** @return array<string,mixed>|null the listing, when it is still waiting for payment */
