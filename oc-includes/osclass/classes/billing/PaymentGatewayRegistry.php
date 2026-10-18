@@ -24,9 +24,9 @@ use mindstellar\currency\CurrencyCode;
  * Deliberately mirrors mindstellar\widgets\WidgetRegistry and
  * mindstellar\fields\FieldTypeRegistry so the three read the same to a plugin author.
  *
- * Nothing is registered by core. With no gateway plugin installed the registry is
- * empty, checkout is unavailable, and the rest of billing -- wallets, ledger,
- * entitlements, admin credit grants -- works exactly as it otherwise would.
+ * Core registers bank transfer (`offline`) and cash on delivery (`cod`) while billing is
+ * on; each offers itself only once the admin sets it up. With neither set up and no gateway
+ * plugin, checkout is unavailable and the rest of billing works as it otherwise would.
  *
  * @package mindstellar\billing
  */

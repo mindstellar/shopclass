@@ -531,6 +531,14 @@ msgstr ""
 msgid "Cancelled"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Cash on delivery"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Cash on delivery fee"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Category"
 msgstr ""
@@ -949,6 +957,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid "Enter a valid email address."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Enter an amount, e.g. 49 or 49.50."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -1753,6 +1765,10 @@ msgid ""
 "added"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Order %s"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/tabs.php
 msgid "Orders"
 msgstr ""
@@ -1808,6 +1824,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Paused"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Pay %s when it arrives."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -2214,6 +2234,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Shipping class too long."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
+msgid "Shop settings have been updated"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/AdminSecBaseModel.php

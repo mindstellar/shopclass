@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1181 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1188 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -175,7 +175,7 @@ Core defines 1181 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (69)
+### hBilling (76)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -191,19 +191,25 @@ Core defines 1181 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_bump_paused_reset()` | Forget the remembered free-bump answers, so the next check reads the database. |
 | `osc_billing_buy_url()` | Buy credits: packages plus the configured payment methods. |
 | `osc_billing_can_buy()` | Whether buying credits leads anywhere: a payment method is on and a package is for sale. Gateways are preference reads, so they gate the packages query. |
+| `osc_billing_cod_enabled()` | Whether cash on delivery is offered at checkout. |
+| `osc_billing_cod_fee()` | The fee added to a cash on delivery order, in micros. |
 | `osc_billing_currency()` | ISO 4217 code credits are priced in, always upper-case. |
 | `osc_billing_feature(string $id)` | A registered billing feature by id, or null when nothing is registered under it. |
 | `osc_billing_features()` | Every registered billing feature, keyed by id. |
 | `osc_billing_free_live_listings()` | Free listing slots: how many of a seller's listings may be live (published, not yet expired -- see EntitlementStore::liveListings()) at once before a listing.slot entitlement is needed. 0 = unlimited, which is also what an unset preference reads as -- an upgraded install stays unlimited. |
+| `osc_billing_free_over()` | Subtotal from which delivery is free, in micros. 0 = never. |
 | `osc_billing_gateway_name(string $gatewayId)` | The gateway's display name for an order list, falling back to the stored id when the plugin that took the payment is no longer installed. |
 | `osc_billing_highlight_credits()` | Credit price of highlighting a listing. |
 | `osc_billing_highlight_days()` | Days a highlight runs for. |
 | `osc_billing_highlight_enabled()` | Whether highlighting is registered as a purchasable upgrade at all. |
+| `osc_billing_hold_days()` | Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled. |
 | `osc_billing_no_wait_credits()` | Credit price of waiving the flood wait. |
 | `osc_billing_no_wait_days()` | Days the waiver holds once bought. |
 | `osc_billing_no_wait_enabled()` | Whether waiving the flood wait is registered as a purchasable limit at all. |
 | `osc_billing_offline_enabled()` | Whether the bundled bank-transfer gateway is switched on. |
 | `osc_billing_offline_instructions()` | Admin-authored payment instructions shown on the offline checkout screen. |
+| `osc_billing_order_number(int $orderId)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
+| `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
 | `osc_billing_packages()` | The packages a buyer can choose from at checkout. |
 | `osc_billing_photos_credits()` | Credit price of the raised photo cap. |
@@ -215,6 +221,7 @@ Core defines 1181 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_runtime_credits()` | Credit price of the extra runtime. |
 | `osc_billing_runtime_days()` | Extra days over the category ceiling granted while the entitlement is held. |
 | `osc_billing_runtime_enabled()` | Whether extra listing runtime is registered as a purchasable limit at all. |
+| `osc_billing_shipping_flat()` | Core's flat delivery charge for goods orders, in micros. 0 = free. |
 | `osc_billing_slot_credits()` | Credit price of one listing.slot purchase. 0 with billing_slot_enabled on means free. |
 | `osc_billing_slot_enabled()` | Whether buying an extra listing slot is registered as a purchasable feature at all. |
 | `osc_billing_slot_quantity()` | Slots granted per listing.slot purchase. |

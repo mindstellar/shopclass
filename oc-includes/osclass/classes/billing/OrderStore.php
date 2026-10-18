@@ -322,6 +322,35 @@ final class OrderStore extends Model
     }
 
     /**
+     * Change an order's meta while its row is locked, for core work that must happen once per
+     * order (taking and giving back stock). $change runs inside the transaction and may write
+     * elsewhere; what it returns is stored when it differs from what it was given.
+     *
+     * @param int                   $orderId
+     * @param callable(array):array $change
+     *
+     * @return bool false when no order has that id
+     * @throws DbException
+     */
+    public static function withMeta(int $orderId, callable $change): bool
+    {
+        return Db::transaction(static function () use ($orderId, $change): bool {
+            $row = Db::selectOne('SELECT s_meta FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', array($orderId));
+            if ($row === null) {
+                return false;
+            }
+            $meta = $row['s_meta'] !== null && $row['s_meta'] !== '' ? json_decode((string) $row['s_meta'], true) : array();
+            $meta = is_array($meta) ? $meta : array();
+            $new  = $change($meta);
+            if ($new !== $meta) {
+                self::table()->where('pk_i_id', $orderId)->update(array('s_meta' => $new === array() ? null : json_encode($new)));
+            }
+
+            return true;
+        });
+    }
+
+    /**
      * A refund arrives after settlement, so it starts from a settled status (paid,
      * shipped or delivered) rather than pending.
      *
@@ -398,8 +427,8 @@ final class OrderStore extends Model
     }
 
     /**
-     * Close a pending order unpaid. Fires `billing_order_cancelled` ($orderId, $userId) once
-     * the write commits.
+     * Close a pending order unpaid, giving back any stock it holds. Fires
+     * `billing_order_cancelled` ($orderId, $userId) once the write commits.
      *
      * @param int $id
      *
@@ -407,7 +436,14 @@ final class OrderStore extends Model
      */
     public static function cancel(int $id): bool
     {
-        $userId = self::move($id, Order::STATUS_PENDING, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
+        $userId = Db::transaction(static function () use ($id): ?int {
+            $userId = self::move($id, Order::STATUS_PENDING, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
+            if ($userId !== null) {
+                OrderStock::release($id);
+            }
+
+            return $userId;
+        });
         if ($userId === null) {
             return false;
         }
@@ -454,6 +490,32 @@ final class OrderStore extends Model
         $rows = Db::select($sql . ' ORDER BY pk_i_id DESC LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset), $params);
 
         return array_map(static fn (array $row): Order => Order::fromRow($row), $rows);
+    }
+
+    /**
+     * Pending goods orders of these gateways placed before $before, oldest first. Reads a
+     * range of idx_status_date.
+     *
+     * @param string[] $gateways
+     * @param string   $before   Y-m-d H:i:s
+     * @param int      $limit
+     *
+     * @return int[] order ids
+     * @throws DbException
+     */
+    public static function heldBefore(array $gateways, string $before, int $limit): array
+    {
+        if ($gateways === array()) {
+            return array();
+        }
+        $rows = Db::select(
+            'SELECT pk_i_id FROM ' . self::tableName() . ' WHERE s_status = ? AND dt_date < ? AND i_credits = 0'
+            . ' AND s_gateway IN (' . implode(', ', array_fill(0, count($gateways), '?')) . ')'
+            . ' ORDER BY dt_date LIMIT ' . max(1, $limit),
+            array_merge(array(Order::STATUS_PENDING, $before), array_values($gateways))
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
     }
 
     /**

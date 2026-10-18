@@ -613,6 +613,10 @@ msgstr ""
 msgid "0 keeps it forever. The statistics charts use up to ten months."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "0 makes delivery free."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "0 means every listing needs validation."
 msgstr ""
@@ -926,6 +930,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Accept bank transfer / cash payment"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Accept cash on delivery"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
@@ -1250,6 +1258,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Added on top of the category's own expiration ceiling."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Added to the order total. 0 means no fee."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -1601,6 +1613,12 @@ msgstr ""
 msgid ""
 "An order records one attempt to pay. Shopclass stores what was bought and "
 "what "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"An unpaid bank transfer or cash on delivery order is cancelled after this "
+"many days and its stock goes back on sale."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
@@ -2125,6 +2143,12 @@ msgstr ""
 msgid "Bank transfer"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"Bank transfer and cash on delivery orders keep their stock until they are "
+"paid."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Barter"
 msgstr ""
@@ -2403,6 +2427,14 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/Billing.php
+msgid "Cancel unpaid bank transfer and cash on delivery orders"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Cancel unpaid orders after (days)"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 msgid "Cancelled"
@@ -2443,6 +2475,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Cascading options"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Cash on delivery"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Cash on delivery fee"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -3942,6 +3982,14 @@ msgstr ""
 msgid "Deliveries waiting or given up"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Delivery"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Delivery charge"
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
@@ -5013,6 +5061,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hItems.php
 msgid "Free"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Free delivery from"
 msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
@@ -8096,6 +8148,12 @@ msgstr ""
 msgid "One day"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"One delivery method, \"Standard delivery\", at a flat charge. Amounts are "
+"in the listings' currency."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "One hour"
 msgstr ""
@@ -8232,6 +8290,10 @@ msgstr ""
 msgid "Optional. Leave empty for a key that works until you revoke it."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Optional. Letters, digits and dashes, e.g. KC- gives #KC-1042."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid ""
 "Optional. Overrides the URL used to serve files, e.g. a CDN domain in front "
@@ -8260,17 +8322,26 @@ msgstr ""
 msgid "Order #%d"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Order number prefix"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/ajax/AjaxHandler.php
 msgid "Order saved"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Orders"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 msgid "Orders appear here as soon as a payment plugin takes its first payment."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Orders of this much or more ship free. 0 means never."
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
@@ -9834,6 +9905,10 @@ msgstr ""
 msgid "Save settings"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Save shop settings"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "Save the latest user searches"
 msgstr ""
@@ -10484,6 +10559,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
 msgid "Shipping class"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Shop"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -11422,6 +11502,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "The bucket did not answer; its backups are not listed right now."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "The buyer pays the courier. You mark the order paid once it is delivered."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
