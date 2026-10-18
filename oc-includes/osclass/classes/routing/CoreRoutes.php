@@ -347,6 +347,11 @@ class CoreRoutes
                 'params' => array('feature' => array('enc' => 'raw')),
                 'rule'   => false,
             ),
+            'billing_publish' => array(
+                'to'     => array('page' => 'billing', 'action' => 'publish'),
+                'params' => array('itemId' => array()),
+                'rule'   => false,
+            ),
             'billing_upgrade' => array(
                 'to'     => array('page' => 'billing', 'action' => 'upgrade'),
                 'params' => array(

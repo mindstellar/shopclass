@@ -821,6 +821,18 @@ function osc_billing_upgrade_url(int $itemId): string
 }
 
 /**
+ * The pay step for a held listing: the page where the seller pays for it and it goes live.
+ *
+ * @param int $itemId
+ *
+ * @return string
+ */
+function osc_billing_publish_url(int $itemId): string
+{
+    return osc_core_url('billing_publish', array('itemId' => $itemId));
+}
+
+/**
  * Raw expiration datetime of a featured listing, or null when it is not currently
  * featured. Defaults to the item currently in view, the same convention osc_item_field()
  * uses, so it drops straight into an item loop.

@@ -269,6 +269,7 @@ $VIA_TABLE = array(
     'orders'           => array('billing_orders', array()),
     'receipt'          => array('billing_receipt', array('id' => 42)),
     'feature a listing' => array('billing_upgrade', array('itemId' => 42)),
+    'pay for a held listing' => array('billing_publish', array('itemId' => 42)),
     'buy an account upgrade' => array('billing_account_upgrade', array('feature' => 'listing.slot')),
     'feature a listing, named feature' => array('billing_upgrade', array('itemId' => 42, 'feature' => 'top ad')),
     'view beacon'      => array('item_view_beacon', array('id' => 42)),
@@ -289,6 +290,7 @@ $VIA_OFF = array(
     'orders'           => 'http://example.com/index.php?page=billing&action=orders',
     'receipt'          => 'http://example.com/index.php?page=billing&action=receipt&id=42',
     'feature a listing' => 'http://example.com/index.php?page=billing&action=upgrade&itemId=42',
+    'pay for a held listing' => 'http://example.com/index.php?page=billing&action=publish&itemId=42',
     'buy an account upgrade' => 'http://example.com/index.php?page=billing&action=account_upgrade&feature=listing.slot',
     'feature a listing, named feature' => 'http://example.com/index.php?page=billing&action=upgrade'
         . '&itemId=42&feature=top%20ad',
@@ -310,6 +312,7 @@ $VIA_ON = array(
     'orders'           => 'http://example.com/user/orders',
     'receipt'          => $VIA_OFF['receipt'],
     'feature a listing' => $VIA_OFF['feature a listing'],
+    'pay for a held listing' => $VIA_OFF['pay for a held listing'],
     'buy an account upgrade' => $VIA_OFF['buy an account upgrade'],
     'feature a listing, named feature' => $VIA_OFF['feature a listing, named feature'],
     'view beacon'      => $VIA_OFF['view beacon'],
