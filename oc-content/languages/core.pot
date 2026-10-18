@@ -415,6 +415,10 @@ msgid_plural "%d widgets"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "%d widgets here are not sections this page offers. Publishing removes them."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "%d write was refused by strict SQL mode in the last 7 days."
 msgid_plural "%d writes were refused by strict SQL mode in the last 7 days."
@@ -680,6 +684,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "1 widget"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "1 widget here is not a section this page offers. Publishing removes it."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -1232,6 +1240,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Add region"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Add section"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add.php
@@ -3333,6 +3345,10 @@ msgstr ""
 msgid "Could not save uploaded file. File already exists"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Could not save, retrying"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Couldn't copy. Select the text and copy it manually."
 msgstr ""
@@ -3605,6 +3621,20 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Customer Service"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+#: oc-admin/themes/modern/appearance/index.php
+#: oc-includes/osclass/classes/AdminMenu.php
+msgid "Customise"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Customise %s"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Customiser"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -4128,6 +4158,10 @@ msgstr ""
 msgid "Descriptions can be 1 to %d characters."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Desktop"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -4178,6 +4212,14 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 #: oc-includes/osclass/classes/utility/SystemInfo.php
 msgid "Disabled"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Discard"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Discard your changes?"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -4266,6 +4308,10 @@ msgstr ""
 msgid ""
 "Downloads are GitHub's cumulative count of release-asset downloads — "
 "includes CI, mirrors, bots and repeat downloads. Not an install count."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Draft saved just now"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -4802,6 +4848,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Everything Else"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Everything is published"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -5365,6 +5415,7 @@ msgstr ""
 msgid "Hi %s,"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -5384,6 +5435,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Field.php
 msgid "Hide"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Hide %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -6054,6 +6109,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Keep each photo's own shape (recommended)"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Keep editing"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LogSettingsScreen.php
@@ -6732,6 +6791,10 @@ msgstr ""
 msgid "Longest message"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Look"
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Lost And Found"
 msgstr ""
@@ -7280,6 +7343,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Motorcycles"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Move %s down"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Move %s up"
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
@@ -7892,6 +7963,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "No saved backups yet. Downloads are not kept."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "No sections yet. Add one below."
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
@@ -8628,6 +8703,7 @@ msgstr ""
 msgid "Packages"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/functions.php
@@ -8645,6 +8721,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Page description"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Page sections"
 msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
@@ -8826,6 +8906,7 @@ msgstr ""
 msgid "Personals"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Phone"
@@ -8913,6 +8994,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "Pick a form to see its submissions"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Pick a section to edit it."
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -9052,6 +9137,10 @@ msgstr ""
 msgid "Press Repair to fix them. Take a backup first."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Press the up or down arrow key to move this section."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/settings/index.php
@@ -9063,6 +9152,11 @@ msgstr ""
 msgid "Preview Watermark"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Preview of your site"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Preview size"
 msgstr ""
@@ -9175,14 +9269,23 @@ msgstr ""
 msgid "Public site"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Publish"
+msgstr ""
+
 #: oc-includes/osclass/classes/Breadcrumb.php
 #: oc-includes/osclass/functions.php
 msgid "Publish a listing"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Published"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Publishing…"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -9571,6 +9674,7 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/items/frm.php
 msgid "Remove %s"
 msgstr ""
@@ -9618,6 +9722,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "Reorder %s"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Reorder %s with the arrow keys"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -10152,6 +10260,7 @@ msgstr ""
 msgid "Saving to the bucket is not set up any more."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/appearance/widgets.php
 #: oc-admin/themes/modern/fields/index.php
 msgid "Saving…"
@@ -10892,6 +11001,10 @@ msgstr ""
 msgid "Show"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Show %s"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "Show a link in the footer"
@@ -11129,6 +11242,10 @@ msgstr ""
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/locations.php
 msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Something went wrong. Try again."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
@@ -12591,6 +12708,10 @@ msgstr ""
 msgid "This removes the widget from its section immediately and cannot be undone."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "This section has no settings."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "This server accepts files up to %s."
 msgstr ""
@@ -14011,6 +14132,7 @@ msgstr ""
 msgid "Widget type"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Widgets"
 msgstr ""
@@ -14119,6 +14241,10 @@ msgstr ""
 msgid "You have to create the <code>languages</code> folder, i.e.: "
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "You have unpublished changes"
+msgstr ""
+
 #: oc-admin/themes/modern/upgrade/index.php
 msgid ""
 "You have uploaded a new version of Shopclass, you need to upgrade Shopclass "
@@ -14200,6 +14326,10 @@ msgid ""
 "could download a backup."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Your changes are live."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Your current .htaccess file"
 msgstr ""
@@ -14232,6 +14362,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Your database is up to date and healthy."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid ""
+"Your draft is thrown away and the editor goes back to what is live on the "
+"site."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/AdvancedSettingsScreen.php

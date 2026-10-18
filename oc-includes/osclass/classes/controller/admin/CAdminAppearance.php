@@ -24,6 +24,8 @@ use mindstellar\market\PluginDependencies;
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\widgets\Customiser;
+use mindstellar\widgets\CustomiserDraft;
+use mindstellar\widgets\CustomiserScreen;
 use mindstellar\widgets\WidgetConfig;
 use mindstellar\widgets\WidgetStore;
 
@@ -45,6 +47,7 @@ class CAdminAppearance extends AdminSecBaseModel
         'widget_create_post'   => 'createWidgetPost',
         'widget_move_post'     => 'moveWidgetPost',
         'reorder_widgets_post' => 'reorderWidgetsPost',
+        'customise'              => 'customiseScreen',
         'customise_draft_post'   => 'customiseDraftPost',
         'customise_publish_post' => 'customisePublishPost',
         'customise_discard_post' => 'customiseDiscardPost',
@@ -433,6 +436,34 @@ class CAdminAppearance extends AdminSecBaseModel
 
         AjaxResponse::json(array('error' => $ok ? 0 : 1));
         exit;
+    }
+
+    /**
+     * The customiser screen: the theme's sections and look fields beside a live preview.
+     */
+    private function customiseScreen(): void
+    {
+        if (osc_is_moderator()) {
+            http_response_code(403);
+            osc_add_flash_error_message(_m('Only an administrator can customise the theme.'), 'admin');
+            $this->_exportVariableToView('customiser', null);
+            $this->doView('appearance/customise.php');
+
+            return;
+        }
+        $spec = osc_customiser_spec();
+        if ($spec === null) {
+            osc_add_flash_info_message(_m('This theme has nothing to customise.'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+
+            return;
+        }
+        $draft = (new CustomiserDraft(osc_theme(), osc_logged_admin_id()))->read();
+        $screen = CustomiserScreen::build($spec, $draft);
+        $info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
+        $screen['theme_name'] = is_array($info) && $info['name'] !== '' ? ucfirst((string) $info['name']) : osc_theme();
+        $this->_exportVariableToView('customiser', $screen);
+        $this->doView('appearance/customise.php');
     }
 
     /**

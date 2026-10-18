@@ -209,7 +209,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     : ''),
             'note_variant' => 'warning',
             'actions'     => array(
+                'primary' => osc_customiser_spec() !== null ? array(
+                    'label' => __('Customise'),
+                    'url'   => osc_admin_base_url(true) . '?page=appearance&action=customise',
+                ) : null,
                 'links' => array(
+                    '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=appearance&action=widgets') . '">'
+                        . osc_esc_html(__('Widgets')) . '</a>',
                     '<a target="_blank" rel="noopener" href="' . osc_esc_html(osc_base_url(true)) . '">'
                         . osc_esc_html(__('View site')) . '</a>',
                 ),
