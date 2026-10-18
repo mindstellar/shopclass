@@ -686,7 +686,8 @@ final class ListingService
     /**
      * Put a held listing live: it starts its run now, takes its moderation status from its
      * owner, and gets the e-mails and `posted_item` a new listing gets. A listing that is not
-     * held, or that another call published first, is left alone.
+     * held, or that another call published first, is left alone. It charges nothing: a seller
+     * pays through ListingCheckout::publish(), which calls it.
      *
      * @return bool whether this call published it
      */
@@ -728,9 +729,6 @@ final class ListingService
 
             \Log::getInstance()->insertLog('item', 'publish', $id, (string) ($item['s_title'] ?? ''), $actor->logRole(), $actor->logId());
             $this->announce($item, $active, $actor, !$actor->isAdmin());
-            Db::afterCommit(static function () use ($id): void {
-                \mindstellar\billing\OrderStore::unlinkListing($id);
-            });
 
             return true;
         });

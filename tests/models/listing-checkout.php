@@ -206,6 +206,15 @@ $r = ListingCheckout::publish($held, Actor::user($uid));
 osc_remove_filter('billing_can_publish', $veto);
 pin('a plugin refusal stops it and spends nothing', [false, 'refused', 5, null], [$r['published'], $r['reason'], Wallet::balance($uid), $row($held)['dt_first_pub_date']]);
 
+[$uid, , $held] = $seller(5);
+OrderStore::linkListing($held, $listing->getId(), time() + 3600);
+(new \mindstellar\listing\ListingService())->publish($held, Actor::user($uid));
+pin('the listing service leaves the order link to the checkout', $listing->getId(), OrderStore::listingOrder($held)?->getId());
+[$uid, , $held] = $seller(5);
+OrderStore::linkListing($held, $listing->getId(), time() + 3600);
+ListingCheckout::publish($held, Actor::user($uid));
+pin('a publish through the checkout drops the link', null, OrderStore::listingOrder($held));
+
 harness_section('Pay step: two at once');
 
 [$uid, , $held] = $seller(10);

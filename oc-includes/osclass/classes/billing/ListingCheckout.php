@@ -94,6 +94,9 @@ final class ListingCheckout
             if (!(new ListingService())->publish($itemId, $actor)) {
                 throw new RuntimeException('Listing #' . $itemId . ' could not be published');
             }
+            Db::afterCommit(static function () use ($itemId): void {
+                OrderStore::unlinkListing($itemId);
+            });
 
             return array('published' => true, 'reason' => null, 'quote' => $quote);
         });
