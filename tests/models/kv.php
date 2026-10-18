@@ -152,6 +152,16 @@ $kv->increment('count', 'n', -2, $now + 60);
 $counted = $kv->get('count', 'n', $now + 60);
 pin('increment starts from 0 and adds what it is given, below 0 too', ['3', $now, $now + 60], [$counted['value'], $counted['created'], $counted['updated']]);
 check('a malformed key is refused', $refused(static fn () => $kv->increment('count', ' n')));
+pin('it returns the new value, never below 0', [4, 0, 0], [$kv->increment('count', 'n', 1, $now), $kv->increment('count', 'n', -10, $now), $kv->increment('count', 'zero', -1, $now)]);
+$kv->increment('count', 'old', 7, $now - 100, $now - 1);
+pin('an expired counter starts again, with no expiry unless one is given', [1, null], [$kv->increment('count', 'old', 1, $now), $kv->get('count', 'old', $now)['expires']]);
+pin('a live counter keeps its expiry when none is given', [1, 1, $now + 50], [$kv->increment('count', 'live', 1, $now, $now + 50), $kv->increment('count', 'live', 0, $now), $kv->get('count', 'live', $now)['expires']]);
+pin('an increment is one statement', 1, harness_query_count(static fn () => $kv->increment('count', 'n', 1, $now)));
+$kv->deleteGroup('count');
+pin('osc_kv_increment twice reads 2, and osc_kv_get reads it as an int', [1, 2, 2], [osc_kv_increment('count', 'helper', 1, 60), osc_kv_increment('count', 'helper', 1, 60), osc_kv_get('count', 'helper')]);
+$expires = $kv->get('count', 'helper')['expires'] ?? 0;
+check('and the ttl sets the expiry', $expires > time() + 50 && $expires <= time() + 60, (string) $expires);
+check('a ttl below one second is refused', $refused(static fn () => osc_kv_increment('count', 'helper', 1, 0)));
 $kv->deleteGroup('count');
 
 harness_section('times are UTC, whatever the time zone');

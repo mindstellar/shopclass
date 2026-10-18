@@ -106,6 +106,28 @@ if (!function_exists('osc_kv_delete_group')) {
     }
 }
 
+if (!function_exists('osc_kv_increment')) {
+    /**
+     * Add to a counter in one statement and return its new value. An absent or expired key
+     * starts from 0; the value never goes below 0, so a negative $by takes back at most what
+     * is there. osc_kv_get() reads it as an int.
+     *
+     * @param int|null $ttl seconds it lives from now; null keeps the expiry it has (none for a new key)
+     *
+     * @throws InvalidArgumentException on a malformed group or key, or a ttl below 1
+     * @throws \mindstellar\database\DbException
+     */
+    function osc_kv_increment(string $group, string $key, int $by = 1, ?int $ttl = null): int
+    {
+        if ($ttl !== null && $ttl < 1) {
+            throw new InvalidArgumentException('A key-value ttl is at least one second.');
+        }
+        $now = time();
+
+        return (new KeyValue())->increment($group, $key, $by, $now, $ttl === null ? null : $now + $ttl);
+    }
+}
+
 if (!function_exists('osc_kv_claim')) {
     /**
      * Take a key for $ttl seconds: true for exactly one caller while the key is absent or

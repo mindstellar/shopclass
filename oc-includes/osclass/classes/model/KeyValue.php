@@ -129,20 +129,30 @@ final class KeyValue extends Model
     }
 
     /**
-     * Add to a whole-number value in one statement, starting from 0 when the key is absent.
-     * Safe under concurrent callers.
+     * Add to a whole-number value in one statement and return the new value. An absent or
+     * expired key starts from 0, and the value never goes below 0. Safe under concurrent callers.
      *
+     * @param int|null $expiresAt Unix time the key expires; null keeps a live key's expiry
+     *
+     * @return int the value after the change
      * @throws \InvalidArgumentException on a malformed group or key
      * @throws \mindstellar\database\DbException
      */
-    public function increment(string $group, string $key, int $by = 1, ?int $now = null): void
+    public function increment(string $group, string $key, int $by = 1, ?int $now = null, ?int $expiresAt = null): int
     {
         self::check($group, $key);
-        $now = self::datetime($now ?? time());
-        Db::execute(
-            'INSERT INTO ' . DB_TABLE_PREFIX . self::TABLE . ' (s_group, s_key, s_value, dt_created) VALUES (?, ?, ?, ?)'
-            . ' ON DUPLICATE KEY UPDATE s_value = CAST(s_value AS SIGNED) + ?, dt_updated = ?',
-            [$group, $key, (string) $by, $now, $by, $now]
+        $now     = self::datetime($now ?? time());
+        $expires = $expiresAt === null ? null : self::datetime($expiresAt);
+        $expired = '(dt_expires IS NOT NULL AND dt_expires <= ?)';
+
+        // LAST_INSERT_ID(expr) hands the new value back with the write; s_value is set before
+        // dt_expires, so both read the old expiry.
+        return Db::insertGetId(
+            'INSERT INTO ' . DB_TABLE_PREFIX . self::TABLE . ' (s_group, s_key, s_value, dt_created, dt_expires)'
+            . ' VALUES (?, ?, LAST_INSERT_ID(GREATEST(0, ?)), ?, ?)'
+            . ' ON DUPLICATE KEY UPDATE s_value = LAST_INSERT_ID(GREATEST(0, IF(' . $expired . ', 0, CAST(s_value AS SIGNED)) + ?)),'
+            . ' dt_updated = ?, dt_expires = COALESCE(?, IF(' . $expired . ', NULL, dt_expires))',
+            [$group, $key, $by, $now, $expires, $now, $by, $now, $expires, $now]
         );
     }
 
