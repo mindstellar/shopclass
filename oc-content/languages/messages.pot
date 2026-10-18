@@ -2714,6 +2714,10 @@ msgstr ""
 msgid "The description is too long. Use %d characters or fewer."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The draft could not be saved."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminEmails.php
 msgid "The email couldn't be updated, at least one title should not be empty"
 msgstr ""
@@ -2975,6 +2979,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/exception/InvalidException.php
 msgid "The request was refused."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The sections could not be published."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebAjax.php
