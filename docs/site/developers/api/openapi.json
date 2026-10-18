@@ -45902,6 +45902,24 @@
                         ],
                         "description": "What the API allows on this site."
                     },
+                    "cart": {
+                        "type": "object",
+                        "properties": {
+                            "max_lines": {
+                                "type": "integer",
+                                "description": "The most lines a cart takes."
+                            },
+                            "max_qty": {
+                                "type": "integer",
+                                "description": "The most of one variant a cart line takes."
+                            }
+                        },
+                        "required": [
+                            "max_lines",
+                            "max_qty"
+                        ],
+                        "description": "The limits a cart is held to."
+                    },
                     "links": {
                         "type": "object",
                         "additionalProperties": {

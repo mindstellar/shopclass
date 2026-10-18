@@ -78,6 +78,11 @@ pin('a price alert on any variant goes under the lowest price today', [201, null
 $r = $post($tomK, ['product' => ['listing' => $tee, 'variant' => $l, 'kind' => 'price']]);
 pin('on one variant, under that variant\'s price', [201, '799.00'], [$r->status(), $r->body()['data']['product']['below'] ?? null]);
 $tomPriceId = (int) ($r->body()['data']['id'] ?? 0);
+$admin->query("UPDATE {$p}t_item_variant SET i_price = " . $micros(790) . " WHERE pk_i_id = $l");
+$r = $post($tomK, ['product' => ['listing' => $tee, 'variant' => $l, 'kind' => 'price']]);
+pin('the same price alert again takes the new price', [200, $tomPriceId, '790.00'], [$r->status(), $r->body()['data']['id'] ?? null, $r->body()['data']['product']['below'] ?? null]);
+$admin->query("UPDATE {$p}t_item_variant SET i_price = " . $micros(799) . " WHERE pk_i_id = $l");
+$post($tomK, ['product' => ['listing' => $tee, 'variant' => $l, 'kind' => 'price']]);
 
 foreach ([
     'an unknown kind'               => [['product' => ['listing' => $tee, 'kind' => 'soon']], '422 validation_failed', '/product/kind'],

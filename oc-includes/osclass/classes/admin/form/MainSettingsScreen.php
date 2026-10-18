@@ -12,8 +12,8 @@
 namespace mindstellar\admin\form;
 
 use mindstellar\base\SettingsScreen;
-use mindstellar\market\SiteMode;
 use mindstellar\security\Demo;
+use mindstellar\site\SiteMode;
 use mindstellar\utility\Utils;
 
 /**

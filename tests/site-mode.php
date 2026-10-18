@@ -20,7 +20,7 @@ require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingPolicy;
-use mindstellar\market\SiteMode;
+use mindstellar\site\SiteMode;
 
 $admin = api_admin_boot('osc_site_mode');
 $p     = DB_TABLE_PREFIX;

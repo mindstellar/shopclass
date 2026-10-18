@@ -373,8 +373,7 @@ final class MarketAjax extends AjaxHandler
             $author = (string) ($info['author'] ?? '');
         }
         $version = (string) ($info['version'] ?? '');
-        $manifest = is_file($root . 'shopclass.json') ? json_decode((string) file_get_contents($root . 'shopclass.json'), true) : null;
-        $manifest = is_array($manifest) ? $manifest : array();
+        $manifest = \mindstellar\market\PackageManifest::json($root);
         $readme   = is_file($root . 'README.md') ? (string) file_get_contents($root . 'README.md') : '';
 
         // Only files that exist in the package's own assets folder; their URL is this site's.

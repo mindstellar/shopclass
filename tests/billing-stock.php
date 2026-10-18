@@ -206,6 +206,7 @@ $otherOne = $shortOne === $both[0] ? $both[1] : $both[0];
 $oversold = static fn (int $orderId): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_log WHERE s_section = 'billing' AND s_action = 'oversold' AND fk_i_id = $orderId")->fetch_row()[0];
 pin('the short order logs billing/oversold once, the other order logs nothing', [1, 0], [$oversold($shortOne->getId()), $oversold($otherOne->getId())]);
 pin('the short line is recorded with its quantity', [OrderLineStore::itemLines($shortOne->getId())[0]['id'] => 1], $shortOne->meta(OrderStock::SHORT));
+pin('OrderStock::short reads it back, and nothing for an order that was not short', [[OrderLineStore::itemLines($shortOne->getId())[0]['id'] => 1], []], [OrderStock::short($shortOne), OrderStock::short($otherOne)]);
 pin('refunding the short order gives back nothing', [true, '0'], [Billing::refund($shortOne), $stock($r)]);
 $setStock($r, 1);
 

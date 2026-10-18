@@ -17,7 +17,6 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\Response;
-use mindstellar\api\serializer\PageSerializer;
 use mindstellar\seo\SeoResolver;
 
 /**
@@ -93,13 +92,7 @@ final class SeoController
      */
     private function page(SeoResolver $resolver, string $id, string $locale): array
     {
-        $query = $this->api->pageQuery();
-        $row   = ProblemException::found($query->find($id), 'page');
-        $texts = $query->texts([(int) $row['pk_i_id']])[(int) $row['pk_i_id']] ?? [];
-        $one   = ProblemException::found(
-            (new PageSerializer($this->api->facts()->defaultLocale(), \Closure::fromCallable([PageSerializer::class, 'siteUrl'])))->one($row, $texts, $locale),
-            'page'
-        );
+        [$one, $texts] = $this->api->page($id, $locale);
 
         return $resolver->page($one, $texts);
     }

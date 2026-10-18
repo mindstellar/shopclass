@@ -19,6 +19,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\apikey\ApiSettings;
+use mindstellar\billing\CartPricer;
 
 /**
  * `GET /`: what the site is, what the API allows on it and where its collections are.
@@ -68,6 +69,10 @@ final class SiteController
                 'registration'  => $settings->registration() && $facts->usersEnabled() && (bool) osc_user_registration_enabled(),
                 'personal_keys' => $settings->userKeys(),
                 'photo_urls'    => $settings->photoUrls(),
+            ],
+            'cart'           => [
+                'max_lines' => CartPricer::MAX_LINES,
+                'max_qty'   => CartPricer::MAX_QTY,
             ],
             'links'          => $links,
         ];
