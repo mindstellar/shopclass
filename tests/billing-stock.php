@@ -323,6 +323,14 @@ Preference::getInstance()->set('billing_order_prefix', 'KC-<b>');
 scratchdb_forget_cache();
 osc_reset_preferences();
 pin('the order number takes the prefix, cleaned', '#KC-b42', osc_billing_order_number(42));
+$prefixed = OrderStore::find($placed['order']->getId());
+$offline  = PaymentGatewayRegistry::getInstance()->get('offline')->createCheckout($prefixed)->getPayload();
+pin('mails, receipts and the bank reference use it too', ['#KC-b' . $prefixed->getId(), true, true, true], [
+    \mindstellar\billing\Receipts::number($prefixed),
+    str_contains($offline, 'Reference: #KC-b' . $prefixed->getId()),
+    str_contains(\mindstellar\billing\Receipts::emailBody(\mindstellar\billing\Receipts::vars($prefixed)), '#KC-b' . $prefixed->getId()),
+    \mindstellar\api\serializer\OrderSerializer::number($prefixed->getId()) === osc_billing_order_number($prefixed->getId()),
+]);
 pin('a cash on delivery callback is ignored', CallbackResult::OUTCOME_IGNORED, Billing::handleCallback('cod', ['order' => $placed['order']->getId()])->getOutcome());
 Preference::getInstance()->set('billing_cod_enabled', '0');
 scratchdb_forget_cache();

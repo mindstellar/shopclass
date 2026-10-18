@@ -365,6 +365,7 @@ final class Receipts
         return array(
             'site'     => osc_page_title(),
             'number'   => $order->getId(),
+            'label'    => self::number($order),
             'date'     => osc_format_date($paid),
             'credits'  => $order->isGoods() ? $order->getLabel() : sprintf(__('%s credits'), number_format($order->getCredits())),
             'amount'   => Money::format($order->getAmount(), $order->getCurrency()),
@@ -389,7 +390,7 @@ final class Receipts
      */
     public static function number(Order $order): string
     {
-        return '#' . $order->getId();
+        return osc_billing_order_number($order->getId());
     }
 
     /**
@@ -513,7 +514,7 @@ final class Receipts
             return self::goodsEmailBody($vars);
         }
         $rows = array(
-            __('Receipt number')  => '#' . $vars['number'],
+            __('Receipt number')  => $vars['label'],
             __('Date paid')       => $vars['date'],
             __('What you bought') => $vars['credits'],
             __('Amount paid')     => $vars['amount'],
@@ -555,7 +556,7 @@ final class Receipts
     {
         $details = $vars['details'];
         $html    = '<p>' . osc_esc_html(sprintf(__('Thank you for your order from %s.'), $vars['site'])) . '</p>'
-                   . '<p>' . osc_esc_html(sprintf(__('Order %1$s, paid on %2$s by %3$s.'), '#' . $vars['number'], $vars['date'], $vars['method'])) . '</p>'
+                   . '<p>' . osc_esc_html(sprintf(__('Order %1$s, paid on %2$s by %3$s.'), $vars['label'], $vars['date'], $vars['method'])) . '</p>'
                    . self::linesHtml($details)
                    . self::addressHtml($details);
         if ($details['note'] !== '') {

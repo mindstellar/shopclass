@@ -59,10 +59,7 @@ final class OrderSerializer
      */
     public static function number(int $orderId): string
     {
-        $prefix = osc_get_preference('billing_order_prefix');
-        $prefix = is_string($prefix) ? trim(preg_replace('/[^\p{L}\p{N}._-]+/u', '', $prefix) ?? '') : '';
-
-        return '#' . $prefix . $orderId;
+        return osc_billing_order_number($orderId);
     }
 
     /**

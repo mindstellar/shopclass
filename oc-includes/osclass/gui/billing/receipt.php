@@ -24,7 +24,7 @@ if (!defined('ABS_PATH')) {
  */
 
 $rows = array(
-    __('Receipt number')  => '#' . $receipt['number'],
+    __('Receipt number')  => $receipt['label'],
     __('Date paid')       => $receipt['date'],
     __('What was bought') => $receipt['credits'],
     __('Amount paid')     => $receipt['amount'],
@@ -36,7 +36,7 @@ if ($receipt['ref'] !== '') {
 if ($receipt['email'] !== '') {
     $rows[__('Paid by')] = $receipt['email'];
 }
-$title = sprintf(__('Receipt #%d'), $receipt['number']);
+$title = sprintf(__('Receipt %s'), $receipt['label']);
 ?>
 <!doctype html>
 <html lang="<?php echo osc_esc_html(str_replace('_', '-', osc_current_user_locale())); ?>">
