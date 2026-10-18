@@ -12,10 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\listing;
 
+use mindstellar\cache\CacheGroup;
 use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
+use mindstellar\utility\Utils;
 
 /**
  * Listing reads in any status: one listing's status columns, and listings newest first by
@@ -33,6 +35,16 @@ final class ListingQuery
         . ' i.s_contact_name, i.s_contact_email,'
         . ' l.fk_c_country_code, l.s_country, l.fk_i_region_id, l.s_region, l.fk_i_city_id, l.s_city, l.s_city_area,'
         . ' l.s_address, l.s_zip, l.d_coord_lat, l.d_coord_long';
+
+    /**
+     * statsAndLocations() rows of this web request by listing id, null for none, with the
+     * search cache generation they were read at. Dropped when the listing's cache is cleared.
+     *
+     * @var array<int,array{0:int,1:array<string,mixed>|null}>
+     */
+    private static array $places = [];
+
+    private static bool $placesHooked = false;
 
     /** How many of the newest candidates related() scores. */
     public const RELATED_POOL = 500;
@@ -334,15 +346,57 @@ final class ListingQuery
         if ($ids === []) {
             return [];
         }
-        $p = DB_TABLE_PREFIX;
-
-        return Db::stringifyRows(Db::select(
+        // A web request reads each listing's row once, as the item page and its API calls all ask.
+        $memo = Utils::isWebRequest();
+        $gen  = $memo ? CacheGroup::generation('search') : 0;
+        $out  = [];
+        $rest = [];
+        foreach ($ids as $id) {
+            $held = $memo ? (self::$places[(int) $id] ?? null) : null;
+            if ($held !== null && $held[0] === $gen) {
+                if ($held[1] !== null) {
+                    $out[] = $held[1];
+                }
+            } else {
+                $rest[] = $id;
+            }
+        }
+        if ($rest === []) {
+            return $out;
+        }
+        $p    = DB_TABLE_PREFIX;
+        $rows = Db::stringifyRows(Db::select(
             'SELECT s.i_num_views, s.i_num_spam, s.i_num_bad_classified, s.i_num_repeated, s.i_num_offensive,'
             . ' s.i_num_expired, s.i_num_premium_views, l.*'
             . ' FROM ' . $p . 't_item_stats s INNER JOIN ' . $p . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
-            . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')',
-            array_values($ids)
+            . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($rest), '?')) . ')',
+            $rest
         ));
+        if ($memo) {
+            self::holdPlaces($rest, $rows, $gen);
+        }
+
+        return array_merge($out, $rows);
+    }
+
+    /**
+     * @param array<int,int|string>          $ids
+     * @param array<int,array<string,mixed>> $rows
+     */
+    private static function holdPlaces(array $ids, array $rows, int $gen): void
+    {
+        if (!self::$placesHooked) {
+            self::$placesHooked = true;
+            osc_add_hook('invalidate_item_cache', static function ($itemId): void {
+                unset(self::$places[(int) $itemId]);
+            });
+        }
+        foreach ($ids as $id) {
+            self::$places[(int) $id] = [$gen, null];
+        }
+        foreach ($rows as $row) {
+            self::$places[(int) $row['fk_i_item_id']] = [$gen, $row];
+        }
     }
 
     /**
