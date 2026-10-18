@@ -14,11 +14,13 @@ namespace mindstellar\admin\form;
 use mindstellar\billing\Billing;
 use mindstellar\billing\Receipts;
 use mindstellar\currency\CurrencyCode;
+use mindstellar\currency\Money;
 
 /**
- * The billing settings screen, which is six independent forms: the switch that turns
+ * The billing settings screen, which is seven independent forms: the switch that turns
  * selling on at all, what posting and featuring cost, the built-in bank-transfer method,
- * the per-listing upgrades, the seller limits that can be bought past, and receipts.
+ * the per-listing upgrades, the seller limits that can be bought past, receipts, and the
+ * shop (delivery, cash on delivery, held orders, order numbers).
  *
  * Each of the last four re-runs the registration its values feed, so a switch takes effect
  * on the request that flipped it rather than the next one. That is a save-time effect, so
@@ -43,6 +45,8 @@ final class BillingSettingsScreen
     public const PAGE_LIMITS = 'core.settings_billing_limits';
 
     public const PAGE_RECEIPTS = 'core.settings_billing_receipts';
+
+    public const PAGE_SHOP = 'core.settings_billing_shop';
 
     /**
      * The switch. Nothing else on the screen matters while it is off, which is why it has a
@@ -333,13 +337,84 @@ final class BillingSettingsScreen
     }
 
     /**
-     * What the view needs to draw all six forms, keyed by the section each one is.
+     * Selling goods: delivery charges, cash on delivery, how long unpaid offline orders hold
+     * stock, and the order number prefix. Amounts are typed as money and stored as micros.
+     *
+     * @return string the page id
+     */
+    public static function registerShop(): string
+    {
+        if (osc_settings_page(self::PAGE_SHOP) !== null) {
+            return self::PAGE_SHOP;
+        }
+
+        CoreSettings::page(self::PAGE_SHOP, __('Shop'), Billing::PREF_GROUP)
+            ->onAfterSave(static function () {
+                osc_reset_preferences();
+            })
+            ->group(
+                __('Delivery'),
+                __('One delivery method, "Standard delivery", at a flat charge. Amounts are in the listings\' currency.')
+            )
+            ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
+            ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
+            ->group(
+                __('Cash on delivery'),
+                __('The buyer pays the courier. You mark the order paid once it is delivered.')
+            )
+            ->checkbox('billing_cod_enabled', __('Accept cash on delivery'))
+                ->rowLabel(__('Availability'))
+            ->field(self::money('billing_cod_fee', __('Cash on delivery fee'), __('Added to the order total. 0 means no fee.'), osc_get_int_preference('billing_cod_fee', 0, 0)))
+            ->group(
+                __('Orders'),
+                __('Bank transfer and cash on delivery orders keep their stock until they are paid.')
+            )
+            ->number(
+                'billing_hold_days',
+                __('Cancel unpaid orders after (days)'),
+                __('An unpaid bank transfer or cash on delivery order is cancelled after this many days and its stock goes back on sale.')
+            )
+                ->clampMin(1)
+                ->default(7)
+            ->text('billing_order_prefix', __('Order number prefix'), __('Optional. Letters, digits and dashes, e.g. KC- gives #KC-1042.'))
+                ->width('num')
+                ->attrs(array('maxlength' => '10'))
+                ->sanitize(static fn ($value) => (string) preg_replace('/[^A-Za-z0-9-]/', '', (string) $value))
+            ->register();
+
+        return self::PAGE_SHOP;
+    }
+
+    /**
+     * A money field: typed in the site's number format, stored as micros, drawn from what is stored.
+     *
+     * @return array<string,mixed>
+     */
+    private static function money(string $name, string $label, string $help, int $stored): array
+    {
+        return array(
+            'name'       => $name,
+            'type'       => 'text',
+            'label'      => $label,
+            'help'       => $help,
+            'width'      => 'num',
+            'default'    => Money::fromMicros($stored),
+            'write_only' => true,
+            'validate'   => static fn ($value): ?string => trim((string) $value) === '' || Money::parse((string) $value) !== null
+                ? null
+                : _m('Enter an amount, e.g. 49 or 49.50.'),
+            'persist'    => static fn ($value): string => (string) max(0, Money::parse((string) $value) ?? 0),
+        );
+    }
+
+    /**
+     * What the view needs to draw all seven forms, keyed by the section each one is.
      *
      * @param string                   $rejected the page id of the form that was refused, if any
      * @param array<string,mixed>|null $values   that form's submitted values
      *
      * @return array<string,array<string,mixed>> view variables per section: 'switch',
-     *         'pricing', 'offline', 'upgrades', 'limits', 'receipts'
+     *         'pricing', 'offline', 'upgrades', 'limits', 'receipts', 'shop'
      */
     public static function formVars(string $rejected = '', ?array $values = null): array
     {
@@ -350,6 +425,7 @@ final class BillingSettingsScreen
             'upgrades' => array(self::registerUpgrades(), 'billing_upgrades_post', __('Save upgrade settings')),
             'limits'   => array(self::registerLimits(), 'billing_limits_post', __('Save limits')),
             'receipts' => array(self::registerReceipts(), 'billing_receipts_post', __('Save receipt settings')),
+            'shop'     => array(self::registerShop(), 'billing_shop_post', __('Save shop settings')),
         );
 
         $vars = array();

@@ -34,6 +34,15 @@ final class Billing
     /** Master switch. Off on every existing install, so an upgrade changes nothing. */
     public const PREF_ENABLED = 'billing_enabled';
 
+    /** Gateways paid outside the site: their goods orders hold stock from placement. */
+    public const HOLDS_STOCK = array('offline', 'cod');
+
+    /** Daily job that cancels held orders left unpaid past billing_hold_days. */
+    public const JOB_RELEASE = 'billing.release_stock';
+
+    /** Held orders the release job cancels per run. */
+    private const RELEASE_BATCH = 100;
+
     /**
      * Stack of hook batches queued by deferHook(), one per spend() call currently on
      * the stack -- a plugin's apply() could itself call spend() for another feature,
@@ -188,6 +197,11 @@ final class Billing
                 return false;
             }
 
+            // settle() holds the order row, so a replayed callback stops above and takes nothing.
+            if ($order->isGoods() && OrderStock::take($order->getId()) !== array()) {
+                self::log('oversold', $order, $externalRef);
+            }
+
             if ($order->getCredits() > 0) {
                 Wallet::credit(
                     $order->getUserId(),
@@ -231,6 +245,9 @@ final class Billing
         $reversed = Db::transaction(static function () use ($order): bool {
             if (!OrderStore::refund($order->getId())) {
                 return false;
+            }
+            if ($order->isGoods()) {
+                OrderStock::release($order->getId());
             }
 
             if ($order->getCredits() > 0) {
@@ -552,6 +569,48 @@ final class Billing
         }
 
         return $applied;
+    }
+
+    /**
+     * Register the held-stock release job; called from `register_jobs`.
+     */
+    public static function registerJobs(): void
+    {
+        osc_job_register_handler(self::JOB_RELEASE, static function (\mindstellar\job\Job $job): void {
+            if (self::releaseHeld() === self::RELEASE_BATCH) {
+                $job->repeat(array());
+            }
+        });
+        osc_job_describe(self::JOB_RELEASE, __('Cancel unpaid bank transfer and cash on delivery orders'));
+    }
+
+    /**
+     * Queue the release job once a day while billing is on; called from `cron_daily`.
+     */
+    public static function queueRelease(): void
+    {
+        if (osc_billing_enabled()) {
+            osc_job_ensure(self::JOB_RELEASE);
+        }
+    }
+
+    /**
+     * Cancel one batch of pending goods orders of the HOLDS_STOCK gateways placed more than
+     * billing_hold_days ago, giving their stock back. Each fires `billing_order_cancelled`.
+     *
+     * @return int how many were cancelled; a full batch means there may be more
+     * @throws \mindstellar\database\DbException
+     */
+    public static function releaseHeld(): int
+    {
+        $before = date('Y-m-d H:i:s', time() - osc_billing_hold_days() * 86400);
+        $ids    = OrderStore::heldBefore(self::HOLDS_STOCK, $before, self::RELEASE_BATCH);
+        $cancelled = 0;
+        foreach ($ids as $id) {
+            $cancelled += OrderStore::cancel($id) ? 1 : 0;
+        }
+
+        return $cancelled;
     }
 
     /**

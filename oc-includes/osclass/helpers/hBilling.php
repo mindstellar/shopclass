@@ -14,6 +14,7 @@ use mindstellar\billing\CartPricer;
 use mindstellar\billing\EntitlementStore;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
+use mindstellar\billing\gateway\CashOnDeliveryGateway;
 use mindstellar\billing\gateway\OfflineGateway;
 use mindstellar\billing\ItemUpgradeStore;
 use mindstellar\billing\OrderLineStore;
@@ -161,6 +162,78 @@ function osc_billing_offline_instructions(): string
     $v = osc_get_preference('billing_offline_instructions', 'osclass');
 
     return $v === null ? '' : (string) $v;
+}
+
+/**
+ * Core's flat delivery charge for goods orders, in micros. 0 = free.
+ *
+ * @return int
+ */
+function osc_billing_shipping_flat(): int
+{
+    return osc_get_int_preference('billing_shipping_flat', 0, 0);
+}
+
+/**
+ * Subtotal from which delivery is free, in micros. 0 = never.
+ *
+ * @return int
+ */
+function osc_billing_free_over(): int
+{
+    return osc_get_int_preference('billing_free_over', 0, 0);
+}
+
+/**
+ * Whether cash on delivery is offered at checkout.
+ *
+ * @return bool
+ */
+function osc_billing_cod_enabled(): bool
+{
+    return osc_get_bool_preference('billing_cod_enabled', 'osclass');
+}
+
+/**
+ * The fee added to a cash on delivery order, in micros.
+ *
+ * @return int
+ */
+function osc_billing_cod_fee(): int
+{
+    return osc_get_int_preference('billing_cod_fee', 0, 0);
+}
+
+/**
+ * Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled.
+ *
+ * @return int
+ */
+function osc_billing_hold_days(): int
+{
+    return osc_get_int_preference('billing_hold_days', 7, 1);
+}
+
+/**
+ * Text printed before an order's id in its number, e.g. "KC-". Empty by default.
+ *
+ * @return string
+ */
+function osc_billing_order_prefix(): string
+{
+    return (string) preg_replace('/[^A-Za-z0-9-]/', '', (string) osc_get_preference('billing_order_prefix', 'osclass'));
+}
+
+/**
+ * An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix.
+ *
+ * @param int $orderId
+ *
+ * @return string
+ */
+function osc_billing_order_number(int $orderId): string
+{
+    return '#' . osc_billing_order_prefix() . $orderId;
 }
 
 /**
@@ -1331,15 +1404,23 @@ function osc_register_billing_seller_limits(): void
 osc_register_billing_seller_limits();
 
 /*
- * Core's reference gateway -- bank transfer settled by hand from the admin order
- * screen. Registered only once billing is switched on: an unconditional registration
+ * Core's own gateways -- bank transfer and cash on delivery, settled by hand from the admin
+ * order screen. Registered only once billing is switched on: an unconditional registration
  * would offer a payment method at checkout that a site never asked for.
  */
 osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
         $registry->register(new OfflineGateway());
+        $registry->register(new CashOnDeliveryGateway());
     }
 });
+osc_add_filter('cart_totals', array(CashOnDeliveryGateway::class, 'feeLine'), 5);
+
+/*
+ * Bank transfer and cash on delivery orders hold stock; a daily job cancels those left unpaid.
+ */
+osc_add_hook('register_jobs', array(Billing::class, 'registerJobs'));
+osc_add_hook('cron_daily', array(Billing::class, 'queueRelease'));
 
 /*
  * Core's own delivery method, "Standard delivery" at the flat amount from the billing settings.

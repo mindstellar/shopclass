@@ -48,6 +48,26 @@ payment instructions and settle each order by hand once the money arrives, with
 no card processor or API keys involved. Right for a local site with a handful of
 paying sellers.
 
+**Cash on delivery** is built in too. Switch it on under **Settings → Billing → Shop**,
+with an optional fee added to the order. The buyer pays the courier; mark the order paid
+once it is delivered.
+
+### Selling goods
+
+The **Shop** tab holds the settings a goods checkout needs:
+
+- **Delivery charge** and **Free delivery from**: one "Standard delivery" method at a
+  flat charge, free once the order reaches the amount (0 means never).
+- **Cash on delivery** and its fee.
+- **Cancel unpaid orders after (days)**: bank transfer and cash on delivery orders keep
+  their stock from the moment they are placed. Left unpaid this long (7 days by default),
+  they are cancelled once a day and the stock goes back on sale.
+- **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`.
+
+A card payment takes the stock when the payment comes in. If two buyers pay for the last
+one at the same moment, the second order is still paid and is marked oversold for you to
+sort out.
+
 **Test Payments** is a bundled plugin for trying the flow out. Its checkout page
 lets you choose **Pay**, **Decline**, **Leave pending** or **Fail**, and each one
 drives the real billing callback, so you can see an order succeed, hang or fail

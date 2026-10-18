@@ -273,6 +273,8 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `ItemUpgradeStore` | `grant()` / `active()` / `has()` / `expiresAt()` / `prime()` / `purge()` — what an item holds |
 | `PackageStore` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |
 | `gateway\OfflineGateway` | Core's reference `PaymentGateway`: bank transfer, settled by hand |
+| `gateway\CashOnDeliveryGateway` | Cash on delivery (`cod`), settled by hand; its fee is a `fee` line through `cart_totals` |
+| `OrderStock` | `take()` / `release()` — a goods order's stock, once each per order |
 
 `Wallet::reverse()` is the chargeback path and is deliberately not `debit()`: by the time a
 provider claws a payment back the user has usually spent what it bought, so a reversal that
@@ -537,6 +539,12 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_runtime_enabled` | `0` | Whether extra listing runtime is registered as a feature at all |
 | `billing_runtime_credits` | `0` | Price of the extra runtime |
 | `billing_runtime_days` | `30` | Extra days over the category ceiling granted while held |
+| `billing_shipping_flat` | `0` | "Standard delivery" charge for goods orders, micros |
+| `billing_free_over` | `0` | Subtotal from which delivery is free, micros; 0 = never |
+| `billing_cod_enabled` | `0` | Whether cash on delivery is offered at checkout |
+| `billing_cod_fee` | `0` | Fee added to a cash on delivery order, micros |
+| `billing_hold_days` | `7` | Days an unpaid bank transfer or cash on delivery order holds its stock |
+| `billing_order_prefix` | *(empty)* | Printed before the id in an order number (`osc_billing_order_number()`) |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
 posting stays unlimited and free, premium stays admin-only. Nothing in this layer activates
@@ -550,7 +558,8 @@ until an admin turns it on.
   price, currency, and featured-listing enabled/price/duration), an Upgrades section (enabled/price/duration for
   bump, highlight and urgent), a Seller limits section (enabled/price/quantity-or-days for
   the raised photo cap, the flood-wait waiver, and extra listing runtime), and the bundled
-  bank-transfer gateway's own enable switch and instructions text
+  bank-transfer gateway's own enable switch and instructions text, and a Shop section
+  (delivery charge, free-over amount, cash on delivery and its fee, hold days, order prefix)
 - **Billing → Packages** — the price list a buyer chooses from at checkout: name, price,
   credits, position, enabled
 - **Billing → Orders** — list plus a per-order detail view with two hand-actions: mark an
@@ -638,6 +647,21 @@ One job: flip `b_premium` off where `dt_premium_expiration < NOW() AND b_premium
 purge entitlement and item-upgrade rows whose own expiration has passed. All three are pure
 housekeeping with no fulfilment side effects, so they share the existing hourly slot rather
 than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/functions.php`).
+
+The daily tick queues `billing.release_stock` while billing is on. It cancels pending goods
+orders of `Billing::HOLDS_STOCK` (`offline`, `cod`) placed more than `billing_hold_days`
+ago, 100 per run, and gives their stock back; each fires `billing_order_cancelled`.
+
+### Goods stock
+
+A goods order takes its stock once and gives it back once, keyed on the `_stock_taken`
+meta flag under the order's row lock (`OrderStore::withMeta()`). `Billing::markPaid()`
+takes it inside its transaction; a replayed callback finds `settle()` false and takes
+nothing. Bank transfer and cash on delivery take it at placement instead, and placement is
+refused when a line is short. A paid line that cannot be taken is not an error: it is
+recorded under `_short` (line id => qty) for the admin. `Billing::refund()` and
+`OrderStore::cancel()` give the stock back. Variants that do not track stock are never
+touched.
 
 ## 9. Hooks
 

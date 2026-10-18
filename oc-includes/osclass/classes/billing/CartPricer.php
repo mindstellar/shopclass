@@ -169,8 +169,8 @@ final class CartPricer
         if (!is_array($methods)) {
             return $methods;
         }
-        $flat     = osc_get_int_preference('billing_shipping_flat', 0, 0);
-        $freeOver = osc_get_int_preference('billing_free_over', 0, 0);
+        $flat     = osc_billing_shipping_flat();
+        $freeOver = osc_billing_free_over();
         $subtotal = is_array($cart) ? (int) ($cart['subtotal'] ?? 0) : 0;
         $methods[] = array(
             'id'     => self::STANDARD,
@@ -387,8 +387,8 @@ final class CartPricer
      */
     private static function freeOver(int $subtotal): ?array
     {
-        $freeOver = osc_get_int_preference('billing_free_over', 0, 0);
-        if ($freeOver <= 0 || osc_get_int_preference('billing_shipping_flat', 0, 0) <= 0) {
+        $freeOver = osc_billing_free_over();
+        if ($freeOver <= 0 || osc_billing_shipping_flat() <= 0) {
             return null;
         }
 

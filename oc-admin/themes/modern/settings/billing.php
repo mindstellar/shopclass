@@ -11,7 +11,7 @@
  */
 
 /**
- * The chrome around the six declared billing forms. Each form -- its heading, its intro,
+ * The chrome around the seven declared billing forms. Each form -- its heading, its intro,
  * its route, its fields, their values and the submit row -- is core's, drawn from the
  * declaration the controller saves through. The payment-method table below them is a list
  * of what is installed and belongs to the view.
@@ -34,6 +34,7 @@ $tabs = array(
     'upgrades' => __('Upgrades'),
     'limits'   => __('Seller limits'),
     'receipts' => __('Receipts'),
+    'shop'     => __('Shop'),
     'methods'  => __('Payment methods'),
 );
 $tab = (string) __get('billing_tab');

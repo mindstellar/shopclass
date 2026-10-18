@@ -109,6 +109,20 @@ if (!function_exists('osc_add_admin_submenu_page')) {
     }
 }
 
+// The shop form reads money the way an English admin types it.
+if (!function_exists('osc_locale_dec_point')) {
+    function osc_locale_dec_point()
+    {
+        return '.';
+    }
+}
+if (!function_exists('osc_locale_thousands_sep')) {
+    function osc_locale_thousands_sep()
+    {
+        return ',';
+    }
+}
+
 // Recorded rather than enforced: whether the check runs at all, and on which actions, is one
 // of the things this file asserts.
 $GLOBALS['csrfChecks'] = array();
@@ -1182,6 +1196,28 @@ pin('a refused save redraws its own tab', 'pricing', __get('billing_tab'));
 $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' => '1'));
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
 pin('and reports itself', array('ok:Billing settings have been updated'), flashed($run));
+
+$shop = array(
+    'billing_shipping_flat' => '49.50',
+    'billing_free_over'     => '999',
+    'billing_cod_enabled'   => '1',
+    'billing_cod_fee'       => '-5',
+    'billing_hold_days'     => '0',
+    'billing_order_prefix'  => 'KC 1!',
+);
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', $shop);
+pin('the shop form checks the CSRF token', array('billing_shop_post'), $run['csrf']);
+pin('and reports itself', array('ok:Shop settings have been updated'), flashed($run));
+check('and returns to its tab', str_ends_with((string) end($run['redirects']), '&tab=shop'), (string) end($run['redirects']));
+pin('amounts are stored as micros', array(array('49500000', 'STRING'), array('999000000', 'STRING')), array(pref($admin, 'billing_shipping_flat'), pref($admin, 'billing_free_over')));
+pin('a negative fee is floored', array('0', 'STRING'), pref($admin, 'billing_cod_fee'));
+pin('the hold is at least a day', array('1', 'INTEGER'), pref($admin, 'billing_hold_days'));
+pin('cash on delivery is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_cod_enabled'));
+pin('the prefix keeps letters, digits and dashes', array('KC1', 'STRING'), pref($admin, 'billing_order_prefix'));
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shipping_flat' => 'lots') + $shop);
+pin('an amount that is not a number is refused', array('warning:Enter an amount, e.g. 49 or 49.50.'), flashed($run));
+pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
+pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
 
 harness_section('permalinks, and the two effects that follow a save');
 
