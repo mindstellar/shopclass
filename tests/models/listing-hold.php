@@ -55,17 +55,26 @@ $due = static function () use ($admin, $p): void {
     $admin->query("UPDATE {$p}t_job_queue SET dt_next_run = DATE_SUB(NOW(), INTERVAL 1 DAY)");
 };
 
+$runsIn = static function (string $type, int $item) use ($admin, $p): float {
+    $at = $admin->query("SELECT UNIX_TIMESTAMP(dt_next_run) - UNIX_TIMESTAMP() FROM {$p}t_job_queue WHERE s_type = '{$type}' AND s_unique = '{$item}'")->fetch_row()[0] ?? -86400;
+
+    return round((int) $at / 86400, 1);
+};
+
 harness_section('Queueing');
 $clear();
 ListingHoldJobs::queue(11, 7);
 pin('seven days queue the delete', 1, $count(ListingHoldJobs::EXPIRE));
 pin('and the reminder', 1, $count(ListingHoldJobs::REMIND));
+pin('the delete runs in seven days', 7.0, $runsIn(ListingHoldJobs::EXPIRE, 11));
+pin('the reminder a day earlier', 6.0, $runsIn(ListingHoldJobs::REMIND, 11));
 ListingHoldJobs::queue(11, 7);
 pin('queueing again leaves one delete', 1, $count(ListingHoldJobs::EXPIRE));
 pin('and one reminder', 1, $count(ListingHoldJobs::REMIND));
 $clear();
 ListingHoldJobs::queue(12, 1);
 pin('one day queues only the delete', 1, $count(ListingHoldJobs::EXPIRE));
+pin('and it runs in one day', 1.0, $runsIn(ListingHoldJobs::EXPIRE, 12));
 pin('and no reminder', 0, $count(ListingHoldJobs::REMIND));
 $clear();
 
