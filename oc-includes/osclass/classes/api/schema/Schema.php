@@ -91,6 +91,7 @@ final class Schema
             ...$suffixed(self::PAGES, 'Page'),
             ...$suffixed(self::DOCUMENTS, 'Document'),
             ...AdminSchema::NAMES,
+            ...OrderSchema::NAMES,
         ];
     }
 
@@ -220,7 +221,7 @@ final class Schema
             $schemas[$name . 'Document'] = self::object(['data' => self::ref($name)], ['data']);
         }
 
-        return $schemas + AdminSchema::components();
+        return $schemas + AdminSchema::components() + OrderSchema::components();
     }
 
     /**

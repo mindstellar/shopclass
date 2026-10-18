@@ -21,6 +21,7 @@ use mindstellar\api\controller\CommentsController;
 use mindstellar\api\controller\ListingsController;
 use mindstellar\api\controller\ListingWritesController;
 use mindstellar\api\controller\LocationsController;
+use mindstellar\api\controller\OrdersController;
 use mindstellar\api\controller\PagesController;
 use mindstellar\api\controller\PhotosController;
 use mindstellar\api\controller\RegistrationController;
@@ -546,6 +547,56 @@ final class PublicRoutes
                 auth: RouteSpec::AUTH_USER,
                 scope: 'wishlist:write',
                 status: 204
+            ),
+            'GET cart/quote' => RouteSpec::read(
+                handler: [OrdersController::class, 'quote'],
+                tag: 'Orders',
+                summary: 'Price a cart: lines, shipping, fees and totals, worked out from the database',
+                response: 'QuoteDocument',
+                query: [
+                    'lines'    => ['type' => 'string', 'maxLength' => 1000, 'pattern' => '^(?:[0-9]{1,12}:[0-9]{1,6}(?:,[0-9]{1,12}:[0-9]{1,6})*)?$', 'description' => 'variant:qty pairs, comma separated, at most 50. A quantity over 20 is capped with a problem.'],
+                    'shipping' => ['type' => 'string', 'maxLength' => 64, 'description' => 'A shipping method id from shipping_methods; the first one when left out.'],
+                    'gateway'  => ['type' => 'string', 'maxLength' => 64, 'description' => 'A payment method id; its fee is added to the totals.'],
+                    'locale'   => self::LOCALE,
+                ]
+            ),
+            'GET account/orders' => RouteSpec::read(
+                handler: [OrdersController::class, 'index'],
+                tag: 'Orders',
+                summary: 'Your orders, newest first',
+                response: 'OrderPage',
+                query: $paging,
+                auth: RouteSpec::AUTH_USER,
+                scope: 'orders:read'
+            ),
+            'POST account/orders' => RouteSpec::write(
+                handler: [OrdersController::class, 'create'],
+                tag: 'Orders',
+                summary: 'Place an order for a cart; the server prices it again and answers how to pay',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'orders:write',
+                body: 'OrderInput',
+                response: 'OrderPlaced',
+                status: 201,
+                errors: [429]
+            ),
+            'GET account/orders/{id}' => RouteSpec::read(
+                handler: [OrdersController::class, 'show'],
+                tag: 'Orders',
+                summary: 'One of your orders',
+                response: 'OrderDocument',
+                errors: [404],
+                auth: RouteSpec::AUTH_USER,
+                scope: 'orders:read'
+            ),
+            'POST account/orders/{id}/cancel' => RouteSpec::write(
+                handler: [OrdersController::class, 'cancel'],
+                tag: 'Orders',
+                summary: 'Cancel one of your orders while it is still pending',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'orders:write',
+                response: 'OrderDocument',
+                errors: [404, 409]
             ),
             'POST users' => RouteSpec::write(
                 handler: [RegistrationController::class, 'register'],

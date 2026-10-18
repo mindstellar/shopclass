@@ -61,7 +61,7 @@ mindstellar\api\Problem code unsupported_grant_type = 400
 mindstellar\api\Problem code unsupported_media_type = 415
 mindstellar\api\Problem code validation_failed = 422
 mindstellar\api\Problem code wrong_credential = 403
-mindstellar\api\Problem::FIELD_CODES = ["type","enum","minimum","maximum","minLength","maxLength","pattern","format","minItems","maxItems","minProperties","required","additionalProperties","invalid","unknown","taken","mismatch","limit","rejected"]
+mindstellar\api\Problem::FIELD_CODES = ["type","enum","minimum","maximum","minLength","maxLength","pattern","format","minItems","maxItems","minProperties","required","additionalProperties","invalid","unknown","taken","mismatch","limit","rejected","out_of_stock","not_buyable","unavailable"]
 mindstellar\api\Problem::PLUGIN_CODE = "/^ext_[a-z0-9]+(?:_[a-z0-9]+)+$/D"
 mindstellar\api\Problem::TYPE_BASE = "https://mindstellar.com/docs/developers/api/errors/#"
 mindstellar\api\Problem::public static make(string $code, string $detail = '', array $extra = []): mindstellar\api\Response

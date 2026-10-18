@@ -1443,6 +1443,76 @@ This API described in OpenAPI 3.1, with the site's plugin endpoints
 
 Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
+## Orders
+
+| Method | Path | Auth | Scope | Summary |
+|---|---|---|---|---|
+| GET | `/account/orders` | user | `orders:read` | Your orders, newest first |
+| POST | `/account/orders` | user | `orders:write` | Place an order for a cart; the server prices it again and answers how to pay |
+| GET | `/account/orders/{id}` | user | `orders:read` | One of your orders |
+| POST | `/account/orders/{id}/cancel` | user | `orders:write` | Cancel one of your orders while it is still pending |
+| GET | `/cart/quote` | public | `listings:read` | Price a cart: lines, shipping, fees and totals, worked out from the database |
+
+### GET `/account/orders`
+
+Your orders, newest first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`OrderPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/orders`
+
+Place an order for a cart; the server prices it again and answers how to pay
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `OrderInput` as JSON.
+
+Answers: 201 Created (`OrderPlaced`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/account/orders/{id}`
+
+One of your orders
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`OrderDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/orders/{id}/cancel`
+
+Cancel one of your orders while it is still pending
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`OrderDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/cart/quote`
+
+Price a cart: lines, shipping, fees and totals, worked out from the database
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `lines` | query | string | no | variant:qty pairs, comma separated, at most 50. A quantity over 20 is capped with a problem. |
+| `shipping` | query | string | no | A shipping method id from shipping_methods; the first one when left out. |
+| `gateway` | query | string | no | A payment method id; its fee is added to the totals. |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`QuoteDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
 ## Pages
 
 | Method | Path | Auth | Scope | Summary |
