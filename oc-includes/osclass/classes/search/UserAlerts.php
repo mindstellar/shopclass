@@ -87,7 +87,7 @@ final class UserAlerts
     /**
      * Save a stored search for a user. The same live search is not saved twice; the one there
      * is answered. A product alert (type \Alerts::PRODUCT, an AlertEnvelope::product()) counts as
-     * the same when it waits for the same listing, variant and kind, whatever its price. An alert
+     * the same when it waits for the same listing, variant and kind, whatever its price; the one there takes the new price. An alert
      * of an account that is not confirmed and enabled is kept but not switched on. A user who
      * already keeps the most live alerts of that family (maxPerUser() saved searches, or
      * MAX_PRODUCT_PER_USER product alerts), gets LIMIT; one over the alert_subscribe throttle
@@ -113,6 +113,10 @@ final class UserAlerts
             static fn (array $row): bool => self::sameProduct(AlertEnvelope::productOf((string) $row['s_search']), $product)
         ));
         if ($same !== []) {
+            if ($product !== null && $this->alerts->update(['s_search' => $alert], ['pk_i_id' => (int) $same[0]['pk_i_id']]) !== false) {
+                $same[0]['s_search'] = $alert;
+            }
+
             return ['status' => self::EXISTS, 'alert' => $same[0]];
         }
         if (!osc_validate_email($email)) {
