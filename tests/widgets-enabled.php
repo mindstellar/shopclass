@@ -103,4 +103,30 @@ $config = WidgetConfig::fromPosted($type, array(), array('image' => 'https://cdn
 pin('an http(s) image keeps its query string', 'https://cdn.test/a.jpg?w=1', $config['image']);
 pin('missing values take their defaults', array('Hello', 7, 0, 'grid'), array($config['title'], $config['count'], $config['show'], $config['layout']));
 
+harness_section('site paths');
+
+if (!defined('WEB_PATH')) {
+    define('WEB_PATH', 'http://shop.test:8090/sub/');
+}
+if (!function_exists('osc_base_url')) {
+    function osc_base_url($with_index = false)
+    {
+        return WEB_PATH;
+    }
+}
+
+foreach (array('/oc-content/uploads/a.jpg?x=1', '/') as $path) {
+    pin('a site path is kept: ' . $path, $path, WidgetConfig::imageValue($path));
+}
+foreach (array('//evil.test/a.jpg', '/\\evil.test', '/a\\b', "/a\tb", "/a\x7fb", '/a b', 'a.jpg', 'javascript:alert(1)') as $bad) {
+    pin('refused: ' . json_encode($bad), '', WidgetConfig::imageValue($bad));
+}
+pin('an old absolute address on another host is kept', 'https://cdn.test/a.jpg', WidgetConfig::imageValue('https://cdn.test/a.jpg'));
+{
+    $base = (string) osc_base_url();
+    pin('an own-site address becomes a path', parse_url($base, PHP_URL_PATH) . 'oc-content/a.jpg', WidgetConfig::imageValue($base . 'oc-content/a.jpg'));
+    pin('a path resolves back', $base . 'oc-content/a.jpg', WidgetConfig::toAbsolute(parse_url($base, PHP_URL_PATH) . 'oc-content/a.jpg'));
+}
+pin('toAbsolute leaves a full URL alone', 'https://cdn.test/a.jpg', WidgetConfig::toAbsolute('https://cdn.test/a.jpg'));
+
 exit(harness_result());

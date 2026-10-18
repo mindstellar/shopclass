@@ -463,7 +463,7 @@ osc_register_widget('core.rich_text', array(
  * Core "Image" widget — an image block, chosen from the media library and
  * optionally linked. Registered unconditionally so the page builder can place
  * images out of the box. The 'image' and 'link' values are stored as validated
- * http(s) URLs (see WidgetConfig::fromPosted); alt text is purified. Safe for any admin.
+ * http(s) URLs or site paths (see WidgetConfig::fromPosted); alt text is purified. Safe for any admin.
  */
 osc_register_widget('core.image', array(
     'label'       => 'Image',
@@ -474,13 +474,13 @@ osc_register_widget('core.image', array(
         array('name' => 'link', 'label' => 'Link URL (optional)', 'type' => 'text'),
     ),
     'render'      => static function ($config) {
-        $src = (string) ($config['image'] ?? '');
+        $src = \mindstellar\widgets\WidgetConfig::toAbsolute((string) ($config['image'] ?? ''));
         if ($src === '') {
             return;
         }
         $img  = '<img src="' . osc_esc_html($src) . '" alt="' . osc_esc_html((string) ($config['alt'] ?? ''))
             . '" loading="lazy" decoding="async" style="max-width:100%;height:auto"/>';
-        $link = (string) ($config['link'] ?? '');
+        $link = \mindstellar\widgets\WidgetConfig::toAbsolute((string) ($config['link'] ?? ''));
         if ($link !== '' && preg_match('#^https?://#i', $link)) {
             echo '<a href="' . osc_esc_html($link) . '">' . $img . '</a>';
         } else {
