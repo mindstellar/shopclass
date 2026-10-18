@@ -28,10 +28,12 @@ class SearchRunner
      * @param array<string,mixed>|null        $params  the search parameters listeners get; null for the request's
      * @param (callable(array): array)|null   $extend  makes the bare t_item rows into the caller's rows, in place
      *                                                 of Item::extendData(); the cache then keeps the bare rows
+     * @param string|null                     $extendKey names what $extend makes (its locale and options); with
+     *                                                 it the cache keeps the extended rows, as it does Item::extendData()'s
      *
      * @return SearchResult
      */
-    public static function run(SearchCriteria $criteria, \Search $search, string $context, ?callable $shape = null, bool $count = true, ?array $params = null, ?callable $extend = null): SearchResult
+    public static function run(SearchCriteria $criteria, \Search $search, string $context, ?callable $shape = null, bool $count = true, ?array $params = null, ?callable $extend = null, ?string $extendKey = null): SearchResult
     {
         SearchBuilder::apply($criteria, $search);
 
@@ -53,6 +55,7 @@ class SearchRunner
         $model    = $search;
         $extras   = null;
         $snippets = array();
+        $extended = false;
         if ($backend !== null) {
             $aItems = $backend['items'];
             $total = (int)($backend['total'] ?? count($aItems));
@@ -65,11 +68,16 @@ class SearchRunner
             // The search-cache generation is bumped on every item lifecycle event, so a
             // deleted or disabled listing is never served from a stored result.
             // The rows are kept per page and sort; the total is kept once, by countMatches().
-            $key    = 'rows|' . osc_current_user_locale() . '|' . $search->toJson() . ($extend === null ? '' : '|bare');
-            $aItems = CacheGroup::remember('search', $key, static fn (): array => $search->doSearch($extend === null, false));
-            $total  = $count ? $search->countMatches(true) : null;
+            $extended = $extend !== null && $extendKey !== null;
+            $key      = 'rows|' . osc_current_user_locale() . '|' . $search->toJson() . ($extend === null ? '' : ($extended ? '|' . $extendKey : '|bare'));
+            $aItems   = CacheGroup::remember('search', $key, static function () use ($search, $extend, $extended): array {
+                $rows = $search->doSearch($extend === null, false);
+
+                return $extended && $rows !== array() ? $extend($rows) : $rows;
+            });
+            $total    = $count ? $search->countMatches(true) : null;
         }
-        if ($extend !== null && $aItems !== array()) {
+        if ($extend !== null && !$extended && $aItems !== array()) {
             $aItems = $extend($aItems);
         }
         $aItems = self::withSnippets($aItems, $criteria->pattern(), $snippets);

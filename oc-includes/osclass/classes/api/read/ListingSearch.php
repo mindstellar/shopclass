@@ -108,7 +108,8 @@ final class ListingSearch
             fn (\Search $search) => $this->shape($sort, $pager, $search, $near, $request->queryBool('in_stock'), $request->queryBool('on_sale'), self::optionFilter($request), self::idFilter($request)),
             $pager->counts(),
             $params,
-            fn (array $rows): array => $this->reader->extend($rows, $context)
+            fn (array $rows): array => $this->reader->extend($rows, $context),
+            $this->reader->extendKey($context)
         );
 
         return $pager->respond(

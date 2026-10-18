@@ -87,6 +87,14 @@ final class ListingReader
     }
 
     /**
+     * What extend() makes in this context, as a cache key part.
+     */
+    public function extendKey(ViewContext $context): string
+    {
+        return 'api|' . $context->locale() . '|' . (int) ($context->includes('translations') && $context->wants('translations'));
+    }
+
+    /**
      * @param array<string,mixed> $item an extended listing row
      *
      * @return array<string,mixed>
