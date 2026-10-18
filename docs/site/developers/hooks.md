@@ -265,7 +265,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 621 names. Generated from the source; do not edit by hand.
+Core fires 611 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -513,7 +513,7 @@ Core fires 621 names. Generated from the source; do not edit by hand.
 | `hook_email_user_validation` | action | `$user, $input` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_warn_expiration` | action | `$item` | `oc-includes/osclass/cron.php` |
 
-### Item (77)
+### Item (76)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -522,7 +522,6 @@ Core fires 621 names. Generated from the source; do not edit by hand.
 | `after_delete_item` | action | `$itemId, $item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `before_delete_item` | action | `$itemId` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `before_item_edit` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `cart_item_add_after` | action | `$quote->cart(), array( 'id' => 'item.' . $line['variant'], 'label' => (string) $line['title'], 'amount' => (int) $line['amount'], 'currency' => $quote->currency(), 'meta' => array('variant' => (int) $line['variant'], 'qty' => (int) $line['qty'], 'item_id' => (int) $line['item_id']), )` | `oc-includes/osclass/classes/billing/CartStore.php` |
 | `deactivate_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `delete_item` | action | `$id` | `oc-includes/osclass/classes/model/Item.php` |
 | `disable_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
@@ -595,7 +594,7 @@ Core fires 621 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (242)
+### Other (233)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -687,15 +686,6 @@ Core fires 621 names. Generated from the source; do not edit by hand.
 | `billing_tracking_url` | filter | `$url, $carrier, $tracking` | `oc-includes/osclass/classes/billing/OrderStore.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
-| `cart_checkout_before` | action | `$cart` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
-| `cart_discount_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
-| `cart_free_over` | filter | `$freeOver, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
-| `cart_needs_shipping` | filter | `true, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
-| `cart_problems` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
-| `cart_shipping_lines` | filter | `$default, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
-| `cart_shipping_methods` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
-| `cart_tax_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
-| `cart_totals` | filter | `$totals, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `change_email_confirm` | action | `Params::getParam('userId'), $change['old'], $change['new']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `cli_commands` | filter | `array()` | `oc-includes/osclass/classes/cli/Cli.php` |
 | `contact_form` | action | none | `oc-includes/osclass/gui/contact-content.php` |
