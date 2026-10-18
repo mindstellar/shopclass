@@ -19,7 +19,9 @@ namespace mindstellar\mail;
 use Admin;
 use Item;
 use mindstellar\billing\Order;
+use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\Receipts;
+use mindstellar\currency\Money;
 use OSCLocale;
 use Page;
 use Params;
@@ -2007,6 +2009,91 @@ final class CoreEmails
     }
 
     /**
+     * Tell the buyer their order arrived, with a link to rate each product.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderDelivered($order)
+    {
+        $rate  = '';
+        $seen  = array();
+        foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+            $itemId = (int) ($line['item_id'] ?? 0);
+            if ($line['kind'] !== OrderLineStore::KIND_ITEM || $itemId < 1 || isset($seen[$itemId])) {
+                continue;
+            }
+            $seen[$itemId] = true;
+            $rate .= '<li>' . osc_esc_html((string) $line['title']) . ' - <a href="' . osc_esc_html(osc_item_url_ns($itemId)) . '">'
+                . osc_esc_html(__('Rate it')) . '</a></li>';
+        }
+        $mail = self::orderMail($order, false, array('{ORDER_PRODUCTS}' => $rate === '' ? '' : '<ul>' . $rate . '</ul>'));
+        if ($mail === null) {
+            return;
+        }
+        self::sendStatusMail('delivered', $order, $mail, __('Your order {ORDER_NUMBER} was delivered'), __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'));
+    }
+
+    /**
+     * Tell the buyer their order was cancelled and what happens to a payment.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderCancelled($order)
+    {
+        $mail = self::orderMail($order, false);
+        if ($mail === null) {
+            return;
+        }
+        self::sendStatusMail('cancelled', $order, $mail, __('Your order {ORDER_NUMBER} was cancelled'), __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'));
+    }
+
+    /**
+     * Tell the buyer their order was refunded: how much, and how.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderRefunded($order)
+    {
+        $mail = self::orderMail($order, false, array(
+            '{REFUND_AMOUNT}' => osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())),
+        ));
+        if ($mail === null) {
+            return;
+        }
+        self::sendStatusMail('refunded', $order, $mail, __('Your order {ORDER_NUMBER} was refunded'), __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'));
+    }
+
+    /**
+     * Run a status mail's title and body through the usual filters and send it.
+     *
+     * @param string              $kind  delivered, cancelled or refunded; names the email_order_<kind>_* filters
+     * @param Order               $order
+     * @param array<string,mixed> $mail  From orderMail()
+     * @param string              $title
+     * @param string              $body
+     *
+     * @return void
+     */
+    private static function sendStatusMail(string $kind, Order $order, array $mail, string $title, string $body): void
+    {
+        $title = osc_apply_filter('email_order_' . $kind . '_title_after', osc_mailBeauty(osc_apply_filter(
+            'email_title',
+            osc_apply_filter('email_order_' . $kind . '_title', $title, $order)
+        ), $mail['words']), $order);
+        $body  = osc_apply_filter('email_order_' . $kind . '_description_after', osc_mailBeauty(osc_apply_filter(
+            'email_description',
+            osc_apply_filter('email_order_' . $kind . '_description', $body, $order)
+        ), $mail['htmlWords']), $order);
+        self::sendOrderMail($mail, $title, $body);
+    }
+
+    /**
      * Tell the shop owner a goods order came in that is paid or will be paid on delivery.
      *
      * @param Order $order
@@ -2036,10 +2123,11 @@ final class CoreEmails
      *
      * @param Order $order
      * @param bool  $toAdmin Send to the shop's contact address instead of the buyer
+     * @param array<string,string> $extra More placeholders, already escaped HTML
      *
      * @return array<string,mixed>|null null when there is nobody to send to
      */
-    private static function orderMail(Order $order, bool $toAdmin): ?array
+    private static function orderMail(Order $order, bool $toAdmin, array $extra = array()): ?array
     {
         $user  = User::getInstance()->findByPrimaryKey($order->getUserId());
         $buyer = $order->meta('_buyer');
@@ -2067,7 +2155,7 @@ final class CoreEmails
         }
 
         [$words, $htmlWords] = self::words(
-            array(
+            $extra + array(
                 '{ORDER_NUMBER}'   => Receipts::number($order),
                 '{USER_NAME}'      => $uname !== '' ? $uname : $email,
                 '{USER_EMAIL}'     => $email,
