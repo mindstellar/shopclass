@@ -13,9 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\base\Model;
-use mindstellar\container\Container;
+use mindstellar\boot\CoreServices;
 use mindstellar\database\Db;
-use mindstellar\event\Dispatcher;
 use mindstellar\listing\event\VariantPriceChanged;
 use mindstellar\listing\event\VariantStockChanged;
 
@@ -417,7 +416,7 @@ final class VariantStore extends Model
         if ($ids === array()) {
             return;
         }
-        $events = Container::root()->get(Dispatcher::class);
+        $events = CoreServices::dispatcher();
         Db::afterCommit(static function () use ($events, $itemId, $ids, $from, $to): void {
             foreach ($ids as $variantId) {
                 $events->dispatch(new VariantPriceChanged($variantId, $itemId, $from, $to));
@@ -455,7 +454,7 @@ final class VariantStore extends Model
         if ($stock === array() && $price === array()) {
             return;
         }
-        $events = Container::root()->get(Dispatcher::class);
+        $events = CoreServices::dispatcher();
         Db::afterCommit(static function () use ($events, $itemId, $stock, $price): void {
             foreach ($stock as [$variantId, $from, $to]) {
                 $events->dispatch(new VariantStockChanged($variantId, $itemId, $from, $to));

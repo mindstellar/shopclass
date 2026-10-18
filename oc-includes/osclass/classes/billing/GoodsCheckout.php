@@ -117,7 +117,7 @@ final class GoodsCheckout
         }
 
         $cart = $quote->cart();
-        $events  = $this->events ??= Container::root()->get(DispatcherInterface::class);
+        $events  = $this->events ??= CoreServices::dispatcher();
         $started = $events->dispatch(new CheckoutStarting($cart));
         if ($started->refusals() !== array()) {
             throw InvalidException::all($started->refusals());

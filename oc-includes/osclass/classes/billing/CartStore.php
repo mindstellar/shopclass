@@ -14,10 +14,10 @@ namespace mindstellar\billing;
 
 use mindstellar\billing\event\CartItemAdded;
 use mindstellar\billing\event\Line;
+use mindstellar\boot\CoreServices;
 use mindstellar\container\Container;
 use mindstellar\database\Db;
 use mindstellar\database\RowHashQuery;
-use mindstellar\event\DispatcherInterface;
 use mindstellar\model\KeyValue;
 use mindstellar\privacy\PersonalData;
 use mindstellar\user\UserStore;
@@ -87,7 +87,7 @@ final class CartStore
 
         if ($quote !== null) {
             $known  = array_column($out['before'], 'variant');
-            $events = Container::root()->get(DispatcherInterface::class);
+            $events = CoreServices::dispatcher();
             foreach ($quote->lines() as $line) {
                 if (!in_array($line['variant'], $known, true)) {
                     $events->dispatch(new CartItemAdded($quote->cart(), new Line(

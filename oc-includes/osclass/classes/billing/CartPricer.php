@@ -20,7 +20,7 @@ use mindstellar\billing\event\CartShipping;
 use mindstellar\billing\event\CartShippingLines;
 use mindstellar\billing\event\CartTaxLines;
 use mindstellar\billing\event\Line;
-use mindstellar\container\Container;
+use mindstellar\boot\CoreServices;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\listing\ListingQuery;
 use mindstellar\listing\PhotoStore;
@@ -509,7 +509,7 @@ final class CartPricer
 
     private function events(): DispatcherInterface
     {
-        return $this->events ??= Container::root()->get(DispatcherInterface::class);
+        return $this->events ??= CoreServices::dispatcher();
     }
 
     /**
