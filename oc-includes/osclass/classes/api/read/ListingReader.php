@@ -75,7 +75,8 @@ final class ListingReader
 
     /**
      * Listing rows made ready for many(). Only the context's language is read, unless the
-     * response carries `translations`.
+     * response carries `translations`. A response with no description, snippet or
+     * translations keeps no description text, so its cached page stays small.
      *
      * @param array<int,array<string,mixed>> $items t_item rows
      *
@@ -83,7 +84,18 @@ final class ListingReader
      */
     public function extend(array $items, ViewContext $context): array
     {
-        return $this->rows->extend($items, $context->locale(), $context->includes('translations') && $context->wants('translations'));
+        $rows = $this->rows->extend($items, $context->locale(), self::translations($context));
+        if (self::descriptions($context)) {
+            return $rows;
+        }
+        foreach ($rows as $i => $row) {
+            unset($rows[$i]['s_description']);
+            foreach (array_keys((array) ($row['locale'] ?? [])) as $code) {
+                unset($rows[$i]['locale'][$code]['s_description']);
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -91,7 +103,17 @@ final class ListingReader
      */
     public function extendKey(ViewContext $context): string
     {
-        return 'api|' . $context->locale() . '|' . (int) ($context->includes('translations') && $context->wants('translations'));
+        return 'api|' . $context->locale() . '|' . (int) self::translations($context) . (int) self::descriptions($context);
+    }
+
+    private static function translations(ViewContext $context): bool
+    {
+        return $context->includes('translations') && $context->wants('translations');
+    }
+
+    private static function descriptions(ViewContext $context): bool
+    {
+        return $context->wants('description') || $context->wants('snippet') || self::translations($context);
     }
 
     /**
