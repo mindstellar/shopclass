@@ -23,7 +23,7 @@ final class SavedListing
     /**
      * @param int|false|null $rows rows the edit updated; null for a new listing
      */
-    public function __construct(private int $id, private bool $needsValidation, private int|false|null $rows = null)
+    public function __construct(private int $id, private bool $needsValidation, private int|false|null $rows = null, private bool $unpaid = false)
     {
     }
 
@@ -59,6 +59,14 @@ final class SavedListing
     public function needsValidation(): bool
     {
         return $this->needsValidation;
+    }
+
+    /**
+     * The listing is saved hidden and waits for payment.
+     */
+    public function unpaid(): bool
+    {
+        return $this->unpaid;
     }
 
     /**
