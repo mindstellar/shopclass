@@ -9288,6 +9288,10 @@ msgid "Publish a listing"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
+msgid "Publish anyway"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Published"
@@ -9774,6 +9778,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 msgid "Repeat password"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Replace changes made elsewhere?"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
@@ -12187,6 +12195,12 @@ msgstr ""
 msgid "The sections could not be published."
 msgstr ""
 
+#: oc-includes/osclass/classes/widgets/Customiser.php
+msgid ""
+"The sections were changed elsewhere, such as on the Widgets screen, after "
+"this draft began. Publishing replaces those changes."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid ""
 "The sender cannot send messages for this long. Sign-in and posting still "
@@ -12413,6 +12427,19 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "These do not say they work with this site type: %s"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid ""
+"These sections were changed elsewhere, such as on the Widgets screen, after "
+"your draft began. Publishing replaces those changes with your draft."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid ""
+"These sections were changed elsewhere, such as on the Widgets screen, after "
+"your draft began. Publishing replaces those changes; Discard starts again "
+"from what is live."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
