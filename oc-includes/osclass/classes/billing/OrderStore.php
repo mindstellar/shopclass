@@ -391,8 +391,10 @@ final class OrderStore extends Model
     }
 
     /**
-     * A paid goods order was sent, or a cash on delivery one before it is paid. Fires
-     * `billing_order_shipped` ($orderId, $userId) once the write commits.
+     * A paid goods order was sent, or a cash on delivery one before it is paid. With no URL
+     * given, the `billing_tracking_url` filter ($url, $carrier, $tracking) may supply one, kept
+     * only when it is https. Fires `billing_order_shipped` ($orderId, $userId) once the write
+     * commits.
      *
      * @param int    $id
      * @param string $carrier  Up to 100 characters
@@ -407,13 +409,20 @@ final class OrderStore extends Model
         if ($order === null || !$order->canShip()) {
             return false;
         }
+        $carrier  = mb_substr(trim($carrier), 0, 100, 'UTF-8');
+        $tracking = mb_substr(trim($tracking), 0, 100, 'UTF-8');
+        $url      = trim($url);
+        if ($url === '') {
+            $found = osc_apply_filter('billing_tracking_url', $url, $carrier, $tracking);
+            $url   = is_string($found) ? Receipts::httpsUrl($found) : '';
+        }
         $at     = date('Y-m-d H:i:s');
         $userId = self::move($id, $order->getStatus(), Order::STATUS_SHIPPED, static function (array $meta) use ($carrier, $tracking, $url, $at): array {
             $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
             $meta['_shipping'] = array(
-                'carrier'    => mb_substr(trim($carrier), 0, 100, 'UTF-8'),
-                'tracking'   => mb_substr(trim($tracking), 0, 100, 'UTF-8'),
-                'url'        => mb_substr(trim($url), 0, 500, 'UTF-8'),
+                'carrier'    => $carrier,
+                'tracking'   => $tracking,
+                'url'        => mb_substr($url, 0, 500, 'UTF-8'),
                 'shipped_at' => $at,
             ) + $shipping;
 

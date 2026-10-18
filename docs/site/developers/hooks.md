@@ -219,8 +219,26 @@ below zero. `cart_item_add_after` is fired by a theme's cart, not by core.
 | `cart_tax_lines` | filter | `$lines, $cart` |
 | `cart_discount_lines` | filter | `$lines, $cart` |
 | `cart_totals` | filter | `$totals, $cart` |
+| `cart_free_over` | filter | `$freeOver, $cart` |
+| `cart_problems` | filter | `$problems, $cart` |
 | `cart_item_add_after` | action | `$cart, $line` |
 | `cart_checkout_before` | action | `$cart` |
+
+`$cart` also holds `coupon` (the code, upper-cased, or null) and `address`. On a quote,
+`address` has only the `country`, `state` and `postcode` the shopper gave; when an order is
+placed it is the full delivery address. A tax line with `meta.included` set to `true` is tax
+already in the prices: it is shown, counted in `totals.tax_included`, and not added to the total.
+`cart_free_over` returns `{amount, remaining}` to replace core's free-delivery meter, or null for
+none; core works out `remaining`. `cart_problems` entries are `{code, pointer, message}`: a code of
+`a-z` and `_` up to 32, a pointer of `/coupon`, `/address/postcode`, `/address/state`,
+`/address/country` or `/shipping_method`, and plain text up to 200 characters. Any other entry is
+dropped. The quote lists them under `problems`, and placing an order is refused with a 422 at that
+pointer.
+
+Orders and receipts have two filters of their own. `billing_tracking_url` (`$url, $carrier,
+$tracking`) gives a parcel its tracking link when the admin left it empty; only an https link is
+kept. `billing_receipt_details` (`$details, $order`) may set the receipt's `title`, `extra` and
+`summary` rows (`{label, value}`, plain text) and `footer`; core keeps every other key as it was.
 
 A paid order fires `billing_order_paid`, as it does today. A goods order also fires
 `billing_order_placed`, `billing_order_shipped`, `billing_order_delivered` and
@@ -242,7 +260,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 598 names. Generated from the source; do not edit by hand.
+Core fires 602 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -556,7 +574,7 @@ Core fires 598 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (235)
+### Other (239)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -642,11 +660,15 @@ Core fires 598 names. Generated from the source; do not edit by hand.
 | `billing_order_placed` | action | `$order->getId(), $userId` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
 | `billing_order_shipped` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
+| `billing_receipt_details` | filter | `$details, $order` | `oc-includes/osclass/classes/billing/Receipts.php` |
+| `billing_tracking_url` | filter | `$url, $carrier, $tracking` | `oc-includes/osclass/classes/billing/OrderStore.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `cart_checkout_before` | action | `$cart` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
 | `cart_discount_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
+| `cart_free_over` | filter | `$freeOver, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `cart_needs_shipping` | filter | `true, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
+| `cart_problems` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `cart_shipping_lines` | filter | `$default, $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `cart_shipping_methods` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |
 | `cart_tax_lines` | filter | `array(), $cart` | `oc-includes/osclass/classes/billing/CartPricer.php` |

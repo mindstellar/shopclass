@@ -49,7 +49,9 @@ final class OrdersController
 
     /**
      * `GET cart/quote`: the cart priced from the database. Public, because a guest's cart is
-     * priced too; a bad line is a problem in the answer, not an error.
+     * priced too; a bad line is a problem in the answer, not an error. The country, state,
+     * postcode and coupon reach the cart filters, so a plugin can price delivery, tax and
+     * discounts before checkout; a malformed one is left out.
      */
     public function quote(ApiCall $call): Response
     {
@@ -68,6 +70,8 @@ final class OrdersController
             'gateway'         => $request->queryString('gateway'),
             'user_id'         => $call->userId(),
             'locale'          => $request->queryString('locale'),
+            'address'         => CartPricer::quoteAddress($request->queryString('country'), $request->queryString('state'), $request->queryString('postcode')),
+            'coupon'          => $request->queryString('coupon'),
         ));
 
         $gateways = array();
@@ -117,7 +121,8 @@ final class OrdersController
             (array) ($input['address'] ?? array()),
             (string) ($input['shipping_method'] ?? ''),
             (string) ($input['gateway'] ?? ''),
-            (string) ($input['note'] ?? '')
+            (string) ($input['note'] ?? ''),
+            is_string($input['coupon'] ?? null) ? $input['coupon'] : null
         );
         $next = $placed['next'];
 

@@ -557,6 +557,10 @@ final class PublicRoutes
                     'lines'    => ['type' => 'string', 'maxLength' => 1000, 'pattern' => '^(?:[0-9]{1,12}:[0-9]{1,6}(?:,[0-9]{1,12}:[0-9]{1,6})*)?$', 'description' => 'variant:qty pairs, comma separated, at most 50. A quantity over 20 is capped with a problem.'],
                     'shipping' => ['type' => 'string', 'maxLength' => 64, 'description' => 'A shipping method id from shipping_methods; the first one when left out.'],
                     'gateway'  => ['type' => 'string', 'maxLength' => 64, 'description' => 'A payment method id; its fee is added to the totals.'],
+                    'country'  => ['type' => 'string', 'maxLength' => 200, 'description' => 'The delivery country\'s two-letter code, for delivery and tax plugins; anything else is ignored.'],
+                    'state'    => ['type' => 'string', 'maxLength' => 200, 'description' => 'The delivery state, up to 100 characters; a longer one is ignored.'],
+                    'postcode' => ['type' => 'string', 'maxLength' => 200, 'description' => 'The delivery postcode, up to 20 characters; a longer one is ignored.'],
+                    'coupon'   => ['type' => 'string', 'maxLength' => 200, 'description' => 'A coupon code: trimmed and upper-cased, 1-40 of A-Z, 0-9 and -. Anything else is ignored, not refused.'],
                     'locale'   => self::LOCALE,
                 ]
             ),

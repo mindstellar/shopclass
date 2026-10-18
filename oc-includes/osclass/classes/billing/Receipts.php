@@ -395,11 +395,13 @@ final class Receipts
 
     /**
      * What a goods order holds, as plain text: every line, the address, how it goes and the
-     * tracking once shipped. Escaping is the caller's.
+     * tracking once shipped, then the `billing_receipt_details` filter's ($details, $order)
+     * title, extra rows under the business details, summary rows under the lines and footer.
+     * The filter changes those four only. Escaping is the caller's.
      *
      * @param Order $order
      *
-     * @return array{lines:array<int,array<string,string>>,address:string[],shipping:string,carrier:string,tracking:string,tracking_url:string,total:string,note:string}
+     * @return array{lines:array<int,array<string,mixed>>,address:string[],shipping:string,carrier:string,tracking:string,tracking_url:string,total:string,note:string,title:string,extra:array<int,array{label:string,value:string}>,summary:array<int,array{label:string,value:string}>,footer:string}
      */
     public static function details(Order $order): array
     {
@@ -416,8 +418,9 @@ final class Receipts
                 'options' => implode(', ', $options),
                 'sku'     => (string) ($line['sku'] ?? ''),
                 'qty'     => (string) $line['qty'],
-                'unit'    => Money::format($line['unit'], $currency),
-                'amount'  => Money::format($line['amount'], $currency),
+                'unit'     => Money::format($line['unit'], $currency),
+                'amount'   => Money::format($line['amount'], $currency),
+                'included' => $line['kind'] === OrderLineStore::KIND_TAX && ($line['meta']['included'] ?? false) === true,
             );
         }
         $fulfilment = $order->fulfilment() ?? array();
@@ -427,9 +430,8 @@ final class Receipts
                 $address[] = trim($part);
             }
         }
-        $note = $order->meta('_note');
-
-        return array(
+        $note    = $order->meta('_note');
+        $details = array(
             'lines'        => $lines,
             'address'      => $address,
             'shipping'     => (string) ($fulfilment['label'] ?? ''),
@@ -438,7 +440,58 @@ final class Receipts
             'tracking_url' => self::httpsUrl((string) ($fulfilment['tracking_url'] ?? '')),
             'total'        => Money::format($order->getAmount(), $currency),
             'note'         => is_string($note) ? $note : '',
+            'title'        => __('Receipt'),
+            'extra'        => array(),
+            'summary'      => array(),
+            'footer'       => '',
         );
+        $asked = osc_apply_filter('billing_receipt_details', $details, $order);
+        $asked = is_array($asked) ? $asked : array();
+        $title = self::plain($asked['title'] ?? null, 100);
+
+        return array(
+            'title'   => $title !== '' ? $title : $details['title'],
+            'extra'   => self::rows($asked['extra'] ?? null),
+            'summary' => self::rows($asked['summary'] ?? null),
+            'footer'  => self::plain($asked['footer'] ?? null, 1000, true),
+        ) + $details;
+    }
+
+    /**
+     * Up to 30 {label, value} rows of plain text a receipt filter returned; a malformed row is dropped.
+     *
+     * @param mixed $rows
+     *
+     * @return array<int,array{label:string,value:string}>
+     */
+    private static function rows($rows): array
+    {
+        $out = array();
+        foreach (is_array($rows) ? $rows : array() as $row) {
+            $label = is_array($row) ? self::plain($row['label'] ?? null, 200) : '';
+            $value = is_array($row) ? self::plain($row['value'] ?? null, 500, true) : '';
+            if ($label !== '' && count($out) < 30) {
+                $out[] = array('label' => $label, 'value' => $value);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * A string trimmed to $max characters with control characters made spaces (line breaks
+     * kept when $lines), or '' for anything that is not a string.
+     *
+     * @param mixed $value
+     */
+    private static function plain($value, int $max, bool $lines = false): string
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+        $value = preg_replace($lines ? '/[\x00-\x09\x0B-\x1F\x7F]+/' : '/[\x00-\x1F\x7F]+/', ' ', str_replace("\r\n", "\n", $value)) ?? '';
+
+        return mb_substr(trim($value), 0, $max, 'UTF-8');
     }
 
     /**
@@ -469,14 +522,15 @@ final class Receipts
                 . '<th align="right">' . osc_esc_html(__('Qty')) . '</th>'
                 . '<th align="right">' . osc_esc_html(__('Amount')) . '</th></tr>';
         foreach ($details['lines'] as $line) {
-            $name = $line['kind'] === OrderLineStore::KIND_ITEM
+            $amount = !empty($line['included']) ? sprintf(__('%s (included)'), $line['unit']) : $line['amount'];
+            $name   = $line['kind'] === OrderLineStore::KIND_ITEM
                 ? '<strong>' . osc_esc_html($line['title']) . '</strong>'
                   . ($line['options'] !== '' ? '<br><span style="color:#666">' . osc_esc_html($line['options']) . '</span>' : '')
                   . ($line['sku'] !== '' ? '<br><span style="color:#666">' . osc_esc_html(sprintf(__('SKU %s'), $line['sku'])) . '</span>' : '')
                 : osc_esc_html($line['title']);
             $html .= '<tr><td>' . $name . '</td>'
                      . '<td align="right">' . ($line['kind'] === OrderLineStore::KIND_ITEM ? osc_esc_html($line['qty']) : '') . '</td>'
-                     . '<td align="right">' . osc_esc_html($line['amount']) . '</td></tr>';
+                     . '<td align="right">' . osc_esc_html($amount) . '</td></tr>';
         }
 
         return $html . '<tr><td colspan="2"><strong>' . osc_esc_html(__('Total')) . '</strong></td>'

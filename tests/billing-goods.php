@@ -31,6 +31,7 @@ use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\billing\Receipts;
 use mindstellar\exception\InvalidException;
 use mindstellar\listing\VariantStore;
 
@@ -127,9 +128,9 @@ pin('a string id and quantity are read', [$md, 3], [$quote([['variant' => (strin
 
 harness_section('caps and problems');
 $q = $quote([['variant' => $md, 'qty' => 25]]);
-pin('a quantity over 20 is capped with a problem', [20, [['line' => 0, 'code' => 'qty']]], [$q->lines()[0]['qty'], array_values(array_filter($q->problems(), static fn ($x) => $x['code'] === 'qty'))]);
+pin('a quantity over 20 is capped with a problem', [20, [['line' => 0, 'code' => 'qty', 'pointer' => null, 'message' => null]]], [$q->lines()[0]['qty'], array_values(array_filter($q->problems(), static fn ($x) => $x['code'] === 'qty'))]);
 $q = $quote([['variant' => $l, 'qty' => 0]]);
-pin('a quantity under 1 becomes 1 with a problem', [1, [['line' => 0, 'code' => 'qty']]], [$q->lines()[0]['qty'], $q->problems()]);
+pin('a quantity under 1 becomes 1 with a problem', [1, [['line' => 0, 'code' => 'qty', 'pointer' => null, 'message' => null]]], [$q->lines()[0]['qty'], $q->problems()]);
 $q = $quote([['variant' => $l, 'qty' => 2], ['variant' => $l, 'qty' => 3]]);
 pin('the same variant twice is one line', [1, 5], [count($q->lines()), $q->lines()[0]['qty']]);
 $many = [];
@@ -137,18 +138,18 @@ for ($i = 0; $i < 51; $i++) {
     $many[] = ['variant' => 900000 + $i, 'qty' => 1];
 }
 $q = $quote($many);
-pin('the 51st line is refused for the cap', ['line' => 50, 'code' => 'qty'], $q->problems()[50] ?? null);
+pin('the 51st line is refused for the cap', ['line' => 50, 'code' => 'qty', 'pointer' => null, 'message' => null], $q->problems()[50] ?? null);
 pin('every other unknown variant is not buyable', 50, count(array_filter($q->problems(), static fn ($x) => $x['code'] === 'not_buyable')));
 $q = $quote([['variant' => $hiddenV, 'qty' => 1], ['variant' => 999999, 'qty' => 1], ['variant' => $noPayV, 'qty' => 1], ['variant' => 'x'], 'junk', ['variant' => $md, 'qty' => 1]]);
 pin('hidden, unknown, priceless and malformed lines are problems, not errors', [
-    ['line' => 0, 'code' => 'not_buyable'], ['line' => 1, 'code' => 'not_buyable'], ['line' => 2, 'code' => 'not_buyable'],
-    ['line' => 3, 'code' => 'not_buyable'], ['line' => 4, 'code' => 'not_buyable'],
+    ['line' => 0, 'code' => 'not_buyable', 'pointer' => null, 'message' => null], ['line' => 1, 'code' => 'not_buyable', 'pointer' => null, 'message' => null], ['line' => 2, 'code' => 'not_buyable', 'pointer' => null, 'message' => null],
+    ['line' => 3, 'code' => 'not_buyable', 'pointer' => null, 'message' => null], ['line' => 4, 'code' => 'not_buyable', 'pointer' => null, 'message' => null],
 ], $q->problems());
 pin('and the good line is still priced', [1, $m(699)], [count($q->lines()), $q->total()]);
 $q = $quote([['variant' => $md, 'qty' => 1], ['variant' => $euroV, 'qty' => 1]]);
-pin('a line in another currency is not buyable', [['line' => 1, 'code' => 'not_buyable']], $q->problems());
+pin('a line in another currency is not buyable', [['line' => 1, 'code' => 'not_buyable', 'pointer' => null, 'message' => null]], $q->problems());
 $q = $quote([['variant' => $s, 'qty' => 1], ['variant' => $md, 'qty' => 4]]);
-pin('lines short of stock are out of stock', [['line' => 0, 'code' => 'out_of_stock'], ['line' => 1, 'code' => 'out_of_stock']], $q->problems());
+pin('lines short of stock are out of stock', [['line' => 0, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null], ['line' => 1, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null]], $q->problems());
 pin('with what is left', [0, 3], [$q->lines()[0]['stock_left'], $q->lines()[1]['stock_left']]);
 pin('and they are not in the subtotal', 0, $q->totals()['subtotal']);
 pin('an empty cart quotes zero in the site currency', [0, 'USD', []], [$quote([])->total(), $quote([])->currency(), $quote([])->lines()]);
@@ -213,9 +214,9 @@ $q = $quote([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => 'express']
 pin('the filters run in order, each seeing the lines before it', ['methods', 'shipping:express', 'tax:1', 'discount', 'totals:' . $m(9 + 99 + 10 - 5)], $seen);
 pin('a malformed method is dropped', ['standard', 'express'], array_column($q->shippingMethods(), 'id'));
 pin('the chosen method prices the shipping line', $m(99), $q->totals()['shipping']);
-pin('a bad tax line is dropped', [['id' => 'gst', 'label' => 'GST', 'amount' => $m(10), 'currency' => 'USD', 'meta' => ['rate' => 18]]], $q->extraLines('tax'));
+pin('a bad tax line is dropped', [['id' => 'gst', 'label' => 'GST', 'amount' => $m(10), 'currency' => 'USD', 'meta' => ['rate' => 18], 'included' => false]], $q->extraLines('tax'));
 pin('a discount always takes off', [-$m(5), $m(5)], [$q->extraLines('discount')[0]['amount'], $q->totals()['discount']]);
-pin('cart_totals adds a fee, and its own sums are ignored', ['subtotal' => $m(9), 'shipping' => $m(99), 'discount' => $m(5), 'tax' => $m(10), 'fee' => $m(2), 'total' => $m(115)], $q->totals());
+pin('cart_totals adds a fee, and its own sums are ignored', ['subtotal' => $m(9), 'shipping' => $m(99), 'discount' => $m(5), 'tax' => $m(10), 'tax_included' => 0, 'fee' => $m(2), 'total' => $m(115)], $q->totals());
 $huge = static function ($lines) {
     $lines[] = ['label' => 'Everything free', 'amount' => -9000000000000];
 
@@ -445,6 +446,136 @@ $all  = array_map(static fn (Order $o): int => $o->getId(), OrderStore::forUser(
 $page = array_map(static fn (Order $o): int => $o->getId(), OrderStore::forUser($tom, 2, 0, $all[1]));
 pin('forUser() is newest first and pages by id', array_slice($all, 2, 2), $page);
 pin('the statuses include shipped and delivered', true, in_array(Order::STATUS_SHIPPED, Order::STATUSES, true) && in_array(Order::STATUS_DELIVERED, Order::STATUSES, true));
+
+harness_section('what plugins see and add');
+$saw = [];
+$spy = static function ($lines, $cart) use (&$saw) {
+    $saw = [$cart['address'], $cart['coupon']];
+
+    return $lines;
+};
+osc_add_filter('cart_tax_lines', $spy);
+$quote([['variant' => $mugV, 'qty' => 1]], ['address' => CartPricer::quoteAddress(' in ', '', '110017'), 'coupon' => ' welcome10 ']);
+pin('the quote hands the filters the postcode, country and code, upper-cased', [['country' => 'IN', 'postcode' => '110017'], 'WELCOME10'], $saw);
+$quote([['variant' => $mugV, 'qty' => 1]], ['address' => CartPricer::quoteAddress('IND', str_repeat('x', 101), str_repeat('1', 21)), 'coupon' => 'no spaces!']);
+pin('a malformed country, state, postcode or code is left out', [[], null], $saw);
+pin('a code longer than 40 is no code', [null, 'A-1'], [CartPricer::coupon(str_repeat('A', 41)), CartPricer::coupon('a-1')]);
+osc_remove_filter('cart_tax_lines', $spy);
+
+$problemsFilter = static function ($problems, $cart) {
+    $problems[] = ['code' => 'not_serviceable', 'pointer' => '/address/postcode', 'message' => 'We do not deliver to this PIN code yet.'];
+    $problems[] = ['code' => 'nope', 'pointer' => '/lines/0', 'message' => 'Unknown pointer'];
+    $problems[] = ['code' => 'too_long', 'pointer' => '/coupon', 'message' => str_repeat('x', 300)];
+    $problems[] = ['code' => 'Bad-Code', 'pointer' => '/coupon', 'message' => 'Bad code'];
+    $problems[] = ['code' => 'empty', 'pointer' => '/coupon', 'message' => ' '];
+    $problems[] = 'junk';
+
+    return $problems;
+};
+osc_add_filter('cart_problems', $problemsFilter);
+$q = $quote([['variant' => $mugV, 'qty' => 1]]);
+pin('a cart_problems entry is kept with its pointer; an unknown pointer, a long or empty text and a bad code are dropped', [
+    ['line' => null, 'code' => 'not_serviceable', 'pointer' => '/address/postcode', 'message' => 'We do not deliver to this PIN code yet.'],
+], $q->problems());
+$before = [$orders(), $lineRows()];
+pin('placing refuses with it, as rejected', ['/address/postcode rejected'], $refused(static fn () => $checkout->place($tom, [['variant' => $mugV, 'qty' => 1]], $address, 'standard', 'fake')));
+$message = '';
+try {
+    $checkout->place($tom, [['variant' => $mugV, 'qty' => 1]], $address, 'standard', 'fake');
+} catch (InvalidException $e) {
+    $message = $e->errors()[0]['message'];
+}
+pin('in the plugin\'s words, writing nothing', ['We do not deliver to this PIN code yet.', $before], [$message, [$orders(), $lineRows()]]);
+osc_remove_filter('cart_problems', $problemsFilter);
+
+$coupons = [];
+$couponSpy = static function ($lines, $cart) use (&$coupons) {
+    $coupons[] = $cart['coupon'];
+
+    return $lines;
+};
+osc_add_filter('cart_discount_lines', $couponSpy);
+$checkout->place($tom, [['variant' => $mugV, 'qty' => 1]], $address, 'standard', 'fake', '', 'save5');
+pin('place() hands the filters the code too', ['SAVE5'], $coupons);
+osc_remove_filter('cart_discount_lines', $couponSpy);
+
+$taxes = static function ($lines) use ($m) {
+    $lines[] = ['id' => 'tax.vat.20', 'label' => 'VAT 20%', 'amount' => $m(1.5), 'meta' => ['included' => true, 'bp' => 2000]];
+    $lines[] = ['id' => 'tax.levy', 'label' => 'Levy', 'amount' => $m(1)];
+    $lines[] = ['id' => 'tax.str', 'label' => 'Not really included', 'amount' => $m(2), 'meta' => ['included' => 'true']];
+
+    return $lines;
+};
+osc_add_filter('cart_tax_lines', $taxes);
+$q = $quote([['variant' => $mugV, 'qty' => 1]]);
+pin('an included tax line is marked; only a true flag counts', [true, false, false], array_column($q->extraLines('tax'), 'included'));
+pin('it raises tax_included and leaves the total alone; an additive one still adds', [$m(3), $m(1.5), $m(9 + 49 + 3)], [$q->totals()['tax'], $q->totals()['tax_included'], $q->total()]);
+$taxed = $checkout->place($tom, [['variant' => $mugV, 'qty' => 1]], $address, 'standard', 'fake')['order'];
+$taxLines = array_values(array_filter(OrderLineStore::ofOrder($taxed->getId()), static fn ($x) => $x['kind'] === 'tax'));
+pin('the included one is stored with amount 0 and the tax as its unit', [[0, $m(1.5), true], [$m(1), $m(1), null], [$m(2), $m(2), 'true']], array_map(static fn ($x) => [$x['amount'], $x['unit'], $x['meta']['included'] ?? null], $taxLines));
+pin('so the lines still add up to the total', OrderStore::find($taxed->getId())->getAmount(), (int) array_sum(array_column(OrderLineStore::ofOrder($taxed->getId()), 'amount')));
+$receipt = Receipts::details(OrderStore::find($taxed->getId()));
+$vatRow  = array_values(array_filter($receipt['lines'], static fn ($x) => $x['title'] === 'VAT 20%'))[0];
+check('the receipt and its mail show the tax as included', $vatRow['included'] === true && str_contains(Receipts::linesHtml($receipt), '>1.50 USD (included)<'), Receipts::linesHtml($receipt));
+osc_remove_filter('cart_tax_lines', $taxes);
+OrderStore::cancel($taxed->getId());
+
+$free = null;
+$freeOver = static function ($core, $cart) use (&$free) {
+    return $free;
+};
+osc_add_filter('cart_free_over', $freeOver);
+$free = ['amount' => $m(500), 'remaining' => 1];
+pin('cart_free_over replaces the meter; remaining is core\'s sum', ['amount' => $m(500), 'remaining' => $m(491)], $quote([['variant' => $mugV, 'qty' => 1]])->freeOver());
+$free = null;
+pin('null takes the meter away', null, $quote([['variant' => $mugV, 'qty' => 1]])->freeOver());
+$free = ['amount' => 'lots'];
+pin('a malformed answer keeps core\'s', ['amount' => $m(999), 'remaining' => $m(990)], $quote([['variant' => $mugV, 'qty' => 1]])->freeOver());
+osc_remove_filter('cart_free_over', $freeOver);
+
+harness_section('tracking links and receipt details from plugins');
+$track = static fn ($url, $carrier, $tracking) => $carrier === 'Delhivery' ? 'https://track.example.test/' . $tracking : 'http://insecure.example.test/' . $tracking;
+osc_add_filter('billing_tracking_url', $track, 10, 3);
+$shipA = OrderStore::create($tom, 'fake', $m(9), 'USD', 0, ['_kind' => 'goods']);
+$shipB = OrderStore::create($tom, 'fake', $m(9), 'USD', 0, ['_kind' => 'goods']);
+$shipC = OrderStore::create($tom, 'fake', $m(9), 'USD', 0, ['_kind' => 'goods']);
+foreach ([$shipA, $shipB, $shipC] as $o) {
+    Billing::markPaid($o);
+}
+OrderStore::ship($shipA->getId(), ' Delhivery ', ' AB1 ', '');
+OrderStore::ship($shipB->getId(), 'Other', 'AB2', '');
+OrderStore::ship($shipC->getId(), 'Delhivery', 'AB3', 'https://own.example.test/AB3');
+pin('with no URL the filter\'s https one is kept, an http one refused, a given one wins', ['https://track.example.test/AB1', '', 'https://own.example.test/AB3'], [
+    OrderStore::find($shipA->getId())->fulfilment()['tracking_url'], OrderStore::find($shipB->getId())->fulfilment()['tracking_url'], OrderStore::find($shipC->getId())->fulfilment()['tracking_url'],
+]);
+osc_remove_filter('billing_tracking_url', $track);
+
+$invoice = static function ($details, $order) {
+    $details['title']     = 'Tax <invoice>';
+    $details['extra'][]   = ['label' => 'GSTIN', 'value' => '07AAA<b>1Z5'];
+    $details['extra'][]   = ['label' => '', 'value' => 'no label'];
+    $details['summary'][] = ['label' => 'Taxable value', 'value' => '$ 9.00'];
+    $details['footer']    = 'Thank you. <script>x</script>';
+    $details['total']     = '$ 0.00';
+    $details['lines']     = [];
+
+    return $details;
+};
+osc_add_filter('billing_receipt_details', $invoice, 10, 2);
+$shown = Receipts::details(OrderStore::find($shipA->getId()));
+pin('the filter sets title, extra, summary and footer, and nothing else', ['Tax <invoice>', [['label' => 'GSTIN', 'value' => '07AAA<b>1Z5']], [['label' => 'Taxable value', 'value' => '$ 9.00']], 'Thank you. <script>x</script>', true], [
+    $shown['title'], $shown['extra'], $shown['summary'], $shown['footer'], $shown['total'] !== '$ 0.00',
+]);
+ob_start();
+Receipts::render(OrderStore::find($shipA->getId()), 'https://example.test/', 'Back');
+$html = (string) ob_get_clean();
+check('the receipt page prints them escaped', str_contains($html, 'Tax &lt;invoice&gt; ') && str_contains($html, '07AAA&lt;b&gt;1Z5') && str_contains($html, 'Taxable value')
+    && str_contains($html, 'Thank you. &lt;script&gt;') && !str_contains($html, '<script>') && !str_contains($html, 'not a tax invoice'));
+osc_remove_filter('billing_receipt_details', $invoice);
+ob_start();
+Receipts::render(OrderStore::find($shipA->getId()), 'https://example.test/', 'Back');
+$html = (string) ob_get_clean();
+check('without it the receipt reads as before', str_contains($html, 'Receipt #') && str_contains($html, 'not a tax invoice'));
 
 harness_section('counting a user\'s orders');
 $ann   = seed_user($admin, 'ann', 'ann@example.test');

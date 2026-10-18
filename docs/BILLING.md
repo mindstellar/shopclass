@@ -679,11 +679,13 @@ touched.
 | `billing_can_publish` | filter | Veto or override the quota decision, on every call including billing-off |
 | `billing_feature_price` | filter | Override a feature's credit price. Receives `($price, $featureId, $userId)` — `$userId` is who the price is being resolved for, and is `null` when no user is in scope (e.g. listing a feature's price with nobody buying yet) |
 | `billing_feature_duration` | filter | Override a duration feature's granted days. Receives `($days, $featureId, $userId)`, same `$userId` convention as `billing_feature_price` |
+| `billing_tracking_url` | filter | `($url, $carrier, $tracking)` in `OrderStore::ship()` when the admin left the link empty; kept only when https |
+| `billing_receipt_details` | filter | `($details, $order)` sets the receipt's `title`, `extra` and `summary` rows (`{label, value}`) and `footer`, plain text; every other key stays core's |
 
 ### Cart hooks
 
-`CartPricer::quote()` fires the five filters in table order on every quote and placement.
-`$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal}`; later
+`CartPricer::quote()` fires the filters in table order on every quote and placement.
+`$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal, coupon}`; later
 filters also see `shipping_lines`, `tax_lines` and `discount_lines`. A line is
 `{id, label, amount (micros), currency, meta}`; one in another currency is dropped, and so is
 one below zero unless it is a discount. A filter
@@ -701,8 +703,34 @@ the theme's cart, not core. A paid order reuses `billing_order_paid`.
 | `cart_tax_lines` | filter | `($lines, $cart)` the tax lines |
 | `cart_discount_lines` | filter | `($lines, $cart)` the discount lines |
 | `cart_totals` | filter | `($totals, $cart)` the totals |
+| `cart_free_over` | filter | `($freeOver, $cart)` `{amount, remaining}` to replace the free-delivery meter, null for none; core works out `remaining` |
+| `cart_problems` | filter | `($problems, $cart)` entries `{code, pointer, message}` that stop the order |
 | `cart_item_add_after` | action | `($cart, $line)` after a line is added |
 | `cart_checkout_before` | action | `($cart)` before checkout starts |
+
+**Address and coupon.** `GET cart/quote` takes `country` (two letters), `state` (up to 100) and
+`postcode` (up to 20); they reach `$cart['address']` as those three keys only. On placement
+`address` is the full delivery address. `coupon` (query, or the `POST account/orders` body) is
+trimmed and upper-cased to `[A-Z0-9-]{1,40}`, else null. A malformed value is dropped, not refused.
+
+**Included tax.** A `cart_tax_lines` line with `meta.included === true` is tax already in the
+prices. The quote shows it with `included: true` and sums it into `totals.tax_included`;
+`totals.tax` and the total take only the other tax lines. The order stores it as a `tax` line with
+`i_amount 0`, `i_unit` the tax and meta `included`, so an order's lines still add up to its
+total. The API order line carries `included`; the receipt and order mails print it as
+"(included)".
+
+**Problems.** A `cart_problems` entry needs a code of `[a-z_]{1,32}`, a pointer from
+`CartPricer::PROBLEM_POINTERS` (`/coupon`, `/address/postcode`, `/address/state`,
+`/address/country`, `/shipping_method`) and a message of 1-200 characters; anything else is
+dropped. The quote returns them in `problems[]` with `line` null; core's line problems have
+`pointer` and `message` null. `place()` refuses on any, a 422 with field code `rejected` at the
+entry's pointer and its message.
+
+`osc_kv_increment($group, $key, $by, $ttl)` keeps a counter in `t_key_value` and returns its new
+value. `OrderStore::countForUser($userId, $statuses, $gateways)` and
+`osc_billing_user_order_count($userId, $statuses)` count a user's goods orders on
+`idx_user_status`.
 
 ---
 

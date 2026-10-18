@@ -36,7 +36,8 @@ if ($receipt['ref'] !== '') {
 if ($receipt['email'] !== '') {
     $rows[__('Paid by')] = $receipt['email'];
 }
-$title = sprintf(__('Receipt %s'), $receipt['label']);
+$details = !empty($receipt['details']) ? $receipt['details'] : null;
+$title   = $details === null ? sprintf(__('Receipt %s'), $receipt['label']) : sprintf(__('%1$s %2$s'), $details['title'], $receipt['label']);
 ?>
 <!doctype html>
 <html lang="<?php echo osc_esc_html(str_replace('_', '-', osc_current_user_locale())); ?>">
@@ -64,6 +65,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
 .rc-rows th{width:42%;padding-right:16px;color:var(--muted);font-weight:400}
 .rc-rows td{overflow-wrap:anywhere}
 .rc-note{margin:24px 0 0;color:var(--muted);font-size:.9rem}
+.rc-extra{margin:12px 0 0;padding:0;list-style:none;color:var(--muted);font-size:.9rem}
 @media (max-width:480px){.rc-paper{padding:24px 18px}.rc-rows th,.rc-rows td{display:block;width:auto;padding:0}.rc-rows th{padding-top:10px}.rc-rows td{border-top:0;padding-bottom:10px}}
 @media print{:root{--bg:#fff;--paper:#fff;--ink:#000;--muted:#444;--line:#bbb;--warn:#000;--warn-bg:#fff}body{font-size:12pt}.rc-wrap{max-width:none;padding:0}.rc-tools{display:none}.rc-paper{border:0;padding:0}.rc-status{border:2px solid #000}}
 </style>
@@ -79,6 +81,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
         <?php if ($receipt['business'] !== '') { ?>
             <p class="rc-business"><?php echo nl2br(osc_esc_html($receipt['business']), false); ?></p>
         <?php } ?>
+        <?php if ($details !== null && $details['extra'] !== array()) { ?>
+            <ul class="rc-extra">
+                <?php foreach ($details['extra'] as $row) { ?>
+                    <li><?php echo osc_esc_html($row['label']); ?>: <?php echo nl2br(osc_esc_html($row['value']), false); ?></li>
+                <?php } ?>
+            </ul>
+        <?php } ?>
         <h1 class="rc-title"><?php echo osc_esc_html($title); ?></h1>
         <?php if ($receipt['refunded']) { ?>
             <p class="rc-status"><?php echo osc_esc_html(__('Refunded')); ?></p>
@@ -91,8 +100,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
                 </tr>
             <?php } ?>
         </table>
-        <?php if (!empty($receipt['details'])) {
-            $details = $receipt['details']; ?>
+        <?php if ($details !== null) { ?>
             <table class="rc-rows rc-lines">
                 <?php foreach ($details['lines'] as $line) { ?>
                     <tr>
@@ -105,10 +113,20 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
                                 <br><small><?php echo osc_esc_html(trim($line['options'] . ' ' . ($line['sku'] !== '' ? sprintf(__('SKU %s'), $line['sku']) : ''))); ?></small>
                             <?php } ?>
                         </th>
-                        <td><?php echo osc_esc_html($line['amount']); ?></td>
+                        <td><?php echo osc_esc_html(!empty($line['included']) ? sprintf(__('%s (included)'), $line['unit']) : $line['amount']); ?></td>
                     </tr>
                 <?php } ?>
             </table>
+            <?php if ($details['summary'] !== array()) { ?>
+                <table class="rc-rows rc-summary">
+                    <?php foreach ($details['summary'] as $row) { ?>
+                        <tr>
+                            <th scope="row"><?php echo osc_esc_html($row['label']); ?></th>
+                            <td><?php echo nl2br(osc_esc_html($row['value']), false); ?></td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            <?php } ?>
             <?php if ($details['address'] !== array()) { ?>
                 <table class="rc-rows">
                     <tr>
@@ -125,11 +143,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
             <?php } ?>
         <?php } ?>
         <p class="rc-note">
-            <?php echo osc_esc_html($receipt['refunded']
-                ? (empty($receipt['details'])
+            <?php echo nl2br(osc_esc_html($receipt['refunded']
+                ? ($details === null
                     ? __('This payment was refunded. The credits were taken back.')
                     : __('This payment was refunded.'))
-                : __('Thank you for your payment. This is a receipt, not a tax invoice.')); ?>
+                : ($details !== null && $details['footer'] !== '' ? $details['footer'] : __('Thank you for your payment. This is a receipt, not a tax invoice.'))), false); ?>
         </p>
     </main>
 </div>

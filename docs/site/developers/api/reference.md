@@ -1520,6 +1520,10 @@ Price a cart: lines, shipping, fees and totals, worked out from the database
 | `lines` | query | string | no | variant:qty pairs, comma separated, at most 50. A quantity over 20 is capped with a problem. |
 | `shipping` | query | string | no | A shipping method id from shipping_methods; the first one when left out. |
 | `gateway` | query | string | no | A payment method id; its fee is added to the totals. |
+| `country` | query | string | no | The delivery country's two-letter code, for delivery and tax plugins; anything else is ignored. |
+| `state` | query | string | no | The delivery state, up to 100 characters; a longer one is ignored. |
+| `postcode` | query | string | no | The delivery postcode, up to 20 characters; a longer one is ignored. |
+| `coupon` | query | string | no | A coupon code: trimmed and upper-cased, 1-40 of A-Z, 0-9 and -. Anything else is ignored, not refused. |
 | `locale` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
