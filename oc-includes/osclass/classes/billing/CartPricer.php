@@ -92,6 +92,7 @@ final class CartPricer
                 'variant'        => $variantId,
                 'qty'            => $qty,
                 'item_id'        => $itemId,
+                'category_id'    => (int) $listing['fk_i_category_id'],
                 'title'          => $listing['title'],
                 'options'        => is_array($options) && $options !== array() ? $options : null,
                 'sku'            => isset($variant['s_sku']) && $variant['s_sku'] !== '' ? (string) $variant['s_sku'] : null,
