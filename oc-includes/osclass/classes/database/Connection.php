@@ -488,7 +488,10 @@ class Connection
                 }
                 $out .= $this->literal($params[$next++]);
             } else {
-                $out .= $c;
+                // Copy up to the next character the scan cares about in one step.
+                $run  = strcspn($sql, "'\"`-/#?", $i + 1);
+                $out .= $c . substr($sql, $i + 1, $run);
+                $i   += $run;
             }
         }
         if ($next !== \count($params)) {
