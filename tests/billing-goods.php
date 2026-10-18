@@ -246,6 +246,19 @@ foreach (['cart_shipping_lines', 'cart_tax_lines'] as $hook) {
 }
 osc_remove_filter('cart_totals', $negativeFee);
 
+$badMethods = static function ($methods) use ($m) {
+    $methods[] = ['id' => 'pickup', 'label' => 'Pickup', 'amount' => $m(3)];
+    $methods[] = ['id' => 'refund', 'label' => 'Refund', 'amount' => -$m(5)];
+    $methods[] = ['id' => 'pickup', 'label' => 'Second pickup', 'amount' => $m(1)];
+    $methods[] = ['id' => 'blank', 'label' => '  ', 'amount' => $m(1)];
+
+    return $methods;
+};
+osc_add_filter('cart_shipping_methods', $badMethods, 10);
+$q = $quote([['variant' => $mugV, 'qty' => 1]]);
+pin('an old callback\'s negative, duplicate or unlabelled method is dropped', [['standard', 'Standard delivery', $m(49)], ['pickup', 'Pickup', $m(3)]], array_map(static fn ($x) => [$x['id'], $x['label'], $x['amount']], $q->shippingMethods()));
+osc_remove_filter('cart_shipping_methods', $badMethods);
+
 harness_section('the quote reads three times');
 check('the query counter works here', harness_questions() >= 0);
 $count = harness_query_count(static fn () => $quote([['variant' => $md, 'qty' => 1], ['variant' => $mugV, 'qty' => 1], ['variant' => $l, 'qty' => 1]]));
