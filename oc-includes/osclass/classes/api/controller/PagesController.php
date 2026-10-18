@@ -46,12 +46,22 @@ final class PagesController
 
     public function menus(ApiCall $call): Response
     {
-        $locale = $this->api->locale($call->request());
-        $menus  = $this->serializer->menus(
+        $locale  = $this->api->locale($call->request());
+        $catalog = CategoryCatalog::fromSite();
+        $key     = 'menu-urls|' . $locale . '|' . CacheGroup::generation('preference');
+        $urls    = CacheGroup::remember('category', $key, static function () use ($catalog): array {
+            $urls = [];
+            foreach ($catalog->childIds(0) as $id) {
+                $urls[$id] = (string) osc_search_url(['sCategory' => $id]);
+            }
+
+            return $urls;
+        }) ?? [];
+        $menus = $this->serializer->menus(
             $this->linked($locale),
-            CategoryCatalog::fromSite(),
+            $catalog,
             $locale,
-            static fn (array $row): string => (string) osc_search_url(['sCategory' => (int) $row['pk_i_id']])
+            static fn (array $row): string => $urls[(int) $row['pk_i_id']] ?? (string) osc_search_url(['sCategory' => (int) $row['pk_i_id']])
         );
 
         return Page::whole($menus, $this->api->links(), $call);
