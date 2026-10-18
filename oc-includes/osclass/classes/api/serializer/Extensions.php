@@ -25,6 +25,9 @@ final class Extensions
     /** @var array<string,true> messages already logged, so a page of 50 rows logs each once */
     private array $logged = [];
 
+    /** @var array<string,array<string,int>> hook and member count => the members as keys */
+    private array $memberKeys = [];
+
     /**
      * @param callable|null $log receives each message; error_log() by default
      */
@@ -70,6 +73,10 @@ final class Extensions
         if (!is_array($filtered)) {
             ($this->log)($hook . ' returned ' . get_debug_type($filtered) . ' instead of an array; the filter was ignored.');
 
+            return $before;
+        }
+        // No filter changed it: nothing to check.
+        if ($filtered === $before && !array_key_exists('ext', $before) && array_diff_key($before, $this->memberKeys[$hook . count($members)] ??= array_flip($members)) === []) {
             return $before;
         }
         // The view's members are the ones the serializer built, plus `ext`.
