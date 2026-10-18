@@ -12,7 +12,7 @@
 namespace mindstellar\admin\form;
 
 use mindstellar\base\SettingsScreen;
-use mindstellar\market\SiteMode;
+use mindstellar\site\SiteMode;
 use mindstellar\security\Demo;
 use mindstellar\utility\Utils;
 

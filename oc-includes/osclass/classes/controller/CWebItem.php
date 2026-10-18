@@ -27,7 +27,7 @@ use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
-use mindstellar\market\SiteMode;
+use mindstellar\site\SiteMode;
 use mindstellar\security\Captcha;
 use mindstellar\utility\Validate;
 

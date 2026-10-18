@@ -1430,7 +1430,7 @@ function osc_watermark_opacity(): int
  */
 function osc_site_mode(): string
 {
-    return \mindstellar\market\SiteMode::normalize((string) getPreference('site_mode'));
+    return \mindstellar\site\SiteMode::normalize((string) getPreference('site_mode'));
 }
 
 /**

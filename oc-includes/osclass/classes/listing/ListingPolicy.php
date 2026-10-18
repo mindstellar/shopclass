@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
-use mindstellar\market\SiteMode;
+use mindstellar\site\SiteMode;
 use mindstellar\security\ActionThrottle;
 
 /**

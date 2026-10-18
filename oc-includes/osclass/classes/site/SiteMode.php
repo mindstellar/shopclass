@@ -11,13 +11,13 @@ declare(strict_types=1);
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-namespace mindstellar\market;
+namespace mindstellar\site;
 
 /**
  * What the site is for: classifieds, a shop, or both. Packages declare the modes they
  * support in their manifest.
  *
- * @package mindstellar\market
+ * @package mindstellar\site
  */
 final class SiteMode
 {
