@@ -327,6 +327,33 @@ Billing::queueRelease();
 Billing::queueRelease();
 pin('the daily tick queues it once', 1, osc_job_count('pending', Billing::JOB_RELEASE));
 
+harness_section('one gateway\'s pending orders, for its provider check');
+$poll = [];
+foreach ([5, 3, 1] as $days) {
+    $o = OrderStore::create($tom, 'poll', $m(5), 'USD', $days === 3 ? 10 : 0);
+    OrderStore::attachRef($o->getId(), 'poll', 'cs_' . $days);
+    $age($o, $days);
+    $poll[$days] = $o->getId();
+}
+$noRef = OrderStore::create($tom, 'poll', $m(5), 'USD', 0);
+$age($noRef, 4);
+$otherRef = OrderStore::create($tom, 'poll', $m(5), 'USD', 0);
+OrderStore::attachRef($otherRef->getId(), 'poll', 'pi_x');
+$age($otherRef, 4);
+$fresh = OrderStore::create($tom, 'poll', $m(5), 'USD', 0);
+OrderStore::attachRef($fresh->getId(), 'poll', 'cs_fresh');
+$elsewhere = OrderStore::create($tom, 'card', $m(5), 'USD', 0);
+OrderStore::attachRef($elsewhere->getId(), 'card', 'cs_card');
+$age($elsewhere, 6);
+$ids = static fn (array $orders): array => array_map(static fn (Order $o): int => $o->getId(), $orders);
+$dayAgo = date('Y-m-d H:i:s', time() - 43200);
+pin('oldest first, goods and credit orders, only ours with the prefix', [$poll[5], $poll[3], $poll[1]], $ids(OrderStore::pendingBefore('poll', $dayAgo, 10, 'cs_')));
+pin('the limit keeps the oldest', [$poll[5]], $ids(OrderStore::pendingBefore('poll', $dayAgo, 1, 'cs_')));
+pin('no prefix: every order with a reference', [$poll[5], $otherRef->getId(), $poll[3], $poll[1]], $ids(OrderStore::pendingBefore('poll', $dayAgo, 10)));
+Billing::markPaid(OrderStore::find($poll[5]));
+pin('a settled order drops out', [$poll[3], $poll[1]], $ids(OrderStore::pendingBefore('poll', $dayAgo, 10, 'cs_')));
+pin('a LIKE wildcard in the prefix is literal', [], $ids(OrderStore::pendingBefore('poll', $dayAgo, 10, 'c%')));
+
 harness_section('open held orders per buyer');
 $setLimit = static function (string $limit): void {
     Preference::getInstance()->set('billing_open_hold_orders', $limit);

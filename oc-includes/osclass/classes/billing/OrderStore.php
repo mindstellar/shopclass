@@ -598,6 +598,34 @@ final class OrderStore extends Model
     }
 
     /**
+     * One gateway's pending orders placed before $before that carry its reference, oldest first:
+     * the orders a gateway asks its provider about when no webhook came. Goods and credit orders
+     * alike. Reads a range of idx_status_date.
+     *
+     * @param string $gateway
+     * @param string $before    Y-m-d H:i:s
+     * @param int    $limit
+     * @param string $refPrefix Only references that start with this, such as "cs_"
+     *
+     * @return Order[]
+     * @throws DbException
+     */
+    public static function pendingBefore(string $gateway, string $before, int $limit, string $refPrefix = ''): array
+    {
+        $query = self::table()
+            ->where('s_status', Order::STATUS_PENDING)
+            ->where('dt_date', '<', $before)
+            ->where('s_gateway', $gateway)
+            ->whereNotNull('s_external_ref');
+        if ($refPrefix !== '') {
+            $query = $query->where('s_external_ref', 'LIKE', addcslashes($refPrefix, '\\%_') . '%');
+        }
+        $rows = $query->orderBy('dt_date', 'ASC')->orderBy('pk_i_id', 'ASC')->limit(max(1, $limit))->get();
+
+        return array_map(static fn (array $row): Order => Order::fromRow($row), $rows);
+    }
+
+    /**
      * Orders across the whole site.
      *
      * @param int         $limit
