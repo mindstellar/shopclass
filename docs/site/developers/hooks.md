@@ -249,8 +249,52 @@ Pass `[ClassName::class, 'method']` to have core build the class on its first ev
 method is called as is; any other is called on the shared instance from `Container::root()`. Nothing
 is built when you register, so a plugin's `index.php` stays cheap.
 
+A typed callback added on several names of one event, such as `cart_needs_shipping` and
+`cart_shipping_methods`, runs once per event. Removing it from one name removes it from all.
+
 Core never fires these names through `osc_run_hook()` or `osc_apply_filter()`. Their entries in the
 reference below have the kind `event` and name the event class.
+
+### Container and dispatcher
+
+`Container::root()` (`mindstellar\container`) is the site's one container. It builds each service
+on first use and shares it after. Register yours on `init`:
+
+```php
+Container::root()->set(MyNotifier::class, static fn (Container $c): MyNotifier => new MyNotifier($c->get(DispatcherInterface::class)));
+```
+
+`set()` takes a factory; `instance()` takes an object already built, and the later call wins. A
+class whose constructor needs no arguments is built without either. A service that needs itself throws
+`LogicException`.
+
+`CoreServices::dispatcher()` (`mindstellar\boot`) is the site's event dispatcher. To give your own
+event old hook names, extend `Event`, implement `Bridged` and own the names:
+
+```php
+final class StockLow extends Event implements Bridged
+{
+    public function __construct(private int $itemId)
+    {
+    }
+
+    public static function legacyNames(): array
+    {
+        return ['my_stock_low'];
+    }
+
+    public function applyLegacy(string $name, callable $fn): void
+    {
+        $fn($this->itemId);
+    }
+}
+
+HookBridge::active()->own(StockLow::class);
+CoreServices::dispatcher()->dispatch(new StockLow($itemId));
+```
+
+`applyLegacy()` calls an old-style callback with the hook's old arguments. Override `accepts($name)`
+when one class owns names that only some of its events should run.
 
 ## Cart hooks
 

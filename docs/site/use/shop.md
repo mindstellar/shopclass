@@ -66,8 +66,8 @@ The buyer is e-mailed when an order is:
 6. **refunded**.
 
 You get a "New order" mail for each order. A mail that cannot be sent waits on the job queue and
-is tried again, once per order and kind. Developers change the wording with the
-`email_order_<kind>_title` and `_description` filters.
+is tried again, once per order and kind. Developers change the wording with the `MailComposing`
+event; see [Order mails](/docs/developers/hooks/#order-mails).
 
 ## 5. Plugins that add to the shop
 
