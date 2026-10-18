@@ -685,7 +685,8 @@ touched.
 `CartPricer::quote()` fires the five filters in table order on every quote and placement.
 `$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal}`; later
 filters also see `shipping_lines`, `tax_lines` and `discount_lines`. A line is
-`{id, label, amount (micros), currency, meta}`; one in another currency is dropped. A filter
+`{id, label, amount (micros), currency, meta}`; one in another currency is dropped, and so is
+one below zero unless it is a discount. A filter
 adds lines; core sums them, so no filter sets an item's price. `cart_totals` adds fee lines
 under `fees`; its other values are ignored and the total never goes below zero. Core's
 "Standard delivery" is a `cart_shipping_methods` listener at priority 5.

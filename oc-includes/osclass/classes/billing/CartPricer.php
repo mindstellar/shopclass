@@ -21,7 +21,8 @@ use mindstellar\listing\VariantStore;
  * price, stock check and total is read or worked out here. Three queries (variants, listings,
  * photos), then the cart filters in this order: `cart_shipping_methods`, `cart_shipping_lines`,
  * `cart_tax_lines`, `cart_discount_lines`, `cart_totals`. A filter adds lines; the sums are
- * always core's, so no filter can change an item's price, and the total never goes below zero.
+ * always core's, so no filter can change an item's price. Only discount lines take off, and the
+ * total never goes below zero.
  */
 final class CartPricer
 {
@@ -354,7 +355,8 @@ final class CartPricer
 
     /**
      * The lines a filter returned, kept when well formed: {id, label, amount, currency, meta}.
-     * A line in another currency is dropped; a discount always takes off.
+     * A line in another currency is dropped; a discount always takes off, and any other line
+     * below zero is dropped, so only a discount lowers the total.
      *
      * @param mixed $lines
      *
@@ -370,7 +372,7 @@ final class CartPricer
             $label  = is_string($line['label'] ?? null) ? trim($line['label']) : '';
             $amount = self::micros($line['amount'] ?? null);
             $cur    = $line['currency'] ?? $currency;
-            if ($label === '' || $amount === null || $cur !== $currency) {
+            if ($label === '' || $amount === null || $cur !== $currency || ($amount < 0 && $kind !== OrderLineStore::KIND_DISCOUNT)) {
                 continue;
             }
             if ($kind === OrderLineStore::KIND_DISCOUNT) {

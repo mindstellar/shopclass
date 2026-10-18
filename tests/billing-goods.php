@@ -227,6 +227,23 @@ osc_remove_filter('cart_discount_lines', $huge);
 foreach (['cart_shipping_methods' => $express, 'cart_shipping_lines' => $shipLines, 'cart_tax_lines' => $tax, 'cart_discount_lines' => $discount, 'cart_totals' => $fee] as $hook => $fn) {
     osc_remove_filter($hook, $fn);
 }
+$negative = static fn ($lines) => array_merge($lines, [['label' => 'Minus', 'amount' => -$m(5)]]);
+$negativeFee = static function ($totals) use ($m) {
+    $totals['fees'][] = ['label' => 'Minus fee', 'amount' => -$m(5)];
+
+    return $totals;
+};
+foreach (['cart_shipping_lines', 'cart_tax_lines'] as $hook) {
+    osc_add_filter($hook, $negative);
+}
+osc_add_filter('cart_totals', $negativeFee);
+$q = $quote([['variant' => $mugV, 'qty' => 1]]);
+pin('a shipping, tax or fee line below zero is dropped', [[], [], $m(9 + 49)], [$q->extraLines('tax'), $q->extraLines('fee'), $q->total()]);
+pin('so only the standard shipping line is left', ['shipping.standard'], array_column($q->extraLines('shipping'), 'id'));
+foreach (['cart_shipping_lines', 'cart_tax_lines'] as $hook) {
+    osc_remove_filter($hook, $negative);
+}
+osc_remove_filter('cart_totals', $negativeFee);
 
 harness_section('the quote reads three times');
 check('the query counter works here', harness_questions() >= 0);
