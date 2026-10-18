@@ -87,22 +87,56 @@ final class CommentQuery
 
     /**
      * How many approved comments gave each rating: stars 5 down to 1 => count, zeros included.
-     * One query on the listing index.
+     * One query on the listing index, or none with the listing's ratingCounts().
+     *
+     * @param array<int,int>|null $counts the listing's ratingCounts(), when read already
      *
      * @return array<int,int>
      */
-    public function distribution(int $listingId): array
+    public function distribution(int $listingId, ?array $counts = null): array
     {
-        $out  = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
-        $rows = $this->approvedQuery($listingId)->whereNotNull('i_rating')->select('i_rating')->selectRaw('COUNT(*) AS n')->groupBy('i_rating')->get();
-        foreach ($rows as $row) {
-            $stars = (int) $row['i_rating'];
+        $out = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+        foreach ($counts ?? $this->ratingCounts($listingId) as $stars => $n) {
             if (isset($out[$stars])) {
-                $out[$stars] = (int) $row['n'];
+                $out[$stars] = $n;
             }
         }
 
         return $out;
+    }
+
+    /**
+     * How many approved comments gave each rating, as stored: rating => count. One query on
+     * the listing index; summaryOf() and distribution() read it.
+     *
+     * @return array<int,int>
+     */
+    public function ratingCounts(int $listingId): array
+    {
+        $out = [];
+        foreach ($this->approvedQuery($listingId)->whereNotNull('i_rating')->select('i_rating')->selectRaw('COUNT(*) AS n')->groupBy('i_rating')->get() as $row) {
+            $out[(int) $row['i_rating']] = (int) $row['n'];
+        }
+
+        return $out;
+    }
+
+    /**
+     * summary()'s entry for one listing, from its ratingCounts().
+     *
+     * @param array<int,int> $counts
+     *
+     * @return array{count:int,average:float|null}
+     */
+    public static function summaryOf(array $counts): array
+    {
+        $n     = array_sum($counts);
+        $total = 0;
+        foreach ($counts as $stars => $count) {
+            $total += $stars * $count;
+        }
+
+        return ['count' => $n, 'average' => $n > 0 ? round($total / $n, 1) : null];
     }
 
     /**

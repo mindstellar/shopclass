@@ -163,7 +163,17 @@ final class ListingReader
             $currencies         = $this->currencies->findMany(array_keys($codes));
         }
 
-        $rating = $lookups['rating'] ?? false;
+        $rating  = $lookups['rating'] ?? false;
+        $ratings = [];
+        $stars   = [];
+        if ($rating && $single) {
+            // One listing: its summary comes from the same counts as its stars.
+            $counts  = $this->comments->ratingCounts($ids[0]);
+            $ratings = [$ids[0] => CommentQuery::summaryOf($counts)];
+            $stars   = [$ids[0] => $this->comments->distribution($ids[0], $counts)];
+        } elseif ($rating) {
+            $ratings = $this->comments->summary($ids);
+        }
 
         return new ListingRelations(
             $this->categories,
@@ -172,8 +182,8 @@ final class ListingReader
             ($lookups['fields'] ?? false) ? $this->fieldValues($ids) : [],
             $currencies,
             ($lookups['product'] ?? false) ? VariantStore::ofItems($ids) : [],
-            $rating ? $this->comments->summary($ids) : [],
-            $rating && $single ? [$ids[0] => $this->comments->distribution($ids[0])] : []
+            $ratings,
+            $stars
         );
     }
 
