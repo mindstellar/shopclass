@@ -90,7 +90,7 @@ $r = $call('GET', 'account/cart', null, $sueKey);
 pin('GET returns the lines', $lines([$teeV, 2], [$mugV, 1]), $r->body()['data']['lines'] ?? null);
 pin('and a timestamp that matches the schema', [], api_admin_schema_errors('CartDocument', $r));
 $expires = $row($sue)['expires'] ?? null;
-check('the row expires in about 90 days', is_int($expires) && abs($expires - (time() + CartStore::TTL)) < 120);
+check('the row expires in about 90 days', is_int($expires) && abs($expires - (time() + 90 * 86400)) < 120);
 pin('another user sees an empty cart', [], $call('GET', 'account/cart', null, $tomKey)->body()['data']['lines'] ?? null);
 pin('a repeated variant is merged', [204, $lines([$teeV, 5])], [$call('PUT', 'account/cart', ['lines' => $lines([$teeV, 2], [$teeV, 3])], $sueKey)->status(), CartStore::read($sue)['lines']]);
 $call('PUT', 'account/cart', ['lines' => $lines([$teeV, 2], [$mugV, 1])], $sueKey);
@@ -127,6 +127,35 @@ pin('not for a removed line', 0, count($fired));
 $fired = [];
 $call('PUT', 'account/cart', ['lines' => $lines([$hidV, 1])], $sueKey);
 pin('not for a dropped variant', 0, count($fired));
+
+harness_section('two writes at once');
+// Two writes of the same new variant by one user in two processes. Holding the user's row
+// makes both wait; the second must see the first one's cart and fire nothing.
+$call('PUT', 'account/cart', ['lines' => []], $sueKey);
+$dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
+$admin->begin_transaction();
+$admin->query("SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = $sue FOR UPDATE");
+$puts = [];
+$outs = [];
+foreach ([0, 1] as $i) {
+    $puts[] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/cart-put-child.php', $dbName, (string) $sue, (string) $teeV], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    $outs[$i] = $pipes;
+}
+$watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
+$waiting = 0;
+for ($try = 0; $try < 400 && $waiting < 2; $try++) {
+    usleep(50000);
+    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND INFO LIKE 'SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = % FOR UPDATE'")->fetch_row()[0];
+}
+$watch->close();
+$admin->commit();
+$printed = '';
+foreach ($puts as $i => $proc) {
+    $printed .= stream_get_contents($outs[$i][1]) . stream_get_contents($outs[$i][2]);
+    proc_close($proc);
+}
+pin('both writes waited on the user', 2, $waiting);
+pin('both saved, and cart_item_add_after fired once', [2, 1, $lines([$teeV, 1])], [substr_count($printed, 'saved'), substr_count($printed, 'fired'), CartStore::read($sue)['lines']]);
 
 harness_section('If-Match');
 $call('PUT', 'account/cart', ['lines' => $lines([$teeV, 1])], $sueKey);
