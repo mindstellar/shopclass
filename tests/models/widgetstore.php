@@ -128,6 +128,22 @@ $cachedIds('cache.b');
 WidgetStore::deleteByLocation('cache.b');
 pin('deleteByLocation invalidates the widget cache', array(), $cachedIds('cache.b'));
 
+harness_section('WidgetStore: replaceLocation');
+
+$r1 = WidgetStore::add($row(array('s_location' => 'swap', 's_type' => 'core.html', 's_config' => '{}', 'i_order' => 0)));
+$cachedIds('swap');
+$section = static fn (?int $id, string $title): array => array('id' => $id, 'type' => 'core.html', 'config' => array('title' => $title), 'description' => $title);
+WidgetStore::replaceLocation('swap', array($section(null, 'new'), $section($r1, 'kept')));
+$swapIds = $cachedIds('swap');
+pin('replaceLocation invalidates the widget cache', 2, count($swapIds));
+pin('the kept id is read back in its new place', $r1, $swapIds[1] ?? null);
+WidgetStore::replaceLocation('swap', array($section($r1, 'first'), $section($r1, 'again')));
+$swapRows = $admin->query("SELECT pk_i_id, s_description FROM $table WHERE s_location = 'swap' ORDER BY i_order")->fetch_all(MYSQLI_ASSOC);
+pin('an id given twice updates once and inserts the second row', array('first', 'again'), array_column($swapRows, 's_description'));
+pin('the first use keeps the id', (string) $r1, $swapRows[0]['pk_i_id'] ?? null);
+check('the second use is a new row', ($swapRows[1]['pk_i_id'] ?? (string) $r1) !== (string) $r1);
+WidgetStore::deleteByLocation('swap');
+
 harness_section('WidgetStore: toggleEnabled, keepEnabled');
 
 $t1 = WidgetStore::add($row(array('s_location' => 'toggle', 's_type' => 'core.html', 's_config' => '{"title":"T"}')));
