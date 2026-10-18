@@ -200,6 +200,55 @@ pin('the short line is recorded with its quantity', [OrderLineStore::itemLines($
 pin('refunding the short order gives back nothing', [true, '0'], [Billing::refund($shortOne), $stock($r)]);
 $setStock($r, 1);
 
+$race = static function (array $runs, string $lock, string $waitLike) use ($admin, $p, $dbName): array {
+    $admin->begin_transaction();
+    $admin->query($lock);
+    $procs = [];
+    $pipes = [];
+    foreach ($runs as $i => [$orderId, $action]) {
+        $procs[$i] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/order-pay-child.php', $dbName, (string) $orderId, $action], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp);
+        $pipes[$i] = $pp;
+    }
+    $watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
+    $waiting = 0;
+    for ($try = 0; $try < 200 && $waiting < count($runs); $try++) {
+        usleep(50000);
+        $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE '{$waitLike}'")->fetch_row()[0];
+    }
+    $watch->close();
+    $admin->commit();
+    $printed = '';
+    foreach ($procs as $i => $proc) {
+        $printed .= stream_get_contents($pipes[$i][1]) . stream_get_contents($pipes[$i][2]);
+        proc_close($proc);
+    }
+
+    return [$waiting, $printed];
+};
+$lockOrder = static fn (Order $o): string => "SELECT s_meta FROM {$p}t_billing_order WHERE pk_i_id = {$o->getId()} FOR UPDATE";
+
+harness_section('two releases of one order');
+$held = $place([['variant' => $a, 'qty' => 2]], 'offline');
+[$waiting, $printed] = $race([[$held->getId(), 'release'], [$held->getId(), 'release']], $lockOrder($held), "SELECT s_meta FROM %t_billing_order%");
+pin('both waited on the order row', 2, $waiting);
+pin('one gives the stock back, the other finds nothing', [1, 1, 0], [substr_count($printed, 'released'), substr_count($printed, 'none'), substr_count($printed, 'threw')]);
+pin('the stock is back once', '5', $stock($a));
+OrderStore::cancel($held->getId());
+
+harness_section('a payment and a cancel on one order');
+foreach (['offline', 'card'] as $via) {
+    $one = $place([['variant' => $a, 'qty' => 1]], $via);
+    [$waiting, $printed] = $race([[$one->getId(), 'pay'], [$one->getId(), 'cancel']], $lockOrder($one), "UPDATE %t_billing_order%");
+    $now = OrderStore::find($one->getId());
+    pin("$via: both waited on the order row", 2, $waiting);
+    pin("$via: exactly one wins, neither throws", [1, 0], [substr_count($printed, 'taken') + substr_count($printed, 'cancelled'), substr_count($printed, 'threw')]);
+    pin("$via: the stock matches the winner", $now->isPaid() ? '4' : '5', $stock($a));
+    if ($now->isPaid()) {
+        Billing::refund($now);
+    }
+    pin("$via: and is whole again after", '5', $stock($a));
+}
+
 harness_section('the release job');
 $age = static function (Order $order, int $days) use ($admin, $p): void {
     $at = date('Y-m-d H:i:s', time() - $days * 86400);
