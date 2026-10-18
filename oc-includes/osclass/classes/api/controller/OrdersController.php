@@ -135,8 +135,8 @@ final class OrdersController
     public function cancel(ApiCall $call): Response
     {
         $order = $this->own($call);
-        if (!$order->isGoods() || !OrderStore::cancel($order->getId())) {
-            throw ProblemException::of('conflict', 'Only an order that is still pending can be cancelled.');
+        if (!$order->buyerMayCancel() || !OrderStore::cancel($order->getId())) {
+            throw ProblemException::of('conflict', 'Only a pending bank transfer or cash on delivery order can be cancelled.');
         }
 
         return Response::ok($this->serializer->orders(array(ProblemException::found(OrderStore::find($order->getId()), 'order')))[0]);

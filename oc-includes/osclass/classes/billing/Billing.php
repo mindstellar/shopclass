@@ -647,11 +647,11 @@ final class Billing
         }
 
         if (!self::markPaid($order, $result->getExternalRef())) {
-            // The provider took the money for an order already closed as failed, and a callback
-            // may not reopen it. The entry shows in Tools → Activity log, one per provider retry;
-            // the admin marks the order paid (CAdminBilling order_paid) or refunds it.
+            // The provider took the money for an order already closed as failed or cancelled, and a
+            // callback may not reopen it. The entry shows in Tools → Activity log, one per provider
+            // retry; the admin refunds it, or marks a failed one paid (CAdminBilling order_paid).
             $now = OrderStore::find($order->getId());
-            if ($now !== null && $now->getStatus() === Order::STATUS_FAILED) {
+            if ($now !== null && in_array($now->getStatus(), array(Order::STATUS_FAILED, Order::STATUS_CANCELLED), true)) {
                 self::log('paid after close', $now, $result->getExternalRef());
             }
         }

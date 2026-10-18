@@ -421,6 +421,11 @@ pin('and the log says it was paid after close', 1, $logged($closed->getId()));
 Billing::handleCallback('fake', array());
 pin('a provider retry of the late payment logs once more', 2, $logged($closed->getId()));
 pin('and still mints nothing', $balance + 200, Wallet::balance($userId));
+$dropped = OrderStore::create($userId, 'fake', 5_000_000, 'USD', 200);
+OrderStore::settle($dropped->getId(), Order::STATUS_CANCELLED);
+$gateway->verdict = CallbackResult::paid($dropped->getId(), 'ext_dropped', 5_000_000, 'USD');
+Billing::handleCallback('fake', array());
+pin('a paid callback on a cancelled order is logged too', [Order::STATUS_CANCELLED, 1], [OrderStore::find($dropped->getId())->getStatus(), $logged($dropped->getId())]);
 
 /* A gateway must not be able to settle an order that belongs to another. */
 $rival = new FakeGateway('rival');

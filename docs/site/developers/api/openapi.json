@@ -5248,7 +5248,7 @@
         "/account/orders/{id}/cancel": {
             "post": {
                 "operationId": "postAccountOrdersByIdCancel",
-                "summary": "Cancel one of your orders while it is still pending",
+                "summary": "Cancel one of your pending bank transfer or cash on delivery orders",
                 "tags": [
                     "Orders"
                 ],
@@ -49656,7 +49656,7 @@
                     },
                     "can_cancel": {
                         "type": "boolean",
-                        "description": "True while the order is pending."
+                        "description": "True while the buyer may cancel it: a pending bank transfer or cash on delivery order."
                     }
                 },
                 "required": [

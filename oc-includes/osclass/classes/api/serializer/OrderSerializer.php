@@ -197,7 +197,7 @@ final class OrderSerializer
             'shipping'    => self::shipping($order),
             'gateway'     => array('id' => $order->getGateway(), 'name' => $gateway === null ? $order->getGateway() : $gateway->getName()),
             'receipt_url' => Receipts::available($order) ? Receipts::url($order->getId()) : null,
-            'can_cancel'  => $order->isGoods() && $order->isPending(),
+            'can_cancel'  => $order->buyerMayCancel(),
         );
     }
 

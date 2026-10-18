@@ -166,7 +166,7 @@ $r      = $call('POST', 'account/orders', $body([['variant' => $medium, 'qty' =>
 pin('a key with orders:write places: 201', 201, $r->status());
 pin('the answer matches the schema', [], api_admin_schema_errors('OrderPlaced', $r));
 $o = $r->body()['data'];
-pin('the total is the server\'s whatever the body said', ['1456.00', 'pending', true, 'goods'], [$o['total']['amount'], $o['status'], $o['can_cancel'], $o['kind']]);
+pin('the total is the server\'s whatever the body said', ['1456.00', 'pending', false, 'goods'], [$o['total']['amount'], $o['status'], $o['can_cancel'], $o['kind']]);
 pin('the lines: goods then shipping, with the server\'s prices', [['item', '699.00', '1398.00', 2], ['item', '9.00', '9.00', 1], ['shipping', '49.00', '49.00', 1]], array_map(static fn ($l) => [$l['kind'], $l['unit']['amount'], $l['amount']['amount'], $l['qty']], $o['lines']));
 pin('the stored order matches', [$tom, $m(1456), 'Leave at the door', 'Tom Lee'], (static function () use ($o): array {
     $order = OrderStore::find($o['id']);
@@ -227,6 +227,9 @@ pin('another user\'s order is a 404', '404 not_found', api_admin_code($call('GET
 pin('so is one that does not exist', '404 not_found', api_admin_code($call('GET', 'account/orders/999999', null, $tomKey)));
 pin('another user cannot cancel it', ['404 not_found', 'pending'], [api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $annKey)), OrderStore::find($o['id'])->getStatus()]);
 pin('a read-only key cannot cancel', '403 insufficient_scope', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $reader)));
+pin('a pending card order cannot be cancelled by the buyer', ['409 conflict', 'pending'], [api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey)), OrderStore::find($o['id'])->getStatus()]);
+$admin->query("UPDATE {$p}t_billing_order SET s_gateway = 'offline' WHERE pk_i_id = " . (int) $o['id']);
+pin('a pending bank transfer order can', true, $call('GET', 'account/orders/' . $o['id'], null, $tomKey)->body()['data']['can_cancel']);
 $r = $call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey);
 pin('the owner cancels a pending order', [200, 'cancelled', false, []], [$r->status(), $r->body()['data']['status'], $r->body()['data']['can_cancel'], api_admin_schema_errors('OrderDocument', $r)]);
 pin('twice is a 409', '409 conflict', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey)));

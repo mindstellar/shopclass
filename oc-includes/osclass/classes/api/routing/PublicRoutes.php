@@ -592,7 +592,7 @@ final class PublicRoutes
             'POST account/orders/{id}/cancel' => RouteSpec::write(
                 handler: [OrdersController::class, 'cancel'],
                 tag: 'Orders',
-                summary: 'Cancel one of your orders while it is still pending',
+                summary: 'Cancel one of your pending bank transfer or cash on delivery orders',
                 auth: RouteSpec::AUTH_USER,
                 scope: 'orders:write',
                 response: 'OrderDocument',
