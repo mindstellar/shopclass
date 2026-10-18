@@ -344,13 +344,17 @@ final class Router
      */
     private static function split(string $key, array $spec): array
     {
-        $parts = explode(' ', $key, 3);
-        if (preg_match('/^v[0-9]+$/D', $parts[0]) === 1 && count($parts) > 1) {
-            $spec['versions'] = [$parts[0]];
-            array_shift($parts);
-        } else {
-            $parts = explode(' ', $key, 2);
+        // Methods are upper case, so only a key starting with a lower-case v can name a version.
+        if (($key[0] ?? '') === 'v') {
+            $parts = explode(' ', $key, 3);
+            if (preg_match('/^v[0-9]+$/D', $parts[0]) === 1 && count($parts) > 1) {
+                $spec['versions'] = [$parts[0]];
+                array_shift($parts);
+
+                return [$parts[0], $parts[1] ?? '', $spec];
+            }
         }
+        $parts = explode(' ', $key, 2);
 
         return [$parts[0], $parts[1] ?? '', $spec];
     }
