@@ -260,7 +260,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 602 names. Generated from the source; do not edit by hand.
+Core fires 603 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
