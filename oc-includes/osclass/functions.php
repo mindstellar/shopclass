@@ -1015,6 +1015,9 @@ osc_add_hook('variant_price_changed', array(\mindstellar\listing\ProductAlerts::
 // The wishlist lives in t_key_value, which has no user column: export and erase it here.
 osc_add_filter('personal_data_export', array(\mindstellar\listing\WishlistService::class, 'export'));
 osc_add_hook('delete_user', array(\mindstellar\listing\WishlistService::class, 'erase'));
+// The saved cart lives in t_key_value too.
+osc_add_filter('personal_data_export', array(\mindstellar\billing\CartStore::class, 'export'));
+osc_add_hook('delete_user', array(\mindstellar\billing\CartStore::class, 'erase'));
 
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.

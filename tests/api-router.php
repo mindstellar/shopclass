@@ -189,6 +189,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET account'                       => 'user account:read',
     'GET account/alerts'                => 'user alerts:read',
     'GET account/alerts/{id}'           => 'user alerts:read',
+    'GET account/cart'                  => 'user cart:read',
     'GET account/keys'                  => 'user account:write',
     'GET account/keys/{id}'             => 'user account:write',
     'GET account/listings'              => 'user account:read',
@@ -239,6 +240,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST listings/{id}/photos'         => 'user listings:write',
     'POST photos'                       => 'user listings:write',
     'POST users'                        => 'none -',
+    'PUT account/cart'                  => 'user cart:write',
     'PUT account/wishlist'              => 'user wishlist:write',
 ], $routeTable);
 pin('every admin route needs an admin key and names an admin scope', [

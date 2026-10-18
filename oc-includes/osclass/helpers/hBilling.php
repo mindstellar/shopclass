@@ -1436,6 +1436,16 @@ osc_register_render_target('billing/wallet', ABS_PATH . 'oc-includes/osclass/gui
 osc_register_render_target('billing/buy', ABS_PATH . 'oc-includes/osclass/gui/billing/buy-content.php');
 osc_register_render_target('billing/orders', ABS_PATH . 'oc-includes/osclass/gui/billing/orders-content.php');
 
+/**
+ * A signed-in shopper's saved cart: `{variant, qty}` lines, no prices. Empty for a guest.
+ *
+ * @return array<int,array{variant:int,qty:int}>
+ */
+function osc_cart_saved(int $userId): array
+{
+    return \mindstellar\billing\CartStore::read($userId)['lines'];
+}
+
 /*
  * Wallet/buy links on the account menu. This runs through the same 'user_menu_filter'
  * a theme's own account sidebar already applies its options through (see

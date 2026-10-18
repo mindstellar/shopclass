@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1188 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1189 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -175,7 +175,7 @@ Core defines 1188 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (76)
+### hBilling (77)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -230,6 +230,7 @@ Core defines 1188 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_urgent_days()` | Days an urgent mark runs for. |
 | `osc_billing_urgent_enabled()` | Whether marking a listing urgent is registered as a purchasable upgrade at all. |
 | `osc_billing_wallet_url()` | Balance and ledger history. Rewritten like every other account route when the site has rewriting on (rewrite_billing_wallet, 'user/credits' by default); the query-string form still resolves either way, so links already out there keep working. |
+| `osc_cart_saved(int $userId)` | A signed-in shopper's saved cart: `{variant, qty}` lines, no prices. Empty for a guest. |
 | `osc_item_can_be_featured(?array $item = null)` | Whether a listing is eligible to be featured for credits: billing switched on, featuring itself switched on, and the listing not already featured. A price of 0 with billing_premium_enabled on means every seller can feature for free -- it does not mean unavailable. |
 | `osc_item_can_bump(?array $item = null)` | Whether an item may be bumped right now: bump is switched on, the item belongs to the logged-in user, and there is no live cooldown row. Bump has no state of its own beyond that row -- the cooldown IS the row's expiry, not a second concept. |
 | `osc_item_extra_runtime_days(?int $userId = null)` | Extra days $userId may run a listing beyond its category's expiration ceiling, raised by a listing.runtime entitlement. 0 (not osc_items_wait_time_for_user()'s "no preference to fall back to") when billing is off, no user is known, or the user holds nothing -- there is no old global preference this one overrides, so 0 is simply "no extra". -1 means unlimited extra runtime; treat it that way, never compare it numerically. |

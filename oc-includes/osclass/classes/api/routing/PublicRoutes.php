@@ -16,6 +16,7 @@ use mindstellar\api\controller\AccountController;
 use mindstellar\api\controller\AccountKeysController;
 use mindstellar\api\controller\AlertsController;
 use mindstellar\api\controller\AuthController;
+use mindstellar\api\controller\CartController;
 use mindstellar\api\controller\CategoriesController;
 use mindstellar\api\controller\CommentsController;
 use mindstellar\api\controller\ListingsController;
@@ -606,6 +607,23 @@ final class PublicRoutes
                 scope: 'orders:write',
                 response: 'OrderDocument',
                 errors: [404, 409]
+            ),
+            'GET account/cart' => RouteSpec::read(
+                handler: [CartController::class, 'show'],
+                tag: 'Orders',
+                summary: 'Your saved cart: variant ids and quantities, never prices',
+                response: 'CartDocument',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'cart:read'
+            ),
+            'PUT account/cart' => RouteSpec::write(
+                handler: [CartController::class, 'replace'],
+                tag: 'Orders',
+                summary: 'Replace your saved cart; variants that cannot be bought are dropped',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'cart:write',
+                body: 'CartInput',
+                status: 204
             ),
             'POST users' => RouteSpec::write(
                 handler: [RegistrationController::class, 'register'],

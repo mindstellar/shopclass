@@ -210,7 +210,7 @@ Core prices every cart through these filters, in this order, and fires `cart_che
 when an order is placed. `$cart` is the cart array; a line is
 `{id, label, amount (micros), currency, meta}`. A filter adds lines and core does the sums, so
 no filter sets an item's price. `cart_totals` adds fee lines under `fees`; the total never goes
-below zero. `cart_item_add_after` is fired by a theme's cart, not by core.
+below zero. `cart_item_add_after` is fired by `PUT account/cart` for each variant new to the saved cart.
 
 | Hook | Kind | Arguments |
 |---|---|---|
@@ -242,7 +242,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 598 names. Generated from the source; do not edit by hand.
+Core fires 599 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -475,7 +475,7 @@ Core fires 598 names. Generated from the source; do not edit by hand.
 | `hook_email_user_validation` | action | `$user, $input` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_warn_expiration` | action | `$item` | `oc-includes/osclass/cron.php` |
 
-### Item (76)
+### Item (77)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -484,6 +484,7 @@ Core fires 598 names. Generated from the source; do not edit by hand.
 | `after_delete_item` | action | `$itemId, $item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `before_delete_item` | action | `$itemId` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `before_item_edit` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `cart_item_add_after` | action | `$quote->cart(), array( 'id' => 'item.' . $line['variant'], 'label' => (string) $line['title'], 'amount' => (int) $line['amount'], 'currency' => $quote->currency(), 'meta' => array('variant' => (int) $line['variant'], 'qty' => (int) $line['qty'], 'item_id' => (int) $line['item_id']), )` | `oc-includes/osclass/classes/billing/CartStore.php` |
 | `deactivate_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `delete_item` | action | `$id` | `oc-includes/osclass/classes/model/Item.php` |
 | `disable_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |

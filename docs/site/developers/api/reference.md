@@ -1447,12 +1447,37 @@ Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too ma
 
 | Method | Path | Auth | Scope | Summary |
 |---|---|---|---|---|
+| GET | `/account/cart` | user | `cart:read` | Your saved cart: variant ids and quantities, never prices |
+| PUT | `/account/cart` | user | `cart:write` | Replace your saved cart; variants that cannot be bought are dropped |
 | GET | `/account/orders` | user | `orders:read` | Your orders, newest first |
 | POST | `/account/orders` | user | `orders:write` | Place an order for a cart; the server prices it again and answers how to pay |
 | GET | `/account/orders/{id}` | user | `orders:read` | One of your orders |
 | POST | `/account/orders/{id}/cancel` | user | `orders:write` | Cancel one of your pending bank transfer or cash on delivery orders |
 | POST | `/account/orders/{id}/pay` | user | `orders:write` | Start paying one of your pending card orders again |
 | GET | `/cart/quote` | public | `listings:read` | Price a cart: lines, shipping, fees and totals, worked out from the database |
+
+### GET `/account/cart`
+
+Your saved cart: variant ids and quantities, never prices
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`CartDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### PUT `/account/cart`
+
+Replace your saved cart; variants that cannot be bought are dropped
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `CartInput` as JSON.
+
+Answers: 204 No content; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 412 Precondition failed; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/account/orders`
 
