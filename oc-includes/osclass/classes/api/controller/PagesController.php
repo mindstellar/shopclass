@@ -51,7 +51,7 @@ final class PagesController
             $this->linked($locale),
             CategoryCatalog::fromSite(),
             $locale,
-            static fn (array $row): string => (string) osc_search_url(['sCategory' => CategoryCatalog::text($row, 's_slug', $locale)])
+            static fn (array $row): string => (string) osc_search_url(['sCategory' => (int) $row['pk_i_id']])
         );
 
         return Page::whole($menus, $this->api->links(), $call);
