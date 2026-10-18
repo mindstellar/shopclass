@@ -1683,6 +1683,10 @@ Item::getInstance()->deleteByPrimaryKey($heldLiveId);
 pin('with the live one gone, the held row still counts for nothing', 0, EntitlementStore::liveListings($heldUserId));
 check('the free slot is open again', EntitlementStore::withinFreeQuota($heldUserId));
 Item::getInstance()->deleteByPrimaryKey($heldRowId);
+$rawId = seed_item($admin, $categoryId, $heldUserId, 'Raw insert, no first date');
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_first_pub_date = NULL WHERE pk_i_id = ' . $rawId);
+pin('a live row a plugin wrote without a first date still counts', 1, EntitlementStore::liveListings($heldUserId));
+Item::getInstance()->deleteByPrimaryKey($rawId);
 
 $slotSwitchBefore = osc_get_preference('billing_slot_enabled', 'osclass');
 osc_set_preference('billing_slot_enabled', '1', 'osclass', 'BOOLEAN');

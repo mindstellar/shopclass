@@ -409,8 +409,9 @@ final class EntitlementStore extends Model
      * which is the whole point of a slot model: deletion frees the slot by
      * construction, with no sweep and no bookkeeping.
      *
-     * A held listing (dt_first_pub_date IS NULL, not yet paid for) is not counted: it has
-     * not published, so it must not raise the price of the seller's next one.
+     * A held listing (hidden, inactive and dt_first_pub_date NULL: not yet paid for) is not
+     * counted: it has not published, so it must not raise the price of the seller's next one.
+     * A live row a plugin wrote without dt_first_pub_date still counts.
      *
      * Rides the plain fk_i_user_id index on t_item: the WHERE clause leads with
      * an equality match on it, narrowing to one seller's rows before the OR on
@@ -426,7 +427,7 @@ final class EntitlementStore extends Model
     {
         return (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
-            . ' WHERE fk_i_user_id = ? AND dt_first_pub_date IS NOT NULL'
+            . ' WHERE fk_i_user_id = ? AND (dt_first_pub_date IS NOT NULL OR b_enabled = 1 OR b_active = 1)'
             . ' AND (b_premium = 1 OR dt_expiration >= ?)'
             . ($current ? ' LOCK IN SHARE MODE' : ''),
             array($userId, date('Y-m-d H:i:s'))
