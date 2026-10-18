@@ -126,6 +126,10 @@
         if (data.ready) {
             post({select: selected});
         }
+        // The page has no node for that text, so it is drawn by a reload once the draft is saved.
+        if (data.missed) {
+            changed(true, location_);
+        }
         if (data.picked !== undefined && data.picked !== null) {
             var ref = String(data.picked);
             if (find(ref) !== -1) {
