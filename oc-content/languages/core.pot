@@ -53,6 +53,10 @@ msgid_plural "%1$s (%2$d rows)"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "%1$s (%2$d short)"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "%1$s and %2$s stay as they are."
 msgstr ""
@@ -126,6 +130,10 @@ msgid "%1$s region starting with “%2$s”"
 msgid_plural "%1$s regions starting with “%2$s”"
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "%1$s sends %2$s back to %3$s. This cannot be undone."
+msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid ""
@@ -708,6 +716,19 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
+"<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have "
+"it and will get it ready once your payment ({PAYMENT_METHOD}) is "
+"in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
+"<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on "
+"its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
 "<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} is back in "
 "stock.</p><p>{ITEM_LINK}</p>"
 msgstr ""
@@ -716,6 +737,12 @@ msgstr ""
 msgid ""
 "<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} now sells for "
 "{ITEM_PRICE}.</p><p>{ITEM_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
+"<p>Order {ORDER_NUMBER} came in from {USER_NAME} ({USER_EMAIL}). Payment: "
+"{PAYMENT_METHOD}.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -1480,6 +1507,10 @@ msgstr ""
 msgid "All loaded PHP extensions"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
+msgid "All orders"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/package.php
 msgid "All packages"
 msgstr ""
@@ -1560,6 +1591,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
+#: oc-includes/osclass/classes/billing/Receipts.php
 msgid "Amount"
 msgstr ""
 
@@ -2427,6 +2459,18 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Cancel order"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Cancel order #%d?"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Cancel this order"
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/Billing.php
 msgid "Cancel unpaid bank transfer and cash on delivery orders"
 msgstr ""
@@ -2467,6 +2511,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Carpool"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Carrier"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Carrier: %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -2911,6 +2963,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/preview.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Close"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Close an order that will not be paid. Stock held for it goes back on sale."
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -3971,6 +4027,11 @@ msgid ""
 "the form and its category assignment. Continue?"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
+#: oc-admin/themes/modern/billing/order.php
+msgid "Delivered"
+msgstr ""
+
 #: oc-includes/osclass/classes/webhook/Delivery.php
 msgid ""
 "Deliveries to %1$s failed %2$d times in a row, so the site stopped sending "
@@ -3982,12 +4043,27 @@ msgstr ""
 msgid "Deliveries waiting or given up"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Delivery"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+#: oc-includes/osclass/gui/billing/receipt.php
+msgid "Delivery address"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Delivery address and buyer"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Delivery charge"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Delivery: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -5872,6 +5948,11 @@ msgstr ""
 msgid "It stopped and did not finish. Nothing was saved."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Item"
+msgstr ""
+
 #: oc-admin/themes/modern/items/index.php
 msgid "Item ID"
 msgstr ""
@@ -5880,6 +5961,7 @@ msgstr ""
 msgid "Item expiration date"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/stats/items.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Items"
@@ -6884,8 +6966,26 @@ msgstr ""
 msgid "Mark as spam"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Mark delivered"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Mark shipped"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Mark this delivered once the parcel has arrived."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Mark this listing as spam?"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid ""
+"Mark this paid when the money has arrived: a bank transfer, or cash on "
+"delivery."
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -7435,6 +7535,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
 msgid "New listings/users"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "New order {ORDER_NUMBER} on {WEB_TITLE}"
 msgstr ""
 
 #: oc-admin/gui/forgot_password.php
@@ -8294,6 +8398,10 @@ msgstr ""
 msgid "Optional. Letters, digits and dashes, e.g. KC- gives #KC-1042."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Optional. Must start with https://"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid ""
 "Optional. Overrides the URL used to serve files, e.g. a CDN domain in front "
@@ -8320,6 +8428,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Order #%d"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Order %1$s, paid on %2$s by %3$s."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Order e-mail"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -8378,6 +8494,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Outline Color"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Oversold"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -9052,6 +9172,11 @@ msgstr ""
 msgid "QR code for your authenticator app"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Qty"
+msgstr ""
+
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Question about your listing"
 msgstr ""
@@ -9270,6 +9395,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Refund this payment through %s. The buyer gets the money back "
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Refund this payment through %s. The buyer gets the money back."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
@@ -9791,8 +9920,14 @@ msgstr ""
 msgid "S3 bucket \"%s\" (local copies kept)"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/items/frm.php
 msgid "SKU"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+#: oc-includes/osclass/gui/billing/receipt.php
+msgid "SKU %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
@@ -10557,6 +10692,15 @@ msgstr ""
 msgid "Share listing"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Ship this order"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/index.php
+#: oc-admin/themes/modern/billing/order.php
+msgid "Shipped"
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 msgid "Shipping class"
 msgstr ""
@@ -11092,6 +11236,10 @@ msgstr ""
 msgid "Stock (blank does not track)"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Stock ran out after this order was paid. Short:"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/spamNbots.php
 msgid ""
 "Stops bots on the public forms. <a href=\"%1$s\" target=\"_blank\">Get a "
@@ -11290,6 +11438,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/functions.php
 msgid "Thank you for using <a href=\"%s\" target=\"_blank\">Shopclass</a>"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Thank you for your order from %s."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/Receipts.php
@@ -11502,6 +11654,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "The bucket did not answer; its backups are not listed right now."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "The buyer is not charged. This cannot be undone."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -12286,6 +12442,10 @@ msgid "This payment method cannot refund from here"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/receipt.php
+msgid "This payment was refunded."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/receipt.php
 msgid "This payment was refunded. The credits were taken back."
 msgstr ""
 
@@ -12336,6 +12496,12 @@ msgstr ""
 msgid ""
 "This plugin is not in the market. Get its zip file from the theme author "
 "and upload it under Plugins, Add plugin."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid ""
+"This records that the money was given back. Nothing is sent to the payment "
+"provider."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -12544,6 +12710,10 @@ msgid ""
 "shell:"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
+msgid "To ship"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/header.php
 msgid "Toggle dark mode"
 msgstr ""
@@ -12598,6 +12768,11 @@ msgstr ""
 msgid "Top Right"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Total"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/items.php
 msgid "Total number of listings' views"
 msgstr ""
@@ -12608,6 +12783,30 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Toys - Games - Hobbies"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Track parcel"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Track your parcel"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Tracking"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Tracking link"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Tracking number"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Tracking number: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -12859,6 +13058,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Unique reporters"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Unit"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/users.php
@@ -13550,6 +13753,14 @@ msgid ""
 "you use watermarks."
 msgstr ""
 
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "We received your order {ORDER_NUMBER}"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "We will send you another e-mail when your order ships."
+msgstr ""
+
 #: oc-includes/osclass/classes/routing/FrontController.php
 msgid "We'll be right back"
 msgstr ""
@@ -13991,6 +14202,14 @@ msgstr ""
 msgid ""
 "Your new key \"%s\". Copy it now and keep it somewhere safe: it is not "
 "shown again."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Receipts.php
+msgid "Your order %1$s from %2$s"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "Your order {ORDER_NUMBER} has shipped"
 msgstr ""
 
 #: oc-includes/osclass/functions.php

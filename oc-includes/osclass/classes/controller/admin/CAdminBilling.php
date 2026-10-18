@@ -17,6 +17,7 @@ use mindstellar\admin\ListPaging;
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\Order;
+use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
@@ -82,6 +83,15 @@ class CAdminBilling extends AdminSecBaseModel
             case ('order_paid'):
                 $this->orderPaidPost();
                 break;
+            case ('order_ship'):
+                $this->orderShipPost();
+                break;
+            case ('order_delivered'):
+                $this->orderDeliveredPost();
+                break;
+            case ('order_cancel'):
+                $this->orderCancelPost();
+                break;
             case ('order_refund'):
                 $this->orderRefundPost();
                 break;
@@ -126,7 +136,14 @@ class CAdminBilling extends AdminSecBaseModel
             'status'  => $this->allowedStatus(Params::getParamString('status')),
             'gateway' => Params::getParamString('gateway'),
             'user_id' => Params::getParamInt('userId'),
+            'goods'   => false,
         );
+        // "To ship": paid goods orders, newest first.
+        $toShip = Params::getParamInt('toShip') === 1;
+        if ($toShip) {
+            $filters['status'] = Order::STATUS_PAID;
+            $filters['goods']  = true;
+        }
 
         $page   = ListPaging::page();
         $total  = OrderStore::searchCount($filters);
@@ -139,6 +156,7 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('summary', OrderStore::summary($filters));
         $this->_exportVariableToView('gateways', OrderStore::knownGateways());
         $this->_exportVariableToView('filters', $filters);
+        $this->_exportVariableToView('toShip', $toShip);
         $this->_exportVariableToView('total', $total);
         $this->_exportVariableToView('pageNum', $page);
         $this->_exportVariableToView('perPage', self::PER_PAGE);
@@ -168,6 +186,7 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('dashboardUrl', Billing::dashboardUrl($order));
         $this->_exportVariableToView('entries', $this->ledgerForOrder($order->getId()));
         $this->_exportVariableToView('balance', Wallet::balance($order->getUserId()));
+        $this->_exportVariableToView('lines', $order->isGoods() ? OrderLineStore::ofOrder($order->getId()) : array());
 
         $this->doView('billing/order.php');
     }
@@ -233,6 +252,106 @@ class CAdminBilling extends AdminSecBaseModel
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId());
+    }
+
+    /**
+     * Mark a paid goods order shipped, with the carrier and tracking the buyer is shown.
+     * The tracking address has to be https.
+     *
+     * @return void
+     */
+    private function orderShipPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        $back = $this->orderUrl($order);
+        $clean = static fn (string $v): string => trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $v) ?? '');
+        $url   = $clean(Params::getParamString('trackingUrl'));
+        if ($url !== '' && Receipts::httpsUrl($url) === '') {
+            osc_add_flash_error_message(_m('The tracking link has to be a full https:// address'), 'admin');
+            $this->redirectTo($back);
+
+            return;
+        }
+
+        if (OrderStore::ship($order->getId(), $clean(Params::getParamString('carrier')), $clean(Params::getParamString('tracking')), $url)) {
+            osc_add_flash_ok_message(sprintf(_m('Order #%d is marked shipped'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Only a paid order can be marked shipped'), 'admin');
+        }
+
+        $this->redirectTo($back);
+    }
+
+    /**
+     * Mark a shipped goods order delivered.
+     *
+     * @return void
+     */
+    private function orderDeliveredPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        if (OrderStore::deliver($order->getId())) {
+            osc_add_flash_ok_message(sprintf(_m('Order #%d is marked delivered'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Only a shipped order can be marked delivered'), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * Cancel an order that is still unpaid.
+     *
+     * @return void
+     */
+    private function orderCancelPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        if (OrderStore::cancel($order->getId())) {
+            osc_add_flash_ok_message(sprintf(_m('Order #%d is cancelled'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Only an order that is not paid yet can be cancelled'), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * The goods order the form names, or a redirect to the list when there is none.
+     *
+     * @return Order|null
+     */
+    private function goodsOrder(): ?Order
+    {
+        $order = OrderStore::find(Params::getParamInt('id'));
+        if ($order === null || !$order->isGoods()) {
+            osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
+
+            return null;
+        }
+
+        return $order;
+    }
+
+    private function orderUrl(Order $order): string
+    {
+        return osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId();
     }
 
     /**

@@ -18,6 +18,8 @@ namespace mindstellar\mail;
 
 use Admin;
 use Item;
+use mindstellar\billing\Order;
+use mindstellar\billing\Receipts;
 use OSCLocale;
 use Page;
 use Params;
@@ -31,6 +33,29 @@ use View;
  */
 final class CoreEmails
 {
+    /** Set by the order mails when a send fails, so the caller can try again later. */
+    private static bool $orderMailFailed = false;
+
+    /**
+     * Forget an earlier failed order mail, before firing a new one.
+     *
+     * @return void
+     */
+    public static function resetOrderMailFailure(): void
+    {
+        self::$orderMailFailed = false;
+    }
+
+    /**
+     * Whether an order mail sent since resetOrderMailFailure() failed.
+     *
+     * @return bool
+     */
+    public static function orderMailFailed(): bool
+    {
+        return self::$orderMailFailed;
+    }
+
     /**
      * Email the confirmation link for a newly created search alert.
      *
@@ -1931,6 +1956,156 @@ final class CoreEmails
             'subject' => $title,
             'body'    => $body,
         ));
+    }
+
+    /**
+     * Tell the buyer a goods order that waits for payment (bank transfer, cash on delivery) was received.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderPlaced($order)
+    {
+        $mail = self::orderMail($order, false);
+        if ($mail === null) {
+            return;
+        }
+        $title = osc_apply_filter('email_order_placed_title_after', osc_mailBeauty(osc_apply_filter(
+            'email_title',
+            osc_apply_filter('email_order_placed_title', __('We received your order {ORDER_NUMBER}'), $order)
+        ), $mail['words']), $order);
+        $body  = osc_apply_filter('email_order_placed_description_after', osc_mailBeauty(osc_apply_filter(
+            'email_description',
+            osc_apply_filter('email_order_placed_description', __('<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order)
+        ), $mail['htmlWords']), $order);
+        self::sendOrderMail($mail, $title, $body);
+    }
+
+    /**
+     * Tell the buyer their order is on its way, with the tracking link when there is a safe one.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderShipped($order)
+    {
+        $mail = self::orderMail($order, false);
+        if ($mail === null) {
+            return;
+        }
+        $title = osc_apply_filter('email_order_shipped_title_after', osc_mailBeauty(osc_apply_filter(
+            'email_title',
+            osc_apply_filter('email_order_shipped_title', __('Your order {ORDER_NUMBER} has shipped'), $order)
+        ), $mail['words']), $order);
+        $body  = osc_apply_filter('email_order_shipped_description_after', osc_mailBeauty(osc_apply_filter(
+            'email_description',
+            osc_apply_filter('email_order_shipped_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order)
+        ), $mail['htmlWords']), $order);
+        self::sendOrderMail($mail, $title, $body);
+    }
+
+    /**
+     * Tell the shop owner a goods order came in that is paid or will be paid on delivery.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function adminNewOrder($order)
+    {
+        $mail = self::orderMail($order, true);
+        if ($mail === null) {
+            return;
+        }
+        $title = osc_apply_filter('email_admin_new_order_title_after', osc_mailBeauty(osc_apply_filter(
+            'email_title',
+            osc_apply_filter('email_admin_new_order_title', __('New order {ORDER_NUMBER} on {WEB_TITLE}'), $order)
+        ), $mail['words']), $order);
+        $body  = osc_apply_filter('email_admin_new_order_description_after', osc_mailBeauty(osc_apply_filter(
+            'email_description',
+            osc_apply_filter('email_admin_new_order_description', __('<p>Order {ORDER_NUMBER} came in from {USER_NAME} ({USER_EMAIL}). Payment: {PAYMENT_METHOD}.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order)
+        ), $mail['htmlWords']), $order);
+        self::sendOrderMail($mail, $title, $body);
+    }
+
+    /**
+     * The recipient and the placeholder words of an order mail. Every value that came from a
+     * visitor or a seller is escaped.
+     *
+     * @param Order $order
+     * @param bool  $toAdmin Send to the shop's contact address instead of the buyer
+     *
+     * @return array<string,mixed>|null null when there is nobody to send to
+     */
+    private static function orderMail(Order $order, bool $toAdmin): ?array
+    {
+        $user  = User::getInstance()->findByPrimaryKey($order->getUserId());
+        $buyer = $order->meta('_buyer');
+        $buyer = is_array($buyer) ? $buyer : array();
+        $email = (string) ($buyer['email'] ?? (is_array($user) ? ($user['s_email'] ?? '') : ''));
+        $uname = (string) ($buyer['name'] ?? (is_array($user) ? ($user['s_name'] ?? '') : ''));
+        $to    = $toAdmin ? (string) osc_contact_email() : $email;
+        if ($to === '') {
+            return null;
+        }
+
+        $details  = Receipts::details($order);
+        $url      = $toAdmin
+            ? osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()
+            : osc_billing_orders_url();
+        $tracking = '';
+        if ($details['carrier'] !== '' || $details['tracking'] !== '' || $details['tracking_url'] !== '') {
+            $tracking = '<p>'
+                . ($details['carrier'] !== '' ? osc_esc_html(sprintf(__('Carrier: %s'), $details['carrier'])) . '<br>' : '')
+                . ($details['tracking'] !== '' ? osc_esc_html(sprintf(__('Tracking number: %s'), $details['tracking'])) . '<br>' : '')
+                . ($details['tracking_url'] !== ''
+                    ? '<a href="' . osc_esc_html($details['tracking_url']) . '">' . osc_esc_html(__('Track your parcel')) . '</a>'
+                    : '')
+                . '</p>';
+        }
+
+        [$words, $htmlWords] = self::words(
+            array(
+                '{ORDER_NUMBER}'   => Receipts::number($order),
+                '{USER_NAME}'      => $uname !== '' ? $uname : $email,
+                '{USER_EMAIL}'     => $email,
+                '{PAYMENT_METHOD}' => osc_billing_gateway_name($order->getGateway()),
+                '{ORDER_TOTAL}'    => $details['total'],
+                '{ORDER_LINES}'    => Receipts::linesHtml($details),
+                '{ORDER_ADDRESS}'  => Receipts::addressHtml($details),
+                '{ORDER_TRACKING}' => $tracking,
+                '{ORDER_URL}'      => $url,
+                '{ORDER_LINK}'     => '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($url) . '</a>',
+            ),
+            array('{USER_NAME}', '{USER_EMAIL}', '{PAYMENT_METHOD}')
+        );
+
+        return array('to' => $to, 'toName' => $toAdmin ? '' : $uname, 'words' => $words, 'htmlWords' => $htmlWords);
+    }
+
+    /**
+     * Send a finished order mail, and flag a failure for the caller.
+     *
+     * @param array<string,mixed> $mail  From orderMail()
+     * @param string              $title
+     * @param string              $body
+     *
+     * @return void
+     */
+    private static function sendOrderMail(array $mail, string $title, string $body): void
+    {
+        $sent = osc_sendMail(array(
+            'from'    => self::fromAddress(),
+            'to'      => $mail['to'],
+            'to_name' => $mail['toName'],
+            'subject' => $title,
+            'body'    => $body,
+        ));
+        if (!$sent) {
+            self::$orderMailFailed = true;
+        }
     }
 
     /**

@@ -91,9 +91,44 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
                 </tr>
             <?php } ?>
         </table>
+        <?php if (!empty($receipt['details'])) {
+            $details = $receipt['details']; ?>
+            <table class="rc-rows rc-lines">
+                <?php foreach ($details['lines'] as $line) { ?>
+                    <tr>
+                        <th scope="row">
+                            <?php echo osc_esc_html($line['title']); ?>
+                            <?php if ($line['kind'] === 'item') { ?>
+                                <?php echo osc_esc_html(' × ' . $line['qty']); ?>
+                            <?php } ?>
+                            <?php if ($line['options'] !== '' || $line['sku'] !== '') { ?>
+                                <br><small><?php echo osc_esc_html(trim($line['options'] . ' ' . ($line['sku'] !== '' ? sprintf(__('SKU %s'), $line['sku']) : ''))); ?></small>
+                            <?php } ?>
+                        </th>
+                        <td><?php echo osc_esc_html($line['amount']); ?></td>
+                    </tr>
+                <?php } ?>
+            </table>
+            <?php if ($details['address'] !== array()) { ?>
+                <table class="rc-rows">
+                    <tr>
+                        <th scope="row"><?php echo osc_esc_html(__('Delivery address')); ?></th>
+                        <td><?php echo implode('<br>', array_map('osc_esc_html', $details['address'])); ?></td>
+                    </tr>
+                    <?php if ($details['shipping'] !== '') { ?>
+                        <tr>
+                            <th scope="row"><?php echo osc_esc_html(__('Delivery')); ?></th>
+                            <td><?php echo osc_esc_html($details['shipping']); ?></td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            <?php } ?>
+        <?php } ?>
         <p class="rc-note">
             <?php echo osc_esc_html($receipt['refunded']
-                ? __('This payment was refunded. The credits were taken back.')
+                ? (empty($receipt['details'])
+                    ? __('This payment was refunded. The credits were taken back.')
+                    : __('This payment was refunded.'))
                 : __('Thank you for your payment. This is a receipt, not a tax invoice.')); ?>
         </p>
     </main>

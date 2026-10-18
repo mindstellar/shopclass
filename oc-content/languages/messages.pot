@@ -1679,7 +1679,15 @@ msgid "One page has been deleted correctly"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only a paid order can be marked shipped"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Only a paid order can be refunded"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only a shipped order can be marked delivered"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
@@ -1690,6 +1698,10 @@ msgstr ""
 msgid ""
 "Only a site admin can ban a sender for good. Sign in to the admin in this "
 "browser, then open the link again."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only an order that is not paid yet can be cancelled"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebAjax.php
@@ -1748,7 +1760,19 @@ msgid "Order #%d"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is cancelled"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is marked delivered"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Order #%d is marked paid and the credits have been added"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is marked shipped"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -3003,6 +3027,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "The theme has been installed correctly"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "The tracking link has to be a full https:// address"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php

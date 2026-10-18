@@ -132,6 +132,21 @@ invoice.
 If the e-mail cannot be sent, it waits on the background queue and is tried again.
 A buyer gets one receipt per order.
 
+### Selling goods: order mails and fulfilment
+
+A paid goods order sends the buyer one confirmation with every item, the delivery
+address and the delivery method, and sends you a "New order" mail. A bank transfer or
+cash on delivery order sends both at once, before payment, and the confirmation when you
+mark it paid. If a mail cannot be sent, it waits on the background queue and is tried
+again.
+
+Open an order in **Billing → Orders** to see its items, address and buyer. If stock ran
+out after the order was paid, an **Oversold** note lists the short items. Use **Mark
+shipped** (carrier, tracking number and an optional https tracking link) and **Mark
+delivered** to move it along; the buyer is e-mailed when it ships. **Cancel order** closes
+an order that is not paid yet. **To ship** at the top of the list shows paid orders that
+have not shipped.
+
 ### Seller limits
 
 **Free listings per seller** and the **photo cap** set what sellers get for
