@@ -245,7 +245,7 @@ check('with the amount, the method and the wait', str_contains($sent[0]['subject
 Receipts::afterRefunded($gone->getId(), $tom, 0);
 pin('a second refund hook sends nothing', [], $mails());
 $unpaid = $make('fake');
-check('a mail for the wrong status is nothing to send', Receipts::sendNotice(Receipts::MAIL_DELIVERED, $unpaid->getId()) && Receipts::sendNotice(Receipts::MAIL_REFUNDED, $unpaid->getId()) && $mails() === []);
+check('a mail for the wrong status is nothing to send', Receipts::sendNotice(Receipts::MAIL_DELIVERED, $unpaid->getId()) && Receipts::sendNotice(Receipts::MAIL_CANCELLED, $unpaid->getId()) && Receipts::sendNotice(Receipts::MAIL_REFUNDED, $unpaid->getId()) && $mails() === []);
 
 harness_section('a failed send is queued and tried again');
 $retry = $make('fake');
@@ -289,6 +289,10 @@ Billing::markPaid($credits, 'ext-6');
 $sent = $mails();
 pin('keeps the old receipt and tells the owner nothing', ['tom@example.test'], array_column($sent, 'to'));
 pin('with the old subject', 'Your receipt from ' . osc_page_title() . ', order #' . $credits->getId(), $sent[0]['subject']);
+foreach ([Receipts::MAIL_DELIVERED => Order::STATUS_DELIVERED, Receipts::MAIL_CANCELLED => Order::STATUS_CANCELLED, Receipts::MAIL_REFUNDED => Order::STATUS_REFUNDED] as $kind => $status) {
+    $admin->query("UPDATE {$p}t_billing_order SET s_status = '$status' WHERE pk_i_id = {$credits->getId()}");
+    pin("a credits order in $status gets no $kind mail, and no mark", [true, [], null], [Receipts::sendNotice($kind, $credits->getId()), $mails(), OrderStore::find($credits->getId())->meta('_mail_' . $kind)]);
+}
 
 harness_section('the hooks');
 $names = [];
