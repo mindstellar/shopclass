@@ -16,7 +16,8 @@ Everything below lives in the admin panel at `https://example.com/oc-admin/`.
 
 Set the site title, contact e-mail and default language. **Site is a** says whether the site
 is a classifieds site, a shop (only admins add products) or both; your theme and plugins say which
-of these they work for, and the screen warns when one does not. The title appears in
+of these they work for, and the screen warns when one does not. Setting up a shop? Read
+[running a shop](/docs/use/shop/) after these steps. The title appears in
 page titles, in e-mail and in the browser tab. Get it right before search
 engines see the site.
 

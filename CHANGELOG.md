@@ -25,7 +25,21 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Activating a theme that needs plugins opens one screen that installs and activates them, and Appearance warns if one is later removed.
 - The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
 - Listings have a `product` member with variants (SKU, price, stock, weight, shipping class), set by an admin.
-- The cart hook names (`cart_shipping_methods`, `cart_totals` and others) are reserved; they are not fired yet. See [Hooks](https://shopclass.org/docs/developers/hooks/).
+- A listing can have option rows (Colour x Size and so on), each with its own SKU, price and stock, set in the admin item form or by an admin through the API. `GET /listings` takes `option[name][]=value` and `ids`.
+- **Goods orders**: a cart is priced on the server and placed as an order, paid by a card plugin, bank transfer or cash on delivery. Stock is taken once when the order is paid (bank transfer and cash on delivery hold it from placement) and given back on refund or cancel; a line paid after the last one sold is marked oversold.
+- **Billing → Orders** shows a goods order's items, address, buyer and oversold lines, and can mark it shipped (carrier, tracking number, https link), delivered or cancelled. **To ship** lists paid orders not yet sent.
+- **Settings → Billing → Shop** sets the delivery charge, free delivery from, cash on delivery and its fee, hold days, open unpaid orders per buyer and the order number prefix.
+- The shop API: `GET /cart/quote` prices a cart, `POST /account/orders` places an order, and `GET /account/orders`, `/account/orders/{id}`, `/cancel` and `/pay` read, cancel and pay it again. `GET` and `PUT /account/cart` keep a signed-in shopper's cart for 90 days.
+- The cart hooks (`cart_shipping_methods`, `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`, `cart_free_over`, `cart_problems`, `cart_needs_shipping`, `cart_item_add_after` and `cart_checkout_before`) are fired, so shipping, tax and promotion plugins price a cart. See [Hooks](https://shopclass.org/docs/developers/hooks/) and [Billing](https://shopclass.org/docs/developers/payment-gateways/).
+- Buyers get an e-mail when an order is placed, paid, shipped, delivered, cancelled or refunded; one that fails to send is tried again once from the job queue. The owner gets one when a new order comes in.
+- Comments can carry a 1 to 5 rating, shown and averaged by the API and in the admin Comments list.
+- A signed-in user keeps a wishlist and back-in-stock or price-drop alerts through `account/wishlist` and `account/alerts`.
+- **Appearance → Customise** edits a theme's sections and look beside a live preview, saved as a draft until Publish. See [Customiser](https://shopclass.org/docs/developers/customiser/).
+- The widgets screen has an eye button that hides and shows a widget without deleting it.
+- `osc_kv_list()` pages through a key-value group, and `osc_kv_increment()` adds to a counter in one statement.
+- `osc_billing_user_order_count()` counts a user's goods orders by status.
+- `billing_order_failed` fires when a card payment fails, and the daily job closes card orders left unpaid past the hold days.
+- `billing_tracking_url` and `billing_receipt_details` let a plugin set an order's tracking link and add to its receipt, and the order mails take their text from the `email_order_<kind>_title` and `_description` filters.
 - `osc_admin_count($n)` draws a count as a small badge beside a tab, filter or button label, and `osc_admin_link_group()` takes a `count` per link and then draws a tab strip that scrolls on a phone.
 
 - A `category_modes` settings field sets a mode per category, with an Off switch per main category and subcategories that follow their parent; `osc_category_mode()` reads it.
@@ -101,6 +115,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Removed methods and classes: `Params::_view()`, `PageForm::multilanguage_name_description()`, `Object_Cache_Factory::getCache()` (use `getInstance()`), `LocationsTmp`, `StorageQueue` and `StorageWorker` (use the job queue), and `oc-includes/osclass/timezones.php` (use `DateTimeZone::listIdentifiers()`).
 
 ### Security
+- A plugin download link from the catalogue is shown only when it is an https address.
 - `CurlHttpClient` takes a `resolve` option that pins a host to an address the caller checked, so a plugin fetching a user's URL can close the DNS rebinding gap.
 
 - The admin Languages list escapes each language's name and description, and the installer escapes its language error.
@@ -156,6 +171,9 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
 
 ### Changed
+- `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
+- A cash on delivery order ships before it is paid and is marked paid when marked delivered; neither the buyer nor the hold job cancels one once shipped.
+- Mails, receipts, bank transfer references and the API show an order number with its prefix.
 - The listing map choice moved from **Settings → Listings** to **Settings → General → Maps**, next to its Google Maps key and the address lookup, with clearer help text.
 - Counts on the Market Updates tab, the Update all button, System info and the Locations filter are badges instead of a number in brackets.
 - The category checkbox tree (`osc_admin_tree_picker()`) shows a card per main category with folded subcategories and a live count; a main category with only some subcategories ticked shows a dash and is not saved itself. Its posted names, ids and Check all / Uncheck all still work.
