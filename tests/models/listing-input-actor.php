@@ -40,6 +40,8 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hFields.php';
 
 use mindstellar\auth\Actor;
+use mindstellar\billing\Billing;
+use mindstellar\billing\EntitlementStore;
 use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
@@ -124,3 +126,31 @@ pin('the listing is refused', true, $refused instanceof InvalidException);
 $first = $refused->errors()[0] ?? array();
 pin('with the member, code and message', array('/description', 'too_short', 'Description too short (en_US).'), array($first['pointer'] ?? null, $first['code'] ?? null, $first['message'] ?? null));
 pin('the web text is the messages, one per line', implode('', array_map(static fn (array $e): string => $e['message'] . PHP_EOL, $refused->errors())), $refused->getMessage());
+
+harness_section('expirationDays() is the category days plus the runtime entitlement');
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+$cat30 = seed_category($admin, 'Thirty', null, 'en_US', 1, 30);
+$cat0  = seed_category($admin, 'Forever', null, 'en_US', 1, 0);
+$mia   = seed_user($admin, 'mia', 'mia@example.test');
+$zed   = seed_user($admin, 'zed', 'zed@example.test');
+$ned   = seed_user($admin, 'ned', 'ned@example.test');
+scratchdb_forget_cache();
+// An earlier file in the suite leaves its category tree on the shared instance.
+$held = new ReflectionProperty(Category::class, 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $held->setAccessible(true);
+}
+$held->setValue(null, null);
+pin('no entitlement: the category days', 30, ListingInput::expirationDays($cat30, $mia));
+pin('no user: the category days', 30, ListingInput::expirationDays($cat30, null));
+EntitlementStore::grant($mia, 'listing.runtime', 15);
+pin('a runtime of 15 raises 30 to 45', 45, ListingInput::expirationDays($cat30, $mia));
+pin('a category of 0 days is never raised', 0, ListingInput::expirationDays($cat0, $mia));
+EntitlementStore::grant($zed, 'listing.runtime', null);
+pin('unlimited runtime is the empty string', '', ListingInput::expirationDays($cat30, $zed));
+pin('unlimited runtime leaves a 0-day category at 0', 0, ListingInput::expirationDays($cat0, $zed));
+$days = static fn (int $c, int $u): mixed => ListingInput::fromArray($form(array('catId' => (string) $c, 'contactEmail' => 'x@example.test')), Actor::user($u), true)['dt_expiration'];
+pin('a public add form matches expirationDays(), raised', ListingInput::expirationDays($cat30, $mia), $days($cat30, $mia));
+pin('...unlimited', ListingInput::expirationDays($cat30, $zed), $days($cat30, $zed));
+pin('...no entitlement', ListingInput::expirationDays($cat30, $ned), $days($cat30, $ned));
+pin('...a never-expiring category', ListingInput::expirationDays($cat0, $mia), $days($cat0, $mia));

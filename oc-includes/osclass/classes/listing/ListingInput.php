@@ -210,6 +210,25 @@ final class ListingInput
     }
 
     /**
+     * Days a new listing runs: the category's days plus the owner's listing.runtime extra.
+     * '' means unlimited; a category of 0 days never expires and is never raised.
+     */
+    public static function expirationDays(int $categoryId, ?int $userId): int|string
+    {
+        $category     = Category::getInstance()->findByPrimaryKey($categoryId);
+        $categoryDays = (int) ($category['i_expiration_days'] ?? 0);
+        if ($categoryDays <= 0) {
+            return $categoryDays;
+        }
+        $extra = osc_item_extra_runtime_days($userId);
+        if ($extra === 0) {
+            return $categoryDays;
+        }
+
+        return $extra === -1 ? '' : $categoryDays + $extra;
+    }
+
+    /**
      * read() from plain values, for $actor or else the signed-in user or admin of this request.
      *
      * @param array<string,mixed> $input
@@ -439,12 +458,6 @@ final class ListingInput
         }
 
         if ($isAdd || $admin) {
-            // The ceiling is the category's own i_expiration_days unless the poster
-            // holds a listing.runtime entitlement, which raises it by their extra
-            // days -- -1 means unlimited extra runtime, so the clamp below is skipped
-            // entirely for that user, the same as it already is for an admin.
-            $extraRuntimeDays = osc_item_extra_runtime_days($aItem['userId'] ?? null);
-
             $dt_expiration = $get('dt_expiration');
             if ($dt_expiration == -1) {
                 $aItem['dt_expiration'] = '';
@@ -461,15 +474,9 @@ final class ListingInput
                 )
             ) {
                 $aItem['dt_expiration'] = $dt_expiration;
-                $_category              = Category::getInstance()->findByPrimaryKey($aItem['catId']);
-                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
-                // A category of 0 days never expires, so it is already the most generous
-                // ceiling there is -- raising it by an entitlement's days would start
-                // expiring listings that never did.
-                $expirationCeiling = $categoryDays;
-                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
-                    $expirationCeiling = $extraRuntimeDays === -1 ? null : $categoryDays + $extraRuntimeDays;
-                }
+                // Unlimited runtime ('') leaves no ceiling.
+                $expirationCeiling      = self::expirationDays((int) $aItem['catId'], $aItem['userId'] ?? null);
+                $expirationCeiling      = $expirationCeiling === '' ? null : (int) $expirationCeiling;
                 if (ctype_digit($dt_expiration)) {
                     if (!$admin && $expirationCeiling !== null && $dt_expiration > $expirationCeiling) {
                         $aItem['dt_expiration'] = $expirationCeiling;
@@ -489,13 +496,7 @@ final class ListingInput
             } else {
                 // No expiration asked for, which is every public posting form -- the
                 // runtime a seller paid for has to land here or it never applies at all.
-                $_category              = Category::getInstance()->findByPrimaryKey($aItem['catId']);
-                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
-                $aItem['dt_expiration'] = $_category['i_expiration_days'] ?? null;
-
-                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
-                    $aItem['dt_expiration'] = $extraRuntimeDays === -1 ? '' : $categoryDays + $extraRuntimeDays;
-                }
+                $aItem['dt_expiration'] = self::expirationDays((int) $aItem['catId'], $aItem['userId'] ?? null);
             }
             unset($dt_expiration);
         } else {
