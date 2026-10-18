@@ -150,7 +150,7 @@ final class CartPricer
             'label'    => $chosen['label'],
             'amount'   => $chosen['amount'],
             'currency' => $currency,
-            'meta'     => array('method' => $chosen['id']),
+            'meta'     => array('method' => $chosen['id']) + ($chosen['eta'] !== null ? array('eta' => $chosen['eta']) : array()),
         ));
         $extra                   = array();
         $extra['shipping']       = $cart['needs_shipping'] ? self::extra(osc_apply_filter('cart_shipping_lines', $default, $cart), 'shipping', $currency) : array();
