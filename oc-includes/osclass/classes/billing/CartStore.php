@@ -12,8 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\billing;
 
+use mindstellar\billing\event\CartItemAdded;
+use mindstellar\billing\event\Line;
+use mindstellar\container\Container;
 use mindstellar\database\Db;
 use mindstellar\database\RowHashQuery;
+use mindstellar\event\DispatcherInterface;
 use mindstellar\model\KeyValue;
 use mindstellar\privacy\PersonalData;
 use mindstellar\user\UserStore;
@@ -61,7 +65,7 @@ final class CartStore
         $lines = self::clean($lines);
         $quote = null;
         if ($lines !== array()) {
-            $quote = (new CartPricer())->quote($lines, array('user_id' => $userId));
+            $quote = Container::root()->get(CartPricer::class)->quote($lines, array('user_id' => $userId));
             $lines = array();
             foreach ($quote->lines() as $line) {
                 $lines[] = array('variant' => (int) $line['variant'], 'qty' => (int) $line['qty']);
@@ -82,16 +86,17 @@ final class CartStore
         });
 
         if ($quote !== null) {
-            $known = array_column($out['before'], 'variant');
+            $known  = array_column($out['before'], 'variant');
+            $events = Container::root()->get(DispatcherInterface::class);
             foreach ($quote->lines() as $line) {
                 if (!in_array($line['variant'], $known, true)) {
-                    osc_run_hook('cart_item_add_after', $quote->cart(), array(
-                        'id'       => 'item.' . $line['variant'],
-                        'label'    => (string) $line['title'],
-                        'amount'   => (int) $line['amount'],
-                        'currency' => $quote->currency(),
-                        'meta'     => array('variant' => (int) $line['variant'], 'qty' => (int) $line['qty'], 'item_id' => (int) $line['item_id']),
-                    ));
+                    $events->dispatch(new CartItemAdded($quote->cart(), new Line(
+                        'item.' . $line['variant'],
+                        (string) $line['title'],
+                        (int) $line['amount'],
+                        $quote->currency(),
+                        array('variant' => (int) $line['variant'], 'qty' => (int) $line['qty'], 'item_id' => (int) $line['item_id'])
+                    )));
                 }
             }
         }

@@ -12,6 +12,15 @@ declare(strict_types=1);
 
 namespace mindstellar\billing;
 
+use mindstellar\billing\event\CartDiscountLines;
+use mindstellar\billing\event\CartFees;
+use mindstellar\billing\event\CartFreeOver;
+use mindstellar\billing\event\CartProblems;
+use mindstellar\billing\event\CartShipping;
+use mindstellar\billing\event\CartShippingLines;
+use mindstellar\billing\event\CartTaxLines;
+use mindstellar\container\Container;
+use mindstellar\event\DispatcherInterface;
 use mindstellar\listing\ListingQuery;
 use mindstellar\listing\PhotoStore;
 use mindstellar\listing\VariantStore;
@@ -48,6 +57,13 @@ final class CartPricer
 
     /** Longest text of a `cart_problems` entry. */
     private const MAX_PROBLEM_TEXT = 200;
+
+    private ?DispatcherInterface $events;
+
+    public function __construct(?DispatcherInterface $events = null)
+    {
+        $this->events = $events;
+    }
 
     /**
      * Price the cart.
@@ -135,8 +151,9 @@ final class CartPricer
             'coupon'          => self::coupon($ctx['coupon'] ?? null),
         );
 
-        $cart['needs_shipping'] = osc_apply_filter('cart_needs_shipping', true, $cart) !== false;
-        $methods = $cart['needs_shipping'] ? self::methods(osc_apply_filter('cart_shipping_methods', array(), $cart), $currency) : array();
+        $shipping = $this->events()->dispatch(new CartShipping($cart));
+        $cart['needs_shipping'] = $shipping->needsShipping();
+        $methods = $cart['needs_shipping'] ? self::methods($shipping->rawMethods(), $currency) : array();
         $asked   = (string) ($ctx['shipping_method'] ?? '');
         $chosen  = null;
         foreach ($methods as $method) {
@@ -154,17 +171,17 @@ final class CartPricer
             'meta'     => array('method' => $chosen['id']) + ($chosen['eta'] !== null ? array('eta' => $chosen['eta']) : array()),
         ));
         $extra                   = array();
-        $extra['shipping']       = $cart['needs_shipping'] ? self::extra(osc_apply_filter('cart_shipping_lines', $default, $cart), 'shipping', $currency) : array();
+        $extra['shipping']       = $cart['needs_shipping'] ? self::extra($this->events()->dispatch(new CartShippingLines($cart, $default))->rawLines(), 'shipping', $currency) : array();
         $cart['shipping_lines']  = $extra['shipping'];
-        $extra['tax']            = self::extra(osc_apply_filter('cart_tax_lines', array(), $cart), 'tax', $currency);
+        $extra['tax']            = self::extra($this->events()->dispatch(new CartTaxLines($cart))->rawLines(), 'tax', $currency);
         $cart['tax_lines']       = $extra['tax'];
-        $extra['discount']       = self::extra(osc_apply_filter('cart_discount_lines', array(), $cart), 'discount', $currency);
+        $extra['discount']       = self::extra($this->events()->dispatch(new CartDiscountLines($cart))->rawLines(), 'discount', $currency);
         $cart['discount_lines']  = $extra['discount'];
 
-        $extra['fee'] = self::fees($cart, $subtotal, $extra);
+        $extra['fee'] = $this->fees($cart, $subtotal, $extra);
         $totals       = self::sum($subtotal, $extra);
-        $freeOver     = $cart['needs_shipping'] ? self::freeOver($subtotal, $cart) : null;
-        $problems     = array_merge($problems, self::problems(osc_apply_filter('cart_problems', array(), $cart)));
+        $freeOver     = $cart['needs_shipping'] ? $this->freeOver($subtotal, $cart) : null;
+        $problems     = array_merge($problems, self::problems($this->events()->dispatch(new CartProblems($cart))->rawProblems()));
 
         return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $freeOver, $problems, $cart);
     }
@@ -224,7 +241,7 @@ final class CartPricer
             'discount' => $cart['discount_lines'] ?? array(),
         );
 
-        return (int) array_sum(array_column(self::fees($cart, (int) ($cart['subtotal'] ?? 0), $extra), 'amount'));
+        return (int) array_sum(array_column($this->fees($cart, (int) ($cart['subtotal'] ?? 0), $extra), 'amount'));
     }
 
     /**
@@ -235,40 +252,23 @@ final class CartPricer
      *
      * @return array<int,array{id:string,label:string,amount:int,currency:string,meta:array<string,mixed>}>
      */
-    private static function fees(array $cart, int $subtotal, array $extra): array
+    private function fees(array $cart, int $subtotal, array $extra): array
     {
-        $totals         = self::sum($subtotal, $extra + array('fee' => array()));
-        $totals['fees'] = array();
-        $filtered       = osc_apply_filter('cart_totals', $totals, $cart);
+        $totals = self::sum($subtotal, $extra + array('fee' => array()));
+        $event  = $this->events()->dispatch(new CartFees($cart, $totals));
 
-        return self::extra(is_array($filtered) && is_array($filtered['fees'] ?? null) ? $filtered['fees'] : array(), 'fee', (string) $cart['currency']);
+        return self::extra($event->rawFees(), 'fee', (string) $cart['currency']);
     }
 
     /**
      * Core's `cart_shipping_methods` listener: "Standard delivery" at the flat amount from the
      * billing settings, free once the subtotal reaches the free-over amount. Zero when unset.
-     *
-     * @param mixed               $methods
-     * @param array<string,mixed> $cart
-     *
-     * @return mixed
      */
-    public static function standardMethod($methods, $cart = array())
+    public static function standardMethod(CartShipping $event): void
     {
-        if (!is_array($methods)) {
-            return $methods;
-        }
         $flat     = osc_billing_shipping_flat();
         $freeOver = osc_billing_free_over();
-        $subtotal = is_array($cart) ? (int) ($cart['subtotal'] ?? 0) : 0;
-        $methods[] = array(
-            'id'     => self::STANDARD,
-            'label'  => _m('Standard delivery'),
-            'eta'    => null,
-            'amount' => $freeOver > 0 && $subtotal >= $freeOver ? 0 : $flat,
-        );
-
-        return $methods;
+        $event->addMethod(self::STANDARD, _m('Standard delivery'), $freeOver > 0 && $event->cart()->subtotal() >= $freeOver ? 0 : $flat);
     }
 
     /**
@@ -385,7 +385,7 @@ final class CartPricer
      *
      * @return array<int,array{id:string,label:string,eta:?string,amount:int}>
      */
-    private static function methods($methods, string $currency): array
+    public static function methods($methods, string $currency): array
     {
         $out = array();
         foreach (is_array($methods) ? $methods : array() as $method) {
@@ -461,7 +461,7 @@ final class CartPricer
      *
      * @return array<int,array{line:null,code:string,pointer:string,message:string}>
      */
-    private static function problems($problems): array
+    public static function problems($problems): array
     {
         $out = array();
         foreach (is_array($problems) ? $problems : array() as $problem) {
@@ -519,11 +519,11 @@ final class CartPricer
      *
      * @return array{amount:int,remaining:int}|null
      */
-    private static function freeOver(int $subtotal, array $cart): ?array
+    private function freeOver(int $subtotal, array $cart): ?array
     {
         $amount   = osc_billing_free_over();
         $freeOver = $amount <= 0 || osc_billing_shipping_flat() <= 0 ? null : array('amount' => $amount, 'remaining' => max(0, $amount - $subtotal));
-        $asked    = osc_apply_filter('cart_free_over', $freeOver, $cart);
+        $asked    = $this->events()->dispatch(new CartFreeOver($cart, $freeOver))->freeOver();
         if ($asked === null) {
             return null;
         }
@@ -533,6 +533,11 @@ final class CartPricer
         }
 
         return array('amount' => $amount, 'remaining' => max(0, $amount - $subtotal));
+    }
+
+    private function events(): DispatcherInterface
+    {
+        return $this->events ??= Container::root()->get(DispatcherInterface::class);
     }
 
     /**
