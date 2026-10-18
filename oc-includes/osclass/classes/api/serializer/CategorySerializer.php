@@ -50,17 +50,18 @@ final class CategorySerializer
     }
 
     /**
-     * Every category, flat in display order.
+     * Every category, flat in display order, or only the top-level ones.
      *
      * @param array<int,array<string,mixed>>|null $covers category id => shaped photo, sent as `cover` when given
      *
      * @return array<int,array<string,mixed>>
      */
-    public function flat(CategoryCatalog $catalog, ViewContext $context, ?array $covers = null): array
+    public function flat(CategoryCatalog $catalog, ViewContext $context, ?array $covers = null, bool $roots = false): array
     {
         $context = self::viewed($context);
+        $rows    = $roots ? array_map(static fn (int $id): array => (array) $catalog->find($id), $catalog->childIds(0)) : $catalog->all();
 
-        return array_map(fn (array $c): array => $this->finish($this->shape($c, $context, $covers), $context), $catalog->all());
+        return array_map(fn (array $c): array => $this->finish($this->shape($c, $context, $covers), $context), $rows);
     }
 
     /**

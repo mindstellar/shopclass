@@ -31462,6 +31462,15 @@
                         }
                     },
                     {
+                        "name": "roots",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only the top-level categories, flat; ignored with tree.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "name": "include",
                         "in": "query",
                         "required": false,

@@ -236,7 +236,7 @@ final class PublicRoutes
                 tag: 'Categories',
                 summary: 'Every category, flat or as a tree',
                 response: 'CategoryList',
-                query: $view + ['tree' => ['type' => 'boolean'], 'include' => ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none.']]
+                query: $view + ['tree' => ['type' => 'boolean'], 'roots' => ['type' => 'boolean', 'description' => 'Only the top-level categories, flat; ignored with tree.'], 'include' => ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none.']]
             ),
             'GET categories/{category}' => RouteSpec::read(
                 handler: [CategoriesController::class, 'show'],

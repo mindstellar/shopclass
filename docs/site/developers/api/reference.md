@@ -1091,6 +1091,7 @@ Every category, flat or as a tree
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
 | `tree` | query | boolean | no |  |
+| `roots` | query | boolean | no | Only the top-level categories, flat; ignored with tree. |
 | `include` | query | string | no | Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
