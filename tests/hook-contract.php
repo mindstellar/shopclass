@@ -27,6 +27,7 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 
 define('ABS_PATH', dirname(__DIR__) . '/');
 
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
 const HOOK_FIXTURE = __DIR__ . '/fixtures/hook-names.txt';
@@ -78,6 +79,18 @@ function hook_scan(): array
                 '/(osc_run_hook|Plugins::runHook|osc_apply_filter|Plugins::applyFilter)\s*\(\s*\$/',
                 $src
             );
+        }
+    }
+
+    // Names a typed event now owns have no call site; they keep the kind the fixture records.
+    $pinned = is_file(HOOK_FIXTURE) ? explode("\n", (string) file_get_contents(HOOK_FIXTURE)) : array();
+    foreach (\mindstellar\boot\CoreServices::events() as $event) {
+        foreach ($event::legacyNames() as $name) {
+            if (in_array('filter ' . $name, $pinned, true)) {
+                $filters[$name] = true;
+            } else {
+                $actions[$name] = true;
+            }
         }
     }
 

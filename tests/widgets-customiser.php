@@ -28,6 +28,7 @@ require_once __DIR__ . '/lib/harness.php';
 const SCRATCH = 'osc_widgets_customiser';
 
 $admin = scratchdb_session(SCRATCH);
+harness_reset_container();
 define('OC_ADMIN', true);
 require_once __DIR__ . '/lib/customiser-kit.php';
 customiser_kit_declare();

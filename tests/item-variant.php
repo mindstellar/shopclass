@@ -320,6 +320,7 @@ pin('a photo id that is not a number', ['/product/variants/0/photo_id'], $codes(
 pin('a row message says which row', 'Variant 2: SKU too long.', $v->product($tee([$row(['Size' => 'S']), $row(['Size' => 'M'], ['s_sku' => str_repeat('x', 65)])]))[0]['message'] ?? null);
 
 harness_section('option rows: saveSet');
+harness_reset_container();
 $fired = [];
 osc_add_hook('variant_stock_changed', static function (int $id, int $item, ?int $from, ?int $to) use (&$fired): void {
     $fired[] = ['stock', $id, $item, $from, $to];

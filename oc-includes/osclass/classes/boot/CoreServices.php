@@ -49,6 +49,10 @@ final class CoreServices
      */
     public static function events(): array
     {
-        return [];
+        return [
+            \mindstellar\listing\event\VariantPriceChanged::class,
+            \mindstellar\listing\event\VariantStockChanged::class,
+            \mindstellar\widgets\event\CustomiserPublished::class,
+        ];
     }
 }

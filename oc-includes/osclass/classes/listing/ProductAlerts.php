@@ -15,14 +15,16 @@ namespace mindstellar\listing;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\job\Job;
+use mindstellar\listing\event\VariantPriceChanged;
+use mindstellar\listing\event\VariantStockChanged;
 use mindstellar\search\AlertEnvelope;
 use mindstellar\search\UserAlerts;
 
 /**
  * Back-in-stock and price-drop alerts on a product. They are t_alerts rows of type
  * \Alerts::PRODUCT holding an AlertEnvelope::product(), so the account page lists them and
- * they go with the account. Each one is sent once, by a job queued from `variant_stock_changed`
- * (0 to some) or `variant_price_changed` (a drop), and then stopped.
+ * they go with the account. Each one is sent once, by a job queued from a VariantStockChanged event
+ * (0 to some) or a VariantPriceChanged event (a drop), and then stopped.
  */
 final class ProductAlerts
 {
@@ -85,24 +87,22 @@ final class ProductAlerts
     }
 
     /**
-     * `variant_stock_changed`: a variant that was sold out has stock again.
+     * A variant that was sold out has stock again.
      */
-    public static function stockChanged($variantId, $itemId, $from, $to): void
+    public static function stockChanged(VariantStockChanged $event): void
     {
-        if (self::whole($from) === 0 && ($to === null || self::whole($to) > 0)) {
-            self::queue('stock', (int) $variantId, (int) $itemId, null);
+        if ($event->backInStock()) {
+            self::queue('stock', $event->variantId(), $event->itemId(), null);
         }
     }
 
     /**
-     * `variant_price_changed`: a variant's selling price went down.
+     * A variant's selling price went down.
      */
-    public static function priceChanged($variantId, $itemId, $from, $to): void
+    public static function priceChanged(VariantPriceChanged $event): void
     {
-        $to   = self::whole($to);
-        $from = self::whole($from);
-        if ($to !== null && $from !== null && $to < $from) {
-            self::queue('price', (int) $variantId, (int) $itemId, $to);
+        if ($event->dropped()) {
+            self::queue('price', $event->variantId(), $event->itemId(), $event->to());
         }
     }
 

@@ -13,16 +13,20 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\base\Model;
+use mindstellar\container\Container;
 use mindstellar\database\Db;
+use mindstellar\event\Dispatcher;
+use mindstellar\listing\event\VariantPriceChanged;
+use mindstellar\listing\event\VariantStockChanged;
 
 /**
  * Reads and writes of t_item_variant. A listing is buyable when it has at least one row. It has
  * either one default row (no options), for a plain product, or option rows (Colour x Size ...),
  * never both. Rows go with their listing (ON DELETE CASCADE).
  *
- * A kept row whose stock or selling price changes fires `variant_stock_changed` or
- * `variant_price_changed` ($variantId, $itemId, $from, $to) once the write commits; a row
- * with no price of its own fires the price one when the listing's price changes.
+ * A kept row whose stock or selling price changes dispatches a VariantStockChanged or
+ * VariantPriceChanged event once the write commits; a row with no price of its own dispatches
+ * the price one when the listing's price changes.
  */
 final class VariantStore extends Model
 {
@@ -398,7 +402,7 @@ final class VariantStore extends Model
     }
 
     /**
-     * The listing's own price went from $from to $to: fires `variant_price_changed` once the write
+     * The listing's own price went from $from to $to: dispatches VariantPriceChanged once the write
      * commits for each of $before that still has no price of its own.
      *
      * @param int[] $before inheriting() read before the edit
@@ -413,15 +417,16 @@ final class VariantStore extends Model
         if ($ids === array()) {
             return;
         }
-        Db::afterCommit(static function () use ($itemId, $ids, $from, $to): void {
+        $events = Container::root()->get(Dispatcher::class);
+        Db::afterCommit(static function () use ($events, $itemId, $ids, $from, $to): void {
             foreach ($ids as $variantId) {
-                osc_run_hook('variant_price_changed', $variantId, $itemId, $from, $to);
+                $events->dispatch(new VariantPriceChanged($variantId, $itemId, $from, $to));
             }
         });
     }
 
     /**
-     * Fire the stock and price hooks, once the write commits, for each kept row that changed.
+     * Dispatch the stock and price events, once the write commits, for each kept row that changed.
      * The price is the one the row sells at: its own, else the listing's.
      *
      * @param array<int,array{0:int,1:array<string,mixed>,2:array<string,mixed>}> $changes id, old row, new values
@@ -450,12 +455,13 @@ final class VariantStore extends Model
         if ($stock === array() && $price === array()) {
             return;
         }
-        Db::afterCommit(static function () use ($itemId, $stock, $price): void {
+        $events = Container::root()->get(Dispatcher::class);
+        Db::afterCommit(static function () use ($events, $itemId, $stock, $price): void {
             foreach ($stock as [$variantId, $from, $to]) {
-                osc_run_hook('variant_stock_changed', $variantId, $itemId, $from, $to);
+                $events->dispatch(new VariantStockChanged($variantId, $itemId, $from, $to));
             }
             foreach ($price as [$variantId, $from, $to]) {
-                osc_run_hook('variant_price_changed', $variantId, $itemId, $from, $to);
+                $events->dispatch(new VariantPriceChanged($variantId, $itemId, $from, $to));
             }
         });
     }

@@ -111,6 +111,25 @@ function hooks_scan(): array
         }
     }
 
+    // Names a typed event owns have no call site; the event's legacy call gives the arguments.
+    require_once ROOT . 'oc-includes/vendor/autoload.php';
+    foreach (\mindstellar\boot\CoreServices::events() as $event) {
+        $file = (new ReflectionClass($event))->getFileName();
+        $call = (new ReflectionClass($event))->hasMethod('applyLegacy')
+            ? (new ReflectionMethod($event, 'applyLegacy'))->getDeclaringClass()->getFileName()
+            : $file;
+        $args = preg_match('/\$fn\(([^;]*)\);/', (string) file_get_contents($call), $m) === 1
+            ? preg_replace('/\$this->/', '$', $m[1])
+            : '';
+        foreach ($event::legacyNames() as $name) {
+            $found[$name] ??= array(
+                'kind'  => 'action',
+                'args'  => trim((string) $args),
+                'where' => str_replace(realpath(ROOT) . '/', '', realpath($file)),
+            );
+        }
+    }
+
     ksort($found);
 
     return $found;
