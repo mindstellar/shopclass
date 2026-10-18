@@ -744,7 +744,10 @@ function osc_billing_orders_url(): string
  */
 function osc_billing_order_return_url(int $orderId): string
 {
-    return (string) osc_apply_filter('billing_order_return_url', osc_billing_orders_url(), $orderId);
+    $event = new \mindstellar\billing\event\OrderReturnUrlResolving($orderId, osc_billing_orders_url());
+    \mindstellar\boot\CoreServices::dispatcher()->dispatch($event);
+
+    return $event->url();
 }
 
 /**

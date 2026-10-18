@@ -12,6 +12,15 @@ declare(strict_types=1);
 
 namespace mindstellar\boot;
 
+use mindstellar\billing\event\OrderCancelled;
+use mindstellar\billing\event\OrderDelivered;
+use mindstellar\billing\event\OrderFailed;
+use mindstellar\billing\event\OrderPaid;
+use mindstellar\billing\event\OrderPlaced;
+use mindstellar\billing\event\OrderReturnUrlResolving;
+use mindstellar\billing\event\OrderShipped;
+use mindstellar\billing\event\ReceiptComposing;
+use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\container\Container;
 use mindstellar\event\Bridged;
 use mindstellar\event\Dispatcher;
@@ -43,12 +52,35 @@ final class CoreServices
     }
 
     /**
+     * The site's dispatcher. Core's services are registered first when start-up has not done it.
+     */
+    public static function dispatcher(): DispatcherInterface
+    {
+        $c = Container::root();
+        if (!$c->has(DispatcherInterface::class)) {
+            self::register($c);
+        }
+
+        return $c->get(DispatcherInterface::class);
+    }
+
+    /**
      * The core events that own old hook names.
      *
      * @return list<class-string<Bridged>>
      */
     public static function events(): array
     {
-        return [];
+        return [
+            OrderPlaced::class,
+            OrderPaid::class,
+            OrderFailed::class,
+            OrderShipped::class,
+            OrderDelivered::class,
+            OrderCancelled::class,
+            TrackingUrlResolving::class,
+            ReceiptComposing::class,
+            OrderReturnUrlResolving::class,
+        ];
     }
 }

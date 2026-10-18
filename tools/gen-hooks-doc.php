@@ -111,6 +111,19 @@ function hooks_scan(): array
         }
     }
 
+    // Names a typed event owns are fired by dispatch(), so they are listed from the event class.
+    require_once ROOT . 'oc-includes/vendor/autoload.php';
+    foreach (\mindstellar\boot\CoreServices::events() as $event) {
+        $class = new ReflectionClass($event);
+        foreach ($event::legacyNames() as $name) {
+            $found[$name] = array(
+                'kind'  => 'event',
+                'args'  => $class->getShortName(),
+                'where' => str_replace(realpath(ROOT) . '/', '', (string) $class->getFileName()),
+            );
+        }
+    }
+
     ksort($found);
 
     return $found;

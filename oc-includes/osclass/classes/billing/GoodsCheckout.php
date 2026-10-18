@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\billing;
 
+use mindstellar\billing\event\OrderPlaced;
+use mindstellar\boot\CoreServices;
 use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
 use mindstellar\user\UserStore;
@@ -147,7 +149,7 @@ final class GoodsCheckout
             OrderStore::cancel($order->getId());
             throw new InvalidException('/gateway', 'unavailable', _m('This payment method is not available right now. Try another.'));
         }
-        osc_run_hook('billing_order_placed', $order->getId(), $userId);
+        CoreServices::dispatcher()->dispatch(new OrderPlaced($order->getId(), $userId));
 
         return array('order' => $order, 'next' => $intent);
     }

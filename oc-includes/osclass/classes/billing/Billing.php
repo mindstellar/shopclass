@@ -13,6 +13,9 @@ namespace mindstellar\billing;
 
 use DomainException;
 use Log;
+use mindstellar\billing\event\OrderFailed;
+use mindstellar\billing\event\OrderPaid;
+use mindstellar\boot\CoreServices;
 use mindstellar\database\Db;
 use Throwable;
 
@@ -148,7 +151,7 @@ final class Billing
             case CallbackResult::OUTCOME_FAILED:
                 $order = self::resolve($gatewayId, $result);
                 if ($order !== null && OrderStore::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef())) {
-                    osc_run_hook('billing_order_failed', $order->getId(), $order->getUserId());
+                    CoreServices::dispatcher()->dispatch(new OrderFailed($order->getId(), $order->getUserId()));
                 }
 
                 return $result;
@@ -220,7 +223,7 @@ final class Billing
             self::log('paid', $order, $externalRef);
             // The hook runs before the e-mail, so a slow mail server cannot keep plugins from hearing about the payment.
             try {
-                osc_run_hook('billing_order_paid', $order->getId(), $order->getUserId(), $order->getCredits());
+                CoreServices::dispatcher()->dispatch(new OrderPaid($order->getId(), $order->getUserId(), $order->getCredits()));
             } finally {
                 Receipts::afterPaid($order);
             }
@@ -246,7 +249,7 @@ final class Billing
         if ($collected) {
             self::log('paid', $order, $order->getExternalRef());
             try {
-                osc_run_hook('billing_order_paid', $order->getId(), $order->getUserId(), $order->getCredits());
+                CoreServices::dispatcher()->dispatch(new OrderPaid($order->getId(), $order->getUserId(), $order->getCredits()));
             } finally {
                 Receipts::afterPaid($order);
             }

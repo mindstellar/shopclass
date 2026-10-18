@@ -247,9 +247,10 @@ Plugins::addHook('ed_words', static function ($words) {
 CoreServices::register($c);
 $bridge = HookBridge::active();
 $events = $c->get(Dispatcher::class);
-check('no core event owns a name yet', $bridge->owners() === [] && CoreServices::events() === []);
+$coreOwned = $bridge->owners();
+check('core registers the names of its own events', count($coreOwned) === array_sum(array_map(static fn (string $c): int => count($c::legacyNames()), CoreServices::events())));
 $bridge->own(EdWords::class);
-pin('the event owns its names', ['ed_words' => EdWords::class, 'ed_ping' => EdWords::class], $bridge->owners());
+pin('the event owns its names', ['ed_words' => EdWords::class, 'ed_ping' => EdWords::class], array_diff_key($bridge->owners(), $coreOwned));
 pin('a callback added before the name was owned moves over', ['early'], $events->dispatch(new EdWords())->words);
 pin('and is gone from the old store', 'xs', Plugins::applyFilter('ed_words', 'xs'));
 

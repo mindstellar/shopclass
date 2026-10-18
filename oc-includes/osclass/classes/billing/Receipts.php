@@ -11,6 +11,8 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\billing\event\ReceiptComposing;
+use mindstellar\boot\CoreServices;
 use mindstellar\currency\Money;
 use mindstellar\mail\CoreEmails;
 use RuntimeException;
@@ -447,9 +449,9 @@ final class Receipts
 
     /**
      * What a goods order holds, as plain text: every line, the address, how it goes and the
-     * tracking once shipped, then the `billing_receipt_details` filter's ($details, $order)
-     * title, extra rows under the business details, summary rows under the lines and footer.
-     * The filter changes those four only. Escaping is the caller's.
+     * tracking once shipped, then the title, extra rows under the business details, summary rows
+     * under the lines and footer that `ReceiptComposing` listeners (or old `billing_receipt_details`
+     * callbacks) set. They change those four only. Escaping is the caller's.
      *
      * @param Order $order
      *
@@ -497,37 +499,15 @@ final class Receipts
             'summary'      => array(),
             'footer'       => '',
         );
-        $asked = osc_apply_filter('billing_receipt_details', $details, $order);
-        $asked = is_array($asked) ? $asked : array();
-        $title = self::plain($asked['title'] ?? null, 100);
+        $event = new ReceiptComposing($order, $details);
+        CoreServices::dispatcher()->dispatch($event);
 
         return array(
-            'title'   => $title !== '' ? $title : $details['title'],
-            'extra'   => self::rows($asked['extra'] ?? null),
-            'summary' => self::rows($asked['summary'] ?? null),
-            'footer'  => self::plain($asked['footer'] ?? null, 1000, true),
+            'title'   => $event->title(),
+            'extra'   => $event->extraRows(),
+            'summary' => $event->summaryRows(),
+            'footer'  => $event->footer(),
         ) + $details;
-    }
-
-    /**
-     * Up to 30 {label, value} rows of plain text a receipt filter returned; a malformed row is dropped.
-     *
-     * @param mixed $rows
-     *
-     * @return array<int,array{label:string,value:string}>
-     */
-    private static function rows($rows): array
-    {
-        $out = array();
-        foreach (is_array($rows) ? $rows : array() as $row) {
-            $label = is_array($row) ? self::plain($row['label'] ?? null, 200) : '';
-            $value = is_array($row) ? self::plain($row['value'] ?? null, 500, true) : '';
-            if ($label !== '' && count($out) < 30) {
-                $out[] = array('label' => $label, 'value' => $value);
-            }
-        }
-
-        return $out;
     }
 
     /**
@@ -536,7 +516,7 @@ final class Receipts
      *
      * @param mixed $value
      */
-    private static function plain($value, int $max, bool $lines = false): string
+    public static function plain($value, int $max, bool $lines = false): string
     {
         if (!is_string($value)) {
             return '';

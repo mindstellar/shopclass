@@ -28,6 +28,7 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 define('ABS_PATH', dirname(__DIR__) . '/');
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
 const HOOK_FIXTURE = __DIR__ . '/fixtures/hook-names.txt';
 const HOOK_ARGS_FIXTURE = __DIR__ . '/fixtures/hook-api-args.txt';
@@ -78,6 +79,18 @@ function hook_scan(): array
                 '/(osc_run_hook|Plugins::runHook|osc_apply_filter|Plugins::applyFilter)\s*\(\s*\$/',
                 $src
             );
+        }
+    }
+
+    // Names a typed event owns are fired by dispatch(), not osc_run_hook(); they keep the kind the fixture records.
+    $fixture = is_file(HOOK_FIXTURE) ? (string) file_get_contents(HOOK_FIXTURE) : '';
+    foreach (\mindstellar\boot\CoreServices::events() as $event) {
+        foreach ($event::legacyNames() as $name) {
+            if (preg_match('/^filter ' . preg_quote($name, '/') . '$/m', $fixture) === 1) {
+                $filters[$name] = true;
+            } else {
+                $actions[$name] = true;
+            }
         }
     }
 
