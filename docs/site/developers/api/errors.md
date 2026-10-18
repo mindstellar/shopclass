@@ -83,7 +83,7 @@ A `422 validation_failed` lists every problem at once in `errors`:
 | `taken` | Another resource already uses the value. |
 | `mismatch` | The value does not match, such as a wrong current password, or a region outside the country or a city outside the region. |
 | `limit` | A limit is reached, such as the photos a listing may hold. |
-| `rejected` | The web form refused the input; `message` is its text. |
+| `rejected` | The web form refused the input, or a plugin refused the cart on `POST account/orders`; `message` is its text. |
 | `out_of_stock` | An order line asks for more than is in stock. |
 | `not_buyable` | An order line names a product that is gone, hidden, unpriced or in another currency. |
 | `unavailable` | The payment method is not on offer for this order. |

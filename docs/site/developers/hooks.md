@@ -214,6 +214,7 @@ below zero. `cart_item_add_after` is fired by `PUT account/cart` for each varian
 
 | Hook | Kind | Arguments |
 |---|---|---|
+| `cart_needs_shipping` | filter | `$needs, $cart` |
 | `cart_shipping_methods` | filter | `$methods, $cart` |
 | `cart_shipping_lines` | filter | `$lines, $cart` |
 | `cart_tax_lines` | filter | `$lines, $cart` |
@@ -229,7 +230,9 @@ below zero. `cart_item_add_after` is fired by `PUT account/cart` for each varian
 placed it is the full delivery address. A tax line with `meta.included` set to `true` is tax
 already in the prices: it is shown, counted in `totals.tax_included`, and not added to the total.
 `cart_free_over` returns `{amount, remaining}` to replace core's free-delivery meter, or null for
-none; core works out `remaining`. `cart_problems` entries are `{code, pointer, message}`: a code of
+none; core works out `remaining`. Every `cart_free_over` callback must return its input when it does
+not apply. `cart_needs_shipping` returns false when nothing in the cart is sent; core then skips the
+shipping filters. `cart_problems` entries are `{code, pointer, message}`: a code of
 `a-z` and `_` up to 32, a pointer of `/coupon`, `/address/postcode`, `/address/state`,
 `/address/country` or `/shipping_method`, and plain text up to 200 characters. Any other entry is
 dropped. The quote lists them under `problems`, and placing an order is refused with a 422 at that

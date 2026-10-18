@@ -694,7 +694,7 @@ touched.
 ### Cart hooks
 
 `CartPricer::quote()` fires the filters in table order on every quote and placement.
-`$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal, coupon}`; later
+`$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal, coupon, needs_shipping}`; later
 filters also see `shipping_lines`, `tax_lines` and `discount_lines`. A line is
 `{id, label, amount (micros), currency, meta}`; one in another currency is dropped, and so is
 one below zero unless it is a discount. A filter
