@@ -154,7 +154,7 @@ final class HookBridge
         $eventClass = $this->eventFor($name);
         $removed    = false;
         foreach ($this->bound[$name] ?? [] as $entry) {
-            if ($entry['fn'] != $fn) {
+            if ($entry['fn'] !== $fn) {
                 continue;
             }
             if ($eventClass !== null) {
@@ -197,7 +197,7 @@ final class HookBridge
      */
     private static function acceptsAny(object $event, \ArrayObject $names): bool
     {
-        if (!method_exists($event, 'accepts')) {
+        if (!$event instanceof Bridged) {
             return true;
         }
         foreach ($names as $name) {

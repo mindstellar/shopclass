@@ -26,6 +26,12 @@ interface Bridged
     public static function legacyNames(): array;
 
     /**
+     * Whether a callback added on $name runs for this event. Event gives true; a class that owns
+     * the names of several kinds can narrow it to its own.
+     */
+    public function accepts(string $name): bool;
+
+    /**
      * Call an old-style callback added on $name with that hook's arguments, and fold what it returns into the event.
      */
     public function applyLegacy(string $name, callable $fn): void;

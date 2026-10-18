@@ -28,4 +28,12 @@ abstract class Event
     {
         return $this->stopped;
     }
+
+    /**
+     * Whether a callback added on the old hook $name runs for this event; see Bridged.
+     */
+    public function accepts(string $name): bool
+    {
+        return true;
+    }
 }
