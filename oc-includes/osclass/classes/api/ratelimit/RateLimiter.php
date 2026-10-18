@@ -32,18 +32,26 @@ final class RateLimiter
     /** @var \Closure(string, string, int, int): ?int|null */
     private ?\Closure $add;
 
+    /** @var \Closure(string, string, int): ?int */
+    private \Closure $read;
+
     /**
      * @param callable      $increment (bucket, key, window, limit) => count so far, or null when the counter
      *                                 cannot be reached
      * @param callable|null $exact     the same for exact buckets; $increment when null
      * @param callable|null $add       (bucket, key, by, window) => count so far, to count several requests in an
      *                                 exact bucket in one write; $exact once per request when null
+     * @param callable|null $read      (bucket, key, window) => count so far without counting, or null when it
+     *                                 cannot be read; RateLimit::count when null
      */
-    public function __construct(callable $increment, private Clock $clock, ?callable $exact = null, ?callable $add = null)
+    public function __construct(callable $increment, private Clock $clock, ?callable $exact = null, ?callable $add = null, ?callable $read = null)
     {
         $this->increment = \Closure::fromCallable($increment);
         $this->exact     = $exact !== null ? \Closure::fromCallable($exact) : $this->increment;
         $this->add       = $add !== null ? \Closure::fromCallable($add) : null;
+        $this->read      = $read !== null
+            ? \Closure::fromCallable($read)
+            : static fn (string $context, string $key, int $window): ?int => RateLimit::count($context, $key, $window, $clock->now());
     }
 
     /**
@@ -143,6 +151,23 @@ final class RateLimiter
         $result = $this->hit($bucket, $failOpen, $n);
         if (!$result->allowed()) {
             throw ProblemException::tooMany($message, $result->reset());
+        }
+    }
+
+    /**
+     * Refuse when an exact bucket is already full, without counting this request. Count it
+     * with hit() once it has done what the bucket guards.
+     *
+     * @throws ProblemException 429 when the bucket is full
+     */
+    public function refuseIfFull(RateBucket $bucket, string $message): void
+    {
+        if ($bucket->max() <= 0) {
+            return;
+        }
+        $count = ($this->read)($bucket->name(), $bucket->key(), $bucket->window());
+        if ($count !== null && $count >= $bucket->max()) {
+            throw ProblemException::tooMany($message, $bucket->window() - ($this->clock->now() % $bucket->window()));
         }
     }
 

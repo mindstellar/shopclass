@@ -109,7 +109,9 @@ final class OrdersController
     {
         $userId = $call->userId();
         $input  = $call->input();
-        $this->api->limiter()->enforce($this->api->ratePolicy()->checkout($userId), 'Too many orders placed in an hour. Try again later.');
+        // A refused placement does not spend the hour: check the bucket first, count once the order is written.
+        $bucket = $this->api->ratePolicy()->checkout($userId);
+        $this->api->limiter()->refuseIfFull($bucket, 'Too many orders placed in an hour. Try again later.');
 
         $placed = $this->checkout->place(
             $userId,
@@ -119,6 +121,7 @@ final class OrdersController
             (string) ($input['gateway'] ?? ''),
             (string) ($input['note'] ?? '')
         );
+        $this->api->limiter()->hit($bucket);
         $next = $placed['next'];
 
         return $this->api->created(
