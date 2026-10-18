@@ -159,6 +159,10 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
                 var input = field && field.querySelector('.widget-image-input');
                 if (input && window.oscMediaPicker) {
                     window.oscMediaPicker.open(function (url) {
+                        try {
+                            var u = new URL(url, window.location.href);
+                            if (u.origin === window.location.origin && u.pathname.indexOf('//') === -1) { url = u.pathname + u.search; }
+                        } catch (err) { /* keep the full address */ }
                         input.value = url;
                         sync(field);
                         input.dispatchEvent(new Event('change', { bubbles: true }));

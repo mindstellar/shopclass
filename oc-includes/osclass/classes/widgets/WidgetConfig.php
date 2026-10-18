@@ -65,11 +65,10 @@ final class WidgetConfig
                     $config[$name] = in_array($value, $allowed, true) ? $value : (string) $default;
                     break;
                 case 'image':
-                    // Read unpurified so a query string survives, but keep only an http(s) URL.
+                    // Read unpurified so a query string survives; keep an http(s) URL or a site path.
                     $hasRaw        = array_key_exists($name, $postedRaw);
                     $imageUrl      = $hasRaw && is_string($postedRaw[$name]) ? trim($postedRaw[$name]) : (string) $default;
-                    $config[$name] = ($imageUrl !== '' && filter_var($imageUrl, FILTER_VALIDATE_URL)
-                        && preg_match('#^https?://#i', $imageUrl)) ? $imageUrl : '';
+                    $config[$name] = self::imageValue($imageUrl);
                     break;
                 case 'code':
                     if ($isSuperAdmin) {
@@ -89,6 +88,67 @@ final class WidgetConfig
         }
 
         return $config;
+    }
+
+    /**
+     * Whether a value is a path on this site: one leading slash, no "//", "/\\", backslash,
+     * space, quote, angle bracket or control character.
+     */
+    public static function isSitePath(string $value): bool
+    {
+        return preg_match('#^/(?![/\\\\])#', $value) === 1 && preg_match('/[\x00-\x20\x7f"<>\\\\]/', $value) !== 1;
+    }
+
+    /**
+     * An address under this site's base URL as a site path; any other value unchanged.
+     */
+    public static function toSitePath(string $value): string
+    {
+        if (!defined('WEB_PATH') || !function_exists('osc_base_url')) {
+            return $value;
+        }
+        $base = (string) osc_base_url();
+        if ($base === '' || stripos($value, $base) !== 0) {
+            return $value;
+        }
+        $parts = parse_url($base);
+        $path  = (string) ($parts['path'] ?? '/');
+        $path  = rtrim($path, '/') . '/' . ltrim(substr($value, strlen($base)), '/');
+
+        return self::isSitePath($path) ? $path : $value;
+    }
+
+    /**
+     * A site path as an absolute address on this site's origin; any other value unchanged.
+     */
+    public static function toAbsolute(string $value): string
+    {
+        if (!self::isSitePath($value) || !defined('WEB_PATH') || !function_exists('osc_base_url')) {
+            return $value;
+        }
+        $parts = parse_url((string) osc_base_url());
+        if (empty($parts['scheme']) || empty($parts['host'])) {
+            return $value;
+        }
+
+        return $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '') . $value;
+    }
+
+    /**
+     * What an image field stores: a site path (own-site addresses are shortened), another
+     * http(s) URL, or '' for anything else.
+     */
+    public static function imageValue(string $value): string
+    {
+        $value = trim($value);
+        if (self::isSitePath($value)) {
+            return $value;
+        }
+        if ($value !== '' && filter_var($value, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $value)) {
+            return self::toSitePath($value);
+        }
+
+        return '';
     }
 
     /**
