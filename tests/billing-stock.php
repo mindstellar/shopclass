@@ -249,6 +249,20 @@ foreach (['offline', 'card'] as $via) {
     pin("$via: and is whole again after", '5', $stock($a));
 }
 
+harness_section('two orders taking the same two variants in opposite order');
+$setStock($r, 5);
+$ar = $place([['variant' => $a, 'qty' => 1], ['variant' => $r, 'qty' => 1]], 'card');
+$ra = $place([['variant' => $r, 'qty' => 1], ['variant' => $a, 'qty' => 1]], 'card');
+$lockBoth = "SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id IN ($a, $r) FOR UPDATE";
+[$waiting, $printed] = $race([[$ar->getId(), 'pay'], [$ra->getId(), 'pay']], $lockBoth, "UPDATE {$p}t_item_variant%");
+pin('both waited on a variant', 2, $waiting);
+pin('both take their stock, neither deadlocks', [2, 0], [substr_count($printed, 'taken'), substr_count($printed, 'threw')]);
+pin('each variant lost two', ['3', '3'], [$stock($a), $stock($r)]);
+[$waiting, $printed] = $race([[$ar->getId(), 'release'], [$ra->getId(), 'release']], $lockBoth, "UPDATE {$p}t_item_variant%");
+pin('giving both back does not deadlock either', [2, 2, 0], [$waiting, substr_count($printed, 'released'), substr_count($printed, 'threw')]);
+pin('and the stock is whole', ['5', '5'], [$stock($a), $stock($r)]);
+$setStock($r, 1);
+
 harness_section('the release job');
 $age = static function (Order $order, int $days) use ($admin, $p): void {
     $at = date('Y-m-d H:i:s', time() - $days * 86400);
