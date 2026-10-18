@@ -55,6 +55,7 @@ Worth knowing before you port something:
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
+| Let owners customise a theme with a live preview | [Customiser](/docs/developers/customiser/) |
 | Style the account and sign-in pages | [Account pages](/docs/developers/account-pages/) |
 | Extend a theme without forking it | [Child themes](/docs/developers/child-themes/) |
 | Show distance search in a theme | [Distance search in themes](/docs/developers/distance-search/) |

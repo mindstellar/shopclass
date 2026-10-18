@@ -93,6 +93,11 @@ section; the order is the order visitors see.
 
 Plugins register further types, which appear in the same picker.
 
+Each typed widget has an eye button. It hides the widget from the site without
+deleting it, and a second click shows it again. A hidden widget keeps its place
+and settings, and its name is struck through in the list. Moderators can hide
+any widget except a Custom Code one.
+
 Only full admins can add a Custom Code widget; moderators cannot.
 
 :::danger[Custom Code runs on your visitors' browsers]
@@ -101,6 +106,27 @@ only code you understand, from a source you trust. A "free analytics snippet"
 from a forum post is the classic way a classifieds site starts serving malware
 to its own users.
 :::
+
+## Customise your theme
+
+If your theme supports it, **Appearance → Customise** edits the home page with a
+live preview beside the controls. A theme that does not support it has no
+Customise entry; use **Manage widgets** instead.
+
+- **Sections.** The home page is a list of sections. Reorder them, hide one with
+  the eye, remove it, or add another from the types the theme allows. Click a
+  section to edit its text and images.
+- **Look.** The theme's brand colour, fonts, logo and light or dark default are
+  set in the same screen. Colour and font changes show at once; the rest reload
+  the preview.
+- **Draft and publish.** Every change is saved as your private draft, kept for
+  seven days. Visitors see nothing until you press **Publish**. **Discard**
+  throws the draft away and returns to the published page.
+- **Hidden sections.** A hidden section stays in the list, struck through, and
+  can be shown again. It is the same hide switch as on **Manage widgets**.
+- **The preview is for you only.** It works for a signed-in administrator who has
+  a draft, is never cached and is hidden from search engines. Moderators cannot
+  customise; they keep **Manage widgets**.
 
 ## Page builder
 
