@@ -14,7 +14,6 @@ namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
-use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\Page;
 use mindstellar\api\Response;
@@ -29,7 +28,7 @@ final class PagesController
 
     public function __construct(private ApiServices $api)
     {
-        $this->serializer = new PageSerializer($api->facts()->defaultLocale(), \Closure::fromCallable([PageSerializer::class, 'siteUrl']));
+        $this->serializer = $api->pageSerializer();
     }
 
     public function index(ApiCall $call): Response
@@ -39,12 +38,9 @@ final class PagesController
 
     public function show(ApiCall $call): Response
     {
-        $locale = $this->api->locale($call->request());
-        $query  = $this->api->pageQuery();
-        $page   = ProblemException::found($query->find((string) ($call->arg('page') ?? '')), 'page');
-        $texts  = $query->texts([(int) $page['pk_i_id']])[(int) $page['pk_i_id']] ?? [];
+        [$page] = $this->api->page((string) ($call->arg('page') ?? ''), $this->api->locale($call->request()));
 
-        return Response::ok(ProblemException::found($this->serializer->one($page, $texts, $locale), 'page'));
+        return Response::ok($page);
     }
 
     public function menus(ApiCall $call): Response
