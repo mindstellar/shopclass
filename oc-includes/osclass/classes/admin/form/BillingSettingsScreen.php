@@ -372,7 +372,7 @@ final class BillingSettingsScreen
             ->number(
                 'billing_hold_days',
                 __('Cancel unpaid orders after (days)'),
-                __('An unpaid bank transfer or cash on delivery order is cancelled after this many days and its stock goes back on sale.')
+                __('An unpaid order is cancelled after this many days. A bank transfer or cash on delivery order\'s stock goes back on sale.')
             )
                 ->clampMin(1)
                 ->default(7)

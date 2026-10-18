@@ -37,7 +37,7 @@ final class Billing
     /** Gateways paid outside the site: their goods orders hold stock from placement. */
     public const HOLDS_STOCK = array('offline', 'cod');
 
-    /** Daily job that cancels held orders left unpaid past billing_hold_days. */
+    /** Daily job that cancels goods orders left unpaid past billing_hold_days. */
     public const JOB_RELEASE = 'billing.release_stock';
 
     /** Held orders the release job cancels per run. */
@@ -147,8 +147,8 @@ final class Billing
 
             case CallbackResult::OUTCOME_FAILED:
                 $order = self::resolve($gatewayId, $result);
-                if ($order !== null) {
-                    OrderStore::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef());
+                if ($order !== null && OrderStore::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef())) {
+                    osc_run_hook('billing_order_failed', $order->getId(), $order->getUserId());
                 }
 
                 return $result;
@@ -607,7 +607,7 @@ final class Billing
                 $job->repeat(array());
             }
         });
-        osc_job_describe(self::JOB_RELEASE, __('Cancel unpaid bank transfer and cash on delivery orders'));
+        osc_job_describe(self::JOB_RELEASE, __('Cancel unpaid shop orders'));
     }
 
     /**
@@ -621,8 +621,9 @@ final class Billing
     }
 
     /**
-     * Cancel one batch of pending goods orders of the HOLDS_STOCK gateways placed more than
-     * billing_hold_days ago, giving their stock back. Each fires `billing_order_cancelled`.
+     * Cancel one batch of pending goods orders placed more than billing_hold_days ago: those
+     * of the HOLDS_STOCK gateways give their stock back, and card orders the buyer left are
+     * closed too. Each fires `billing_order_cancelled`.
      *
      * @return int how many were cancelled; a full batch means there may be more
      * @throws \mindstellar\database\DbException
@@ -631,6 +632,9 @@ final class Billing
     {
         $before = date('Y-m-d H:i:s', time() - osc_billing_hold_days() * 86400);
         $ids    = OrderStore::heldBefore(self::HOLDS_STOCK, $before, self::RELEASE_BATCH);
+        if (count($ids) < self::RELEASE_BATCH) {
+            $ids = array_merge($ids, OrderStore::heldBefore(self::HOLDS_STOCK, $before, self::RELEASE_BATCH - count($ids), true));
+        }
         $cancelled = 0;
         foreach ($ids as $id) {
             $cancelled += OrderStore::cancel($id) ? 1 : 0;

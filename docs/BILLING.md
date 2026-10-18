@@ -650,8 +650,10 @@ housekeeping with no fulfilment side effects, so they share the existing hourly 
 than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/functions.php`).
 
 The daily tick queues `billing.release_stock` while billing is on. It cancels pending goods
-orders of `Billing::HOLDS_STOCK` (`offline`, `cod`) placed more than `billing_hold_days`
-ago, 100 per run, and gives their stock back; each fires `billing_order_cancelled`.
+orders placed more than `billing_hold_days` ago, 100 per run; each fires
+`billing_order_cancelled`. Orders of `Billing::HOLDS_STOCK` (`offline`, `cod`) give their stock
+back. Card orders hold no stock; they are closed so whatever they reserved (a coupon use) is
+given back. A payment that arrives later is logged as "paid after close".
 
 `GoodsCheckout::place()` counts a buyer's pending `HOLDS_STOCK` orders (one count on
 `idx_user_status`, both gateways together) and refuses a new one at `billing_open_hold_orders`.
@@ -679,6 +681,7 @@ touched.
 | `billing_order_shipped` | action | `($orderId, $userId)` paid → shipped, after commit |
 | `billing_order_delivered` | action | `($orderId, $userId)` shipped → delivered, after commit |
 | `billing_order_cancelled` | action | `($orderId, $userId)` pending → cancelled, after commit |
+| `billing_order_failed` | action | `($orderId, $userId)` pending → failed on a gateway's failed callback |
 | `billing_credits_changed` | action | Any ledger write |
 | `billing_feature_applied` | action | `Billing::spend()` succeeds, after the feature's effect lands |
 | `item_bumped` | action | `item.bump`'s `apply` succeeds, after `dt_pub_date` moves. Receives the item id, the same way `item_premium_on` does |

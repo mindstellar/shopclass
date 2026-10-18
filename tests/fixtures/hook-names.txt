@@ -95,6 +95,7 @@ action billing_credits_changed
 action billing_feature_applied
 action billing_order_cancelled
 action billing_order_delivered
+action billing_order_failed
 action billing_order_paid
 action billing_order_placed
 action billing_order_refunded

@@ -90,6 +90,10 @@ final class StockCardGateway implements PaymentGateway
 
     public function handleCallback(array $request): CallbackResult
     {
+        if (!empty($request['failed'])) {
+            return CallbackResult::failed((int) $request['order'], 'declined');
+        }
+
         return CallbackResult::paid((int) $request['order'], (string) $request['ref'], (int) $request['amount'], 'USD');
     }
 }
@@ -268,6 +272,18 @@ pin('giving both back does not deadlock either', [2, 2, 0], [$waiting, substr_co
 pin('and the stock is whole', ['5', '5'], [$stock($a), $stock($r)]);
 $setStock($r, 1);
 
+harness_section('a declined card payment');
+$declined = $place([['variant' => $a, 'qty' => 1]], 'card');
+$failed   = [];
+$onFail   = static function ($orderId, $userId) use (&$failed): void {
+    $failed[] = [(int) $orderId, (int) $userId];
+};
+osc_add_hook('billing_order_failed', $onFail);
+Billing::handleCallback('card', ['order' => $declined->getId(), 'failed' => 1]);
+Billing::handleCallback('card', ['order' => $declined->getId(), 'failed' => 1]);
+osc_remove_hook('billing_order_failed', $onFail);
+pin('the order fails and billing_order_failed fires once with its buyer', ['failed', [[$declined->getId(), $declined->getUserId()]]], [OrderStore::find($declined->getId())->getStatus(), $failed]);
+
 harness_section('the release job');
 $age = static function (Order $order, int $days) use ($admin, $p): void {
     $at = date('Y-m-d H:i:s', time() - $days * 86400);
@@ -290,11 +306,11 @@ $onCancel  = static function ($orderId) use (&$cancelled): void {
     $cancelled[] = (int) $orderId;
 };
 osc_add_hook('billing_order_cancelled', $onCancel);
-pin('one run cancels the two held orders past the 7-day hold', 2, Billing::releaseHeld());
+pin('one run cancels the two held orders and the left card order past the 7-day hold', 3, Billing::releaseHeld());
 osc_remove_hook('billing_order_cancelled', $onCancel);
 $status = static fn (Order $o): string => OrderStore::find($o->getId())->getStatus();
-pin('only those', ['cancelled', 'cancelled', 'pending', 'pending', 'paid', 'pending'], array_map($status, [$oldBank, $oldCod, $newBank, $oldCard, $oldPaid, $oldCredit]));
-pin('each announced once', [$oldBank->getId(), $oldCod->getId()], $cancelled);
+pin('only those', ['cancelled', 'cancelled', 'pending', 'cancelled', 'paid', 'pending'], array_map($status, [$oldBank, $oldCod, $newBank, $oldCard, $oldPaid, $oldCredit]));
+pin('each announced once', [$oldBank->getId(), $oldCod->getId(), $oldCard->getId()], $cancelled);
 pin('and their stock is back', '3', $stock($a));
 pin('a second run finds nothing', 0, Billing::releaseHeld());
 Preference::getInstance()->set('billing_hold_days', '5');

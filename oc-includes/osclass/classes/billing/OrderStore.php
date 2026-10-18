@@ -571,24 +571,25 @@ final class OrderStore extends Model
     }
 
     /**
-     * Pending goods orders of these gateways placed before $before, oldest first. Reads a
-     * range of idx_status_date.
+     * Pending goods orders of these gateways (or, with $others, of every other gateway) placed
+     * before $before, oldest first. Reads a range of idx_status_date.
      *
      * @param string[] $gateways
      * @param string   $before   Y-m-d H:i:s
      * @param int      $limit
+     * @param bool     $others
      *
      * @return int[] order ids
      * @throws DbException
      */
-    public static function heldBefore(array $gateways, string $before, int $limit): array
+    public static function heldBefore(array $gateways, string $before, int $limit, bool $others = false): array
     {
         if ($gateways === array()) {
             return array();
         }
         $rows = Db::select(
             'SELECT pk_i_id FROM ' . self::tableName() . ' WHERE s_status = ? AND dt_date < ? AND i_credits = 0'
-            . ' AND s_gateway IN (' . implode(', ', array_fill(0, count($gateways), '?')) . ')'
+            . ' AND s_gateway ' . ($others ? 'NOT IN (' : 'IN (') . implode(', ', array_fill(0, count($gateways), '?')) . ')'
             . ' ORDER BY dt_date LIMIT ' . max(1, $limit),
             array_merge(array(Order::STATUS_PENDING, $before), array_values($gateways))
         );

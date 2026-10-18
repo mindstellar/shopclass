@@ -260,7 +260,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 603 names. Generated from the source; do not edit by hand.
+Core fires 604 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -575,7 +575,7 @@ Core fires 603 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (239)
+### Other (240)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -657,6 +657,7 @@ Core fires 603 names. Generated from the source; do not edit by hand.
 | `billing_listing_limit_message` | filter | `osc_billing_slot_enabled() ? _m('You are at your listing limit. Buy an extra listing slot on your credits page, or free up a listing -- delete one or let one expire -- to post again.') : _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'), $userId ?? osc_logged_user_id(), $item` | `oc-includes/osclass/helpers/hBilling.php` |
 | `billing_order_cancelled` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
 | `billing_order_delivered` | action | `$id, $userId` | `oc-includes/osclass/classes/billing/OrderStore.php` |
+| `billing_order_failed` | action | `$order->getId(), $order->getUserId()` | `oc-includes/osclass/classes/billing/Billing.php` |
 | `billing_order_paid` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
 | `billing_order_placed` | action | `$order->getId(), $userId` | `oc-includes/osclass/classes/billing/GoodsCheckout.php` |
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
