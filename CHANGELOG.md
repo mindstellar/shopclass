@@ -19,6 +19,7 @@ Beta 5 makes pages faster, with more caching, kept connections and compressed fi
 Plugin authors: please read **Breaking** before you upgrade.
 
 ### New
+- The shop hooks are typed events. A callback whose first parameter is an event class gets the event; the hook names and old callbacks work as before. See [Hooks](https://shopclass.org/docs/developers/hooks/).
 - `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key, and work with the API switched off. See [REST API](https://shopclass.org/docs/developers/api/).
 - A theme or plugin can declare `modes` (`classifieds`, `shop`) and the plugins it needs, in `shopclass.json` or the `Modes:` and `Requires Plugins:` headers. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
 - **Settings → General → Site is a** sets classifieds, shop or both; in shop mode only admins post. `osc_site_mode()` reads it.

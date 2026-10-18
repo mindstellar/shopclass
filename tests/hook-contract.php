@@ -41,7 +41,7 @@ const HOOK_ROOTS = array('oc-includes/osclass', 'oc-admin');
  *
  * @return array{actions:string[],filters:string[],dynamic:int}
  */
-function hook_scan(): array
+function hook_scan(bool $withEvents = true): array
 {
     $actions = array();
     $filters = array();
@@ -84,7 +84,7 @@ function hook_scan(): array
 
     // Names a typed event now owns have no call site; they keep the kind the fixture records.
     $pinned = is_file(HOOK_FIXTURE) ? explode("\n", (string) file_get_contents(HOOK_FIXTURE)) : array();
-    foreach (\mindstellar\boot\CoreServices::events() as $event) {
+    foreach ($withEvents ? \mindstellar\boot\CoreServices::events() : array() as $event) {
         foreach ($event::legacyNames() as $name) {
             if (in_array('filter ' . $name, $pinned, true)) {
                 $filters[$name] = true;
@@ -254,6 +254,21 @@ report(
     'none unrecorded',
     $added === array() ? 'none' : implode(', ', $added) . '  (run: php tests/hook-contract.php --write)'
 );
+
+harness_section('Typed events');
+
+$owners = array();
+foreach (\mindstellar\boot\CoreServices::events() as $event) {
+    foreach ($event::legacyNames() as $name) {
+        $owners[$name][] = $event;
+    }
+}
+$sites = hook_scan(false);
+$fired = array_merge($sites['actions'], $sites['filters']);
+
+pin('every name an event owns is in the fixture', array(), array_values(array_filter(array_keys($owners), static fn (string $n): bool => !in_array('action ' . $n, $want, true) && !in_array('filter ' . $n, $want, true))));
+pin('no name is both owned by an event and fired through osc_run_hook or osc_apply_filter', array(), array_values(array_intersect(array_keys($owners), $fired)));
+pin('no two events own one name', array(), array_keys(array_filter($owners, static fn (array $l): bool => count($l) > 1)));
 
 harness_section('API hook arguments');
 
