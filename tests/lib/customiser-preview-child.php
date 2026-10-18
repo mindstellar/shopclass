@@ -12,22 +12,24 @@
  * One public request for tests/widgets-customiser.php, in its own process because OC_ADMIN
  * is a constant. Prints what the page rendered and the preview helpers answered, as JSON.
  *
- * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api>'
+ * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api, ocAdmin, theme, loggedIn>'
  */
 
 ob_start();
-define('OC_ADMIN', false);
+$args = json_decode((string) $argv[2], true);
+define('OC_ADMIN', !empty($args['ocAdmin']));
 require_once __DIR__ . '/scratchdb.php';
 
 $admin = scratchdb_bootstrap((string) $argv[1]);
 $admin->select_db((string) $argv[1]);
-$args = json_decode((string) $argv[2], true);
 
 require_once __DIR__ . '/customiser-kit.php';
 customiser_kit_declare();
 
 $GLOBALS['adminId'] = (int) ($args['adminId'] ?? 0);
 $GLOBALS['api']     = !empty($args['api']);
+$GLOBALS['webTheme']      = (string) ($args['theme'] ?? 'aisle');
+$GLOBALS['adminLoggedIn'] = ($args['loggedIn'] ?? true) !== false;
 $_GET               = (array) ($args['get'] ?? array());
 $_POST              = array();
 $_SERVER['REQUEST_METHOD'] = 'GET';

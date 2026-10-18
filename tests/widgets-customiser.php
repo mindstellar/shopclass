@@ -91,10 +91,10 @@ function drive(string $action, array $post = array(), array $files = array()): a
 }
 
 /** A public request in its own process. */
-function preview(array $get, int $adminId, bool $api = false): array
+function preview(array $get, int $adminId, bool $api = false, array $extra = array()): array
 {
     $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/lib/customiser-preview-child.php') . ' '
-        . escapeshellarg(SCRATCH) . ' ' . escapeshellarg((string) json_encode(array('get' => $get, 'adminId' => $adminId, 'api' => $api)));
+        . escapeshellarg(SCRATCH) . ' ' . escapeshellarg((string) json_encode(array('get' => $get, 'adminId' => $adminId, 'api' => $api) + $extra));
     $out = (string) shell_exec($cmd . ' 2>&1');
     $res = json_decode($out, true);
     if (!is_array($res)) {
@@ -259,6 +259,17 @@ pin('without osc_preview the admin sees the published page', '<hero ' . $hero . 
 pin('an API request ignores it', '<hero ' . $hero . '>Live</hero>', preview(array('osc_preview' => '1'), $adminA, true)['page'] ?? null);
 $adminB = seed_exec($admin, 'INSERT INTO ' . DB_TABLE_PREFIX . "t_admin (s_name, s_username, s_password, s_email, b_moderator) VALUES ('B', 'b', 'x', 'b@x.test', 0)", '', array());
 pin('another admin with no draft sees the published rows', '<hero ' . $hero . '>Live</hero>', preview(array('osc_preview' => '1'), $adminB)['page'] ?? null);
+
+$inAdmin = preview(array('osc_preview' => '1'), $adminA, false, array('ocAdmin' => true));
+check('inside the admin ?osc_preview=1 is no preview', ($inAdmin['preview'] ?? true) === false);
+pin('...and the published rows render', '<hero ' . $hero . '>Live</hero>', $inAdmin['page'] ?? null);
+$noSession = preview(array('osc_preview' => '1'), $adminA, false, array('loggedIn' => false));
+check('an admin id without a signed-in admin session is no preview', ($noSession['preview'] ?? true) === false);
+pin('...and the published rows render', '<hero ' . $hero . '>Live</hero>', $noSession['page'] ?? null);
+(new CustomiserDraft('other', $adminB))->save(array('locations' => array('home' => array(array('id' => null, 'key' => 'o', 'type' => 'aisle.promise', 'config' => array('text' => 'Other theme'))))));
+pin('a draft saved for another theme does not show on the active one', '<hero ' . $hero . '>Live</hero>', preview(array('osc_preview' => '1'), $adminB)['page'] ?? null);
+pin('...and shows when that theme is active', '<promise>Other theme</promise>', preview(array('osc_preview' => '1'), $adminB, false, array('theme' => 'other'))['page'] ?? null);
+(new CustomiserDraft('other', $adminB))->discard();
 
 harness_section('publish');
 
