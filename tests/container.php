@@ -86,6 +86,18 @@ check('instance() puts an object already built in', $c->get(CtPlain::class) === 
 $c->set(CtPlain::class, static fn () => new CtPlain());
 check('set() after a build replaces the shared object', $c->get(CtPlain::class) !== $fake);
 
+$c2      = new Container();
+$factory = 0;
+$c2->set(CtPlain::class, static function () use (&$factory): CtPlain {
+    $factory++;
+
+    return new CtPlain();
+});
+$early = new CtPlain();
+$c2->instance(CtPlain::class, $early);
+check('instance() after set() wins', $c2->get(CtPlain::class) === $early);
+pin('and the factory is never called', 0, $factory);
+
 harness_section('Building unregistered classes');
 
 $c    = new Container();
@@ -124,6 +136,16 @@ check('a factory that threw can be retried, and throws the same way', (static fu
 
     return false;
 })());
+
+$c->set('ping', static fn (Container $c) => $c->get('pong'));
+$c->set('pong', static fn (Container $c) => $c->get('ping'));
+$cycle = '';
+try {
+    $c->get('ping');
+} catch (LogicException $e) {
+    $cycle = $e->getMessage();
+}
+check('two services that need each other throw LogicException', strpos($cycle, 'needs itself') !== false);
 
 harness_section('The site-wide container');
 

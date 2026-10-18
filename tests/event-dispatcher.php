@@ -113,6 +113,16 @@ class EdListener
         $e->log[] = 'static';
     }
 
+    private function hidden(EdBase $e): void
+    {
+        $e->log[] = 'private';
+    }
+
+    protected function guarded(EdBase $e): void
+    {
+        $e->log[] = 'protected';
+    }
+
     public function typedWords(EdWords $e): void
     {
         $e->words[] = 'typed-pair';
@@ -289,6 +299,14 @@ $d3->listen(EdBase::class, [EdListener::class, 'noSuchMethod'], 1);
 $d3->listen(EdBase::class, ed_mark('after'), 2);
 pin('an invalid listener is skipped and the rest still run', ['after'], $d3->dispatch(new EdBase())->log);
 check('with a warning', strpos($warned, 'Invalid listener') !== false);
+foreach (['hidden' => 'private', 'guarded' => 'protected'] as $method => $what) {
+    $warned = '';
+    $d4     = new Dispatcher(new Container());
+    $d4->listen(EdBase::class, [EdListener::class, $method], 1);
+    $d4->listen(EdBase::class, ed_mark('later'), 2);
+    pin("a $what listener method is skipped and later listeners still run", ['later'], $d4->dispatch(new EdBase())->log);
+    check("with a warning for the $what one", strpos($warned, 'Invalid listener') !== false);
+}
 restore_error_handler();
 
 harness_section('Bridge: owning names');
@@ -415,6 +433,23 @@ pin(
     ['invoke-typed', 'invoke-old:di', 'string-typed', 'union', 'magic:di', 'magic-static:di', 'direct'],
     $events->dispatch(new EdWords('di'))->words
 );
+
+$warned = '';
+set_error_handler(static function (int $no, string $msg) use (&$warned): bool {
+    $warned = $msg;
+
+    return true;
+}, E_USER_WARNING);
+osc_add_filter_like('ed_ping', 'ed_no_such_function', 1);
+osc_add_filter_like('ed_ping', static function ($who) use (&$pinged): void {
+    $pinged[] = 'after-bad:' . $who;
+}, 2);
+$pinged = [];
+$events->dispatch(new EdWords('ev'));
+restore_error_handler();
+check('a non-callable added with osc_add_hook on an owned name warns', strpos($warned, 'Invalid callable on hook ed_ping') !== false);
+pin('and the callbacks after it still run', ['after-bad:ev'], $pinged);
+Plugins::removeHook('ed_ping', 'ed_no_such_function');
 
 Plugins::addHook('ed_plain', static fn ($v) => $v . '!', 5);
 pin('a name no event owns keeps the old path', 'hi!', Plugins::applyFilter('ed_plain', 'hi'));
