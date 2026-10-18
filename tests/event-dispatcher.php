@@ -131,6 +131,29 @@ class EdListener
     }
 }
 
+final class EdInvokeTyped
+{
+    public function __invoke(EdWords $e): void
+    {
+        $e->words[] = 'invoke-typed';
+    }
+}
+
+final class EdInvokeOld
+{
+    /**
+     * @param list<string> $words
+     *
+     * @return list<string>
+     */
+    public function __invoke(array $words, string $who): array
+    {
+        $words[] = 'invoke-old:' . $who;
+
+        return $words;
+    }
+}
+
 final class EdMagic
 {
     /**
@@ -155,6 +178,14 @@ final class EdMagic
         $args[0][] = 'magic-static:' . $args[1];
 
         return $args[0];
+    }
+}
+
+final class EdStringTyped
+{
+    public static function typedStatic(EdWords $e): void
+    {
+        $e->words[] = 'string-typed';
     }
 }
 
@@ -358,6 +389,11 @@ pin('a typed listener that stops the event keeps later old callbacks from runnin
 check('a name nothing owns or uses has no hook', !Plugins::hasHook('ed_unused') && $bridge->eventFor('ed_unused') === null);
 
 $probe = new EdWords();
+check('an invokable typed with the event takes it', HookBridge::takesEvent(new EdInvokeTyped(), $probe));
+check('an old-style invokable does not', !HookBridge::takesEvent(new EdInvokeOld(), $probe));
+check('a Class::method string typed with the event takes it', HookBridge::takesEvent(EdStringTyped::class . '::typedStatic', $probe));
+check('a union type naming the event takes it', HookBridge::takesEvent(static function (EdWords|null $e): void {
+}, $probe));
 check('a __call method is treated as old-style', !HookBridge::takesEvent([new EdMagic(), 'foo'], $probe));
 check('a __callStatic string is treated as old-style', !HookBridge::takesEvent(EdMagic::class . '::bar', $probe));
 
@@ -366,9 +402,19 @@ foreach (['ed_words', 'ed_ping'] as $name) {
         Plugins::removeHook($name, $fn);
     }
 }
+osc_add_filter_like('ed_words', new EdInvokeTyped(), 1);
+osc_add_filter_like('ed_words', new EdInvokeOld(), 2);
+osc_add_filter_like('ed_words', EdStringTyped::class . '::typedStatic', 3);
+osc_add_filter_like('ed_words', static function (EdWords|null $e): void {
+    $e->words[] = 'union';
+}, 4);
 osc_add_filter_like('ed_words', [new EdMagic(), 'foo'], 5);
 osc_add_filter_like('ed_words', EdMagic::class . '::bar', 6);
-pin('callbacks served by __call and __callStatic get the old arguments', ['magic:di', 'magic-static:di', 'direct'], $events->dispatch(new EdWords('di'))->words);
+pin(
+    'invokables, strings, unions and magic methods each get the right arguments',
+    ['invoke-typed', 'invoke-old:di', 'string-typed', 'union', 'magic:di', 'magic-static:di', 'direct'],
+    $events->dispatch(new EdWords('di'))->words
+);
 
 Plugins::addHook('ed_plain', static fn ($v) => $v . '!', 5);
 pin('a name no event owns keeps the old path', 'hi!', Plugins::applyFilter('ed_plain', 'hi'));
