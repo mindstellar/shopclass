@@ -169,6 +169,16 @@ select.field-select {
   padding: .25rem;
 }
 
+// An image made for one scheme, such as a logo for dark headers, is shown on that scheme's
+// background whatever the admin's own scheme is. The field sets data-surface in its attrs.
+.field-image:has(> input[data-surface="light"]) .field-image-preview {
+  background: var(--bs-white);
+}
+
+.field-image:has(> input[data-surface="dark"]) .field-image-preview {
+  background: var(--bs-dark);
+}
+
 // The free-text half of a "Custom: [____]" choice, sized to sit on the option's own line.
 .field-inline-text {
   display: inline-block !important;
