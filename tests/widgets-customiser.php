@@ -13,7 +13,8 @@
  * WidgetStore::replaceLocation() rewrites one location in one transaction, the draft refuses
  * what the spec does not allow, publish and discard keep settings images right, the
  * widgets screen keeps a hidden row hidden, moderators are refused, and ?osc_preview=1
- * renders the draft only for the admin who saved it, uncached and noindex.
+ * renders the draft only for the admin who saved it (the published rows for an admin with
+ * none), uncached and noindex.
  *
  * DB-backed.  Usage:  php tests/widgets-customiser.php
  */
@@ -258,7 +259,9 @@ pin('osc_head prints the admin origin', '<meta name="osc-customiser" content="ht
 pin('without osc_preview the admin sees the published page', '<hero ' . $hero . '>Live</hero>', preview(array(), $adminA)['page'] ?? null);
 pin('an API request ignores it', '<hero ' . $hero . '>Live</hero>', preview(array('osc_preview' => '1'), $adminA, true)['page'] ?? null);
 $adminB = seed_exec($admin, 'INSERT INTO ' . DB_TABLE_PREFIX . "t_admin (s_name, s_username, s_password, s_email, b_moderator) VALUES ('B', 'b', 'x', 'b@x.test', 0)", '', array());
-pin('another admin with no draft sees the published rows', '<hero ' . $hero . '>Live</hero>', preview(array('osc_preview' => '1'), $adminB)['page'] ?? null);
+$noDraft = preview(array('osc_preview' => '1'), $adminB);
+pin('another admin with no draft sees the published rows', '<hero ' . $hero . '>Live</hero>', $noDraft['page'] ?? null);
+check('...still as a preview, so the frame answers the customiser', ($noDraft['preview'] ?? false) === true && array_key_exists('brand', $noDraft) && $noDraft['brand'] === null);
 
 $inAdmin = preview(array('osc_preview' => '1'), $adminA, false, array('ocAdmin' => true));
 check('inside the admin ?osc_preview=1 is no preview', ($inAdmin['preview'] ?? true) === false);

@@ -265,9 +265,10 @@ function osc_customiser_spec(): ?array
 }
 
 /**
- * The draft this request previews, or null. A public page previews only with ?osc_preview=1,
- * a signed-in admin, and a draft that admin saved for the theme being shown; never in the
- * admin or the API. Read once per request.
+ * The draft this request previews, or null. A public page previews only with ?osc_preview=1
+ * and a signed-in admin, never in the admin or the API. With no draft saved for the theme being
+ * shown it previews an empty draft, so the published page still answers the customiser.
+ * Read once per request.
  *
  * @return array<string,mixed>|null
  */
@@ -283,7 +284,9 @@ function osc_customiser_preview_draft(): ?array
         && osc_logged_admin_id() > 0
         && osc_is_admin_user_logged_in()
     ) {
-        $draft = (new \mindstellar\widgets\CustomiserDraft(osc_current_web_theme(), osc_logged_admin_id()))->read();
+        $theme = osc_current_web_theme();
+        $draft = (new \mindstellar\widgets\CustomiserDraft($theme, osc_logged_admin_id()))->read()
+            ?? array('theme' => $theme, 'locations' => array(), 'settings' => array(), 'updated_at' => 0);
     }
 
     return $GLOBALS['osc_customiser_preview'] = $draft;

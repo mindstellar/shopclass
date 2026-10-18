@@ -58,8 +58,8 @@ transaction, saves the look values, clears the page cache and runs
 `customiser_published( $theme )`.
 
 The preview is the location's `preview` URL plus `?osc_preview=1`. It is honoured
-only for a signed-in administrator with a draft for the active theme. Otherwise
-the parameter does nothing. In a preview:
+only for a signed-in administrator. Otherwise the parameter does nothing. With
+no draft for the active theme, the preview shows the published page. In a preview:
 
 - `osc_show_widgets( $location )` renders the drafted rows. An unsaved row has
   id `0`.
