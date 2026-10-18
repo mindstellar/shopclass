@@ -180,14 +180,19 @@ final class HookBridge
      */
     public static function takesEvent(callable $callable, object $event): bool
     {
-        if (is_array($callable)) {
-            $reflection = new \ReflectionMethod($callable[0], (string) $callable[1]);
-        } elseif (is_string($callable) && strpos($callable, '::') !== false) {
-            $reflection = new \ReflectionMethod($callable);
-        } elseif (is_object($callable) && !$callable instanceof \Closure) {
-            $reflection = new \ReflectionMethod($callable, '__invoke');
-        } else {
-            $reflection = new \ReflectionFunction(\Closure::fromCallable($callable));
+        try {
+            if (is_array($callable)) {
+                $reflection = new \ReflectionMethod($callable[0], (string) $callable[1]);
+            } elseif (is_string($callable) && strpos($callable, '::') !== false) {
+                $reflection = new \ReflectionMethod($callable);
+            } elseif (is_object($callable) && !$callable instanceof \Closure) {
+                $reflection = new \ReflectionMethod($callable, '__invoke');
+            } else {
+                $reflection = new \ReflectionFunction(\Closure::fromCallable($callable));
+            }
+        } catch (\ReflectionException $e) {
+            // A callback served by __call or __callStatic has no real method; it gets the old arguments.
+            return false;
         }
         $first = $reflection->getParameters()[0] ?? null;
         $type  = $first !== null ? $first->getType() : null;

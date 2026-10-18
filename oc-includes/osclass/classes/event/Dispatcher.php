@@ -149,7 +149,8 @@ final class Dispatcher implements DispatcherInterface
         $key = $pair[0] . '::' . $pair[1];
         if (!isset($this->resolved[$key])) {
             if (!method_exists($pair[0], $pair[1])) {
-                return null;
+                // A class that serves the name through __callStatic is called as given.
+                return is_callable($listener) ? $listener : null;
             }
             $method = new \ReflectionMethod($pair[0], $pair[1]);
             if (!$method->isPublic()) {

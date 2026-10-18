@@ -131,6 +131,33 @@ class EdListener
     }
 }
 
+final class EdMagic
+{
+    /**
+     * @param list<mixed> $args
+     *
+     * @return list<string>
+     */
+    public function __call(string $name, array $args): array
+    {
+        $args[0][] = 'magic:' . $args[1];
+
+        return $args[0];
+    }
+
+    /**
+     * @param list<mixed> $args
+     *
+     * @return list<string>
+     */
+    public static function __callStatic(string $name, array $args): array
+    {
+        $args[0][] = 'magic-static:' . $args[1];
+
+        return $args[0];
+    }
+}
+
 function ed_mark(string $tag): Closure
 {
     return static function (EdBase $e) use ($tag): void {
@@ -329,6 +356,19 @@ osc_add_filter_like('ed_ping', static function (EdWords $e) use (&$pinged): void
 $events->dispatch(new EdWords('cy'));
 pin('a typed listener that stops the event keeps later old callbacks from running', ['typed:cy'], $pinged);
 check('a name nothing owns or uses has no hook', !Plugins::hasHook('ed_unused') && $bridge->eventFor('ed_unused') === null);
+
+$probe = new EdWords();
+check('a __call method is treated as old-style', !HookBridge::takesEvent([new EdMagic(), 'foo'], $probe));
+check('a __callStatic string is treated as old-style', !HookBridge::takesEvent(EdMagic::class . '::bar', $probe));
+
+foreach (['ed_words', 'ed_ping'] as $name) {
+    foreach (Plugins::callbacks($name) as $fn) {
+        Plugins::removeHook($name, $fn);
+    }
+}
+osc_add_filter_like('ed_words', [new EdMagic(), 'foo'], 5);
+osc_add_filter_like('ed_words', EdMagic::class . '::bar', 6);
+pin('callbacks served by __call and __callStatic get the old arguments', ['magic:di', 'magic-static:di', 'direct'], $events->dispatch(new EdWords('di'))->words);
 
 Plugins::addHook('ed_plain', static fn ($v) => $v . '!', 5);
 pin('a name no event owns keeps the old path', 'hi!', Plugins::applyFilter('ed_plain', 'hi'));
