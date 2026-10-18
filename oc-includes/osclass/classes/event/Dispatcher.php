@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\event;
 
-use mindstellar\container\Container;
 use mindstellar\container\ContainerInterface;
 
 /**
@@ -35,9 +34,9 @@ final class Dispatcher implements DispatcherInterface
     private int $added = 0;
 
     /**
-     * @param ContainerInterface|null $container where instance methods of lazy pairs come from; the root one when null
+     * @param ContainerInterface $container where instance methods of lazy pairs come from
      */
-    public function __construct(private ?ContainerInterface $container = null)
+    public function __construct(private ContainerInterface $container)
     {
     }
 
@@ -156,7 +155,7 @@ final class Dispatcher implements DispatcherInterface
             if (!$method->isPublic()) {
                 return null;
             }
-            $target = $method->isStatic() ? $pair[0] : ($this->container ?? Container::root())->get($pair[0]);
+            $target = $method->isStatic() ? $pair[0] : $this->container->get($pair[0]);
             $this->resolved[$key] = [$target, $pair[1]];
         }
 
