@@ -42,32 +42,30 @@ abstract class CartEvent extends Event
     }
 
     /**
-     * Check a line a listener adds and return it as an array. A discount always takes off; any
-     * other kind below zero is refused, as is a line in another currency or without a label.
+     * Check a line a listener adds and return it as core keeps it. See Line::fault() for the rules.
      *
      * @return array{id:string,label:string,amount:int,currency:string,meta:array<string,mixed>}
      * @throws \InvalidArgumentException
      */
     protected function accept(Line $line, string $kind): array
     {
-        $currency = (string) ($this->cart['currency'] ?? '');
-        if (trim($line->label()) === '') {
-            throw new \InvalidArgumentException('A cart line needs a label.');
-        }
-        if ($line->currency() !== $currency) {
-            throw new \InvalidArgumentException(sprintf('The line "%s" is in %s; the cart is in %s.', $line->id(), $line->currency(), $currency));
-        }
-        if (preg_match('/^[a-z0-9_.-]{1,64}$/', $line->id()) !== 1) {
-            throw new \InvalidArgumentException(sprintf('"%s" is not a line id.', $line->id()));
-        }
-        if ($line->amount() < 0 && $kind !== 'discount') {
-            throw new \InvalidArgumentException(sprintf('The %s line "%s" is below zero.', $kind, $line->id()));
-        }
-        $row = $line->toArray();
-        if ($kind === 'discount') {
-            $row['amount'] = -abs($row['amount']);
+        $fault = Line::fault($line->id(), $line->label(), $line->amount(), $line->currency(), $kind, (string) ($this->cart['currency'] ?? ''));
+        if ($fault !== null) {
+            throw new \InvalidArgumentException($fault);
         }
 
-        return $row;
+        return Line::row($line->id(), $line->label(), $line->amount(), $line->currency(), $kind, $line->meta());
+    }
+
+    /**
+     * @param mixed $rows
+     *
+     * @throws \InvalidArgumentException when the event already holds Line::MAX_PER_EVENT lines
+     */
+    protected static function roomFor($rows): void
+    {
+        if (is_array($rows) && count($rows) >= Line::MAX_PER_EVENT) {
+            throw new \InvalidArgumentException(sprintf('A cart event holds at most %d lines.', Line::MAX_PER_EVENT));
+        }
     }
 }

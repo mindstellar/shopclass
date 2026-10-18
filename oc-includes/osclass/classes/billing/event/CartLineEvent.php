@@ -43,7 +43,8 @@ abstract class CartLineEvent extends CartEvent implements Bridged
      */
     public function addLine(Line $line): void
     {
-        $this->lines   = $this->arrays();
+        $this->lines = $this->arrays();
+        self::roomFor($this->lines);
         $this->lines[] = $this->accept($line, $this->kind());
     }
 

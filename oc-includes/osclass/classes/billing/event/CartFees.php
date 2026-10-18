@@ -53,10 +53,10 @@ final class CartFees extends CartEvent implements Bridged
      */
     public function addFee(Line $line): void
     {
-        $row            = $this->accept($line, 'fee');
         $this->totals   = is_array($this->totals) ? $this->totals : [];
         $fees           = is_array($this->totals['fees'] ?? null) ? $this->totals['fees'] : [];
-        $fees[]         = $row;
+        self::roomFor($fees);
+        $fees[]         = $this->accept($line, 'fee');
         $this->totals['fees'] = $fees;
     }
 

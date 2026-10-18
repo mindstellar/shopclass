@@ -19,6 +19,7 @@ use mindstellar\billing\event\CartProblems;
 use mindstellar\billing\event\CartShipping;
 use mindstellar\billing\event\CartShippingLines;
 use mindstellar\billing\event\CartTaxLines;
+use mindstellar\billing\event\Line;
 use mindstellar\container\Container;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\listing\ListingQuery;
@@ -423,29 +424,19 @@ final class CartPricer
     {
         $out = array();
         foreach (is_array($lines) ? $lines : array() as $n => $line) {
-            if (!is_array($line) || count($out) >= self::MAX_EXTRA) {
+            if (!is_array($line) || count($out) >= Line::MAX_PER_EVENT) {
                 continue;
             }
-            $label  = is_string($line['label'] ?? null) ? trim($line['label']) : '';
+            $label  = is_string($line['label'] ?? null) ? $line['label'] : '';
             $amount = self::micros($line['amount'] ?? null);
             $cur    = $line['currency'] ?? $currency;
-            if ($label === '' || $amount === null || $cur !== $currency || ($amount < 0 && $kind !== OrderLineStore::KIND_DISCOUNT)) {
+            $id     = is_string($line['id'] ?? null) && preg_match('/^[a-z0-9_.-]{1,64}$/', $line['id']) ? $line['id'] : $kind . '.' . $n;
+            if ($amount === null || !is_string($cur) || Line::fault($id, $label, $amount, $cur, $kind, $currency) !== null) {
                 continue;
             }
-            if ($kind === OrderLineStore::KIND_DISCOUNT) {
-                $amount = -abs($amount);
-            }
-            $id    = is_string($line['id'] ?? null) && preg_match('/^[a-z0-9_.-]{1,64}$/', $line['id']) ? $line['id'] : $kind . '.' . $n;
-            $meta  = is_array($line['meta'] ?? null) ? $line['meta'] : array();
-            $row   = array(
-                'id'       => $id,
-                'label'    => mb_substr($label, 0, 200, 'UTF-8'),
-                'amount'   => $amount,
-                'currency' => $currency,
-                'meta'     => $meta,
-            );
+            $row = Line::row($id, $label, $amount, $currency, $kind, is_array($line['meta'] ?? null) ? $line['meta'] : array());
             if ($kind === OrderLineStore::KIND_TAX) {
-                $row['included'] = ($meta['included'] ?? false) === true;
+                $row['included'] = ($row['meta']['included'] ?? false) === true;
             }
             $out[] = $row;
         }

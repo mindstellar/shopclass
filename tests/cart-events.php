@@ -76,6 +76,13 @@ pin('lines() returns Line objects', ['tax.vat'], array_map(static fn (Line $l): 
 $tax->removeLine('tax.vat');
 pin('removeLine() takes it out', [], $tax->rawLines());
 
+$tax->addLine(new Line('tax.long', ' ' . str_repeat('L', 250), 1, 'USD'));
+pin('a long label is trimmed and cut where core cuts it', Line::MAX_LABEL, mb_strlen($tax->rawLines()[0]['label']));
+for ($n = 1; $n < Line::MAX_PER_EVENT; $n++) {
+    $tax->addLine(new Line('tax.n' . $n, 'N', 1, 'USD'));
+}
+check('a line past the most one event holds is refused', $refuses(static fn () => $tax->addLine(new Line('tax.over', 'Over', 1, 'USD'))));
+
 $discount = new CartDiscountLines($cart);
 $discount->addLine(new Line('discount.c', 'Coupon', 3000000, 'USD'));
 pin('a discount always takes off', -3000000, $discount->rawLines()[0]['amount']);
