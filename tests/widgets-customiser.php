@@ -393,6 +393,38 @@ $admin->query("RENAME TABLE {$wt}_away TO $wt");
 check('a failed lookup of the live ids is thrown, not read as "all rows are new"', $threw);
 drive('customise_discard_post');
 
+harness_section('the orphan sweep and settings images');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hResources.php';
+$rt     = DB_TABLE_PREFIX . 't_resource';
+$png2   = tempnam(sys_get_temp_dir(), 'osccust');
+imagepng(imagecreatetruecolor(4, 4), $png2);
+$upload = static fn (): array => array('logo' => array('name' => 'logo.png', 'type' => 'image/png', 'tmp_name' => $png2, 'error' => UPLOAD_ERR_OK, 'size' => filesize($png2)));
+$old    = static function (int $id) use ($admin, $rt): void {
+    $admin->query("UPDATE $rt SET dt_created = '2020-01-01 00:00:00' WHERE pk_i_id = $id");
+};
+$sweep = static function () use ($admin, $rt): void {
+    osc_set_preference('resource_sweep_offset', 0, 'osclass', 'INTEGER');
+    osc_sweep_orphan_resources();
+};
+
+drive('customise_draft_post', array(), $upload());
+$drafted = (int) $draftKv()['settings']['logo'];
+$old($drafted);
+$sweep();
+pin('a settings image a live draft names is kept', 1, $resourceCount($drafted));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'customiser'");
+$sweep();
+pin('...and swept once the draft has expired', 0, $resourceCount($drafted));
+
+drive('customise_draft_post', array(), $upload());
+$kept = (int) $draftKv()['settings']['logo'];
+drive('customise_publish_post');
+$old($kept);
+$sweep();
+pin('a settings image a preference points to is kept', 1, $resourceCount($kept));
+@unlink($png2);
+
 $code = harness_result();
 ob_end_flush();
 exit($code);
