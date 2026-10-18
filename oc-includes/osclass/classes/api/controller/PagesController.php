@@ -18,6 +18,7 @@ use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\PageSerializer;
+use mindstellar\cache\CacheGroup;
 
 /**
  * `GET /pages`, `GET /pages/{page}` (id or internal name) and `GET /menus`.
@@ -57,21 +58,27 @@ final class PagesController
     }
 
     /**
+     * The linked pages in $locale, cached in the `page` group with the permalink settings.
+     *
      * @return array<int,array<string,mixed>>
      */
     private function linked(string $locale): array
     {
-        $query = $this->api->pageQuery();
-        $pages = $query->linked();
-        $texts = $query->texts(array_map(static fn (array $p): int => (int) $p['pk_i_id'], $pages));
-        $out   = [];
-        foreach ($pages as $page) {
-            $row = $this->serializer->summary($page, $texts[(int) $page['pk_i_id']] ?? [], $locale);
-            if ($row !== null) {
-                $out[] = $row;
-            }
-        }
+        $key = 'linked|' . $locale . '|' . CacheGroup::generation('preference');
 
-        return $out;
+        return CacheGroup::remember('page', $key, function () use ($locale): array {
+            $query = $this->api->pageQuery();
+            $pages = $query->linked();
+            $texts = $query->texts(array_map(static fn (array $p): int => (int) $p['pk_i_id'], $pages));
+            $out   = [];
+            foreach ($pages as $page) {
+                $row = $this->serializer->summary($page, $texts[(int) $page['pk_i_id']] ?? [], $locale);
+                if ($row !== null) {
+                    $out[] = $row;
+                }
+            }
+
+            return $out;
+        }) ?? [];
     }
 }
