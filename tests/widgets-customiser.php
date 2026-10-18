@@ -262,7 +262,17 @@ pin('another admin with no draft sees the published rows', '<hero ' . $hero . '>
 
 harness_section('publish');
 
+$publishedThemes = array();
+osc_add_hook('customiser_published', static function ($theme) use (&$publishedThemes) {
+    $publishedThemes[] = $theme;
+});
+$savedPages = array();
+osc_add_hook('settings_page_saved', static function ($page) use (&$savedPages) {
+    $savedPages[] = $page;
+});
 $r = drive('customise_publish_post');
+pin('publish runs customiser_published once with the theme', array('aisle'), $publishedThemes);
+pin('...and settings_page_saved for the look page', array('aisle'), $savedPages);
 pin('publish is 200', 200, $r['status']);
 pin('...purges the page cache', array('widget'), $r['purges']);
 $home = $rowsAt('home');
@@ -271,6 +281,9 @@ pin('...the hero kept its id', (string) $hero, $home[0]['pk_i_id']);
 pin('the look values are stored', array('ocean', 'Hi there'), array(osc_get_preference('brand', 'aisle'), osc_get_preference('footer_note', 'aisle')));
 pin('the draft is gone', null, $draftKv());
 pin('publishing again has nothing to publish', 409, drive('customise_publish_post')['status']);
+drive('customise_draft_post', array('settings' => array('brand' => 'raspberry')));
+drive('customise_discard_post');
+pin('neither the 409 nor a discard runs customiser_published', array('aisle'), $publishedThemes);
 
 harness_section('settings images');
 
