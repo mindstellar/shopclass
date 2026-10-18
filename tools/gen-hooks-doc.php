@@ -87,6 +87,11 @@ function hooks_scan(): array
             if (isset($found[$name])) {
                 continue;
             }
+            // A call line marked "hooks-doc: skip" repeats a hook documented at its main call site.
+            $lineEnd = strpos($src, "\n", $m[0][$i][1]);
+            if (strpos(substr($src, $m[0][$i][1], ($lineEnd === false ? strlen($src) : $lineEnd) - $m[0][$i][1]), 'hooks-doc: skip') !== false) {
+                continue;
+            }
             $fn    = $m[1][$i][0];
             $start = $m[0][$i][1];
             $open  = strpos($src, '(', $start);

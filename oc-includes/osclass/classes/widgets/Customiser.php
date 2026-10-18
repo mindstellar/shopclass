@@ -198,7 +198,7 @@ final class Customiser
                     SettingsImage::delete($page, $oldId);
                 }
             }
-            osc_run_hook('settings_page_saved', (string) $this->spec['settings']['page'], osc_settings_hook_values($fields, $values));
+            osc_run_hook('settings_page_saved', (string) $this->spec['settings']['page'], osc_settings_hook_values($fields, $values)); // hooks-doc: skip
         }
 
         try {

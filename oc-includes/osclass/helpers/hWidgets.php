@@ -168,8 +168,9 @@ function osc_render_widget($widgetRow)
 }
 
 /**
- * What the active theme lets the owner customise, checked, or null when it declares nothing
- * usable. Read from osc_add_theme_support('customiser', array(...)):
+ * What the active theme lets the owner customise, checked; null when it declares nothing usable.
+ *
+ * Read from osc_add_theme_support('customiser', array(...)):
  *
  *   'locations' => array('home' => array('label' => …, 'types' => array(…), 'preview' => url)),
  *   'settings'  => array('page' => settings page id, 'fields' => array(field names)),

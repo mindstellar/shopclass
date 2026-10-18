@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1200 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1201 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1049,7 +1049,7 @@ Core defines 1200 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_priv_count_premiums()` | Gets number of premiums |
 | `osc_reset_premiums()` | Set the internal pointer of array premiums to its first element, and return it. |
 
-### hResources (7)
+### hResources (8)
 
 `oc-includes/osclass/helpers/hResources.php`
 
@@ -1061,6 +1061,7 @@ Core defines 1200 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_media_owner_types()` | Distinct, well-formed owner types currently present in t_resource, listing photos left out. |
 | `osc_media_row_urls(array $row)` | The thumbnail and full URLs for a normalised media row (see osc_media_library_query). Uses the storage-aware osc_get_resource_url so offloaded files resolve correctly. |
 | `osc_resource_owner_exists(string $ownerType, int $ownerId)` | Whether the owner record a resource points at still exists. |
+| `osc_setting_resource_in_use(array $row)` | Whether a settings image is still wanted: a preference holds its id (or the id it was renumbered from), or a customiser draft, which lives seven days, names it. When unsure it says yes, so nothing in use is swept. |
 | `osc_sweep_orphan_resources()` | Walk t_resource and delete resources whose owner no longer exists. |
 
 ### hSanitize (11)
@@ -1465,12 +1466,12 @@ Core defines 1200 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_customiser_draft_value(string $page, string $name)` | The drafted value of one look setting while previewing, or null outside a preview or when that setting is not drafted. |
 | `osc_customiser_preview()` | Whether this request renders the signed-in admin's customiser draft. |
-| `osc_customiser_preview_draft()` | The draft this request previews, or null. A public page previews only with ?osc_preview=1, a signed-in admin, and a draft that admin saved for the theme being shown; never in the admin or the API. Read once per request. |
+| `osc_customiser_preview_draft()` | The draft this request previews, or null. A public page previews only with ?osc_preview=1 and a signed-in admin, never in the admin or the API. With no draft saved for the theme being shown it previews an empty draft, so the published page still answers the customiser. Read once per request. |
 | `osc_customiser_preview_headers()` | Headers a preview response carries, or none outside a preview. |
 | `osc_customiser_preview_rows(string $location)` | The drafted rows of one location as t_widget rows, or null when it is not drafted or this is not a preview. An unsaved row has pk_i_id 0; s_key is the id, or the draft key of an unsaved row, for the theme's data-sec attribute. |
 | `osc_customiser_preview_start()` | On a preview request: keep the page out of every cache and out of search results. |
 | `osc_customiser_preview_url(string $location = 'home')` | The preview address of a customisable location, with osc_preview=1, or '' when the theme does not let that location be customised. |
-| `osc_customiser_spec()` | What the active theme lets the owner customise, checked, or null when it declares nothing usable. Read from osc_add_theme_support('customiser', array(...)): |
+| `osc_customiser_spec()` | What the active theme lets the owner customise, checked; null when it declares nothing usable. |
 | `osc_register_widget($id, $spec)` | Register a widget type so it can be placed from the admin appearance screen and rendered on the front end. Thin wrapper over WidgetRegistry::register(). |
 | `osc_render_widget($widgetRow)` | Render a single widget row. |
 | `osc_widget_locations()` | The widget sections the active theme offers, in the order it offers them: slug =&gt; array('label' =&gt; string, 'description' =&gt; string). |

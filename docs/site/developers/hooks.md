@@ -806,7 +806,7 @@ Core fires 605 names. Generated from the source; do not edit by hand.
 | `scripts_defer` | filter | `defined('OC_ADMIN') && OC_ADMIN` | `oc-includes/osclass/classes/Scripts.php` |
 | `scripts_loaded` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/osclass/classes/admin/ui/SettingsForm.php` |
-| `settings_page_saved` | action | `(string) $this->spec['settings']['page'], osc_settings_hook_values($fields, $values)` | `oc-includes/osclass/classes/widgets/Customiser.php` |
+| `settings_page_saved` | action | `$pageId, $exposed` | `oc-includes/osclass/helpers/hSettings.php` |
 | `shutdown_functions` | filter | `[$injectCsrf]` | `oc-includes/osclass/classes/security/Csrf.php` |
 | `slug` | filter | `trim($fieldsDescription['s_slug'])` | `oc-includes/osclass/classes/model/Category.php` |
 | `static_page_text` | filter | `(string) ($texts[$shown]['s_text'] ?? ''), $shown` | `oc-includes/osclass/classes/api/serializer/PageSerializer.php` |

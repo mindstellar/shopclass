@@ -34,7 +34,7 @@ invalid:
 - `locations` must be widget locations the theme declares, `types` registered
   widget types, and `preview` a URL on this site.
 - `settings.fields` must be fields of the named settings page. Secret, custom,
-  category-mode and rich text fields are not allowed.
+  category-mode, rich text and translated fields are not allowed; core drops them.
 - `swatches` are printed as a background colour only when they match
   `#rrggbb`. A `select` field with swatches is drawn as colour circles.
 - `live` names fields the preview applies without a reload, as attributes on
@@ -93,8 +93,9 @@ on `<html>`, for example `data-osc-allow-data-brand="raspberry ocean"`.
 The admin screen and the preview talk with `postMessage`. Both sides check
 `event.origin === location.origin`. Every message has `type: 'osc-customiser'`.
 
-Core ships only the admin side. The theme writes the preview side: a script it
-enqueues only while `osc_customiser_preview()` is true. That script must:
+Core ships no preview-side script, only the admin side. The theme must write the
+preview side: a script it enqueues only while `osc_customiser_preview()` is true.
+That script must:
 
 - listen for `message` events of type `osc-customiser` from its own origin;
 - apply `set`, `text` and `select` as in the table below;
@@ -109,9 +110,9 @@ Admin to preview:
 
 | Message | Effect |
 |---|---|
-| `{ set: { attr: 'data-brand', value: 'ocean' } }` | Sets the attribute, only if the value is in the matching `data-osc-allow-*` list. |
+| `{ set: { attr: 'data-brand', value: 'ocean' } }` | Sets the attribute, only if the value is in the matching `data-osc-allow-*` list. A value of `''` or `'system'` removes the attribute instead. |
 | `{ text: { section, field, value } }` | Sets `textContent` of `[data-sec=section] [data-field=field]`. |
-| `{ select: section }` | Outlines the section. |
+| `{ select: section, name }` | Outlines the section. The optional `name` is the label shown on the outline; send the section's display name. |
 
 Preview to admin:
 
