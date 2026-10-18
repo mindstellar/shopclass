@@ -55,8 +55,9 @@ final class ListingCheckout
     }
 
     /**
-     * Spend the credits and put the listing live. Nothing is spent when it is not held or the
-     * balance is short. The row lock makes two simultaneous calls spend once.
+     * Spend the credits and put the listing live. Nothing is spent when it is not held, the
+     * balance is short or a plugin refuses it through `billing_can_publish` (reason `refused`).
+     * The row lock makes two simultaneous calls spend once.
      *
      * @return array{published: bool, reason: ?string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}}
      *
@@ -78,6 +79,10 @@ final class ListingCheckout
             }
             if ($quote['shortfall'] > 0) {
                 return array('published' => false, 'reason' => 'insufficient_credits', 'quote' => $quote);
+            }
+            // The slots are as good as bought here, so only a plugin's billing_can_publish can still say no.
+            if (!EntitlementStore::canPublish($userId, array('item' => $row), true)) {
+                return array('published' => false, 'reason' => 'refused', 'quote' => $quote);
             }
             for ($i = 0; $i < $quote['slots']; $i++) {
                 if (!Billing::spend($userId, self::FEATURE, array('ref_type' => 'item', 'ref_id' => $itemId))) {

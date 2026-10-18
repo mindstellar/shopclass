@@ -378,6 +378,17 @@ try {
     $refused = $e->errors()[0]['code'] ?? null;
 }
 pin('an admin import over the limit is still refused', 'listing_limit', $refused);
+$bea  = seed_user($admin, 'bea', 'bea@example.test');
+$veto = static fn (): bool => false;
+osc_add_filter('billing_can_publish', $veto);
+$refused = null;
+try {
+    $post($sellerOf($bea), ['catId' => (string) $bikes]);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+osc_remove_filter('billing_can_publish', $veto);
+pin('a plugin refusal within the free limit is refused, not held', 'listing_limit', $refused);
 $adminPost = $post($actor, ['ownerId' => (string) $ann, 'catId' => (string) $bikes]);
 pin('an admin post over the limit goes live', [1, 1], array_slice($state($adminPost->id()), 0, 2));
 $guestPost = $post(Actor::guest('192.0.2.71'), ['catId' => (string) $bikes]);

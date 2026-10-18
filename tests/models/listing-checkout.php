@@ -199,6 +199,13 @@ try {
 }
 pin('another user cannot publish it', [ForbiddenException::NOT_OWNER, 5, null], [$thrown, Wallet::balance($uid), $row($held)['dt_first_pub_date']]);
 
+[$uid, , $held] = $seller(5);
+$veto = static fn (): bool => false;
+osc_add_filter('billing_can_publish', $veto);
+$r = ListingCheckout::publish($held, Actor::user($uid));
+osc_remove_filter('billing_can_publish', $veto);
+pin('a plugin refusal stops it and spends nothing', [false, 'refused', 5, null], [$r['published'], $r['reason'], Wallet::balance($uid), $row($held)['dt_first_pub_date']]);
+
 harness_section('Pay step: two at once');
 
 [$uid, , $held] = $seller(10);

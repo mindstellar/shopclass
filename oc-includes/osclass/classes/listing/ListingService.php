@@ -866,8 +866,9 @@ final class ListingService
         if ((!$actor->isAdmin() || $import) && osc_billing_enabled() && !empty($aItem['userId'])) {
             $withinFreeQuota = \mindstellar\billing\EntitlementStore::withinFreeQuota($aItem['userId']);
             if (!\mindstellar\billing\EntitlementStore::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                // Over the limit the listing is saved hidden until it is paid for; admins and imports are refused.
-                if (!$actor->isAdmin() && osc_billing_pay_at_post()) {
+                // Over the limit the listing is saved hidden until it is paid for. Admins, imports
+                // and a plugin's billing_can_publish refusal are refused.
+                if (!$withinFreeQuota && !$actor->isAdmin() && osc_billing_pay_at_post()) {
                     $hold = true;
                 } else {
                     $errors[] = ListingValidator::entry('', 'listing_limit', osc_listing_limit_message((int) $aItem['userId'], $aItem));
