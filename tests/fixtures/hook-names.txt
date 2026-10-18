@@ -114,6 +114,7 @@ action cron_hourly
 action cron_weekly
 action custom_controller
 action custom_query
+action customiser_published
 action d_file_included
 action d_function_run
 action d_hook_run

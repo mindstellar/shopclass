@@ -263,7 +263,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 604 names. Generated from the source; do not edit by hand.
+Core fires 605 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -578,7 +578,7 @@ Core fires 604 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (240)
+### Other (241)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -697,6 +697,7 @@ Core fires 604 names. Generated from the source; do not edit by hand.
 | `custom_field_autocomplete_source` | filter | `$results, $fieldId, $term, $field` | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `custom_field_input_class` | filter | `$defaultInputClass, $field, $type, $search` | `oc-includes/osclass/classes/form/FieldForm.php` |
 | `custom_query` | action | `$mSearch, $keyword, $value` | `oc-includes/osclass/helpers/hItems.php` |
+| `customiser_published` | action | `$theme` | `oc-includes/osclass/classes/widgets/Customiser.php` |
 | `d_file_included` | action | `$file, $replacement, $version, $message` | `oc-includes/osclass/classes/utility/Deprecate.php` |
 | `d_function_run` | action | `$function, $replacement, $version` | `oc-includes/osclass/classes/utility/Deprecate.php` |
 | `d_hook_run` | action | `$hook, $replacement, $version, $message` | `oc-includes/osclass/classes/utility/Deprecate.php` |
@@ -805,7 +806,7 @@ Core fires 604 names. Generated from the source; do not edit by hand.
 | `scripts_defer` | filter | `defined('OC_ADMIN') && OC_ADMIN` | `oc-includes/osclass/classes/Scripts.php` |
 | `scripts_loaded` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/osclass/classes/admin/ui/SettingsForm.php` |
-| `settings_page_saved` | action | `$pageId, $exposed` | `oc-includes/osclass/helpers/hSettings.php` |
+| `settings_page_saved` | action | `(string) $this->spec['settings']['page'], osc_settings_hook_values($fields, $values)` | `oc-includes/osclass/classes/widgets/Customiser.php` |
 | `shutdown_functions` | filter | `[$injectCsrf]` | `oc-includes/osclass/classes/security/Csrf.php` |
 | `slug` | filter | `trim($fieldsDescription['s_slug'])` | `oc-includes/osclass/classes/model/Category.php` |
 | `static_page_text` | filter | `(string) ($texts[$shown]['s_text'] ?? ''), $shown` | `oc-includes/osclass/classes/api/serializer/PageSerializer.php` |

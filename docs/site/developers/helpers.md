@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1190 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1200 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -175,7 +175,7 @@ Core defines 1190 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (77)
+### hBilling (79)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -1457,12 +1457,20 @@ Core defines 1190 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_render_item_view_beacon()` | Emit the beacon &lt;script&gt; at the end of the listing detail page. CWebItem sets $GLOBALS['osc_view_beacon_item_id'] only while rendering a public listing detail with the beacon enabled, so this fires there and nowhere else. It is baked into the cached HTML, so it runs for every visitor of the cached page and reports one view per real browser load. sendBeacon is fire-and-forget and survives page unload; fetch(keepalive) is the fallback. |
 | `osc_view_beacon_suppress_render_count($countsAsView, $item = null)` | Suppress the render-time view increment when the beacon owns counting, so a cached page and the beacon never both count (and a no-JS bot is not counted at render while a human is counted by the beacon). Filters `count_view_on_render`, whose value is otherwise osc_request_counts_as_view(). |
 
-### hWidgets (4)
+### hWidgets (12)
 
 `oc-includes/osclass/helpers/hWidgets.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_customiser_draft_value(string $page, string $name)` | The drafted value of one look setting while previewing, or null outside a preview or when that setting is not drafted. |
+| `osc_customiser_preview()` | Whether this request renders the signed-in admin's customiser draft. |
+| `osc_customiser_preview_draft()` | The draft this request previews, or null. A public page previews only with ?osc_preview=1, a signed-in admin, and a draft that admin saved for the theme being shown; never in the admin or the API. Read once per request. |
+| `osc_customiser_preview_headers()` | Headers a preview response carries, or none outside a preview. |
+| `osc_customiser_preview_rows(string $location)` | The drafted rows of one location as t_widget rows, or null when it is not drafted or this is not a preview. An unsaved row has pk_i_id 0; s_key is the id, or the draft key of an unsaved row, for the theme's data-sec attribute. |
+| `osc_customiser_preview_start()` | On a preview request: keep the page out of every cache and out of search results. |
+| `osc_customiser_preview_url(string $location = 'home')` | The preview address of a customisable location, with osc_preview=1, or '' when the theme does not let that location be customised. |
+| `osc_customiser_spec()` | What the active theme lets the owner customise, checked, or null when it declares nothing usable. Read from osc_add_theme_support('customiser', array(...)): |
 | `osc_register_widget($id, $spec)` | Register a widget type so it can be placed from the admin appearance screen and rendered on the front end. Thin wrapper over WidgetRegistry::register(). |
 | `osc_render_widget($widgetRow)` | Render a single widget row. |
 | `osc_widget_locations()` | The widget sections the active theme offers, in the order it offers them: slug =&gt; array('label' =&gt; string, 'description' =&gt; string). |

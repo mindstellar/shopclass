@@ -91,7 +91,11 @@ function osc_field($item, $field, $locale)
  */
 function osc_show_widgets($location)
 {
-    $widgets = Widget::getInstance()->findByLocation($location);
+    // A customiser preview shows the admin's drafted rows for a drafted location.
+    $widgets = function_exists('osc_customiser_preview_rows') ? osc_customiser_preview_rows((string) $location) : null;
+    if ($widgets === null) {
+        $widgets = Widget::getInstance()->findByLocation($location);
+    }
     foreach ($widgets as $w) {
         osc_render_widget($w);
     }

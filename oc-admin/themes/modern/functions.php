@@ -328,7 +328,7 @@ function widgetConfigFieldId($typeId, $fieldName)
  * use, so a field looks and behaves the same in both. $disabled is true for a field whose
  * type is not the currently selected one, so it does not post until the type is switched
  * client-side. Supported types: text, number, textarea, select, checkbox, code, image.
- * Field types map to what CAdminAppearance::buildWidgetConfig() accepts.
+ * Field types map to what WidgetConfig::fromPosted() accepts.
  *
  * Everything except `image` goes through the core field primitives -- this function used to
  * be a second, theme-local implementation of them, one `case` per type, with its own idea

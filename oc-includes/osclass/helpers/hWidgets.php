@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\widgets\WidgetConfig;
 use mindstellar\widgets\WidgetRegistry;
 
 /**
@@ -126,7 +127,8 @@ function _osc_widget_locations_normalize($raw)
  * Dispatcher used by osc_show_widgets() / osc_show_widgets_by_description() and
  * by admin previews. A typed row (non-empty s_type) is rendered by its
  * registered type's callable; an unknown type (its plugin deactivated) is
- * skipped silently — no output, no fatal. A row with no s_type follows the
+ * skipped silently — no output, no fatal, and so is a row whose config holds
+ * `_enabled => false` (hidden, not deleted). A row with no s_type follows the
  * legacy path and echoes s_content unchanged.
  *
  * @param array<string,mixed> $widgetRow A t_widget row.
@@ -149,6 +151,9 @@ function osc_render_widget($widgetRow)
                 $config = $decoded;
             }
         }
+        if (!WidgetConfig::enabled($config)) {
+            return;
+        }
 
         $out = ($type['render'])($config, $widgetRow);
         if (is_string($out)) {
@@ -160,6 +165,268 @@ function osc_render_widget($widgetRow)
 
     // Legacy stored-content path — byte-identical to the historical behaviour.
     echo $widgetRow['s_content'];
+}
+
+/**
+ * What the active theme lets the owner customise, checked, or null when it declares nothing
+ * usable. Read from osc_add_theme_support('customiser', array(...)):
+ *
+ *   'locations' => array('home' => array('label' => …, 'types' => array(…), 'preview' => url)),
+ *   'settings'  => array('page' => settings page id, 'fields' => array(field names)),
+ *   'swatches'  => array(field => array(option => '#rrggbb')),
+ *   'live'      => array(field => 'data-…'),
+ *
+ * A location must be a declared widget location, a type a registered widget type, a field a
+ * field of that settings page (not secret, custom, category_modes, richtext or translated),
+ * a swatch a six-digit hex, a preview URL one on this site. Anything else is dropped.
+ *
+ * @return array{locations:array<string,array{label:string,types:string[],preview:string}>,settings:array{page:string,fields:string[]},swatches:array<string,array<string,string>>,live:array<string,string>}|null
+ */
+function osc_customiser_spec(): ?array
+{
+    $raw = osc_theme_supports('customiser');
+    if (!is_array($raw)) {
+        return null;
+    }
+
+    $declared  = osc_widget_locations();
+    $types     = osc_widget_types();
+    $base      = osc_base_url();
+    $locations = array();
+    foreach ((array) ($raw['locations'] ?? array()) as $slug => $loc) {
+        if (!is_string($slug) || !isset($declared[$slug]) || !is_array($loc)) {
+            continue;
+        }
+        $allowed = array();
+        foreach ((array) ($loc['types'] ?? array()) as $type) {
+            if (is_string($type) && isset($types[$type]) && !in_array($type, $allowed, true)) {
+                $allowed[] = $type;
+            }
+        }
+        if ($allowed === array()) {
+            continue;
+        }
+        $preview = is_string($loc['preview'] ?? null) ? $loc['preview'] : '';
+        if ($preview === '' || strpos($preview, $base) !== 0) {
+            $preview = $base;
+        }
+        $locations[$slug] = array(
+            'label'   => is_string($loc['label'] ?? null) && trim($loc['label']) !== '' ? trim($loc['label']) : $declared[$slug]['label'],
+            'types'   => $allowed,
+            'preview' => $preview,
+        );
+    }
+
+    $page   = is_string($raw['settings']['page'] ?? null) ? $raw['settings']['page'] : '';
+    $fields = array();
+    if ($page !== '' && osc_settings_page($page) !== null) {
+        $declaredFields = \mindstellar\settings\SettingsPageRegistry::getInstance()->fields($page);
+        foreach ((array) ($raw['settings']['fields'] ?? array()) as $name) {
+            $field = is_string($name) ? ($declaredFields[$name] ?? null) : null;
+            if ($field === null || in_array($field['type'], array('secret', 'custom', 'category_modes', 'richtext'), true)
+                || osc_settings_field_locales($field) !== array() || in_array($name, $fields, true)
+            ) {
+                continue;
+            }
+            $fields[] = $name;
+        }
+    }
+
+    $swatches = array();
+    foreach ((array) ($raw['swatches'] ?? array()) as $name => $map) {
+        if (!in_array($name, $fields, true) || !is_array($map)) {
+            continue;
+        }
+        foreach ($map as $option => $hex) {
+            $hex = is_string($hex) ? strtolower($hex) : '';
+            if (preg_match('/^#[0-9a-f]{6}$/D', $hex)) {
+                $swatches[$name][(string) $option] = $hex;
+            }
+        }
+    }
+
+    $live = array();
+    foreach ((array) ($raw['live'] ?? array()) as $name => $attr) {
+        if (in_array($name, $fields, true) && is_string($attr) && preg_match('/^data-[a-z0-9-]{1,40}$/D', $attr)) {
+            $live[$name] = $attr;
+        }
+    }
+
+    if ($locations === array() && $fields === array()) {
+        return null;
+    }
+
+    return array(
+        'locations' => $locations,
+        'settings'  => array('page' => $page, 'fields' => $fields),
+        'swatches'  => $swatches,
+        'live'      => $live,
+    );
+}
+
+/**
+ * The draft this request previews, or null. A public page previews only with ?osc_preview=1,
+ * a signed-in admin, and a draft that admin saved for the theme being shown; never in the
+ * admin or the API. Read once per request.
+ *
+ * @return array<string,mixed>|null
+ */
+function osc_customiser_preview_draft(): ?array
+{
+    if (array_key_exists('osc_customiser_preview', $GLOBALS)) {
+        return $GLOBALS['osc_customiser_preview'];
+    }
+    $draft = null;
+    if ((!defined('OC_ADMIN') || OC_ADMIN !== true)
+        && Params::getParamString('osc_preview') === '1'
+        && !osc_is_api_request()
+        && osc_logged_admin_id() > 0
+        && osc_is_admin_user_logged_in()
+    ) {
+        $draft = (new \mindstellar\widgets\CustomiserDraft(osc_current_web_theme(), osc_logged_admin_id()))->read();
+    }
+
+    return $GLOBALS['osc_customiser_preview'] = $draft;
+}
+
+/**
+ * Whether this request renders the signed-in admin's customiser draft.
+ *
+ * @return bool
+ */
+function osc_customiser_preview(): bool
+{
+    return osc_customiser_preview_draft() !== null;
+}
+
+/**
+ * The drafted value of one look setting while previewing, or null outside a preview or when
+ * that setting is not drafted.
+ *
+ * @param string $page settings page id the theme declared
+ * @param string $name field name
+ *
+ * @return mixed
+ */
+function osc_customiser_draft_value(string $page, string $name)
+{
+    $draft = osc_customiser_preview_draft();
+    if ($draft === null) {
+        return null;
+    }
+    $raw = osc_theme_supports('customiser');
+    if (!is_array($raw) || ($raw['settings']['page'] ?? null) !== $page
+        || !in_array($name, (array) ($raw['settings']['fields'] ?? array()), true)
+    ) {
+        return null;
+    }
+
+    return array_key_exists($name, $draft['settings']) ? $draft['settings'][$name] : null;
+}
+
+/**
+ * The preview address of a customisable location, with osc_preview=1, or '' when the theme
+ * does not let that location be customised.
+ *
+ * @param string $location
+ *
+ * @return string
+ */
+function osc_customiser_preview_url(string $location = 'home'): string
+{
+    $spec = osc_customiser_spec();
+    if ($spec === null || !isset($spec['locations'][$location])) {
+        return '';
+    }
+    $url = $spec['locations'][$location]['preview'];
+
+    return $url . (strpos($url, '?') === false ? '?' : '&') . 'osc_preview=1';
+}
+
+/**
+ * The drafted rows of one location as t_widget rows, or null when it is not drafted or this
+ * is not a preview. An unsaved row has pk_i_id 0; s_key is the id, or the draft key of an
+ * unsaved row, for the theme's data-sec attribute.
+ *
+ * @param string $location
+ *
+ * @return array<int,array<string,string|null>>|null
+ */
+function osc_customiser_preview_rows(string $location): ?array
+{
+    $draft = osc_customiser_preview_draft();
+    if ($draft === null || !is_array($draft['locations'][$location] ?? null)) {
+        return null;
+    }
+    $spec  = osc_customiser_spec();
+    $types = $spec['locations'][$location]['types'] ?? null;
+    if ($types === null) {
+        return null;
+    }
+
+    $rows = array();
+    foreach (array_values($draft['locations'][$location]) as $i => $row) {
+        if (!is_array($row) || !in_array($row['type'] ?? null, $types, true)) {
+            continue;
+        }
+        $id     = (int) ($row['id'] ?? 0);
+        $rows[] = array(
+            'pk_i_id'       => (string) $id,
+            's_key'         => $id > 0 ? (string) $id : (string) ($row['key'] ?? ''),
+            's_description' => (string) ($row['description'] ?? ''),
+            's_location'    => $location,
+            'e_kind'        => 'html',
+            's_content'     => '',
+            'i_order'       => (string) $i,
+            's_type'        => (string) $row['type'],
+            's_config'      => (string) json_encode(is_array($row['config'] ?? null) ? $row['config'] : array()),
+        );
+    }
+
+    return $rows;
+}
+
+/**
+ * Headers a preview response carries, or none outside a preview.
+ *
+ * @return string[]
+ */
+function osc_customiser_preview_headers(): array
+{
+    return osc_customiser_preview() ? array('X-Robots-Tag: noindex') : array();
+}
+
+/**
+ * On a preview request: keep the page out of every cache and out of search results.
+ *
+ * @return void
+ */
+function osc_customiser_preview_start(): void
+{
+    if (!osc_customiser_preview()) {
+        return;
+    }
+    osc_mark_response_cacheable(false);
+    osc_add_filter('response_is_cacheable', '_osc_customiser_not_cacheable');
+    if (!headers_sent()) {
+        foreach (osc_customiser_preview_headers() as $header) {
+            header($header);
+        }
+    }
+}
+
+/**
+ * The response_is_cacheable answer for a preview.
+ *
+ * @return bool
+ */
+function _osc_customiser_not_cacheable(): bool
+{
+    return false;
+}
+
+if (function_exists('osc_add_hook')) {
+    osc_add_hook('init', 'osc_customiser_preview_start');
 }
 
 /*
@@ -192,7 +459,7 @@ osc_register_widget('core.rich_text', array(
  * Core "Image" widget — an image block, chosen from the media library and
  * optionally linked. Registered unconditionally so the page builder can place
  * images out of the box. The 'image' and 'link' values are stored as validated
- * http(s) URLs (see buildWidgetConfig); alt text is purified. Safe for any admin.
+ * http(s) URLs (see WidgetConfig::fromPosted); alt text is purified. Safe for any admin.
  */
 osc_register_widget('core.image', array(
     'label'       => 'Image',
@@ -224,7 +491,7 @@ osc_register_widget('core.image', array(
  * it is enforced per-user by its 'super_admin' capability (the type picker and
  * the save path both reject it for a moderator). Its single 'code' field is
  * stored unfiltered (bypassing HTMLPurifier) only because the type is
- * super_admin-gated — see CAdminAppearance::buildWidgetConfig(). Render echoes
+ * super_admin-gated — see WidgetConfig::fromPosted(). Render echoes
  * the stored code verbatim onto the public page.
  */
 osc_register_widget('core.custom_code', array(
