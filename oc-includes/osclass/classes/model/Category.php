@@ -33,6 +33,9 @@ class Category extends DAO
     private $tree;
     private $categories;
     private $categoriesEnabled;
+
+    /** The category cache generation $categoriesEnabled was read at. */
+    private ?int $enabledGeneration = null;
     private $relation;
     private $slugs;
 
@@ -85,6 +88,7 @@ class Category extends DAO
     {
         // Only the rows are cached; the tree is rebuilt from them, which is faster than reading three copies.
         if (!$this->categoriesEnabled) {
+            $this->enabledGeneration = \mindstellar\cache\CacheGroup::generation('category');
             $this->categoriesEnabled = \mindstellar\cache\CacheGroup::remember('category', 'enabled:' . $this->language, fn (): array => $this->listEnabled()) ?? array();
         }
         $this->tree       = array();
@@ -267,6 +271,22 @@ class Category extends DAO
      *
      * @return \Category
      */
+    /**
+     * The enabled rows the shared instance holds in $language, as listEnabled() gives them, or
+     * null when it holds none or they may be out of date. Lets other readers skip a second copy.
+     *
+     * @return array<int,array<string,mixed>>|null
+     */
+    public static function heldEnabled(string $language): ?array
+    {
+        $held = self::$instance;
+        if (!$held instanceof self || $held->language !== $language || $held->slugsWritten || !is_array($held->categoriesEnabled) || $held->categoriesEnabled === array()) {
+            return null;
+        }
+
+        return $held->enabledGeneration === \mindstellar\cache\CacheGroup::generation('category') ? $held->categoriesEnabled : null;
+    }
+
     public static function getInstance($l = '')
     {
         if (!self::$instance instanceof self) {

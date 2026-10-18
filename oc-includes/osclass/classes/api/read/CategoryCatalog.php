@@ -80,7 +80,8 @@ final class CategoryCatalog
 
     /**
      * The site's enabled categories, read on first use from the cache the category group keeps.
-     * One catalog per locale serves the whole request until a category changes.
+     * One catalog per locale serves the whole request until a category changes; it is built
+     * from the rows the Category model holds when the page loaded them already.
      */
     public static function fromSite(): self
     {
@@ -88,7 +89,11 @@ final class CategoryCatalog
         $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
         $key    = $locale . '|' . CacheGroup::generation('category');
 
-        return $site[$key] ??= new self(static fn (): array => (new CategoryQuery())->enabledTree($locale));
+        return $site[$key] ??= new self(static function () use ($locale): array {
+            $held = \Category::heldEnabled($locale);
+
+            return $held !== null ? CategoryQuery::treeFromMerged($held, $locale) : (new CategoryQuery())->enabledTree($locale);
+        });
     }
 
     /**

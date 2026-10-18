@@ -115,6 +115,38 @@ final class CategoryQuery
             }
             $byId[$id]['locale'][$code] = $text;
         }
+
+        return self::walk($byId, $language);
+    }
+
+    /**
+     * enabledTree()'s rows from Category::listEnabled()'s, which hold the same rows and texts
+     * in the same order, so a request that has them reads the tree once.
+     *
+     * @param array<int,array<string,mixed>> $merged
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function treeFromMerged(array $merged, string $language): array
+    {
+        $byId = [];
+        foreach ($merged as $row) {
+            unset($row['fk_i_category_id']);
+            $byId[(int) $row['pk_i_id']] = $row;
+        }
+
+        return self::walk($byId, $language);
+    }
+
+    /**
+     * Parents first, each followed by its children, with $language's texts on top.
+     *
+     * @param array<int,array<string,mixed>> $byId rows with a `locale` map, in enabledRows() order
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function walk(array $byId, string $language): array
+    {
         $children = [];
         foreach ($byId as $id => $row) {
             $children[$row['fk_i_parent_id'] === null ? 0 : (int) $row['fk_i_parent_id']][] = $id;
