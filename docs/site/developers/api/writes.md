@@ -28,6 +28,11 @@ TOKEN=sca_…        # an access token, or a personal key
 | `POST /account/alerts` | `alerts:write` | Save a search. |
 | `GET /account/alerts/{id}` | `alerts:read` | One saved search. The `Location` of a new one. |
 | `DELETE /account/alerts/{id}` | `alerts:write` | Stop a saved search. `204`. |
+| `GET /cart/quote` | `listings:read` | Price a cart. Needs no sign-in. |
+| `GET /account/orders` | `orders:read` | Your orders, newest first. |
+| `POST /account/orders` | `orders:write` | Place an order. `201`. |
+| `GET /account/orders/{id}` | `orders:read` | One of your orders. The `Location` of a new one. |
+| `POST /account/orders/{id}/cancel` | `orders:write` | Cancel a pending order. |
 | `POST /users` | none | Sign up, when the site allows it. `201`. The password needs at least 5 characters. |
 
 A write that is not allowed gets `403`. A user who is not the owner of a live listing gets
@@ -55,6 +60,7 @@ Every `Location` can be read with `GET`.
 | `POST /listings/{id}/photos` | `/listings/{id}/photos/{photo}` |
 | `POST /listings/{id}/comments` | `/comments/{id}` |
 | `POST /account/alerts` | `/account/alerts/{id}` |
+| `POST /account/orders` | `/account/orders/{id}` |
 | `POST /account/keys` | `/account/keys/{id}` |
 
 `POST /users` has no `Location` either: see [Sign up](#sign-up).
@@ -345,6 +351,36 @@ curl -i -X POST $API/account/alerts \
 | `type` | How often it mails: `daily` or `weekly`. |
 | List and stop | `GET /account/alerts`, `DELETE /account/alerts/{id}` (`204`). |
 | Shown on the web | The same search appears on the account's alerts page. |
+
+## Cart and orders
+
+The request names variants and quantities. Prices, delivery, fees, totals and stock are worked out on the server; an amount in the body is ignored.
+
+```bash
+curl "$API/cart/quote?lines=12:2,15:1&gateway=offline"
+```
+
+`lines` is `variant:qty` pairs, at most 50, a quantity of 1 to 20. A variant that is gone, hidden or out of stock does not fail the call: it is listed in `problems` (`not_buyable`, `out_of_stock`, `qty`) with its position in `lines`, and an out-of-stock line stays out of the totals. `shipping` picks a delivery method from `shipping_methods`; `gateway` adds that payment method's fee. Every amount is `{amount, currency, formatted}`. A quote is never cached.
+
+```bash
+curl -i -X POST $API/account/orders \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "lines": [{ "variant": 12, "qty": 2 }], "shipping_method": "standard", "gateway": "offline",
+        "address": { "name": "Tom Lee", "phone": "5550100", "line1": "1 Main St", "city": "Austin", "state": "TX", "postcode": "73301", "country": "US" } }'
+```
+
+The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redirect", "payload": "<url>" }` to send the buyer to, or `{ "kind": "html", "payload": "<markup>" }`, the gateway's own page to print as it is.
+
+| Rule | Detail |
+|---|---|
+| Who | A signed-in user. A guest page token can price a cart but not place one. |
+| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`), `/address/<field>` (`required`, `maxLength`). Nothing is written. |
+| Retry | Send an `Idempotency-Key`: a repeat gets the first order back and does not ask the gateway again. |
+| Limit | 20 orders an hour per user: `429 rate_limited`. |
+| `status` | `pending`, `paid`, `shipped`, `delivered`, `failed`, `refunded`, `cancelled`. |
+| Lines | `kind` is `item`, `shipping`, `tax`, `discount` or `fee`; a discount's amount is negative. `listing` links the live listing and is `null` once it is gone. |
+| Cancel | Only while `can_cancel` is true (pending): `200` with the order, else `409 conflict`. |
+| Other users | Another user's order is `404`. |
 
 ## Sign up
 

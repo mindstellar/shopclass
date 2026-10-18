@@ -38,6 +38,9 @@ final class RatePolicy
     /** The default of the site-wide sign-up setting. */
     public const SIGN_UPS_PER_SITE = ApiSettings::DEFAULTS['api_signups_per_hour'];
 
+    /** Orders one user may place in an hour. */
+    public const ORDERS_PER_HOUR = 20;
+
     private const HOUR = 3600;
 
     public function __construct(private ApiSettings $settings)
@@ -93,6 +96,14 @@ final class RatePolicy
     public function photoFetch(int $userId): RateBucket
     {
         return new RateBucket('api_photo_fetch', (string) $userId, $this->settings->photoFetchesPerHour(), self::HOUR, true);
+    }
+
+    /**
+     * An order placement, counted per user and exactly.
+     */
+    public function checkout(int $userId): RateBucket
+    {
+        return new RateBucket('api_checkout', (string) $userId, self::ORDERS_PER_HOUR, self::HOUR, true);
     }
 
     /**

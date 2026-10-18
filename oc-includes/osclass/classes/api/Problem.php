@@ -87,6 +87,7 @@ final class Problem
         'type', 'enum', 'minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'format',
         'minItems', 'maxItems', 'minProperties', 'required', 'additionalProperties',
         'invalid', 'unknown', 'taken', 'mismatch', 'limit', 'rejected',
+        'out_of_stock', 'not_buyable', 'unavailable',
     ];
 
     /** Core service reasons that answer as another field code. */
@@ -97,6 +98,9 @@ final class Problem
         'too_fast'      => 'rejected',
         'refused'       => 'rejected',
         'listing_limit' => 'limit',
+        'empty'         => 'minItems',
+        'qty'           => 'maximum',
+        'unknown_user'  => 'rejected',
     ];
 
     private function __construct()

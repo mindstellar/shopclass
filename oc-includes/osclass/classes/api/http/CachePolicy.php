@@ -58,11 +58,12 @@ final class CachePolicy
     }
 
     /**
-     * Whether a path below the version reads an account, admin data or sign-ins.
+     * Whether a path below the version reads an account, admin data, sign-ins or a cart, whose
+     * stock and prices must not sit in a cache.
      */
     private static function isPersonal(string $path): bool
     {
-        return preg_match('#^(?:account(?:/|$)|admin/)|(?:^|/)sessions(?:/|$)#', $path) === 1;
+        return preg_match('#^(?:account(?:/|$)|admin/|cart/)|(?:^|/)sessions(?:/|$)#', $path) === 1;
     }
 
     /**
