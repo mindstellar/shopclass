@@ -162,8 +162,9 @@ final class OrderLineStore extends Model
             'SELECT DISTINCT l.fk_i_item_id FROM ' . self::tableName() . ' l'
             . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_billing_order o ON o.pk_i_id = l.fk_i_order_id'
             . ' WHERE l.fk_i_item_id IN (' . implode(', ', array_fill(0, count($itemIds), '?')) . ')'
-            . ' AND o.fk_i_user_id = ? AND o.s_status IN (' . implode(', ', array_fill(0, count(Order::SETTLED), '?')) . ')',
-            array_merge($itemIds, array($userId), Order::SETTLED)
+            . ' AND o.fk_i_user_id = ? AND o.s_status IN (' . implode(', ', array_fill(0, count(Order::SETTLED), '?')) . ')'
+            . ' AND (o.s_gateway <> ? OR o.dt_paid_date IS NOT NULL)',
+            array_merge($itemIds, array($userId), Order::SETTLED, array(gateway\CashOnDeliveryGateway::ID))
         );
 
         return array_map(static fn (array $row): int => (int) $row['fk_i_item_id'], $rows);

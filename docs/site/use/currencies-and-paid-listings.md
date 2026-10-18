@@ -49,8 +49,9 @@ no card processor or API keys involved. Right for a local site with a handful of
 paying sellers.
 
 **Cash on delivery** is built in too. Switch it on under **Settings → Billing → Shop**,
-with an optional fee added to the order. The buyer pays the courier; mark the order paid
-once it is delivered.
+with an optional fee added to the order. The buyer pays the courier: ship the order
+unpaid, and marking it delivered marks it paid. An unshipped order left unpaid is
+cancelled after the hold days.
 
 ### Selling goods
 

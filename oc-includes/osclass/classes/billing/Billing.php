@@ -230,6 +230,32 @@ final class Billing
     }
 
     /**
+     * Mark a shipped goods order delivered. A cash on delivery order is paid now: the
+     * `billing_order_paid` hook and the receipt follow, as for markPaid().
+     *
+     * @param Order $order
+     *
+     * @return bool false when the order is not shipped
+     */
+    public static function deliver(Order $order): bool
+    {
+        $collected = false;
+        if (!OrderStore::deliver($order->getId(), $collected)) {
+            return false;
+        }
+        if ($collected) {
+            self::log('paid', $order, $order->getExternalRef());
+            try {
+                osc_run_hook('billing_order_paid', $order->getId(), $order->getUserId(), $order->getCredits());
+            } finally {
+                Receipts::afterPaid($order);
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Reverse a paid order.
      *
      * The credits come back out even if that leaves the balance negative -- see

@@ -19,8 +19,8 @@ use mindstellar\billing\PaymentGateway;
 use mindstellar\currency\Money;
 
 /**
- * Cash on delivery: the buyer pays the courier, and the admin marks the order paid once it is
- * delivered. No callback. The fee from the settings is added as a `fee` line by feeLine().
+ * Cash on delivery: the buyer pays the courier. The admin ships the order unpaid, and marking
+ * it delivered marks it paid. No callback. The fee from the settings is added as a `fee` line by feeLine().
  */
 final class CashOnDeliveryGateway implements PaymentGateway
 {

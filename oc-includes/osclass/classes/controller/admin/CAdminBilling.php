@@ -138,11 +138,12 @@ class CAdminBilling extends AdminSecBaseModel
             'user_id' => Params::getParamInt('userId'),
             'goods'   => false,
         );
-        // "To ship": paid goods orders, newest first.
+        // "To ship": paid goods orders and unpaid cash on delivery ones, newest first.
         $toShip = Params::getParamInt('toShip') === 1;
         if ($toShip) {
-            $filters['status'] = Order::STATUS_PAID;
-            $filters['goods']  = true;
+            $filters['status']  = null;
+            $filters['goods']   = true;
+            $filters['to_ship'] = true;
         }
 
         $page   = ListPaging::page();
@@ -239,12 +240,14 @@ class CAdminBilling extends AdminSecBaseModel
         $wasFailed = $order->getStatus() === Order::STATUS_FAILED;
 
         if (Billing::markPaid($order, $order->getExternalRef(), true)) {
-            osc_add_flash_ok_message(
-                $wasFailed
-                    ? sprintf(_m('Order #%d was marked failed and is now marked paid; the credits have been added'), $order->getId())
-                    : sprintf(_m('Order #%d is marked paid and the credits have been added'), $order->getId()),
-                'admin'
-            );
+            if ($order->getCredits() === 0) {
+                $message = sprintf(_m('Order #%d is marked paid'), $order->getId());
+            } elseif ($wasFailed) {
+                $message = sprintf(_m('Order #%d was marked failed and is now marked paid; the credits have been added'), $order->getId());
+            } else {
+                $message = sprintf(_m('Order #%d is marked paid and the credits have been added'), $order->getId());
+            }
+            osc_add_flash_ok_message($message, 'admin');
         } else {
             // markPaid() is guarded on the order still being pending or failed, so
             // this is the benign double-submit rather than a failure.
@@ -255,7 +258,8 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     /**
-     * Mark a paid goods order shipped, with the carrier and tracking the buyer is shown.
+     * Mark a paid goods order, or an unpaid cash on delivery one, shipped, with the carrier and
+     * tracking the buyer is shown.
      * The tracking address has to be https.
      *
      * @return void
@@ -281,7 +285,7 @@ class CAdminBilling extends AdminSecBaseModel
         if (OrderStore::ship($order->getId(), $clean(Params::getParamString('carrier')), $clean(Params::getParamString('tracking')), $url)) {
             osc_add_flash_ok_message(sprintf(_m('Order #%d is marked shipped'), $order->getId()), 'admin');
         } else {
-            osc_add_flash_warning_message(_m('Only a paid order can be marked shipped'), 'admin');
+            osc_add_flash_warning_message(_m('Only a paid order, or an unpaid cash on delivery one, can be marked shipped'), 'admin');
         }
 
         $this->redirectTo($back);
@@ -300,7 +304,7 @@ class CAdminBilling extends AdminSecBaseModel
         if ($order === null) {
             return;
         }
-        if (OrderStore::deliver($order->getId())) {
+        if (Billing::deliver($order)) {
             osc_add_flash_ok_message(sprintf(_m('Order #%d is marked delivered'), $order->getId()), 'admin');
         } else {
             osc_add_flash_warning_message(_m('Only a shipped order can be marked delivered'), 'admin');

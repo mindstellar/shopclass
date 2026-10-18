@@ -200,11 +200,25 @@ $fresh = $make();
 $page  = drive('order_delivered', ['id' => $fresh->getId()]);
 pin('and not from pending', 'pending', $status($fresh->getId()));
 
+harness_section('cash on delivery');
+$cod  = $make('cod');
+$cid  = $cod->getId();
+$page = drive('order', [], ['id' => $cid]);
+check('a pending cash on delivery order offers shipping', str_contains($page['drawn'], 'value="order_ship"'));
+$list = drive('orders', [], ['toShip' => 1]);
+check('and is in To ship', str_contains($list['drawn'], 'id=' . $cid . '"') || str_contains($list['drawn'], 'id=' . $cid . '&'));
+drive('order_ship', ['id' => $cid, 'carrier' => 'DHL']);
+$page = drive('order', [], ['id' => $cid]);
+pin('it ships unpaid, and can still be cancelled as a refused parcel', ['shipped', true, true], [$status($cid), str_contains($page['drawn'], 'collected the cash'), str_contains($page['drawn'], 'order-cancel-dialog')]);
+drive('order_delivered', ['id' => $cid]);
+pin('delivered, it is paid', ['delivered', true], [$status($cid), OrderStore::find($cid)->isPaid()]);
+
 harness_section('the token');
 foreach (['orderShipPost', 'orderDeliveredPost', 'orderCancelPost'] as $method) {
     $source = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminBilling.php', $method);
     $csrf   = strpos($source, 'osc_csrf_check()');
-    $write  = strpos($source, 'OrderStore::');
+    $writes = array_filter([strpos($source, 'OrderStore::'), strpos($source, 'Billing::')], static fn ($x) => $x !== false);
+    $write  = $writes === [] ? false : min($writes);
     check("scan: $method checks the token before it touches an order", $csrf !== false && $write !== false && $csrf < $write);
 }
 

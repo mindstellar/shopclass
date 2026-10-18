@@ -302,7 +302,7 @@ foreach ($order->getMeta() as $key => $value) {
         </div>
 
         <div>
-            <?php if ($isGoods && $order->getStatus() === Order::STATUS_PAID) { ?>
+            <?php if ($order->canShip()) { ?>
                 <?php osc_admin_panel_open(__('Ship this order')); ?>
                     <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
                         <input type="hidden" name="page" value="billing"/>
@@ -335,7 +335,9 @@ foreach ($order->getMeta() as $key => $value) {
 
             <?php if ($isGoods && $order->getStatus() === Order::STATUS_SHIPPED) { ?>
                 <?php osc_admin_panel_open(__('Delivery')); ?>
-                    <p class="panel-subtitle"><?php _e('Mark this delivered once the parcel has arrived.'); ?></p>
+                    <p class="panel-subtitle"><?php echo osc_esc_html($order->awaitsCash()
+                        ? __('Mark this delivered once the courier has collected the cash. That also marks it paid.')
+                        : __('Mark this delivered once the parcel has arrived.')); ?></p>
                     <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
                         <input type="hidden" name="page" value="billing"/>
                         <input type="hidden" name="action" value="order_delivered"/>
@@ -377,7 +379,7 @@ foreach ($order->getMeta() as $key => $value) {
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
 
-            <?php if ($isGoods && $order->isPending()) { ?>
+            <?php if ($isGoods && ($order->isPending() || $order->awaitsCash())) { ?>
                 <?php osc_admin_panel_open(__('Cancel this order')); ?>
                     <p class="panel-subtitle"><?php _e('Close an order that will not be paid. Stock held for it goes back on sale.'); ?></p>
                     <button type="button" class="btn btn-dim" data-osc-dialog-open="#order-cancel-dialog"><?php _e('Cancel order'); ?></button>
@@ -477,7 +479,7 @@ foreach ($order->getMeta() as $key => $value) {
             'confirm' => __('Refund'),
         ));
     }
-    if ($isGoods && $order->isPending()) {
+    if ($isGoods && ($order->isPending() || $order->awaitsCash())) {
         osc_admin_confirm_dialog(array(
             'id'      => 'order-cancel-dialog',
             'url'     => $actionUrl,

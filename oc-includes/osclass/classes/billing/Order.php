@@ -240,13 +240,38 @@ final class Order
     }
 
     /**
-     * Whether the money is in: paid, or a goods order since shipped or delivered.
+     * Whether the money is in: paid, or a goods order since shipped or delivered. A cash on
+     * delivery order on its way is not paid yet.
      *
      * @return bool
      */
     public function isPaid(): bool
     {
-        return in_array($this->status, self::SETTLED, true);
+        return in_array($this->status, self::SETTLED, true) && !$this->awaitsCash();
+    }
+
+    /**
+     * A cash on delivery order shipped before the courier collected: it is paid once delivered.
+     *
+     * @return bool
+     */
+    public function awaitsCash(): bool
+    {
+        return $this->status === self::STATUS_SHIPPED && $this->paidDate === null && $this->gateway === gateway\CashOnDeliveryGateway::ID;
+    }
+
+    /**
+     * Whether the admin may mark it shipped: a paid goods order, or a cash on delivery one not
+     * paid yet.
+     *
+     * @return bool
+     */
+    public function canShip(): bool
+    {
+        return $this->isGoods() && (
+            $this->status === self::STATUS_PAID
+            || ($this->status === self::STATUS_PENDING && $this->gateway === gateway\CashOnDeliveryGateway::ID)
+        );
     }
 
     /**
