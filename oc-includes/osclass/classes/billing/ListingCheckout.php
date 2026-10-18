@@ -14,12 +14,17 @@ declare(strict_types=1);
 namespace mindstellar\billing;
 
 use mindstellar\auth\Actor;
+use mindstellar\billing\event\OrderPaid;
+use mindstellar\billing\event\OrderReturnUrlResolving;
 use mindstellar\database\Db;
 use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingHoldJobs;
+use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStore;
 use RuntimeException;
+use Throwable;
 
 /**
  * What a held listing costs and paying for it. The web page, the API and the order listeners
@@ -85,6 +90,109 @@ final class ListingCheckout
 
             return array('published' => true, 'reason' => null, 'quote' => $quote);
         });
+    }
+
+    /**
+     * Start an order for the credits a held listing is short of. The amount, currency and
+     * credits come from the package row, never from the caller.
+     *
+     * @return array{order: Order, next: CheckoutIntent}
+     *
+     * @throws ForbiddenException when the listing is not the user's
+     * @throws InvalidException with `/package` (nothing_to_pay, unavailable, too_small) or `/gateway` (unavailable)
+     */
+    public static function startOrder(int $itemId, int $userId, int $packageId, string $gatewayId): array
+    {
+        $quote = self::quote($itemId, $userId);
+        if ($quote['shortfall'] <= 0) {
+            throw new InvalidException('/package', 'nothing_to_pay', _m('You have enough credits to publish this listing.'));
+        }
+        $package = PackageStore::find($packageId);
+        if ($package === null || empty($package['b_enabled'])) {
+            throw new InvalidException('/package', 'unavailable', _m('That package is no longer available'));
+        }
+        if ((int) $package['i_credits'] < $quote['shortfall']) {
+            throw new InvalidException('/package', 'too_small', _m('That package does not cover the credits this listing needs.'));
+        }
+        $currency  = (string) $package['s_currency'];
+        $available = PaymentGatewayRegistry::getInstance()->available($currency);
+        if (!isset($available[$gatewayId])) {
+            throw new InvalidException('/gateway', 'unavailable', _m('That payment method is not available'));
+        }
+
+        $order = OrderStore::create($userId, $gatewayId, (int) $package['i_amount'], $currency, (int) $package['i_credits'], array(
+            '_kind'  => Order::KIND_LISTING,
+            '_item'  => $itemId,
+            '_label' => mb_substr(sprintf(_m('Listing: %s'), self::title($itemId)), 0, 200, 'UTF-8'),
+        ));
+        $intent = Billing::checkout($order);
+        if ($intent === null) {
+            OrderStore::markMailSent($order->getId(), Receipts::MAIL_CANCELLED);
+            OrderStore::cancel($order->getId());
+            throw new InvalidException('/gateway', 'unavailable', _m('That payment method is not available right now. Try again or choose another.'));
+        }
+
+        $deadline = ListingStore::find($itemId, array('dt_expiration'))['dt_expiration'] ?? null;
+        $ends     = $deadline === null ? time() + osc_billing_hold_days() * 86400 : (int) strtotime((string) $deadline);
+        OrderStore::linkListing($itemId, $order->getId(), $ends + 86400);
+
+        return array('order' => $order, 'next' => $intent);
+    }
+
+    /**
+     * A paid listing order publishes its listing when it is still held and still the payer's.
+     * Otherwise the credits stay in the wallet and nothing else happens.
+     */
+    public static function onOrderPaid(OrderPaid $e): void
+    {
+        $order  = $e->order();
+        $itemId = $order === null ? null : $order->listingId();
+        if ($order === null || $itemId === null) {
+            return;
+        }
+        $row = ListingStore::find($itemId, array('fk_i_user_id', 'b_enabled', 'b_active', 'dt_first_pub_date'));
+        if ($row === null || !ListingHoldJobs::isHeld(Db::stringifyRow($row))) {
+            return;
+        }
+        if ((int) $row['fk_i_user_id'] !== $order->getUserId()) {
+            error_log(sprintf('Billing: order #%d paid for listing #%d, which its payer no longer owns', $order->getId(), $itemId));
+
+            return;
+        }
+        // The payment is already settled, so a failure here must not fail the gateway's callback.
+        try {
+            self::publish($itemId, Actor::user($order->getUserId()));
+        } catch (Throwable $t) {
+            error_log(sprintf('Billing: order #%d could not publish listing #%d: %s', $order->getId(), $itemId, get_class($t)));
+        }
+    }
+
+    /**
+     * After paying for a listing the buyer goes back to its pay step.
+     */
+    public static function onReturnUrl(OrderReturnUrlResolving $e): void
+    {
+        $itemId = OrderStore::find($e->orderId())?->listingId();
+        if ($itemId !== null) {
+            $e->setUrl(osc_billing_publish_url($itemId));
+        }
+    }
+
+    /**
+     * The listing's title in the user's language, else any title, else "Listing #N".
+     */
+    private static function title(int $itemId): string
+    {
+        $locale = function_exists('osc_current_user_locale') ? (string) osc_current_user_locale() : '';
+        $title  = '';
+        foreach ((new ListingQuery())->descriptions(array($itemId)) as $text) {
+            $t = trim((string) $text['s_title']);
+            if ($t !== '' && ($title === '' || $text['fk_c_locale_code'] === $locale)) {
+                $title = $t;
+            }
+        }
+
+        return $title !== '' ? $title : sprintf(_m('Listing #%d'), $itemId);
     }
 
     /**

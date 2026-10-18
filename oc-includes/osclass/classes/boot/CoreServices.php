@@ -32,6 +32,7 @@ use mindstellar\billing\event\OrderShipped;
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\billing\GoodsCheckout;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\container\Container;
 use mindstellar\event\Bridged;
 use mindstellar\event\Dispatcher;
@@ -62,6 +63,8 @@ final class CoreServices
         $c->set(CartPricer::class, static fn (Container $c): CartPricer => new CartPricer($c->get(DispatcherInterface::class)));
         $c->set(GoodsCheckout::class, static fn (Container $c): GoodsCheckout => new GoodsCheckout($c->get(CartPricer::class), $c->get(DispatcherInterface::class)));
         $c->set(CoreEmails::class, static fn (Container $c): CoreEmails => new CoreEmails($c->get(DispatcherInterface::class)));
+        $events->listen(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
+        $events->listen(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
         foreach (self::events() as $event) {
             $bridge->own($event);
         }

@@ -34,11 +34,17 @@ if (!function_exists('_m')) {
 
 use mindstellar\auth\Actor;
 use mindstellar\billing\Billing;
+use mindstellar\billing\CallbackResult;
+use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
+use mindstellar\billing\PackageStore;
+use mindstellar\billing\PaymentGateway;
+use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
 use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
 
 $userId = seed_user($admin, 'seller', 'seller@example.test');
 
@@ -221,6 +227,148 @@ foreach ($procs as $i => $proc) {
 pin('both waited on the listing row', 2, $waiting);
 pin('one publishes, the other finds it not held, none throws', [1, 1, 0], [substr_count($printed, 'published'), substr_count($printed, 'not_held'), substr_count($printed, 'threw')]);
 pin('one debit and seven credits left', [1, 7], [$debits($uid), Wallet::balance($uid)]);
+
+harness_section('Listing order: start');
+
+/** A gateway that sends the buyer away, or fails to when told to. */
+final class ListingOrderGateway implements PaymentGateway
+{
+    public bool $fail = false;
+
+    public function __construct(private string $id)
+    {
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return 'Listing test';
+    }
+
+    public function getSupportedCurrencies(): array
+    {
+        return array('USD');
+    }
+
+    public function isConfigured(): bool
+    {
+        return true;
+    }
+
+    public function createCheckout(Order $order): CheckoutIntent
+    {
+        if ($this->fail) {
+            throw new RuntimeException('down');
+        }
+
+        return CheckoutIntent::redirect('https://example.test/pay/' . $order->getId());
+    }
+
+    public function handleCallback(array $request): CallbackResult
+    {
+        return CallbackResult::ignored();
+    }
+}
+$gw   = new ListingOrderGateway('lcgw');
+$down = new ListingOrderGateway('lcdown');
+$down->fail = true;
+PaymentGatewayRegistry::getInstance()->register($gw);
+PaymentGatewayRegistry::getInstance()->register($down);
+
+$pkg      = PackageStore::create(['s_name' => 'Five', 'i_amount' => 2_000_000, 's_currency' => 'USD', 'i_credits' => 5]);
+$small    = PackageStore::create(['s_name' => 'Two', 'i_amount' => 900_000, 's_currency' => 'USD', 'i_credits' => 2]);
+$disabled = PackageStore::create(['s_name' => 'Off', 'i_amount' => 1_000_000, 's_currency' => 'USD', 'i_credits' => 10, 'b_enabled' => 0]);
+$orders   = static function (int $uid) use ($admin, $p): int {
+    return (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_order WHERE fk_i_user_id = {$uid}")->fetch_row()[0];
+};
+$refusal = static function (callable $fn): string {
+    try {
+        $fn();
+    } catch (InvalidException $e) {
+        return $e->errors()[0]['pointer'] . ' ' . $e->errors()[0]['code'];
+    } catch (ForbiddenException $e) {
+        return 'forbidden';
+    }
+
+    return 'none';
+};
+
+[$uid, $live, $held] = $seller(0);
+// What a browser might post: its amount and credits must never reach the order.
+$req     = ['packageId' => $pkg, 'gateway' => 'lcgw', 'amount' => 1, 'credits' => 999];
+$started = ListingCheckout::startOrder($held, $uid, $req['packageId'], $req['gateway']);
+$order   = $started['order'];
+$stored  = OrderStore::find($order->getId());
+pin('the order is a listing order for the held listing', [true, $held, 'Listing: Held ' . $seq], [$stored->isListing(), $stored->listingId(), $stored->getLabel()]);
+pin('amount, currency and credits are the package row', [2_000_000, 'USD', 5, 'lcgw'], [$stored->getAmount(), $stored->getCurrency(), $stored->getCredits(), $stored->getGateway()]);
+pin('the gateway sends the buyer on', true, $started['next']->isRedirect());
+pin('the listing links to its order', $order->getId(), OrderStore::listingOrder($held)?->getId());
+$kvEnds = (int) $admin->query("SELECT UNIX_TIMESTAMP(dt_expires) - UNIX_TIMESTAMP(i.dt_expiration) FROM {$p}t_key_value k JOIN {$p}t_item i ON i.pk_i_id = {$held} WHERE k.s_group = 'listing_unpaid' AND k.s_key = '{$held}'")->fetch_row()[0];
+pin('the link lapses a day after the hold', 86400, $kvEnds);
+
+$before = $orders($uid);
+pin('a package short of the shortfall is refused', '/package too_small', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $small, 'lcgw')));
+pin('a disabled package is refused', '/package unavailable', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $disabled, 'lcgw')));
+pin('an unknown gateway is refused', '/gateway unavailable', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'nope')));
+pin('and none of them wrote an order', $before, $orders($uid));
+pin("another seller's listing is refused", 'forbidden', $refusal(fn () => ListingCheckout::startOrder($held, $uid + 1000, $pkg, 'lcgw')));
+pin('a gateway that fails is refused', '/gateway unavailable', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'lcdown')));
+$last = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_billing_order WHERE fk_i_user_id = {$uid}")->fetch_row()[0];
+pin('and its order is cancelled', Order::STATUS_CANCELLED, OrderStore::find($last)->getStatus());
+
+[$uid, , $held] = $seller(5);
+pin('nothing to pay is refused', '/package nothing_to_pay', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')));
+
+harness_section('Listing order: paid');
+
+$ledger = static function (int $uid) use ($admin, $p): array {
+    $rows = $admin->query("SELECT i_amount FROM {$p}t_billing_ledger WHERE fk_i_user_id = {$uid} ORDER BY pk_i_id")->fetch_all();
+
+    return array_map(static fn (array $r): int => (int) $r[0], $rows);
+};
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+pin('paying settles the order', true, Billing::markPaid($order));
+pin('the listing is live', ['1', '1', true], [$row($held)['b_enabled'], $row($held)['b_active'], $row($held)['dt_first_pub_date'] !== null]);
+pin('five credits minted, three spent', [[5, -3], 2], [$ledger($uid), Wallet::balance($uid)]);
+pin('the order link is gone', null, OrderStore::listingOrder($held));
+pin('a replayed payment changes nothing', [false, [5, -3], 2], [Billing::markPaid($order), $ledger($uid), Wallet::balance($uid)]);
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+$admin->query("DELETE FROM {$p}t_item WHERE pk_i_id = {$held}");
+pin('paid after the listing was deleted: settled', true, Billing::markPaid($order));
+pin('the credits stay in the wallet and no row comes back', [5, 0], [Wallet::balance($uid), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0]]);
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+$other = seed_user($admin, 'newowner', 'newowner@example.test');
+$admin->query("UPDATE {$p}t_item SET fk_i_user_id = {$other} WHERE pk_i_id = {$held}");
+Billing::markPaid($order);
+pin('paid by a seller who no longer owns it: stays held', null, $row($held)['dt_first_pub_date']);
+pin('and the credits are the payer\'s', [5, 0], [Wallet::balance($uid), Wallet::balance($other)]);
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+osc_set_preference('billing_slot_credits', '10', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_slot();
+Billing::markPaid($order);
+pin('a price that rose meanwhile leaves it held with the credits kept', [null, 5], [$row($held)['dt_first_pub_date'], Wallet::balance($uid)]);
+osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_slot();
+
+harness_section('Listing order: return URL');
+
+pin('a listing order returns to its pay step', osc_billing_publish_url($held), osc_billing_order_return_url($order->getId()));
+$creditsOrder = OrderStore::create($uid, 'lcgw', 1_000_000, 'USD', 5);
+pin('a credits order returns to the orders page', osc_billing_orders_url(), osc_billing_order_return_url($creditsOrder->getId()));
 
 harness_section('Pay step: URL');
 
