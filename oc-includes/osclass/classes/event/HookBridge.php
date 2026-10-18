@@ -108,6 +108,10 @@ final class HookBridge
         }
         $typed    = null;
         $listener = function (object $event) use ($name, $fn, &$typed): void {
+            // An event may narrow a name to itself: one class can own the names of several mails.
+            if (method_exists($event, 'accepts') && !$event->accepts($name)) {
+                return;
+            }
             $callable = $this->events->resolve($fn);
             if ($callable === null) {
                 trigger_error('Invalid callable on hook ' . $name, E_USER_WARNING);

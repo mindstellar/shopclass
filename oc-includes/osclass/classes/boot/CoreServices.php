@@ -37,6 +37,8 @@ use mindstellar\event\Bridged;
 use mindstellar\event\Dispatcher;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\event\HookBridge;
+use mindstellar\mail\CoreEmails;
+use mindstellar\mail\event\MailComposing;
 
 /**
  * The services core puts in the site-wide container at start-up. Plugins may add their own on init.
@@ -59,6 +61,7 @@ final class CoreServices
         $c->instance(HookBridge::class, $bridge);
         $c->set(CartPricer::class, static fn (Container $c): CartPricer => new CartPricer($c->get(DispatcherInterface::class)));
         $c->set(GoodsCheckout::class, static fn (Container $c): GoodsCheckout => new GoodsCheckout($c->get(CartPricer::class), $c->get(DispatcherInterface::class)));
+        $c->set(CoreEmails::class, static fn (Container $c): CoreEmails => new CoreEmails($c->get(DispatcherInterface::class)));
         foreach (self::events() as $event) {
             $bridge->own($event);
         }
@@ -103,6 +106,7 @@ final class CoreServices
             TrackingUrlResolving::class,
             ReceiptComposing::class,
             OrderReturnUrlResolving::class,
+            MailComposing::class,
         ];
     }
 }

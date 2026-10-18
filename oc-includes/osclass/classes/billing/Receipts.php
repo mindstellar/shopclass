@@ -240,8 +240,7 @@ final class Receipts
     }
 
     /**
-     * Fire the mail hook for one kind of order mail, once per order and kind. The core
-     * handlers flag a failed send on CoreEmails::orderMailFailed().
+     * Send one kind of order mail, once per order and kind. A failed send is flagged on CoreEmails::orderMailFailed().
      *
      * @param string $kind
      * @param int    $orderId
@@ -265,19 +264,15 @@ final class Receipts
         }
 
         CoreEmails::resetOrderMailFailure();
-        if ($kind === self::MAIL_PLACED) {
-            osc_run_hook('hook_email_order_placed', $order);
-        } elseif ($kind === self::MAIL_SHIPPED) {
-            osc_run_hook('hook_email_order_shipped', $order);
-        } elseif ($kind === self::MAIL_DELIVERED) {
-            osc_run_hook('hook_email_order_delivered', $order);
-        } elseif ($kind === self::MAIL_CANCELLED) {
-            osc_run_hook('hook_email_order_cancelled', $order);
-        } elseif ($kind === self::MAIL_REFUNDED) {
-            osc_run_hook('hook_email_order_refunded', $order);
-        } else {
-            osc_run_hook('hook_email_admin_new_order', $order);
-        }
+        $send = array(
+            self::MAIL_PLACED    => 'orderPlaced',
+            self::MAIL_SHIPPED   => 'orderShipped',
+            self::MAIL_DELIVERED => 'orderDelivered',
+            self::MAIL_CANCELLED => 'orderCancelled',
+            self::MAIL_REFUNDED  => 'orderRefunded',
+            self::MAIL_ADMIN     => 'adminNewOrder',
+        );
+        CoreEmails::{$send[$kind]}($order);
         if (CoreEmails::orderMailFailed()) {
             return false;
         }

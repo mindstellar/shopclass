@@ -32,6 +32,8 @@ use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\boot\CoreServices;
+use mindstellar\mail\event\MailComposing;
+use mindstellar\mail\event\MailSent;
 use PHPMailer\PHPMailer\PHPMailer;
 
 $admin = api_admin_boot('osc_billing_mails');
@@ -296,11 +298,59 @@ foreach ([Receipts::MAIL_DELIVERED => Order::STATUS_DELIVERED, Receipts::MAIL_CA
     pin("a credits order in $status gets no $kind mail, and no mark", [true, [], null], [Receipts::sendNotice($kind, $credits->getId()), $mails(), OrderStore::find($credits->getId())->meta('_mail_' . $kind)]);
 }
 
-harness_section('the hooks');
-$names = [];
-foreach (['hook_email_order_placed', 'hook_email_order_shipped', 'hook_email_order_delivered', 'hook_email_order_cancelled', 'hook_email_order_refunded', 'hook_email_admin_new_order'] as $hook) {
-    $names[$hook] = Plugins::hasHook($hook);
-}
-pin('core listens on the six mail hooks', [true, true, true, true, true, true], array_values($names));
+harness_section('the mail events');
+$bridge = \mindstellar\event\HookBridge::active();
+pin('MailComposing owns the 28 mail text names', [28, MailComposing::class], [count(MailComposing::legacyNames()), $bridge->eventFor('email_order_placed_title')]);
+check('the seven hook_email_ trigger names are gone', !Plugins::hasHook('hook_email_order_placed') && !Plugins::hasHook('hook_email_product_alert'));
+
+$seen  = [];
+$typed = static function (MailComposing $e): void {
+    $e->setSubject('Order {ORDER_NUMBER} is on the way, {USER_NAME}');
+    $e->setWord('{USER_NAME}', 'Tommy <3');
+};
+$oldTitle = static fn ($text, $order) => $text . ' [t' . $order->getId() . ']';
+$after    = static function ($text, $order) use (&$seen) {
+    $seen[] = $text;
+
+    return $text . ' [after]';
+};
+$sentEvents = [];
+$listener   = static function (MailSent $e) use (&$sentEvents): void {
+    $sentEvents[] = [$e->kind(), $e->to(), $e->ok(), $e->order() !== null];
+};
+$events = \mindstellar\container\Container::root()->get(\mindstellar\event\Dispatcher::class);
+$events->listen(MailSent::class, $listener);
+osc_add_filter('email_order_placed_title', $typed, 5);
+osc_add_filter('email_order_placed_title', $oldTitle, 7);
+osc_add_filter('email_order_placed_title_after', $after, 5);
+$held2 = $make('offline');
+$mails();
+Receipts::sendNotice(Receipts::MAIL_PLACED, $held2->getId());
+$sent = $mails();
+$number = Receipts::number($held2);
+pin('a typed and an old listener both shape the subject, by priority; the after callback sees the rendered text', ["Order $number is on the way, Tommy <3 [t" . $held2->getId() . '] [after]', ["Order $number is on the way, Tommy <3 [t" . $held2->getId() . ']']], [$sent[0]['subject'], $seen]);
+check('the typed word is escaped in the body', str_contains($sent[0]['body'], 'Tommy &lt;3'));
+pin('MailSent follows each send', [['order_placed', 'tom@example.test', true, true], ['order_placed', 'owner@shop.test', true, true]], array_slice($sentEvents, 0, 1) + [1 => ['order_placed', 'owner@shop.test', true, true]]);
+osc_remove_hook('email_order_placed_title', $typed);
+osc_remove_hook('email_order_placed_title', $oldTitle);
+osc_remove_hook('email_order_placed_title_after', $after);
+
+$suppress = static function (MailComposing $e): void {
+    $e->suppress();
+};
+osc_add_filter('email_order_placed_description', $suppress);
+$held3 = $make('offline');
+$mails();
+$sentEvents = [];
+pin('a suppressed mail is not sent and is not a failure', [true, [], []], [Receipts::sendNotice(Receipts::MAIL_PLACED, $held3->getId()), $mails(), $sentEvents]);
+osc_remove_hook('email_order_placed_description', $suppress);
+
+$held4 = $make('offline');
+MailsRecorder::$fail = true;
+$sentEvents = [];
+pin('a failed send is retried, and MailSent says it failed', [false, false], [Receipts::sendNotice(Receipts::MAIL_PLACED, $held4->getId()), $sentEvents[0][2] ?? true]);
+MailsRecorder::$fail = false;
+$mails();
+$events->remove(MailSent::class, $listener);
 
 exit(harness_result());

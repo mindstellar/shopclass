@@ -126,10 +126,12 @@ check('functions.php wires both hooks', str_contains($wiring, "osc_add_hook('var
 osc_add_hook('variant_stock_changed', [ProductAlerts::class, 'stockChanged']);
 osc_add_hook('variant_price_changed', [ProductAlerts::class, 'priceChanged']);
 $mails = [];
-osc_remove_hook('hook_email_product_alert', [\mindstellar\mail\CoreEmails::class, 'productAlert']);
-osc_add_hook('hook_email_product_alert', static function ($row, $item, $kind, $price) use (&$mails): void {
-    $mails[] = [(int) $row['pk_i_id'], (int) $item['pk_i_id'], $kind, $price];
-});
+$capture = static function (\mindstellar\mail\event\MailComposing $e) use (&$mails): void {
+    $alert   = (array) $e->alert();
+    $mails[] = [(int) $alert['pk_i_id'], (int) ($e->item()['pk_i_id'] ?? 0), str_contains($e->subject(), 'Price') ? 'price' : 'stock', $e->words()['{ITEM_PRICE}'] ?? ''];
+    $e->suppress();
+};
+osc_add_filter('email_product_alert_title', $capture);
 $jobs = static fn (): int => (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_job_queue WHERE s_type = '" . ProductAlerts::JOB . "'")->fetch_assoc()['c'];
 $live = static fn (int $id): bool => ($a = $alert($id)) !== [] && $a['dt_unsub_date'] === null && (int) $a['b_active'] === 1;
 
@@ -138,7 +140,7 @@ pin('stock 3 to 5 queues nothing', 0, $jobs());
 VariantStore::saveSet($tee, [$row('S', 3, $micros(699)), $row('M', 5, $micros(699)), $row('L', 0, $micros(799))]);
 pin('stock 0 to 3 queues one job', 1, $jobs());
 osc_job_run(5);
-pin('which mails the alert once', [[$stockId, $tee, 'stock', null]], $mails);
+pin('which mails the alert once', [[$stockId, $tee, 'stock', '']], $mails);
 pin('and stops it', false, $live($stockId));
 pin('the saved search is untouched', true, $live($searchId));
 pin('the price alerts are untouched', [true, true], [$live($priceId), $live($tomPriceId)]);
@@ -161,7 +163,7 @@ harness_section('price drops');
 $mails = [];
 VariantStore::saveSet($tee, [$row('S', 1, $micros(499)), $row('M', 5, $micros(699)), $row('L', 0, $micros(799))]);
 osc_job_run(5);
-pin('699 to 499 on S mails the any-variant alert under 699', [[$priceId, $tee, 'price', $micros(499)]], $mails);
+pin('699 to 499 on S mails the any-variant alert under 699', [[$priceId, $tee, 'price', osc_format_price($micros(499))]], $mails);
 pin('not the one on L under 799, which did not change', true, $live($tomPriceId));
 $cheap = $post($tomK, ['product' => ['listing' => $tee, 'kind' => 'price']]);
 pin('a new any-variant alert now goes under 499', '499.00', $cheap->body()['data']['product']['below'] ?? null);
@@ -173,7 +175,7 @@ osc_job_run(5);
 pin('449 does not mail an alert under 399', [[], true], [$mails, $live($cheapId)]);
 VariantStore::saveSet($tee, [$row('S', 1, $micros(449)), $row('M', 5, $micros(699)), $row('L', 0, $micros(749))]);
 osc_job_run(5);
-pin('799 to 749 on L mails the alert on L', [[$tomPriceId, $tee, 'price', $micros(749)]], $mails);
+pin('799 to 749 on L mails the alert on L', [[$tomPriceId, $tee, 'price', osc_format_price($micros(749))]], $mails);
 $mails = [];
 VariantStore::saveSet($tee, [$row('S', 1, $micros(449)), $row('M', 5, $micros(699)), $row('L', 0, $micros(999))]);
 osc_job_run(5);
@@ -200,7 +202,7 @@ osc_job_run(5);
 pin('a rise of the listing\'s price sends nothing', [[], true], [$mails, $live($capAlert)]);
 $call('PATCH', 'listings/' . $cap, ['price' => '15'], $owner);
 osc_job_run(5);
-pin('a drop of the listing\'s price mails it', [[$capAlert, $cap, 'price', $micros(15)]], $mails);
+pin('a drop of the listing\'s price mails it', [[$capAlert, $cap, 'price', osc_format_price($micros(15))]], $mails);
 
 harness_section('a listing that is hidden sends nothing');
 $admin->query("UPDATE {$p}t_item SET b_enabled = 0 WHERE pk_i_id = $tee");
@@ -227,7 +229,7 @@ pin('more than one batch of alerts are all mailed, each once', [30, 30], [count(
 pin('and all are stopped', 0, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_alerts WHERE e_type = 'CUSTOM' AND dt_unsub_date IS NULL")->fetch_assoc()['c']);
 
 harness_section('the e-mail');
-osc_add_hook('hook_email_product_alert', [\mindstellar\mail\CoreEmails::class, 'productAlert']);
+osc_remove_hook('email_product_alert_title', $capture);
 $sent = [];
 $item = Item::getInstance()->findByPrimaryKey($tee);
 \mindstellar\utility\DeferredMail::during(static function () use ($sue, $tom, $item, $micros): void {

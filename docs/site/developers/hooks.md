@@ -249,15 +249,19 @@ A paid order fires `billing_order_paid`, as it does today. A goods order also fi
 
 ## Order mails
 
-A goods order sends these mails, each on its own action with the `Order` object as its only
-argument: `hook_email_order_placed` (the buyer, when a bank transfer or cash on delivery order
-is received), `hook_email_order_shipped` (the buyer, with the carrier and tracking link),
-`hook_email_order_delivered` (the buyer, with a "Rate it" link per product),
-`hook_email_order_cancelled`, `hook_email_order_refunded` (the buyer, with the amount) and
-`hook_email_admin_new_order` (the shop's contact address, once the order is paid or held).
-Remove core's handler from the hook to send your own. Each mail also has the usual
-`email_<name>_title`, `_description` and `_after` filters. A mail that cannot be sent is tried
-again by the job queue; the paid confirmation is the order's receipt.
+A goods order sends these mails: `order_placed` (the buyer, when a bank transfer or cash on
+delivery order is received), `order_shipped` (with the carrier and tracking link),
+`order_delivered` (with a "Rate it" link per product), `order_cancelled`, `order_refunded` (with
+the amount) and `admin_new_order` (the shop's contact address, once the order is paid or held).
+A product alert (`product_alert`) goes the same way.
+
+Each mail fires one `MailComposing` event (`mindstellar\mail\event`) before it is sent. A
+listener may change the subject or body template, set a word such as `{USER_NAME}`, or call
+`suppress()` to send nothing. `MailSent` follows with the result. The old
+`email_<kind>_title`, `_description`, `_title_after` and `_description_after` filters still
+work: a callback typed `MailComposing $e` gets the event, any other gets `($text, $order)`
+(`($text, $alert, $item, $kind)` for a product alert). A mail that cannot be sent is tried again
+by the job queue; the paid confirmation is the order's receipt.
 
 ## Reference
 
@@ -380,7 +384,7 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 
-### Email (128)
+### Email (121)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -388,10 +392,10 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `email_admin_new_item_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_admin_new_item_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_admin_new_item_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_admin_new_item_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_new_item_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_admin_new_order_description` | filter | `__('<p>Order {ORDER_NUMBER} came in from {USER_NAME} ({USER_EMAIL}). Payment: {PAYMENT_METHOD}.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_admin_new_order_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_admin_new_order_description', __('<p>Order {ORDER_NUMBER} came in from {USER_NAME} ({USER_EMAIL}). Payment: {PAYMENT_METHOD}.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order) ), $mail['htmlWords']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_admin_new_order_title` | filter | `__('New order {ORDER_NUMBER} on {WEB_TITLE}'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_admin_new_order_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_new_order_title', __('New order {ORDER_NUMBER} on {WEB_TITLE}'), $order) ), $mail['words']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_admin_new_order_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_admin_new_order_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_admin_new_order_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_admin_new_order_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_admin_user_registration_title` | filter | `$content['s_title'], $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_admin_user_registration_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_user_registration_title', $content['s_title'], $user) ), $words), $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_admin_user_regsitration_description` | filter | `$content['s_text'], $user` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
@@ -442,30 +446,30 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `email_new_item_non_register_user_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_cancelled_description` | filter | `__('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_cancelled_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_order_cancelled_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order) ), $mail['htmlWords']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_cancelled_title` | filter | `__('Your order {ORDER_NUMBER} was cancelled'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_cancelled_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_order_cancelled_title', __('Your order {ORDER_NUMBER} was cancelled'), $order) ), $mail['words']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_delivered_description` | filter | `__('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_delivered_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_order_delivered_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'), $order) ), $mail['htmlWords']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_delivered_title` | filter | `__('Your order {ORDER_NUMBER} was delivered'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_delivered_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_order_delivered_title', __('Your order {ORDER_NUMBER} was delivered'), $order) ), $mail['words']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_placed_description` | filter | `__('<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_placed_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_order_placed_description', __('<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order) ), $mail['htmlWords']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_placed_title` | filter | `__('We received your order {ORDER_NUMBER}'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_placed_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_order_placed_title', __('We received your order {ORDER_NUMBER}'), $order) ), $mail['words']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_refunded_description` | filter | `__('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_refunded_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_order_refunded_description', __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'), $order) ), $mail['htmlWords']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_refunded_title` | filter | `__('Your order {ORDER_NUMBER} was refunded'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_refunded_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_order_refunded_title', __('Your order {ORDER_NUMBER} was refunded'), $order) ), $mail['words']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_shipped_description` | filter | `__('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_shipped_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_order_shipped_description', __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'), $order) ), $mail['htmlWords']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_shipped_title` | filter | `__('Your order {ORDER_NUMBER} has shipped'), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_order_shipped_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_order_shipped_title', __('Your order {ORDER_NUMBER} has shipped'), $order) ), $mail['words']), $order` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_product_alert_description` | filter | `$body, $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_product_alert_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_product_alert_description', $body, $alert, $item, $kind) ), $htmlWords), $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_product_alert_title` | filter | `$title, $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_product_alert_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_product_alert_title', $title, $alert, $item, $kind) ), $words), $alert, $item, $kind` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_order_cancelled_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_cancelled_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_cancelled_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_cancelled_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_delivered_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_delivered_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_delivered_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_delivered_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_placed_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_placed_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_placed_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_placed_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_refunded_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_refunded_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_refunded_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_refunded_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_shipped_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_shipped_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_shipped_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_order_shipped_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_product_alert_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_product_alert_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_product_alert_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_product_alert_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_send_friend_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_send_friend_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_send_friend_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
@@ -488,7 +492,6 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `email_warn_expiration_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_warn_expiration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `hook_email_admin_new_item` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
-| `hook_email_admin_new_order` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
 | `hook_email_admin_new_user` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_alert_validation` | action | `Alerts::getInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
 | `hook_email_comment_validated` | action | `$comment` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
@@ -501,12 +504,6 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `hook_email_new_comment_user` | action | `$mail` | `oc-includes/osclass/classes/comment/CommentService.php` |
 | `hook_email_new_email` | action | `$newEmail, osc_change_user_email_confirm_url($userId, $code)` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_new_item_non_register_user` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
-| `hook_email_order_cancelled` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
-| `hook_email_order_delivered` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
-| `hook_email_order_placed` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
-| `hook_email_order_refunded` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
-| `hook_email_order_shipped` | action | `$order` | `oc-includes/osclass/classes/billing/Receipts.php` |
-| `hook_email_product_alert` | action | `$row, $item, $kind, $price` | `oc-includes/osclass/classes/listing/ProductAlerts.php` |
 | `hook_email_send_friend` | action | `$args` | `oc-includes/osclass/classes/security/MessageHold.php` |
 | `hook_email_user_forgot_password` | action | `$admin, $password_url` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `hook_email_user_registration` | action | `$user` | `oc-includes/osclass/classes/controller/CWebRegister.php` |
