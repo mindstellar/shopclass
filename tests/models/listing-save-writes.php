@@ -436,6 +436,13 @@ check('the held row has the hold deadline', $row($held4)['dt_expiration'] !== nu
 $service->publish($held4, $sellerOf($ann));
 pin('after publish the deadline is gone', '9999-12-31 23:59:59', $row($held4)['dt_expiration']);
 
+harness_section('a held listing past its deadline counts once when published');
+$late = $post($sellerOf($ann), ['catId' => (string) $bikes])->id();
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 1 HOUR) WHERE pk_i_id = $late");
+$catBefore = $catCount($bikes);
+$service->publish($late, $sellerOf($ann));
+pin('the category count went up by one', $catBefore + 1, $catCount($bikes));
+
 harness_section('an edit keeps a held listing held');
 $held5   = $post($sellerOf($ann), ['catId' => (string) $bikes]);
 $h5      = $held5->id();

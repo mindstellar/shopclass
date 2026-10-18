@@ -715,7 +715,8 @@ final class ListingService
             if ($days === '' || $days === 0) {
                 Db::execute('UPDATE ' . $this->items->getTableName() . ' SET dt_expiration = ? WHERE pk_i_id = ?', array('9999-12-31 23:59:59', $id));
             } else {
-                $this->items->updateExpirationDate($id, (string) $days);
+                // announce() counts it; the expiry update must not count it as well.
+                $this->items->updateExpirationDate($id, (string) $days, false);
             }
 
             $texts = $this->storedLocales($id);
