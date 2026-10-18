@@ -13,9 +13,9 @@ declare(strict_types=1);
 namespace mindstellar\billing;
 
 use mindstellar\billing\event\CheckoutStarting;
-use mindstellar\container\Container;
 use mindstellar\billing\event\OrderPlaced;
 use mindstellar\boot\CoreServices;
+use mindstellar\container\Container;
 use mindstellar\database\Db;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\exception\InvalidException;

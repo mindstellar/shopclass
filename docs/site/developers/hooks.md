@@ -269,7 +269,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 611 names. Generated from the source; do not edit by hand.
+Core fires 614 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -510,7 +510,7 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `hook_email_user_validation` | action | `$user, $input` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `hook_email_warn_expiration` | action | `$item` | `oc-includes/osclass/cron.php` |
 
-### Item (76)
+### Item (77)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -519,6 +519,7 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `after_delete_item` | action | `$itemId, $item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `before_delete_item` | action | `$itemId` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `before_item_edit` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `cart_item_add_after` | event | `CartItemAdded` | `oc-includes/osclass/classes/billing/event/CartItemAdded.php` |
 | `deactivate_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `delete_item` | action | `$id` | `oc-includes/osclass/classes/model/Item.php` |
 | `disable_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
@@ -591,7 +592,7 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (233)
+### Other (242)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -683,6 +684,15 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `billing_tracking_url` | event | `TrackingUrlResolving` | `oc-includes/osclass/classes/billing/event/TrackingUrlResolving.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
+| `cart_checkout_before` | event | `CheckoutStarting` | `oc-includes/osclass/classes/billing/event/CheckoutStarting.php` |
+| `cart_discount_lines` | event | `CartDiscountLines` | `oc-includes/osclass/classes/billing/event/CartDiscountLines.php` |
+| `cart_free_over` | event | `CartFreeOver` | `oc-includes/osclass/classes/billing/event/CartFreeOver.php` |
+| `cart_needs_shipping` | event | `CartShipping` | `oc-includes/osclass/classes/billing/event/CartShipping.php` |
+| `cart_problems` | event | `CartProblems` | `oc-includes/osclass/classes/billing/event/CartProblems.php` |
+| `cart_shipping_lines` | event | `CartShippingLines` | `oc-includes/osclass/classes/billing/event/CartShippingLines.php` |
+| `cart_shipping_methods` | event | `CartShipping` | `oc-includes/osclass/classes/billing/event/CartShipping.php` |
+| `cart_tax_lines` | event | `CartTaxLines` | `oc-includes/osclass/classes/billing/event/CartTaxLines.php` |
+| `cart_totals` | event | `CartFees` | `oc-includes/osclass/classes/billing/event/CartFees.php` |
 | `change_email_confirm` | action | `Params::getParam('userId'), $change['old'], $change['new']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `cli_commands` | filter | `array()` | `oc-includes/osclass/classes/cli/Cli.php` |
 | `contact_form` | action | none | `oc-includes/osclass/gui/contact-content.php` |
@@ -702,7 +712,7 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `custom_field_autocomplete_source` | filter | `$results, $fieldId, $term, $field` | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `custom_field_input_class` | filter | `$defaultInputClass, $field, $type, $search` | `oc-includes/osclass/classes/form/FieldForm.php` |
 | `custom_query` | action | `$mSearch, $keyword, $value` | `oc-includes/osclass/helpers/hItems.php` |
-| `customiser_published` | action | `$theme` | `oc-includes/osclass/classes/widgets/event/CustomiserPublished.php` |
+| `customiser_published` | event | `CustomiserPublished` | `oc-includes/osclass/classes/widgets/event/CustomiserPublished.php` |
 | `d_file_included` | action | `$file, $replacement, $version, $message` | `oc-includes/osclass/classes/utility/Deprecate.php` |
 | `d_function_run` | action | `$function, $replacement, $version` | `oc-includes/osclass/classes/utility/Deprecate.php` |
 | `d_hook_run` | action | `$hook, $replacement, $version, $message` | `oc-includes/osclass/classes/utility/Deprecate.php` |
@@ -822,8 +832,8 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `upload_image_mime` | filter | `$imgres->getMime()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_file` | action | `$stored` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_resource` | action | `$row` | `oc-includes/osclass/classes/storage/ResourceUploader.php` |
-| `variant_price_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/event/VariantPriceChanged.php` |
-| `variant_stock_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/event/VariantStockChanged.php` |
+| `variant_price_changed` | event | `VariantPriceChanged` | `oc-includes/osclass/classes/listing/event/VariantPriceChanged.php` |
+| `variant_stock_changed` | event | `VariantStockChanged` | `oc-includes/osclass/classes/listing/event/VariantStockChanged.php` |
 | `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `watermark_font_size` | filter | `30` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `watermark_text_value` | filter | `$watermark_text` | `oc-includes/osclass/classes/ImageProcessing.php` |
