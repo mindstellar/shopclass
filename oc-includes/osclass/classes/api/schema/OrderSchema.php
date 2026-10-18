@@ -117,7 +117,8 @@ final class OrderSchema
                 'gateway'     => Schema::ref('OrderGateway'),
                 'receipt_url' => Schema::nullable('string', 'The printable receipt, once the order is paid.'),
                 'can_cancel'  => ['type' => 'boolean', 'description' => 'True while the buyer may cancel it: a pending bank transfer or cash on delivery order.'],
-            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'gateway', 'receipt_url', 'can_cancel']),
+                'can_pay'     => ['type' => 'boolean', 'description' => 'True while the buyer may start paying again: a pending card order.'],
+            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'gateway', 'receipt_url', 'can_cancel', 'can_pay']),
             'OrderNext' => Schema::object([
                 'kind'    => ['type' => 'string', 'enum' => ['redirect', 'html']],
                 'payload' => ['type' => 'string', 'description' => 'redirect: the URL to send the buyer to. html: the gateway\'s own markup, to print as it is.'],

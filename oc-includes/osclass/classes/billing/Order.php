@@ -338,6 +338,17 @@ final class Order
     }
 
     /**
+     * Whether the buyer may start its payment again: a pending goods order of a card gateway,
+     * whose first payment page was left.
+     *
+     * @return bool
+     */
+    public function canPayAgain(): bool
+    {
+        return $this->isGoods() && $this->isPending() && !in_array($this->gateway, Billing::HOLDS_STOCK, true);
+    }
+
+    /**
      * Whether this order is still awaiting settlement, and so may still transition.
      *
      * @return bool

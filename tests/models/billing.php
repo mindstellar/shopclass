@@ -425,6 +425,11 @@ $dropped = OrderStore::create($userId, 'fake', 5_000_000, 'USD', 200);
 OrderStore::settle($dropped->getId(), Order::STATUS_CANCELLED);
 $gateway->verdict = CallbackResult::paid($dropped->getId(), 'ext_dropped', 5_000_000, 'USD');
 Billing::handleCallback('fake', array());
+$twice = static fn (int $id): int => (int) $admin->query("SELECT COUNT(*) FROM " . DB_TABLE_PREFIX . "t_log WHERE s_section = 'billing' AND s_action = 'paid twice' AND fk_i_id = $id")->fetch_row()[0];
+pin('a replay on a paid order is not paid twice', 0, $twice($order->getId()));
+$gateway->verdict = CallbackResult::paid($order->getId(), 'ext_other_page', 5_000_000, 'USD');
+Billing::handleCallback('fake', array());
+pin('a second payment of a paid order is logged', 1, $twice($order->getId()));
 pin('a paid callback on a cancelled order is logged too', [Order::STATUS_CANCELLED, 1], [OrderStore::find($dropped->getId())->getStatus(), $logged($dropped->getId())]);
 
 /* A gateway must not be able to settle an order that belongs to another. */

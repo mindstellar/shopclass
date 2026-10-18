@@ -19,6 +19,7 @@ use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\OrderSerializer;
+use mindstellar\billing\Billing;
 use mindstellar\billing\CartPricer;
 use mindstellar\billing\GoodsCheckout;
 use mindstellar\billing\Order;
@@ -125,6 +126,29 @@ final class OrdersController
             $call,
             $this->serializer->orders(array($placed['order']))[0],
             'account/orders/' . $placed['order']->getId(),
+            array('next' => array('kind' => $next->getKind(), 'payload' => $next->getPayload()))
+        );
+    }
+
+    /**
+     * `POST account/orders/{id}/pay`: ask the gateway again how to pay a pending card order,
+     * for a buyer who left its payment page. `next` says where the buyer goes.
+     */
+    public function pay(ApiCall $call): Response
+    {
+        $order = $this->own($call);
+        if (!$order->canPayAgain()) {
+            throw ProblemException::of('conflict', 'Only a pending card order can be paid again.');
+        }
+        $this->api->limiter()->enforce($this->api->ratePolicy()->checkout($call->userId()), 'Too many payments started in an hour. Try again later.');
+        $next = Billing::checkout($order);
+        if ($next === null) {
+            throw ProblemException::of('conflict', 'That payment method is not available right now.');
+        }
+
+        return Response::ok(
+            $this->serializer->orders(array(ProblemException::found(OrderStore::find($order->getId()), 'order')))[0],
+            200,
             array('next' => array('kind' => $next->getKind(), 'payload' => $next->getPayload()))
         );
     }

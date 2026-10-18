@@ -228,6 +228,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST account/keys'                 => 'user account:write',
     'POST account/orders'               => 'user orders:write',
     'POST account/orders/{id}/cancel'   => 'user orders:write',
+    'POST account/orders/{id}/pay'      => 'user orders:write',
     'POST account/password'             => 'user account:write',
     'POST account/sign-out-everywhere'  => 'user account:write',
     'POST account/wishlist/{listing}'   => 'user wishlist:write',

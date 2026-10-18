@@ -80,7 +80,7 @@ None.
 Added to v1.
 
 - `GET /cart/quote?lines=variant:qty,…`: a cart priced on the server with delivery, fees, totals and the payment methods on offer. Needs no sign-in.
-- `POST /account/orders`, `GET /account/orders`, `GET /account/orders/{id}` and `POST /account/orders/{id}/cancel`, with the scopes `orders:read` and `orders:write`.
+- `POST /account/orders`, `GET /account/orders`, `GET /account/orders/{id}`, `POST /account/orders/{id}/pay` and `POST /account/orders/{id}/cancel`, with the scopes `orders:read` and `orders:write`.
 - New field error codes `out_of_stock`, `not_buyable` and `unavailable`.
 
 ### v1: pages, menus, SEO and products

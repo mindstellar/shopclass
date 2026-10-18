@@ -679,6 +679,9 @@ final class Billing
             $now = OrderStore::find($order->getId());
             if ($now !== null && in_array($now->getStatus(), array(Order::STATUS_FAILED, Order::STATUS_CANCELLED), true)) {
                 self::log('paid after close', $now, $result->getExternalRef());
+            } elseif ($now !== null && $now->isPaid() && $result->getExternalRef() !== null && $result->getExternalRef() !== $now->getExternalRef()) {
+                // A second payment page of the same order (Pay again) was paid too.
+                self::log('paid twice', $now, $result->getExternalRef());
             }
         }
 

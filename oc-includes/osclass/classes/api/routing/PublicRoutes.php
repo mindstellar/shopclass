@@ -589,6 +589,15 @@ final class PublicRoutes
                 auth: RouteSpec::AUTH_USER,
                 scope: 'orders:read'
             ),
+            'POST account/orders/{id}/pay' => RouteSpec::write(
+                handler: [OrdersController::class, 'pay'],
+                tag: 'Orders',
+                summary: 'Start paying one of your pending card orders again',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'orders:write',
+                response: 'OrderPlaced',
+                errors: [404, 409, 429]
+            ),
             'POST account/orders/{id}/cancel' => RouteSpec::write(
                 handler: [OrdersController::class, 'cancel'],
                 tag: 'Orders',

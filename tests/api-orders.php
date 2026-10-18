@@ -227,9 +227,17 @@ pin('another user\'s order is a 404', '404 not_found', api_admin_code($call('GET
 pin('so is one that does not exist', '404 not_found', api_admin_code($call('GET', 'account/orders/999999', null, $tomKey)));
 pin('another user cannot cancel it', ['404 not_found', 'pending'], [api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $annKey)), OrderStore::find($o['id'])->getStatus()]);
 pin('a read-only key cannot cancel', '403 insufficient_scope', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $reader)));
+pin('a pending card order can be paid again', true, $one->body()['data']['can_pay']);
+$calls = $gateway->calls;
+$again = $call('POST', 'account/orders/' . $o['id'] . '/pay', null, $tomKey);
+pin('Pay again asks the gateway once more and says where to go', [200, $calls + 1, 'redirect', 'https://pay.example.test/' . $o['id'], 'pending', []], [$again->status(), $gateway->calls, $again->body()['next']['kind'] ?? null, $again->body()['next']['payload'] ?? null, $again->body()['data']['status'] ?? null, api_admin_schema_errors('OrderPlaced', $again)]);
+pin('another user cannot pay it', '404 not_found', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $annKey)));
+pin('nor a read-only key', '403 insufficient_scope', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $reader)));
 pin('a pending card order cannot be cancelled by the buyer', ['409 conflict', 'pending'], [api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey)), OrderStore::find($o['id'])->getStatus()]);
 $admin->query("UPDATE {$p}t_billing_order SET s_gateway = 'offline' WHERE pk_i_id = " . (int) $o['id']);
-pin('a pending bank transfer order can', true, $call('GET', 'account/orders/' . $o['id'], null, $tomKey)->body()['data']['can_cancel']);
+$bank = $call('GET', 'account/orders/' . $o['id'], null, $tomKey)->body()['data'];
+pin('a pending bank transfer order can, and is not paid again', [true, false], [$bank['can_cancel'], $bank['can_pay']]);
+pin('paying it again is a 409', '409 conflict', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $tomKey)));
 $r = $call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey);
 pin('the owner cancels a pending order', [200, 'cancelled', false, []], [$r->status(), $r->body()['data']['status'], $r->body()['data']['can_cancel'], api_admin_schema_errors('OrderDocument', $r)]);
 pin('twice is a 409', '409 conflict', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey)));

@@ -195,6 +195,7 @@ final class OrderSerializer
             'gateway'     => array('id' => $order->getGateway(), 'name' => $gateway === null ? $order->getGateway() : $gateway->getName()),
             'receipt_url' => Receipts::available($order) ? Receipts::url($order->getId()) : null,
             'can_cancel'  => $order->buyerMayCancel(),
+            'can_pay'     => $order->canPayAgain() && $gateway !== null && $gateway->isConfigured(),
         );
     }
 

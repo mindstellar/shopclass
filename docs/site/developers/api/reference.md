@@ -1450,7 +1450,8 @@ Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too ma
 | GET | `/account/orders` | user | `orders:read` | Your orders, newest first |
 | POST | `/account/orders` | user | `orders:write` | Place an order for a cart; the server prices it again and answers how to pay |
 | GET | `/account/orders/{id}` | user | `orders:read` | One of your orders |
-| POST | `/account/orders/{id}/cancel` | user | `orders:write` | Cancel one of your orders while it is still pending |
+| POST | `/account/orders/{id}/cancel` | user | `orders:write` | Cancel one of your pending bank transfer or cash on delivery orders |
+| POST | `/account/orders/{id}/pay` | user | `orders:write` | Start paying one of your pending card orders again |
 | GET | `/cart/quote` | public | `listings:read` | Price a cart: lines, shipping, fees and totals, worked out from the database |
 
 ### GET `/account/orders`
@@ -1490,7 +1491,7 @@ Answers: 200 OK (`OrderDocument`); 304 Not modified; 401 No valid credential; 40
 
 ### POST `/account/orders/{id}/cancel`
 
-Cancel one of your orders while it is still pending
+Cancel one of your pending bank transfer or cash on delivery orders
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -1498,6 +1499,17 @@ Cancel one of your orders while it is still pending
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 200 OK (`OrderDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/orders/{id}/pay`
+
+Start paying one of your pending card orders again
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`OrderPlaced`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/cart/quote`
 
