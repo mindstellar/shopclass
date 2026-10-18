@@ -36,6 +36,7 @@ use mindstellar\billing\event\OrderReturnUrlResolving;
 use mindstellar\billing\event\OrderShipped;
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\billing\event\TrackingUrlResolving;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\container\Container;
 use mindstellar\event\DispatcherInterface;
@@ -48,11 +49,24 @@ if (!function_exists('osc_plugins_path')) {
     }
 }
 
+// Core's listing-order listeners read the database, which this test has none of.
 $fresh = static function (): DispatcherInterface {
     harness_reset_container();
+    $events = Container::root()->get(DispatcherInterface::class);
+    $events->remove(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
+    $events->remove(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
 
-    return Container::root()->get(DispatcherInterface::class);
+    return $events;
 };
+
+harness_section('Core listeners');
+
+harness_reset_container();
+$core = Container::root()->get(DispatcherInterface::class);
+pin('core listens for paid listing orders and their return URL', [true, true], [
+    $core->remove(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']),
+    $core->remove(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']),
+]);
 
 harness_section('Status events');
 

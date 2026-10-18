@@ -1295,12 +1295,17 @@ msgid "Links are not allowed in messages."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/CartPricer.php
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Listing #%d"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Listing counts are recalculated"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "Listing: %s"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
@@ -2550,6 +2555,11 @@ msgstr ""
 msgid "That package could not be saved"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "That package does not cover the credits this listing needs."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That package is no longer available"
 msgstr ""
@@ -2562,10 +2572,12 @@ msgstr ""
 msgid "That password is not right. Nothing was started."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That payment method is not available"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That payment method is not available right now. Try again or choose another."
 msgstr ""
@@ -3692,6 +3704,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "You have already rated this item"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "You have enough credits to publish this listing."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
