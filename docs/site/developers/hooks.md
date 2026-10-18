@@ -217,6 +217,29 @@ osc_add_filter('cart_tax_lines', static function (CartTaxLines $e): void {
 }, 10);
 ```
 
+The cart events live in `mindstellar\billing\event`. What a listener can call:
+
+| Event | Methods |
+|---|---|
+| every cart event | `cart()` (a `CartView`: `currency()`, `subtotal()`, `lines()`, `address()`, `coupon()`, `userId()`, `shippingMethod()`, `gateway()`, `needsShipping()`), `cartArray()` |
+| `CartShippingLines`, `CartTaxLines`, `CartDiscountLines` | `addLine(Line)`, `removeLine($id)`, `lines()` |
+| `CartFees` | `addFee(Line)`, `totals()` |
+| `CartShipping` | `needsShipping()`, `setNeedsShipping($bool)`, `addMethod($id, $label, $amount, $eta = null)`, `methods()` |
+| `CartFreeOver` | `setFreeOver($amount or null)`, `freeOver()` |
+| `CartProblems` | `add($code, $pointer, $message)` |
+| `CartItemAdded` | `line()`, `variantId()`, `qty()`, `itemId()` |
+| `CheckoutStarting` | `refuse($pointer, $code, $message)`, `refusals()` |
+| `OrderEvent` and its subclasses | `orderId()`, `userId()`, `order()`; `OrderPaid` adds `credits()` |
+| `TrackingUrlResolving` | `carrier()`, `tracking()`, `url()`, `setUrl($url)` |
+| `ReceiptComposing` | `order()`, `title()`, `setTitle()`, `addExtraRow($label, $value)`, `addSummaryRow($label, $value)`, `setFooter()` |
+
+A line is `new Line($id, $label, $amount, $currency, $meta = [])`, with the amount in micros.
+`addLine()`, `addFee()`, `addMethod()` and `add()` throw `InvalidArgumentException` for a bad
+entry: an empty label, a currency other than the cart's, an id outside `[a-z0-9_.-]{1,64}`, an
+amount below zero on anything but a discount, or more than 20 lines on one event. A discount always
+takes off. A label is trimmed and cut at 200 characters. Old filters returning a bad entry have it
+dropped instead.
+
 An old callback and a typed one on one name run in one list, ordered by priority (lower first,
 default 5, same registration order on a tie). `$e->stopPropagation()` ends the run, so later
 callbacks do not fire. A listener typed with a parent class, such as `OrderEvent`, runs for every
