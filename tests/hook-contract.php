@@ -82,14 +82,14 @@ function hook_scan(): array
         }
     }
 
-    // A name a typed event owns is fired by dispatch(), not by a call site; it keeps the kind the fixture records.
+    // Names a typed event now owns have no call site; they keep the kind the fixture records.
     $pinned = is_file(HOOK_FIXTURE) ? explode("\n", (string) file_get_contents(HOOK_FIXTURE)) : array();
     foreach (\mindstellar\boot\CoreServices::events() as $event) {
         foreach ($event::legacyNames() as $name) {
-            if (in_array('action ' . $name, $pinned, true)) {
-                $actions[$name] = true;
-            } else {
+            if (in_array('filter ' . $name, $pinned, true)) {
                 $filters[$name] = true;
+            } else {
+                $actions[$name] = true;
             }
         }
     }

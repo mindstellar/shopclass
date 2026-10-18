@@ -123,6 +123,7 @@ harness_section('the hooks queue a job that mails once');
 $wiring = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/functions.php');
 check('functions.php wires both hooks', str_contains($wiring, "osc_add_hook('variant_stock_changed', array(\\mindstellar\\listing\\ProductAlerts::class, 'stockChanged'));")
     && str_contains($wiring, "osc_add_hook('variant_price_changed', array(\\mindstellar\\listing\\ProductAlerts::class, 'priceChanged'));"));
+harness_reset_container();
 osc_add_hook('variant_stock_changed', [ProductAlerts::class, 'stockChanged']);
 osc_add_hook('variant_price_changed', [ProductAlerts::class, 'priceChanged']);
 $mails = [];

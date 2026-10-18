@@ -107,6 +107,9 @@ final class CoreServices
             ReceiptComposing::class,
             OrderReturnUrlResolving::class,
             MailComposing::class,
+            \mindstellar\listing\event\VariantPriceChanged::class,
+            \mindstellar\listing\event\VariantStockChanged::class,
+            \mindstellar\widgets\event\CustomiserPublished::class,
         ];
     }
 }

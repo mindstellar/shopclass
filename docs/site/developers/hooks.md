@@ -702,7 +702,7 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `custom_field_autocomplete_source` | filter | `$results, $fieldId, $term, $field` | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `custom_field_input_class` | filter | `$defaultInputClass, $field, $type, $search` | `oc-includes/osclass/classes/form/FieldForm.php` |
 | `custom_query` | action | `$mSearch, $keyword, $value` | `oc-includes/osclass/helpers/hItems.php` |
-| `customiser_published` | action | `$theme` | `oc-includes/osclass/classes/widgets/Customiser.php` |
+| `customiser_published` | action | `$theme` | `oc-includes/osclass/classes/widgets/event/CustomiserPublished.php` |
 | `d_file_included` | action | `$file, $replacement, $version, $message` | `oc-includes/osclass/classes/utility/Deprecate.php` |
 | `d_function_run` | action | `$function, $replacement, $version` | `oc-includes/osclass/classes/utility/Deprecate.php` |
 | `d_hook_run` | action | `$hook, $replacement, $version, $message` | `oc-includes/osclass/classes/utility/Deprecate.php` |
@@ -822,8 +822,8 @@ Core fires 611 names. Generated from the source; do not edit by hand.
 | `upload_image_mime` | filter | `$imgres->getMime()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_file` | action | `$stored` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_resource` | action | `$row` | `oc-includes/osclass/classes/storage/ResourceUploader.php` |
-| `variant_price_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/VariantStore.php` |
-| `variant_stock_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/VariantStore.php` |
+| `variant_price_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/event/VariantPriceChanged.php` |
+| `variant_stock_changed` | action | `$variantId, $itemId, $from, $to` | `oc-includes/osclass/classes/listing/event/VariantStockChanged.php` |
 | `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `watermark_font_size` | filter | `30` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `watermark_text_value` | filter | `$watermark_text` | `oc-includes/osclass/classes/ImageProcessing.php` |

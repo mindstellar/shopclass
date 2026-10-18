@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\base;
 
+use mindstellar\container\Container;
+
 /**
  * Base for the plugin registries: one shared instance per subclass, an entries map,
  * and id validation. A subclass adds its own register() and checks.
@@ -19,9 +21,6 @@ namespace mindstellar\base;
 abstract class Registry
 {
     protected const ID_PATTERN = '/^[a-z0-9_.-]{1,60}$/';
-
-    /** @var array<class-string,static> */
-    private static array $instances = [];
 
     /** @var array<string,mixed> registered entries, keyed by id */
     protected array $entries = [];
@@ -31,12 +30,17 @@ abstract class Registry
     }
 
     /**
-     * Shared registry instance, created on first use.
+     * Shared registry instance: the root container's, created on first use.
      */
     public static function getInstance(): static
     {
-        // @phpstan-ignore new.static (the constructor is protected and subclasses keep it)
-        return self::$instances[static::class] ??= new static();
+        $container = Container::root();
+        if (!$container->has(static::class)) {
+            // @phpstan-ignore new.static (the constructor is protected and subclasses keep it)
+            $container->set(static::class, static fn (): static => new static());
+        }
+
+        return $container->get(static::class);
     }
 
     /**

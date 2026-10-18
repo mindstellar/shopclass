@@ -13,8 +13,11 @@ declare(strict_types=1);
 namespace mindstellar\widgets;
 
 use mindstellar\admin\form\store\StoreFactory;
+use mindstellar\container\Container;
+use mindstellar\event\Dispatcher;
 use mindstellar\settings\SettingsImage;
 use mindstellar\settings\SettingsPageRegistry;
+use mindstellar\widgets\event\CustomiserPublished;
 
 /**
  * The customiser's draft, publish and discard rules over a theme's osc_customiser_spec().
@@ -207,7 +210,7 @@ final class Customiser
             // Published already; a draft left behind is overwritten by the next change.
         }
         $theme = $this->draft->theme();
-        osc_run_hook('customiser_published', $theme);
+        Container::root()->get(Dispatcher::class)->dispatch(new CustomiserPublished($theme));
 
         return array('status' => 200, 'errors' => array());
     }
