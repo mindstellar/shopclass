@@ -133,6 +133,22 @@ check('an expired live listing stays', $exists($old));
 pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
 $clear();
 
+harness_section('Status filters against rows');
+$cat3     = seed_category($admin, 'Trucks');
+$sHeld    = seed_item($admin, $cat3, $user, 'Held truck');
+$sBlocked = seed_item($admin, $cat3, $user, 'Blocked truck', 19.50, 0, 0);
+$sPending = seed_item($admin, $cat3, $user, 'Pending truck', 19.50, 0, 1);
+$hold($sHeld);
+$ids = static function (string $status) use ($cat3): array {
+    $rows = ListingStatus::condition(\mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_item')->select('pk_i_id'), [$status])
+        ->where('fk_i_category_id', $cat3)->orderBy('pk_i_id')->get();
+
+    return array_map(static fn (array $r): int => (int) $r['pk_i_id'], $rows);
+};
+pin('unpaid finds only the held row', [$sHeld], $ids(ListingStatus::UNPAID));
+pin('disabled finds the blocked row, not the held one', [$sBlocked], $ids(ListingStatus::DISABLED));
+pin('pending finds the waiting row, not the held one', [$sPending], $ids(ListingStatus::PENDING));
+
 harness_section('Activate and enable leave it held');
 $stuck = seed_item($admin, seed_category($admin, 'Boats'), $user, 'Unpaid boat');
 $hold($stuck);
