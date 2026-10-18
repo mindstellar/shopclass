@@ -735,6 +735,19 @@ function osc_billing_orders_url(): string
 }
 
 /**
+ * Where a payment gateway sends the buyer back after paying for an order. The orders list by
+ * default; a theme with its own order page returns that page through the filter.
+ *
+ * @param int $orderId
+ *
+ * @return string
+ */
+function osc_billing_order_return_url(int $orderId): string
+{
+    return (string) osc_apply_filter('billing_order_return_url', osc_billing_orders_url(), $orderId);
+}
+
+/**
  * Whether the user has a paid, shipped or delivered order with this listing on it.
  *
  * @param int $userId

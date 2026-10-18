@@ -357,6 +357,7 @@ filter billing_can_publish
 filter billing_feature_duration
 filter billing_feature_price
 filter billing_listing_limit_message
+filter billing_order_return_url
 filter billing_receipt_details
 filter billing_tracking_url
 filter body_class
