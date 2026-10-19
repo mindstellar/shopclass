@@ -55,9 +55,15 @@ pin('isHeld(): a row without the column is not', false, ListingStatus::isHeld(ar
 pin('the jobs class keeps no copy of the rule', false, method_exists(\mindstellar\listing\ListingHoldJobs::class, 'isHeld'));
 check('ALL lists unpaid', in_array('unpaid', ListingStatus::ALL, true));
 $where = static fn (string $status): string => ListingStatus::condition(new QueryBuilder('t_item'), array($status), $now)->toSql();
-check('unpaid SQL', strpos($where(ListingStatus::UNPAID), 'b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL') !== false);
-check('disabled SQL excludes held rows', strpos($where(ListingStatus::DISABLED), 'b_spam = 0 AND b_enabled = 0 AND dt_first_pub_date IS NOT NULL') !== false);
-check('pending SQL excludes held rows', strpos($where(ListingStatus::PENDING), 'b_enabled = 1 AND b_active = 0 AND dt_first_pub_date IS NOT NULL') !== false);
+pin('the held rule as SQL', '(i.b_enabled = 0 AND i.b_active = 0 AND i.dt_first_pub_date IS NULL)', ListingStatus::heldSql('i.'));
+check('unpaid SQL is that rule', strpos($where(ListingStatus::UNPAID), ListingStatus::heldSql()) !== false);
+check('disabled SQL excludes held rows', strpos($where(ListingStatus::DISABLED), 'b_spam = 0 AND b_enabled = 0 AND NOT ' . ListingStatus::heldSql()) !== false);
+check('pending SQL keeps an enabled row with no first date, as of() does', strpos($where(ListingStatus::PENDING), 'dt_first_pub_date') === false);
+$src = '';
+foreach (array('model/Item.php', 'listing/ListingStore.php', 'billing/EntitlementStore.php') as $file) {
+    $src .= (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/' . $file);
+}
+pin('no other class spells the held rule out', 0, preg_match_all('/dt_first_pub_date IS (NOT )?NULL/', $src));
 
 harness_section('the SQL');
 $sql = ListingStatus::liveConditions('i.', $now);

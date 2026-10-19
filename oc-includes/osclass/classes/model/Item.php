@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\listing\ListingStatus;
 
 /**
  * Model database for Item table
@@ -726,17 +727,11 @@ class Item extends DAO
         switch ($itemType) {
             case 'blocked':
                 $this->addWhereByOptions(['DISABLED'], $conditions, $params);
-                $this->pushWhere($conditions, $params, 'i.dt_first_pub_date IS NOT NULL');
+                $this->pushWhere($conditions, $params, 'NOT ' . ListingStatus::heldSql('i.'));
 
                 return;
             case 'unpaid':
-                $this->pushWhere(
-                    $conditions,
-                    $params,
-                    'i.b_enabled = ? AND i.b_active = ? AND i.dt_first_pub_date IS NULL',
-                    'AND',
-                    array(0, 0)
-                );
+                $this->pushWhere($conditions, $params, ListingStatus::heldSql('i.'));
 
                 return;
             case 'active':
@@ -756,7 +751,7 @@ class Item extends DAO
             case 'pending':
             case 'pending_validate':
                 $this->addWhereByOptions(['INACTIVE'], $conditions, $params);
-                $this->pushWhere($conditions, $params, 'i.dt_first_pub_date IS NOT NULL');
+                $this->pushWhere($conditions, $params, 'NOT ' . ListingStatus::heldSql('i.'));
 
                 return;
             case 'premium':

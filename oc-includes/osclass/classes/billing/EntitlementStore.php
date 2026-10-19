@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use mindstellar\base\Model;
 use mindstellar\database\Db;
+use mindstellar\listing\ListingStatus;
 
 /**
  * What a user is entitled to: a quantity, a duration, or both, per feature.
@@ -427,7 +428,7 @@ final class EntitlementStore extends Model
     {
         return (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
-            . ' WHERE fk_i_user_id = ? AND (dt_first_pub_date IS NOT NULL OR b_enabled = 1 OR b_active = 1)'
+            . ' WHERE fk_i_user_id = ? AND NOT ' . ListingStatus::heldSql()
             . ' AND (b_premium = 1 OR dt_expiration >= ?)'
             . ($current ? ' LOCK IN SHARE MODE' : ''),
             array($userId, date('Y-m-d H:i:s'))

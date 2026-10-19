@@ -1182,6 +1182,15 @@ pin('the blocked tab lists the blocked id', array((int) $blockId), $idsOf('block
 pin('the pending tab lists the pending id', array((int) $pendId), $idsOf('pending'));
 pin('the unpaid count agrees', '1', $model->countItemTypesByUserID($holder, 'unpaid'));
 
+// Rows a plugin wrote without dt_first_pub_date: only a hidden and inactive one can read as held.
+$legacyPend  = seed_item($admin, $cat, $holder, 'Legacy pending', 5.0, 0, 1);
+$legacyBlock = seed_item($admin, $cat, $holder, 'Legacy blocked', 5.0, 1, 0);
+$setItem($legacyPend, 'dt_first_pub_date = NULL');
+$setItem($legacyBlock, 'dt_first_pub_date = NULL');
+pin('a legacy row waiting for validation stays in the pending tab', array((int) $pendId, (int) $legacyPend), $idsOf('pending'));
+pin('a legacy blocked row that is active stays in the blocked tab', array((int) $blockId, (int) $legacyBlock), $idsOf('blocked'));
+pin('and neither reads as unpaid', array((int) $heldId), $idsOf('unpaid'));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

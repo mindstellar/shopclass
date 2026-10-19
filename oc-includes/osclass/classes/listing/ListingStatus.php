@@ -110,9 +110,9 @@ final class ListingStatus
             foreach ($statuses as $status) {
                 $group = match ($status) {
                     self::SPAM     => $group->orWhereRaw('b_spam = 1'),
-                    self::DISABLED => $group->orWhereRaw('b_spam = 0 AND b_enabled = 0 AND dt_first_pub_date IS NOT NULL'),
-                    self::PENDING  => $group->orWhereRaw('b_spam = 0 AND b_enabled = 1 AND b_active = 0 AND dt_first_pub_date IS NOT NULL'),
-                    self::UNPAID   => $group->orWhereRaw('b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL'),
+                    self::DISABLED => $group->orWhereRaw('b_spam = 0 AND b_enabled = 0 AND NOT ' . self::heldSql()),
+                    self::PENDING  => $group->orWhereRaw('b_spam = 0 AND b_enabled = 1 AND b_active = 0'),
+                    self::UNPAID   => $group->orWhereRaw(self::heldSql()),
                     self::EXPIRED  => $group->orWhereRaw($live . ' AND b_premium = 0 AND (dt_expiration IS NULL OR dt_expiration < ?)', [$at]),
                     default        => $group->orWhereRaw($live . ' AND (b_premium = 1 OR dt_expiration >= ?)', [$at]),
                 };
@@ -120,6 +120,16 @@ final class ListingStatus
 
             return $group;
         });
+    }
+
+    /**
+     * isHeld() as SQL, in brackets; put NOT before it for the rows that are not held.
+     *
+     * @param string $alias column qualifier ending in a dot (e.g. 'i.'), or '' for none
+     */
+    public static function heldSql(string $alias = ''): string
+    {
+        return sprintf('(%1$sb_enabled = 0 AND %1$sb_active = 0 AND %1$sdt_first_pub_date IS NULL)', $alias);
     }
 
     /**

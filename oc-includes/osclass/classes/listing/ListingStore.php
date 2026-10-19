@@ -102,7 +102,7 @@ final class ListingStore extends Model
     {
         return Db::select(
             'SELECT pk_i_id, s_secret FROM ' . self::tableName()
-            . ' WHERE b_enabled = 0 AND b_active = 0 AND dt_first_pub_date IS NULL AND dt_expiration < ?'
+            . ' WHERE ' . ListingStatus::heldSql() . ' AND dt_expiration < ?'
             . ' ORDER BY pk_i_id LIMIT ' . $limit,
             array($before)
         );
