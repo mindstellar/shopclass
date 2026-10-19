@@ -23,11 +23,18 @@ if (api_admin_isolated(__FILE__)) {
     return;
 }
 
+use mindstellar\auth\Actor;
+use mindstellar\billing\Billing;
+use mindstellar\billing\EntitlementStore;
+use mindstellar\billing\ListingCheckout;
+use mindstellar\billing\Wallet;
+use mindstellar\database\Db;
 use mindstellar\job\JobQueue;
 use mindstellar\job\JobWorker;
 use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\ListingStore;
 
 $admin = api_admin_boot('osc_models_listing_hold');
 $p     = DB_TABLE_PREFIX;
@@ -160,6 +167,79 @@ pin('the owner cannot activate it', null, (new ListingService())->activate($stuc
 pin('nor with its secret', null, (new ListingService())->activate($stuck, $secret));
 pin('an admin enable does nothing', false, (new ListingService())->enable($stuck));
 pin('it still waits for payment', ListingStatus::UNPAID, $status($stuck));
+
+harness_section('The delete and a payment at the same moment');
+foreach ([Billing::PREF_ENABLED => 'BOOLEAN', 'billing_slot_enabled' => 'BOOLEAN'] as $k => $t) {
+    osc_set_preference($k, '1', $k === Billing::PREF_ENABLED ? Billing::PREF_GROUP : 'osclass', $t);
+}
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
+osc_set_preference('billing_slot_quantity', '1', 'osclass', 'INTEGER');
+osc_set_preference('moderate_items', '-1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_slot();
+$dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
+$cat4   = seed_category($admin, 'Planes', null, 'en_US', 1, 30);
+
+// The parent holds the seller and listing locks and pays; the child deletes at the deadline.
+$race = static function (string $mode) use ($admin, $p, $cat4, $dbName, $hold, $clear, $due): array {
+    static $n = 0;
+    $n++;
+    $clear();
+    $uid  = seed_user($admin, 'racer' . $n, 'racer' . $n . '@example.test');
+    seed_item($admin, $cat4, $uid, 'Live plane ' . $n);
+    $held = seed_item($admin, $cat4, $uid, 'Held plane ' . $n);
+    $hold($held);
+    Wallet::credit($uid, 3, Wallet::REASON_GRANT);
+    if ($mode === 'sweep') {
+        $admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id = {$held}");
+    } else {
+        ListingHoldJobs::queue($held, 7);
+        $due();
+    }
+    $out = Db::transaction(static function () use ($admin, $uid, $held, $mode, $dbName): array {
+        EntitlementStore::lockSeller($uid);
+        ListingStore::find($held, ['*'], true);
+        $child = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/../lib/listing-expire-child.php', $dbName, (string) $held, $mode], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        usleep(300000);
+        // Pay only once the child is stuck on a lock, so a slow start cannot hide a missing lock.
+        $waiting = false;
+        for ($i = 0; $i < 100 && !$waiting; $i++) {
+            $waiting = (int) $admin->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX t JOIN information_schema.PROCESSLIST l ON l.ID = t.trx_mysql_thread_id WHERE t.trx_state = 'LOCK WAIT' AND l.DB = '{$dbName}'")->fetch_row()[0] > 0;
+            if (!$waiting) {
+                usleep(100000);
+            }
+        }
+        $paid = ListingCheckout::publish($held, Actor::user($uid));
+
+        return [$child, $pipes, $waiting, $paid['published']];
+    });
+    [$child, $pipes, $waiting, $published] = $out;
+    $printed = trim(stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]));
+    proc_close($child);
+    $row    = $admin->query("SELECT b_enabled, b_active, dt_first_pub_date FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_assoc();
+    $debits = (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_ledger WHERE fk_i_user_id = {$uid} AND s_ref_type = 'item'")->fetch_row()[0];
+
+    return [
+        'waited'  => $waiting,
+        'paid'    => $published,
+        'child'   => $printed,
+        'live'    => $row !== null && $row['b_enabled'] === '1' && $row['b_active'] === '1' && $row['dt_first_pub_date'] !== null,
+        'debits'  => $debits,
+    ];
+};
+
+$r = $race('expire');
+pin('the delete job waits for the payment', [true, true], [$r['waited'], $r['paid']]);
+pin('then keeps the listing it finds paid', 'kept', $r['child']);
+pin('which is live with one debit', [true, 1], [$r['live'], $r['debits']]);
+pin('and the job did not fail', 0, $queue->count(JobQueue::STATUS_ERROR));
+
+$r = $race('sweep');
+pin('the sweep waits for the payment', [true, true], [$r['waited'], $r['paid']]);
+pin('then keeps the listing it finds paid', 'kept', $r['child']);
+pin('which is live with one debit', [true, 1], [$r['live'], $r['debits']]);
+$clear();
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
