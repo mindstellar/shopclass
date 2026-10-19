@@ -200,6 +200,15 @@ osc_add_filter('user_menu_filter', function ($options) {
 
 The `opt_logout` entry is always moved last, whatever the filter returns.
 
+In shop mode core drops the seller entries from a shopper's menu: `opt_items`,
+`opt_publicprofile`, `opt_alerts`, `opt_billing_wallet`, `opt_billing_buy` and
+`opt_api_access`, and adds `opt_billing_orders` (Your orders) when billing is on. It does
+this in one `user_menu_filter` callback at priority 20, so plugin entries stay. In every
+mode an entry whose `class` is already in the list is dropped, so two sources of one entry
+show once. `osc_is_shopper()` is true for a signed-in user with no admin session in shop
+mode; use it to guard hard-coded links in your own account chrome. A seller page a shopper
+opens redirects to the dashboard.
+
 ## Adding to a page
 
 Every account page fires two actions inside its content column. The argument is
@@ -369,6 +378,9 @@ token and `do`: `credits` (spend the balance and publish) or `order` (with `pack
 The page adds `.oe-bill-publish`, `.oe-bill-publish-card`, `.oe-bill-publish-status` and
 `.oe-bill-publish-more` to the billing classes. Its package form is
 `gui/billing/parts/package-picker.php`, the same one the Buy credits page uses.
+
+An admin sees the same listing as Waiting for payment and can publish it free. A reminder
+e-mail goes to the owner a day before the hold ends.
 
 ## One page, three routes
 

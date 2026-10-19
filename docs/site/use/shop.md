@@ -85,6 +85,13 @@ Each one is free, works on plain shared hosting and does nothing until you set i
 | **Digital Goods** | Downloadable files for a product, with links in the receipt. |
 | **Stripe**, **PayPal**, **Razorpay** | Card and wallet payments. Buyers pay on the provider's page. |
 
+## What shoppers see in their account
+
+A signed-in shopper gets a buyer account: the dashboard with their recent orders, Your
+orders, profile, password and delete account. The seller pages (listings, public profile,
+alerts, credits and API access) are hidden, and a link to one leads to the dashboard. With
+Digital Goods on, a Downloads entry lists what they bought. An admin signed in sees everything.
+
 ## 6. Customise
 
 If your theme supports it, **Appearance → Customise** edits the home page sections and the look
