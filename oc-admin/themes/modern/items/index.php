@@ -320,6 +320,13 @@ osc_admin_pagination($aData);
                                                                 : '') ?>><?php _e('OFF'); ?></option>
                                     </select>
                             <?php osc_admin_form_row_close(); ?>
+                            <?php osc_admin_form_row_open(__('Payment')); ?>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value=""><?php _e('Choose an option'); ?></option>
+                                        <option value="unpaid" <?php echo (Params::getParamString('status') === 'unpaid'
+                                                                ? 'selected="selected"' : '') ?>><?php _e('Waiting for payment'); ?></option>
+                                    </select>
+                            <?php osc_admin_form_row_close(); ?>
                         </div>
                     </div>
                     <?php osc_run_hook('filters_manage_item_search'); ?>

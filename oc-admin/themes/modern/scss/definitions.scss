@@ -83,6 +83,7 @@ $status-badge: (
         // "untested" for exactly that reason -- same question, same silhouette.
         "paid":      (tint: var(--osc-success-tint), ink: var(--osc-success),      icon: "\f287"), // ● disc
         "pending":   (tint: var(--osc-warning-tint), ink: var(--osc-warning-deep), icon: "\f291"), // ◷ clock
+        "unpaid":    (tint: var(--osc-warning-tint), ink: var(--osc-warning-deep), icon: "\f291"), // ◷ clock (a listing waiting for payment)
         "shipped":   (tint: var(--osc-bronze-tint),  ink: var(--osc-bronze),       icon: "\f139"), // ⬆ arrow in a disc
         "delivered": (tint: var(--osc-success-tint), ink: var(--osc-success),      icon: "\f26a"), // ✔ check in a disc
         "failed":    (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f567"), // ⊘ slashed ring

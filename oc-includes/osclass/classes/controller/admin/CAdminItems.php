@@ -29,6 +29,7 @@ use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStatus;
 use mindstellar\listing\PhotoService;
 use mindstellar\moderation\ListingModeration;
 
@@ -44,6 +45,7 @@ class CAdminItems extends AdminSecBaseModel
         'bulk_actions'   => 'bulkActions',
         'delete'         => 'deleteListings',
         'status'         => 'setStatus',
+        'publish_free'   => 'publishFree',
         'status_premium' => 'setFlag',
         'status_spam'    => 'setFlag',
         'clear_reports'  => 'clearReports',
@@ -239,6 +241,29 @@ class CAdminItems extends AdminSecBaseModel
             'disable'    => _m('The listing has been disabled'),
         );
         $this->moderate($action, $id, $done[$action], _m("The listing can't be activated because it's blocked"));
+        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+
+        return null;
+    }
+
+    /**
+     * Put a listing that waits for payment live without charging the seller.
+     *
+     * @return false|null false when there was nothing usable to act on
+     */
+    private function publishFree(): ?bool
+    {
+        osc_csrf_check();
+        $id = Params::getParamInt('id');
+        if ($id <= 0) {
+            return false;
+        }
+
+        if ((new ListingService())->publish($id, Actor::admin((int) osc_logged_admin_id()))) {
+            osc_add_flash_ok_message(_m('The listing is published; the seller was not charged'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('The listing is not waiting for payment'), 'admin');
+        }
         $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
 
         return null;
@@ -602,7 +627,12 @@ class CAdminItems extends AdminSecBaseModel
     {
         $actions    = array();
         $csrf_token = osc_csrf_token_url();
-        if ($item['b_active']) {
+        $held       = ListingStatus::isHeld($item);
+        if ($held) {
+            $actions[] = '<a class="btn btn-outline-secondary" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=publish_free&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '">' . __('Publish without payment') . '</a>';
+        } elseif ($item['b_active']) {
             $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
                 . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
                 . '&amp;value=INACTIVE">' . __('Deactivate') . '</a>';
@@ -611,14 +641,17 @@ class CAdminItems extends AdminSecBaseModel
                 . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
                 . '&amp;value=ACTIVE">' . __('Activate') . '</a>';
         }
-        if ($item['b_enabled']) {
-            $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
-                . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                . '&amp;value=DISABLE">' . __('Block') . '</a>';
-        } else {
-            $actions[] = '<a class="btn btn-outline-secondary" href="' . osc_admin_base_url(true)
-                . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                . '&amp;value=ENABLE">' . __('Unblock') . '</a>';
+        // A held listing is hidden by design; Block and Unblock do not apply.
+        if (!$held) {
+            if ($item['b_enabled']) {
+                $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
+                    . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                    . '&amp;value=DISABLE">' . __('Block') . '</a>';
+            } else {
+                $actions[] = '<a class="btn btn-outline-secondary" href="' . osc_admin_base_url(true)
+                    . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                    . '&amp;value=ENABLE">' . __('Unblock') . '</a>';
+            }
         }
         if ($item['b_premium']) {
             $actions[] = '<a class="btn btn-outline-secondary" href="' . osc_admin_base_url(true)
@@ -695,7 +728,9 @@ class CAdminItems extends AdminSecBaseModel
      */
     private function itemStatePills(array $item)
     {
-        if (!empty($item['b_spam'])) {
+        if (ListingStatus::isHeld($item)) {
+            $pills = array(array('unpaid', __('Waiting for payment')));
+        } elseif (!empty($item['b_spam'])) {
             $pills = array(array('spam', __('Spam')));
         } elseif (empty($item['b_enabled'])) {
             $pills = array(array('blocked', __('Blocked')));
@@ -731,6 +766,15 @@ class CAdminItems extends AdminSecBaseModel
                 . '&id=' . $item['pk_i_id'] . '&' . osc_csrf_token_url()
                 . '&value=' . $value;
         };
+
+        if (ListingStatus::isHeld($item)) {
+            return array(
+                'routine' => array(array('label' => __('Publish without payment'), 'url' => $url('publish_free', ''))),
+                'danger'  => empty($item['b_spam'])
+                    ? array(array('label' => __('Mark as spam'), 'url' => $url('status_spam', '1')))
+                    : array(array('label' => __('Unmark as spam'), 'url' => $url('status_spam', '0'))),
+            );
+        }
 
         $routine = array(
             !empty($item['b_active'])
@@ -881,7 +925,7 @@ class CAdminItems extends AdminSecBaseModel
             ListingModeration::make()->apply($action, $id, (int) osc_logged_admin_id(), '');
             osc_add_flash_ok_message($done, 'admin');
         } catch (ConflictException $e) {
-            osc_add_flash_error_message($conflict, 'admin');
+            osc_add_flash_error_message($e->getMessage() !== '' ? $e->getMessage() : $conflict, 'admin');
         } catch (RefusedException | RuntimeException $e) {
             osc_add_flash_error_message(_m('An error has occurred'), 'admin');
         }

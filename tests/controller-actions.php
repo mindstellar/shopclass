@@ -50,6 +50,7 @@ $controllers = array(
         'items_reported' => 'reported',
         'post'           => 'newItem',
         'post_item'      => 'newItemPost',
+        'publish_free'   => 'publishFree',
         'settings'       => 'settings',
         'settings_post'  => 'settingsPost',
         'status'         => 'setStatus',

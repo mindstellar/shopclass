@@ -8902,6 +8902,10 @@ msgstr ""
 msgid "Paused: %s. Switch it on again once the receiver works."
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "Payment"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Payment instructions"
 msgstr ""
@@ -9340,6 +9344,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
 msgid "Publish anyway"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+msgid "Publish without payment"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
@@ -13973,6 +13982,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "Waiting and running"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+msgid "Waiting for payment"
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
