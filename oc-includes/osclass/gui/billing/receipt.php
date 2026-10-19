@@ -30,6 +30,9 @@ $rows = array(
     __('Amount paid')     => $receipt['amount'],
     __('Payment method')  => $receipt['method'],
 );
+if (($receipt['for'] ?? '') !== '') {
+    $rows[__('For')] = $receipt['for'];
+}
 if ($receipt['ref'] !== '') {
     $rows[__('Payment reference')] = $receipt['ref'];
 }

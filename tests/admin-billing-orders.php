@@ -243,4 +243,25 @@ check('To ship lists paid goods orders only', str_contains($page['drawn'], 'Ship
 $page = drive('index', [], ['status' => 'shipped']);
 check('shipped and delivered are filters', str_contains($page['drawn'], 'value="shipped"') && str_contains($page['drawn'], 'value="delivered"'));
 
+harness_section('a listing order');
+$cat  = seed_category($admin);
+$item = seed_item($admin, $cat, $tom, 'Red car');
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL WHERE pk_i_id = {$item}");
+$lo = OrderStore::create($tom, 'fake', $m(3), 'USD', 3, ['_kind' => Order::KIND_LISTING, '_item' => $item, '_label' => 'Listing: Red car']);
+$page = drive('order', [], ['id' => $lo->getId()]);
+check('shows the label and the editor link', str_contains($page['drawn'], 'Listing: Red car') && str_contains($page['drawn'], 'action=item_edit&amp;id=' . $item));
+check('no warning before a failure', !str_contains($page['drawn'], 'could not be published'));
+OrderStore::notePublishFailed($lo->getId(), 'bad <b>reason</b>');
+$page = drive('order', [], ['id' => $lo->getId()]);
+check('the warning row shows the reason, escaped', str_contains($page['drawn'], 'could not be published: bad &lt;b&gt;reason&lt;/b&gt;') && !str_contains($page['drawn'], '<b>reason'));
+$page = drive('index', [], []);
+check('the list shows the label and the unpublished word', str_contains($page['drawn'], 'Listing: Red car') && str_contains($page['drawn'], 'listing not published'));
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1, b_active = 1, dt_first_pub_date = NOW() WHERE pk_i_id = {$item}");
+$page = drive('order', [], ['id' => $lo->getId()]);
+check('live later reads as published later', str_contains($page['drawn'], 'It was published later'));
+$page = drive('index', [], []);
+check('the list drops the unpublished word once live', !str_contains($page['drawn'], 'listing not published'));
+$page = drive('order', [], ['id' => $credits->getId()]);
+check('a credits order shows none of it', !str_contains($page['drawn'], 'Listing: ') && !str_contains($page['drawn'], 'could not be published'));
+
 exit(harness_result());

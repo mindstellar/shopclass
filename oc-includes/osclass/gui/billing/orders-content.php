@@ -100,7 +100,14 @@ $col = array(
                 <?php foreach ($orders as $order) { ?>
                     <tr>
                         <td data-label="<?php echo osc_esc_html($col['date']); ?>"><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
-                        <td data-label="<?php echo osc_esc_html($col['method']); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
+                        <td data-label="<?php echo osc_esc_html($col['method']); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?>
+                            <?php if ($order->isListing()) {
+                                $itemId = (int) $order->listingId();
+                                $state  = OrderStore::listingState($itemId);
+                                $link   = $state === 'held' ? osc_billing_publish_url($itemId) : ($state === 'live' ? osc_item_url_ns($itemId) : ''); ?>
+                                <br><span class="oe-muted"><?php if ($link !== '') { ?><a href="<?php echo osc_esc_html($link); ?>"><?php echo osc_esc_html($order->getLabel()); ?></a><?php } else { echo osc_esc_html($order->getLabel()); } ?></span>
+                            <?php } ?>
+                        </td>
                         <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['amount']); ?>">
                             <?php echo osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())); ?>
                         </td>

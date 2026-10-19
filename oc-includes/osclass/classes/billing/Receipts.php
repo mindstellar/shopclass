@@ -417,6 +417,7 @@ final class Receipts
             'label'    => self::number($order),
             'date'     => osc_format_date($paid),
             'credits'  => $order->isGoods() ? $order->getLabel() : sprintf(__('%s credits'), number_format($order->getCredits())),
+            'for'      => $order->isListing() ? $order->getLabel() : '',
             'amount'   => Money::format($order->getAmount(), $order->getCurrency()),
             'method'   => osc_billing_gateway_name($order->getGateway()),
             'ref'      => (string) $order->getExternalRef(),
@@ -604,6 +605,9 @@ final class Receipts
             __('Amount paid')     => $vars['amount'],
             __('Payment method')  => $vars['method'],
         );
+        if (($vars['for'] ?? '') !== '') {
+            $rows[__('For')] = $vars['for'];
+        }
         if ($vars['ref'] !== '') {
             $rows[__('Payment reference')] = $vars['ref'];
         }
