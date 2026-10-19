@@ -1524,6 +1524,7 @@ osc_add_filter('cart_shipping_methods', array(CartPricer::class, 'standardMethod
 osc_register_render_target('billing/wallet', ABS_PATH . 'oc-includes/osclass/gui/billing/wallet-content.php');
 osc_register_render_target('billing/buy', ABS_PATH . 'oc-includes/osclass/gui/billing/buy-content.php');
 osc_register_render_target('billing/orders', ABS_PATH . 'oc-includes/osclass/gui/billing/orders-content.php');
+osc_register_render_target('billing/publish', ABS_PATH . 'oc-includes/osclass/gui/billing/publish-content.php');
 
 /**
  * A signed-in shopper's saved cart: `{variant, qty}` lines, no prices. Empty for a guest.

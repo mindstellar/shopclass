@@ -10,15 +10,19 @@
  */
 
 use mindstellar\admin\ListPaging;
+use mindstellar\auth\Actor;
 use mindstellar\billing\Billing;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\ItemUpgradeStore;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
+use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
 
 /**
  * The buyer-facing side of billing: wallet, checkout, orders, and featuring a listing.
@@ -58,6 +62,7 @@ class CWebBilling extends WebSecBaseModel
         'user-billing-wallet.php' => 'wallet-content.php',
         'user-billing-buy.php'    => 'buy-content.php',
         'user-billing-orders.php' => 'orders-content.php',
+        'user-billing-publish.php' => 'publish-content.php',
     );
 
     /**
@@ -68,6 +73,7 @@ class CWebBilling extends WebSecBaseModel
         'user-billing-wallet.php' => 'billing/wallet',
         'user-billing-buy.php'    => 'billing/buy',
         'user-billing-orders.php' => 'billing/orders',
+        'user-billing-publish.php' => 'billing/publish',
     );
 
     /**
@@ -112,6 +118,13 @@ class CWebBilling extends WebSecBaseModel
                 break;
             case ('account_upgrade'):
                 $this->accountUpgradePost();
+                break;
+            case ('publish'):
+                if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+                    $this->publishPost();
+                } else {
+                    $this->publishView();
+                }
                 break;
             default:
                 $this->walletView();
@@ -364,6 +377,118 @@ class CWebBilling extends WebSecBaseModel
     }
 
     /**
+     * The pay step of a held listing: its price, the seller's balance and how to pay.
+     *
+     * @param array<string,mixed> $extra more view variables, e.g. a gateway's in-page instructions
+     *
+     * @return void
+     */
+    private function publishView(array $extra = array())
+    {
+        $userId = (int) osc_logged_user_id();
+        $itemId = Params::getParamInt('itemId');
+        try {
+            $state = ListingCheckout::state($itemId, $userId);
+        } catch (ForbiddenException $e) {
+            osc_add_flash_error_message(_m('That listing does not belong to you'));
+            $this->redirectTo(osc_user_list_items_url());
+
+            return;
+        }
+
+        $this->_exportVariableToView('item', array(
+            'id'    => $itemId,
+            'title' => ListingCheckout::title($itemId),
+            'url'   => $state['quote']['live'] ? osc_item_url_from_item(Item::getInstance()->findByPrimaryKey($itemId)) : '',
+        ));
+        $this->_exportVariableToView('state', $state);
+        $this->_exportVariableToView('packages', ListingCheckout::packagesFor($state['quote']['shortfall']));
+        $this->_exportVariableToView('gateways', ListingCheckout::gateways());
+        foreach ($extra as $key => $value) {
+            $this->_exportVariableToView($key, $value);
+        }
+        $this->doView('user-billing-publish.php');
+    }
+
+    /**
+     * Pay for a held listing: with credits already in the wallet (`do=credits`), or by
+     * starting an order for a package (`do=order`). Amounts come from the package and the
+     * quote, never from the request.
+     *
+     * @return void
+     */
+    private function publishPost()
+    {
+        osc_csrf_check();
+
+        $userId = (int) osc_logged_user_id();
+        $itemId = Params::getParamInt('itemId');
+        $back   = osc_billing_publish_url($itemId);
+
+        try {
+            switch (Params::getParamString('do')) {
+                case 'credits':
+                    $this->publishWithCredits($itemId, $userId);
+                    break;
+                case 'order':
+                    $started = ListingCheckout::startOrder(
+                        $itemId,
+                        $userId,
+                        Params::getParamInt('packageId'),
+                        Params::getParamString('gateway')
+                    );
+                    if ($started['next']->isRedirect()) {
+                        $this->redirectTo($started['next']->getPayload());
+                    }
+                    $this->publishView(array('checkoutHtml' => $started['next']->getPayload(), 'order' => $started['order']));
+
+                    return;
+            }
+        } catch (ForbiddenException $e) {
+            osc_add_flash_error_message(_m('That listing does not belong to you'));
+            $this->redirectTo(osc_user_list_items_url());
+        } catch (InvalidException $e) {
+            osc_add_flash_error_message($e->getMessage());
+        }
+
+        $this->redirectTo($back);
+    }
+
+    /**
+     * Spend the seller's credits on the listing and send them where it now is: the listing
+     * when it is live, My listings when it waits for validation or the admin.
+     *
+     * @throws ForbiddenException when the listing is not the user's
+     */
+    private function publishWithCredits(int $itemId, int $userId): void
+    {
+        $result = ListingCheckout::publish($itemId, Actor::user($userId));
+        if ($result['reason'] === 'insufficient_credits') {
+            osc_add_flash_error_message(_m('You do not have enough credits to publish this listing.'));
+
+            return;
+        }
+        if ($result['reason'] === 'refused') {
+            osc_add_flash_error_message(_m('This listing cannot be published right now.'));
+
+            return;
+        }
+
+        $item = Item::getInstance()->findByPrimaryKey($itemId);
+        $live = !empty($item['b_enabled']) && !empty($item['b_active']);
+        if ($result['reason'] === 'not_held') {
+            osc_add_flash_info_message(_m('This listing is already published'));
+        } elseif (empty($item['b_active'])) {
+            osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
+        } elseif (empty($item['b_enabled'])) {
+            osc_add_flash_ok_message(_m('Your listing will be published after an admin approves it.'));
+        } else {
+            osc_add_flash_ok_message(_m('Your listing has been published'));
+        }
+        $this->redirectTo($live ? osc_item_url_from_item($item) : osc_user_list_items_url());
+    }
+
+    /**
      * The flash a spend that the wallet could not cover shows, with a link to buy credits.
      */
     private static function notEnoughCreditsFlash(): void
@@ -584,6 +709,7 @@ class CWebBilling extends WebSecBaseModel
             'user-billing-wallet.php' => _m('Credits'),
             'user-billing-buy.php'    => _m('Buy credits'),
             'user-billing-orders.php' => _m('Your orders'),
+            'user-billing-publish.php' => _m('Publish your listing'),
         );
         $heading  = $headings[$file] ?? '';
 

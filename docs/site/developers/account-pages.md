@@ -204,7 +204,7 @@ The `opt_logout` entry is always moved last, whatever the filter returns.
 Every account page fires two actions inside its content column. The argument is
 the page: `user-dashboard`, `user-items`, `user-alerts`, `user-profile`,
 `user-signin`, `user-custom`, `user-api_access`, `user-delete_account`, and on the credits pages
-`billing-wallet`, `billing-buy` or `billing-orders`.
+`billing-wallet`, `billing-buy`, `billing-orders` or `billing-publish`.
 
 ```php
 osc_add_hook('account_page_before', function ($page) {
@@ -336,6 +336,38 @@ or `create` (with `name`, `expires` as `YYYY-MM-DD`, `scopes[]` and `password`).
 
 The page reuses `.oe-panel`, `.oe-badge`, `.oe-group`, `.oe-field`, `.oe-check` and
 `.oe-link-btn`. The two page hooks fire as on the other account pages.
+
+## The pay step
+
+When a seller posts over the listing limit and the site takes payment at the end of posting,
+the listing is saved hidden and the seller lands on its pay step,
+`osc_billing_publish_url($itemId)` (`page=billing&action=publish&itemId=N`). Only the owner can
+open it; anyone else goes to their own listings.
+
+| | |
+|---|---|
+| Theme view | `user-billing-publish.php` |
+| Fallback file | `oc-includes/osclass/gui/billing/publish-content.php`, render target `billing/publish` |
+| Redirects | To My listings with a flash when the listing is not the seller's. |
+
+A theme that ships its own view gets these view variables:
+
+| Variable | Holds |
+|---|---|
+| `item` | `id`, `title`, and `url` once the listing is live |
+| `state` | `step`, `quote`, `order` and `failed`. `step` is `pay`, `waiting` (an order is pending), `failed` (paid, but not published yet), `published` or `closed`. `quote` holds `credits`, `balance` and `shortfall`. |
+| `packages` | Enabled packages that cover the shortfall, smallest first |
+| `gateways` | Payment methods, id to gateway |
+| `order`, `checkoutHtml` | After a gateway that shows its instructions in the page. Print `checkoutHtml` as is. |
+
+Forms post to `osc_base_url(true)` with `page=billing`, `action=publish`, `itemId`, the CSRF
+token and `do`: `credits` (spend the balance and publish) or `order` (with `packageId` and
+`gateway`). The price always comes from the server. Delete is the listing's own delete
+(`page=item&action=item_delete&id=N`).
+
+The page adds `.oe-bill-publish`, `.oe-bill-publish-card`, `.oe-bill-publish-status` and
+`.oe-bill-publish-more` to the billing classes. Its package form is
+`gui/billing/parts/package-picker.php`, the same one the Buy credits page uses.
 
 ## One page, three routes
 
