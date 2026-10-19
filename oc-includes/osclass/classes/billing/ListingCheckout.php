@@ -117,6 +117,26 @@ final class ListingCheckout
     }
 
     /**
+     * Put a held listing live without charging anyone, as an admin may. Like publish(), it
+     * drops the listing's order link once that commits.
+     *
+     * @return bool whether this call published it
+     */
+    public static function publishFree(int $itemId, Actor $actor): bool
+    {
+        return (bool) Db::transaction(static function () use ($itemId, $actor): bool {
+            if (!(new ListingService())->publish($itemId, $actor)) {
+                return false;
+            }
+            Db::afterCommit(static function () use ($itemId): void {
+                OrderStore::unlinkListing($itemId);
+            });
+
+            return true;
+        });
+    }
+
+    /**
      * Start an order for the credits a held listing is short of. The amount, currency and
      * credits come from the package row, never from the caller.
      *

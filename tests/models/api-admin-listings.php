@@ -21,6 +21,8 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 use mindstellar\api\Response;
+use mindstellar\billing\Order;
+use mindstellar\billing\OrderStore;
 use mindstellar\listing\ListingHoldJobs;
 
 $admin = api_admin_boot('osc_models_api_admin_listings');
@@ -173,8 +175,11 @@ osc_add_hook('posted_item', static function () use (&$posted): void {
     $posted++;
 });
 $ledgerBefore = $ledger();
+$open = OrderStore::create($ann, 'offline', 100, 'USD', 3, ['_kind' => Order::KIND_LISTING, '_item' => $held2]);
+OrderStore::linkListing($held2, $open->getId(), time() + 86400);
 $r = $call('POST', 'admin/listings/' . $held2 . '/publish', null, $boss);
 $h = $row($held2);
+pin('the open order is no longer linked to the published listing', null, OrderStore::listingOrder($held2));
 pin('publish: 200 active, row 1/1/now', [200, 'active', '1', '1', true], [$r->status(), $r->body()['data']['status'] ?? null, $h['b_enabled'], $h['b_active'], strtotime((string) $h['dt_first_pub_date']) > time() - 60]);
 check('the run starts now and ends later', strtotime((string) $h['dt_expiration']) > time() + 86400);
 pin('posted_item fired once, no ledger row, logged under the admin', [1, $ledgerBefore, [['s_who' => 'admin', 'fk_i_who_id' => (string) $bossId]]], [$posted, $ledger(), $logs('publish', $held2)]);

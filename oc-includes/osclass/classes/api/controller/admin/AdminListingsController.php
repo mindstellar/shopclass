@@ -23,6 +23,7 @@ use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\api\write\OwnedListings;
 use mindstellar\apikey\Credential;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\exception\ConflictException;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\moderation\StatusFlags;
@@ -120,7 +121,7 @@ final class AdminListingsController
     public function publish(ApiCall $call): Response
     {
         $listing = $this->owned->load($call->intArg());
-        if (!$this->api->listings()->publish($listing->id(), $call->actor('admin:listings'))) {
+        if (!ListingCheckout::publishFree($listing->id(), $call->actor('admin:listings'))) {
             throw new ConflictException(_m('The listing is not waiting for payment.'));
         }
 
