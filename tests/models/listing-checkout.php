@@ -426,6 +426,10 @@ pin('marked spam: closed', 'closed', ListingCheckout::state($held, $uid)['step']
 $admin->query("UPDATE {$p}t_item SET b_spam = 0 WHERE pk_i_id = {$held}");
 pin('live again: published', ['published', true], [ListingCheckout::state($held, $uid)['step'], ListingCheckout::state($held, $uid)['quote']['live']]);
 pin('landing reads a held row as held', ListingCheckout::LANDING_HELD, ListingCheckout::landing(['b_enabled' => '0', 'b_active' => '0', 'dt_first_pub_date' => null]));
+pin('validation and moderation are the pending landings', [false, false, true, true, false], array_map(
+    [ListingCheckout::class, 'isPending'],
+    [ListingCheckout::LANDING_HELD, ListingCheckout::LANDING_LIVE, ListingCheckout::LANDING_VALIDATION, ListingCheckout::LANDING_MODERATION, ListingCheckout::LANDING_CLOSED]
+));
 
 harness_section('Listing order: return URL');
 

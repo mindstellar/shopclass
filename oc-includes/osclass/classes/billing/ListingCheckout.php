@@ -291,6 +291,14 @@ final class ListingCheckout
     }
 
     /**
+     * Whether a listing that landed there waits for the e-mail check or an admin.
+     */
+    public static function isPending(string $landing): bool
+    {
+        return $landing === self::LANDING_VALIDATION || $landing === self::LANDING_MODERATION;
+    }
+
+    /**
      * The payment methods a listing order can use. Cash on delivery is left out: there is nothing to deliver.
      *
      * @return array<string,PaymentGateway>

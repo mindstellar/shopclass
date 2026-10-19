@@ -154,9 +154,7 @@ final class ListingWritesController
             if ($result['reason'] === 'refused') {
                 throw ProblemException::from(Problem::rejected('This site does not allow this listing to be published.'));
             }
-            $pending = in_array($result['landing'], [ListingCheckout::LANDING_VALIDATION, ListingCheckout::LANDING_MODERATION], true);
-
-            return $this->saved($call, new ListingOutcome($id, $pending, 0), false);
+            return $this->saved($call, new ListingOutcome($id, ListingCheckout::isPending($result['landing']), 0), false);
         }
 
         // A refused order does not spend the hour: check the bucket first, count once the order is written.
