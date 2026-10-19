@@ -2,27 +2,15 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.0.0.beta5
+## Shopclass 7.1.0
 
-Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
-
-It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
-
-Beta 2 gives themes search snippets, related listings and search box suggestions, which a search plugin can take over.
-
-Beta 3 gives plugins their own database migrations, an HTTPS client and street address lookup, and carries the security fixes from 6.4.7.
-
-Beta 4 drops Bootstrap's JavaScript from the admin, lets a search plugin answer the admin Listings screen, stops a double click from posting a listing twice, and lets address lookups wait for a provider's daily limit.
-
-Beta 5 makes pages faster, with more caching, kept connections and compressed files, and lets sellers buy account upgrades such as extra listing slots with credits. Address lookup now needs a lookup plugin such as LocationIQ.
-
-Plugin authors: please read **Breaking** before you upgrade.
+Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only admins post and shoppers get a buyer account. Over the limit, a seller now saves the listing and pays on the last step.
 
 ### New
 - The shop hooks are typed events. A callback whose first parameter is an event class gets the event; the hook names and old callbacks work as before. See [Hooks](https://shopclass.org/docs/developers/hooks/).
 - `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key, and work with the API switched off. See [REST API](https://shopclass.org/docs/developers/api/).
 - A theme or plugin can declare `modes` (`classifieds`, `shop`) and the plugins it needs, in `shopclass.json` or the `Modes:` and `Requires Plugins:` headers. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
-- **Settings → General → Site is a** sets classifieds, shop or both; in shop mode only admins post. `osc_site_mode()` reads it.
+- **Settings → General → Site is a** sets classifieds or shop; in shop mode only admins post. `osc_site_mode()` reads it.
 - Activating a theme that needs plugins opens one screen that installs and activates them, and Appearance warns if one is later removed.
 - The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
 - Listings have a `product` member with variants (SKU, price, stock, weight, shipping class), set by an admin.
@@ -42,6 +30,56 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_billing_order_return_url()` (filter `billing_order_return_url`) is where a gateway sends the buyer after paying; `OrderStore::pendingBefore()` lists one gateway's old pending orders.
 - `billing_order_failed` fires when a card payment fails, and the daily job closes card orders left unpaid past the hold days.
 - `billing_tracking_url` and `billing_receipt_details` let a plugin set an order's tracking link and add to its receipt, and the order mails take their text from the `email_order_<kind>_title` and `_description` filters.
+- `GET /listings` takes `page` for numbered pages with any sort, and answers `meta.page` and `meta.pages`.
+- A product variant can have a "was" price (`compare_at`, set by an admin); listings answer `compare_at` and `on_sale`.
+- Variants answer `low_stock`, the units left when 1 to 5 are, so a shop can say "Only 3 left".
+- `GET /listings` takes `in_stock=true` and `on_sale=true` to list only what a shop can sell now or has marked down.
+- `GET /categories?include=cover` adds each category's cover: the first photo of the newest live listing in it or below it.
+- `GET /categories?roots=true` lists only the top-level categories.
+- **Pay at the end of posting**: over the limit, the listing is saved and paid for on the last step. Switch it in `Settings → Billing → Pricing → Take payment at the end of posting`.
+- A saved listing shows as "Waiting for payment" on My listings and in the admin Listings filter; an admin can use "Publish without payment".
+- A seller gets a reminder e-mail a day before an unpaid listing is deleted; edit it in `Settings → Emails`.
+- `POST /listings/{id}/publish` and `POST /admin/listings/{id}/publish` publish a listing that is waiting for payment.
+- In shop mode a shopper's account menu shows buyer pages only, with Your orders and recent orders on the dashboard.
+- Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
+
+### Changed
+- `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
+- A cash on delivery order ships before it is paid and is marked paid when marked delivered; neither the buyer nor the hold job cancels one once shipped.
+- Mails, receipts, bank transfer references and the API show an order number with its prefix.
+- `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
+- A listing waiting for payment takes no slot.
+- The `both` site type is gone: classifieds or shop. A stored `both` reads as classifieds.
+
+### Security
+- A plugin download link from the catalogue is shown only when it is an https address.
+
+### Performance
+- API calls a theme makes on one page share their work: the route table builds only the routes a call tries, the category tree is read once, and each listing's row, photos, stats and location are read once.
+- API listing searches cache the finished rows, without description text when the response asks for none, so the Aisle home page runs 10 statements instead of 21 and a product page 19 instead of 36.
+- `GET /menus` caches the linked pages and top category links, and `Currency::listAll()` reads the cached table.
+- One listing's rating summary and stars come from one query.
+
+### Fixed
+- The API main menu no longer links a top category to a subcategory that has the same slug.
+
+## Shopclass 7.0.0.beta5
+
+Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
+
+It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
+
+Beta 2 gives themes search snippets, related listings and search box suggestions, which a search plugin can take over.
+
+Beta 3 gives plugins their own database migrations, an HTTPS client and street address lookup, and carries the security fixes from 6.4.7.
+
+Beta 4 drops Bootstrap's JavaScript from the admin, lets a search plugin answer the admin Listings screen, stops a double click from posting a listing twice, and lets address lookups wait for a provider's daily limit.
+
+Beta 5 makes pages faster, with more caching, kept connections and compressed files, and lets sellers buy account upgrades such as extra listing slots with credits. Address lookup now needs a lookup plugin such as LocationIQ.
+
+Plugin authors: please read **Breaking** before you upgrade.
+
+### New
 - `osc_admin_count($n)` draws a count as a small badge beside a tab, filter or button label, and `osc_admin_link_group()` takes a `count` per link and then draws a tab strip that scrolls on a phone.
 
 - A `category_modes` settings field sets a mode per category, with an Off switch per main category and subcategories that follow their parent; `osc_category_mode()` reads it.
@@ -84,12 +122,6 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Search snippets: on a keyword search each listing gets its text with the searched words marked, from `osc_item_search_snippet()` and the API's `snippet`. A search plugin can also send category counts, a "did you mean" query and a fuzzy-match flag (`osc_search_category_counts()`, `osc_search_suggestion()`, `osc_search_relaxed()`, and `meta` in the API).
 - Related listings: `osc_related_listings()` and `GET /listings/{id}/related` show live listings like one listing (same category, shared title words). A search plugin can pick them with the `item_related_ids` filter.
 - Search box and post form suggestions: `GET /search/suggest` lists listings whose titles match, with a thumbnail, and `GET /search/categories` suggests up to three categories for a title. A search plugin can answer either through the `search_suggestions` and `category_suggestions` filters, and may add suggested searches. Themes add `osc_search_suggest_attributes()` to a search input to show the list.
-- `GET /listings` takes `page` for numbered pages with any sort, and answers `meta.page` and `meta.pages`.
-- A product variant can have a "was" price (`compare_at`, set by an admin); listings answer `compare_at` and `on_sale`.
-- Variants answer `low_stock`, the units left when 1 to 5 are, so a shop can say "Only 3 left".
-- `GET /listings` takes `in_stock=true` and `on_sale=true` to list only what a shop can sell now or has marked down.
-- `GET /categories?include=cover` adds each category's cover: the first photo of the newest live listing in it or below it.
-- `GET /categories?roots=true` lists only the top-level categories.
 
 ### Breaking
 
@@ -118,7 +150,6 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Removed methods and classes: `Params::_view()`, `PageForm::multilanguage_name_description()`, `Object_Cache_Factory::getCache()` (use `getInstance()`), `LocationsTmp`, `StorageQueue` and `StorageWorker` (use the job queue), and `oc-includes/osclass/timezones.php` (use `DateTimeZone::listIdentifiers()`).
 
 ### Security
-- A plugin download link from the catalogue is shown only when it is an https address.
 - `CurlHttpClient` takes a `resolve` option that pins a host to an address the caller checked, so a plugin fetching a user's URL can close the DNS rebinding gap.
 
 - The admin Languages list escapes each language's name and description, and the installer escapes its language error.
@@ -172,15 +203,8 @@ Plugin authors: please read **Breaking** before you upgrade.
 - The `.htaccess` core writes now compresses responses and lets browsers keep static files; an older core-written file is updated on upgrade.
 - With Redis, Valkey or memcached, custom fields find a category's parents from a small cached list instead of reading every category in every language.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
-- API calls a theme makes on one page share their work: the route table builds only the routes a call tries, the category tree is read once, and each listing's row, photos, stats and location are read once.
-- API listing searches cache the finished rows, without description text when the response asks for none, so the Aisle home page runs 10 statements instead of 21 and a product page 19 instead of 36.
-- `GET /menus` caches the linked pages and top category links, and `Currency::listAll()` reads the cached table.
-- One listing's rating summary and stars come from one query.
 
 ### Changed
-- `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
-- A cash on delivery order ships before it is paid and is marked paid when marked delivered; neither the buyer nor the hold job cancels one once shipped.
-- Mails, receipts, bank transfer references and the API show an order number with its prefix.
 - The listing map choice moved from **Settings → Listings** to **Settings → General → Maps**, next to its Google Maps key and the address lookup, with clearer help text.
 - Counts on the Market Updates tab, the Update all button, System info and the Locations filter are badges instead of a number in brackets.
 - The category checkbox tree (`osc_admin_tree_picker()`) shows a card per main category with folded subcategories and a live count; a main category with only some subcategories ticked shows a dash and is not saved itself. Its posted names, ids and Check all / Uncheck all still work.
@@ -228,7 +252,6 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
-- The API main menu no longer links a top category to a subcategory that has the same slug.
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
 - The Credits menu link also shows when a free account upgrade is on offer, not only when credits can be bought or are held.
