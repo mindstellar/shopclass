@@ -134,7 +134,7 @@ class AdminSecBaseModel extends SecBaseModel
         Cookie::getInstance()->pop('oc_adminSecret');
         Cookie::getInstance()->pop('oc_adminLocale');
         Cookie::getInstance()->set();
-        \mindstellar\security\AdminTwoFactor::clearPendingCookie();
+        CAdminLogin::clearTwoFactorCookie();
     }
 
     /**
