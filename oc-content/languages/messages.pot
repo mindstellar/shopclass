@@ -3304,6 +3304,12 @@ msgstr ""
 msgid "This listing is not for sale."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "This listing will cost %d credit. You pay on the last step."
+msgid_plural "This listing will cost %d credits. You pay on the last step."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 #: oc-includes/osclass/classes/location/LocationService.php
 msgid "This location no longer exists."
@@ -3895,6 +3901,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Your listing has been published"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Your listing is saved. Pay for it on the next page to publish it."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
