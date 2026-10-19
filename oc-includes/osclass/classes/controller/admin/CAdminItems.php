@@ -696,7 +696,9 @@ class CAdminItems extends AdminSecBaseModel
 
         $expired = osc_isExpired($item['dt_expiration'] ?? '');
         $this->_exportVariableToView('itemFacts', array(
-            'published' => empty($item['dt_pub_date']) ? '' : osc_format_date($item['dt_pub_date']),
+            // A held listing was never published, whatever dt_pub_date says.
+            'published' => ListingStatus::isHeld($item) ? __('Waiting for payment')
+                : (empty($item['dt_pub_date']) ? '' : osc_format_date($item['dt_pub_date'])),
             // A listing that never expires carries the year-9999 sentinel, which is a date
             // nobody means to read.
             'expires'   => empty($item['dt_expiration']) || strpos((string)$item['dt_expiration'], '9999') === 0

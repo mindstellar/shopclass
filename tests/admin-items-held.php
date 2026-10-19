@@ -226,9 +226,11 @@ $moves = __get('itemActions');
 pin('first pill is unpaid', 'unpaid', $pills[0][0] ?? null);
 pin('one routine move: Publish without payment', array('Publish without payment'), array_column($moves['routine'], 'label'));
 pin('the only danger move is spam', array('Mark as spam'), array_column($moves['danger'], 'label'));
+pin('it shows no publish date, only that it waits for payment', 'Waiting for payment', __get('itemFacts')['published'] ?? null);
 drive('item_edit', array('id' => $live));
 $moves = __get('itemActions');
 pin('a live listing keeps Deactivate, Mark as premium, Block listing, Mark as spam', array('Deactivate', 'Mark as premium', 'Block listing', 'Mark as spam'), array_merge(array_column($moves['routine'], 'label'), array_column($moves['danger'], 'label')));
 pin('and its first pill is active', 'active', __get('itemStatus')[0][0] ?? null);
+pin('a live listing shows its publish date', osc_format_date('2020-01-01 00:00:00'), __get('itemFacts')['published'] ?? null);
 
 exit(harness_result());
