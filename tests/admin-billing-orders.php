@@ -253,7 +253,10 @@ check('shows the label and the editor link', str_contains($page['drawn'], 'Listi
 check('no warning before a failure', !str_contains($page['drawn'], 'could not be published'));
 OrderStore::notePublishFailed($lo->getId(), 'bad <b>reason</b>');
 $page = drive('order', [], ['id' => $lo->getId()]);
-check('the warning row shows the reason, escaped', str_contains($page['drawn'], 'could not be published: bad &lt;b&gt;reason&lt;/b&gt;') && !str_contains($page['drawn'], '<b>reason'));
+check('an unknown reason reads as an error, never the raw note', str_contains($page['drawn'], 'could not be published: an error stopped it') && !str_contains($page['drawn'], 'reason'));
+OrderStore::notePublishFailed($lo->getId(), 'insufficient_credits');
+$page = drive('order', [], ['id' => $lo->getId()]);
+check('a known reason reads in words, not as its code', str_contains($page['drawn'], 'the price went up before the payment arrived') && !str_contains($page['drawn'], 'insufficient_credits'));
 $page = drive('index', [], []);
 check('the list shows the label and the unpublished word', str_contains($page['drawn'], 'Listing: Red car') && str_contains($page['drawn'], 'listing not published'));
 $admin->query("UPDATE {$p}t_item SET b_enabled = 1, b_active = 1, dt_first_pub_date = NOW() WHERE pk_i_id = {$item}");

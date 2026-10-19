@@ -295,8 +295,29 @@ Db::execute("UPDATE {$p}t_billing_order SET s_status = 'paid' WHERE pk_i_id = ?"
 OrderStore::notePublishFailed($order->getId(), 'insufficient_credits');
 Wallet::credit($uid, 5, Wallet::REASON_GRANT);
 $r = pay($uid, $held);
-check('the page says the payment arrived', str_contains($r['drawn'], 'Your payment arrived, but the listing is not published yet.'));
+check('the page says the payment arrived, and why it is not live', str_contains($r['drawn'], 'Your payment arrived, but the listing is not published yet: the price went up before the payment arrived.'));
 check('and offers the credits that fix it', str_contains($r['drawn'], 'Use 3 credits and publish'));
+
+[$uid, $held] = $seller(0);
+$order = mindstellar\billing\ListingCheckout::startOrder($held, $uid, $five, 'ppgw')['order'];
+Db::execute("UPDATE {$p}t_billing_order SET s_status = 'paid' WHERE pk_i_id = ?", array($order->getId()));
+OrderStore::notePublishFailed($order->getId(), 'refused');
+Wallet::credit($uid, 5, Wallet::REASON_GRANT);
+$r = pay($uid, $held);
+check('a refusal says so and points to the site owner', str_contains($r['drawn'], 'this site does not allow it to be published.') && str_contains($r['drawn'], 'Contact the site owner.'));
+check('with no retry button that would only be refused again', !str_contains($r['drawn'], 'value="credits"'));
+
+harness_section('a publish that throws');
+
+[$uid, $held] = $seller(5);
+$boom = static function (): void {
+    throw new RuntimeException('disk full');
+};
+osc_add_hook('posted_item', $boom);
+$r = pay($uid, $held, array('do' => 'credits'));
+osc_remove_hook('posted_item', $boom);
+pin('the seller is sent back to the pay step, still held, nothing spent', array(osc_billing_publish_url($held), null, 5), array($r['redirect'], $row($held)['dt_first_pub_date'], Wallet::balance($uid)));
+check('with an error flash, not a crash', str_contains($r['flashes'], 'error:This listing could not be published. Try again later.'));
 
 harness_section('where a credits publish lands');
 

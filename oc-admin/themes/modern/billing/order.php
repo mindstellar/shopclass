@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
@@ -200,9 +201,9 @@ foreach ($order->getMeta() as $key => $value) {
                 <div class="callout-warning callout-block mb-3">
                     <div>
                         <?php if (OrderStore::listingState($listingId) === 'live') {
-                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published (%1$s, %2$s). It was published later.'), (string) ($publishFailed['reason'] ?? ''), (string) ($publishFailed['at'] ?? '')));
+                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published (%1$s, %2$s). It was published later.'), ListingCheckout::failureReason((string) ($publishFailed['reason'] ?? '')), (string) ($publishFailed['at'] ?? '')));
                         } else {
-                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published: %1$s (%2$s). The credits are in the buyer\'s wallet.'), (string) ($publishFailed['reason'] ?? ''), (string) ($publishFailed['at'] ?? '')));
+                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published: %1$s (%2$s). The credits are in the buyer\'s wallet.'), ListingCheckout::failureReason((string) ($publishFailed['reason'] ?? '')), (string) ($publishFailed['at'] ?? '')));
                         } ?>
                     </div>
                 </div>

@@ -462,14 +462,23 @@ class CWebBilling extends WebSecBaseModel
      */
     private function publishWithCredits(int $itemId, int $userId): void
     {
-        $result = ListingCheckout::publish($itemId, Actor::user($userId));
+        try {
+            $result = ListingCheckout::publish($itemId, Actor::user($userId));
+        } catch (ForbiddenException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            error_log(sprintf('Billing: listing #%d could not be published with credits: %s', $itemId, $e->getMessage()));
+            osc_add_flash_error_message(_m('This listing could not be published. Try again later.'));
+
+            return;
+        }
         if ($result['reason'] === 'insufficient_credits') {
             osc_add_flash_error_message(_m('You do not have enough credits to publish this listing.'));
 
             return;
         }
         if ($result['reason'] === 'refused') {
-            osc_add_flash_error_message(_m('This listing cannot be published right now.'));
+            osc_add_flash_error_message(_m('This site does not allow this listing to be published. Contact the site owner.'));
 
             return;
         }

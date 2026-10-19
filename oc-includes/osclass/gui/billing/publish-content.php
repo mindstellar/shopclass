@@ -12,6 +12,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 
 /**
@@ -45,6 +46,8 @@ if ($payReady) {
     $payGateways = (array) __get('gateways');
     $payHeld     = in_array($payStep, array('pay', 'waiting', 'failed'), true);
     $payFields   = array('page' => 'billing', 'action' => 'publish', 'itemId' => $payItemId);
+    $payFailed   = $payStep === 'failed' ? (string) ($payState['failed']['reason'] ?? '') : '';
+    $payRefused  = $payFailed === 'refused';
 }
 ?>
 <div class="oe-account">
@@ -89,7 +92,13 @@ if ($payReady) {
                 <p class="oe-meta oe-bill-publish-status"><?php echo osc_esc_html(_m('Waiting for the payment to be confirmed.')); ?>
                     <a href="<?php echo osc_esc_html(osc_billing_publish_url($payItemId)); ?>"><?php echo osc_esc_html(_m('Refresh')); ?></a></p>
             <?php } elseif ($payStep === 'failed') { ?>
-                <p class="oe-meta oe-bill-publish-status"><?php echo osc_esc_html(_m('Your payment arrived, but the listing is not published yet.')); ?></p>
+                <p class="oe-meta oe-bill-publish-status"><?php echo osc_esc_html(sprintf(
+                    _m('Your payment arrived, but the listing is not published yet: %s.'),
+                    ListingCheckout::failureReason($payFailed)
+                )); ?>
+                    <?php if ($payFailed !== 'insufficient_credits') {
+                        echo osc_esc_html(_m('Contact the site owner.'));
+                    } ?></p>
             <?php } ?>
 
             <p class="oe-meta"><?php echo osc_esc_html($payCredits === 0
@@ -99,7 +108,7 @@ if ($payReady) {
                     sprintf(_mn('%d credit', '%d credits', $payCredits), $payCredits),
                     sprintf(_mn('%d credit', '%d credits', $payBalance), $payBalance)
                 )); ?></p>
-            <?php if ($payHeld && $payShort === 0) { ?>
+            <?php if ($payHeld && $payShort === 0 && !$payRefused) { ?>
                 <form class="oe-inline-form nocsrf oe-bill-actions" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
                     <?php echo osc_csrf_token_form(); ?>
                     <?php foreach ($payFields + array('do' => 'credits') as $payName => $payValue) { ?>

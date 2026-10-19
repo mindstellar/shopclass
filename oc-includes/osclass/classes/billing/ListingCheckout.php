@@ -238,6 +238,19 @@ final class ListingCheckout
     }
 
     /**
+     * Why a paid listing order could not publish its listing, in words, from the reason
+     * notePublishFailed() stored.
+     */
+    public static function failureReason(string $reason): string
+    {
+        return match ($reason) {
+            'insufficient_credits' => _m('the price went up before the payment arrived'),
+            'refused'              => _m('this site does not allow it to be published'),
+            default                => _m('an error stopped it'),
+        };
+    }
+
+    /**
      * Where a listing stands for its seller: `held`, `live`, `validation` (waits for the
      * e-mail check), `moderation` (waits for an admin) or `closed` (expired, spam).
      *
