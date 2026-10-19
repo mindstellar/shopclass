@@ -19,7 +19,7 @@ The site owner adds endpoints on **Settings → API → Webhooks**
 
 | Event | Sent when | `data` |
 |---|---|---|
-| `listing.created` | A listing is posted. | The listing |
+| `listing.created` | A listing is posted. One waiting for payment sends it when it is published. | The listing |
 | `listing.updated` | A listing is edited or gets a photo. | The listing |
 | `listing.activated` | A listing is approved or activated. | The listing |
 | `listing.deactivated` | A listing is sent back to moderation. | The listing |
@@ -210,7 +210,9 @@ Write your receiver so it copes with the delivery system:
 - **Be idempotent.** Store each `webhook-id` and skip one you have seen. A retry carries the
   same id as the first try.
 - **Do not rely on order.** A retried `listing.created` can arrive after the
-  `listing.updated` that followed it. Compare the `timestamp` members, or fetch the current state.
+  `listing.updated` that followed it. So can one sent when a listing was published after
+  payment, if it was edited while it waited. Compare the `timestamp` members, or fetch the
+  current state.
 - **Answer fast.** Queue the work on your side.
 
 ## Rotating the secret
