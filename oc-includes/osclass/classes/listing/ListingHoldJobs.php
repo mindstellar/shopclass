@@ -30,17 +30,21 @@ final class ListingHoldJobs
     /** How many held listings past their deadline one sweep run deletes. */
     public const SWEEP_BATCH = 100;
 
-    /** Queue the delete after $holdDays days, and the reminder one day earlier. */
+    /**
+     * Queue the delete after $holdDays days, and the reminder one day earlier. Call it in the
+     * hold's own transaction: the delete job is what marks the listing as held for payment.
+     *
+     * @throws \RuntimeException when a job could not be queued
+     */
     public static function queue(int $itemId, int $holdDays): void
     {
-        $key = (string) $itemId;
-        try {
-            osc_job_enqueue(self::EXPIRE, array('item' => $itemId), array('delay' => $holdDays * 86400, 'unique_key' => $key));
-            if ($holdDays > 1) {
-                osc_job_enqueue(self::REMIND, array('item' => $itemId), array('delay' => ($holdDays - 1) * 86400, 'unique_key' => $key));
-            }
-        } catch (\Throwable $e) {
-            error_log('Unpaid listing jobs were not queued: ' . $e->getMessage());
+        $key    = (string) $itemId;
+        $queued = osc_job_enqueue(self::EXPIRE, array('item' => $itemId), array('delay' => $holdDays * 86400, 'unique_key' => $key)) > 0;
+        if ($queued && $holdDays > 1) {
+            $queued = osc_job_enqueue(self::REMIND, array('item' => $itemId), array('delay' => ($holdDays - 1) * 86400, 'unique_key' => $key)) > 0;
+        }
+        if (!$queued) {
+            throw new \RuntimeException('Unpaid listing jobs were not queued for listing ' . $itemId . '.');
         }
     }
 

@@ -359,6 +359,18 @@ pin('the stats row exists', 1, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t
 pin('the texts are stored', 2, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_item_description WHERE fk_i_item_id = $hid")->fetch_assoc()['c']);
 pin('the expire and remind jobs are queued under the id', [[(string) $hid], [(string) $hid]], [array_values(array_intersect($jobKeys(ListingHoldJobs::EXPIRE), [(string) $hid])), array_values(array_intersect($jobKeys(ListingHoldJobs::REMIND), [(string) $hid]))]);
 
+$admin->query("CREATE TRIGGER {$p}no_expire_job BEFORE INSERT ON {$p}t_job_queue FOR EACH ROW BEGIN IF NEW.s_type = '" . ListingHoldJobs::EXPIRE . "' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'no queue'; END IF; END");
+$itemsBefore = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_item")->fetch_row()[0];
+$refused     = null;
+try {
+    $post($sellerOf($ann), ['catId' => (string) $bikes]);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+$admin->query("DROP TRIGGER {$p}no_expire_job");
+pin('a hold whose delete job cannot be queued is refused', 'rejected', $refused);
+pin('and leaves no held row', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id > {$itemsBefore}")->fetch_row()[0]);
+
 osc_set_preference('billing_pay_at_post', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
 $refused = null;

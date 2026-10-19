@@ -974,10 +974,14 @@ final class ListingService
         $mStats->emptyRow($itemId);
 
         if ($hold) {
-            $holdDays = osc_billing_hold_days();
-            Db::afterCommit(static function () use ($itemId, $holdDays): void {
-                ListingHoldJobs::queue((int) $itemId, $holdDays);
-            });
+            // In this transaction: a held row with no delete job must not be saved.
+            try {
+                ListingHoldJobs::queue((int) $itemId, osc_billing_hold_days());
+            } catch (\RuntimeException $e) {
+                error_log($e->getMessage());
+
+                throw self::notSaved();
+            }
 
             return new SavedListing((int) $itemId, false, null, true);
         }
