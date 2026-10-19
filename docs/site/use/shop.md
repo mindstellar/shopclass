@@ -11,7 +11,8 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
 ## 1. Turn it on
 
 1. **Settings → General → Site is a**: pick **Shop**. In shop mode only admins add products.
-   Pick **Shop and classifieds** to keep visitor listings as well.
+   A shop also sells digital goods and credit packages. A classifieds site keeps the cart,
+   orders and payment plugins too.
 2. **Settings → Billing**: switch **Enable billing** on and set your currency.
 3. **Settings → Billing → Shop**: set the delivery charge, the amount that makes delivery free,
    cash on delivery and its fee, how long unpaid orders wait before they are cancelled, and the

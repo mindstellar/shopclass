@@ -46576,8 +46576,7 @@
                         "type": "string",
                         "enum": [
                             "classifieds",
-                            "shop",
-                            "both"
+                            "shop"
                         ],
                         "description": "What the site is for."
                     },

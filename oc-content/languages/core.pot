@@ -10936,10 +10936,6 @@ msgstr ""
 msgid "Shop (only admins add products)"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
-msgid "Shop and classifieds"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Shopclass"
 msgstr ""

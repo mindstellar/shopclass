@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace mindstellar\site;
 
 /**
- * What the site is for: classifieds, a shop, or both. Packages declare the modes they
+ * What the site is for: classifieds or a shop. Packages declare the modes they
  * support in their manifest.
  *
  * @package mindstellar\site
@@ -23,16 +23,16 @@ final class SiteMode
 {
     public const CLASSIFIEDS = 'classifieds';
     public const SHOP        = 'shop';
-    public const BOTH        = 'both';
 
-    public const ALL = [self::CLASSIFIEDS, self::SHOP, self::BOTH];
+    public const ALL = [self::CLASSIFIEDS, self::SHOP];
 
     private function __construct()
     {
     }
 
     /**
-     * A stored value as a known mode; anything else is classifieds.
+     * A stored value as a known mode; anything else is classifieds. A retired 'both' site let
+     * visitors post, so classifieds keeps it working where shop would lock every seller out.
      */
     public static function normalize(string $value): string
     {
@@ -48,7 +48,6 @@ final class SiteMode
     {
         return match (self::normalize($mode)) {
             self::SHOP => [self::SHOP],
-            self::BOTH => [self::CLASSIFIEDS, self::SHOP],
             default    => [self::CLASSIFIEDS],
         };
     }

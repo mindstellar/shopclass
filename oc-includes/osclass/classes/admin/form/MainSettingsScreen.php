@@ -79,7 +79,6 @@ final class MainSettingsScreen extends SettingsScreen
             ->select('site_mode', __('Site is a'), array(
                 SiteMode::CLASSIFIEDS => __('Classifieds site'),
                 SiteMode::SHOP        => __('Shop (only admins add products)'),
-                SiteMode::BOTH        => __('Shop and classifieds'),
             ), __('Your theme and plugins say which of these they work for.'))
                 ->default(SiteMode::CLASSIFIEDS)
             ->custom('site_mode_notice', static function () {

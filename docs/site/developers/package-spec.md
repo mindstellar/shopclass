@@ -85,7 +85,7 @@ Same idea, different names, because theme parsing is a separate function:
 
 ### Modes and required plugins
 
-The site owner picks a site type in **Settings → General**: classifieds, shop, or both. A theme
+The site owner picks a site type in **Settings → General**: classifieds or shop. A theme
 or plugin that does not declare that type gets a warning there.
 
 A package in the catalog can say the same in `shopclass.json`, which wins over the header:

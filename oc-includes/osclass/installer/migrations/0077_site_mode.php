@@ -12,7 +12,7 @@ use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
- * Add the site mode setting (classifieds, shop or both) for existing installs, as basic_data.sql does for new ones.
+ * Add the site mode setting (classifieds or shop) for existing installs, as basic_data.sql does for new ones.
  * INSERT IGNORE never overwrites a value an admin already set, so a re-run is safe.
  */
 return new class () implements MigrationInterface {

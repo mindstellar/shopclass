@@ -505,7 +505,7 @@ final class Schema
             'name'           => ['type' => 'string'],
             'description'    => self::nullable('string'),
             'url'            => ['type' => 'string', 'format' => 'uri'],
-            'mode'           => ['type' => 'string', 'enum' => ['classifieds', 'shop', 'both'], 'description' => 'What the site is for.'],
+            'mode'           => ['type' => 'string', 'enum' => ['classifieds', 'shop'], 'description' => 'What the site is for.'],
             'api_version'    => ['type' => 'string'],
             'default_locale' => ['type' => 'string'],
             'locales'        => ['type' => 'array', 'items' => self::object([
