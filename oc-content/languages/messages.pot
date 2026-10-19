@@ -577,6 +577,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Check your inbox to validate your listing"
 msgstr ""
 
@@ -693,6 +694,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Contact the seller"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Contact the site owner."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -3346,12 +3351,12 @@ msgid ""
 "extend"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebBilling.php
-msgid "This listing cannot be published right now."
-msgstr ""
-
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "This listing costs %1$s. You have %2$s."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "This listing could not be published. Try again later."
 msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
@@ -3420,6 +3425,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid "This search could not be saved. Search again and try once more."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid ""
+"This site does not allow this listing to be published. Contact the site "
+"owner."
 msgstr ""
 
 #: oc-includes/osclass/classes/api/Kernel.php
@@ -4018,6 +4029,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Your listing will be published after an admin approves it."
 msgstr ""
 
@@ -4073,7 +4085,7 @@ msgid "Your password"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
-msgid "Your payment arrived, but the listing is not published yet."
+msgid "Your payment arrived, but the listing is not published yet: %s."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
@@ -4107,6 +4119,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Zip code too long."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "an error stopped it"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -4195,6 +4211,10 @@ msgstr ""
 msgid "the photo must be one of this listing's photos."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "the price went up before the payment arrived"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "the same options as variant %d."
 msgstr ""
@@ -4205,6 +4225,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid "the site owner"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "this site does not allow it to be published"
 msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php
