@@ -16,6 +16,7 @@ namespace mindstellar\billing;
 use mindstellar\auth\Actor;
 use mindstellar\billing\event\OrderPaid;
 use mindstellar\billing\event\OrderReturnUrlResolving;
+use mindstellar\billing\gateway\CashOnDeliveryGateway;
 use mindstellar\database\Db;
 use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
@@ -125,7 +126,7 @@ final class ListingCheckout
             throw new InvalidException('/package', 'too_small', _m('That package does not cover the credits this listing needs.'));
         }
         $currency  = (string) $package['s_currency'];
-        $available = PaymentGatewayRegistry::getInstance()->available($currency);
+        $available = self::gateways($currency);
         if (!isset($available[$gatewayId])) {
             throw new InvalidException('/gateway', 'unavailable', _m('That payment method is not available'));
         }
@@ -178,10 +179,76 @@ final class ListingCheckout
         }
         // The payment is already settled, so a failure here must not fail the gateway's callback.
         try {
-            self::publish($itemId, Actor::user($order->getUserId()));
+            $result = self::publish($itemId, Actor::user($order->getUserId()));
+            $reason = $result['published'] || $result['reason'] === 'not_held' ? null : (string) $result['reason'];
         } catch (Throwable $t) {
-            error_log(sprintf('Billing: order #%d could not publish listing #%d: %s', $order->getId(), $itemId, get_class($t)));
+            $reason = get_class($t);
         }
+        if ($reason !== null) {
+            error_log(sprintf('Billing: order #%d could not publish listing #%d: %s', $order->getId(), $itemId, $reason));
+            OrderStore::notePublishFailed($order->getId(), $reason);
+        }
+    }
+
+    /**
+     * Everything the pay step shows: the quote, the open order linked to the listing and the
+     * note a paid order carries when its listing could not be published. `step` is one of
+     * `published`, `closed` (not held, not live), `waiting` (order pending), `failed` (order
+     * paid, listing still held) or `pay`.
+     *
+     * @return array{step: string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}, order: ?Order, failed: ?array}
+     *
+     * @throws ForbiddenException when the listing is not the user's
+     */
+    public static function state(int $itemId, int $userId): array
+    {
+        $quote  = self::quote($itemId, $userId);
+        $order  = $quote['held'] ? OrderStore::listingOrder($itemId) : null;
+        $order  = $order !== null && $order->getUserId() === $userId ? $order : null;
+        $failed = $order === null ? null : $order->meta(OrderStore::PUBLISH_FAILED);
+        $failed = is_array($failed) ? $failed : null;
+
+        if (!$quote['held']) {
+            $step = $quote['live'] ? 'published' : 'closed';
+        } elseif ($order !== null && $order->isPending()) {
+            $step = 'waiting';
+        } elseif ($order !== null && $order->isPaid() && $failed !== null) {
+            $step = 'failed';
+        } else {
+            $step = 'pay';
+        }
+
+        return array('step' => $step, 'quote' => $quote, 'order' => $order, 'failed' => $failed);
+    }
+
+    /**
+     * The payment methods a listing order can use. Cash on delivery is left out: there is nothing to deliver.
+     *
+     * @return array<string,PaymentGateway>
+     */
+    public static function gateways(?string $currency = null): array
+    {
+        $gateways = PaymentGatewayRegistry::getInstance()->available($currency);
+        unset($gateways[CashOnDeliveryGateway::ID]);
+
+        return $gateways;
+    }
+
+    /**
+     * The enabled packages that cover $shortfall credits, smallest first.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function packagesFor(int $shortfall): array
+    {
+        $packages = array_values(array_filter(
+            PackageStore::enabled(),
+            static fn (array $p): bool => (int) $p['i_credits'] >= $shortfall
+        ));
+        usort($packages, static fn (array $a, array $b): int => array((int) $a['i_credits'], (int) $a['i_amount'])
+            <=> array((int) $b['i_credits'], (int) $b['i_amount']));
+
+        return $packages;
     }
 
     /**
@@ -198,7 +265,7 @@ final class ListingCheckout
     /**
      * The listing's title in the user's language, else any title, else "Listing #N".
      */
-    private static function title(int $itemId): string
+    public static function title(int $itemId): string
     {
         $locale = function_exists('osc_current_user_locale') ? (string) osc_current_user_locale() : '';
         $title  = '';

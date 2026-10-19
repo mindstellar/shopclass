@@ -355,6 +355,15 @@ pin('and the listing keeps the order it had', $order->getId(), OrderStore::listi
 $last = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_billing_order WHERE fk_i_user_id = {$uid}")->fetch_row()[0];
 pin('and its order is cancelled', Order::STATUS_CANCELLED, OrderStore::find($last)->getStatus());
 
+osc_set_preference('billing_cod_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_currency', 'USD', 'osclass', 'STRING');
+osc_reset_preferences();
+pin('cash on delivery is a gateway', true, isset(PaymentGatewayRegistry::getInstance()->available()['cod']));
+pin('but not one a listing order offers', [false, true], [isset(ListingCheckout::gateways()['cod']), isset(ListingCheckout::gateways()['lcgw'])]);
+pin('nor takes', '/gateway unavailable', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'cod')));
+osc_set_preference('billing_cod_enabled', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
 [$uid, , $held] = $seller(5);
 pin('nothing to pay is refused', '/package nothing_to_pay', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')));
 
@@ -398,6 +407,25 @@ pin('a price that rose meanwhile leaves it held with the credits kept', [null, 5
 osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
 osc_reset_preferences();
 osc_register_billing_slot();
+
+harness_section('Listing order: paid, not published');
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+seed_item($admin, $cat, $uid, 'Price riser');
+Billing::markPaid($order);
+$note = OrderStore::find($order->getId())->meta(OrderStore::PUBLISH_FAILED);
+pin('a paid order whose listing cannot go live: still held', null, $row($held)['dt_first_pub_date']);
+pin('and the order says why', 'insufficient_credits', $note['reason'] ?? null);
+pin('the pay step reads it as paid, not published', 'failed', ListingCheckout::state($held, $uid)['step']);
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+Billing::markPaid($order);
+Billing::markPaid($order);
+ListingCheckout::onOrderPaid(new \mindstellar\billing\event\OrderPaid($order->getId(), $uid, 5));
+pin('a replay on a live listing writes no note', null, OrderStore::find($order->getId())->meta(OrderStore::PUBLISH_FAILED));
+pin('the pay step reads it as published', 'published', ListingCheckout::state($held, $uid)['step']);
 
 harness_section('Listing order: return URL');
 
