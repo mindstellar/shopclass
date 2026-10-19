@@ -30,7 +30,11 @@ use mindstellar\api\read\SiteFacts;
 use mindstellar\api\serializer\EventData;
 use mindstellar\apikey\ApiSettings;
 use mindstellar\apikey\Scopes;
+use mindstellar\auth\Actor;
+use mindstellar\billing\Billing;
 use mindstellar\job\JobQueue;
+use mindstellar\listing\ListingInput;
+use mindstellar\listing\ListingService;
 use mindstellar\model\ApiCredential;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
@@ -501,6 +505,77 @@ $test = $delivery->run(['endpoint_id' => $one->id(), 'test' => true] + $job);
 pin('a test is sent even while paused, and does not count', [true, 8], [$test?->ok(), $store->find($one->id())?->failures()]);
 $manager()->update($one->id(), null, null, null, true);
 pin('switching it on clears the pause and the count', [true, 0], [$store->find($one->id())?->enabled(), $store->find($one->id())?->failures()]);
+
+harness_section('a listing held for payment sends its events when it goes live');
+seed_country($admin, 'US', 'United States');
+foreach ([Billing::PREF_ENABLED => 'BOOLEAN', 'billing_slot_enabled' => 'BOOLEAN'] as $k => $t) {
+    osc_set_preference($k, '1', $k === Billing::PREF_ENABLED ? Billing::PREF_GROUP : 'osclass', $t);
+}
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+foreach (['moderate_items' => '-1', 'items_wait_time' => '0', 'language' => 'en_US', 'title_character_length' => '100', 'description_character_length' => '5000'] as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+scratchdb_forget_cache();
+osc_reset_preferences();
+View::getInstance()->_erase('locales');
+$_SERVER['REMOTE_ADDR'] = '192.0.2.71';
+$heldParent = seed_category($admin, 'Vehicles', null, $locale);
+$heldCat    = seed_category($admin, 'Bikes', $heldParent, $locale);
+if (!function_exists('osc_item_url_from_item')) {
+    function osc_item_url_from_item($item = null, $locale = '')
+    {
+        return 'http://localhost/item/' . (int) (is_array($item) ? $item['pk_i_id'] : $item);
+    }
+}
+if (!function_exists('osc_format_price')) {
+    function osc_format_price($price, $symbol = null)
+    {
+        return (string) $price;
+    }
+}
+$seller  = seed_user($admin, 'heldseller', 'heldseller@example.test');
+$sActor  = Actor::user($seller, '192.0.2.71');
+$service = new ListingService();
+$form    = [
+    'catId' => (string) $heldCat, 'countryId' => 'US', 'country' => 'United States', 'region' => 'Texas', 'city' => 'Austin',
+    'address' => '1 Main Street', 'title' => ['en_US' => 'Held bike'],
+    'description' => ['en_US' => 'A bike that waits for payment before it shows.'], 'price' => '100',
+    'contactName' => 'Office', 'contactEmail' => 'office@example.test', 'contactPhone' => '5550199',
+];
+$post = static fn (): \mindstellar\listing\SavedListing => $service->create(ListingInput::fromArray($form, $sActor, true), $sActor);
+$post();
+[$heldEp] = $manager()->create('https://hooks.example/held', ['listing.created', 'listing.activated', 'listing.updated', 'listing.deleted'], 'Held', true, 1);
+\mindstellar\webhook\WebhookServices::reset();
+$clearJobs();
+$mine    = static fn (): array => array_values(array_filter(
+    array_map(static fn (array $r): array => json_decode(json_decode($r['s_payload'], true)['body'], true) + ['_ep' => json_decode($r['s_payload'], true)['endpoint_id']], $jobs()),
+    static fn (array $b): bool => $b['_ep'] === $heldEp->id()
+));
+$types   = static fn (): array => array_column($mine(), 'type');
+$held    = $post();
+$hid     = $held->id();
+check('the second post is held', $held->unpaid());
+pin('a held save sends no listing.created and no listing.activated', [], $types());
+$service->publish($hid, $sActor);
+$sent = $mine();
+pin('publish sends one listing.created', ['listing.created'], $types());
+pin('its data is the full listing, active', [$hid, 'active', false], [$sent[0]['data']['id'] ?? null, $sent[0]['data']['status'] ?? null, array_key_exists('live', $sent[0]['data'] ?? [])]);
+$clearJobs();
+$service->publish($hid, $sActor);
+pin('a second publish sends nothing', [], $types());
+
+$held2 = $post()->id();
+$clearJobs();
+$service->update(ListingInput::fromArray($form + ['id' => (string) $held2, 'title' => ['en_US' => 'Edited held bike']], $sActor, false), $sActor);
+$edit = $mine();
+pin('an edit of a held listing sends the thin payload', [['listing.updated'], ['id', 'url', 'live']], [$types(), array_keys($edit[0]['data'] ?? [])]);
+pin('and it says the listing is not live', false, $edit[0]['data']['live'] ?? null);
+check('the thin payload carries no title or contact', !str_contains((string) json_encode($edit[0]['data'] ?? []), 'Edited held bike') && !str_contains((string) json_encode($edit[0]['data'] ?? []), 'office@'));
+$clearJobs();
+$service->delete($held2, (string) $admin->query("SELECT s_secret FROM {$p}t_item WHERE pk_i_id = $held2")->fetch_assoc()['s_secret'], $sActor);
+pin('deleting a held listing sends listing.deleted once', ['listing.deleted'], $types());
+$manager()->delete($heldEp->id());
+$clearJobs();
 
 harness_section('delivery: schedule, Retry-After and 410 Gone');
 $span = array_sum(\mindstellar\webhook\RetrySchedule::WAITS);
