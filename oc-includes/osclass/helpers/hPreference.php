@@ -1424,7 +1424,7 @@ function osc_watermark_opacity(): int
 }
 
 /**
- * What the site is for: 'classifieds' (the default), 'shop' or 'both'.
+ * What the site is for: 'classifieds' (the default) or 'shop'.
  *
  * @return string
  */

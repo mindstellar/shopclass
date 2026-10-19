@@ -37,7 +37,9 @@ pin('unset reads classifieds', 'classifieds', osc_site_mode());
 $mode('shop');
 pin('shop', 'shop', osc_site_mode());
 $mode('both');
-pin('both', 'both', osc_site_mode());
+pin('a stored both reads classifieds', 'classifieds', osc_site_mode());
+pin('the modes are classifieds and shop', ['classifieds', 'shop'], SiteMode::ALL);
+pin('both needs classifieds', ['classifieds'], SiteMode::needed('both'));
 $mode('nonsense');
 pin('an unknown value reads classifieds', 'classifieds', osc_site_mode());
 
@@ -50,16 +52,32 @@ pin('shop: a user is refused', ListingPolicy::SHOP_MODE, ListingPolicy::mayPost(
 pin('shop: a guest is refused', ListingPolicy::SHOP_MODE, ListingPolicy::mayPost($guest, 'a@example.test'));
 pin('shop: an admin may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($root, 'a@example.test'));
 $mode('both');
-pin('both: a user may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($user, 'a@example.test'));
-pin('both: a guest may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($guest, 'a@example.test'));
+pin('a stored both posts as classifieds: a user may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($user, 'a@example.test'));
+pin('a stored both posts as classifieds: a guest may post', ListingPolicy::ALLOWED, ListingPolicy::mayPost($guest, 'a@example.test'));
 check('the refusal has a message', \mindstellar\listing\ListingService::refusalMessage(ListingPolicy::SHOP_MODE) !== '');
 
 harness_section('packages that do not declare the mode');
 $packages = ['Aisle' => ['shop'], 'Bender' => ['classifieds'], 'Both' => ['classifieds', 'shop'], 'Plain' => ['classifieds']];
 pin('classifieds', ['Aisle'], SiteMode::lacking('classifieds', $packages));
 pin('shop', ['Bender', 'Plain'], SiteMode::lacking('shop', $packages));
-pin('both needs both', ['Aisle', 'Bender', 'Plain'], SiteMode::lacking('both', $packages));
+pin('a stored both needs classifieds', ['Aisle'], SiteMode::lacking('both', $packages));
 pin('nothing lacks when nothing is active', [], SiteMode::lacking('shop', []));
+
+harness_section('the settings screen and the API');
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
+\mindstellar\admin\form\MainSettingsScreen::register();
+$modeField = \mindstellar\settings\SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\MainSettingsScreen::PAGE_ID)['site_mode'];
+pin('the site type select offers two options', ['classifieds', 'shop'], array_keys($modeField['options']));
+$siteEnum = \mindstellar\api\schema\Schema::components()['Site']['properties']['mode']['enum'];
+pin('the API mode enum has two values', ['classifieds', 'shop'], $siteEnum);
+$siteFeatures = static function (string $value) use ($mode): bool {
+    $mode($value);
+
+    return osc_site_mode() === SiteMode::SHOP;
+};
+check('features.shop is false in classifieds', !$siteFeatures('classifieds'));
+check('features.shop is true in shop', $siteFeatures('shop'));
+check('features.shop is false for a stored both', !$siteFeatures('both'));
 
 harness_section('the migration');
 $run = static function () use ($p): void {

@@ -975,7 +975,7 @@ Core defines 1209 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_save_webp()` | Whether new photos are stored as WebP. Only when the server can write WebP. |
 | `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not |
 | `osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')` | generic function to insert/update preferences |
-| `osc_site_mode()` | What the site is for: 'classifieds' (the default), 'shop' or 'both'. |
+| `osc_site_mode()` | What the site is for: 'classifieds' (the default) or 'shop'. |
 | `osc_subdomain_host()` | Return subdomain host |
 | `osc_subdomain_type()` | Return subdomain type |
 | `osc_theme()` | Gets current theme |
