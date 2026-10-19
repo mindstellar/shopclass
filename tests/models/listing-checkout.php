@@ -463,6 +463,41 @@ osc_reset_preferences();
 pin('the helper returns the same figures', ListingCheckout::nextListing($nuid), osc_billing_next_listing_quote($nuid));
 pin('the helper is all zeros with no user', ['slots' => 0, 'credits' => 0, 'balance' => 0, 'shortfall' => 0], osc_billing_next_listing_quote(0));
 
+harness_section('Going live or deleted drops the hold jobs');
+
+$holdJobs = static function (int $id) use ($admin, $p): int {
+    return (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type IN ('listing.unpaid_expire', 'listing.unpaid_remind') AND s_unique = '{$id}'")->fetch_row()[0];
+};
+$queued = static function (int $credits) use ($seller): array {
+    $s = $seller($credits);
+    \mindstellar\listing\ListingHoldJobs::queue($s[2], 7);
+
+    return $s;
+};
+[$uid, , $held] = $queued(3);
+$before = $holdJobs($held);
+ListingCheckout::publish($held, Actor::user($uid));
+pin('paid with credits: both jobs gone', [2, 0], [$before, $holdJobs($held)]);
+[$uid, , $held] = $queued(0);
+Billing::markPaid(ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order']);
+pin('paid by an order: both jobs gone', [true, 0], [$row($held)['dt_first_pub_date'] !== null, $holdJobs($held)]);
+[$uid, , $held] = $queued(0);
+pin('published free by an admin: both jobs gone', [true, 0], [ListingCheckout::publishFree($held, Actor::admin(1)), $holdJobs($held)]);
+[$uid, , $held] = $queued(0);
+(new \mindstellar\listing\ListingService())->delete($held, $secret($held), Actor::user($uid));
+pin('deleted: both jobs gone', 0, $holdJobs($held));
+[$uid, , $held] = $queued(0);
+$refuse = static function (): void {
+    throw new RuntimeException('refused');
+};
+osc_add_hook('after_delete_item', $refuse);
+try {
+    \mindstellar\database\Db::transaction(static fn () => (new \mindstellar\listing\ListingService())->delete($held, $secret($held), Actor::user($uid)));
+} catch (RuntimeException $e) {
+}
+osc_remove_hook('after_delete_item', $refuse);
+pin('a delete that rolls back keeps them', 2, $holdJobs($held));
+
 harness_section('Pay step: URL');
 
 pin('the pay-step URL is the billing_publish route', true, str_contains(osc_billing_publish_url(9), 'billing_publish'));

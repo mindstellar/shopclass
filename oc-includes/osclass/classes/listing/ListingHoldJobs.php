@@ -49,6 +49,14 @@ final class ListingHoldJobs
         }
     }
 
+    /** Drop the listing's waiting delete and reminder, once it is live or deleted. */
+    public static function cancel(int $itemId): void
+    {
+        $queue = JobQueue::getInstance();
+        $queue->cancelKey(self::EXPIRE, (string) $itemId);
+        $queue->cancelKey(self::REMIND, (string) $itemId);
+    }
+
     /**
      * Whether core holds the listing for payment: the held columns and its queued delete job.
      * A hidden row a plugin wrote without a first publish date has no job, so moderation may change it.

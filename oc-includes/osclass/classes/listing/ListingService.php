@@ -719,6 +719,8 @@ final class ListingService
                 return false;
             }
 
+            ListingHoldJobs::cancel($id);
+
             $days = ListingInput::expirationDays((int) $row['fk_i_category_id'], $ownerId > 0 ? $ownerId : null);
             // No run time is the column's "never" value.
             if ($days === '' || $days === 0) {

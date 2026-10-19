@@ -1322,6 +1322,7 @@ class Item extends DAO
                     Db::table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
                 }
                 Db::table(DB_TABLE_PREFIX . 't_resource')->where('s_owner_type', ItemResource::OWNER)->where('i_owner_id', $id)->delete();
+                \mindstellar\listing\ListingHoldJobs::cancel((int) $id);
 
                 // Not parent::deleteByPrimaryKey(): the inherited DAO reports a failed
                 // delete by returning false rather than raising, and a plain return
