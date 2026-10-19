@@ -297,6 +297,7 @@ pin('every admin route needs an admin key and names an admin scope', [
     'POST admin/keys'                             => 'admin admin:keys',
     'POST admin/keys/{id}/rotate'                 => 'admin admin:keys',
     'POST admin/listings/{id}/bump'               => 'admin admin:listings',
+    'POST admin/listings/{id}/publish'            => 'admin admin:listings',
     'POST admin/regions'                          => 'admin admin:taxonomy',
     'POST admin/users/{id}/sign-out-everywhere'   => 'admin admin:users',
     'POST admin/webhooks'                         => 'admin admin:webhooks',
