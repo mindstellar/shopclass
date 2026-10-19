@@ -102,6 +102,11 @@ class WebSecBaseModel
         throw new PayPageRedirect('404');
     }
 
+    /** This site is not in shop mode, so nobody is sent to the dashboard. */
+    protected function redirectShopperHome(): void
+    {
+    }
+
     public function _exportVariableToView($key, $value)
     {
         View::getInstance()->_exportVariableToView($key, $value);
