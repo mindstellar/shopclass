@@ -49,7 +49,6 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Mails, receipts, bank transfer references and the API show an order number with its prefix.
 - `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
 - A listing waiting for payment takes no slot.
-- The `both` site type is gone: classifieds or shop. A stored `both` reads as classifieds.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.
