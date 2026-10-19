@@ -209,7 +209,10 @@ $login = static function (string $user, string $password, array $cookies = []) u
 
 [$code, $location, $set] = $login('plain', 'secret-pass', ['oc_admin_login_redirect' => $remembered]);
 check('signing in goes to the remembered page', $code === 302 && str_contains($location, 'page=items'), $code . ' ' . $location);
-pin('...clearing the cookie on the admin path and the old site-path copy', ['/', '/oc-admin/'], $paths($set, 'oc_admin_login_redirect'));
+pin('...clearing the cookie on the admin path and the old site-path copy', ['/oc-admin/', '/'], $paths($set, 'oc_admin_login_redirect'));
+[, , $set] = $login('plain', 'wrong-pass', ['oc_admin_login_redirect' => $remembered]);
+pin('a wrong password clears only the admin-path cookie', ['/oc-admin/'], $paths($set, 'oc_admin_login_redirect'));
+$clearTries();
 
 harness_section('the password step starts no session');
 

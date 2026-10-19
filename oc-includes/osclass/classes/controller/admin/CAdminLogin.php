@@ -339,6 +339,10 @@ class CAdminLogin extends AdminBaseModel
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
         }
+        // Releases before 7.0 set the login redirect cookie on the site path; drop that copy. Can go in 8.0.
+        if (osc_admin_cookie_path() !== Cookie::options(0)['path']) {
+            osc_write_signed_redirect_cookie('oc_admin_login_redirect', '', time() - 3600);
+        }
         $is_valid_locale = osc_validate_locale($locale, true);
         if ($remember) {
             Cookie::getInstance()->set_expires(osc_time_cookie());

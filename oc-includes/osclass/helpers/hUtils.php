@@ -838,13 +838,7 @@ function osc_set_admin_login_redirect($url, $keepExisting = false)
  */
 function osc_pop_admin_login_redirect()
 {
-    $path = osc_admin_cookie_path();
-    // Older releases set it on the site path, so public pages carried it too; drop that copy.
-    if (isset($_COOKIE['oc_admin_login_redirect']) && $path !== Cookie::options(0)['path']) {
-        osc_write_signed_redirect_cookie('oc_admin_login_redirect', '', time() - 3600);
-    }
-
-    return osc_pop_signed_redirect('oc_admin_login_redirect', $path);
+    return osc_pop_signed_redirect('oc_admin_login_redirect', osc_admin_cookie_path());
 }
 
 /**
