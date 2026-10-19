@@ -175,6 +175,16 @@ final class PublicRoutes
                 status: 204,
                 errors: [403, 404]
             ),
+            'POST listings/{id}/publish' => RouteSpec::write(
+                handler: [ListingWritesController::class, 'publish'],
+                tag: 'Listings',
+                summary: 'Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'listings:write',
+                body: 'ListingPublishInput',
+                response: 'ListingPublished',
+                errors: [403, 404, 429]
+            ),
             'POST photos' => RouteSpec::write(
                 handler: [PhotosController::class, 'stage'],
                 tag: 'Listings',

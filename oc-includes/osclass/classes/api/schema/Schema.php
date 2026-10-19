@@ -38,7 +38,7 @@ final class Schema
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
-        'ListingInput', 'ListingPatch', 'SavedListing', 'ListingPayment', 'PhotoToken', 'CommentInput', 'SavedComment',
+        'ListingInput', 'ListingPatch', 'SavedListing', 'ListingPayment', 'ListingPublishInput', 'ListingPublished', 'PhotoToken', 'CommentInput', 'SavedComment',
         'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'CartLine', 'Cart', 'CartInput', 'CartDocument', 'SearchSuggestions', 'CategorySuggestions',
         'PageSummary', 'Page', 'Menu', 'Seo',
     ];
@@ -699,6 +699,15 @@ final class Schema
                 'publish_url' => ['type' => 'string', 'format' => 'uri', 'description' => 'The web page to pay on. The seller must be signed in on the web.'],
             ], ['credits', 'balance', 'shortfall', 'publish_url'])
                 + ['description' => 'What the listing costs to publish, the user\'s credits, what is missing, and the web page to pay on.'],
+            'ListingPublishInput' => $input([
+                'package' => ['type' => 'integer', 'minimum' => 1, 'description' => 'The credit package to buy. Send it with `gateway`.'],
+                'gateway' => $text(50) + ['description' => 'The payment method. Send it with `package`.'],
+            ]) + ['description' => 'Empty to pay with your credits; `package` and `gateway` to start an order for the credits missing.'],
+            'ListingPublished' => $saved('Listing', [
+                'payment' => self::ref('ListingPayment'),
+                'order'   => self::ref('Order'),
+                'next'    => self::ref('OrderNext'),
+            ]),
             'PhotoToken'   => self::object([
                 'token'      => ['type' => 'string', 'description' => 'Send it in photo_tokens when making the listing.'],
                 'expires_at' => self::time(),

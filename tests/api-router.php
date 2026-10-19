@@ -238,6 +238,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST listings'                     => 'user listings:write',
     'POST listings/{id}/comments'       => 'user comments:write',
     'POST listings/{id}/photos'         => 'user listings:write',
+    'POST listings/{id}/publish'        => 'user listings:write',
     'POST photos'                       => 'user listings:write',
     'POST users'                        => 'none -',
     'PUT account/cart'                  => 'user cart:write',
