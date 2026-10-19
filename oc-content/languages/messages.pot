@@ -3378,6 +3378,11 @@ msgstr ""
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "This listing is not waiting for payment."
 msgstr ""
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "This listing will cost %d credit. You pay on the last step."
+msgid_plural "This listing will cost %d credits. You pay on the last step."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 #: oc-includes/osclass/classes/location/LocationService.php
@@ -4007,6 +4012,10 @@ msgid "Your listing is published."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Your listing is saved. Pay for it on the next page to publish it."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Your listing will be published after an admin approves it."
 msgstr ""
