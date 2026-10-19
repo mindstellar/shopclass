@@ -137,7 +137,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `seo` | The head data of a public page: canonical URL, title, robots, breadcrumbs, hreflang |
 | `security` | CSRF, rate limits, captcha, ban rules, two-factor sign-in, signed links |
 | `settings` | The registry plugins add settings pages to, and image fields on those pages |
-| `site` | What the site is for: classifieds, shop or both (`SiteMode`) |
+| `site` | What the site is for: classifieds or shop (`SiteMode`) |
 | `storage` | File storage (local, S3), uploads and the media library |
 | `theme` | Themes and their views |
 | `upgrade` | Core, plugin and theme updates |

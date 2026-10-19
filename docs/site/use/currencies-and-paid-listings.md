@@ -159,6 +159,14 @@ listings and no photo cap, nobody needs extra slots or extra photos.
 
 Set the free allowance to what a casual seller needs and a dealer does not.
 
+**Take payment at the end of posting** (Settings → Billing → Pricing, on by default
+when extra slots are for sale). A seller over the limit fills in the whole form, the
+listing is saved hidden as **Waiting for payment**, and they pay on the last step with
+credits or a package. It is deleted after the **hold days** if they never pay, and they
+get a reminder e-mail a day before (edit it in Settings → Emails). Turn the switch off
+and an over-limit seller is stopped at the form. In **Listings**, filter by Waiting for
+payment, and use **Publish without payment** to put one live free.
+
 ### Before charging anyone
 
 - Take a [backup](/docs/use/backups-and-maintenance/).

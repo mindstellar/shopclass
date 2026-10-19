@@ -83,6 +83,7 @@ Added to v1 on 2026-10-19.
 - `POST /listings/{id}/publish` publishes it with credits, or with `{package, gateway}` starts an order and answers `order` and `next`. `POST /admin/listings/{id}/publish` publishes without payment.
 - New error `insufficient_credits` (`422`, with `payment`) and new warning `listing_unpaid`.
 - `listing.created` is sent when a listing that waited for payment goes live.
+- The site document's `mode` is `classifieds` or `shop`; `both` is gone.
 
 ### v1: cart quote and orders
 

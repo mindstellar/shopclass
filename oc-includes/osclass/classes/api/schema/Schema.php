@@ -520,7 +520,7 @@ final class Schema
                 'users'        => ['type' => 'boolean', 'description' => 'Whether the site has user accounts.'],
                 'registration' => ['type' => 'boolean', 'description' => 'Whether the site\'s own sign-up form is open.'],
                 'comments'     => ['type' => 'boolean', 'description' => 'Whether listings take comments.'],
-                'shop'         => ['type' => 'boolean', 'description' => 'Whether the site sells products: its mode is shop or both.'],
+                'shop'         => ['type' => 'boolean', 'description' => 'Whether the site sells products: its mode is shop.'],
             ], ['users', 'registration', 'comments', 'shop']) + ['description' => 'What the site itself offers.'],
             'api'            => self::object([
                 'registration'  => ['type' => 'boolean', 'description' => 'Whether POST /users signs up new accounts.'],

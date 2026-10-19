@@ -46641,7 +46641,7 @@
                             },
                             "shop": {
                                 "type": "boolean",
-                                "description": "Whether the site sells products: its mode is shop or both."
+                                "description": "Whether the site sells products: its mode is shop."
                             }
                         },
                         "required": [
