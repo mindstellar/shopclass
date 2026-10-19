@@ -263,26 +263,17 @@ class ItemsDataTable extends DataTable
 
                 // Options of each row
                 $options_more = array();
+                $rowLink      = static fn (string $query, string $label): string => '<a href="' . osc_admin_base_url(true)
+                    . '?page=items&amp;action=' . $query . '">' . $label . '</a>';
+                $status       = static fn (string $value, string $label): string => $rowLink(
+                    'status&amp;id=' . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=' . $value,
+                    $label
+                );
                 if (osc_item_is_unpaid()) {
-                    $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=publish_free&amp;id='
-                        . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Publish without payment') . '</a>';
+                    $options_more[] = $rowLink('publish_free&amp;id=' . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url, __('Publish without payment'));
                 } else {
-                    if ($aRow['b_active']) {
-                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=INACTIVE">' . __('Deactivate')
-                            . '</a>';
-                    } else {
-                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=ACTIVE">' . __('Activate')
-                            . '</a>';
-                    }
-                    if ($aRow['b_enabled']) {
-                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=DISABLE">' . __('Block') . '</a>';
-                    } else {
-                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=ENABLE">' . __('Unblock') . '</a>';
-                    }
+                    $options_more[] = $aRow['b_active'] ? $status('INACTIVE', __('Deactivate')) : $status('ACTIVE', __('Activate'));
+                    $options_more[] = $aRow['b_enabled'] ? $status('DISABLE', __('Block')) : $status('ENABLE', __('Unblock'));
                 }
                 if ($aRow['b_premium']) {
                     $options_more[] =

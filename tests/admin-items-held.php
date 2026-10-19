@@ -180,6 +180,13 @@ pin('the held row offers publish_free and no Activate or Unblock', [true, false,
     str_contains($heldRow, 'value=ACTIVE'),
     str_contains($heldRow, 'value=ENABLE'),
 ]);
+pin('the blocked row offers Deactivate and Unblock, the live row Deactivate and Block', [true, true, true, true], [
+    (bool) preg_match('#<a href="[^"]*\?page=items&amp;action=status&amp;id=' . $blocked . '&amp;[^"]*&amp;value=INACTIVE">Deactivate</a>#', $blockedRow),
+    (bool) preg_match('#<a href="[^"]*\?page=items&amp;action=status&amp;id=' . $blocked . '&amp;[^"]*&amp;value=ENABLE">Unblock</a>#', $blockedRow),
+    str_contains($rowFor($all, $live), '&amp;value=INACTIVE">Deactivate</a>'),
+    str_contains($rowFor($all, $live), '&amp;value=DISABLE">Block</a>'),
+]);
+check('the held link is the publish_free action for that row', (bool) preg_match('#<a href="[^"]*\?page=items&amp;action=publish_free&amp;id=' . $held . '&amp;[^"]+">Publish without payment</a>#', $heldRow));
 pin('the filter returns only the held listing', array($held), $ids(drive('', array('status' => 'unpaid'))['aData']));
 pin('the raw Block filter is untouched: both rows', array($blocked, $held), $ids(drive('', array('b_enabled' => '0'))['aData']));
 
