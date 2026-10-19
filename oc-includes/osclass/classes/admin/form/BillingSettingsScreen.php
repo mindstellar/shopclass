@@ -122,6 +122,14 @@ final class BillingSettingsScreen
                 ->clampMin(1)
                 ->default(1)
             ->checkbox(
+                'billing_pay_at_post',
+                __('Take payment at the end of posting'),
+                __('A seller over the limit writes the listing first and pays for the slot on the last step. Off, they are sent to buy a slot before they can post.')
+            )
+                ->rowLabel(__('Pay at post'))
+                ->default(true)
+                ->dependsOn('billing_slot_enabled')
+            ->checkbox(
                 'billing_premium_enabled',
                 __('Sell featured listings'),
                 __('A price of 0 makes featuring free.')
@@ -372,7 +380,7 @@ final class BillingSettingsScreen
             ->number(
                 'billing_hold_days',
                 __('Cancel unpaid orders after (days)'),
-                __('An unpaid order is cancelled after this many days. A bank transfer or cash on delivery order\'s stock goes back on sale.')
+                __('An unpaid order is cancelled after this many days. A bank transfer or cash on delivery order\'s stock goes back on sale. A listing waiting for payment is deleted after the same number of days; the seller is reminded a day before.')
             )
                 ->clampMin(1)
                 ->default(7)
