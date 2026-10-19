@@ -8930,12 +8930,12 @@ msgstr ""
 msgid "Paused: %s. Switch it on again once the receiver works."
 msgstr ""
 
-#: oc-admin/themes/modern/items/index.php
-msgid "Payment"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Pay at post"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+msgid "Payment"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
