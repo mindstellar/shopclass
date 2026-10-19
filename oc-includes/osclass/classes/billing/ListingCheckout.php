@@ -200,6 +200,25 @@ final class ListingCheckout
     }
 
     /**
+     * A deleted listing drops its order link and cancels the order still waiting for payment,
+     * whatever deleted it. Runs on `delete_item`, once the delete commits.
+     *
+     * @param int|string $itemId
+     */
+    public static function onListingDeleted($itemId): void
+    {
+        $itemId = (int) $itemId;
+        Db::afterCommit(static function () use ($itemId): void {
+            $order = OrderStore::listingOrder($itemId);
+            OrderStore::unlinkListing($itemId);
+            if ($order !== null && $order->isPending()) {
+                OrderStore::markMailSent($order->getId(), Receipts::MAIL_CANCELLED);
+                OrderStore::cancel($order->getId());
+            }
+        });
+    }
+
+    /**
      * Everything the pay step shows: the quote, the open order linked to the listing and the
      * note a paid order carries when its listing could not be published. `step` is one of
      * `published`, `validation` (waits for the seller's e-mail check), `moderation` (waits for

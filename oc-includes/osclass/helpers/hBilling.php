@@ -1511,6 +1511,7 @@ osc_add_filter('cart_totals', array(CashOnDeliveryGateway::class, 'feeLine'), 5)
 // The My listings rows of a held listing (listeners live in hItems.php, which loads first).
 osc_add_filter('listing_row_badges', 'osc_listing_row_unpaid_badge');
 osc_add_filter('listing_row_actions', 'osc_listing_row_unpaid_actions');
+osc_add_hook('delete_item', array(\mindstellar\billing\ListingCheckout::class, 'onListingDeleted'));
 osc_add_hook('register_jobs', array(Billing::class, 'registerJobs'));
 osc_add_hook('cron_daily', array(Billing::class, 'queueRelease'));
 

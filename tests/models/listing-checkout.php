@@ -419,6 +419,27 @@ osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
 osc_reset_preferences();
 osc_register_billing_slot();
 
+harness_section('Listing order: listing deleted');
+
+$secret = static fn (int $id): string => (string) $admin->query("SELECT s_secret FROM {$p}t_item WHERE pk_i_id = {$id}")->fetch_row()[0];
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+(new \mindstellar\listing\ListingService())->delete($held, $secret($held), Actor::user($uid));
+pin('the owner deletes it: the order link is gone', null, OrderStore::listingOrder($held));
+pin('and its pending order is cancelled', Order::STATUS_CANCELLED, OrderStore::find($order->getId())->getStatus());
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 3 DAY) WHERE pk_i_id = {$held}");
+\mindstellar\listing\ListingHoldJobs::sweep();
+pin('the deadline sweep deletes it and cleans up the same way', [false, null, Order::STATUS_CANCELLED], [(bool) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0], OrderStore::listingOrder($held), OrderStore::find($order->getId())->getStatus()]);
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+\mindstellar\database\Db::execute("UPDATE {$p}t_billing_order SET s_status = 'paid' WHERE pk_i_id = ?", [$order->getId()]);
+(new \mindstellar\listing\ListingService())->delete($held, $secret($held), Actor::user($uid));
+pin('a paid order stays paid', [Order::STATUS_PAID, null], [OrderStore::find($order->getId())->getStatus(), OrderStore::listingOrder($held)]);
+
 harness_section('Listing order: paid, not published');
 
 [$uid, , $held] = $seller(0);
