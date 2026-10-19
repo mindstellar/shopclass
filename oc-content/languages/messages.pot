@@ -1516,6 +1516,10 @@ msgid "No keywords have been deleted"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-items-content.php
+msgid "No listing is waiting for payment."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
 msgid "No listings with this status."
 msgstr ""
 
@@ -2070,12 +2074,19 @@ msgstr ""
 msgid "Public profile"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hItems.php
+msgid "Publish (%d credit)"
+msgid_plural "Publish (%d credits)"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "Publish a listing"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
+#: oc-includes/osclass/helpers/hItems.php
 msgid "Publish for free"
 msgstr ""
 
@@ -3602,6 +3613,11 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "View your listing"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
+#: oc-includes/osclass/helpers/hItems.php
+msgid "Waiting for payment"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php

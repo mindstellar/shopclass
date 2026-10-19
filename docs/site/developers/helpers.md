@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1206 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1209 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -522,7 +522,7 @@ Core defines 1206 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (118)
+### hItems (121)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -589,6 +589,7 @@ Core defines 1206 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_is_inactive()` | Gets if current item is inactive |
 | `osc_item_is_premium()` | Gets true if current item is marked premium, else return false |
 | `osc_item_is_spam()` | Gets if item is marked as spam |
+| `osc_item_is_unpaid()` | Whether the current item is held, waiting for its owner to pay before it goes live. |
 | `osc_item_latitude()` | Gets latitude of current item |
 | `osc_item_link_bad_category()` | Retrun link for mark as bad category the current item. |
 | `osc_item_link_expired()` | Gets link for mark as expired the current item |
@@ -618,6 +619,8 @@ Core defines 1206 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_list_items_per_page()` | Gets number of items per page for current pagination |
 | `osc_list_page()` | Current page of the search pagination. |
 | `osc_list_total_pages()` | Total number of pages in the search pagination. |
+| `osc_listing_row_unpaid_actions($actions, $item, $context = '')` | Gives a held listing a Publish link to the pay step and takes away its upgrade links. |
+| `osc_listing_row_unpaid_badge($badges, $item, $context = '')` | Marks a held listing in the seller's own list. |
 | `osc_priv_count_item_resources()` | **Deprecated since 2.4.** Gets number of item resources |
 | `osc_priv_count_items()` | **Deprecated since 2.4.** Gets number of items |
 | `osc_query_item($params = null)` | Perform a search based on custom filters and conditions export the results to a variable to be able to manage it from custom_items' helpers |
