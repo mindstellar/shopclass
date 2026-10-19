@@ -285,7 +285,7 @@ final class AdminTwoFactor
     {
         $stored = (string)self::read((int)$admin['pk_i_id']);
 
-        return hash_hmac('sha256', (string)($admin['s_password'] ?? '') . '|' . $stored, SigningKey::get());
+        return hash_hmac('sha256', 'admin-2fa-bind|' . (string)($admin['s_password'] ?? '') . '|' . $stored, SigningKey::get());
     }
 
     /**
