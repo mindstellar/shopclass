@@ -127,17 +127,52 @@ $cat2   = seed_category($admin, 'Vans');
 $lost   = seed_item($admin, $cat2, $user, 'Unpaid, its job lost');
 $fresh  = seed_item($admin, $cat2, $user, 'Unpaid, still in time');
 $old    = seed_item($admin, $cat2, $user, 'Live, long expired');
+$raw    = seed_item($admin, $cat2, $user, 'Hidden by a plugin');
 $hold($lost);
 $hold($fresh);
-$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id IN ({$lost}, {$old})");
+$hold($raw);
+ListingHoldJobs::queue($lost, 7);
+ListingHoldJobs::queue($fresh, 7);
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id IN ({$lost}, {$old}, {$raw})");
 ListingHoldJobs::queueSweep();
 pin('cron_daily queues one sweep', 1, $count(ListingHoldJobs::SWEEP));
 JobWorker::resetRegistration();
 JobWorker::run(10);
-check('a held listing past its deadline with no job is gone', !$exists($lost));
+check('a held listing past its deadline, its job not run yet, is gone', !$exists($lost));
 check('a held listing still in time stays', $exists($fresh));
 check('an expired live listing stays', $exists($old));
+check('a hidden row with no delete job stays', $exists($raw));
 pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
+
+harness_section('A row with no delete job and a delete job running');
+$clear();
+$mine = seed_item($admin, $cat2, $user, 'Unpaid, due now');
+$hold($mine);
+ListingHoldJobs::queue($mine, 1);
+$due();
+JobWorker::resetRegistration();
+JobWorker::run(10);
+check('the due delete removes its own listing', !$exists($mine));
+check('and leaves the hidden row', $exists($raw));
+
+harness_section('A delete job that could not delete');
+$clear();
+$stubborn = seed_item($admin, $cat2, $user, 'Unpaid, delete refused');
+$hold($stubborn);
+ListingHoldJobs::queue($stubborn, 1);
+$due();
+$refuse = static function (): void {
+    throw new RuntimeException('refused');
+};
+osc_add_hook('before_delete_item', $refuse);
+JobWorker::resetRegistration();
+JobWorker::run(10);
+osc_remove_hook('before_delete_item', $refuse);
+check('the listing is still there', $exists($stubborn));
+pin('a keyed delete job is queued again', [(string) $stubborn], array_column($admin->query("SELECT s_unique FROM {$p}t_job_queue WHERE s_type = '" . ListingHoldJobs::EXPIRE . "' AND s_status = 'pending'")->fetch_all(MYSQLI_ASSOC), 's_unique'));
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id = {$stubborn}");
+ListingHoldJobs::sweep();
+check('so the sweep deletes it', !$exists($stubborn));
 $clear();
 
 harness_section('Status filters against rows');
@@ -192,10 +227,10 @@ $race = static function (string $mode, string $locks = 'both') use ($admin, $p, 
     $held = seed_item($admin, $cat4, $uid, 'Held plane ' . $n);
     $hold($held);
     Wallet::credit($uid, 3, Wallet::REASON_GRANT);
+    ListingHoldJobs::queue($held, 7);
     if ($mode === 'sweep') {
         $admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id = {$held}");
     } else {
-        ListingHoldJobs::queue($held, 7);
         $due();
     }
     $child = null;
@@ -280,6 +315,7 @@ $uid  = seed_user($admin, 'together', 'together@example.test');
 seed_item($admin, $cat4, $uid, 'Live together');
 $held = seed_item($admin, $cat4, $uid, 'Held together');
 $hold($held);
+ListingHoldJobs::queue($held, 7);
 Wallet::credit($uid, 3, Wallet::REASON_GRANT);
 $admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id = {$held}");
 $admin->begin_transaction();

@@ -430,6 +430,7 @@ pin('and its pending order is cancelled', Order::STATUS_CANCELLED, OrderStore::f
 
 [$uid, , $held] = $seller(0);
 $order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+\mindstellar\listing\ListingHoldJobs::queue($held, 7);
 $admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 3 DAY) WHERE pk_i_id = {$held}");
 \mindstellar\listing\ListingHoldJobs::sweep();
 pin('the deadline sweep deletes it and cleans up the same way', [false, null, Order::STATUS_CANCELLED], [(bool) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0], OrderStore::listingOrder($held), OrderStore::find($order->getId())->getStatus()]);

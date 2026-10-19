@@ -58,7 +58,7 @@ final class ListingHoldJobs
     }
 
     /**
-     * Queue the daily sweep, which deletes held listings whose own delete job never ran;
+     * Queue the daily sweep, which deletes held listings whose delete job is still waiting;
      * called from `cron_daily`.
      */
     public static function queueSweep(): void
@@ -67,7 +67,8 @@ final class ListingHoldJobs
     }
 
     /**
-     * Delete one batch of held listings more than a day past their deadline.
+     * Delete one batch of held listings more than a day past their deadline that still have
+     * a delete job queued. A row with no such job was not held by core, so it is left alone.
      *
      * @return int how many it found
      */
@@ -75,7 +76,12 @@ final class ListingHoldJobs
     {
         $rows = ListingStore::heldPast(date('Y-m-d H:i:s', time() - 86400), self::SWEEP_BATCH);
         foreach ($rows as $row) {
-            self::deleteIfHeld((int) $row['pk_i_id']);
+            try {
+                self::deleteIfHeld((int) $row['pk_i_id']);
+            } catch (\Throwable $e) {
+                // Its delete job is still queued, so the next sweep tries again.
+                error_log('Unpaid listing ' . $row['pk_i_id'] . ' was not deleted: ' . $e->getMessage());
+            }
         }
 
         return count($rows);
@@ -89,7 +95,14 @@ final class ListingHoldJobs
             }
         });
         osc_job_register_handler(self::EXPIRE, static function (Job $job): void {
-            self::deleteIfHeld((int) $job->get('item', 0));
+            $itemId = (int) $job->get('item', 0);
+            try {
+                self::deleteIfHeld($itemId);
+            } catch (\Throwable $e) {
+                // A running job has lost its key, so queue a keyed one again for the sweep to find.
+                error_log('Unpaid listing ' . $itemId . ' was not deleted: ' . $e->getMessage());
+                self::queue($itemId, 1);
+            }
         });
         osc_job_register_handler(self::REMIND, static function (Job $job): void {
             $row = self::heldRow($job);
@@ -108,7 +121,8 @@ final class ListingHoldJobs
      * lock and then the row lock, the order ListingCheckout::publish() takes, so a listing paid
      * at the same moment is kept and the two never deadlock.
      *
-     * @return bool whether it was deleted
+     * @return bool whether it was deleted; false when it is no longer held
+     * @throws \RuntimeException when it is still held and was not deleted
      */
     private static function deleteIfHeld(int $itemId): bool
     {
@@ -122,11 +136,15 @@ final class ListingHoldJobs
                 EntitlementStore::lockSeller($ownerId);
             }
             $row = ListingStore::find($itemId, array('*'), true);
-            if ($row === null || !ListingStatus::isHeld($row) || (int) $row['fk_i_user_id'] !== $ownerId) {
+            if ($row === null || !ListingStatus::isHeld($row)) {
                 return false;
             }
+            if ((int) $row['fk_i_user_id'] !== $ownerId
+                || (new ListingService())->delete($itemId, (string) $row['s_secret'], Actor::admin(0)) === false) {
+                throw new \RuntimeException('The delete did not run.');
+            }
 
-            return (new ListingService())->delete($itemId, (string) $row['s_secret'], Actor::admin(0)) !== false;
+            return true;
         });
     }
 
