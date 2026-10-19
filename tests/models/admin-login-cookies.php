@@ -74,6 +74,7 @@ $codes  = AdminTwoFactor::enable($twoId, $secret, Totp::code($secret));
 $otherSecret = Totp::newSecret();
 AdminTwoFactor::enable($otherId, $otherSecret, Totp::code($otherSecret));
 check('two admins with two-step sign-in on', is_array($codes) && AdminTwoFactor::enabled(['pk_i_id' => $otherId]));
+$twoCookie  = 'oc_admin_2fa';
 $clearTries = static function () use ($db, $p): void {
     $db->query("TRUNCATE TABLE {$p}t_rate_counter");
 };
@@ -216,11 +217,11 @@ $clearTries();
 [$code, $location, $set] = $login('twofa', 'secret-pass');
 check('a right password asks for the code', $code === 302 && str_contains($location, 'action=2fa'), $code . ' ' . $location);
 pin('...with no session cookie', [], $set['osclass'] ?? []);
-$pending = $valueOf($set, AdminTwoFactor::PENDING_COOKIE);
-$line    = $set[AdminTwoFactor::PENDING_COOKIE][0] ?? '';
-check('...but a signed code-step cookie on the admin path', $pending !== '' && $paths($set, AdminTwoFactor::PENDING_COOKIE) === ['/oc-admin/'], $line);
+$pending = $valueOf($set, $twoCookie);
+$line    = $set[$twoCookie][0] ?? '';
+check('...but a signed code-step cookie on the admin path', $pending !== '' && $paths($set, $twoCookie) === ['/oc-admin/'], $line);
 check('...HttpOnly, SameSite=Lax, for 300 s', stripos($line, 'HttpOnly') !== false && stripos($line, 'SameSite=Lax') !== false && preg_match('/Max-Age=(29[89]|300)\b/', $line) === 1, $line);
-[$code, , $set, $body] = $call('/oc-admin/index.php?page=login&action=2fa', [AdminTwoFactor::PENDING_COOKIE => $pending]);
+[$code, , $set, $body] = $call('/oc-admin/index.php?page=login&action=2fa', [$twoCookie => $pending]);
 check('the code form opens from the cookie', $code === 200 && str_contains($body, 'two_factor_code'), (string) $code);
 pin('...still with no session cookie', [], $set['osclass'] ?? []);
 [$code, $location] = $call('/oc-admin/index.php?page=login&action=2fa');
@@ -228,8 +229,8 @@ check('without the cookie the code form goes back to the login', $code === 302 &
 
 harness_section('a bad code-step cookie is refused');
 
-$post2fa = static function (string $cookie, string $code) use ($call, $csrf): array {
-    return $call('/oc-admin/index.php', [AdminTwoFactor::PENDING_COOKIE => $cookie], ['page' => 'login', 'action' => '2fa_post', 'code' => $code] + $csrf);
+$post2fa = static function (string $cookie, string $code) use ($call, $csrf, $twoCookie): array {
+    return $call('/oc-admin/index.php', [$twoCookie => $cookie], ['page' => 'login', 'action' => '2fa_post', 'code' => $code] + $csrf);
 };
 $refused = static function (array $r): bool {
     return $r[0] === 302 && !str_contains($r[1], 'action=2fa') && ($r[2]['osclass'] ?? []) === [];
@@ -240,14 +241,15 @@ $data['id']      = $otherId;
 $tampered        = rtrim(strtr(base64_encode((string) json_encode($data)), '+/', '-_'), '=') . '.' . $sig;
 $r               = $post2fa($tampered, $codes[0]);
 check('a cookie edited to name another admin signs no one in', $refused($r), $r[0] . ' ' . $r[1]);
-check('...and is cleared', str_contains(implode(' ', $r[2][AdminTwoFactor::PENDING_COOKIE] ?? []), 'Max-Age=0'));
+check('...and is cleared', str_contains(implode(' ', $r[2][$twoCookie] ?? []), 'Max-Age=0'));
 $twoRow   = AdminStore::find($twoId);
 $otherRow = AdminStore::find($otherId);
-$expired  = AdminTwoFactor::pendingToken($twoRow, false, 'en_US', $base . '/oc-admin/', time() - 301);
+$expired  = AdminTwoFactor::issuePending($twoRow, ['remember' => false, 'locale' => 'en_US', 'redirect' => $base . '/oc-admin/'], time() - 301);
 $r        = $post2fa($expired, $codes[0]);
 check('an expired cookie signs no one in', $refused($r), $r[0] . ' ' . $r[1]);
-pin('a cookie for one admin does not read for another', null, AdminTwoFactor::pending(AdminTwoFactor::pendingToken($otherRow, false, '', ''), $twoRow));
-pin('...nor one with a wrong purpose', 0, AdminTwoFactor::pendingId(\mindstellar\security\SignedPayload::pack('signed-redirect', ['id' => $twoId], 300)));
+$read = AdminTwoFactor::readPending(AdminTwoFactor::issuePending($otherRow, ['locale' => 'en_US']));
+pin('a token reads back as its admin and choices', [$otherId, ['locale' => 'en_US'], false], [(int) ($read['admin']['pk_i_id'] ?? 0), $read['choices'] ?? null, isset($read['admin']['s_2fa'])]);
+pin('...but not one with a wrong purpose', null, AdminTwoFactor::readPending(\mindstellar\security\SignedPayload::pack('signed-redirect', ['id' => $twoId], 300)));
 
 harness_section('wrong codes are still limited');
 
@@ -268,14 +270,14 @@ $r = $post2fa($pending, Totp::code($secret, Totp::step() + 1));
 check('the app code goes to the remembered page', $r[0] === 302 && !str_contains($r[1], 'page=login'), $r[0] . ' ' . $r[1]);
 $session = $valueOf($r[2], 'osclass');
 check('...with a new admin session', $session !== '');
-check('...and clears the code-step cookie', str_contains(implode(' ', $r[2][AdminTwoFactor::PENDING_COOKIE] ?? []), 'Max-Age=0'));
+check('...and clears the code-step cookie', str_contains(implode(' ', $r[2][$twoCookie] ?? []), 'Max-Age=0'));
 [$code] = $call('/oc-admin/index.php?page=items', ['osclass' => $session]);
 pin('the session opens the admin', 200, $code);
 $r = $post2fa($pending, $codes[1]);
 check('the used cookie does not sign in again, even with a good backup code', $refused($r), $r[0] . ' ' . $r[1]);
 
 [, , $set] = $login('twofa', 'secret-pass');
-$r         = $post2fa($valueOf($set, AdminTwoFactor::PENDING_COOKIE), $codes[2]);
+$r         = $post2fa($valueOf($set, $twoCookie), $codes[2]);
 check('a backup code signs in', $r[0] === 302 && !str_contains($r[1], 'page=login') && $valueOf($r[2], 'osclass') !== '', $r[0] . ' ' . $r[1]);
 pin('...and is used up', 7, count(AdminTwoFactor::settings($twoRow)['backup']));
 

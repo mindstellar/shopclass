@@ -23,6 +23,9 @@ class CAdminLogin extends AdminBaseModel
 {
     use \mindstellar\base\ActionMap;
 
+    /** The cookie that carries a sign-in waiting for its code, on the admin path. */
+    private const TWO_FACTOR_COOKIE = 'oc_admin_2fa';
+
     /** Each action and the method that answers it; any other action goes to loginForm(). */
     private const ACTIONS = array(
         'login_post'   => 'loginPost',
@@ -136,16 +139,14 @@ class CAdminLogin extends AdminBaseModel
         if (\mindstellar\security\AdminTwoFactor::enabled($admin)) {
             // The password is right, but nothing is signed in until the code passes. A cookie,
             // not the session, so leaving at the code page leaves no session behind.
-            Cookie::write(
-                \mindstellar\security\AdminTwoFactor::PENDING_COOKIE,
-                \mindstellar\security\AdminTwoFactor::pendingToken($admin, $remember, $locale, $url_redirect),
-                time() + \mindstellar\security\AdminTwoFactor::PENDING_TTL,
-                osc_admin_cookie_path()
-            );
+            self::writeTwoFactorCookie(\mindstellar\security\AdminTwoFactor::issuePending(
+                $admin,
+                array('remember' => $remember, 'locale' => $locale, 'redirect' => $url_redirect)
+            ));
             $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
         }
 
-        \mindstellar\security\AdminTwoFactor::clearPendingCookie();
+        self::clearTwoFactorCookie();
         $this->signIn($admin, $remember, $locale);
         $this->redirectTo($url_redirect);
     }
@@ -179,9 +180,10 @@ class CAdminLogin extends AdminBaseModel
             osc_add_flash_error_message(\mindstellar\security\AdminTwoFactor::refusedMessage(), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
         }
-        \mindstellar\security\AdminTwoFactor::clearPendingCookie();
-        $this->signIn($admin, $pending['remember'], $pending['locale']);
-        $this->redirectTo($pending['redirect']);
+        self::clearTwoFactorCookie();
+        $choices = $pending['choices'];
+        $this->signIn($admin, (bool)($choices['remember'] ?? false), (string)($choices['locale'] ?? ''));
+        $this->redirectTo((string)($choices['redirect'] ?? osc_admin_base_url()));
     }
 
     /**
@@ -374,27 +376,53 @@ class CAdminLogin extends AdminBaseModel
     }
 
     /**
-     * The sign-in waiting for its second step, or null when there is none, or its cookie is
+     * The sign-in waiting for its second step, or null when there is none or its cookie is
      * forged, expired, for an admin that is gone or already used; a bad cookie is cleared.
      *
-     * @return array{admin:array<string,mixed>,remember:bool,locale:string,redirect:string}|null
+     * @return array{admin:array<string,mixed>,choices:array<string,mixed>}|null
      */
     private function pendingTwoFactor(): ?array
     {
-        $token = $_COOKIE[\mindstellar\security\AdminTwoFactor::PENDING_COOKIE] ?? null;
+        $token = $_COOKIE[self::TWO_FACTOR_COOKIE] ?? null;
         if (!is_string($token) || $token === '') {
             return null;
         }
-        $id      = \mindstellar\security\AdminTwoFactor::pendingId($token);
-        $admin   = $id > 0 ? Admin::getInstance()->findByPrimaryKey($id) : false;
-        $pending = $admin ? \mindstellar\security\AdminTwoFactor::pending($token, $admin) : null;
+        $pending = \mindstellar\security\AdminTwoFactor::readPending($token);
         if ($pending === null) {
-            \mindstellar\security\AdminTwoFactor::clearPendingCookie();
-
-            return null;
+            self::clearTwoFactorCookie();
         }
 
-        return array('admin' => $admin) + $pending;
+        return $pending;
+    }
+
+    /**
+     * Keep the sign-in waiting for its code in a cookie on the admin path.
+     *
+     * @param string $token
+     *
+     * @return void
+     */
+    private static function writeTwoFactorCookie(string $token): void
+    {
+        Cookie::write(
+            self::TWO_FACTOR_COOKIE,
+            $token,
+            time() + \mindstellar\security\AdminTwoFactor::PENDING_TTL,
+            osc_admin_cookie_path()
+        );
+    }
+
+    /**
+     * Clear the code-step cookie, when the browser has one; also called at logout.
+     *
+     * @return void
+     */
+    public static function clearTwoFactorCookie(): void
+    {
+        if (isset($_COOKIE[self::TWO_FACTOR_COOKIE])) {
+            Cookie::write(self::TWO_FACTOR_COOKIE, '', time() - 3600, osc_admin_cookie_path());
+            unset($_COOKIE[self::TWO_FACTOR_COOKIE]);
+        }
     }
 
     /**

@@ -20,9 +20,6 @@ use mindstellar\database\DbException;
  */
 final class AdminTwoFactor
 {
-    /** The cookie that carries a sign-in waiting for its code, on the admin path. */
-    public const PENDING_COOKIE = 'oc_admin_2fa';
-
     /** Seconds the code step stays open after the password passed. */
     public const PENDING_TTL = 300;
 
@@ -206,86 +203,58 @@ final class AdminTwoFactor
      * A signed token saying this admin passed the password step, kept in a cookie instead of
      * the session. It ends when the password or the 2FA data changes, so a passed code ends it.
      *
-     * @param array<string,mixed> $admin a t_admin row
-     * @param bool                $remember
-     * @param string              $locale
-     * @param string              $redirect
-     * @param int|null            $now the current time; time() when null
+     * @param array<string,mixed> $admin   a t_admin row
+     * @param array<string,mixed> $choices what to carry to the code step, e.g. remember, locale
+     * @param int|null            $now     the current time; time() when null
      *
      * @return string
      */
-    public static function pendingToken(array $admin, bool $remember, string $locale, string $redirect, ?int $now = null): string
+    public static function issuePending(array $admin, array $choices, ?int $now = null): string
     {
+        $id = (int)$admin['pk_i_id'];
+
         return SignedPayload::pack(self::PENDING_PURPOSE, array(
-            'id'       => (int)$admin['pk_i_id'],
-            'remember' => $remember,
-            'locale'   => $locale,
-            'redirect' => $redirect,
-            'bind'     => self::pendingBinding($admin),
+            'id'      => $id,
+            'choices' => $choices,
+            'bind'    => self::pendingBinding((string)($admin['s_password'] ?? ''), self::read($id)),
         ), self::PENDING_TTL, 0, $now);
     }
 
     /**
-     * The admin id a pending token names, or 0 when it is forged, expired or not one.
+     * Read a pending token: the admin it names and the choices it carries. Null when it is
+     * forged, expired, for an admin that is gone, or used up.
      *
      * @param string   $token
      * @param int|null $now
      *
-     * @return int
+     * @return array{admin:array<string,mixed>,choices:array<string,mixed>}|null
      */
-    public static function pendingId(string $token, ?int $now = null): int
-    {
-        return (int)(SignedPayload::unpack(self::PENDING_PURPOSE, $token, $now)['id'] ?? 0);
-    }
-
-    /**
-     * Read a pending token for this admin.
-     *
-     * @param string              $token
-     * @param array<string,mixed> $admin the row of the admin it names
-     * @param int|null            $now
-     *
-     * @return array{remember:bool,locale:string,redirect:string}|null null when forged, expired,
-     *                                                                 for another admin or used up
-     */
-    public static function pending(string $token, array $admin, ?int $now = null): ?array
+    public static function readPending(string $token, ?int $now = null): ?array
     {
         $data = SignedPayload::unpack(self::PENDING_PURPOSE, $token, $now);
-        if ($data === null || (int)($data['id'] ?? 0) !== (int)($admin['pk_i_id'] ?? -1)
-            || !hash_equals(self::pendingBinding($admin), (string)($data['bind'] ?? ''))) {
+        $id   = (int)($data['id'] ?? 0);
+        $row  = $id > 0 ? AdminStore::find($id) : null;
+        if ($row === null) {
+            return null;
+        }
+        $stored = isset($row['s_2fa']) ? (string)$row['s_2fa'] : null;
+        unset($row['s_2fa']);
+        if (!hash_equals(self::pendingBinding((string)$row['s_password'], $stored), (string)($data['bind'] ?? ''))) {
             return null;
         }
 
-        return array(
-            'remember' => (bool)($data['remember'] ?? false),
-            'locale'   => (string)($data['locale'] ?? ''),
-            'redirect' => (string)($data['redirect'] ?? ''),
-        );
+        return array('admin' => $row, 'choices' => is_array($data['choices'] ?? null) ? $data['choices'] : array());
     }
 
     /**
-     * Clear the code-step cookie, when the browser has one.
-     *
-     * @return void
-     */
-    public static function clearPendingCookie(): void
-    {
-        if (isset($_COOKIE[self::PENDING_COOKIE])) {
-            \Cookie::write(self::PENDING_COOKIE, '', time() - 3600, osc_admin_cookie_path());
-            unset($_COOKIE[self::PENDING_COOKIE]);
-        }
-    }
-
-    /**
-     * @param array<string,mixed> $admin
+     * @param string      $password the stored password hash
+     * @param string|null $stored   the stored 2FA data
      *
      * @return string
      */
-    private static function pendingBinding(array $admin): string
+    private static function pendingBinding(string $password, ?string $stored): string
     {
-        $stored = (string)self::read((int)$admin['pk_i_id']);
-
-        return hash_hmac('sha256', 'admin-2fa-bind|' . (string)($admin['s_password'] ?? '') . '|' . $stored, SigningKey::get());
+        return hash_hmac('sha256', 'admin-2fa-bind|' . $password . '|' . (string)$stored, SigningKey::get());
     }
 
     /**
