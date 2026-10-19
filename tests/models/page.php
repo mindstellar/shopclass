@@ -347,6 +347,28 @@ harness_section('Page::deleteByInternalName');
 pin('deleting by internal name removes the page', 1, $model->deleteByInternalName('p3'));
 pin('it is gone', 0, $rawCount("SELECT COUNT(*) c FROM $table WHERE s_internal_name = 'p3'"));
 
+harness_section('Page::importEmailJsonTemplates — matched by name, not id');
+
+/* On an upgraded site a migration-added mail page can land at another id, and the id the
+ * template carries may belong to an owner's own page. */
+$admin->query("INSERT INTO $table (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (60, 'owner_page', 0, NOW()), (61, 'email_import_probe', 1, NOW())");
+$admin->query("INSERT INTO $dtbl (fk_i_pages_id, fk_c_locale_code, s_title, s_text) VALUES (60, 'en_US', 'About us', 'Owner text')");
+pin('the import accepts the file', true, $model->importEmailJsonTemplates(json_encode(array(
+    'language' => 'en_US',
+    'template' => array(
+        array('fk_i_page_id' => 60, 's_internal_name' => 'email_import_probe', 's_title' => 'Mail title', 's_description' => 'Mail text'),
+        array('fk_i_page_id' => 61, 's_title' => 'By id', 's_description' => 'Id text'),
+        array('fk_i_page_id' => 61, 's_internal_name' => 'email_not_here', 's_title' => 'Gone', 's_description' => 'Gone'),
+    ),
+))));
+pin('the owner page at the template id keeps its text', 'Owner text', $rawRows("SELECT s_text FROM $dtbl WHERE fk_i_pages_id = 60 AND fk_c_locale_code = 'en_US'")[0]['s_text'] ?? null);
+pin('a template without a name falls back to its id', 'By id', $rawRows("SELECT s_title FROM $dtbl WHERE fk_i_pages_id = 61 AND fk_c_locale_code = 'en_US'")[0]['s_title'] ?? null);
+$model->importEmailJsonTemplates(json_encode(array(
+    'language' => 'en_US',
+    'template' => array(array('fk_i_page_id' => 60, 's_internal_name' => 'email_import_probe', 's_title' => 'Mail title', 's_description' => 'Mail text')),
+)));
+pin('the named page gets the template text', 'Mail text', $rawRows("SELECT s_text FROM $dtbl WHERE fk_i_pages_id = 61 AND fk_c_locale_code = 'en_US'")[0]['s_text'] ?? null);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
