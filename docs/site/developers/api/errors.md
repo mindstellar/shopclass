@@ -107,7 +107,7 @@ Each code's `type` link points at its anchor here.
 | <a id="not_owner"></a>`not_owner` | 403 | The resource is real and live but belongs to someone else, such as another user's listing or comment. |
 | <a id="cross_origin"></a>`cross_origin` | 403 | A page-token call that did not come from the site's own pages: another `Origin`, a `Sec-Fetch-Site` other than `same-origin`, or neither. |
 | <a id="api_disabled"></a>`api_disabled` | 403 | The site owner switched the API off. |
-| <a id="not_found"></a>`not_found` | 404 | No such endpoint, API version or record. Also a pending, disabled or spam listing, a disabled user, an unapproved comment that is not the caller's, and a photo, key or saved search that is not the caller's. |
+| <a id="not_found"></a>`not_found` | 404 | No such endpoint, API version or record. Also a pending, disabled, spam or unpaid listing, a disabled user, an unapproved comment that is not the caller's, and a photo, key or saved search that is not the caller's. |
 | <a id="method_not_allowed"></a>`method_not_allowed` | 405 | The path exists but not for this method. `Allow` lists the methods that work. |
 | <a id="already_reviewed"></a>`already_reviewed` | 409 | The signed-in user already has a rated comment on this listing. A comment with no rating is still accepted. |
 | <a id="idempotency_in_flight"></a>`idempotency_in_flight` | 409 | A request with the same `Idempotency-Key` is still running. `Retry-After: 1`. |
@@ -166,6 +166,10 @@ also answers this.
 - an [admin action](/docs/developers/api/admin/) the state refuses: activating a blocked
   listing, deleting a currency a listing uses or the site defaults to, revoking a key that is
   already revoked
+
+### `insufficient_credits`
+
+422. `POST /listings/{id}/publish` was asked to spend credits the user does not have. The answer carries `payment`: `credits` (the price), `balance`, `shortfall` and `publish_url` (the site's pay page, which needs a web sign-in). Buy the missing credits, then publish again.
 
 ### `precondition_failed`
 

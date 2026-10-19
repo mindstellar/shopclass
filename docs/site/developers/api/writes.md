@@ -107,6 +107,18 @@ Location: https://example.com/api/v1/listings/412
 }
 ```
 
+A site that sells listing slots may save the listing without making it live. Then `data.status` is `unpaid`, the `listing_unpaid` warning is set, and `payment` says what it costs. The listing is hidden from everyone but its owner until it is [published](#publish-a-listing). Its `published_at` is when it was saved and its `expires_at` is the payment deadline.
+
+```json
+{
+  "data": { "id": 412, "status": "unpaid", "title": "Vintage Hardcover Classics Collection", "…": "…" },
+  "warnings": [
+    { "code": "listing_unpaid", "message": "The listing is saved and waits for payment. Publish it with credits or at payment.publish_url." }
+  ],
+  "payment": { "credits": 2, "balance": 0, "shortfall": 2, "publish_url": "https://example.com/…" }
+}
+```
+
 Required: `category_id`, `title`, `description`.
 
 | Member | Type | Notes |
@@ -143,7 +155,7 @@ Plugins can change the body before it is saved with the `api_listing_input` filt
 | Answer | Why |
 |---|---|
 | `422 validation_failed` | A bad member, or the web form's own refusal: a missing field, or the posting wait. `errors` points at the member. |
-| `422 listing_limit` | The user has reached the site's listing limit. `detail` says which. |
+| `422 listing_limit` | The user has reached the site's listing limit and the site does not take payment at the end of posting. `detail` says which. Otherwise the listing is saved and `payment` says what it costs. |
 | `403 banned` | The account or address is banned from posting. |
 | `403 wrong_credential` | The site lets only signed-in users post, and the caller is not one. |
 | `403 feature_disabled` | The site is a shop: only an admin adds listings. |
@@ -208,6 +220,33 @@ curl -X DELETE $API/listings/412 -H "Authorization: Bearer $TOKEN"
 ```
 
 `204`, no body. The listing and its photos are removed as the web delete does it.
+
+## Publish a listing
+
+A listing with `status: "unpaid"` waits for payment. `POST /listings/{id}/publish` puts it live. Only its owner may call it.
+
+```bash
+curl -i -X POST $API/listings/412/publish \
+  -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(uuidgen)"
+```
+
+With an empty body the site takes the listing's credits from the user's balance. To buy the credits that are missing, send a package and a payment method. The site starts an order, as `POST /account/orders` does. Follow `next` to pay, then watch `GET /account/orders`.
+
+```json
+{ "package": 5, "gateway": "offline" }
+```
+
+| Answer | When |
+|---|---|
+| `200` | The listing is published. `data.status` is `active`, or `pending` if the site checks new listings. |
+| `200` | The listing was already published. Nothing is spent. |
+| `200` with `order` and `next` | A `package` and `gateway` were sent. The order is started and the listing stays `unpaid` until it is paid. `payment` is set. |
+| `422 insufficient_credits` | The balance is too low. `payment` says the price and the shortfall. |
+| `404` | Not your listing, or it does not exist. |
+
+`payment.publish_url` is the site's pay page. It needs the seller signed in on the site, so an app should use the order path instead.
+
+A repeat with the same `Idempotency-Key` gets the first answer back. Starting orders is limited to 20 an hour per user: `429 rate_limited`. A refused request is not counted. `listing.created` is sent to webhooks when the listing goes live.
 
 ## Photos
 
@@ -321,7 +360,7 @@ curl -i -X POST $API/listings/412/comments \
 | `title` | Optional, up to 200. |
 | Author | Taken from the account. You cannot set a name or e-mail. |
 | Moderation | If the site approves comments first, or the spam check holds one, you get `comment_pending`. |
-| Refusals | `403` when comments are off, or the account is banned. `404` when the listing is pending, disabled or spam. |
+| Refusals | `403` when comments are off, or the account is banned. `404` when the listing is pending, disabled, spam or unpaid. |
 | Delete | `DELETE /comments/{id}` removes your own approved comment. Someone else's is `403`; one still waiting for approval is `409`. |
 
 ## Saved searches
@@ -488,6 +527,7 @@ curl -X POST $API/listings -H "Authorization: Bearer $TOKEN" \
 | Saved searches | The site's hourly alert limit, counted with the web form | `429 rate_limited` |
 | Staged photos waiting | 50 per user | `422` on `/photo` |
 | `photo_tokens` / `photo_urls` in one body | 50 / 20 | `422 validation_failed` |
+| Payments started for a listing | 20 an hour per user, with the orders above | `429 rate_limited` |
 | Sign-ups | 5 an hour per address; 100 for the site by default (a setting), counting only those that passed their checks | `429 rate_limited` |
 
 Each `429` has `Retry-After`. The site owner sets the listing number: [Set up the REST API](/docs/configure/api/#rate-limits).
@@ -498,7 +538,7 @@ Each `429` has `Retry-After`. The site owner sets the listing number: [Set up th
 |---|---|---|
 | `GET /account` | `account:read` | Your profile, in the owner's view. |
 | `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email` (with `current_password`). A `website` that is not a web address is a `422`. |
-| `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
+| `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `unpaid`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
 | `POST /account/password` | `account:write` | Change the password. The new one needs at least 5 characters, as on the site's forms; shorter is a `422` on `/new_password`. |
 | `GET /account/sessions` | `account:read` | Your live sign-ins. Keys are at `/account/keys`. |
 | `DELETE /account/sessions/{id}` | `account:write` | End one sign-in. `204`. |
