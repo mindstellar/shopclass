@@ -194,8 +194,16 @@ check('it runs about 30 days from now', abs($exp - (time() + 30 * 86400)) < 3600
 
 $page = drive('publish_free', array('id' => $held));
 check('again: not waiting for payment, nothing changes', in_array('error:The listing is not waiting for payment', $page['flashes'], true) && $posted === 1);
+// Old dates, so a publish that slipped past the guards would change the row and report success.
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1, b_active = 1, dt_pub_date = '2020-01-01 00:00:00', dt_first_pub_date = '2020-01-01 00:00:00' WHERE pk_i_id = {$live}");
 $page = drive('publish_free', array('id' => $live));
 check('a live listing: the same notice', in_array('error:The listing is not waiting for payment', $page['flashes'], true) && $posted === 1);
+pin('...and its dates are untouched', '2020-01-01 00:00:00', $admin->query("SELECT dt_first_pub_date FROM {$p}t_item WHERE pk_i_id = {$live}")->fetch_row()[0]);
+$before = seed_item($admin, $cat, $tom, 'Published before');
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_pub_date = '2020-01-01 00:00:00', dt_first_pub_date = '2020-01-01 00:00:00' WHERE pk_i_id = {$before}");
+$page = drive('publish_free', array('id' => $before));
+check('an off listing published before: the same notice', in_array('error:The listing is not waiting for payment', $page['flashes'], true) && $posted === 1);
+pin('...and it stays off', '0/0/0', $state($before));
 
 $held2 = seed_item($admin, $cat, $tom, 'Held two');
 $admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL WHERE pk_i_id = {$held2}");
