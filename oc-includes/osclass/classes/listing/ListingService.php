@@ -634,18 +634,26 @@ final class ListingService
      */
     public function notifyNew(array $item, string $active, Actor $actor): void
     {
-        ViewScope::withItem($item, static function () use ($item, $active, $actor): void {
+        // A mail that cannot be written is logged: it must not roll back the save, or a paid publish.
+        $guard = static function (callable $send) use ($item): void {
+            try {
+                $send();
+            } catch (\Throwable $e) {
+                error_log('Listing #' . $item['pk_i_id'] . ': a new-listing e-mail failed: ' . $e->getMessage());
+            }
+        };
+        ViewScope::withItem($item, static function () use ($item, $active, $actor, $guard): void {
             $registered = $actor->userId() !== null;
             if ($active === 'INACTIVE' && !$registered) {
-                osc_run_hook('hook_email_item_validation_non_register_user', $item);
+                $guard(static fn () => osc_run_hook('hook_email_item_validation_non_register_user', $item));
             } elseif ($active === 'INACTIVE') {
-                osc_run_hook('hook_email_item_validation', $item);
+                $guard(static fn () => osc_run_hook('hook_email_item_validation', $item));
             } elseif (!$registered) {
-                osc_run_hook('hook_email_new_item_non_register_user', $item);
+                $guard(static fn () => osc_run_hook('hook_email_new_item_non_register_user', $item));
             }
 
             if (osc_notify_new_item()) {
-                osc_run_hook('hook_email_admin_new_item', $item);
+                $guard(static fn () => osc_run_hook('hook_email_admin_new_item', $item));
             }
         });
     }

@@ -206,4 +206,20 @@ osc_remove_filter('billing_can_publish', $veto);
 pin('422 validation_failed rejected', '422 validation_failed rejected', $code($r) . ' ' . ($r->body()['errors'][0]['code'] ?? ''));
 pin('nothing spent, still held', [5, 0, null], [Wallet::balance($di), $debits($di), $firstPub($diHeld)]);
 
+harness_section('the admin mail cannot be written');
+
+[$eve, $eveKey, , $eveHeld] = $seller(5);
+// As CoreEmails::adminNewItem() does when its e-mail page has no text.
+$broken = static function (): void {
+    throw new TypeError('current(): Argument #1 ($array) must be of type array, null given');
+};
+osc_add_hook('hook_email_admin_new_item', $broken);
+osc_set_preference('notify_new_item', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+$r = $call('POST', 'listings/' . $eveHeld . '/publish', [], $eveKey);
+osc_set_preference('notify_new_item', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+osc_remove_hook('hook_email_admin_new_item', $broken);
+pin('the publish still commits: 200, live, credits spent', [200, 'active', 2], [$r->status(), $r->body()['data']['status'] ?? null, Wallet::balance($eve)]);
+
 exit(harness_result());
