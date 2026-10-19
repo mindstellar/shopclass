@@ -63,8 +63,9 @@ final class ListingCheckout
      * Spend the credits and put the listing live. Nothing is spent when it is not held, the
      * balance is short or a plugin refuses it through `billing_can_publish` (reason `refused`).
      * Locking the seller makes two simultaneous calls, for one listing or two, spend once.
+     * `landing` is where the listing stands afterwards (see landing()).
      *
-     * @return array{published: bool, reason: ?string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}}
+     * @return array{published: bool, reason: ?string, landing: string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}}
      *
      * @throws ForbiddenException when the actor is not the listing's owner
      */
@@ -79,17 +80,19 @@ final class ListingCheckout
             if ($row === null || $userId <= 0 || (int) $row['fk_i_user_id'] !== $userId) {
                 throw new ForbiddenException('', ForbiddenException::NOT_OWNER);
             }
-            $quote = self::price(Db::stringifyRow($row), $userId, true);
+            $row   = Db::stringifyRow($row);
+            $quote = self::price($row, $userId, true);
+            $kept  = static fn (string $reason): array => array('published' => false, 'reason' => $reason, 'landing' => self::landing($row), 'quote' => $quote);
 
             if (!$quote['held']) {
-                return array('published' => false, 'reason' => 'not_held', 'quote' => $quote);
+                return $kept('not_held');
             }
             if ($quote['shortfall'] > 0) {
-                return array('published' => false, 'reason' => 'insufficient_credits', 'quote' => $quote);
+                return $kept('insufficient_credits');
             }
             // The slots are as good as bought here, so only a plugin's billing_can_publish can still say no.
             if (!EntitlementStore::canPublish($userId, array('item' => $row), true)) {
-                return array('published' => false, 'reason' => 'refused', 'quote' => $quote);
+                return $kept('refused');
             }
             for ($i = 0; $i < $quote['slots']; $i++) {
                 if (!Billing::spend($userId, self::FEATURE, array('ref_type' => 'item', 'ref_id' => $itemId))) {
@@ -103,7 +106,9 @@ final class ListingCheckout
                 OrderStore::unlinkListing($itemId);
             });
 
-            return array('published' => true, 'reason' => null, 'quote' => $quote);
+            $after = ListingStore::find($itemId, self::STATUS_COLUMNS);
+
+            return array('published' => true, 'reason' => null, 'landing' => $after === null ? self::LANDING_CLOSED : self::landing(Db::stringifyRow($after)), 'quote' => $quote);
         });
     }
 

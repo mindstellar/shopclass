@@ -474,18 +474,17 @@ class CWebBilling extends WebSecBaseModel
             return;
         }
 
-        $item = Item::getInstance()->findByPrimaryKey($itemId);
-        $live = !empty($item['b_enabled']) && !empty($item['b_active']);
+        $live = $result['landing'] === ListingCheckout::LANDING_LIVE;
         if ($result['reason'] === 'not_held') {
             osc_add_flash_info_message(_m('This listing is already published'));
-        } elseif (empty($item['b_active'])) {
+        } elseif ($result['landing'] === ListingCheckout::LANDING_VALIDATION) {
             osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
-        } elseif (empty($item['b_enabled'])) {
+        } elseif ($result['landing'] === ListingCheckout::LANDING_MODERATION) {
             osc_add_flash_ok_message(_m('Your listing will be published after an admin approves it.'));
         } else {
             osc_add_flash_ok_message(_m('Your listing has been published'));
         }
-        $this->redirectTo($live ? osc_item_url_from_item($item) : osc_user_list_items_url());
+        $this->redirectTo($live ? osc_item_url_from_item(Item::getInstance()->findByPrimaryKey($itemId)) : osc_user_list_items_url());
     }
 
     /**

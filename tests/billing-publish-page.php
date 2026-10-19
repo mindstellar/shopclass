@@ -298,6 +298,32 @@ $r = pay($uid, $held);
 check('the page says the payment arrived', str_contains($r['drawn'], 'Your payment arrived, but the listing is not published yet.'));
 check('and offers the credits that fix it', str_contains($r['drawn'], 'Use 3 credits and publish'));
 
+harness_section('where a credits publish lands');
+
+osc_set_preference('moderate_items', '0', 'osclass', 'INTEGER');
+osc_set_preference('logged_user_item_validation', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+[$uid, $held] = $seller(5);
+$r = pay($uid, $held, array('do' => 'credits'));
+pin('waiting for the e-mail check: to My listings', array(WEB_PATH . 'osc_user_list_items_url', '1', '0'), array($r['redirect'], $row($held)['b_enabled'], $row($held)['b_active']));
+check('with the validation flash', str_contains($r['flashes'], 'ok:Check your inbox to validate your listing'));
+$r = pay($uid, $held);
+check('the pay step says so too, with no listing link', str_contains($r['drawn'], 'Check your inbox to validate your listing') && !str_contains($r['drawn'], 'View your listing') && !str_contains($r['drawn'], 'Your listing is published.'));
+osc_set_preference('moderate_items', '-1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+
+[$uid, $held] = $seller(5);
+$block = static function ($item) use ($held): void {
+    Db::execute('UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_enabled = 0 WHERE pk_i_id = ?', array($held));
+};
+osc_add_hook('posted_item', $block);
+$r = pay($uid, $held, array('do' => 'credits'));
+osc_remove_hook('posted_item', $block);
+pin('held for an admin: to My listings', array(WEB_PATH . 'osc_user_list_items_url', '0'), array($r['redirect'], $row($held)['b_enabled']));
+check('with the approval flash', str_contains($r['flashes'], 'ok:Your listing will be published after an admin approves it.'));
+$r = pay($uid, $held);
+check('the pay step says it waits for an admin', str_contains($r['drawn'], 'after an admin approves it') && !str_contains($r['drawn'], 'not waiting for payment'));
+
 harness_section('request data');
 
 [$uid, $held] = $seller(5);

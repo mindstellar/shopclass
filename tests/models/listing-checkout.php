@@ -174,15 +174,18 @@ harness_section('Pay step: publish');
 [$uid, $live, $held] = $seller(5);
 $r = ListingCheckout::publish($held, Actor::user($uid));
 pin('five credits publish it', [true, null], [$r['published'], $r['reason']]);
+pin('and say where it landed', ListingCheckout::LANDING_LIVE, $r['landing']);
 pin('the listing is live', ['1', '1'], [$row($held)['b_enabled'], $row($held)['b_active']]);
 pin('three credits were spent, one ledger row', [2, 1], [Wallet::balance($uid), $debits($uid)]);
 $again = ListingCheckout::publish($held, Actor::user($uid));
 pin('a second call finds it not held', [false, 'not_held'], [$again['published'], $again['reason']]);
+pin('which still says where it is', ListingCheckout::LANDING_LIVE, $again['landing']);
 pin('and spends nothing more', [2, 1], [Wallet::balance($uid), $debits($uid)]);
 
 [$uid, , $held] = $seller(2);
 $r = ListingCheckout::publish($held, Actor::user($uid));
 pin('two credits are short', [false, 'insufficient_credits', 1], [$r['published'], $r['reason'], $r['quote']['shortfall']]);
+pin('the short listing lands nowhere yet', ListingCheckout::LANDING_HELD, $r['landing']);
 pin('nothing was spent and the row stays held', [2, 0, null], [Wallet::balance($uid), $debits($uid), $row($held)['dt_first_pub_date']]);
 
 [$uid, $live, $held] = $seller(0);
@@ -214,6 +217,14 @@ pin('the listing service leaves the order link to the checkout', $listing->getId
 OrderStore::linkListing($held, $listing->getId(), time() + 3600);
 ListingCheckout::publish($held, Actor::user($uid));
 pin('a publish through the checkout drops the link', null, OrderStore::listingOrder($held));
+
+osc_set_preference('moderate_items', '0', 'osclass', 'INTEGER');
+osc_set_preference('logged_user_item_validation', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+[$uid, , $held] = $seller(5);
+pin('a listing that needs the e-mail check lands in validation', ListingCheckout::LANDING_VALIDATION, ListingCheckout::publish($held, Actor::user($uid))['landing']);
+osc_set_preference('moderate_items', '-1', 'osclass', 'INTEGER');
+osc_reset_preferences();
 
 harness_section('Pay step: two at once');
 
