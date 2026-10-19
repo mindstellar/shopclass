@@ -570,6 +570,25 @@ function osc_user_listings_used(?int $userId = null): int
 }
 
 /**
+ * What the next listing costs $userId when it goes live: the extra slots it needs, their
+ * credits, the balance and the shortfall. All zeros when billing is off or nobody is signed in.
+ * The post form, the slot box and the listing rows read it.
+ *
+ * @param int|null $userId
+ *
+ * @return array{slots: int, credits: int, balance: int, shortfall: int}
+ */
+function osc_billing_next_listing_quote(?int $userId = null): array
+{
+    $userId = $userId ?? osc_logged_user_id();
+    if (!osc_billing_enabled() || empty($userId)) {
+        return array('slots' => 0, 'credits' => 0, 'balance' => 0, 'shortfall' => 0);
+    }
+
+    return \mindstellar\billing\ListingCheckout::nextListing((int) $userId);
+}
+
+/**
  * Listings $userId may still publish before hitting the ceiling. -1 means unlimited,
  * the same sentinel osc_user_listing_limit() uses; otherwise never below 0, so a seller
  * already over the line reads back 0 rather than a negative.

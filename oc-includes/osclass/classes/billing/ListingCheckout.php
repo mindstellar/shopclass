@@ -213,17 +213,18 @@ final class ListingCheckout
     }
 
     /**
-     * @param array<string,string|null> $row
-     * @param bool                      $current count the seller's listings as committed now, under lockSeller()
+     * What the seller's next listing costs: the slots it needs, their credits, the balance and
+     * what the balance is short. A held listing is not counted, so its own price equals this.
      *
-     * @return array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}
+     * @param bool $current count the seller's listings as committed now, under lockSeller()
+     *
+     * @return array{slots: int, credits: int, balance: int, shortfall: int}
      */
-    private static function price(array $row, int $userId, bool $current = false): array
+    public static function nextListing(int $userId, bool $current = false): array
     {
-        $held    = ListingStatus::isHeld($row);
         $ceiling = EntitlementStore::listingCeiling($userId);
         $slots   = 0;
-        if ($held && $ceiling !== -1) {
+        if ($ceiling !== -1) {
             $over  = EntitlementStore::liveListings($userId, $current) - $ceiling + 1;
             $slots = max(0, (int) ceil($over / osc_billing_slot_quantity()));
         }
@@ -232,12 +233,26 @@ final class ListingCheckout
         $balance = osc_user_credits($userId);
 
         return array(
-            'held'      => $held,
-            'live'      => !$held && (int) ($row['b_enabled'] ?? 0) === 1,
             'slots'     => $slots,
             'credits'   => $credits,
             'balance'   => $balance,
             'shortfall' => max(0, $credits - $balance),
         );
+    }
+
+    /**
+     * @param array<string,string|null> $row
+     * @param bool                      $current count the seller's listings as committed now, under lockSeller()
+     *
+     * @return array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}
+     */
+    private static function price(array $row, int $userId, bool $current = false): array
+    {
+        $held = ListingStatus::isHeld($row);
+        $cost = $held
+            ? self::nextListing($userId, $current)
+            : array('slots' => 0, 'credits' => 0, 'balance' => osc_user_credits($userId), 'shortfall' => 0);
+
+        return array('held' => $held, 'live' => !$held && (int) ($row['b_enabled'] ?? 0) === 1) + $cost;
     }
 }
