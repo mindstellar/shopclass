@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1353,7 +1353,7 @@ Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_web_user_apply_identity($user)` | Populate the request-scoped identity for the given user. |
 | `osc_web_user_login($user, $remember = false)` | Log a front-end user in by issuing the signed identity cookie. |
 
-### hUtils (48)
+### hUtils (49)
 
 `oc-includes/osclass/helpers/hUtils.php`
 
@@ -1361,6 +1361,7 @@ Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_add_route($id, $regexp, $url, $file, $user_menu = false, $location = 'custom', $section = 'custom', $title = 'Custom')` | Register a file-backed custom route. |
 | `osc_add_route_hook($id, $regexp, $url)` | Register a controller route dispatched by class instead of by file. |
+| `osc_admin_cookie_path()` | The URL path of the admin, e.g. /oc-admin/ or /sub/oc-admin/, for cookies only the admin reads. |
 | `osc_admin_date($date, $dateOnly = false)` | Renders a date for an admin list table: a compact, unambiguous value with the site's long format kept on hover and for screen readers. |
 | `osc_admin_date_format($dateOnly = false)` | Compact numeric format for an admin list table date column. |
 | `osc_autop($text, $line_breaks = true)` | Convert plain-text line breaks into HTML paragraphs and line breaks. |
@@ -1389,7 +1390,7 @@ Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_openstreet_geocode_url($address)` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin.** Get OpenStreetMaps geocode URL. |
 | `osc_pop_admin_login_redirect()` | Admin counterpart of osc_pop_login_redirect(). Single-use. |
 | `osc_pop_login_redirect()` | Read, validate and clear the login-redirect cookie set by osc_set_login_redirect(). |
-| `osc_pop_signed_redirect($cookieName)` | Read, validate and clear a signed-redirect cookie. Always deletes it (single-use). |
+| `osc_pop_signed_redirect($cookieName, $path = null)` | Read, validate and clear a signed-redirect cookie. Always deletes it (single-use). |
 | `osc_private_user_menu($options = null)` | Prints the user's account menu |
 | `osc_request_counts_as_view()` | Whether this request should be counted in the listing view statistics. |
 | `osc_server_is_nginx()` | Whether the site is served by nginx, which ignores .htaccess entirely: rewriting is configured in the server block instead, so anything written to that file is inert. |
@@ -1397,7 +1398,7 @@ Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_server_software()` | The web server's reported identity, lowercased, e.g. "nginx/1.27.0". |
 | `osc_set_admin_login_redirect($url, $keepExisting = false)` | Admin counterpart of osc_set_login_redirect(), under its own cookie so the front-end and admin flows never collide. Used by the admin login page and by the admin auth gate, which remembers the protected page an unauthenticated admin was trying to reach. |
 | `osc_set_login_redirect($url, $keepExisting = false)` | Remember where a visitor came from across the login POST without a session. |
-| `osc_set_signed_redirect($cookieName, $url, $keepExisting = false)` | Store a same-site destination in a short-lived, HMAC-signed standalone cookie — the shared core behind the login/admin-login redirect helpers. Never starts a session. |
+| `osc_set_signed_redirect($cookieName, $url, $keepExisting = false, $path = null)` | Store a same-site destination in a short-lived, HMAC-signed standalone cookie — the shared core behind the login/admin-login redirect helpers. Never starts a session. |
 | `osc_show_captcha($context = '', $deferred = false)` | Echoes the active provider's captcha widget. |
 | `osc_show_recaptcha($section = '')` | Print recaptcha html. |
 | `osc_show_widgets($location)` | Print all widgets belonging to $location |
@@ -1406,7 +1407,7 @@ Core defines 1176 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_tinymce_config($preset = 'basic', array $overrides = array())` | The TinyMCE config every editor in the product starts from, as the JSON object literal tinymce.init() takes. |
 | `osc_turnstile_configured()` | Whether both Cloudflare Turnstile keys are configured. |
 | `osc_upload_token()` | The unguessable token that ties temp photo uploads on a listing form to the browser that made them, without a session. Read from (or minted into) the `oc_upload` cookie once per request; it is the capability the upload store checks so a visitor can only delete the photos they uploaded. |
-| `osc_write_signed_redirect_cookie($cookieName, $value, $expiry)` | Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone — not the session container — so it never starts a session. |
+| `osc_write_signed_redirect_cookie($cookieName, $value, $expiry, $path = null)` | Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone — not the session container — so it never starts a session. |
 
 ### hValidate (15)
 

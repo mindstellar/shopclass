@@ -137,15 +137,16 @@ class Cookie
      * The attributes every site cookie is written with: HttpOnly, SameSite=Lax, Secure on HTTPS,
      * on the site's path and cookie domain.
      *
-     * @param int $expires unix time; 0 for a browser-session cookie, a past time to delete
+     * @param int         $expires unix time; 0 for a browser-session cookie, a past time to delete
+     * @param string|null $path    a narrower path, e.g. the admin's; null for the site path
      *
      * @return array<string,mixed> setcookie() options array
      */
-    public static function options(int $expires): array
+    public static function options(int $expires, ?string $path = null): array
     {
         $options = array(
             'expires'  => $expires,
-            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+            'path'     => $path ?? (defined('REL_WEB_URL') ? REL_WEB_URL : '/'),
             'httponly' => true,
             'samesite' => 'Lax',
         );
@@ -162,11 +163,13 @@ class Cookie
     /**
      * Write one cookie with options(); a past $expires deletes it.
      *
+     * @param string|null $path a narrower path, e.g. the admin's; null for the site path
+     *
      * @return bool false when headers were already sent
      */
-    public static function write(string $name, string $value, int $expires): bool
+    public static function write(string $name, string $value, int $expires, ?string $path = null): bool
     {
-        return !headers_sent() && setcookie($name, $value, self::options($expires));
+        return !headers_sent() && setcookie($name, $value, self::options($expires, $path));
     }
 
     /**

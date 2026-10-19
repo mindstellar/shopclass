@@ -828,7 +828,7 @@ function osc_pop_login_redirect()
  */
 function osc_set_admin_login_redirect($url, $keepExisting = false)
 {
-    osc_set_signed_redirect('oc_admin_login_redirect', $url, $keepExisting);
+    osc_set_signed_redirect('oc_admin_login_redirect', $url, $keepExisting, osc_admin_cookie_path());
 }
 
 /**
@@ -838,20 +838,39 @@ function osc_set_admin_login_redirect($url, $keepExisting = false)
  */
 function osc_pop_admin_login_redirect()
 {
-    return osc_pop_signed_redirect('oc_admin_login_redirect');
+    $path = osc_admin_cookie_path();
+    // Older releases set it on the site path, so public pages carried it too; drop that copy.
+    if (isset($_COOKIE['oc_admin_login_redirect']) && $path !== Cookie::options(0)['path']) {
+        osc_write_signed_redirect_cookie('oc_admin_login_redirect', '', time() - 3600);
+    }
+
+    return osc_pop_signed_redirect('oc_admin_login_redirect', $path);
+}
+
+/**
+ * The URL path of the admin, e.g. /oc-admin/ or /sub/oc-admin/, for cookies only the admin reads.
+ *
+ * @return string
+ */
+function osc_admin_cookie_path()
+{
+    $path = (string) parse_url(osc_admin_base_url(), PHP_URL_PATH);
+
+    return $path === '' ? '/' : $path;
 }
 
 /**
  * Store a same-site destination in a short-lived, HMAC-signed standalone cookie — the shared
  * core behind the login/admin-login redirect helpers. Never starts a session.
  *
- * @param string $cookieName
- * @param string $url
- * @param bool   $keepExisting skip when a valid destination is already stored under this name
+ * @param string      $cookieName
+ * @param string      $url
+ * @param bool        $keepExisting skip when a valid destination is already stored under this name
+ * @param string|null $path         cookie path; null for the site path
  *
  * @return void
  */
-function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
+function osc_set_signed_redirect($cookieName, $url, $keepExisting = false, $path = null)
 {
     if (!is_string($url) || $url === '' || strpos($url, osc_base_url()) !== 0) {
         return;
@@ -868,22 +887,23 @@ function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
     $expiry = time() + 600;
     $value  = \mindstellar\security\SignedPayload::pack('signed-redirect', array('u' => $url), 600);
 
-    osc_write_signed_redirect_cookie($cookieName, $value, $expiry);
+    osc_write_signed_redirect_cookie($cookieName, $value, $expiry, $path);
     $_COOKIE[$cookieName] = $value;
 }
 
 /**
  * Read, validate and clear a signed-redirect cookie. Always deletes it (single-use).
  *
- * @param string $cookieName
+ * @param string      $cookieName
+ * @param string|null $path the path it was set on; null for the site path
  *
  * @return string same-site destination, or '' when absent, tampered, expired or off-site
  */
-function osc_pop_signed_redirect($cookieName)
+function osc_pop_signed_redirect($cookieName, $path = null)
 {
     $value = $_COOKIE[$cookieName] ?? '';
     if ($value !== '') {
-        osc_write_signed_redirect_cookie($cookieName, '', time() - 3600);
+        osc_write_signed_redirect_cookie($cookieName, '', time() - 3600, $path);
         unset($_COOKIE[$cookieName]);
     }
 
@@ -915,15 +935,16 @@ function osc_signed_redirect_verify($value)
  * Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone —
  * not the session container — so it never starts a session.
  *
- * @param string $cookieName
- * @param string $value
- * @param int    $expiry
+ * @param string      $cookieName
+ * @param string      $value
+ * @param int         $expiry
+ * @param string|null $path   cookie path; null for the site path
  *
  * @return void
  */
-function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
+function osc_write_signed_redirect_cookie($cookieName, $value, $expiry, $path = null)
 {
-    Cookie::write((string) $cookieName, (string) $value, (int) $expiry);
+    Cookie::write((string) $cookieName, (string) $value, (int) $expiry, $path === null ? null : (string) $path);
 }
 
 /**
