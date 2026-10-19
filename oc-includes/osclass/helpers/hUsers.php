@@ -1087,8 +1087,8 @@ const OSC_SHOPPER_HIDDEN_MENU = array(
 );
 
 /**
- * The account menu for a shopper: seller entries dropped and "Your orders" added. In every mode
- * an entry whose class is already in the list is dropped, so two sources of one entry show once.
+ * The account menu for a shopper: seller entries dropped and "Your orders" added when no one
+ * else added it. Every other visitor gets the list untouched.
  *
  * @param mixed $options the user_menu_filter list
  *
@@ -1096,35 +1096,20 @@ const OSC_SHOPPER_HIDDEN_MENU = array(
  */
 function osc_shopper_user_menu($options)
 {
-    if (!is_array($options)) {
+    if (!is_array($options) || !osc_is_shopper()) {
         return $options;
     }
 
-    if (osc_is_shopper()) {
-        $options = array_filter($options, static function ($entry): bool {
-            return !in_array(is_array($entry) ? (string) ($entry['class'] ?? '') : '', OSC_SHOPPER_HIDDEN_MENU, true);
-        });
-        if (osc_billing_enabled() && !in_array('opt_billing_orders', array_column($options, 'class'), true)) {
-            $options[] = array('name' => _m('Your orders'), 'url' => osc_billing_orders_url(), 'class' => 'opt_billing_orders');
-        }
+    $options = array_values(array_filter($options, static function ($entry): bool {
+        return !in_array(is_array($entry) ? (string) ($entry['class'] ?? '') : '', OSC_SHOPPER_HIDDEN_MENU, true);
+    }));
+    if (osc_billing_enabled() && !in_array('opt_billing_orders', array_column($options, 'class'), true)) {
+        $options[] = array('name' => _m('Your orders'), 'url' => osc_billing_orders_url(), 'class' => 'opt_billing_orders');
     }
 
-    $seen = array();
-    $out  = array();
-    foreach ($options as $entry) {
-        $class = is_array($entry) ? (string) ($entry['class'] ?? '') : '';
-        if ($class !== '') {
-            if (isset($seen[$class])) {
-                continue;
-            }
-            $seen[$class] = true;
-        }
-        $out[] = $entry;
-    }
-
-    return $out;
+    return $options;
 }
 
-// Priority 20, so core's billing and API entries are already in the list. Plugins::addHook()
-// because this file loads before hPlugins.php.
+// Priority 20, so core's billing and API entries are already in the list; entries added after it
+// are not filtered. Plugins::addHook() because this file loads before hPlugins.php.
 Plugins::addHook('user_menu_filter', 'osc_shopper_user_menu', 20);

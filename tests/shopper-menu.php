@@ -10,7 +10,7 @@
 
 /**
  * The account menu for a shopper: seller entries gone, "Your orders" once, plugin entries kept;
- * an admin session and classifieds mode keep the list, minus repeated entries. DB-free.
+ * an admin session and classifieds mode keep the list untouched. DB-free.
  * Usage: php tests/shopper-menu.php
  */
 
@@ -114,8 +114,8 @@ pin('Aisle\'s own Your orders is kept', 'Orders (Aisle)', $out[5]['name']);
 $out = $run([], $noOrders);
 pin('core adds Your orders when nobody did', 'opt_billing_orders', end($out)['class']);
 pin('...with its url', 'http://x.test/orders', end($out)['url']);
-$out = $run([], $twice);
-pin('two orders entries show once, the first', ['Orders (Aisle)'], array_values(array_column(array_filter($out, static fn ($e) => ($e['class'] ?? '') === 'opt_billing_orders'), 'name')));
+$out = $run([], $menu);
+pin('core adds no second Your orders', 1, count(array_filter($out, static fn ($e) => ($e['class'] ?? '') === 'opt_billing_orders')));
 $out = $run(['billing' => false], $noOrders);
 check('billing off adds no Your orders', !in_array('opt_billing_orders', $classes($out), true));
 
@@ -123,7 +123,7 @@ harness_section('Everyone else');
 pin('an admin session keeps every entry', $classes($menu), $classes($run(['admin' => true], $menu)));
 pin('classifieds mode keeps every entry', $classes($menu), $classes($run(['mode' => 'classifieds'], $menu)));
 pin('a guest in shop mode keeps every entry', $classes($menu), $classes($run(['user' => false], $menu)));
-pin('classifieds mode drops a repeated entry', count($twice) - 1, count($run(['mode' => 'classifieds'], $twice)));
+pin('classifieds mode keeps two entries that share a class', count($twice), count($run(['mode' => 'classifieds'], $twice)));
 pin('an entry that is not an array is kept', 'x', $run([], ['x'])[0]);
 
 exit(harness_result());
