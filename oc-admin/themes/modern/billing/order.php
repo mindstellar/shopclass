@@ -89,6 +89,18 @@ if ($isGoods) {
     $rows[] = array('label' => __('Credits'), 'value' => number_format($order->getCredits()));
 }
 
+$listingId = $order->listingId();
+if ($listingId !== null) {
+    $rows[] = array(
+        'label' => __('Listing'),
+        'value' => OrderStore::listingState($listingId) === 'gone'
+            ? osc_esc_html($order->getLabel()) . ' <span class="text-muted">' . osc_esc_html(__('(deleted)')) . '</span>'
+            : '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=items&action=item_edit&id=' . $listingId) . '">'
+              . osc_esc_html($order->getLabel()) . '</a>',
+        'html'  => true,
+    );
+}
+
 if ($user !== null) {
     $rows[] = array(
         'label' => __('User'),
@@ -182,6 +194,19 @@ foreach ($order->getMeta() as $key => $value) {
             <?php osc_admin_panel_open(__('Order')); ?>
                 <?php osc_admin_definition($rows); ?>
             <?php osc_admin_panel_close(); ?>
+
+            <?php $publishFailed = $order->meta(OrderStore::PUBLISH_FAILED);
+            if ($listingId !== null && is_array($publishFailed)) { ?>
+                <div class="callout-warning callout-block mb-3">
+                    <div>
+                        <?php if (OrderStore::listingState($listingId) === 'live') {
+                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published (%1$s, %2$s). It was published later.'), (string) ($publishFailed['reason'] ?? ''), (string) ($publishFailed['at'] ?? '')));
+                        } else {
+                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published: %1$s (%2$s). The credits are in the buyer\'s wallet.'), (string) ($publishFailed['reason'] ?? ''), (string) ($publishFailed['at'] ?? '')));
+                        } ?>
+                    </div>
+                </div>
+            <?php } ?>
 
             <?php if ($isGoods) { ?>
                 <?php if ($short !== array()) { ?>

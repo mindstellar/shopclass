@@ -623,6 +623,10 @@ msgstr[1] ""
 msgid "%s's profile"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "(deleted)"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BanRuleForm.php
 msgid "(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)"
 msgstr ""
@@ -5172,6 +5176,11 @@ msgstr ""
 msgid "Folder <code>oc-content/uploads</code> exists"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/Receipts.php
+#: oc-includes/osclass/gui/billing/receipt.php
+msgid "For"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 msgid ""
 "For 24 hours each delivery carries two signatures, one with each secret, so "
@@ -6488,6 +6497,7 @@ msgstr ""
 msgid "List of terms not allowed in usernames, separated by commas"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/main/index.php
@@ -8804,6 +8814,18 @@ msgstr ""
 #: oc-includes/osclass/classes/billing/Receipts.php
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "Paid by"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid ""
+"Paid, but the listing could not be published (%1$s, %2$s). It was published "
+"later."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid ""
+"Paid, but the listing could not be published: %1$s (%2$s). The credits are "
+"in the buyer's wallet."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -14833,6 +14855,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
 msgid "library uploads"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/index.php
+msgid "listing not published"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php

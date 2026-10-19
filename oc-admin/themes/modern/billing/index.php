@@ -11,6 +11,7 @@
  */
 
 use mindstellar\billing\Order;
+use mindstellar\billing\OrderStore;
 
 osc_admin_page(array(
     'section' => __('Billing'),
@@ -138,6 +139,11 @@ $isFiltered = $toShip
                             </a>
                             <?php if ($order->isGoods()) { ?>
                                 <br><span class="text-muted"><?php echo osc_esc_html($order->getLabel()); ?></span>
+                            <?php } elseif ($order->isListing()) { ?>
+                                <br><span class="text-muted"><?php echo osc_esc_html($order->getLabel()); ?></span>
+                                <?php if ($order->meta(OrderStore::PUBLISH_FAILED) !== null && OrderStore::listingState((int) $order->listingId()) === 'held') { ?>
+                                    <span class="text-muted">· <?php _e('listing not published'); ?></span>
+                                <?php } ?>
                             <?php } ?>
                         </td>
                         <td>

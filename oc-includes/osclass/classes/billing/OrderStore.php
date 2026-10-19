@@ -22,6 +22,8 @@ use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
+use mindstellar\listing\ListingStatus;
+use mindstellar\listing\ListingStore;
 use mindstellar\model\KeyValue;
 
 /**
@@ -42,6 +44,9 @@ final class OrderStore extends Model
 
     /** s_meta key core sets once the order's receipt e-mail went out. */
     public const RECEIPT_SENT = '_receipt_sent';
+
+    /** s_meta key core sets when an order was paid but its listing could not be published. */
+    public const PUBLISH_FAILED = '_publish_failed';
 
     /** Key-value group linking an unpaid listing to its open order. */
     private const LISTING_GROUP = 'listing_unpaid';
@@ -278,6 +283,41 @@ final class OrderStore extends Model
 
             return $meta;
         });
+    }
+
+    /**
+     * Record that an order was paid but its listing could not be published.
+     *
+     * @param int    $orderId
+     * @param string $reason  Short plain text
+     *
+     * @return bool whether the order exists
+     */
+    public static function notePublishFailed(int $orderId, string $reason): bool
+    {
+        return self::withMeta($orderId, static function (array $meta) use ($reason): array {
+            $meta[self::PUBLISH_FAILED] = array('reason' => $reason, 'at' => date('Y-m-d H:i:s'));
+
+            return $meta;
+        });
+    }
+
+    /**
+     * Where a listing order's listing stands: "held" (waiting for payment), "live" (it went
+     * live at some point) or "gone" (deleted).
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    public static function listingState(int $itemId): string
+    {
+        $row = ListingStore::find($itemId, array('b_enabled', 'b_active', 'b_spam', 'dt_first_pub_date'));
+        if ($row === null) {
+            return 'gone';
+        }
+
+        return ListingStatus::of($row) === ListingStatus::UNPAID ? 'held' : 'live';
     }
 
     /**
