@@ -2,19 +2,13 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.0.0.beta5
+## Shopclass 7.0.0.rc1
 
-Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
+Shopclass 7.0 is a big release and the base for the features that come next in the 7.x line. It opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
 
-It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
+Pages are faster, with more caching, kept database connections and compressed files. With Redis or Valkey on a VPS or in Docker, background jobs start at once and busy counters stay out of the database, and the Docker image needs no cron line. Shared hosting works as before.
 
-Beta 2 gives themes search snippets, related listings and search box suggestions, which a search plugin can take over.
-
-Beta 3 gives plugins their own database migrations, an HTTPS client and street address lookup, and carries the security fixes from 6.4.7.
-
-Beta 4 drops Bootstrap's JavaScript from the admin, lets a search plugin answer the admin Listings screen, stops a double click from posting a listing twice, and lets address lookups wait for a provider's daily limit.
-
-Beta 5 makes pages faster, with more caching, kept connections and compressed files, and lets sellers buy account upgrades such as extra listing slots with credits. Address lookup now needs a lookup plugin such as LocationIQ.
+Sellers at the listing limit can buy an extra slot or account upgrades with credits. Themes get search snippets, related listings and search suggestions, and plugins get their own database migrations, an HTTPS client and address lookup. The admin is tidier and easier to use: one look for tabs, forms and lists, short help text, a layout that works on a phone, no Bootstrap JavaScript, and a media library for site images.
 
 Plugin authors: please read **Breaking** before you upgrade.
 
@@ -61,6 +55,8 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Search snippets: on a keyword search each listing gets its text with the searched words marked, from `osc_item_search_snippet()` and the API's `snippet`. A search plugin can also send category counts, a "did you mean" query and a fuzzy-match flag (`osc_search_category_counts()`, `osc_search_suggestion()`, `osc_search_relaxed()`, and `meta` in the API).
 - Related listings: `osc_related_listings()` and `GET /listings/{id}/related` show live listings like one listing (same category, shared title words). A search plugin can pick them with the `item_related_ids` filter.
 - Search box and post form suggestions: `GET /search/suggest` lists listings whose titles match, with a thumbnail, and `GET /search/categories` suggests up to three categories for a title. A search plugin can answer either through the `search_suggestions` and `category_suggestions` filters, and may add suggested searches. Themes add `osc_search_suggest_attributes()` to a search input to show the list.
+- **Media library**: one screen lists every stored file with a summary, search, a grid view, bulk delete and all kept photo sizes. Rich text editors get a **Media library** button that inserts a site image.
+- `osc_admin_tab_nav()` draws page tabs (System info, Billing, status filters) with the same look as the other admin tabs.
 
 ### Breaking
 
@@ -144,6 +140,10 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
 
 ### Changed
+- The admin works on a phone: list rows become compact cards, tab strips scroll, dialogs keep their buttons in view, and the pager is one row.
+- One tab look across the admin, and Billing and Spam and bots show one form per tab with one Save button.
+- The user editor is one form with sections, a status panel with the account's actions, and the user's alerts on their own tab.
+- Admin help text is one short line per field, and add buttons name what they add, such as "Add listing".
 - The listing map choice moved from **Settings → Listings** to **Settings → General → Maps**, next to its Google Maps key and the address lookup, with clearer help text.
 - Counts on the Market Updates tab, the Update all button, System info and the Locations filter are badges instead of a number in brackets.
 - The category checkbox tree (`osc_admin_tree_picker()`) shows a card per main category with folded subcategories and a live count; a main category with only some subcategories ticked shows a dash and is not saved itself. Its posted names, ids and Check all / Uncheck all still work.
