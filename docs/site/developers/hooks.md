@@ -366,7 +366,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 614 names. Generated from the source; do not edit by hand.
+Core fires 618 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -481,7 +481,7 @@ Core fires 614 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 
-### Email (121)
+### Email (125)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -523,6 +523,10 @@ Core fires 614 names. Generated from the source; do not edit by hand.
 | `email_item_validation_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_item_validation_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_validation_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_legend_words` | filter | `$array, @$email['s_internal_name']` | `oc-includes/osclass/classes/EmailVariables.php` |
+| `email_listing_unpaid_reminder_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_listing_unpaid_reminder_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_listing_unpaid_reminder_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_listing_unpaid_reminder_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_new_admin_description` | filter | `$content['s_text'], $data` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_admin_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_admin_description', $content['s_text'], $data) ), $words ), $data` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_admin_title` | filter | `$content['s_title'], $data` | `oc-includes/osclass/classes/mail/CoreEmails.php` |

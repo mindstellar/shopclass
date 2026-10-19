@@ -135,6 +135,10 @@ action edit_page
 action edited_category
 action edited_category_order
 action edited_item
+action email_listing_unpaid_reminder_description
+action email_listing_unpaid_reminder_description_after
+action email_listing_unpaid_reminder_title
+action email_listing_unpaid_reminder_title_after
 action enable_comment
 action enable_item
 action enable_user

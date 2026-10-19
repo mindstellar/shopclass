@@ -110,6 +110,6 @@ pin('setWord() escapes the body and keeps the subject plain', ['Hi Bo <b>!', '<p
 $e->setWord('{NAME}', 'Cy', '<i>Cy</i>');
 pin('setWord() takes HTML for the body', '<p><i>Cy</i></p>', $e->preview()['body']);
 check('suppress() is remembered', !$e->isSuppressed() && ($e->suppress() ?? true) && $e->isSuppressed());
-pin('names: 7 kinds, 4 parts', 28, count(MailComposing::legacyNames()));
+pin('names: 8 kinds, 4 parts', 32, count(MailComposing::legacyNames()));
 
 exit(harness_result());

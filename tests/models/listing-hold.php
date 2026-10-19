@@ -35,6 +35,15 @@ use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\ListingStore;
+use mindstellar\mail\event\MailComposing;
+use PHPMailer\PHPMailer\PHPMailer;
+
+if (!function_exists('osc_core_url')) {
+    function osc_core_url($name, $args = [])
+    {
+        return 'https://shop.test/index.php?page=billing&action=' . substr((string) $name, 8) . '&' . http_build_query($args);
+    }
+}
 
 $admin = api_admin_boot('osc_models_listing_hold');
 $p     = DB_TABLE_PREFIX;
@@ -108,17 +117,141 @@ pin('nothing is left waiting', 0, $queue->count(JobQueue::STATUS_PENDING));
 pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
 
 harness_section('The reminder');
-$clear();
-$other = seed_item($admin, seed_category($admin, 'Bikes'), $user, 'Unpaid too');
+foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'contactEmail' => 'owner@shop.test', 'date_format' => 'Y-m-d'] as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+scratchdb_forget_cache();
+osc_reset_preferences();
+require_once ABS_PATH . 'oc-includes/osclass/emails.php';
+foreach (['osc_get_domain' => 'shop.test', 'osc_mailserver_name_from' => '', 'osc_mailserver_mail_from' => 'noreply@shop.test', 'osc_themes_path' => ABS_PATH . 'oc-content/themes/', 'osc_theme' => ''] as $fn => $value) {
+    if (!function_exists($fn)) {
+        eval('function ' . $fn . '() { return ' . var_export($value, true) . '; }');
+    }
+}
+
+/** A mailer that keeps what it would have sent. */
+final class HoldMailRecorder extends PHPMailer
+{
+    /** @var array<int,array<string,string>> */
+    public static array $sent = [];
+
+    public function send()
+    {
+        $to           = $this->getToAddresses();
+        self::$sent[] = ['to' => (string) ($to[0][0] ?? ''), 'subject' => $this->Subject, 'body' => $this->Body];
+
+        return true;
+    }
+}
+osc_add_filter('init_send_mail', static fn ($mail) => new HoldMailRecorder(true));
+
+$pageRow = static fn () => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_pages WHERE s_internal_name = 'email_listing_unpaid_reminder'")->fetch_row()[0];
+$runReminder = static function (int $id) use ($clear, $due, $admin, $p): void {
+    $clear();
+    ListingHoldJobs::queue($id, 7);
+    $admin->query("DELETE FROM {$p}t_job_queue WHERE s_type = '" . ListingHoldJobs::EXPIRE . "'");
+    $due();
+    JobWorker::resetRegistration();
+    JobWorker::run(10);
+};
+$runMigration = static function () {
+    $migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0082_listing_unpaid_reminder_mail.php';
+    $migration->up(\mindstellar\database\Connection::getInstance());
+};
+
+$runMigration();
+$userMail = 'remind@example.test';
+$admin->query("UPDATE {$p}t_user SET s_email = '{$userMail}' WHERE pk_i_id = {$user}");
+foreach ([Billing::PREF_ENABLED => 'BOOLEAN', 'billing_slot_enabled' => 'BOOLEAN'] as $k => $t) {
+    osc_set_preference($k, '1', $k === Billing::PREF_ENABLED ? Billing::PREF_GROUP : 'osclass', $t);
+}
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
+osc_set_preference('billing_slot_quantity', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_slot();
+
+$other = seed_item($admin, seed_category($admin, 'Bikes'), $user, 'Unpaid <b>too</b>');
 $hold($other);
-ListingHoldJobs::queue($other, 7);
+$admin->query("UPDATE {$p}t_item SET dt_expiration = '2031-03-04 10:00:00' WHERE pk_i_id = {$other}");
+$deadline = osc_format_date('2031-03-04 10:00:00');
+HoldMailRecorder::$sent = [];
+$runReminder($other);
+pin('the reminder job ran and left the listing', true, $exists($other));
+pin('one mail goes out', 1, count(HoldMailRecorder::$sent));
+$mail = HoldMailRecorder::$sent[0] ?? ['to' => '', 'subject' => '', 'body' => ''];
+pin('to the owner', $userMail, $mail['to']);
+check('with the subject', str_contains($mail['subject'], 'Pay to publish'));
+check('the pay link is the publish page for this listing', str_contains($mail['body'], 'page=billing') && str_contains($mail['body'], 'action=publish') && str_contains($mail['body'], 'itemId=' . $other));
+$credits = ListingCheckout::quote($other, $user)['credits'];
+check('it names the credits', $credits > 0 && str_contains($mail['body'], 'costs ' . $credits . ' credits'));
+check('and the deadline', str_contains($mail['body'], $deadline));
+check('a title with markup arrives escaped', str_contains($mail['body'], '&lt;b&gt;too&lt;/b&gt;') && !str_contains($mail['body'], '<b>too'));
+pin('nothing is left waiting', 0, $queue->count(JobQueue::STATUS_PENDING));
+pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
+JobWorker::run(10);
+pin('running the worker again sends no second mail', 1, count(HoldMailRecorder::$sent));
+
+HoldMailRecorder::$sent = [];
+$paid = seed_item($admin, seed_category($admin, 'Skates'), $user, 'Paid already');
+$runReminder($paid);
+pin('a published listing gets no mail', 0, count(HoldMailRecorder::$sent));
+$gone = seed_item($admin, seed_category($admin, 'Kayaks'), $user, 'Deleted soon');
+$hold($gone);
+ListingHoldJobs::queue($gone, 7);
+$admin->query("DELETE FROM {$p}t_item WHERE pk_i_id = {$gone}");
 $admin->query("DELETE FROM {$p}t_job_queue WHERE s_type = '" . ListingHoldJobs::EXPIRE . "'");
 $due();
 JobWorker::resetRegistration();
 JobWorker::run(10);
-pin('the reminder job ran and left the listing', true, $exists($other));
-pin('nothing is left waiting', 0, $queue->count(JobQueue::STATUS_PENDING));
-pin('and nothing failed', 0, $queue->count(JobQueue::STATUS_ERROR));
+pin('a deleted listing gets no mail', 0, count(HoldMailRecorder::$sent));
+
+$admin->query("UPDATE {$p}t_pages_description d JOIN {$p}t_pages g ON g.pk_i_id = d.fk_i_pages_id SET d.s_title = 'Please pay {ITEM_TITLE}' WHERE g.s_internal_name = 'email_listing_unpaid_reminder' AND d.fk_c_locale_code = 'en_US'");
+HoldMailRecorder::$sent = [];
+$runReminder($other);
+pin('the admin\'s edited title reaches the mail', 'Please pay Unpaid too', trim(HoldMailRecorder::$sent[0]['subject'] ?? ''));
+
+$admin->query("DELETE FROM {$p}t_pages WHERE s_internal_name = 'email_listing_unpaid_reminder'");
+HoldMailRecorder::$sent = [];
+$runReminder($other);
+pin('with the template row gone, the default text still goes out', 1, count(HoldMailRecorder::$sent));
+check('it is the default', str_contains(HoldMailRecorder::$sent[0]['subject'] ?? '', 'Pay to publish'));
+
+$seen = [];
+osc_add_filter('email_listing_unpaid_reminder_title', static function ($text, $item = null) use (&$seen) {
+    $seen[] = $text;
+
+    return 'Old filter: ' . $text;
+}, 10, 2);
+HoldMailRecorder::$sent = [];
+$runReminder($other);
+check('an old title filter runs', $seen !== [] && str_contains(HoldMailRecorder::$sent[0]['subject'] ?? '', 'Old filter'));
+
+$off = static function (MailComposing $e): void {
+    $e->suppress();
+};
+$dispatcher = \mindstellar\container\Container::root()->get(\mindstellar\event\Dispatcher::class);
+$dispatcher->listen(MailComposing::class, $off);
+HoldMailRecorder::$sent = [];
+$runReminder($other);
+pin('a listener that suppresses stops the mail', 0, count(HoldMailRecorder::$sent));
+$dispatcher->remove(MailComposing::class, $off);
+$clear();
+
+harness_section('Migration 0082: the template row, by name');
+pin('the row is gone', 0, $pageRow());
+$runMigration();
+pin('the migration adds it', 1, $pageRow());
+$descCount = static fn () => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_pages_description d JOIN {$p}t_pages g ON g.pk_i_id = d.fk_i_pages_id WHERE g.s_internal_name = 'email_listing_unpaid_reminder'")->fetch_row()[0];
+pin('with one en_US text', 1, $descCount());
+$firstId = (int) $admin->query("SELECT pk_i_id FROM {$p}t_pages WHERE s_internal_name = 'email_listing_unpaid_reminder'")->fetch_row()[0];
+$runMigration();
+pin('a second run leaves one row', 1, $pageRow());
+pin('and one text', 1, $descCount());
+$admin->query("DELETE FROM {$p}t_pages WHERE pk_i_id = {$firstId}");
+$admin->query("INSERT INTO {$p}t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES ({$firstId}, 'email_other', 1, NOW())");
+$runMigration();
+pin('an id taken by another page is not a problem: the row comes back with a new id', [1, true], [$pageRow(), (int) $admin->query("SELECT pk_i_id FROM {$p}t_pages WHERE s_internal_name = 'email_listing_unpaid_reminder'")->fetch_row()[0] !== $firstId]);
 $clear();
 
 harness_section('The daily sweep');
