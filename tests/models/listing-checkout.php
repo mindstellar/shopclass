@@ -405,6 +405,32 @@ pin('a listing order returns to its pay step', osc_billing_publish_url($held), o
 $creditsOrder = OrderStore::create($uid, 'lcgw', 1_000_000, 'USD', 5);
 pin('a credits order returns to the orders page', osc_billing_orders_url(), osc_billing_order_return_url($creditsOrder->getId()));
 
+harness_section('Next listing price');
+
+[$nuid, $nlive, $nheld] = $seller(2);
+$next = ListingCheckout::nextListing($nuid);
+pin('one live at a limit of one: one slot, three credits', [1, 3, 2, 1], [$next['slots'], $next['credits'], $next['balance'], $next['shortfall']]);
+$held2 = ListingCheckout::quote($nheld, $nuid);
+pin('the held listing quote equals the next-listing price', $next, array_intersect_key($held2, $next));
+seed_item($admin, $cat, $nuid, 'Another live');
+pin('two live: two slots, six credits', [2, 6], [ListingCheckout::nextListing($nuid)['slots'], ListingCheckout::nextListing($nuid)['credits']]);
+osc_set_preference('billing_slot_quantity', '2', 'osclass', 'INTEGER');
+osc_reset_preferences();
+pin('slots of two cover it in one purchase', 1, ListingCheckout::nextListing($nuid)['slots']);
+seed_item($admin, $cat, $nuid, 'Third live');
+pin('a part-filled purchase rounds up', 2, ListingCheckout::nextListing($nuid)['slots']);
+osc_set_preference('billing_slot_quantity', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+$fresh = seed_user($admin, 'freshnext', 'freshnext@example.test');
+pin('inside the quota nothing is needed', [0, 0], [ListingCheckout::nextListing($fresh)['slots'], ListingCheckout::nextListing($fresh)['credits']]);
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+pin('an unlimited ceiling needs nothing', 0, ListingCheckout::nextListing($nuid)['slots']);
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+pin('the helper returns the same figures', ListingCheckout::nextListing($nuid), osc_billing_next_listing_quote($nuid));
+pin('the helper is all zeros with no user', ['slots' => 0, 'credits' => 0, 'balance' => 0, 'shortfall' => 0], osc_billing_next_listing_quote(0));
+
 harness_section('Pay step: URL');
 
 pin('the pay-step URL is the billing_publish route', true, str_contains(osc_billing_publish_url(9), 'billing_publish'));

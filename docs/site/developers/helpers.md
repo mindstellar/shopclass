@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1205 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1206 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -175,7 +175,7 @@ Core defines 1205 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (82)
+### hBilling (83)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -203,6 +203,7 @@ Core defines 1205 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_highlight_days()` | Days a highlight runs for. |
 | `osc_billing_highlight_enabled()` | Whether highlighting is registered as a purchasable upgrade at all. |
 | `osc_billing_hold_days()` | Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled, and days a listing saved over the limit waits for payment before it is deleted. |
+| `osc_billing_next_listing_quote(?int $userId = null)` | What the next listing costs $userId when it goes live: the extra slots it needs, their credits, the balance and the shortfall. All zeros when billing is off or nobody is signed in. The post form, the slot box and the listing rows read it. |
 | `osc_billing_no_wait_credits()` | Credit price of waiving the flood wait. |
 | `osc_billing_no_wait_days()` | Days the waiver holds once bought. |
 | `osc_billing_no_wait_enabled()` | Whether waiving the flood wait is registered as a purchasable limit at all. |
