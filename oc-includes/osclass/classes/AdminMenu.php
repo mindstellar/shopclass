@@ -39,6 +39,9 @@ class AdminMenu
     /** Submenu keys per section as core left them, before anyone else registered. */
     private $aCoreSubmenus = array();
 
+    /** Submenu keys a plugin placed inside a group heading, per section. */
+    private $aPlaced = array();
+
     /**
      * Start with an empty menu tree.
      */
@@ -393,6 +396,8 @@ class AdminMenu
             'settings_mailserver',
             'administrator'
         );
+        // Drawn only while a plugin has put something under it: the shop plugins' screens.
+        $this->add_submenu_divider('settings', __('Shop'), 'settings_group_shop', 'administrator');
         $this->add_submenu_divider('settings', __('System'), 'settings_group_system', 'administrator');
         $this->add_submenu(
             'settings',
@@ -515,12 +520,25 @@ class AdminMenu
      * @param string      $submenu_id
      * @param string|null $capability 'moderator' to keep it visible to moderators
      * @param string|null $icon_url
+     * @param string|null $group     id of a group heading in this section, such as
+     *                               'settings_group_shop'; the entry goes at the end of that
+     *                               group. Unknown or null: it is appended to the section.
+     * @param string[]    $match     further admin urls that mark this entry as the current one,
+     *                               such as the other tabs of a screen
      *
      * @return void
      */
-    public function add_submenu($menu_id, $submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
-    {
-        $array                                     = array(
+    public function add_submenu(
+        $menu_id,
+        $submenu_title,
+        $url,
+        $submenu_id,
+        $capability = null,
+        $icon_url = null,
+        $group = null,
+        $match = array()
+    ) {
+        $array = array(
             $submenu_title,
             $url,
             $submenu_id,
@@ -528,7 +546,46 @@ class AdminMenu
             $capability,
             $icon_url
         );
-        $this->aMenu[$menu_id]['sub'][$submenu_id] = $array;
+        if ($match) {
+            $array[6] = array_values((array)$match);
+        }
+
+        $sub = $this->aMenu[$menu_id]['sub'] ?? array();
+        unset($sub[$submenu_id]);
+        $at = $group !== null ? self::groupEnd($sub, 'divider_' . $group) : null;
+        if ($at === null) {
+            $sub[$submenu_id] = $array;
+        } else {
+            $sub = array_slice($sub, 0, $at, true) + array($submenu_id => $array) + array_slice($sub, $at, null, true);
+            $this->aPlaced[$menu_id][] = $submenu_id;
+        }
+        $this->aMenu[$menu_id]['sub'] = $sub;
+    }
+
+    /**
+     * Position just after the last entry of the group headed by $dividerKey, or null when
+     * there is no such heading.
+     *
+     * @param array<string,array<mixed>> $sub
+     * @param string                     $dividerKey
+     *
+     * @return int|null
+     */
+    private static function groupEnd(array $sub, string $dividerKey): ?int
+    {
+        $at = null;
+        $i  = 0;
+        foreach ($sub as $key => $entry) {
+            if ($at !== null && strpos($entry[1], 'divider_') === 0) {
+                return $at;
+            }
+            $i++;
+            if ($at !== null || $key === $dividerKey) {
+                $at = $i;
+            }
+        }
+
+        return $at;
     }
 
     /**
@@ -597,8 +654,17 @@ class AdminMenu
                     $credential_sub = $aSub[4] ?? $aSub[3];
 
                     if (!$is_moderator || ($credential_sub === 'moderator')) { // show
-                        $url_submenu = $aSub[1];
-                        $url_submenu = str_replace($bases, '', $url_submenu);
+                        $url_submenu = str_replace($bases, '', $aSub[1]);
+                        // A screen with tabs claims the urls of its other tabs; the longest one that matches counts.
+                        if (strpos($actual_url, $url_submenu) !== 0) {
+                            foreach ($aSub[6] ?? array() as $extra) {
+                                $extra = str_replace($bases, '', $extra);
+                                if ($extra !== '' && strpos($actual_url, $extra) === 0) {
+                                    $url_submenu = $extra;
+                                    break;
+                                }
+                            }
+                        }
 
                         if ($url_submenu && strpos($actual_url, $url_submenu) === 0) {
                             // Two entries can share a link, such as a plugin's shortcut to a core screen; the one in the page's own section wins.
@@ -685,6 +751,7 @@ class AdminMenu
         if ($core === null) {
             return null;
         }
+        $core = array_merge($core, $this->aPlaced[$menuId] ?? array());
 
         $grouped = false;
         foreach ($visible as $entry) {

@@ -1542,6 +1542,27 @@ function osc_cart_saved(int $userId): array
     return \mindstellar\billing\CartStore::read($userId)['lines'];
 }
 
+if (!function_exists('osc_billing_gateway_setup_url')) {
+    /**
+     * Where an admin sets a payment method up, or '' when the gateway does not say. A gateway
+     * names it with an optional settingsUrl(): ?string method; one without it has no link.
+     *
+     * @param \mindstellar\billing\PaymentGateway $gateway
+     *
+     * @return string
+     * @since 7.1.0
+     */
+    function osc_billing_gateway_setup_url($gateway): string
+    {
+        if (!is_object($gateway) || !method_exists($gateway, 'settingsUrl')) {
+            return '';
+        }
+        $url = $gateway->settingsUrl();
+
+        return is_string($url) ? $url : '';
+    }
+}
+
 /*
  * Wallet/buy links on the account menu. This runs through the same 'user_menu_filter'
  * a theme's own account sidebar already applies its options through (see

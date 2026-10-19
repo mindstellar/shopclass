@@ -923,12 +923,18 @@ if (!function_exists('osc_settings_menu_init')) {
             if ($page['menu'] === '') {
                 continue;
             }
+            $menu = $page['menu'];
+            // Billing has a menu only while it is switched on; the page then lives in Settings.
+            if ($menu === 'billing' && !isset(AdminMenu::getInstance()->get_array_menu()['billing'])) {
+                $menu = 'settings';
+            }
             osc_add_admin_submenu_page(
-                $page['menu'],
+                $menu,
                 $page['menu_title'],
                 osc_settings_page_url($id),
                 'settings-page-' . $id,
-                $page['capability']
+                $page['capability'],
+                $menu === 'settings' && $page['group'] !== '' ? 'settings_group_' . $page['group'] : null
             );
         }
         SettingsPageRegistry::getInstance()->menuReady(true);

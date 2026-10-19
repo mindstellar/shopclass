@@ -70,11 +70,13 @@ $tab = (string) __get('billing_tab');
                     <th scope="col"><?php _e('Payment method'); ?></th>
                     <th scope="col"><?php _e('Currencies'); ?></th>
                     <th scope="col"><?php _e('Status'); ?></th>
+                    <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                 </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($gateways as $gateway) {
-                    $ready = $gateway->isConfigured(); ?>
+                    $ready = $gateway->isConfigured();
+                    $setup = osc_billing_gateway_setup_url($gateway); ?>
                     <tr>
                         <td>
                             <strong><?php echo osc_esc_html($gateway->getName()); ?></strong>
@@ -88,6 +90,11 @@ $tab = (string) __get('billing_tab');
                                 $ready ? 'active' : 'inactive',
                                 $ready ? __('Ready') : __('Needs setting up')
                             ); ?>
+                        </td>
+                        <td class="text-end">
+                            <?php if ($setup !== '') { ?>
+                                <a href="<?php echo osc_esc_html($setup); ?>"><?php _e('Set up'); ?></a>
+                            <?php } ?>
                         </td>
                     </tr>
                 <?php } ?>

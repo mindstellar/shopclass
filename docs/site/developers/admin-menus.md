@@ -35,9 +35,17 @@ osc_add_admin_submenu_page(
     $submenu_title,
     $url,
     $submenu_id,
-    $capability = 'administrator'
+    $capability = 'administrator',
+    $group = null,
+    $match = array()
 );
 ```
+
+`$group` is the id of a heading inside the section, such as `settings_group_shop`
+(Settings has `site`, `content`, `email`, `shop` and `system` headings). The entry goes at the
+end of that group. `$match` lists other admin URLs that should light this entry, for the
+tabs of one screen. A declared settings page takes the same placement with `'group' => 'shop'`
+and can draw tabs with `'tabs'`.
 
 ## Removing entries
 

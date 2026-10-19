@@ -44,6 +44,28 @@ pin('the longest matching link still wins', ['settings', 'settings_general'], Ad
 pin('a plugin page highlights its own entry', ['plugins', 'plugins_manage'], AdminMenu::current($menu, 'page=plugins', 'plugins', false, $bases));
 pin('no query string is the dashboard', ['dash', ''], AdminMenu::current($menu, '', null, false, $bases));
 
+harness_section('Group placement');
+
+$m = new AdminMenu();
+$m->add_menu('Settings', $base . '?page=settings', 'settings', 'administrator');
+$m->add_submenu_divider('settings', 'Site', 'settings_group_site');
+$m->add_submenu('settings', 'General', $base . '?page=settings', 'settings_general', 'administrator');
+$m->add_submenu_divider('settings', 'Shop', 'settings_group_shop');
+$m->add_submenu_divider('settings', 'System', 'settings_group_system');
+$m->add_submenu('settings', 'Storage', $base . '?page=settings&action=storage', 'settings_storage', 'administrator');
+$m->add_submenu('settings', 'Tax', $base . '?page=settings&action=custom&id=tax', 's-tax', 'administrator', null, 'settings_group_shop');
+$m->add_submenu('settings', 'Shipping', $base . '?page=plugins&action=renderplugin&route=shipping-zones', 's-ship', 'administrator', null, 'settings_group_shop', [$base . '?page=settings&action=custom&id=shipping']);
+$m->add_submenu('settings', 'Elsewhere', $base . '?page=x', 's-else', 'administrator', null, 'settings_group_nope');
+$m->add_submenu('settings', 'Old call', $base . '?page=y', 's-old', 'administrator');
+pin('entries land at the end of their group, in order; unknown group and old calls append',
+    ['divider_settings_group_site', 'settings_general', 'divider_settings_group_shop', 's-tax', 's-ship', 'divider_settings_group_system', 'settings_storage', 's-else', 's-old'],
+    array_keys($m->get_array_menu()['settings']['sub']));
+
+$tabbed = $m->get_array_menu();
+pin('a tab url highlights the entry that claims it', ['settings', 's-ship'], AdminMenu::current($tabbed, 'page=settings&action=custom&id=shipping', 'settings', false, $bases));
+pin('the first tab highlights it too', ['settings', 's-ship'], AdminMenu::current($tabbed, 'page=plugins&action=renderplugin&route=shipping-zones', 'plugins', false, $bases));
+pin('another settings page keeps its own', ['settings', 's-tax'], AdminMenu::current($tabbed, 'page=settings&action=custom&id=tax', 'settings', false, $bases));
+
 exit(harness_result());
 
 /* file end: ./tests/admin-menu-current.php */

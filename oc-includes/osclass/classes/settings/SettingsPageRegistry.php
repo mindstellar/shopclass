@@ -96,6 +96,7 @@ final class SettingsPageRegistry extends Registry
         'users',
         'pages',
         'stats',
+        'billing',
     );
 
     /** @var array<string,int> ids a second registration tried to claim */
@@ -129,6 +130,11 @@ final class SettingsPageRegistry extends Registry
      *                             (reached from a link the plugin puts somewhere else).
      *                             Defaults to 'plugins'.
      *   'menu_title' => string    Menu label; defaults to 'title'.
+     *   'group'      => string    A heading inside the Settings menu to sit under: 'site',
+     *                             'content', 'email', 'shop' or 'system'. Settings only.
+     *   'tabs'       => array|callable  Tab links (label, url, active) drawn above the form,
+     *                             or a callable returning them. For a page that is one tab
+     *                             of a larger screen.
      *   'section'    => string    Preference section the values are stored in.
      *                             Defaults to the page id, which is what keeps one
      *                             plugin's keys out of core's 'osclass' section.
@@ -288,6 +294,10 @@ final class SettingsPageRegistry extends Registry
             'id'         => $id,
             'title'      => $spec['title'],
             'menu'       => $menu,
+            'group'      => isset($spec['group']) && is_string($spec['group']) && preg_match(self::IDENTIFIER, $spec['group'])
+                ? $spec['group']
+                : '',
+            'tabs'       => isset($spec['tabs']) && (is_array($spec['tabs']) || is_callable($spec['tabs'])) ? $spec['tabs'] : null,
             'menu_title' => isset($spec['menu_title']) && is_string($spec['menu_title'])
                 ? $spec['menu_title']
                 : $spec['title'],

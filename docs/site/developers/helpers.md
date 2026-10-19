@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1212 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1213 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -87,7 +87,7 @@ Core defines 1212 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_add_admin_menu_page($menu_title, $url, $menu_id, $capability = 'administrator', $icon_url = null, $position = null)` | Add menu entry |
 | `osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability = null)` | Add submenu divider under menu id $menu_id |
-| `osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator')` | Add submenu under menu id $menu_id |
+| `osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator', $group = null, $match = array())` | Add submenu under menu id $menu_id |
 | `osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the appearance menu page |
 | `osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the categories menu page |
 | `osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the listings menu page |
@@ -175,7 +175,7 @@ Core defines 1212 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (83)
+### hBilling (84)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -199,6 +199,7 @@ Core defines 1212 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_free_live_listings()` | Free listing slots: how many of a seller's listings may be live (published, not yet expired -- see EntitlementStore::liveListings()) at once before a listing.slot entitlement is needed. 0 = unlimited, which is also what an unset preference reads as -- an upgraded install stays unlimited. |
 | `osc_billing_free_over()` | Subtotal from which delivery is free, in micros. 0 = never. |
 | `osc_billing_gateway_name(string $gatewayId)` | The gateway's display name for an order list, falling back to the stored id when the plugin that took the payment is no longer installed. |
+| `osc_billing_gateway_setup_url($gateway)` | Where an admin sets a payment method up, or '' when the gateway does not say. A gateway names it with an optional settingsUrl(): ?string method; one without it has no link. |
 | `osc_billing_highlight_credits()` | Credit price of highlighting a listing. |
 | `osc_billing_highlight_days()` | Days a highlight runs for. |
 | `osc_billing_highlight_enabled()` | Whether highlighting is registered as a purchasable upgrade at all. |

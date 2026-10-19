@@ -1067,6 +1067,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/settings/api.php
+#: oc-admin/themes/modern/settings/billing.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/tools/backup.php
@@ -10877,6 +10878,7 @@ msgid "Set a backups bucket"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
+#: oc-admin/themes/modern/settings/billing.php
 msgid "Set up"
 msgstr ""
 
@@ -10969,6 +10971,7 @@ msgid "Shipping class"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
+#: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Shop"
 msgstr ""

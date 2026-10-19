@@ -21,6 +21,8 @@
  *   - a refund or decline for a different amount does nothing
  *   - the admin Refund button refunds its own paid orders once, and nothing else
  *
+ *   - a gateway's optional settingsUrl() gives the Settings > Billing "Set up" link
+ *
  * Usage:  php tests/test-gateway.php   (own scratch database, dropped on exit)
  */
 
@@ -344,5 +346,27 @@ harness_section('Dashboard link');
 $linked = $newOrder(1);
 check('the test checkout page is its dashboard', strpos((string) $gateway->dashboardUrl($linked), 'route=test-gateway-checkout') !== false);
 pin('core shows no link on an http site', null, Billing::dashboardUrl($linked));
+
+harness_section('Set up link');
+
+pin('a gateway without settingsUrl has no link', '', osc_billing_gateway_setup_url($gateway));
+$withUrl = new class ($gateway) {
+    public function __construct(private $inner)
+    {
+    }
+
+    public function settingsUrl(): ?string
+    {
+        return 'https://example.test/oc-admin/?page=settings&action=custom&id=acme';
+    }
+};
+pin('a gateway that names its settings page gets the link', 'https://example.test/oc-admin/?page=settings&action=custom&id=acme', osc_billing_gateway_setup_url($withUrl));
+$nullUrl = new class () {
+    public function settingsUrl(): ?string
+    {
+        return null;
+    }
+};
+pin('a null answer is no link', '', osc_billing_gateway_setup_url($nullUrl));
 
 exit(harness_result());
