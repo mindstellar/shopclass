@@ -30,19 +30,6 @@ use mindstellar\security\Totp;
 $db = api_admin_boot('osc_models_admin_login_cookies');
 $p  = DB_TABLE_PREFIX;
 
-$port  = 0;
-$probe = @stream_socket_server('tcp://127.0.0.1:0');
-if ($probe !== false) {
-    $port = (int) substr((string) strrchr((string) stream_socket_get_name($probe, false), ':'), 1);
-    fclose($probe);
-}
-if ($port === 0) {
-    echo "SKIP  no free local port\n";
-    harness_section('skipped');
-    check('skipped: no free local port', true);
-    exit(harness_result());
-}
-
 harness_section('an installed site');
 seed_locale($db, 'en_US', 'English (US)');
 Connection::getInstance()->executeScript(str_replace(
@@ -81,59 +68,86 @@ $clearTries = static function () use ($db, $p): void {
 
 $dir = sys_get_temp_dir() . '/osc-admin-cookies-' . getmypid() . '/';
 @mkdir($dir, 0700, true);
-$server = null;
-register_shutdown_function(static function () use (&$server, $dir): void {
-    if (is_resource($server)) {
-        proc_terminate($server);
-        proc_close($server);
+$servers = [];
+register_shutdown_function(static function () use (&$servers, $dir): void {
+    foreach ($servers as $server) {
+        if (is_resource($server)) {
+            proc_terminate($server);
+            proc_close($server);
+        }
     }
     array_map('unlink', glob($dir . '*') ?: []);
     @rmdir($dir);
 });
 $root = rtrim(ABS_PATH, '/');
-file_put_contents($dir . 'router.php', '<?php
+/** Serve the site on a free port under $prefix ('' or e.g. '/sub'); returns its base URL, or '' when it did not start. */
+$serve = static function (string $prefix) use (&$servers, $dir, $root, $p): string {
+    $port  = 0;
+    $probe = @stream_socket_server('tcp://127.0.0.1:0');
+    if ($probe !== false) {
+        $port = (int) substr((string) strrchr((string) stream_socket_get_name($probe, false), ':'), 1);
+        fclose($probe);
+    }
+    $router = $dir . 'router' . md5($prefix) . '.php';
+    file_put_contents($router, '<?php
+$prefix = ' . var_export($prefix, true) . ';
 $path = (string) parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
+if ($prefix !== "" && strpos($path, $prefix . "/") === 0) {
+    $path = substr($path, strlen($prefix));
+}
 if ($path === "/oc-admin/" || $path === "/oc-admin/index.php") {
-    $_SERVER["SCRIPT_NAME"] = $_SERVER["PHP_SELF"] = "/oc-admin/index.php";
+    $_SERVER["SCRIPT_NAME"] = $_SERVER["PHP_SELF"] = $prefix . "/oc-admin/index.php";
     $_SERVER["SCRIPT_FILENAME"] = ' . var_export($root . '/oc-admin/index.php', true) . ';
     chdir(' . var_export($root . '/oc-admin', true) . ');
     require ' . var_export($root . '/oc-admin/index.php', true) . ';
     return true;
 }
-if ($path !== "/" && is_file(' . var_export($root, true) . ' . $path)) {
+if ($prefix === "" && $path !== "/" && is_file(' . var_export($root, true) . ' . $path)) {
     return false;
 }
-$_SERVER["SCRIPT_NAME"] = $_SERVER["PHP_SELF"] = "/index.php";
+$_SERVER["SCRIPT_NAME"] = $_SERVER["PHP_SELF"] = $prefix . "/index.php";
 $_SERVER["SCRIPT_FILENAME"] = ' . var_export($root . '/index.php', true) . ';
 chdir(' . var_export($root, true) . ');
 require ' . var_export($root . '/index.php', true) . ';
 ');
-$base   = 'http://127.0.0.1:' . $port;
-$server = proc_open(
-    [PHP_BINARY, '-d', 'display_errors=1', '-d', 'error_reporting=' . E_ALL, '-d', 'opcache.jit=disable', '-S', '127.0.0.1:' . $port, '-t', $root, $dir . 'router.php'],
-    [0 => ['file', '/dev/null', 'r'], 1 => ['file', $dir . 'server.log', 'w'], 2 => ['file', $dir . 'server.log', 'a']],
-    $pipes,
-    $root,
-    [
-        'PATH'                   => (string) getenv('PATH'),
-        'OSC_IGNORE_CONFIG_FILE' => '1',
-        'DB_HOST'                => DB_HOST,
-        'DB_PORT'                => (string) ini_get('mysqli.default_port'),
-        'DB_NAME'                => DB_NAME,
-        'DB_USER'                => DB_USER,
-        'DB_PASSWORD'            => DB_PASSWORD,
-        'DB_TABLE_PREFIX'        => $p,
-        'WEB_PATH'               => $base . '/',
-        'REL_WEB_URL'            => '/',
-    ]
-);
-$up = false;
-for ($i = 0; $i < 100 && !$up; $i++) {
-    usleep(30000);
-    $sock = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.1);
-    $up   = $sock !== false && fclose($sock);
+    $base      = 'http://127.0.0.1:' . $port;
+    $servers[] = proc_open(
+        [PHP_BINARY, '-d', 'display_errors=1', '-d', 'error_reporting=' . E_ALL, '-d', 'opcache.jit=disable', '-S', '127.0.0.1:' . $port, '-t', $root, $router],
+        [0 => ['file', '/dev/null', 'r'], 1 => ['file', $dir . 'server.log', 'a'], 2 => ['file', $dir . 'server.log', 'a']],
+        $pipes,
+        $root,
+        [
+            'PATH'                   => (string) getenv('PATH'),
+            'OSC_IGNORE_CONFIG_FILE' => '1',
+            'DB_HOST'                => DB_HOST,
+            'DB_PORT'                => (string) ini_get('mysqli.default_port'),
+            'DB_NAME'                => DB_NAME,
+            'DB_USER'                => DB_USER,
+            'DB_PASSWORD'            => DB_PASSWORD,
+            'DB_TABLE_PREFIX'        => $p,
+            'WEB_PATH'               => $base . $prefix . '/',
+            'REL_WEB_URL'            => $prefix . '/',
+        ]
+    );
+    for ($i = 0; $i < 100 && $port > 0; $i++) {
+        usleep(30000);
+        $sock = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.1);
+        if ($sock !== false) {
+            fclose($sock);
+
+            return $base;
+        }
+    }
+
+    return '';
+};
+$base = $serve('');
+if ($base === '') {
+    echo "SKIP  the local server did not start\n";
+    harness_section('skipped');
+    check('skipped: the local server did not start', true);
+    exit(harness_result());
 }
-check('the server started', $up);
 
 /**
  * One request: [status, Location, Set-Cookie lines keyed by name, body].
@@ -142,7 +156,7 @@ check('the server started', $up);
  * @param array<string,string> $post    form fields; a GET when empty
  */
 $call = static function (string $path, array $cookies = [], array $post = [], array $headers = []) use ($base): array {
-    $ch = curl_init($base . $path);
+    $ch = curl_init(str_starts_with($path, 'http') ? $path : $base . $path);
     if ($cookies !== []) {
         $headers[] = 'Cookie: ' . implode('; ', array_map(static fn ($k, $v) => $k . '=' . $v, array_keys($cookies), $cookies));
     }
@@ -283,6 +297,45 @@ check('the used cookie does not sign in again, even with a good backup code', $r
 $r         = $post2fa($valueOf($set, $twoCookie), $codes[2]);
 check('a backup code signs in', $r[0] === 302 && !str_contains($r[1], 'page=login') && $valueOf($r[2], 'osclass') !== '', $r[0] . ' ' . $r[1]);
 pin('...and is used up', 7, count(AdminTwoFactor::settings($twoRow)['backup']));
+
+harness_section('a forged or stale code-step cookie');
+
+$clearTries();
+[, , $set] = $login('twofa', 'secret-pass');
+$fresh     = $valueOf($set, $twoCookie);
+$forged    = substr($fresh, 0, -1) . (substr($fresh, -1) === 'A' ? 'B' : 'A');
+$r         = $post2fa($forged, $codes[3]);
+check('a cookie with a wrong signature signs no one in', $refused($r), $r[0] . ' ' . $r[1]);
+pin('...and the backup code is not used up', 7, count(AdminTwoFactor::settings($twoRow)['backup']));
+
+[, , $set] = $login('plain', 'secret-pass', [$twoCookie => $fresh]);
+pin('a sign-in without two-step clears a stale code-step cookie', ['/oc-admin/'], $paths($set, $twoCookie));
+check('...as a deletion', str_contains(implode(' ', $set[$twoCookie] ?? []), 'Max-Age=0'));
+[, , $set] = $call('/oc-admin/index.php?page=main&action=logout', ['osclass' => $valueOf($set, 'osclass'), $twoCookie => $fresh]);
+check('logging out clears it too', str_contains(implode(' ', $set[$twoCookie] ?? []), 'Max-Age=0'), implode(' | ', $set[$twoCookie] ?? []));
+
+$db->query("UPDATE {$p}t_admin SET s_password = '" . password_hash('new-pass', PASSWORD_BCRYPT, ['cost' => 12]) . "' WHERE pk_i_id = $twoId");
+$r = $post2fa($fresh, $codes[3]);
+check('a password changed after the password step ends the code step', $refused($r), $r[0] . ' ' . $r[1]);
+$db->query("UPDATE {$p}t_admin SET s_password = '$livePass' WHERE pk_i_id = $twoId");
+
+harness_section('a site in a subfolder');
+
+$sub = $serve('/sub');
+check('the subfolder server started', $sub !== '');
+[$code, , $set] = $call($sub . '/sub/oc-admin/index.php?page=items');
+pin('the redirect cookie is on the subfolder admin path', [302, ['/sub/oc-admin/']], [$code, $paths($set, 'oc_admin_login_redirect')]);
+[, , , $body] = $call($sub . '/sub/oc-admin/index.php?page=login');
+$subCsrf      = [];
+foreach (['CSRFName', 'CSRFToken'] as $field) {
+    if (preg_match('/name=[\'"]' . $field . '[\'"] value=[\'"]([^\'"]*)/', $body, $m) === 1) {
+        $subCsrf[$field] = html_entity_decode($m[1]);
+    }
+}
+$clearTries();
+[$code, $location, $set] = $call($sub . '/sub/oc-admin/index.php', [], ['page' => 'login', 'action' => 'login_post', 'user' => 'twofa', 'password' => 'secret-pass', 'locale' => 'en_US'] + $subCsrf);
+check('the password step asks for the code', $code === 302 && str_contains($location, 'action=2fa'), $code . ' ' . $location);
+pin('...with the code-step cookie on the subfolder admin path', ['/sub/oc-admin/'], $paths($set, $twoCookie));
 
 $log = (string) @file_get_contents($dir . 'server.log');
 check('the server logged no PHP error', preg_match('/PHP (Warning|Notice|Deprecated|Fatal|Parse)/', $log) !== 1, $log);
