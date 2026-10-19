@@ -389,6 +389,15 @@ try {
 }
 osc_remove_filter('billing_can_publish', $veto);
 pin('a plugin refusal within the free limit is refused, not held', 'listing_limit', $refused);
+osc_add_filter('billing_can_publish', $veto);
+$refused = null;
+try {
+    $post($sellerOf($ann), ['catId' => (string) $bikes]);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+osc_remove_filter('billing_can_publish', $veto);
+pin('a plugin refusal over the limit is refused too, as the post form does', 'listing_limit', $refused);
 $adminPost = $post($actor, ['ownerId' => (string) $ann, 'catId' => (string) $bikes]);
 pin('an admin post over the limit goes live', [1, 1], array_slice($state($adminPost->id()), 0, 2));
 $guestPost = $post(Actor::guest('192.0.2.71'), ['catId' => (string) $bikes]);

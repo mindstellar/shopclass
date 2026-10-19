@@ -855,25 +855,16 @@ final class ListingService
         osc_run_hook('pre_item_add', $aItem, $text);
         $errors = self::pluginErrors($errors, $text, (string) osc_apply_filter('pre_item_add_error', $text, $aItem));
 
-        // The one choke point for the listing quota. Guest posts (no user id) have no
-        // wallet to charge and admin posts are never metered, so both skip enforcement
-        // entirely. withinFreeQuota() is the same COUNT canPublish() would otherwise run
-        // again internally, so it is computed once here and handed to canPublish() rather
-        // than paying for it twice on every post. Nothing is ever consumed here: a
-        // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
-        // checked, so there is nothing left to spend once a post is allowed through.
+        // The one choke point for the listing quota: guests and admin posts are not metered.
+        // Over the limit the listing is held until paid for, or refused (see postingRule()).
         if ((!$actor->isAdmin() || $import) && osc_billing_enabled() && !empty($aItem['userId'])) {
             // Locked, so two posts or a post and a publish cannot both take the last free slot.
             \mindstellar\billing\EntitlementStore::lockSeller((int) $aItem['userId']);
-            $withinFreeQuota = \mindstellar\billing\EntitlementStore::withinFreeQuota((int) $aItem['userId'], true);
-            if (!\mindstellar\billing\EntitlementStore::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                // Over the limit the listing is saved hidden until it is paid for. Admins, imports
-                // and a plugin's billing_can_publish refusal are refused.
-                if (!$withinFreeQuota && !$actor->isAdmin() && osc_billing_pay_at_post()) {
-                    $hold = true;
-                } else {
-                    $errors[] = ListingValidator::entry('', 'listing_limit', osc_listing_limit_message((int) $aItem['userId'], $aItem));
-                }
+            $rule = \mindstellar\billing\ListingCheckout::postingRule((int) $aItem['userId'], array('item' => $aItem), true, !$actor->isAdmin());
+            if ($rule === \mindstellar\billing\ListingCheckout::POST_HOLD) {
+                $hold = true;
+            } elseif ($rule === \mindstellar\billing\ListingCheckout::POST_REFUSE) {
+                $errors[] = ListingValidator::entry('', 'listing_limit', osc_listing_limit_message((int) $aItem['userId'], $aItem));
             }
         }
 

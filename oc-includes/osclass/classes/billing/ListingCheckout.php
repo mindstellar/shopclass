@@ -44,6 +44,10 @@ final class ListingCheckout
     public const LANDING_MODERATION = 'moderation';
     public const LANDING_CLOSED     = 'closed';
 
+    public const POST_PUBLISH = 'publish';
+    public const POST_HOLD    = 'hold';
+    public const POST_REFUSE  = 'refuse';
+
     /** The columns landing() reads. */
     private const STATUS_COLUMNS = array('fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration', 'dt_first_pub_date');
 
@@ -371,6 +375,29 @@ final class ListingCheckout
             'balance'   => $balance,
             'shortfall' => max(0, $credits - $balance),
         );
+    }
+
+    /**
+     * What happens to the seller's next listing: it goes live, it is held until paid for (over
+     * the slot limit with pay at post on) or it is refused (the limit with pay at post off, or a
+     * plugin's `billing_can_publish`). The post form and the submit both ask this.
+     *
+     * @param array<string,mixed> $ctx     passed to the billing_can_publish filter
+     * @param bool                $current count the seller's listings under lockSeller()
+     * @param bool                $mayHold false where a hold is never offered (an admin import)
+     */
+    public static function postingRule(int $userId, array $ctx = array(), bool $current = false, bool $mayHold = true): string
+    {
+        $within = !osc_billing_enabled() || EntitlementStore::withinFreeQuota($userId, $current);
+        if (EntitlementStore::canPublish($userId, $ctx, $within)) {
+            return self::POST_PUBLISH;
+        }
+        // Only the slot limit may hold: a plugin that refuses even with the slots paid is final.
+        if (!$within && $mayHold && osc_billing_pay_at_post() && EntitlementStore::canPublish($userId, $ctx, true)) {
+            return self::POST_HOLD;
+        }
+
+        return self::POST_REFUSE;
     }
 
     /**

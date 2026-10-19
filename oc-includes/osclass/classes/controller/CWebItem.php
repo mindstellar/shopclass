@@ -13,7 +13,7 @@
  */
 
 use mindstellar\auth\Actor;
-use mindstellar\billing\EntitlementStore;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\comment\CommentService;
 use mindstellar\comment\SavedComment;
 use mindstellar\exception\ConflictException;
@@ -123,16 +123,14 @@ class CWebItem extends BaseModel
         // at all would only waste the writing. Admins are never metered, and guests
         // have no quota to be outside of. With pay-at-post a seller over the slot limit
         // writes the listing first and pays on the last step.
-        if (!osc_is_admin_user_logged_in()
-            && osc_is_web_user_logged_in()
-            && !osc_user_can_publish()
-        ) {
-            // Only the slot limit holds: a billing_can_publish refusal still turns them back.
-            if (!osc_billing_pay_at_post() || !EntitlementStore::canPublish((int) osc_logged_user_id(), array(), true)) {
-                osc_add_flash_error_message(osc_listing_limit_message());
-                $this->redirectTo(osc_user_list_items_url());
-            }
-
+        $rule = !osc_is_admin_user_logged_in() && osc_is_web_user_logged_in()
+            ? ListingCheckout::postingRule((int) osc_logged_user_id())
+            : ListingCheckout::POST_PUBLISH;
+        if ($rule === ListingCheckout::POST_REFUSE) {
+            osc_add_flash_error_message(osc_listing_limit_message());
+            $this->redirectTo(osc_user_list_items_url());
+        }
+        if ($rule === ListingCheckout::POST_HOLD) {
             $quote = osc_billing_next_listing_quote();
             $this->_exportVariableToView('listingPostQuote', $quote);
             if ($quote['credits'] > 0) {
