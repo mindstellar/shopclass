@@ -149,9 +149,10 @@ the one exception: it locks out everything except a signed-in admin.
 | **Unactivated users** | Never activated from the confirmation e-mail |
 | **Avatars of deleted users** | Profile pictures left behind by deleted accounts |
 
-**Blocked listings** and **Unactivated listings** also match listings waiting for
-payment that are older than their threshold. The hold job deletes those first (7 days
-by default).
+**Expired**, **Blocked** and **Unactivated listings** also match listings waiting for
+payment, once they are older than the group's **Older than**. Core deletes an unpaid
+listing after **Cancel unpaid orders after (days)** (7 by default), so a threshold longer
+than that never reaches one.
 
 Tick which groups to clean, and set **Older than** (in days) for each one. For
 Reported listings the age counts from the listing's last change, so an owner who

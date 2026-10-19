@@ -52,7 +52,7 @@ the options on the product page.
 If two shoppers pay for the last unit at the same moment, the second order is still paid and is
 marked **Oversold** so you can sort it out.
 
-Unpaid bank transfer and cash on delivery orders are cancelled after the hold days you set. A
+Unpaid bank transfer and cash on delivery orders are cancelled after **Cancel unpaid orders after (days)**. A
 shopper may hold at most the number of open unpaid orders you allow.
 
 ## 4. The order mails
