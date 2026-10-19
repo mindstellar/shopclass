@@ -24,6 +24,7 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 $admin = api_admin_boot('osc_models_listing_checkout');
+require_once __DIR__ . '/../lib/listing-order-gateway.php';
 
 if (!function_exists('_m')) {
     function _m($key)
@@ -34,13 +35,10 @@ if (!function_exists('_m')) {
 
 use mindstellar\auth\Actor;
 use mindstellar\billing\Billing;
-use mindstellar\billing\CallbackResult;
-use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
-use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
 use mindstellar\exception\ForbiddenException;
@@ -271,52 +269,6 @@ pin('then finds the free slot taken and spends nothing', ['insufficient_credits'
 
 harness_section('Listing order: start');
 
-/** A gateway that sends the buyer away, or fails to when told to. */
-final class ListingOrderGateway implements PaymentGateway
-{
-    public bool $fail = false;
-    /** @var array<int,int|null> the order each checkout found linked to its listing */
-    public array $linked = [];
-
-    public function __construct(private string $id)
-    {
-    }
-
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    public function getName(): string
-    {
-        return 'Listing test';
-    }
-
-    public function getSupportedCurrencies(): array
-    {
-        return array('USD');
-    }
-
-    public function isConfigured(): bool
-    {
-        return true;
-    }
-
-    public function createCheckout(Order $order): CheckoutIntent
-    {
-        $this->linked[] = OrderStore::listingOrder((int) $order->listingId())?->getId();
-        if ($this->fail) {
-            throw new RuntimeException('down');
-        }
-
-        return CheckoutIntent::redirect('https://example.test/pay/' . $order->getId());
-    }
-
-    public function handleCallback(array $request): CallbackResult
-    {
-        return CallbackResult::ignored();
-    }
-}
 $gw   = new ListingOrderGateway('lcgw');
 $down = new ListingOrderGateway('lcdown');
 $down->fail = true;

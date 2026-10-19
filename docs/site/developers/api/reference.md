@@ -1139,6 +1139,7 @@ Answers: 200 OK (`CustomFieldList`); 304 Not modified; 401 No valid credential; 
 | POST | `/listings/{id}/photos` | user | `listings:write` | Add a photo to your listing |
 | GET | `/listings/{id}/photos/{photo}` | public | `listings:read` | One photo of a listing |
 | DELETE | `/listings/{id}/photos/{photo}` | user | `listings:write` | Remove a photo from your listing |
+| POST | `/listings/{id}/publish` | user | `listings:write` | Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of |
 | GET | `/listings/{id}/related` | public | `listings:read` | Live listings like this one, best first: same category and shared title words, or what a search plugin picks |
 | POST | `/photos` | user | `listings:write` | Upload a photo for a listing you are about to post; its token lasts two hours. 200, not 201: the token names no resource to read |
 
@@ -1331,6 +1332,19 @@ Remove a photo from your listing
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/listings/{id}/publish`
+
+Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `ListingPublishInput` as JSON, optional.
+
+Answers: 200 OK (`ListingPublished`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/listings/{id}/related`
 
