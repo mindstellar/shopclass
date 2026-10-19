@@ -2927,8 +2927,16 @@ msgstr ""
 msgid "The listing is marked as spam. Unmark it in order to make it public"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The listing is not waiting for payment"
+msgstr ""
+
 #: oc-includes/osclass/classes/api/controller/admin/AdminListingsController.php
 msgid "The listing is not waiting for payment."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The listing is published; the seller was not charged"
 msgstr ""
 
 #: oc-includes/osclass/classes/moderation/ListingModeration.php

@@ -13,6 +13,7 @@
  */
 
 use mindstellar\admin\ListPaging;
+use mindstellar\listing\ListingStatus;
 use mindstellar\search\SearchRunner;
 use mindstellar\utility\Sanitize;
 
@@ -191,6 +192,10 @@ class ItemsDataTable extends DataTable
                 $this->mSearch->addFlag('b_spam', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
+            if ($k === 'status' && $v === 'unpaid') {
+                $this->mSearch->addConditions(ListingStatus::heldSql(Item::getInstance()->getTableName() . '.'));
+                $this->withFilters = true;
+            }
             if ($k === 'user' && $v != '') {
                 $no_user_email = $v;
             }
@@ -258,21 +263,26 @@ class ItemsDataTable extends DataTable
 
                 // Options of each row
                 $options_more = array();
-                if ($aRow['b_active']) {
-                    $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                        . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=INACTIVE">' . __('Deactivate')
-                        . '</a>';
+                if (osc_item_is_unpaid()) {
+                    $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=publish_free&amp;id='
+                        . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Publish without payment') . '</a>';
                 } else {
-                    $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                        . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=ACTIVE">' . __('Activate')
-                        . '</a>';
-                }
-                if ($aRow['b_enabled']) {
-                    $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                        . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=DISABLE">' . __('Block') . '</a>';
-                } else {
-                    $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
-                        . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=ENABLE">' . __('Unblock') . '</a>';
+                    if ($aRow['b_active']) {
+                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
+                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=INACTIVE">' . __('Deactivate')
+                            . '</a>';
+                    } else {
+                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
+                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=ACTIVE">' . __('Activate')
+                            . '</a>';
+                    }
+                    if ($aRow['b_enabled']) {
+                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
+                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=DISABLE">' . __('Block') . '</a>';
+                    } else {
+                        $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=status&amp;id='
+                            . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;value=ENABLE">' . __('Unblock') . '</a>';
+                    }
                 }
                 if ($aRow['b_premium']) {
                     $options_more[] =
@@ -442,6 +452,13 @@ class ItemsDataTable extends DataTable
      */
     private function get_row_status()
     {
+        if (osc_item_is_unpaid()) {
+            return array(
+                'class' => 'status-unpaid',
+                'text'  => __('Waiting for payment')
+            );
+        }
+
         if (osc_item_is_spam()) {
             return array(
                 'class' => 'status-spam',
