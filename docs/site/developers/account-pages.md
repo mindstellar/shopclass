@@ -68,8 +68,9 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-meta` | a record's secondary line | date, status, category, row actions; wraps freely |
 | `.oe-dashboard-intro` | the dashboard's "Signed in as" line | a `<p>` |
 | `.oe-dashboard-actions` | the dashboard's two buttons under it | also carries `.oe-actions` |
-| `.oe-dashboard-title` | the dashboard's "Your latest listings" heading | an `<h2>` |
+| `.oe-dashboard-title` | the dashboard's "Your latest listings" heading ("Your recent orders" for a shopper in shop mode) | an `<h2>` |
 | `.oe-dashboard-more` | the dashboard's "See all" link line | also carries `.oe-muted` |
+| `.oe-bill` | a shopper's order table on the dashboard, the same table as the orders page | holds one `.oe-scroll` and its `<table>` |
 | `.oe-row-actions` | a record's action links | also carries `.oe-meta`; `.oe-danger-link` marks the destructive one |
 | `.oe-row-promote` | the paid-upgrades line under a listing | also carries `.oe-row-actions` |
 | `.oe-link-btn` | a button that looks like a link | inside an `.oe-inline-form` |

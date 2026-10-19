@@ -366,6 +366,21 @@ function osc_is_admin_user_logged_in()
 }
 
 /**
+ * True for a shopper: a signed-in user, with no admin session, on a site in shop mode.
+ *
+ * A shopper buys and never sells, so the account hides the seller pages: listings, public
+ * profile, alerts, credits and API access. Admins see everything; classifieds mode is untouched.
+ *
+ * @return bool
+ */
+function osc_is_shopper(): bool
+{
+    return osc_site_mode() === \mindstellar\site\SiteMode::SHOP
+        && osc_is_web_user_logged_in()
+        && !osc_is_admin_user_logged_in();
+}
+
+/**
  * Gets logged admin id
  *
  * @return int
@@ -1060,3 +1075,56 @@ function osc_reset_users()
 {
     return View::getInstance()->_reset('users');
 }
+
+/** Account menu entries a shopper does not get, by class. */
+const OSC_SHOPPER_HIDDEN_MENU = array(
+    'opt_items',
+    'opt_publicprofile',
+    'opt_alerts',
+    'opt_billing_wallet',
+    'opt_billing_buy',
+    'opt_api_access',
+);
+
+/**
+ * The account menu for a shopper: seller entries dropped and "Your orders" added. In every mode
+ * an entry whose class is already in the list is dropped, so two sources of one entry show once.
+ *
+ * @param mixed $options the user_menu_filter list
+ *
+ * @return mixed
+ */
+function osc_shopper_user_menu($options)
+{
+    if (!is_array($options)) {
+        return $options;
+    }
+
+    if (osc_is_shopper()) {
+        $options = array_filter($options, static function ($entry): bool {
+            return !in_array(is_array($entry) ? (string) ($entry['class'] ?? '') : '', OSC_SHOPPER_HIDDEN_MENU, true);
+        });
+        if (osc_billing_enabled() && !in_array('opt_billing_orders', array_column($options, 'class'), true)) {
+            $options[] = array('name' => _m('Your orders'), 'url' => osc_billing_orders_url(), 'class' => 'opt_billing_orders');
+        }
+    }
+
+    $seen = array();
+    $out  = array();
+    foreach ($options as $entry) {
+        $class = is_array($entry) ? (string) ($entry['class'] ?? '') : '';
+        if ($class !== '') {
+            if (isset($seen[$class])) {
+                continue;
+            }
+            $seen[$class] = true;
+        }
+        $out[] = $entry;
+    }
+
+    return $out;
+}
+
+// Priority 20, so core's billing and API entries are already in the list. Plugins::addHook()
+// because this file loads before hPlugins.php.
+Plugins::addHook('user_menu_filter', 'osc_shopper_user_menu', 20);

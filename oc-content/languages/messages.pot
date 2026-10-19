@@ -372,7 +372,7 @@ msgstr ""
 msgid "Already have an account?"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Amount"
 msgstr ""
 
@@ -529,7 +529,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Cancelled"
 msgstr ""
 
@@ -753,7 +753,7 @@ msgid "Create one"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/billing/tabs.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Credits"
@@ -817,7 +817,7 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Date"
 msgstr ""
@@ -1037,7 +1037,7 @@ msgstr ""
 msgid "Extra photos"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Failed"
 msgstr ""
 
@@ -1867,7 +1867,7 @@ msgstr ""
 msgid "Pages"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Paid"
 msgstr ""
 
@@ -1912,12 +1912,12 @@ msgstr ""
 msgid "Pay later"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/billing/parts/package-picker.php
 msgid "Payment method"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Pending"
 msgstr ""
 
@@ -2128,7 +2128,7 @@ msgid ""
 "were."
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Receipt"
 msgstr ""
 
@@ -2156,7 +2156,7 @@ msgstr ""
 msgid "Refund"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Refunded"
 msgstr ""
 
@@ -2268,6 +2268,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 msgid "See all of your listings"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+msgid "See all of your orders"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -2473,7 +2477,7 @@ msgstr ""
 msgid "Standard delivery"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Status"
 msgstr ""
 
@@ -3850,6 +3854,11 @@ msgid "You have not bought any credits yet."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
+#: oc-includes/osclass/gui/billing/orders-content.php
+msgid "You have not ordered anything yet."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "You have not published anything yet."
 msgstr ""
@@ -4093,6 +4102,7 @@ msgid "Your new key"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "Your orders"
 msgstr ""
 
@@ -4123,6 +4133,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Your reCAPTCHA key has been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+msgid "Your recent orders"
 msgstr ""
 
 #: oc-includes/osclass/classes/security/Csrf.php

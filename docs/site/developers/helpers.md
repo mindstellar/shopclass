@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1209 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1211 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1309,7 +1309,7 @@ Core defines 1209 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (62)
+### hUsers (64)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
@@ -1330,6 +1330,7 @@ Core defines 1209 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_has_alerts()` | Gets next alert if there is, else return null |
 | `osc_has_user_avatar(?int $userId = null)` | Whether a user has an uploaded avatar. |
 | `osc_is_admin_user_logged_in()` | Gets true if admin user is logged in |
+| `osc_is_shopper()` | True for a shopper: a signed-in user, with no admin session, on a site in shop mode. |
 | `osc_is_web_user_logged_in()` | Gets true if user is logged in web |
 | `osc_logged_admin_email()` | Gets logged admin email |
 | `osc_logged_admin_id()` | Gets logged admin id |
@@ -1343,6 +1344,7 @@ Core defines 1209 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_reset_users()` | Rewinds the user loop, so osc_prepare_user_info() can be read again. |
 | `osc_resolve_web_user()` | Resolve the current front-end user for this request, or null. |
 | `osc_run_web_user_identity()` | Resolve front-end identity early in the bootstrap so the historical Session::_get('userId') readers see a cookie-authenticated user even before any osc_is_web_user_logged_in() call. No-op — and no session, no DB query — for an anonymous, cookieless visitor, which keeps such requests cacheable. |
+| `osc_shopper_user_menu($options)` | The account menu for a shopper: seller entries dropped and "Your orders" added. In every mode an entry whose class is already in the list is dropped, so two sources of one entry show once. |
 | `osc_total_users($condition = '')` | Gets number of users |
 | `osc_user()` | Gets user array from view |
 | `osc_user_access_date()` | Gets last access date |
