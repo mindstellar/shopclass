@@ -274,7 +274,7 @@ final class ListingService
         $item = $this->items->findByPrimaryKey($id);
         if (!is_array($item) || !isset($item['b_active']) || (int) $item['b_active'] !== 0
             || ($secret !== null && !hash_equals((string) $item['s_secret'], $secret))
-            || ListingStatus::isHeld(Db::stringifyRow($item))
+            || ListingHoldJobs::holds($id, Db::stringifyRow($item))
         ) {
             return null;
         }
@@ -315,7 +315,7 @@ final class ListingService
     public function enable(int $id): bool
     {
         $row = ListingStore::find($id, array('b_enabled', 'b_active', 'dt_first_pub_date'));
-        if ($row !== null && ListingStatus::isHeld(Db::stringifyRow($row))) {
+        if ($row !== null && ListingHoldJobs::holds($id, Db::stringifyRow($row))) {
             return false;
         }
         $result = $this->items->update(

@@ -17,8 +17,8 @@ use mindstellar\database\Db;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
+use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\ListingService;
-use mindstellar\listing\ListingStatus;
 use mindstellar\listing\ListingStore;
 use mindstellar\utility\Clock;
 use mindstellar\utility\DeferredMail;
@@ -169,7 +169,7 @@ final class ListingModeration
      */
     private static function change(string $action, int $id, array $row, ListingService $listings, string $at): ?bool
     {
-        if (ListingStatus::isHeld($row) && in_array($action, ['activate', 'enable', 'bump'], true)) {
+        if (in_array($action, ['activate', 'enable', 'bump'], true) && ListingHoldJobs::holds($id, $row)) {
             throw new ConflictException(_m('The listing is waiting for payment. Publish it instead.'));
         }
         $is = static fn (string $column, int $value): bool => (int) $row[$column] === $value;

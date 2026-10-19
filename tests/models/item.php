@@ -301,6 +301,8 @@ pin(
         'findResourcesByID',
         'fitTitle',
         'getInstance',
+        'insert',
+        'insertGetId',
         'insertLocale',
         'listAllWithCategories',
         'listLatest',

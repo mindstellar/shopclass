@@ -21,6 +21,7 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 use mindstellar\api\Response;
+use mindstellar\listing\ListingHoldJobs;
 
 $admin = api_admin_boot('osc_models_api_admin_listings');
 
@@ -46,6 +47,7 @@ $expired  = seed_item($admin, $cars, $sue, 'Expired estate', 300.0);
 $ann      = seed_user($admin, 'ann', 'ann@example.test');
 $held     = seed_item($admin, $cars, $ann, 'Held sedan', 800.0, 0, 0);
 $admin->query("UPDATE {$p}t_item SET dt_first_pub_date = NULL WHERE pk_i_id = $held");
+ListingHoldJobs::queue($held, 7);
 $admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = $spam");
 $admin->query("UPDATE {$p}t_item SET dt_expiration = '2020-01-01 00:00:00' WHERE pk_i_id = $expired");
 $admin->query("UPDATE {$p}t_item SET dt_pub_date = '2026-01-01 00:00:00', dt_first_pub_date = '2026-01-01 00:00:00' WHERE pk_i_id = $live");
@@ -153,6 +155,12 @@ $r = $call('PATCH', 'admin/listings/' . $held, ['spam' => true], $boss);
 pin('spam: true is 200 and the listing stays held', [200, '1', null], [$r->status(), $row($held)['b_spam'], $row($held)['dt_first_pub_date']]);
 $call('PATCH', 'admin/listings/' . $held, ['spam' => false], $boss);
 pin('spam cleared: unpaid again', 'unpaid', $call('GET', 'admin/listings/' . $held, null, $boss)->body()['data']['status'] ?? null);
+
+harness_section('a hidden row a plugin wrote');
+$draft = (int) Item::getInstance()->insertGetId(['fk_i_category_id' => $cars, 'fk_i_user_id' => $ann, 'dt_pub_date' => '2026-02-02 00:00:00', 'b_enabled' => 0, 'b_active' => 0, 's_secret' => 'plugin1']);
+pin('Item::insertGetId() without a first publish date fills it: disabled, not unpaid', ['2026-02-02 00:00:00', 'disabled'], [$row($draft)['dt_first_pub_date'], $call('GET', 'admin/listings/' . $draft, null, $boss)->body()['data']['status'] ?? null]);
+$admin->query("UPDATE {$p}t_item SET dt_first_pub_date = NULL WHERE pk_i_id = $draft");
+pin('written by SQL with no date and no hold job, it may still be enabled', [200, '1'], [$call('PATCH', 'admin/listings/' . $draft, ['blocked' => false], $boss)->status(), $row($draft)['b_enabled']]);
 
 harness_section('publish without payment');
 $held2    = seed_item($admin, $cars, $ann, 'Held coupe', 820.0, 0, 0);

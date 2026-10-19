@@ -71,6 +71,45 @@ class Item extends DAO
     }
 
     /**
+     * A row inserted without dt_first_pub_date gets its publish date there, so it never reads
+     * as a listing waiting for payment. Only ListingService writes that column as NULL.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return bool
+     */
+    public function insert($values)
+    {
+        return parent::insert(self::withFirstPubDate($values));
+    }
+
+    /**
+     * As insert(), returning the new id.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return int the new row's id, or 0 when the insert wrote no row
+     */
+    public function insertGetId($values)
+    {
+        return parent::insertGetId(self::withFirstPubDate($values));
+    }
+
+    /**
+     * @param array<string,mixed> $values
+     *
+     * @return array<string,mixed>
+     */
+    private static function withFirstPubDate(array $values): array
+    {
+        if (!array_key_exists('dt_first_pub_date', $values)) {
+            $values['dt_first_pub_date'] = $values['dt_pub_date'] ?? date('Y-m-d H:i:s');
+        }
+
+        return $values;
+    }
+
+    /**
      * List items ordered by views
      *
      * @param int $limit

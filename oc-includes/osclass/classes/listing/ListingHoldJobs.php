@@ -16,6 +16,7 @@ use mindstellar\auth\Actor;
 use mindstellar\billing\EntitlementStore;
 use mindstellar\database\Db;
 use mindstellar\job\Job;
+use mindstellar\job\JobQueue;
 
 /**
  * Jobs for a listing saved and not yet paid for: a reminder a day before the deadline, and
@@ -46,6 +47,17 @@ final class ListingHoldJobs
         if (!$queued) {
             throw new \RuntimeException('Unpaid listing jobs were not queued for listing ' . $itemId . '.');
         }
+    }
+
+    /**
+     * Whether core holds the listing for payment: the held columns and its queued delete job.
+     * A hidden row a plugin wrote without a first publish date has no job, so moderation may change it.
+     *
+     * @param array<string,mixed> $row a t_item row with the status columns
+     */
+    public static function holds(int $itemId, array $row): bool
+    {
+        return ListingStatus::isHeld($row) && JobQueue::instance()->hasKey(self::EXPIRE, (string) $itemId);
     }
 
     /**

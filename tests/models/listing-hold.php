@@ -194,6 +194,7 @@ pin('pending finds the waiting row, not the held one', [$sPending], $ids(Listing
 harness_section('Activate and enable leave it held');
 $stuck = seed_item($admin, seed_category($admin, 'Boats'), $user, 'Unpaid boat');
 $hold($stuck);
+ListingHoldJobs::queue($stuck, 7);
 $status = static function (int $id) use ($admin, $p): string {
     return ListingStatus::of($admin->query("SELECT * FROM {$p}t_item WHERE pk_i_id = {$id}")->fetch_assoc());
 };
@@ -202,6 +203,9 @@ pin('the owner cannot activate it', null, (new ListingService())->activate($stuc
 pin('nor with its secret', null, (new ListingService())->activate($stuck, $secret));
 pin('an admin enable does nothing', false, (new ListingService())->enable($stuck));
 pin('it still waits for payment', ListingStatus::UNPAID, $status($stuck));
+$draft = seed_item($admin, seed_category($admin, 'Rafts'), $user, 'Plugin draft');
+$hold($draft);
+pin('a row hidden the same way with no delete job is a plugin\'s: enable works', [true, '1'], [(new ListingService())->enable($draft), (string) $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = {$draft}")->fetch_row()[0]]);
 
 harness_section('The delete and a payment at the same moment');
 foreach ([Billing::PREF_ENABLED => 'BOOLEAN', 'billing_slot_enabled' => 'BOOLEAN'] as $k => $t) {
