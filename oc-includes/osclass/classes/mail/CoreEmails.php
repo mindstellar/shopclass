@@ -18,6 +18,7 @@ namespace mindstellar\mail;
 
 use Admin;
 use Item;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\Receipts;
@@ -1920,6 +1921,18 @@ final class CoreEmails
     }
 
     /**
+     * Remind the owner of a listing waiting for payment to pay before it is deleted.
+     *
+     * @param array<string,mixed> $item the held listing row
+     *
+     * @return void
+     */
+    public static function listingUnpaidReminder($item)
+    {
+        self::instance()->mailListingUnpaidReminder($item);
+    }
+
+    /**
      * Tell a product alert's owner the listing is back in stock, or its price went down.
      *
      * @param array<string,mixed> $alert t_alerts row; fk_i_user_id and s_email are read
@@ -2041,6 +2054,53 @@ final class CoreEmails
             array('{USER_NAME}', '{ITEM_TITLE}', '{ITEM_PRICE}')
         );
         $this->deliver(new MailComposing('product_alert', $to, $name, $title, $body, $words, $htmlWords, null, $alert, $item, array($alert, $item, $kind)));
+    }
+
+    /**
+     * @param array<string,mixed> $item
+     */
+    public function mailListingUnpaidReminder(array $item): void
+    {
+        $itemId  = (int) ($item['pk_i_id'] ?? 0);
+        $ownerId = (int) ($item['fk_i_user_id'] ?? 0);
+        $user    = $ownerId > 0 ? User::getInstance()->findByPrimaryKey($ownerId) : false;
+        if ($itemId < 1 || !is_array($user) || empty($user['s_email'])) {
+            return;
+        }
+        $to   = (string) $user['s_email'];
+        $name = (string) ($user['s_name'] ?? '');
+        if (!isset($item['s_title'])) {
+            $full = Item::getInstance()->findByPrimaryKey($itemId);
+            $item = is_array($full) ? $full + $item : $item;
+        }
+
+        $page    = (new Page())->findByInternalName('email_listing_unpaid_reminder');
+        $locale  = osc_current_user_locale();
+        $content = null;
+        if (is_array($page) && !empty($page['locale'])) {
+            $content = isset($page['locale'][$locale]['s_title']) ? $page['locale'][$locale] : current($page['locale']);
+        }
+        $title = is_array($content) ? (string) $content['s_title'] : __('{WEB_TITLE} - Pay to publish your listing');
+        $body  = is_array($content)
+            ? (string) $content['s_text']
+            : __('<p>Hi {USER_NAME},</p><p>Your listing <a href="{PAY_URL}">{ITEM_TITLE}</a> is saved but not published. It costs {CREDITS} credits to publish.</p><p>Pay for it by {DEADLINE} or it is deleted: {PAY_LINK}</p><p>Regards,</p><p>{WEB_LINK}</p>');
+
+        $payUrl = osc_billing_publish_url($itemId);
+        $quote  = ListingCheckout::quote($itemId, $ownerId);
+
+        [$words, $htmlWords] = self::words(
+            array(
+                '{USER_NAME}'  => $name !== '' ? $name : $to,
+                '{ITEM_TITLE}' => (string) ($item['s_title'] ?? ''),
+                '{ITEM_ID}'    => (string) $itemId,
+                '{CREDITS}'    => (string) $quote['credits'],
+                '{DEADLINE}'   => osc_esc_html((string) osc_format_date((string) ($item['dt_expiration'] ?? ''))),
+                '{PAY_URL}'    => osc_esc_html($payUrl),
+                '{PAY_LINK}'   => '<a href="' . osc_esc_html($payUrl) . '">' . osc_esc_html($payUrl) . '</a>',
+            ),
+            array('{USER_NAME}', '{ITEM_TITLE}')
+        );
+        $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item)));
     }
 
     public function mailOrder(string $kind, Order $order): void

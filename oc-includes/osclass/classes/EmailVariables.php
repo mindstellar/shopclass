@@ -68,6 +68,10 @@ class EmailVariables
             '{ITEM_LINK}'                      => __('Listing list'),
             '{ITEM_TITLE}'                     => __('Listing title'),
             '{ITEM_ID}'                        => __('Listing id'),
+            '{CREDITS}'                        => __('Credits the listing costs'),
+            '{DEADLINE}'                       => __('Date the unpaid listing is deleted'),
+            '{PAY_URL}'                        => __('Url to pay for the listing'),
+            '{PAY_LINK}'                       => __('Link to pay for the listing'),
             '{EDIT_LINK}'                      => __('Link for edit listing'),
             '{EDIT_URL}'                       => __('Url for edit listing'),
             '{DELETE_LINK}'                    => __('Delete listing link'),
@@ -327,6 +331,15 @@ class EmailVariables
                 '{SELLER_EMAIL}',
                 '{CONTACT_NAME}',
                 '{CONTACT_EMAIL}'
+            ),
+            'email_listing_unpaid_reminder'           => array(
+                '{USER_NAME}',
+                '{ITEM_TITLE}',
+                '{ITEM_ID}',
+                '{CREDITS}',
+                '{DEADLINE}',
+                '{PAY_URL}',
+                '{PAY_LINK}'
             )
         );
 

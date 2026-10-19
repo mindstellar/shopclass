@@ -33,6 +33,7 @@ final class MailComposing extends Event implements Bridged
         'order_refunded',
         'admin_new_order',
         'product_alert',
+        'listing_unpaid_reminder',
     ];
 
     private bool $suppressed = false;

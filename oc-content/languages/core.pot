@@ -762,6 +762,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
+"<p>Hi {USER_NAME},</p><p>Your listing <a "
+"href=\"{PAY_URL}\">{ITEM_TITLE}</a> is saved but not published. It costs "
+"{CREDITS} credits to publish.</p><p>Pay for it by {DEADLINE} or it is "
+"deleted: {PAY_LINK}</p><p>Regards,</p><p>{WEB_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
 "<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on "
 "its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
 msgstr ""
@@ -3529,6 +3537,10 @@ msgid ""
 "is "
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Credits the listing costs"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Credits — %s"
 msgstr ""
@@ -3762,6 +3774,10 @@ msgstr ""
 #: oc-includes/osclass/classes/billing/Receipts.php
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "Date paid"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Date the unpaid listing is deleted"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -6483,6 +6499,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Link for edit listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Link to pay for the listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -13591,6 +13611,10 @@ msgstr ""
 msgid "Url for edit listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Url to pay for the listing"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Use ImageMagick instead of GD library"
 msgstr ""
@@ -15249,6 +15273,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "yes, for one request at a time"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "{WEB_TITLE} - Pay to publish your listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
