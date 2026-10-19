@@ -115,6 +115,7 @@ Each code's `type` link points at its anchor here.
 | <a id="unsupported_media_type"></a>`unsupported_media_type` | 415 | The body is not `application/json` (or `application/merge-patch+json` on `PATCH`). A photo is `multipart/form-data` in a field named `photo`, or the image itself. |
 | <a id="idempotency_key_reused"></a>`idempotency_key_reused` | 422 | The same `Idempotency-Key` was sent with a different request. |
 | <a id="listing_limit"></a>`listing_limit` | 422 | The user has reached the site's listing limit. `detail` says what it is. |
+| <a id="insufficient_credits"></a>`insufficient_credits` | 422 | Not enough credits to publish the listing. `payment` says the price, the balance and the shortfall. |
 | <a id="page_too_deep"></a>`page_too_deep` | 422 | `page` is past the deepest page a list reaches (10,000 listings). Narrow the filters. |
 | <a id="login_blocked"></a>`login_blocked` | 429 | Too many wrong passwords for this account or address, at `POST /auth/token`, `POST /account/password` or `POST /account/keys`. See `Retry-After`. |
 | <a id="too_many_failures"></a>`too_many_failures` | 429 | Too many wrong keys from this address in 15 minutes. `Retry-After: 900`. See [lockout](/docs/developers/api/authentication/#lockout-after-failed-keys). |

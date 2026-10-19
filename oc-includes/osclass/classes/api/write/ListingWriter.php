@@ -94,7 +94,7 @@ final class ListingWriter
             throw self::refusal($e);
         }
 
-        return new ListingOutcome($saved->id(), $saved->needsValidation(), $this->skipped($saved->id(), $photos, 0));
+        return new ListingOutcome($saved->id(), $saved->needsValidation(), $this->skipped($saved->id(), $photos, 0), $saved->unpaid());
     }
 
     /**
@@ -111,7 +111,7 @@ final class ListingWriter
         $before = $photos->isEmpty() ? 0 : $this->room->count($id);
         $saved  = $this->edit(['id' => $id, 'secret' => $listing->secret(), 'photos' => $photos->paths()] + $form, $actor);
 
-        return new ListingOutcome($id, $saved->needsValidation(), $this->skipped($id, $photos, $before));
+        return new ListingOutcome($id, $saved->needsValidation(), $this->skipped($id, $photos, $before), $saved->unpaid());
     }
 
     /**

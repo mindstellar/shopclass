@@ -26,6 +26,7 @@ use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListings;
 use mindstellar\api\write\PhotoBatch;
 use mindstellar\api\write\PhotoIntake;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\listing\PhotoRoom;
 
 /**
@@ -172,8 +173,30 @@ final class ListingWritesController
         if ($outcome->photosSkipped() > 0) {
             $warnings[Warning::PHOTO_SKIPPED] = $outcome->photosSkipped() . ' photo(s) were not added: the listing has as many as it may hold.';
         }
-        $extra = Warning::member($warnings);
+        $extra = [];
+        if ($outcome->unpaid()) {
+            $warnings[Warning::LISTING_UNPAID] = 'The listing is saved and waits for payment. Publish it with credits or at payment.publish_url.';
+            $extra['payment']                  = self::payment($id, $call->userId());
+        }
+        $extra = Warning::member($warnings) + $extra;
 
         return $created ? $this->api->created($call, $data, 'listings/' . $id, $extra) : Response::ok($data, 200, $extra);
+    }
+
+    /**
+     * What a held listing costs, the user's credits and where to pay on the web.
+     *
+     * @return array{credits: int, balance: int, shortfall: int, publish_url: string}
+     */
+    private static function payment(int $id, int $userId): array
+    {
+        $quote = ListingCheckout::quote($id, $userId);
+
+        return [
+            'credits'     => $quote['credits'],
+            'balance'     => $quote['balance'],
+            'shortfall'   => $quote['shortfall'],
+            'publish_url' => osc_billing_publish_url($id),
+        ];
     }
 }

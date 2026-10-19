@@ -38,7 +38,7 @@ final class Schema
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
-        'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
+        'ListingInput', 'ListingPatch', 'SavedListing', 'ListingPayment', 'PhotoToken', 'CommentInput', 'SavedComment',
         'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'CartLine', 'Cart', 'CartInput', 'CartDocument', 'SearchSuggestions', 'CategorySuggestions',
         'PageSummary', 'Page', 'Menu', 'Seo',
     ];
@@ -680,10 +680,10 @@ final class Schema
     {
         $text    = static fn (int $max, int $min = 0): array => ['type' => 'string', 'minLength' => $min, 'maxLength' => $max];
         $input   = static fn (array $properties, array $required = []): array => self::object($properties, $required) + ['additionalProperties' => false];
-        $saved   = static fn (string $name): array => self::object([
+        $saved   = static fn (string $name, array $more = []): array => self::object([
             'data'     => self::ref($name),
             'warnings' => ['type' => 'array', 'items' => self::ref('Warning')],
-        ], ['data']);
+        ] + $more, ['data']);
         $locale  = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$'];
         $list    = ['type' => ['string', 'integer', 'array'], 'items' => ['type' => ['string', 'integer']], 'description' => 'One value, a comma list, or a list.'];
         $listing = self::listingMembers();
@@ -691,7 +691,14 @@ final class Schema
         return [
             'ListingInput' => $input($listing, ['category_id', 'title', 'description']),
             'ListingPatch' => $input($listing),
-            'SavedListing' => $saved('Listing'),
+            'SavedListing' => $saved('Listing', ['payment' => self::ref('ListingPayment')]),
+            'ListingPayment' => self::object([
+                'credits'     => ['type' => 'integer', 'description' => 'What the listing costs to publish, in credits.'],
+                'balance'     => ['type' => 'integer', 'description' => 'The user\'s credits.'],
+                'shortfall'   => ['type' => 'integer', 'description' => 'Credits missing; 0 when the balance covers it.'],
+                'publish_url' => ['type' => 'string', 'format' => 'uri', 'description' => 'The web page to pay on. The seller must be signed in on the web.'],
+            ], ['credits', 'balance', 'shortfall', 'publish_url'])
+                + ['description' => 'What the listing costs to publish, the user\'s credits, what is missing, and the web page to pay on.'],
             'PhotoToken'   => self::object([
                 'token'      => ['type' => 'string', 'description' => 'Send it in photo_tokens when making the listing.'],
                 'expires_at' => self::time(),

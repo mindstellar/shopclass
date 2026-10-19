@@ -44381,6 +44381,7 @@
                             "validation_failed",
                             "idempotency_key_reused",
                             "listing_limit",
+                            "insufficient_credits",
                             "page_too_deep",
                             "rate_limited",
                             "login_blocked",
@@ -45964,7 +45965,8 @@
                             "listing_pending",
                             "photo_skipped",
                             "comment_pending",
-                            "email_confirmation_sent"
+                            "email_confirmation_sent",
+                            "listing_unpaid"
                         ]
                     },
                     "message": {
@@ -46830,11 +46832,43 @@
                         "items": {
                             "$ref": "#/components/schemas/Warning"
                         }
+                    },
+                    "payment": {
+                        "$ref": "#/components/schemas/ListingPayment"
                     }
                 },
                 "required": [
                     "data"
                 ]
+            },
+            "ListingPayment": {
+                "type": "object",
+                "properties": {
+                    "credits": {
+                        "type": "integer",
+                        "description": "What the listing costs to publish, in credits."
+                    },
+                    "balance": {
+                        "type": "integer",
+                        "description": "The user's credits."
+                    },
+                    "shortfall": {
+                        "type": "integer",
+                        "description": "Credits missing; 0 when the balance covers it."
+                    },
+                    "publish_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "The web page to pay on. The seller must be signed in on the web."
+                    }
+                },
+                "required": [
+                    "credits",
+                    "balance",
+                    "shortfall",
+                    "publish_url"
+                ],
+                "description": "What the listing costs to publish, the user's credits, what is missing, and the web page to pay on."
             },
             "PhotoToken": {
                 "type": "object",
