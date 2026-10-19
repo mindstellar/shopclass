@@ -205,6 +205,15 @@ $due();
 JobWorker::resetRegistration();
 JobWorker::run(10);
 pin('a deleted listing gets no mail', 0, count(HoldMailRecorder::$sent));
+$stale = seed_item($admin, seed_category($admin, 'Canoes'), $user, 'Paid since');
+$hold($stale);
+$snapshot = $admin->query("SELECT * FROM {$p}t_item WHERE pk_i_id = {$stale}")->fetch_assoc();
+\mindstellar\mail\CoreEmails::listingUnpaidReminder($snapshot);
+pin('the mail itself sends for a held listing', 1, count(HoldMailRecorder::$sent));
+HoldMailRecorder::$sent = [];
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1, b_active = 1, dt_first_pub_date = NOW() WHERE pk_i_id = {$stale}");
+\mindstellar\mail\CoreEmails::listingUnpaidReminder($snapshot);
+pin('and re-checks the hold: a held snapshot of a listing paid since gets no mail', 0, count(HoldMailRecorder::$sent));
 
 $admin->query("UPDATE {$p}t_pages_description d JOIN {$p}t_pages g ON g.pk_i_id = d.fk_i_pages_id SET d.s_title = 'Please pay {ITEM_TITLE}' WHERE g.s_internal_name = 'email_listing_unpaid_reminder' AND d.fk_c_locale_code = 'en_US'");
 HoldMailRecorder::$sent = [];

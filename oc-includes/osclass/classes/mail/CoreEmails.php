@@ -26,6 +26,7 @@ use mindstellar\boot\CoreServices;
 use mindstellar\container\Container;
 use mindstellar\currency\Money;
 use mindstellar\event\DispatcherInterface;
+use mindstellar\listing\ListingStatus;
 use mindstellar\mail\event\MailComposing;
 use mindstellar\mail\event\MailSent;
 use OSCLocale;
@@ -1923,7 +1924,7 @@ final class CoreEmails
     /**
      * Remind the owner of a listing waiting for payment to pay before it is deleted.
      *
-     * @param array<string,mixed> $item the held listing row
+     * @param array<string,mixed> $item the held listing row; only its id is read
      *
      * @return void
      */
@@ -2061,18 +2062,19 @@ final class CoreEmails
      */
     public function mailListingUnpaidReminder(array $item): void
     {
-        $itemId  = (int) ($item['pk_i_id'] ?? 0);
+        $itemId = (int) ($item['pk_i_id'] ?? 0);
+        // Read fresh: a listing paid or deleted since the caller read it gets no reminder.
+        $item = $itemId > 0 ? Item::getInstance()->findByPrimaryKey($itemId) : null;
+        if (!is_array($item) || !ListingStatus::isHeld($item)) {
+            return;
+        }
         $ownerId = (int) ($item['fk_i_user_id'] ?? 0);
         $user    = $ownerId > 0 ? User::getInstance()->findByPrimaryKey($ownerId) : false;
-        if ($itemId < 1 || !is_array($user) || empty($user['s_email'])) {
+        if (!is_array($user) || empty($user['s_email'])) {
             return;
         }
         $to   = (string) $user['s_email'];
         $name = (string) ($user['s_name'] ?? '');
-        if (!isset($item['s_title'])) {
-            $full = Item::getInstance()->findByPrimaryKey($itemId);
-            $item = is_array($full) ? $full + $item : $item;
-        }
 
         $page    = (new Page())->findByInternalName('email_listing_unpaid_reminder');
         $locale  = osc_current_user_locale();
