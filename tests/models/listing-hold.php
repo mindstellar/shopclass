@@ -181,8 +181,9 @@ osc_register_billing_slot();
 $dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
 $cat4   = seed_category($admin, 'Planes', null, 'en_US', 1, 30);
 
-// The parent holds the seller and listing locks and pays; the child deletes at the deadline.
-$race = static function (string $mode) use ($admin, $p, $cat4, $dbName, $hold, $clear, $due): array {
+// The parent takes the seller lock, the listing lock or both, and pays; the child deletes at the
+// deadline. With one lock only, the child must still wait, so each of its two locks is pinned.
+$race = static function (string $mode, string $locks = 'both') use ($admin, $p, $cat4, $dbName, $hold, $clear, $due): array {
     static $n = 0;
     $n++;
     $clear();
@@ -197,24 +198,45 @@ $race = static function (string $mode) use ($admin, $p, $cat4, $dbName, $hold, $
         ListingHoldJobs::queue($held, 7);
         $due();
     }
-    $out = Db::transaction(static function () use ($admin, $uid, $held, $mode, $dbName): array {
-        EntitlementStore::lockSeller($uid);
-        ListingStore::find($held, ['*'], true);
-        $child = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/../lib/listing-expire-child.php', $dbName, (string) $held, $mode], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-        usleep(300000);
-        // Pay only once the child is stuck on a lock, so a slow start cannot hide a missing lock.
-        $waiting = false;
-        for ($i = 0; $i < 100 && !$waiting; $i++) {
-            $waiting = (int) $admin->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX t JOIN information_schema.PROCESSLIST l ON l.ID = t.trx_mysql_thread_id WHERE t.trx_state = 'LOCK WAIT' AND l.DB = '{$dbName}'")->fetch_row()[0] > 0;
-            if (!$waiting) {
-                usleep(100000);
+    $child = null;
+    $pipes = [];
+    try {
+        $out = Db::transaction(static function () use ($admin, $p, $uid, $held, $mode, $locks, $dbName, &$child, &$pipes): array {
+            if ($locks !== 'row') {
+                EntitlementStore::lockSeller($uid);
             }
-        }
-        $paid = ListingCheckout::publish($held, Actor::user($uid));
+            if ($locks !== 'seller') {
+                ListingStore::find($held, ['*'], true);
+            }
+            $child = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/../lib/listing-expire-child.php', $dbName, (string) $held, $mode], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+            usleep(300000);
+            // Pay only once the child is stuck on a lock, so a slow start cannot hide a missing lock.
+            $waiting = false;
+            for ($i = 0; $i < 30 && !$waiting; $i++) {
+                $waiting = (int) $admin->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX t JOIN information_schema.PROCESSLIST l ON l.ID = t.trx_mysql_thread_id WHERE t.trx_state = 'LOCK WAIT' AND l.DB = '{$dbName}'")->fetch_row()[0] > 0;
+                if (!$waiting) {
+                    usleep(100000);
+                }
+            }
+            if ($locks === 'row') {
+                // Taking the seller lock now would invert the order, so the payment is written directly.
+                Db::execute("UPDATE {$p}t_item SET b_enabled = 1, b_active = 1, dt_first_pub_date = NOW() WHERE pk_i_id = ?", [$held]);
+                $paid = true;
+            } else {
+                try {
+                    $paid = ListingCheckout::publish($held, Actor::user($uid))['published'];
+                } catch (Throwable $e) {
+                    $paid = false;
+                }
+            }
 
-        return [$child, $pipes, $waiting, $paid['published']];
-    });
-    [$child, $pipes, $waiting, $published] = $out;
+            return [$waiting, $paid];
+        });
+    } catch (Throwable $e) {
+        // A deadlock rolls the payment back: report it as not paid.
+        $out = [false, false];
+    }
+    [$waiting, $published] = $out;
     $printed = trim(stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]));
     proc_close($child);
     $row    = $admin->query("SELECT b_enabled, b_active, dt_first_pub_date FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_assoc();
@@ -239,6 +261,41 @@ $r = $race('sweep');
 pin('the sweep waits for the payment', [true, true], [$r['waited'], $r['paid']]);
 pin('then keeps the listing it finds paid', 'kept', $r['child']);
 pin('which is live with one debit', [true, 1], [$r['live'], $r['debits']]);
+
+foreach (['expire', 'sweep'] as $mode) {
+    $r = $race($mode, 'seller');
+    pin($mode . ': the seller lock alone makes the delete wait', [true, true], [$r['waited'], $r['paid']]);
+    pin($mode . ': and the paid listing is kept', ['kept', true], [$r['child'], $r['live']]);
+    $r = $race($mode, 'row');
+    pin($mode . ': the listing lock alone makes the delete wait', true, $r['waited']);
+    pin($mode . ': and the paid listing is kept', ['kept', true], [$r['child'], $r['live']]);
+}
+pin('no delete job failed', 0, $queue->count(JobQueue::STATUS_ERROR));
+
+harness_section('The delete and a payment starting together');
+// Both wait on the parent's seller lock, the payment first. A delete that took the listing lock
+// before the seller lock would deadlock with the payment once the parent lets go.
+$clear();
+$uid  = seed_user($admin, 'together', 'together@example.test');
+seed_item($admin, $cat4, $uid, 'Live together');
+$held = seed_item($admin, $cat4, $uid, 'Held together');
+$hold($held);
+Wallet::credit($uid, 3, Wallet::REASON_GRANT);
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id = {$held}");
+$admin->begin_transaction();
+$admin->query("SELECT pk_i_id FROM {$p}t_user WHERE pk_i_id = {$uid} FOR UPDATE");
+$payer = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/../lib/listing-publish-child.php', $dbName, (string) $held, (string) $uid], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $payPipes);
+usleep(800000);
+$deleter = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/../lib/listing-expire-child.php', $dbName, (string) $held, 'sweep'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $delPipes);
+usleep(800000);
+$bothWait = proc_get_status($payer)['running'] && proc_get_status($deleter)['running'];
+$admin->commit();
+$paidOut = trim(stream_get_contents($payPipes[1]) . stream_get_contents($payPipes[2]));
+$delOut  = trim(stream_get_contents($delPipes[1]) . stream_get_contents($delPipes[2]));
+proc_close($payer);
+proc_close($deleter);
+pin('both waited', true, $bothWait);
+pin('the payment publishes and the delete keeps it, with no deadlock', ['published', 'kept'], [$paidOut, $delOut]);
 $clear();
 
 harness_section('Migration 0081: rows a plugin wrote without a first publish date');
