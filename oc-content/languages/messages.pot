@@ -2927,6 +2927,10 @@ msgstr ""
 msgid "The listing is marked as spam. Unmark it in order to make it public"
 msgstr ""
 
+#: oc-includes/osclass/classes/moderation/ListingModeration.php
+msgid "The listing is waiting for payment. Publish it instead."
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ProductAlerts.php
 #: oc-includes/osclass/classes/listing/WishlistService.php
 msgid "The listing was not found."

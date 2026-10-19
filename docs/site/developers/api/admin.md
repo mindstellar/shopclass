@@ -71,7 +71,7 @@ is refused, nothing is saved.
 
 | Endpoint | Does |
 |---|---|
-| `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`; a comma list or repeated), `user` (ids) and `category` (ids or slugs, subcategories included; an id may name a category that is off), each a comma list or repeated as in search, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |
+| `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`, `unpaid`; a comma list or repeated), `user` (ids) and `category` (ids or slugs, subcategories included; an id may name a category that is off), each a comma list or repeated as in search, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/listings/{id}` | One listing. |
 | `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (a day or an RFC 3339 date-time, which names its day in UTC; `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. `product` sells it; see [Selling a listing](#selling-a-listing). |
 | `DELETE /admin/listings/{id}` | Delete. |

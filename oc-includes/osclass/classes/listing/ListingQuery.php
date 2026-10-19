@@ -27,11 +27,11 @@ use mindstellar\utility\Utils;
 final class ListingQuery
 {
     /** The columns ListingStatus and ListingPolicy read. */
-    private const STATUS_COLUMNS = ['pk_i_id', 'fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'];
+    private const STATUS_COLUMNS = ['pk_i_id', 'fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration', 'dt_first_pub_date'];
 
     /** What a listing write reads: the t_item columns with the location's. */
     private const EDIT_COLUMNS = 'i.pk_i_id, i.fk_i_user_id, i.fk_i_category_id, i.i_price, i.fk_c_currency_code, i.s_contact_phone,'
-        . ' i.b_show_email, i.s_secret, i.b_enabled, i.b_active, i.b_spam, i.b_premium, i.dt_expiration,'
+        . ' i.b_show_email, i.s_secret, i.b_enabled, i.b_active, i.b_spam, i.b_premium, i.dt_expiration, i.dt_first_pub_date,'
         . ' i.s_contact_name, i.s_contact_email,'
         . ' l.fk_c_country_code, l.s_country, l.fk_i_region_id, l.s_region, l.fk_i_city_id, l.s_city, l.s_city_area,'
         . ' l.s_address, l.s_zip, l.d_coord_lat, l.d_coord_long';
