@@ -241,6 +241,25 @@ pin('then keeps the listing it finds paid', 'kept', $r['child']);
 pin('which is live with one debit', [true, 1], [$r['live'], $r['debits']]);
 $clear();
 
+harness_section('Migration 0081: rows a plugin wrote without a first publish date');
+$clear();
+$cat    = seed_category($admin, 'Legacy');
+$legacy = seed_item($admin, $cat, $user, 'Legacy hidden');
+$hold($legacy);
+$queued = seed_item($admin, $cat, $user, 'Really held');
+$hold($queued);
+ListingHoldJobs::queue($queued, 7);
+$migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0081_item_first_pub_date_backfill.php';
+$migration->up(\mindstellar\database\Connection::getInstance());
+$first = static fn (int $id) => $admin->query("SELECT dt_first_pub_date FROM {$p}t_item WHERE pk_i_id = {$id}")->fetch_row()[0];
+check('a hidden legacy row gets a first publish date, so it is not held', $first($legacy) !== null);
+pin('a row with a queued hold delete stays held', null, $first($queued));
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 3 DAY) WHERE pk_i_id IN ({$legacy}, {$queued})");
+ListingHoldJobs::sweep();
+pin('the sweep keeps the legacy row and deletes the held one', [true, false], [$exists($legacy), $exists($queued)]);
+$migration->up(\mindstellar\database\Connection::getInstance());
+pin('running again changes nothing', true, $first($legacy) !== null);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
