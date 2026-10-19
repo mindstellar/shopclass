@@ -14,7 +14,8 @@ use mindstellar\migration\MigrationInterface;
 /**
  * Add the e-mail template for the reminder to pay for a saved listing. The row is found by
  * name, never by id, because admin pages share the table and a fixed id may be taken.
- * Safe to re-run: the page and its text are added only when missing.
+ * Every enabled locale without a text gets the English one. Safe to re-run: only what is
+ * missing is added.
  *
  * @title Unpaid listing reminder mail
  */
@@ -36,7 +37,7 @@ return new class () implements MigrationInterface {
         }
         $conn->execute(
             'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_pages_description (fk_i_pages_id, fk_c_locale_code, s_title, s_text)'
-            . " SELECT ?, pk_c_code, ?, ? FROM " . DB_TABLE_PREFIX . "t_locale WHERE pk_c_code = 'en_US'",
+            . " SELECT ?, pk_c_code, ?, ? FROM " . DB_TABLE_PREFIX . "t_locale WHERE b_enabled = 1 OR pk_c_code = 'en_US'",
             [
                 (int) $id,
                 '{WEB_TITLE} - Pay to publish your listing',
