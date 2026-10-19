@@ -43,6 +43,9 @@ $pending  = seed_item($admin, $cars, $sue, 'Pending wagon', 900.0, 0);
 $blocked  = seed_item($admin, $cars, $tom, 'Blocked van', 700.0, 0, 0);
 $spam     = seed_item($admin, $cars, $tom, 'Spam coupe', 10.0);
 $expired  = seed_item($admin, $cars, $sue, 'Expired estate', 300.0);
+$ann      = seed_user($admin, 'ann', 'ann@example.test');
+$held     = seed_item($admin, $cars, $ann, 'Held sedan', 800.0, 0, 0);
+$admin->query("UPDATE {$p}t_item SET dt_first_pub_date = NULL WHERE pk_i_id = $held");
 $admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = $spam");
 $admin->query("UPDATE {$p}t_item SET dt_expiration = '2020-01-01 00:00:00' WHERE pk_i_id = $expired");
 $admin->query("UPDATE {$p}t_item SET dt_pub_date = '2026-01-01 00:00:00', dt_first_pub_date = '2026-01-01 00:00:00' WHERE pk_i_id = $live");
@@ -85,20 +88,22 @@ pin('a moderator cannot reach the users screen\'s endpoints', '403 insufficient_
 
 harness_section('the list');
 $r = $call('GET', 'admin/listings', null, $boss);
-pin('every status, newest first', [$expired, $spam, $blocked, $pending, $live], $ids($r));
+pin('every status, newest first', [$held, $expired, $spam, $blocked, $pending, $live], $ids($r));
 pin('no total unless asked', null, $r->body()['meta']['total'] ?? null);
 $r = $call('GET', 'admin/listings', null, $boss, [], ['count' => 'true']);
-pin('with the total when count=true', 5, $r->body()['meta']['total'] ?? null);
+pin('with the total when count=true', 6, $r->body()['meta']['total'] ?? null);
 pin('matches the schema', [], api_admin_schema_errors('ListingPage', $r));
 pin('in the admin view: the address and report counters', ['127.0.0.1', true], [$r->body()['data'][0]['ip'] ?? null, isset($r->body()['data'][0]['stats'])]);
 pin('status=pending', [$pending], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'pending'])));
 pin('status=spam,expired', [$expired, $spam], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'spam,expired'])));
 pin('status=active', [$live], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'active'])));
-pin('status=disabled', [$blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'disabled'])));
+pin('status=disabled: the blocked one, not the held one', [$blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'disabled'])));
+pin('status=unpaid', [$held], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'unpaid'])));
+pin('status=pending leaves the held one out', [$pending], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'pending'])));
 pin('an unknown status is 422', '422 validation_failed', api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['status' => 'gone'])));
 pin('the user filter returns that user listings, spam and blocked included', [$spam, $blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['user' => (string) $tom])));
 pin('user= takes a list, as search does', 5, count($ids($call('GET', 'admin/listings', null, $boss, [], ['user' => $sue . ',' . $tom]))));
-pin('category= by the parent\'s id or slug takes its subcategories', [5, 5, 0], [
+pin('category= by the parent\'s id or slug takes its subcategories', [6, 6, 0], [
     count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => (string) $vehicles]))),
     count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => 'vehicles']))),
     count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => '99999']))),
@@ -106,7 +111,7 @@ pin('category= by the parent\'s id or slug takes its subcategories', [5, 5, 0], 
 pin('an unknown category slug is 422', '422 validation_failed', api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['category' => 'nosuch'])));
 $boat = seed_item($admin, $boats, $tom, 'Rowing boat', 50.0);
 $old  = seed_item($admin, $retired, $tom, 'Retired sofa', 50.0);
-pin('category= takes a list, and a slug path names its last slug', [6, 5], [
+pin('category= takes a list, and a slug path names its last slug', [7, 6], [
     count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => $cars . ',boats']))),
     count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => 'vehicles/cars']))),
 ]);
@@ -130,9 +135,24 @@ for ($i = 0; $i < 4 && $next !== null; $i++) {
         parse_str((string) parse_url($link, PHP_URL_QUERY), $next);
     }
 }
-pin('paging by id walks every listing once', [$expired, $spam, $blocked, $pending, $live], $seen);
+pin('paging by id walks every listing once', [$held, $expired, $spam, $blocked, $pending, $live], $seen);
 pin('one listing whatever its status', [200, 'spam'], (static fn (Response $r): array => [$r->status(), $r->body()['data']['status'] ?? null])($call('GET', 'admin/listings/' . $spam, null, $mod)));
 pin('an unknown listing is 404', 404, $call('GET', 'admin/listings/99999', null, $boss)->status());
+
+harness_section('a listing held for payment');
+$r = $call('GET', 'admin/listings/' . $held, null, $boss);
+pin('read as unpaid, not approved, blocked', [200, 'unpaid', false, true], [$r->status(), $r->body()['data']['status'] ?? null, $r->body()['data']['approved'] ?? null, $r->body()['data']['blocked'] ?? null]);
+$heldState = static fn (): array => array_intersect_key($row($held), array_flip(['b_enabled', 'b_active', 'b_spam', 'dt_first_pub_date']));
+$heldNow   = $heldState();
+pin('approved: true is 409 and the row is unchanged', ['409 conflict', $heldNow], [api_admin_code($call('PATCH', 'admin/listings/' . $held, ['approved' => true], $boss)), $heldState()]);
+pin('blocked: false is 409 and the row is unchanged', ['409 conflict', $heldNow], [api_admin_code($call('PATCH', 'admin/listings/' . $held, ['blocked' => false], $boss)), $heldState()]);
+pin('bump is 409 and the row is unchanged', ['409 conflict', $heldNow], [api_admin_code($call('POST', 'admin/listings/' . $held . '/bump', null, $boss)), $heldState()]);
+$r = $call('PATCH', 'admin/listings/' . $held, ['price' => '810'], $boss);
+pin('a price alone saves and the listing stays held', [200, 'unpaid', '810.00', $heldNow], [$r->status(), $r->body()['data']['status'] ?? null, $r->body()['data']['price']['amount'] ?? null, $heldState()]);
+$r = $call('PATCH', 'admin/listings/' . $held, ['spam' => true], $boss);
+pin('spam: true is 200 and the listing stays held', [200, '1', null], [$r->status(), $row($held)['b_spam'], $row($held)['dt_first_pub_date']]);
+$call('PATCH', 'admin/listings/' . $held, ['spam' => false], $boss);
+pin('spam cleared: unpaid again', 'unpaid', $call('GET', 'admin/listings/' . $held, null, $boss)->body()['data']['status'] ?? null);
 
 harness_section('status through PATCH');
 $fired = [];
