@@ -178,9 +178,14 @@ final class ListingCheckout
         }
         // The payment is already settled, so a failure here must not fail the gateway's callback.
         try {
-            self::publish($itemId, Actor::user($order->getUserId()));
+            $result = self::publish($itemId, Actor::user($order->getUserId()));
+            $reason = $result['published'] || $result['reason'] === 'not_held' ? null : (string) $result['reason'];
         } catch (Throwable $t) {
-            error_log(sprintf('Billing: order #%d could not publish listing #%d: %s', $order->getId(), $itemId, get_class($t)));
+            $reason = get_class($t);
+        }
+        if ($reason !== null) {
+            error_log(sprintf('Billing: order #%d could not publish listing #%d: %s', $order->getId(), $itemId, $reason));
+            OrderStore::notePublishFailed($order->getId(), $reason);
         }
     }
 

@@ -399,6 +399,23 @@ osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
 osc_reset_preferences();
 osc_register_billing_slot();
 
+harness_section('Listing order: paid, not published');
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+seed_item($admin, $cat, $uid, 'Price riser');
+Billing::markPaid($order);
+$note = OrderStore::find($order->getId())->meta(OrderStore::PUBLISH_FAILED);
+pin('a paid order whose listing cannot go live: still held', null, $row($held)['dt_first_pub_date']);
+pin('and the order says why', 'insufficient_credits', $note['reason'] ?? null);
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+Billing::markPaid($order);
+Billing::markPaid($order);
+ListingCheckout::onOrderPaid(new \mindstellar\billing\event\OrderPaid($order->getId(), $uid, 5));
+pin('a replay on a live listing writes no note', null, OrderStore::find($order->getId())->meta(OrderStore::PUBLISH_FAILED));
+
 harness_section('Listing order: return URL');
 
 pin('a listing order returns to its pay step', osc_billing_publish_url($held), osc_billing_order_return_url($order->getId()));
