@@ -112,7 +112,7 @@ require ' . var_export($root . '/index.php', true) . ';
 ');
     $base      = 'http://127.0.0.1:' . $port;
     $servers[] = proc_open(
-        [PHP_BINARY, '-d', 'display_errors=1', '-d', 'error_reporting=' . E_ALL, '-d', 'opcache.jit=disable', '-S', '127.0.0.1:' . $port, '-t', $root, $router],
+        [PHP_BINARY, '-d', 'display_errors=1', '-d', 'error_reporting=' . E_ALL, '-d', 'opcache.jit=disable', '-d', 'sendmail_path=/bin/true', '-S', '127.0.0.1:' . $port, '-t', $root, $router],
         [0 => ['file', '/dev/null', 'r'], 1 => ['file', $dir . 'server.log', 'a'], 2 => ['file', $dir . 'server.log', 'a']],
         $pipes,
         $root,
