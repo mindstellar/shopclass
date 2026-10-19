@@ -1153,6 +1153,35 @@ pin('a stored 200 is capped at 100', 100, $titlePref('200'));
 pin('a stored 60 is kept', 60, $titlePref('60'));
 pin('a stored 0 falls back to the column width', 100, $titlePref('0'));
 
+/* ----------------------------------------------------------------------------
+ * My listings tabs with a held listing: it has its own tab and no other tab shows it.
+ * ------------------------------------------------------------------------- */
+harness_section('Item::findItemByTypes — held listings and the unpaid tab');
+
+$resetDao();
+$holder  = seed_user($admin, 'holder', 'holder@example.test');
+$heldId  = seed_item($admin, $cat, $holder, 'Held', 5.0, 0, 0);
+$setItem($heldId, 'dt_first_pub_date = NULL');
+$blockId = seed_item($admin, $cat, $holder, 'Blocked', 5.0, 1, 0);
+$pendId  = seed_item($admin, $cat, $holder, 'Pending', 5.0, 0, 1);
+$liveId  = seed_item($admin, $cat, $holder, 'Live', 5.0);
+$mine    = 'fk_i_user_id = ' . (int) $holder;
+$idsOf   = static function (string $type) use ($model, $holder): array {
+    $ids = array_map(static fn ($row) => (int) $row['pk_i_id'], $model->findItemTypesByUserID($holder, 0, 100, $type));
+    sort($ids);
+
+    return $ids;
+};
+
+pin('unpaid counts the held row only', '1', $model->findItemByTypes($mine, 'unpaid', true));
+pin('blocked does not count the held row', '1', $model->findItemByTypes($mine, 'blocked', true));
+pin('pending does not count the held row', '1', $model->findItemByTypes($mine, 'pending', true));
+pin('all counts every row', '4', $model->findItemByTypes($mine, 'all', true));
+pin('the unpaid tab lists the held id', array((int) $heldId), $idsOf('unpaid'));
+pin('the blocked tab lists the blocked id', array((int) $blockId), $idsOf('blocked'));
+pin('the pending tab lists the pending id', array((int) $pendId), $idsOf('pending'));
+pin('the unpaid count agrees', '1', $model->countItemTypesByUserID($holder, 'unpaid'));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
