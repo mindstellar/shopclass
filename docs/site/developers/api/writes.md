@@ -223,7 +223,7 @@ curl -X DELETE $API/listings/412 -H "Authorization: Bearer $TOKEN"
 
 ## Publish a listing
 
-A listing with `status: "unpaid"` waits for payment. `POST /listings/{id}/publish` puts it live. Only its owner may call it.
+A listing with `status: "unpaid"` waits for payment. `POST /listings/{id}/publish` puts it live. Only its owner may call it, with a credential that holds both `listings:write` and `orders:write`: either path spends money.
 
 ```bash
 curl -i -X POST $API/listings/412/publish \
@@ -242,6 +242,7 @@ With an empty body the site takes the listing's credits from the user's balance.
 | `200` | The listing was already published. Nothing is spent. |
 | `200` with `order` and `next` | A `package` and `gateway` were sent. The order is started and the listing stays `unpaid` until it is paid. `payment` is set. |
 | `422 insufficient_credits` | The balance is too low. `payment` says the price and the shortfall. |
+| `403 insufficient_scope` | The credential lacks `orders:write`. |
 | `404` | Not your listing, or it does not exist. |
 
 `payment.publish_url` is the site's pay page. It needs the seller signed in on the site, so an app should use the order path instead.

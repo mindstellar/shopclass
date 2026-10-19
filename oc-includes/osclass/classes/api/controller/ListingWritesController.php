@@ -122,12 +122,16 @@ final class ListingWritesController
      * `POST /listings/{id}/publish`, owner only. An empty body spends the user's credits; a
      * `{package, gateway}` body starts an order for the credits it is short of and answers
      * `order` and `next`. A second call with the same `Idempotency-Key` replays the first;
-     * without one it answers the listing as it is and spends nothing.
+     * without one it answers the listing as it is and spends nothing. Both paths move money,
+     * so the credential needs `orders:write` too.
      *
      * @throws ProblemException 403, 404, 422 or 429
      */
     public function publish(ApiCall $call): Response
     {
+        if (!$call->credential()->has('orders:write')) {
+            throw ProblemException::from(Problem::insufficientScope('orders:write'));
+        }
         $id     = $this->owned->own($call->intArg(), $call->credential())->id();
         $userId = $call->userId();
         $input  = $call->input();

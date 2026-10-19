@@ -178,7 +178,7 @@ final class PublicRoutes
             'POST listings/{id}/publish' => RouteSpec::write(
                 handler: [ListingWritesController::class, 'publish'],
                 tag: 'Listings',
-                summary: 'Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of',
+                summary: 'Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of. Needs orders:write too',
                 auth: RouteSpec::AUTH_USER,
                 scope: 'listings:write',
                 body: 'ListingPublishInput',

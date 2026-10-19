@@ -72,7 +72,7 @@ $five = (int) PackageStore::create(['s_name' => 'Five', 'i_amount' => 2_000_000,
 $two  = (int) PackageStore::create(['s_name' => 'Two', 'i_amount' => 900_000, 's_currency' => 'USD', 'i_credits' => 2]);
 
 $keys    = new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock());
-$userKey = static fn (int $uid, array $scopes = ['listings:read', 'listings:write']): string => $keys->create('key', 'k' . $uid . count($scopes), $scopes, KeyOwner::user($uid))->token();
+$userKey = static fn (int $uid, array $scopes = ['listings:read', 'listings:write', 'orders:write']): string => $keys->create('key', 'k' . $uid . count($scopes), $scopes, KeyOwner::user($uid))->token();
 $seq     = 0;
 $seller  = static function (int $credits) use ($admin, $p, $cat, $userKey, &$seq): array {
     $seq++;
@@ -140,6 +140,10 @@ pin('another user on a held listing: 404', '404 not_found', $code($call('POST', 
 pin('another user on a live listing: 403 not_owner', '403 not_owner', $code($call('POST', 'listings/' . $annLive . '/publish', [], $sueKey)));
 pin('no credential: 401', 401, $call('POST', 'listings/' . $annHeld . '/publish', [])->status());
 pin('a read-only key: 403 insufficient_scope', '403 insufficient_scope', $code($call('POST', 'listings/' . $annHeld . '/publish', [], $userKey($ann, ['listings:read']))));
+$writeOnly = $userKey($ann, ['listings:write']);
+$r         = $call('POST', 'listings/' . $annHeld . '/publish', [], $writeOnly);
+pin('listings:write alone may not spend credits: it needs orders:write', ['403 insufficient_scope', true], [$code($r), str_contains((string) $r->header('WWW-Authenticate'), 'orders:write')]);
+pin('nor start an order', '403 insufficient_scope', $code($call('POST', 'listings/' . $annHeld . '/publish', ['package' => $five, 'gateway' => 'lcgw'], $writeOnly)));
 $bossId = api_admin_seed_admin($admin, 'boss');
 pin('an admin key: 403 wrong_credential', '403 wrong_credential', $code($call('POST', 'listings/' . $annHeld . '/publish', [], api_admin_key($bossId))));
 pin('an unknown listing: 404', '404 not_found', $code($call('POST', 'listings/999999/publish', [], $annKey)));
