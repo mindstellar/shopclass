@@ -75,8 +75,12 @@ if ($payReady) {
             <div class="oe-bill-actions">
                 <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html((string) $payItem['url']); ?>"><?php echo osc_esc_html(_m('View your listing')); ?></a>
             </div>
-        <?php } elseif ($payStep === 'closed') { ?>
-            <p class="oe-meta"><?php echo osc_esc_html(_m('This listing is not waiting for payment.')); ?></p>
+        <?php } elseif (in_array($payStep, array('validation', 'moderation', 'closed'), true)) { ?>
+            <p class="oe-meta"><?php echo osc_esc_html(match ($payStep) {
+                'validation' => _m('Check your inbox to validate your listing'),
+                'moderation' => _m('Your listing will be published after an admin approves it.'),
+                default      => _m('This listing is not waiting for payment.'),
+            }); ?></p>
             <div class="oe-bill-actions">
                 <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Your listings')); ?></a>
             </div>

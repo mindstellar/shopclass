@@ -427,6 +427,21 @@ ListingCheckout::onOrderPaid(new \mindstellar\billing\event\OrderPaid($order->ge
 pin('a replay on a live listing writes no note', null, OrderStore::find($order->getId())->meta(OrderStore::PUBLISH_FAILED));
 pin('the pay step reads it as published', 'published', ListingCheckout::state($held, $uid)['step']);
 
+harness_section('Pay step: where a paid listing landed');
+
+[$uid, , $held] = $seller(5);
+ListingCheckout::publish($held, Actor::user($uid));
+$admin->query("UPDATE {$p}t_item SET b_active = 0 WHERE pk_i_id = {$held}");
+$st = ListingCheckout::state($held, $uid);
+pin('waiting for the e-mail check: its own step, not published', ['validation', false], [$st['step'], $st['quote']['live']]);
+$admin->query("UPDATE {$p}t_item SET b_active = 1, b_enabled = 0 WHERE pk_i_id = {$held}");
+pin('waiting for an admin: its own step', 'moderation', ListingCheckout::state($held, $uid)['step']);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1, b_spam = 1 WHERE pk_i_id = {$held}");
+pin('marked spam: closed', 'closed', ListingCheckout::state($held, $uid)['step']);
+$admin->query("UPDATE {$p}t_item SET b_spam = 0 WHERE pk_i_id = {$held}");
+pin('live again: published', ['published', true], [ListingCheckout::state($held, $uid)['step'], ListingCheckout::state($held, $uid)['quote']['live']]);
+pin('landing reads a held row as held', ListingCheckout::LANDING_HELD, ListingCheckout::landing(['b_enabled' => '0', 'b_active' => '0', 'dt_first_pub_date' => null]));
+
 harness_section('Listing order: return URL');
 
 pin('a listing order returns to its pay step', osc_billing_publish_url($held), osc_billing_order_return_url($order->getId()));

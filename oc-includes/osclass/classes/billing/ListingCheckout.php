@@ -38,6 +38,15 @@ final class ListingCheckout
     /** The feature whose slots a listing over the limit has to buy. */
     private const FEATURE = 'listing.slot';
 
+    public const LANDING_HELD       = 'held';
+    public const LANDING_LIVE       = 'live';
+    public const LANDING_VALIDATION = 'validation';
+    public const LANDING_MODERATION = 'moderation';
+    public const LANDING_CLOSED     = 'closed';
+
+    /** The columns landing() reads. */
+    private const STATUS_COLUMNS = array('fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration', 'dt_first_pub_date');
+
     /**
      * The price of putting the listing live, worked out fresh on every call.
      *
@@ -47,12 +56,7 @@ final class ListingCheckout
      */
     public static function quote(int $itemId, int $userId): array
     {
-        $row = ListingStore::find($itemId, array('fk_i_user_id', 'b_enabled', 'b_active', 'dt_first_pub_date'));
-        if ($row === null || (int) $row['fk_i_user_id'] !== $userId || $userId <= 0) {
-            throw new ForbiddenException('', ForbiddenException::NOT_OWNER);
-        }
-
-        return self::price(Db::stringifyRow($row), $userId);
+        return self::price(self::ownedRow($itemId, $userId), $userId);
     }
 
     /**
@@ -193,8 +197,9 @@ final class ListingCheckout
     /**
      * Everything the pay step shows: the quote, the open order linked to the listing and the
      * note a paid order carries when its listing could not be published. `step` is one of
-     * `published`, `closed` (not held, not live), `waiting` (order pending), `failed` (order
-     * paid, listing still held) or `pay`.
+     * `published`, `validation` (waits for the seller's e-mail check), `moderation` (waits for
+     * an admin), `closed` (expired, spam), `waiting` (order pending), `failed` (order paid,
+     * listing still held) or `pay`.
      *
      * @return array{step: string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}, order: ?Order, failed: ?array}
      *
@@ -202,14 +207,20 @@ final class ListingCheckout
      */
     public static function state(int $itemId, int $userId): array
     {
-        $quote  = self::quote($itemId, $userId);
+        $row    = self::ownedRow($itemId, $userId);
+        $quote  = self::price($row, $userId);
         $order  = $quote['held'] ? OrderStore::listingOrder($itemId) : null;
         $order  = $order !== null && $order->getUserId() === $userId ? $order : null;
         $failed = $order === null ? null : $order->meta(OrderStore::PUBLISH_FAILED);
         $failed = is_array($failed) ? $failed : null;
 
         if (!$quote['held']) {
-            $step = $quote['live'] ? 'published' : 'closed';
+            $step = match (self::landing($row)) {
+                self::LANDING_LIVE       => 'published',
+                self::LANDING_VALIDATION => 'validation',
+                self::LANDING_MODERATION => 'moderation',
+                default                  => 'closed',
+            };
         } elseif ($order !== null && $order->isPending()) {
             $step = 'waiting';
         } elseif ($order !== null && $order->isPaid() && $failed !== null) {
@@ -219,6 +230,23 @@ final class ListingCheckout
         }
 
         return array('step' => $step, 'quote' => $quote, 'order' => $order, 'failed' => $failed);
+    }
+
+    /**
+     * Where a listing stands for its seller: `held`, `live`, `validation` (waits for the
+     * e-mail check), `moderation` (waits for an admin) or `closed` (expired, spam).
+     *
+     * @param array<string,mixed> $row a t_item row with the status columns
+     */
+    public static function landing(array $row): string
+    {
+        return match (ListingStatus::of($row)) {
+            ListingStatus::UNPAID   => self::LANDING_HELD,
+            ListingStatus::ACTIVE   => self::LANDING_LIVE,
+            ListingStatus::PENDING  => self::LANDING_VALIDATION,
+            ListingStatus::DISABLED => self::LANDING_MODERATION,
+            default                 => self::LANDING_CLOSED,
+        };
     }
 
     /**
@@ -308,6 +336,21 @@ final class ListingCheckout
     }
 
     /**
+     * @return array<string,string|null> the listing's status columns
+     *
+     * @throws ForbiddenException when the listing is not the user's
+     */
+    private static function ownedRow(int $itemId, int $userId): array
+    {
+        $row = ListingStore::find($itemId, self::STATUS_COLUMNS);
+        if ($row === null || (int) $row['fk_i_user_id'] !== $userId || $userId <= 0) {
+            throw new ForbiddenException('', ForbiddenException::NOT_OWNER);
+        }
+
+        return Db::stringifyRow($row);
+    }
+
+    /**
      * @param array<string,string|null> $row
      * @param bool                      $current count the seller's listings as committed now, under lockSeller()
      *
@@ -315,11 +358,12 @@ final class ListingCheckout
      */
     private static function price(array $row, int $userId, bool $current = false): array
     {
-        $held = ListingStatus::isHeld($row);
-        $cost = $held
+        $landing = self::landing($row);
+        $held    = $landing === self::LANDING_HELD;
+        $cost    = $held
             ? self::nextListing($userId, $current)
             : array('slots' => 0, 'credits' => 0, 'balance' => osc_user_credits($userId), 'shortfall' => 0);
 
-        return array('held' => $held, 'live' => !$held && (int) ($row['b_enabled'] ?? 0) === 1) + $cost;
+        return array('held' => $held, 'live' => $landing === self::LANDING_LIVE) + $cost;
     }
 }
