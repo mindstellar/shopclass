@@ -537,12 +537,14 @@ final class JobQueue
     public function cancelKey(string $type, string $key): int
     {
         try {
-            return Db::table($this->table())
-                ->where('s_type', $type)
-                ->where('s_unique', $key)
-                ->where('s_status', self::STATUS_PENDING)
-                ->delete();
+            return (int) Db::execute(
+                'DELETE FROM ' . $this->table() . ' WHERE s_type = ? AND s_unique = ? AND s_status = ?',
+                array($type, $key, self::STATUS_PENDING)
+            );
         } catch (DbException $e) {
+            // The job still runs and finds nothing to do, so this is only logged.
+            error_log('Jobs ' . $type . ' ' . $key . ' were not cancelled: ' . $e->getMessage());
+
             return 0;
         }
     }
