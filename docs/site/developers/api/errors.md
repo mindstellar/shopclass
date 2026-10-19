@@ -164,8 +164,9 @@ also answers this.
 
 - a stored `Idempotency-Key` answer that cannot be read
 - an [admin action](/docs/developers/api/admin/) the state refuses: activating a blocked
-  listing, deleting a currency a listing uses or the site defaults to, revoking a key that is
-  already revoked
+  listing, approving, unblocking or bumping a listing that waits for payment (publish it
+  instead), publishing one that does not, deleting a currency a listing uses or the site
+  defaults to, revoking a key that is already revoked
 
 ### `insufficient_credits`
 
