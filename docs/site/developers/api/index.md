@@ -146,7 +146,7 @@ curl -H "Authorization: Bearer $KEY" "$API/listings/159?include=custom_fields,tr
 Related: `GET /listings/{id}/photos`, `GET /listings/{id}/photos/{photo}`,
 `GET /listings/{id}/comments` (approved comments, oldest first, when comments are on),
 `GET /comments/{id}` and `GET /users/{id}/listings`.
-A pending, disabled or spam listing is a `404` except to its owner and keys with the admin view.
+A pending, disabled, spam or unpaid listing is a `404` except to its owner and keys with the admin view.
 An expired listing answers with `status: "expired"`, as its page shows it; search leaves it out.
 
 ### Paging
@@ -250,7 +250,7 @@ Location: https://example.com/api/v1/listings/412
 ```
 
 The body is `{"data": {…the listing…}}`. If the site checks new listings first, `data.status` is
-`pending` and a `warnings` list says `listing_pending`.
+`pending` and a `warnings` list says `listing_pending`. A site that sells listing slots may answer `unpaid`, with a `warnings` code `listing_unpaid` and a `payment` member: see [Publish a listing](/docs/developers/api/writes/#publish-a-listing).
 
 ### 4. Edit it
 
