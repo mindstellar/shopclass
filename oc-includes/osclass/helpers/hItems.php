@@ -637,6 +637,72 @@ function osc_item_is_expired()
 }
 
 /**
+ * Whether the current item is held, waiting for its owner to pay before it goes live.
+ *
+ * @return boolean
+ */
+function osc_item_is_unpaid()
+{
+    return \mindstellar\listing\ListingStatus::isHeld((array) osc_item());
+}
+
+/**
+ * Marks a held listing in the seller's own list.
+ *
+ * @param array<string,mixed> $badges
+ * @param mixed               $item
+ * @param string              $context
+ *
+ * @return array<string,mixed>
+ */
+function osc_listing_row_unpaid_badge($badges, $item, $context = '')
+{
+    $badges = (array) $badges;
+    if ($context === 'user_items' && is_array($item) && \mindstellar\listing\ListingStatus::isHeld($item)) {
+        $badges['status'] = array('label' => _m('Waiting for payment'), 'class' => 'pending');
+    }
+
+    return $badges;
+}
+
+/**
+ * Gives a held listing a Publish link to the pay step and takes away its upgrade links.
+ *
+ * @param array<string,mixed> $actions
+ * @param mixed               $item
+ * @param string              $context
+ *
+ * @return array<string,mixed>
+ */
+function osc_listing_row_unpaid_actions($actions, $item, $context = '')
+{
+    static $quote = null;
+
+    $actions = (array) $actions;
+    if ($context !== 'user_items' || !is_array($item) || !\mindstellar\listing\ListingStatus::isHeld($item)) {
+        return $actions;
+    }
+
+    $quote ??= osc_billing_next_listing_quote();
+    $credits = (int) $quote['credits'];
+    $publish = array(
+        'label' => $credits > 0
+            ? sprintf(_mn('Publish (%d credit)', 'Publish (%d credits)', $credits), $credits)
+            : _m('Publish for free'),
+        'url'   => osc_billing_publish_url((int) ($item['pk_i_id'] ?? 0)),
+    );
+
+    $kept = array();
+    foreach ($actions as $key => $action) {
+        if (!is_array($action) || ($action['group'] ?? '') !== 'promote') {
+            $kept[$key] = $action;
+        }
+    }
+
+    return array('publish' => $publish) + $kept;
+}
+
+/**
  * Gets status of current item.
  * b_active = true  -> item is active
  * b_active = false -> item is inactive

@@ -252,11 +252,11 @@ Listing lists pass a context: `dashboard`, `user_items`, `public_profile` or
 
 | Filter | Entries |
 |---|---|
-| `listing_row_badges` | `['label' => …, 'class' => …]`; the class is an `.oe-badge` modifier. Core's keys: `status`, `premium`, `highlight`, `urgent` |
+| `listing_row_badges` | `['label' => …, 'class' => …]`; the class is an `.oe-badge` modifier. Core's keys: `status`, `premium`, `highlight`, `urgent`. A listing waiting for payment gets the `status` "Waiting for payment" on `user_items` |
 | `listing_row_meta` | `['text' => …]`, plus `'url'` for a link or `'datetime'` for a `<time>`. Core's keys: `category`, `date`, `views` |
-| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Add `'method' => 'post'` and `'fields' => [name => value]` for a button in a form with the CSRF token. `'group' => 'promote'` puts it on the paid-upgrades line. Core's keys: `edit`, `delete`, and on `user_items` only `upgrade_<feature>` for each upgrade the owner can buy |
+| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Add `'method' => 'post'` and `'fields' => [name => value]` for a button in a form with the CSRF token. `'group' => 'promote'` puts it on the paid-upgrades line. Core's keys: `edit`, `delete`, and on `user_items` only `upgrade_<feature>` for each upgrade the owner can buy, or `publish` for a listing waiting for payment |
 
-Core escapes every value. Add a Renew link on expired listings:
+The My listings tabs are All, Published, Awaiting validation and Expired, plus Waiting for payment (`itemType=unpaid`) when pay-at-post is on or the seller has one. Core escapes every value. Add a Renew link on expired listings:
 
 ```php
 osc_add_filter('listing_row_actions', function ($actions, $item, $context) {

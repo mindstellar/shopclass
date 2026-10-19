@@ -25,6 +25,9 @@ $itemsTabs = array(
     'pending' => _m('Awaiting validation'),
     'expired' => _m('Expired'),
 );
+if (osc_billing_pay_at_post() || Item::getInstance()->countItemTypesByUserID((int) osc_logged_user_id(), 'unpaid') > 0) {
+    $itemsTabs['unpaid'] = _m('Waiting for payment');
+}
 $listingLimit = osc_user_listing_limit();
 ?>
 <div class="oe-account">
@@ -65,7 +68,7 @@ $listingLimit = osc_user_listing_limit();
         <?php if (osc_count_items() === 0) { ?>
             <p class="oe-empty"><?php echo osc_esc_html($itemsType === 'all'
                 ? _m('You have not published anything yet.')
-                : _m('No listings with this status.')); ?></p>
+                : ($itemsType === 'unpaid' ? _m('No listing is waiting for payment.') : _m('No listings with this status.'))); ?></p>
             <div class="oe-actions">
                 <a class="oe-btn" href="<?php echo osc_esc_html(osc_item_post_url_in_category()); ?>"><?php
                     echo osc_esc_html(_m('Publish a listing')); ?></a>
