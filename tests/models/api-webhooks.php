@@ -574,6 +574,23 @@ check('the thin payload carries no title or contact', !str_contains((string) jso
 $clearJobs();
 $service->delete($held2, (string) $admin->query("SELECT s_secret FROM {$p}t_item WHERE pk_i_id = $held2")->fetch_assoc()['s_secret'], $sActor);
 pin('deleting a held listing sends listing.deleted once', ['listing.deleted'], $types());
+
+osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
+osc_set_preference('billing_slot_quantity', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_slot();
+\mindstellar\billing\Wallet::credit($seller, 6, \mindstellar\billing\Wallet::REASON_GRANT);
+$byCredits = $post()->id();
+$clearJobs();
+\mindstellar\billing\ListingCheckout::publish($byCredits, $sActor);
+\mindstellar\billing\ListingCheckout::publish($byCredits, $sActor);
+pin('paid with credits, twice: one listing.created', [['listing.created'], $byCredits], [$types(), $mine()[0]['data']['id'] ?? null]);
+$byOrder = $post()->id();
+$order   = \mindstellar\billing\OrderStore::create($seller, 'offline', 100, 'USD', 9, ['_kind' => \mindstellar\billing\Order::KIND_LISTING, '_item' => $byOrder]);
+$clearJobs();
+Billing::markPaid($order);
+Billing::markPaid(\mindstellar\billing\OrderStore::find($order->getId()));
+pin('paid by an order, marked paid twice: one listing.created', [['listing.created'], $byOrder, 'active'], [$types(), $mine()[0]['data']['id'] ?? null, $mine()[0]['data']['status'] ?? null]);
 $manager()->delete($heldEp->id());
 $clearJobs();
 
