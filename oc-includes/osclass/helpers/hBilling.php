@@ -84,6 +84,7 @@ function osc_billing_slot_enabled(): bool
 /**
  * Whether a listing over the free limit is held until its slot is paid, instead of refused.
  * Needs billing and slot sales on; the billing_pay_at_post preference defaults to on.
+ * Set on the admin Billing > Pricing screen.
  *
  * @return bool
  */
@@ -633,6 +634,7 @@ function osc_user_can_publish(?int $userId = null): bool
  * (the submit path), and is empty where there is not (opening the form).
  *
  * When extra slots are on sale the default names that remedy too. Filterable.
+ * Shown only when the post is refused (pay at post off, or a billing_can_publish veto).
  *
  * @param int|null            $userId
  * @param array<string,mixed> $item

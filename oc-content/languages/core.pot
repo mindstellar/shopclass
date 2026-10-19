@@ -961,6 +961,12 @@ msgid ""
 "by default."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"A seller over the limit writes the listing first and pays for the slot on "
+"the last step. Off, they are sent to buy a slot before they can post."
+msgstr ""
+
 #: oc-includes/osclass/classes/routing/ReservedSlugs.php
 msgid ""
 "A slug of \"api\", or one starting with \"api/\", is reserved for the "
@@ -1706,7 +1712,9 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
 "An unpaid order is cancelled after this many days. A bank transfer or cash "
-"on delivery order's stock goes back on sale."
+"on delivery order's stock goes back on sale. A listing waiting for payment "
+"is deleted after the same number of days; the seller is reminded a day "
+"before."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
@@ -8903,6 +8911,10 @@ msgid "Paused: %s. Switch it on again once the receiver works."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Pay at post"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Payment instructions"
 msgstr ""
 
@@ -11627,6 +11639,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Take credits back off this account. You can add them again afterwards, and "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Take payment at the end of posting"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php

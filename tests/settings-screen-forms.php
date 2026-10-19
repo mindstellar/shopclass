@@ -1221,6 +1221,39 @@ pin('an amount that is not a number is refused', array('warning:Enter an amount,
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
 pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
 
+harness_section('billing pricing: pay at post');
+
+$payFields = SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_PRICING);
+$keys      = array_keys($payFields);
+check(
+    'the switch sits on Pricing under the slot fields',
+    array_search('billing_pay_at_post', $keys, true) === array_search('billing_slot_quantity', $keys, true) + 1,
+    implode(',', $keys)
+);
+pin('it follows slot sales', 'billing_slot_enabled', $payFields['billing_pay_at_post']['depends'] ?? null);
+check(
+    'the hold-days help names listings',
+    stripos((string) (SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP)['billing_hold_days']['help'] ?? ''), 'listing') !== false
+);
+
+// hBilling.php cannot be loaded whole here (the harness stubs its registrars), so the two
+// readers under test are taken from it by name.
+$billingSrc = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php');
+foreach (array('osc_billing_slot_enabled', 'osc_billing_pay_at_post') as $reader) {
+    if (!function_exists($reader) && preg_match('/^function ' . $reader . '\(\).*?^}$/ms', $billingSrc, $fn)) {
+        eval($fn[0]);
+    }
+}
+seed_pref($admin, 'billing_enabled', '1', 'BOOLEAN');
+seed_pref($admin, 'billing_slot_enabled', '1', 'BOOLEAN');
+osc_reset_preferences();
+$run = drive('CAdminSettingsBilling', 'billing_pricing_post', array('billing_pay_at_post' => '1') + $pricing);
+pin('ticked stores one', array('1', 'BOOLEAN'), pref($admin, 'billing_pay_at_post'));
+pin('and the helper is on', true, osc_billing_pay_at_post());
+$run = drive('CAdminSettingsBilling', 'billing_pricing_post', $pricing);
+pin('unticked stores a zero, not a missing row', array('0', 'BOOLEAN'), pref($admin, 'billing_pay_at_post'));
+pin('and the helper is off', false, osc_billing_pay_at_post());
+
 harness_section('permalinks, and the two effects that follow a save');
 
 // The structure as the screen posts it, with the shapes the hand-written controller

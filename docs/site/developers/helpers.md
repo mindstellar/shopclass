@@ -215,7 +215,7 @@ Core defines 1209 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
 | `osc_billing_packages()` | The packages a buyer can choose from at checkout. |
-| `osc_billing_pay_at_post()` | Whether a listing over the free limit is held until its slot is paid, instead of refused. Needs billing and slot sales on; the billing_pay_at_post preference defaults to on. |
+| `osc_billing_pay_at_post()` | Whether a listing over the free limit is held until its slot is paid, instead of refused. Needs billing and slot sales on; the billing_pay_at_post preference defaults to on. Set on the admin Billing &gt; Pricing screen. |
 | `osc_billing_photos_credits()` | Credit price of the raised photo cap. |
 | `osc_billing_photos_enabled()` | Whether raising a seller's photo cap is registered as a purchasable limit at all. |
 | `osc_billing_photos_quantity()` | Photo cap granted while the entitlement is held. |
