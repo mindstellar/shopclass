@@ -13,6 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
+use mindstellar\billing\EntitlementStore;
+use mindstellar\database\Db;
 use mindstellar\job\Job;
 
 /**
@@ -67,10 +69,9 @@ final class ListingHoldJobs
      */
     public static function sweep(): int
     {
-        $rows    = ListingStore::heldPast(date('Y-m-d H:i:s', time() - 86400), self::SWEEP_BATCH);
-        $service = new ListingService();
+        $rows = ListingStore::heldPast(date('Y-m-d H:i:s', time() - 86400), self::SWEEP_BATCH);
         foreach ($rows as $row) {
-            $service->delete((int) $row['pk_i_id'], (string) $row['s_secret'], Actor::admin(0));
+            self::deleteIfHeld((int) $row['pk_i_id']);
         }
 
         return count($rows);
@@ -84,10 +85,7 @@ final class ListingHoldJobs
             }
         });
         osc_job_register_handler(self::EXPIRE, static function (Job $job): void {
-            $row = self::heldRow($job);
-            if ($row !== null) {
-                (new ListingService())->delete((int) $row['pk_i_id'], (string) $row['s_secret'], Actor::admin(0));
-            }
+            self::deleteIfHeld((int) $job->get('item', 0));
         });
         osc_job_register_handler(self::REMIND, static function (Job $job): void {
             $row = self::heldRow($job);
@@ -99,6 +97,33 @@ final class ListingHoldJobs
         osc_job_describe(self::EXPIRE, __('Delete unpaid listing'), $describe);
         osc_job_describe(self::REMIND, __('Remind to pay for listing'), $describe);
         osc_job_describe(self::SWEEP, __('Delete unpaid listings past their deadline'));
+    }
+
+    /**
+     * Delete a listing that is still waiting for payment. It re-reads the row under the seller
+     * lock and then the row lock, the order ListingCheckout::publish() takes, so a listing paid
+     * at the same moment is kept and the two never deadlock.
+     *
+     * @return bool whether it was deleted
+     */
+    private static function deleteIfHeld(int $itemId): bool
+    {
+        if ($itemId <= 0) {
+            return false;
+        }
+        $ownerId = ListingStore::ownerId($itemId);
+
+        return Db::transaction(static function () use ($itemId, $ownerId): bool {
+            if ($ownerId > 0) {
+                EntitlementStore::lockSeller($ownerId);
+            }
+            $row = ListingStore::find($itemId, array('*'), true);
+            if ($row === null || !ListingStatus::isHeld($row) || (int) $row['fk_i_user_id'] !== $ownerId) {
+                return false;
+            }
+
+            return (new ListingService())->delete($itemId, (string) $row['s_secret'], Actor::admin(0)) !== false;
+        });
     }
 
     /** @return array<string,mixed>|null the listing, when it is still waiting for payment */
