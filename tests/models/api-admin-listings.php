@@ -154,6 +154,33 @@ pin('spam: true is 200 and the listing stays held', [200, '1', null], [$r->statu
 $call('PATCH', 'admin/listings/' . $held, ['spam' => false], $boss);
 pin('spam cleared: unpaid again', 'unpaid', $call('GET', 'admin/listings/' . $held, null, $boss)->body()['data']['status'] ?? null);
 
+harness_section('publish without payment');
+$held2    = seed_item($admin, $cars, $ann, 'Held coupe', 820.0, 0, 0);
+$held3    = seed_item($admin, $cars, $ann, 'Held wagon', 830.0, 0, 0);
+$admin->query("UPDATE {$p}t_item SET dt_first_pub_date = NULL WHERE pk_i_id IN ($held2, $held3)");
+$ledger = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_ledger")->fetch_row()[0];
+$fired  = [];
+$posted = 0;
+osc_add_hook('posted_item', static function () use (&$posted): void {
+    $posted++;
+});
+$ledgerBefore = $ledger();
+$r = $call('POST', 'admin/listings/' . $held2 . '/publish', null, $boss);
+$h = $row($held2);
+pin('publish: 200 active, row 1/1/now', [200, 'active', '1', '1', true], [$r->status(), $r->body()['data']['status'] ?? null, $h['b_enabled'], $h['b_active'], strtotime((string) $h['dt_first_pub_date']) > time() - 60]);
+check('the run starts now and ends later', strtotime((string) $h['dt_expiration']) > time() + 86400);
+pin('posted_item fired once, no ledger row, logged under the admin', [1, $ledgerBefore, [['s_who' => 'admin', 'fk_i_who_id' => (string) $bossId]]], [$posted, $ledger(), $logs('publish', $held2)]);
+pin('publish again: 409 conflict', '409 conflict', api_admin_code($call('POST', 'admin/listings/' . $held2 . '/publish', null, $boss)));
+pin('a live listing: 409 conflict', '409 conflict', api_admin_code($call('POST', 'admin/listings/' . $live . '/publish', null, $boss)));
+pin('a moderator key may publish, as the screen is open to moderators', 200, $call('POST', 'admin/listings/' . $held3 . '/publish', null, $mod)->status());
+pin('posted_item fired for the second', 2, $posted);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL WHERE pk_i_id = $held3");
+pin('without admin:listings: 403 insufficient_scope', '403 insufficient_scope', api_admin_code($call('POST', 'admin/listings/' . $held3 . '/publish', null, $noScope)));
+pin('a user key: 403 wrong_credential', '403 wrong_credential', api_admin_code($call('POST', 'admin/listings/' . $held3 . '/publish', null, $userKey)));
+pin('unknown listing: 404', 404, $call('POST', 'admin/listings/99999/publish', null, $boss)->status());
+pin('the refused calls left the listing held', [0, null], [$row($held3)['b_enabled'] + 0, $row($held3)['dt_first_pub_date']]);
+$fired = [];
+
 harness_section('status through PATCH');
 $fired = [];
 $r     = $call('PATCH', 'admin/listings/' . $pending, ['approved' => true], $boss);

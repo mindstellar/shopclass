@@ -76,6 +76,7 @@ is refused, nothing is saved.
 | `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (a day or an RFC 3339 date-time, which names its day in UTC; `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. `product` sells it; see [Selling a listing](#selling-a-listing). |
 | `DELETE /admin/listings/{id}` | Delete. |
 | `POST /admin/listings/{id}/bump` | Move to the top of "newest first". |
+| `POST /admin/listings/{id}/publish` | Publish a listing that waits for payment, without charging the seller. |
 
 The admin view reads `approved`, `blocked`, `spam` and `premium` back under the same names;
 `status` sums them up. A flag already as asked changes nothing. An unblock runs first and a
