@@ -12,10 +12,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
-use mindstellar\billing\Receipts;
-use mindstellar\currency\Money;
 
 /**
  * The buyer's own orders -- markup only: no page chrome, no heading
@@ -50,22 +47,7 @@ if (!osc_is_web_user_logged_in()) {
     $total  = OrderStore::searchCount(array('user_id' => $userId));
 }
 
-$statusWords = array(
-    Order::STATUS_PENDING   => _m('Pending'),
-    Order::STATUS_PAID      => _m('Paid'),
-    Order::STATUS_FAILED    => _m('Failed'),
-    Order::STATUS_REFUNDED  => _m('Refunded'),
-    Order::STATUS_CANCELLED => _m('Cancelled'),
-);
-
-// Column headings, also each cell's label when a row stacks on a phone.
-$col = array(
-    'date'    => _m('Date'),
-    'method'  => _m('Payment method'),
-    'amount'  => _m('Amount'),
-    'credits' => _m('Credits'),
-    'status'  => _m('Status'),
-);
+$shopper = osc_is_shopper();
 ?>
 <div class="oe-account">
 <div class="oe-account-main">
@@ -78,53 +60,16 @@ $col = array(
         <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
-    <?php $billingTab = 'orders';
-    require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
-    <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php'; ?>
+    <?php if (!$shopper) {
+        $billingTab = 'orders';
+        require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php';
+        require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php';
+    } ?>
     <div class="oe-panel oe-bill-card">
         <?php if (empty($orders)) { ?>
-            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('You have not bought any credits yet.')); ?></p>
+            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($shopper ? _m('You have not ordered anything yet.') : _m('You have not bought any credits yet.')); ?></p>
         <?php } else { ?>
-            <div class="oe-scroll">
-            <table>
-                <thead>
-                <tr>
-                    <th scope="col"><?php echo osc_esc_html($col['date']); ?></th>
-                    <th scope="col"><?php echo osc_esc_html($col['method']); ?></th>
-                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['amount']); ?></th>
-                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['credits']); ?></th>
-                    <th scope="col"><?php echo osc_esc_html($col['status']); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($orders as $order) { ?>
-                    <tr>
-                        <td data-label="<?php echo osc_esc_html($col['date']); ?>"><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
-                        <td data-label="<?php echo osc_esc_html($col['method']); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?>
-                            <?php if ($order->isListing()) {
-                                $itemId = (int) $order->listingId();
-                                $state  = OrderStore::listingState($itemId);
-                                $link   = $state === 'held' ? osc_billing_publish_url($itemId) : ($state === 'live' ? osc_item_url_ns($itemId) : ''); ?>
-                                <br><span class="oe-muted"><?php if ($link !== '') { ?><a href="<?php echo osc_esc_html($link); ?>"><?php echo osc_esc_html($order->getLabel()); ?></a><?php } else { echo osc_esc_html($order->getLabel()); } ?></span>
-                            <?php } ?>
-                        </td>
-                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['amount']); ?>">
-                            <?php echo osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())); ?>
-                        </td>
-                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['credits']); ?>"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
-                        <td data-label="<?php echo osc_esc_html($col['status']); ?>">
-                            <span class="oe-badge oe-bill-badge <?php echo osc_esc_html($order->getStatus()); ?>">
-                                <?php echo osc_esc_html($statusWords[$order->getStatus()] ?? $order->getStatus()); ?>
-                            </span>
-                            <?php if (Receipts::available($order)) { ?>
-                                <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Receipt')); ?></a>
-                            <?php } ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-            </div>
+            <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/order-list.php'; ?>
             <?php if ($total > $perPage) { ?>
                 <div class="oe-pager oe-bill-pager">
                     <span>
@@ -146,9 +91,11 @@ $col = array(
         <?php } ?>
     </div>
 
+    <?php if (!$shopper) { ?>
     <p class="oe-muted oe-bill-sub">
         <a href="<?php echo osc_esc_html(osc_billing_wallet_url()); ?>"><?php echo osc_esc_html(_m('Back to your wallet')); ?></a>
     </p>
+    <?php } ?>
 <?php } ?>
 </div>
 <?php osc_run_hook('account_page_after', 'billing-orders'); ?>

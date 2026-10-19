@@ -14,6 +14,7 @@
 
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
+use mindstellar\billing\OrderStore;
 use mindstellar\exception\BlockedException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
@@ -52,6 +53,9 @@ class CWebUser extends WebSecBaseModel
         'delete_post'          => 'deletePost',
     );
 
+    /** Seller pages a shopper is sent away from. */
+    private const SHOPPER_HIDDEN = array('items', 'alerts', 'api_access', 'api_access_post');
+
     /**
      * Boots the secured base controller, bounces the visitor home when accounts are
      * disabled, and fires the `init_user` hook.
@@ -79,8 +83,21 @@ class CWebUser extends WebSecBaseModel
         if ($method === null) {
             return;
         }
+        if (in_array($this->action, self::SHOPPER_HIDDEN, true)) {
+            $this->shopperToDashboard();
+        }
 
         $this->$method();
+    }
+
+    /**
+     * Send a shopper to the dashboard: the seller pages are not theirs.
+     */
+    private function shopperToDashboard(): void
+    {
+        if (osc_is_shopper()) {
+            $this->redirectTo(osc_user_dashboard_url());
+        }
     }
 
     /**
@@ -88,6 +105,14 @@ class CWebUser extends WebSecBaseModel
      */
     private function dashboard(): void
     {
+        if (osc_is_shopper()) {
+            $orders = osc_billing_enabled() ? OrderStore::forUser((int) osc_logged_user_id(), 5) : array();
+            $this->_exportVariableToView('orders', $orders);
+            $this->_exportVariableToView('items', array());
+            $this->doView(osc_locate_template(array('user-dashboard.php'), 'user-dashboard'));
+
+            return;
+        }
         $max_items =
             (Params::getParam('max_items') != '') ? Params::getParam('max_items') : 5;
         $aItems    =
