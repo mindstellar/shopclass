@@ -53,9 +53,6 @@ class CWebUser extends WebSecBaseModel
         'delete_post'          => 'deletePost',
     );
 
-    /** Seller pages a shopper is sent away from. */
-    private const SHOPPER_HIDDEN = array('items', 'alerts', 'api_access', 'api_access_post');
-
     /**
      * Boots the secured base controller, bounces the visitor home when accounts are
      * disabled, and fires the `init_user` hook.
@@ -83,21 +80,9 @@ class CWebUser extends WebSecBaseModel
         if ($method === null) {
             return;
         }
-        if (in_array($this->action, self::SHOPPER_HIDDEN, true)) {
-            $this->shopperToDashboard();
-        }
+        $this->redirectShopperHome();
 
         $this->$method();
-    }
-
-    /**
-     * Send a shopper to the dashboard: the seller pages are not theirs.
-     */
-    private function shopperToDashboard(): void
-    {
-        if (osc_is_shopper()) {
-            $this->redirectTo(osc_user_dashboard_url());
-        }
     }
 
     /**

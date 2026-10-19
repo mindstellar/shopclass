@@ -35,9 +35,6 @@ use mindstellar\exception\InvalidException;
  */
 class CWebBilling extends WebSecBaseModel
 {
-    /** The billing pages a shopper keeps; the credits pages send them to the dashboard. */
-    private const SHOPPER_OPEN = array('orders', 'receipt');
-
     /** Rows per page of the wallet ledger and the orders list. */
     private const PER_PAGE = 25;
 
@@ -104,9 +101,7 @@ class CWebBilling extends WebSecBaseModel
      */
     public function doModel()
     {
-        if (!in_array($this->action, self::SHOPPER_OPEN, true)) {
-            $this->shopperToDashboard();
-        }
+        $this->redirectShopperHome();
 
         switch ($this->action) {
             case ('buy'):
@@ -137,16 +132,6 @@ class CWebBilling extends WebSecBaseModel
             default:
                 $this->walletView();
                 break;
-        }
-    }
-
-    /**
-     * Send a shopper to the dashboard: credits, upgrades and the pay step are seller pages.
-     */
-    private function shopperToDashboard(): void
-    {
-        if (osc_is_shopper()) {
-            $this->redirectTo(osc_user_dashboard_url());
         }
     }
 

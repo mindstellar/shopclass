@@ -276,4 +276,12 @@ $signIn(null);
 $r = $drive('TestShopperPublic', 'user', 'pub_profile', ['id' => (string) $amy]);
 pin('a guest sees the public profile', [null, 'user-public-profile'], [$r['redirect'], $r['view']]);
 
+harness_section('one list of seller pages');
+$listed = [];
+foreach ($hidden as [$class, $page, $action]) {
+    $listed[] = osc_shopper_page_hidden($page, $action);
+}
+pin('every page above is on it', array_fill(0, count($hidden), true), $listed);
+pin('dashboard, orders, receipt and other pages are not', [false, false, false, false], [osc_shopper_page_hidden('user', 'dashboard'), osc_shopper_page_hidden('billing', 'orders'), osc_shopper_page_hidden('billing', 'receipt'), osc_shopper_page_hidden('item', 'item_add')]);
+
 exit(harness_result());

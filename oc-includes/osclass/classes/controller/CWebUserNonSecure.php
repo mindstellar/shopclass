@@ -146,7 +146,11 @@ class CWebUserNonSecure extends BaseModel
      */
     private function publicProfile(): void
     {
-        $this->shopperToDashboard();
+        // Shop mode has no seller profiles: a shopper goes to the dashboard, a guest home.
+        $this->redirectShopperHome();
+        if (osc_site_mode() === \mindstellar\site\SiteMode::SHOP && !osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
+            $this->redirectTo(osc_base_url());
+        }
         if (Params::getParam('username') != '') {
             $user = User::getInstance()->findByUsername(Params::getParam('username'));
         } else {
@@ -199,22 +203,6 @@ class CWebUserNonSecure extends BaseModel
         // visitors. Sibling `/user` routes (dashboard, account) stay private by default.
         osc_mark_response_cacheable();
         $this->doView(osc_locate_template(array('user-public-profile.php'), 'user-public-profile'));
-    }
-
-    /**
-     * In shop mode there are no seller profiles: a shopper goes to the dashboard, a guest home.
-     * An admin session sees the page as before.
-     */
-    private function shopperToDashboard(): void
-    {
-        if (osc_site_mode() !== \mindstellar\site\SiteMode::SHOP) {
-            return;
-        }
-        if (osc_is_shopper()) {
-            $this->redirectTo(osc_user_dashboard_url());
-        } elseif (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
-            $this->redirectTo(osc_base_url());
-        }
     }
 
     /**

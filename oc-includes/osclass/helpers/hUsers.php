@@ -1076,6 +1076,36 @@ function osc_reset_users()
     return View::getInstance()->_reset('users');
 }
 
+/**
+ * Seller pages a shopper is sent to the dashboard from, by page: the actions hidden, or the only
+ * actions kept. A new seller page goes here and in OSC_SHOPPER_HIDDEN_MENU below.
+ */
+const OSC_SHOPPER_PAGES = array(
+    'user'    => array('hide' => array('items', 'alerts', 'api_access', 'api_access_post', 'pub_profile')),
+    'billing' => array('keep' => array('orders', 'receipt')),
+);
+
+/**
+ * Whether a page is a seller page a shopper does not get.
+ *
+ * @param string $page   the request's page, such as 'user'
+ * @param string $action the request's action
+ *
+ * @return bool
+ */
+function osc_shopper_page_hidden(string $page, string $action): bool
+{
+    $rule = OSC_SHOPPER_PAGES[$page] ?? null;
+    if ($rule === null) {
+        return false;
+    }
+    if (isset($rule['keep'])) {
+        return !in_array($action, $rule['keep'], true);
+    }
+
+    return in_array($action, $rule['hide'], true);
+}
+
 /** Account menu entries a shopper does not get, by class. */
 const OSC_SHOPPER_HIDDEN_MENU = array(
     'opt_items',
