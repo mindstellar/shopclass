@@ -589,6 +589,7 @@ wallet, `buy` and `orders` pages share one row of tabs (`gui/billing/tabs.php`).
 | `orders` | GET | logged in | The buyer's own past orders |
 | `upgrade` | POST, CSRF | logged in | Apply an item-scoped feature (`feature`, default `listing.premium`) to one of the buyer's own listings (`itemId`) |
 | `account_upgrade` | POST, CSRF | logged in | Buy an account upgrade (`feature`) that `osc_account_upgrade_offers()` lists, such as `listing.slot`; with `next=post` a bought slot opens the post form |
+| `publish` | GET, POST, CSRF | logged in, owner | The pay step for a listing waiting for payment (`itemId`); POST `do=credits` spends credits, `do=order` starts a package order (§14) |
 | `callback` | GET/POST | **none** — no session, no CSRF | A gateway's webhook or return-URL hit |
 
 Every logged-in action checks `osc_billing_enabled()` first and bounces to the site root
@@ -690,6 +691,8 @@ touched.
 | `billing_feature_duration` | filter | Override a duration feature's granted days. Receives `($days, $featureId, $userId)`, same `$userId` convention as `billing_feature_price` |
 | `billing_tracking_url` | filter | `($url, $carrier, $tracking)` in `OrderStore::ship()` when the admin left the link empty; kept only when https |
 | `billing_receipt_details` | filter | `($details, $order)` sets the receipt's `title`, `extra` and `summary` rows (`{label, value}`) and `footer`, plain text; every other key stays core's |
+
+A listing waiting for payment fires `posted_item` (and the `listing.created` webhook) when it goes live, not when it is saved (§14).
 
 ### Cart hooks
 
@@ -804,3 +807,41 @@ themselves, by deletion or expiry.
 **What buys more:** `listing.slot` — a capacity entitlement that raises the ceiling
 while held and is never spent, because a slot is a ceiling, not a balance. Nothing is
 consumed on publish (§4); there is nothing there to consume.
+
+**A listing waiting for payment occupies no slot** (§14). Its price is what the seller's
+next listing would cost, worked out fresh each time; a slot is taken only when it goes live.
+
+## 14. Pay at the end of posting
+
+A seller over the free limit saves the listing and pays on the last step, instead of being
+stopped at the form. The switch is the `billing_pay_at_post` preference (Settings → Billing →
+Pricing → Take payment at the end of posting); `osc_billing_pay_at_post()` is true when it is
+on, billing is on and slot sales are on. With it off, the post form refuses as before.
+
+**The held state.** A held listing has `b_enabled = 0`, `b_active = 0` and a NULL
+`dt_first_pub_date`. The queued `listing.unpaid_expire` job is the marker core relies on:
+`ListingHoldJobs::holds()` needs the columns and the job, so a hidden row a plugin wrote
+without a first publish date is not treated as held. The order that will pay for it is linked
+in `t_key_value` (group set by `OrderStore::linkListing()`) until the hold ends.
+
+**Jobs.** `listing.unpaid_expire` deletes the listing at the deadline (`billing_hold_days`),
+`listing.unpaid_remind` mails the owner a day before (not queued when the hold is one day or
+less), and `listing.unpaid_sweep` runs daily from `cron_daily` and deletes held listings a day
+past their deadline whose delete job is still waiting.
+
+**Paying.** `ListingCheckout` prices the listing (`quote()`), spends credits and publishes
+(`publish()`), or creates a package order for the shortfall (`startOrder()`); a paid listing order
+publishes the listing from `onOrderPaid()`. `ListingService::publish()` is the go-live and
+fires `posted_item`. `ListingCheckout::publishFree()` publishes without charging. The web pay
+step and both API routes call the same methods.
+
+**API.** A held listing answers `status: "unpaid"`. `POST /listings/{id}/publish` pays and
+publishes it; `POST /admin/listings/{id}/publish` publishes it free. See the
+API writes page (`docs/site/developers/api/writes.md`).
+
+**Admin.** The Listings screen shows such a row as Waiting for payment, has a filter for it
+and a Publish without payment action. Activate, unblock and bump refuse it.
+
+**Refunds.** Credits are spent only at go-live, so deleting a held listing spends nothing and
+cancels its pending order. A paid order whose listing could not be published leaves the
+credits in the wallet and a note on the order.
