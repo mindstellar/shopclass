@@ -28,8 +28,8 @@ use mindstellar\exception\InvalidException;
  * The buyer-facing side of billing: wallet, checkout, orders, and featuring a listing.
  *
  * Every action needs a logged-in user (see CWebBillingNonSecure for the one route that
- * cannot) and every action refuses when billing is switched off, so nothing here has to
- * repeat that check itself.
+ * cannot) and every action but the pay step refuses when billing is switched off, so
+ * nothing here has to repeat that check itself.
  *
  * Class CWebBilling
  */
@@ -78,13 +78,14 @@ class CWebBilling extends WebSecBaseModel
 
     /**
      * Boots the secured base controller, bounces the visitor home when billing is off,
-     * and fires the `init_billing` hook.
+     * and fires the `init_billing` hook. The pay step stays open, so a listing held before
+     * billing was switched off can still be published, for free.
      */
     public function __construct()
     {
         parent::__construct();
 
-        if (!osc_billing_enabled()) {
+        if (!osc_billing_enabled() && $this->action !== 'publish') {
             osc_add_flash_error_message(_m('Billing is not available on this site'));
             $this->redirectTo(osc_base_url());
         }

@@ -345,6 +345,29 @@ check('with the approval flash', str_contains($r['flashes'], 'ok:Your listing wi
 $r = pay($uid, $held);
 check('the pay step says it waits for an admin', str_contains($r['drawn'], 'after an admin approves it') && !str_contains($r['drawn'], 'not waiting for payment'));
 
+harness_section('billing switched off');
+
+[$uid, $held] = $seller(0);
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+$r = pay($uid, $held);
+pin('the pay step still opens', array(null, 'user-billing-publish.php'), array($r['redirect'], $GLOBALS['view']));
+check('and offers to publish for free', str_contains($r['drawn'], 'This listing is free to publish now.') && str_contains($r['drawn'], 'Publish for free'));
+$r = pay($uid, $held, array('do' => 'credits'));
+pin('which publishes it with nothing spent', array(WEB_PATH . 'listing/' . $held, '1', 0), array($r['redirect'], $row($held)['b_enabled'], Wallet::balance($uid)));
+$_GET = array('page' => 'billing', 'action' => 'buy');
+Params::init();
+$GLOBALS['flashes'] = array();
+$bounced = null;
+try {
+    new PayPageBilling();
+} catch (PayPageRedirect $e) {
+    $bounced = $e->url;
+}
+pin('the other billing pages still send the visitor home', osc_base_url(), $bounced);
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
 harness_section('request data');
 
 [$uid, $held] = $seller(5);

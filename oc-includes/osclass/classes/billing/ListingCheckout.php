@@ -347,6 +347,7 @@ final class ListingCheckout
     /**
      * What the seller's next listing costs: the slots it needs, their credits, the balance and
      * what the balance is short. A held listing is not counted, so its own price equals this.
+     * With billing off it is free.
      *
      * @param bool $current count the seller's listings as committed now, under lockSeller()
      *
@@ -354,7 +355,7 @@ final class ListingCheckout
      */
     public static function nextListing(int $userId, bool $current = false): array
     {
-        $ceiling = EntitlementStore::listingCeiling($userId);
+        $ceiling = osc_billing_enabled() ? EntitlementStore::listingCeiling($userId) : -1;
         $slots   = 0;
         if ($ceiling !== -1) {
             $over  = EntitlementStore::liveListings($userId, $current) - $ceiling + 1;
