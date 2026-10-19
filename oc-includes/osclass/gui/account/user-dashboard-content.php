@@ -34,7 +34,9 @@ $dashboardShopper = osc_is_shopper();
             <?php if ($orders === array()) { ?>
                 <p class="oe-empty"><?php echo osc_esc_html(_m('You have not ordered anything yet.')); ?></p>
             <?php } else { ?>
-                <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/order-list.php'; ?>
+                <div class="oe-bill">
+                    <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/order-list.php'; ?>
+                </div>
                 <p class="oe-muted oe-dashboard-more">
                     <a href="<?php echo osc_esc_html(osc_billing_orders_url()); ?>"><?php
                         echo osc_esc_html(_m('See all of your orders')); ?></a>
