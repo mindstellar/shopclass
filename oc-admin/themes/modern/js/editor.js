@@ -37,8 +37,10 @@
             // function, so the server sends the signed endpoint and the intent.
             var media = cfg.osc_media === true;
             var uploadUrl = cfg.osc_upload_url || '';
+            var libraryLabel = cfg.osc_library_label || '';
             delete cfg.osc_media;
             delete cfg.osc_upload_url;
+            delete cfg.osc_library_label;
 
             cfg.target = field;
             delete cfg.selector;
@@ -55,6 +57,26 @@
                     window.oscMediaPicker.open(function (url) {
                         cb(url, { title: '' });
                     });
+                };
+            }
+
+            // A toolbar button of its own, next to Image, so the library is one click away
+            // rather than behind the image dialog's browse icon.
+            if (media && window.oscMediaPicker && typeof cfg.toolbar === 'string' && / image( |$)/.test(cfg.toolbar)) {
+                cfg.toolbar = cfg.toolbar.replace(/ image( |$)/, ' image osclibrary$1');
+                var setup = cfg.setup;
+                cfg.setup = function (editor) {
+                    editor.ui.registry.addButton('osclibrary', {
+                        icon: 'gallery',
+                        tooltip: libraryLabel,
+                        onAction: function () {
+                            window.oscMediaPicker.open(function (url) {
+                                var img = editor.dom.create('img', { src: url, alt: '' });
+                                editor.insertContent(img.outerHTML);
+                            });
+                        }
+                    });
+                    if (typeof setup === 'function') { setup(editor); }
                 };
             }
 

@@ -13,7 +13,7 @@
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\MainSettingsForm;
+use mindstellar\admin\form\MainSettingsScreen;
 
 /**
  * Class CAdminSettingsMain
@@ -49,7 +49,7 @@ class CAdminSettingsMain extends AdminSecBaseModel
                 // update index view
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(MainSettingsForm::register());
+                $result = CoreSettings::attempt(MainSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     // Redrawn with what was typed rather than thrown away with a redirect.
                     $this->drawForm($result['values']);
@@ -78,9 +78,9 @@ class CAdminSettingsMain extends AdminSecBaseModel
         // The declared form carries its own choice lists. These two are exported beside it
         // under the names they have always had, because a replaced admin theme's own view
         // reads them and would silently draw empty selects without them.
-        $this->_exportVariableToView('aLanguages', OSCLocale::newInstance()->listAllEnabled());
-        $this->_exportVariableToView('aCurrencies', Currency::newInstance()->listAll());
-        $this->_exportVariableToView('main_form', MainSettingsForm::formVars($values));
+        $this->_exportVariableToView('aLanguages', OSCLocale::getInstance()->listAllEnabled());
+        $this->_exportVariableToView('aCurrencies', Currency::getInstance()->listAll());
+        $this->_exportVariableToView('main_form', MainSettingsScreen::formVars($values));
         $this->doView('settings/index.php');
     }
 }

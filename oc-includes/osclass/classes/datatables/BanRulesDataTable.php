@@ -36,12 +36,6 @@ class BanRulesDataTable extends DataTable
         'ip'    => 's_ip',
         'email' => 's_email',
     );
-    private $userId;
-    /**
-     * @var bool
-     */
-    private $withUserId;
-    private $search;
 
     /**
      * Builds the ban-rule listing for the admin datatable.
@@ -56,7 +50,7 @@ class BanRulesDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $list_rules = BanRule::newInstance()->search(
+        $list_rules = BanRule::getInstance()->search(
             $this->start,
             $this->limit,
             $this->order_by['column_name'],
@@ -104,17 +98,8 @@ class BanRulesDataTable extends DataTable
         $this->iPage = ListPaging::page();
 
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
-        foreach ($_get as $k => $v) {
-            if ($k === 'user') {
-                $this->search = $v;
-            }
-            if ($k === 'userId' && $v != '') {
-                $this->withUserId = true;
-                $this->userId     = $v;
-            }
-        }
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 

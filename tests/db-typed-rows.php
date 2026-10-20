@@ -12,9 +12,9 @@
  * Typed-row parity pins.
  *
  * The legacy query layer reads results through mysqli::query(), which hands
- * back every column as a PHP string. The parameterized layer runs prepared
- * statements, which carry column metadata, so numeric columns come back as
- * native int/float. Moving a model method from one to the other therefore
+ * back every column as a PHP string. With OSC_DB_REAL_PREPARES the parameterized
+ * layer runs prepared statements, which carry column metadata, so numeric columns
+ * come back as native int/float. Moving a model method from one to the other therefore
  * changes the TYPE of values it returns, silently, for every caller that
  * compares with === or concatenates.
  *
@@ -35,6 +35,9 @@
 
 require_once __DIR__ . '/lib/scratchdb.php';
 require_once __DIR__ . '/lib/harness.php';
+
+// The pins below are about real prepared statements; tests/db-one-trip.php covers the default.
+define('OSC_DB_REAL_PREPARES', true);
 
 $admin = scratchdb_session('osc_typed_rows');
 

@@ -19,8 +19,9 @@ use Throwable;
  *
  * Injection-safe query API over the singleton mysqli connection managed by
  * ConnectionManager. New code and plugins should use this instead of building
- * SQL strings by hand: every value in $params is sent as a bound parameter, so
- * it can never be interpreted as SQL.
+ * SQL strings by hand: every value in $params is escaped for the connection and
+ * sent in place of its '?' (or as a real prepared statement with OSC_DB_REAL_PREPARES),
+ * so it can never be interpreted as SQL.
  *
  * $params bind VALUES only. Table/column names can never be bound parameters —
  * validate any dynamic identifier against an allowlist before interpolating it
@@ -59,7 +60,7 @@ class Connection
     public function __construct(?\mysqli $conn = null)
     {
         if ($conn === null) {
-            $conn = ConnectionManager::newInstance()->getHandle();
+            $conn = ConnectionManager::getInstance()->getHandle();
         }
         if (!$conn instanceof mysqli) {
             throw new DbException('No database connection available');
@@ -73,13 +74,21 @@ class Connection
      * @return Connection
      * @throws DbException when no mysqli connection is available
      */
-    public static function instance(): self
+    public static function getInstance(): self
     {
         if (!self::$shared instanceof self) {
             self::$shared = new self();
         }
 
         return self::$shared;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function instance(): self
+    {
+        return self::getInstance();
     }
 
     /**
@@ -95,9 +104,10 @@ class Connection
     {
         $start = microtime(true);
         try {
-            if ($params === []) {
-                $result = $this->run(function () use ($sql) {
-                    return $this->conn->query($sql);
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $result = $this->run(function () use ($text) {
+                    return $this->conn->query($text);
                 }, $sql);
                 if (!$result instanceof \mysqli_result) {
                     throw new DbException('Database query failed');
@@ -176,9 +186,10 @@ class Connection
     {
         $start = microtime(true);
         try {
-            if ($params === []) {
-                $this->run(function () use ($sql) {
-                    return $this->conn->query($sql);
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $this->run(function () use ($text) {
+                    return $this->conn->query($text);
                 }, $sql);
 
                 return (int) $this->conn->affected_rows;
@@ -230,9 +241,10 @@ class Connection
     {
         $start = microtime(true);
         try {
-            if ($params === []) {
-                $this->run(function () use ($sql) {
-                    return $this->conn->query($sql);
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $this->run(function () use ($text) {
+                    return $this->conn->query($text);
                 }, $sql);
 
                 return (int) $this->conn->insert_id;
@@ -348,6 +360,178 @@ class Connection
     }
 
     /**
+     * Take a server-wide named lock, waiting up to $wait seconds. Returns the call that
+     * releases it, or null when another session holds it.
+     *
+     * @param string $name at most 64 characters
+     * @param int    $wait
+     *
+     * @return \Closure|null
+     * @throws DbException
+     */
+    public function namedLock(string $name, int $wait): ?\Closure
+    {
+        if ((int) $this->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($name)) === 1) {
+            // Already ours: taking it again would release it early on MySQL before 5.7.5.
+            return static function (): void {
+            };
+        }
+        if ((int) $this->scalar('SELECT GET_LOCK(?, ?)', array($name, $wait)) !== 1) {
+            return null;
+        }
+
+        return function () use ($name): void {
+            try {
+                $this->scalar('SELECT RELEASE_LOCK(?)', array($name));
+            } catch (Throwable $e) {
+                // The server drops the lock with the session anyway.
+            }
+        };
+    }
+
+    /**
+     * Run $fn under a named lock, then release it. When the lock is not taken, $busy answers
+     * instead, given the DbException that stopped it or null when another session holds it.
+     *
+     * @param string        $name
+     * @param int           $wait seconds to wait for the lock
+     * @param callable      $fn
+     * @param callable|null $busy without it, a held lock answers null and an error is thrown
+     *
+     * @return mixed
+     * @throws DbException when the lock query fails and no $busy is given
+     */
+    public function withNamedLock(string $name, int $wait, callable $fn, ?callable $busy = null)
+    {
+        try {
+            $release = $this->namedLock($name, $wait);
+        } catch (DbException $e) {
+            if ($busy === null) {
+                throw $e;
+            }
+
+            return $busy($e);
+        }
+        if ($release === null) {
+            return $busy === null ? null : $busy(null);
+        }
+        try {
+            return $fn();
+        } finally {
+            $release();
+        }
+    }
+
+    /**
+     * Whether values go to the server as real prepared statements, which costs a prepare and
+     * a close trip per query. Off by default; define OSC_DB_REAL_PREPARES as true to turn it on.
+     */
+    private static function realPrepares(): bool
+    {
+        return \defined('OSC_DB_REAL_PREPARES') && OSC_DB_REAL_PREPARES;
+    }
+
+    /**
+     * $sql with each '?' placeholder replaced by its value, escaped for this connection, so the
+     * query goes in one trip. A '?' inside a quoted string, a quoted name or a comment is kept.
+     * Null tells the caller to use withStatement(): OSC_DB_REAL_PREPARES is on, or the server could
+     * split this SQL into strings and comments differently than this scan does (a backslash in
+     * quotes under NO_BACKSLASH_ESCAPES or ANSI_QUOTES, a /*! or /*+ comment it runs, a -- not
+     * followed by a space), which would put a value in the wrong place.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException when a value is not scalar or null, or the counts differ
+     */
+    private function inline(string $sql, array $params): ?string
+    {
+        if ($params === []) {
+            return $sql;
+        }
+        if (self::realPrepares()) {
+            return null;
+        }
+        $params = array_values($params);
+        $out    = '';
+        $next   = 0;
+        $length = \strlen($sql);
+        for ($i = 0; $i < $length; $i++) {
+            $c = $sql[$i];
+            if ($c === "'" || $c === '"' || $c === '`') {
+                $end = strpos($sql, $c, $i + 1);
+                $end = $end === false ? $length : $end;
+                // A backslash means different things under NO_BACKSLASH_ESCAPES and ANSI_QUOTES.
+                if ($c !== '`' && str_contains(substr($sql, $i, $end - $i), '\\')) {
+                    return null;
+                }
+                $out .= substr($sql, $i, $end - $i + 1);
+                $i    = $end;
+            } elseif ($c === '-' && ($sql[$i + 1] ?? '') === '-' && isset($sql[$i + 2]) && $sql[$i + 2] !== ' ') {
+                // MySQL also reads -- before a control character or DEL as a comment; anything but a space goes prepared.
+                return null;
+            } elseif ($c === '/' && \in_array(substr($sql, $i, 3), array('/*!', '/*+', '/*M'), true)) {
+                return null;
+            } elseif ($c === '#' || ($c === '-' && substr($sql, $i, 3) === '-- ')) {
+                $end  = strpos($sql, "\n", $i);
+                $end  = $end === false ? $length : $end;
+                $out .= substr($sql, $i, $end - $i);
+                $i    = $end - 1;
+            } elseif ($c === '/' && ($sql[$i + 1] ?? '') === '*') {
+                $end  = strpos($sql, '*/', $i + 2);
+                $end  = $end === false ? $length : $end + 2;
+                $out .= substr($sql, $i, $end - $i);
+                $i    = $end - 1;
+            } elseif ($c === '?') {
+                if (!\array_key_exists($next, $params)) {
+                    throw new DbException('Database query failed');
+                }
+                $out .= $this->literal($params[$next++]);
+            } else {
+                $out .= $c;
+            }
+        }
+        if ($next !== \count($params)) {
+            throw new DbException('Database query failed');
+        }
+
+        return $out;
+    }
+
+    /**
+     * One value as an SQL literal: a number as it is, text escaped and quoted.
+     *
+     * @throws DbException on a value that is neither scalar nor null, or a float that is not finite
+     */
+    private function literal(mixed $value): string
+    {
+        if (\is_int($value)) {
+            return (string) $value;
+        }
+        if (\is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if ($value === null) {
+            return 'NULL';
+        }
+        if (\is_float($value)) {
+            if (!is_finite($value)) {
+                throw new DbException('Database query failed');
+            }
+
+            // An exponent makes MySQL read a float, as a prepared statement sends it, not an exact decimal.
+            $text = var_export($value, true);
+
+            return stripos($text, 'E') === false ? $text . 'E0' : $text;
+        }
+        if (\is_string($value)) {
+            return "'" . $this->conn->real_escape_string($value) . "'";
+        }
+        error_log('Db query: unsupported param type ' . \gettype($value));
+        throw new DbException('Database query failed');
+    }
+
+    /**
      * Prepare $sql, bind $params as positional parameters, execute, hand the
      * live statement to $consume, and always close the statement afterwards.
      *
@@ -441,6 +625,9 @@ class Connection
      */
     private function run(callable $fn, string $sql)
     {
+        if ($this === self::$shared) {
+            Db::assertIntact();
+        }
         try {
             $result = $fn();
             if ($result === false) {
@@ -455,6 +642,9 @@ class Connection
             // Capped, so a failed statement carrying user rows does not copy them into the log.
             $logged = strlen($sql) > 300 ? substr($sql, 0, 300) . '… (' . strlen($sql) . ' bytes)' : $sql;
             error_log('Db query failed: ' . $logged . ' -- ' . $e->getMessage());
+            if ($this === self::$shared) {
+                Db::noteError((int) $e->getCode());
+            }
             if ($e instanceof DbException) {
                 throw $e;
             }
@@ -473,7 +663,7 @@ class Connection
      * read helpers delegate to those — so prepared statements count once, not once
      * per prepare/bind/execute step. The logged SQL has $params inlined so the panel
      * shows real values; when OSC_DEBUG_DB_EXPLAIN is on a SELECT's plan is captured
-     * too. Debug-only: the raw execution path never interpolates.
+     * too. Debug-only: queries run through inline(), which is stricter than this display form.
      *
      * @param string           $sql
      * @param array<int,mixed> $params
@@ -486,7 +676,7 @@ class Connection
         }
         $display = $params === [] ? $sql : $this->interpolate($sql, $params);
         $errno   = (int) $this->conn->errno;
-        \LogDatabase::newInstance()->addMessage(
+        \LogDatabase::getInstance()->addMessage(
             $display,
             microtime(true) - $start,
             $errno,
@@ -522,18 +712,11 @@ class Connection
 
                 return '?';
             }
-            $v = $values[$i++];
-            if ($v === null) {
-                return 'NULL';
+            try {
+                return $this->literal($values[$i++]);
+            } catch (DbException $e) {
+                return '?';
             }
-            if (is_bool($v)) {
-                return $v ? '1' : '0';
-            }
-            if (is_int($v) || is_float($v)) {
-                return (string) $v;
-            }
-
-            return "'" . $this->conn->real_escape_string((string) $v) . "'";
         }, $sql);
     }
 
@@ -570,7 +753,7 @@ class Connection
             }
 
             if ($rows !== []) {
-                \LogDatabase::newInstance()->addExplainMessage($display, $rows);
+                \LogDatabase::getInstance()->addExplainMessage($display, $rows);
             }
         } catch (Throwable $e) {
             // A plan we could not fetch is not worth failing (or logging) the request over.

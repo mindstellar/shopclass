@@ -114,9 +114,10 @@ $admin->query("UPDATE {$prefix}t_city SET fk_c_country_code = NULL WHERE fk_i_re
 $admin->query("UPDATE {$prefix}t_city SET i_source_id = 1356, d_coord_lat = 19.076000, d_coord_long = 72.878000 WHERE pk_i_id = $t0");
 $admin->query("INSERT INTO {$prefix}t_city_area (pk_i_id, fk_i_city_id, s_name) VALUES (1, $t1, 'Old Quarter')");
 
-$admin->query("INSERT INTO {$prefix}t_city_stats (fk_i_city_id, i_num_items) VALUES ($t0, 7), ($t1, 3)");
-$admin->query("INSERT INTO {$prefix}t_region_stats (fk_i_region_id, i_num_items) VALUES ($bigRegion, 10)");
-$admin->query("INSERT INTO {$prefix}t_country_stats (fk_c_country_code, i_num_items) VALUES ('AA', 12)");
+$admin->query("UPDATE {$prefix}t_city SET i_num_items = 7 WHERE pk_i_id = $t0");
+$admin->query("UPDATE {$prefix}t_city SET i_num_items = 3 WHERE pk_i_id = $t1");
+$admin->query("UPDATE {$prefix}t_region SET i_num_items = 10 WHERE pk_i_id = $bigRegion");
+$admin->query("UPDATE {$prefix}t_country SET i_num_items = 12 WHERE pk_c_code = 'AA'");
 
 /** Place a listing; null leaves that column empty. */
 $listing = static function (?string $country, ?int $region, ?int $city, ?int $area) use ($admin, $prefix, $category): int {
@@ -176,9 +177,9 @@ pin('three countries', 3, $page['total']);
 pin('countries have no parent', null, $page['parent']);
 pin('row keys', array('code', 'name', 'slug', 'listings', 'regions'), array_keys($page['rows'][0]));
 pin('first country by name', 'AA', $page['rows'][0]['code']);
-pin('listings come from t_country_stats', 12, $page['rows'][0]['listings']);
+pin('listings come from t_country.i_num_items', 12, $page['rows'][0]['listings']);
 pin('region count per row', 20, $page['rows'][0]['regions']);
-pin('a country with no stats row reads 0 listings', 0, $page['rows'][1]['listings']);
+pin('a country with no count set reads 0 listings', 0, $page['rows'][1]['listings']);
 pin('prefix search', array('BB'), array_column($q->countries('Beta', 1, 50)['rows'], 'code'));
 $page = $q->countries('Zeta', 1, 50);
 pin('no match: zero total, no rows', array(0, array()), array($page['total'], $page['rows']));
@@ -191,7 +192,7 @@ pin('regions carry their country for the breadcrumb', array('level' => 'country'
 pin('row keys', array('id', 'country', 'name', 'slug', 'active', 'listings', 'cities'), array_keys($page['rows'][0]));
 $big = array_values(array_filter($page['rows'], static fn ($r) => $r['id'] === $bigRegion))[0] ?? array();
 pin('city count per row', 20006, $big['cities'] ?? null);
-pin('listings come from t_region_stats', 10, $big['listings'] ?? null);
+pin('listings come from t_region.i_num_items', 10, $big['listings'] ?? null);
 pin('regions of BB', 15, $q->regions('BB', '', 1, 50)['total']);
 $page = $q->regions('ZZ', '', 1, 50);
 pin('unknown country: no parent, no rows', array(null, 0, array()), array($page['parent'], $page['total'], $page['rows']));
@@ -225,7 +226,7 @@ $page = $q->cities($bigRegion, 'Town', 400, 50);
 pin('deep page', array('Town 19950', 'Town 19999'), array($page['rows'][0]['name'], end($page['rows'])['name']));
 
 $page = $q->cities($bigRegion, 'Town 0000', 1, 50);
-pin('listings from t_city_stats', array(7, 3, 0), array_slice(array_column($page['rows'], 'listings'), 0, 3));
+pin('listings from t_city.i_num_items', array(7, 3, 0), array_slice(array_column($page['rows'], 'listings'), 0, 3));
 pin('b_active = 0 reads inactive', array(true, true, false), array_slice(array_column($page['rows'], 'active'), 0, 3));
 
 pin('page below 1 clamps to 1', 1, $q->cities($bigRegion, '', 0, 50)['page']);
@@ -528,9 +529,9 @@ $userPlaces = static function () use ($admin, $prefix): array {
 };
 
 foreach (array(
-    'city'    => array($c11, static fn ($id) => City::newInstance()->deleteByPrimaryKey($id)),
-    'region'  => array($d1, static fn ($id) => Region::newInstance()->deleteByPrimaryKey($id)),
-    'country' => array('DD', static fn ($id) => Country::newInstance()->deleteByPrimaryKey($id)),
+    'city'    => array($c11, static fn ($id) => City::getInstance()->deleteByPrimaryKey($id)),
+    'region'  => array($d1, static fn ($id) => Region::getInstance()->deleteByPrimaryKey($id)),
+    'country' => array('DD', static fn ($id) => Country::getInstance()->deleteByPrimaryKey($id)),
 ) as $level => [$id, $delete]) {
     $impact      = $q->impact($level, array($id));
     $itemsBefore = $scalar("SELECT COUNT(*) FROM {$prefix}t_item");
@@ -562,7 +563,7 @@ seed_city($admin, $e1, 'Epsi Gone', 'EE');
 
 $snapshot = static function () use ($admin, $prefix): array {
     $out = array();
-    foreach (array('t_country', 't_region', 't_city', 't_location_slug_history') as $table) {
+    foreach (array('t_country', 't_region', 't_city', 't_slug_history') as $table) {
         $row = $admin->query("CHECKSUM TABLE {$prefix}{$table}")->fetch_assoc();
         $out[$table] = array(
             (int) $admin->query("SELECT COUNT(*) FROM {$prefix}{$table}")->fetch_row()[0],
@@ -598,11 +599,10 @@ harness_section('CAdminAjax wiring (source scan)');
 
 $ajax = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php');
 check('CAdminAjax requires an admin session', preg_match('/class\s+CAdminAjax\s+extends\s+AdminSecBaseModel\b/', $ajax) === 1);
-preg_match('/isModerator\(\)\s*&&\s*!in_array\(\$this->action,\s*array\(([^)]*)\)/', $ajax, $m);
-check('moderator allow-list found', isset($m[1]));
 foreach (array('location_search', 'location_impact', 'location_record') as $action) {
-    check("$action is routed", strpos($ajax, "case '$action':") !== false);
-    check("$action is refused to moderators", isset($m[1]) && strpos($m[1], "'$action'") === false);
+    $route = \mindstellar\admin\ajax\AjaxRegistry::route($action);
+    check("$action is routed", $route !== null && $route['handler'] === \mindstellar\admin\ajax\LocationAjax::class);
+    check("$action is refused to moderators", !\mindstellar\admin\ajax\AjaxRegistry::moderatorMay($action));
 }
 
 if (!defined('MODELS_RUNNER')) {

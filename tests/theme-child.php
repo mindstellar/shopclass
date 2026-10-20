@@ -34,6 +34,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Validate.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
 
@@ -53,9 +54,14 @@ class WebThemes
     public static string $current = 'child';
     public static string $root    = '';
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getCurrentTheme(): string
@@ -232,7 +238,7 @@ harness_section('The child has the last word on theme support');
 // The child's functions.php is required first and the parent's second, so a registry
 // that simply takes the newest value hands every contested feature to the parent --
 // the opposite of what a child theme is for. Declaring nothing must still inherit.
-$supports = \mindstellar\theme\ThemeSupports::instance();
+$supports = \mindstellar\theme\ThemeSupports::getInstance();
 
 $supports->reset();
 $supports->add('views', array('from-child'));

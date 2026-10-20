@@ -48,7 +48,7 @@ $admin = scratchdb_session('osc_models_itemcomment');
 
 Params::init(); // empty $_GET/$_POST snapshot: osc_item_comments_page()/osc_comments_per_page() resolve to 0
 
-$model = ItemComment::newInstance();
+$model = ItemComment::getInstance();
 $table = DB_TABLE_PREFIX . 't_item_comment';
 
 /**

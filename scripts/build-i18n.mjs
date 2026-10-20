@@ -22,6 +22,8 @@ import { existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const SRC_DIRS = ['oc-includes', 'oc-admin'];
+// Third-party Composer packages are installed at build time, not ours to translate.
+const SKIP_DIRS = new Set([join('oc-includes', 'vendor')]);
 const LANG_DIR = 'oc-content/languages';
 const DEFAULT_DOMAIN = 'core';
 // The text domains core actually loads at runtime (hTranslations.php). A string
@@ -63,7 +65,9 @@ async function walkPhp(dir, out = []) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
         const full = join(dir, entry.name);
         if (entry.isDirectory()) {
-            await walkPhp(full, out);
+            if (!SKIP_DIRS.has(full)) {
+                await walkPhp(full, out);
+            }
         } else if (entry.isFile() && extname(entry.name) === '.php') {
             out.push(full);
         }

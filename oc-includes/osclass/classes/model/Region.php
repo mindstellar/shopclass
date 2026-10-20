@@ -12,6 +12,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+use mindstellar\model\SlugHistory;
+
 /**
  * Model database for Region table
  *
@@ -20,11 +23,7 @@
  */
 class Region extends DAO
 {
-    /**
-     *
-     * @var \Region
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Region constructor.
@@ -38,17 +37,11 @@ class Region extends DAO
     }
 
     /**
-     * Return the shared Region model instance, creating it on first use.
-     *
-     * @return \Region
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -75,7 +68,7 @@ class Region extends DAO
     public function findByCountry($countryId)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('fk_c_country_code', $countryId)
                 ->orderBy('s_name', 'ASC')
                 ->get();
@@ -83,7 +76,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -96,7 +89,7 @@ class Region extends DAO
      */
     public function findByName($name, $country = null)
     {
-        $query = osc_db_table($this->getTableName())->where('s_name', $name);
+        $query = Db::table($this->getTableName())->where('s_name', $name);
         if ($country != null) {
             $query = $query->where('fk_c_country_code', $country);
         }
@@ -111,7 +104,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -127,7 +120,7 @@ class Region extends DAO
         $country = trim($country);
         // Reproduces DBCommandClass::like()'s own escaping (escapeStr($v, true)):
         // a caller-typed '%' or '_' must stay literal, never a SQL wildcard.
-        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
+        $pattern = \mindstellar\database\QueryBuilder::escapeLike((string)$query) . '%';
 
         $sql    = 'SELECT a.pk_i_id as id, a.s_name as label, a.s_name as value FROM '
             . $this->getTableName() . ' as a';
@@ -141,7 +134,7 @@ class Region extends DAO
             } else {
                 // Country::getTableName() is a fixed configuration value (the
                 // table prefix constant), never caller input.
-                $sql .= ' LEFT JOIN ' . Country::newInstance()->getTableName() . ' as aux'
+                $sql .= ' LEFT JOIN ' . Country::getInstance()->getTableName() . ' as aux'
                     . ' ON aux.pk_c_code = a.fk_c_country_code'
                     . ' WHERE aux.s_name = ? AND a.s_name LIKE ?';
                 $params[] = $country;
@@ -152,15 +145,17 @@ class Region extends DAO
             $params[] = $pattern;
         }
 
-        $sql .= ' LIMIT 5';
+        // A big region must not be pushed out by small ones that sort before it.
+        $sql     .= ' ORDER BY a.s_name = ? DESC, a.i_num_items DESC, a.s_name LIMIT 5';
+        $params[] = trim((string) $query);
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -175,25 +170,18 @@ class Region extends DAO
     {
         osc_run_hook('before_delete_region', $pk);
 
-        $mCities = City::newInstance();
+        $mCities = City::getInstance();
         $aCities = $mCities->findByRegion($pk);
         $result  = 0;
         foreach ($aCities as $city) {
-            $result += $mCities->deleteByPrimaryKey($city['pk_i_id']);
+            $result += $mCities->deleteByPrimaryKey((int) $city['pk_i_id']);
         }
-        Item::newInstance()->deleteByRegion($pk);
-        RegionStats::newInstance()->delete(array('fk_i_region_id' => $pk));
-        User::newInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
+        Item::getInstance()->deleteByRegion($pk);
+        User::getInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
 
-        // Recorded renames for this region. The table has no foreign key -- fk_i_id
-        // points into either t_region or t_city depending on e_type -- so nothing
-        // removes these rows on its own, and a leftover slug would keep redirecting
-        // to a region that no longer exists.
+        // Old slugs would keep redirecting to a region that is gone.
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_location_slug_history')
-                ->where('e_type', 'REGION')
-                ->where('fk_i_id', (int)$pk)
-                ->delete();
+            SlugHistory::forget(SlugHistory::REGION, (int)$pk);
         } catch (\Throwable $e) {
             // A stale redirect is not worth failing the delete over.
         }
@@ -223,7 +211,7 @@ class Region extends DAO
     public function findBySlug($slug)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+            $row = Db::table($this->getTableName())->where('s_slug', $slug)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -232,7 +220,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -251,7 +239,7 @@ class Region extends DAO
     public function findBySourceId($sourceId)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('i_source_id', $sourceId)->first();
+            $row = Db::table($this->getTableName())->where('i_source_id', $sourceId)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -260,7 +248,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -272,12 +260,12 @@ class Region extends DAO
     public function listByEmptySlug()
     {
         try {
-            $rows = osc_db_table($this->getTableName())->where('s_slug', '')->get();
+            $rows = Db::table($this->getTableName())->where('s_slug', '')->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

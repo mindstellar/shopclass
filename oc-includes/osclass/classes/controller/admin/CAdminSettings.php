@@ -116,6 +116,19 @@ class CAdminSettings
             case ('storage_migrate_post'):
                 $do = new CAdminSettingsStorage();
                 break;
+            case ('api'):
+            case ('api_post'):
+            case ('api_key_create'):
+            case ('api_key_rotate'):
+            case ('api_key_revoke'):
+            case ('api_webhook_create'):
+            case ('api_webhook_update'):
+            case ('api_webhook_toggle'):
+            case ('api_webhook_rotate'):
+            case ('api_webhook_test'):
+            case ('api_webhook_delete'):
+                $do = new CAdminSettingsApi();
+                break;
             case ('custom'):
             case ('custom_post'):
                 $do = new CAdminSettingsCustom();

@@ -22,7 +22,7 @@ use mindstellar\utility\Utils;
 
 $admin = scratchdb_session('osc_models_edgeupgrade');
 $pref  = DB_TABLE_PREFIX . 't_preference';
-$conn  = Connection::instance();
+$conn  = Connection::getInstance();
 
 $dir = sys_get_temp_dir() . '/osc-edge-migrations-' . getmypid();
 @mkdir($dir);

@@ -24,7 +24,7 @@ osc_admin_page(array(
 $aData = __get('aEmails');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Emails templates')); ?>
+    <?php osc_admin_page_head(__('Email templates')); ?>
     <div id="email-templates" class="table-contains-actions">
         <table class="table" cellpadding="0" cellspacing="0">
             <thead>

@@ -44,7 +44,7 @@ function osc_sitemap_default_robots_txt()
  */
 function osc_sitemap_warm_cache()
 {
-    return Sitemap::newInstance()->warmCache();
+    return Sitemap::getInstance()->warmCache();
 }
 
 /**
@@ -55,7 +55,7 @@ function osc_sitemap_warm_cache()
  */
 function osc_sitemap_clear_cache()
 {
-    Sitemap::newInstance()->clearCache();
+    Sitemap::getInstance()->clearCache();
 }
 
 /**

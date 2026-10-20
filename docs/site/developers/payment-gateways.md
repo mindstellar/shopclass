@@ -21,18 +21,24 @@ files that matter:
 
 ## Registering a gateway
 
-Implement `mindstellar\billing\PaymentGateway` and register it on `init`, while
-billing is on:
+Implement `mindstellar\billing\PaymentGateway` and register it on the
+`register_payment_gateways` hook, while billing is on. The hook fires once, the first time
+a page asks for payment methods, so other pages never build your gateway. Add the hook when
+your plugin loads, as below:
 
 ```php
 use mindstellar\billing\PaymentGatewayRegistry;
 
-osc_add_hook('init', static function () {
+osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::instance()->register(new AcmePayGateway());
+        $registry->register(new AcmePayGateway());
     }
 });
 ```
+
+Before Shopclass 7.0 the hook does not exist. To support both, when
+`defined(PaymentGatewayRegistry::class . '::HOOK')` is false register on `init`, and on
+`init_billing_non_secure` for the payment callback, which does not run `init`.
 
 The interface has six methods:
 
@@ -61,7 +67,7 @@ Return `CheckoutIntent::html($markup)` instead to render in place, as core's ban
 transfer gateway does. Core prints that markup unescaped, so escape everything in it.
 
 To keep the provider's id for the checkout (a session id, say), call
-`Orders::attachRef($order->getId(), $this->getId(), $ref)`; it works only while the
+`OrderStore::attachRef($order->getId(), $this->getId(), $ref)`; it works only while the
 order is pending, and a new checkout for the same order replaces it.
 If `createCheckout()` throws, core logs it, leaves the order pending and tells the buyer
 the payment method is not available.
@@ -69,7 +75,7 @@ the payment method is not available.
 Implement `DashboardLinkGateway::dashboardUrl()` to put a **View payment** link to the payment
 in your provider's dashboard on the admin order screen; core shows only an https URL.
 To keep a small value of your own on an order, such as whether it was a live or test
-payment, call `Orders::setMeta($orderId, 'my_key', $value)`; keys starting with `_` are
+payment, call `OrderStore::setMeta($orderId, 'my_key', $value)`; keys starting with `_` are
 core's, and `null` removes the key. Start the key with your gateway id and `_` (for example
 `stripe_livemode`) to keep it off the order screen.
 
@@ -124,7 +130,9 @@ After your gateway accepts a callback, `Billing::handleCallback()`:
 - refuses an order that belongs to another gateway;
 - settles an order only while it is pending, and keys the credit on the order,
   so a **replayed** callback credits nothing;
-- lets only a paid order be refunded.
+- lets only a paid order be refunded;
+- never reopens an order already closed as **failed**. A verified paid callback for
+  one is logged as `paid after close` in the activity log, for the admin to settle.
 
 Core does **not** compare money on a failed or refunded result. Check those
 yourself if the provider sends figures, as `TestGateway::handleCallback()` does.
@@ -136,11 +144,7 @@ never reveals whether an order exists.
 ### Pages of your own
 
 The test checkout page and its buttons are [controller routes](/docs/developers/routes/#controller-routes).
-Two things to know:
-
-- A route hook request does not run `init`, so register the gateway again inside
-  the handler.
-- Check the buyer owns the order, and call `osc_csrf_check()` on every POST.
+Check the buyer owns the order, and call `osc_csrf_check()` on every POST.
 
 **Pay**, **Decline** and **Refund** pass a signed payload to `Billing::handleCallback()`:
 the same call the callback route makes. **Leave pending** and **Fail with error** send
@@ -246,7 +250,7 @@ osc_add_hook(osc_plugin_path(__FILE__) . '_configure', static function () {
 });
 
 osc_add_hook(osc_plugin_path(__FILE__) . '_uninstall', static function () {
-    foreach (array_keys(SettingsPageRegistry::instance()->fields('test-gateway')) as $name) {
+    foreach (array_keys(SettingsPageRegistry::getInstance()->fields('test-gateway')) as $name) {
         osc_delete_preference($name, 'test-gateway');
     }
 });

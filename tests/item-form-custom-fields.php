@@ -31,9 +31,14 @@ date_default_timezone_set('UTC');
 /** Stored interval values, as Field::getDateIntervalByPrimaryKey() hands them over. */
 class Field
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getDateIntervalByPrimaryKey($itemId, $fieldId)
@@ -44,9 +49,14 @@ class Field
 
 class Session
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function _getForm($key = '')
@@ -57,9 +67,14 @@ class Session
 
 class Category
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function listAll($order = true)

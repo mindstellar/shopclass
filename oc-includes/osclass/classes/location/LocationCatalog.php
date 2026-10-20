@@ -25,8 +25,6 @@ final class LocationCatalog
     /** Where installed checksums live: one JSON object, not 250 preference rows. */
     private const PREF_INSTALLED = 'location_data_installed';
 
-    /** When the manifest was last fetched, so an admin screen is not a network call. */
-    private const PREF_CHECKED   = 'location_catalog_checked';
     /** Which catalog URL the cached manifest came from. */
     private const PREF_SOURCE    = 'location_catalog_source';
     /** The manifest URL a pointer resolved to, and the data release it names. */
@@ -66,7 +64,7 @@ final class LocationCatalog
             return $this->manifest;
         }
 
-        $checked = (int) osc_get_preference(self::PREF_CHECKED);
+        $checked = (int) self::quietly(static fn () => osc_update_check_state('location')['checked'], 0);
         $cached  = $this->readCache();
 
         // The cache belongs to the catalog it came from. Pointing the install at another
@@ -74,7 +72,7 @@ final class LocationCatalog
         // serving the previous catalog's manifest until the six hours are up, which
         // reads as the new catalog offering the old one's countries.
         $source = md5(osc_get_locations_json_url());
-        if (osc_get_preference(self::PREF_SOURCE) !== $source) {
+        if (self::quietly(static fn () => osc_get_preference(self::PREF_SOURCE), null) !== $source) {
             $cached = null;
         }
 
@@ -115,13 +113,15 @@ final class LocationCatalog
         $data = self::normalizeManifest($data);
 
         $this->writeCache($data);
-        osc_set_preference(self::PREF_CHECKED, (string) time());
-        osc_set_preference(self::PREF_SOURCE, $source);
         // Country files are addressed relative to the manifest, not to the pointer, so
         // the resolved URL is remembered — otherwise a cache hit would have nothing to
-        // build those addresses from.
-        osc_set_preference(self::PREF_MANIFEST, (string) $manifestUrl);
-        osc_set_preference(self::PREF_RELEASE, $release);
+        // build those addresses from. The installer has no database yet, so none of this is required.
+        self::quietly(static function () use ($source, $manifestUrl, $release) {
+            osc_update_check_save('location', array('checked' => time()));
+            osc_set_preference(self::PREF_SOURCE, $source);
+            osc_set_preference(self::PREF_MANIFEST, (string) $manifestUrl);
+            osc_set_preference(self::PREF_RELEASE, $release);
+        }, null);
 
         return $this->manifest = $data;
     }
@@ -219,7 +219,6 @@ final class LocationCatalog
      * @param array<string,mixed> $manifest
      *
      * @return void
-     * @throws \Exception when no source of randomness is available for the temp file name
      */
     private function writeCache(array $manifest): void
     {
@@ -228,17 +227,7 @@ final class LocationCatalog
             return;
         }
 
-        // Written aside and moved into place, so a reader never sees half a manifest.
-        $tmp = $path . '.' . bin2hex(random_bytes(4));
-        if (@file_put_contents($tmp, json_encode($manifest)) === false) {
-            @unlink($tmp);
-
-            return;
-        }
-
-        if (!@rename($tmp, $path)) {
-            @unlink($tmp);
-        }
+        \mindstellar\utility\FileSystem::writeAtomic($path, (string) json_encode($manifest));
     }
 
     /**
@@ -270,7 +259,7 @@ final class LocationCatalog
         }
 
         $this->manifest = null;
-        osc_set_preference(self::PREF_CHECKED, '0');
+        osc_update_check_save('location', array('checked' => 0));
     }
 
     /**
@@ -464,8 +453,8 @@ final class LocationCatalog
             return array();
         }
 
-        $installed = $this->installed();
-        $present   = $this->countriesInDatabase();
+        $installed = self::quietly(fn () => $this->installed(), array());
+        $present   = self::quietly(fn () => $this->countriesInDatabase(), array());
 
         $out = array();
         foreach ($manifest['countries'] as $entry) {
@@ -540,20 +529,29 @@ final class LocationCatalog
     }
 
     /**
+     * Run a database-backed step, falling back to $default when there is no database (the installer).
+     *
+     * @param callable $fn
+     * @param mixed    $default
+     *
+     * @return mixed
+     */
+    private static function quietly(callable $fn, $default)
+    {
+        try {
+            return $fn();
+        } catch (\Throwable $e) {
+            return $default;
+        }
+    }
+
+    /**
      * Which countries already have location rows in this install.
      *
      * @return array<string, bool> lowercase country codes that actually have region rows
      */
     private function countriesInDatabase(): array
     {
-        $rows = osc_db_select(
-            'SELECT DISTINCT fk_c_country_code AS code FROM ' . DB_TABLE_PREFIX . 't_region'
-        );
-        $out = array();
-        foreach ($rows as $row) {
-            $out[strtolower((string) $row['code'])] = true;
-        }
-
-        return $out;
+        return (new LocationQuery())->countriesWithRegions();
     }
 }

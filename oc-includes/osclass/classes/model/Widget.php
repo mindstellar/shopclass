@@ -12,18 +12,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Class Widget
  */
 class Widget extends DAO
 {
-    protected $cacheGroup = 'widget';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     *
-     * @var \Widget
-     */
-    private static $instance;
+    protected $cacheGroup = 'widget';
 
     /**
      * Widget constructor.
@@ -37,17 +35,11 @@ class Widget extends DAO
     }
 
     /**
-     * Return the shared Widget model instance, creating it on first use.
-     *
-     * @return \Widget
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -59,11 +51,20 @@ class Widget extends DAO
      */
     public function findByLocation($location)
     {
-        return \mindstellar\cache\CacheGroup::remember('widget', 'location:' . $location, function () use ($location) {
+        return $this->byLocation()[(string) $location] ?? array();
+    }
+
+    /**
+     * Every widget grouped by location, read once: a page shows several locations.
+     *
+     * @return array<string,array<int,array<string,string|null>>>
+     */
+    private function byLocation(): array
+    {
+        return \mindstellar\cache\CacheGroup::remember('widget', 'by-location', function () {
             try {
-                return osc_db_stringify_rows(osc_db_table($this->getTableName())
+                $rows = Db::stringifyRows(Db::table($this->getTableName())
                     ->select(...$this->getFields())
-                    ->where('s_location', $location)
                     // i_order ascending, then primary key ascending as a tiebreak so
                     // legacy rows (all i_order = 0) keep their current relative order.
                     ->orderBy('i_order', 'ASC')
@@ -72,6 +73,12 @@ class Widget extends DAO
             } catch (\mindstellar\database\DbException $e) {
                 return null;
             }
+            $out = array();
+            foreach ($rows as $row) {
+                $out[(string) $row['s_location']][] = $row;
+            }
+
+            return $out;
         }) ?? array();
     }
 
@@ -89,7 +96,7 @@ class Widget extends DAO
     {
         // New code uses the query builder rather than the legacy DAO this model is
         // otherwise written against.
-        $rows = osc_db_table($this->getTableName())
+        $rows = Db::table($this->getTableName())
             ->select('s_location')
             ->groupBy('s_location')
             ->get();
@@ -115,26 +122,7 @@ class Widget extends DAO
      */
     public function reorder(array $orderedIds)
     {
-        try {
-            $table = DB_TABLE_PREFIX . 't_widget';
-            try {
-                osc_db_transaction(static function () use ($orderedIds, $table) {
-                    $position = 0;
-                    foreach ($orderedIds as $id) {
-                        osc_db_table($table)
-                            ->where('pk_i_id', (int) $id)
-                            ->update(array('i_order' => $position));
-                        $position++;
-                    }
-                });
-            } catch (Throwable $e) {
-                return false;
-            }
-
-            return true;
-        } finally {
-            $this->cacheChanged();
-        }
+        return \mindstellar\widgets\WidgetStore::reorder($orderedIds);
     }
 
     /**
@@ -148,12 +136,7 @@ class Widget extends DAO
      */
     public function getNextOrder($location)
     {
-        $max = osc_db_scalar(
-            'SELECT MAX(i_order) FROM ' . DB_TABLE_PREFIX . 't_widget WHERE s_location = ?',
-            array($location)
-        );
-
-        return $max === null ? 0 : (int) $max + 1;
+        return \mindstellar\widgets\WidgetStore::nextOrder((string) $location);
     }
 
     /**
@@ -167,7 +150,7 @@ class Widget extends DAO
     public function findByDescription($description)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('s_description', $description)
                 ->get();
@@ -175,7 +158,7 @@ class Widget extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

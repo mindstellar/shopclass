@@ -53,7 +53,7 @@ require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hPlugins.php';
 $admin = scratchdb_session('osc_models_osclocale');
 $table = DB_TABLE_PREFIX . 't_locale';
 
-$model = OSCLocale::newInstance();
+$model = OSCLocale::getInstance();
 
 /**
  * Insert a locale row with full control over both enabled flags — the shared

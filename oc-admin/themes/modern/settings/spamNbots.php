@@ -14,7 +14,7 @@
  */
 
 /**
- * The chrome around the four declared spam-and-bots forms. Each form -- its route, its
+ * The chrome around the six declared spam-and-bots forms, one per tab. Each form -- its route, its
  * fields, their values and the submit row -- is core's, drawn from the declaration the
  * controller saves through.
  */
@@ -28,60 +28,49 @@ osc_admin_page(array(
                     . 'Be careful: in order to use these services, you must register on their sites first and follow their instructions.'),
 ));
 
+// One form per tab, so the screen has one Save button at a time. The controller checks the tab.
+$tabs = array(
+    'akismet'  => array(__('Akismet'), 'akismet', __('Akismet checks new comments and listings for spam. It needs a key from akismet.com.')),
+    'captcha'  => array(__('Captcha'), 'captcha', ''),
+    'alerts'   => array(__('Search alerts'), 'alerts', __('Search alerts e-mail visitors about new listings that match a saved search. Requiring sign-in stops strangers subscribing other people.')),
+    'messages' => array(__('Messages'), 'messages', __('Limits for the forms that send e-mail: contact, contact the seller, contact a user and share a listing.')),
+    'limits'   => array(__('Limits'), 'limits', __('How many times one visitor address may use each public form or upload in an hour.')),
+    'signin'   => array(__('Sign-in protection'), 'login_throttle', __('After too many failed sign-ins on the site or the admin panel, the address or account is blocked for a while.')),
+);
+$tab = (string) __get('spam_tab');
+[, $form, $help] = $tabs[$tab];
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="spam-setting">
-    <?php osc_admin_page_head(__('Spam and bots')); ?>
-    <div id="akismet-settings">
-        <?php osc_admin_form_section(__('Akismet')); ?>
-        <p><?php _e("Akismet is a hosted web service that saves you time by automatically detecting comment and trackback spam. "
-                    . "It's hosted on our servers, but we give you access to it through plugins and our API."); ?></p>
-        <?php osc_admin_settings_form($forms['akismet']['id'], $forms['akismet']); ?>
-    </div>
-    <div id="recaptcha-settings" class="separate-top">
-        <?php osc_admin_form_section(__('Captcha')); ?>
+    <?php osc_admin_page_head(__('Spam and bots'));
+    osc_admin_tab_nav(array_map(static fn ($key, $spec) => array(
+        'label'  => $spec[0],
+        'url'    => osc_admin_base_url(true) . '?page=settings&action=spamNbots&tab=' . $key,
+        'active' => $key === $tab,
+    ), array_keys($tabs), $tabs));
+
+    if ($tab === 'captcha') { ?>
         <p><?php printf(
-            __('Protect your site from automated abuse with Google reCAPTCHA or Cloudflare Turnstile. '
-                           . '<a href="%1$s" target="_blank">Get a reCAPTCHA key</a> or '
-                           . '<a href="%2$s" target="_blank">get a Turnstile key</a>.'),
+            __('Stops bots on the public forms. <a href="%1$s" target="_blank">Get a reCAPTCHA key</a> or '
+               . '<a href="%2$s" target="_blank">get a Turnstile key</a>.'),
             'https://www.google.com/recaptcha/admin#whyrecaptcha',
             'https://dash.cloudflare.com/?to=/:account/turnstile'
         ); ?></p>
-        <?php osc_admin_settings_form($forms['captcha']['id'], $forms['captcha']); ?>
-    </div>
-    <div id="alerts-settings" class="separate-top">
-        <?php osc_admin_form_section(__('Search alerts')); ?>
-        <p><?php _e('Search alerts email visitors when new listings match a saved search. Requiring login before '
-                    . 'subscribing prevents anonymous email harvesting and confirmation-email abuse through the alert endpoint.'); ?></p>
-        <?php osc_admin_settings_form($forms['alerts']['id'], $forms['alerts']); ?>
-    </div>
-    <div id="messages-settings" class="separate-top">
-        <?php osc_admin_form_section(__('Messages'), array(
-            'intro' => __('Limits for the forms that send e-mail: the contact form, contact the seller, contact a '
-                          . 'user and share a listing.'),
-        )); ?>
-        <?php osc_admin_settings_form($forms['messages']['id'], $forms['messages']); ?>
-    </div>
-    <div id="limits-settings" class="separate-top">
-        <?php osc_admin_form_section(__('Limits'), array(
-            'intro' => __('How many times one visitor address may use each public form or upload in an hour.'),
-        )); ?>
-        <?php osc_admin_settings_form($forms['limits']['id'], $forms['limits']); ?>
-    </div>
-    <div id="login-throttle-settings" class="separate-top">
-        <?php osc_admin_form_section(__('Sign-in protection'), array(
-            'intro' => __('After too many failed sign-ins, Shopclass blocks that address or account for a '
-                          . 'while. This stops password guessing on the site and the admin panel.'),
-        )); ?>
-        <?php if (osc_captcha_enabled()) { ?>
-            <p class="text-muted"><?php _e('A captcha is set up above, so the per-account limit is off. '
-                                           . 'Nobody can lock another person out of their account.'); ?></p>
-        <?php } ?>
-        <?php osc_admin_settings_form($forms['login_throttle']['id'], $forms['login_throttle']); ?>
+    <?php } else { ?>
+        <p><?php echo osc_esc_html($help); ?></p>
+    <?php }
+    if ($tab === 'signin' && osc_captcha_enabled()) { ?>
+        <p class="text-muted"><?php _e('A captcha is set up, so the per-account limit is off. '
+                                       . 'Nobody can lock another person out of their account.'); ?></p>
+    <?php }
 
+    osc_admin_settings_form($forms[$form]['id'], array('titles' => false) + $forms[$form]);
+
+    if ($tab === 'signin') { ?>
         <p class="text-muted"><?php printf(
             __('See who is blocked right now, and unblock them, under <a href="%s">Tools > System info > Security</a>.'),
             osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=system-info&tab=security#signin-activity')
         ); ?></p>
-    </div>
+    <?php } ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

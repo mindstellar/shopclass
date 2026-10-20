@@ -16,6 +16,7 @@ use mindstellar\database\DbException;
 use mindstellar\job\Job;
 use mindstellar\job\JobRegistry;
 use mindstellar\job\JobWorker;
+use mindstellar\utility\Formatting;
 use RuntimeException;
 
 /**
@@ -96,7 +97,7 @@ final class BackupJobs
         $store->saveState(self::state($p, 'running'));
         try {
             $p = $builder->step($p);
-        } catch (BackupFailure $e) {
+        } catch (BackupException $e) {
             self::ended($store, $p, $e);
 
             return;
@@ -112,7 +113,7 @@ final class BackupJobs
             $p['upload'] = array();
             $store->saveState(self::state($p, 'running'));
             if (!self::effect('upload', $p)) {
-                self::ended($store, $p, self::keep($store, $p, new BackupFailure(__('The upload could not be started.'), 'upload')));
+                self::ended($store, $p, self::keep($store, $p, new BackupException(__('The upload could not be started.'), 'upload')));
             }
 
             return;
@@ -141,13 +142,13 @@ final class BackupJobs
         $store->saveState(self::state($p, 'running'));
         try {
             if ($bucket === null) {
-                throw new BackupFailure(BackupBucket::addressProblem() ?: __('Saving to the bucket is not set up any more.'), 'upload');
+                throw new BackupException(BackupBucket::addressProblem() ?: __('Saving to the bucket is not set up any more.'), 'upload');
             }
             if ($store->cancelRequested((string) $p['run'])) {
-                throw BackupFailure::cancelled('upload');
+                throw BackupException::cancelled('upload');
             }
             if ($store->path($name) === null) {
-                throw new BackupFailure(__('The backup file is gone.'), 'upload');
+                throw new BackupException(__('The backup file is gone.'), 'upload');
             }
             $deadline = microtime(true) + Builder::SECONDS;
             $ok = $bucket->putLarge($store->dir() . $name, BackupBucket::key($name), static function (int $done, int $total) use (&$p, $store, $deadline): bool {
@@ -159,11 +160,11 @@ final class BackupJobs
             }, $state);
             $p['upload'] = $state;
             if (!$ok) {
-                throw new BackupFailure(BackupFailure::clean((string) ($state['error'] ?? '')), 'upload');
+                throw new BackupException(BackupException::clean((string) ($state['error'] ?? '')), 'upload');
             }
             if (empty($state['done'])) {
                 if ($store->cancelRequested((string) $p['run'])) {
-                    throw BackupFailure::cancelled('upload');
+                    throw BackupException::cancelled('upload');
                 }
                 $store->saveState(self::state($p, 'running'));
                 $job->repeat($p);
@@ -174,14 +175,15 @@ final class BackupJobs
             $manifest = (array) $store->manifest($name);
             $manifest['kind'] = 'backup';
             $store->saveManifest($name, $manifest);
+            /** @var array<string, mixed> $side */
             $side = array();
             if (!$bucket->putLarge($store->sidecarPath($name), BackupBucket::sidecarKey($name), static function (): bool {
                 return true;
             }, $side) || empty($side['done'])) {
                 $bucket->deleteMany(array(BackupBucket::key($name)));
-                throw new BackupFailure(BackupFailure::clean((string) ($side['error'] ?? '')), 'upload');
+                throw new BackupException(BackupException::clean((string) ($side['error'] ?? '')), 'upload');
             }
-        } catch (BackupFailure $e) {
+        } catch (BackupException $e) {
             $store->forgetBucketList();
             if ($bucket !== null) {
                 $bucket->abortLarge(BackupBucket::key($name), $state);
@@ -208,11 +210,11 @@ final class BackupJobs
      *
      * @param BackupStore         $store
      * @param array<string,mixed> $p
-     * @param BackupFailure       $e
+     * @param BackupException       $e
      *
-     * @return BackupFailure
+     * @return BackupException
      */
-    private static function keep(BackupStore $store, array $p, BackupFailure $e): BackupFailure
+    private static function keep(BackupStore $store, array $p, BackupException $e): BackupException
     {
         $name     = (string) $p['name'];
         $manifest = $store->manifest($name);
@@ -222,7 +224,7 @@ final class BackupJobs
         $manifest['kind'] = 'backup';
         $store->saveManifest($name, $manifest);
 
-        return new BackupFailure(trim($e->getMessage() . ' ' . __('The backup was kept on the server instead.')), 'upload');
+        return new BackupException(trim($e->getMessage() . ' ' . __('The backup was kept on the server instead.')), 'upload');
     }
 
     /**
@@ -247,7 +249,7 @@ final class BackupJobs
         $store->saveState(self::state($p, 'running'));
         try {
             $p = $restorer->step($p);
-        } catch (BackupFailure $e) {
+        } catch (BackupException $e) {
             self::ended($store, $p, $e);
 
             return;
@@ -280,13 +282,13 @@ final class BackupJobs
         $store->saveState(self::state($p, 'running'));
         try {
             if ($bucket === null) {
-                throw new BackupFailure(BackupBucket::addressProblem() ?: __('Saving to the bucket is not set up any more.'), 'fetch');
+                throw new BackupException(BackupBucket::addressProblem() ?: __('Saving to the bucket is not set up any more.'), 'fetch');
             }
             if (!preg_match(BackupStore::UPLOAD, (string) $p['source']) || !BackupStore::isName((string) $p['bucket_name'])) {
-                throw new BackupFailure(__('That backup is not in the list any more.'), 'fetch');
+                throw new BackupException(__('That backup is not in the list any more.'), 'fetch');
             }
             if (!$store->protect()) {
-                throw new BackupFailure(BackupStore::unwritable(), 'fetch');
+                throw new BackupException(BackupStore::unwritable(), 'fetch');
             }
             $deadline = microtime(true) + Builder::SECONDS;
             $ok = $bucket->getLarge(BackupBucket::key((string) $p['bucket_name']), $local, static function (int $done, int $total) use (&$p, $store, $deadline): bool {
@@ -298,9 +300,9 @@ final class BackupJobs
             }, $state);
             $p['fetch'] = $state;
             if (!$ok) {
-                throw new BackupFailure(BackupFailure::clean((string) ($state['error'] ?? '')), 'fetch');
+                throw new BackupException(BackupException::clean((string) ($state['error'] ?? '')), 'fetch');
             }
-        } catch (BackupFailure $e) {
+        } catch (BackupException $e) {
             @unlink($local);
             self::ended($store, $p, $e);
 
@@ -412,7 +414,7 @@ final class BackupJobs
 
         return new Builder($store, $content, $opts + array(
             'db_bytes' => static function (): int {
-                $size = DatabaseTools::size(Connection::instance(), DB_TABLE_PREFIX);
+                $size = DatabaseTools::size(Connection::getInstance(), DB_TABLE_PREFIX);
 
                 return $size === null ? 0 : $size['bytes'];
             },
@@ -434,7 +436,7 @@ final class BackupJobs
      */
     public static function restorer(BackupStore $store, int $jobId, array $opts = array()): Restorer
     {
-        $conn    = Connection::instance();
+        $conn    = Connection::getInstance();
         $content = (string) ($opts['content'] ?? ABS_PATH . 'oc-content');
         $site    = (string) ($opts['site'] ?? ABS_PATH);
         $builder = self::builder($store, array('content' => $content) + (array) ($opts['builder'] ?? array()));
@@ -502,11 +504,11 @@ final class BackupJobs
      *
      * @param BackupStore         $store
      * @param array<string,mixed> $p
-     * @param BackupFailure       $e
+     * @param BackupException       $e
      *
      * @return void
      */
-    private static function ended(BackupStore $store, array $p, BackupFailure $e): void
+    private static function ended(BackupStore $store, array $p, BackupException $e): void
     {
         $state = self::state($p, $e->cancelled ? 'cancelled' : 'failed');
         $state['stage']       = $e->stage;
@@ -573,7 +575,7 @@ final class BackupJobs
             __('Backup saved: %1$s, %2$s, %3$s, %4$s'),
             self::when(date('c', (int) $p['started'])),
             self::whatWord((string) $p['what']),
-            DatabaseTools::bytes((int) ($p['size'] ?? 0)),
+            Formatting::bytes((int) ($p['size'] ?? 0)),
             $where
         );
         JobWorker::log('backup', 0, $line);
@@ -601,25 +603,8 @@ final class BackupJobs
      */
     private static function requeue(int $id): bool
     {
-        $table = DB_TABLE_PREFIX . 't_job_queue';
         try {
-            osc_db_execute('DELETE FROM ' . $table . ' WHERE s_type LIKE ?', array('backup.%'));
-            $other = osc_db_table($table)->where('pk_i_id', $id)->first();
-            if ($other !== null) {
-                unset($other['pk_i_id']);
-                osc_db_table($table)->insert($other);
-                osc_db_table($table)->where('pk_i_id', $id)->delete();
-            }
-            $now = date('Y-m-d H:i:s');
-            osc_db_table($table)->insert(array(
-                'pk_i_id'     => $id,
-                's_type'      => self::RESTORE,
-                's_payload'   => '{}',
-                's_status'    => 'running',
-                'dt_next_run' => $now,
-                'dt_created'  => $now,
-                'dt_locked'   => $now,
-            ));
+            \mindstellar\job\JobQueue::getInstance()->reinstate($id, self::RESTORE, 'backup.%');
         } catch (DbException $e) {
             return false;
         }

@@ -53,11 +53,13 @@ The settings are in **Settings → Spam and bots → Sign-in protection**:
 | Keep records for | 7 days |
 
 The per-account limit is the one that matters against a targeted attack; the
-per-IP limit catches broad scanning.
+per-IP limit catches broad scanning. An IPv6 visitor counts by its /64 network, as do the
+form and posting limits, so changing addresses inside it does not reset the count. A user's username and e-mail share one account
+budget. Once it is spent, signing in by the other name answers as a wrong password.
 
 **Failed sign-ins right now**, under **Tools → System info → Security**, lists every
 address and account with recent failures and says which are blocked. **Unblock** lets one of them try again at
-once; **Unblock everyone** clears them all.
+once (for an IPv6 address, its whole /64); **Unblock everyone** clears them all.
 
 :::danger[Behind a proxy, throttling needs the real client IP]
 If your site sits behind Cloudflare, a tunnel or any reverse proxy and the real
@@ -87,12 +89,31 @@ saying so, at most once an hour: change the password when it comes. Changing the
 (`OSC_CSRF_SECRET`) makes every backup code stop working; the app codes still
 work, and **New backup codes** issues fresh ones.
 
+Open the admin at the site's own admin address, the site URL followed by
+`oc-admin/`. The code step is kept in a cookie for that path only. At another
+address, such as a different domain or folder, the browser does not send it
+back and the sign-in returns to the password form.
+
 If an admin loses both their phone and their backup codes, a full administrator
 can turn it off on that admin's edit screen, or from the command line:
 
 ```bash
 php oc-cli.php user:2fa-off --user=<username>
 ```
+
+## Sign out of all devices
+
+Signing out ends the sign-in in that browser only. A stolen copy of a sign-in
+cookie keeps working until it expires. **Sign out of all devices** ends every
+sign-in at once, this browser included.
+
+| Who | Where | What ends |
+|---|---|---|
+| A user | **My account → Sign-in details → Sign out of all devices**, with their password | Every web sign-in, every app signed in through the API, and their personal API keys |
+| An admin | **Edit profile → Sign out of all devices**, with their password and a code when two-step sign-in is on | Every admin sign-in of that account, remembered or not, and every API key that admin made. The page says how many keys first. |
+| An admin, for a user | **Users**, the user's row, **More → Sign out of all devices** | The same as the user's own button |
+
+Changing the password does the same for that account.
 
 ## The keyword blocklist
 
@@ -157,6 +178,8 @@ of them, and to e-mail fields on your own forms.
 contact a seller (15), contact a user (15), send to a friend (5) and search alert
 sign-ups (10). 0 means no limit. Developers can still change them with the
 `action_throttle_limit` filter.
+
+**Settings → Spam and bots → Search alerts** sets how many saved searches one user may keep (default 20, 0 means no limit).
 
 ## Rate limits and registration rules
 

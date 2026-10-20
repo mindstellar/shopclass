@@ -64,7 +64,7 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
                     <div class="btn-group btn-group-sm">
                         <input
                                 id="fPattern" type="text" name="sSearch"
-                                value="<?php echo osc_esc_html(Params::getParam('sSearch')); ?>"
+                                value="<?php echo osc_esc_html(Params::getParamString('sSearch')); ?>"
                                 class="input-text input-actions"/>
                         <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>"><i
                                     class="bi bi-search"></i></button>
@@ -120,7 +120,7 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
                         <?php foreach ($rows as $key => $row) { ?>
                             <tr>
                                 <?php foreach ($row as $k => $v) { ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php echo $v; ?></td>
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php echo $v; ?></td>
                                 <?php } ?>
                             </tr>
                         <?php } ?>

@@ -429,12 +429,33 @@ final class FormSpec
     }
 
     /**
-     * Add a select field.
+     * Add a mode per category: a switch on each main category, a select on each subcategory.
+     * Stored as JSON of category id => mode; read it with osc_category_mode().
      *
      * @param string               $name
      * @param string               $label
-     * @param array<string,string> $options value => label
+     * @param array<string,string> $modes value => label; "off" is reserved
      * @param string               $help
+     *
+     * @return self
+     */
+    public function category_modes(string $name, string $label = '', array $modes = array(), string $help = ''): self
+    {
+        $field = $this->base('category_modes', $name, $label, $help);
+        if ($modes !== array()) {
+            $field['modes'] = $modes;
+        }
+
+        return $this->field($field);
+    }
+
+    /**
+     * Add a select field.
+     *
+     * @param string                  $name
+     * @param string                  $label
+     * @param array<array-key,string> $options value => label; PHP keeps a key like '0' as an int
+     * @param string                  $help
      *
      * @return self
      */

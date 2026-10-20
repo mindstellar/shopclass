@@ -11,7 +11,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\utility\Utils;
 use PHPMailer\PHPMailer\PHPMailer;
 
 /**
@@ -621,10 +620,10 @@ function install_test_db_connection()
  */
 function install_nonce()
 {
-    $nonce = Session::newInstance()->_get('install_nonce');
+    $nonce = Session::getInstance()->_get('install_nonce');
     if (!$nonce) {
         $nonce = bin2hex(random_bytes(16));
-        Session::newInstance()->_set('install_nonce', $nonce);
+        Session::getInstance()->_set('install_nonce', $nonce);
     }
 
     return $nonce;
@@ -639,7 +638,7 @@ function install_nonce()
 function install_nonce_check()
 {
     $token   = (string)Params::getParam('install_nonce');
-    $session = (string)Session::newInstance()->_get('install_nonce');
+    $session = (string)Session::getInstance()->_get('install_nonce');
 
     return $token !== '' && $session !== '' && hash_equals($session, $token);
 }
@@ -660,7 +659,7 @@ function set_allow_report_osclass($value)
         'e_type'    => 'BOOLEAN'
     );
 
-    Preference::newInstance()->insert($values);
+    Preference::getInstance()->insert($values);
 }
 
 /**
@@ -693,6 +692,14 @@ function oc_install()
         return array(
             'error' => __('The table prefix can only contain letters, numbers and underscores.'),
             'field' => 'tableprefix',
+        );
+    }
+
+    // The site language row is built from the language's files, so a language that is not on
+    // disk stops the install here, before any table is created.
+    if (!isset(osc_listLocales()[osc_current_admin_locale()]['locale_code'])) {
+        return array(
+            'error' => sprintf(__('The language %s is not installed.'), osc_current_admin_locale()),
         );
     }
 
@@ -809,7 +816,7 @@ function oc_install()
     // Establish the shared singleton connection now. Every write below — the DAO
     // models, the migration ledger and the parameterized osc_db_* API — resolves
     // this same handle, so they all run over one connection to the new schema.
-    $conn = \mindstellar\database\ConnectionManager::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $conn = \mindstellar\database\ConnectionManager::getInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     $c_db = $conn->getHandle();
     $db   = new \mindstellar\database\Connection($c_db);
 
@@ -828,7 +835,7 @@ function oc_install()
 
     $locales = osc_listLocales();
     $values  = array(
-        'pk_c_code'         => $locales[osc_current_admin_locale()]['locale_code'],
+        'pk_c_code'         => osc_current_admin_locale(),
         's_name'            => $locales[osc_current_admin_locale()]['name'],
         's_short_name'      => $locales[osc_current_admin_locale()]['short_name'],
         's_description'     => $locales[osc_current_admin_locale()]['description'],
@@ -850,7 +857,7 @@ function oc_install()
     // rows carry a foreign key to t_locale. Written through the parameterized
     // query builder (bound values, one prepared statement).
     try {
-        osc_db_table(DB_TABLE_PREFIX . 't_locale')->insert($values);
+        \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_locale')->insert($values);
     } catch (\Throwable $e) {
         error_log('Shopclass install: could not save the site language row: ' . $e->getMessage());
 
@@ -905,7 +912,7 @@ function oc_install()
         $mail_templates      = json_encode($decoded);
     }
 
-    Page::newInstance()->importEmailJsonTemplates($mail_templates);
+    Page::getInstance()->importEmailJsonTemplates($mail_templates);
 
     // Seed the installer's own preference rows through the parameterized API,
     // grouped in one transaction so a mid-write failure leaves none of them
@@ -914,12 +921,12 @@ function oc_install()
     try {
         $prefTable   = DB_TABLE_PREFIX . 't_preference';
         $adminLocale = osc_current_admin_locale();
-        osc_db_transaction(static function () use ($prefTable, $adminLocale) {
+        \mindstellar\database\Db::transaction(static function () use ($prefTable, $adminLocale) {
             $replace = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-            osc_db_execute($replace, array('language', $adminLocale, 'osclass', 'STRING'));
-            osc_db_execute($replace, array('admin_language', $adminLocale, 'osclass', 'STRING'));
-            osc_db_execute($replace, array('csrf_name', 'CSRF' . mt_rand(0, mt_getrandmax()), 'osclass', 'STRING'));
-            osc_db_execute($replace, array('csrf_secret', bin2hex(random_bytes(32)), 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('language', $adminLocale, 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('admin_language', $adminLocale, 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('csrf_name', 'CSRF' . mt_rand(0, mt_getrandmax()), 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('csrf_secret', bin2hex(random_bytes(32)), 'osclass', 'STRING'));
         });
     } catch (\Throwable $e) {
         error_log('Shopclass install: seeding preferences failed: ' . $e->getMessage());
@@ -939,14 +946,14 @@ function oc_install()
         oc_install_example_data();
     } catch (\Throwable $e) {
         error_log('Shopclass install: sample content could not be added: ' . $e->getMessage());
-        Session::newInstance()->_set('install_sample_warning', 1);
+        Session::getInstance()->_set('install_sample_warning', 1);
     }
 
     if ($writesConfig) {
         copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
     }
     // The site step creates the admin; it runs only after this session installed the database.
-    Session::newInstance()->_set('install_db_done', 1);
+    Session::getInstance()->_set('install_db_done', 1);
 
     return false;
 }
@@ -961,10 +968,15 @@ function oc_install_example_data()
 {
     require_once LIB_PATH . 'osclass/formatting.php';
     require LIB_PATH . 'osclass/installer/basic_data.php';
+    /**
+     * @var array<int, array<string, mixed>> $categories
+     * @var array<string, mixed>             $item
+     * @var array<string, mixed>             $page
+     */
     require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
     require_once LIB_PATH . 'osclass/helpers/hValidate.php';
     require_once LIB_PATH . 'osclass/helpers/hUsers.php';
-    $mCat = Category::newInstance();
+    $mCat = Category::getInstance();
 
     if (!function_exists('osc_apply_filter')) {
         /**
@@ -975,6 +987,7 @@ function oc_install_example_data()
          *
          * @return mixed The value it was given
          */
+        // @phpstan-ignore function.inner (installer-only stand-in, declared once)
         function osc_apply_filter($dummyfilter, $str)
         {
             return $str;
@@ -1012,7 +1025,7 @@ function oc_install_example_data()
     $mItem->prepareData(true);
     $mItem->add();
 
-    Page::newInstance()->insert(
+    Page::getInstance()->insert(
         array(
             's_internal_name' => $page['s_internal_name'],
             'b_indelible'     => 0,
@@ -1284,8 +1297,7 @@ function is_osclass_installed()
 }
 
 /**
- * Commit the install sentinel, ping the search engines if opted in, and return the
- * credentials for the finish screen.
+ * Commit the install sentinel and return the credentials for the finish screen.
  *
  * @param string $password Plain-text admin password, echoed back for display
  *
@@ -1295,29 +1307,22 @@ function finish_installation($password)
 {
     require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
 
-    // Whether the owner opted in to search-engine pings on step 2 (short-lived
-    // cookie). Read before the finalize so the pref row records the choice.
+    // The ping_search_engines preference still records the old opt-in cookie.
     $pingEngines = isset($_COOKIE['osclass_ping_engines']) && (int)$_COOKIE['osclass_ping_engines'] === 1;
 
     // Finalize in one transaction. The osclass_installed sentinel is written
     // LAST, so the row that is_osclass_installed() and upgrades key off can never
     // land beside a half-written finalize. REPLACE keeps a step-4 page refresh
     // from tripping a duplicate key; the row values are byte-identical to before.
-    osc_db_transaction(static function () use ($pingEngines) {
+    \mindstellar\database\Db::transaction(static function () use ($pingEngines) {
         $prefTable = DB_TABLE_PREFIX . 't_preference';
         $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-        osc_db_execute($replace, array('ping_search_engines', $pingEngines ? '1' : '0', 'osclass', 'BOOLEAN'));
-        osc_db_execute($replace, array('osclass_installed', '1', 'osclass', 'BOOLEAN'));
+        \mindstellar\database\Db::execute($replace, array('ping_search_engines', $pingEngines ? '1' : '0', 'osclass', 'BOOLEAN'));
+        \mindstellar\database\Db::execute($replace, array('osclass_installed', '1', 'osclass', 'BOOLEAN'));
     });
 
-    // Network I/O never belongs inside a transaction: ping only after the
-    // finalize has committed, and only if the owner opted in.
-    if ($pingEngines) {
-        install_ping_search_engines();
-    }
-
     // Admin account for the credentials shown on the finish screen.
-    $admin = osc_db_table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first();
+    $admin = \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first();
 
     return array(
         's_email'    => $admin['s_email'] ?? '',
@@ -1347,31 +1352,6 @@ function display_database_config($form_data = null, $error = null)
 function display_target()
 {
     include_once 'installer/gui/install-target.php';
-}
-
-/**
- * Notify the major search engines that the sitemap exists. Network I/O only —
- * the ping_search_engines preference is recorded by the finalize transaction in
- * finish_installation(). Best-effort: each request is isolated so a slow or dead
- * endpoint can never block the finish screen.
- *
- * @return void
- */
-function install_ping_search_engines()
-{
-    $sitemap = urlencode(osc_search_url(array('sFeed' => 'rss')));
-    $targets = array(
-        'http://www.google.com/webmasters/sitemaps/ping?sitemap=' . $sitemap,
-        'http://www.bing.com/webmaster/ping.aspx?siteMap=' . $sitemap,
-    );
-
-    foreach ($targets as $target) {
-        try {
-            Utils::doRequest($target, array());
-        } catch (\Throwable $e) {
-            error_log('Shopclass install: search-engine ping failed: ' . $e->getMessage());
-        }
-    }
 }
 
 /**
@@ -1414,8 +1394,8 @@ function basic_info()
     // in one transaction through the parameterized API: either the site has an
     // owner and a title, or nothing is saved. Success is the returned insert id,
     // never affected-rows (which don't propagate on the shared handle).
-    osc_db_transaction(static function () use ($adminUser, $adminEmail, $adminHash, $webTitle) {
-        osc_db_table(DB_TABLE_PREFIX . 't_admin')->insert(array(
+    \mindstellar\database\Db::transaction(static function () use ($adminUser, $adminEmail, $adminHash, $webTitle) {
+        \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->insert(array(
             's_name'     => 'Administrator',
             's_username' => $adminUser,
             's_password' => $adminHash,
@@ -1424,8 +1404,8 @@ function basic_info()
 
         $prefTable = DB_TABLE_PREFIX . 't_preference';
         $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-        osc_db_execute($replace, array('pageTitle', $webTitle, 'osclass', 'STRING'));
-        osc_db_execute($replace, array('contactEmail', $adminEmail, 'osclass', 'STRING'));
+        \mindstellar\database\Db::execute($replace, array('pageTitle', $webTitle, 'osclass', 'STRING'));
+        \mindstellar\database\Db::execute($replace, array('contactEmail', $adminEmail, 'osclass', 'STRING'));
     });
 
     $body = sprintf(__('Hi %s,'), Params::getParam('webtitle')) . '<br/>';

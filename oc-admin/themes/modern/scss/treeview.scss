@@ -106,6 +106,10 @@ form h3 {
   transform: rotate(-90deg);
 }
 
+[dir="rtl"] .osc-tree-parent.is-collapsed > .osc-tree-toggle > i {
+  transform: rotate(90deg);
+}
+
 // Leaves reserve the toggle's width so their checkboxes line up under parents'.
 .osc-tree li:not(.osc-tree-parent) {
   padding-inline-start: 1.2rem;

@@ -28,36 +28,39 @@ $direction = Params::getParam('direction');
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_page_head(__('Reported listings')); ?>
 <div class="relative">
-    <?php osc_admin_toolbar_open(array('align' => 'end')); ?>
-        <?php if ($sort !== 'date') { ?>
-            <a id="btn-reset-filters" class="btn btn-sm btn-dim" href="<?php
-               echo osc_admin_base_url(true); ?>?page=items&action=items_reported"><?php _e('Reset filters'); ?></a>
-        <?php } ?>
-        <?php osc_admin_per_page(array(
-            'label'   => __('%d Listings'),
-            'options' => array(10, 25, 50, 100),
-            'current' => (int) Params::getParam('iDisplayLength'),
-        )); ?>
+    <?php // One row: bulk actions on the left, the filter reset and page size on the right.
+    osc_admin_toolbar_open(array('align' => 'between')); ?>
+    <?php osc_admin_bulk_actions(array('name' => 'bulk_actions', 'form' => 'datatablesForm', 'options_html' => static function ($form) { ?>
+        <select id="bulk_actions" name="bulk_actions" class="select-box-extra form-select"<?php echo $form; ?>>
+            <option value=""><?php _e('Bulk actions'); ?></option>
+            <option value="delete_all" data-dialog-content="<?php printf(
+                __('Are you sure you want to %s the selected items?'),
+                strtolower(__('Delete'))
+            ); ?>"><?php _e('Delete'); ?></option>
+            <option value="clear_reports_all" data-dialog-content="<?php _e('Are you sure you want to clear the deduplicated reports (and all reportings) of the selected items? This also resets their report-threshold auto-block state.'); ?>"><?php _e('Clear reports'); ?></option>
+            <option value="clear_all" data-dialog-content="<?php _e('Are you sure you want to clear all the reportings of the selected items?'); ?>"><?php _e('Clear All'); ?></option>
+            <option value="clear_spam_all" data-dialog-content="<?php _e('Are you sure you want to clear the spam reportings of the selected items?'); ?>"><?php _e('Clear Spam'); ?></option>
+            <option value="clear_bad_all" data-dialog-content="<?php _e('Are you sure you want to clear the misclassified reportings of the selected items?'); ?>"><?php _e('Clear Missclassified'); ?></option>
+            <option value="clear_dupl_all" data-dialog-content="<?php _e('Are you sure you want to clear the duplicated reportings of the selected items?'); ?>"><?php _e('Clear Duplicated'); ?></option>
+            <option value="clear_expi_all" data-dialog-content="<?php _e('Are you sure you want to clear the expired reportings of the selected items?'); ?>"><?php _e('Clear Expired'); ?></option>
+            <option value="clear_offe_all" data-dialog-content="<?php _e('Are you sure you want to clear the offensive reportings of the selected items?'); ?>"><?php _e('Clear Offensive'); ?></option>
+        </select>
+    <?php })); ?>
+        <div class="osc-toolbar-group">
+            <?php if ($sort !== 'date') { ?>
+                <a id="btn-reset-filters" class="btn btn-sm btn-dim" href="<?php
+                   echo osc_admin_base_url(true); ?>?page=items&action=items_reported"><?php _e('Reset filters'); ?></a>
+            <?php } ?>
+            <?php osc_admin_per_page(array(
+                'label'   => __('%d Listings'),
+                'options' => array(10, 25, 50, 100),
+                'current' => (int) Params::getParam('iDisplayLength'),
+            )); ?>
+        </div>
     <?php osc_admin_toolbar_close(); ?>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
         <input type="hidden" name="page" value="items" />
         <input type="hidden" name="action" value="bulk_actions" />
-        <?php osc_admin_bulk_actions(array('name' => 'bulk_actions', 'options_html' => static function () { ?>
-            <select id="bulk_actions" name="bulk_actions" class="select-box-extra form-select">
-                <option value=""><?php _e('Bulk actions'); ?></option>
-                <option value="delete_all" data-dialog-content="<?php printf(
-                    __('Are you sure you want to %s the selected items?'),
-                    strtolower(__('Delete'))
-                ); ?>"><?php _e('Delete'); ?></option>
-                <option value="clear_reports_all" data-dialog-content="<?php _e('Are you sure you want to clear the deduplicated reports (and all reportings) of the selected items? This also resets their report-threshold auto-block state.'); ?>"><?php _e('Clear reports'); ?></option>
-                <option value="clear_all" data-dialog-content="<?php _e('Are you sure you want to clear all the reportings of the selected items?'); ?>"><?php _e('Clear All'); ?></option>
-                <option value="clear_spam_all" data-dialog-content="<?php _e('Are you sure you want to clear the spam reportings of the selected items?'); ?>"><?php _e('Clear Spam'); ?></option>
-                <option value="clear_bad_all" data-dialog-content="<?php _e('Are you sure you want to clear the misclassified reportings of the selected items?'); ?>"><?php _e('Clear Missclassified'); ?></option>
-                <option value="clear_dupl_all" data-dialog-content="<?php _e('Are you sure you want to clear the duplicated reportings of the selected items?'); ?>"><?php _e('Clear Duplicated'); ?></option>
-                <option value="clear_expi_all" data-dialog-content="<?php _e('Are you sure you want to clear the expired reportings of the selected items?'); ?>"><?php _e('Clear Expired'); ?></option>
-                <option value="clear_offe_all" data-dialog-content="<?php _e('Are you sure you want to clear the offensive reportings of the selected items?'); ?>"><?php _e('Clear Offensive'); ?></option>
-            </select>
-        <?php })); ?>
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
@@ -78,7 +81,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
                                           // `items_processing_row` filter still hands plugins the plain word.?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                    <?php // A report count of 0 stays blank, so the reasons that matter stand out.
+                                    if (in_array($k, array('spam', 'bad', 'rep', 'exp', 'off'), true) && (int) $v === 0) {
+                                        $v = '';
+                                    } ?>
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
                                         echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>
                                 <?php } ?>

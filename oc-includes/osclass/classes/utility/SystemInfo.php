@@ -137,23 +137,23 @@ class SystemInfo
      */
     private $php_max_upload_size;
     /**
-     * @var false|string
+     * @var string
      */
     private $php_max_execution_time;
     /**
-     * @var float
+     * @var string
      */
     private $php_memory_usage_percent;
     /**
-     * @var float
+     * @var string
      */
     private $php_memory_usage;
     /**
-     * @var false|string
+     * @var string
      */
     private $php_memory_limit;
     /**
-     * @var false|string
+     * @var string
      */
     private $php_version;
     /**
@@ -183,7 +183,7 @@ class SystemInfo
     private $php_os;
 
     /**
-     * @var false|string
+     * @var string
      */
     private $allow_url_fopen;
     /**
@@ -251,10 +251,10 @@ class SystemInfo
      */
     public function setOsclassInfo(): self
     {
-        $all_preferences_serialized = serialize(Preference::newInstance()->listAll());
+        $all_preferences_serialized = serialize(Preference::getInstance()->listAll());
         $all_preference_bytes       = round(mb_strlen($all_preferences_serialized, '8bit') / 1024, 2);
 
-        $this->osclass_preference_count = count(Preference::newInstance()->listAll());
+        $this->osclass_preference_count = count(Preference::getInstance()->listAll());
         $this->osclass_preference_size  = $all_preference_bytes . 'KB';
 
         $this->osclass_version      = osc_version();
@@ -324,7 +324,7 @@ class SystemInfo
     /**
      * Return Important PHP info in an array
      *
-     * @return array<string,bool|string>
+     * @return array<string,mixed>
      */
     private function getPhpInfoArr(): array
     {
@@ -369,7 +369,7 @@ class SystemInfo
         $this->php_post_max_size        = ini_get('post_max_size');
 
         //set php curl support
-        $this->php_curl_support = function_exists('curl_init');
+        $this->php_curl_support = Curl::available();
         //php gd support
         $this->php_gd_support = extension_loaded('gd');
         //php gd freetype support
@@ -405,7 +405,7 @@ class SystemInfo
      */
     public function setDbInfo(): self
     {
-        $this->db_serverinfo   = Connection::instance()->serverInfo();
+        $this->db_serverinfo   = Connection::getInstance()->serverInfo();
         $this->db_host         = DB_HOST;
         $this->db_name         = DB_NAME;
         $this->db_user         = DB_USER;

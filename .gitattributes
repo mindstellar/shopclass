@@ -21,6 +21,8 @@
 /.editorconfig export-ignore
 /.php-cs-fixer.dist.php export-ignore
 /.phpcompat.xml.dist export-ignore
+/phpstan.neon.dist export-ignore
+/phpstan-baseline.neon export-ignore
 /.git-blame-ignore-revs export-ignore
 /tools export-ignore
 /Dockerfile export-ignore
@@ -37,10 +39,6 @@
 # Build input and tool leftovers: nothing loads them on a site.
 /eslint.config.mjs export-ignore
 /oc-admin/themes/modern/js/location.js export-ignore
-/oc-includes/vendor/bin export-ignore
-/oc-includes/vendor/async-aws/core/src/Test export-ignore
-/oc-includes/vendor/symfony/http-client-contracts/Test export-ignore
-/oc-includes/vendor/symfony/service-contracts/Test export-ignore
 # Debug and build input only: source maps and the admin theme's Sass.
 *.map export-ignore
 /oc-admin/themes/modern/scss export-ignore

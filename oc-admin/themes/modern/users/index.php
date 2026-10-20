@@ -138,7 +138,7 @@ $withFilters = __get('withFilters');
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
                                               // `users_processing_row` filter still hands plugins the plain word.?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
                                             echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>
                                 <?php } ?>
@@ -185,17 +185,17 @@ osc_admin_pagination($aData);
                                     <?php osc_admin_form_row_open(__('Email')); ?>
                                             <input id="s_email" name="s_email" type="text"
                                                    placeholder="<?php echo osc_esc_html(__('Any e-mail')); ?>"
-                                                   value="<?php echo osc_esc_html(Params::getParam('s_email')); ?>"/>
+                                                   value="<?php echo osc_esc_html(Params::getParamString('s_email')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Name')); ?>
                                             <input id="s_name" name="s_name" type="text"
                                                    placeholder="<?php echo osc_esc_html(__('Any name')); ?>"
-                                                   value="<?php echo osc_esc_html(Params::getParam('s_name')); ?>"/>
+                                                   value="<?php echo osc_esc_html(Params::getParamString('s_name')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Username')); ?>
                                             <input id="s_username" name="s_username" type="text"
                                                    placeholder="<?php echo osc_esc_html(__('Any username')); ?>"
-                                                   value="<?php echo osc_esc_html(Params::getParam('s_username')); ?>"/>
+                                                   value="<?php echo osc_esc_html(Params::getParamString('s_username')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Active')); ?>
                                             <select id="b_active" name="b_active">
@@ -230,7 +230,7 @@ osc_admin_pagination($aData);
                                     <?php osc_admin_form_row_open(__('Region')); ?>
                                             <input id="region" name="region" type="text" class="form-control"
                                                    placeholder="<?php echo osc_esc_html(__('Any region')); ?>"
-                                                   value="<?php echo osc_esc_html(Params::getParam('region')); ?>"
+                                                   value="<?php echo osc_esc_html(Params::getParamString('region')); ?>"
                                                    autocomplete="off"
                                                    data-ac="location_regions"
                                                    data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
@@ -238,19 +238,19 @@ osc_admin_pagination($aData);
                                                    data-ac-scope="#countryId" data-ac-scope-param="country"
                                                    data-ac-clears="#cityId,#city"/>
                                             <input id="regionId" name="regionId" type="hidden"
-                                                   value="<?php echo osc_esc_html(Params::getParam('regionId')); ?>"/>
+                                                   value="<?php echo osc_esc_html(Params::getParamString('regionId')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('City')); ?>
                                             <input id="city" name="city" type="text" class="form-control"
                                                    placeholder="<?php echo osc_esc_html(__('Any city')); ?>"
-                                                   value="<?php echo osc_esc_html(Params::getParam('city')); ?>"
+                                                   value="<?php echo osc_esc_html(Params::getParamString('city')); ?>"
                                                    autocomplete="off"
                                                    data-ac="location_cities"
                                                    data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
                                                    data-ac-target="#cityId"
                                                    data-ac-scope="#regionId" data-ac-scope-param="region"/>
                                             <input id="cityId" name="cityId" type="hidden"
-                                                   value="<?php echo osc_esc_html(Params::getParam('cityId')); ?>"/>
+                                                   value="<?php echo osc_esc_html(Params::getParamString('cityId')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Block')); ?>
                                             <select id="b_enabled" name="b_enabled">

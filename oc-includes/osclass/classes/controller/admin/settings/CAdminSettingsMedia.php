@@ -17,7 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\MediaSettingsForm;
+use mindstellar\admin\form\MediaSettingsScreen;
 
 /**
  * Class CAdminSettingsMedia
@@ -51,13 +51,13 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 // A bad watermark file is refused in validation with everything else, so
                 // nothing is written; a good one that cannot be moved is reported by the
                 // after_save, beside the values that did save.
-                $result = CoreSettings::attempt(MediaSettingsForm::register());
+                $result = CoreSettings::attempt(MediaSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     $this->drawForm($result['values']);
                     break;
                 }
 
-                $lowered = MediaSettingsForm::lowered();
+                $lowered = MediaSettingsScreen::lowered();
                 if ($lowered !== null) {
                     osc_add_flash_warning_message(
                         sprintf(
@@ -66,7 +66,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                         ),
                         'admin'
                     );
-                } elseif (!MediaSettingsForm::uploadFailed()) {
+                } elseif (!MediaSettingsScreen::uploadFailed()) {
                     osc_add_flash_ok_message(_m('Media config has been updated'), 'admin');
                 }
 
@@ -78,13 +78,13 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 }
                 osc_csrf_check();
 
-                if (\mindstellar\storage\StorageManager::instance()->remote() === null) {
+                if (\mindstellar\storage\StorageManager::getInstance()->remote() === null) {
                     // No remote storage configured: regenerate every resource inline, exactly as before.
                     // One photo that cannot be opened, such as one over the pixel limit, is skipped.
                     $skipped = 0;
-                    foreach (ItemResource::newInstance()->getAllResources() as $resource) {
+                    foreach (ItemResource::getInstance()->getAllResources() as $resource) {
                         try {
-                            ItemActions::regenerateResourceImages($resource);
+                            \mindstellar\listing\PhotoService::regenerateImages($resource);
                         } catch (Throwable $e) {
                             $skipped++;
                         }
@@ -99,8 +99,8 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                     // A remote adapter is active: regenerating inline would mean one synchronous
                     // download per resource, so page through resource ids (never loading full rows)
                     // and queue a 'regenerate' job per resource for the storage worker to process.
-                    $remoteId = \mindstellar\storage\StorageManager::instance()->remote()->getId();
-                    $itemResourceManager = ItemResource::newInstance();
+                    $remoteId = \mindstellar\storage\StorageManager::getInstance()->remote()->getId();
+                    $itemResourceManager = ItemResource::getInstance();
                     $batchSize = 500;
                     $offset    = 0;
                     $count     = 0;
@@ -141,21 +141,9 @@ class CAdminSettingsMedia extends AdminSecBaseModel
     private function drawForm(?array $values = null)
     {
         // The name a replaced admin theme's own copy of the view still reads.
-        $this->_exportVariableToView('max_size_upload', MediaSettingsForm::uploadLimitKb());
-        $this->_exportVariableToView('media_form', MediaSettingsForm::formVars($values));
+        $this->_exportVariableToView('max_size_upload', MediaSettingsScreen::uploadLimitKb());
+        $this->_exportVariableToView('media_form', MediaSettingsScreen::formVars($values));
         $this->doView('settings/media.php');
-    }
-
-    /**
-     * Converts a php.ini-style byte size ("8M", "1G") to kilobytes.
-     *
-     * @param string $sSize
-     *
-     * @return int
-     */
-    public function _sizeToKB($sSize)
-    {
-        return MediaSettingsForm::sizeToKb((string)$sSize);
     }
 }
 

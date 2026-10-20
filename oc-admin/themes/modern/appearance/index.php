@@ -15,7 +15,7 @@
 
 //getting variables for this view
 $themes = __get('themes');
-$info   = WebThemes::newInstance()->loadThemeInfo(osc_theme());
+$info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
 
 osc_admin_page(array(
     'section' => __('Appearance'),
@@ -84,7 +84,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <li><a href="#market-tab-installed"><?php _e('Themes'); ?></a></li>
                 <li><a href="#market-tab-browse"><?php _e('Browse'); ?></a></li>
                 <li><a href="#market-tab-updates"><?php _e('Updates'); ?>
-                        <span class="market-tab-count" id="market-updates-count">(<?php echo (int) count($aMarketUpdates); ?>)</span>
+                        <?php echo osc_admin_count(count($aMarketUpdates), 'market-updates-count'); ?>
                     </a></li>
             </ul>
         </div>
@@ -94,7 +94,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="appearance">
         <?php
         $csrf_token      = osc_csrf_token_url();
-        $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
+        $aThemesToUpdate = osc_update_check_state('themes')['to_update'];
         $bThemesToUpdate = is_array($aThemesToUpdate);
         $themeMeta       = static function ($info) {
             $meta = array(sprintf(__('Version %s'), osc_esc_html($info['version'])));
@@ -109,7 +109,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         // The parent a theme declares, when it names one that is actually installed.
         $parentOf = static function ($slug) {
-            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+            $i = WebThemes::getInstance()->loadThemeInfo($slug);
             if (!is_array($i) || empty($i['template'])
                 || !\mindstellar\utility\Validate::packageName((string) $i['template'])
                 || $i['template'] === $slug
@@ -122,7 +122,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         /** A theme's display name, falling back to its directory name. */
         $nameOf = static function ($slug) {
-            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+            $i = WebThemes::getInstance()->loadThemeInfo($slug);
 
             return is_array($i) && $i['name'] !== '' ? ucfirst($i['name']) : $slug;
         };
@@ -207,7 +207,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php if ($otherThemes) : ?>
             <?php osc_package_list_open('osc-pkg-list--themes'); ?>
             <?php foreach ($otherThemes as $theme) :
-                $tInfo  = WebThemes::newInstance()->loadThemeInfo($theme);
+                $tInfo  = WebThemes::getInstance()->loadThemeInfo($theme);
                 $tName  = ucfirst($tInfo['name']);
                 $update = $bThemesToUpdate && in_array($theme, $aThemesToUpdate, true);
                 // Deleting this one would leave the active theme rendering on the default.
@@ -241,7 +241,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 : '')),
                     'note_variant' => ($clashes !== array() || $isParent) ? 'warning' : 'update',
                     'actions'     => array(
-                        'primary' => array(
+                        // A theme that clashes with its parent cannot run, so it offers no Activate.
+                        'primary' => $clashes !== array() ? null : array(
                             'label' => __('Activate'),
                             'url'   => osc_admin_base_url(true) . '?page=appearance&amp;action=activate&amp;theme='
                                 . urlencode($theme) . '&amp;' . $csrf_token,

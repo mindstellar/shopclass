@@ -54,7 +54,7 @@ $pending = static function (string $name, string $new, string $issued = 'NOW()')
     $admin->query("INSERT INTO {$prefix}t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, fk_i_user_id)
                    VALUES ($item, NOW(), 't', 'n', '{$name}@old.test', 'b', $id)");
     $admin->query("INSERT INTO {$prefix}t_alerts (s_email, fk_i_user_id, s_search, e_type) VALUES ('{$name}@old.test', $id, '', 'DAILY')");
-    $admin->query("INSERT INTO {$prefix}t_user_email_tmp (fk_i_user_id, s_new_email, dt_date) VALUES ($id, '$new', NOW())");
+    $admin->query("INSERT INTO {$prefix}t_key_value (s_group, s_key, s_value, dt_created) VALUES ('email_change', '$id', '$new', NOW())");
 
     return $id;
 };
@@ -69,7 +69,7 @@ $repointed = static function (int $id, string $email) use ($field, $prefix): arr
 harness_section('A matching, fresh code switches everything');
 
 $ann    = $pending('ann', 'ann@new.test');
-pin('a pending e-mail change code is not a password-reset code', array(), User::newInstance()->findByIdPasswordSecret($ann, $code));
+pin('a pending e-mail change code is not a password-reset code', array(), User::getInstance()->findByIdPasswordSecret($ann, $code));
 $result = UserActions::confirmEmailChange($ann, $code);
 pin('the change is applied', array('status' => 'ok', 'old' => 'ann@old.test', 'new' => 'ann@new.test'), $result);
 pin('the user has the new address', 'ann@new.test', $emailOf($ann));
@@ -78,9 +78,9 @@ pin('the code is cleared', array(null, null), array(
     $field("SELECT s_pass_code FROM {$prefix}t_user WHERE pk_i_id = $ann"),
     $field("SELECT s_pass_date FROM {$prefix}t_user WHERE pk_i_id = $ann"),
 ));
-pin('the pending row is gone', 0, (int)$field("SELECT COUNT(*) FROM {$prefix}t_user_email_tmp WHERE fk_i_user_id = $ann"));
+pin('the pending row is gone', 0, (int)$field("SELECT COUNT(*) FROM {$prefix}t_key_value WHERE s_group = 'email_change' AND s_key = '$ann'"));
 pin('the same link does not work twice', 'invalid', UserActions::confirmEmailChange($ann, $code)['status']);
-pin('nor does it work as a password-reset code', array(), User::newInstance()->findByIdPasswordSecret($ann, $code));
+pin('nor does it work as a password-reset code', array(), User::getInstance()->findByIdPasswordSecret($ann, $code));
 
 harness_section('Codes that must not work');
 
@@ -107,18 +107,18 @@ pin('a password-reset code does not confirm an e-mail change', 'invalid', UserAc
 harness_section('issuePassCode binds each code to its purpose');
 
 $ivy   = $pending('ivy', 'ivy@new.test');
-$reset = User::newInstance()->issuePassCode($ivy, User::PASS_CODE_RESET);
+$reset = User::getInstance()->issuePassCode($ivy, User::PASS_CODE_RESET);
 $saved = $field("SELECT s_pass_code FROM {$prefix}t_user WHERE pk_i_id = $ivy");
 check('only the hash of the issued code is stored', $saved === User::passCodeHash(User::PASS_CODE_RESET, $reset) && $saved !== $reset);
-check('an issued reset code opens the reset form', (User::newInstance()->findByIdPasswordSecret($ivy, $reset)['pk_i_id'] ?? null) == $ivy);
+check('an issued reset code opens the reset form', (User::getInstance()->findByIdPasswordSecret($ivy, $reset)['pk_i_id'] ?? null) == $ivy);
 pin('an issued reset code does not confirm an e-mail change', 'invalid', UserActions::confirmEmailChange($ivy, $reset)['status']);
 $jay   = $pending('jay', 'jay@new.test');
-$email = User::newInstance()->issuePassCode($jay, User::PASS_CODE_EMAIL);
-pin('an issued e-mail code does not open the reset form', array(), User::newInstance()->findByIdPasswordSecret($jay, $email));
+$email = User::getInstance()->issuePassCode($jay, User::PASS_CODE_EMAIL);
+pin('an issued e-mail code does not open the reset form', array(), User::getInstance()->findByIdPasswordSecret($jay, $email));
 pin('an issued e-mail code confirms the change', 'ok', UserActions::confirmEmailChange($jay, $email)['status']);
 
 $eve = $pending('eve', 'eve@new.test');
-$admin->query("DELETE FROM {$prefix}t_user_email_tmp WHERE fk_i_user_id = $eve");
+$admin->query("DELETE FROM {$prefix}t_key_value WHERE s_group = 'email_change' AND s_key = '$eve'");
 pin('with no pending change the link is refused', 'invalid', UserActions::confirmEmailChange($eve, $code)['status']);
 
 harness_section('An address taken since the request');

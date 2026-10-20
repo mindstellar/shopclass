@@ -22,6 +22,7 @@
 error_reporting(E_ALL & ~E_DEPRECATED);
 
 define('ABS_PATH', dirname(__DIR__) . '/');
+define('OC_ADMIN', true);
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
@@ -68,6 +69,12 @@ $request(array('iPage' => '-3'));
 ListPaging::page();
 pin('the corrected page is written back', 1, (int) Params::getParam('iPage'));
 
+$request(array('pageNum' => '4'));
+pin('an old admin link with pageNum still pages', 4, ListPaging::page());
+pin('...and is written back as iPage', 4, (int) Params::getParam('iPage'));
+$request(array('pageNum' => '4', 'iPage' => '2'));
+pin('iPage wins over pageNum', 2, ListPaging::page());
+
 harness_section('Page size');
 
 pin('a normal size is itself', 25, $length('25'));
@@ -95,5 +102,105 @@ pin('page 4 at 10 a page', 30, ListPaging::start(4, 10));
 // passes its own number must not be able to produce a negative LIMIT offset.
 pin('an offset can never go negative', 0, ListPaging::start(0, 25));
 pin('...however wrong the page', 0, ListPaging::start(-7, 25));
+
+harness_section('Past the end');
+
+if (!function_exists('osc_admin_base_url')) {
+    function osc_admin_base_url($index = false)
+    {
+        return 'https://example.test/oc-admin/' . ($index ? 'index.php' : '');
+    }
+}
+/** The redirect for an empty page, given the request's query string. */
+$pastEnd = static function (string $query, int $rows, int $total, int $length, int $page): ?string {
+    $_SERVER['QUERY_STRING'] = $query;
+    Params::init();
+
+    return ListPaging::pastEndUrl($rows, $total, $length, $page);
+};
+$base = 'https://example.test/oc-admin/index.php?';
+
+pin('a page with rows stays', null, $pastEnd('page=items&iPage=9', 3, 30, 10, 9));
+pin('page 1 stays, even empty', null, $pastEnd('page=items&iPage=1', 0, 0, 10, 1));
+pin('an empty page past the end goes to the last page', $base . 'page=items&iPage=3', $pastEnd('page=items&iPage=9', 0, 30, 10, 9));
+pin('...or to page 1 when nothing is left', $base . 'page=items&iPage=1', $pastEnd('page=items&iPage=4', 0, 0, 10, 4));
+pin('iPage as the first parameter is rewritten too', $base . 'iPage=2&page=items', $pastEnd('iPage=7&page=items', 0, 11, 10, 7));
+pin('a missing iPage is added', $base . 'page=items&iPage=2', $pastEnd('page=items', 0, 11, 10, 5));
+pin('the last page itself never redirects to itself', null, $pastEnd('page=items&iPage=3', 0, 30, 10, 3));
+
+harness_section('Past the end, from a DataTable result');
+
+$_SERVER['QUERY_STRING'] = 'page=items&iPage=9';
+Params::init();
+$table = static fn (string $key, int $rows): array => array(
+    $key                   => array_fill(0, $rows, array()),
+    'iTotalDisplayRecords' => '30',
+    'iDisplayLength'       => '10',
+);
+pin('aRows past the end goes to the last page', $base . 'page=items&iPage=3', ListPaging::pastEnd($table('aRows', 0), 9));
+pin('aaData is read the same way', $base . 'page=items&iPage=3', ListPaging::pastEnd($table('aaData', 0), 9));
+pin('a page with rows stays', null, ListPaging::pastEnd($table('aaData', 2), 9));
+pin('missing counts mean page 1', $base . 'page=items&iPage=1', ListPaging::pastEnd(array(), 9));
+
+harness_section('One pager for both widget names');
+
+require_once __DIR__ . '/lib/stubs.php';
+if (!function_exists('_e')) {
+    function _e($key, $domain = 'core')
+    {
+        echo $key;
+    }
+}
+if (!function_exists('osc_admin_base_url')) {
+    function osc_admin_base_url($index = false)
+    {
+        return 'https://example.test/oc-admin/index.php';
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPagination.php';
+require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
+
+$render = static function (callable $draw): string {
+    ob_start();
+    $draw();
+
+    return (string) ob_get_clean();
+};
+$request(array());
+$pager = $render(static fn () => osc_admin_pager(array(
+    'total'    => 240,
+    'per_page' => 25,
+    'page'     => 3,
+    'base_url' => 'https://example.test/oc-admin/index.php?page=billing',
+    'params'   => array('status' => 'paid'),
+)));
+$table = $render(static fn () => osc_admin_pagination(array(
+    'aaData'               => array_fill(0, 25, array()),
+    'iTotalDisplayRecords' => 240,
+    'iDisplayLength'       => 25,
+    'iPage'                => 3,
+    'base_url'             => 'https://example.test/oc-admin/index.php?page=billing&status=paid',
+)));
+pin('both names draw the same markup', $table, $pager);
+check('the range line is stated', strpos($pager, 'Showing 51 to 75 of 240 results') !== false, $pager);
+check('page links carry iPage', strpos($pager, 'status=paid&amp;iPage=4') !== false, $pager);
+check('ten pages need no go-to form', strpos($pager, 'gotoPage') === false, $pager);
+$long = $render(static fn () => osc_admin_pager(array(
+    'total'    => 400,
+    'per_page' => 25,
+    'page'     => 3,
+    'base_url' => 'https://example.test/oc-admin/index.php?page=billing',
+    'params'   => array('status' => 'paid'),
+)));
+check('the go-to form keeps the list filters', strpos($long, 'gotoPage') !== false && strpos($long, 'name="status"') !== false && strpos($long, 'name="page"') !== false, $long);
+check('no pageNum goes out', strpos($pager, 'pageNum') === false, $pager);
+
+$_SERVER['QUERY_STRING'] = 'page=items&pageNum=2&iDisplayLength=10';
+$request(array('page' => 'items', 'pageNum' => '2'));
+$fromRequest = $render(static fn () => osc_admin_pagination(array('aaData' => array_fill(0, 10, array()), 'iTotalDisplayRecords' => 30, 'iDisplayLength' => 10)));
+check('an old pageNum link is read and rewritten', strpos($fromRequest, 'Showing 11 to 20') !== false
+    && strpos($fromRequest, 'pageNum') === false && strpos($fromRequest, 'iPage=3') !== false, $fromRequest);
+$hooks = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/parts/ui.php');
+check('the widgets register no hook per call', strpos($hooks, "'before_show_pagination_admin'") === false);
 
 exit(harness_result());

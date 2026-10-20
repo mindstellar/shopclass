@@ -75,9 +75,14 @@ function osc_get_locales()
 /** Counts reads, which is the point of the memo the helper drops. */
 class OSCLocale
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function listAllEnabled($isBo = false, $indexedByPk = false)
@@ -91,44 +96,21 @@ class OSCLocale
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 
-/** Every `case ('name'):` arm of the outer switch in $source, keyed by name. */
-function case_blocks(string $source): array
+/** Every action in the controller's ACTIONS map, keyed by name, with the source of its method. */
+function case_blocks(string $file): array
 {
-    if (!preg_match_all("/case \('([a-z_]+)'\):/", $source, $m, PREG_OFFSET_CAPTURE)) {
+    if (!preg_match('/const ACTIONS = array\((.*?)\);/s', (string) file_get_contents($file), $map)
+        || !preg_match_all("/'([a-z_]+)'\\s*=>/", $map[1], $m)
+    ) {
         return array();
     }
 
     $blocks = array();
-    foreach ($m[1] as $i => $match) {
-        $start          = $m[0][$i][1];
-        $end            = $m[0][$i + 1][1] ?? strlen($source);
-        $blocks[$match[0]] = substr($source, $start, $end - $start);
+    foreach ($m[1] as $action) {
+        $blocks[$action] = harness_action_source($file, $action);
     }
 
     return $blocks;
-}
-
-/** The body of one method, matched by counting braces from its opening one. */
-function method_body(string $source, string $name): string
-{
-    $at = strpos($source, 'function ' . $name . '(');
-    if ($at === false) {
-        return '';
-    }
-    $open  = strpos($source, '{', $at);
-    $depth = 0;
-    for ($i = $open; $i < strlen($source); $i++) {
-        if ($source[$i] === '{') {
-            $depth++;
-        } elseif ($source[$i] === '}') {
-            $depth--;
-            if ($depth === 0) {
-                return substr($source, $open, $i - $open + 1);
-            }
-        }
-    }
-
-    return '';
 }
 
 harness_section('the enabled-locale list is read once per request');
@@ -169,22 +151,25 @@ pin(
 
 harness_section('every locale-writing action on the languages screen invalidates');
 
-$controller = (string)file_get_contents(
-    ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php'
-);
-$blocks = case_blocks($controller);
+$blocks = case_blocks(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php');
 
 // Derived from the source, not listed: an action added later that writes a locale is held
 // to the same rule instead of being exempt for having been written after this test. The
-// markers cover the inherited DAO writes, the two methods the model owns and the raw
-// paths -- a case naming the table at all counts as writing, because the cost of a false
-// positive is one extra call to the flush and the cost of a miss is a stale list.
+// markers cover the inherited DAO writes, the two methods the model owns, the language
+// service's writes and the raw paths -- a case naming the table at all counts as writing,
+// because the cost of a false positive is one extra call to the flush and the cost of a
+// miss is a stale list.
 $writes = array(
     '->update(',
+    'LocaleStore::update(',
     '->insert(',
     '->delete(',
     'insertLocaleInfo(',
     'deleteLocale(',
+    '->enable(',
+    '->disable(',
+    '->install(',
+    '->importPublished(',
     'osc_checkLocales(',
     'osc_db_query(',
     't_locale',
@@ -219,7 +204,7 @@ foreach ($mutating as $name) {
     check(
         "'" . $name . "' drops the memoised locale list",
         strpos($blocks[$name], 'osc_invalidate_locale_cache(') !== false,
-        'CAdminLanguages::doModel() case ' . $name . ' writes a locale and leaves the memo in place'
+        'CAdminLanguages action ' . $name . ' writes a locale and leaves the memo in place'
     );
 }
 
@@ -229,9 +214,8 @@ harness_section('and so does the model, which a plugin can call directly');
 // here on purpose: the CI check that reports a legacy-DAO write inside a transaction
 // resolves calls against the receiving class, and an override would change what it sees.
 // The two methods the model owns carry the flush instead.
-$model = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/model/OSCLocale.php');
 foreach (array('deleteLocale', 'insertLocaleInfo') as $method) {
-    $body = method_body($model, $method);
+    $body = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/model/OSCLocale.php', $method);
     check($method . '() has a body to read', $body !== '');
     check(
         'OSCLocale::' . $method . '() drops the memoised locale list',

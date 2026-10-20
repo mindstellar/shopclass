@@ -39,7 +39,7 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
         ); ?></span>
         <?php $publicPlace = implode(', ', array_filter(array(
             (string) osc_user_city(), (string) osc_user_region(), (string) osc_user_country(),
-        ), 'strlen'));
+        ), static fn (string $v): bool => $v !== ''));
         if ($publicPlace !== '') { ?>
             <span><?php echo osc_esc_html($publicPlace); ?></span>
         <?php }

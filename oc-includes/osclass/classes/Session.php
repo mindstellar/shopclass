@@ -17,14 +17,20 @@
  */
 class Session
 {
+    use \mindstellar\base\SharedInstance;
+
+    /** Bytes of cookie value the flash messages may take; the name and attributes need the rest of 4096. */
+    public const FLASH_BUDGET = 3800;
+
     //attributes
-    private static $instance;
     private $session = array();
     private $ephemeral = array();
     private $messages = array();
     private $form = array();
     private $keepForm = array();
     private $started = false;
+    /** @var array<string,true> keys forgotten for this request; never read back from $_SESSION */
+    private $forgotten = array();
 
     /**
      * Seed the in-memory default containers so reads are safe before (or without) a
@@ -37,17 +43,11 @@ class Session
     }
 
     /**
-     * The shared Session instance, created on first call.
-     *
-     * @return \Session
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -120,7 +120,7 @@ class Session
                 $_SESSION[$key] = $value;
             }
         }
-        $this->session = $_SESSION;
+        $this->session = array_diff_key($_SESSION, $this->forgotten);
         $this->seedDefaults();
     }
 
@@ -142,7 +142,7 @@ class Session
             'lifetime' => $params['lifetime'],
             'path'     => $params['path'],
             'domain'   => $params['domain'],
-            'secure'   => $params['secure'] ?? false,
+            'secure'   => $params['secure'],
             'httponly' => true,
             'samesite' => 'Lax',
         ));
@@ -263,6 +263,28 @@ class Session
     }
 
     /**
+     * Forget keys for the rest of this request only; the stored session keeps them. A running
+     * session is closed unwritten first, so nothing later in the request can save a change.
+     *
+     * @param string[] $keys
+     *
+     * @return void
+     */
+    public function _forgetForRequest(array $keys)
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_abort();
+        }
+        foreach ($keys as $key) {
+            $this->forgotten[$key] = true;
+            unset($this->session[$key], $this->ephemeral[$key]);
+            if (isset($_SESSION)) {
+                unset($_SESSION[$key]);
+            }
+        }
+    }
+
+    /**
      * Destroy the physical session, if one is running, and mark this instance detached.
      *
      * @return void
@@ -276,6 +298,39 @@ class Session
             session_destroy();
         }
         $this->started = false;
+    }
+
+    /**
+     * Destroy the session and tell the browser to drop its session cookie, so a copy of the
+     * old id is worth nothing. Used on sign-out. A value set afterwards starts a new session.
+     *
+     * @return void
+     */
+    public function session_end()
+    {
+        // Resume a session the browser names, so its stored data is removed and not orphaned.
+        $this->maybeResume();
+        $this->session_destroy();
+        if (isset($_COOKIE['osclass'])) {
+            if (!headers_sent()) {
+                $this->configureCookieParams();
+                $params = session_get_cookie_params();
+                // Not Cookie::write(): the clear must match PHP's own session cookie path, domain and secure flag.
+                setcookie('osclass', '', array(
+                    'expires'  => time() - 3600,
+                    'path'     => $params['path'],
+                    'domain'   => $params['domain'],
+                    'secure'   => $params['secure'],
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ));
+            }
+            unset($_COOKIE['osclass']);
+        }
+        // Unset, not emptied: a later write then starts a new session under a new id.
+        unset($_SESSION);
+        $this->session = array();
+        $this->seedDefaults();
     }
 
     /**
@@ -381,10 +436,10 @@ class Session
         if ($value === '') {
             return;
         }
-        $this->writeSignedStore('oc_flash', '', time() - 3600);
+        \Cookie::write('oc_flash', '', time() - 3600);
         unset($_COOKIE['oc_flash']);
 
-        $messages = $this->decodeSignedStore($value);
+        $messages = $this->decodeSignedStore('oc_flash', $value);
         if (!empty($messages)) {
             $this->messages = $messages;
         }
@@ -403,81 +458,147 @@ class Session
         if (empty($this->messages)) {
             return;
         }
-        $this->writeSignedStore('oc_flash', $this->encodeSignedStore($this->messages), time() + 300);
+        $messages = self::fitFlashMessages($this->messages);
+        \Cookie::write('oc_flash', $this->encodeSignedStore('oc_flash', $messages, 300), time() + 300);
     }
 
     /**
-     * Serialise + HMAC-sign a value for a standalone cookie store (flash, form repop). The
-     * signature is what lets these be client-side cookies safely: a tampered value verifies
-     * to nothing, so a visitor cannot forge flash HTML or form input.
+     * The flash messages cut down so their signed cookie value stays within $budget bytes, since
+     * a browser drops a cookie over 4096 bytes. The first messages are kept in bucket order and
+     * one "…and N more" line, of the first dropped message's type, ends the bucket it was in.
      *
-     * @param mixed $data
+     * @param array<string,mixed> $messages bucket => list of ['msg' => string, 'type' => string]
+     * @param int                 $budget   bytes of packed cookie value
+     *
+     * @return array<string,mixed>
+     */
+    public static function fitFlashMessages(array $messages, int $budget = self::FLASH_BUDGET): array
+    {
+        if (self::packedLength($messages) <= $budget) {
+            return $messages;
+        }
+        $queue = array();
+        foreach ($messages as $bucket => $list) {
+            foreach (is_array($list) ? $list : array() as $message) {
+                $queue[] = array((string)$bucket, $message);
+            }
+        }
+        $total = count($queue);
+        $kept  = array();
+        $done  = 0;
+        foreach ($queue as $i => [$bucket, $message]) {
+            $try            = $kept;
+            $try[$bucket][] = $message;
+            if (self::packedLength(self::withMore($try, $queue, $i + 1)) > $budget) {
+                break;
+            }
+            $kept = $try;
+            $done = $i + 1;
+        }
+        if ($done > 0) {
+            return self::withMore($kept, $queue, $done);
+        }
+        if ($total === 0) {
+            return array();
+        }
+
+        // Even the first message alone is too long: cut it, as plain text, until it fits.
+        [$bucket, $message] = $queue[0];
+        $html = is_array($message) ? (string)($message['msg'] ?? '') : '';
+        $text = html_entity_decode(strip_tags(str_replace('<br />', ' ', $html)), ENT_QUOTES, 'UTF-8');
+        $low  = 0;
+        $high = mb_strlen($text);
+        $best = array();
+        while ($low <= $high) {
+            $mid        = intdiv($low + $high, 2);
+            $cut        = is_array($message) ? $message : array();
+            $cut['msg'] = self::cutText($text, $mid);
+            $try        = self::withMore(array($bucket => array($cut)), $queue, 1);
+            if (self::packedLength($try) <= $budget) {
+                $best = $try;
+                $low  = $mid + 1;
+            } else {
+                $high = $mid - 1;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * $kept plus, when the messages from $next on are left out, the "…and N more" line in the
+     * bucket and type of the first one left out.
+     *
+     * @param array<string,mixed>              $kept
+     * @param array<int,array{0:string,1:mixed}> $queue
+     *
+     * @return array<string,mixed>
+     */
+    private static function withMore(array $kept, array $queue, int $next): array
+    {
+        $left = count($queue) - $next;
+        if ($left <= 0) {
+            return $kept;
+        }
+        [$bucket, $message] = $queue[$next];
+        $line = function_exists('__') ? __('…and %d more') : '…and %d more';
+        $kept[$bucket][] = array(
+            'msg'  => sprintf($line, $left),
+            'type' => is_array($message) ? ($message['type'] ?? '') : '',
+        );
+
+        return $kept;
+    }
+
+    /** Plain $text cut to $width characters plus "…", escaped for HTML. */
+    private static function cutText(string $text, int $width): string
+    {
+        return htmlspecialchars(mb_substr($text, 0, $width), ENT_QUOTES, 'UTF-8') . '…';
+    }
+
+    /**
+     * The length of the value SignedPayload::pack() makes of $data: base64url JSON with the
+     * expiry added, a dot and a 43-character signature.
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function packedLength(array $data): int
+    {
+        $data['x'] = time() + 300;
+
+        return (int)ceil(strlen((string)json_encode($data)) * 4 / 3) + 1 + 43;
+    }
+
+    /**
+     * Sign a value for a standalone cookie store (flash, form repop), bound to the cookie's
+     * name, so a visitor cannot forge flash HTML or form input.
+     *
+     * @param string $name cookie name, which is the signing purpose
+     * @param array  $data
+     * @param int    $ttl  seconds
      *
      * @return string
      */
-    private function encodeSignedStore($data)
+    private function encodeSignedStore($name, array $data, $ttl)
     {
-        $payload = base64_encode(json_encode($data));
-
-        return $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+        return \mindstellar\security\SignedPayload::pack('cookie-store:' . $name, $data, $ttl);
     }
 
     /**
-     * Verify and decode a signed cookie-store value. Returns an empty array unless the
-     * signature is valid.
+     * The data of a signed cookie-store value; empty unless it is genuine and unexpired.
      *
-     * @param string $value
+     * @param string $name
+     * @param mixed  $value
      *
      * @return array
      */
-    private function decodeSignedStore($value)
+    private function decodeSignedStore($name, $value)
     {
-        if (!is_string($value) || strpos($value, '.') === false) {
+        if (!is_string($value) || $value === '') {
             return array();
         }
-        $dot     = strrpos($value, '.');
-        $payload = substr($value, 0, $dot);
-        $sig     = substr($value, $dot + 1);
-        if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
-            return array();
-        }
-        $json = base64_decode($payload, true);
-        if ($json === false) {
-            return array();
-        }
-        $decoded = json_decode($json, true);
 
-        return is_array($decoded) ? $decoded : array();
-    }
-
-    /**
-     * Write (or, with a past expiry, delete) a standalone signed-store cookie. Standalone —
-     * not the session container — so it never starts a session.
-     *
-     * @param string $name
-     * @param string $value
-     * @param int    $expiry
-     *
-     * @return void
-     */
-    private function writeSignedStore($name, $value, $expiry)
-    {
-        if (headers_sent()) {
-            return;
-        }
-        $options = array(
-            'expires'  => $expiry,
-            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-        );
-        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
-            $options['secure'] = true;
-        }
-        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-            $options['domain'] = COOKIE_DOMAIN;
-        }
-        setcookie($name, $value, $options);
+        return \mindstellar\security\SignedPayload::unpack('cookie-store:' . $name, $value) ?? array();
     }
 
     /**
@@ -608,14 +729,15 @@ class Session
         if ($value === '') {
             return;
         }
-        $data           = $this->decodeSignedStore($value);
+        $data           = $this->decodeSignedStore('oc_form', $value);
         $this->form     = (isset($data['f']) && is_array($data['f'])) ? $data['f'] : array();
         $this->keepForm = (isset($data['k']) && is_array($data['k'])) ? $data['k'] : array();
 
         if (!empty($this->keepForm)) {
-            $this->writeSignedStore('oc_form', $value, time() + 1800);
+            $kept = $this->encodeSignedStore('oc_form', array('f' => $this->form, 'k' => $this->keepForm), 1800);
+            \Cookie::write('oc_form', $kept, time() + 1800);
         } else {
-            $this->writeSignedStore('oc_form', '', time() - 3600);
+            \Cookie::write('oc_form', '', time() - 3600);
             unset($_COOKIE['oc_form']);
         }
     }
@@ -632,16 +754,16 @@ class Session
     {
         if (empty($this->form) && empty($this->keepForm)) {
             if (isset($_COOKIE['oc_form'])) {
-                $this->writeSignedStore('oc_form', '', time() - 3600);
+                \Cookie::write('oc_form', '', time() - 3600);
             }
 
             return;
         }
-        $value = $this->encodeSignedStore(array('f' => $this->form, 'k' => $this->keepForm));
+        $value = $this->encodeSignedStore('oc_form', array('f' => $this->form, 'k' => $this->keepForm), 1800);
         if (strlen($value) > 3800) {
             return;
         }
-        $this->writeSignedStore('oc_form', $value, time() + 1800);
+        \Cookie::write('oc_form', $value, time() + 1800);
     }
 
     /**

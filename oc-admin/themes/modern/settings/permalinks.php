@@ -33,9 +33,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <!-- settings form -->
         <div id="mail-settings">
             <?php osc_admin_page_head(__('Permalinks')); ?>
-            <p class="settings-lead"><?php _e('By default Shopclass uses web URLs which have question marks and lots of numbers in them. '
-                     . 'However, Shopclass offers you friendly urls. This can improve the aesthetics, usability, '
-                     . 'and forward-compatibility of your links'); ?></p>
+            <p class="settings-lead"><?php _e('Friendly URLs use words instead of question marks and numbers.'); ?></p>
             <?php osc_admin_settings_form($form['id'], $form); ?>
         </div>
         <!-- /settings form -->

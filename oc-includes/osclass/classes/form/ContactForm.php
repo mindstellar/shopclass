@@ -60,8 +60,8 @@ class ContactForm extends Form
      */
     public static function your_name()
     {
-        if (Session::newInstance()->_getForm('yourName') != '') {
-            $name = Session::newInstance()->_getForm('yourName');
+        if (Session::getInstance()->_getForm('yourName') != '') {
+            $name = Session::getInstance()->_getForm('yourName');
             parent::generic_input_text('yourName', $name);
         } else {
             parent::generic_input_text('yourName', osc_logged_user_name());
@@ -77,8 +77,8 @@ class ContactForm extends Form
      */
     public static function your_email()
     {
-        if (Session::newInstance()->_getForm('yourEmail') != '') {
-            $email = Session::newInstance()->_getForm('yourEmail');
+        if (Session::getInstance()->_getForm('yourEmail') != '') {
+            $email = Session::getInstance()->_getForm('yourEmail');
             parent::generic_input_text('yourEmail', $email);
         } else {
             parent::generic_input_text('yourEmail', osc_logged_user_email());
@@ -94,8 +94,8 @@ class ContactForm extends Form
      */
     public static function your_phone_number()
     {
-        if (Session::newInstance()->_getForm('phoneNumber') != '') {
-            $phoneNumber = Session::newInstance()->_getForm('phoneNumber');
+        if (Session::getInstance()->_getForm('phoneNumber') != '') {
+            $phoneNumber = Session::getInstance()->_getForm('phoneNumber');
             parent::generic_input_text('phoneNumber', $phoneNumber);
         } else {
             parent::generic_input_text('phoneNumber', osc_logged_user_phone());
@@ -111,8 +111,8 @@ class ContactForm extends Form
      */
     public static function the_subject()
     {
-        if (Session::newInstance()->_getForm('subject') != '') {
-            $subject = Session::newInstance()->_getForm('subject');
+        if (Session::getInstance()->_getForm('subject') != '') {
+            $subject = Session::getInstance()->_getForm('subject');
             parent::generic_input_text('subject', $subject);
         } else {
             parent::generic_input_text('subject', '');
@@ -128,8 +128,8 @@ class ContactForm extends Form
      */
     public static function your_message()
     {
-        if (Session::newInstance()->_getForm('message_body') != '') {
-            $message = Session::newInstance()->_getForm('message_body');
+        if (Session::getInstance()->_getForm('message_body') != '') {
+            $message = Session::getInstance()->_getForm('message_body');
             parent::generic_textarea('message', $message);
         } else {
             parent::generic_textarea('message', '');
@@ -157,50 +157,21 @@ class ContactForm extends Form
      */
     public static function js_validation($enqueue = false)
     {
-        // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no
-        // external helper so it runs on any public theme.
         if ($enqueue) {
             ob_start();
         }
         ?>
         <script>
-            (function () {
-                var form = document.querySelector('form[name="contact_form"]');
-                if (!form) { return; }
-                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                var fields = [
-                    {name: 'message', required: "<?php echo osc_esc_js(__('Message: this field is required')); ?>."},
-                    {
-                        name: 'yourEmail',
-                        required: "<?php echo osc_esc_js(__('Email: this field is required')); ?>.",
-                        email: "<?php echo osc_esc_js(__('Invalid email address')); ?>."
-                    }
-                ];
-                form.addEventListener('submit', function (e) {
-                    var errors = [];
-                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
-                    fields.forEach(function (f) {
-                        var el = form.querySelector('[name="' + f.name + '"]');
-                        if (!el) { return; }
-                        var v = el.value.trim(), msg = null;
-                        if (v === '') { msg = f.required; }
-                        else if (f.email && !emailRe.test(v)) { msg = f.email; }
-                        if (msg) { errors.push({el: el, msg: msg}); el.classList.add('is-invalid'); }
-                    });
-                    var container = document.querySelector('#error_list');
-                    if (container) {
-                        container.innerHTML = '';
-                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
-                    }
-                    if (errors.length) {
-                        e.preventDefault();
-                        window.scrollTo({top: 0, behavior: 'smooth'});
-                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                    } else {
-                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
-                    }
-                });
-            })();
+            <?php echo self::validationJs('contact_form', [
+                'message'   => ['required' => true],
+                'yourEmail' => ['required' => true, 'email' => true],
+            ], [
+                'message'   => __('Message: this field is required') . '.',
+                'yourEmail' => [
+                    'required' => __('Email: this field is required') . '.',
+                    'email'    => __('Invalid email address') . '.',
+                ],
+            ]); ?>
         </script>
         <?php
         if ($enqueue) {

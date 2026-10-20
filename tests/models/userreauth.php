@@ -9,7 +9,7 @@
  */
 
 /**
- * UserReauth, the password check on the account's change-password and sign-out-all forms: a
+ * Reauth, the password check on the account's change-password and sign-out-all forms: a
  * wrong password is refused and counted under the sign-in form's limit, enough failures block
  * even the right password until the window ends, and a password sent as an array is a clean
  * refusal, not an error.
@@ -35,6 +35,7 @@ require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hSecurity.php';
 
+use mindstellar\auth\Reauth;
 use mindstellar\security\LoginThrottle;
 use mindstellar\security\UserReauth;
 
@@ -59,11 +60,11 @@ Params::init();
 harness_section('Password');
 
 $reset();
-pin('a wrong password is refused', "Current password doesn't match", UserReauth::verify($row(), 'wrong'));
+pin('a wrong password is refused', "Current password doesn't match", Reauth::verify($row(), 'wrong'));
 pin('...and counted under the sign-in form\'s context and the e-mail', 1, $failures());
-check('an empty password is refused', UserReauth::verify($row(), '') !== '');
+check('an empty password is refused', Reauth::verify($row(), '') !== '');
 LoginThrottle::recordFailure('web', 'someone-else@example.test');
-pin('the right password passes', '', UserReauth::verify($row(), 'right-password'));
+pin('the right password passes', '', Reauth::verify($row(), 'right-password'));
 pin('...and clears this account\'s failures only, not the address\'s', [0, 1], [$failures(), $failures('someone-else@example.test')]);
 
 harness_section('A password sent as an array');
@@ -72,21 +73,21 @@ $_POST = ['password' => ['x'], 'new_password' => ['y'], 'new_password2' => 'z'];
 Params::init();
 $read = Params::getParamString('password', false, false);
 pin('reads as an empty string', '', $read);
-check('which is a refusal, not an error', UserReauth::verify($row(), $read) !== '');
+check('which is a refusal, not an error', Reauth::verify($row(), $read) !== '');
 $_POST = [];
 Params::init();
 
-$source = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php');
-$change = substr($source, (int) strpos($source, "case 'change_password_post':"), 1800);
-$cases  = ['change_password_post' => $change];
-if (str_contains($source, "case 'sign_out_all_post':")) {
-    $cases['change_password_post'] = substr($change, 0, (int) strpos($change, "case 'sign_out_all_post':"));
-    $cases['sign_out_all_post']    = substr($source, (int) strpos($source, "case 'sign_out_all_post':"), 900);
-}
+$cases  = [
+    'change_password_post' => harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php', 'changePasswordPost'),
+    'sign_out_all_post'    => harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php', 'signOutAllPost'),
+];
+$change = $cases['change_password_post'];
 foreach ($cases as $case => $code) {
+    check("$case checks the CSRF token first", str_contains($code, 'osc_csrf_check();')
+        && strpos($code, 'osc_csrf_check();') < strpos($code, "Params::getParamString('password', false, false)"));
     check("$case reads the passwords as strings", str_contains($code, "Params::getParamString('password', false, false)")
         && !preg_match("/Params::getParam\\('(password|new_password2?)'/", $code));
-    check("$case checks the password through UserReauth", str_contains($code, 'UserReauth::verify(')
+    check("$case checks the password through Reauth", (str_contains($code, 'Reauth::verify(') || str_contains($code, '(new AccountService())->changePassword('))
         && !str_contains($code, 'osc_verify_password('));
 }
 check('change_password_post reads the new passwords as strings too', str_contains($change, "Params::getParamString('new_password', false, false)")
@@ -97,15 +98,27 @@ harness_section('The limit');
 $reset();
 $max = osc_login_throttle_max_account();
 for ($i = 0; $i < $max; $i++) {
-    UserReauth::verify($row(), 'wrong');
+    Reauth::verify($row(), 'wrong');
 }
 pin("$max failures are counted", $max, $failures());
 $blocked = osc_login_throttle_message(LoginThrottle::evaluate('web', 'uma@example.test')['retry_after']);
-pin('then the right password is refused with the sign-in form\'s message', $blocked, UserReauth::verify($row(), 'right-password'));
+pin('then the right password is refused with the sign-in form\'s message', $blocked, Reauth::verify($row(), 'right-password'));
 pin('...without counting another try', $max, $failures());
 pin('the sign-in form is blocked for the account too', LoginThrottle::BLOCKED, LoginThrottle::evaluate('web', 'uma@example.test')['status']);
 $admin->query("UPDATE $attempts SET dt_date = DATE_SUB(dt_date, INTERVAL " . (osc_login_throttle_window() + 1) . ' MINUTE)');
-pin('once the window ends, the right password passes', '', UserReauth::verify($row(), 'right-password'));
+pin('once the window ends, the right password passes', '', Reauth::verify($row(), 'right-password'));
+
+$reset();
+for ($i = 0; $i < $max; $i++) {
+    LoginThrottle::recordFailure('web', 'uma');
+}
+check('sign-in failures by username use up the same budget', Reauth::verify($row(), 'right-password') !== '');
+$reset();
+
+harness_section('The 6.4 class name');
+
+pin('UserReauth::verify() still answers as Reauth', ["Current password doesn't match", ''], [UserReauth::verify($row(), 'wrong'), UserReauth::verify($row(), 'right-password')]);
+pin('...with the same context', Reauth::CONTEXT, UserReauth::CONTEXT);
 
 $reset();
 

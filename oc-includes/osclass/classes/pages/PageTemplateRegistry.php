@@ -12,6 +12,7 @@
 namespace mindstellar\pages;
 
 use InvalidArgumentException;
+use mindstellar\base\Registry;
 
 /**
  * Class PageTemplateRegistry
@@ -33,34 +34,8 @@ use InvalidArgumentException;
  *
  * @package mindstellar\pages
  */
-final class PageTemplateRegistry
+final class PageTemplateRegistry extends Registry
 {
-    private static ?PageTemplateRegistry $instance = null;
-
-    /** @var array<string,array> registered template specs, keyed by id */
-    private array $templates = [];
-
-    /**
-     * Singleton: obtain the registry through instance().
-     */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Shared registry instance, created on first use.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
     /**
      * Register a page template.
      *
@@ -119,7 +94,7 @@ final class PageTemplateRegistry
             $locations = array_values($spec['locations']);
         }
 
-        $this->templates[$id] = [
+        $this->entries[$id] = [
             'id'          => $id,
             'label'       => $spec['label'],
             'description' => isset($spec['description']) && is_string($spec['description']) ? $spec['description'] : '',
@@ -128,40 +103,5 @@ final class PageTemplateRegistry
             'builder'     => !empty($spec['builder']),
             'locations'   => $locations,
         ];
-    }
-
-    /**
-     * The spec for a registered template, or null when the id is not registered
-     * (e.g. its plugin is deactivated).
-     *
-     * @param string $id
-     *
-     * @return array<string,mixed>|null
-     */
-    public function get(string $id): ?array
-    {
-        return $this->templates[$id] ?? null;
-    }
-
-    /**
-     * All registered template specs, keyed by id.
-     *
-     * @return array<string,array>
-     */
-    public function all(): array
-    {
-        return $this->templates;
-    }
-
-    /**
-     * Whether $id is a well-formed page template id.
-     *
-     * @param string $id
-     *
-     * @return bool
-     */
-    public static function isValidId(string $id): bool
-    {
-        return (bool) preg_match('/^[a-z0-9_.-]{1,60}$/', $id);
     }
 }

@@ -1,10 +1,14 @@
 <?php
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 08/05/20
- * Time: 12:51 AM
- * License is provided in root directory.
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. The original
+ * Osclass code it derives from was licensed under the Apache License 2.0.
+ * See LICENSE (GPL-3.0) and LICENSE-APACHE (Apache-2.0).
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 namespace mindstellar\utility;
@@ -40,6 +44,7 @@ class FileSystem
      * @return void
      * @internal
      */
+    // @phpstan-ignore method.unused (installed as an error handler by name)
     private static function handleError($type, $msg)
     {
         self::$lastError = $msg;
@@ -211,6 +216,25 @@ class FileSystem
     }
 
     /**
+     * The entries under $originDir that sync() would copy: everything but the names in $filter.
+     *
+     * @param array<int,string> $filter
+     * @param int<0,2>          $mode   a RecursiveIteratorIterator mode
+     */
+    public function filteredIterator(string $originDir, array $filter = [], int $mode = RecursiveIteratorIterator::SELF_FIRST, bool $followLinks = false): RecursiveIteratorIterator
+    {
+        $flags = $followLinks ? FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS : FilesystemIterator::SKIP_DOTS;
+
+        return new RecursiveIteratorIterator(
+            new RecursiveCallbackFilterIterator(
+                new RecursiveDirectoryIterator($originDir, $flags),
+                static fn ($file) => !in_array($file->getBasename(), $filter, false)
+            ),
+            $mode
+        );
+    }
+
+    /**
      * Sync a directory to another.
      *
      * Copies files and directories from the origin directory into the target directory. By default:
@@ -238,7 +262,6 @@ class FileSystem
      */
     public function sync($originDir, $targetDir, $options = [], $filter = [])
     {
-        $iterator     = null;
         $targetDir    = rtrim($targetDir, '/\\');
         $originDir    = rtrim($originDir, '/\\');
         $originDirLen = strlen($originDir);
@@ -249,14 +272,10 @@ class FileSystem
 
         // Iterate in destination folder to remove obsolete entries
         if (isset($options['delete']) && $options['delete'] && $this->exists($targetDir)) {
-            $deleteIterator = $iterator;
-            if (null === $deleteIterator) {
-                $flags          = FilesystemIterator::SKIP_DOTS;
-                $deleteIterator = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($targetDir, $flags),
-                    RecursiveIteratorIterator::CHILD_FIRST
-                );
-            }
+            $deleteIterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($targetDir, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
             $targetDirLen = strlen($targetDir);
             foreach ($deleteIterator as $file) {
                 $origin = $originDir . substr($file->getPathname(), $targetDirLen);
@@ -268,26 +287,7 @@ class FileSystem
 
         $copyOnWindows = $options['copy_on_windows'] ?? false;
 
-        if (null === $iterator) {
-            $flags = $copyOnWindows ? FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS
-                : FilesystemIterator::SKIP_DOTS;
-            /**
-             * $iterator = new RecursiveIteratorIterator(
-             * new RecursiveDirectoryIterator($originDir, $flags),
-             * RecursiveIteratorIterator::SELF_FIRST
-             * );
-             */
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveCallbackFilterIterator(
-                    new RecursiveDirectoryIterator($originDir, $flags),
-                    static function ($filterIterator) use ($filter) {
-                        /** @var FilesystemIterator $filterIterator */
-                        return !in_array($filterIterator->getBaseName(), $filter, false);
-                    }
-                ),
-                RecursiveIteratorIterator::SELF_FIRST
-            );
-        }
+        $iterator = $this->filteredIterator($originDir, $filter, RecursiveIteratorIterator::SELF_FIRST, $copyOnWindows);
 
         $this->mkdir($targetDir);
         $filesCreatedWhileMirroring = [];
@@ -482,7 +482,7 @@ class FileSystem
 
             // Stream context created to allow files overwrite when using FTP stream wrapper - disabled by default
             if (false ===
-                $target = @fopen($targetFile, 'wb', null, stream_context_create(['ftp' => ['overwrite' => true]]))
+                $target = @fopen($targetFile, 'wb', false, stream_context_create(['ftp' => ['overwrite' => true]]))
             ) {
                 throw new RuntimeException(sprintf(
                     'Unable to copy "%s" to "%s" because target file could not be opened for writing.',
@@ -608,7 +608,7 @@ class FileSystem
         if (true !== @rename($origin, $target)) {
             if (is_dir($origin)) {
                 // See https://bugs.php.net/54097 & https://php.net/rename#113943
-                $this->sync($origin, $target, null, ['override' => $overwrite, 'delete' => $overwrite]);
+                $this->sync($origin, $target, ['override' => $overwrite, 'delete' => $overwrite]);
                 $this->remove($origin);
 
                 return;
@@ -676,6 +676,77 @@ class FileSystem
     }
 
     /**
+     * Replace $path whole: write a hidden temp file beside it, then rename it into place, so a
+     * reader never sees half a file. Nothing is left behind on failure.
+     *
+     * @param string          $path
+     * @param string|callable $data the content, or a call given the open temp handle that returns false to abort
+     * @param int|null        $mode the temp file is created with it, so it is never more open than asked
+     *
+     * @return bool
+     */
+    public static function writeAtomic(string $path, $data, ?int $mode = null): bool
+    {
+        try {
+            $tmp = dirname($path) . DIRECTORY_SEPARATOR . '.' . basename($path) . '.' . bin2hex(random_bytes(6)) . '.tmp';
+        } catch (Exception $e) {
+            return false;
+        }
+        $umask = $mode === null ? null : umask(0777 & ~$mode);
+        try {
+            $out = @fopen($tmp, 'xb');
+        } finally {
+            if ($umask !== null) {
+                umask($umask);
+            }
+        }
+        if ($out === false) {
+            return false;
+        }
+        // A new file cannot be made with execute or special bits, so only those need a chmod.
+        $ok = $mode === null || ($mode & ~0666) === 0 || @chmod($tmp, $mode);
+        if ($ok) {
+            $ok = is_string($data) ? @fwrite($out, $data) === strlen($data) : $data($out) !== false;
+        }
+        $ok = fclose($out) && $ok;
+        if (!$ok || !@rename($tmp, $path)) {
+            @unlink($tmp);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * The status code a HEAD request for $url answers, without following redirects; 0 when
+     * there is no answer.
+     *
+     * @param string             $url
+     * @param int                $timeout seconds for the whole request
+     * @param array<int,mixed>   $curlOptions extra cURL options, such as AddressGuard::curlOptions() to pin the checked IP
+     *
+     * @return int
+     */
+    public function head(string $url, int $timeout = 3, array $curlOptions = array()): int
+    {
+        if (!Curl::available()) {
+            return 0;
+        }
+        $ch = $this->curlHandle($url, true, $timeout, array());
+        curl_setopt_array($ch, array(
+            CURLOPT_NOBODY         => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
+        ) + $curlOptions);
+        $ok     = curl_exec($ch) !== false;
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        unset($ch);
+
+        return $ok ? $status : 0;
+    }
+
+    /**
      * Get content implementation
      *
      * @param string       $url
@@ -706,54 +777,19 @@ class FileSystem
         $data            = null;
         $responseHeaders = [];
         $responseInfo    = ['status' => 0, 'headers' => []];
-        if ($this->testCurl()) {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-            if ($timeout > 0) {
-                @curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-            }
-            // Abort a connection that stalls (under 1 byte/s for 30s) even when no
-            // overall timeout is set, so a slow peer cannot hold the request open
-            // indefinitely without capping a large-but-progressing download.
-            @curl_setopt($ch, CURLOPT_LOW_SPEED_LIMIT, 1);
-            @curl_setopt($ch, CURLOPT_LOW_SPEED_TIME, 30);
-            curl_setopt(
-                $ch,
-                CURLOPT_USERAGENT,
-                Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
-            );
-            if (!defined('CURLOPT_RETURNTRANSFER')) {
-                define('CURLOPT_RETURNTRANSFER', 1);
-            }
-            @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-            // Bound the redirect chain and keep it on HTTP(S): a redirect must not be
-            // able to pivot to file://, gopher:// and friends (the classic SSRF jump).
-            @curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-            if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
-                @curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-                @curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-            }
-            curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        if (Curl::available()) {
+            $ch = $this->curlHandle($url, $verify_ssl, $timeout, $headers);
+            @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             // Advertise every encoding this curl can decode, and let it decompress
             // transparently. Without it curl sends no Accept-Encoding at all and servers
             // hand back the raw file: the largest country in the location dataset arrives
             // as 76 MB rather than 5.7. The bytes returned are identical either way, so
             // checksums over the result are unaffected.
             @curl_setopt($ch, CURLOPT_ENCODING, '');
-            if (stripos($url, 'https') !== false) {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verify_ssl);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            }
 
             if ($post_data !== null) {
-                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-            }
-
-            if (!empty($headers)) {
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             }
 
             // A redirect starts a new header block; only the last one (the final
@@ -791,13 +827,55 @@ class FileSystem
     }
 
     /**
-     * Returns true if there is curl on system environment
+     * A curl handle with the options every request here shares: timeouts, user agent,
+     * HTTP(S) only, a bounded redirect chain and TLS checks.
      *
-     * @return bool
+     * @param string            $url
+     * @param bool              $verifySsl
+     * @param int               $timeout 0 for no overall limit
+     * @param array<int,string> $headers extra request header lines
+     *
+     * @return \CurlHandle
      */
-    private function testCurl(): bool
+    private function curlHandle(string $url, bool $verifySsl, int $timeout, array $headers)
     {
-        return (function_exists('curl_init') || function_exists('curl_exec'));
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        if ($timeout > 0) {
+            @curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+        }
+        // Abort a connection that stalls (under 1 byte/s for 30s) even when no
+        // overall timeout is set, so a slow peer cannot hold the request open
+        // indefinitely without capping a large-but-progressing download.
+        @curl_setopt($ch, CURLOPT_LOW_SPEED_LIMIT, 1);
+        @curl_setopt($ch, CURLOPT_LOW_SPEED_TIME, 30);
+        curl_setopt(
+            $ch,
+            CURLOPT_USERAGENT,
+            Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
+        );
+        if (!defined('CURLOPT_RETURNTRANSFER')) {
+            define('CURLOPT_RETURNTRANSFER', 1);
+        }
+        // Bound the redirect chain and keep it on HTTP(S): a redirect must not be
+        // able to pivot to file://, gopher:// and friends (the classic SSRF jump).
+        @curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+        if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+            @curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+            @curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+        curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        if (stripos($url, 'https') !== false) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        }
+        if (!empty($headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
+
+        return $ch;
     }
 
     /**
@@ -828,7 +906,6 @@ class FileSystem
         }
 
         $fileList = array();
-        /** @var RecursiveDirectoryIterator $iterator */
         foreach ($iterator as $file) {
             $pathname   = $file->getPathname();
             $fileList[] = $file->isDir() ? $pathname . '/' : $pathname;
@@ -915,7 +992,7 @@ class FileSystem
         bool $verify_ssl = true,
         ?string $expectedSha256 = null
     ) {
-        if (!filter_var($sourceURL, FILTER_VALIDATE_URL)) {
+        if (!Validate::httpUrl($sourceURL)) {
             throw new InvalidArgumentException(sprintf('Invalid source url "%s". ', $sourceURL));
         }
         if ($expectedSha256 !== null && !preg_match('/^[a-f0-9]{64}$/i', $expectedSha256)) {
@@ -928,37 +1005,19 @@ class FileSystem
         if ($this->exists($file_path)) {
             $this->remove($file_path);
         }
-        if ($this->testCurl()) {
+        if (Curl::available()) {
             set_time_limit(0);
             $fp = fopen($filename, 'wb+');
             if ($fp) {
-                $ch = curl_init($sourceURL);
-                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-                curl_setopt($ch, CURLOPT_TIMEOUT, self::DOWNLOAD_TIMEOUT_SECONDS);
-                curl_setopt(
-                    $ch,
-                    CURLOPT_USERAGENT,
-                    Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
-                );
+                $ch = $this->curlHandle($sourceURL, $verify_ssl, self::DOWNLOAD_TIMEOUT_SECONDS, array());
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
                 curl_setopt($ch, CURLOPT_FILE, $fp);
                 // Decompressed in flight, so the file on disk is the real thing and the
-                // checksum below still matches — it just travels in a fraction of the
-                // bytes. The largest country in the location catalog is 76 MB raw and
-                // 5.7 MB gzipped.
+                // checksum below still matches.
                 @curl_setopt($ch, CURLOPT_ENCODING, '');
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-                // A redirect must stay on HTTP(S), as in getContents().
-                curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-                curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-                curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
-
-                if (stripos($sourceURL, 'https') !== false) {
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verify_ssl);
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-                }
                 if ($post_data !== null) {
-                    curl_setopt($ch, CURLOPT_POST, 1);
+                    curl_setopt($ch, CURLOPT_POST, true);
                     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
                 }
 

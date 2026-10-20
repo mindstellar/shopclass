@@ -27,17 +27,17 @@
  */
 function osc_static_page()
 {
-    if (View::newInstance()->_exists('pages')) {
-        $page = View::newInstance()->_current('pages');
+    if (View::getInstance()->_exists('pages')) {
+        $page = View::getInstance()->_current('pages');
     } else {
         $page = null;
     }
-    if (View::newInstance()->_exists('page')) {
-        $page = View::newInstance()->_get('page');
+    if (View::getInstance()->_exists('page')) {
+        $page = View::getInstance()->_get('page');
     }
 
-    if (!View::newInstance()->_exists('page_meta')) {
-        View::newInstance()->_exportVariableToView('page_meta', json_decode(@$page['s_meta'], true));
+    if (!View::getInstance()->_exists('page_meta')) {
+        View::getInstance()->_exportVariableToView('page_meta', json_decode(@$page['s_meta'], true));
     }
 
     return $page;
@@ -152,10 +152,10 @@ function osc_static_page_slug()
  */
 function osc_static_page_meta($field = null)
 {
-    if (!View::newInstance()->_exists('page_meta')) {
+    if (!View::getInstance()->_exists('page_meta')) {
         $meta = json_decode(osc_static_page_field('s_meta'), true);
     } else {
-        $meta = View::newInstance()->_get('page_meta');
+        $meta = View::getInstance()->_get('page_meta');
     }
     if ($field !== null) {
         $meta = (isset($meta[$field]) && !empty($meta[$field])) ? $meta[$field] : '';
@@ -200,10 +200,10 @@ function osc_get_static_page($internal_name, $locale = '')
     if ($locale == '') {
         $locale = osc_current_user_locale();
     }
-    $page = Page::newInstance()->findByInternalName($internal_name, $locale);
-    View::newInstance()->_exportVariableToView('page_meta', json_decode(@$page['s_meta'], true));
+    $page = Page::getInstance()->findByInternalName($internal_name, $locale);
+    View::getInstance()->_exportVariableToView('page_meta', json_decode(@$page['s_meta'], true));
 
-    View::newInstance()->_exportVariableToView('page', $page);
+    View::getInstance()->_exportVariableToView('page', $page);
 }
 
 /**
@@ -213,11 +213,11 @@ function osc_get_static_page($internal_name, $locale = '')
  */
 function osc_count_static_pages()
 {
-    if (!View::newInstance()->_exists('pages')) {
-        View::newInstance()->_exportVariableToView('pages', Page::newInstance()->listAll(false));
+    if (!View::getInstance()->_exists('pages')) {
+        View::getInstance()->_exportVariableToView('pages', Page::getInstance()->listAll(false));
     }
 
-    return View::newInstance()->_count('pages');
+    return View::getInstance()->_count('pages');
 }
 
 /**
@@ -228,22 +228,22 @@ function osc_count_static_pages()
  */
 function osc_has_static_pages()
 {
-    if (!View::newInstance()->_exists('pages')) {
-        View::newInstance()->_exportVariableToView('pages', Page::newInstance()->listAll(false, 1));
+    if (!View::getInstance()->_exists('pages')) {
+        View::getInstance()->_exportVariableToView('pages', Page::getInstance()->listAll(false, 1));
     }
-    if (View::newInstance()->_get('pageLoop') !== 'pages') {
-        View::newInstance()->_exportVariableToView('oldPage', View::newInstance()->_get('page'));
-        View::newInstance()->_exportVariableToView('pageLoop', 'pages');
+    if (View::getInstance()->_get('pageLoop') !== 'pages') {
+        View::getInstance()->_exportVariableToView('oldPage', View::getInstance()->_get('page'));
+        View::getInstance()->_exportVariableToView('pageLoop', 'pages');
     }
-    $page = View::newInstance()->_next('pages');
+    $page = View::getInstance()->_next('pages');
     if (!$page) {
-        View::newInstance()->_exportVariableToView('page', View::newInstance()->_get('oldPage'));
-        View::newInstance()->_exportVariableToView('pageLoop', '');
+        View::getInstance()->_exportVariableToView('page', View::getInstance()->_get('oldPage'));
+        View::getInstance()->_exportVariableToView('pageLoop', '');
     } else {
-        View::newInstance()->_exportVariableToView('page', View::newInstance()->_current('pages'));
+        View::getInstance()->_exportVariableToView('page', View::getInstance()->_current('pages'));
     }
     if (isset($page['s_meta'])) {
-        View::newInstance()->_exportVariableToView('page_meta', json_decode($page['s_meta'], true));
+        View::getInstance()->_exportVariableToView('page_meta', json_decode($page['s_meta'], true));
     }
 
     return $page;
@@ -258,11 +258,11 @@ function osc_has_static_pages()
  */
 function osc_reset_static_pages()
 {
-    if (View::newInstance()->_exists('oldPage')) {
-        View::newInstance()->_exportVariableToView('page', View::newInstance()->_get('oldPage'));
+    if (View::getInstance()->_exists('oldPage')) {
+        View::getInstance()->_exportVariableToView('page', View::getInstance()->_get('oldPage'));
     }
-    if (View::newInstance()->_exists('pageLoop')) {
-        View::newInstance()->_exportVariableToView('pageLoop', '');
+    if (View::getInstance()->_exists('pageLoop')) {
+        View::getInstance()->_exportVariableToView('pageLoop', '');
     }
-    return View::newInstance()->_reset('pages');
+    return View::getInstance()->_reset('pages');
 }

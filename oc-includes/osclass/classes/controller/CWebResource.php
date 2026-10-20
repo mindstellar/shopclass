@@ -66,8 +66,6 @@ class CWebResource extends BaseModel
         $resource = $this->resolveResource($id, $type);
         if ($resource === null) {
             $this->notFound();
-
-            return;
         }
 
         $filename = osc_resource_download_filename($resource, $variant);
@@ -91,11 +89,9 @@ class CWebResource extends BaseModel
 
         // 2) Otherwise the object lives on a remote adapter.
         osc_storage_register_remote();
-        $adapter = StorageManager::instance()->forResource($resource);
+        $adapter = StorageManager::getInstance()->forResource($resource);
         if (!$adapter->isRemote()) {
             $this->notFound();
-
-            return;
         }
 
         // A private (signed-URL) bucket must never be proxied with the server's
@@ -108,8 +104,6 @@ class CWebResource extends BaseModel
                 : '';
             if ($signed === '') {
                 $this->notFound();
-
-                return;
             }
             header('Location: ' . $signed, true, 302);
             exit;
@@ -120,8 +114,6 @@ class CWebResource extends BaseModel
         $bytes = $adapter->get(ResourceLocator::storageKey($resource, $variant));
         if ($bytes === false) {
             $this->notFound();
-
-            return;
         }
         $this->sendHeaders($contentType, strlen($bytes), $filename);
         echo $bytes;
@@ -157,9 +149,9 @@ class CWebResource extends BaseModel
     }
 
     /**
-     * Resolve the row from the right table. An empty or 'item' type is the legacy
-     * t_item_resource; any other value is a t_resource owner type and must match
-     * the stored row, so an id cannot be reinterpreted across owner types.
+     * Resolve the row. An empty or 'item' type is a listing photo; any other value is
+     * a t_resource owner type and must match the stored row, so an id cannot be
+     * reinterpreted across owner types.
      *
      * @param int    $id
      * @param string $type
@@ -174,7 +166,7 @@ class CWebResource extends BaseModel
 
         try {
             if ($type === '' || $type === 'item') {
-                $row = ItemResource::newInstance()->findByPrimaryKey($id);
+                $row = ItemResource::getInstance()->findByPrimaryKey($id);
 
                 return (is_array($row) && !empty($row['pk_i_id'])) ? $row : null;
             }
@@ -183,17 +175,9 @@ class CWebResource extends BaseModel
                 return null;
             }
 
-            $row = Resource::newInstance()->findByPrimaryKey($id);
-            if (!is_array($row) || empty($row['pk_i_id'])) {
-                return null;
-            }
             // The URL's declared owner type must match the stored row, so an id
             // cannot be reinterpreted across owner types.
-            if ((string) ($row['s_owner_type'] ?? '') !== $type) {
-                return null;
-            }
-
-            return $row;
+            return (new Resource())->findOwned($type, $id);
         } catch (\Throwable $e) {
             return null;
         }

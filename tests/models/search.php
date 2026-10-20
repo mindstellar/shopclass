@@ -149,8 +149,8 @@ $car3 = $mkItem('Green Coupe', $catCars, 9000.0, 0, $regionB, $cityB, 'Beta', 'B
  * the request cache here — standalone this is a harmless no-op, but it lets the
  * category-filtered pins below see this file's own categories.
  */
-if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::newInstance()->flush();
+if (class_exists('mindstellar\\cache\\CacheManager')) {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 $searchCategoryReset = new ReflectionProperty('Category', 'instance');
 if (PHP_VERSION_ID < 80100) {
@@ -172,7 +172,7 @@ $sorted = static function (array $a): array {
  * ------------------------------------------------------------------------- */
 harness_section('Search: public surface');
 
-$s = Search::newInstance();
+$s = Search::getInstance();
 check('Search still extends DAO', is_subclass_of('Search', 'DAO'));
 check('$s->dao is a live DBCommandClass (C5)', $s->dao instanceof DBCommandClass);
 pin('table name is unchanged', $prefix . 't_item', $s->getTableName());
@@ -180,8 +180,8 @@ pin('doSearch signature is unchanged', 'public doSearch($extended = true, $count
 pin('addPattern signature is unchanged', 'public addPattern($pattern)', harness_method_signature('Search', 'addPattern'));
 pin('setJsonAlert signature is unchanged', 'public setJsonAlert($aData)', harness_method_signature('Search', 'setJsonAlert'));
 pin(
-    'the sort-column allowlist is unchanged',
-    array('i_price', 'dt_pub_date', 'dt_expiration', 'relevance'),
+    'the sort-column allowlist only gained distance',
+    array('i_price', 'dt_pub_date', 'dt_expiration', 'relevance', 'distance'),
     Search::getAllowedColumnsForSorting()
 );
 
@@ -283,8 +283,54 @@ $s->addPattern('se');
 pin('a below-min-length term falls back to substring match', array($car2), $sorted($ids($s->doSearch())));
 
 /* ----------------------------------------------------------------------------
+ * With photos: each listing once, however many photos or joined rows it has.
+ * ------------------------------------------------------------------------- */
+harness_section('Search: with photos');
+
+seed_photo($admin, $car1, array('s_name' => 'a', 's_path' => '/a.jpg'));
+seed_photo($admin, $car1, array('s_name' => 'b', 's_path' => '/b.jpg'));
+seed_photo($admin, $car3, array('s_name' => 'c', 's_extension' => 'png', 's_content_type' => 'image/png', 's_path' => '/c.png'));
+seed_photo($admin, $bike1, array('s_name' => 'd', 's_extension' => 'pdf', 's_content_type' => 'application/pdf', 's_path' => '/d.pdf'));
+// An image of another owner type whose id matches a listing without photos.
+$admin->query("INSERT INTO {$prefix}t_resource (s_owner_type, i_owner_id, s_name, s_extension, s_content_type, s_path, dt_created) VALUES ('user', $car2, 'u', 'jpg', 'image/jpeg', '/u.jpg', NOW())");
+$s = new Search();
+$s->withPicture(true);
+pin('only listings with an image, each once', array($car1, $car3), $sorted($ids($s->doSearch())));
+pin('and the count agrees', 2, $s->count());
+$s = new Search();
+$s->withPicture(true);
+$s->addJoinTable('photos', $prefix . 't_resource AS r2', "r2.s_owner_type = 'item' AND r2.i_owner_id = " . $prefix . 't_item.pk_i_id', 'LEFT');
+pin('a plugin join that repeats a listing still lists it once', array($car1, $car3), $sorted($ids($s->doSearch())));
+
+/* ----------------------------------------------------------------------------
  * Premium only.
  * ------------------------------------------------------------------------- */
+harness_section('Search: count() reads only the total');
+$s = new Search();
+$s->addCategory($catCars);
+pin('count() before a search runs the COUNT alone, not the rows as well', 1, harness_query_count(static fn () => $s->count()));
+\mindstellar\cache\CacheGroup::invalidate('search');
+$cached = static function (string $order, ?array $price = null): Search {
+    $s = new Search();
+    $s->addCategory($GLOBALS['catCarsForCount']);
+    $s->order($order, 'ASC');
+    if ($price !== null) {
+        $s->priceRange(...$price);
+    }
+
+    return $s;
+};
+$GLOBALS['catCarsForCount'] = $catCars;
+$first = $cached('dt_pub_date')->countMatches(true);
+$priceTotal = null;
+pin('another sort reuses the cached total, with no query', array($first, 0), array(
+    &$priceTotal,
+    harness_query_count(static function () use ($cached, &$priceTotal): void {
+        $priceTotal = $cached('i_price')->countMatches(true);
+    }),
+));
+check('another price range gets its own total', $cached('dt_pub_date', array(1000, 6000))->countMatches(true) !== $first);
+
 harness_section('Search: premium');
 
 $s = new Search();
@@ -296,6 +342,14 @@ if (PHP_VERSION_ID < 80100) {
 }
 check('the order is a seeded RAND(), not a fresh one', (bool) preg_match('/ORDER BY RAND\(\d+\)/', (string) $premiumSql->invoke(new Search(), 2)));
 pin('and holds between calls, so the page can be cached', $ids($premiums), $ids((new Search())->getPremiums(10)));
+\mindstellar\cache\CacheGroup::invalidate('search');
+$coldPremiums = harness_query_count(static fn () => (new Search())->getPremiums(10));
+$warmPremiums = harness_query_count(static fn () => (new Search())->getPremiums(10));
+pin('within the rotation the rows come from the cache: one query fewer', 1, $coldPremiums - $warmPremiums);
+foreach (array('activate_item', 'deactivate_item', 'item_premium_on', 'item_premium_off') as $statusHook) {
+    osc_run_hook($statusHook, $car2);
+    pin('a listing change through ' . $statusHook . ' reads the featured rows again', $coldPremiums, harness_query_count(static fn () => (new Search())->getPremiums(10)));
+}
 
 /* ----------------------------------------------------------------------------
  * Sorting.
@@ -311,6 +365,49 @@ pin('and the dearest last', $car2, $byPriceAsc[count($byPriceAsc) - 1]);
 $s = new Search();
 $s->order('i_price', 'DESC');
 pin('sort by price descending puts the dearest first', $car2, $ids($s->doSearch())[0]);
+
+harness_section('Search: orderBy and addCondition');
+
+$s = new Search();
+$s->orderBy(array(array('i_price', 'DESC'), array('pk_i_id', 'ASC')));
+pin('orderBy orders by several columns, each in its direction', $car2, $ids($s->doSearch())[0]);
+$rec = json_decode($s->toJson(), true);
+pin('and records the order as order() would', array($prefix . 't_item.i_price DESC, ' . $prefix . 't_item.pk_i_id', 'ASC'), array($rec['order_column'], $rec['order_direction']));
+$refused = static function (callable $fn): string {
+    try {
+        $fn();
+    } catch (InvalidArgumentException $e) {
+        return 'refused';
+    }
+
+    return 'accepted';
+};
+pin('orderBy refuses a column outside its list, a bad direction and nothing at all', array('refused', 'refused', 'refused'), array(
+    $refused(static fn () => (new Search())->orderBy(array(array('s_secret', 'ASC')))),
+    $refused(static fn () => (new Search())->orderBy(array(array('pk_i_id', 'ASC; DROP')))),
+    $refused(static fn () => (new Search())->orderBy(array())),
+));
+
+$s = new Search();
+$s->addCondition($prefix . 't_item.i_price >= ? AND ' . $prefix . 't_item.pk_i_id <> ?', array(0, $bike1));
+$found = $ids($s->doSearch());
+pin('addCondition inlines its values', array(4, false), array(count($found), in_array((int)$bike1, $found, true)));
+$rec = json_decode($s->toJson(), true);
+pin('as typed SQL text', array($prefix . 't_item.i_price >= 0 AND ' . $prefix . 't_item.pk_i_id <> ' . $bike1), $rec['no_catched_conditions']);
+$s = new Search();
+$s->addCondition($prefix . 't_item.dt_pub_date < ?', array("2026-01-01' OR '1'='1"));
+pin('a string is escaped and quoted', 0, count($s->doSearch()));
+pin('addCondition refuses quotes in the SQL, a count that does not match, and an array value', array('refused', 'refused', 'refused'), array(
+    $refused(static fn () => (new Search())->addCondition("pk_i_id = '1'")),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? AND pk_i_id = ?', array(1))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id IN (?)', array(array(1, 2)))),
+));
+pin('addCondition refuses backticks and comment markers in the SQL', array('refused', 'refused', 'refused', 'refused'), array(
+    $refused(static fn () => (new Search())->addCondition('`pk_i_id` = ?', array(1))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? -- ?', array(1, 2))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? # ?', array(1, 2))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? /* ? */', array(1, 2))),
+));
 
 /* ----------------------------------------------------------------------------
  * Pagination (offset and count differ so a swap would fail).
@@ -420,6 +517,18 @@ harness_section('Search: getLatestItems');
 $s = new Search();
 $latest = $s->getLatestItems(10);
 check('getLatestItems returns the recent items', is_array($latest) && count($latest) === 5);
+
+// Nothing reads the total of the latest list, so it skips the COUNT(*).
+\mindstellar\cache\CacheManager::getInstance()->flush();
+$latestQ = harness_query_count(static function () {
+    (new Search())->getLatestItems(10);
+});
+$countedQ = harness_query_count(static function () {
+    $s = new Search();
+    $s->set_rpp(10);
+    $s->doSearch();
+});
+pin('getLatestItems runs one statement fewer than a counted search', $countedQ - 1, $latestQ);
 
 /* ----------------------------------------------------------------------------
  * Old-format alert compat: a blob whose location fragments and pattern were
@@ -560,13 +669,17 @@ check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) 
 
 harness_section('Search: setJsonAlert applies only the plain-value fields of an old-format blob');
 
+// Read the search's state through its toJson() record.
 $prop = static function (Search $search, string $name) {
-    $p = new ReflectionProperty('Search', $name);
-    if (PHP_VERSION_ID < 80100) {
-        $p->setAccessible(true);
-    }
+    $record = json_decode($search->toJson(), true);
 
-    return $p->getValue($search);
+    return match ($name) {
+        'categories'             => $record['aCategories'],
+        'conditions'             => $record['no_catched_conditions'],
+        'price_min', 'price_max' => $record[$name] * 1000000,
+        'locale_code'            => $record['locale_code'] ?? array(),
+        default                  => $record[$name],
+    };
 };
 $hostile                          = $decoded;
 $hostile['aCategories']           = array($catCars, '1) OR SLEEP(1) -- ', 'x');
@@ -622,11 +735,201 @@ harness_section('Search: locale codes never reach SQL unchecked');
 
 $loc = new Search();
 $loc->addLocale(array("zz_ZZ' OR 'a'='a", 'en_US', array('x')));
-pin('only a locale-code shape is kept', array('en_US' => 'en_US'), $prop($loc, 'locale_code'));
+pin('only a locale-code shape is kept', array('en_US'), $prop($loc, 'locale_code'));
 $twoLocales = new Search();
 $twoLocales->addPattern('se');
 $twoLocales->addLocale(array('en_US', 'es_ES'));
 check('two locales build valid SQL (they used to lack an OR)', count($twoLocales->doSearch()) > 0);
+
+harness_section('Search: toJson() names the locale filter');
+$plain = new Search();
+$en    = new Search();
+$en->addLocale('en_US');
+$es = new Search();
+$es->addLocale('es_ES');
+$both = new Search();
+$both->addLocale(array('es_ES', 'en_US'));
+$bothReversed = new Search();
+$bothReversed->addLocale(array('en_US', 'es_ES'));
+check('a search with no locale filter keeps its old record', !array_key_exists('locale_code', json_decode($plain->toJson(), true)));
+pin('a locale filter is in the record', array('en_US'), json_decode($en->toJson(), true)['locale_code'] ?? null);
+check('so two locales give two result cache keys', md5($en->toJson()) !== md5($es->toJson()));
+pin('the same locales in another order give the same key', $both->toJson(), $bothReversed->toJson());
+
+harness_section('Search: FULLTEXT settings come from the server');
+$ftServer = new ReflectionProperty(\mindstellar\search\query\PatternFilter::class, 'server');
+if (PHP_VERSION_ID < 80100) {
+    $ftServer->setAccessible(true);
+}
+$ftServer->setValue(null, null);
+\mindstellar\cache\CacheManager::getInstance()->flush();
+$s = new Search();
+$s->addPattern('Mountain');
+$s->doSearch();
+$ftRead = $ftServer->getValue();
+pin('the minimum token size is the server value', (int)$admin->query('SELECT @@innodb_ft_min_token_size')->fetch_row()[0], $ftRead['min']);
+check('the InnoDB default stopwords are read', isset($ftRead['stop']['with']));
+
+/* "with" is an InnoDB stopword, so FULLTEXT finds nothing; the substring fallback finds it. */
+$lamp = $mkItem('Lamp with shade', $catCars, 40.0, 0, $regionA, $cityA, 'Alpha', 'Aville');
+$s = new Search();
+$s->addPattern('with');
+pin('a stopword-only search falls back and finds the listing', array($lamp), $sorted($ids($s->doSearch())));
+$s = new Search();
+$s->addPattern('about lamp');
+pin('a stopword next to a real word does not empty the search', array($lamp), $sorted($ids($s->doSearch())));
+
+/* "tv" is below the minimum token size, so it is matched by substring next to the FULLTEXT word. */
+$tvLamp = $mkItem('Lamp for the TV', $catCars, 45.0, 0, $regionA, $cityA, 'Alpha', 'Aville');
+$s = new Search();
+$s->addPattern('tv lamp');
+pin('a short word next to a real word must still appear', array($tvLamp), $sorted($ids($s->doSearch())));
+$s = new Search();
+$s->addPattern('tv lamp');
+$s->order('relevance');
+pin('so must it when sorted by relevance', array($tvLamp), $sorted($ids($s->doSearch())));
+$relParts = new ReflectionProperty(Search::class, 'parts');
+if (PHP_VERSION_ID < 80100) {
+    $relParts->setAccessible(true);
+}
+$relSql = \mindstellar\search\query\SearchCompiler::results($relParts->getValue($s), null)[0];
+check('a relevance search filters by MATCH in WHERE, so the full-text index picks the rows', (bool)preg_match('/WHERE .*MATCH\(d\.s_description, d\.s_title\)/s', $relSql), $relSql);
+
+/* A custom stopword table replaces the default list. */
+$stopDb = (string)$admin->query('SELECT DATABASE()')->fetch_row()[0];
+$admin->query('DROP TABLE IF EXISTS ft_custom_stop');
+$admin->query('CREATE TABLE ft_custom_stop (value VARCHAR(18) NOT NULL) ENGINE=InnoDB');
+$admin->query("INSERT INTO ft_custom_stop (value) VALUES ('zebra')");
+$ftServer->setValue(null, null);
+\mindstellar\cache\CacheManager::getInstance()->flush();
+try {
+    $admin->query("SET GLOBAL innodb_ft_server_stopword_table = '" . $stopDb . "/ft_custom_stop'");
+    $s = new Search();
+    $s->addPattern('Mountain');
+    $s->doSearch();
+    $ftCustom = $ftServer->getValue();
+} finally {
+    $admin->query('SET GLOBAL innodb_ft_server_stopword_table = NULL');
+    $admin->query('DROP TABLE ft_custom_stop');
+    $ftServer->setValue(null, null);
+    \mindstellar\cache\CacheManager::getInstance()->flush();
+}
+check('a custom stopword table is read', isset($ftCustom['stop']['zebra']) && !isset($ftCustom['stop']['with']));
+
+harness_section('Search: filters() gives plain values');
+
+$f = (new Search())->filters();
+pin('an empty search filters by nothing', array(array(), null, null, null, array(), false, null, array(), false), array(
+    $f->categories, $f->priceMin, $f->priceMax, $f->pattern, $f->locations['cities'], $f->withPicture, $f->radius, $f->userIds, $f->rawSql,
+));
+pin('and is newest first, 10 a page', array(array(array('table' => null, 'column' => 'dt_pub_date', 'direction' => 'DESC')), 0, 10), array($f->order, $f->offset, $f->perPage));
+
+$s = new Search();
+$s->addCategory($catCars);
+$s->priceRange(100, 2500);
+$s->addPattern('  red bike ');
+$s->addCity(array('7', 'Pune'));
+$s->addCountry(array('IN', 'India'));
+$s->fromUser(array(3, '5'));
+$s->withPicture(true);
+$s->near(18.5, 73.8, 25.0);
+$s->order('i_price', 'ASC', '%st_item');
+$s->page(2, 20);
+$f = $s->filters();
+pin('the category', true, in_array((int)$catCars, $f->categories, true));
+pin('the price in the site currency', array(100.0, 2500.0), array($f->priceMin, $f->priceMax));
+pin('the keywords, trimmed', 'red bike', $f->pattern);
+pin('a city id and a city name', array(array('by' => 'id', 'value' => 7), array('by' => 'name', 'value' => 'Pune')), $f->locations['cities']);
+pin('a country code and a country name', array(array('by' => 'code', 'value' => 'in'), array('by' => 'name', 'value' => 'India')), $f->locations['countries']);
+pin('user ids as ints', array(3, 5), $f->userIds);
+pin('the switches', array(true, false), array($f->withPicture, $f->onlyPremium));
+pin('the radius', array('lat' => 18.5, 'lng' => 73.8, 'km' => 25.0), $f->radius);
+pin('the order without the table prefix', array(array('table' => 't_item', 'column' => 'i_price', 'direction' => 'ASC')), $f->order);
+pin('the window', array(40, 20), array($f->offset, $f->perPage));
+pin('no raw SQL', false, $f->rawSql);
+
+$s = new Search(true);
+$s->addFlag('b_spam', false);
+$s->addFlag('b_active', true);
+$s->addContactEmail('anon@example.test');
+$f = $s->filters();
+pin('status flags as 0 or 1', array('b_spam' => 0, 'b_active' => 1), $f->flags);
+pin('the contact e-mail, and no listing id', array('anon@example.test', null), array($f->contactEmail, $f->itemId));
+pin('typed flags are not raw SQL, and an admin search is not live-only', array(false, false), array($f->rawSql, $f->liveOnly));
+$s = new Search(true);
+$s->addItemId(42);
+pin('the listing id', 42, $s->filters()->itemId);
+$threw = false;
+try {
+    (new Search(true))->addFlag('b_premium = 1 OR 1', true);
+} catch (InvalidArgumentException $e) {
+    $threw = true;
+}
+check('a column that is not a flag is refused', $threw);
+
+$spamId = (int)$admin->query("SELECT pk_i_id FROM {$prefix}t_item ORDER BY pk_i_id LIMIT 1")->fetch_row()[0];
+$admin->query("UPDATE {$prefix}t_item SET b_spam = 1 WHERE pk_i_id = {$spamId}");
+$all  = (int)$admin->query("SELECT COUNT(*) FROM {$prefix}t_item")->fetch_row()[0];
+$spam = new Search(true);
+$spam->addFlag('b_spam', true);
+$clean = new Search(true);
+$clean->addFlag('b_spam', false);
+pin('a flag filters the rows', array(1, $all - 1), array((int)$spam->count(), (int)$clean->count()));
+$copy = new Search(true);
+$copy->setJsonAlert(json_decode($spam->toJson(), true));
+pin('and survives a stored search', 1, (int)$copy->count());
+$admin->query("UPDATE {$prefix}t_item SET b_spam = 0 WHERE pk_i_id = {$spamId}");
+
+harness_section('the admin Listings table asks a search backend first');
+if (!function_exists('osc_admin_base_url')) {
+    function osc_admin_base_url($index = false)
+    {
+        return 'http://localhost/oc-admin/' . ($index ? 'index.php' : '');
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
+$asked = array();
+osc_add_filter('search_results', $adminBackend = static function ($answer, $search, $params, $context, $bare) use (&$asked) {
+    $asked[] = array($context, $bare, $search->filters()->flags);
+
+    return $context === 'admin' ? array('items' => array(), 'total' => 99) : $answer;
+});
+$table = (new ItemsDataTable())->table(array('b_spam' => '0'));
+osc_remove_filter('search_results', $adminBackend);
+pin('it is asked with context admin, for full rows, with the typed flags', array(array('admin', false, array('b_spam' => 0))), $asked);
+pin('and its total fills the table', 99, (int)$table['iTotalDisplayRecords']);
+pin('a junk answer is no answer', null, \mindstellar\search\SearchRunner::answer(new Search(true), 'admin', false, array('x' => 1)));
+
+$s = new Search();
+$s->orderBy(array(array('b_premium', 'DESC'), array('dt_pub_date', 'asc')));
+pin('orderBy gives each term', array(
+    array('table' => 't_item', 'column' => 'b_premium', 'direction' => 'DESC'),
+    array('table' => 't_item', 'column' => 'dt_pub_date', 'direction' => 'ASC'),
+), $s->filters()->order);
+
+$s = new Search();
+$s->order('s_name', 'ASC', '%st_user');
+pin('a t_user order names its table', array(array('table' => 't_user', 'column' => 's_name', 'direction' => 'ASC')), $s->filters()->order);
+
+foreach (array(
+    'a condition'      => static fn (Search $s) => $s->addConditions($prefix . 't_item.i_price > 0'),
+    'a table'          => static fn (Search $s) => $s->addTable($prefix . 't_item_meta'),
+    'a listing filter' => static fn (Search $s) => $s->addItemConditions($prefix . 't_item.b_premium = 1'),
+    'a GROUP BY'       => static fn (Search $s) => $s->addGroupBy($prefix . 't_item.pk_i_id'),
+) as $label => $add) {
+    $s = new Search();
+    $add($s);
+    pin($label . ' is raw SQL', true, $s->filters()->rawSql);
+}
+$s = new Search();
+$s->addField($prefix . 't_item.i_price AS p');
+pin('an extra field is not', false, $s->filters()->rawSql);
+
+pin('a search is of live listings', true, (new Search())->filters()->liveOnly);
+$f = (new Search())->includeHidden()->filters();
+pin('includeHidden() says it is not', array(false, false), array($f->liveOnly, $f->rawSql));
+pin('nor is an expired-listings search', false, (new Search(true))->filters()->liveOnly);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

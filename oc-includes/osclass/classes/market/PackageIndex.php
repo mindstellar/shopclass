@@ -217,7 +217,7 @@ final class PackageIndex
     private function rawInstalledThemes(): array
     {
         $index      = $this->catalog->index();
-        $webThemes  = WebThemes::newInstance();
+        $webThemes  = WebThemes::getInstance();
         $activeSlug = function_exists('osc_theme') ? osc_theme() : null;
 
         $rows = [];

@@ -277,6 +277,9 @@ _e('Tick to open links in new tab'); ?></label>
                 <div class="card-footer form-actions">
                     <input type="submit" id="cfield_save" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit" />
                     <input type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>" class="btn btn-dim" onclick="if(window.cfCloseDrawer){window.cfCloseDrawer();}else{document.getElementById('edit-custom-field-frame').remove();}return false;" />
+                    <?php if ($builderMode && !empty($field['pk_i_id'])) { ?>
+                    <button type="button" class="btn btn-danger ms-auto" onclick="return delete_field(<?php echo (int) $field['pk_i_id']; ?>);"><?php _e('Delete field'); ?></button>
+                    <?php } ?>
                 </div>
             </fieldset>
         </form>

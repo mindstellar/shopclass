@@ -24,7 +24,9 @@ require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
 use mindstellar\admin\DatabaseTools;
+use mindstellar\backup\RestoreUpload;
 use mindstellar\database\SchemaDoctor;
+use mindstellar\utility\Formatting;
 
 $finding = static function (string $kind, string $name = 'idx_x'): array {
     return array('table' => 'oc_t_x', 'kind' => $kind, 'name' => $name, 'declared' => '', 'found' => '');
@@ -56,7 +58,7 @@ pin('Repair refused: only extra items', false, DatabaseTools::repairAllowed(arra
 pin('Repair refused: an update is waiting', false, DatabaseTools::repairAllowed(array($finding(SchemaDoctor::MISSING_INDEX)), array('0099_x.php')));
 check('the server checks repairAllowed() before running Repair', (static function (string $c): bool {
     $refuse = strpos($c, '!DatabaseTools::repairAllowed($findings, $pending)');
-    $run    = strpos($c, 'SchemaReconciler($conn))->repair()');
+    $run    = strpos($c, 'DatabaseTools::repair()');
 
     return $refuse !== false && $run !== false && $refuse < $run;
 })($controller));
@@ -69,12 +71,12 @@ check('the Repair button sits in the "Repair can fix these" group only', substr_
 
 harness_section('Old URLs');
 
-pin('import lands on the Backup and restore page', '?page=tools&action=backup#restore', DatabaseTools::movedTo('import'));
-pin('upgrade keeps its own screen', null, DatabaseTools::movedTo('upgrade'));
-pin('database lands on the System info Database tab', '?page=tools&action=system-info&tab=database', DatabaseTools::movedTo('database'));
+pin('import lands on the Backup and restore page', '?page=tools&action=backup#restore', CAdminTools::movedTo('import'));
+pin('upgrade keeps its own screen', null, CAdminTools::movedTo('upgrade'));
+pin('database lands on the System info Database tab', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
 
 foreach (array('upgrade', 'database', 'backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post') as $action) {
-    check("the controller still routes action=$action", (bool) preg_match("/case \\(?'" . preg_quote($action, '/') . "'\\)?:/", $controller));
+    check("the controller still routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
 
 $menu = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php');
@@ -87,16 +89,56 @@ check('the Database tab does not back up or restore', strpos($view, "'import_pos
 
 harness_section('Restore upload');
 
-pin('no file field', 'No file was uploaded', DatabaseTools::uploadError(array()));
-pin('an array-shaped sql[] field is refused, not a TypeError', 'No file was uploaded', DatabaseTools::uploadError(array(
+pin('no file field', 'No file was uploaded', RestoreUpload::error(array()));
+pin('an array-shaped sql[] field is refused, not a TypeError', 'No file was uploaded', RestoreUpload::error(array(
     'name' => array('a.sql'), 'type' => array(''), 'tmp_name' => array('/tmp/x'), 'error' => array(0), 'size' => array(10),
 )));
-pin('no file chosen', 'No file was uploaded', DatabaseTools::uploadError(array('tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0)));
+pin('no file chosen', 'No file was uploaded', RestoreUpload::error(array('tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0)));
 foreach (array(UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE) as $code) {
-    check("error $code says the file is too large", strpos(DatabaseTools::uploadError(array('tmp_name' => '', 'error' => $code, 'size' => 0)), 'larger than this server accepts') !== false);
+    check("error $code says the file is too large", strpos(RestoreUpload::error(array('tmp_name' => '', 'error' => $code, 'size' => 0)), 'larger than this server accepts') !== false);
 }
-pin('a partial upload fails plainly', 'The upload failed. Try again.', DatabaseTools::uploadError(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 5)));
-pin('a good upload passes', '', DatabaseTools::uploadError(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_OK, 'size' => 5)));
+pin('a partial upload fails plainly', 'The upload failed. Try again.', RestoreUpload::error(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 5)));
+pin('a good upload passes', '', RestoreUpload::error(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_OK, 'size' => 5)));
+
+if (!defined('OSCLASS_VERSION')) {
+    define('OSCLASS_VERSION', '7.0.0');
+}
+if (!defined('DB_TABLE_PREFIX')) {
+    define('DB_TABLE_PREFIX', 'oc_');
+}
+$restoreDir = sys_get_temp_dir() . '/osc_restore_upload_' . getmypid() . '/';
+$upload     = static function (string $body) use ($restoreDir): array {
+    @mkdir($restoreDir . 'in', 0700, true);
+    $tmp = $restoreDir . 'in/' . bin2hex(random_bytes(4));
+    file_put_contents($tmp, $body);
+
+    return array('tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($body));
+};
+$store = new mindstellar\backup\BackupStore($restoreDir . 'backups');
+$moved = static fn (string $from, string $to): bool => rename($from, $to);
+/** store() past its is_uploaded_file() check, which no CLI file passes, with the move given. */
+$save = static function ($file, callable $move) use ($store): array {
+    $save = new ReflectionMethod(RestoreUpload::class, 'save');
+    $save->setAccessible(true);
+
+    return $save->invoke(null, $file, RestoreUpload::error($file), $store, $move);
+};
+pin('a file that was not uploaded through the form is refused first', array('name' => '', 'error' => 'No file was uploaded'), RestoreUpload::store($upload('SELECT 1;'), $store));
+pin('a file that is neither zip nor sql is refused', 'Choose a .zip or .sql backup file.', $save($upload("\0\1binary"), $moved)['error']);
+pin('a move that fails is reported', 'The upload failed. Try again.', $save($upload('SELECT 1;'), static fn (): bool => false)['error']);
+$kept = $save($upload('SELECT 1;'), $moved);
+check('a file that passes is kept under the name it is given', $kept['error'] === '' && is_file($restoreDir . 'backups/' . $kept['name']));
+@unlink($restoreDir . 'backups/' . $kept['name']);
+$refused = $save($upload("PK\x03\x04not an archive"), $moved);
+pin('a file that fails the restore check is refused with its reason', array('name' => '', 'error' => 'This file is not a Shopclass backup.'), $refused);
+pin('...and removed from the backup folder', array(), glob($restoreDir . 'backups/upload-*') ?: array());
+pin('the type is read from the first bytes', array('zip', 'sql', ''), array(
+    RestoreUpload::type($upload("PK\x03\x04rest")['tmp_name']), RestoreUpload::type($upload('CREATE TABLE t (id int);')['tmp_name']), RestoreUpload::type($upload("a\0b")['tmp_name']),
+));
+array_map('unlink', array_merge(glob($restoreDir . 'in/*') ?: array(), glob($restoreDir . 'backups/{,.}[!.]*', GLOB_BRACE) ?: array()));
+@rmdir($restoreDir . 'in');
+@rmdir($restoreDir . 'backups');
+@rmdir($restoreDir);
 
 harness_section('Waiting updates in plain words');
 
@@ -130,7 +172,7 @@ pin('MySQL is named', array('label' => 'MySQL 8.0.36', 'supported' => true), Dat
 pin('below the MySQL floor', false, DatabaseTools::server('5.7.4')['supported']);
 pin('below the MariaDB floor', false, DatabaseTools::server('10.1.48-MariaDB')['supported']);
 pin('an empty server string says nothing', array('label' => '', 'supported' => true), DatabaseTools::server(''));
-pin('sizes read in words', array('0 B', '1.5 KB', '63.9 MB'), array(DatabaseTools::bytes(0), DatabaseTools::bytes(1536), DatabaseTools::bytes(67003187)));
+pin('sizes read in words', array('0 B', '1.5 KB', '63.9 MB'), array(Formatting::bytes(0), Formatting::bytes(1536), Formatting::bytes(67003187)));
 
 exit(harness_result());
 

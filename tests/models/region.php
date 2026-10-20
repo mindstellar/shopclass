@@ -40,7 +40,7 @@
  *
  * deleteByPrimaryKey() has NO query of its own to convert: every line is a
  * call into another model's own public method (City::findByRegion(),
- * City::deleteByPrimaryKey(), Item::deleteByRegion(), RegionStats::delete(),
+ * City::deleteByPrimaryKey(), Item::deleteByRegion(),
  * User::update()) or the inherited DAO::delete() on this table — all four
  * kinds are out of scope for this conversion (§3.1: pure delegation to a DAO
  * base method, or to another model entirely, is left alone). The method is
@@ -49,7 +49,7 @@
  * against a future change to this file. No item fixtures are seeded, so
  * Item::deleteByRegion()/deleteByCity() always operate over zero rows and
  * never reach the before/after_delete_item hook pipeline — the cascade down
- * through City/CityArea/RegionStats/CityStats/User is exercised in full
+ * through City/CityArea/User is exercised in full
  * without needing to bootstrap that plumbing.
  *
  * The "number of failed deletions" ledger deleteByPrimaryKey()'s own docblock
@@ -72,7 +72,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_region');
 $table = DB_TABLE_PREFIX . 't_region';
 
-$model = Region::newInstance();
+$model = Region::getInstance();
 
 /**
  * t_region.s_slug is NOT NULL DEFAULT '', and seed_region() always derives a
@@ -114,18 +114,18 @@ $seedCityAreaRow = static function (int $cityId, string $name) use ($admin, &$ne
 $seedRegionStats = static function (int $regionId, int $numItems = 0) use ($admin): void {
     seed_exec(
         $admin,
-        'INSERT INTO ' . DB_TABLE_PREFIX . 't_region_stats (fk_i_region_id, i_num_items) VALUES (?, ?)',
+        'UPDATE ' . DB_TABLE_PREFIX . 't_region SET i_num_items = ? WHERE pk_i_id = ?',
         'ii',
-        array($regionId, $numItems)
+        array($numItems, $regionId)
     );
 };
 
 $seedCityStats = static function (int $cityId, int $numItems = 0) use ($admin): void {
     seed_exec(
         $admin,
-        'INSERT INTO ' . DB_TABLE_PREFIX . 't_city_stats (fk_i_city_id, i_num_items) VALUES (?, ?)',
+        'UPDATE ' . DB_TABLE_PREFIX . 't_city SET i_num_items = ? WHERE pk_i_id = ?',
         'ii',
-        array($cityId, $numItems)
+        array($numItems, $cityId)
     );
 };
 
@@ -249,7 +249,7 @@ check('only the requested country comes back', is_array($rows), describe($rows))
 pin('exactly two US regions', 2, count($rows));
 pin(
     'each row carries exactly the SELECT * columns in table order',
-    array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'),
+    array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long', 'i_num_items'),
     array_keys($rows[0])
 );
 check('every value in every row is a string or null (C4)', all_rows_string($rows), describe($rows));
@@ -289,7 +289,7 @@ harness_section('Region::findByName — match, no country filter');
 
 $row = $model->findByName('Alpha');
 check('a match returns an array', is_array($row), describe($row));
-pin('the row carries exactly the SELECT * columns in table order', array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'), array_keys($row));
+pin('the row carries exactly the SELECT * columns in table order', array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long', 'i_num_items'), array_keys($row));
 pin('pk_i_id round-trips', (string) $regionAlphaUs, $row['pk_i_id']);
 check('every value in the row is a string or null (C4)', all_values_string($row), describe($row));
 
@@ -334,6 +334,15 @@ $names = array_column($rows, 'label');
 sort($names);
 pin('both AlphaUS and AlphaFR are present', array('AlphaFR', 'AlphaUS'), $names);
 pin('label and value carry the same region name', $rows[0]['label'], $rows[0]['value']);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_region SET i_num_items = 5 WHERE pk_i_id = ' . (int) $alphaUs);
+$exact = seed_region($admin, $fr, 'Alpha');
+pin(
+    'an exact name comes first, then the region with the most listings',
+    array('Alpha', 'AlphaUS', 'AlphaFR'),
+    array_column($model->ajax('Alpha'), 'label')
+);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_region WHERE pk_i_id = ' . (int) $exact);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_region SET i_num_items = 0 WHERE pk_i_id = ' . (int) $alphaUs);
 
 harness_section('Region::ajax — country filter, 2-letter code (fk_c_country_code)');
 
@@ -491,14 +500,14 @@ pin('one listByEmptySlug() call costs one query', 1, harness_query_count(static 
  * deleteByPrimaryKey() — NOT converted (pure delegation); the cascade is
  * pinned in full regardless, per the work unit's brief.
  * ------------------------------------------------------------------------- */
-harness_section('Region::deleteByPrimaryKey — cascades through City/CityArea/*Stats/User, leaves other rows untouched');
+harness_section('Region::deleteByPrimaryKey — cascades through City/CityArea/User, leaves other rows untouched');
 
 scratchdb_truncate_all($admin);
 $us = seed_country($admin, 'US', 'United States');
 $fr = seed_country($admin, 'FR', 'France');
 
-// The region under test: two cities, one of which has a city area; a region
-// stats row; a city stats row for each city; users pointing at the region,
+// The region under test: two cities, one of which has a city area; item counts
+// on the region and each city; users pointing at the region,
 // at one of its cities, and at the city area.
 $regionUnderTest = seed_region($admin, $us, 'DoomedRegion');
 $cityOne         = seed_city($admin, $regionUnderTest, 'CityOne', $us);
@@ -527,9 +536,6 @@ check('the region row itself is gone', !$rowExists($table, 'pk_i_id', $regionUnd
 check('city one is gone', !$rowExists(DB_TABLE_PREFIX . 't_city', 'pk_i_id', $cityOne, 'i'));
 check('city two is gone', !$rowExists(DB_TABLE_PREFIX . 't_city', 'pk_i_id', $cityTwo, 'i'));
 check('the city area under city one is gone', !$rowExists(DB_TABLE_PREFIX . 't_city_area', 'pk_i_id', $areaOne, 'i'));
-check('the region stats row is gone', !$rowExists(DB_TABLE_PREFIX . 't_region_stats', 'fk_i_region_id', $regionUnderTest, 'i'));
-check('city one\'s stats row is gone', !$rowExists(DB_TABLE_PREFIX . 't_city_stats', 'fk_i_city_id', $cityOne, 'i'));
-check('city two\'s stats row is gone', !$rowExists(DB_TABLE_PREFIX . 't_city_stats', 'fk_i_city_id', $cityTwo, 'i'));
 
 $u = $readUser($userOnRegion);
 pin('the user pointed at the region has fk_i_region_id nulled', null, $u['fk_i_region_id']);
@@ -546,8 +552,8 @@ pin('...and s_city_area cleared', '', $u['s_city_area']);
 check('the survivor region is untouched', $rowExists($table, 'pk_i_id', $survivorRegion, 'i'));
 check('the survivor city is untouched', $rowExists(DB_TABLE_PREFIX . 't_city', 'pk_i_id', $survivorCity, 'i'));
 check('the survivor city area is untouched', $rowExists(DB_TABLE_PREFIX . 't_city_area', 'pk_i_id', $survivorArea, 'i'));
-check('the survivor region stats row is untouched', $rowExists(DB_TABLE_PREFIX . 't_region_stats', 'fk_i_region_id', $survivorRegion, 'i'));
-check('the survivor city stats row is untouched', $rowExists(DB_TABLE_PREFIX . 't_city_stats', 'fk_i_city_id', $survivorCity, 'i'));
+pin('the survivor region count is untouched', 1, (int) $admin->query('SELECT i_num_items FROM ' . DB_TABLE_PREFIX . 't_region WHERE pk_i_id = ' . (int) $survivorRegion)->fetch_row()[0]);
+pin('the survivor city count is untouched', 1, (int) $admin->query('SELECT i_num_items FROM ' . DB_TABLE_PREFIX . 't_city WHERE pk_i_id = ' . (int) $survivorCity)->fetch_row()[0]);
 // $readUser() runs its own SELECT through prepared mysqli with a bound
 // parameter, which — unlike the legacy dao->get() path this model still
 // uses — returns native-typed ints for INT columns under mysqlnd. Cast the

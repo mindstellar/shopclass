@@ -12,7 +12,10 @@
 namespace mindstellar\market;
 
 use mindstellar\backup\BackupStore;
+use mindstellar\security\Demo;
+use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\FileSystem;
+use mindstellar\utility\Validate;
 use mindstellar\utility\Zip;
 use RuntimeException;
 use Throwable;
@@ -149,7 +152,7 @@ final class Installer
      */
     private function execute(string $slug, array $versionEntry): array
     {
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             return $this->result(false, __('Package installs are disabled in demo mode.'), $slug, null, false);
         }
 
@@ -186,7 +189,7 @@ final class Installer
         }
         $sha256 = strtolower($sha256);
 
-        if (!filter_var($url, FILTER_VALIDATE_URL) || !FileSystem::isAllowedPackageHost($url)) {
+        if (!Validate::httpUrl($url) || !FileSystem::isAllowedPackageHost($url)) {
             return $this->result(
                 false,
                 __('Package source host is not on the allowed list for verified downloads.'),
@@ -216,16 +219,10 @@ final class Installer
             return $this->result(false, $writable, $slug, null, false);
         }
 
-        $fs  = new FileSystem();
-        $zip = new Zip();
-
-        $uniqueId    = $fs->generateUniqueId('installer_');
-        $zipFile     = $this->downloadsPath . $uniqueId . '.zip';
-        $extractPath = $this->downloadsPath . $uniqueId;
-
+        $extractPath = null;
         try {
-            $downloaded = $fs->downloadFile($url, $zipFile, null, true, $sha256);
-            if (!$downloaded) {
+            $extractPath = Upgrade::stagePackage($url, $sha256, $this->downloadsPath, 'installer_');
+            if ($extractPath === null) {
                 return $this->result(
                     false,
                     __('Download failed, or the downloaded file did not match the expected checksum.'),
@@ -235,22 +232,20 @@ final class Installer
                 );
             }
 
-            $resultCode = $zip->unzipFile($downloaded, $extractPath);
-            if ($resultCode !== 1) {
-                return $this->result(false, __('The package archive is invalid or unsafe.'), $slug, null, false);
-            }
-
             $staged = $this->validateStagedPackage($extractPath, $slug, $version);
             if (!$staged['ok']) {
                 return $this->result(false, $staged['reason'], $slug, null, false);
             }
 
             return $this->swap($slug, $targetDir, $staged['packageDir'], $version);
+        } catch (\UnexpectedValueException $e) {
+            return $this->result(false, __('The package archive is invalid or unsafe.'), $slug, null, false);
         } catch (Throwable $e) {
             return $this->result(false, sprintf(__('Install failed: %s'), $e->getMessage()), $slug, null, false);
         } finally {
-            $fs->remove($zipFile);
-            $fs->remove($extractPath);
+            if ($extractPath !== null) {
+                (new FileSystem())->remove($extractPath);
+            }
         }
     }
 
@@ -275,11 +270,10 @@ final class Installer
             return __('The existing package directory is not writable.');
         }
 
-        if (!is_dir($this->downloadsPath) && !@mkdir($this->downloadsPath, 0755, true) && !is_dir($this->downloadsPath)) {
-            return __('The downloads directory could not be created.');
-        }
-        if (!is_writable($this->downloadsPath)) {
-            return __('The downloads directory is not writable.');
+        if (!Upgrade::downloadsReady($this->downloadsPath)) {
+            return is_dir($this->downloadsPath)
+                ? __('The downloads directory is not writable.')
+                : __('The downloads directory could not be created.');
         }
 
         return null;
@@ -449,7 +443,7 @@ final class Installer
 
         // Exact-match pointer (never a glob) so slugs sharing a hyphenated prefix
         // (e.g. "sample" and "sample-forms") can never resolve each other's backup.
-        if (@file_put_contents($this->backupsPath . $slug . '.last-backup', $backupFilename, LOCK_EX) === false) {
+        if (!FileSystem::writeAtomic($this->backupsPath . $slug . '.last-backup', $backupFilename)) {
             return null;
         }
 

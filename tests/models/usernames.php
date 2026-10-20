@@ -28,17 +28,15 @@ require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 
 $admin  = scratchdb_session('osc_models_usernames');
+// The model suite runs every file in one process, so set what registration depends on.
+osc_set_preference('enabled_user_validation', '0');
+osc_reset_preferences();
 $prefix = DB_TABLE_PREFIX;
 
 $usernameOf = static function (int $id) use ($admin, $prefix): string {
     return (string)$admin->query("SELECT s_username FROM {$prefix}t_user WHERE pk_i_id = $id")->fetch_assoc()['s_username'];
 };
-$assignDefault = static function (int $id): string {
-    $method = new ReflectionMethod('UserActions', 'assignDefaultUsername');
-    $method->setAccessible(true);
-
-    return $method->invoke(null, $id);
-};
+$assignDefault = static fn (int $id): string => \mindstellar\user\Usernames::assignDefault($id);
 
 harness_section('UserActions::numericUsernameError');
 
@@ -90,6 +88,10 @@ pin('the fallback suffix still works under the key', $fourth . '_2', $assignDefa
 $admin->query("ALTER TABLE {$prefix}t_user DROP KEY uk_test_username");
 
 harness_section('claimUsername fails closed when the lock is held elsewhere');
+// A refused claim would wait 5 s for the lock each time; the refusal is the same at 0.
+if (!defined('OSC_LOCK_WAIT')) {
+    define('OSC_LOCK_WAIT', 0);
+}
 
 // The admin connection is its own session, so it can hold the lock the model connection waits on.
 $lockName = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $prefix . 't_user');
@@ -106,11 +108,89 @@ pin('and writes nothing', 'robert', $usernameOf($bob));
 $dropLock();
 pin('with the lock free the same claim goes through', 'ok', UserActions::claimUsername($bob, 'bobby'));
 
+harness_section('A named lock this connection already holds is re-entered, not released early');
+$conn    = \mindstellar\database\Connection::getInstance();
+$ownLock = static fn (): int => (int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lockName));
+$release = $conn->namedLock($lockName, 0);
+check('the model connection takes the username lock', $release !== null);
+pin('a claim under the lock it already holds goes through', 'ok', \mindstellar\user\Usernames::claim($bob, 'bobbie'));
+pin('and the outer hold survives the claim', 1, $ownLock());
+pin('withNamedLock re-entered answers its callback', 'inner', $conn->withNamedLock($lockName, 0, static fn (): string => 'inner'));
+pin('and still leaves the outer hold in place', 1, $ownLock());
+$release();
+pin('the outer release frees it', 0, $ownLock());
+check('the test holds the username lock again', $holdLock());
+pin('a lock another session holds answers the busy callback', 'busy', $conn->withNamedLock($lockName, 0, static fn (): string => 'ran', static fn (?\mindstellar\database\DbException $e): string => $e === null ? 'busy' : 'error'));
+$dropLock();
+
+harness_section('The re-entry guard and lock errors, on a scripted connection');
+
+/** A Connection whose lock queries answer from a script and are recorded, with no server behind it. */
+class ScriptedLockConnection extends \mindstellar\database\Connection
+{
+    /** @var array<int,string> */
+    public array $asked = array();
+
+    /** @var array<string,mixed> SQL prefix => answer, or a Throwable to throw */
+    public array $answers = array();
+
+    public function scalar(string $sql, array $params = array())
+    {
+        $this->asked[] = $sql;
+        foreach ($this->answers as $prefix => $answer) {
+            if (str_starts_with($sql, $prefix)) {
+                if ($answer instanceof \Throwable) {
+                    throw $answer;
+                }
+
+                return $answer;
+            }
+        }
+
+        return null;
+    }
+}
+$scripted = static function (array $answers): ScriptedLockConnection {
+    $c          = (new ReflectionClass(ScriptedLockConnection::class))->newInstanceWithoutConstructor();
+    $c->answers = $answers;
+
+    return $c;
+};
+
+// MySQL 8 re-locks natively, so only a scripted IS_USED_LOCK can show the guard at work.
+$own     = $scripted(array('SELECT IS_USED_LOCK' => 1, 'SELECT GET_LOCK' => 1));
+$release = $own->namedLock('osc_test_lock', 0);
+check('guard (scripted, not MySQL): a lock this session holds is re-entered', $release !== null);
+pin('guard (scripted, not MySQL): GET_LOCK is not asked again', 0, count(array_filter($own->asked, static fn (string $q): bool => str_starts_with($q, 'SELECT GET_LOCK'))));
+$release();
+pin('guard (scripted, not MySQL): the inner release does not release the outer hold', 0, count(array_filter($own->asked, static fn (string $q): bool => str_starts_with($q, 'SELECT RELEASE_LOCK'))));
+
+$failure = new \mindstellar\database\DbException('lock query failed');
+$broken  = $scripted(array('SELECT IS_USED_LOCK' => $failure));
+$given   = 'not called';
+$broken->withNamedLock('osc_test_lock', 0, static fn (): string => 'ran', static function (?\mindstellar\database\DbException $e) use (&$given): string {
+    $given = $e;
+
+    return 'busy';
+});
+check('a failing lock query hands its DbException to the busy callback', $given === $failure);
+$thrown = null;
+try {
+    $broken->withNamedLock('osc_test_lock', 0, static fn (): string => 'ran');
+} catch (\mindstellar\database\DbException $e) {
+    $thrown = $e;
+}
+check('...and with no busy callback it is thrown', $thrown === $failure);
+
 harness_section('Registration with a chosen username claims it under the lock');
 
 require_once __DIR__ . '/../lib/action-standins.php';
 
 seed_locale($admin);
+foreach (['enabled_users' => '1', 'enabled_user_registration' => '1'] as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+osc_reset_preferences();
 
 $userCount = static function () use ($admin, $prefix): int {
     return (int)$admin->query("SELECT COUNT(*) c FROM {$prefix}t_user")->fetch_assoc()['c'];
@@ -129,12 +209,12 @@ $register = static function (string $username, string $email) {
 };
 
 pin('a free chosen name registers', 2, $register('newcomer', 'newcomer@example.test'));
-pin('and the account holds that name', 'newcomer', (string)(User::newInstance()->findByEmail('newcomer@example.test')['s_username'] ?? ''));
+pin('and the account holds that name', 'newcomer', (string)(User::getInstance()->findByEmail('newcomer@example.test')['s_username'] ?? ''));
 
 $before = $userCount();
 pin('a name another account holds is refused', "Username is already taken\n", $register('newcomer', 'second@example.test'));
 pin('the half-created account is removed', $before, $userCount());
-pin('the refused e-mail has no account', array(), User::newInstance()->findByEmail('second@example.test'));
+pin('the refused e-mail has no account', array(), User::getInstance()->findByEmail('second@example.test'));
 
 check('the test holds the username lock again', $holdLock());
 $before = $userCount();
@@ -145,6 +225,48 @@ pin(
 );
 pin('and leaves no account behind', $before, $userCount());
 $dropLock();
+
+harness_section('A username held for a sign-up that made no account');
+
+\mindstellar\user\Usernames::hold('Ghost');
+check('a held name counts as taken, in any case', \mindstellar\user\UserStore::usernameTaken('ghost', 0) && \mindstellar\user\Usernames::held('GHOST'));
+pin('a claim of a held name is refused', 'taken', \mindstellar\user\Usernames::claim($bob, 'ghost'));
+pin('registering it is refused as for an account\'s name', "Username is already taken\n", $register('ghost', 'ghost@example.test'));
+check('a name nobody holds is free', !\mindstellar\user\UserStore::usernameTaken('spectre', 0));
+$admin->query("UPDATE {$prefix}t_key_value SET dt_expires = '2000-01-01 00:00:00' WHERE s_group = 'core.username_hold'");
+check('a hold that has run out frees the name', !\mindstellar\user\UserStore::usernameTaken('ghost', 0));
+$holdExpiry = static function () use ($admin, $prefix) {
+    $row = $admin->query("SELECT dt_expires FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold' ORDER BY dt_created DESC, s_key LIMIT 1")->fetch_row();
+
+    return $row === null ? 'none' : $row[0];
+};
+osc_set_preference('enabled_user_validation', '1');
+osc_set_preference('enabled_inactive_users', '1');
+osc_set_preference('days_inactive_users', '7');
+osc_reset_preferences();
+$admin->query("DELETE FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold'");
+\mindstellar\user\Usernames::hold('wraith');
+$expires = strtotime((string) $holdExpiry() . ' UTC');
+check('with the cleanup of unactivated users on, a hold lasts as long as it keeps them (7 days)', abs($expires - (time() + 7 * 86400)) < 120, (string) $holdExpiry());
+osc_set_preference('enabled_inactive_users', '0');
+osc_reset_preferences();
+$admin->query("DELETE FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold'");
+\mindstellar\user\Usernames::hold('wraith');
+$expires = strtotime((string) $holdExpiry() . ' UTC');
+check('with that cleanup off, a hold lasts 7 days', abs($expires - (time() + 7 * 86400)) < 120, (string) $holdExpiry());
+osc_set_preference('enabled_inactive_users', '1');
+osc_set_preference('days_inactive_users', '30');
+osc_reset_preferences();
+$admin->query("DELETE FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold'");
+\mindstellar\user\Usernames::hold('wraith');
+$expires = strtotime((string) $holdExpiry() . ' UTC');
+check('a 30-day cleanup period is capped at 7 days', abs($expires - (time() + 7 * 86400)) < 120, (string) $holdExpiry());
+$holder = seed_user($admin, 'holder', 'holder@example.test');
+pin('a held name is refused to a normal claim', 'taken', \mindstellar\user\Usernames::claim($holder, 'wraith'));
+pin('an admin claim ignores the hold', 'ok', \mindstellar\user\Usernames::claim($holder, 'wraith', true));
+pin('the admin\'s name was written', 'wraith', $usernameOf($holder));
+osc_set_preference('enabled_user_validation', '0');
+osc_reset_preferences();
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

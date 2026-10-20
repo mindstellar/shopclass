@@ -14,7 +14,7 @@
  */
 
 $all      = osc_get_preference('location_todo');
-$worktodo = LocationsTmp::newInstance()->count();
+$worktodo = \mindstellar\location\LocationRecountJobs::pending();
 
 /**
  * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
@@ -38,7 +38,7 @@ function customHead()
     if ($all == '') {
         $all = 0;
     }
-    $worktodo = LocationsTmp::newInstance()->count();
+    $worktodo = \mindstellar\location\LocationRecountJobs::pending();
     ?>
     <script type="text/javascript">
         function reload() {

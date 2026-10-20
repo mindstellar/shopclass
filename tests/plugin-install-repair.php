@@ -168,7 +168,7 @@ $functions = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/function
 check(
     'the core badge is dropped once the running version caught up',
     (bool) preg_match(
-        "/version_compare\(\\\$update_json->s_new_version, OSCLASS_VERSION, 'le'\)/",
+        "/version_compare\(\\\$package\['s_new_version'\], OSCLASS_VERSION, 'le'\)/",
         $functions
     )
 );

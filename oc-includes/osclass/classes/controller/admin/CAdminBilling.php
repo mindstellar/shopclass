@@ -13,14 +13,16 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
-use mindstellar\billing\Packages;
+use mindstellar\billing\OrderStore;
+use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
+use mindstellar\currency\Money;
 
 /**
  * The billing section: payment orders and user credit balances.
@@ -126,16 +128,16 @@ class CAdminBilling extends AdminSecBaseModel
             'user_id' => Params::getParamInt('userId'),
         );
 
-        $page   = max(1, Params::getParamInt('pageNum'));
-        $total  = Orders::searchCount($filters);
-        $offset = ($page - 1) * self::PER_PAGE;
+        $page   = ListPaging::page();
+        $total  = OrderStore::searchCount($filters);
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
-        $orders = Orders::search($filters, self::PER_PAGE, $offset);
+        $orders = OrderStore::search($filters, self::PER_PAGE, $offset);
 
         $this->_exportVariableToView('orders', $orders);
         $this->_exportVariableToView('users', $this->usersFor($orders));
-        $this->_exportVariableToView('summary', Orders::summary($filters));
-        $this->_exportVariableToView('gateways', Orders::knownGateways());
+        $this->_exportVariableToView('summary', OrderStore::summary($filters));
+        $this->_exportVariableToView('gateways', OrderStore::knownGateways());
         $this->_exportVariableToView('filters', $filters);
         $this->_exportVariableToView('total', $total);
         $this->_exportVariableToView('pageNum', $page);
@@ -151,16 +153,16 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function orderView()
     {
-        $order = Orders::find(Params::getParamInt('id'));
+        $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null) {
             osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
         }
 
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
 
         $this->_exportVariableToView('order', $order);
-        $this->_exportVariableToView('user', User::newInstance()->findByPrimaryKey($order->getUserId()));
+        $this->_exportVariableToView('user', User::getInstance()->findByPrimaryKey($order->getUserId()));
         $this->_exportVariableToView('gateway', $gateway);
         $this->_exportVariableToView('refundable', Billing::refundableGateway($order) !== null);
         $this->_exportVariableToView('dashboardUrl', Billing::dashboardUrl($order));
@@ -177,7 +179,7 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function receiptView()
     {
-        $order = Orders::find(Params::getParamInt('id'));
+        $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null || !Receipts::canView($order, 0, true)) {
             osc_add_flash_error_message(_m('That order has no receipt'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
@@ -209,7 +211,7 @@ class CAdminBilling extends AdminSecBaseModel
     {
         osc_csrf_check();
 
-        $order = Orders::find(Params::getParamInt('id'));
+        $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null) {
             osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
@@ -242,7 +244,7 @@ class CAdminBilling extends AdminSecBaseModel
     {
         osc_csrf_check();
 
-        $order = Orders::find(Params::getParamInt('id'));
+        $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null) {
             osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
@@ -277,7 +279,7 @@ class CAdminBilling extends AdminSecBaseModel
         }
         osc_csrf_check();
 
-        $order = Orders::find($id);
+        $order = OrderStore::find($id);
         if ($order === null) {
             osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
@@ -311,9 +313,9 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function creditsView()
     {
-        $page   = max(1, Params::getParamInt('pageNum'));
+        $page   = ListPaging::page();
         $total  = Wallet::balanceCount();
-        $offset = ($page - 1) * self::PER_PAGE;
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $this->_exportVariableToView('wallets', Wallet::balances(self::PER_PAGE, $offset));
         $this->_exportVariableToView('outstanding', Wallet::totalOutstanding());
@@ -332,15 +334,15 @@ class CAdminBilling extends AdminSecBaseModel
     private function walletView()
     {
         $userId = Params::getParamInt('userId');
-        $user   = User::newInstance()->findByPrimaryKey($userId);
+        $user   = User::getInstance()->findByPrimaryKey($userId);
         if ($user === null) {
             osc_add_flash_error_message(_m('That user no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=credits');
         }
 
-        $page   = max(1, Params::getParamInt('pageNum'));
+        $page   = ListPaging::page();
         $total  = Wallet::historyCount($userId);
-        $offset = ($page - 1) * self::PER_PAGE;
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $this->_exportVariableToView('user', $user);
         $this->_exportVariableToView('balance', Wallet::balance($userId));
@@ -360,14 +362,14 @@ class CAdminBilling extends AdminSecBaseModel
      * edits a balance without leaving a record.
      *
      * @return void
-     * @throws DbException when the ledger write fails
+     * @throws \mindstellar\database\DbException when the ledger write fails
      */
     private function walletAdjustPost()
     {
         osc_csrf_check();
 
         $userId = Params::getParamInt('userId');
-        $user   = User::newInstance()->findByPrimaryKey($userId);
+        $user   = User::getInstance()->findByPrimaryKey($userId);
         if ($user === null) {
             osc_add_flash_error_message(_m('That user no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=credits');
@@ -410,7 +412,7 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function packagesView()
     {
-        $this->_exportVariableToView('packages', Packages::all());
+        $this->_exportVariableToView('packages', PackageStore::all());
         $this->doView('billing/packages.php');
     }
 
@@ -422,7 +424,7 @@ class CAdminBilling extends AdminSecBaseModel
     private function packageView()
     {
         $id      = Params::getParamInt('id');
-        $package = $id > 0 ? Packages::find($id) : null;
+        $package = $id > 0 ? PackageStore::find($id) : null;
         if ($id > 0 && $package === null) {
             osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
@@ -436,7 +438,7 @@ class CAdminBilling extends AdminSecBaseModel
      * Create or update a package.
      *
      * The amount arrives as decimal currency and is validated before it is converted
-     * to micros -- Orders::create() trusts this row completely at checkout, so a bad
+     * to micros -- OrderStore::create() trusts this row completely at checkout, so a bad
      * amount has to be caught here, never there.
      *
      * @return void
@@ -469,16 +471,14 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo($back);
         }
 
-        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+        if (!\mindstellar\currency\CurrencyCode::valid($currency)) {
             osc_add_flash_error_message(_m('Currency must be a 3-letter code, e.g. USD'), 'admin');
             $this->redirectTo($back);
         }
 
         $data = array(
             's_name'     => $name,
-            // Money is entered as decimal currency and stored as micros -- integer
-            // maths only, the value is never kept as a float past this line.
-            'i_amount'   => (int) round((float) $amountRaw * 1000000),
+            'i_amount'   => Money::toMicros($amountRaw),
             's_currency' => $currency,
             'i_credits'  => $credits,
             'i_position' => max(0, $position),
@@ -487,14 +487,14 @@ class CAdminBilling extends AdminSecBaseModel
 
         try {
             if ($id > 0) {
-                if (Packages::find($id) === null) {
+                if (PackageStore::find($id) === null) {
                     osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
                 }
-                Packages::update($id, $data);
+                PackageStore::update($id, $data);
                 osc_add_flash_ok_message(_m('Package updated'), 'admin');
             } else {
-                Packages::create($data);
+                PackageStore::create($data);
                 osc_add_flash_ok_message(_m('Package created'), 'admin');
             }
         } catch (InvalidArgumentException $e) {
@@ -516,7 +516,7 @@ class CAdminBilling extends AdminSecBaseModel
         osc_csrf_check();
 
         $id = Params::getParamInt('id');
-        if (Packages::delete($id)) {
+        if (PackageStore::delete($id)) {
             osc_add_flash_ok_message(_m('Package deleted'), 'admin');
         } else {
             osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
@@ -535,11 +535,7 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function ledgerForOrder($orderId)
     {
-        return osc_db_table(DB_TABLE_PREFIX . 't_billing_ledger')
-            ->where('s_ref_type', 'order')
-            ->where('i_ref_id', (int) $orderId)
-            ->orderBy('pk_i_id', 'ASC')
-            ->get();
+        return \mindstellar\billing\OrderStore::ledgerRows((int) $orderId);
     }
 
     /**
@@ -559,10 +555,7 @@ class CAdminBilling extends AdminSecBaseModel
             return array();
         }
 
-        $rows = osc_db_table(DB_TABLE_PREFIX . 't_user')
-            ->select('pk_i_id', 's_username', 's_name', 's_email')
-            ->whereIn('pk_i_id', array_keys($ids))
-            ->get();
+        $rows = \mindstellar\user\UserStore::byIds(array_keys($ids), array('pk_i_id', 's_username', 's_name', 's_email'));
 
         $byId = array();
         foreach ($rows as $row) {

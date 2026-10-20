@@ -44,43 +44,55 @@ Worth knowing before you port something:
 | Publish a plugin or theme | [Package specification](/docs/developers/package-spec/) |
 | Get it listed for every install | [The market](/docs/developers/market/) |
 | Run your code inside core | [Hooks and filters](/docs/developers/hooks/) |
+| Find the `osc_*` helper for a job | [Helper functions](/docs/developers/helpers/) |
+| Know which core class to call, and where hooks fire | [Architecture](/docs/developers/architecture/) |
 | Add a page of your own | [Routes](/docs/developers/routes/) |
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |
 | Add an admin settings page | [Settings pages](/docs/developers/settings-pages/) |
 | Build an admin add/edit screen | [Admin editors](/docs/developers/admin-editors/) |
 | Take payments | [Payment gateways](/docs/developers/payment-gateways/) |
+| Call another service over HTTPS | [HTTP client](/docs/developers/http-client/) |
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
 | Style the account and sign-in pages | [Account pages](/docs/developers/account-pages/) |
 | Extend a theme without forking it | [Child themes](/docs/developers/child-themes/) |
+| Show distance search in a theme | [Distance search in themes](/docs/developers/distance-search/) |
 | Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
-| Style the e-mails the site sends | [E-mail layout](/docs/developers/email-layout/) |
+| Style the e-mails the site sends, or e-mail the site owner | [E-mail layout](/docs/developers/email-layout/) |
 | Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |
+| Keep a small value, flag or lock without a table | [Key-value store](/docs/developers/kv-store/) |
 | Keep a search filter working in saved alerts | [Saved-search alerts](/docs/developers/alerts/) |
 | Bring listings in from elsewhere | [Importing listings](/docs/developers/importing-listings/) |
+| Call the site from another program | [REST API](/docs/developers/api/) |
+| Post listings and comments through the API | [Writes](/docs/developers/api/writes/) |
+| Moderate and manage a site with an admin key | [Admin endpoints](/docs/developers/api/admin/) |
+| Get a signed POST when a listing or user changes | [Webhooks](/docs/developers/api/webhooks/) |
+| Add your own REST API endpoints | [Plugin endpoints](/docs/developers/api/plugin-endpoints/) |
 | Understand the schema | [Database model](/docs/developers/database/) |
 | Debug something | [PHP errors](/docs/developers/debug-php-errors/) · [SQL queries](/docs/developers/debug-sql-queries/) |
 | Contribute to core | [Contributing](/docs/developers/contributing/) |
 
 ## A local development stack
 
-The runtime needs no build tools, but the admin theme's CSS and JavaScript are
-compiled from source, so working on core needs Node.
+Working on core needs Composer for the PHP packages and Node for the admin theme's CSS
+and JavaScript, which are built from source. Generated files are not in git.
 
 ```bash
 git clone git@github.com:mindstellar/shopclass.git
 cd shopclass
-npm install
+composer install
+npm ci
 npm run build        # vendor assets + SCSS → CSS + JS
 npm run watch        # rebuild on change
 ```
 
-A full stack (PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin)
+A full stack (PHP-FPM, MariaDB, Nginx, Valkey, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`:
 
 ```bash
+npm run setup         # first run: installs and builds the generated files
 npm run dev:build     # first run: builds the PHP-FPM image
 npm run dev           # start
 npm run dev:logs      # follow the logs

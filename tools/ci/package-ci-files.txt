@@ -1,0 +1,11 @@
+# The package-ci bundle: one "source  path-in-bundle" pair per line. The release job builds
+# the bundle from this list and check-release-assets.php checks the bundle against it.
+tools/package-lint.php                              package-lint.php
+oc-includes/osclass/classes/market/Compatibility.php Compatibility.php
+deprecated-api.json                                 deprecated-api.json
+tools/ci/deprecation-scan.php                       deprecation-scan.php
+tools/ci/annotate.php                               annotate.php
+tools/ci/smoke-install.sh                           smoke-install.sh
+tools/ci/build-catalog.php                          build-catalog.php
+oc-includes/osclass/classes/market/Markdown.php     Markdown.php
+tools/ci/deprecation-collector/index.php            deprecation-collector/index.php

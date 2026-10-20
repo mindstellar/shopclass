@@ -79,9 +79,14 @@ function osc_user_unsubscribe_alert_url($id = '', $email = '', $secret = '')
 
 class Page
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function findByInternalName($name)
@@ -95,9 +100,14 @@ class Page
 
 class User
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function findByPrimaryKey($id)
@@ -108,6 +118,7 @@ class User
 
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hSanitize.php'; // the real osc_esc_html(), ahead of any stand-in
 require_once __DIR__ . '/lib/stubs.php';
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/../oc-includes/osclass/emails.php';
 require_once __DIR__ . '/../oc-includes/osclass/alerts.php';
 require_once __DIR__ . '/lib/harness.php';

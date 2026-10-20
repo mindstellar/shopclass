@@ -2,10 +2,10 @@
  * Admin UI helpers — vanilla JS (migrated off jQuery / jQuery-UI).
  *
  * Provides oscInitTabs() (the segmented locale/section tabs, replacing
- * jQuery-UI .tabs()) and wires the flash-message and help-box close buttons.
+ * jQuery-UI .tabs()) and wires the flash-message close buttons.
  */
 /* global osc */
-/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat */
+/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat, oscCatcardsSummary, oscCatcardsLive, oscCatcardsCascade, oscFill */
 
 // Initialise every .osc-tab within `root` (default: document). Works on the
 // existing markup: a .osc-tab container holding `> ul > li > a[href="#panel"]`
@@ -248,13 +248,18 @@ function oscTreeview(root, opts) {
                 return;
             }
             li.classList.add('osc-tree-parent');
-            if (startCollapsed) { li.classList.add('is-collapsed'); }
+            var collapsed = startCollapsed && !li.hasAttribute('data-osc-tree-open');
+            if (collapsed) { li.classList.add('is-collapsed'); }
             var toggle = document.createElement('button');
             toggle.type = 'button';
             toggle.className = 'osc-tree-toggle';
             toggle.innerHTML = '<i class="bi bi-chevron-down" aria-hidden="true"></i>';
-            toggle.setAttribute('aria-expanded', startCollapsed ? 'false' : 'true');
-            toggle.setAttribute('aria-label', opts.toggleLabel || 'Toggle');
+            toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            var named = li.querySelector(':scope > label, :scope > .osc-catcard-name');
+            toggle.setAttribute('aria-label', oscFill(opts.toggleLabel || root.getAttribute('data-toggle-label') || 'Toggle',
+                [named ? named.textContent : '']));
+            if (!childUl.id) { childUl.id = (root.id || 'osc-tree') + '-sub-' + i; }
+            toggle.setAttribute('aria-controls', childUl.id);
             toggle.addEventListener('click', function (e) {
                 e.preventDefault();
                 var collapsed = li.classList.toggle('is-collapsed');
@@ -284,6 +289,124 @@ function oscTreeview(root, opts) {
 
     root.addEventListener('change', oscTreeSyncParents);
     oscTreeSyncParents();
+    oscCatcardsLive(root);
+}
+
+// Keep a card list's summary and counts current. Idempotent per root.
+function oscCatcardsLive(root) {
+    if (!root.hasAttribute('data-osc-catcards') || root.hasAttribute('data-osc-catcards-live')) {
+        return;
+    }
+    root.setAttribute('data-osc-catcards-live', '1');
+    root.addEventListener('change', function (e) {
+        if (root.getAttribute('data-osc-catcards') === 'checks') { oscCatcardsCascade(root, e.target); }
+        oscCatcardsSummary(root);
+    });
+    oscCatcardsSummary(root);
+}
+
+// After a box changes, each category above it is ticked when all its subcategories are,
+// empty when none are, and shows the dash (unticked, so not saved) when only some are.
+function oscCatcardsCascade(root, box) {
+    if (!box || box.type !== 'checkbox') { return; }
+    var li = box.closest('li');
+    while (li && root.contains(li)) {
+        var parentLi = li.parentElement ? li.parentElement.closest('li') : null;
+        if (!parentLi || !root.contains(parentLi)) { return; }
+        var parentBox = parentLi.querySelector(':scope > input[type=checkbox]');
+        var sub = parentLi.querySelector(':scope > ul');
+        if (parentBox && sub) {
+            var all = sub.querySelectorAll('input[type=checkbox]').length;
+            var on = sub.querySelectorAll('input[type=checkbox]:checked').length;
+            parentBox.checked = all > 0 && on === all;
+            parentBox.indeterminate = on > 0 && on < all;
+        }
+        li = parentLi;
+    }
+}
+
+// Fill a translated template the way the server's sprintf() reads it: %s, %1$s and %%.
+function oscFill(tpl, values) {
+    var i = 0;
+    return String(tpl || '').replace(/%%|%(\d+\$)?s/g, function (m, pos) {
+        if (m === '%%') { return '%'; }
+        var v = values[pos ? parseInt(pos, 10) - 1 : i++];
+        return v === undefined ? '' : String(v);
+    });
+}
+
+// The live line above a category card list, and each card's count of chosen subcategories.
+function oscCatcardsSummary(root) {
+    var summary = document.querySelector('[data-osc-catcards-summary="' + CSS.escape(root.id) + '"]');
+    var cards = root.querySelectorAll(':scope > .osc-catcard');
+    var label = function (key) { return root.getAttribute('data-label-' + key); };
+    var setMeta = function (card, extra) {
+        var meta = card.querySelector(':scope > [data-osc-catcard-meta]');
+        if (!meta) { return; }
+        if (!meta.hasAttribute('data-base')) { meta.setAttribute('data-base', meta.textContent); }
+        meta.textContent = meta.getAttribute('data-base') + (extra ? ' · ' + extra : '');
+    };
+
+    if (root.getAttribute('data-osc-catcards') === 'modes') {
+        cards.forEach(function (card) {
+            var picked = card.querySelector(':scope > .osc-segmented input:checked');
+            var pickedLabel = picked ? card.querySelector('label[for="' + CSS.escape(picked.id) + '"]') : null;
+            var topMode = picked && picked.value !== '' ? pickedLabel.textContent : '';
+            var offWord = card.querySelector(':scope > .osc-segmented input[value=""] + label');
+            var cardName = card.querySelector('.osc-catcard-name').textContent;
+
+            // Rows come in tree order with their depth; each "Same as parent" names what it inherits.
+            var apart = 0;
+            var topValue = topMode || (offWord ? offWord.textContent : '');
+            var modes = [topValue];
+            var paths = [cardName];
+            var head = card.querySelector('[data-osc-catmatrix-same]');
+            if (head) { head.textContent = oscFill(label('inherit'), [topValue]); }
+            card.querySelectorAll('.osc-catmatrix-row').forEach(function (row) {
+                var depth = parseInt(row.getAttribute('data-depth') || '0', 10);
+                var inherited = modes[depth];
+                var same = row.querySelector('input[value=""] + .osc-catmatrix-label');
+                if (same) { same.textContent = oscFill(label('inherit'), [inherited]); }
+                var chosen = row.querySelector('input:checked');
+                var own = chosen && chosen.value !== '';
+                var mode = own ? chosen.nextElementSibling.textContent : inherited;
+                var name = row.querySelector('.osc-catcard-subname').textContent;
+                row.classList.toggle('is-set', !!own);
+                if (own) {
+                    apart++;
+                }
+                modes[depth + 1] = mode;
+                paths[depth + 1] = paths[depth] + ' › ' + name;
+            });
+            setMeta(card, apart ? oscFill(label('apart'), [apart]) : '');
+        });
+        return;
+    }
+
+    var boxes = root.querySelectorAll('input[type=checkbox]');
+    var checked = root.querySelectorAll('input[type=checkbox]:checked').length;
+    if (summary) { summary.textContent = oscFill(label('count'), [checked, boxes.length]); }
+    cards.forEach(function (card) {
+        var inside = card.querySelectorAll(':scope > ul input[type=checkbox]:checked').length;
+        setMeta(card, inside ? oscFill(label('selected'), [inside]) : '');
+    });
+}
+
+// A category_modes field folds on its own. A checkbox tree folds only when its page calls
+// oscTreeview(), as it always has, so a page passing its own options keeps them.
+function oscCatcardsInit() {
+    document.querySelectorAll('[data-osc-catcards]').forEach(function (root) {
+        if (root.getAttribute('data-osc-catcards') === 'modes') {
+            oscTreeview(root);
+        } else {
+            oscCatcardsLive(root);
+        }
+    });
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', oscCatcardsInit);
+} else {
+    oscCatcardsInit();
 }
 
 // Global so third-party plugins calling checkAll(id, check) by name keep working.
@@ -377,6 +500,11 @@ document.addEventListener('click', function (e) {
         if (target && typeof target.showModal === 'function') {
             e.preventDefault();
             target.showModal();
+            // Chrome focuses a scrolling body first; the first field is where typing should go.
+            if (document.activeElement && document.activeElement.classList.contains('osc-dialog-body')) {
+                var first = target.querySelector('[autofocus], input:not([type="hidden"]), select, textarea, button');
+                if (first) { first.focus(); }
+            }
         }
         return;
     }
@@ -573,8 +701,15 @@ function oscDirtySync(bar) {
     if (!form) { return; }
     var controls = oscDirtyControls(form);
     var changed = 0;
+    var radios = {};
     for (var i = 0; i < controls.length; i++) {
-        if (controls[i].getAttribute('data-osc-was') !== oscControlValue(controls[i])) { changed++; }
+        if (controls[i].getAttribute('data-osc-was') === oscControlValue(controls[i])) { continue; }
+        // Picking another radio changes two buttons but one setting.
+        if (controls[i].type === 'radio') {
+            if (radios[controls[i].name]) { continue; }
+            radios[controls[i].name] = true;
+        }
+        changed++;
     }
     var status = bar.querySelector('.form-actions-status');
     if (status) {
@@ -618,4 +753,444 @@ document.addEventListener('change', function (e) {
 });
 document.addEventListener('input', function (e) {
     if (oscDependsIsMaster(e.target)) { oscSyncDepends(document); }
+});
+
+// osc.collapse — show and hide a .collapse panel from a [data-osc-collapse="#panel"] button,
+// an accordion with data-osc-parent. See docs/site/developers/scripts-and-styles.md.
+osc.collapse = (function () {
+    var DURATION = 350;
+
+    function emit(panel, name, cancelable) {
+        return panel.dispatchEvent(new CustomEvent('osc:collapse:' + name, {bubbles: true, cancelable: !!cancelable}));
+    }
+
+    function sync(panel, open) {
+        if (!panel.id) { return; }
+        document.querySelectorAll('[data-osc-collapse="#' + CSS.escape(panel.id) + '"]').forEach(function (t) {
+            t.setAttribute('aria-expanded', open ? 'true' : 'false');
+            t.classList.toggle('collapsed', !open);
+        });
+    }
+
+    function animate(panel, from, to, done) {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            done();
+            return;
+        }
+        var finished = false;
+        function finish() {
+            if (finished) { return; }
+            finished = true;
+            panel.style.transition = panel.style.height = panel.style.overflow = '';
+            done();
+        }
+        panel.style.overflow = 'hidden';
+        panel.style.height = from + 'px';
+        void panel.offsetHeight;
+        panel.style.transition = 'height ' + DURATION + 'ms ease';
+        panel.style.height = to + 'px';
+        panel.addEventListener('transitionend', function end(e) {
+            if (e.target === panel && e.propertyName === 'height') {
+                panel.removeEventListener('transitionend', end);
+                finish();
+            }
+        });
+        setTimeout(finish, DURATION + 50);
+    }
+
+    function show(panel) {
+        if (!panel || panel.classList.contains('show') || panel.dataset.oscCollapseBusy || !emit(panel, 'show', true)) {
+            return;
+        }
+        var group = panel.getAttribute('data-osc-parent');
+        if (group) {
+            document.querySelectorAll('.collapse.show[data-osc-parent]').forEach(function (other) {
+                if (other !== panel && other.getAttribute('data-osc-parent') === group) { hide(other); }
+            });
+        }
+        panel.dataset.oscCollapseBusy = '1';
+        panel.classList.add('show');
+        sync(panel, true);
+        animate(panel, 0, panel.scrollHeight, function () {
+            delete panel.dataset.oscCollapseBusy;
+            emit(panel, 'shown');
+        });
+    }
+
+    function hide(panel) {
+        if (!panel || !panel.classList.contains('show') || panel.dataset.oscCollapseBusy || !emit(panel, 'hide', true)) {
+            return;
+        }
+        panel.dataset.oscCollapseBusy = '1';
+        sync(panel, false);
+        animate(panel, panel.scrollHeight, 0, function () {
+            panel.classList.remove('show');
+            delete panel.dataset.oscCollapseBusy;
+            emit(panel, 'hidden');
+        });
+    }
+
+    function toggle(panel) {
+        if (panel) { (panel.classList.contains('show') ? hide : show)(panel); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-osc-collapse]');
+        if (!trigger) { return; }
+        e.preventDefault();
+        try {
+            toggle(document.querySelector(trigger.getAttribute('data-osc-collapse')));
+        } catch (err) {
+            // An invalid selector in the markup; nothing to toggle.
+        }
+    });
+
+    return {show: show, hide: hide, toggle: toggle};
+})();
+
+// osc.offcanvas — slide a .offcanvas panel in from a [data-osc-offcanvas="#panel"] button,
+// over a backdrop; Escape, the backdrop or osc.offcanvas.hide(panel) close it.
+osc.offcanvas = (function () {
+    var open = null, backdrop = null, opener = null;
+
+    function emit(panel, name, cancelable) {
+        return panel.dispatchEvent(new CustomEvent('osc:offcanvas:' + name, {bubbles: true, cancelable: !!cancelable}));
+    }
+
+    function settle(panel, done) {
+        var finished = false;
+        function finish() { if (!finished) { finished = true; done(); } }
+        panel.addEventListener('transitionend', function end(e) {
+            if (e.target === panel) { panel.removeEventListener('transitionend', end); finish(); }
+        });
+        setTimeout(finish, 400);
+    }
+
+    function show(panel, trigger) {
+        if (!panel || open || !emit(panel, 'show', true)) { return; }
+        open = panel;
+        opener = trigger || document.activeElement;
+        backdrop = document.createElement('div');
+        backdrop.className = 'offcanvas-backdrop fade';
+        backdrop.addEventListener('click', function () { hide(panel); });
+        document.body.appendChild(backdrop);
+        document.body.style.overflow = 'hidden';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        panel.classList.add('showing');
+        void panel.offsetHeight;
+        backdrop.classList.add('show');
+        settle(panel, function () {
+            panel.classList.remove('showing');
+            panel.classList.add('show');
+            var focusable = panel.querySelector('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+            if (focusable) { focusable.focus(); }
+            emit(panel, 'shown');
+        });
+    }
+
+    function hide(panel) {
+        if (!panel || open !== panel || !emit(panel, 'hide', true)) { return; }
+        panel.classList.add('hiding');
+        if (backdrop) { backdrop.classList.remove('show'); }
+        settle(panel, function () {
+            panel.classList.remove('show', 'hiding');
+            panel.removeAttribute('role');
+            panel.removeAttribute('aria-modal');
+            if (backdrop) { backdrop.remove(); backdrop = null; }
+            document.body.style.overflow = '';
+            open = null;
+            if (opener && opener.focus) { opener.focus(); }
+            emit(panel, 'hidden');
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-osc-offcanvas]');
+        if (!trigger) { return; }
+        e.preventDefault();
+        var panel = document.querySelector(trigger.getAttribute('data-osc-offcanvas'));
+        if (panel) { (open === panel ? hide(panel) : show(panel, trigger)); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && open) { hide(open); }
+    });
+
+    return {show: show, hide: hide, isOpen: function (panel) { return open === panel; }};
+})();
+
+// osc.dropdown — open the .dropdown-menu next to a [data-osc-dropdown] button. An outside
+// click or Escape closes it; the arrow keys move between its .dropdown-item links.
+osc.dropdown = (function () {
+    var open = null;
+
+    function menuOf(trigger) {
+        return trigger.parentElement ? trigger.parentElement.querySelector('.dropdown-menu') : null;
+    }
+
+    function emit(trigger, name) {
+        trigger.dispatchEvent(new CustomEvent('osc:dropdown:' + name, {bubbles: true}));
+    }
+
+    function show(trigger) {
+        var menu = menuOf(trigger);
+        if (!menu || open === trigger) { return; }
+        if (open) { hide(open); }
+        menu.classList.add('show');
+        trigger.classList.add('show');
+        trigger.setAttribute('aria-expanded', 'true');
+        open = trigger;
+        emit(trigger, 'shown');
+    }
+
+    function hide(trigger) {
+        var menu = menuOf(trigger);
+        if (!menu || open !== trigger) { return; }
+        menu.classList.remove('show');
+        trigger.classList.remove('show');
+        trigger.setAttribute('aria-expanded', 'false');
+        open = null;
+        emit(trigger, 'hidden');
+    }
+
+    function move(step) {
+        var items = Array.prototype.slice.call(menuOf(open).querySelectorAll('.dropdown-item:not(.disabled)'));
+        if (!items.length) { return; }
+        var at = items.indexOf(document.activeElement);
+        items[(at + step + items.length) % items.length].focus();
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-osc-dropdown]');
+        if (trigger) {
+            e.preventDefault();
+            (open === trigger ? hide : show)(trigger);
+            return;
+        }
+        if (open && !menuOf(open).contains(e.target)) { hide(open); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (!open) { return; }
+        if (e.key === 'Escape') {
+            var trigger = open;
+            hide(trigger);
+            trigger.focus();
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            move(e.key === 'ArrowDown' ? 1 : -1);
+        }
+    });
+
+    return {show: show, hide: hide};
+})();
+
+// osc.sidebar — the admin menu: the rail (collapsed) mode with its flyouts, the ghost
+// scrollbar, and bringing an opened section into view. Runs once on DOMContentLoaded;
+// the collapse button saves the state to the URL in its data-osc-save-url.
+osc.sidebar = (function () {
+    var root = document.documentElement;
+    var desktop = window.matchMedia('(min-width: 1025px)');
+
+    function collapsed() {
+        return root.getAttribute('data-osc-sidebar') === 'collapsed' && desktop.matches;
+    }
+
+    // A collapsed row needs the label the rail cannot show: a parent reuses its submenu
+    // as the flyout, under an added title; a leaf gets a small flyout element. Both are
+    // children of the <li>, so the CSS :hover/:focus-within reveal still works.
+    function addFlyouts(items) {
+        items.forEach(function (item) {
+            var anchor = item.querySelector('.nav-link a');
+            if (!anchor) { return; }
+            var label = anchor.textContent.trim();
+            var submenu = item.querySelector('.sidebar-submenu');
+            if (submenu) {
+                if (!submenu.querySelector('.rail-flyout-title')) {
+                    var head = document.createElement('li');
+                    head.className = 'rail-flyout-title';
+                    head.setAttribute('aria-hidden', 'true');
+                    head.textContent = label;
+                    submenu.insertBefore(head, submenu.firstChild);
+                }
+            } else if (!item.querySelector('.sidebar-flyout')) {
+                var chip = document.createElement('span');
+                chip.className = 'sidebar-flyout';
+                chip.setAttribute('aria-hidden', 'true');
+                chip.textContent = label;
+                item.appendChild(chip);
+            }
+        });
+    }
+
+    // Flyouts leave the scroll frame with position:fixed, so their place is worked out
+    // here from the row; the CSS owns when they show.
+    function place(item) {
+        var link = item.querySelector('.nav-link');
+        var fly = item.querySelector('.sidebar-submenu') || item.querySelector('.sidebar-flyout');
+        if (!link || !fly) { return; }
+        var r = link.getBoundingClientRect();
+        fly.style.top = Math.min(r.top, Math.max(8, window.innerHeight - fly.offsetHeight - 8)) + 'px';
+        if (getComputedStyle(root).direction === 'rtl') {
+            fly.style.right = (window.innerWidth - r.left + 6) + 'px';
+            fly.style.left = 'auto';
+        } else {
+            fly.style.left = (r.right + 6) + 'px';
+            fly.style.right = 'auto';
+        }
+    }
+
+    function initRail(nav, scroller) {
+        var items = Array.prototype.slice.call(nav.querySelectorAll('#dashboard-menu > li.nav-item'));
+        var open = null;
+        addFlyouts(items);
+        items.forEach(function (item) {
+            function enter() { if (collapsed()) { open = item; place(item); } }
+            function leave() { if (open === item) { open = null; } }
+            item.addEventListener('mouseenter', enter);
+            item.addEventListener('mouseleave', leave);
+            item.addEventListener('focusin', enter);
+            item.addEventListener('focusout', leave);
+        });
+        if (scroller) {
+            scroller.addEventListener('scroll', function () { if (open && collapsed()) { place(open); } }, {passive: true});
+        }
+        window.addEventListener('resize', function () { if (open && collapsed()) { place(open); } });
+
+        var toggle = document.getElementById('oscSidebarToggle');
+        if (!toggle) { return; }
+        toggle.addEventListener('click', function () {
+            var next = root.getAttribute('data-osc-sidebar') === 'collapsed' ? 'expanded' : 'collapsed';
+            root.setAttribute('data-osc-sidebar', next);
+            toggle.setAttribute('aria-expanded', next === 'collapsed' ? 'false' : 'true');
+            var url = toggle.getAttribute('data-osc-save-url');
+            if (url) {
+                fetch(url + '&state=' + next, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            }
+        });
+    }
+
+    // The native scrollbar is hidden; this thin overlay tracks it, shows on scroll or
+    // hover and fades when idle, and its thumb can be dragged.
+    function initScrollbar(frame, scroller) {
+        var bar = document.createElement('div');
+        bar.className = 'ghost-scrollbar';
+        var thumb = document.createElement('div');
+        thumb.className = 'ghost-scrollbar-thumb';
+        bar.appendChild(thumb);
+        frame.appendChild(bar);
+
+        var hideTimer, dragging = false, startY = 0, startScroll = 0;
+        function measure() {
+            var ch = scroller.clientHeight;
+            var sh = scroller.scrollHeight;
+            if (sh - ch <= 1) {
+                bar.classList.remove('is-active');
+                bar.style.display = 'none';
+                return null;
+            }
+            bar.style.display = '';
+            var thumbH = Math.max(28, Math.round(ch * ch / sh));
+            var maxThumb = ch - thumbH;
+            thumb.style.height = thumbH + 'px';
+            thumb.style.transform = 'translateY(' + (maxThumb > 0 ? Math.round(scroller.scrollTop / (sh - ch) * maxThumb) : 0) + 'px)';
+            return {ch: ch, sh: sh, maxThumb: maxThumb};
+        }
+        function flash() {
+            if (!measure()) { return; }
+            bar.classList.add('is-active');
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(function () {
+                if (!dragging && !bar.matches(':hover')) { bar.classList.remove('is-active'); }
+            }, 1000);
+        }
+        scroller.addEventListener('scroll', flash, {passive: true});
+        frame.addEventListener('mouseenter', flash);
+        window.addEventListener('resize', measure);
+        thumb.addEventListener('mousedown', function (e) {
+            if (!measure()) { return; }
+            dragging = true;
+            startY = e.clientY;
+            startScroll = scroller.scrollTop;
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        window.addEventListener('mousemove', function (e) {
+            if (!dragging) { return; }
+            var m = measure();
+            if (m && m.maxThumb > 0) { scroller.scrollTop = startScroll + (e.clientY - startY) / m.maxThumb * (m.sh - m.ch); }
+        });
+        window.addEventListener('mouseup', function () {
+            if (dragging) { dragging = false; document.body.style.userSelect = ''; flash(); }
+        });
+        bar.addEventListener('mouseenter', function () { clearTimeout(hideTimer); if (measure()) { bar.classList.add('is-active'); } });
+        bar.addEventListener('mouseleave', flash);
+        measure();
+        return measure;
+    }
+
+    // Scroll the menu so el is in view; a tall el keeps its top edge in view.
+    function scrollIntoMenu(scroller, el) {
+        var gap = 8;
+        var view = scroller.getBoundingClientRect();
+        var box = el.getBoundingClientRect();
+        if (box.bottom + gap > view.bottom) {
+            scroller.scrollTop += Math.ceil(Math.min(box.bottom + gap - view.bottom, box.top - view.top));
+        } else if (box.top - gap < view.top) {
+            scroller.scrollTop -= Math.ceil(view.top - box.top + gap);
+        }
+    }
+
+    // An opened section can end below the fold; bring as much of it into view as fits.
+    function revealOnOpen(scroller, measure) {
+        scroller.addEventListener('osc:collapse:shown', function (e) {
+            var section = e.target.closest('.nav-item');
+            if (section && !collapsed()) { scrollIntoMenu(scroller, section); }
+            measure();
+        });
+    }
+
+    // At 1024px and below the menu is an off-canvas panel opened from the top bar.
+    function initMobile(nav) {
+        var icon = document.querySelector('#header .toggle-icon');
+        function apply() {
+            var small = !desktop.matches;
+            if (!small && osc.offcanvas.isOpen(nav)) { osc.offcanvas.hide(nav); }
+            nav.classList.toggle('offcanvas', small);
+            nav.classList.toggle('offcanvas-start', small);
+        }
+        nav.addEventListener('osc:offcanvas:show', function () { if (icon) { icon.classList.add('open'); } });
+        nav.addEventListener('osc:offcanvas:hide', function () { if (icon) { icon.classList.remove('open'); } });
+        desktop.addEventListener('change', apply);
+        apply();
+    }
+
+    function init() {
+        var nav = document.getElementById('sidebar-wrapper');
+        if (!nav || nav.dataset.oscSidebarInit) { return; }
+        nav.dataset.oscSidebarInit = '1';
+        initMobile(nav);
+        var frame = nav.querySelector('.sidebar-scroll-frame');
+        var scroller = frame ? frame.querySelector('.sidebar-scroll') : null;
+        initRail(nav, scroller);
+        if (frame && scroller) {
+            var current = nav.querySelector('.sidebar-submenu .sub-active');
+            if (current && !collapsed()) { scrollIntoMenu(scroller, current); }
+            revealOnOpen(scroller, initScrollbar(frame, scroller));
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    return {init: init};
+})();
+
+// A tab strip that scrolls on a phone opens with its current tab in view. "nearest" moves the
+// strip only as far as needed, in either reading direction, and leaves a strip that fits alone.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.osc-tabnav, #content-render .nav-tabs').forEach(function (strip) {
+        var current = strip.querySelector('.is-active, .active, [aria-current="page"]');
+        if (current) {
+            current.scrollIntoView({block: 'nearest', inline: 'nearest'});
+        }
+    });
 });

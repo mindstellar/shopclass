@@ -43,10 +43,41 @@
       color: var(--osc-bronze) !important;
     }
   }
+
+  // The add action carries its label, so the page's main job is not a bare "+".
+  h1 a.osc-head-add {
+    border: 1px solid var(--osc-rule-strong);
+    color: var(--osc-bronze) !important;
+    font-size: .875rem;
+    font-weight: 600;
+    gap: .35rem;
+    height: auto;
+    min-height: 2rem;
+    padding-inline: .6rem;
+
+    .bi {
+      font-size: 1rem;
+    }
+  }
 }
 
 #content-render {
   background-color: var(--osc-bench-sunk);
+}
+
+// When the page prints its own title, the header's section name steps down to a small label,
+// so each screen has one large title. A page with no title of its own keeps the large name.
+#content-render:has(#content-page .osc-page-title) #content-head h1 {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+
+  a {
+    letter-spacing: normal;
+    text-transform: none;
+  }
 }
 
 #content-head,
@@ -93,6 +124,11 @@ h3.render-title {
 * + h3.render-title,
 h3.render-title.separate-top {
   margin-block-start: 20px;
+}
+
+// The page title opens the page; a script or hidden field before it is not content to clear.
+h2.osc-page-title:first-of-type {
+  margin-block-start: 0;
 }
 
 .render-title a.btn-mini, .form-controls a.btn-mini {

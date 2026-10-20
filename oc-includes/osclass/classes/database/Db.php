@@ -32,6 +32,9 @@ use Throwable;
  */
 class Db
 {
+    /** Driver errors after which the server has rolled the open transaction back. */
+    public const LOST_TRANSACTION = array(1213, 1020);
+
     /**
      * Current transaction nesting depth.
      *
@@ -39,12 +42,22 @@ class Db
      */
     private static $depth = 0;
 
+    /** The error that rolled the open transaction back, until the caller rolls back too. */
+    private static ?int $lost = null;
+
     /**
      * Whether the end-of-request leaked-transaction guard has been registered.
      *
      * @var bool
      */
     private static $leakGuardArmed = false;
+
+    /**
+     * Callbacks waiting for the outermost commit, keyed by the nesting level that queued them.
+     *
+     * @var array<int,array<int,callable>>
+     */
+    private static $afterCommit = array();
 
     /**
      * Resolve the singleton mysqli connection through the Connection wrapper, which
@@ -56,7 +69,7 @@ class Db
      */
     private static function conn(): mysqli
     {
-        return Connection::instance()->handle();
+        return Connection::getInstance()->handle();
     }
 
     /**
@@ -73,6 +86,122 @@ class Db
     public static function table(string $table): QueryBuilder
     {
         return new QueryBuilder($table);
+    }
+
+    /**
+     * Run a parameterized SELECT and return every row.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws DbException
+     */
+    public static function select(string $sql, array $params = []): array
+    {
+        return Connection::getInstance()->select($sql, $params);
+    }
+
+    /**
+     * Run a parameterized SELECT and return the first row, or null.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @return array<string,mixed>|null
+     * @throws DbException
+     */
+    public static function selectOne(string $sql, array $params = []): ?array
+    {
+        return Connection::getInstance()->selectOne($sql, $params);
+    }
+
+    /**
+     * Run a parameterized SELECT and return the first column of the first row.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @return mixed null when there is no row
+     * @throws DbException
+     */
+    public static function scalar(string $sql, array $params = [])
+    {
+        return Connection::getInstance()->scalar($sql, $params);
+    }
+
+    /**
+     * Count the rows of $table, optionally under a parameterized WHERE clause.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException
+     */
+    public static function count(string $table, string $where = '', array $params = []): int
+    {
+        return (int) self::scalar('SELECT COUNT(*) FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : ''), $params);
+    }
+
+    /**
+     * Run a parameterized write and return the affected row count.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException
+     */
+    public static function execute(string $sql, array $params = []): int
+    {
+        return Connection::getInstance()->execute($sql, $params);
+    }
+
+    /**
+     * Run a parameterized INSERT and return the new row's id.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException
+     */
+    public static function insertGetId(string $sql, array $params = []): int
+    {
+        return Connection::getInstance()->insertGetId($sql, $params);
+    }
+
+    /**
+     * A row with every value a string, null kept, true and false as '1' and '0'. The legacy
+     * query layer read every column as a string, while prepared statements return ints and
+     * floats, so rows read this way keep the shape callers compare against ('1', not 1).
+     * A FLOAT column loses its trailing zeros ('1.50' becomes '1.5'); select it with a CAST
+     * when the rendered form matters. DECIMAL already arrives as a string.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array<string,mixed>
+     */
+    public static function stringifyRow(array $row): array
+    {
+        foreach ($row as $k => $v) {
+            if ($v === null || \is_string($v)) {
+                continue;
+            }
+            $row[$k] = \is_bool($v) ? ($v ? '1' : '0') : (string)$v;
+        }
+
+        return $row;
+    }
+
+    /**
+     * stringifyRow() for each row.
+     *
+     * @param array<int,mixed> $rows
+     *
+     * @return array<int,mixed>
+     */
+    public static function stringifyRows(array $rows): array
+    {
+        foreach ($rows as $i => $row) {
+            if (\is_array($row)) {
+                $rows[$i] = self::stringifyRow($row);
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -120,20 +249,39 @@ class Db
     {
         if (self::$depth > 1) {
             $result = self::releaseSavepoint('oscsp' . (self::$depth - 1));
+            // The savepoint's work now belongs to the enclosing level, and so do its callbacks.
+            if (isset(self::$afterCommit[self::$depth])) {
+                foreach (self::$afterCommit[self::$depth] as $fn) {
+                    self::$afterCommit[self::$depth - 1][] = $fn;
+                }
+                unset(self::$afterCommit[self::$depth]);
+            }
             self::$depth--;
 
             return $result;
         }
 
         try {
-            return self::conn()->commit();
+            $result = self::$lost === null && self::conn()->commit();
+            if (self::$lost !== null) {
+                // A lost transaction is rolled back, never committed; the server has dropped it already.
+                self::conn()->rollback();
+            }
         } catch (Throwable $e) {
-            return false;
+            $result = false;
         } finally {
+            self::$lost = null;
             if (self::$depth > 0) {
                 self::$depth--;
             }
         }
+        $queued             = self::$afterCommit[1] ?? array();
+        self::$afterCommit = array();
+        if ($result) {
+            self::runCallbacks($queued);
+        }
+
+        return $result;
     }
 
     /**
@@ -146,18 +294,59 @@ class Db
     {
         if (self::$depth > 1) {
             $result = self::rollbackToSavepoint('oscsp' . (self::$depth - 1));
+            unset(self::$afterCommit[self::$depth]);
             self::$depth--;
 
             return $result;
         }
 
+        self::$afterCommit = array();
         try {
             return self::conn()->rollback();
         } catch (Throwable $e) {
             return false;
         } finally {
+            self::$lost = null;
             if (self::$depth > 0) {
                 self::$depth--;
+            }
+        }
+    }
+
+    /**
+     * Run $fn once the outermost transaction commits, or now when none is open. It is dropped
+     * if the level that queued it rolls back, so work that cannot be undone, like removing a
+     * file, never outruns a write that may still be rolled back.
+     *
+     * @param callable $fn
+     *
+     * @return void
+     */
+    public static function afterCommit(callable $fn): void
+    {
+        if (self::$depth <= 0) {
+            $fn();
+
+            return;
+        }
+        self::$afterCommit[self::$depth][] = $fn;
+    }
+
+    /**
+     * Run callbacks queued for a commit that has happened. One that throws is logged, not
+     * thrown: the write is committed, so the caller must still see success.
+     *
+     * @param array<int,callable> $callbacks
+     *
+     * @return void
+     */
+    private static function runCallbacks(array $callbacks): void
+    {
+        foreach ($callbacks as $fn) {
+            try {
+                $fn();
+            } catch (Throwable $e) {
+                error_log('Db: an after-commit callback failed: ' . $e->getMessage());
             }
         }
     }
@@ -170,6 +359,44 @@ class Db
     public static function inTransaction(): bool
     {
         return self::$depth > 0;
+    }
+
+    /**
+     * Throw when a statement failed with a deadlock (1213) or a snapshot conflict (1020) inside
+     * a transaction. The server has rolled the whole transaction back, so the rest must not run.
+     *
+     * @throws DbException
+     */
+    public static function failIfLost(int $errno): void
+    {
+        self::noteError($errno);
+        self::assertIntact();
+    }
+
+    /**
+     * Note a statement error; after a deadlock or snapshot conflict every later query fails
+     * until rollBack(), so a caller that swallowed the error cannot write outside the transaction.
+     *
+     * @internal Connection calls it
+     */
+    public static function noteError(int $errno): void
+    {
+        if (self::$depth > 0 && in_array($errno, self::LOST_TRANSACTION, true)) {
+            self::$lost = $errno;
+        }
+    }
+
+    /**
+     * Throw while the server has rolled the open transaction back and the caller has not.
+     *
+     * @internal Connection and DBCommandClass call it before each query
+     * @throws DbException
+     */
+    public static function assertIntact(): void
+    {
+        if (self::$lost !== null) {
+            throw new DbException('The server rolled the transaction back', self::$lost);
+        }
     }
 
     /**
@@ -194,21 +421,36 @@ class Db
         self::$leakGuardArmed = true;
 
         register_shutdown_function(static function (): void {
-            if (self::$depth <= 0) {
-                return;
-            }
-            error_log(sprintf(
-                'Db: transaction still open at request end (depth=%d) — rolling back. A begin() '
-                . 'without a matching commit()/rollBack() discards every write since it; find the '
-                . 'unbalanced begin (likely a raw osc_db_begin or an escaped exception).',
-                self::$depth
-            ));
-            // Unwind every open level so the connection is not left mid-transaction.
-            $guard = 0;
-            while (self::$depth > 0 && $guard++ < 1024) {
-                self::rollBack();
-            }
+            self::unwind('request end');
         });
+    }
+
+    /**
+     * Roll back a transaction left open, and log it. A long-running worker calls this after each
+     * job, so one job's leaked begin() cannot hold, or block, the jobs after it.
+     *
+     * @param string $where for the log line, e.g. 'request end'
+     *
+     * @return bool true when a transaction was left open
+     */
+    public static function unwind(string $where): bool
+    {
+        if (self::$depth <= 0) {
+            return false;
+        }
+        error_log(sprintf(
+            'Db: transaction still open at %s (depth=%d) — rolling back. A begin() '
+            . 'without a matching commit()/rollBack() discards every write since it; find the '
+            . 'unbalanced begin (likely a raw osc_db_begin or an escaped exception).',
+            $where,
+            self::$depth
+        ));
+        $guard = 0;
+        while (self::$depth > 0 && $guard++ < 1024) {
+            self::rollBack();
+        }
+
+        return true;
     }
 
     /**
@@ -294,12 +536,52 @@ class Db
         }
         try {
             $result = $fn();
+            self::assertIntact();
             self::commit();
 
             return $result;
         } catch (Throwable $e) {
             self::rollBack();
             throw $e;
+        }
+    }
+
+    /**
+     * Run $fn under a named lock on the shared connection; see Connection::withNamedLock().
+     *
+     * @param string        $name
+     * @param int           $wait
+     * @param callable      $fn
+     * @param callable|null $busy
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public static function withNamedLock(string $name, int $wait, callable $fn, ?callable $busy = null)
+    {
+        return Connection::getInstance()->withNamedLock($name, $wait, $fn, $busy);
+    }
+
+    /**
+     * Run $fn, and once more after 50 ms if it throws a DbException, since a deadlock usually
+     * clears. Inside a transaction it throws at once: a deadlock has rolled the whole transaction back.
+     *
+     * @param callable $fn
+     *
+     * @return mixed
+     * @throws DbException when both tries fail, or the first fails inside a transaction
+     */
+    public static function retryOnce(callable $fn)
+    {
+        try {
+            return $fn();
+        } catch (DbException $e) {
+            if (self::$depth > 0) {
+                throw $e;
+            }
+            usleep(50000);
+
+            return $fn();
         }
     }
 

@@ -47,7 +47,7 @@ Add one crontab entry:
 
 Without it, e-mail alerts never send and expired listings never expire. This
 is the step people skip most, and the bug they report most. See
-[setting up cron](/docs/configure/cron/).
+[setting up cron](/docs/configure/cron/). The Docker image runs it for you.
 
 ## 5. Mail
 

@@ -14,11 +14,12 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\SitemapSettingsForm;
+use mindstellar\admin\form\SitemapSettingsScreen;
+use mindstellar\utility\Validate;
 
 /**
  * Admin screen for the core XML sitemap generator. The settings and robots.txt forms are
- * declared in SitemapSettingsForm; the custom-URL list (the `custom_urls` JSON preference)
+ * declared in SitemapSettingsScreen; the custom-URL list (the `custom_urls` JSON preference)
  * and the regenerate / clear-cache action are handled here.
  *
  * Class CAdminSettingsSitemap
@@ -52,9 +53,9 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
             case ('sitemap_settings_post'):
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SitemapSettingsForm::register());
+                $result = CoreSettings::attempt(SitemapSettingsScreen::register());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SitemapSettingsForm::PAGE_ID, $result['values']);
+                    $this->drawForms(SitemapSettingsScreen::PAGE_ID, $result['values']);
                     break;
                 }
 
@@ -82,7 +83,7 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
                     $lastmod = date('Y-m-d');
                 }
 
-                if ($url === '' || !$this->_isHttpUrl($url)) {
+                if (!Validate::httpUrl($url)) {
                     osc_add_flash_error_message(_m('Enter a valid URL, including the scheme (e.g. https://example.com/page)'), 'admin');
                 } else {
                     $list   = $this->_customUrls();
@@ -113,9 +114,9 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
 
                 // An unwritable file is refused in validation; a write that fails anyway is
                 // reported by the after_save, and either way the typed content comes back.
-                $result = CoreSettings::attempt(SitemapSettingsForm::registerRobots());
-                if ($result['errors'] !== array() || !SitemapSettingsForm::robotsWritten()) {
-                    $this->drawForms(SitemapSettingsForm::PAGE_ROBOTS, $result['values']);
+                $result = CoreSettings::attempt(SitemapSettingsScreen::registerRobots());
+                if ($result['errors'] !== array() || !SitemapSettingsScreen::robotsWritten()) {
+                    $this->drawForms(SitemapSettingsScreen::PAGE_ROBOTS, $result['values']);
                     break;
                 }
 
@@ -144,22 +145,22 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
      */
     private function drawForms(string $rejected = '', ?array $values = null)
     {
-        $forms = SitemapSettingsForm::formVars($rejected, $values);
+        $forms = SitemapSettingsScreen::formVars($rejected, $values);
 
         // The names these have always had: a replaced admin theme's own view still reads
         // them, and View::_get() answers '' for a key nobody exported.
         $shown = $forms['settings']['values'];
         $prefs = array('sitemap_number' => (int) $shown['sitemap_number']);
-        foreach (array_keys(SitemapSettingsForm::TOGGLES) as $key) {
+        foreach (array_keys(SitemapSettingsScreen::TOGGLES) as $key) {
             $prefs[$key] = !empty($shown[$key]);
         }
-        $path = SitemapSettingsForm::robotsPath();
+        $path = SitemapSettingsScreen::robotsPath();
 
         $this->_exportVariableToView('sitemap_forms', $forms);
         $this->_exportVariableToView('prefs', $prefs);
         $this->_exportVariableToView('custom_urls', $this->_customUrls());
-        $this->_exportVariableToView('robots_content', (string) $forms['robots']['values'][SitemapSettingsForm::ROBOTS]);
-        $this->_exportVariableToView('robots_writable', SitemapSettingsForm::robotsWritable());
+        $this->_exportVariableToView('robots_content', (string) $forms['robots']['values'][SitemapSettingsScreen::ROBOTS]);
+        $this->_exportVariableToView('robots_writable', SitemapSettingsScreen::robotsWritable());
         $this->_exportVariableToView('robots_exists', file_exists($path));
         $this->_exportVariableToView('sitemap_index_url', osc_base_url() . 'sitemapindex.xml');
         $this->doView('settings/sitemap.php');
@@ -192,21 +193,6 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
     {
         osc_set_preference('custom_urls', json_encode($list), Sitemap::PREF_GROUP, 'STRING');
         osc_sitemap_clear_cache();
-    }
-
-    /**
-     * FILTER_VALIDATE_URL alone accepts any scheme with an authority component
-     * (e.g. `javascript://…`), so a custom sitemap URL is only accepted once it
-     * is both filter-valid AND explicitly http/https.
-     *
-     * @param string $url
-     *
-     * @return bool
-     */
-    private function _isHttpUrl($url)
-    {
-        return filter_var($url, FILTER_VALIDATE_URL) !== false
-            && preg_match('#^https?://#i', $url) === 1;
     }
 }
 

@@ -32,7 +32,7 @@ $countryCode = $loc['country']['code'] ?? '';
 $regionId    = $loc['region']['id'] ?? 0;
 $keep        = array(
     'q'       => $loc['scope'] === 'level' ? $loc['q'] : '',
-    'pageNum' => $loc['page'] > 1 ? $loc['page'] : null,
+    'iPage'   => $loc['page'] > 1 ? $loc['page'] : null,
 );
 $view    = array('country' => $countryCode, 'region' => $regionId) + $keep;
 $back    = $url(array('country' => $countryCode, 'region' => $regionId, 'q' => $loc['q'], 'scope' => $loc['scope'] === 'all' ? 'all' : '') + $keep);

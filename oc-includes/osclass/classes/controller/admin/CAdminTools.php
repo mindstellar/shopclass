@@ -20,18 +20,78 @@ if (!defined('ABS_PATH')) {
  * Class CAdminTools
  */
 use mindstellar\admin\DatabaseTools;
+use mindstellar\admin\form\CleanupSettingsScreen;
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\LogSettingsScreen;
+use mindstellar\admin\form\MaintenanceSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\admin\SystemChecks;
 use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
-use mindstellar\backup\BackupManager;
+use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
+use mindstellar\backup\RestoreUpload;
+use mindstellar\logger\LogStore;
 use mindstellar\security\AdminReauth;
+use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\utility\AjaxResponse;
+use mindstellar\utility\Formatting;
 
 class CAdminTools extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
+    /** Each action and the method that answers it; any other action goes to systemInfo(). */
+    private const ACTIONS = array(
+        'import'             => 'importMoved',
+        'import_post'        => 'uploadBackup',
+        'backup_upload'      => 'uploadBackup',
+        'category'           => 'categoryMoved',
+        'category_post'      => 'recountCategories',
+        'locations'          => 'locationsPage',
+        'locations_post'     => 'recountLocations',
+        'upgrade'            => 'upgradePage',
+        'version'            => 'versionPage',
+        'cache'              => 'movedToSystemInfo',
+        'jobs'               => 'movedToSystemInfo',
+        'cache_clear'        => 'clearCache',
+        'backup'             => 'backupScreen',
+        'backup_post'        => 'backupScreen',
+        'backup_start'       => 'startBackup',
+        'backup-sql'         => 'startBackup',
+        'backup-sql_file'    => 'startBackup',
+        'backup-zip'         => 'startBackup',
+        'backup-zip_file'    => 'startBackup',
+        'backup_cancel'      => 'cancelBackup',
+        'backup_download'    => 'downloadBackup',
+        'backup_delete'      => 'deleteBackup',
+        'backup_restore'     => 'restoreBackup',
+        'backup_dismiss'     => 'dismissBackup',
+        'backup_reopen'      => 'reopenBackup',
+        'maintenance'        => 'maintenance',
+        'cleanup'            => 'cleanupPage',
+        'jobs_run'           => 'runJobs',
+        'jobs_retry'         => 'retryJob',
+        'jobs_forget'        => 'forgetJob',
+        'cleanup_post'       => 'cleanupSave',
+        'cleanup_run'        => 'runCleanup',
+        'logs'               => 'logsPage',
+        'logs_settings_post' => 'logSettingsSave',
+        'logs_clear'         => 'clearLogs',
+        'database'           => 'databaseMoved',
+        'system_info'        => 'systemInfo',
+        'system-info'        => 'systemInfo',
+    );
+
+    /** Old Tools actions whose screen is now a part of another page, with where they land. */
+    public const MOVED = array(
+        'import'   => 'backup#restore',
+        'database' => 'system-info&tab=database',
+        'jobs'     => 'system-info&tab=jobs',
+        'cache'    => 'system-info&tab=cache',
+    );
+
     /**
      * Let plugins hook the tools section before anything is dispatched.
      */
@@ -53,453 +113,543 @@ class CAdminTools extends AdminSecBaseModel
     {
         parent::doModel();
 
-        switch ($this->action) {
-            case ('import'):
-                // Restoring a backup is now a part of Tools > Backup and restore; old links land there.
-                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo('import'));
-                break;
-            case ('import_post'):
-            case ('backup_upload'):
-                $this->backupUpload($this->action === 'import_post' ? 'sql' : 'backup_file');
-                break;
-            // The recount lives on the Categories screen; the old page URL still lands there.
-            case ('category'):
-                $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
-                break;
-            case ('category_post'):
-                osc_csrf_check();
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=categories')) {
-                    break;
-                }
-                osc_update_cat_stats();
-                osc_add_flash_ok_message(_m('Recount category stats has been successful'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
-                break;
-            case ('locations'):
-                $this->doView('tools/locations.php');
-                break;
-            case ('locations_post'):
-                // Also posted from the Locations Data tab, which asks to come back there.
-                $fromLocations = Params::getParamString('return') === 'locations';
-                $isXhr         = strtolower(Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
-                $back          = $fromLocations
-                    ? osc_admin_base_url(true) . '?page=settings&action=locations&tab=data'
-                    : osc_admin_base_url(true) . '?page=tools&action=locations';
-                if ($isXhr && !defined('IS_AJAX')) {
-                    define('IS_AJAX', true);
-                }
-                osc_csrf_check();
-                if (defined('DEMO')) {
-                    if ($isXhr) {
-                        AjaxResponse::json(array('error' => _m('This action cannot be done because it is a demo site')));
-                        exit;
-                    }
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo($back);
-                }
+        $method = $this->actionMethod('systemInfo');
 
-                $started = (float) (Params::getServerParam('REQUEST_TIME_FLOAT') ?: microtime(true));
-                $queued  = (int) LocationsTmp::newInstance()->count();
-                $pending = (int) osc_update_location_stats(true);
-                $total   = $queued === 0 ? $pending : max($pending, (int) osc_get_preference('location_todo'));
-
-                if ($isXhr) {
-                    header('Cache-Control: no-store');
-                    AjaxResponse::json(array(
-                        'status'  => $pending > 0 ? 'more' : 'done',
-                        'pending' => $pending,
-                        'total'   => $total,
-                    ));
-                    exit;
-                }
-
-                if ($fromLocations) {
-                    // Without the script, keep counting while this request has time left.
-                    $until = microtime(true) + \mindstellar\location\LocationAdminView::recountBudget(
-                        (int) ini_get('max_execution_time'),
-                        microtime(true) - $started
-                    );
-                    while ($pending > 0 && microtime(true) < $until) {
-                        $next = (int) osc_update_location_stats();
-                        if ($next >= $pending) {
-                            // A batch's writes are all failing; stop spinning until the next run.
-                            break;
-                        }
-                        $pending = $next;
-                    }
-                    if ($pending > 0) {
-                        osc_add_flash_info_message(sprintf(
-                            _m('%s locations are still to be counted. Continue counting to finish.'),
-                            number_format($pending)
-                        ), 'admin');
-                    } else {
-                        osc_add_flash_ok_message(_m('Listing counts are recalculated'), 'admin');
-                    }
-                }
-
-                $this->redirectTo($back);
-                break;
-            case ('upgrade'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true))) {
-                    break;
-                }
-                // Only the confirm dialog's POST starts the run; a link with confirm=true just shows the page.
-                $start = Params::getServerParam('REQUEST_METHOD') === 'POST' && Params::getParamString('confirm') === 'true';
-                if ($start) {
-                    osc_csrf_check();
-                }
-                $this->_exportVariableToView('upgrade_start', $start);
-                $this->doView('tools/upgrade.php');
-                break;
-            case 'version':
-                $this->doView('tools/version.php');
-                break;
-            case ('cache'):
-            case 'jobs':
-                // These pages are now tabs of System info.
-                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo($this->action));
-                break;
-            case ('cache_clear'):
-                if ($this->refuseOnDemo(self::cacheUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                if (osc_cache_flush()) {
-                    osc_add_flash_ok_message(_m('The cache has been cleared'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m('The cache could not be cleared'), 'admin');
-                }
-                $this->redirectTo(self::cacheUrl());
-                break;
-            case ('backup'):
-            case ('backup_post'):
-                $this->backupPage();
-                break;
-            case ('backup_start'):
-            case ('backup-sql'):
-            case ('backup-sql_file'):
-            case ('backup-zip'):
-            case ('backup-zip_file'):
-                $this->backupStart();
-                break;
-            case ('backup_cancel'):
-                if ($this->refuseOnDemo(self::backupUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                BackupManager::cancel();
-                $this->redirectTo(self::backupUrl());
-                break;
-            case ('backup_download'):
-                $this->backupDownload();
-                break;
-            case ('backup_delete'):
-                if ($this->refuseOnDemo(self::backupUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                $name   = Params::getParamString('name', false, false);
-                $bucket = Params::getParamString('from') === 'bucket' ? BackupBucket::adapter() : false;
-                if ($bucket === false ? BackupStore::site()->delete($name) : $bucket !== null && BackupStore::site()->bucketDelete($bucket, $name)) {
-                    osc_add_flash_ok_message(_m('The backup is deleted.'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m('That backup is not in the list any more.'), 'admin');
-                }
-                $this->redirectTo(self::backupUrl());
-                break;
-            case ('backup_restore'):
-                if ($this->refuseOnDemo(self::backupUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                if ($this->refuseRestoreOff()) {
-                    break;
-                }
-                $name       = Params::getParamString('name', false, false);
-                $fromBucket = Params::getParamString('from') === 'bucket';
-                $admin  = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
-                $reauth = is_array($admin) ? AdminReauth::verify(
-                    $admin,
-                    Params::getParamString('password', false, false),
-                    Params::getParamString('code')
-                ) : _m("You don't have enough permissions");
-                if ($reauth !== '') {
-                    Session::newInstance()->_set('backupReauthError', $reauth);
-                    $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name) . ($fromBucket ? '&from=bucket' : ''));
-                    break;
-                }
-                $parts  = Params::getParamArray('parts');
-                $choose = Params::getParamInt('choose') === 1;
-                $error  = BackupManager::startRestore(
-                    $name,
-                    !$choose || in_array('database', $parts, true),
-                    !$choose || in_array('files', $parts, true),
-                    $fromBucket
-                );
-                if ($error !== '') {
-                    osc_add_flash_error_message(osc_esc_html($error), 'admin');
-                }
-                $this->redirectTo(self::backupUrl());
-                break;
-            case ('backup_dismiss'):
-                osc_csrf_check();
-                BackupManager::dismiss();
-                $this->redirectTo(self::backupUrl());
-                break;
-            case ('backup_reopen'):
-                if ($this->refuseOnDemo(self::backupUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                if (BackupManager::reopen()) {
-                    osc_add_flash_ok_message(_m('The site is open again. Check the database below.'), 'admin');
-                    $this->redirectTo(self::databaseUrl());
-                    break;
-                }
-                $this->redirectTo(self::backupUrl());
-                break;
-            case ('maintenance'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->doView('tools/maintenance.php');
-                    break;
-                }
-                $mode = Params::getParam('mode');
-                if ($mode === 'on') {
-                    osc_csrf_check();
-                    $maintenance_file = osc_base_path() . '.maintenance';
-                    $fileHandler      = @fopen($maintenance_file, 'wb');
-                    if ($fileHandler) {
-                        fclose($fileHandler);
-                        osc_purge_page_cache('maintenance');
-                        osc_add_flash_ok_message(_m('Maintenance mode is ON'), 'admin');
-                    } else {
-                        osc_add_flash_error_message(
-                            _m('There was an error creating the .maintenance file, please create it manually at the root folder'),
-                            'admin'
-                        );
-                    }
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
-                } elseif ($mode === 'off') {
-                    osc_csrf_check();
-                    $deleted = @unlink(osc_base_path() . '.maintenance');
-                    if ($deleted) {
-                        osc_purge_page_cache('maintenance');
-                        osc_add_flash_ok_message(_m('Maintenance mode is OFF'), 'admin');
-                    } else {
-                        osc_add_flash_error_message(
-                            _m('There was an error removing the .maintenance file, please remove it manually from the root folder'),
-                            'admin'
-                        );
-                    }
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
-                } elseif ($mode === 'save') {
-                    osc_csrf_check();
-                    osc_set_preference(
-                        OSC_MAINTENANCE_PREF_LOCKOUT,
-                        Params::getParamString('maintenance_lockout') === '1' ? '1' : '0',
-                        OSC_MAINTENANCE_PREF_SECTION,
-                        'BOOLEAN'
-                    );
-                    osc_set_preference(
-                        OSC_MAINTENANCE_PREF_MESSAGE,
-                        osc_sanitize_maintenance_message(Params::getParamString('maintenance_message')),
-                        OSC_MAINTENANCE_PREF_SECTION,
-                        'STRING'
-                    );
-                    osc_reset_preferences();
-                    osc_purge_page_cache('maintenance');
-                    osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
-                }
-                $this->doView('tools/maintenance.php');
-                break;
-            case 'cleanup':
-                $this->_exportVariableToView('cleanup_history', $this->jobLog(array('cleanup'), 10));
-                $this->doView('tools/cleanup.php');
-                break;
-            case 'jobs_run':
-                if ($this->refuseOnDemo(self::jobsUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                $ran = osc_job_run(20);
-                if ($ran > 0) {
-                    osc_add_flash_ok_message(
-                        sprintf(_mn('%d job ran.', '%d jobs ran.', $ran), $ran),
-                        'admin'
-                    );
-                } else {
-                    osc_add_flash_warning_message(_m('Nothing was waiting to run.'), 'admin');
-                }
-                $this->redirectTo(self::jobsUrl());
-                break;
-            case 'jobs_retry':
-                if ($this->refuseOnDemo(self::jobsUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                $id = Params::getParamInt('id');
-                if ($id > 0) {
-                    $done = \mindstellar\job\JobQueue::instance()->retry($id);
-                } else {
-                    $done = \mindstellar\job\JobQueue::instance()->retryAll() > 0;
-                }
-                if ($done) {
-                    osc_add_flash_ok_message(_m('Queued again. It runs on the next cron tick.'), 'admin');
-                } else {
-                    osc_add_flash_warning_message(_m('Nothing to queue again.'), 'admin');
-                }
-                $this->redirectTo(self::jobsUrl());
-                break;
-            case 'jobs_forget':
-                if ($this->refuseOnDemo(self::jobsUrl())) {
-                    break;
-                }
-                osc_csrf_check();
-                $id = Params::getParamInt('id');
-                if ($id > 0) {
-                    $done = \mindstellar\job\JobQueue::instance()->forget($id);
-                } else {
-                    $done = \mindstellar\job\JobQueue::instance()->forgetAll() > 0;
-                }
-                if ($done) {
-                    osc_add_flash_ok_message(_m('Thrown away.'), 'admin');
-                } else {
-                    osc_add_flash_warning_message(_m('Nothing to throw away.'), 'admin');
-                }
-                $this->redirectTo(self::jobsUrl());
-                break;
-            case 'cleanup_post':
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
-                    break;
-                }
-                osc_csrf_check();
-                $limit = Params::getParamInt('batch_limit');
-                osc_set_preference('batch_limit', $limit > 0 ? $limit : Cleanup::DEFAULT_BATCH, 'osclass', 'INTEGER');
-                foreach (Cleanup::RULES as $rule) {
-                    osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'osclass', 'BOOLEAN');
-                    $days = Params::getParamInt('days_' . $rule);
-                    osc_set_preference('days_' . $rule, $days > 0 ? $days : Cleanup::DEFAULT_DAYS, 'osclass', 'INTEGER');
-                }
-                osc_set_preference(
-                    'item_views_enabled',
-                    Params::getParam('item_views_enabled') ? '1' : '0',
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'count_bot_views',
-                    Params::getParam('count_bot_views') ? '1' : '0',
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'item_stats_retention_days',
-                    max(0, Params::getParamInt('item_stats_retention_days')),
-                    'osclass',
-                    'INTEGER'
-                );
-                osc_reset_preferences();
-                osc_add_flash_ok_message(_m('Cleanup settings saved'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
-                break;
-            case 'cleanup_run':
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
-                    break;
-                }
-                osc_csrf_check();
-                if (\mindstellar\job\CleanupJobs::isRunning()) {
-                    osc_add_flash_warning_message(_m('Cleanup is already running in the background.'), 'admin');
-                } elseif (\mindstellar\job\CleanupJobs::queue() > 0) {
-                    // Start now, so the first batches do not wait for cron. Cron does the rest.
-                    \mindstellar\job\JobWorker::run(10);
-                    osc_add_flash_ok_message(_m('Cleanup started. It runs in the background until nothing matches.'), 'admin');
-                } else {
-                    osc_add_flash_warning_message(_m('Nothing matches the enabled rules.'), 'admin');
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
-                break;
-            case ('logs'):
-                // set default iDisplayLength (same cookie behaviour as the listings)
-                ListPaging::rememberedLength(20);
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
-
-                if (Params::getParam('sort') == '') {
-                    Params::setParam('sort', 'date');
-                }
-                if (Params::getParam('direction') == '') {
-                    Params::setParam('direction', 'desc');
-                }
-
-                $page = ListPaging::page();
-
-                $logsDataTable = new LogsDataTable();
-                $logsDataTable->table(Params::getParamsAsArray());
-                $aData = $logsDataTable->getData();
-
-                if (count($aData['aRows']) == 0 && $page != 1) {
-                    $total   = (int) $aData['iTotalDisplayRecords'];
-                    $maxPage = (int) ceil($total / (int) $aData['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-                    if ($maxPage == 0) {
-                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=1', $url));
-                    }
-                    if ($page > 1) {
-                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url));
-                    }
-                }
-
-                $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('sections', Log::newInstance()->distinctSections());
-                $this->_exportVariableToView('log_enabled', osc_is_admin_log_enabled());
-                $this->_exportVariableToView('log_retention_days', osc_admin_log_retention_days());
-                $this->doView('tools/logs.php');
-                break;
-            case ('logs_settings_post'):
-                osc_csrf_check();
-                $retention = Params::getParamInt('admin_log_retention_days');
-                osc_set_preference(
-                    'admin_log_enabled',
-                    Params::getParam('admin_log_enabled') != '' ? 1 : 0,
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'admin_log_retention_days',
-                    $retention > 0 ? $retention : 0,
-                    'osclass',
-                    'INTEGER'
-                );
-                osc_reset_preferences();
-                osc_add_flash_ok_message(_m('Activity log settings saved'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
-                break;
-            case ('logs_clear'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=logs')) {
-                    break;
-                }
-                osc_csrf_check();
-                $removed = Log::newInstance()->clearAll();
-                osc_add_flash_ok_message(
-                    sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
-                    'admin'
-                );
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
-                break;
-            case 'database':
-                // The Database page is now a tab of System info.
-                $this->redirectTo(self::databaseUrl());
-                break;
-            case 'system_info':
-            case 'system-info':
-            default:
-                $this->systemInfoPage();
-                break;
-        }
+        $this->$method();
     }
 
+    /**
+     * The old restore page, now part of Backup and restore.
+     */
+    private function importMoved(): void
+    {
+        // Restoring a backup is now a part of Tools > Backup and restore; old links land there.
+        $this->redirectTo(osc_admin_base_url(true) . self::movedTo('import'));
+    }
+
+    /**
+     * Restore from an uploaded backup file.
+     */
+    private function uploadBackup(): void
+    {
+        $this->backupUpload($this->action === 'import_post' ? 'sql' : 'backup_file');
+    }
+
+    /**
+     * The old category recount page, now on the Categories screen.
+     */
+    private function categoryMoved(): void
+    {
+        // The recount lives on the Categories screen; the old page URL still lands there.
+        $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
+    }
+
+    /**
+     * Count the listings in every category again.
+     */
+    private function recountCategories(): void
+    {
+        osc_csrf_check();
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=categories')) {
+            return;
+        }
+        osc_update_cat_stats();
+        osc_add_flash_ok_message(_m('Recount category stats has been successful'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
+    }
+
+    /**
+     * The location recount page.
+     */
+    private function locationsPage(): void
+    {
+        $this->doView('tools/locations.php');
+    }
+
+    /**
+     * Count the listings in every place again, a batch at a time.
+     */
+    private function recountLocations(): void
+    {
+        // Also posted from the Locations Data tab, which asks to come back there.
+        $fromLocations = Params::getParamString('return') === 'locations';
+        $isXhr         = $this->isXhrRequest();
+        $back          = $fromLocations
+            ? osc_admin_base_url(true) . '?page=settings&action=locations&tab=data'
+            : osc_admin_base_url(true) . '?page=tools&action=locations';
+        if ($isXhr && !defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+        if (Demo::active()) {
+            if ($isXhr) {
+                AjaxResponse::json(array('error' => Demo::message()));
+                exit;
+            }
+            osc_add_flash_warning_message(Demo::message(), 'admin');
+            $this->redirectTo($back);
+        }
+
+        $started = (float) (Params::getServerParam('REQUEST_TIME_FLOAT') ?: microtime(true));
+        $queued  = \mindstellar\location\LocationRecountJobs::pending();
+        $pending = (int) osc_update_location_stats(true);
+        $total   = $queued === 0 ? $pending : max($pending, (int) osc_get_preference('location_todo'));
+
+        if ($isXhr) {
+            header('Cache-Control: no-store');
+            AjaxResponse::json(array(
+                'status'  => $pending > 0 ? 'more' : 'done',
+                'pending' => $pending,
+                'total'   => $total,
+            ));
+            exit;
+        }
+
+        if ($fromLocations) {
+            // Without the script, keep counting while this request has time left.
+            $until = microtime(true) + \mindstellar\location\LocationAdminView::recountBudget(
+                (int) ini_get('max_execution_time'),
+                microtime(true) - $started
+            );
+            while ($pending > 0 && microtime(true) < $until) {
+                $next = (int) osc_update_location_stats();
+                if ($next >= $pending) {
+                    // A batch's writes are all failing; stop spinning until the next run.
+                    break;
+                }
+                $pending = $next;
+            }
+            if ($pending > 0) {
+                osc_add_flash_info_message(sprintf(
+                    _m('%s locations are still to be counted. Continue counting to finish.'),
+                    number_format($pending)
+                ), 'admin');
+            } else {
+                osc_add_flash_ok_message(_m('Listing counts are recalculated'), 'admin');
+            }
+        }
+
+        $this->redirectTo($back);
+    }
+
+    /**
+     * The core upgrade page; a confirmed POST starts the upgrade.
+     */
+    private function upgradePage(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true))) {
+            return;
+        }
+        // Only the confirm dialog's POST starts the run; a link with confirm=true just shows the page.
+        $start = Params::getServerParam('REQUEST_METHOD') === 'POST' && Params::getParamString('confirm') === 'true';
+        if ($start) {
+            osc_csrf_check();
+        }
+        $this->_exportVariableToView('upgrade_start', $start);
+        $this->doView('tools/upgrade.php');
+    }
+
+    /**
+     * The version and changelog page.
+     */
+    private function versionPage(): void
+    {
+        $this->doView('tools/version.php');
+    }
+
+    /**
+     * The old cache and jobs pages, now tabs of System info.
+     */
+    private function movedToSystemInfo(): void
+    {
+        // These pages are now tabs of System info.
+        $this->redirectTo(osc_admin_base_url(true) . self::movedTo($this->action));
+    }
+
+    /**
+     * Clear the object cache.
+     */
+    private function clearCache(): void
+    {
+        if ($this->refuseOnDemo(self::cacheUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        if (osc_cache_flush()) {
+            osc_add_flash_ok_message(_m('The cache has been cleared'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('The cache could not be cleared'), 'admin');
+        }
+        $this->redirectTo(self::cacheUrl());
+    }
+
+    /**
+     * The Backup and restore screen.
+     */
+    private function backupScreen(): void
+    {
+        $this->backupPage();
+    }
+
+    /**
+     * Start a backup.
+     */
+    private function startBackup(): void
+    {
+        $this->backupStart();
+    }
+
+    /**
+     * Cancel the running backup.
+     */
+    private function cancelBackup(): void
+    {
+        if ($this->refuseOnDemo(self::backupUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        BackupService::cancel();
+        $this->redirectTo(self::backupUrl());
+    }
+
+    /**
+     * Download a backup file.
+     */
+    private function downloadBackup(): void
+    {
+        $this->backupDownload();
+    }
+
+    /**
+     * Delete a backup file.
+     */
+    private function deleteBackup(): void
+    {
+        if ($this->refuseOnDemo(self::backupUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        $name   = Params::getParamString('name', false, false);
+        $bucket = Params::getParamString('from') === 'bucket' ? BackupBucket::adapter() : false;
+        if ($bucket === false ? BackupStore::site()->delete($name) : $bucket !== null && BackupStore::site()->bucketDelete($bucket, $name)) {
+            osc_add_flash_ok_message(_m('The backup is deleted.'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('That backup is not in the list any more.'), 'admin');
+        }
+        $this->redirectTo(self::backupUrl());
+    }
+
+    /**
+     * Restore a backup, after asking to confirm.
+     */
+    private function restoreBackup(): void
+    {
+        if ($this->refuseOnDemo(self::backupUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        if ($this->refuseRestoreOff()) {
+            return;
+        }
+        $name       = Params::getParamString('name', false, false);
+        $fromBucket = Params::getParamString('from') === 'bucket';
+        $admin  = Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
+        $reauth = is_array($admin) ? AdminReauth::verify(
+            $admin,
+            Params::getParamString('password', false, false),
+            Params::getParamString('code')
+        ) : _m("You don't have enough permissions");
+        if ($reauth !== '') {
+            Session::getInstance()->_set('backupReauthError', $reauth);
+            $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name) . ($fromBucket ? '&from=bucket' : ''));
+            return;
+        }
+        $parts  = Params::getParamArray('parts');
+        $choose = Params::getParamInt('choose') === 1;
+        $error  = BackupService::startRestore(
+            $name,
+            !$choose || in_array('database', $parts, true),
+            !$choose || in_array('files', $parts, true),
+            $fromBucket
+        );
+        if ($error !== '') {
+            osc_add_flash_error_message(osc_esc_html($error), 'admin');
+        }
+        $this->redirectTo(self::backupUrl());
+    }
+
+    /**
+     * Hide the last backup's result.
+     */
+    private function dismissBackup(): void
+    {
+        osc_csrf_check();
+        BackupService::dismiss();
+        $this->redirectTo(self::backupUrl());
+    }
+
+    /**
+     * Open the site again after a restore that was left closed.
+     */
+    private function reopenBackup(): void
+    {
+        if ($this->refuseOnDemo(self::backupUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        if (BackupService::reopen()) {
+            osc_add_flash_ok_message(_m('The site is open again. Check the database below.'), 'admin');
+            $this->redirectTo(self::databaseUrl());
+            return;
+        }
+        $this->redirectTo(self::backupUrl());
+    }
+
+    /**
+     * Turn maintenance mode on or off.
+     */
+    private function maintenance(): void
+    {
+        if (Demo::active()) {
+            osc_add_flash_warning_message(Demo::message(), 'admin');
+            $this->_exportVariableToView('maintenance_form', MaintenanceSettingsScreen::formVars());
+            $this->doView('tools/maintenance.php');
+            return;
+        }
+        $mode = Params::getParam('mode');
+        $form = null;
+        if ($mode === 'on') {
+            osc_csrf_check();
+            if (osc_maintenance_set(true)) {
+                osc_add_flash_ok_message(_m('Maintenance mode is ON'), 'admin');
+            } else {
+                osc_add_flash_error_message(
+                    _m('There was an error creating the .maintenance file, please create it manually at the root folder'),
+                    'admin'
+                );
+            }
+            $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
+        } elseif ($mode === 'off') {
+            osc_csrf_check();
+            if (osc_maintenance_set(false)) {
+                osc_add_flash_ok_message(_m('Maintenance mode is OFF'), 'admin');
+            } else {
+                osc_add_flash_error_message(
+                    _m('There was an error removing the .maintenance file, please remove it manually from the root folder'),
+                    'admin'
+                );
+            }
+            $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
+        } elseif ($mode === 'save') {
+            osc_csrf_check();
+            $result = CoreSettings::attempt(MaintenanceSettingsScreen::register());
+            if ($result['errors'] === array()) {
+                osc_purge_page_cache('maintenance');
+                osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
+            }
+            $form = $result['values'];
+        }
+        $this->_exportVariableToView('maintenance_form', MaintenanceSettingsScreen::formVars($form));
+        $this->doView('tools/maintenance.php');
+    }
+
+    /**
+     * The cleanup page.
+     */
+    private function cleanupPage(): void
+    {
+        $this->drawCleanup();
+    }
+
+    /**
+     * Run the waiting background jobs now.
+     */
+    private function runJobs(): void
+    {
+        if ($this->refuseOnDemo(self::jobsUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        $ran = osc_job_run(20);
+        if ($ran > 0) {
+            osc_add_flash_ok_message(
+                sprintf(_mn('%d job ran.', '%d jobs ran.', $ran), $ran),
+                'admin'
+            );
+        } else {
+            osc_add_flash_warning_message(_m('Nothing was waiting to run.'), 'admin');
+        }
+        $this->redirectTo(self::jobsUrl());
+    }
+
+    /**
+     * Run a failed background job again.
+     */
+    private function retryJob(): void
+    {
+        if ($this->refuseOnDemo(self::jobsUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        $id = Params::getParamInt('id');
+        if ($id > 0) {
+            $done = \mindstellar\job\JobQueue::getInstance()->retry($id);
+        } else {
+            $done = \mindstellar\job\JobQueue::getInstance()->retryAll() > 0;
+        }
+        if ($done) {
+            osc_add_flash_ok_message(_m('Queued again. It runs on the next cron tick.'), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Nothing to queue again.'), 'admin');
+        }
+        $this->redirectTo(self::jobsUrl());
+    }
+
+    /**
+     * Remove a failed background job.
+     */
+    private function forgetJob(): void
+    {
+        if ($this->refuseOnDemo(self::jobsUrl())) {
+            return;
+        }
+        osc_csrf_check();
+        $id = Params::getParamInt('id');
+        if ($id > 0) {
+            $done = \mindstellar\job\JobQueue::getInstance()->forget($id);
+        } else {
+            $done = \mindstellar\job\JobQueue::getInstance()->forgetAll() > 0;
+        }
+        if ($done) {
+            osc_add_flash_ok_message(_m('Thrown away.'), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Nothing to throw away.'), 'admin');
+        }
+        $this->redirectTo(self::jobsUrl());
+    }
+
+    /**
+     * Save the cleanup settings.
+     */
+    private function cleanupSave(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
+            return;
+        }
+        osc_csrf_check();
+        $result = CoreSettings::attempt(CleanupSettingsScreen::register());
+        if ($result['errors'] !== array()) {
+            $this->drawCleanup($result['values']);
+            return;
+        }
+        osc_add_flash_ok_message(_m('Cleanup settings saved'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+    }
+
+    /**
+     * Start the cleanup now, in the background.
+     */
+    private function runCleanup(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
+            return;
+        }
+        osc_csrf_check();
+        if (\mindstellar\job\CleanupJobs::isRunning()) {
+            osc_add_flash_warning_message(_m('Cleanup is already running in the background.'), 'admin');
+        } elseif (\mindstellar\job\CleanupJobs::queue() > 0) {
+            // Start now, so the first batches do not wait for cron. Cron does the rest.
+            \mindstellar\job\JobWorker::run(10);
+            osc_add_flash_ok_message(_m('Cleanup started. It runs in the background until nothing matches.'), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Nothing matches the enabled rules.'), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+    }
+
+    /**
+     * The activity log.
+     */
+    private function logsPage(): void
+    {
+        // set default iDisplayLength (same cookie behaviour as the listings)
+        ListPaging::rememberedLength(20);
+        $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+        if (Params::getParam('sort') == '') {
+            Params::setParam('sort', 'date');
+        }
+        if (Params::getParam('direction') == '') {
+            Params::setParam('direction', 'desc');
+        }
+
+        $page = ListPaging::page();
+
+        $logsDataTable = new LogsDataTable();
+        $logsDataTable->table(Params::getParamsAsArray());
+        $aData = $logsDataTable->getData();
+
+        $pastEnd = ListPaging::pastEnd($aData, (int) $page);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $this->_exportVariableToView('aData', $aData);
+        $this->_exportVariableToView('sections', Log::getInstance()->distinctSections());
+        $this->_exportVariableToView('log_form', LogSettingsScreen::formVars());
+        $this->doView('tools/logs.php');
+    }
+
+    /**
+     * Save the activity log settings.
+     */
+    private function logSettingsSave(): void
+    {
+        osc_csrf_check();
+        if (CoreSettings::attempt(LogSettingsScreen::register())['errors'] === array()) {
+            osc_add_flash_ok_message(_m('Activity log settings saved'), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
+    }
+
+    /**
+     * Clear the activity log.
+     */
+    private function clearLogs(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=logs')) {
+            return;
+        }
+        osc_csrf_check();
+        try {
+            $removed = LogStore::clearAll();
+            osc_add_flash_ok_message(
+                sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
+                'admin'
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            osc_add_flash_error_message(_m('The log could not be cleared'), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
+    }
+
+    /**
+     * The old database page, now a tab of System info.
+     */
+    private function databaseMoved(): void
+    {
+        // The Database page is now a tab of System info.
+        $this->redirectTo(self::databaseUrl());
+    }
+
+    /**
+     * The System info screen.
+     */
+    private function systemInfo(): void
+    {
+        $this->systemInfoPage();
+    }
     /**
      * The Backup and restore page.
      *
@@ -511,6 +661,18 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
+     * The Cleanup screen, with the values a rejected save hands back, or the stored ones.
+     *
+     * @param array<string,mixed>|null $values
+     */
+    private function drawCleanup(?array $values = null): void
+    {
+        $this->_exportVariableToView('cleanup_history', $this->jobLog(array('cleanup'), 10));
+        $this->_exportVariableToView('cleanup_form', CleanupSettingsScreen::formVars($values));
+        $this->doView('tools/cleanup.php');
+    }
+
+    /**
      * Tools > Backup and restore. A finished run stays on the page until it is dismissed
      * or the next run starts; a plain visit changes no state.
      *
@@ -519,8 +681,8 @@ class CAdminTools extends AdminSecBaseModel
     private function backupPage(): void
     {
         $store  = BackupStore::site();
-        $state  = BackupManager::current();
-        $busy   = BackupManager::busy();
+        $state  = BackupService::current();
+        $busy   = BackupService::busy();
         $keep   = '';
         $notice = null;
         $status = (string) ($state['status'] ?? '');
@@ -538,7 +700,7 @@ class CAdminTools extends AdminSecBaseModel
                     __('Backup saved: %1$s, %2$s, %3$s.'),
                     BackupJobs::when(date('c', (int) $state['started'])),
                     BackupJobs::whatWord((string) $state['what']),
-                    DatabaseTools::bytes((int) $state['size'])
+                    Formatting::bytes((int) $state['size'])
                 )));
         } elseif ($status === 'cancelled') {
             $notice = array('tone' => 'info', 'lines' => array(__('Backup cancelled. Nothing was saved.')));
@@ -562,10 +724,10 @@ class CAdminTools extends AdminSecBaseModel
         $confirm    = null;
         $name       = Params::getParamString('confirm', false, false);
         $fromBucket = $bucket !== null && Params::getParamString('from') === 'bucket';
-        $reauth     = (string) Session::newInstance()->_get('backupReauthError');
-        Session::newInstance()->_drop('backupReauthError');
+        $reauth     = (string) Session::getInstance()->_get('backupReauthError');
+        Session::getInstance()->_drop('backupReauthError');
         if ($name !== '' && !$busy && !osc_web_restore_disabled()) {
-            $check = $fromBucket ? BackupManager::checkBucket($name) : BackupManager::check($name);
+            $check = $fromBucket ? BackupService::checkBucket($name) : BackupService::check($name);
             if ($check['reason'] !== '') {
                 osc_add_flash_error_message(osc_esc_html($check['reason']), 'admin');
             } else {
@@ -586,9 +748,9 @@ class CAdminTools extends AdminSecBaseModel
         $this->_exportVariableToView('backup_bucket_address', BackupBucket::addressProblem());
         $this->_exportVariableToView('backup_confirm', $confirm);
         $this->_exportVariableToView('backup_reauth_error', $confirm !== null ? $reauth : '');
-        $me = $confirm !== null ? Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;
+        $me = $confirm !== null ? Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;
         $this->_exportVariableToView('backup_reauth_2fa', is_array($me) && \mindstellar\security\AdminTwoFactor::enabled($me));
-        $this->_exportVariableToView('backup_probe', $list !== array() ? BackupManager::probe() : null);
+        $this->_exportVariableToView('backup_probe', $list !== array() ? BackupService::probe() : null);
         $this->doView('tools/backup.php');
     }
 
@@ -652,10 +814,10 @@ class CAdminTools extends AdminSecBaseModel
             'backup-zip_file' => array('files', 'download'),
         );
         list($what, $where) = $aliases[$this->action] ?? array(
-            (string) Params::getParamEnum('what', BackupManager::WHAT, ''),
-            (string) Params::getParamEnum('where', BackupManager::WHERE, ''),
+            (string) Params::getParamEnum('what', BackupService::WHAT, ''),
+            (string) Params::getParamEnum('where', BackupService::WHERE, ''),
         );
-        $error = BackupManager::startBackup($what, $where);
+        $error = BackupService::startBackup($what, $where);
         if ($error !== '') {
             osc_add_flash_error_message(osc_esc_html($error), 'admin');
         }
@@ -742,72 +904,22 @@ class CAdminTools extends AdminSecBaseModel
         $file = Params::getFiles($field);
         // Over post_max_size PHP drops the whole body, token included, so say why first.
         if ($file === array() && Params::getServerParam('REQUEST_METHOD') === 'POST'
-            && (int) Params::getServerParam('CONTENT_LENGTH') > DatabaseTools::uploadLimit()
+            && (int) Params::getServerParam('CONTENT_LENGTH') > RestoreUpload::limit()
         ) {
-            osc_add_flash_error_message(DatabaseTools::tooLargeMessage(), 'admin');
+            osc_add_flash_error_message(RestoreUpload::tooLargeMessage(), 'admin');
             $this->redirectTo($back);
 
             return;
         }
         osc_csrf_check();
-        $error = DatabaseTools::uploadError($file);
-        if ($error === '' && !is_uploaded_file($file['tmp_name'])) {
-            $error = _m('No file was uploaded');
-        }
-        $ext = $error === '' ? self::backupType($file['tmp_name']) : '';
-        if ($error === '' && $ext === '') {
-            $error = _m('Choose a .zip or .sql backup file.');
-        }
-        $store = BackupStore::site();
-        if ($error === '' && !$store->protect()) {
-            $error = BackupStore::unwritable();
-        }
-        $name = BackupStore::uploadName($ext);
-        if ($error === '' && !move_uploaded_file($file['tmp_name'], $store->dir() . $name)) {
-            $error = _m('The upload failed. Try again.');
-        }
+        ['name' => $name, 'error' => $error] = RestoreUpload::store($file);
         if ($error !== '') {
             osc_add_flash_error_message(osc_esc_html($error), 'admin');
             $this->redirectTo($back);
 
             return;
         }
-        @chmod($store->dir() . $name, 0600);
-        $check = BackupManager::check($name);
-        if ($check['reason'] !== '') {
-            @unlink($store->dir() . $name);
-            osc_add_flash_error_message(osc_esc_html($check['reason']), 'admin');
-            $this->redirectTo($back);
-
-            return;
-        }
         $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name));
-    }
-
-    /**
-     * zip or sql, read from the file's first bytes; '' for anything else.
-     *
-     * @param string $file
-     *
-     * @return string
-     */
-    private static function backupType(string $file): string
-    {
-        $head = (string) @file_get_contents($file, false, null, 0, 8192);
-        if (strncmp($head, "PK\x03\x04", 4) === 0) {
-            return 'zip';
-        }
-        if ($head === '' || strpos($head, "\0") !== false) {
-            return '';
-        }
-        if (function_exists('finfo_open')) {
-            $mime = (string) finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $head);
-            if (strpos($mime, 'text/') !== 0 && $mime !== 'application/sql') {
-                return '';
-            }
-        }
-
-        return 'sql';
     }
 
     /**
@@ -835,13 +947,31 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
+     * Where an old Tools URL now points, as a query string for the admin index, or null
+     * when the action still has its own screen.
+     *
+     * @param string $action
+     *
+     * @return string|null
+     */
+    public static function movedTo(string $action): ?string
+    {
+        if (!isset(self::MOVED[$action])) {
+            return null;
+        }
+        list($target, $fragment) = explode('#', self::MOVED[$action]) + array(1 => '');
+
+        return '?page=tools&action=' . $target . ($fragment !== '' ? '#' . $fragment : '');
+    }
+
+    /**
      * System info > Jobs.
      *
      * @return string
      */
     private static function jobsUrl(): string
     {
-        return osc_admin_base_url(true) . DatabaseTools::movedTo('jobs');
+        return osc_admin_base_url(true) . self::movedTo('jobs');
     }
 
     /**
@@ -851,7 +981,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function cacheUrl(): string
     {
-        return osc_admin_base_url(true) . DatabaseTools::movedTo('cache');
+        return osc_admin_base_url(true) . self::movedTo('cache');
     }
 
     /**
@@ -861,7 +991,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function databaseUrl(): string
     {
-        return osc_admin_base_url(true) . DatabaseTools::movedTo('database');
+        return osc_admin_base_url(true) . self::movedTo('database');
     }
 
     /**
@@ -886,7 +1016,7 @@ class CAdminTools extends AdminSecBaseModel
         }
 
         if ($tab === 'jobs') {
-            $queue = \mindstellar\job\JobQueue::instance();
+            $queue = \mindstellar\job\JobQueue::getInstance();
             $this->_exportVariableToView('jobs_failed', $queue->page(\mindstellar\job\JobQueue::STATUS_ERROR, null, 50));
             $this->_exportVariableToView('jobs_active', array_merge(
                 $queue->page(\mindstellar\job\JobQueue::STATUS_RUNNING, null, 50),
@@ -912,8 +1042,6 @@ class CAdminTools extends AdminSecBaseModel
     private function databasePost(array &$env): bool
     {
         $self = self::databaseUrl();
-        $conn = \mindstellar\database\Connection::instance();
-        $dir  = DatabaseTools::migrationsDir();
 
         if (Params::getParam('upgrade') !== '') {
             if ($this->refuseOnDemo($self)) {
@@ -922,9 +1050,9 @@ class CAdminTools extends AdminSecBaseModel
             osc_csrf_check();
             $this->_exportVariableToView('db_upgrade', DatabaseTools::upgrade());
             osc_reset_preferences();
-            $env['pending']    = DatabaseTools::pending($conn, $dir);
+            $env['pending']    = DatabaseTools::pending();
             $env['db_version'] = (string) osc_version();
-            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
+            list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
         }
 
         if (Params::getParam('repair') !== '') {
@@ -949,27 +1077,16 @@ class CAdminTools extends AdminSecBaseModel
 
                 return false;
             }
-            try {
-                $release = DatabaseTools::upgradeLock($conn);
-            } catch (\mindstellar\database\DbException $e) {
-                $release = null;
-            }
-            if ($release === null) {
+            $repair = DatabaseTools::repair();
+            if ($repair === null) {
                 osc_add_flash_error_message(_m('An upgrade is running. Try again when it has finished.'), 'admin');
                 $this->redirectTo($self);
 
                 return false;
             }
-            try {
-                $repair = (new \mindstellar\database\SchemaReconciler($conn))->repair();
-            } catch (Throwable $e) {
-                $repair = array('ran' => array(), 'failed' => array($e->getMessage()));
-            } finally {
-                $release();
-            }
             $this->_exportVariableToView('db_repair', $repair);
-            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
-            $env['db_size'] = DatabaseTools::size($conn, DB_TABLE_PREFIX);
+            list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
+            $env['db_size'] = DatabaseTools::size();
         }
 
         return true;
@@ -985,12 +1102,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private function systemEnvironment(bool $withDatabase): array
     {
-        $conn = \mindstellar\database\Connection::instance();
-        try {
-            $server = $conn->serverInfo();
-        } catch (Throwable $e) {
-            $server = '';
-        }
+        $server = DatabaseTools::serverInfo();
         $cacheDriver = defined('OSC_CACHE') ? (string) OSC_CACHE : 'default';
         $maintenance = '';
         if (file_exists(ABS_PATH . '.maintenance')) {
@@ -998,7 +1110,7 @@ class CAdminTools extends AdminSecBaseModel
         }
         $uploads = osc_uploads_path();
         $free    = function_exists('disk_free_space') ? @disk_free_space($uploads) : false;
-        $queue   = \mindstellar\job\JobQueue::instance();
+        $queue   = \mindstellar\job\JobQueue::getInstance();
         \mindstellar\job\JobWorker::registerHandlers();
         $stats    = $queue->stats();
         $signins  = \mindstellar\security\LoginThrottle::activity();
@@ -1007,8 +1119,17 @@ class CAdminTools extends AdminSecBaseModel
             $drivers[$name] = self::cacheSupported($name);
         }
         $cacheOn  = $cacheDriver === 'default' || self::cacheSupported($cacheDriver);
-        $prefs   = Preference::newInstance()->listAll();
+        $prefs   = Preference::getInstance()->listAll();
         $last    = json_decode((string) osc_get_preference('backup_last'), true);
+        $htaccess     = osc_base_path() . '.htaccess';
+        $htaccessAuth = osc_rewrite_enabled() && !osc_server_is_nginx() && is_file($htaccess)
+            ? \mindstellar\routing\ServerRules::passesAuthorization($htaccess)
+            : null;
+        try {
+            $reservedSlugs = \mindstellar\routing\ReservedSlugs::conflicts();
+        } catch (Throwable $e) {
+            $reservedSlugs = array();
+        }
 
         $env = array(
             'admin_url'        => osc_admin_base_url(true),
@@ -1038,13 +1159,13 @@ class CAdminTools extends AdminSecBaseModel
             'photos'           => (int) osc_max_images_per_item(),
             'extensions'       => get_loaded_extensions(),
             'imagick'          => extension_loaded('imagick'),
-            'imagick_on'       => extension_loaded('imagick') && osc_use_imagick(),
+            'imagick_on'       => \ImageProcessing::usesImagick(),
             'gd'               => extension_loaded('gd'),
             'opcache'          => function_exists('opcache_get_status') && ini_get('opcache.enable'),
             'allow_url_fopen'  => (bool) ini_get('allow_url_fopen'),
             'uploads_writable' => @is_writable($uploads),
-            'php_user'         => self::userName(function_exists('posix_geteuid') ? posix_geteuid() : null),
-            'file_owner'       => self::userName(@fileowner(ABS_PATH . 'index.php') ?: null),
+            'php_user'         => \mindstellar\admin\SystemChecks::userName(function_exists('posix_geteuid') ? posix_geteuid() : null),
+            'file_owner'       => \mindstellar\admin\SystemChecks::userName(@fileowner(ABS_PATH . 'index.php') ?: null),
             'self_update_off'  => osc_self_update_disabled(),
             'read_only'        => array_keys(array_filter(array(
                 'core'      => ABS_PATH . 'oc-includes',
@@ -1057,6 +1178,8 @@ class CAdminTools extends AdminSecBaseModel
             'config_writable'  => @is_writable(ABS_PATH . 'config.php'),
             'debug'            => defined('OSC_DEBUG') && OSC_DEBUG,
             'maintenance'      => $maintenance,
+            'htaccess_auth'    => $htaccessAuth,
+            'reserved_slugs'   => $reservedSlugs,
             'cache_driver'     => $cacheDriver,
             'cache_supported'  => $cacheOn,
             'cache_working'    => $cacheDriver !== 'default' && $cacheOn ? self::cacheAnswers() : null,
@@ -1089,8 +1212,9 @@ class CAdminTools extends AdminSecBaseModel
             'cron_last'        => osc_cron_last_run(),
             // This request came through the same proxy every visitor does.
             'proxy'            => osc_proxy_ip_mismatch(),
+            'admin_ip_allow'   => ($allow = \mindstellar\security\AdminIpAllowlist::fromConfig()) === null ? null : $allow->count(),
             'backup_last'      => is_array($last) ? $last : null,
-            'backup_probe'     => BackupManager::probe(),
+            'backup_probe'     => BackupService::probe(),
             'storage'          => array(
                 'active'     => (string) osc_get_preference('storage_active'),
                 'bucket'     => (string) osc_get_preference('storage_s3_bucket'),
@@ -1102,9 +1226,9 @@ class CAdminTools extends AdminSecBaseModel
             'db_size'          => null,
         );
         if ($withDatabase) {
-            $env['pending'] = DatabaseTools::pending($conn, DatabaseTools::migrationsDir());
-            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
-            $env['db_size'] = DatabaseTools::size($conn, DB_TABLE_PREFIX);
+            $env['pending'] = DatabaseTools::pending();
+            list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
+            $env['db_size'] = DatabaseTools::size();
         }
 
         return $env;
@@ -1117,21 +1241,11 @@ class CAdminTools extends AdminSecBaseModel
      *
      * @return bool
      */
-    private static function userName(?int $uid): string
-    {
-        if ($uid === null) {
-            return '';
-        }
-        $info = function_exists('posix_getpwuid') ? @posix_getpwuid($uid) : false;
-
-        return is_array($info) ? (string) $info['name'] : '#' . $uid;
-    }
-
     private static function cacheSupported(string $driver): bool
     {
-        $class = 'Object_Cache_' . $driver;
+        $class = \mindstellar\cache\CacheManager::driverClass($driver);
 
-        return class_exists($class) && method_exists($class, 'is_supported') && call_user_func(array($class, 'is_supported'));
+        return $class !== null && $class::is_supported();
     }
 
     /**
@@ -1142,7 +1256,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function cacheAnswers(): bool
     {
-        $cache = \Object_Cache_Factory::newInstance();
+        $cache = \mindstellar\cache\CacheManager::getInstance();
         $key   = 'osc_sysinfo_probe';
         $value = bin2hex(random_bytes(8));
         try {
@@ -1160,23 +1274,6 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * The SchemaDoctor findings, and the error that stopped them ('' when none).
-     *
-     * @return array{0:array<int,array<string,string>>,1:string}
-     */
-    private function schemaFindings(): array
-    {
-        try {
-            return array(
-                (new \mindstellar\database\SchemaDoctor(\mindstellar\database\Connection::instance()))->diagnose(),
-                '',
-            );
-        } catch (Throwable $e) {
-            return array(array(), $e->getMessage());
-        }
-    }
-
-    /**
      * The latest background-job rows from the activity log, newest first.
      *
      * @param array<int,string> $actions narrow to these actions; empty for all
@@ -1187,14 +1284,7 @@ class CAdminTools extends AdminSecBaseModel
     private function jobLog(array $actions, int $limit): array
     {
         try {
-            $query = osc_db_table(DB_TABLE_PREFIX . 't_log')
-                ->select('dt_date', 's_action', 'fk_i_id', 's_data')
-                ->where('s_section', 'jobs');
-            if ($actions !== array()) {
-                $query = $query->whereIn('s_action', $actions);
-            }
-
-            return $query->orderBy('dt_date', 'DESC')->limit($limit)->get();
+            return \mindstellar\logger\LogQuery::jobs($actions, $limit);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }

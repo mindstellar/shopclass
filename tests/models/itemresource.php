@@ -11,38 +11,31 @@
 /**
  * Characterization pins for the ItemResource model.
  *
- * Written against the legacy implementation and required to pass UNCHANGED once
- * the model moves to the parameterized query layer.
+ * Listing photos are the `item` rows of t_resource. ItemResource reads and writes
+ * them in the old t_item_resource row shape (pk_i_id, fk_i_item_id, s_name,
+ * s_extension, s_content_type, s_path, s_storage), so callers that predate the move
+ * see the same columns, values and ordering. Rows of other owner types share the
+ * table and the id range, and the model must never return, count, change or
+ * delete them.
  *
- * This model backs image/attachment handling, so the exact column set, the row
- * ORDER and the per-item query cost are all part of the contract, not incidental.
- * Everything below was established by running the code, never by reading a method
- * name or a comment. The quirks that surprised, all reproduced rather than fixed:
+ * The quirks kept from the old model, all reproduced rather than fixed:
  *
- *  - getAllResourcesFromItem()/primeResourcesCache() are a memo/prefetch pair over
- *    osc_cache_*. On a default install the object cache is a request-lifetime PHP
- *    array, so it is a genuine within-process memo: a cold read costs one query, a
- *    repeat read costs none, and priming n items costs ONE query and makes all n
- *    reads free. An item with no resources is memoized too (the empty array is a
- *    cache hit, not a miss), so it does not fall through to its own query.
- *  - Nothing invalidates that memo. Deleting an item's resources through this very
- *    model leaves the earlier result being served for the rest of the process.
- *  - A FAILED query is handled differently by the two halves of the pair: the read
- *    returns an empty array and stores nothing, while the prime seeds every id it
- *    was given with an empty array — poisoning the memo, so subsequent reads report
- *    "no resources" instead of retrying.
- *  - getAllResources() and getResources() INNER JOIN t_item, so a resource row whose
- *    item is gone is invisible through them while countResources(),
+ *  - getAllResourcesFromItem() is a memo over osc_cache_*: a cold read costs one
+ *    query and a repeat read costs none. primeResourcesCache() reads n items in ONE
+ *    query and keeps them for the request only, so the n reads after it are free.
+ *    An item with no photos is kept too.
+ *  - Nothing invalidates that memo. Deleting photos through this very model leaves
+ *    the earlier result being served for the rest of the process.
+ *  - A FAILED query stores nothing, in the read and in the prime.
+ *  - getAllResources() and getResources() INNER JOIN t_item, so a photo whose
+ *    listing is gone is invisible through them while countResources(),
  *    getResourceIdsBatch() and getResourcesBatchByStorage() still see it.
- *  - The paging trio (getResources, getResourceIdsBatch, getResourcesBatchByStorage)
- *    all compile to `LIMIT <first arg>, <second arg>`, i.e. the FIRST argument is
- *    the offset. Two gates ride on that: a second argument of 0 or less drops the
- *    offset and turns the FIRST argument into a row count, and a non-numeric first
- *    argument drops the clause entirely and returns every row.
- *  - Bad input lands on three different return types depending on the method:
- *    existResource() returns the string '0' for a genuine no-match but the int 0
- *    when the comparison was malformed by a null argument, and countResources()
- *    ignores a non-numeric item id and counts the whole table.
+ *  - The paging trio takes the FIRST argument as the offset. A second argument of
+ *    0 or less turns the first into a row count, and a non-numeric first argument
+ *    to getResources() returns every row.
+ *  - existResource() returns the string '0' for a no-match but the int 0 for a
+ *    null argument, and countResources() ignores a non-numeric item id and counts
+ *    every photo.
  *
  * Usage:  php tests/models/itemresource.php          (standalone, own scratch database)
  *         php tests/run-models.php itemresource      (as part of the suite)
@@ -97,11 +90,11 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
  * preference; the Preference singleton loads the whole table on construction. Warm
  * it here so that one-off query is never attributed to a query-count measurement.
  */
-Preference::newInstance();
+Preference::getInstance();
 
-$model = ItemResource::newInstance();
-$table = DB_TABLE_PREFIX . 't_item_resource';
-$cache = Object_Cache_Factory::newInstance();
+$model = ItemResource::getInstance();
+$table = DB_TABLE_PREFIX . 't_resource';
+$cache = \mindstellar\cache\CacheManager::getInstance();
 
 /**
  * Empty the object cache.
@@ -113,6 +106,15 @@ $cache = Object_Cache_Factory::newInstance();
  */
 $flush = static function () use ($cache): void {
     $cache->flush();
+    ItemResource::getInstance()->forget();
+};
+
+/** The listing ids primeResourcesCache() keeps for this request. */
+$primedIds = static function (): array {
+    $memo = new ReflectionProperty('ItemResource', 'primed');
+    $memo->setAccessible(true);
+
+    return array_keys($memo->getValue(ItemResource::getInstance()));
 };
 
 /**
@@ -125,8 +127,7 @@ $cacheKey = static function ($itemId): string {
 };
 
 /**
- * t_item_resource has no seed helper in scratchdb.php, so it lives here as a
- * local closure, raw mysqli, never through the code under test.
+ * Seed a listing photo, raw, never through the code under test.
  *
  * @return int The id just inserted
  */
@@ -136,14 +137,33 @@ $seedResource = static function (
     string $storage = 'local',
     string $extension = 'jpg',
     string $contentType = 'image/jpeg'
-) use ($admin, $table): int {
+) use ($admin): int {
+    return seed_photo($admin, $itemId, array(
+        's_name'         => $name,
+        's_storage'      => $storage,
+        's_extension'    => $extension,
+        's_content_type' => $contentType,
+    ));
+};
+
+/**
+ * Seed a t_resource row of another owner type, which ItemResource must never see.
+ *
+ * @return int The id just inserted
+ */
+$seedForeign = static function (string $ownerType, int $ownerId, string $name, string $storage = 'local') use ($admin, $table): int {
     return seed_exec(
         $admin,
-        "INSERT INTO $table (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
-         VALUES (?, ?, ?, ?, ?, ?)",
-        'isssss',
-        array($itemId, $name, $extension, $contentType, 'oc-content/uploads/0/', $storage)
+        "INSERT INTO $table (s_owner_type, i_owner_id, s_name, s_extension, s_content_type, s_path, s_storage, dt_created)
+         VALUES (?, ?, ?, 'jpg', 'image/jpeg', 'oc-content/uploads/0/', ?, NOW())",
+        'siss',
+        array($ownerType, $ownerId, $name, $storage)
     );
+};
+
+/** A foreign row as it sits in the table, to prove it was left alone. */
+$foreignRow = static function (int $id) use ($admin, $table): ?array {
+    return $admin->query("SELECT s_owner_type, i_owner_id, s_name, s_storage FROM $table WHERE pk_i_id = $id")->fetch_assoc();
 };
 
 /**
@@ -160,7 +180,7 @@ $setPubDate = static function (int $itemId, string $date) use ($admin): void {
 };
 
 /**
- * Run $fn with t_item_resource renamed out of the way, so every query this model
+ * Run $fn with t_resource renamed out of the way, so every query this model
  * makes fails. It is the only way to reach the error-fallback branches, and those
  * branches are the whole reason the conversion needs a catch per method.
  *
@@ -178,16 +198,16 @@ $withTableMissing = static function (callable $fn) use ($admin, $table) {
 };
 
 /* ----------------------------------------------------------------------------
- * Surface (C2): the public API must survive the conversion byte-identical.
+ * Surface: the public methods and their signatures stay as they were.
  * ------------------------------------------------------------------------- */
 harness_section('ItemResource: public surface');
 
-check('ItemResource still extends DAO', is_subclass_of('ItemResource', 'DAO'));
-check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBCommandClass);
-pin('table name is unchanged', $table, $model->getTableName());
-pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
+pin('the table is t_resource', $table, $model->getTableName());
+pin('the owner type of listing photos', 'item', ItemResource::OWNER);
+pin('getInstance returns the shared instance', true, ItemResource::getInstance() === $model);
+pin('newInstance returns it too', true, ItemResource::newInstance() === $model);
 pin(
-    'field allowlist is unchanged',
+    'field list is the old row shape',
     array('pk_i_id', 'fk_i_item_id', 's_name', 's_extension', 's_content_type', 's_path', 's_storage'),
     $model->getFields()
 );
@@ -250,19 +270,38 @@ pin(
 );
 
 pin(
-    'the model declares exactly these methods of its own, nothing added or removed',
+    'the public methods, nothing added or removed',
     array(
-        '__construct', 'countResources', 'deleteResourcesIds', 'existResource', 'getAllResources',
-        'getAllResourcesFromItem', 'getResource', 'getResourceIdsBatch', 'getResourceSecure',
-        'getResources', 'getResourcesBatchByStorage', 'getTableItemDescription', 'getTableItemName',
-        'newInstance', 'primeResourcesCache',
+        'cacheKey',
+        'columns',
+        'countResources',
+        'deleteResourcesIds',
+        'existResource',
+        'findByPrimaryKey',
+        'forget',
+        'getAllResources',
+        'getAllResourcesFromItem',
+        'getFields',
+        'getInstance',
+        'getResource',
+        'getResourceIdsBatch',
+        'getResourceSecure',
+        'getResources',
+        'getResourcesBatchByStorage',
+        'getTableItemDescription',
+        'getTableItemName',
+        'getTableName',
+        'insertGetId',
+        'newInstance',
+        'ofItems',
+        'primeResourcesCache',
+        'update',
+        'updateByPrimaryKey',
     ),
     (static function () {
         $own = array();
-        foreach ((new ReflectionClass('ItemResource'))->getMethods() as $m) {
-            if ($m->getDeclaringClass()->getName() === 'ItemResource') {
-                $own[] = $m->getName();
-            }
+        foreach ((new ReflectionClass('ItemResource'))->getMethods(ReflectionMethod::IS_PUBLIC) as $m) {
+            $own[] = $m->getName();
         }
         sort($own);
 
@@ -275,11 +314,13 @@ pin(
  * ------------------------------------------------------------------------- */
 harness_section('ItemResource: empty-table ledger');
 
+// No photos yet, but a user's row sits in the table under owner id 1.
+$f0 = $seedForeign('user', 1, 'aaa');
 $flush();
 pin('getAllResources on an empty table returns an empty array', array(), $model->getAllResources());
 pin('getAllResourcesFromItem on an empty table returns an empty array', array(), $model->getAllResourcesFromItem(1));
 pin('getResource on an empty table returns an empty array', array(), $model->getResource(1));
-pin('existResource on an empty table returns the string "0"', '0', $model->existResource(1, 'aaa'));
+pin('existResource on an empty table returns the string "0"', '0', $model->existResource($f0, 'aaa'));
 pin('countResources on an empty table returns the string "0"', '0', $model->countResources());
 pin('countResources(id) on an empty table returns the string "0"', '0', $model->countResources(1));
 pin('getResources on an empty table returns an empty array', array(), $model->getResources());
@@ -289,7 +330,9 @@ pin(
     array(),
     $model->getResourcesBatchByStorage('local', 0, 10)
 );
-pin('deleteResourcesIds on an empty table returns int 0', 0, $model->deleteResourcesIds(array(1)));
+pin('deleteResourcesIds on an empty table returns int 0', 0, $model->deleteResourcesIds(array($f0)));
+pin('findByPrimaryKey on an empty table returns false', false, $model->findByPrimaryKey($f0));
+pin('the user row was left alone', array('s_owner_type' => 'user', 'i_owner_id' => '1', 's_name' => 'aaa', 's_storage' => 'local'), $foreignRow($f0));
 $flush();
 
 /* ----------------------------------------------------------------------------
@@ -305,8 +348,11 @@ $setPubDate($itemA, '2026-01-01 00:00:00');
 $setPubDate($itemB, '2026-02-02 00:00:00');
 $setPubDate($itemC, '2026-03-03 00:00:00');
 
+// Rows of other owner types sit between the photos, under the same owner ids.
+$fA  = $seedForeign('user', $itemA, 'aaa');
 $rA1 = $seedResource($itemA, 'aaa');
 $rA2 = $seedResource($itemA, 'bbb');
+$fC  = $seedForeign('page', $itemC, 'zzz', 's3');
 $rB1 = $seedResource($itemB, 'ccc', 's3', 'png', 'image/png');
 
 /* ----------------------------------------------------------------------------
@@ -435,11 +481,8 @@ $primeCost = harness_query_count(static function () use ($model, $itemA, $itemB,
     $model->primeResourcesCache(array($itemA, $itemB, $itemC));
 });
 pin('priming three items costs exactly one query', 1, $primeCost);
-pin(
-    'it seeds one entry per id, on the exact keys the reader uses',
-    array($cacheKey($itemA), $cacheKey($itemB), $cacheKey($itemC)),
-    array_keys($cache->cache)
-);
+pin('it keeps one list per id for this request', array($itemA, $itemB, $itemC), $primedIds());
+pin('...and writes nothing to the cache', array(), array_keys($cache->cache));
 pin('reading all three afterwards costs nothing', 0, harness_query_count(static function () use ($model, $itemA, $itemB, $itemC) {
     $model->getAllResourcesFromItem($itemA);
     $model->getAllResourcesFromItem($itemB);
@@ -458,27 +501,41 @@ $flush();
 pin('an empty id list costs no query at all', 0, harness_query_count(static function () use ($model) {
     $model->primeResourcesCache(array());
 }));
-pin('...and stores nothing', 0, count($cache->cache));
+pin('...and stores nothing', array(0, array()), array(count($cache->cache), $primedIds()));
 
 $flush();
 $model->primeResourcesCache($itemA);
-pin('a bare id (not an array) is accepted and primes that one item', array($cacheKey($itemA)), array_keys($cache->cache));
+pin('a bare id (not an array) is accepted and primes that one item', array($itemA), $primedIds());
 
 $flush();
 $model->primeResourcesCache(array($itemA, $itemA, (string)$itemA));
-pin('duplicate and string-typed ids collapse to a single entry', array($cacheKey($itemA)), array_keys($cache->cache));
+pin('duplicate and string-typed ids collapse to a single entry', array($itemA), $primedIds());
+$model->primeResourcesCache(array($itemA, $itemB));
+$model->forget($itemA);
+pin('forget() drops one listing\'s kept list', array($itemB), $primedIds());
+$model->forget();
+pin('...or every one', array(), $primedIds());
 
 $flush();
 $model->primeResourcesCache(array(null, 'abc'));
 pin(
     'ids that are not numbers become 0 and are primed as an empty result',
-    array($cacheKey(0)),
-    array_keys($cache->cache)
+    array(0),
+    $primedIds()
 );
 
 /* ----------------------------------------------------------------------------
  * getResource() — the first resource of an item.
  * ------------------------------------------------------------------------- */
+harness_section('ItemResource: the cache helpers drop the kept lists');
+
+$flush();
+$model->primeResourcesCache(array($itemA, $itemB));
+osc_invalidate_item_cache($itemA);
+pin('osc_invalidate_item_cache() drops that listing\'s kept list', array($itemB), $primedIds());
+osc_cache_flush();
+pin('osc_cache_flush() drops every kept list', array(), $primedIds());
+
 harness_section('ItemResource::getResource');
 
 $one = $model->getResource($itemA);
@@ -691,7 +748,7 @@ pin('it costs one statement', 1, harness_query_count(static function () use ($mo
  * ------------------------------------------------------------------------- */
 harness_section('ItemResource: an orphaned resource row and the item join');
 
-$orphan = $seedResource(999999, 'orphan'); // seeded raw, with foreign-key checks off
+$orphan = $seedResource(999999, 'orphan'); // t_resource has no foreign key to t_item
 
 pin('getAllResources hides it — it INNER JOINs t_item', 3, count($model->getAllResources()));
 pin('getResources hides it as well', 3, count($model->getResources(null, 0, 100)));
@@ -705,13 +762,49 @@ pin('and deleting it works', 1, $model->deleteResourcesIds(array($orphan)));
 $flush();
 
 /* ----------------------------------------------------------------------------
+ * Rows of other owner types: never returned, counted, changed or deleted.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemResource: rows of other owner types');
+
+$fAWas = $foreignRow($fA);
+$fCWas = $foreignRow($fC);
+$flush();
+pin('a listing\'s photos leave out a user row with the same owner id', array((string)$rA1, (string)$rA2), array_column($model->getAllResourcesFromItem($itemA), 'pk_i_id'));
+pin('a listing with only a page row has no photos', array(), $model->getAllResourcesFromItem($itemC));
+$flush();
+$model->primeResourcesCache(array($itemA, $itemC));
+pin('the prime leaves them out too', array(array((string)$rA1, (string)$rA2), array()), array(
+    array_column($model->getAllResourcesFromItem($itemA), 'pk_i_id'),
+    $model->getAllResourcesFromItem($itemC),
+));
+$flush();
+pin('getResource skips a lower-numbered user row', (string)$rA1, $model->getResource($itemA)['pk_i_id']);
+pin('getResource of a listing with only a page row is empty', array(), $model->getResource($itemC));
+pin('existResource does not see a user row with a matching name', '0', $model->existResource($fA, 'aaa'));
+pin('countResources does not count them', array('3', '2', '0'), array($model->countResources(), $model->countResources($itemA), $model->countResources($itemC)));
+pin('getAllResources and getResources leave them out', array(3, 3), array(count($model->getAllResources()), count($model->getResources(null, 0, 100))));
+pin('getResourceIdsBatch leaves them out', array($rA1, $rA2, $rB1), $model->getResourceIdsBatch(0, 100));
+pin('getResourcesBatchByStorage leaves them out', array((string)$rB1), array_column($model->getResourcesBatchByStorage('s3', 0, 100), 'pk_i_id'));
+pin('findByPrimaryKey returns false for one', false, $model->findByPrimaryKey($fA));
+pin('findByPrimaryKey of a photo returns the old row shape', array(
+    'pk_i_id' => (string)$rA1, 'fk_i_item_id' => (string)$itemA, 's_name' => 'aaa', 's_extension' => 'jpg',
+    's_content_type' => 'image/jpeg', 's_path' => 'oc-content/uploads/0/', 's_storage' => 'local',
+), $model->findByPrimaryKey($rA1));
+pin('updateByPrimaryKey changes nothing on one', 0, $model->updateByPrimaryKey(array('s_name' => 'hit'), $fA));
+pin('update by listing id changes nothing on one', 0, $model->update(array('s_path' => 'moved/'), array('fk_i_item_id' => $itemC)));
+pin('update with an unknown column is refused', false, $model->update(array('s_owner_type' => 'item'), array('pk_i_id' => $fA)));
+pin('deleteResourcesIds deletes none of them', 0, $model->deleteResourcesIds(array($f0, $fA, $fC)));
+pin('they are all as they were', array($fAWas, $fCWas, 'user'), array($foreignRow($fA), $foreignRow($fC), $foreignRow($f0)['s_owner_type'] ?? null));
+$flush();
+
+/* ----------------------------------------------------------------------------
  * The error-fallback ledger: every branch reached only when the query fails.
  * These are exactly the branches the conversion has to reproduce with a catch.
  * ------------------------------------------------------------------------- */
 harness_section('ItemResource: the error-fallback ledger');
 
 $flush();
-$withTableMissing(static function () use ($model, $itemA, $rA1, $cache, $flush, $cacheKey) {
+$withTableMissing(static function () use ($model, $itemA, $rA1, $cache, $flush, $cacheKey, $primedIds) {
     pin('getAllResources returns an empty array', array(), $model->getAllResources());
     pin('getAllResourcesFromItem returns an empty array', array(), $model->getAllResourcesFromItem($itemA));
     pin('...and stores nothing in the cache, so a later read retries', 0, count($cache->cache));
@@ -723,13 +816,11 @@ $withTableMissing(static function () use ($model, $itemA, $rA1, $cache, $flush, 
     pin('getResourcesBatchByStorage returns an empty array', array(), $model->getResourcesBatchByStorage('local', 0, 10));
     pin('deleteResourcesIds returns bool false', false, $model->deleteResourcesIds(array($rA1)));
 
-    /* The prefetch does NOT bail out when its query fails: it still seeds every id
-     * it was given with an empty array, so the memo now reports "no resources" for
-     * items that have them. Reproduced, not fixed. */
+    /* A failed prefetch keeps nothing, so a later read of each listing retries. */
     $flush();
     pin('primeResourcesCache returns null', null, $model->primeResourcesCache(array($itemA)));
-    pin('...but still seeds the id it was given', array($cacheKey($itemA)), array_keys($cache->cache));
-    pin('...with an empty array, poisoning the memo', array(), $model->getAllResourcesFromItem($itemA));
+    pin('...and keeps nothing', array(array(), array()), array($primedIds(), array_keys($cache->cache)));
+    pin('...so a later read retries, and with the table gone finds nothing', array(), $model->getAllResourcesFromItem($itemA));
 });
 $flush();
 pin('the table is back and reads work again', 3, count($model->getAllResources()));
@@ -755,11 +846,11 @@ pin('a null id list returns int 0 — it is wrapped into a one-element list', 0,
  * fixtures untouched whichever way the server answers. */
 $probeTable = $table . '_strict_probe';
 osc_db_execute('CREATE TABLE ' . $probeTable . ' LIKE ' . $table);
-osc_db_execute('INSERT INTO ' . $probeTable . ' SELECT * FROM ' . $table . ' LIMIT 1');
+osc_db_execute('INSERT INTO ' . $probeTable . ' SELECT * FROM ' . $table . " WHERE s_owner_type = 'item' LIMIT 1");
 $numericCompareIsFatal = static function () use ($probeTable): bool {
     $previous = error_reporting(E_ALL & ~E_WARNING);
     try {
-        osc_db_table($probeTable)->whereIn('pk_i_id', array('abc'))->delete();
+        osc_db_table($probeTable)->where('s_owner_type', ItemResource::OWNER)->whereIn('pk_i_id', array('abc'))->delete();
 
         return false;
     } catch (\mindstellar\database\DbException $e) {
@@ -797,6 +888,7 @@ pin('a keyed array is accepted', 1, $model->deleteResourcesIds(array('key' => $d
 pin('a list mixing a real id with a junk one deletes the real one', 1, $model->deleteResourcesIds(array($rB1, 'zz')));
 pin('a repeated id is still deleted once', 1, $model->deleteResourcesIds(array($rA2, $rA2)));
 pin('what remains is the untouched first resource', '1', $model->countResources());
+pin('the rows of other owner types are all still there', 3, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE s_owner_type <> 'item'")->fetch_row()[0]);
 
 /* ----------------------------------------------------------------------------
  * The per-item query cost of the resource memo, measured at two fixture sizes.

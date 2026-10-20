@@ -44,7 +44,6 @@ if (!osc_is_web_user_logged_in()) {
 
     $balance = osc_user_credits($userId);
     $entries = Wallet::history($userId, $perPage, $offset);
-    $entries = is_array($entries) ? $entries : array();
     $total   = Wallet::historyCount($userId);
     $limit   = osc_user_listing_limit($userId);
     $canBuy  = osc_billing_can_buy();

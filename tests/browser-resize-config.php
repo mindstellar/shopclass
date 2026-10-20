@@ -10,7 +10,8 @@
 
 /**
  * Pins the photo uploader's browser resize config: the box is the normal size, never smaller,
- * and keeping the full-size photo limits resizing to files over the maximum size.
+ * and keeping the full-size photo limits resizing to files over the maximum size. Also pins
+ * ImageProcessing::parseSize(), which every image size setting is read through.
  *
  * Usage: php tests/browser-resize-config.php
  */
@@ -40,5 +41,18 @@ pin(
     '{"maxWidth":640,"maxHeight":480,"minBytes":1500000,"quality":0.92,"onlyOversize":false}',
     json_encode($on)
 );
+
+harness_section('ImageProcessing::parseSize');
+pin('a size reads as width and height', [640, 480], ImageProcessing::parseSize('640x480'));
+pin('capitals and spaces are allowed', [1920, 1080], ImageProcessing::parseSize(' 1920X1080 '));
+foreach (['640', '640x0', ' 0x480', '640x480px', 'axb', ''] as $bad) {
+    try {
+        ImageProcessing::parseSize($bad);
+        $refused = false;
+    } catch (InvalidArgumentException $e) {
+        $refused = true;
+    }
+    check('"' . $bad . '" is refused', $refused);
+}
 
 exit(harness_result());

@@ -277,8 +277,8 @@ final class LocationAdminView
      */
     public static function importOffer(string $code, array $status): ?array
     {
-        $code = strtoupper(trim($code));
-        if (preg_match('/^[A-Z]{2}$/', $code) !== 1) {
+        $code = CountryCode::normalize($code);
+        if ($code === null) {
             return null;
         }
         foreach (self::catalogRows($status) as $row) {
@@ -331,7 +331,7 @@ final class LocationAdminView
      */
     public static function importInsteadRefusal(string $code, array $status): ?string
     {
-        if (preg_match('/^[A-Z]{2}$/', strtoupper(trim($code))) !== 1) {
+        if (CountryCode::normalize($code) === null) {
             return 'malformed';
         }
         $offer = self::importOffer($code, $status);

@@ -34,7 +34,7 @@ function customFrmText()
         $return['title']      = __('Edit user');
         $return['action_frm'] = 'edit_post';
         $return['btn_text']   = __('Update user');
-        $return['alerts']     = Alerts::newInstance()->findByUser($user['pk_i_id'], true);
+        $return['alerts']     = Alerts::getInstance()->findByUser($user['pk_i_id'], true);
     } else {
         $return['edit']       = false;
         $return['title']      = __('Add new user');
@@ -90,44 +90,14 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 $aux = customFrmText();
 ?>
-<?php osc_current_admin_theme_path('parts/header.php'); ?>
+<?php osc_enqueue_script('admin-editor');
+osc_current_admin_theme_path('parts/header.php'); ?>
 <?php if ($aux['edit'] && count($aux['alerts']) > 0) { ?>
-    <style>
-        #more-tooltip {
-            position: absolute;
-            background: #f2f2f2;
-            border: solid 2px #bababa;
-            margin-left: 5px;
-            margin-top: 0px;
-            padding: 7px;
-            max-width: 400px;
-            border-radius: 5px;
-            --moz-border-radius: 5px;
-            ---webkit-border-radius: 5px;
-            z-index: 100;
-        }
-    </style>
     <script type="text/javascript">
         function delete_alert(id) {
             document.getElementById("alert_id").value = id;
             document.getElementById("dialog-alert-delete").showModal();
         }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var tip = document.getElementById('more-tooltip');
-            if (tip) {
-                tip.style.display = 'none';
-                document.querySelectorAll('.more-tooltip').forEach(function (el) {
-                    el.addEventListener('mouseenter', function () {
-                        tip.innerHTML = el.getAttribute('categories') || '';
-                        tip.style.top = (el.offsetTop - tip.offsetHeight - 15) + 'px';
-                        tip.style.left = el.offsetLeft + 'px';
-                        tip.style.display = '';
-                    });
-                    el.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
-                });
-            }
-        });
     </script>
 <?php } ?>
 <script type="text/javascript">
@@ -174,253 +144,221 @@ $aux = customFrmText();
         }
     });
 </script>
-<div class="row">
-    <div class="col-xl-10">
-        <div class="row">
-            <div class="col">
-                <div class="row-wrapper">
-                    <?php osc_admin_page_head($aux['title']); ?>
-                </div>
+<?php
+osc_admin_page_head($aux['title']);
+
+// Editing has two tabs, like a settings page: the profile form, and the user's alerts.
+$tab = $aux['edit'] && Params::getParamString('tab') === 'alerts' ? 'alerts' : 'profile';
+if ($aux['edit']) {
+    $editUrl = osc_admin_base_url(true) . '?page=users&action=edit&id=' . (int) $user['pk_i_id'];
+    osc_admin_tab_nav(array(
+        array('label' => __('Profile'), 'url' => $editUrl, 'active' => $tab === 'profile'),
+        array('label' => __('Alerts'), 'url' => $editUrl . '&tab=alerts', 'active' => $tab === 'alerts', 'count' => count($aux['alerts'])),
+    ));
+}
+
+if ($tab === 'profile') {
+    echo '<ul id="error_list"></ul>';
+    // The shipped validator and plugins find this form by its name and id.
+    osc_admin_form_open(array(
+        'id'     => 'register',
+        'name'   => 'register',
+        'page'   => 'users',
+        'action' => $aux['action_frm'],
+        'upload' => true,
+    ));
+    UserForm::primary_input_hidden($user);
+
+    if ($aux['edit']) {
+        $userMoves = (array) __get('userMoves'); ?>
+        <input type="hidden" name="b_enabled" value="<?php echo (int) $user['b_enabled']; ?>"/>
+        <input type="hidden" name="b_active" value="<?php echo (int) $user['b_active']; ?>"/>
+        <?php osc_admin_form_section(__('Account')); ?>
+        <?php osc_admin_form_row_open(__('Status')); ?>
+            <div class="user-editor-status">
+                <?php !empty($user['b_active']) ? osc_admin_status('active', __('Active')) : osc_admin_status('inactive', __('Inactive')); ?>
+                <?php !empty($user['b_enabled']) ? osc_admin_status('active', __('Can sign in')) : osc_admin_status('blocked', __('Blocked')); ?>
             </div>
-            <div class="col">
-
-                <?php if (__get('user') != '') {
-                    $actions = __get('actions'); ?>
-                    <ul id="item-action-list" class="btn-group btn-group-sm float-end">
-                        <?php foreach ($actions as $action) { ?>
-                            <?php echo $action; ?>
-                        <?php } ?>
-                    </ul>
-
-                <?php } ?>
-
+        <?php osc_admin_form_row_close(); ?>
+        <?php osc_admin_form_row_open(__('Registered')); ?>
+            <div class="user-editor-text"><?php echo osc_admin_date((string) $user['dt_reg_date']); ?></div>
+        <?php osc_admin_form_row_close(); ?>
+        <?php osc_admin_form_row_open(__('Last seen')); ?>
+            <div class="user-editor-text"><?php echo !empty($user['dt_access_date'])
+                ? osc_admin_date((string) $user['dt_access_date']) . ' ' . osc_esc_html(sprintf(__('from %s'), (string) $user['s_access_ip']))
+                : osc_esc_html(__('Never')); ?></div>
+        <?php osc_admin_form_row_close(); ?>
+        <?php osc_admin_form_row_open(__('Listings')); ?>
+            <div class="user-editor-text"><a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=items&userId=' . (int) $user['pk_i_id']); ?>"><?php
+                echo osc_esc_html(sprintf(_n('%d listing', '%d listings', (int) $user['i_items']), (int) $user['i_items'])); ?></a></div>
+        <?php osc_admin_form_row_close(); ?>
+        <?php osc_admin_form_row_open(__('Actions')); ?>
+            <div class="user-editor-actions">
+                <?php foreach ($userMoves['routine'] ?? array() as $move) {
+                    osc_admin_action_button($move + array('variant' => 'dim'));
+                }
+                foreach ($userMoves['danger'] ?? array() as $move) {
+                    osc_admin_action_button($move + array('variant' => 'outline-danger'));
+                } ?>
             </div>
+        <?php osc_admin_form_row_close(); ?>
+    <?php } ?>
+
+    <?php osc_admin_form_section(__('Profile')); ?>
+    <?php osc_admin_form_row_open(__('Name')); ?>
+        <?php UserForm::name_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Username')); ?>
+        <?php UserForm::username_text($user); ?>
+        <div id="available"></div>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open('', array('label_html' => osc_esc_html(__('E-mail')) . ' <span class="osc-field-required"></span>')); ?>
+        <?php UserForm::email_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Cell phone')); ?>
+        <?php UserForm::mobile_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Phone')); ?>
+        <?php UserForm::phone_land_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Website')); ?>
+        <?php UserForm::website_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('User type')); ?>
+        <?php UserForm::is_company_select($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Photo')); ?>
+        <div class="user-editor-photo">
+            <?php if ($aux['edit'] && function_exists('osc_user_avatar_url')) { ?>
+                <img class="user-editor-avatar" src="<?php echo osc_esc_html(osc_user_avatar_url($user['pk_i_id'], 'normal')); ?>"
+                     alt="<?php echo osc_esc_html(__('Current avatar')); ?>" width="64" height="64"/>
+            <?php } ?>
+            <input type="file" name="avatar" id="avatar" accept="image/*" class="form-control form-control-sm"/>
+            <?php if ($aux['edit']) { ?>
+                <label class="user-editor-remove">
+                    <input type="checkbox" name="remove_avatar" id="remove_avatar" value="1"/>
+                    <?php _e('Remove'); ?>
+                </label>
+            <?php } ?>
         </div>
-        <div class="row">
-            <div class="col">
-                <!-- add user form -->
-                <div class="settings-user">
-                    <ul id="error_list"></ul>
-                    <form name="register" action="<?php echo osc_admin_base_url(true); ?>" method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="page" value="users"/>
-                        <input type="hidden" name="action" value="<?php echo $aux['action_frm']; ?>"/>
-                        <?php osc_admin_form_section(__('Contact info')); ?>
-                        <?php UserForm::primary_input_hidden($user); ?>
-                        <?php if ($aux['edit']) { ?>
-                            <input type="hidden" name="b_enabled" value="<?php echo $user['b_enabled']; ?>"/>
-                            <input type="hidden" name="b_active" value="<?php echo $user['b_active']; ?>"/>
-                        <?php } ?>
-                        <fieldset>
-                            <div class="form-horizontal">
-                                <?php if ($aux['edit']) { ?>
-                                    <?php osc_admin_form_row_open(__('Last access')); ?>
-                                            <div class='form-label-checkbox'>
-                                                <?php echo sprintf(__('%s on %s'), $user['s_access_ip'], $user['dt_access_date']); ?>
-                                            </div>
-                                    <?php osc_admin_form_row_close(); ?>
-                                <?php } ?>
-                                <?php osc_admin_form_row_open(__('Name')); ?>
-                                        <?php UserForm::name_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Username')); ?>
-                                        <?php UserForm::username_text($user); ?>
-                                        <div id="available"></div>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open('', array('label_html' => sprintf('%s <em>%s</em>', __('E-mail'), __('(required)')))); ?>
-                                        <?php UserForm::email_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Cell phone')); ?>
-                                        <?php UserForm::mobile_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Phone')); ?>
-                                        <?php UserForm::phone_land_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Website')); ?>
-                                        <?php UserForm::website_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Avatar')); ?>
-                                        <?php if ($aux['edit'] && function_exists('osc_user_avatar_url')) { ?>
-                                            <div class="form-label-checkbox">
-                                                <img src="<?php echo osc_esc_html(osc_user_avatar_url($user['pk_i_id'], 'normal')); ?>"
-                                                     alt="<?php echo osc_esc_html(__('Current avatar')); ?>"
-                                                     width="96" height="96" style="border-radius: 4px; object-fit: cover;"/>
-                                            </div>
-                                        <?php } ?>
-                                        <div class="form-label-checkbox">
-                                            <input type="file" name="avatar" id="avatar" accept="image/*"/>
-                                        </div>
-                                        <?php if ($aux['edit']) { ?>
-                                            <div class="input-separate-top">
-                                                <label>
-                                                    <input type="checkbox" name="remove_avatar" id="remove_avatar" value="1"
-                                                           style="width: inherit!important;"/>
-                                                    <?php _e('Remove current avatar'); ?>
-                                                </label>
-                                            </div>
-                                        <?php } ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_section(__('About you')); ?>
-                                <?php osc_admin_form_row_open(__('User type')); ?>
-                                        <?php UserForm::is_company_select($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Additional information')); ?>
-                                        <?php UserForm::multilanguage_info($locales, $user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_section(__('Location')); ?>
-                                <?php osc_admin_form_row_open(__('Country')); ?>
-                                        <?php UserForm::country_select($countries, $user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Region')); ?>
-                                        <?php UserForm::region_select($regions, $user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('City')); ?>
-                                        <?php UserForm::city_select($cities, $user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('City area')); ?>
-                                        <?php UserForm::city_area_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Zip code')); ?>
-                                        <?php UserForm::zip_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('Address')); ?>
-                                        <?php UserForm::address_text($user); ?>
-                                <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_section(__('Password')); ?>
-                                <?php
-                                $passwordLabel = __('New password');
-                                if (!$aux['edit']) {
-                                    $passwordLabel .= sprintf('<br/><em>%s</em>', __('(twice, required)'));
-                                }
-                                osc_admin_form_row_open('', array('label_html' => $passwordLabel)); ?>
-                                        <?php UserForm::password_text($user); ?>
-                                        <?php if ($aux['edit']) { ?>
-                                            <p class="help-inline"><?php _e("If you'd like to change the password, type a new one. Otherwise leave this blank"); ?></p>
-                                        <?php } ?>
-                                        <div class="input-separate-top">
-                                            <?php UserForm::check_password_text($user); ?>
-                                            <?php if ($aux['edit']) { ?>
-                                                <p class="help-inline"><?php _e('Type your new password again'); ?></p>
-                                            <?php } ?>
-                                        </div>
-                                <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('About')); ?>
+        <?php UserForm::multilanguage_info($locales, $user); ?>
+    <?php osc_admin_form_row_close(); ?>
 
-                                <?php if (!$aux['edit']) {
-                                    osc_run_hook('user_register_form');
-                                } else {
-                                    osc_run_hook('user_profile_form', $user);
-                                    osc_run_hook('user_form', $user);
-                                } ?>
+    <?php osc_admin_form_section(__('Location')); ?>
+    <?php osc_admin_form_row_open(__('Country')); ?>
+        <?php UserForm::country_select($countries, $user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Region')); ?>
+        <?php UserForm::region_select($regions, $user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('City')); ?>
+        <?php UserForm::city_select($cities, $user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('City area')); ?>
+        <?php UserForm::city_area_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Zip code')); ?>
+        <?php UserForm::zip_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Address')); ?>
+        <?php UserForm::address_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
 
-                                <div class="clear"></div>
-                                <?php osc_admin_form_actions(array(
-                                    array('label' => $aux['btn_text'], 'type' => 'submit', 'variant' => 'primary'),
-                                )); ?>
-                            </div>
-                        </fieldset>
-                    </form>
-                </div>
-                <?php if ($aux['edit'] && count($aux['alerts']) > 0) { ?>
-                    <div class="settings-user">
-                        <ul id="error_list"></ul>
-                        <form>
-                            <div class="form-horizontal">
-                                <?php osc_admin_form_section(__('Alerts')); ?>
-                                    <?php for ($k = 0, $kMax = count($aux['alerts']); $k < $kMax; $k++) {
-                                        $array_conditions = (array)json_decode($aux['alerts'][$k]['s_search'], true);
-                                        $raw_data         = osc_get_raw_search($array_conditions);
-                                        $new_search       = \mindstellar\search\AlertReplay::search($aux['alerts'][$k]);
-                                        $results          = array();
-                                        if ($new_search !== null) {
-                                            $new_search->limit(0, 2);
-                                            $results = $new_search->doSearch();
-                                        }
-                                        ob_start();
-                                        ?>
-                                            <?php echo sprintf(__('Alert #%d'), ($k + 1)); ?>
-                                            <br/>
-                                            <?php if (isset($raw_data['held'])) { ?>
-                                                <?php osc_admin_status('spam', __('Needs attention')); ?>
-                                                <?php echo osc_esc_html(\mindstellar\search\AlertStore::reasonText((string)$raw_data['held'])); ?><br/>
-                                            <?php } ?>
-                                            <?php if (isset($raw_data['sPattern']) && $raw_data['sPattern'] != '') { ?>
-                                                <?php echo sprintf(__('<b>Pattern:</b> %s'), osc_esc_html($raw_data['sPattern'])); ?><br/>
-                                            <?php } ?>
+    <?php osc_admin_form_section(__('Password')); ?>
+    <?php osc_admin_form_row_open($aux['edit'] ? __('New password') : __('Password')); ?>
+        <?php UserForm::password_text($user); ?>
+        <?php if ($aux['edit']) { ?>
+            <p class="help-box"><?php _e('Leave blank to keep the current password.'); ?></p>
+        <?php } ?>
+    <?php osc_admin_form_row_close(); ?>
+    <?php osc_admin_form_row_open(__('Repeat password')); ?>
+        <?php UserForm::check_password_text($user); ?>
+    <?php osc_admin_form_row_close(); ?>
 
-                                            <?php if (isset($raw_data['aCategories']) && !empty($raw_data['aCategories'])) {
-                                                $l         = min(count($raw_data['aCategories']), 2);
-                                                $cat_array = array();
-                                                for ($c = 0; $c < $l; $c++) {
-                                                    $cat_array[] = osc_esc_html($raw_data['aCategories'][$c]);
-                                                }
-                                                if (count($raw_data['aCategories']) > $l) {
-                                                    $cat_array[] =
-                                                        '<a href="#" class="more-tooltip" categories="' . osc_esc_html(implode(
-                                                            ', ',
-                                                            $raw_data['aCategories']
-                                                        ))
-                                                        . '" >' . __('...More') . '</a>';
-                                                }
-                                                ?>
-                                                <?php echo sprintf(__('<b>Categories:</b> %s'), implode(', ', $cat_array)); ?><br/>
-                                            <?php } ?>
+    <?php
+    // Plugin fields print their own rows; they get a heading only when one prints.
+    ob_start();
+    if (!$aux['edit']) {
+        osc_run_hook('user_register_form');
+    } else {
+        osc_run_hook('user_profile_form', $user);
+        osc_run_hook('user_form', $user);
+    }
+    $pluginFields = (string) ob_get_clean();
+    if (trim($pluginFields) !== '') {
+        osc_admin_form_section(__('More'));
+        echo $pluginFields;
+    }
 
-                                            <a href="javascript:delete_alert('<?php echo $aux['alerts'][$k]['pk_i_id']; ?>');"><?php _e('Delete'); ?></a>
-                                            &nbsp;|&nbsp;
-                                            <?php if ($aux['alerts'][$k]['b_active'] == 1) { ?>
-                                                <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]='
-                                                                    . $aux['alerts'][$k]['pk_i_id'] . '&' . osc_csrf_token_url() . '&status=0&user_id='
-                                                                    . $user['pk_i_id']; ?>"><?php _e('Disable'); ?></a>
-                                            <?php } else { ?>
-                                                <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]='
-                                                                    . $aux['alerts'][$k]['pk_i_id'] . '&' . osc_csrf_token_url() . '&status=1&user_id='
-                                                                    . $user['pk_i_id']; ?>"><?php _e('Enable'); ?></a>
-                                            <?php } ?>
-                                        <?php
-                                        osc_admin_form_row_open('', array('label_html' => ob_get_clean())); ?>
-                                            <?php if (!empty($results)) {
-                                                foreach ($results as $r) { ?>
-                                                    <label><b><?php echo osc_esc_html($r['s_title']); ?></b></label>
-                                                    <p><?php echo osc_esc_html($r['s_description']); ?></p>
-                                                <?php }
-                                                } else { ?>
-                                                <label>&nbsp;</label>
-                                                <p>&nbsp;</p>
-                                            <?php } ?>
-                                        <?php osc_admin_form_row_close(); ?>
-                                        <div class="clear"></div>
-                                    <?php } ?>
-                                <div class="clear"></div>
-                            </div>
-                            </fieldset>
-                        </form>
-                    </div>
-
-                    <dialog id="dialog-alert-delete" class="osc-dialog osc-dialog-danger">
-                        <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-                            <input type="hidden" name="page" value="users"/>
-                            <input type="hidden" name="action" value="delete_alerts"/>
-                            <input type="hidden" id="alert_id" name="alert_id[]" value=""/>
-                            <input type="hidden" id="alert_user_id" name="alert_user_id" value="<?php echo $user['pk_i_id']; ?>"/>
-                            <div class="osc-dialog-body">
-                                <p class="osc-dialog-title">
-                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                    <?php _e('Delete alert'); ?>
-                                </p>
-                                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this alert?'); ?></p>
-                            </div>
-                            <div class="osc-dialog-actions">
-                                <button type="button" class="btn btn-dim btn-sm"
-                                        data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                                <button id="alert-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
-                            </div>
-                        </form>
-                    </dialog>
-                    <div id="more-tooltip"></div>
+    osc_admin_form_close(array(
+        array('label' => $aux['btn_text'], 'type' => 'submit', 'variant' => 'primary'),
+    ));
+} else {
+    if ($aux['alerts'] === array()) { ?>
+        <p class="text-muted"><?php _e('This user has no alerts.'); ?></p>
+    <?php } else { ?>
+        <div class="table-contains-actions">
+            <table class="table osc-table-stack user-alerts">
+                <thead>
+                <tr>
+                    <th><?php _e('Search'); ?></th>
+                    <th><?php _e('Status'); ?></th>
+                    <th class="text-end"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($aux['alerts'] as $alert) {
+                    $raw    = osc_get_raw_search((array) json_decode((string) $alert['s_search'], true));
+                    $search = array();
+                    if (!empty($raw['sPattern'])) {
+                        $search[] = sprintf(__('Words: %s'), $raw['sPattern']);
+                    }
+                    if (!empty($raw['aCategories'])) {
+                        $search[] = sprintf(__('Categories: %s'), implode(', ', (array) $raw['aCategories']));
+                    }
+                    $toggle = osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]=' . (int) $alert['pk_i_id']
+                        . '&' . osc_csrf_token_url() . '&user_id=' . (int) $user['pk_i_id'] . '&status=' . ($alert['b_active'] == 1 ? '0' : '1'); ?>
+                    <tr>
+                        <td><?php echo osc_esc_html($search !== array() ? implode(' · ', $search) : __('Every new listing')); ?></td>
+                        <td data-col-name="<?php echo osc_esc_html(__('Status')); ?>">
+                            <?php if (isset($raw['held'])) {
+                                osc_admin_status('spam', __('Needs attention'));
+                                echo ' ' . osc_esc_html(\mindstellar\search\AlertStore::reasonText((string) $raw['held']));
+                            } else {
+                                $alert['b_active'] == 1 ? osc_admin_status('active', __('On')) : osc_admin_status('inactive', __('Off'));
+                            } ?>
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($toggle); ?>"><?php $alert['b_active'] == 1 ? _e('Turn off') : _e('Turn on'); ?></a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="delete_alert('<?php echo (int) $alert['pk_i_id']; ?>');"><?php _e('Delete'); ?></button>
+                        </td>
+                    </tr>
                 <?php } ?>
-            </div>
+                </tbody>
+            </table>
         </div>
-    </div>
-</div>
 
-<!-- /add user form -->
+        <dialog id="dialog-alert-delete" class="osc-dialog osc-dialog-danger">
+            <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
+                <input type="hidden" name="page" value="users"/>
+                <input type="hidden" name="action" value="delete_alerts"/>
+                <input type="hidden" id="alert_id" name="alert_id[]" value=""/>
+                <input type="hidden" name="user_id" value="<?php echo (int) $user['pk_i_id']; ?>"/>
+                <div class="osc-dialog-body">
+                    <p class="osc-dialog-title">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <?php _e('Delete alert'); ?>
+                    </p>
+                    <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this alert?'); ?></p>
+                </div>
+                <div class="osc-dialog-actions">
+                    <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+                    <button id="alert-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
+                </div>
+            </form>
+        </dialog>
+    <?php }
+} ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

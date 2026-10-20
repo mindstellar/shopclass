@@ -23,7 +23,7 @@ use mindstellar\pages\PageTemplateRegistry;
  */
 function osc_register_page_template($id, $spec)
 {
-    PageTemplateRegistry::instance()->register($id, $spec);
+    PageTemplateRegistry::getInstance()->register($id, $spec);
 }
 
 /**
@@ -33,7 +33,7 @@ function osc_register_page_template($id, $spec)
  */
 function osc_page_templates()
 {
-    return PageTemplateRegistry::instance()->all();
+    return PageTemplateRegistry::getInstance()->all();
 }
 
 /**
@@ -45,7 +45,7 @@ function osc_page_templates()
  */
 function osc_page_template($id)
 {
-    return PageTemplateRegistry::instance()->get($id);
+    return PageTemplateRegistry::getInstance()->get($id);
 }
 
 /**

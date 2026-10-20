@@ -26,10 +26,10 @@ use mindstellar\storage\StorageManager;
  */
 function osc_register_storage_adapter($adapter)
 {
-    StorageManager::instance()->register($adapter);
+    StorageManager::getInstance()->register($adapter);
 }
 
-StorageManager::instance()->boot();
+StorageManager::getInstance()->boot();
 
 // Plugins are loaded after this file but before 'init' fires (which happens
 // once per request, from BaseModel::__construct), so this is the first safe
@@ -54,7 +54,7 @@ function osc_storage_register_remote()
     if (!function_exists('osc_get_preference')) {
         return;
     }
-    if (StorageManager::instance()->adapter('s3') !== null) {
+    if (StorageManager::getInstance()->adapter('s3') !== null) {
         return;
     }
 
@@ -81,7 +81,7 @@ function osc_storage_register_remote()
 }
 
 osc_add_hook('init', static function () {
-    osc_run_hook('register_storage_adapters', StorageManager::instance());
+    osc_run_hook('register_storage_adapters', StorageManager::getInstance());
     osc_storage_register_remote();
 });
 
@@ -95,7 +95,7 @@ $oscStorageEnqueueOffload = static function ($resource) {
     // deciding whether to queue — the offload must not hinge on the init-time
     // registration having run on the request that produced the upload.
     osc_storage_register_remote();
-    $remote = StorageManager::instance()->remote();
+    $remote = StorageManager::getInstance()->remote();
     if ($remote === null) {
         return;
     }
@@ -115,7 +115,7 @@ osc_add_hook('regenerate_image', static function ($resource) {
         return;
     }
 
-    $adapter = StorageManager::instance()->forResource($resource);
+    $adapter = StorageManager::getInstance()->forResource($resource);
     if (!$adapter->isRemote()) {
         return;
     }

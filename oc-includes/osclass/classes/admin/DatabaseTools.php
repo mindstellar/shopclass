@@ -11,9 +11,11 @@
 namespace mindstellar\admin;
 
 use Closure;
-use mindstellar\admin\form\MediaSettingsForm;
+use Generator;
 use mindstellar\database\Connection;
+use mindstellar\database\DbException;
 use mindstellar\database\SchemaDoctor;
+use mindstellar\database\SchemaReconciler;
 use mindstellar\database\SqlStream;
 use mindstellar\database\TablePrefix;
 use mindstellar\migration\MigrationRunner;
@@ -46,14 +48,6 @@ final class DatabaseTools
         SchemaDoctor::NULLABILITY,
     );
 
-    /** Old Tools actions whose screen is now a part of another page, with where they land. */
-    public const MOVED = array(
-        'import'   => 'backup#restore',
-        'database' => 'system-info&tab=database',
-        'jobs'     => 'system-info&tab=jobs',
-        'cache'    => 'system-info&tab=cache',
-    );
-
     /**
      * The findings Repair can fix.
      *
@@ -82,51 +76,36 @@ final class DatabaseTools
     }
 
     /**
-     * Where an old Tools URL now points, as a query string for the admin index, or null
-     * when the action still has its own screen.
-     *
-     * @param string $action
-     *
-     * @return string|null
-     */
-    public static function movedTo(string $action): ?string
-    {
-        if (!isset(self::MOVED[$action])) {
-            return null;
-        }
-        list($target, $fragment) = explode('#', self::MOVED[$action]) + array(1 => '');
-
-        return '?page=tools&action=' . $target . ($fragment !== '' ? '#' . $fragment : '');
-    }
-
-    /**
-     * The core migrations directory.
-     *
-     * @return string
-     */
-    public static function migrationsDir(): string
-    {
-        return dirname(__DIR__, 2) . '/installer/migrations';
-    }
-
-    /**
      * Migrations not applied yet, in run order. Empty when there are none, or when the
      * ledger cannot be read: SchemaDoctor then reports the real error.
      *
-     * @param Connection $conn
-     * @param string     $dir the migrations directory
-     *
      * @return string[]
      */
-    public static function pending(Connection $conn, string $dir): array
+    public static function pending(): array
     {
         try {
-            $runner = new MigrationRunner($conn, $dir);
+            $runner = MigrationRunner::forCore();
             $runner->ensureLedger();
 
             return $runner->pending();
         } catch (Throwable $e) {
             return array();
+        }
+    }
+
+    /**
+     * Whether every core migration has run. False also when the ledger or the migrations
+     * directory cannot be read, so the caller sends the admin to the screen that says why.
+     */
+    public static function upToDate(): bool
+    {
+        try {
+            $runner = MigrationRunner::forCore();
+            $runner->ensureLedger();
+
+            return $runner->pending() === array();
+        } catch (Throwable $e) {
+            return false;
         }
     }
 
@@ -208,6 +187,9 @@ final class DatabaseTools
      */
     public static function restore(Connection $conn, $handle, ?callable $each = null, bool $replace = false): int
     {
+        // Leave headroom under the server's packet size for the protocol around the statement.
+        $packet = (int) $conn->scalar('SELECT @@max_allowed_packet');
+        $limit  = $packet > 0 ? $packet - intdiv($packet, 8) : PHP_INT_MAX;
         // A backup lists tables in its own order, so a key may point at a table not made yet.
         $conn->execute('SET FOREIGN_KEY_CHECKS = 0');
         try {
@@ -217,7 +199,9 @@ final class DatabaseTools
                 if ($table !== null) {
                     $conn->execute('DROP TABLE IF EXISTS `' . $table . '`');
                 }
-                $conn->execute($statement);
+                foreach (self::splitInsert($statement, $limit) as $part) {
+                    $conn->execute($part);
+                }
                 $ran++;
                 if ($each !== null) {
                     $each($ran);
@@ -228,6 +212,110 @@ final class DatabaseTools
         }
 
         return $ran;
+    }
+
+    /**
+     * A multi-row INSERT longer than $limit bytes as several INSERTs of the same rows, each
+     * within $limit where a single row allows. Any other statement comes back whole.
+     *
+     * @param string $statement
+     * @param int    $limit
+     *
+     * @return Generator<int,string>
+     */
+    public static function splitInsert(string $statement, int $limit): Generator
+    {
+        if (strlen($statement) <= $limit
+            || !preg_match('/^INSERT\s+(?:(?:LOW_PRIORITY|DELAYED|HIGH_PRIORITY|IGNORE)\s+)*(?:INTO\s+)?'
+                . '(?:`(?:[^`]|``)+`|[A-Za-z0-9_$.]+)\s*(?:\((?:[^()`]|`(?:[^`]|``)*`)*\)\s*)?VALUES?\s*/i', $statement, $m)
+        ) {
+            yield $statement;
+
+            return;
+        }
+
+        $header = strlen($m[0]);
+        $tuples = self::tupleEnds($statement, $header);
+        if ($tuples === array()) {
+            yield $statement;
+
+            return;
+        }
+
+        $head  = substr($statement, 0, $header);
+        $start = $header;
+        $end   = $header;
+        foreach ($tuples as $tuple) {
+            [$from, $to] = $tuple;
+            if ($end > $start && $header + $to - $start > $limit) {
+                yield $head . substr($statement, $start, $end - $start);
+                $start = $from;
+            }
+            $end = $to;
+        }
+        yield $head . substr($statement, $start, $end - $start);
+    }
+
+    /**
+     * The [start, end) offsets of each "(...)" row after $offset, or an empty array when
+     * anything but rows separated by commas follows, such as ON DUPLICATE KEY UPDATE; the
+     * statement then goes whole. It reads backups as the dump writes them, with backslash escapes.
+     *
+     * @param string $sql
+     * @param int    $offset
+     *
+     * @return array<int,array{0:int,1:int}>
+     */
+    private static function tupleEnds(string $sql, int $offset): array
+    {
+        $length = strlen($sql);
+        $tuples = array();
+        $i      = $offset;
+        while (true) {
+            if (($sql[$i] ?? '') !== '(') {
+                return array();
+            }
+            $from  = $i;
+            $depth = 0;
+            while ($i < $length) {
+                $i  += strcspn($sql, "()'\"`", $i);
+                $char = $sql[$i] ?? '';
+                if ($char === '(') {
+                    $depth++;
+                } elseif ($char === ')') {
+                    $depth--;
+                    if ($depth === 0) {
+                        $i++;
+                        break;
+                    }
+                } elseif ($char !== '') {
+                    // Backslash escapes apply inside values, not inside backtick identifiers.
+                    $i++;
+                    while ($i < $length) {
+                        $i += strcspn($sql, $char === '`' ? '`' : $char . '\\', $i);
+                        if (($sql[$i] ?? '') === '\\') {
+                            $i += 2;
+                            continue;
+                        }
+                        break;
+                    }
+                }
+                $i++;
+            }
+            if ($depth !== 0) {
+                return array();
+            }
+            $tuples[] = array($from, $i);
+            $i += strspn($sql, " \t\r\n", $i);
+            if ($i >= $length) {
+                return $tuples;
+            }
+            if ($sql[$i] !== ',') {
+                return array();
+            }
+            $i++;
+            $i += strspn($sql, " \t\r\n", $i);
+        }
     }
 
     /**
@@ -258,83 +346,7 @@ final class DatabaseTools
      */
     public static function upgradeLock(Connection $conn): ?Closure
     {
-        $lock = (new MigrationRunner($conn, self::migrationsDir()))->lockName();
-        if ((int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lock)) === 1) {
-            // Taking it again would release it early on MySQL before 5.7.5.
-            return static function (): void {
-            };
-        }
-        if ((int) $conn->scalar('SELECT GET_LOCK(?, 0)', array($lock)) !== 1) {
-            return null;
-        }
-
-        return static function () use ($conn, $lock): void {
-            try {
-                $conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
-            } catch (Throwable $e) {
-                // The server drops the lock with the session anyway.
-            }
-        };
-    }
-
-    /**
-     * The largest upload PHP accepts here, in bytes: the smaller of upload_max_filesize
-     * and post_max_size. PHP_INT_MAX when neither sets a limit.
-     *
-     * @return int
-     */
-    public static function uploadLimit(): int
-    {
-        $limits = array();
-        foreach (array('upload_max_filesize', 'post_max_size') as $setting) {
-            $kb = MediaSettingsForm::sizeToKb((string) ini_get($setting));
-            if ($kb > 0) {
-                $limits[] = $kb * 1024;
-            }
-        }
-
-        return $limits === array() ? PHP_INT_MAX : min($limits);
-    }
-
-    /**
-     * Why an uploaded restore file cannot be used, or '' when it can. A file field sent
-     * as an array (sql[]) is refused like a missing file.
-     *
-     * @param mixed $file the \$_FILES entry
-     *
-     * @return string
-     */
-    public static function uploadError($file): string
-    {
-        if (!is_array($file) || !isset($file['error'], $file['tmp_name'], $file['size'])
-            || !is_int($file['error']) || !is_string($file['tmp_name'])
-        ) {
-            return __('No file was uploaded');
-        }
-        if ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE) {
-            return self::tooLargeMessage();
-        }
-        if ($file['error'] === UPLOAD_ERR_NO_FILE || (int) $file['size'] === 0) {
-            return __('No file was uploaded');
-        }
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return __('The upload failed. Try again.');
-        }
-
-        return '';
-    }
-
-    /**
-     * The message for a file over PHP's upload limit.
-     *
-     * @return string
-     */
-    public static function tooLargeMessage(): string
-    {
-        return sprintf(
-            __('The file is larger than this server accepts (%s). Raise upload_max_filesize and post_max_size, or restore from the command line.'),
-            self::bytes(self::uploadLimit())
-        );
+        return $conn->namedLock((new MigrationRunner($conn, MigrationRunner::coreDir()))->lockName(), 0);
     }
 
     /** Oldest servers Shopclass supports. */
@@ -367,33 +379,19 @@ final class DatabaseTools
     }
 
     /**
-     * A byte count in words: "63.9 MB".
-     *
-     * @param int $bytes
-     *
-     * @return string
-     */
-    public static function bytes(int $bytes): string
-    {
-        $units = array('B', 'KB', 'MB', 'GB', 'TB');
-        $i     = $bytes > 0 ? (int) min(floor(log($bytes, 1024)), count($units) - 1) : 0;
-
-        return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
-    }
-
-    /**
      * Table count and total size of this install's tables, or null when the server
      * does not say.
      *
-     * @param Connection $conn
-     * @param string     $prefix the table prefix
+     * @param Connection|null $conn   this site's connection by default
+     * @param string|null     $prefix the table prefix; this site's by default
      *
      * @return array{tables:int,bytes:int}|null
      */
-    public static function size(Connection $conn, string $prefix): ?array
+    public static function size(?Connection $conn = null, ?string $prefix = null): ?array
     {
+        $prefix ??= DB_TABLE_PREFIX;
         try {
-            $row = $conn->selectOne(
+            $row = ($conn ?? Connection::getInstance())->selectOne(
                 'SELECT COUNT(*) AS n, COALESCE(SUM(data_length + index_length), 0) AS bytes'
                 . ' FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_name LIKE ? ESCAPE \'!\'',
                 array(TablePrefix::like($prefix))
@@ -406,5 +404,57 @@ final class DatabaseTools
         }
 
         return array('tables' => (int) $row['n'], 'bytes' => (int) $row['bytes']);
+    }
+
+    /**
+     * Repair the schema drift the reconciler can fix, under the upgrade lock. Null when an
+     * upgrade holds the lock.
+     *
+     * @return array{ran:array<int,string>,failed:array<int,string>}|null
+     */
+    public static function repair(): ?array
+    {
+        $conn = Connection::getInstance();
+        try {
+            $release = self::upgradeLock($conn);
+        } catch (DbException $e) {
+            $release = null;
+        }
+        if ($release === null) {
+            return null;
+        }
+        try {
+            return (new SchemaReconciler($conn))->repair();
+        } catch (Throwable $e) {
+            return array('ran' => array(), 'failed' => array($e->getMessage()));
+        } finally {
+            $release();
+        }
+    }
+
+    /**
+     * The SchemaDoctor findings, and the error that stopped them ('' when none).
+     *
+     * @return array{0:array<int,array<string,mixed>>,1:string}
+     */
+    public static function findings(): array
+    {
+        try {
+            return array((new SchemaDoctor(Connection::getInstance()))->diagnose(), '');
+        } catch (Throwable $e) {
+            return array(array(), $e->getMessage());
+        }
+    }
+
+    /**
+     * The database server's version string, or '' when it cannot be read.
+     */
+    public static function serverInfo(): string
+    {
+        try {
+            return Connection::getInstance()->serverInfo();
+        } catch (Throwable $e) {
+            return '';
+        }
     }
 }

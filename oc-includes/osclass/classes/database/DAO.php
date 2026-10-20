@@ -18,6 +18,8 @@ define('DB_CONST_FALSE', 'FALSE');
 define('DB_CONST_NULL', 'NULL');
 define('DB_CUSTOM_COND', 'DB_CUSTOM_COND');
 
+use mindstellar\database\Db;
+
 /**
  * DAO base model
  *
@@ -26,10 +28,8 @@ define('DB_CUSTOM_COND', 'DB_CUSTOM_COND');
  * unchanged -- values are returned as strings, as the driver used to hand them
  * back, because callers compare and print them loosely.
  *
- * $this->dao is still constructed and still public. It is no longer used by the
- * methods here, but plugins reach models' query builder through it, so it stays
- * a supported way in. New query code should use mindstellar\database\Connection
- * or QueryBuilder rather than either.
+ * $this->dao (the old query builder) is deprecated and goes away in 8.0. Plugins should use
+ * the osc_db_* helpers.
  *
  * @package    Shopclass
  * @subpackage Model
@@ -40,18 +40,12 @@ class DAO
     /**
      * DBCommandClass object
      *
-     * The legacy stateful query builder. Nothing in core routes through it any
-     * more; it is kept because plugins reach a model's builder as $model->dao,
-     * and two of the bundled ones do.
+     * The legacy stateful query builder. Nothing in core uses it. It is built on the first
+     * read of $model->dao, with a deprecation notice.
      *
      * @acces      public
      * @since      2.3
-     * @deprecated 5.3 Build queries with mindstellar\database\Connection or
-     *             QueryBuilder instead. Still populated and still supported --
-     *             the models themselves stopped using it in 5.3, so this is now
-     *             purely a compatibility surface for plugins.
-     * @see        \mindstellar\database\Connection
-     * @see        \mindstellar\database\QueryBuilder
+     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
      * @var DBCommandClass
      */
     public $dao;
@@ -106,26 +100,59 @@ class DAO
     private $errorDesc = '';
 
     /**
-     * Init connection of the database and create DBCommandClass object
+     * Set the table prefix. $dao is built on first read.
      */
     public function __construct()
     {
-        $conn              = \mindstellar\database\ConnectionManager::newInstance();
-        $data              = $conn->getHandle();
-        $this->dao         = new DBCommandClass($data);
+        unset($this->dao);
         $this->tablePrefix = DB_TABLE_PREFIX;
     }
 
     /**
-     * Reinitialize connection to the database once the object is unserialized
+     * Builds $dao the first time it is read.
+     *
+     * @param string $name
+     *
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        if ($name !== 'dao') {
+            $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0];
+            trigger_error(
+                'Undefined property: ' . static::class . '::$' . $name . ' in ' . ($caller['file'] ?? '?') . ' on line ' . ($caller['line'] ?? 0),
+                E_USER_WARNING
+            );
+
+            return null;
+        }
+        \mindstellar\utility\Deprecate::deprecatedFunction('$model->dao (DBCommandClass)', '7.0.0', 'the osc_db_* helpers');
+
+        $handle = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
+
+        return $this->dao = new DBCommandClass($handle);
+    }
+
+    /**
+     * isset($model->dao) stays true before the first read, as it was when the constructor built it.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function __isset($name)
+    {
+        return $name === 'dao';
+    }
+
+    /**
+     * Drops a builder that came with the serialized model; the first read builds a new one.
      *
      * @return void
      */
     public function __wakeup()
     {
-        $conn      = \mindstellar\database\ConnectionManager::newInstance();
-        $data      = $conn->getHandle();
-        $this->dao = new DBCommandClass($data);
+        unset($this->dao);
     }
 
     /**
@@ -457,7 +484,7 @@ class DAO
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
 
         try {
-            $id = osc_db_insert_id(
+            $id = Db::insertGetId(
                 'INSERT INTO ' . $this->getTableName() . ' (' . implode(', ', $columns) . ')'
                 . ' VALUES (' . $placeholders . ')',
                 array_values($values)
@@ -517,7 +544,7 @@ class DAO
     public function count()
     {
         try {
-            $total = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
+            $total = Db::scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
             $this->clearError();
         } catch (\mindstellar\database\DbException $e) {
             $this->recordError($e);
@@ -540,8 +567,8 @@ class DAO
     protected function pagedCounts(string $where, array $params = array()): ?array
     {
         try {
-            $total = osc_db_count($this->getTableName(), $where, $params);
-            $rows  = osc_db_count($this->getTableName());
+            $total = Db::count($this->getTableName(), $where, $params);
+            $rows  = Db::count($this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return null;
         }
@@ -597,7 +624,7 @@ class DAO
     private function fetch($sql, array $params = array())
     {
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
             $this->clearError();
         } catch (\mindstellar\database\DbException $e) {
             $this->recordError($e);
@@ -605,7 +632,7 @@ class DAO
             return false;
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -619,7 +646,7 @@ class DAO
     private function write($sql, array $params = array())
     {
         try {
-            $affected = osc_db_execute($sql, $params);
+            $affected = Db::execute($sql, $params);
             $this->clearError();
             $this->cacheChanged();
         } catch (\mindstellar\database\DbException $e) {
@@ -640,7 +667,7 @@ class DAO
     protected function cacheChanged()
     {
         if ($this->cacheGroup !== null) {
-            \mindstellar\cache\CacheGroup::invalidate($this->cacheGroup);
+            \mindstellar\cache\CacheGroup::changed($this->cacheGroup);
         }
     }
 
@@ -686,7 +713,7 @@ class DAO
     {
         $this->errorLevel = (int)$e->getCode();
 
-        $conn            = \mindstellar\database\ConnectionManager::newInstance()->getHandle();
+        $conn            = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
         $this->errorDesc = ($conn instanceof mysqli && $conn->error !== '')
             ? $conn->error
             : $e->getMessage();

@@ -372,6 +372,27 @@ class QueryBuilder
     }
 
     /**
+     * $value with the LIKE metacharacters escaped, so a typed '%' or '_' matches itself.
+     */
+    public static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    }
+
+    /**
+     * Rows newest first by $column, below $before when given: one page of a keyset list.
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws DbException
+     */
+    public function newestBefore(?int $before, int $limit, string $column = 'pk_i_id'): array
+    {
+        $query = $before !== null ? $this->where($column, '<', $before) : $this;
+
+        return $query->orderBy($column, 'DESC')->limit($limit)->get();
+    }
+
+    /**
      * Add a LIKE condition. The wildcard payload is built in PHP and bound as a
      * single parameter; LIKE metacharacters (% and _) in $value are escaped
      * first, so a literal '%' or '_' typed by a user stays literal.
@@ -386,7 +407,7 @@ class QueryBuilder
     public function like(string $column, string $value, string $side = 'both'): self
     {
         $this->assertIdent($column);
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+        $escaped = self::escapeLike($value);
         switch ($side) {
             case 'before':
                 $pattern = '%' . $escaped;
@@ -519,7 +540,7 @@ class QueryBuilder
     {
         [$sql, $bindings] = $this->compileSelect();
 
-        return Connection::instance()->select($sql, $bindings);
+        return Connection::getInstance()->select($sql, $bindings);
     }
 
     /**
@@ -532,7 +553,7 @@ class QueryBuilder
     {
         [$sql, $bindings] = $this->limit(1)->compileSelect();
 
-        return Connection::instance()->selectOne($sql, $bindings);
+        return Connection::getInstance()->selectOne($sql, $bindings);
     }
 
     /**
@@ -553,7 +574,7 @@ class QueryBuilder
             $sql .= $whereSql;
             $bindings = array_merge($bindings, $whereBindings);
 
-            return (int) Connection::instance()->scalar($sql, $bindings);
+            return (int) Connection::getInstance()->scalar($sql, $bindings);
         }
 
         // Grouped: count the number of groups by wrapping the grouped query in a
@@ -578,7 +599,7 @@ class QueryBuilder
         $bindings = array_merge($bindings, $havingBindings);
         $sql = 'SELECT COUNT(*) AS aggregate FROM (' . $inner . ') AS oscsub';
 
-        return (int) Connection::instance()->scalar($sql, $bindings);
+        return (int) Connection::getInstance()->scalar($sql, $bindings);
     }
 
     /**
@@ -607,7 +628,7 @@ class QueryBuilder
         [$whereSql, $bindings] = $this->compileWheres();
         $sql .= $whereSql;
 
-        return Connection::instance()->scalar($sql, $bindings);
+        return Connection::getInstance()->scalar($sql, $bindings);
     }
 
     /**
@@ -692,7 +713,7 @@ class QueryBuilder
         $sql     .= $whereSql;
         $bindings = array_merge($bindings, $whereBindings);
 
-        return Connection::instance()->execute($sql, $bindings);
+        return Connection::getInstance()->execute($sql, $bindings);
     }
 
     /**
@@ -747,6 +768,7 @@ class QueryBuilder
             $quoted = $this->quoteIdent((string) $column);
             $sets[] = $quoted . ' = VALUES(' . $quoted . ')';
         }
+        // @phpstan-ignore identical.alwaysFalse (empty data and update lists are possible)
         if ($sets === []) {
             throw new DbException('Upsert needs at least one column to update');
         }
@@ -755,7 +777,7 @@ class QueryBuilder
             . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')'
             . ' ON DUPLICATE KEY UPDATE ' . implode(', ', $sets);
 
-        return Connection::instance()->execute($sql, $bindings);
+        return Connection::getInstance()->execute($sql, $bindings);
     }
 
     /**
@@ -770,7 +792,7 @@ class QueryBuilder
     {
         [$sql, $bindings] = $this->select($column)->limit(1)->compileSelect();
 
-        return Connection::instance()->scalar($sql, $bindings);
+        return Connection::getInstance()->scalar($sql, $bindings);
     }
 
     /**
@@ -795,7 +817,7 @@ class QueryBuilder
         $sql = 'INSERT INTO ' . $this->writeTable()
             . ' (' . implode(', ', $columns) . ') VALUES (' . $placeholders . ')';
 
-        return Connection::instance()->insertGetId($sql, array_values($data));
+        return Connection::getInstance()->insertGetId($sql, array_values($data));
     }
 
     /**
@@ -827,7 +849,7 @@ class QueryBuilder
         $sql .= $whereSql;
         $bindings = array_merge($bindings, $whereBindings);
 
-        return Connection::instance()->execute($sql, $bindings);
+        return Connection::getInstance()->execute($sql, $bindings);
     }
 
     /**
@@ -846,7 +868,7 @@ class QueryBuilder
         [$whereSql, $whereBindings] = $this->compileWheres();
         $sql .= $whereSql;
 
-        return Connection::instance()->execute($sql, $whereBindings);
+        return Connection::getInstance()->execute($sql, $whereBindings);
     }
 
     /**

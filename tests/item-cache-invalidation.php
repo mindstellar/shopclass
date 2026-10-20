@@ -14,7 +14,7 @@
  * osc_invalidate_item_cache() is where every event that makes an item's rendered page
  * wrong already converges: an edit, an image added or removed, the listing deleted, and
  * the storage worker once an offload has rewritten the image URLs. That last one has no
- * hook of its own — StorageWorker calls this function directly — so before this hook
+ * hook of its own — the storage offload job calls this function directly — so before this hook
  * existed, a proxy or CDN had no way to learn that a cached listing page was still
  * pointing at local files the offload had moved.
  *
@@ -53,13 +53,18 @@ function osc_get_locales()
 }
 
 /** Stands in for the object cache; records what it was asked to delete. */
-class Object_Cache_Factory
+class RecordingCacheManager
 {
     public static $deleted = array();
 
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function delete($key)
@@ -69,6 +74,7 @@ class Object_Cache_Factory
         return true;
     }
 }
+class_alias('RecordingCacheManager', 'mindstellar\\cache\\CacheManager');
 
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hCache.php';
 require_once __DIR__ . '/lib/harness.php';
@@ -82,7 +88,7 @@ function invalidations($itemId, array $locales = array())
 {
     $GLOBALS['fired']   = array();
     $GLOBALS['locales'] = $locales;
-    Object_Cache_Factory::$deleted = array();
+    RecordingCacheManager::$deleted = array();
     osc_invalidate_item_cache($itemId);
 
     return array_values(array_filter($GLOBALS['fired'], static function ($f) {
@@ -106,7 +112,7 @@ harness_section('invalidate_item_cache — every branch reaches it');
 
 check(
     'the locale branch still clears its per-locale keys',
-    count(Object_Cache_Factory::$deleted) === 2
+    count(RecordingCacheManager::$deleted) === 2
 );
 $f = invalidations(7, $two);
 pin('...and fires the hook after them', 1, count($f));

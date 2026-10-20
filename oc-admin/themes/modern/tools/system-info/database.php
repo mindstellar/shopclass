@@ -13,12 +13,14 @@
 use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\SchemaDoctor;
+use mindstellar\migration\MigrationRunner;
 
 // System info > Database, below the verdict and the facts: waiting updates and check and repair.
+/** @var array<string, mixed> $env */
 $findings   = (array) ($env['findings'] ?? array());
 $error      = (string) ($env['findings_error'] ?? '');
 $pending    = (array) ($env['pending'] ?? array());
-$repair     = View::newInstance()->_get('db_repair');
+$repair     = View::getInstance()->_get('db_repair');
 $hasPending = $pending !== array();
 $canRepair  = DatabaseTools::repairAllowed($findings, $pending);
 $self       = SystemChecks::url($env, 'database');
@@ -91,7 +93,7 @@ $groups = array(
                     <tbody>
                     <?php foreach ($pending as $migration) { ?>
                         <tr>
-                            <td><?php echo osc_esc_html(DatabaseTools::title(DatabaseTools::migrationsDir(), (string) $migration)); ?></td>
+                            <td><?php echo osc_esc_html(DatabaseTools::title(MigrationRunner::coreDir(), (string) $migration)); ?></td>
                             <td class="text-muted"><code><?php echo osc_esc_html((string) $migration); ?></code></td>
                         </tr>
                     <?php } ?>

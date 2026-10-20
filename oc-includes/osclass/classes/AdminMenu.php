@@ -22,6 +22,8 @@
  */
 class AdminMenu
 {
+    use \mindstellar\base\SharedInstance;
+
     /**
      * Menu ids that open a new band in the sidebar, drawn with a hairline above.
      *
@@ -32,7 +34,6 @@ class AdminMenu
      */
     private const BAND_STARTS = array('items', 'appearance', 'settings');
 
-    private static $instance;
     private $aMenu;
 
     /** Submenu keys per section as core left them, before anyone else registered. */
@@ -402,6 +403,13 @@ class AdminMenu
         }
         $this->add_submenu(
             'settings',
+            __('API'),
+            osc_admin_base_url(true) . '?page=settings&action=api',
+            'settings_api',
+            'administrator'
+        );
+        $this->add_submenu(
+            'settings',
             __('Advanced'),
             osc_admin_base_url(true) . '?page=settings&action=advanced',
             'settings_advanced',
@@ -526,10 +534,40 @@ class AdminMenu
             $actual_url = 'page=' . $actual_page;
         }
 
-        $adminMenu = self::newInstance();
+        $adminMenu = self::getInstance();
         $aMenu     = $adminMenu->get_array_menu();
 
         $is_moderator = osc_is_moderator();
+        [$current_menu, $current_submenu] = self::current($aMenu, $actual_url, $actual_page, $is_moderator, array(osc_admin_base_url(true) . '?', osc_admin_base_url()));
+
+        $currentMenuId = $current_menu;
+
+        $sMenu = '<!-- menu -->' . PHP_EOL;
+
+        $sMenu .= '<div class="px-1 pt-2">' .
+                  PHP_EOL;
+        $sMenu .= '<ul id="dashboard-menu" class="oscmenu col-md-12 nav nav-pills flex-column">' .
+                  PHP_EOL;
+
+        foreach ($aMenu as $key => $value) {
+            $sMenu .= $this->renderMenu($key, $value, $current_menu, $current_submenu);
+        }
+
+        $sMenu .= '</ul></div>' . PHP_EOL;
+        echo $sMenu;
+    }
+
+    /**
+     * The section and entry ids to highlight for a query string, as [menu, submenu].
+     * The longest matching link wins; on a tie, the entry in the page's own section.
+     *
+     * @param array<string,mixed> $aMenu
+     * @param string[]            $bases admin URL prefixes stripped from each link
+     *
+     * @return array{0:string,1:string}
+     */
+    public static function current(array $aMenu, string $actual_url, $actual_page, bool $is_moderator, array $bases): array
+    {
         // find current menu section
         $current_menu    = '';
         $current_submenu = '';
@@ -548,13 +586,13 @@ class AdminMenu
 
                     if (!$is_moderator || ($credential_sub === 'moderator')) { // show
                         $url_submenu = $aSub[1];
-                        $url_submenu = str_replace(array(
-                                                       osc_admin_base_url(true) . '?',
-                                                       osc_admin_base_url()
-                                                   ), '', $url_submenu);
+                        $url_submenu = str_replace($bases, '', $url_submenu);
 
-                        if ($priority <= 2 && $url_submenu && strpos($actual_url, $url_submenu) === 0) {
-                            if ($urlLength < strlen($url_submenu)) {
+                        if ($url_submenu && strpos($actual_url, $url_submenu) === 0) {
+                            // Two entries can share a link, such as a plugin's shortcut to a core screen; the one in the page's own section wins.
+                            if ($urlLength < strlen($url_submenu)
+                                || ($urlLength === strlen($url_submenu) && $value[2] === $actual_page && $current_menu !== $actual_page)
+                            ) {
                                 $urlLength       = strlen($url_submenu);
                                 $current_submenu = $aSub['2'];
                                 $current_menu    = $value[2];
@@ -571,12 +609,9 @@ class AdminMenu
 
             // --- menu section
             $url_menu = $value[1];
-            $url_menu = str_replace(array(
-                                        osc_admin_base_url(true) . '?',
-                                        osc_admin_base_url()
-                                    ), '', $url_menu);
+            $url_menu = str_replace($bases, '', $url_menu);
 
-            if ($priority <= 2 && $url_menu && @strpos($actual_url, $url_menu) === 0) {
+            if ($url_menu && @strpos($actual_url, $url_menu) === 0) {
                 if ($urlLength < strlen($url_menu)) {
                     $urlLength    = strlen($url_menu);
                     $current_menu = $value[2];
@@ -599,21 +634,7 @@ class AdminMenu
             $current_menu = 'dash';
         }
 
-        $currentMenuId = $current_menu;
-
-        $sMenu = '<!-- menu -->' . PHP_EOL;
-
-        $sMenu .= '<div class="px-1 pt-2">' .
-                  PHP_EOL;
-        $sMenu .= '<ul id="dashboard-menu" class="oscmenu col-md-12 nav nav-pills flex-column">' .
-                  PHP_EOL;
-
-        foreach ($aMenu as $key => $value) {
-            $sMenu .= $this->renderMenu($key, $value, $current_menu, $current_submenu);
-        }
-
-        $sMenu .= '</ul></div>' . PHP_EOL;
-        echo $sMenu;
+        return array($current_menu, $current_submenu);
     }
 
     /**
@@ -674,17 +695,11 @@ class AdminMenu
     }
 
     /**
-     * The shared AdminMenu instance, created on first call.
-     *
-     * @return \AdminMenu
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -738,7 +753,7 @@ class AdminMenu
             if (isset($value['sub']) && !empty($value['sub'])) {
                 $isOpen = ($activeMenu === $menuId);
                 $str    .= ' <button type="button" class="nav-chevron' . ($isOpen ? '' : ' collapsed')
-                           . '" data-bs-target="#' . $menuId . '-submenu" data-bs-toggle="collapse"'
+                           . '" data-osc-collapse="#' . $menuId . '-submenu"'
                            . ' aria-expanded="' . ($isOpen ? 'true' : 'false') . '"'
                            . ' aria-controls="' . $menuId . '-submenu"'
                            . ' aria-label="'
@@ -771,7 +786,7 @@ class AdminMenu
     {
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
-            . '-submenu" data-bs-parent="#dashboard-menu">';
+            . '-submenu" data-osc-parent="#dashboard-menu">';
         // Which items this admin may see. Index 4 is the capability on a submenu entry.
         //
         // A divider is skipped here on purpose. It is a label with no destination, so it can

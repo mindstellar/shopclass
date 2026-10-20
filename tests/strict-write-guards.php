@@ -119,6 +119,10 @@ $userCount = static function () use ($admin, $prefix): int {
  * Post a registration and hand back whatever add() answered. Params is static and
  * request-scoped, so every field one call sets is cleared before the next.
  */
+foreach (array('enabled_users' => '1', 'enabled_user_registration' => '1') as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+osc_reset_preferences();
 $register = static function (array $params, bool $isAdmin = false) {
     foreach (array(
         's_name', 's_email', 's_username', 's_password', 's_password2', 's_website',
@@ -244,16 +248,32 @@ pin('and wrote its user row', $before + 1, $userCount());
 
 $before = $userCount();
 pin(
-    'a name one character over the column is refused by name',
-    "Name is too long, the maximum is 100 characters\n",
-    $register(array('s_name' => str_repeat('a', 101)))
+    'a name one character over the 50-character limit is refused by name',
+    "Name is too long, the maximum is 50 characters\n",
+    $register(array('s_name' => str_repeat('a', 51)))
 );
 pin('and no user row was written', $before, $userCount());
 
 pin(
-    'a name of exactly the column width is accepted',
+    'a name of exactly 50 characters is accepted',
     2,
-    $register(array('s_name' => str_repeat('a', 100)))
+    $register(array('s_name' => str_repeat('a', 50)))
+);
+
+pin(
+    'a description over 1000 characters is refused',
+    "Description is too long, the maximum is 1000 characters\n",
+    $register(array('s_info' => array('en_US' => str_repeat('a', 1001))))
+);
+pin(
+    'a long description in a second language is refused too',
+    "Description is too long, the maximum is 1000 characters\n",
+    $register(array('s_info' => array('en_US' => 'Hi', 'es_ES' => str_repeat('a', 1001))))
+);
+pin(
+    'a description of exactly 1000 characters is accepted',
+    2,
+    $register(array('s_info' => array('en_US' => str_repeat('a', 1000))))
 );
 
 pin(
@@ -264,9 +284,9 @@ pin(
 
 pin(
     'every over-long field is named, not just the first',
-    "Name is too long, the maximum is 100 characters\n"
+    "Name is too long, the maximum is 50 characters\n"
     . "Zip code is too long, the maximum is 15 characters\n",
-    $register(array('s_name' => str_repeat('a', 101), 'zip' => str_repeat('9', 16)))
+    $register(array('s_name' => str_repeat('a', 51), 'zip' => str_repeat('9', 16)))
 );
 
 // The half-width copy is what made this a truncation rather than a stored value:
@@ -300,7 +320,7 @@ pin('and wrote the second user row', $before + 1, $userCount());
 $before = $userCount();
 pin(
     'the over-long name is refused the same way, not by an exception',
-    "Name is too long, the maximum is 100 characters\n",
+    "Name is too long, the maximum is 50 characters\n",
     $register(array('s_name' => str_repeat('a', 150)))
 );
 pin('and still no user row', $before, $userCount());
@@ -395,8 +415,8 @@ $edit = static function (array $params, int $id) {
 
 pin(
     'an over-long name is refused by name here too',
-    "Name is too long, the maximum is 100 characters\n",
-    $edit(array('s_name' => str_repeat('a', 101), 's_email' => 'editme@example.test'), $editUser)
+    "Name is too long, the maximum is 50 characters\n",
+    $edit(array('s_name' => str_repeat('a', 51), 's_email' => 'editme@example.test'), $editUser)
 );
 pin('and the stored name is untouched', $nameBefore, $nameOf($editUser));
 

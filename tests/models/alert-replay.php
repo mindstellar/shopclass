@@ -228,13 +228,7 @@ $mkItem = static function (
         array($id)
     );
     if ($hasPicture) {
-        seed_exec(
-            $admin,
-            "INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path)
-             VALUES (?, 'photo', 'jpg', 'image/jpeg', '/photo.jpg')",
-            'i',
-            array($id)
-        );
+        seed_photo($admin, $id, array('s_path' => '/photo.jpg'));
     }
 
     return $id;
@@ -393,8 +387,8 @@ $seedItemMeta($i6, $fNumber, '2000');
  * once per process. Reset it (as tests/models/search.php does) so this file's
  * own categories are what gets seen.
  */
-if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::newInstance()->flush();
+if (class_exists('mindstellar\\cache\\CacheManager')) {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 $categoryReset = new ReflectionProperty('Category', 'instance');
 if (PHP_VERSION_ID < 80100) {
@@ -457,7 +451,7 @@ $legacyBase = array(
 $metaCondition = static function (string $type, int $fieldId, $aux) use ($prefix, $metaTable): ?string {
     switch ($type) {
         case 'TEXT':
-            $escaped = "'" . \mindstellar\database\Connection::instance()->escape('%' . $aux . '%') . "'";
+            $escaped = "'" . \mindstellar\database\Connection::getInstance()->escape('%' . $aux . '%') . "'";
             $sql     = "SELECT fk_i_item_id FROM $metaTable WHERE ";
             $sql     .= $metaTable . '.fk_i_field_id = ' . $fieldId . ' AND ';
             $sql     .= $metaTable . '.s_value LIKE ' . $escaped;
@@ -465,7 +459,7 @@ $metaCondition = static function (string $type, int $fieldId, $aux) use ($prefix
             return $prefix . 't_item.pk_i_id IN (' . $sql . ')';
         case 'DROPDOWN':
         case 'RADIO':
-            $escaped = "'" . \mindstellar\database\Connection::instance()->escape((string)$aux) . "'";
+            $escaped = "'" . \mindstellar\database\Connection::getInstance()->escape((string)$aux) . "'";
             $sql     = "SELECT fk_i_item_id FROM $metaTable WHERE ";
             $sql     .= $metaTable . '.fk_i_field_id = ' . $fieldId . ' AND ';
             $sql     .= $metaTable . '.s_value = ' . $escaped;
@@ -1174,28 +1168,28 @@ $listener = static function ($params, $search = null, $context = null) use (&$se
         'search'   => $search,
         'context'  => $context,
         'getParam' => Params::getParam('sRegion'),
-        'shared'   => Search::newInstance(),
+        'shared'   => Search::getInstance(),
     );
     // The classic plugin pattern: reach the search through the shared instance.
-    Search::newInstance()->addConditions(sprintf('%st_item.pk_i_id = %d', $prefix, $i2));
+    Search::getInstance()->addConditions(sprintf('%st_item.pk_i_id = %d', $prefix, $i2));
 };
 osc_add_hook('search_conditions', $listener);
 
 Params::setParam('sRegion', 'outer');
-$sharedBefore = Search::newInstance();
+$sharedBefore = Search::getInstance();
 $replayed     = AlertReplay::search(array('s_search' => $envelope(array('sRegion' => 'Alpha'))));
 $result       = $sorted($ids($replayed->doSearch()));
 osc_remove_hook('search_conditions', $listener);
 
 pin('the listener ran once', 1, count($seen));
-pin('its condition, added through Search::newInstance(), landed on the replayed search', array($i2), $result);
+pin('its condition, added through Search::getInstance(), landed on the replayed search', array($i2), $result);
 check('it was handed the replayed Search', $seen[0]['search'] === $replayed);
-check('Search::newInstance() was the replayed Search while it ran', $seen[0]['shared'] === $replayed);
+check('Search::getInstance() was the replayed Search while it ran', $seen[0]['shared'] === $replayed);
 pin('the context is alert', 'alert', $seen[0]['context']);
 pin('Params::getParam() read the stored params', 'Alpha', $seen[0]['getParam']);
 pin('the params argument is the stored params, shaped as a request', array('sRegion' => 'Alpha'), $seen[0]['params']);
 pin('the request params are restored afterwards', 'outer', Params::getParam('sRegion'));
-check('the shared Search is restored afterwards', Search::newInstance() === $sharedBefore);
+check('the shared Search is restored afterwards', Search::getInstance() === $sharedBefore);
 Params::unsetParam('sRegion');
 
 harness_section('alert-replay: (d) v2 — display');
@@ -1216,9 +1210,9 @@ pin('osc_get_raw_search(): price unscaled, empty bounds left out', array(1000, f
 pin('osc_get_raw_search(): the stored params come along', $v2Display['params'], $raw['params'] ?? null);
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 $alertSearchFor = static function (array $row): string {
-    View::newInstance()->_exportVariableToView('alerts', array($row));
-    View::newInstance()->_reset('alerts');
-    View::newInstance()->_next('alerts');
+    View::getInstance()->_exportVariableToView('alerts', array($row));
+    View::getInstance()->_reset('alerts');
+    View::getInstance()->_next('alerts');
 
     return osc_alert_search();
 };
@@ -1272,12 +1266,9 @@ pin(
 
 harness_section('alert-replay: (d) v2 — page size');
 
-$rpp = new ReflectionProperty('Search', 'results_per_page');
-if (PHP_VERSION_ID < 80100) {
-    $rpp->setAccessible(true);
-}
-pin('the limit option sets the page size', 7, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row), array('limit' => 7))));
-pin('without it the page size is 10', 10, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row))));
+$rpp = static fn (Search $search) => json_decode($search->toJson(), true)['results_per_page'];
+pin('the limit option sets the page size', 7, $rpp(AlertReplay::search(array('s_search' => $v2Row), array('limit' => 7))));
+pin('without it the page size is 10', 10, $rpp(AlertReplay::search(array('s_search' => $v2Row))));
 check(
     'the alert cron replays with the search page size',
     strpos(
@@ -1297,10 +1288,10 @@ pin(
  * ------------------------------------------------------------------------- */
 harness_section('alert-replay: (e) migration — converts, holds, resumes');
 
-$conn        = \mindstellar\database\Connection::instance();
+$conn        = \mindstellar\database\Connection::getInstance();
 $alertsTable = $prefix . 't_alerts';
 $migration   = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0044_alerts_search_values.php';
-$jobQueue    = \mindstellar\job\JobQueue::instance();
+$jobQueue    = \mindstellar\job\JobQueue::getInstance();
 $convertType = \mindstellar\search\AlertJobs::TYPE;
 
 $seedAlert = static function (?string $search, int $active = 1) use ($admin, $alertsTable): int {
@@ -1405,9 +1396,9 @@ harness_section('alert-replay: (e) a held alert cannot be switched back on');
 
 $heldPk  = $pks[3];
 $plainPk = $pks[4];
-pin('activate() leaves a held row inactive', array(0, 0), array((int)Alerts::newInstance()->activate($heldPk), $alertRows()[$heldPk][1]));
-pin('and still activates an ordinary one', array(1, 1), array((int)Alerts::newInstance()->activate($plainPk), $alertRows()[$plainPk][1]));
-Alerts::newInstance()->deactivate($plainPk);
+pin('activate() leaves a held row inactive', array(0, 0), array((int)Alerts::getInstance()->activate($heldPk), $alertRows()[$heldPk][1]));
+pin('and still activates an ordinary one', array(1, 1), array((int)Alerts::getInstance()->activate($plainPk), $alertRows()[$plainPk][1]));
+Alerts::getInstance()->deactivate($plainPk);
 pin('heldIds() names the held ones among the ids given', array($heldPk), AlertStore::heldIds(array($heldPk, $plainPk, 'x')));
 $rowsNow = $alertRows();
 
@@ -1500,8 +1491,8 @@ $admin->query('DELETE FROM ' . $prefix . "t_job_queue WHERE s_type = '" . $conve
 // friends). This file runs early in the suite, so those ids are the *first* ones
 // TRUNCATE's AUTO_INCREMENT reset hands out — a later file that reseeds its own
 // category at the same id would otherwise read this file's cached row back for it.
-if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::newInstance()->flush();
+if (class_exists('mindstellar\\cache\\CacheManager')) {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 $categoryReset->setValue(null, null);
 

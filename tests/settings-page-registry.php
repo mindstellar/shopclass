@@ -33,6 +33,8 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/category/CategoryModes.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';
@@ -57,9 +59,14 @@ class Params
 
 class Preference
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function get($key, $section = 'osclass')
@@ -139,7 +146,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 function register_error(string $id, array $spec): ?string
 {
     try {
-        SettingsPageRegistry::instance()->register($id, $spec);
+        SettingsPageRegistry::getInstance()->register($id, $spec);
     } catch (InvalidArgumentException $e) {
         return $e->getMessage();
     }
@@ -312,6 +319,21 @@ check('translate on a text field is accepted', register_error('x14', array('titl
 check('translate on a textarea is accepted', register_error('x15', array('title' => 'X', 'fields' => array(
     array('name' => 'a', 'type' => 'textarea', 'translate' => true),
 ))) === null);
+
+// A category_modes field names its modes; "off" is the reserved word for a subcategory
+// switched off, so a mode spelled that way could never be told apart from it.
+check('category_modes with no modes is refused', register_error('x40', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes'),
+))) !== null);
+check('a mode named "off" is refused', register_error('x41', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes', 'modes' => array('off' => 'Off')),
+))) !== null);
+check('a mode with a space is refused', register_error('x42', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes', 'modes' => array('two words' => 'X')),
+))) !== null);
+pin('a category_modes field with modes registers', null, register_error('x43', array('title' => 'X', 'fields' => array(
+    array('name' => 'a', 'type' => 'category_modes', 'modes' => array('nights' => 'Nights', 'slots' => 'Time slots')),
+))));
 
 // Same rule for the flag that turns purification off: only free-typed values are purified,
 // so setting it anywhere else reads as a decision that was taken and is not.
@@ -562,7 +584,7 @@ pin(
 pin(
     'a field that declares a column keeps it',
     's_email',
-    SettingsPageRegistry::instance()->fields('s8')['email']['column'] ?? null
+    SettingsPageRegistry::getInstance()->fields('s8')['email']['column'] ?? null
 );
 // A preference has a key the same way a row has a column, so a column on a preference page
 // is the preference the value is stored under -- which is what lets a control keep the name
@@ -574,7 +596,7 @@ check('a column on a page that stores preferences names the preference', registe
 pin(
     'and it is kept as declared, punctuation and all',
     'maxLatestItems@home',
-    SettingsPageRegistry::instance()->fields('s9')['max_latest_items_at_home']['column'] ?? null
+    SettingsPageRegistry::getInstance()->fields('s9')['max_latest_items_at_home']['column'] ?? null
 );
 // t_preference takes any string for a key, so nothing downstream would refuse this: the
 // declaration would simply write whatever it named into the page's section.
@@ -750,7 +772,7 @@ harness_section('two plugins claiming one id');
 $before = osc_settings_page('myplugin')['title'];
 register_error('myplugin', array('title' => 'Impostor', 'fields' => array(array('name' => 'z'))));
 pin('the first registration keeps the page', $before, osc_settings_page('myplugin')['title']);
-check('the field it declared is not there', !array_key_exists('z', SettingsPageRegistry::instance()->fields('myplugin')));
+check('the field it declared is not there', !array_key_exists('z', SettingsPageRegistry::getInstance()->fields('myplugin')));
 // Silent would be as bad as replacing; the collision is recorded so it can be found.
 pin('and the collision is counted', 1, osc_settings_page_conflicts()['myplugin'] ?? 0);
 check('a healthy id is not listed', !array_key_exists('cust', osc_settings_page_conflicts()));
@@ -771,7 +793,7 @@ pin('an untouched checkbox is false', false, osc_settings_value('myplugin', 'ver
 pin('a field the page does not declare is null', null, osc_settings_value('myplugin', 'ghost'));
 
 harness_section('sanitising a submission');
-$fields = SettingsPageRegistry::instance()->fields('myplugin');
+$fields = SettingsPageRegistry::getInstance()->fields('myplugin');
 $GLOBALS['params'] = array('batch' => ' 12 ');
 pin('a number arrives as an int', 12, osc_settings_sanitize($fields['batch']));
 $GLOBALS['params'] = array('batch' => '2.5');
@@ -792,6 +814,15 @@ pin('an absent checkbox is false', false, osc_settings_sanitize($fields['verbose
 // the only thing that can be relied on.
 $GLOBALS['params'] = array('verbose' => 'on');
 pin("a checkbox is read by presence, not by its value", true, osc_settings_sanitize($fields['verbose']));
+$modesField = array('name' => 'cats', 'type' => 'category_modes', 'modes' => array('nights' => 'Nights', 'slots' => 'Time slots'));
+$GLOBALS['params'] = array('cats' => array('9' => 'slots', '4' => 'nights', '7' => '', '12' => 'weekly', 'x' => 'nights', '20' => 'off', '21' => array('nights')));
+pin('category modes keep known modes and "off", sorted by id, as JSON', '{"4":"nights","9":"slots","20":"off"}', osc_settings_sanitize($modesField));
+$GLOBALS['params'] = array('cats' => '5');
+pin('a category_modes value that is not a list stores an empty object', '{}', osc_settings_sanitize($modesField));
+$GLOBALS['params'] = array('cats' => array('4' => 'nights'));
+pin('a category_modes sanitize callback gets the JSON', '{"4":"nights"}!', osc_settings_sanitize($modesField + array('sanitize' => static fn ($v) => $v . '!')));
+pin('a stored category_modes value reads back as id => mode', array(4 => 'nights', 20 => 'off'), osc_category_modes_parse('{"4":"nights","20":"off","x":"slots","5":"bad mode"}'));
+pin('a broken stored value reads as no modes', array(), osc_category_modes_parse('{not json'));
 // An array where a scalar was declared is the shape an attacker reaches for first.
 $GLOBALS['params'] = array('api_key' => array('a', 'b'));
 pin('an array submitted for a scalar field is dropped', '', osc_settings_sanitize($fields['api_key']));
@@ -829,7 +860,7 @@ pin('a malformed email is rejected', 'Notify is not a valid email address', osc_
 pin('an optional field left empty passes', null, osc_settings_validate($fields['notify'], ''));
 
 harness_section('a custom validator and a custom sanitiser');
-SettingsPageRegistry::instance()->register('cust', array(
+SettingsPageRegistry::getInstance()->register('cust', array(
     'title'  => 'Custom',
     'fields' => array(
         array('name' => 'slug', 'label' => 'Slug',
@@ -837,7 +868,7 @@ SettingsPageRegistry::instance()->register('cust', array(
               'validate' => static fn ($v, $f) => strlen($v) > 8 ? 'Slug is too long' : null),
     ),
 ));
-$cust = SettingsPageRegistry::instance()->fields('cust');
+$cust = SettingsPageRegistry::getInstance()->fields('cust');
 $GLOBALS['params'] = array('slug' => 'My Slug');
 pin('the field sanitiser runs instead of the type default', 'my-slug', osc_settings_sanitize($cust['slug']));
 pin('the field validator runs', 'Slug is too long', osc_settings_validate($cust['slug'], 'aaaaaaaaaa'));
@@ -858,14 +889,14 @@ osc_settings_sanitize($fields['notify']);
 // narrowed by its own type. Purifying those would take characters out for no gain.
 pin('a secret, a number and an email do not', array(), $GLOBALS['purified']);
 
-SettingsPageRegistry::instance()->register('typed', array(
+SettingsPageRegistry::getInstance()->register('typed', array(
     'title'  => 'Typed',
     'fields' => array(
         array('name' => 'phone', 'type' => 'tel'),
         array('name' => 'shade', 'type' => 'color'),
     ),
 ));
-$typedFields         = SettingsPageRegistry::instance()->fields('typed');
+$typedFields         = SettingsPageRegistry::getInstance()->fields('typed');
 $GLOBALS['purified'] = array();
 $GLOBALS['params']   = array('phone' => '+1 555 0100', 'shade' => '#ff8800');
 osc_settings_sanitize($typedFields['phone']);
@@ -874,14 +905,14 @@ osc_settings_sanitize($typedFields['shade']);
 // own, so without this they store less filtered than the text field beside them.
 pin('a tel and a color are purified like text', array('+1 555 0100', '#ff8800'), $GLOBALS['purified']);
 
-SettingsPageRegistry::instance()->register('raw', array(
+SettingsPageRegistry::getInstance()->register('raw', array(
     'title'  => 'Raw',
     'fields' => array(
         array('name' => 'body', 'type' => 'textarea', 'purify' => false),
         array('name' => 'title', 'type' => 'text'),
     ),
 ));
-$rawFields           = SettingsPageRegistry::instance()->fields('raw');
+$rawFields           = SettingsPageRegistry::getInstance()->fields('raw');
 $GLOBALS['purified'] = array();
 $GLOBALS['params']   = array('body' => '<p>kept</p>', 'title' => '<p>stripped</p>');
 osc_settings_sanitize($rawFields['body']);
@@ -920,7 +951,7 @@ osc_settings_menu_init();
 $ids = array_column($GLOBALS['menu'], 3);
 check('a page that asked for a menu gets one', in_array('settings-page-myplugin', $ids, true), implode(',', $ids));
 // A page reached from a plugin's own link should not also plant an entry nobody asked for.
-SettingsPageRegistry::instance()->register('hidden', array(
+SettingsPageRegistry::getInstance()->register('hidden', array(
     'title'  => 'Hidden',
     'menu'   => '',
     'fields' => array(array('name' => 'a')),

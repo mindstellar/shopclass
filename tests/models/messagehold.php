@@ -222,7 +222,7 @@ pin('the link is used up', 'gone', MessageHold::confirm($planted));
 
 harness_section('JobQueue: keep_existing leaves a waiting job alone');
 
-$queue = \mindstellar\job\JobQueue::instance();
+$queue = \mindstellar\job\JobQueue::getInstance();
 $first = $queue->enqueue('test.keep', array('v' => 1), array('unique_key' => 'k1', 'keep_existing' => true, 'delay' => 60));
 check('the first job is queued', $first > 0);
 pin('a second one with the same key is not', 0, $queue->enqueue('test.keep', array('v' => 2), array('unique_key' => 'k1', 'keep_existing' => true)));

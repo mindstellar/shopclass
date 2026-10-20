@@ -10,6 +10,7 @@
 
 namespace mindstellar\backup;
 
+use mindstellar\utility\FileSystem;
 use mindstellar\utility\Zip;
 use RuntimeException;
 use ZipArchive;
@@ -272,22 +273,14 @@ final class BackupArchive
             throw new RuntimeException('Could not read a file in the backup');
         }
         $mode = is_file($target) ? (fileperms($target) & 0777) : null;
-        $tmp  = $dir . '/.' . basename($target) . '.' . BackupStore::random(6) . '.restore';
-        $out  = @fopen($tmp, 'xb');
-        if ($out === false) {
-            fclose($in);
-            throw new RuntimeException('Could not write in oc-content');
-        }
-        $copied = stream_copy_to_stream($in, $out, $size + 1);
-        $ok     = $copied !== false && $copied <= $size;
+        $ok   = FileSystem::writeAtomic($target, static function ($out) use ($in, $size): bool {
+            $copied = stream_copy_to_stream($in, $out, $size + 1);
+
+            return $copied !== false && $copied <= $size;
+        }, $mode);
         fclose($in);
-        $ok = fclose($out) && $ok;
-        if (!$ok || !@rename($tmp, $target)) {
-            @unlink($tmp);
+        if (!$ok) {
             throw new RuntimeException('Could not write in oc-content. The disk may be full.');
-        }
-        if ($mode !== null) {
-            @chmod($target, $mode);
         }
     }
 }

@@ -1,0 +1,291 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * Pins the Redis/Valkey cache: the built-in client's protocol over a socket pair, and the driver
+ * against a real server through every client this PHP has (built-in, and phpredis when loaded).
+ * The server part runs when OSC_TEST_REDIS names one (host:port), as CI does.
+ * Usage: OSC_TEST_REDIS=127.0.0.1:6379 php tests/cache-redis.php
+ */
+
+define('ABS_PATH', dirname(__DIR__) . '/');
+
+require ABS_PATH . 'oc-includes/vendor/autoload.php';
+require_once __DIR__ . '/lib/harness.php';
+
+use mindstellar\cache\PhpRedisClient;
+use mindstellar\cache\RedisCache;
+use mindstellar\cache\RespClient;
+
+if (!function_exists('__')) {
+    function __($text)
+    {
+        return $text;
+    }
+}
+
+harness_section('the built-in client speaks the protocol');
+
+[$near, $far] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+$client       = new RespClient([], $near);
+$reply        = static function (string $bytes) use ($far): void {
+    fwrite($far, $bytes);
+};
+
+$reply("+OK\r\n");
+pin('a status reply is true', true, $client->command('SET', 'k', "two\r\nlines"));
+pin('and the command went out as a counted list', "*3\r\n\$3\r\nSET\r\n\$1\r\nk\r\n\$10\r\ntwo\r\nlines\r\n", fread($far, 4096));
+$reply(":42\r\n");
+pin('a number reply is an int', 42, $client->command('INCR', 'n'));
+$reply("\$-1\r\n");
+pin('a missing value is null', null, $client->command('GET', 'gone'));
+$reply("\$10\r\ntwo\r\nlines\r\n");
+pin('a value with line breaks in it reads whole', "two\r\nlines", $client->command('GET', 'k'));
+$reply("*2\r\n\$1\r\n0\r\n*1\r\n\$3\r\nabc\r\n");
+pin('a nested list reads as arrays', ['0', ['abc']], $client->command('SCAN', '0'));
+$reply("-ERR wrong number of arguments\r\n");
+try {
+    $client->command('GET');
+    $threw = '';
+} catch (UnexpectedValueException $e) {
+    $threw = $e->getMessage();
+}
+pin('an error reply is a refusal, not a dead server', 'Redis refused the command: ERR wrong number of arguments', $threw);
+fclose($far);
+try {
+    $client->command('PING');
+    $threw = false;
+} catch (RuntimeException $e) {
+    $threw = !$e instanceof UnexpectedValueException;
+}
+check('a closed connection is a dead server', $threw);
+
+harness_section('a server that does not answer');
+
+$GLOBALS['_cache_config'] = [['default_host' => '127.0.0.1', 'default_port' => 1]];
+$dead  = new RedisCache();
+$start = microtime(true);
+$found = null;
+pin('a get is a miss', false, $dead->get('anything', $found));
+pin('and says so', false, $found);
+pin('a set fails', false, $dead->set('anything', 1));
+check('and the request is not held up', microtime(true) - $start < 2);
+pin('a worker waiting on it is told it cannot', null, $dead->waitSignal('jobs', 1));
+pin('counters and hashes say they cannot be reached', array(null, null, null, null, null), array(
+    $dead->counter('c', 1, 60), $dead->counters(array('c')), $dead->hashAdd('h', 'f', 1, 60), $dead->hashRead('h'), $dead->hashTake('h'),
+));
+
+$calls  = 0;
+$broken = new class ($calls) implements mindstellar\cache\RedisClient {
+    public function __construct(private int &$calls)
+    {
+    }
+
+    public function command(string ...$args): mixed
+    {
+        $this->calls++;
+
+        throw new RuntimeException('down');
+    }
+};
+$skips = new RedisCache($broken);
+$skips->get('a');
+$skips->set('b', 1);
+$skips->increment('c');
+pin('after the first failure the request stops asking the server', 1, $calls);
+pin('getMany on a server that is down finds nothing', [], (new RedisCache($broken))->getMany(['a', 'b']));
+
+$sent     = array();
+$scripted = new class ($sent) implements mindstellar\cache\RedisClient {
+    public function __construct(private array &$sent)
+    {
+    }
+
+    public function command(string ...$args): mixed
+    {
+        $this->sent[] = $args[0];
+
+        return match ($args[0]) {
+            'SET'    => null,
+            'INCRBY' => 2,
+            'RENAME' => true,
+            'HGETALL' => array(),
+            default  => 1,
+        };
+    }
+};
+(new RedisCache($scripted))->counter('c', 2, 60);
+pin('a counter that ran out between SET and INCRBY gets its expiry back', array('SET', 'INCRBY', 'EXPIRE'), $sent);
+$sent = array();
+(new RedisCache($scripted))->hashTake('h');
+pin('a taken hash expires before it is read, in case the request dies', array('RENAME', 'EXPIRE', 'HGETALL', 'DEL'), $sent);
+
+harness_section('igbinary values');
+
+$stored   = array();
+$recorder = new class ($stored) implements mindstellar\cache\RedisClient {
+    public function __construct(private array &$stored)
+    {
+    }
+
+    public function command(string ...$args): mixed
+    {
+        if ($args[0] === 'SET') {
+            $this->stored[$args[1]] = $args[2];
+
+            return true;
+        }
+
+        return $this->stored[$args[1]] ?? null;
+    }
+};
+$codec = new RedisCache($recorder);
+$codec->set('row', array('a' => 1));
+if (function_exists('igbinary_serialize')) {
+    check('with igbinary a value is stored in its format', strncmp((string) reset($stored), "\x00\x00\x00\x02", 4) === 0);
+} else {
+    echo "  (igbinary is not loaded: the stored-format check was not run)\n";
+}
+$found = null;
+pin('and reads back whole', array(array('a' => 1), true), array((new RedisCache($recorder))->get('row', $found), $found));
+$stored[key($stored)] = serialize(array('old' => true));
+pin('a value an older release stored with serialize() still reads', array('old' => true), (new RedisCache($recorder))->get('row'));
+$noIgbinary = shell_exec(escapeshellarg(PHP_BINARY) . ' -n -r ' . escapeshellarg(
+    'require ' . var_export(ABS_PATH . 'oc-includes/vendor/autoload.php', true) . ';'
+    . ' $c = new class implements mindstellar\\cache\\RedisClient { public function command(string ...$a): mixed { return $a[0] === "GET" ? "\x00\x00\x00\x02\x14\x01" : null; } };'
+    . ' $f = null; $v = (new mindstellar\\cache\\RedisCache($c))->get("k", $f);'
+    . ' $m = (new mindstellar\\cache\\RedisCache($c))->getMany(["k"]);'
+    . ' echo json_encode([function_exists("igbinary_unserialize"), $v, $f, $m]);'
+));
+pin('without igbinary such a value is a miss, not an error', '[false,false,false,[]]', trim((string) $noIgbinary));
+
+$server = getenv('OSC_TEST_REDIS');
+if (!$server) {
+    echo "  (no OSC_TEST_REDIS server: the server checks were not run)\n";
+    exit(harness_result());
+}
+[$host, $port] = explode(':', $server) + [1 => '6379'];
+$config        = ['host' => $host, 'port' => (int) $port];
+
+$clients = ['built-in client' => new RespClient($config)];
+if (class_exists('Redis')) {
+    $clients['phpredis'] = new PhpRedisClient($config);
+} else {
+    echo "  (phpredis is not loaded: only the built-in client was checked)\n";
+}
+
+foreach ($clients as $label => $raw) {
+    harness_section('the driver over ' . ($label === 'phpredis' ? 'phpredis' : 'the built-in client'));
+
+    $GLOBALS['_cache_config'] = [['default_host' => $host, 'default_port' => (int) $port]];
+    $cache                    = new RedisCache($raw);
+    $fresh                    = static fn (): RedisCache => new RedisCache($raw);
+    $cache->flush();
+
+    $row = ['pk_i_id' => 7, 's_name' => 'Bike', 'tags' => ['a', 'b'], 'price' => null];
+    check('a set is stored', $cache->set('row', $row, 30));
+    $found = null;
+    pin('a later request reads it back whole', $row, $fresh()->get('row', $found));
+    pin('and calls it a hit', true, $found);
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'row');
+    check('it expires when asked', is_int($ttl) && $ttl > 0 && $ttl <= 30);
+    $cache->set('short', 'x');
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'short');
+    check('and after the default time when not', is_int($ttl) && $ttl > 0 && $ttl <= 60);
+
+    $found = null;
+    pin('a missing key is a miss', false, $fresh()->get('nope', $found));
+    pin('and says so', false, $found);
+    $cache->set('falsy', false);
+    $found = null;
+    pin('a stored false is a hit, not a miss', false, $fresh()->get('falsy', $found));
+    pin('and says so', true, $found);
+
+    check('add stores a new key', $cache->add('once', 1, 30));
+    check('but not over an existing one', !$fresh()->add('once', 2, 30));
+    pin('which keeps its value', 1, $fresh()->get('once'));
+
+    check('delete removes a key', $cache->delete('once'));
+    pin('so the next request misses it', false, $fresh()->get('once'));
+
+    pin('increment creates a counter at its first value', 1, $cache->increment('hits', 1, 1, 30));
+    pin('and counts up from there', 3, $fresh()->increment('hits', 2, 1, 30));
+    pin('a counter reads back as a number', 3, $fresh()->get('hits'));
+    check('a number added first is counted on top of', $cache->add('limit', 5, 30) && $fresh()->increment('limit', 1, 0, 30) === 6);
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'hits');
+    check('and expires like any other value', is_int($ttl) && $ttl > 0 && $ttl <= 30);
+
+    $cache->set('m1', 1, 30);
+    $cache->set('m2', ['x' => 2], 30);
+    $many = $fresh();
+    pin('getMany reads several keys and leaves out a missing one', ['m1' => 1, 'm2' => ['x' => 2]], $many->getMany(['m1', 'nope', 'm2']));
+    pin('...and counts each as a hit or a miss', [2, 1], [$many->cache_hits, $many->cache_misses]);
+    $hits = $many->cache_hits;
+    pin('a key it read is then held for the request', [1, $hits + 1], [$many->get('m1'), $many->cache_hits]);
+
+    $raw->command('SET', 'other_site_key', 'theirs');
+    $raw->command('SET', $cache->site_root . 'oldrel_row', 'old');
+    check('each release has its own keys under the site', $cache->site_prefix !== $cache->site_root && str_starts_with($cache->site_prefix, $cache->site_root));
+    check('flush clears this site', $cache->flush());
+    pin('so its keys are gone', false, $fresh()->get('row'));
+    pin('and so are an older release\'s', null, $raw->command('GET', $cache->site_root . 'oldrel_row'));
+    pin('but another site keeps its own', 'theirs', $raw->command('GET', 'other_site_key'));
+    $raw->command('DEL', 'other_site_key');
+    for ($i = 0; $i < 1200; $i++) {
+        $raw->command('SET', $cache->site_prefix . 'bulk' . $i, '1');
+    }
+    $cache->flush();
+    pin('flush keeps going past the first page of keys', [], $raw->command('KEYS', $cache->site_prefix . '*'));
+
+    $cache->signal('jobs');
+    $cache->signal('jobs');
+    pin('signals fold into one', 1, $raw->command('LLEN', $cache->site_prefix . 'signal_jobs'));
+    pin('a waiting worker gets it', true, $fresh()->waitSignal('jobs', 1));
+    $start = microtime(true);
+    pin('with none sent it waits and says so', false, $fresh()->waitSignal('jobs', 1));
+    check('for about the time asked', microtime(true) - $start >= 0.9 && microtime(true) - $start < 3);
+
+    pin('a counter starts at what is added', 1, $cache->counter('views', 1, 30));
+    pin('and counts on from there', 3, $fresh()->counter('views', 2, 30));
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'counter_views');
+    check('it lives the time asked', is_int($ttl) && $ttl > 0 && $ttl <= 30);
+    pin('counters reads several, 0 for one not set', array('views' => 3, 'none' => 0), $fresh()->counters(array('views', 'none')));
+    pin('a hash field counts up', array(1, 3), array($cache->hashAdd('buf', '7', 1, 30), $cache->hashAdd('buf', '7', 2, 30)));
+    $cache->hashAdd('buf', '9', 1, 30);
+    pin('hashRead gives every field as a number', array('7' => 3, '9' => 1), $fresh()->hashRead('buf'));
+    $ttl = $raw->command('TTL', $cache->site_prefix . 'hash_buf');
+    check('a hash lives the time asked', is_int($ttl) && $ttl > 0 && $ttl <= 30);
+    $cache->hashDelete('buf', array('9'));
+    pin('hashDelete removes fields', array('7' => 3), $fresh()->hashRead('buf'));
+    pin('hashTake hands the counts over', array('7' => 3), $fresh()->hashTake('buf'));
+    pin('and leaves nothing behind', array(array(), array()), array($fresh()->hashRead('buf'), $fresh()->hashTake('buf')));
+    pin('and no copy either', array(), $raw->command('KEYS', $cache->site_prefix . 'hash_buf*'));
+
+    $stats = $cache->statsData();
+    check('stats read the server', is_array($stats) && isset($stats['uptime'], $stats['memory_used']));
+    check('and name the client', str_contains((string) ($stats['server'] ?? ''), '(' . ($label === 'phpredis' ? 'phpredis' : 'built-in client') . ')'));
+}
+
+harness_section('the database number');
+
+$one = new RespClient($config + ['database' => 1]);
+$one->command('SET', 'in_db_one', '1');
+pin('a key lands in the chosen database', 1, (new RespClient($config + ['database' => 1]))->command('EXISTS', 'in_db_one'));
+pin('and not in database 0', 0, (new RespClient($config))->command('EXISTS', 'in_db_one'));
+$one->command('DEL', 'in_db_one');
+
+harness_section('a server that refuses the sign-in');
+
+$refused = new RedisCache(new RespClient($config + ['password' => 'not-the-password']));
+$found   = null;
+pin('a get is a miss, not an error', false, $refused->get('row', $found));
+pin('a set fails', false, $refused->set('row', 1));
+
+exit(harness_result());

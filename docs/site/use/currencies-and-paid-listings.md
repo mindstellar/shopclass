@@ -93,6 +93,11 @@ of days, for example.
 Orders are visible to you at **Billing → Orders**, and balances at
 **Billing → Credits**.
 
+A **paid after close** entry in **Tools → Activity log** means the provider took
+the money for an order that had already failed. The order stays failed. Open it and
+click **Mark as paid** to give the buyer their credits, or refund the payment in the
+provider's dashboard.
+
 ### Receipts
 
 When an order is paid, the buyer gets a receipt by e-mail, whatever the payment

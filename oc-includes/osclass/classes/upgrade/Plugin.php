@@ -11,23 +11,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 15/07/20
- * Time: 7:03 PM
- * License is provided in root directory.
- */
-
 namespace mindstellar\upgrade;
 
 use mindstellar\utility\FileSystem;
+use mindstellar\utility\Validate;
 use Plugins;
 use RuntimeException;
 
 /**
  * Class Plugin
  *
+ * @deprecated 7.0.0 Nothing calls it: market\Installer and market\Catalog install and update plugins.
  * @package mindstellar\upgrade
  */
 class Plugin extends UpgradePackage
@@ -87,7 +81,7 @@ class Plugin extends UpgradePackage
         $package_info['s_requires_php']      = $plugin_info['requires_php'] ?? '';
 
         $json_url = $plugin_info['plugin_update_uri'];
-        if (!filter_var($json_url, FILTER_VALIDATE_URL)) {
+        if (!Validate::httpUrl($json_url)) {
             throw new RuntimeException($plugin_short_name . ':' . __('Invalid plugin update uri'));
         }
 

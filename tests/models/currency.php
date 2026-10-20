@@ -60,7 +60,7 @@ $resetCache();
 $seedCurrency('USD', 'US Dollar');
 $seedCurrency('EUR', 'Euro', 0);
 
-$model = Currency::newInstance();
+$model = Currency::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2).

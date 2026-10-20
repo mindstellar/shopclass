@@ -66,7 +66,7 @@ require_once __DIR__ . '/../../oc-includes/osclass/helpers/hPreference.php';
 
 $admin = scratchdb_session('osc_models_field');
 
-// findIDSearchableByCategories() constructs Category::newInstance()
+// findIDSearchableByCategories() constructs Category::getInstance()
 // unconditionally (even for numeric ids), and Category's constructor builds its
 // tree cache through hDefines/hCache helpers the harness cannot load
 // (hDefines.php redeclares osc_uploads_path() unguarded, per amendment R). Guard
@@ -102,7 +102,7 @@ if (!function_exists('osc_cache_set')) {
 
 // Category::__construct() reads OC_ADMIN unguarded (Field's own constructor
 // guards it with defined()). findIDSearchableByCategories() resolves non-numeric
-// ids through Category::newInstance(), so the constant has to exist. false is the
+// ids through Category::getInstance(), so the constant has to exist. false is the
 // non-admin (public) context, matching this harness's locale resolution.
 if (!defined('OC_ADMIN')) {
     define('OC_ADMIN', false);
@@ -118,7 +118,7 @@ $groupFld  = DB_TABLE_PREFIX . 't_meta_group_fields';
 $groupCat  = DB_TABLE_PREFIX . 't_meta_group_categories';
 $itemMeta  = DB_TABLE_PREFIX . 't_item_meta';
 
-$model = Field::newInstance();
+$model = Field::getInstance();
 $locale = $model->currentLocaleCode; // '' in this harness
 
 /**
@@ -214,7 +214,7 @@ check(
     is_array($model->dao->query('SELECT 1 AS one')->row()),
     'dao->query() did not return a usable recordset'
 );
-pin('newInstance is a singleton', true, Field::newInstance() === $model);
+pin('newInstance is a singleton', true, Field::getInstance() === $model);
 pin('table name is unchanged', $fieldsTbl, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 pin(
@@ -360,7 +360,7 @@ pin('a non-numeric category returns an empty array', array(), $model->categoryPa
 harness_section('Field::categoryPath — one cached parent map, whatever the depth');
 
 scratchdb_forget_cache();
-pin('a cold walk costs one query, the parent map', 1, harness_query_count(static function () use ($model, $cLeaf) {
+pin('a cold walk costs one query, the enabled category rows', 1, harness_query_count(static function () use ($model, $cLeaf) {
     $model->categoryPath($cLeaf);
 }));
 pin('a warm three-deep walk costs no query', 0, harness_query_count(static function () use ($model, $cLeaf) {
@@ -370,6 +370,82 @@ pin('repeated walks cost no query either', 0, harness_query_count(static functio
     $model->categoryPath($cRoot);
     $model->categoryPath($cLeaf);
 }));
+
+harness_section('Field::categoryPath — reuses the enabled category rows');
+
+scratchdb_forget_cache();
+\mindstellar\category\CategoryQuery::enabledRows();
+pin('with the category tree loaded, a walk costs no query', 0, harness_query_count(static function () use ($model, $cLeaf) {
+    $model->categoryPath($cLeaf);
+}));
+
+harness_section('Field::categoryPath — with a shared cache, the small parent map');
+
+$sharedCache = new class () implements \mindstellar\cache\CacheDriver {
+    /** @var array<string,mixed> */
+    public array $data = [];
+    public static function is_supported()
+    {
+        return true;
+    }
+    public function add($key, $data, $expire = 0)
+    {
+        return isset($this->data[$key]) ? false : $this->set($key, $data, $expire);
+    }
+    public function set($key, $data, $expire = 0)
+    {
+        $this->data[$key] = $data;
+
+        return true;
+    }
+    public function get($key, &$found = null)
+    {
+        $found = array_key_exists($key, $this->data);
+
+        return $found ? $this->data[$key] : false;
+    }
+    public function delete($key)
+    {
+        unset($this->data[$key]);
+
+        return true;
+    }
+    public function flush()
+    {
+        $this->data = [];
+
+        return true;
+    }
+    public function stats()
+    {
+    }
+    public function _get_cache()
+    {
+        return 'shared';
+    }
+    public function __destruct()
+    {
+    }
+};
+$driverProp = new ReflectionProperty('mindstellar\\cache\\CacheManager', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $driverProp->setAccessible(true);
+}
+$memoryDriver = $driverProp->getValue();
+scratchdb_forget_cache();
+$driverProp->setValue(null, $sharedCache);
+\mindstellar\cache\CacheGroup::forgetGenerations();
+$sharedPath = $model->categoryPath($cLeaf);
+$driverProp->setValue(null, $memoryDriver);
+\mindstellar\cache\CacheGroup::forgetGenerations();
+$storedRows = array_filter($sharedCache->data, static fn ($v) => is_array($v) && isset(reset($v)['s_name']));
+pin('the same path, without storing or reading the enabled category rows', array(array($cLeaf, $cMid, $cRoot), array()), array($sharedPath, $storedRows));
+
+$cOff   = seed_category($admin, 'Hidden', null, 'en_US', 0);
+$cUnder = seed_category($admin, 'Under hidden', $cOff);
+scratchdb_forget_cache();
+pin('a disabled ancestor is still on the path', array($cUnder, $cOff), $model->categoryPath($cUnder));
+pin('a disabled category resolves to itself', array($cOff), $model->categoryPath($cOff));
 
 /* ----------------------------------------------------------------------------
  * findByGroup() — fields of a form, ordered by their per-form position.
@@ -470,6 +546,28 @@ $fOnChild = $seedField('On child', 'on-child', 'TEXT', 0, 0, null, null, 0);
 $linkFieldToCat($hChild, $fOnChild);
 pin('inheritance runs downwards only — the parent sees nothing', array(), $model->findByCategory($hRoot));
 pin('the child sees the field', array((string)$fOnChild), array_column($model->findByCategory($hChild), 'pk_i_id'));
+
+harness_section('Field::findByCategory — cached, and dropped by every field write');
+
+scratchdb_truncate_all($admin);
+$kCat   = seed_category($admin, 'Cached');
+$kField = $seedField('Cached field', 'cached-field', 'TEXT', 0, 0, null, null, 0);
+pin('no field yet', array(), $model->findByCategory($kCat));
+pin('a second read is served from the cache', 0, harness_query_count(static function () use ($model, $kCat) {
+    $model->findByCategory($kCat);
+}));
+$model->insertCategories($kField, array($kCat));
+pin('linking the field shows it at once', array((string)$kField), array_column($model->findByCategory($kCat), 'pk_i_id'));
+$model->cleanCategoriesFromField($kField);
+pin('unlinking it hides it at once', array(), $model->findByCategory($kCat));
+$kForm = $seedGroup('Cached form', 'cached-form', 0);
+$linkGroupToCat($kForm, $kCat);
+scratchdb_forget_cache();
+pin('an empty form adds nothing', array(), $model->findByCategory($kCat));
+\mindstellar\form\builder\FormFieldLinkStore::replace($kForm, array($kField));
+pin('placing the field in the form shows it at once', array((string)$kField), array_column($model->findByCategory($kCat), 'pk_i_id'));
+$model->update(array('i_position' => 3), array('pk_i_id' => $kField));
+pin('editing the field shows the edit at once', '3', $model->findByCategory($kCat)[0]['i_position']);
 
 /* ----------------------------------------------------------------------------
  * findIDSearchableByCategories() — searchable ids across the inheritance path.

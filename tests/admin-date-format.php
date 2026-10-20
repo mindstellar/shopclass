@@ -115,6 +115,9 @@ $GLOBALS['trCalls'] = 0;
 osc_format_date('2026-09-15 06:14:00', 'l, F j');
 check('a second date in the same language does not translate every name again', $GLOBALS['trCalls'] <= 3,
     $GLOBALS['trCalls'] . ' calls');
+foreach (array('D, d M Y g:i a', 'l \\t\\h\\e jS \\o\\f F Y h:i:s A', 'Y-m-d H:i', 'M', 'a A \\M\\a\\y') as $fmt) {
+    pin('in English "' . $fmt . '" matches date()', date($fmt, strtotime('2026-05-03 18:07:09')), osc_format_date('2026-05-03 18:07:09', $fmt));
+}
 $GLOBALS['tr'] = array('Monday' => 'Maandag');
 $GLOBALS['locale'] = 'nl_NL';
 pin('another language whose sample words match still gets its own names', 'Maandag, September 14',
@@ -123,6 +126,11 @@ $GLOBALS['locale'] = 'en_US';
 $GLOBALS['tr'] = array('January' => 'Januar', 'September' => 'September', 'Monday' => 'Montag', 'Mon' => 'Mo');
 pin('a language switch in the same request uses the new names', 'Montag, September 14',
     osc_format_date('2026-09-14 06:14:00', 'l, F j'));
+$GLOBALS['locale'] = 'de_AT';
+$GLOBALS['tr'] = array('January' => 'Jänner', 'October' => 'Oktober', 'Oct' => 'Okt', 'Thursday' => 'Donnerstag',
+    'Thu' => 'Do', 'PM' => 'NM', 'pm' => 'nm');
+pin('each name letter is translated: l D F M A a', 'Donnerstag Do Oktober Okt NM nm',
+    osc_format_date('2026-10-15 18:07:00', 'l D F M A a'));
 
 exit(harness_result());
 

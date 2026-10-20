@@ -23,36 +23,20 @@ $i_now_truncated = strtotime(date('Y-m-d H:i:00'));
 if (!defined('CLI')) {
     define('CLI', PHP_SAPI === 'cli');
 }
-// The CLI names a schedule to force it; with none named it runs what is due, as the web does.
-$forced = CLI ? strtolower((string) Params::getParam('cron-type')) : '';
 
-// Hourly crons
-$cron = Cron::newInstance()->getCronByType('HOURLY');
-if (is_array($cron)) {
-    $claimed = false;
-    $i_next  = strtotime($cron['d_next_exec']);
-
-    if ($forced !== '' ? $forced === 'hourly' : ($i_now - $i_next + $shift_seconds) >= 0) {
-        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
-        $d_next = date('Y-m-d H:i:s', $i_now_truncated + 3600);
-        $claimed = Cron::newInstance()->claim('HOURLY', (string) $cron['d_next_exec'], $d_now, $d_next);
-    }
-    if ($claimed) {
-        osc_runAlert('HOURLY', $cron['d_last_exec']);
-
-        // Run cron AFTER updating the next execution time to avoid double run of cron
+// Each schedule runs its jobs only in the request that moves it on, so two at once cannot both run.
+// Each one sends its alerts, then purges latest searches when that setting names its period.
+$schedules = array(
+    'HOURLY' => array(3600, 'hour', static function (array $cron): void {
         $purge = osc_purge_latest_searches();
-        if ($purge === 'hour') {
-            LatestSearches::newInstance()->purgeDate(date('Y-m-d H:i:s', time() - 3600));
-        } elseif (!in_array($purge, array('forever', 'day', 'week'))) {
-            LatestSearches::newInstance()->purgeNumber($purge);
+        if (!in_array($purge, array('forever', 'hour', 'day', 'week'))) {
+            LatestSearches::getInstance()->purgeNumber((int) $purge);
         }
-        osc_update_location_stats(true, 'auto');
 
         // WARN EXPIRATION EACH HOUR (COMMENT TO DISABLE)
         // NOTE: IF THIS IS ENABLE, SAME CODE SHOULD BE DISABLE ON CRON DAILY
         if (is_numeric(osc_warn_expiration()) && osc_warn_expiration() > 0) {
-            $items = Item::newInstance()->findByHourExpiration(24 * osc_warn_expiration());
+            $items = Item::getInstance()->findByHourExpiration(24 * osc_warn_expiration());
             foreach ($items as $item) {
                 osc_run_hook('hook_email_warn_expiration', $item);
             }
@@ -69,44 +53,26 @@ if (is_array($cron)) {
                 }
             }
         }
-        // Drop the tracking rows abandoned uploads leave in t_item_upload_tmp, on the same
-        // window as the temp files swept above.
-        ItemTmpUpload::newInstance()->pruneBefore(date('Y-m-d H:i:s', time() - (2 * 3600)));
+        \mindstellar\security\RateLimit::prune();
 
         osc_run_hook('cron_hourly');
-    }
-}
-
-// Daily cron
-$cron = Cron::newInstance()->getCronByType('DAILY');
-if (is_array($cron)) {
-    $claimed = false;
-    $i_next  = strtotime($cron['d_next_exec']);
-
-    if ($forced !== '' ? $forced === 'daily' : ($i_now - $i_next + $shift_seconds) >= 0) {
-        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
-        $d_next = date('Y-m-d H:i:s', $i_now_truncated + (24 * 3600));
-        $claimed = Cron::newInstance()->claim('DAILY', (string) $cron['d_next_exec'], $d_now, $d_next);
-    }
-    if ($claimed) {
-        //osc_do_auto_upgrade();
-
-        osc_runAlert('DAILY', $cron['d_last_exec']);
-
-        // Run cron AFTER updating the next execution time to avoid double run of cron
-        $purge = osc_purge_latest_searches();
-        if ($purge === 'day') {
-            LatestSearches::newInstance()->purgeDate(date('Y-m-d H:i:s', time() - (24 * 3600)));
-        }
+    }),
+    'DAILY'  => array(24 * 3600, 'day', static function (array $cron): void {
         osc_update_cat_stats();
         \mindstellar\security\MessageGuard::purgeExpired();
+        // Sellers whose listings expired since the last run. A failed run is not retried; their next listing change corrects them.
+        try {
+            \mindstellar\user\UserStore::recountExpired((string) $cron['d_last_exec'], date('Y-m-d H:i:s'));
+        } catch (\mindstellar\database\DbException $e) {
+            error_log('Seller listing recount failed: ' . $e->getMessage());
+        }
 
         // Retention: prune admin activity-log rows past the configured window
         // (0 = keep forever), so t_log cannot grow without bound. Mirrors the
         // latest-searches purge above.
         $logRetention = osc_admin_log_retention_days();
         if ($logRetention > 0) {
-            Log::newInstance()->purgeOlderThan(date('Y-m-d H:i:s', time() - ($logRetention * 24 * 3600)));
+            Log::getInstance()->purgeOlderThan(date('Y-m-d H:i:s', time() - ($logRetention * 24 * 3600)));
         }
 
         // Retention: prune the site-wide daily stats rollup past the configured
@@ -115,7 +81,7 @@ if (is_array($cron)) {
         // something the schema depends on.
         $statsRetention = osc_item_stats_retention_days();
         if ($statsRetention > 0) {
-            ItemStats::newInstance()->purgeOlderThan(date('Y-m-d', time() - ($statsRetention * 24 * 3600)));
+            ItemStats::getInstance()->purgeOlderThan(date('Y-m-d', time() - ($statsRetention * 24 * 3600)));
         }
 
         // Retention: drop recorded sign-in attempts past the configured window
@@ -123,22 +89,20 @@ if (is_array($cron)) {
         // anything; what is left is history, and under a sustained guessing run
         // the table is the fastest-growing one in the schema.
         \mindstellar\security\LoginThrottle::prune();
-        \mindstellar\security\RateLimit::prune();
 
-        // Pending e-mail changes are dropped after 7 days; their confirmation link then stops working.
+        // Expired key-value rows (API Idempotency-Keys, staged uploads and pending e-mail changes among them), and refresh tokens that can no longer be used.
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')
-                ->where('dt_date', '<', date('Y-m-d H:i:s', time() - (7 * 24 * 3600)))
-                ->delete();
+            (new \mindstellar\model\KeyValue())->prune(time());
+            (new \mindstellar\model\ApiCredential())->pruneRefresh(time() - (7 * 24 * 3600));
         } catch (\mindstellar\database\DbException $e) {
-            error_log('Pending e-mail change prune failed: ' . $e->getMessage());
+            error_log('Key-value and API prune failed: ' . $e->getMessage());
         }
 
         // Pre-generate the XML sitemap into the object cache so bots never trigger
         // the (potentially heavy) location scans on the request path. Regeneration
         // is otherwise lazy-on-request; this closes that gap.
         try {
-            Sitemap::newInstance()->warmCache();
+            Sitemap::getInstance()->warmCache();
         } catch (Throwable $e) {
             error_log('Sitemap cron warming failed: ' . $e->getMessage());
         }
@@ -146,36 +110,38 @@ if (is_array($cron)) {
         // WARN EXPIRATION EACH DAY (UNCOMMENT TO ENABLE)
         // NOTE: IF THIS IS ENABLE, SAME CODE SHOULD BE DISABLE ON CRON HOURLY
         /*if(is_numeric(osc_warn_expiration()) && osc_warn_expiration()>0) {
-            $items = Item::newInstance()->findByDayExpiration(osc_warn_expiration());
+            $items = Item::getInstance()->findByDayExpiration(osc_warn_expiration());
             foreach($items as $item) {
                 osc_run_hook('hook_email_warn_expiration', $item);
             }
         }*/
 
         osc_run_hook('cron_daily');
-    }
-}
-
-// Weekly cron
-$cron = Cron::newInstance()->getCronByType('WEEKLY');
-if (is_array($cron)) {
-    $claimed = false;
-    $i_next  = strtotime($cron['d_next_exec']);
-
-    if ($forced !== '' ? $forced === 'weekly' : ($i_now - $i_next + $shift_seconds) >= 0) {
-        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
-        $d_next = date('Y-m-d H:i:s', $i_now_truncated + (7 * 24 * 3600));
-        $claimed = Cron::newInstance()->claim('WEEKLY', (string) $cron['d_next_exec'], $d_now, $d_next);
-    }
-    if ($claimed) {
-        osc_runAlert('WEEKLY', $cron['d_last_exec']);
-
-        // Run cron AFTER updating the next execution time to avoid double run of cron
-        $purge = osc_purge_latest_searches();
-        if ($purge === 'week') {
-            LatestSearches::newInstance()->purgeDate(date('Y-m-d H:i:s', time() - (7 * 24 * 3600)));
-        }
+    }),
+    'WEEKLY' => array(7 * 24 * 3600, 'week', static function (array $cron): void {
+        // Correct drift in the listing counts of every country, region and city.
+        osc_update_location_stats(true);
         osc_run_hook('cron_weekly');
+    }),
+);
+foreach ($schedules as $type => [$period, $purgeKey, $jobs]) {
+    $cron = Cron::getInstance()->getCronByType($type);
+    if (!is_array($cron)) {
+        // A lost schedule comes back as never run, so the next cron run finds it due.
+        Cron::getInstance()->restore($type);
+        continue;
+    }
+    // The CLI names a schedule to force it; with none named it runs what is due, as the web does.
+    $forced = CLI ? strtolower((string) Params::getParam('cron-type')) : '';
+    $due    = $forced !== ''
+        ? $forced === strtolower($type)
+        : ($i_now - strtotime($cron['d_next_exec']) + $shift_seconds) >= 0;
+    if ($due && Cron::getInstance()->claim($type, (string) $cron['d_next_exec'], $d_now, date('Y-m-d H:i:s', $i_now_truncated + $period))) {
+        osc_runAlert($type, $cron['d_last_exec']);
+        if (osc_purge_latest_searches() === $purgeKey) {
+            LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - $period));
+        }
+        $jobs($cron);
     }
 }
 

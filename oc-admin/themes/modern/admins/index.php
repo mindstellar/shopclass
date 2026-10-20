@@ -47,21 +47,14 @@ osc_admin_page_head(__('Manage admins')); ?>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (count($aData['aaData']) > 0) { ?>
+                    <?php if (count($aData['aaData']) > 0) {
+                        $colNames = array(1 => __('Username'), 2 => __('Name'), 3 => __('E-mail')); ?>
                         <?php foreach ($aData['aaData'] as $array) { ?>
                             <tr>
                                 <?php foreach ($array as $key => $value) { ?>
-                                    <td <?php if ($key == 0) {
-                                        echo 'class="col-bulkactions"';
-                                    } elseif ($key == 1) {
-                                        echo ' echo data-col-name="' . __('Username') . '"';
-                                    } elseif ($key == 2) {
-                                        echo ' data-col-name="' . __('Name') . '"';
-                                    } elseif ($key == 3) {
-                                        echo ' data-col-name="' . __('E-mail') . '"';
-                                    } else {
-                                        echo  'data-col-name="' . ucfirst($key) . '"';
-                                    } ?>>
+                                    <td <?php echo $key === 0
+                                        ? 'class="col-bulkactions"'
+                                        : 'data-col-name="' . osc_esc_html($colNames[$key] ?? '') . '"'; ?>>
                                         <?php echo $value; ?>
                                     </td>
                                 <?php } ?>

@@ -29,7 +29,7 @@ require_once __DIR__ . '/lib/stubs.php';
 
 class Session
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
     }
@@ -43,7 +43,7 @@ class Session
 /** A branch Root(3) > Child(7) > Leaf(9), whatever id is asked for. */
 class Category
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
     }

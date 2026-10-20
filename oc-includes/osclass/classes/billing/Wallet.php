@@ -12,6 +12,8 @@
 namespace mindstellar\billing;
 
 use InvalidArgumentException;
+use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 
 /**
@@ -36,13 +38,12 @@ use mindstellar\database\DbException;
  *
  * @package mindstellar\billing
  */
-final class Wallet
+final class Wallet extends Model
 {
+    protected const TABLE = 't_billing_wallet';
+
     /** MySQL's duplicate-entry error number. */
     private const ERR_DUPLICATE = 1062;
-
-    /** MySQL's deadlock-detected error number. */
-    private const ERR_DEADLOCK = 1213;
 
     public const REASON_PURCHASE = 'purchase';
     public const REASON_SPEND    = 'spend';
@@ -60,7 +61,7 @@ final class Wallet
      */
     public static function balance(int $userId): int
     {
-        $value = osc_db_scalar(
+        $value = Db::scalar(
             'SELECT i_balance FROM ' . self::wallet() . ' WHERE fk_i_user_id = ?',
             array($userId)
         );
@@ -181,7 +182,7 @@ final class Wallet
      */
     public static function history(int $userId, int $limit = 50, int $offset = 0): array
     {
-        return osc_db_table(self::ledger())
+        return Db::table(self::ledger())
             ->where('fk_i_user_id', $userId)
             ->orderBy('pk_i_id', 'DESC')
             ->limit($limit)
@@ -198,7 +199,7 @@ final class Wallet
      */
     public static function historyCount(int $userId): int
     {
-        return osc_db_table(self::ledger())->where('fk_i_user_id', $userId)->count();
+        return Db::table(self::ledger())->where('fk_i_user_id', $userId)->count();
     }
 
     /**
@@ -215,7 +216,7 @@ final class Wallet
      */
     public static function balances(int $limit = 25, int $offset = 0): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT w.fk_i_user_id, w.i_balance, w.dt_mod_date, u.s_username, u.s_name, u.s_email'
             . ' FROM ' . self::wallet() . ' w'
             . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_user u ON u.pk_i_id = w.fk_i_user_id'
@@ -232,7 +233,7 @@ final class Wallet
      */
     public static function balanceCount(): int
     {
-        return (int) osc_db_scalar(
+        return (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . self::wallet() . ' w'
             . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_user u ON u.pk_i_id = w.fk_i_user_id'
         );
@@ -246,11 +247,12 @@ final class Wallet
      */
     public static function totalOutstanding(): int
     {
-        return (int) osc_db_scalar('SELECT COALESCE(SUM(i_balance), 0) FROM ' . self::wallet());
+        return (int) Db::scalar('SELECT COALESCE(SUM(i_balance), 0) FROM ' . self::wallet());
     }
 
     /**
      * Move the balance by $delta (signed) and append the matching ledger row, atomically.
+     * It retries a deadlock itself, not through Db::retryOnce(): only a deadlock is retried, and a duplicate key means settled.
      *
      * @param int         $userId
      * @param int  $delta         positive to credit, negative to debit
@@ -305,11 +307,11 @@ final class Wallet
                 $params[] = -$delta;
             }
 
-            if (osc_db_execute($sql, $params) !== 1) {
+            if (Db::execute($sql, $params) !== 1) {
                 return; // insufficient funds; $applied stays false
             }
 
-            osc_db_execute(
+            Db::execute(
                 'INSERT INTO ' . self::ledger()
                 . ' (fk_i_user_id, i_amount, i_balance_after, s_reason, s_ref_type, i_ref_id,'
                 . ' s_idempotency_key, dt_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -336,15 +338,15 @@ final class Wallet
         // instance) could silently discard writes that caller already made before
         // reaching here. A nested call gets the one attempt it always had; only the
         // outermost caller retries.
-        $attempts = osc_db_in_transaction() ? 1 : 2;
+        $attempts = Db::inTransaction() ? 1 : 2;
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                osc_db_transaction($run);
+                Db::transaction($run);
                 break;
             } catch (DbException $e) {
                 $code = (int) $e->getCode();
-                if ($code === self::ERR_DEADLOCK && $attempt < $attempts) {
+                if (in_array($code, Db::LOST_TRANSACTION, true) && $attempt < $attempts) {
                     // ensureWallet() runs as this transaction's first write, so a
                     // deadlock here means the whole (now-discarded) transaction wrote
                     // nothing yet -- redoing it once from scratch is a retry, not a
@@ -396,7 +398,7 @@ final class Wallet
      */
     private static function ensureWallet(int $userId): void
     {
-        $touched = osc_db_execute(
+        $touched = Db::execute(
             'UPDATE ' . self::wallet() . ' SET dt_mod_date = ? WHERE fk_i_user_id = ?',
             array(date('Y-m-d H:i:s'), $userId)
         );
@@ -406,12 +408,12 @@ final class Wallet
 
         // The UPDATE above already X-locked this row if it exists, so nothing can remove
         // it between that statement and this one.
-        if (osc_db_select_one('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ?', array($userId)) !== null) {
+        if (Db::selectOne('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ?', array($userId)) !== null) {
             return;
         }
 
         try {
-            osc_db_execute(
+            Db::execute(
                 'INSERT INTO ' . self::wallet() . ' (fk_i_user_id, i_balance, dt_mod_date) VALUES (?, 0, ?)',
                 array($userId, date('Y-m-d H:i:s'))
             );
@@ -434,7 +436,7 @@ final class Wallet
      */
     private static function keyExists(string $idempotencyKey): bool
     {
-        return osc_db_table(self::ledger())->where('s_idempotency_key', $idempotencyKey)->count() > 0;
+        return Db::table(self::ledger())->where('s_idempotency_key', $idempotencyKey)->count() > 0;
     }
 
     /**
@@ -444,7 +446,7 @@ final class Wallet
      */
     private static function wallet(): string
     {
-        return DB_TABLE_PREFIX . 't_billing_wallet';
+        return self::tableName();
     }
 
     /**

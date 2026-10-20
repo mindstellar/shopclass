@@ -75,13 +75,15 @@ function mediaFileNeedles(array $row)
 {
     $needles = array();
 
-    $key = trim((string) ($row['s_path'] ?? '')) . (int) $row['id'];
-    if ($key !== '' && $key !== (string) (int) $row['id']) {
+    $base = \mindstellar\storage\ResourceLocator::baseName(array('pk_i_id' => (int) $row['id'], 's_base_name' => $row['s_base_name'] ?? null));
+    $key  = trim((string) ($row['s_path'] ?? '')) . $base;
+    if ($key !== $base) {
         $needles[] = $key;
     }
 
     $full = (string) osc_get_resource_url(array(
         'pk_i_id'        => $row['id'],
+        's_base_name'    => $row['s_base_name'] ?? null,
         's_path'         => $row['s_path'] ?? '',
         's_extension'    => $row['s_extension'] ?? '',
         's_storage'      => $row['s_storage'] ?? 'local',
@@ -107,7 +109,6 @@ function mediaFileNeedles(array $row)
  */
 function mediaResolveUsageBatch(array $rows)
 {
-    $p       = DB_TABLE_PREFIX;
     $labels  = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
     $itemIds = $userIds = $pageIds = array();
     $scan    = array();
@@ -131,9 +132,7 @@ function mediaResolveUsageBatch(array $rows)
 
     // Library uploads: load every page once and match in PHP.
     if (!empty($scan)) {
-        $pages = osc_db_select(
-            "SELECT fk_i_pages_id AS id, s_title AS title, s_text AS text FROM {$p}t_pages_description"
-        );
+        $pages = \mindstellar\storage\MediaQuery::pageTexts();
         foreach ($scan as $rid => $needles) {
             foreach ($pages as $pg) {
                 $text = (string) $pg['text'];
@@ -148,9 +147,9 @@ function mediaResolveUsageBatch(array $rows)
     }
 
     // One title lookup per owner type for the explicit owners.
-    $itemTitles = mediaBatchTitles("{$p}t_item_description", 'fk_i_item_id', 's_title', array_keys($itemIds));
-    $userTitles = mediaBatchTitles("{$p}t_user", 'pk_i_id', "COALESCE(NULLIF(s_name, ''), s_email)", array_keys($userIds));
-    $pageTitles = mediaBatchTitles("{$p}t_pages_description", 'fk_i_pages_id', 's_title', array_keys($pageIds));
+    $itemTitles = \mindstellar\storage\MediaQuery::ownerTitles('item', array_keys($itemIds));
+    $userTitles = \mindstellar\storage\MediaQuery::ownerTitles('user', array_keys($userIds));
+    $pageTitles = \mindstellar\storage\MediaQuery::ownerTitles('page', array_keys($pageIds));
 
     foreach ($result as $rid => $u) {
         if ($u === null) {
@@ -176,37 +175,6 @@ function mediaResolveUsageBatch(array $rows)
 }
 
 /**
- * id => display value for a set of ids, in one query. Description tables carry a row
- * per locale, so the first non-empty value per id wins.
- *
- * @param string $table
- * @param string $keyCol
- * @param string $valExpr
- * @param int[]  $ids
- *
- * @return array<int,string>
- */
-function mediaBatchTitles($table, $keyCol, $valExpr, array $ids)
-{
-    $ids = array_values(array_unique(array_map('intval', $ids)));
-    if (empty($ids)) {
-        return array();
-    }
-    $rows = osc_db_select(
-        "SELECT {$keyCol} AS k, {$valExpr} AS v FROM {$table} WHERE {$keyCol} IN (" . implode(',', $ids) . ')'
-    );
-    $out = array();
-    foreach ($rows as $r) {
-        $k = (int) $r['k'];
-        if (!isset($out[$k]) && (string) $r['v'] !== '') {
-            $out[$k] = (string) $r['v'];
-        }
-    }
-
-    return $out;
-}
-
-/**
  * The image's pixel dimensions ("WxH") for a local file, or '' when offloaded or
  * unreadable. Only the current page's rows are checked, so this is bounded.
  *
@@ -220,7 +188,12 @@ function mediaImageSize(array $row)
     if ($storage !== '' && $storage !== 'local') {
         return '';
     }
-    $path = osc_base_path() . (string) ($row['s_path'] ?? '') . (int) $row['id'] . '.' . (string) ($row['s_extension'] ?? '');
+    $path = \mindstellar\storage\ResourceLocator::localPath(array(
+        'pk_i_id'     => (int) $row['id'],
+        's_base_name' => $row['s_base_name'] ?? null,
+        's_path'      => $row['s_path'] ?? '',
+        's_extension' => $row['s_extension'] ?? '',
+    ));
     if (!is_file($path)) {
         return '';
     }
@@ -236,6 +209,42 @@ $mediaTotal   = (int) __get('mediaTotal');
 $mediaPerPage = (int) __get('mediaPerPage');
 $mediaPage    = (int) __get('mediaPage');
 $mediaMaxPage = max(1, (int) ceil($mediaTotal / max(1, $mediaPerPage)));
+$mediaSearch  = (string) __get('mediaSearch');
+$mediaSummary = (array) __get('mediaSummary');
+$mediaView    = __get('mediaView') === 'grid' ? 'grid' : 'list';
+
+/**
+ * The library URL with the current filter, search and view, changed by $over.
+ *
+ * @param array<string,string> $over
+ *
+ * @return string
+ */
+$mediaUrl = static function (array $over = array()) use ($mediaType, $mediaSearch, $mediaView): string {
+    $query = array_filter($over + array('type' => $mediaType, 'q' => $mediaSearch, 'view' => $mediaView), static fn ($v) => $v !== '' && $v !== 'list');
+
+    return osc_admin_base_url(true) . '?page=media' . ($query !== array() ? '&' . http_build_query($query) : '');
+};
+
+/**
+ * The sizes a listing photo is kept in, smallest first, each with its URL and its box.
+ *
+ * @param array<string,mixed> $res a resource row as osc_get_resource_url() reads it
+ *
+ * @return array<int,array{label:string,url:string,box:string}>
+ */
+$mediaSizes = static function (array $res): array {
+    $sizes = array(
+        array('label' => __('Thumbnail'), 'url' => osc_get_resource_url($res, 'thumbnail'), 'box' => (string) osc_thumbnail_dimensions()),
+        array('label' => __('Preview'), 'url' => osc_get_resource_url($res, 'preview'), 'box' => (string) osc_preview_dimensions()),
+        array('label' => __('Normal'), 'url' => osc_get_resource_url($res), 'box' => (string) osc_normal_dimensions()),
+    );
+    if (osc_keep_original_image()) {
+        $sizes[] = array('label' => __('Original'), 'url' => osc_get_resource_url($res, 'original'), 'box' => __('as uploaded'));
+    }
+
+    return $sizes;
+};
 
 $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
 ?>
@@ -243,6 +252,18 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 <div id="media-library" class="col-12">
     <?php
     osc_admin_page_head(__('Media library'));
+
+    // One line on what the library holds and where it is stored.
+    $ownerWords = array('item' => __('listing photos'), 'user' => __('user photos'), 'page' => __('page images'), 'library' => __('library uploads'), 'setting' => __('settings images'));
+    $parts      = array(sprintf(_n('%s file', '%s files', (int) ($mediaSummary['total'] ?? 0)), number_format((int) ($mediaSummary['total'] ?? 0))));
+    foreach (($mediaSummary['owners'] ?? array()) as $owner => $count) {
+        $parts[] = number_format((int) $count) . ' ' . ($ownerWords[$owner] ?? $owner);
+    }
+    $stores = array();
+    foreach (($mediaSummary['storage'] ?? array()) as $store => $count) {
+        $stores[] = sprintf(__('%1$s %2$s'), number_format((int) $count), $store === 'local' ? __('on this server') : sprintf(__('on %s'), strtoupper($store)));
+    }
+    echo '<p class="media-summary">' . osc_esc_html(implode(' · ', $parts)) . ($stores !== array() ? '<br>' . osc_esc_html(implode(' · ', $stores)) : '') . '</p>';
     ?>
     <input type="file" accept="image/*" hidden id="media-upload-input"
            data-url="<?php echo osc_esc_html(osc_admin_base_url(true)
@@ -250,42 +271,76 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                . osc_csrf_token_url()); ?>"/>
     <?php
 
-    osc_admin_toolbar_open();
-
+    // The filters are page tabs, as on the other list screens.
     $filterLinks = array();
     foreach ($mediaFilters as $filter) {
         $filterLinks[] = array(
             'label'  => $filter['label'],
-            'url'    => osc_admin_base_url(true) . '?page=media&amp;type=' . urlencode($filter['type']),
+            'url'    => $mediaUrl(array('type' => $filter['type'])),
             'active' => $filter['type'] === $mediaType,
-        );
+        ) + (isset($filter['count']) ? array('count' => (int) $filter['count']) : array());
     }
-    osc_admin_link_group($filterLinks);
+    osc_admin_tab_nav($filterLinks);
 
+    osc_admin_toolbar_open(array('align' => count($mediaRows) > 0 ? 'between' : 'end'));
+    if (count($mediaRows) > 0) {
+        osc_admin_bulk_actions(array(
+            'name'    => 'bulk_actions',
+            'form'    => 'datatablesForm',
+            'options' => array(
+                array('value' => '', 'label' => __('Bulk actions')),
+                array('value' => 'delete', 'label' => __('Delete'), 'data-dialog-content' => __('Delete the selected files? Listings, users and pages lose them for good.')),
+            ),
+        ));
+    }
+
+    echo '<div class="osc-toolbar-group">'; ?>
+    <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>" class="media-search" nocsrf>
+        <input type="hidden" name="page" value="media"/>
+        <input type="hidden" name="type" value="<?php echo osc_esc_html($mediaType); ?>"/>
+        <?php if ($mediaView === 'grid') { ?><input type="hidden" name="view" value="grid"/><?php } ?>
+        <div class="input-group input-group-sm">
+            <input type="search" name="q" class="form-control" value="<?php echo osc_esc_html($mediaSearch); ?>"
+                   placeholder="<?php echo osc_esc_html(__('File, listing or user')); ?>" aria-label="<?php echo osc_esc_html(__('Search media')); ?>"/>
+            <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Search')); ?>"><i class="bi bi-search" aria-hidden="true"></i></button>
+        </div>
+    </form>
+    <?php
+    osc_admin_link_group(array(
+        array('label' => __('List'), 'url' => $mediaUrl(array('view' => 'list')), 'active' => $mediaView === 'list'),
+        array('label' => __('Grid'), 'url' => $mediaUrl(array('view' => 'grid')), 'active' => $mediaView === 'grid'),
+    ));
     osc_admin_per_page(array(
         'label'   => __('%d files'),
         'current' => $mediaPerPage,
         'options' => __get('mediaPerPageOptions') ?: array(10, 25, 50, 100, 250, 500),
     ));
+    echo '</div>';
 
     osc_admin_toolbar_close();
 
     if (count($mediaRows) === 0) {
         osc_admin_empty(array(
             'icon'  => 'bi-images',
-            'title' => $mediaType === 'all' ? __('No media yet') : __('No media of this type'),
-            'text'  => $mediaType === 'all'
+            'title' => $mediaSearch !== '' ? __('No files match your search') : ($mediaType === 'all' ? __('No media yet') : __('No media of this type')),
+            'text'  => $mediaSearch !== '' ? __('Try another word, or clear the search.') : ($mediaType === 'all'
                 ? __('Every image uploaded across listings, users and pages collects here. '
                      . 'Upload one, or add a photo to a listing.')
-                : __('Nothing has been uploaded under this filter yet.'),
+                : __('Nothing has been uploaded under this filter yet.')),
         ));
     } else {
         // Resolve where every row is used up front, in a fixed number of queries.
         $usageMap = mediaResolveUsageBatch($mediaRows); ?>
+        <form id="datatablesForm" method="post" action="<?php echo osc_admin_base_url(true); ?>">
+        <input type="hidden" name="page" value="media"/>
+        <input type="hidden" name="action" value="bulk"/>
+        <input type="hidden" name="type" value="<?php echo osc_esc_html($mediaType); ?>"/>
         <div id="media-table" class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
+            <?php // The grid is the same table drawn as cards, so selection and actions work the same.?>
+            <table class="table<?php echo $mediaView === 'grid' ? ' media-grid' : ''; ?>" cellpadding="0" cellspacing="0">
                 <thead>
                     <tr>
+                        <th class="col-bulkactions"><input id="check_all" type="checkbox" aria-label="<?php echo osc_esc_html(__('Select all')); ?>"/></th>
                         <th class="media-col-preview"><?php _e('Preview'); ?></th>
                         <th><?php _e('Used in'); ?></th>
                         <th><?php _e('Type'); ?></th>
@@ -300,6 +355,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     // storage-aware URL filters, so offloaded files resolve correctly).
                     $res = array(
                         'pk_i_id'        => $row['id'],
+                        's_base_name'    => $row['s_base_name'] ?? null,
                         's_path'         => $row['s_path'],
                         's_extension'    => $row['s_extension'],
                         's_storage'      => $row['s_storage'],
@@ -313,7 +369,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     $usageName  = $usage !== null
                         ? ($usage['name'] !== '' ? $usage['name'] : '#' . (int) $usage['id'])
                         : '';
-                    $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not attached');
+                    $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not used in a page');
                     $typeLabel  = strtoupper((string) $row['s_extension']);
                     $imageSize  = mediaImageSize($row);
                     $uploaded   = !empty($row['dt']) ? osc_admin_date((string) $row['dt'], true) : '—';
@@ -321,10 +377,12 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                         . '&id=' . (int) $row['id'] . '&type=' . urlencode($mediaType) . '&' . osc_csrf_token_url();
                     ?>
                     <tr>
-                        <td class="media-col-preview" data-col-name="<?php echo osc_esc_html(__('Preview')); ?>">
+                        <td class="col-bulkactions"><input type="checkbox" name="media[]" value="<?php echo osc_esc_html($row['src'] . ':' . (int) $row['id']); ?>" aria-label="<?php echo osc_esc_html(__('Select')); ?>"/></td>
+                        <td class="media-col-preview col-image" data-col-name="<?php echo osc_esc_html(__('Preview')); ?>">
                             <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener"
                                data-media-preview
                                data-full="<?php echo osc_esc_html($full); ?>"
+                               <?php if ($row['src'] === 'item') { ?>data-sizes="<?php echo osc_esc_html((string) json_encode($mediaSizes($res))); ?>"<?php } ?>
                                data-usage="<?php echo osc_esc_html($usageText); ?>"
                                title="<?php echo osc_esc_html(__('Preview')); ?>">
                                 <img src="<?php echo osc_esc_html($thumb); ?>" loading="lazy"
@@ -344,7 +402,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                                     <?php echo osc_esc_html($usageName); ?>
                                 <?php } ?>
                             <?php } else { ?>
-                                <span class="media-owner-unattached"><?php _e('Not attached'); ?></span>
+                                <span class="media-owner-unattached"><?php _e('Not used in a page'); ?></span>
                             <?php } ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Type')); ?>"><?php echo osc_esc_html($typeLabel); ?></td>
@@ -369,6 +427,8 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                 </tbody>
             </table>
         </div>
+        </form>
+        <?php osc_admin_bulk_confirm_dialog(); ?>
 
         <?php osc_admin_pagination(array(
             'aRows'                => $mediaRows,
@@ -393,10 +453,11 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
         <div class="media-preview-figure">
             <img id="media-preview-img" src="" alt=""/>
         </div>
+        <ul class="media-preview-sizes" id="media-preview-sizes" hidden></ul>
     </div>
     <div class="osc-dialog-actions">
         <a id="media-preview-open" class="btn btn-secondary btn-sm" href="#" target="_blank" rel="noopener">
-            <?php _e('View original'); ?>
+            <?php _e('Open image'); ?>
         </a>
         <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Close'); ?></button>
     </div>
@@ -417,6 +478,22 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                 img.alt = trigger.getAttribute('data-usage') || '';
                 name.textContent = trigger.getAttribute('data-usage') || '';
                 open.href = trigger.getAttribute('data-full') || '#';
+                // A listing photo is kept in several sizes; each one is listed with its box and a link.
+                var list = document.getElementById('media-preview-sizes');
+                var sizes = [];
+                try { sizes = JSON.parse(trigger.getAttribute('data-sizes') || '[]'); } catch (err) { sizes = []; }
+                list.replaceChildren();
+                sizes.forEach(function (size) {
+                    var item = document.createElement('li');
+                    var link = document.createElement('a');
+                    link.href = size.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    link.textContent = size.label;
+                    item.append(link, ' ', size.box);
+                    list.append(item);
+                });
+                list.hidden = sizes.length === 0;
                 dialog.showModal();
             });
         });

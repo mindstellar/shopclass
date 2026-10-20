@@ -27,9 +27,7 @@
 # Parsed by the release workflow and the admin upgrade screen.
 /CHANGELOG.md                               @navjottomer
 
-# Committed build output — edits here ship verbatim to users.
-/oc-includes/assets/                        @navjottomer
-/oc-includes/vendor/                        @navjottomer
-/oc-admin/themes/modern/css/                @navjottomer
+# Hand-written assets that ship at literal paths plugins load.
+/oc-includes/assets/osclass/                @navjottomer
 /composer.json                              @navjottomer
 /composer.lock                              @navjottomer

@@ -11,6 +11,8 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\listing\ListingStore;
+
 /**
  * Time-limited premium listings.
  *
@@ -24,6 +26,35 @@ namespace mindstellar\billing;
  */
 final class Premium
 {
+    public const JOB = 'billing.premium_end';
+
+    /**
+     * Register the job that ends upgrades on time; called from `register_jobs`.
+     */
+    public static function registerJobs(): void
+    {
+        osc_job_register_handler(self::JOB, static function (): void {
+            self::expire();
+        });
+        osc_job_describe(self::JOB, __('End premium listings'), static fn (array $payload): string => (string) ($payload['at'] ?? ''));
+    }
+
+    /**
+     * Queue a job for the moment an upgrade ends. The hourly sweep still ends any it misses.
+     */
+    public static function scheduleEnd(string $at): void
+    {
+        $time = strtotime($at);
+        if ($time === false) {
+            return;
+        }
+        try {
+            osc_job_enqueue(self::JOB, array('at' => $at), array('delay' => max(0, $time - time()), 'unique_key' => (string) $time));
+        } catch (\Throwable $e) {
+            error_log('Premium end job was not queued: ' . $e->getMessage());
+        }
+    }
+
     /**
      * End every upgrade whose date has passed.
      *
@@ -34,13 +65,7 @@ final class Premium
      */
     public static function expire(): int
     {
-        $table = DB_TABLE_PREFIX . 't_item';
-
-        $rows = osc_db_select(
-            'SELECT pk_i_id, b_enabled, b_active, b_spam, b_premium, dt_expiration FROM ' . $table
-            . ' WHERE b_premium = 1 AND dt_premium_expiration IS NOT NULL AND dt_premium_expiration <= ?',
-            array(date('Y-m-d H:i:s'))
-        );
+        $rows = ListingStore::endedPremium(date('Y-m-d H:i:s'));
         if ($rows === array()) {
             return 0;
         }
@@ -49,9 +74,7 @@ final class Premium
             return (int) $row['pk_i_id'];
         }, $rows);
 
-        osc_db_table($table)
-            ->whereIn('pk_i_id', $ids)
-            ->update(array('b_premium' => 0, 'dt_premium_expiration' => null));
+        ListingStore::clearPremium($ids);
 
         // The same notification an admin unmarking a listing sends, so a plugin
         // reacting to premium ending need not know whether a person or the clock

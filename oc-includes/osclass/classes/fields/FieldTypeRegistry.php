@@ -12,6 +12,7 @@
 namespace mindstellar\fields;
 
 use InvalidArgumentException;
+use mindstellar\base\Registry;
 
 /**
  * Class FieldTypeRegistry
@@ -35,7 +36,7 @@ use InvalidArgumentException;
  *
  * @package mindstellar\fields
  */
-final class FieldTypeRegistry
+final class FieldTypeRegistry extends Registry
 {
     /** The storage primitives — the historical e_type ENUM values a type may map to. */
     public const STORAGE_PRIMITIVES = array(
@@ -49,32 +50,6 @@ final class FieldTypeRegistry
         'DATE',
         'DATEINTERVAL',
     );
-
-    private static ?FieldTypeRegistry $instance = null;
-
-    /** @var array<string,array> registered type specs, keyed by id */
-    private array $types = array();
-
-    /**
-     * Singleton: obtain the registry through instance().
-     */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Shared registry instance, created on first use.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * Register a field type.
@@ -135,7 +110,7 @@ final class FieldTypeRegistry
             }
         }
 
-        $this->types[$id] = array(
+        $this->entries[$id] = array(
             'id'          => $id,
             'label'       => $spec['label'],
             'storage'     => $storage,
@@ -148,29 +123,6 @@ final class FieldTypeRegistry
             'sanitize'    => $spec['sanitize'] ?? null,
             'validate'    => $spec['validate'] ?? null,
         );
-    }
-
-    /**
-     * The spec for a registered type, or null when the id is not registered (e.g.
-     * its plugin is deactivated).
-     *
-     * @param string $id
-     *
-     * @return array<string,mixed>|null
-     */
-    public function get(string $id): ?array
-    {
-        return $this->types[$id] ?? null;
-    }
-
-    /**
-     * All registered type specs, keyed by id, in registration order.
-     *
-     * @return array<string,array>
-     */
-    public function all(): array
-    {
-        return $this->types;
     }
 
     /**

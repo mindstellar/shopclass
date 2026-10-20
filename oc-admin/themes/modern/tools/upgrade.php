@@ -7,7 +7,7 @@ if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 
-$updateJson    = osc_get_preference('update_core_json');
+$updateJson    = osc_update_core_json();
 $isAvailable   = false;
 $remoteVersion = '';
 if (!empty($updateJson)) {

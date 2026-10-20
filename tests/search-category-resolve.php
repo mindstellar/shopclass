@@ -35,9 +35,14 @@ $GLOBALS['calls']  = array();
 /** Stand-in for the Category model, recording which lookups were asked for. */
 class Category
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function findBySlug($slug)

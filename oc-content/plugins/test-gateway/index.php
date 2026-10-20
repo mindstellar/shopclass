@@ -23,7 +23,7 @@ Requires PHP: 8.0
 
 use mindstellar\billing\Billing;
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\testgateway\TestGateway;
@@ -48,7 +48,7 @@ osc_register_plugin(osc_plugin_path(__FILE__), 'test_gateway_install');
  */
 function test_gateway_uninstall()
 {
-    foreach (array_keys(SettingsPageRegistry::instance()->fields(TestGateway::PAGE)) as $name) {
+    foreach (array_keys(SettingsPageRegistry::getInstance()->fields(TestGateway::PAGE)) as $name) {
         osc_delete_preference($name, TestGateway::PAGE);
     }
 }
@@ -70,12 +70,12 @@ osc_add_hook(osc_plugin_path(__FILE__) . '_configure', static function () {
 function test_gateway_register()
 {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::instance()->register(new TestGateway());
+        PaymentGatewayRegistry::getInstance()->register(new TestGateway());
     }
 }
 
-// 2) The gateway.
-osc_add_hook('init', 'test_gateway_register');
+// 2) The gateway, built the first time a page asks for payment methods (on init before Shopclass 7.0).
+osc_add_hook(defined(PaymentGatewayRegistry::class . '::HOOK') ? PaymentGatewayRegistry::HOOK : 'init', 'test_gateway_register');
 
 // 3) The hosted checkout page and its buttons.
 osc_add_route_hook('test-gateway-checkout', 'test-gateway/checkout/([0-9]+)', 'test-gateway/checkout/{order}');
@@ -94,7 +94,7 @@ function test_gateway_buyer_order(int $orderId): Order
         osc_redirect_to(osc_user_login_url());
     }
 
-    $order = Orders::find($orderId);
+    $order = OrderStore::find($orderId);
     if (!TestGateway::enabled()
         || $order === null
         || $order->getUserId() !== (int) osc_logged_user_id()
@@ -110,7 +110,7 @@ function test_gateway_buyer_order(int $orderId): Order
 osc_add_hook('test-gateway-checkout', static function () {
     $order = test_gateway_buyer_order(Params::getParamInt('order'));
 
-    View::newInstance()->_exportVariableToView('testGatewayOrder', $order);
+    View::getInstance()->_exportVariableToView('testGatewayOrder', $order);
     osc_gui_view('', __DIR__ . '/checkout.php', array(
         'heading' => __('Test checkout', 'test-gateway'),
         'title'   => __('Test checkout', 'test-gateway') . ' - ' . osc_page_title(),

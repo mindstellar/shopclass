@@ -1,10 +1,11 @@
 <?php
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 18/05/20
- * Time: 4:40 PM
- * License is provided in root directory.
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 namespace mindstellar\utility;
@@ -39,7 +40,7 @@ class Deprecate
          */
         Plugins::runHook('d_function_run', $function, $replacement, $version);
 
-        if (OSC_DEBUG) {
+        if (defined('OSC_DEBUG') && OSC_DEBUG) {
             $debug_backtrace = debug_backtrace();
             $caller          = next($debug_backtrace);
             if ($replacement !== null) {
@@ -139,7 +140,7 @@ class Deprecate
          */
         Plugins::runHook('d_hook_run', $hook, $replacement, $version, $message);
 
-        if (OSC_DEBUG) {
+        if (defined('OSC_DEBUG') && OSC_DEBUG) {
             $message         = empty($message) ? '' : ' ' . $message;
             $debug_backtrace = debug_backtrace();
 
@@ -220,7 +221,7 @@ class Deprecate
          */
         Plugins::runHook('d_file_included', $file, $replacement, $version, $message);
 
-        if (OSC_DEBUG) {
+        if (defined('OSC_DEBUG') && OSC_DEBUG) {
             $message = empty($message) ? '' : ' ' . $message;
 
             $debug_backtrace = debug_backtrace();

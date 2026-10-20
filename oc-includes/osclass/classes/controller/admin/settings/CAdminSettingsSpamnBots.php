@@ -17,13 +17,16 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\SpamSettingsForm;
+use mindstellar\admin\form\SpamSettingsScreen;
 
 /**
  * Class CAdminSettingsSpamnBots
  */
 class CAdminSettingsSpamnBots extends AdminSecBaseModel
 {
+    /** The screen's tabs, one form each. */
+    private const TABS = array('akismet', 'captcha', 'alerts', 'messages', 'limits', 'signin');
+
     /**
      * Boots the admin controller and fires the init_admin_settings_spam hook.
      */
@@ -50,26 +53,28 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 // updating the Akismet key
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerAkismet());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerAkismet());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_AKISMET, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_AKISMET, $result['values'], 'akismet');
                     break;
                 }
 
-                if ($result['values']['akismetKey'] === '') {
+                if ($result['updated'] === 0) {
+                    osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
+                } elseif ($result['values']['akismetKey'] === '') {
                     osc_add_flash_info_message(_m('Your Akismet key has been cleared'), 'admin');
                 } else {
                     osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('akismet'));
                 break;
             case ('recaptcha_post'):
                 // updating the captcha provider and its keys
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerCaptcha());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerCaptcha());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_CAPTCHA, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_CAPTCHA, $result['values'], 'captcha');
                     break;
                 }
 
@@ -78,57 +83,57 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 } else {
                     osc_add_flash_ok_message(_m('Your reCAPTCHA key has been updated'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('captcha'));
                 break;
             case ('alerts_post'):
                 // updating search-alert subscription option
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerAlerts());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerAlerts());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_ALERTS, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_ALERTS, $result['values'], 'alerts');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Search alert settings have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('alerts'));
                 break;
             case ('login_throttle_post'):
                 // updating the sign-in rate limit
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerLoginThrottle());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerLoginThrottle());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_LOGIN_THROTTLE, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_LOGIN_THROTTLE, $result['values'], 'signin');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('signin'));
                 break;
             case ('messages_post'):
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerMessages());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerMessages());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_MESSAGES, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_MESSAGES, $result['values'], 'messages');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Message settings have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('messages'));
                 break;
             case ('limits_post'):
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerLimits());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerLimits());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_LIMITS, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_LIMITS, $result['values'], 'limits');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Limits have been updated'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::tabUrl('limits'));
                 break;
             case ('login_throttle_unblock'):
                 if ($this->refuseOnDemo(self::securityUrl())) {
@@ -139,7 +144,8 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $context = Params::getParamString('context');
                 // Raw: it must match the stored name exactly. It is bound in SQL and escaped below.
                 $account = trim(Params::getParamString('account', false, false, false));
-                if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
+                // An IPv6 sign-in is listed and unblocked by its /64 bucket.
+                if ($ip !== '' && (filter_var($ip, FILTER_VALIDATE_IP) || (str_ends_with($ip, '::/64') && filter_var(substr($ip, 0, -3), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)))) {
                     \mindstellar\security\LoginThrottle::unblockIp($ip);
                     osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($ip)), 'admin');
                 } elseif ($account !== '' && in_array($context, \mindstellar\security\LoginThrottle::CONTEXTS, true)) {
@@ -155,11 +161,23 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                LoginAttempt::newInstance()->pruneBefore(date('Y-m-d H:i:s'));
+                \mindstellar\security\LoginThrottle::clearAll();
                 osc_add_flash_ok_message(_m('Recorded sign-in attempts have been cleared'), 'admin');
                 $this->redirectTo(self::securityUrl());
                 break;
         }
+    }
+
+    /**
+     * The screen opened on one tab.
+     *
+     * @param string $tab one of TABS
+     *
+     * @return string
+     */
+    private static function tabUrl(string $tab): string
+    {
+        return osc_admin_base_url(true) . '?page=settings&action=spamNbots&tab=' . $tab;
     }
 
     /**
@@ -178,11 +196,16 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
      *
      * @param string     $rejected the page id of the form that was refused, if any
      * @param array|null $values   that form's submitted values
+     * @param string     $tab      the tab to open; the request's, when empty
      *
      * @return void
      */
-    private function drawForms(string $rejected = '', ?array $values = null)
+    private function drawForms(string $rejected = '', ?array $values = null, string $tab = '')
     {
+        if ($tab === '') {
+            $tab = Params::getParamString('tab');
+        }
+        $this->_exportVariableToView('spam_tab', in_array($tab, self::TABS, true) ? $tab : self::TABS[0]);
         // Whether the stored key is one Akismet recognises. A request to their service, so
         // it is made only for the screen that shows the answer.
         $akismetKey    = osc_akismet_key();
@@ -197,7 +220,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
         // view reads it, and View::_get() answers '' for a key nobody exported -- which
         // reads as "no key configured" rather than as anything being wrong.
         $this->_exportVariableToView('akismet_status', $akismetStatus);
-        $this->_exportVariableToView('spam_forms', SpamSettingsForm::formVars($akismetStatus, $rejected, $values));
+        $this->_exportVariableToView('spam_forms', SpamSettingsScreen::formVars($akismetStatus, $rejected, $values));
         $this->doView('settings/spamNbots.php');
     }
 }

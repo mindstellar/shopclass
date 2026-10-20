@@ -49,8 +49,9 @@ full setup):
 | Command | What it does |
 |---|---|
 | `install --unattended` | Install with no browser: settings come from environment variables or flags. |
+| `core:update [--reinstall]` | Update ShopClass to the newest release on the site's channel, then run the migrations. Run it as the owner of the files when the admin updater cannot write them. `--reinstall` copies the current release again. |
 | `db:upgrade` | Run pending migrations. Also in the admin under **Tools → System info → Database**. |
-| `db:doctor [--strict]` | Report where this database differs from what ShopClass expects, then whether the site is ready for strict SQL mode. `--strict` prints only the readiness part. Changes nothing. Exits `1` when it finds anything. |
+| `db:doctor [--strict]` | Report where this database differs from what ShopClass expects, then whether the site is ready for strict SQL mode. `--strict` prints only the readiness part. Changes nothing. Exits `1` when it finds a problem; an extra column or index is listed but does not fail it. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. Exits `1` when a statement fails. `--dry-run` prints the `db:doctor` report and changes nothing. Also in the admin under **Tools → System info → Database**. |
 | `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content`. Outside a container image, it does nothing. |
 | `version` | Print the installed version. |
@@ -75,6 +76,7 @@ php oc-cli.php user:create-admin --user=jane --email=jane@example.com
 | Command | What it does |
 |---|---|
 | `plugin:list` | List plugins with status, version and folder. |
+| `plugin:install --plugin=<folder>` | Install and enable a plugin whose folder is already in `oc-content/plugins`. Exits 1 if it is already installed, missing, or its install fails. A plugin that prints output still installs, but the command exits 1. |
 | `plugin:activate --plugin=<folder>` | Enable an installed plugin. Accepts the folder name or `folder/index.php`. |
 | `plugin:deactivate --plugin=<folder>` | Disable an active plugin: the fix when one fatals on load. |
 | `theme:list` | List installed public themes, marking the active one. |
@@ -92,6 +94,25 @@ without opening the admin panel:
 | `market:info <slug> [--type=…]` | Show catalog details for a package. |
 | `market:install <slug> [--type=…]` | Install a package from the catalog. |
 | `market:update <slug>\|--all [--type=…]` | Update installed packages. |
+
+## API keys
+
+Make, list and revoke [REST API](/docs/configure/api/) keys. No password is asked: shell
+access is the permission.
+
+| Command | What it does |
+|---|---|
+| `api:key:create --admin=<username>\|id:<n> --name=<label> [--kind=admin\|public] [--scopes=a,b] [--expires=YYYY-MM-DD\|90d]` | Make a key for that admin and print it once. `--kind` defaults to `admin`. A public key always gets `listings:read`. With no `--scopes`, an admin key is refused: name at least one. |
+| `api:key:list` | List keys: id, type, status, name, owner, last used, expiry and scopes. Never the secret. |
+| `api:key:revoke <id>` | Revoke a key at once. |
+
+```bash
+php oc-cli.php api:key:create --admin=jane --name="Mobile app" --kind=public
+php oc-cli.php api:key:create --admin=jane --name="Stock sync" --scopes=listings:read,admin:listings --expires=90d
+php oc-cli.php api:key:revoke 4
+```
+
+`--admin` takes a username. Write `id:7` to pick an admin by number.
 
 ## Location data
 
@@ -143,7 +164,7 @@ Shell access is the permission here, so no admin password is asked.
 | `doctor` | Check PHP version, extensions, database, strict SQL mode readiness, writability, cron freshness and cache. Exits non-zero if any check fails. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
-| `jobs:work [--max-seconds=]` | Drain the background job queue and nothing else. Safe to run every minute. |
+| `jobs:work [--max-seconds=] [--listen]` | Drain the background job queue and nothing else. Safe to run every minute. `--listen` keeps it running and starts jobs as soon as they are due. |
 | `jobs:status` | Show pending, running and gave-up jobs, and the oldest pending one, per type; name anything that gave up. `--type=` narrows it to one type. |
 
 Slow work (moving photos to remote storage, emptying a large category, whatever a
@@ -158,6 +179,18 @@ run every minute and pick new work up quickly:
 It exits non-zero only when the queue holds jobs the worker gave up on. A backlog
 still draining is the normal case and exits `0`. An empty queue costs one query, so
 the entry is harmless to leave in place on a site that queues nothing.
+
+On a server where you can keep a process running (systemd, supervisord, Docker),
+run it with `--listen` instead. It stays up for an hour (`--max-seconds=` changes
+that), then exits with `0` so your process manager restarts it. With a Redis or
+Valkey cache (`OSC_CACHE=redis`) a job starts the moment it is queued, and a job
+held for later within 30 seconds of its time. Without one, it looks every five seconds.
+Every five minutes it also runs the scheduled tasks that are due, so it replaces the
+`cron` line too:
+
+```bash
+php /path/to/site/oc-cli.php jobs:work --listen
+```
 
 `storage:work` still works, as a deprecated alias for `jobs:work`. New crontabs
 should use `jobs:work` directly.

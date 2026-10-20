@@ -27,10 +27,6 @@ class MediaDataTable extends DataTable
     private $order_by;
     private $resourceID;
     private $total_filtered;
-    /**
-     * @var int
-     */
-    private $sEcho;
 
     /**
      * Builds the media (item resources) listing for the admin datatable.
@@ -45,7 +41,7 @@ class MediaDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $media = ItemResource::newInstance()->getResources(
+        $media = ItemResource::getInstance()->getResources(
             $this->resourceID,
             $this->start,
             $this->limit,
@@ -54,12 +50,12 @@ class MediaDataTable extends DataTable
         );
         $this->processData($media);
 
-        $this->total = ItemResource::newInstance()->countResources();
+        $this->total = ItemResource::getInstance()->countResources();
         if ($this->resourceID === null) {
             $this->total_filtered = $this->total;
             $this->totalFiltered = $this->total;
         } else {
-            $this->total_filtered = ItemResource::newInstance()->countResources($this->resourceID);
+            $this->total_filtered = ItemResource::getInstance()->countResources($this->resourceID);
             $this->totalFiltered = $this->total_filtered;
         }
 
@@ -83,16 +79,12 @@ class MediaDataTable extends DataTable
             $arg_item .= '&direction=asc';
         }
 
-        Rewrite::newInstance()->init();
-        $page = Params::getParamInt('iPage');
-        if ($page == 0) {
-            $page = 1;
-        }
-        Params::setParam('iPage', $page);
+        Rewrite::getInstance()->init();
+        ListPaging::page();
         $url_base = preg_replace(
             '|&direction=([^&]*)|',
             '',
-            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::newInstance()->get_raw_request_uri())
+            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::getInstance()->get_raw_request_uri())
         );
 
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
@@ -122,15 +114,6 @@ class MediaDataTable extends DataTable
             if (($k === 'resourceId') && !empty($v)) {
                 $this->resourceID = (int)$v;
             }
-            if ($k === 'iDisplayStart') {
-                $this->start = (int)$v;
-            }
-            if ($k === 'iDisplayLength') {
-                $this->limit = (int)$v;
-            }
-            if ($k === 'sEcho') {
-                $this->sEcho = (int)$v;
-            }
         }
 
         $direction              = isset($_get['direction']) && !is_array($_get['direction'])
@@ -153,7 +136,7 @@ class MediaDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start(ListPaging::page(), $this->limit);
     }
 

@@ -31,22 +31,29 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeViews.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/widgets/WidgetRegistry.php';
 
 $themeRoot = sys_get_temp_dir() . '/osc-theme-views-' . getmypid() . '/';
 
-/** Stands in for WebThemes::newInstance()->getCurrentThemePath(). */
+/** Stands in for WebThemes::getInstance()->getCurrentThemePath(). */
 class WebThemes
 {
     public static string $path = '';
     /** @var string[] what the theme's `Widgets:` line parses to */
     public static array $headerLocations = array();
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getCurrentThemePath(): string
@@ -91,7 +98,7 @@ if (!is_dir($themeRoot)) {
     mkdir($themeRoot, 0777, true);
 }
 
-$supports = \mindstellar\theme\ThemeSupports::instance();
+$supports = \mindstellar\theme\ThemeSupports::getInstance();
 
 harness_section('core baseline, verbatim');
 

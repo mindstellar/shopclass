@@ -17,7 +17,7 @@ URL slug (the name as it appears in web addresses) taken from the title.
 
 To link a page from the site footer, tick **Show a link in the footer** in the
 page's settings. It is off for a new page. Deleting a page also removes its
-footer link.
+footer link, its widgets and its uploaded images.
 
 ## Two ways to build one
 

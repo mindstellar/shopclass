@@ -20,7 +20,8 @@ use mindstellar\utility\Deprecate;
  */
 class Scripts extends Dependencies
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     /**
      * Keep an array of loaded scripts
      *
@@ -60,7 +61,7 @@ class Scripts extends Dependencies
      */
     public static function enqueueScriptCode($code, $dependencies = null, $admin = false, $id = null)
     {
-        $self   = self::newInstance();
+        $self   = self::getInstance();
         $prefix = $admin === true ? 'admin_' : '';
 
         if ($id !== null) {
@@ -95,17 +96,11 @@ class Scripts extends Dependencies
     }
 
     /**
-     * The shared Scripts instance, created on first call.
-     *
-     * @return \Scripts
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -120,6 +115,11 @@ class Scripts extends Dependencies
         } else {
             self::initPrintScripts();
         }
+
+        // Core's scripts; their styles are registered in Styles::init(). Needs the helpers loaded.
+        osc_register_script('tiny_mce', osc_asset_url_versioned(osc_assets_url('tinymce/tinymce.min.js')));
+        osc_register_script('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.js')));
+        osc_register_script('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.js')));
     }
 
     /**
@@ -180,9 +180,9 @@ class Scripts extends Dependencies
             $prefix = 'admin_';
         }
         $printScript = function () {
-            Scripts::newInstance()->printScripts();
+            Scripts::getInstance()->printScripts();
         };
-        if (!Preference::newInstance()->get($prefix.'enqueue_scripts_in_footer')) {
+        if (!Preference::getInstance()->get($prefix.'enqueue_scripts_in_footer')) {
             Plugins::addHook($prefix.'header', $printScript, 8);
             Deprecate::deprecatedRunHook($prefix.'header_scripts_loaded', '5.1.0', $prefix.'scripts_loaded');
         }

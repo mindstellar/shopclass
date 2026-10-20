@@ -12,16 +12,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Alerts DAO
  */
 class Alerts extends DAO
 {
-    /**
-     *
-     * @var \Alerts
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
+    /** How often alerts go out. Hourly ones were made daily in 7.0. */
+    public const TYPES = array('DAILY', 'WEEKLY');
 
     /**
      * Alerts constructor.
@@ -46,17 +47,11 @@ class Alerts extends DAO
     }
 
     /**
-     * Return the shared Alerts model instance, creating it on first use.
-     *
-     * @return \Alerts
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -70,7 +65,7 @@ class Alerts extends DAO
      */
     public function findByUser($userId, $unsub = false)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('fk_i_user_id', $userId);
         if (!$unsub) {
             // Value-less compile-time literal, so it is a whereRaw with no bound value.
@@ -83,7 +78,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -102,7 +97,7 @@ class Alerts extends DAO
         // returned a single-character numeric bare, so where('s_email', '0')
         // compiled `s_email = 0` and coerced every non-numeric email to 0,
         // matching them all. That coercion is deliberately not reproduced.
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('s_email', $email);
         if (!$unsub) {
             $query = $query->whereRaw('dt_unsub_date IS NULL');
@@ -114,7 +109,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -129,7 +124,7 @@ class Alerts extends DAO
      */
     public function findByType($type, $active = false, $unsub = false)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('e_type', $type);
         if (!$unsub) {
             $query = $query->whereRaw('dt_unsub_date IS NULL');
@@ -144,7 +139,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -173,7 +168,7 @@ class Alerts extends DAO
         // The lowest id in each s_search group, not an arbitrary member of it:
         // selecting every column alongside GROUP BY s_search is rejected under
         // ONLY_FULL_GROUP_BY, which left the alert cron with nothing to send.
-        $query = osc_db_table($table)->whereRaw(
+        $query = Db::table($table)->whereRaw(
             'pk_i_id IN (SELECT MIN(a.pk_i_id) FROM ' . $table . ' a'
             . ' WHERE ' . implode(' AND ', $where) . ' GROUP BY a.s_search)',
             $params
@@ -185,7 +180,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -202,7 +197,7 @@ class Alerts extends DAO
      */
     public function findBySearchAndUser($search, $user, $unsub = false)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('fk_i_user_id', $user)
             ->where('s_search', $search);
         if (!$unsub) {
@@ -215,7 +210,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -232,7 +227,7 @@ class Alerts extends DAO
      */
     public function findBySearchAndType($search, $type, $unsub = false)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('e_type', $type)
             ->where('s_search', $search);
         if (!$unsub) {
@@ -245,7 +240,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -261,7 +256,7 @@ class Alerts extends DAO
      */
     public function findUsersBySearchAndType($search, $type, $active = false, $unsub = false)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('e_type', $type)
             ->where('s_search', $search);
         if (!$unsub) {
@@ -277,7 +272,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -292,7 +287,7 @@ class Alerts extends DAO
      */
     public function findByUserByType($userId, $type, $unsub = false)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('e_type', $type)
             ->where('fk_i_user_id', $userId);
         if (!$unsub) {
@@ -305,7 +300,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -323,7 +318,7 @@ class Alerts extends DAO
         // Legacy appended the unsub clause BEFORE the e_type/s_email conditions;
         // the order is preserved but every clause is AND-joined, so it is
         // result-identical either way.
-        $query = osc_db_table($this->getTableName());
+        $query = Db::table($this->getTableName());
         if (!$unsub) {
             $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
@@ -337,7 +332,7 @@ class Alerts extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -354,7 +349,8 @@ class Alerts extends DAO
      */
     public function createAlert($userid, $email, $alert, $secret, $type = 'DAILY')
     {
-        $query = osc_db_table($this->getTableName())
+        $type = in_array($type, self::TYPES, true) ? $type : 'DAILY';
+        $query = Db::table($this->getTableName())
             ->where('s_search', $alert)
             ->whereRaw('dt_unsub_date IS NULL');
 
@@ -373,7 +369,7 @@ class Alerts extends DAO
         // absorbed. The stored blob ($alert) is written verbatim; dt_date keeps
         // the legacy PHP clock (date()), which was never a MySQL NOW() sentinel.
         if (count($query->get()) === 0) {
-            return osc_db_table($this->getTableName())->insert(array(
+            return Db::table($this->getTableName())->insert(array(
                 'fk_i_user_id' => $guest ? null : $userid,
                 's_email'      => $email,
                 's_search'     => $alert,
@@ -396,7 +392,7 @@ class Alerts extends DAO
     public function activate($id)
     {
         try {
-            return osc_db_table($this->getTableName())
+            return Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->whereRaw('(s_search IS NULL OR s_search NOT LIKE ?)', array('{"v":2,"held":%'))
                 ->update(array('b_active' => 1));
@@ -416,7 +412,7 @@ class Alerts extends DAO
     public function deactivate($id)
     {
         try {
-            return osc_db_table($this->getTableName())
+            return Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->update(array('b_active' => 0));
         } catch (\mindstellar\database\DbException $e) {
@@ -437,7 +433,7 @@ class Alerts extends DAO
         // dt_unsub_date keeps the legacy PHP clock (date()); it was never a MySQL
         // NOW() sentinel here.
         try {
-            return osc_db_table($this->getTableName())
+            return Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->update(array('dt_unsub_date' => date('Y-m-d H:i:s')));
         } catch (\mindstellar\database\DbException $e) {
@@ -494,7 +490,7 @@ class Alerts extends DAO
             // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
             // payload before the wildcard boundaries are added, so a literal
             // wildcard character typed by the caller stays literal.
-            $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
+            $escaped  = \mindstellar\database\QueryBuilder::escapeLike((string)$name);
             $where    = 's_email LIKE ?';
             $params[] = '%' . $escaped . '%';
         }
@@ -513,7 +509,7 @@ class Alerts extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $alerts;
         }
@@ -524,7 +520,7 @@ class Alerts extends DAO
             return $alerts;
         }
 
-        $alerts['alerts'] = osc_db_stringify_rows($rows);
+        $alerts['alerts'] = Db::stringifyRows($rows);
         [$alerts['total_results'], $alerts['rows']] = $counts;
 
         return $alerts;

@@ -15,7 +15,8 @@ which has always existed, and **export**, added in **6.2.0**.
 
 A signed-in user follows the link on their account page and receives everything
 the site holds about them as **JSON**: profile, listings, comments, saved
-searches, orders and credit history.
+searches, orders, credit history and any e-mail change still waiting for confirmation.
+Data a plugin keeps is included only if that plugin supports the export.
 
 Two details worth knowing:
 

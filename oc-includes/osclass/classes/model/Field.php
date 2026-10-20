@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Field table
  *
@@ -20,13 +22,10 @@
  */
 class Field extends DAO
 {
-    /**
-     * It references to self object: Field.
-     * It is used as a singleton
-     *
-     * @var Field
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
+    /** Shared with FieldGroup: the fields of a category depend on both. */
+    protected $cacheGroup = FieldGroup::CACHE_GROUP;
 
     /**
      * Current locale code
@@ -52,18 +51,11 @@ class Field extends DAO
     }
 
     /**
-     * It creates a new Field object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return Field
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -76,7 +68,7 @@ class Field extends DAO
     public function findByPrimaryKey($id)
     {
         try {
-            $field = osc_db_table($this->getTableName())->where('pk_i_id', $id)->first();
+            $field = Db::table($this->getTableName())->where('pk_i_id', $id)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -84,7 +76,7 @@ class Field extends DAO
             return array();
         }
 
-        return $this->extendField(osc_db_stringify_row($field));
+        return $this->extendField(Db::stringifyRow($field));
     }
 
     /**
@@ -123,10 +115,8 @@ class Field extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        // A null id used to build a comparison with no right-hand side, so the
-        // delete failed and the method reported false. A bound null is valid SQL
-        // that matches nothing and would report 0 instead — callers tell the two
-        // apart, so the failure value is reproduced explicitly.
+        // A null id reports false, the failure value; callers tell it apart from 0
+        // rows deleted.
         if ($id === null) {
             return false;
         }
@@ -145,12 +135,12 @@ class Field extends DAO
         $dependents = array('t_item_meta', 't_meta_categories', 't_meta_group_fields', 't_form_submission_value');
 
         try {
-            $deleted = osc_db_transaction(function () use ($id, $dependents) {
+            $deleted = Db::transaction(function () use ($id, $dependents) {
                 foreach ($dependents as $table) {
-                    osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_field_id', $id)->delete();
+                    Db::table(DB_TABLE_PREFIX . $table)->where('fk_i_field_id', $id)->delete();
                 }
 
-                return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+                return Db::table($this->getTableName())->where('pk_i_id', $id)->delete();
             });
         } catch (\Throwable $e) {
             // The whole cascade is rolled back, so the field keeps its values and
@@ -159,6 +149,7 @@ class Field extends DAO
             // raises a RuntimeException, and callers expect false either way.
             return false;
         }
+        $this->cacheChanged();
 
         osc_run_hook('after_delete_field', $id);
 
@@ -173,7 +164,7 @@ class Field extends DAO
     public function listAll()
     {
         try {
-            $fields = osc_db_table($this->getTableName())
+            $fields = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->orderBy('i_position', 'ASC')
                 ->get();
@@ -182,8 +173,8 @@ class Field extends DAO
         }
 
         $extendedFields = array();
-        foreach (osc_db_stringify_rows($fields) as $field) {
-            $extendedFields[] = $this->extendField($field, $this->currentLocaleCode);
+        foreach (Db::stringifyRows($fields) as $field) {
+            $extendedFields[] = $this->extendField($field);
         }
 
         return $extendedFields;
@@ -204,37 +195,7 @@ class Field extends DAO
      */
     public function categoryPath($catId)
     {
-        $catId = (int)$catId;
-        if ($catId <= 0) {
-            return array();
-        }
-
-        // Every category's parent in one cached query; category edits clear the group.
-        $parents = \mindstellar\cache\CacheGroup::remember('category', 'parents', static function () {
-            try {
-                $rows = osc_db_select('SELECT pk_i_id, fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category');
-            } catch (\mindstellar\database\DbException $e) {
-                return null;
-            }
-
-            return array_map('intval', array_column($rows, 'fk_i_parent_id', 'pk_i_id'));
-        }) ?? array();
-
-        $path    = array();
-        $current = $catId;
-        $guard   = 0;
-        while ($current > 0 && $guard < 100) {
-            $path[]  = $current;
-            $current = $parents[$current] ?? 0;
-            // defensive: a parent chain that points back at a category already seen
-            // would loop; break instead of spinning to the guard.
-            if (in_array($current, $path, true)) {
-                break;
-            }
-            $guard++;
-        }
-
-        return $path;
+        return \mindstellar\fields\FieldQuery::categoryPath((int) $catId);
     }
 
     /**
@@ -258,16 +219,38 @@ class Field extends DAO
             . ' WHERE gf.fk_i_group_id = ?'
             . ' ORDER BY gf.i_position ASC';
         try {
-            $rows = osc_db_select($sql, array((int)$groupId));
+            $rows = Db::select($sql, array((int)$groupId));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
         $extended = array();
-        foreach (osc_db_stringify_rows($rows) as $field) {
+        foreach (Db::stringifyRows($rows) as $field) {
             $extended[] = $this->extendField($field);
         }
 
         return $extended;
+    }
+
+    /**
+     * The fields of several groups in one query, each group's ordered by position.
+     *
+     * @param int[] $groupIds
+     *
+     * @return array<int,array<int,array<string,mixed>>> group id => fields; a group with none is absent
+     */
+    public function findByGroups(array $groupIds)
+    {
+        try {
+            $byGroup = \mindstellar\fields\FieldQuery::groupFields(array_map('intval', $groupIds));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        foreach ($byGroup as $groupId => $fields) {
+            $byGroup[$groupId] = array_map(fn (array $field): array => $this->extendField($field), $fields);
+        }
+
+        return $byGroup;
     }
 
     /**
@@ -282,55 +265,13 @@ class Field extends DAO
      */
     public function findByCategory($id)
     {
-        $path = $this->categoryPath($id);
-        if (empty($path)) {
-            return array();
-        }
-        // Every id in $path is an (int) produced by categoryPath(); each IN list
-        // is generated placeholders bound to those ids. The two arms each carry
-        // the whole path, so it is bound twice. Every identifier is a literal or
-        // the DB_TABLE_PREFIX constant.
-        $placeholders = implode(', ', array_fill(0, count($path), '?'));
-        $p            = DB_TABLE_PREFIX;
-
-        // Loose fields directly assigned (and in NO form), plus grouped fields whose
-        // form is assigned to the category — form membership now comes from the link
-        // table t_meta_group_fields (a field can be in several forms).
-        // The union carries ids and group positions only, it is collapsed to one row
-        // per field inside its own subquery, and the field columns are read back from
-        // t_meta_fields with no GROUP BY in sight: selecting whole rows alongside a
-        // GROUP BY is rejected under ONLY_FULL_GROUP_BY. MIN() also makes a field that
-        // is both loose and grouped sort as loose rather than as whichever row the
-        // server reached first.
-        $sql = 'SELECT mf.*, query.cf_group_position'
-            . ' FROM ' . $p . 't_meta_fields mf JOIN ('
-            . 'SELECT u.pk_i_id AS pk_i_id, MIN(u.cf_group_position) AS cf_group_position FROM ('
-            . 'SELECT mfa.pk_i_id AS pk_i_id, 0 AS cf_group_position'
-            . ' FROM ' . $p . 't_meta_fields mfa, ' . $p . 't_meta_categories mc'
-            . ' WHERE mc.fk_i_category_id IN (' . $placeholders . ') AND mfa.pk_i_id = mc.fk_i_field_id'
-            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mfa.pk_i_id)'
-            . ' UNION '
-            . 'SELECT mfb.pk_i_id AS pk_i_id, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mfb'
-            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mfb.pk_i_id'
-            . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
-            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
-            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
-            . ') AS u GROUP BY u.pk_i_id'
-            . ') AS query ON query.pk_i_id = mf.pk_i_id'
-            . ' ORDER BY query.cf_group_position ASC, mf.i_position ASC';
-
         try {
-            $fields = osc_db_select($sql, array_merge($path, $path));
+            $fields = \mindstellar\fields\FieldQuery::forCategory((int) $id);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $extendedFields = [];
-        foreach (osc_db_stringify_rows($fields) as $field) {
-            $extendedFields[] = $this->extendField($field, $this->currentLocaleCode);
-        }
-
-        return $extendedFields;
+        return array_map(fn (array $field): array => $this->extendField($field), $fields);
     }
 
     /**
@@ -346,7 +287,7 @@ class Field extends DAO
             $ids = array($ids);
         }
         $catIds = array();
-        $mCat   = Category::newInstance();
+        $mCat   = Category::getInstance();
         foreach ($ids as $id) {
             if (is_numeric($id)) {
                 $catIds[] = (int)$id;
@@ -391,13 +332,13 @@ class Field extends DAO
             . ') AS q';
 
         try {
-            $rows = osc_db_select($sql, array_merge($pathValues, $pathValues));
+            $rows = Db::select($sql, array_merge($pathValues, $pathValues));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
         $tmp = array();
-        foreach (osc_db_stringify_rows($rows) as $t) {
+        foreach (Db::stringifyRows($rows) as $t) {
             $tmp[] = $t['pk_i_id'];
         }
 
@@ -458,7 +399,7 @@ class Field extends DAO
             . ' ORDER BY query.cf_group_position ASC, query.cf_field_position ASC';
 
         try {
-            $result = osc_db_select($sql, array_merge($path, $path, array($itemId)));
+            $result = Db::select($sql, array_merge($path, $path, array($itemId)));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -470,7 +411,7 @@ class Field extends DAO
         // (e.g. DATEINTERVAL from/to), matching the old GROUP BY pk_i_id behaviour.
         $extendedFields = array();
         $seen           = array();
-        foreach (osc_db_stringify_rows($result) as $field) {
+        foreach (Db::stringifyRows($result) as $field) {
             $id = $field['pk_i_id'];
             if (isset($seen[$id])) {
                 continue;
@@ -513,14 +454,14 @@ class Field extends DAO
             . ' ORDER BY mf.i_position ASC';
 
         try {
-            $fields = osc_db_select($sql, array((int)$itemId));
+            $fields = Db::select($sql, array((int)$itemId));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
         // extend fields
         $extendedFields = array();
-        foreach (osc_db_stringify_rows($fields) as $field) {
+        foreach (Db::stringifyRows($fields) as $field) {
             $extendedFields[] = $this->extendField($field);
         }
 
@@ -537,7 +478,7 @@ class Field extends DAO
     public function findByName($name)
     {
         try {
-            $field = osc_db_table($this->getTableName())->where('s_name', $name)->first();
+            $field = Db::table($this->getTableName())->where('s_name', $name)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -545,7 +486,7 @@ class Field extends DAO
             return array();
         }
 
-        return $this->extendField(osc_db_stringify_row($field));
+        return $this->extendField(Db::stringifyRow($field));
     }
 
     /**
@@ -563,7 +504,7 @@ class Field extends DAO
             return array();
         }
         try {
-            $aAux = osc_db_table(DB_TABLE_PREFIX . 't_item_meta')
+            $aAux = Db::table(DB_TABLE_PREFIX . 't_item_meta')
                 ->where('fk_i_field_id', $field_id)
                 ->where('fk_i_item_id', $item_id)
                 ->get();
@@ -572,7 +513,7 @@ class Field extends DAO
         }
 
         $aInterval = array();
-        foreach (osc_db_stringify_rows($aAux) as $v) {
+        foreach (Db::stringifyRows($aAux) as $v) {
             $aInterval[$v['s_multi']] = $v['s_value'];
         }
 
@@ -589,7 +530,7 @@ class Field extends DAO
     public function categories($id)
     {
         try {
-            $categories = osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
+            $categories = Db::table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
                 ->select('fk_i_category_id')
                 ->where('fk_i_field_id', $id)
                 ->get();
@@ -600,7 +541,7 @@ class Field extends DAO
         // Unlike the FieldGroup sibling this returns the raw string ids the legacy
         // result path produced, so the rows are stringified rather than cast.
         $cats = array();
-        foreach (osc_db_stringify_rows($categories) as $v) {
+        foreach (Db::stringifyRows($categories) as $v) {
             $cats[] = $v['fk_i_category_id'];
         }
 
@@ -639,7 +580,7 @@ class Field extends DAO
         // returned below, so the caller uses that id instead of a $model->dao->insertedId()
         // read of the shared connection after this returns — which the category-link inserts
         // below would have overwritten, and which any statement on the shared handle can zero.
-        $id = osc_db_table($this->getTableName())->insert(array(
+        $id = Db::table($this->getTableName())->insert(array(
             's_name'     => $name,
             'e_type'     => $type,
             'b_required' => $required,
@@ -652,13 +593,15 @@ class Field extends DAO
             // return value while the rest were still written, so the catch stays
             // inside the loop.
             try {
-                osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))->insert(
+                Db::table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))->insert(
                     array('fk_i_category_id' => $c, 'fk_i_field_id' => $id)
                 );
             } catch (\mindstellar\database\DbException $e) {
                 $return = false;
             }
         }
+
+        $this->cacheChanged();
 
         // Return the new field id on success (0 if a category link failed), so the caller
         // never has to read it back off the shared connection.
@@ -675,7 +618,7 @@ class Field extends DAO
     public function findBySlug($slug)
     {
         try {
-            $field = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+            $field = Db::table($this->getTableName())->where('s_slug', $slug)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -683,7 +626,7 @@ class Field extends DAO
             return array();
         }
 
-        return $this->extendField(osc_db_stringify_row($field));
+        return $this->extendField(Db::stringifyRow($field));
     }
 
     /**
@@ -706,13 +649,14 @@ class Field extends DAO
                 // return value while the rest were still written, so the catch
                 // stays inside the loop.
                 try {
-                    osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))->insert(
+                    Db::table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))->insert(
                         array('fk_i_category_id' => $c, 'fk_i_field_id' => $id)
                     );
                 } catch (\mindstellar\database\DbException $e) {
                     $return = false;
                 }
             }
+            $this->cacheChanged();
 
             return $return;
         }
@@ -729,19 +673,20 @@ class Field extends DAO
      */
     public function cleanCategoriesFromField($id)
     {
-        // A null id used to fail the query and report false, where a bound null
-        // matches nothing and would report 0. Callers distinguish the two, so the
-        // failure value is reproduced explicitly.
+        // A null id reports false, the failure value; callers tell it apart from 0
+        // rows removed.
         if ($id === null) {
             return false;
         }
 
         try {
-            return osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
+            return Db::table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
                 ->where('fk_i_field_id', $id)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {
             return false;
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -763,7 +708,7 @@ class Field extends DAO
                 // failing one has never stopped the rest; the catch stays inside
                 // the loop and the method still falls through to null.
                 try {
-                    osc_db_execute(
+                    Db::execute(
                         'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_multi, s_value) VALUES (?, ?, ?, ?)',
                         array($itemId, $field, $key, $v)
                     );
@@ -775,7 +720,7 @@ class Field extends DAO
             // The legacy write returned bool true on success (a REPLACE is a write
             // query), not the affected-row count, so the boolean is preserved.
             try {
-                osc_db_execute(
+                Db::execute(
                     'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_value) VALUES (?, ?, ?)',
                     array($itemId, $field, $value)
                 );
@@ -785,6 +730,8 @@ class Field extends DAO
                 return false;
             }
         }
+
+        return null;
     }
 
     /**
@@ -807,7 +754,7 @@ class Field extends DAO
         }
 
         try {
-            $row = osc_db_table($this->getTableName())->select('s_meta')->where('pk_i_id', $metaId)->first();
+            $row = Db::table($this->getTableName())->select('s_meta')->where('pk_i_id', $metaId)->first();
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -825,9 +772,11 @@ class Field extends DAO
         $meta = json_encode($meta);
 
         try {
-            return osc_db_table($this->getTableName())->where('pk_i_id', $metaId)->update(array('s_meta' => $meta));
+            return Db::table($this->getTableName())->where('pk_i_id', $metaId)->update(array('s_meta' => $meta));
         } catch (\mindstellar\database\DbException $e) {
             return false;
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -854,7 +803,7 @@ class Field extends DAO
                 return false;
             }
             try {
-                $row = osc_db_table($this->getTableName())->select('s_meta')->where('pk_i_id', $metaId)->first();
+                $row = Db::table($this->getTableName())->select('s_meta')->where('pk_i_id', $metaId)->first();
             } catch (\mindstellar\database\DbException $e) {
                 return false;
             }

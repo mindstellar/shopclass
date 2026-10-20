@@ -39,6 +39,8 @@ if (!function_exists('__')) {
     }
 }
 
+use mindstellar\cache\CacheGroup;
+use mindstellar\cache\CacheManager;
 use mindstellar\job\Job;
 use mindstellar\job\JobQueue;
 use mindstellar\job\JobRegistry;
@@ -57,7 +59,7 @@ if (!function_exists('osc_plugins_path')) {
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
 $table = DB_TABLE_PREFIX . 't_job_queue';
-$queue = JobQueue::instance();
+$queue = JobQueue::getInstance();
 
 /** Raw seed, never through the code under test, so any state a pin needs can be forced. */
 $seed = static function (
@@ -239,6 +241,24 @@ $queue->fail($id, 'last straw');
 pin('the final failure gives up', 'error:a' . JobQueue::MAX_ATTEMPTS . ':wNULL:lkNULL', $rowState($id));
 
 $truncate();
+$id = $seed('test.one');
+$before = time();
+$queue->fail($id, 'slow', 7200, 12);
+pin('a handler\'s own wait replaces the standard backoff', true, abs(strtotime((string) $column($id, 'dt_next_run')) - ($before + 7200)) <= 5);
+
+$truncate();
+$id = $seed('test.one', 'pending', '2000-01-01 00:00:00', null, 8);
+check('a handler\'s own limit replaces MAX_ATTEMPTS: the 9th failure is not the last', !$queue->fail($id, 'more', 60, 12));
+$id = $seed('test.one', 'pending', '2000-01-01 00:00:00', null, 11);
+check('...and the 12th is', $queue->fail($id, 'enough', 60, 12));
+
+$truncate();
+$id = $seed('test.one', 'pending', '2000-01-01 00:00:00', null, 2);
+$before = time();
+$queue->fail($id, 'plain');
+pin('without them the standard backoff holds: 4 minutes after the third', true, abs(strtotime((string) $column($id, 'dt_next_run')) - ($before + 240)) <= 5);
+
+$truncate();
 $queue->fail(999999, 'no such job');
 check('failing a job that is gone is a no-op', true);
 
@@ -331,6 +351,19 @@ pin('the worker runs both jobs', 2, JobWorker::run(10));
 pin('and the handler saw each payload', array(1, 2), $seen);
 pin('a finished job is removed', 0, $queue->count(JobQueue::STATUS_PENDING));
 
+// Another process dropping a cache group between jobs is simulated by writing the generation key directly.
+$generations = array();
+JobRegistry::register('test.gen', static function () use (&$generations) {
+    $generations[] = CacheGroup::generation('jobtest');
+    CacheManager::getInstance()->set('shared:osc_jobtest_cache_gen', end($generations) + 1, 0);
+});
+CacheGroup::generation('jobtest');
+CacheManager::getInstance()->set('shared:osc_jobtest_cache_gen', 7, 0);
+$queue->enqueue('test.gen');
+$queue->enqueue('test.gen');
+JobWorker::run(10);
+pin('each job reads cache generations afresh, so it sees drops made before it', array(7, 8), $generations);
+
 $truncate();
 $id = $queue->enqueue('test.boom', array());
 JobWorker::run(10);
@@ -386,6 +419,15 @@ $first = $queue->enqueue('test.slow', array());
 $rest  = array($queue->enqueue('test.slow', array()), $queue->enqueue('test.slow', array()));
 pin('a spent budget stops after the job that spent it', 1, JobWorker::run(1));
 pin('and hands the unrun jobs back', array('pending:a0:wNULL:lkNULL', 'pending:a0:wNULL:lkNULL'), array_map($rowState, $rest));
+
+$truncate();
+JobRegistry::register('test.leak', static function () {
+    \mindstellar\database\Db::beginTransaction();
+});
+$id = $queue->enqueue('test.leak', array());
+@JobWorker::run(10);
+pin('a job that leaves a transaction open does not leave it to the next job', false, \mindstellar\database\Db::inTransaction());
+pin('and it fails, since its writes were undone', 'pending:a1:wNULL:lkNULL', $rowState($id));
 
 $truncate();
 pin('an empty queue costs nothing and runs nothing', 0, JobWorker::run(10));
@@ -621,6 +663,184 @@ pin('a run locked past a stale lock is stuck, a fresh one is not', 1, $queue->he
 pin('overdue is the waiting job due longest, failed ones aside', '2001-01-01 00:00:00', $queue->health()['overdue']);
 
 $truncate();
+
+harness_section('Db::retryOnce');
+$tries = 0;
+$flaky = static function () use (&$tries): string {
+    if (++$tries === 1) {
+        throw new \mindstellar\database\DbException('Deadlock found');
+    }
+
+    return 'done';
+};
+pin('outside a transaction a failed try is run once more', array('done', 2), array(\mindstellar\database\Db::retryOnce($flaky), $tries));
+$tries  = 0;
+$thrown = false;
+try {
+    \mindstellar\database\Db::transaction(static function () use ($flaky) {
+        return \mindstellar\database\Db::retryOnce($flaky);
+    });
+} catch (\mindstellar\database\DbException $e) {
+    $thrown = true;
+}
+pin('inside a transaction it throws after one try', array(true, 1), array($thrown, $tries));
+
+harness_section('Waking a listening worker');
+
+$truncate();
+$wakeSent   = array();
+$wakeClient = new class ($wakeSent) implements \mindstellar\cache\RedisClient {
+    public function __construct(private array &$sent)
+    {
+    }
+
+    public function command(string ...$args): mixed
+    {
+        $this->sent[] = $args[0];
+
+        return true;
+    }
+};
+require_once __DIR__ . '/../lib/cache-swap.php';
+$wakeBefore = test_cache_swap(new \mindstellar\cache\RedisCache($wakeClient));
+
+$queue->enqueue('test.ok', array('n' => 1));
+pin('a job due now sends the signal', array('LPUSH', 'LTRIM'), $wakeSent);
+$wakeSent = array();
+$queue->enqueue('test.ok', array('n' => 2), array('delay' => 60));
+pin('a job held for later does not', array(), $wakeSent);
+$queue->enqueueMany('test.ok', array(array('n' => 3), array('n' => 4)));
+pin('a bulk enqueue sends one', array('LPUSH', 'LTRIM'), $wakeSent);
+$wakeSent = array();
+$id   = $queue->enqueue('test.boom', array());
+$wakeSent = array();
+JobWorker::run(10);
+pin('a failure waiting to back off does not', array(), $wakeSent);
+$table = DB_TABLE_PREFIX . 't_job_queue';
+\mindstellar\database\Db::table($table)->where('pk_i_id', $id)->update(array('s_status' => JobQueue::STATUS_ERROR));
+$queue->retry($id);
+pin('a retried job does', array('LPUSH', 'LTRIM'), $wakeSent);
+\mindstellar\database\Db::table($table)->where('pk_i_id', $id)->update(array('s_status' => JobQueue::STATUS_ERROR));
+$wakeSent = array();
+$queue->retryAll();
+pin('so does retrying them all', array('LPUSH', 'LTRIM'), $wakeSent);
+$truncate();
+$id       = $queue->enqueue('test.ok', array('n' => 5));
+$wakeSent = array();
+$queue->claim(1);
+$queue->repeat($id, array('n' => 6), 60);
+pin('a job carried on later does not', array(), $wakeSent);
+$queue->claim(1);
+$queue->release(array($id));
+pin('a claimed job handed back does', array('LPUSH', 'LTRIM'), $wakeSent);
+$queue->claim(1);
+$wakeSent = array();
+$queue->repeat($id, array('n' => 7));
+pin('and so does one carried on now', array('LPUSH', 'LTRIM'), $wakeSent);
+test_cache_swap($wakeBefore);
+
+harness_section('Listening');
+
+final class JobQueueStopListening extends RuntimeException
+{
+}
+$truncate();
+$listenSlept = array();
+$listenStop  = static function (int $seconds) use (&$listenSlept): void {
+    $listenSlept[] = $seconds;
+
+    throw new JobQueueStopListening();
+};
+$listenFor = static function (callable $work) use ($listenStop): int {
+    $calls = 0;
+    try {
+        JobWorker::listen(60, static function () use ($work, &$calls): void {
+            $calls++;
+            $work();
+        }, $listenStop);
+    } catch (JobQueueStopListening $e) {
+    }
+
+    return $calls;
+};
+
+$seen = array();
+JobRegistry::register('test.listen', static function (Job $job) use (&$seen) {
+    $seen[] = $job->get('n');
+});
+$queue->enqueue('test.listen', array('n' => 1));
+$queue->enqueue('test.listen', array('n' => 2));
+pin('due jobs start the worker once', 1, $listenFor(static fn () => JobWorker::run(10)));
+pin('which runs them all', array(1, 2), $seen);
+pin('then, with no Redis cache, it sleeps a few seconds', array(JobWorker::LISTEN_POLL), $listenSlept);
+
+$truncate();
+$listenSlept = array();
+$queue->enqueue('test.ok', array('n' => 3), array('delay' => 60));
+pin('a job held for later starts nothing', 0, $listenFor(static fn () => JobWorker::run(10)));
+
+$queue->enqueue('test.ok', array('n' => 4));
+pin('a worker that gets nothing done is not started again at once', 1, $listenFor(static function (): void {
+}));
+
+$truncate();
+$queue->enqueue('test.listen', array('n' => 5));
+$queue->enqueue('test.listen', array('n' => 6));
+$queue->enqueue('test.listen', array('n' => 7));
+pin('a worker that gets something done is started again at once', 3, $listenFor(static function () use ($queue): void {
+    foreach ($queue->claim(1) as $row) {
+        $queue->complete((int) $row['pk_i_id']);
+    }
+}));
+
+$truncate();
+$listenSlept = array();
+$listenWaits = array();
+$listenRedis = new class ($wakeClient, $listenWaits) extends \mindstellar\cache\RedisCache {
+    /** @var array<int,bool|null> */
+    public array $replies = array();
+
+    public function __construct(\mindstellar\cache\RedisClient $client, private array &$waits)
+    {
+        parent::__construct($client);
+    }
+
+    public function waitSignal(string $name, int $seconds): ?bool
+    {
+        $this->waits[] = $name . ':' . $seconds;
+        if ($this->replies === array()) {
+            throw new JobQueueStopListening();
+        }
+
+        return array_shift($this->replies);
+    }
+};
+test_cache_swap($listenRedis);
+$listenRedis->replies = array(false, true);
+$listenFor(static fn () => null);
+pin('with Redis it waits for the signal instead of sleeping', array('jobs:30', 'jobs:30', 'jobs:30'), $listenWaits);
+pin('so it never sleeps', array(), $listenSlept);
+$listenWaits          = array();
+$listenRedis->replies = array(null);
+$listenFor(static fn () => null);
+pin('a Redis server that is down falls back to sleeping', array(JobWorker::LISTEN_POLL), $listenSlept);
+test_cache_swap($wakeBefore);
+$truncate();
+
+$listenTicks = 0;
+$tickGen     = null;
+CacheGroup::generation('ticktest');
+CacheManager::getInstance()->set('shared:osc_ticktest_cache_gen', 3, 0);
+try {
+    JobWorker::listen(60, static function (): void {
+    }, $listenStop, static function () use (&$listenTicks, &$tickGen): void {
+        $listenTicks++;
+        $tickGen = CacheGroup::generation('ticktest');
+    });
+} catch (JobQueueStopListening $e) {
+}
+pin('the scheduled tasks run once when it starts', 1, $listenTicks);
+pin('and read cache generations afresh', 3, $tickGen);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

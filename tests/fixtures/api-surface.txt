@@ -1,0 +1,170 @@
+function osc_api_admin_session_meta(): string
+function osc_api_enabled(): bool
+function osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ["public"]): void
+function osc_api_register_route(string $method, string $path, array $spec): void
+function osc_api_register_schema(string $slug, string $name, array $schema): array
+function osc_api_session_meta(?mindstellar\apikey\IssuedToken $token = NULL): string
+function osc_api_session_token(): string
+function osc_api_url(string $path = '', ?string $version = NULL): string
+function osc_is_api_request(): bool
+function osc_user_api_access_url(): string
+function osc_webhook_emit(string $type, array $data, array $options = []): ?string
+mindstellar\api\ApiCall::public actor(string $scope = ''): mindstellar\auth\Actor
+mindstellar\api\ApiCall::public arg(string $name): ?string
+mindstellar\api\ApiCall::public args(): array
+mindstellar\api\ApiCall::public credential(): mindstellar\apikey\Credential
+mindstellar\api\ApiCall::public input(): array
+mindstellar\api\ApiCall::public intArg(string $name = 'id'): int
+mindstellar\api\ApiCall::public kit(): mindstellar\api\ApiKit
+mindstellar\api\ApiCall::public listingActor(): mindstellar\auth\Actor
+mindstellar\api\ApiCall::public request(): mindstellar\api\Request
+mindstellar\api\ApiCall::public userId(): int
+mindstellar\api\ApiKit::public context(mindstellar\api\ApiCall $call, string $object, array $members, array $includes = []): mindstellar\api\serializer\ViewContext
+mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
+mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array
+mindstellar\api\ApiKit::public listingContext(mindstellar\api\ApiCall $call): mindstellar\api\serializer\ViewContext
+mindstellar\api\ApiKit::public listingsById(mindstellar\api\ApiCall $call, array $ids, mindstellar\api\serializer\ViewContext $context): array
+mindstellar\api\Problem code api_disabled = 403
+mindstellar\api\Problem code banned = 403
+mindstellar\api\Problem code conflict = 409
+mindstellar\api\Problem code cross_origin = 403
+mindstellar\api\Problem code feature_disabled = 403
+mindstellar\api\Problem code forbidden = 403
+mindstellar\api\Problem code idempotency_in_flight = 409
+mindstellar\api\Problem code idempotency_key_reused = 422
+mindstellar\api\Problem code insufficient_scope = 403
+mindstellar\api\Problem code invalid_cursor = 400
+mindstellar\api\Problem code invalid_grant = 400
+mindstellar\api\Problem code invalid_header = 400
+mindstellar\api\Problem code invalid_json = 400
+mindstellar\api\Problem code invalid_request = 400
+mindstellar\api\Problem code invalid_scope = 400
+mindstellar\api\Problem code listing_limit = 422
+mindstellar\api\Problem code login_blocked = 429
+mindstellar\api\Problem code maintenance = 503
+mindstellar\api\Problem code method_not_allowed = 405
+mindstellar\api\Problem code not_found = 404
+mindstellar\api\Problem code not_owner = 403
+mindstellar\api\Problem code precondition_failed = 412
+mindstellar\api\Problem code rate_limited = 429
+mindstellar\api\Problem code server_error = 500
+mindstellar\api\Problem code session_required = 401
+mindstellar\api\Problem code token_expired = 401
+mindstellar\api\Problem code too_large = 413
+mindstellar\api\Problem code too_many_failures = 429
+mindstellar\api\Problem code unauthorized = 401
+mindstellar\api\Problem code unsupported_grant_type = 400
+mindstellar\api\Problem code unsupported_media_type = 415
+mindstellar\api\Problem code validation_failed = 422
+mindstellar\api\Problem code wrong_credential = 403
+mindstellar\api\Problem::FIELD_CODES = ["type","enum","minimum","maximum","minLength","maxLength","pattern","format","minItems","maxItems","minProperties","required","additionalProperties","invalid","unknown","taken","mismatch","limit","rejected"]
+mindstellar\api\Problem::PLUGIN_CODE = "/^ext_[a-z0-9]+(?:_[a-z0-9]+)+$/D"
+mindstellar\api\Problem::TYPE_BASE = "https://mindstellar.com/docs/developers/api/errors/#"
+mindstellar\api\Problem::public static make(string $code, string $detail = '', array $extra = []): mindstellar\api\Response
+mindstellar\api\Problem::public static validation(array $errors): mindstellar\api\Response
+mindstellar\api\ProblemException::public response(): mindstellar\api\Response
+mindstellar\api\ProblemException::public static field(string $pointer, string $code, string $message, string $in = 'body'): self
+mindstellar\api\ProblemException::public static from(mindstellar\api\Response $response): self
+mindstellar\api\ProblemException::public static notFound(string $detail): self
+mindstellar\api\ProblemException::public static of(string $code, string $detail = '', array $extra = []): self
+mindstellar\api\ProblemException::public static tooMany(string $message, int $retryAfter, string $code = 'rate_limited'): self
+mindstellar\api\Request::public header(string $name): string
+mindstellar\api\Request::public input(): array
+mindstellar\api\Request::public ip(): string
+mindstellar\api\Request::public isRead(): bool
+mindstellar\api\Request::public isWrite(): bool
+mindstellar\api\Request::public method(): string
+mindstellar\api\Request::public path(): ?string
+mindstellar\api\Request::public query(): array
+mindstellar\api\Request::public queryBool(string $name, bool $default = false): bool
+mindstellar\api\Request::public queryIds(string $name): array
+mindstellar\api\Request::public queryInt(string $name, int $default = 0): int
+mindstellar\api\Request::public queryList(string $name): array
+mindstellar\api\Request::public queryString(string $name, string $default = ''): string
+mindstellar\api\Request::public routePath(): string
+mindstellar\api\Request::public version(): string
+mindstellar\api\Response::public body(): ?array
+mindstellar\api\Response::public static collection(array $items, array $meta = [], array $links = {"next":null}): self
+mindstellar\api\Response::public static created(array $data, string $location, array $extra = []): self
+mindstellar\api\Response::public static noContent(): self
+mindstellar\api\Response::public static ok(array $data, int $status = 200, array $extra = []): self
+mindstellar\api\Response::public status(): int
+mindstellar\api\Response::public withBodyMember(string $name, mixed $value): self
+mindstellar\api\Response::public withHeader(string $name, string $value): self
+mindstellar\api\RouteSpec::AUTH_ADMIN = "admin"
+mindstellar\api\RouteSpec::AUTH_NONE = "none"
+mindstellar\api\RouteSpec::AUTH_PUBLIC = "public"
+mindstellar\api\RouteSpec::AUTH_USER = "user"
+mindstellar\api\RouteSpec::NUMERIC_ARGS = ["id","photo"]
+mindstellar\api\RouteSpec::PLUGIN_KEYS = ["handler","auth","scope","summary","description","tags","query","body","responses","deprecated","sunset","where","versions","plugin","replayable"]
+mindstellar\api\RouteSpec::public auth(): string
+mindstellar\api\RouteSpec::public key(): string
+mindstellar\api\RouteSpec::public method(): string
+mindstellar\api\RouteSpec::public path(): string
+mindstellar\api\RouteSpec::public plugin(): ?string
+mindstellar\api\RouteSpec::public scope(): ?string
+mindstellar\api\Warning::CODES = ["listing_pending","photo_skipped","comment_pending","email_confirmation_sent"]
+mindstellar\api\Warning::COMMENT_PENDING = "comment_pending"
+mindstellar\api\Warning::EMAIL_CONFIRMATION_SENT = "email_confirmation_sent"
+mindstellar\api\Warning::LISTING_PENDING = "listing_pending"
+mindstellar\api\Warning::PHOTO_SKIPPED = "photo_skipped"
+mindstellar\api\Warning::public static member(array $warnings): array
+mindstellar\api\read\Page::public static whole(array $items, mindstellar\api\serializer\Links $links, mindstellar\api\ApiCall $call): mindstellar\api\Response
+mindstellar\api\routing\Router::PLUGIN_PATH = "#^ext/([a-z0-9-]+)/.+#D"
+mindstellar\api\routing\Router::SHARED_COMPONENTS = ["Problem","Listing","ListingPage","Photo","PageMeta","PageLinks"]
+mindstellar\api\schema\ExtensionSchemas::NAME = "/^Ext[A-Z][A-Za-z0-9]*$/D"
+mindstellar\api\schema\Schema::public static dateInput(string $description, bool $days = false, bool $nullable = false): array
+mindstellar\api\schema\Schema::public static listOf(array $values): array
+mindstellar\api\schema\Schema::public static nullable(string $type, string $description = ''): array
+mindstellar\api\schema\Schema::public static object(array $properties, array $required = []): array
+mindstellar\api\schema\Schema::public static ref(string $name): array
+mindstellar\api\schema\Schema::public static time(string $description = ''): array
+mindstellar\api\schema\Schema::public static wholeList(string $item): array
+mindstellar\api\serializer\ExtensionMembers::NAME = "/^[a-z0-9_]+$/D"
+mindstellar\api\serializer\ExtensionMembers::OBJECTS = ["listing","user","category"]
+mindstellar\api\serializer\ExtensionMembers::SLUG = "/^[a-z0-9-]+$/D"
+mindstellar\api\serializer\Links::public api(string $path, ?string $version = NULL): string
+mindstellar\api\serializer\Links::public avatar(int $userId): string
+mindstellar\api\serializer\Links::public price(?int $micros, string $symbol): string
+mindstellar\api\serializer\Links::public user(int $id, string $username): string
+mindstellar\api\serializer\SparseFieldset::public wants(string $member): bool
+mindstellar\api\serializer\ViewContext::ADMIN = "admin"
+mindstellar\api\serializer\ViewContext::OWNER = "owner"
+mindstellar\api\serializer\ViewContext::PUBLIC = "public"
+mindstellar\api\serializer\ViewContext::public fields(): ?mindstellar\api\serializer\SparseFieldset
+mindstellar\api\serializer\ViewContext::public include(): array
+mindstellar\api\serializer\ViewContext::public includes(string $name): bool
+mindstellar\api\serializer\ViewContext::public locale(): string
+mindstellar\api\serializer\ViewContext::public version(): string
+mindstellar\api\serializer\ViewContext::public view(): string
+mindstellar\api\serializer\ViewContext::public viewer(): mindstellar\apikey\Credential
+mindstellar\api\serializer\ViewContext::public wants(string $member): bool
+mindstellar\apikey\Credential::public adminId(): ?int
+mindstellar\apikey\Credential::public has(string $scope): bool
+mindstellar\apikey\Credential::public isAdmin(): bool
+mindstellar\apikey\Credential::public isAdminSession(): bool
+mindstellar\apikey\Credential::public isAnonymous(): bool
+mindstellar\apikey\Credential::public isModerator(): bool
+mindstellar\apikey\Credential::public isPageToken(): bool
+mindstellar\apikey\Credential::public isSession(): bool
+mindstellar\apikey\Credential::public isUser(): bool
+mindstellar\apikey\Credential::public kind(): string
+mindstellar\apikey\Credential::public scopes(): array
+mindstellar\apikey\Credential::public userId(): ?int
+mindstellar\apikey\CredentialKind::ANONYMOUS = "anonymous"
+mindstellar\apikey\CredentialKind::GUEST = "guest"
+mindstellar\apikey\CredentialKind::KEY = "key"
+mindstellar\apikey\CredentialKind::PUBLIC = "public"
+mindstellar\apikey\CredentialKind::SESSION = "session"
+mindstellar\apikey\CredentialKind::USER = "user"
+mindstellar\apikey\Scopes::AUDIENCES = ["admin","moderator","user"]
+mindstellar\apikey\Scopes::AUDIENCE_ADMIN = "admin"
+mindstellar\apikey\Scopes::AUDIENCE_MODERATOR = "moderator"
+mindstellar\apikey\Scopes::AUDIENCE_USER = "user"
+mindstellar\apikey\Scopes::PLUGIN_SCOPE = "/^ext:[a-z0-9-]+:[a-z0-9:_-]+$/D"
+mindstellar\auth\Actor::public adminId(): ?int
+mindstellar\auth\Actor::public ip(): string
+mindstellar\auth\Actor::public isAdmin(): bool
+mindstellar\auth\Actor::public isGuest(): bool
+mindstellar\auth\Actor::public userId(): ?int
+mindstellar\webhook\Events::PLUGIN_TYPE = "/^ext\\.[a-z0-9][a-z0-9_-]{0,39}\\.[a-z0-9][a-z0-9_.]{0,59}$/D"

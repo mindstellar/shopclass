@@ -42,3 +42,37 @@
     background-color: var(--osc-bronze-tint, #f1f1f1);
     color: var(--osc-bronze, #8f5d00);
 }
+
+.osc-ac-option .osc-suggest-thumb {
+    display: inline-block;
+    border-radius: var(--osc-radius-sm, .2rem);
+    height: 2rem;
+    margin-right: .5rem;
+    object-fit: cover;
+    vertical-align: middle;
+    width: 2rem;
+}
+
+.osc-ac-option .osc-suggest-count {
+    color: var(--osc-ink-muted, #6b6560);
+    float: right;
+    font-size: .8125rem;
+}
+
+.osc-ac-option .osc-suggest-heading {
+    color: var(--osc-ink-muted, #6b6560);
+    display: block;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    margin-bottom: .25rem;
+    text-transform: uppercase;
+}
+
+.osc-ac-option .osc-suggest-meta {
+    color: var(--osc-ink-muted, #6b6560);
+    display: block;
+    font-size: .8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

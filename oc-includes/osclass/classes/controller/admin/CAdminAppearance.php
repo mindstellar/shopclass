@@ -21,9 +21,30 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
+use mindstellar\widgets\WidgetStore;
 
 class CAdminAppearance extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
+    /** Each action and the method that answers it; any other action goes to themes(). */
+    private const ACTIONS = array(
+        'add'                  => 'addForm',
+        'add_post'             => 'addPost',
+        'delete'               => 'deleteTheme',
+        'widgets'              => 'widgets',
+        'add_widget'           => 'addWidgetForm',
+        'edit_widget'          => 'editWidgetForm',
+        'delete_widget'        => 'deleteWidget',
+        'edit_widget_post'     => 'editWidgetPost',
+        'add_widget_post'      => 'addWidgetPost',
+        'widget_create_post'   => 'createWidgetPost',
+        'widget_move_post'     => 'moveWidgetPost',
+        'reorder_widgets_post' => 'reorderWidgetsPost',
+        'activate'             => 'activateTheme',
+        'render'               => 'render',
+    );
+
     //Business Layer...
 
     /**
@@ -35,404 +56,451 @@ class CAdminAppearance extends AdminSecBaseModel
     public function doModel()
     {
         parent::doModel();
-        //specific things for this class
-        switch ($this->action) {
-            case ('add'):
-                $this->doView('appearance/add.php');
-                break;
-            case ('add_post'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
-                    break;
-                }
-                osc_csrf_check();
-                $filePackage = Params::getFiles('package');
-                if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
-                    $path   = osc_themes_path();
-                    $status = (int)osc_unzip_file($filePackage['tmp_name'], $path);
-                    @unlink($filePackage['tmp_name']);
-                } else {
-                    $status = 3;
-                }
+        $method = $this->actionMethod('themes');
 
-                switch ($status) {
-                    case (0):
-                        $msg = _m('The theme folder is not writable');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (1):
-                        $msg = _m('The theme has been installed correctly');
-                        osc_add_flash_ok_message($msg, 'admin');
-                        break;
-                    case (2):
-                        $msg = _m('The zip file is not valid');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (3):
-                        $msg = _m('No file was uploaded');
-                        osc_add_flash_error_message($msg, 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=add');
-                        break;
-                    case (-1):
-                    default:
-                        $msg = _m('There was a problem adding the theme');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                }
-
-                $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
-                break;
-            case ('delete'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
-                    break;
-                }
-                osc_csrf_check();
-                $theme   = Params::getParamString('webtheme');
-                $themes  = WebThemes::newInstance();
-                // The name decides which directory is included and then deleted, so it is
-                // matched against the installed themes rather than trusted.
-                $known   = $themes->getListThemes();
-                // A theme another one extends: deleting it leaves that child rendering on
-                // the default theme, which is a broken site nobody asked for.
-                $needed  = array();
-                foreach ($known as $other) {
-                    $info = $themes->loadThemeInfo($other);
-                    if (is_array($info) && !empty($info['template']) && $info['template'] === $theme
-                        && $other !== $theme
-                    ) {
-                        $needed[] = $other;
-                    }
-                }
-
-                if ($theme === '') {
-                    osc_add_flash_error_message(_m('No theme selected'), 'admin');
-                } elseif (!in_array($theme, $known, true)) {
-                    osc_add_flash_error_message(_m('That theme is not installed'), 'admin');
-                } elseif ($theme === osc_current_web_theme()) {
-                    osc_add_flash_error_message(_m('Current theme can not be deleted'), 'admin');
-                } elseif ($needed !== array()) {
-                    osc_add_flash_error_message(
-                        sprintf(
-                            _m('"%1$s" extends this theme. Delete it first, or switch it to '
-                               . 'another parent.'),
-                            implode('", "', $needed)
-                        ),
-                        'admin'
-                    );
-                } else {
-                    if (file_exists(osc_content_path() . 'themes/' . $theme . '/functions.php')) {
-                        include osc_content_path() . 'themes/' . $theme . '/functions.php';
-                    }
-                    osc_run_hook('theme_delete_' . $theme);
-                    if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {
-                        osc_add_flash_ok_message(_m('Theme removed successfully'), 'admin');
-                    } else {
-                        osc_add_flash_error_message(_m('There was a problem removing the theme'), 'admin');
-                    }
-                }
-
-                $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
-                break;
-                /* widgets */
-            case ('widgets'):
-                $info = WebThemes::newInstance()->loadThemeInfo(osc_theme());
-
-                $this->_exportVariableToView('info', $info);
-
-                $this->doView('appearance/widgets.php');
-                break;
-            case ('add_widget'):
-                $this->doView('appearance/add_widget.php');
-                break;
-            case ('edit_widget'):
-                $id = Params::getParam('id');
-
-                $widget = Widget::newInstance()->findByPrimaryKey($id);
-                $this->_exportVariableToView('widget', $widget);
-
-                $this->doView('appearance/add_widget.php');
-                break;
-            case ('delete_widget'):
-                osc_csrf_check();
-                $widgetId = Params::getParamInt('id');
-                osc_run_hook('before_delete_widget', $widgetId);
-                Widget::newInstance()->delete(
-                    array('pk_i_id' => $widgetId)
-                );
-                osc_run_hook('after_delete_widget', $widgetId);
-                osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
-                $this->redirectTo($this->widgetReturnUrl());
-                break;
-            case ('edit_widget_post'):
-                osc_csrf_check();
-                if (!osc_validate_text(Params::getParam('description'))) {
-                    osc_add_flash_error_message(_m('Description field is required'), 'admin');
-                    $this->redirectTo($this->widgetReturnUrl());
-                }
-
-                $type = $this->resolveWidgetType(Params::getParam('s_type'));
-
-                if ($type !== null) {
-                    $res = Widget::newInstance()->update(
-                        array(
-                            's_description' => Params::getParam('description'),
-                            's_content'     => '',
-                            's_type'        => $type['id'],
-                            's_config'      => json_encode($this->buildWidgetConfig($type))
-                        ),
-                        array('pk_i_id' => Params::getParam('id'))
-                    );
-                } else {
-                    $res = Widget::newInstance()->update(
-                        array(
-                            's_description' => Params::getParam('description'),
-                            's_content'     => Params::getParam('content', false, false)
-                        ),
-                        array('pk_i_id' => Params::getParam('id'))
-                    );
-                }
-
-                // update() returns affectedRows(), and false only on a query error.
-                // Saving a widget without changing any value affects 0 rows, which is
-                // success with nothing to do — not a failure.
-                if ($res !== false) {
-                    osc_purge_page_cache('widget');
-                    osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
-                }
-                $this->redirectTo($this->widgetReturnUrl());
-                break;
-            case ('add_widget_post'):
-                osc_csrf_check();
-                if (!osc_validate_text(Params::getParam('description'))) {
-                    osc_add_flash_error_message(_m('Description field is required'), 'admin');
-                    $this->redirectTo($this->widgetReturnUrl());
-                }
-
-                $location = Params::getParam('location');
-                $type     = $this->resolveWidgetType(Params::getParam('s_type'));
-
-                if ($type !== null) {
-                    Widget::newInstance()->insert(
-                        array(
-                            's_location'    => $location,
-                            'e_kind'        => 'html',
-                            's_description' => Params::getParam('description'),
-                            's_content'     => '',
-                            's_type'        => $type['id'],
-                            's_config'      => json_encode($this->buildWidgetConfig($type)),
-                            'i_order'       => Widget::newInstance()->getNextOrder($location)
-                        )
-                    );
-                } else {
-                    Widget::newInstance()->insert(
-                        array(
-                            's_location'    => $location,
-                            'e_kind'        => 'html',
-                            's_description' => Params::getParam('description'),
-                            's_content'     => Params::getParam('content', false, false),
-                            'i_order'       => Widget::newInstance()->getNextOrder($location)
-                        )
-                    );
-                }
-                osc_purge_page_cache('widget');
-                osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
-                $this->redirectTo($this->widgetReturnUrl());
-                break;
-            case ('widget_create_post'):
-                // Dropping a type from the palette creates a widget of that type in
-                // that section. JSON, so the builder can insert the row without a
-                // page load; the caller opens its editor straight away because a
-                // fresh widget has no configuration yet.
-                if (!defined('IS_AJAX')) {
-                    define('IS_AJAX', true);
-                }
-                osc_csrf_check();
-
-                $location = Params::getParam('location');
-                $type     = $this->resolveWidgetType(Params::getParam('s_type'));
-                $label    = $type !== null ? $type['label'] : __('Custom HTML');
-
-                $row = array(
-                    's_location'    => $location,
-                    'e_kind'        => 'html',
-                    's_description' => $label,
-                    's_content'     => '',
-                    'i_order'       => Widget::newInstance()->getNextOrder($location)
-                );
-                if ($type !== null) {
-                    $row['s_type']   = $type['id'];
-                    $row['s_config'] = json_encode($this->buildWidgetConfig($type));
-                }
-                // New code goes through the query builder, which returns the new
-                // AUTO_INCREMENT id directly. (The legacy DAO's insert() reports only
-                // success, and returning that handed the builder id "1" — a dragged-in
-                // widget then adopted widget 1's row and could overwrite it.)
-                try {
-                    $newId = osc_db_table(DB_TABLE_PREFIX . 't_widget')->insert($row);
-                } catch (Throwable $e) {
-                    $newId = 0;
-                }
-                \mindstellar\cache\CacheGroup::invalidate('widget');
-                if ($newId > 0) {
-                    osc_purge_page_cache('widget');
-                }
-
-                AjaxResponse::json($newId > 0
-                    ? array(
-                        'error'       => 0,
-                        'id'          => (int)$newId,
-                        'description' => $label,
-                        'type_label'  => $type !== null ? $type['label'] : __('Custom HTML'),
-                        'location'    => $location
-                    )
-                    : array('error' => 1));
-                exit;
-            case ('widget_move_post'):
-                // Reorder, and move between sections. reorder_widgets_post refuses ids
-                // that do not already belong to the location — correct for a pure
-                // reorder, but it is exactly what has to change for a cross-section
-                // drag, so the move is its own endpoint with its own validation.
-                if (!defined('IS_AJAX')) {
-                    define('IS_AJAX', true);
-                }
-                osc_csrf_check();
-
-                $location = Params::getParam('location');
-                $moved    = Params::getParamInt('id');
-                $ids      = Params::getParamArray('ids');
-                $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
-
-                // The section must be one the active theme actually offers, so a
-                // forged post cannot invent a location.
-                $locations = osc_widget_locations();
-                $widgetRow = $moved > 0 ? Widget::newInstance()->findByPrimaryKey($moved) : null;
-                $ok        = false;
-
-                if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
-                    osc_db_table(DB_TABLE_PREFIX . 't_widget')
-                        ->where('pk_i_id', $moved)
-                        ->update(array('s_location' => $location));
-                    \mindstellar\cache\CacheGroup::invalidate('widget');
-                    // Only ids that live in the target section after the move.
-                    $validIds = array();
-                    foreach (Widget::newInstance()->findByLocation($location) as $widget) {
-                        $validIds[(int)$widget['pk_i_id']] = true;
-                    }
-                    $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
-                        return isset($validIds[$id]);
-                    }));
-                    $ok = Widget::newInstance()->reorder($ids);
-                    osc_purge_page_cache('widget');
-                }
-
-                AjaxResponse::json(array('error' => $ok ? 0 : 1));
-                exit;
-            case ('reorder_widgets_post'):
-                // JSON endpoint: flagging the request as AJAX makes the CSRF check
-                // emit a JSON error and exit on failure instead of flash+redirect.
-                if (!defined('IS_AJAX')) {
-                    define('IS_AJAX', true);
-                }
-                osc_csrf_check();
-
-                $location = Params::getParam('location');
-                $ids      = Params::getParamArray('ids');
-                // Integer-validate the id list, dropping any non-numeric value.
-                $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
-
-                // Defence in depth: only reorder ids that currently belong to this
-                // location, so a forged post cannot move widgets from elsewhere.
-                $validIds = array();
-                foreach (Widget::newInstance()->findByLocation($location) as $widget) {
-                    $validIds[(int) $widget['pk_i_id']] = true;
-                }
-                $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
-                    return isset($validIds[$id]);
-                }));
-
-                $ok = Widget::newInstance()->reorder($ids);
-                if ($ok) {
-                    osc_purge_page_cache('widget');
-                }
-
-                AjaxResponse::json(array('error' => $ok ? 0 : 1));
-                exit;
-                /* /widget */
-            case ('activate'):
-                osc_csrf_check();
-                // Only an installed theme, the same rule theme:activate applies on the CLI.
-                $theme = Params::getParamString('theme');
-                if (!in_array($theme, WebThemes::newInstance()->getListThemes(), true)) {
-                    osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
-                    break;
-                }
-                osc_set_preference('theme', $theme);
-                // Clear opcache so the new theme's code runs at once even with
-                // opcache.validate_timestamps=Off (see Plugins::resetOpcache).
-                Plugins::resetOpcache();
-                osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
-                osc_run_hook('theme_activate', $theme);
-                $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
-                break;
-            case ('render'):
-                if (Params::existParam('route')) {
-                    $routes = Rewrite::newInstance()->getRoutes();
-                    $rid    = Params::getParam('route');
-                    $file   = '../';
-                    if (isset($routes[$rid]['file'])) {
-                        $file = $routes[$rid]['file'];
-                    }
-                } else {
-                    // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
-                    // This will be REMOVED in 3.6
-                    $file = Params::getParam('file');
-                    // We pass the GET variables (in case we have somes)
-                    if (preg_match('|(.+?)\?(.*)|', $file, $match)) {
-                        $file = $match[1];
-                        if (preg_match_all('|&([^=]+)=([^&]*)|', urldecode('&' . $match[2] . '&'), $get_vars)) {
-                            for ($var_k = 0; $var_k < count($get_vars[1]); $var_k++) {
-                                Params::setParam($get_vars[1][$var_k], $get_vars[2][$var_k]);
-                            }
-                        }
-                    } else {
-                        $file = Params::getParam('file');
-                    }
-                }
-
-                // Only a .php file inside the themes or plugins folder may be rendered.
-                $resolved = PluginAjaxFile::resolveWithin(
-                    (string) $file,
-                    osc_base_path(),
-                    array(osc_themes_path(), osc_plugins_path())
-                );
-                if ($resolved === null) {
-                    osc_add_flash_warning_message(__('Error loading theme custom file'), 'admin');
-                }
-                $this->_exportVariableToView('file', $resolved);
-                $this->doView('appearance/view.php');
-                break;
-            default:
-                if (Params::getParam('checkUpdated') != '') {
-                    osc_admin_toolbar_update_themes(true);
-                }
-
-                $themes = WebThemes::newInstance()->getListThemes();
-
-                //preparing variables for the view
-                $this->_exportVariableToView('themes', $themes);
-
-                list($aMarketBrowse, $aMarketUpdates, $aMarketMeta) = $this->buildMarketViewData();
-                $this->_exportVariableToView('aMarketBrowse', $aMarketBrowse);
-                $this->_exportVariableToView('aMarketUpdates', $aMarketUpdates);
-                $this->_exportVariableToView('aMarketMeta', $aMarketMeta);
-
-                $this->doView('appearance/index.php');
-                break;
-        }
+        $this->$method();
     }
 
+    /**
+     * The form to upload a theme package.
+     */
+    private function addForm(): void
+    {
+        $this->doView('appearance/add.php');
+    }
+
+    /**
+     * Install an uploaded theme package.
+     */
+    private function addPost(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
+            return;
+        }
+        osc_csrf_check();
+        $filePackage = Params::getFiles('package');
+        if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
+            $path   = osc_themes_path();
+            $status = (int)osc_unzip_file($filePackage['tmp_name'], $path);
+            @unlink($filePackage['tmp_name']);
+        } else {
+            $status = 3;
+        }
+
+        switch ($status) {
+            case (0):
+                $msg = _m('The theme folder is not writable');
+                osc_add_flash_error_message($msg, 'admin');
+                break;
+            case (1):
+                $msg = _m('The theme has been installed correctly');
+                osc_add_flash_ok_message($msg, 'admin');
+                break;
+            case (2):
+                $msg = _m('The zip file is not valid');
+                osc_add_flash_error_message($msg, 'admin');
+                break;
+            case (3):
+                $msg = _m('No file was uploaded');
+                osc_add_flash_error_message($msg, 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=add');
+                break;
+            case (-1):
+            default:
+                $msg = _m('There was a problem adding the theme');
+                osc_add_flash_error_message($msg, 'admin');
+                break;
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+    }
+
+    /**
+     * Delete a theme's files.
+     */
+    private function deleteTheme(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
+            return;
+        }
+        osc_csrf_check();
+        $theme   = Params::getParamString('webtheme');
+        $themes  = WebThemes::getInstance();
+        // The name decides which directory is included and then deleted, so it is
+        // matched against the installed themes rather than trusted.
+        $known   = $themes->getListThemes();
+        // A theme another one extends: deleting it leaves that child rendering on
+        // the default theme, which is a broken site nobody asked for.
+        $needed  = array();
+        foreach ($known as $other) {
+            $info = $themes->loadThemeInfo($other);
+            if (is_array($info) && !empty($info['template']) && $info['template'] === $theme
+                && $other !== $theme
+            ) {
+                $needed[] = $other;
+            }
+        }
+
+        if ($theme === '') {
+            osc_add_flash_error_message(_m('No theme selected'), 'admin');
+        } elseif (!in_array($theme, $known, true)) {
+            osc_add_flash_error_message(_m('That theme is not installed'), 'admin');
+        } elseif ($theme === osc_current_web_theme()) {
+            osc_add_flash_error_message(_m('Current theme can not be deleted'), 'admin');
+        } elseif ($needed !== array()) {
+            osc_add_flash_error_message(
+                sprintf(
+                    _m('"%1$s" extends this theme. Delete it first, or switch it to '
+                       . 'another parent.'),
+                    implode('", "', $needed)
+                ),
+                'admin'
+            );
+        } else {
+            if (file_exists(osc_content_path() . 'themes/' . $theme . '/functions.php')) {
+                include osc_content_path() . 'themes/' . $theme . '/functions.php';
+            }
+            osc_run_hook('theme_delete_' . $theme);
+            if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {
+                osc_add_flash_ok_message(_m('Theme removed successfully'), 'admin');
+            } else {
+                osc_add_flash_error_message(_m('There was a problem removing the theme'), 'admin');
+            }
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+    }
+
+    /**
+     * The widgets screen.
+     */
+    private function widgets(): void
+    {
+        $info = WebThemes::getInstance()->loadThemeInfo(osc_theme());
+
+        $this->_exportVariableToView('info', $info);
+
+        $this->doView('appearance/widgets.php');
+    }
+
+    /**
+     * The form for a new widget.
+     */
+    private function addWidgetForm(): void
+    {
+        $this->doView('appearance/add_widget.php');
+    }
+
+    /**
+     * The widget editor.
+     */
+    private function editWidgetForm(): void
+    {
+        try {
+            $widget = WidgetStore::find(Params::getParamInt('id')) ?? false;
+        } catch (Throwable $e) {
+            $widget = false;
+        }
+        $this->_exportVariableToView('widget', $widget);
+
+        $this->doView('appearance/add_widget.php');
+    }
+
+    /**
+     * Delete a widget.
+     */
+    private function deleteWidget(): void
+    {
+        osc_csrf_check();
+        $widgetId = Params::getParamInt('id');
+        osc_run_hook('before_delete_widget', $widgetId);
+        try {
+            WidgetStore::delete($widgetId);
+        } catch (Throwable $e) {
+            // A failed delete still flashes success, as the legacy model did.
+        }
+        osc_run_hook('after_delete_widget', $widgetId);
+        osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
+        $this->redirectTo($this->widgetReturnUrl());
+    }
+
+    /**
+     * Save the widget editor.
+     */
+    private function editWidgetPost(): void
+    {
+        osc_csrf_check();
+        if (!osc_validate_text(Params::getParam('description'))) {
+            osc_add_flash_error_message(_m('Description field is required'), 'admin');
+            $this->redirectTo($this->widgetReturnUrl());
+        }
+
+        $type = $this->resolveWidgetType(Params::getParam('s_type'));
+
+        if ($type !== null) {
+            $values = array(
+                's_description' => Params::getParam('description'),
+                's_content'     => '',
+                's_type'        => $type['id'],
+                's_config'      => json_encode($this->buildWidgetConfig($type))
+            );
+        } else {
+            $values = array(
+                's_description' => Params::getParam('description'),
+                's_content'     => Params::getParam('content', false, false)
+            );
+        }
+
+        // Saving without changing any value affects 0 rows, which is still success.
+        try {
+            WidgetStore::update(Params::getParamInt('id'), $values);
+            $res = true;
+        } catch (Throwable $e) {
+            $res = false;
+        }
+        if ($res) {
+            osc_purge_page_cache('widget');
+            osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
+        }
+        $this->redirectTo($this->widgetReturnUrl());
+    }
+
+    /**
+     * Create a widget from the form.
+     */
+    private function addWidgetPost(): void
+    {
+        osc_csrf_check();
+        if (!osc_validate_text(Params::getParam('description'))) {
+            osc_add_flash_error_message(_m('Description field is required'), 'admin');
+            $this->redirectTo($this->widgetReturnUrl());
+        }
+
+        $location = Params::getParam('location');
+        $type     = $this->resolveWidgetType(Params::getParam('s_type'));
+
+        $row = array(
+            's_location'    => $location,
+            'e_kind'        => 'html',
+            's_description' => Params::getParam('description'),
+            's_content'     => Params::getParam('content', false, false),
+        );
+        if ($type !== null) {
+            $row['s_content'] = '';
+            $row['s_type']    = $type['id'];
+            $row['s_config']  = json_encode($this->buildWidgetConfig($type));
+        }
+        try {
+            $row['i_order'] = WidgetStore::nextOrder((string)$location);
+            WidgetStore::add($row);
+        } catch (Throwable $e) {
+            // A failed insert still flashes success, as the legacy model did.
+        }
+        osc_purge_page_cache('widget');
+        osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
+        $this->redirectTo($this->widgetReturnUrl());
+    }
+
+    /**
+     * Create a widget dropped from the palette, answered in JSON.
+     */
+    private function createWidgetPost(): void
+    {
+        // Dropping a type from the palette creates a widget of that type in
+        // that section. JSON, so the builder can insert the row without a
+        // page load; the caller opens its editor straight away because a
+        // fresh widget has no configuration yet.
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+
+        $location = Params::getParam('location');
+        $type     = $this->resolveWidgetType(Params::getParam('s_type'));
+        $label    = $type !== null ? $type['label'] : __('Custom HTML');
+
+        $row = array(
+            's_location'    => $location,
+            'e_kind'        => 'html',
+            's_description' => $label,
+            's_content'     => '',
+        );
+        if ($type !== null) {
+            $row['s_type']   = $type['id'];
+            $row['s_config'] = json_encode($this->buildWidgetConfig($type));
+        }
+        // add() returns the new id; the builder needs it to open the editor.
+        try {
+            $row['i_order'] = WidgetStore::nextOrder((string)$location);
+            $newId          = WidgetStore::add($row);
+        } catch (Throwable $e) {
+            $newId = 0;
+        }
+        if ($newId > 0) {
+            osc_purge_page_cache('widget');
+        }
+
+        AjaxResponse::json($newId > 0
+            ? array(
+                'error'       => 0,
+                'id'          => (int)$newId,
+                'description' => $label,
+                'type_label'  => $type !== null ? $type['label'] : __('Custom HTML'),
+                'location'    => $location
+            )
+            : array('error' => 1));
+        exit;
+    }
+
+    /**
+     * Move a widget to another section, answered in JSON.
+     */
+    private function moveWidgetPost(): void
+    {
+        // Reorder, and move between sections. reorder_widgets_post refuses ids
+        // that do not already belong to the location — correct for a pure
+        // reorder, but it is exactly what has to change for a cross-section
+        // drag, so the move is its own endpoint with its own validation.
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+
+        $location = Params::getParam('location');
+        $moved    = Params::getParamInt('id');
+        $ids      = Params::getParamArray('ids');
+
+        // The section must be one the active theme actually offers, so a
+        // forged post cannot invent a location.
+        $locations = osc_widget_locations();
+        $ok        = false;
+
+        try {
+            $widgetRow = $moved > 0 ? WidgetStore::find($moved) : null;
+            if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
+                WidgetStore::moveTo($moved, $location);
+                $ok = WidgetStore::reorderWithin($location, $ids);
+                osc_purge_page_cache('widget');
+            }
+        } catch (Throwable $e) {
+            $ok = false;
+        }
+
+        AjaxResponse::json(array('error' => $ok ? 0 : 1));
+        exit;
+    }
+
+    /**
+     * Save the order of a section's widgets, answered in JSON.
+     */
+    private function reorderWidgetsPost(): void
+    {
+        // JSON endpoint: flagging the request as AJAX makes the CSRF check
+        // emit a JSON error and exit on failure instead of flash+redirect.
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+
+        $location = Params::getParam('location');
+        $ids      = Params::getParamArray('ids');
+
+        $ok = WidgetStore::reorderWithin((string) $location, $ids);
+        if ($ok) {
+            osc_purge_page_cache('widget');
+        }
+
+        AjaxResponse::json(array('error' => $ok ? 0 : 1));
+        exit;
+    }
+
+    /**
+     * Make a theme the site's theme.
+     */
+    private function activateTheme(): void
+    {
+        osc_csrf_check();
+        // Only an installed theme, the same rule theme:activate applies on the CLI.
+        $theme = Params::getParamString('theme');
+        if (!in_array($theme, WebThemes::getInstance()->getListThemes(), true)) {
+            osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+            return;
+        }
+        osc_set_preference('theme', $theme);
+        // Clear opcache so the new theme's code runs at once even with
+        // opcache.validate_timestamps=Off (see Plugins::resetOpcache).
+        Plugins::resetOpcache();
+        osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
+        osc_run_hook('theme_activate', $theme);
+        $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+    }
+
+    /**
+     * Render a theme's admin page file.
+     */
+    private function render(): void
+    {
+        if (Params::existParam('route')) {
+            $routes = Rewrite::getInstance()->getRoutes();
+            $rid    = Params::getParamString('route');
+            $file   = '../';
+            if (isset($routes[$rid]['file'])) {
+                $file = $routes[$rid]['file'];
+            }
+        } else {
+            // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
+            // This will be REMOVED in 3.6
+            $file = Params::getParamString('file');
+            // We pass the GET variables (in case we have somes)
+            if (preg_match('|(.+?)\?(.*)|', $file, $match)) {
+                $file = $match[1];
+                if (preg_match_all('|&([^=]+)=([^&]*)|', urldecode('&' . $match[2] . '&'), $get_vars)) {
+                    for ($var_k = 0; $var_k < count($get_vars[1]); $var_k++) {
+                        Params::setParam($get_vars[1][$var_k], $get_vars[2][$var_k]);
+                    }
+                }
+            } else {
+                $file = Params::getParamString('file');
+            }
+        }
+
+        // Only a .php file inside the themes or plugins folder may be rendered.
+        $resolved = PluginAjaxFile::resolveWithin(
+            (string) $file,
+            osc_base_path(),
+            array(osc_themes_path(), osc_plugins_path())
+        );
+        if ($resolved === null) {
+            osc_add_flash_warning_message(__('Error loading theme custom file'), 'admin');
+        }
+        $this->_exportVariableToView('file', $resolved);
+        $this->doView('appearance/view.php');
+    }
+
+    /**
+     * The themes screen.
+     */
+    private function themes(): void
+    {
+        if (Params::getParam('checkUpdated') != '') {
+            osc_admin_toolbar_update_themes(true);
+        }
+
+        $themes = WebThemes::getInstance()->getListThemes();
+
+        //preparing variables for the view
+        $this->_exportVariableToView('themes', $themes);
+
+        list($aMarketBrowse, $aMarketUpdates, $aMarketMeta) = $this->buildMarketViewData();
+        $this->_exportVariableToView('aMarketBrowse', $aMarketBrowse);
+        $this->_exportVariableToView('aMarketUpdates', $aMarketUpdates);
+        $this->_exportVariableToView('aMarketMeta', $aMarketMeta);
+
+        $this->doView('appearance/index.php');
+    }
     //hopefully generic...
 
     /**
@@ -534,7 +602,7 @@ class CAdminAppearance extends AdminSecBaseModel
 
         // The toolbar count is saved once a day; recount when it disagrees with this list,
         // so the header drawn next shows the same number as the Updates tab.
-        if ((int) osc_get_preference('themes_update_count') !== count($marketUpdates)) {
+        if ((int) osc_update_check_state('themes')['count'] !== count($marketUpdates)) {
             osc_admin_toolbar_update_themes(true);
         }
 
@@ -580,7 +648,7 @@ class CAdminAppearance extends AdminSecBaseModel
             return null;
         }
 
-        $type = \mindstellar\widgets\WidgetRegistry::instance()->get($sType);
+        $type = \mindstellar\widgets\WidgetRegistry::getInstance()->get($sType);
         if ($type === null) {
             osc_add_flash_error_message(_m('Unknown widget type'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');

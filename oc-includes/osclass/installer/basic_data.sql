@@ -127,6 +127,8 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'recaptchaPubKey', '', 'STRING')
     ,('osclass', 'comments_per_page', '10', 'INTEGER')
     ,('osclass', 'save_latest_searches', '0', 'BOOLEAN')
+    ,('osclass', 'geo_search', '0', 'BOOLEAN')
+    ,('osclass', 'distance_unit', 'km', 'STRING')
     ,('osclass', 'purge_latest_searches', '1000', 'STRING')
     ,('osclass', 'selectable_parent_categories', '0', 'BOOLEAN')
     ,('osclass', 'reg_user_post_comments', '0', 'BOOLEAN')
@@ -137,6 +139,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'watermark_text', '', 'STRING')
     ,('osclass', 'watermark_text_color', '', 'STRING')
     ,('osclass', 'watermark_place', 'centre', 'STRING')
+    ,('osclass', 'watermark_opacity', '100', 'INTEGER')
     ,('osclass', 'watermark_image', '', 'STRING')
     ,('osclass', 'last_version_check', '', 'STRING')
     ,('osclass', 'auto_update', 'disabled', 'STRING')
@@ -183,9 +186,25 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'billing_free_live_listings', '0', 'INTEGER')
     ,('osclass', 'billing_slot_enabled', '0', 'BOOLEAN')
     ,('osclass', 'billing_slot_credits', '0', 'INTEGER')
-    ,('osclass', 'billing_slot_quantity', '1', 'INTEGER');
+    ,('osclass', 'billing_slot_quantity', '1', 'INTEGER')
+    ,('api', 'api_enabled', '0', 'BOOLEAN')
+    ,('api', 'api_rate_limit_default', '120', 'INTEGER')
+    ,('api', 'api_rate_limit_anon', '60', 'INTEGER')
+    ,('api', 'api_rate_limit_write', '30', 'INTEGER')
+    ,('api', 'api_cors_origins', '', 'STRING')
+    ,('api', 'api_cache_max_age', '60', 'INTEGER')
+    ,('api', 'api_hide_phone', '0', 'BOOLEAN')
+    ,('api', 'api_user_keys', '0', 'BOOLEAN')
+    ,('api', 'api_registration', '0', 'BOOLEAN')
+    ,('api', 'api_photo_urls', '0', 'BOOLEAN')
+    ,('api', 'api_listing_rate', '0', 'INTEGER')
+    ,('api', 'api_webhooks_allow_private', '0', 'BOOLEAN')
+    ,('api', 'api_password_grant', '1', 'BOOLEAN')
+    ,('api', 'api_signups_per_hour', '100', 'INTEGER')
+    ,('api', 'api_photo_fetches_per_hour', '30', 'INTEGER')
+    ,('api', 'api_refresh_days', '30', 'INTEGER');
 
-INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
-    ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),
-    ('DAILY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),
-    ('WEEKLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00');
+INSERT INTO /*TABLE_PREFIX*/t_key_value (s_group, s_key, s_value, dt_created) VALUES
+    ('cron', 'HOURLY', '{"last":"1000-01-01 00:00:00","next":"1000-01-01 00:00:00"}', UTC_TIMESTAMP()),
+    ('cron', 'DAILY', '{"last":"1000-01-01 00:00:00","next":"1000-01-01 00:00:00"}', UTC_TIMESTAMP()),
+    ('cron', 'WEEKLY', '{"last":"1000-01-01 00:00:00","next":"1000-01-01 00:00:00"}', UTC_TIMESTAMP());

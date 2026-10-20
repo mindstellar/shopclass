@@ -148,6 +148,8 @@ $cases = array(
     'debug_on'             => array('server', array('debug' => true), 'warning', '#server-help'),
     'disk_low'             => array('server', array('free_disk' => 100 * 1024 * 1024), 'warning', null),
     'maintenance_on'       => array('server', array('maintenance' => 'locked'), 'warning', $base . '?page=tools&action=maintenance'),
+    'htaccess_no_authorization' => array('server', array('htaccess_auth' => false), 'warning', null),
+    'api_slug_taken'       => array('server', array('reserved_slugs' => array('pages' => array('api'), 'categories' => array())), 'warning', null),
     'backup_none'          => array('overview', array('backup_last' => null), 'warning', $base . '?page=tools&action=backup'),
     'cron_never'           => array('jobs', array('cron_last' => 0), 'warning', SystemChecks::DOCS_CRON),
     'cron_stale'           => array('jobs', array('cron_last' => $now - 3 * 86400), 'warning', SystemChecks::DOCS_CRON),
@@ -157,7 +159,7 @@ $cases = array(
     'proxy_mismatch'       => array('security', array('proxy' => array('header' => 'X-Forwarded-For', 'proxy' => '10.0.0.1')), 'danger', SystemChecks::DOCS_PROXY),
     'backups_open'         => array('security', array('backup_probe' => true), 'danger', SystemChecks::DOCS_BACKUPS),
     'config_writable'      => array('security', array('config_writable' => true), 'warning', null),
-    'signin_protection_off' => array('security', array('throttle' => array('enabled' => false)), 'warning', $base . '?page=settings&action=spamNbots#login-throttle-settings'),
+    'signin_protection_off' => array('security', array('throttle' => array('enabled' => false)), 'warning', $base . '?page=settings&action=spamNbots&tab=signin'),
     'admins_no_2fa'        => array('security', array('admins' => array(array('id' => 2, 'username' => 'ed', 'two_factor' => false))), 'warning', $base . '?page=admins'),
     'signin_blocked'       => array('security', array('throttle' => array('enabled' => true, 'blocked' => 3)), 'info', '#signin-activity'),
     'cache_unsupported'    => array('cache', array('cache_driver' => 'redis', 'cache_supported' => false), 'warning', $base . '?page=tools&action=system-info&tab=server#server-help'),
@@ -267,11 +269,26 @@ pin('an admin without it is sent to their own profile', $base . '?page=admins&ac
 check('everyone with 2FA: no line', $issue('security', $env(), 'admins_no_2fa') === null);
 $groups = SystemChecks::report('security', $env(array('admins' => $admins, 'web_restore_off' => true, 'package_installs_off' => true)))['groups'];
 pin('the groups', array('Sign-in protection', 'Admins', 'Site'), array_column($groups, 'title'));
-pin('sign-in protection links to its settings', $base . '?page=settings&action=spamNbots#login-throttle-settings', $groups[0]['link']['url']);
+pin('sign-in protection links to its settings', $base . '?page=settings&action=spamNbots&tab=signin', $groups[0]['link']['url']);
 pin('one row per admin, saying only on or off', array('owner' => 'two-step sign-in', 'ed' => 'password only', 'jo' => 'password only'), array_column($groups[1]['rows'], 'value', 'label'));
 check('no row carries a secret', strpos(json_encode($groups), 'secret') === false);
 $site = array_column($groups[2]['rows'], 'value', 'label');
 pin('the switches', array('off, command line only', 'off'), array($site['Restore from the admin'], $site['Plugin and theme installs']));
+pin('the admin allow list is off by default', 'any address', $site['Admin panel addresses']);
+$ipRow = static function (array $extra) use ($env): array {
+    foreach (SystemChecks::report('security', $env($extra))['groups'][2]['rows'] as $row) {
+        if ($row['label'] === 'Admin panel addresses') {
+            return $row;
+        }
+    }
+
+    return array();
+};
+pin('...and counts its entries when on', '2 listed addresses or ranges, and this server', $ipRow(array('admin_ip_allow' => 2))['value'] ?? null);
+pin('...one entry in the singular', '1 listed address or range, and this server', $ipRow(array('admin_ip_allow' => 1))['value'] ?? null);
+pin('...and a list of only bad entries is on, with 0', '0 listed addresses or ranges, and this server', $ipRow(array('admin_ip_allow' => 0))['value'] ?? null);
+check('...with no proxy note when addresses agree', !isset($ipRow(array('admin_ip_allow' => 2))['note']));
+pin('behind a proxy it says what the list sees', 'The allow list checks the proxy\'s address, not the visitor\'s.', $ipRow(array('admin_ip_allow' => 1, 'proxy' => array('header' => 'X-Forwarded-For', 'proxy' => '10.0.0.1')))['note'] ?? null);
 pin('with a captcha there is no account limit', 'A captcha is set up, so there is no limit per account.', array_column(SystemChecks::report('security', $env(array('throttle' => array('enabled' => true, 'captcha' => true))))['groups'][0]['rows'], 'note', 'label')['Limits']);
 check('protection off: no limits row', !in_array('Limits', array_column(SystemChecks::report('security', $env(array('throttle' => array('enabled' => false))))['groups'][0]['rows'], 'label'), true));
 
@@ -283,9 +300,9 @@ $cacheFacts = array_column(SystemChecks::report('cache', $env(array(
     'cache_driver'    => 'memcached',
     'cache_supported' => true,
     'cache_working'   => false,
-    'cache_drivers'   => array('apcu' => false, 'memcached' => true, 'memcache' => false),
+    'cache_drivers'   => array('apcu' => false, 'memcached' => true, 'redis' => true),
 )))['groups'][1]['rows'], 'value', 'label');
-pin('which drivers the server has', array('APCu' => 'not installed', 'Memcached' => 'installed · in use', 'Memcache' => 'not installed'), $cacheFacts);
+pin('which drivers the server has', array('APCu' => 'not installed', 'Memcached' => 'installed · in use', 'Redis / Valkey' => 'installed'), $cacheFacts);
 pin('the working row says why not', 'no, it did not answer', array_column(SystemChecks::report('cache', $env(array('cache_driver' => 'memcached', 'cache_supported' => true, 'cache_working' => false)))['groups'][0]['rows'], 'value', 'label')['Working']);
 pin('stats rows, skipping what the driver does not give', array(
     'Hit rate' => '75% (300 hits, 100 misses)',

@@ -41,10 +41,8 @@
  *    on any single statement has never stopped the ones after it from running.
  *    Foreign-key and duplicate-key fixtures below exercise exactly that.
  *
- * findByCategory() issues one further query per matching form (Field::
- * findByGroup) on top of the ancestry walk. That cost is measured at two
- * fixture sizes so the growth is visible, as the baseline for the batching fix
- * scheduled separately. It is a pin of the CURRENT cost, not an endorsement.
+ * findByCategory() reads every matching form's fields in one query on top of
+ * the ancestry walk, measured at two fixture sizes to show the cost stays flat.
  *
  * Usage:  php tests/models/fieldgroup.php          (standalone, own scratch database)
  *         php tests/run-models.php fieldgroup      (as part of the suite)
@@ -52,7 +50,7 @@
 
 require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
-// findByCategory() reaches Field::newInstance(), whose constructor resolves the
+// findByCategory() reaches Field::getInstance(), whose constructor resolves the
 // current locale through osc_current_user_locale() -> osc_language(). These are
 // the real helpers, not stand-ins: with no session and no preferences seeded
 // they resolve to the empty locale code, which is all this model needs.
@@ -66,7 +64,7 @@ $catLink   = DB_TABLE_PREFIX . 't_meta_group_categories';
 $fieldLink = DB_TABLE_PREFIX . 't_meta_group_fields';
 $fieldsTbl = DB_TABLE_PREFIX . 't_meta_fields';
 
-$model = FieldGroup::newInstance();
+$model = FieldGroup::getInstance();
 
 /**
  * Insert a form row directly, bypassing insertGroup()'s slug derivation, so a
@@ -179,7 +177,7 @@ check(
     is_array($model->dao->query('SELECT 1 AS one')->row()),
     'dao->query() did not return a usable recordset'
 );
-pin('newInstance is a singleton', true, FieldGroup::newInstance() === $model);
+pin('newInstance is a singleton', true, FieldGroup::getInstance() === $model);
 pin('table name is unchanged', $table, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 pin(
@@ -652,6 +650,20 @@ harness_section('FieldGroup::findByCategory — one form reachable by two ancest
 seed_exec($admin, "INSERT INTO $catLink (fk_i_group_id, fk_i_category_id) VALUES (?, ?)", 'ii', array($gLate, $child));
 pin('the doubly-assigned form appears exactly once', array((string)$gEarly, (string)$gLate), array_column($model->findByCategory($child), 'pk_i_id'));
 
+harness_section('FieldGroup::findByCategory — fields match Field::findByGroup');
+
+// Link positions run against pk order, so the batched read must keep each form's own order.
+$fThree = $seedField('Three', 'three');
+$admin->query("UPDATE $fieldLink SET i_position = 5 WHERE fk_i_group_id = $gEarly AND fk_i_field_id = $fTwo");
+$seedLink($gEarly, $fThree, 1);
+$seedLink($gLate, $fThree, 9);
+$batched = $model->findByCategory($child);
+pin('the batched fields equal one findByGroup() per form', array(
+    Field::getInstance()->findByGroup($gEarly),
+    Field::getInstance()->findByGroup($gLate),
+), array_column($batched, 'fields'));
+pin('each form keeps its own field order', array((string)$fThree, (string)$fTwo), array_column($batched[0]['fields'], 'pk_i_id'));
+
 /* ----------------------------------------------------------------------------
  * Query cost. Counts are comparable across the conversion: a prepared statement
  * contributes exactly one Question, the same as a legacy query().
@@ -704,11 +716,9 @@ pin('setFieldSingleGroup costs three queries when attaching', 3, harness_query_c
     $model->setFieldSingleGroup($costField, $costGroup);
 }));
 
-harness_section('FieldGroup::findByCategory — per-form query cost baseline');
+harness_section('FieldGroup::findByCategory — one fields query for every form');
 
-/* Baseline for the batching fix scheduled separately: one query per matching
- * form on top of the ancestry walk and the form lookup. Measured at two fixture
- * sizes so the growth is visible rather than asserted. */
+/* One walk, one form lookup and one query for all the forms' fields, however many forms match. */
 scratchdb_truncate_all($admin);
 $nCat = seed_category($admin, 'Flat');
 
@@ -722,11 +732,11 @@ $attachForms = static function (int $n) use ($seedGroup, $seedField, $seedLink, 
 };
 
 $attachForms(2);
-pin('a top-level category with 2 forms costs 1 walk + 1 lookup + 2 per-form queries', 4, harness_query_count(static function () use ($model, $nCat) {
+pin('a top-level category with 2 forms costs 1 walk + 1 lookup + 1 fields query', 3, harness_query_count(static function () use ($model, $nCat) {
     $model->findByCategory($nCat);
 }));
 $attachForms(2);
-pin('with 4 forms the cost grows to 6 — one more query per added form', 6, harness_query_count(static function () use ($model, $nCat) {
+pin('with 4 forms the cost stays at 3', 3, harness_query_count(static function () use ($model, $nCat) {
     $model->findByCategory($nCat);
 }));
 pin('and the results grow with it', 4, count($model->findByCategory($nCat)));

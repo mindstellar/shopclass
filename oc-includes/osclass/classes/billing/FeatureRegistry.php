@@ -12,6 +12,7 @@
 namespace mindstellar\billing;
 
 use InvalidArgumentException;
+use mindstellar\base\Registry;
 
 /**
  * Registry of what credits can be spent on.
@@ -23,31 +24,9 @@ use InvalidArgumentException;
  *
  * @package mindstellar\billing
  */
-final class FeatureRegistry
+final class FeatureRegistry extends Registry
 {
-    private static ?FeatureRegistry $instance = null;
-
-    /** @var array<string,array> raw specs, keyed by feature id */
-    private array $specs = array();
-
-    /** Private: the registry is a singleton, reached through instance(). */
-    private function __construct()
-    {
-    }
-
-    /**
-     * The shared registry.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
+    protected const ID_PATTERN = '/^[a-z0-9_.-]{1,64}$/';
 
     /**
      * Register a feature. Re-registering an id replaces the previous spec, which is
@@ -103,7 +82,7 @@ final class FeatureRegistry
             throw new InvalidArgumentException('FeatureRegistry: feature "' . $id . '" needs a callable apply');
         }
 
-        $this->specs[$id] = $spec;
+        $this->entries[$id] = $spec;
     }
 
     /**
@@ -115,7 +94,7 @@ final class FeatureRegistry
      */
     public function get(string $id): ?Feature
     {
-        return isset($this->specs[$id]) ? Feature::fromSpec($id, $this->specs[$id]) : null;
+        return isset($this->entries[$id]) ? Feature::fromSpec($id, $this->entries[$id]) : null;
     }
 
     /**
@@ -126,23 +105,11 @@ final class FeatureRegistry
     public function all(): array
     {
         $out = array();
-        foreach ($this->specs as $id => $spec) {
+        foreach ($this->entries as $id => $spec) {
             $out[$id] = Feature::fromSpec($id, $spec);
         }
 
         return $out;
-    }
-
-    /**
-     * Lower-case slug, matching the spelling used for widget and field type ids.
-     *
-     * @param string $id
-     *
-     * @return bool
-     */
-    public static function isValidId(string $id): bool
-    {
-        return (bool) preg_match('/^[a-z0-9_.-]{1,64}$/', $id);
     }
 }
 

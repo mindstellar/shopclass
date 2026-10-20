@@ -11,23 +11,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 15/07/20
- * Time: 7:03 PM
- * License is provided in root directory.
- */
-
 namespace mindstellar\upgrade;
 
-use mindstellar\admin\DatabaseTools;
-use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
+use mindstellar\routing\ServerRules;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 use Plugins;
-use Preference;
 use Rewrite;
 use Throwable;
 
@@ -63,6 +53,37 @@ class Osclass extends UpgradePackage
     }
 
     /**
+     * The core version the database records; a legacy three-digit one (390) reads as 3.9.0.
+     *
+     * @return string
+     */
+    public static function storedVersion(): string
+    {
+        $version = (string) osc_get_preference('version');
+
+        return strlen($version) === 3 && ctype_digit($version) ? implode('.', str_split($version)) : $version;
+    }
+
+    /**
+     * Whether the files are a newer release than the database and core migrations still wait to run.
+     * A newer release with nothing to migrate has its version written here, so the check stops.
+     *
+     * @return bool true also when the migration ledger cannot be read
+     */
+    public static function databaseBehind(): bool
+    {
+        if (!Utils::versionCompare(OSCLASS_VERSION, self::storedVersion(), 'gt')) {
+            return false;
+        }
+        if (!\mindstellar\admin\DatabaseTools::upToDate()) {
+            return true;
+        }
+        Utils::changeOsclassVersionTo(OSCLASS_VERSION);
+
+        return false;
+    }
+
+    /**
      * Upgrade Shopclass Database by running the pending migrations.
      *
      * Migrations alone build the schema; tests/schema-drift.php holds every release to that.
@@ -86,7 +107,7 @@ class Osclass extends UpgradePackage
         // tab closed halfway through leaves the schema mid-migration for no reason.
         ignore_user_abort(true);
 
-        if (is_dir(DatabaseTools::migrationsDir())) {
+        if (is_dir(MigrationRunner::coreDir())) {
             // Legacy installs store the version as an MMN integer (3.9.0 => 390); modern ones
             // store a dotted string (5.3.0.dev). Only the former can predate 3.9.0, so restrict
             // the numeric comparison to numeric values — a dotted string is always newer.
@@ -101,7 +122,7 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            $runner = new MigrationRunner(Connection::instance(), DatabaseTools::migrationsDir());
+            $runner = MigrationRunner::forCore();
             $runner->ensureLedger();
             $migrated = $runner->run();
             if (!$migrated['ok']) {
@@ -126,9 +147,19 @@ class Osclass extends UpgradePackage
                 // request loaded still predates them; rebuilding off it would compile the
                 // same missing routes all over again.
                 osc_reset_preferences();
-                Rewrite::newInstance()->rebuildAndPersistRules();
+                Rewrite::getInstance()->rebuildAndPersistRules();
             } catch (Throwable $e) {
                 // A rules rebuild is a repair, not the upgrade; never fail the upgrade on it.
+            }
+
+            // An .htaccess an older release wrote gains the line that passes the
+            // Authorization header to PHP; a hand-edited one is left alone.
+            if (osc_rewrite_enabled() && !osc_server_is_nginx()) {
+                try {
+                    ServerRules::refresh(osc_base_path() . '.htaccess', REL_WEB_URL);
+                } catch (Throwable $e) {
+                    error_log('upgrade: .htaccess was not refreshed: ' . $e->getMessage());
+                }
             }
 
             Utils::changeOsclassVersionTo(self::newVersionOnDisk());
@@ -203,11 +234,10 @@ class Osclass extends UpgradePackage
         // because the fetch produced nothing (rate limit, outage). Only a fresh result
         // should be allowed to reset the once-a-day check clock or claim "checked now".
         $isFresh    = false;
-        $preference = Preference::newInstance();
+        $package_info = array();
+        $saved      = osc_update_check_state('core');
         if ($force === true
-            || (
-                !$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
-            )
+            || (empty($saved['package']) && (time() - (int) $saved['checked']) > (24 * 3600))
         ) {
             // The whole list, not /releases/latest: that is the newest stable release only, and
             // the list is not in version order, so the channel picks the highest it allows.
@@ -244,8 +274,8 @@ class Osclass extends UpgradePackage
                 $isFresh                             = true;
             }
         }
-        if (!isset($package_info) || empty($package_info)) {
-            $package_info = json_decode($preference->get('update_core_json'), true);
+        if (empty($package_info)) {
+            $package_info = is_array($saved['package'] ?? null) ? $saved['package'] : null;
         }
 
         return Plugins::applyFilter('osclass_upgrade_package', $package_info);
@@ -294,8 +324,7 @@ class Osclass extends UpgradePackage
      */
     public function afterProcessUpgrade()
     {
-        osc_set_preference('update_core_available');
-        osc_set_preference('update_core_json');
+        osc_update_check_save('core', array('checked' => (int) osc_update_check_state('core')['checked']));
 
         return true;
     }

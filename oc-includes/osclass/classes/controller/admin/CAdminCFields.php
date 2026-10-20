@@ -16,6 +16,8 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
+
 /**
  * Class CAdminCFields
  */
@@ -35,7 +37,7 @@ class CAdminCFields extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->fieldManager = Field::newInstance();
+        $this->fieldManager = Field::getInstance();
         osc_run_hook('init_admin_fields');
     }
 
@@ -57,7 +59,7 @@ class CAdminCFields extends AdminSecBaseModel
                 $this->submissionsView();
                 break;
             default:
-                $categories = Category::newInstance()->toTreeAll();
+                $categories = Category::getInstance()->toTreeAll();
                 $selected   = array();
                 foreach ($categories as $c) {
                     $selected[] = $c['pk_i_id'];
@@ -71,8 +73,8 @@ class CAdminCFields extends AdminSecBaseModel
                 // Field palette (all definitions) + forms with their ordered field ids,
                 // for the two-pane drag-and-drop builder.
                 $allFields = $this->fieldManager->listAll();
-                $service   = new \mindstellar\forms\FormService();
-                $groupModel = FieldGroup::newInstance();
+                $service   = new \mindstellar\form\builder\FormService();
+                $groupModel = FieldGroup::getInstance();
                 $forms     = $groupModel->listAll();
                 foreach ($forms as &$form) {
                     $form['field_ids']    = $service->formFieldIds((int)$form['pk_i_id']);
@@ -141,8 +143,8 @@ class CAdminCFields extends AdminSecBaseModel
      */
     private function submissionsView()
     {
-        $submissionModel = \mindstellar\model\FormSubmission::newInstance();
-        $forms           = FieldGroup::newInstance()->listAll();
+        $submissionModel = new \mindstellar\model\FormSubmission();
+        $forms           = FieldGroup::getInstance()->listAll();
 
         // Which form to show — the requested one, else the first with entries, else
         // the first form.
@@ -164,13 +166,8 @@ class CAdminCFields extends AdminSecBaseModel
             $status = null;
         }
 
-        // Paged like every other list screen: a flat fetch stops showing entries past its
-        // limit with nothing on screen to say so.
-        $perPage = Params::getParamInt('iDisplayLength');
-        if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
-            $perPage = 25;
-        }
-        $page = max(1, Params::getParamInt('iPage'));
+        $perPage = ListPaging::length(25);
+        $page    = ListPaging::page();
 
         $submissions  = array();
         $statusCounts = array();
@@ -178,13 +175,13 @@ class CAdminCFields extends AdminSecBaseModel
         $total        = 0;
         if ($formId > 0) {
             $total = $submissionModel->countByForm($formId, $status);
-            $maxPage = max(1, (int) ceil($total / $perPage));
-            if ($page > $maxPage) {
-                $page = $maxPage;
+            $submissions  = $submissionModel->listByForm($formId, $status, $perPage, ListPaging::start($page, $perPage));
+            $pastEnd      = ListPaging::pastEndUrl(count($submissions), $total, $perPage, $page);
+            if ($pastEnd !== null) {
+                $this->redirectTo($pastEnd);
             }
-            $submissions  = $submissionModel->listByForm($formId, $status, $perPage, ($page - 1) * $perPage);
             $statusCounts = $submissionModel->statusCounts($formId);
-            $formFields   = Field::newInstance()->findByGroup($formId);
+            $formFields   = Field::getInstance()->findByGroup($formId);
             // attach each submission's values
             foreach ($submissions as &$s) {
                 $s['values'] = $submissionModel->valuesFor((int)$s['pk_i_id']);

@@ -85,7 +85,7 @@ final class PreferenceStore implements Store
             // preference key is spelled.
             $values = array();
             foreach ($locales as $code => $localeName) {
-                $stored        = Preference::newInstance()->get($key . $code, $this->section);
+                $stored        = Preference::getInstance()->get($key . $code, $this->section);
                 $values[$code] = ($stored === null || $stored === '')
                     ? (string)($field['default'] ?? '')
                     : $stored;
@@ -94,7 +94,7 @@ final class PreferenceStore implements Store
             return $values;
         }
 
-        $stored = Preference::newInstance()->get($key, $this->section);
+        $stored = Preference::getInstance()->get($key, $this->section);
         if ($stored === null || $stored === '') {
             // A checkbox saved as off stores '0', not '', so an empty read really is
             // "never saved" and the declared default is the right answer.
@@ -201,7 +201,7 @@ final class PreferenceStore implements Store
      */
     private function put(string $key, string $value, string $type): int
     {
-        $section = Preference::newInstance()->getSection($this->section);
+        $section = Preference::getInstance()->getSection($this->section);
         if (array_key_exists($key, $section) && (string)$section[$key] === $value) {
             return 0;
         }

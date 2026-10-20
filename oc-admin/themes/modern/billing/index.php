@@ -103,12 +103,12 @@ $isFiltered = ($filters['status'] ?? '') !== ''
             <table class="table billing-orders">
                 <thead>
                 <tr>
+                    <th scope="col"><?php _e('Status'); ?></th>
                     <th scope="col"><?php _e('Order'); ?></th>
                     <th scope="col"><?php _e('User'); ?></th>
                     <th scope="col"><?php _e('Payment method'); ?></th>
                     <th scope="col" class="col-numeric"><?php _e('Amount'); ?></th>
                     <th scope="col" class="col-numeric"><?php _e('Credits'); ?></th>
-                    <th scope="col"><?php _e('Status'); ?></th>
                     <th scope="col"><?php _e('Date'); ?></th>
                 </tr>
                 </thead>
@@ -117,6 +117,12 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                     $user    = $users[$order->getUserId()] ?? null;
                     $orderUrl = $base . '&action=order&id=' . $order->getId(); ?>
                     <tr>
+                        <td>
+                            <?php osc_admin_status(
+                                $order->getStatus(),
+                                $statusWords[$order->getStatus()] ?? $order->getStatus()
+                            ); ?>
+                        </td>
                         <td>
                             <a class="billing-order-link" href="<?php echo osc_esc_html($orderUrl); ?>">
                                 <?php echo osc_esc_html('#' . $order->getId()); ?>
@@ -136,12 +142,6 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                             <?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?>
                         </td>
                         <td class="col-numeric"><?php echo number_format($order->getCredits()); ?></td>
-                        <td>
-                            <?php osc_admin_status(
-                                $order->getStatus(),
-                                $statusWords[$order->getStatus()] ?? $order->getStatus()
-                            ); ?>
-                        </td>
                         <td><?php echo osc_admin_date($order->getDate(), true); ?></td>
                     </tr>
                 <?php } ?>

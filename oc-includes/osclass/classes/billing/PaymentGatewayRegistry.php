@@ -12,12 +12,16 @@
 namespace mindstellar\billing;
 
 use InvalidArgumentException;
+use mindstellar\base\Registry;
+use mindstellar\currency\CurrencyCode;
 
 /**
  * Registry of payment gateways.
  *
- * Plugins register an implementation on init and core looks it up by the id stored on
- * an order. Deliberately mirrors mindstellar\widgets\WidgetRegistry and
+ * Plugins register an implementation on the `register_payment_gateways` hook, which fires
+ * once, the first time anything reads the registry, so a page that never asks for payment
+ * methods builds no gateway. Core looks a gateway up by the id stored on an order.
+ * Deliberately mirrors mindstellar\widgets\WidgetRegistry and
  * mindstellar\fields\FieldTypeRegistry so the three read the same to a plugin author.
  *
  * Nothing is registered by core. With no gateway plugin installed the registry is
@@ -26,31 +30,12 @@ use InvalidArgumentException;
  *
  * @package mindstellar\billing
  */
-final class PaymentGatewayRegistry
+final class PaymentGatewayRegistry extends Registry
 {
-    private static ?PaymentGatewayRegistry $instance = null;
+    /** Fired once, on the first read, with the registry, for gateways to register. */
+    public const HOOK = 'register_payment_gateways';
 
-    /** @var array<string,PaymentGateway> registered gateways, keyed by id */
-    private array $gateways = array();
-
-    /** Private: the registry is a singleton, reached through instance(). */
-    private function __construct()
-    {
-    }
-
-    /**
-     * The shared registry.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
+    private bool $loaded = false;
 
     /**
      * Register a gateway. Re-registering an id replaces the previous implementation,
@@ -70,14 +55,14 @@ final class PaymentGatewayRegistry
         }
 
         foreach ($gateway->getSupportedCurrencies() as $currency) {
-            if (!is_string($currency) || !preg_match('/^[A-Z]{3}$/', $currency)) {
+            if (!is_string($currency) || !CurrencyCode::valid($currency)) {
                 throw new InvalidArgumentException(
                     'PaymentGatewayRegistry: gateway "' . $id . '" lists a non-ISO-4217 currency'
                 );
             }
         }
 
-        $this->gateways[$id] = $gateway;
+        $this->entries[$id] = $gateway;
     }
 
     /**
@@ -89,17 +74,9 @@ final class PaymentGatewayRegistry
      */
     public function get(string $id): ?PaymentGateway
     {
-        return $this->gateways[$id] ?? null;
-    }
+        $this->load();
 
-    /**
-     * Every registered gateway, configured or not, keyed by id.
-     *
-     * @return array<string,PaymentGateway>
-     */
-    public function all(): array
-    {
-        return $this->gateways;
+        return $this->entries[$id] ?? null;
     }
 
     /**
@@ -113,8 +90,9 @@ final class PaymentGatewayRegistry
      */
     public function available(?string $currency = null): array
     {
+        $this->load();
         $out = array();
-        foreach ($this->gateways as $id => $gateway) {
+        foreach ($this->entries as $id => $gateway) {
             if (!$gateway->isConfigured()) {
                 continue;
             }
@@ -128,15 +106,25 @@ final class PaymentGatewayRegistry
     }
 
     /**
-     * Lower-case slug, matching the spelling used for widget and field type ids.
+     * Every registered gateway, configured or not.
      *
-     * @param string $id
-     *
-     * @return bool
+     * @return array<string,PaymentGateway>
      */
-    public static function isValidId(string $id): bool
+    public function all(): array
     {
-        return (bool) preg_match('/^[a-z0-9_.-]{1,60}$/', $id);
+        $this->load();
+
+        return $this->entries;
+    }
+
+    private function load(): void
+    {
+        if ($this->loaded) {
+            return;
+        }
+        // Set first, so a listener that reads the registry does not fire the hook again.
+        $this->loaded = true;
+        osc_run_hook('register_payment_gateways', $this);
     }
 }
 

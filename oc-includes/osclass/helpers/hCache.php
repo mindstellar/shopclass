@@ -24,20 +24,20 @@ function osc_cache_add($key, $data, $expire = 0)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->add($key, $data, $expire);
+    return \mindstellar\cache\CacheManager::getInstance()->add($key, $data, $expire);
 }
 
 /**
  * Close the active cache driver.
  *
- * No bundled driver implements close() -- iObject_Cache releases through __destruct --
+ * No bundled driver implements close() -- CacheDriver releases through __destruct --
  * so this is a no-op unless a custom driver defines one.
  *
  * @return mixed True when the driver has nothing to close
  */
 function osc_cache_close()
 {
-    $cache = Object_Cache_Factory::newInstance();
+    $cache = \mindstellar\cache\CacheManager::getInstance();
 
     return method_exists($cache, 'close') ? $cache->close() : true;
 }
@@ -53,7 +53,7 @@ function osc_cache_delete($key)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->delete($key);
+    return \mindstellar\cache\CacheManager::getInstance()->delete($key);
 }
 
 /**
@@ -63,20 +63,25 @@ function osc_cache_delete($key)
  */
 function osc_cache_flush()
 {
-    return Object_Cache_Factory::newInstance()->flush();
+    \mindstellar\cache\CacheGroup::forgetGenerations();
+    if (class_exists('ItemResource', false)) {
+        ItemResource::getInstance()->forget();
+    }
+
+    return \mindstellar\cache\CacheManager::getInstance()->flush();
 }
 
 /**
  * Normalised statistics for the active cache driver, or null when it has none.
  *
- * Probed rather than declared on iObject_Cache, because third-party drivers
+ * Probed rather than declared on CacheDriver, because third-party drivers
  * implement that interface and a new required method would fatal them.
  *
  * @return array<string,mixed>|null
  */
 function osc_cache_stats()
 {
-    $cache = Object_Cache_Factory::newInstance();
+    $cache = \mindstellar\cache\CacheManager::getInstance();
     if (!method_exists($cache, 'statsData')) {
         return null;
     }
@@ -90,7 +95,7 @@ function osc_cache_stats()
  * concurrent callers do not clobber one another the way a get()/set() would.
  *
  * The native atomic increment is probed with method_exists() rather than declared
- * on iObject_Cache — a required interface method would fatal any third-party driver
+ * on CacheDriver — a required interface method would fatal any third-party driver
  * that implements the interface, exactly the reason osc_cache_stats() probes for
  * statsData(). A driver without it degrades to a (non-atomic) get/set here.
  *
@@ -104,7 +109,7 @@ function osc_cache_stats()
 function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
 {
     $key  .= osc_current_user_locale();
-    $cache = Object_Cache_Factory::newInstance();
+    $cache = \mindstellar\cache\CacheManager::getInstance();
 
     if (method_exists($cache, 'increment')) {
         return (int)$cache->increment($key, $by, $initial, $expire);
@@ -125,14 +130,14 @@ function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
  */
 function osc_cache_init()
 {
-    Object_Cache_Factory::newInstance();
+    \mindstellar\cache\CacheManager::getInstance();
 }
 
 /**
  * Read the value stored under $key.
  *
  * @param string $key
- * @param bool   $found Set by reference to whether the key was a hit
+ * @param bool|null $found Set by reference to whether the key was a hit
  *
  * @return mixed False on a miss
  */
@@ -140,7 +145,7 @@ function osc_cache_get($key, &$found)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->get($key, $found);
+    return \mindstellar\cache\CacheManager::getInstance()->get($key, $found);
 }
 
 /**
@@ -156,13 +161,35 @@ function osc_cache_set($key, $data, $expire = 0)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->set($key, $data, $expire);
+    return \mindstellar\cache\CacheManager::getInstance()->set($key, $data, $expire);
+}
+
+/**
+ * The cached value of $key in $group, or what $load returns (unless null), stored for $expire seconds.
+ * Core drops a whole group when its data changes, such as 'category' when a category is edited.
+ * Like the other osc_cache_* helpers, it adds the current locale to the key.
+ *
+ * @param string   $group  'category', 'page', 'search', or your own name
+ * @param string   $key
+ * @param callable $load
+ * @param int|null $expire Seconds, null for OSC_CACHE_TTL
+ *
+ * @return mixed
+ */
+function osc_cache_remember($group, $key, callable $load, $expire = null)
+{
+    return \mindstellar\cache\CacheGroup::remember(
+        (string)$group,
+        $key . osc_current_user_locale(),
+        $load,
+        $expire === null ? null : (int)$expire
+    );
 }
 
 /**
  * Invalidate cached data that is a pure function of an item id (currently the
  * item's resource/photo list). Without this the object cache is TTL-only, so a
- * persistent backend (memcached/apcu) serves a stale copy of an item the user
+ * persistent backend (memcached, redis, apcu) serves a stale copy of an item the user
  * just edited for up to OSC_CACHE_TTL seconds.
  *
  * The osc_cache_* helpers suffix every key with the current user locale, so the
@@ -180,8 +207,11 @@ function osc_invalidate_item_cache($itemId)
         return;
     }
 
+    if (class_exists('ItemResource', false)) {
+        ItemResource::getInstance()->forget($itemId);
+    }
     $baseKey = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $itemId);
-    $cache   = Object_Cache_Factory::newInstance();
+    $cache   = \mindstellar\cache\CacheManager::getInstance();
 
     $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
     if (empty($locales)) {
@@ -223,7 +253,7 @@ function osc_invalidate_user_cache($userId)
     }
 
     $baseKey = md5(osc_base_url() . 'User:findByPrimaryKey:' . $userId);
-    $cache   = Object_Cache_Factory::newInstance();
+    $cache   = \mindstellar\cache\CacheManager::getInstance();
 
     $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
     if (empty($locales)) {
@@ -340,6 +370,10 @@ osc_add_hook('posted_item', 'osc_invalidate_search_cache');
 osc_add_hook('edited_item', 'osc_invalidate_search_cache');
 osc_add_hook('disable_item', 'osc_invalidate_search_cache');
 osc_add_hook('enable_item', 'osc_invalidate_search_cache');
+osc_add_hook('activate_item', 'osc_invalidate_search_cache');
+osc_add_hook('deactivate_item', 'osc_invalidate_search_cache');
+osc_add_hook('item_premium_on', 'osc_invalidate_search_cache');
+osc_add_hook('item_premium_off', 'osc_invalidate_search_cache');
 osc_add_hook('item_spam_on', 'osc_invalidate_search_cache');
 osc_add_hook('item_spam_off', 'osc_invalidate_search_cache');
 osc_add_hook('after_delete_item', 'osc_invalidate_search_cache');

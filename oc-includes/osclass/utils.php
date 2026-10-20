@@ -15,8 +15,6 @@
 use mindstellar\utility\Deprecate;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\POP3;
 use ReCaptcha\ReCaptcha;
 
 /**
@@ -45,10 +43,7 @@ function osc_isExpired($dt_expiration)
  */
 function osc_item_is_counted(array $item): bool
 {
-    return (int)($item['b_enabled'] ?? 0) === 1
-        && (int)($item['b_active'] ?? 0) === 1
-        && (int)($item['b_spam'] ?? 0) === 0
-        && (!empty($item['b_premium']) || !osc_isExpired((string)($item['dt_expiration'] ?? '')));
+    return \mindstellar\listing\ListingStatus::isLive($item);
 }
 
 /**
@@ -62,71 +57,20 @@ function osc_item_is_counted(array $item): bool
  */
 function osc_deleteResource($id, $admin, $resource = null)
 {
-    if (defined('DEMO')) {
+    if (\mindstellar\security\Demo::active()) {
         return false;
     }
     if (is_array($id)) {
         $id = $id[0];
     }
-    // $resource lets a caller hand over the row it already read. Deleting a listing
-    // removes the resource rows inside a transaction and only unlinks the files once
-    // that commits, by which point this could no longer look the row up — and without
-    // the row there are no paths to remove and no resource to hand to the hook.
+    // $resource lets a caller hand over the row it already read: a listing delete unlinks
+    // the files after its transaction removed the rows.
     if (!is_array($resource)) {
-        $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+        $resource = ItemResource::getInstance()->findByPrimaryKey($id);
     }
-    if ($resource !== null) {
-        Log::newInstance()->insertLog(
-            'item',
-            'delete resource',
-            $resource['pk_i_id'],
-            $id,
-            $admin ? 'admin' : 'user',
-            $admin ? osc_logged_admin_id() : osc_logged_user_id()
-        );
-
-        $backtracel = '';
-        foreach (debug_backtrace() as $k => $v) {
-            if ($v['function'] === 'include' || $v['function'] === 'include_once' || $v['function'] === 'require_once'
-                || $v['function'] === 'require'
-            ) {
-                $backtracel .= '#' . $k . ' ' . $v['function'] . '(' . $v['args'][0] . ') called@ [' . $v['file'] . ':'
-                               . $v['line'] . '] / ';
-            } else {
-                $backtracel .= '#' . $k . ' ' . $v['function'] . ' called@ [' . $v['file'] . ':' . $v['line'] . '] / ';
-            }
-        }
-
-        Log::newInstance()->insertLog(
-            'item',
-            'delete resource backtrace',
-            $resource['pk_i_id'],
-            $backtracel,
-            $admin ? 'admin' : 'user',
-            $admin ? osc_logged_admin_id() : osc_logged_user_id()
-        );
-        // check if resource s_path, pk_i_id and s_extension are set and not empty
-        if (($resource['s_storage'] ?? 'local') === 'local'
-            && \mindstellar\storage\StorageManager::instance()->remote() === null) {
-            try {
-                $filesToRemove = [
-                    $resource['s_path'] . $resource['pk_i_id'] . '.' . $resource['s_extension'],
-                    $resource['s_path'] . $resource['pk_i_id'] . '_original.' . $resource['s_extension'],
-                    $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.' . $resource['s_extension'],
-                    $resource['s_path'] . $resource['pk_i_id'] . '_preview.' . $resource['s_extension'],
-                ];
-                foreach ($filesToRemove as $file) {
-                    if (file_exists($file) && !is_dir($file)) {
-                        (new mindstellar\utility\FileSystem())->remove($file);
-                    }
-                }
-            } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
-        } else {
-            \mindstellar\storage\StorageJobs::enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
-        }
-        osc_run_hook('delete_resource', $resource);
+    if (is_array($resource)) {
+        $actor = \mindstellar\auth\Actor::fromSession((bool) $admin);
+        (new \mindstellar\listing\PhotoService())->removeFiles($resource, $actor);
     }
 }
 
@@ -230,293 +174,58 @@ function osc_doRequest($url, $_data)
     return Utils::doRequest($url, $_data);
 }
 
+// Old mail names kept for plugins; the code is in mindstellar\mail\Mailer. Edit the class, not these.
+
 /**
  * Seconds PHPMailer may wait on one SMTP connect or command.
  *
- * PHPMailer's default is 300. A dead or firewalled host then holds a php-fpm
- * worker for five minutes per send (or per "Send a test email" click). Fifteen
- * seconds is long enough for a slow provider and short enough that a bad host
- * fails the page instead of pinning the pool. Plugins may change it with the
- * `phpmailer_smtp_timeout` filter; the value is clamped to 1–60.
- *
- * Pure aside from that filter. Safe to call from characterization tests.
- *
- * @return int
+ * @see \mindstellar\mail\Mailer::smtpTimeoutSeconds()
  */
 function osc_phpmailer_smtp_timeout_seconds()
 {
-    $seconds = (int)osc_apply_filter('phpmailer_smtp_timeout', 15);
-    if ($seconds < 1) {
-        return 1;
-    }
-    if ($seconds > 60) {
-        return 60;
-    }
-
-    return $seconds;
+    return \mindstellar\mail\Mailer::smtpTimeoutSeconds();
 }
 
 /**
  * Apply {@see osc_phpmailer_smtp_timeout_seconds()} to a PHPMailer instance
  * and to the SMTP object it will use on send().
  *
- * @param PHPMailer $mail
- *
- * @return void
+ * @see \mindstellar\mail\Mailer::limitSmtpWait()
  */
 function osc_phpmailer_limit_smtp_wait($mail)
 {
-    if (!is_object($mail)) {
-        return;
-    }
-    $seconds        = osc_phpmailer_smtp_timeout_seconds();
-    $mail->Timeout  = $seconds;
-    if (method_exists($mail, 'getSMTPInstance')) {
-        $smtpInst = $mail->getSMTPInstance();
-        if (is_object($smtpInst)) {
-            $smtpInst->Timeout = $seconds;
-            if (property_exists($smtpInst, 'Timelimit')) {
-                $smtpInst->Timelimit = $seconds;
-            }
-        }
-    }
+    \mindstellar\mail\Mailer::limitSmtpWait($mail);
 }
 
 /**
  * A visitor's uploaded file, ready to attach to a mail straight from PHP's temporary upload.
  *
- * The file is never copied under the web root. Script types are refused.
- *
- * @param string $field upload field name
- *
- * @return array{path:string,name:string}|false|null null when nothing was uploaded, false when refused
+ * @see \mindstellar\mail\Mailer::uploadAttachment()
  */
 function osc_mail_upload_attachment($field)
 {
-    $file = Params::getFiles($field);
-    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
-        return null;
-    }
-    if ($file['error'] !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null)
-        || !is_uploaded_file($file['tmp_name'])) {
-        return false;
-    }
-    $refused = array(
-        'text/php', 'text/x-php', 'application/php', 'application/x-php', 'application/x-httpd-php',
-        'application/x-httpd-php-source', 'application/x-javascript', 'text/javascript',
-        'application/javascript', 'text/html', 'application/x-sh', 'text/x-shellscript',
-    );
-    if (in_array(\mindstellar\storage\UploadMimes::detect($file['tmp_name']), $refused, true)) {
-        return false;
-    }
-    $name = trim(preg_replace('/[\x00-\x1F\x7F"\\\\\/]+/', '', basename((string) ($file['name'] ?? ''))));
-
-    return array('path' => $file['tmp_name'], 'name' => $name !== '' ? $name : 'attachment');
+    return \mindstellar\mail\Mailer::uploadAttachment($field);
 }
 
 /**
  * Send one email through PHPMailer, using the site's configured mail transport.
  *
- * @param array<string,mixed> $params from, to, to_name, subject, body, alt_body and optional attachment/reply-to keys;
- *                                    secret_link => true marks a mail whose link carries a secret
- *
- * @return bool False on a demo install or when the send fails
+ * @see \mindstellar\mail\Mailer::send()
  */
 function osc_sendMail($params)
 {
-    // DO NOT send mail if it's a demo
-    if (defined('DEMO')) {
-        return false;
-    }
+    return \mindstellar\mail\Mailer::send($params);
+}
 
-    $mail = new PHPMailer(true);
-    $mail->clearAddresses();
-    $mail->clearAllRecipients();
-    $mail->clearAttachments();
-    $mail->clearBCCs();
-    $mail->clearCCs();
-    $mail->clearCustomHeaders();
-    $mail->clearReplyTos();
-
-    /** @var \PHPMailer\PHPMailer\PHPMailer $mail */
-    $mail = osc_apply_filter('init_send_mail', $mail, $params);
-
-    if (osc_mailserver_pop()) {
-        $pop = new POP3();
-
-        $pop3_host = osc_mailserver_host();
-        if (array_key_exists('host', $params)) {
-            $pop3_host = $params['host'];
-        }
-
-        $pop3_port = osc_mailserver_port();
-        if (array_key_exists('port', $params)) {
-            $pop3_port = $params['port'];
-        }
-
-        $pop3_username = osc_mailserver_username();
-        if (array_key_exists('username', $params)) {
-            $pop3_username = $params['username'];
-        }
-
-        $pop3_password = osc_mailserver_password();
-        if (array_key_exists('password', $params)) {
-            $pop3_password = $params['password'];
-        }
-
-        $pop->authorise($pop3_host, $pop3_port, osc_phpmailer_smtp_timeout_seconds(), $pop3_username, $pop3_password);
-    }
-
-    if (osc_mailserver_auth()) {
-        $mail->isSMTP();
-        $mail->SMTPAuth = true;
-    } elseif (osc_mailserver_pop()) {
-        $mail->isSMTP();
-    }
-
-    $smtpSecure = osc_mailserver_ssl();
-    if (array_key_exists('password', $params)) {
-        $smtpSecure = $params['ssl'];
-    }
-    if ($smtpSecure != '') {
-        $mail->SMTPSecure = $smtpSecure;
-    }
-
-    $stmpUsername = osc_mailserver_username();
-    if (array_key_exists('username', $params)) {
-        $stmpUsername = $params['username'];
-    }
-    if ($stmpUsername != '') {
-        $mail->Username = $stmpUsername;
-    }
-
-    $smtpPassword = osc_mailserver_password();
-    if (array_key_exists('password', $params)) {
-        $smtpPassword = $params['password'];
-    }
-    if ($smtpPassword != '') {
-        $mail->Password = $smtpPassword;
-    }
-
-    $smtpHost = osc_mailserver_host();
-    if (array_key_exists('host', $params)) {
-        $smtpHost = $params['host'];
-    }
-    if ($smtpHost != '') {
-        $mail->Host = $smtpHost;
-    }
-
-    $smtpPort = osc_mailserver_port();
-    if (array_key_exists('port', $params)) {
-        $smtpPort = $params['port'];
-    }
-    if ($smtpPort != '') {
-        $mail->Port = $smtpPort;
-    }
-
-    $from = osc_mailserver_mail_from();
-    if (empty($from)) {
-        $from = 'osclass@' . osc_get_domain();
-        if (array_key_exists('from', $params)) {
-            $from = $params['from'];
-        }
-    }
-
-    $from_name = osc_mailserver_name_from();
-    if (empty($from_name)) {
-        $from_name = osc_page_title();
-        if (array_key_exists('from_name', $params)) {
-            $from_name = $params['from_name'];
-        }
-    }
-
-    $mail->From     = osc_apply_filter('mail_from', $from, $params);
-    $mail->FromName = osc_apply_filter('mail_from_name', $from_name, $params);
-
-    // With exceptions enabled (new PHPMailer(true)) a malformed recipient throws from
-    // addAddress()/addBCC()/addReplyTo() before send() is reached, and send() itself
-    // throws on a transport failure. Guard the whole dispatch so a bad address or a
-    // dead mailserver degrades to a logged warning and a false return, never a 500.
-    try {
-        $to      = $params['to'];
-        $to_name = '';
-        if (array_key_exists('to_name', $params)) {
-            $to_name = $params['to_name'];
-        }
-
-        if (!is_array($to)) {
-            $to = array($to => $to_name);
-        }
-
-        foreach ($to as $to_email => $to_name) {
-            $mail->addAddress($to_email, $to_name);
-        }
-
-        if (array_key_exists('add_bcc', $params)) {
-            if (!is_array($params['add_bcc']) && $params['add_bcc'] != '') {
-                $params['add_bcc'] = array($params['add_bcc']);
-            }
-
-            foreach ($params['add_bcc'] as $bcc) {
-                $mail->addBCC($bcc);
-            }
-        }
-
-        if (array_key_exists('reply_to', $params)) {
-            $mail->addReplyTo($params['reply_to']);
-        }
-
-        $mail->Subject = $params['subject'];
-        $mail->Body    = osc_mail_layout((string) $params['body'], $params);
-
-        if (array_key_exists('attachment', $params)) {
-            if (!is_array($params['attachment']) || isset($params['attachment']['path'])) {
-                $params['attachment'] = array($params['attachment']);
-            }
-
-            foreach ($params['attachment'] as $attachment) {
-                if (is_array($attachment)) {
-                    if (isset($attachment['path']) && isset($attachment['name'])) {
-                        try {
-                            $mail->addAttachment($attachment['path'], $attachment['name']);
-                        } catch (\PHPMailer\PHPMailer\Exception $e) {
-                            continue;
-                        }
-                    }
-                } else {
-                    try {
-                        $mail->addAttachment($attachment);
-                    } catch (\PHPMailer\PHPMailer\Exception $e) {
-                        continue;
-                    }
-                }
-            }
-        }
-
-        $mail->CharSet = 'utf-8';
-        $mail->isHTML();
-        // Set ahead of pre_send_mail, so a plugin can still replace it. One a plugin
-        // already set in init_send_mail is kept, as it always was.
-        if ($mail->AltBody === '') {
-            $mail->AltBody = _osc_mail_alt_body($params);
-        }
-
-        $mail = osc_apply_filter('pre_send_mail', $mail, $params);
-        osc_phpmailer_limit_smtp_wait($mail);
-
-        if (!osc_mail_links_trusted($mail, (array) $params)) {
-            return false;
-        }
-
-        // send email!
-        $mail->send();
-    } catch (\PHPMailer\PHPMailer\Exception $e) {
-        trigger_error($e->errorMessage(), E_USER_WARNING);
-
-        return false;
-    }
-
-    return true;
+/**
+ * Send a short notice to the site's contact address, one escaped paragraph per line.
+ * Returns false when it cannot be sent; never throws once called.
+ *
+ * @see \mindstellar\mail\Mailer::admin()
+ */
+function osc_mail_admin(string $subject, array $lines): bool
+{
+    return \mindstellar\mail\Mailer::admin($subject, $lines);
 }
 
 /**
@@ -524,183 +233,42 @@ function osc_sendMail($params)
  * links to the request address point at it instead; without it, a mail that carries a secret
  * link (params 'secret_link') is refused.
  *
- * @param \PHPMailer\PHPMailer\PHPMailer $mail
- * @param array<string,mixed>            $params osc_sendMail() parameters
- *
- * @return bool False when the mail must not be sent
+ * @see \mindstellar\mail\Mailer::linksTrusted()
  */
 function osc_mail_links_trusted($mail, array $params = array()): bool
 {
-    if (!defined('OSC_WEB_PATH_FROM_REQUEST') || !OSC_WEB_PATH_FROM_REQUEST || !defined('WEB_PATH')) {
-        return true;
-    }
-    if (defined('OSC_TRUSTED_WEB_PATH')) {
-        $mail->Body    = str_replace((string) WEB_PATH, OSC_TRUSTED_WEB_PATH, (string) $mail->Body);
-        $mail->AltBody = str_replace((string) WEB_PATH, OSC_TRUSTED_WEB_PATH, (string) $mail->AltBody);
-
-        return true;
-    }
-    if (empty($params['secret_link'])) {
-        return true;
-    }
-    trigger_error(
-        'E-mail not sent: it carries a secret link, and the site address comes from the request Host header. Set WEB_PATH or OSC_CLI_URL to the site address.',
-        E_USER_WARNING
-    );
-
-    return false;
+    return \mindstellar\mail\Mailer::linksTrusted($mail, $params);
 }
 
 /**
  * Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs first, then
  * the site-wide ones.
  *
- * @param string                             $text
- * @param array{0:array<int,string>,1:array<int,string>} $params Search list and its replacement list
- *
- * @return string
+ * @see \mindstellar\mail\Mailer::beauty()
  */
 function osc_mailBeauty($text, $params)
 {
-    // In the order of EmailVariables::COMMON, which the template editor lists.
-    $kwords = EmailVariables::COMMON;
-    $rwords = array(
-        osc_base_url(),
-        osc_page_title(),
-        '<a href="' . osc_base_url() . '">' . osc_page_title() . '</a>',
-        date(osc_date_format() ?: 'Y-m-d') . ' ' . date(osc_time_format() ?: 'H:i:s'),
-        date(osc_time_format() ?: 'H:i'),
-        Params::getServerParam('REMOTE_ADDR')
-    );
-
-    // One case-insensitive pass, so a placeholder typed into a value stays as typed.
-    // A caller key wins over a site token, and a key without a value is removed.
-    $keys    = array_values((array) $params[0]);
-    $values  = array_slice(array_pad(array_values((array) $params[1]), count($keys), ''), 0, count($keys));
-    $search  = array_merge($keys, $kwords);
-    $replace = array_merge($values, $rwords);
-    $map     = array();
-    $pattern = array();
-    foreach ($search as $i => $key) {
-        $key = (string) $key;
-        $low = strtolower($key);
-        if ($key === '' || isset($map[$low])) {
-            continue;
-        }
-        $map[$low] = (string) $replace[$i];
-        $pattern[] = preg_quote($key, '/');
-    }
-
-    return (string) preg_replace_callback(
-        '/' . implode('|', $pattern) . '/i',
-        static function (array $m) use ($map) {
-            return $map[strtolower($m[0])] ?? $m[0];
-        },
-        (string) $text
-    );
+    return \mindstellar\mail\Mailer::beauty($text, $params);
 }
 
 /**
  * A plain-text copy of an HTML mail body.
  *
- * Link addresses are kept -- "unsubscribe (https://...)" -- because a plain-text
- * reader has no other way to follow them. Paragraphs, line breaks and list items keep
- * their shape; everything else a browser would not show is dropped. Tolerant of the
- * loose markup stored mail templates carry.
- *
- * @param string $html
- *
- * @return string '' when the body has no text in it
+ * @see \mindstellar\mail\Mailer::plainText()
  */
 function _osc_mail_text($html)
 {
-    $html = (string)$html;
-    if ($html === '') {
-        return '';
-    }
-
-    // ASCII whitespace only, and no /u: an ASCII byte never occurs inside a UTF-8
-    // sequence, so this is safe on any text, including text that is not valid UTF-8.
-    $text = preg_replace(
-        array('#<(head|style|script|title)\b[^>]*>.*?</\1\s*>#is', '/[ \t\r\n\f\v]+/'),
-        array('', ' '),
-        $html
-    );
-
-    if ($text !== null) {
-        // Quoted attribute values are skipped whole, so an href spelled inside another
-        // attribute is not taken for the real one. The address cannot run past a quote
-        // or ">", and a label cannot swallow the next link. A browser ends a link at
-        // "</a" whatever follows it up to ">", so this does too.
-        $text = preg_replace_callback(
-            '#<a\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*?\shref\s*=\s*(["\'])([^"\'>]*)\1[^>]*>'
-            . '((?:(?!<a\b).)*?)</a\b[^>]*>#is',
-            static function ($m) {
-                $url   = trim($m[2]);
-                $label = trim(strip_tags($m[3]));
-                if ($url === '' || $url[0] === '#' || stripos($url, 'javascript:') === 0) {
-                    return $label;
-                }
-                if ($label === '' || $label === $url) {
-                    return $url;
-                }
-
-                return $label . ' (' . $url . ')';
-            },
-            $text
-        );
-    }
-
-    if ($text !== null) {
-        $text = preg_replace(
-            array(
-                '#<br\s*/?>#i',
-                '#<li\b[^>]*>#i',
-                '#</\s*li\s*>#i',
-                '#</\s*(p|div|h[1-6]|tr|table|blockquote|ul|ol)\s*>#i',
-            ),
-            array("\n", "\n- ", '', "\n\n"),
-            $text
-        );
-    }
-
-    // A pattern gave up -- PCRE's backtracking limit on pathological markup. A plainer
-    // copy without link addresses still beats none.
-    if ($text === null) {
-        $text = $html;
-    }
-
-    $text = strip_tags($text);
-    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $text = str_replace("\xC2\xA0", ' ', $text);
-
-    $lines = array();
-    foreach (explode("\n", $text) as $line) {
-        $lines[] = trim(preg_replace('/[ \t]+/', ' ', $line));
-    }
-
-    return trim(preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines)));
+    return \mindstellar\mail\Mailer::plainText($html);
 }
 
 /**
  * The plain copy a mail is sent with.
  *
- * With no alt_body, or HTML in it, the copy is made from the HTML. A plain copy
- * written by hand is sent as written.
- *
- * @param array<string,mixed> $params osc_sendMail() parameters
- *
- * @return string
+ * @see \mindstellar\mail\Mailer::altBody()
  */
 function _osc_mail_alt_body(array $params)
 {
-    $body = (string)($params['body'] ?? '');
-    $alt  = (string)($params['alt_body'] ?? '');
-    if ($alt !== '' && $alt !== $body && strip_tags($alt) === $alt) {
-        return $alt;
-    }
-
-    return _osc_mail_text($alt !== '' && $alt !== $body ? $alt : $body);
+    return \mindstellar\mail\Mailer::altBody($params);
 }
 
 /**
@@ -708,83 +276,22 @@ function _osc_mail_alt_body(array $params)
  * else core's. A body that is already a whole HTML document, or a send with
  * 'layout' => false, goes out as it is.
  *
- * @param string              $body
- * @param array<string,mixed> $params the osc_sendMail() parameters
- *
- * @return string
+ * @see \mindstellar\mail\Mailer::layout()
  */
 function osc_mail_layout(string $body, array $params = array()): string
 {
-    if (trim($body) === '' || ($params['layout'] ?? true) === false || stripos($body, '<html') !== false) {
-        return $body;
-    }
-
-    $mail = (array) osc_apply_filter('mail_layout_vars', array(
-        'body'      => $body,
-        'subject'   => (string) ($params['subject'] ?? ''),
-        'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', _osc_mail_text($body))), 0, 120),
-        'site_name' => osc_page_title(),
-        'site_url'  => osc_base_url(),
-        'logo_url'  => '',
-        'accent'    => '#0b7269',
-        'footer'    => sprintf(__('You received this e-mail from %s.'), osc_page_title()),
-    ), $params);
-
-    $file = osc_mail_layout_file();
-    ob_start();
-    try {
-        (static function (string $file, array $mail): void {
-            include $file;
-        })($file, $mail);
-    } catch (\Throwable $e) {
-        // A broken layout must not stop the mail: it goes out bare.
-        trigger_error('E-mail layout ' . $file . ': ' . $e->getMessage(), E_USER_WARNING);
-        ob_end_clean();
-
-        return $body;
-    }
-    $html = (string) ob_get_clean();
-
-    return (string) osc_apply_filter('mail_layout', $html !== '' ? $html : $body, $mail, $params);
+    return \mindstellar\mail\Mailer::layout($body, $params);
 }
 
 /**
  * The e-mail layout file: templates/email-layout.php in the active theme or its parent,
  * else core's own.
  *
- * @param string[]|null $bases theme folders to look in, active first; null for the site's
- *
- * @return string
+ * @see \mindstellar\mail\Mailer::layoutFile()
  */
 function osc_mail_layout_file(?array $bases = null): string
 {
-    if ($bases === null) {
-        $bases  = array();
-        $themes = WebThemes::newInstance();
-        // Cron, the admin and the CLI never load the public theme; set it from the site
-        // setting, so the layout and the theme URL helpers it calls both find it.
-        if ((string) $themes->getCurrentTheme() === '' && \mindstellar\utility\Validate::packageName((string) osc_theme())) {
-            $themes->setCurrentTheme((string) osc_theme());
-        }
-        $theme  = (string) $themes->getCurrentTheme();
-        $active = (string) $themes->getCurrentThemePath();
-        if ($active !== '') {
-            $bases[] = $active;
-        }
-        $info = $theme === '' ? false : $themes->loadThemeInfo($theme);
-        if (is_array($info) && !empty($info['template'])
-            && \mindstellar\utility\Validate::packageName((string) $info['template'])
-        ) {
-            $bases[] = osc_themes_path() . $info['template'] . '/';
-        }
-    }
-    foreach ($bases as $base) {
-        if (is_file(rtrim($base, '/') . '/templates/email-layout.php')) {
-            return rtrim($base, '/') . '/templates/email-layout.php';
-        }
-    }
-
-    return LIB_PATH . 'osclass/gui/templates/email-layout.php';
+    return \mindstellar\mail\Mailer::layoutFile($bases);
 }
 
 /**
@@ -832,27 +339,43 @@ function osc_copy($source, $dest)
 }
 
 /**
- * Copy a file by reading it whole and writing it out again.
+ * Copy a file.
  *
- * @param string $file1 Source path
- * @param string $file2 Destination path
+ * @param string $file1
+ * @param string $file2
  *
- * @return bool False when the source could not be read
- * @deprecated since 4.0.0
+ * @return bool
+ * @deprecated since 4.0.0, removed in 8.0; use copy()
  */
 function osc_copyemz($file1, $file2)
 {
-    $contentx   = @file_get_contents($file1);
-    $openedfile = fopen($file2, 'wb');
-    fwrite($openedfile, $contentx);
-    fclose($openedfile);
-    if ($contentx === false) {
-        $status = false;
-    } else {
-        $status = true;
-    }
+    return @copy($file1, $file2);
+}
 
-    return $status;
+/**
+ * Whether a directory is writable. Before 7.0 it walked the whole tree.
+ *
+ * @param string $dir
+ *
+ * @return bool
+ * @deprecated since 4.0.0, removed in 8.0; use is_writable()
+ */
+function osc_check_dir_writable($dir = ABS_PATH)
+{
+    return is_writable($dir);
+}
+
+/**
+ * Make a directory writable (0755) when it is not. Before 7.0 it walked the whole tree.
+ *
+ * @param string $dir
+ *
+ * @return bool
+ * @deprecated since 4.0.0, removed in 8.0; use chmod()
+ */
+function osc_change_permissions($dir = ABS_PATH)
+{
+    return is_writable($dir) || @chmod($dir, 0755);
 }
 
 /**
@@ -868,12 +391,9 @@ function osc_dbdump($path, $file)
     if (!is_writable($path)) {
         return -4;
     }
-    if ($path == '') {
-        return -1;
-    }
 
     //checking connection
-    $dump = Dump::newInstance();
+    $dump = Dump::getInstance();
     if (!$dump) {
         return -2;
     }
@@ -923,72 +443,6 @@ function osc_dbdump($path, $file)
 }
 
 /**
- * Returns true if there is curl on system environment
- *
- * @return bool
- * @deprecated since 4.0.0
- */
-function testCurl()
-{
-    return !(!function_exists('curl_init') || !function_exists('curl_exec'));
-}
-
-/**
- * Returns true if there is fsockopen on system environment
- *
- * @return bool
- * @deprecated since 4.0.0
- */
-function testFsockopen()
-{
-    if (!function_exists('fsockopen')) {
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * IF http-chunked-decode not exist implement here
- *
- * @since 3.0
- */
-if (!function_exists('http_chunked_decode')) {
-    /**
-     * dechunk an http 'transfer-encoding: chunked' message
-     *
-     * @param string $chunk the encoded message
-     *
-     * @return string the decoded message.  If $chunk wasn't encoded properly it will be returned unmodified.
-     */
-    function http_chunked_decode($chunk)
-    {
-        $pos     = 0;
-        $len     = strlen($chunk);
-        $dechunk = null;
-        while (($pos < $len)
-               && ($chunkLenHex = substr(
-                   $chunk,
-                   $pos,
-                   ($newlineAt = strpos($chunk, "\n", $pos + 1)) - $pos
-               ))) {
-            if (!is_hex($chunkLenHex)) {
-                trigger_error('Value is not properly chunk encoded', E_USER_WARNING);
-
-                return $chunk;
-            }
-
-            $pos      = $newlineAt + 1;
-            $chunkLen = hexdec(rtrim($chunkLenHex, "\r\n"));
-            $dechunk  .= substr($chunk, $pos, $chunkLen);
-            $pos      = strpos($chunk, "\n", $pos + $chunkLen) + 1;
-        }
-
-        return $dechunk;
-    }
-}
-
-/**
  * determine if a string can represent a number in hexadecimal
  *
  * @param string $hex
@@ -1007,146 +461,6 @@ function is_hex($hex)
     $dec = hexdec($hex);
 
     return ($hex === dechex($dec));
-}
-
-/**
- * Process response and return headers and body
- *
- * @param string $content
- *
- * @return array{headers?:string,body?:string} Empty when the response has no header block
- * @since 3.0
- */
-function processResponse($content)
-{
-    $res     = explode("\r\n\r\n", $content);
-    $headers = $res[0];
-    $body    = isset($res[1]) ? $res[1] : '';
-
-    if (!is_string($headers)) {
-        return array();
-    }
-
-    return array('headers' => $headers, 'body' => $body);
-}
-
-/**
- * Parse headers and return into array format
- *
- * @param string $headers
- *
- * @return array<string,string> Lower-cased header name => value
- * @deprecated since 4.0.0
- */
-function processHeaders($headers)
-{
-    $headers    = str_replace("\r\n", "\n", $headers);
-    $headers    = preg_replace('/\n[ \t]/', ' ', $headers);
-    $headers    = explode("\n", $headers);
-    $tmpHeaders = $headers;
-    $headers    = array();
-
-    foreach ($tmpHeaders as $aux) {
-        if (preg_match('/^(.*):\s(.*)$/', $aux, $matches)) {
-            $headers[strtolower($matches[1])] = $matches[2];
-        }
-    }
-
-    return $headers;
-}
-
-/**
- * Download file using fsockopen
- *
- * @param string                   $sourceFile
- * @param string|null              $fileout   Destination path; null returns the body instead
- * @param array<string,mixed>|null $post_data POST body; null issues a GET
- *
- * @return bool|string
- * @since      3.0
- * @deprecated since 4.0.0
- */
-function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
-{
-    // parse URL
-    $aUrl = parse_url($sourceFile);
-    $host = $aUrl['host'];
-    if ('localhost' === strtolower($host)) {
-        $host = '127.0.0.1';
-    }
-
-    $link = $aUrl['path'] . (isset($aUrl['query']) ? '?' . $aUrl['query'] : '');
-
-    if (empty($link)) {
-        $link .= '/';
-    }
-
-    $fp = @fsockopen($host, 80, $errno, $errstr, 30);
-    if (!$fp) {
-        return false;
-    }
-
-    $ua  = Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')';
-    $out = ($post_data != null && is_array($post_data) ? 'POST' : 'GET') . " $link HTTP/1.1\r\n";
-    $out .= "Host: $host\r\n";
-    $out .= "User-Agent: $ua\r\n";
-    $out .= "Connection: Close\r\n\r\n";
-    $out .= "\r\n";
-    if ($post_data != null && is_array($post_data)) {
-        $out .= http_build_query($post_data);
-    }
-    fwrite($fp, $out);
-
-    $contents = '';
-    while (!feof($fp)) {
-        $contents .= fgets($fp, 1024);
-    }
-
-    fclose($fp);
-
-    // check redirections ?
-    // if (redirections) then do request again
-    $aResult = processResponse($contents);
-    $headers = processHeaders($aResult['headers']);
-
-    $location = @$headers['location'];
-    if (isset($location) && $location != '') {
-        $aUrl = parse_url($headers['location']);
-
-        $host = $aUrl['host'];
-        if ('localhost' === strtolower($host)) {
-            $host = '127.0.0.1';
-        }
-
-        $requestPath = $aUrl['path'] . (isset($aUrl['query']) ? '?' . $aUrl['query'] : '');
-
-        if (empty($requestPath)) {
-            $requestPath .= '/';
-        }
-
-        download_fsockopen($host, $requestPath, $fileout);
-    } else {
-        $body             = $aResult['body'];
-        $transferEncoding = @$headers['transfer-encoding'];
-        if ($transferEncoding === 'chunked') {
-            $body = http_chunked_decode($aResult['body']);
-        }
-        if ($fileout != null) {
-            $ff = @fopen($fileout, 'wb+');
-            if ($ff !== false) {
-                fwrite($ff, $body);
-                fclose($ff);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        return $body;
-    }
-
-    return false;
 }
 
 /**
@@ -1182,7 +496,7 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
  * @param int  $timeout    total transfer timeout in seconds; 0 leaves no overall
  *                         limit, but getContents() still aborts a stalled transfer.
  *
- * @return bool|string|null
+ * @return bool|string
  */
 function osc_file_get_contents($url, $post_data = null, $verify_ssl = true, $timeout = 0)
 {
@@ -1269,7 +583,7 @@ function osc_package_installs_disabled()
  */
 function osc_market_changes_blocked()
 {
-    return defined('DEMO') || osc_package_installs_disabled();
+    return \mindstellar\security\Demo::active() || osc_package_installs_disabled();
 }
 
 /**
@@ -1328,7 +642,7 @@ function osc_unzip_file($file, $to)
  * @param string $archive_folder full path of the folder
  * @param string $archive_name   full path of the destination zip file
  *
- * @return int
+ * @return bool
  */
 function osc_zip_folder($archive_folder, $archive_name)
 {
@@ -1420,175 +734,6 @@ function osc_replace_double_slash($path)
 }
 
 /**
- * Walk a directory and report whether the files under it are writable.
- *
- * @param string $dir
- *
- * @return bool False on a path containing .., or on the first unwritable file
- * @deprecated since 4.0.0
- */
-function osc_check_dir_writable($dir = ABS_PATH)
-{
-    if (strpos($dir, '../') !== false || strpos($dir, "..\\") !== false) {
-        return false;
-    }
-
-    clearstatcache();
-    if ($dh = opendir($dir)) {
-        while (($file = readdir($dh)) !== false) {
-            if ($file !== '.' && $file !== '..') {
-                if (is_dir(osc_replace_double_slash($dir . '/' . $file))) {
-                    if (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/themes')) {
-                        if ($file === 'storefront' || $file === 'index.php') {
-                            $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/plugins')) {
-                        if ($file === 'google_maps' || $file === 'google_analytics' || $file === 'index.php') {
-                            $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/languages')) {
-                        if ($file === 'en_US' || $file === 'index.php') {
-                            $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/downloads')) {
-                        continue;
-                    } elseif (osc_replace_double_slash($dir) === osc_uploads_path()) {
-                        continue;
-                    } else {
-                        $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
-                        if (!$res) {
-                            return false;
-                        }
-                    }
-                } else {
-                    return is_writable(osc_replace_double_slash($dir . '/' . $file));
-                }
-            }
-        }
-        closedir($dh);
-    }
-
-    return true;
-}
-
-/**
- * Walk a directory and chmod anything under it that is not writable to 0755.
- *
- * @param string $dir
- *
- * @return bool False on a path containing .., or when a chmod fails
- * @deprecated since 4.0.0
- */
-function osc_change_permissions($dir = ABS_PATH)
-{
-    if (strpos($dir, '../') !== false || strpos($dir, "..\\") !== false) {
-        return false;
-    }
-
-    clearstatcache();
-    if ($dh = opendir($dir)) {
-        while (($file = readdir($dh)) !== false) {
-            if ($file !== '.' && $file !== '..' && $file[0] !== '.') {
-                if (!is_writable(osc_replace_double_slash($dir . '/' . $file))) {
-                    $result = chmod(str_replace('//', '/', $dir . '/' . $file), 0755);
-                }
-
-                if (is_dir(osc_replace_double_slash($dir . '/' . $file))) {
-                    if (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/themes')) {
-                        if ($file === 'modern' || $file === 'index.php') {
-                            $res = osc_change_permissions(str_replace('//', '/', $dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/plugins')) {
-                        if ($file === 'google_maps' || $file === 'google_analytics' || $file === 'index.php') {
-                            $res = osc_change_permissions(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/languages')) {
-                        if ($file === 'en_US' || $file === 'index.php') {
-                            $res = osc_change_permissions(osc_replace_double_slash($dir . '/' . $file));
-                            if (!$res) {
-                                return false;
-                            }
-                        }
-                    } elseif (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/downloads')) {
-                        continue;
-                    } elseif (osc_replace_double_slash($dir) === osc_uploads_path()) {
-                        continue;
-                    } else {
-                        $res = osc_change_permissions(osc_replace_double_slash($dir . '/' . $file));
-                        if (!$res) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-
-                if (isset($result)) {
-                    return $result;
-                }
-
-                return false;
-            }
-        }
-        closedir($dh);
-    }
-
-    return true;
-}
-
-/**
- * Record the current permission bits of a directory and everything under it.
- *
- * @param string $dir
- *
- * @return array<string,int>|false Path => permission bits, or false on a path containing ..
- * @deprecated since 4.0.0
- */
-function osc_save_permissions($dir = ABS_PATH)
-{
-    if (strpos($dir, '../') !== false || strpos($dir, "..\\") !== false) {
-        return false;
-    }
-
-    $perms       = array();
-    $perms[$dir] = fileperms($dir);
-    clearstatcache();
-    if ($dh = opendir($dir)) {
-        while (($file = readdir($dh)) !== false) {
-            if ($file !== '.' && $file !== '..') {
-                if (is_dir(str_replace('//', '/', $dir . '/' . $file))) {
-                    $res = osc_save_permissions(str_replace('//', '/', $dir . '/' . $file));
-                    foreach ($res as $k => $v) {
-                        $perms[$k] = $v;
-                    }
-                } else {
-                    $perms[str_replace('//', '/', $dir . '/' . $file)] =
-                        fileperms(str_replace('//', '/', $dir . '/' . $file));
-                }
-            }
-        }
-        closedir($dh);
-    }
-
-    return $perms;
-}
-
-/**
  * Format a stored integer price for display.
  *
  * @param int|string $price Price in the currency's smallest stored unit
@@ -1635,17 +780,12 @@ function rglob($pattern, $flags = 0, $path = '')
  * @param string      $update_uri
  * @param string|null $version Version currently installed
  *
- * @return bool
+ * @return bool Always false: the old market is gone.
  * @deprecated since 4.0.0 use mindstellar\market\PackageIndex::forPlugins()->pendingUpdates() instead
  * @see \mindstellar\market\PackageIndex::pendingUpdates()
  */
 function osc_check_plugin_update($update_uri, $version = null)
 {
-    $uri = _get_market_url('plugins', $update_uri);
-    if ($uri != false) {
-        return _need_update($uri, $version);
-    }
-
     return false;
 }
 
@@ -1655,17 +795,12 @@ function osc_check_plugin_update($update_uri, $version = null)
  * @param string      $update_uri
  * @param string|null $version Version currently installed
  *
- * @return bool
+ * @return bool Always false: the old market is gone.
  * @deprecated since 4.0.0 use mindstellar\market\PackageIndex::forThemes()->pendingUpdates() instead
  * @see \mindstellar\market\PackageIndex::pendingUpdates()
  */
 function osc_check_theme_update($update_uri, $version = null)
 {
-    $uri = _get_market_url('themes', $update_uri);
-    if ($uri != false) {
-        return _need_update($uri, $version);
-    }
-
     return false;
 }
 
@@ -1696,13 +831,9 @@ function osc_check_language_update($update_uri, $version = null, $disable = fals
 
     if ($published === null) {
         $published = array();
-        $json      = @osc_file_get_contents(osc_get_i18n_repository_url());
-        $list      = json_decode((string) $json, true);
-        if (is_array($list)) {
-            foreach ($list as $locale) {
-                if (is_array($locale) && isset($locale['locale_code'], $locale['version'])) {
-                    $published[(string) $locale['locale_code']] = (string) $locale['version'];
-                }
+        foreach (\mindstellar\language\LanguageService::published(static fn ($url) => @osc_file_get_contents($url)) ?? array() as $code => $locale) {
+            if (isset($locale['version'])) {
+                $published[$code] = (string) $locale['version'];
             }
         }
     }
@@ -1712,108 +843,6 @@ function osc_check_language_update($update_uri, $version = null, $disable = fals
     }
 
     return version_compare((string) $version, $published[$update_uri], '<');
-}
-
-/**
- * Resolve a package's update URI to a market URL.
- *
- * @param string      $type       One of plugins, themes or languages
- * @param string|null $update_uri
- * @param bool        $disable    True short-circuits to false; that is the default
- *
- * @return string|false False unless $update_uri is already an absolute http(s) URL
- * @deprecated since 4.0.0
- */
-function _get_market_url($type, $update_uri, $disable = true)
-{
-    if ($disable) {
-        return false;
-    }
-    if ($update_uri == null) {
-        return false;
-    }
-
-    if (in_array($type, array('plugins', 'themes', 'languages'))) {
-        if (stripos($update_uri, 'http://') === false && stripos($update_uri, 'https://') === false) {
-            // OSCLASS OFFICIAL REPOSITORY
-            // $uri = osc_market_url( $type , $update_uri );
-            return false;
-        }
-
-        /** @var string $uri */
-        $uri = $update_uri;
-
-        return $uri;
-    }
-
-    return false;
-}
-
-/**
- * Whether the JSON descriptor at a URI advertises a version newer than the installed one.
- *
- * @param string      $uri
- * @param string|null $version Version currently installed
- * @param bool        $disable True short-circuits to false; that is the default
- *
- * @return bool
- * @deprecated since 4.0.0
- */
-function _need_update($uri, $version, $disable = true)
-{
-    if ($disable) {
-        return false;
-    }
-    if (false === ($json = osc_file_get_contents($uri))) {
-        return false;
-    }
-
-    $data = json_decode($json, true);
-    if (isset($data['s_version'])) {
-        $result = version_compare2($data['s_version'], $version);
-        if ($result === 1) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Returns
- *      0  if both are equal,
- *      1  if A > B, and
- *      -1 if B < A.
- *
- * @param string $a -> from market
- * @param string $b -> installed version
- *
- * @return int
- * @deprecated since 4.0.0
- * @see Utils::versionCompare()
- */
-function version_compare2($a, $b)
-{
-    Deprecate::deprecatedFunction(__FUNCTION__, '4.0.0', 'Utils::versionCompare()');
-    $aA = explode('.', rtrim($a, '.0')); //Split version into pieces and remove trailing .0
-    $aB = explode('.', rtrim($b, '.0')); //Split version into pieces and remove trailing .0
-    foreach ($aA as $depth => $aVal) { //Iterate over each piece of A
-        if (isset($b[$depth])) { //If B matches A to this depth, compare the values
-            if ($aVal > $aB[$depth]) {
-                return 1;
-            }
-
-            if ($aVal < $aB[$depth]) {
-                return -1;
-            } //Return A > B //Return B > A
-            //An equal result is inconclusive at this point
-        } else {      //If B does not match A to this depth, then A comes after B in sort order
-            return 1; //so return A > B
-        }
-    }
-    //At this point, we know that to the depth that A and B extend to, they are equivalent.
-    //Either the loop ended because A is shorter than B, or both are equal.
-    return (count($aA) < count($aB)) ? -1 : 0;
 }
 
 /**
@@ -1924,27 +953,12 @@ function osc_is_update_compatible($section, $element, $osclass_version = OSCLASS
 {
     if ($element != '') {
         $data = array();
-        if (stripos($element, 'http://') === true && stripos($element, 'https://') === false) {
-            // OSCLASS OFFICIAL REPOSITORY
-            // $url  = osc_market_url( $section , $element );
-            // $data = json_decode(
-            //             osc_file_get_contents(
-            //                 $url ,
-            //                 array ( 'api_key' => osc_market_api_connect() )
-            //             ) ,
-            //             true
-            //          );
-        } else {
-            // THIRD PARTY REPOSITORY
-            $data = json_decode(osc_file_get_contents($element), true);
-        }
+        $data = json_decode(osc_file_get_contents($element), true);
         if (isset($data['s_compatible'])) {
             $versions = explode(',', $data['s_compatible']);
 
             foreach ($versions as $_version) {
-                $result = version_compare2($osclass_version, $_version);
-
-                if ($result == 0 || $result == -1) {
+                if (version_compare((string) $osclass_version, trim($_version), '<=')) {
                     return true;
                 }
             }

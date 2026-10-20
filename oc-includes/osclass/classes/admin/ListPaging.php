@@ -44,6 +44,7 @@ final class ListPaging
      * Anything that is not a whole number above zero is page 1 — absent, empty, negative,
      * a word, a float. The value is written back to the request, because a screen builds its
      * own paging links from the parameter afterwards and they have to agree with the rows.
+     * An old admin link's `pageNum` still counts when `iPage` is absent.
      *
      * @param string $name
      *
@@ -52,6 +53,9 @@ final class ListPaging
     public static function page(string $name = 'iPage'): int
     {
         $raw  = Params::getParam($name);
+        if ($name === 'iPage' && ($raw === '' || $raw === null) && defined('OC_ADMIN') && OC_ADMIN) {
+            $raw = Params::getParam('pageNum');
+        }
         $page = (is_numeric($raw) && (int) $raw >= 1) ? (int) $raw : 1;
 
         Params::setParam($name, $page);
@@ -67,19 +71,23 @@ final class ListPaging
      *
      * @param int    $default
      * @param string $name
+     * @param int    $max
      *
      * @return int
      */
-    public static function length(int $default = self::DEFAULT_LENGTH, string $name = 'iDisplayLength'): int
-    {
-        $default = $default >= 1 ? min($default, self::MAX_LENGTH) : self::DEFAULT_LENGTH;
+    public static function length(
+        int $default = self::DEFAULT_LENGTH,
+        string $name = 'iDisplayLength',
+        int $max = self::MAX_LENGTH
+    ): int {
+        $default = $default >= 1 ? min($default, $max) : self::DEFAULT_LENGTH;
         $raw     = Params::getParam($name);
 
         if (!is_numeric($raw) || (int) $raw < 1) {
             return $default;
         }
 
-        return min((int) $raw, self::MAX_LENGTH);
+        return min((int) $raw, $max);
     }
 
     /**
@@ -107,10 +115,10 @@ final class ListPaging
 
         if (is_numeric($raw) && (int) $raw >= 1) {
             $length = min((int) $raw, self::MAX_LENGTH);
-            \Cookie::newInstance()->push($cookie, $length);
-            \Cookie::newInstance()->set();
+            \Cookie::getInstance()->push($cookie, (string) $length);
+            \Cookie::getInstance()->set();
         } else {
-            $stored = \Cookie::newInstance()->get_value($cookie);
+            $stored = \Cookie::getInstance()->get_value($cookie);
             $length = (is_numeric($stored) && (int) $stored >= 1)
                 ? min((int) $stored, self::MAX_LENGTH)
                 : self::length($default, $name);
@@ -132,5 +140,45 @@ final class ListPaging
     public static function start(int $page, int $length): int
     {
         return max(0, ($page - 1) * $length);
+    }
+
+    /**
+     * Where to send a list page that came back empty because $page ran past the end: this
+     * screen's URL on its last page, or page 1 when nothing is left. Null when there is no need.
+     *
+     * @param int $rows   rows on this page
+     * @param int $total  rows in the whole list
+     * @param int $length rows per page
+     */
+    public static function pastEndUrl(int $rows, int $total, int $length, int $page): ?string
+    {
+        $last = max(1, (int) ceil($total / max(1, $length)));
+        if ($rows > 0 || $page <= 1 || $page === $last) {
+            return null;
+        }
+        $query = (string) Params::getServerParam('QUERY_STRING', false, false);
+        $query = preg_match('/(^|&)iPage=\d*/', $query) === 1
+            ? preg_replace('/(^|&)iPage=\d*/', '${1}iPage=' . $last, $query)
+            : ltrim($query . '&iPage=' . $last, '&');
+
+        return osc_admin_base_url(true) . '?' . $query;
+    }
+
+    /**
+     * pastEndUrl() for a DataTable result: rows from aRows or aaData, with its
+     * iTotalDisplayRecords and iDisplayLength.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function pastEnd(array $data, int $page): ?string
+    {
+        $rows = $data['aRows'] ?? $data['aaData'] ?? array();
+
+        return self::pastEndUrl(
+            is_array($rows) ? count($rows) : 0,
+            (int) ($data['iTotalDisplayRecords'] ?? 0),
+            (int) ($data['iDisplayLength'] ?? 0),
+            $page
+        );
     }
 }

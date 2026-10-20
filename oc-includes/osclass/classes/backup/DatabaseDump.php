@@ -34,19 +34,16 @@ final class DatabaseDump
         't_user_description',
         't_category',
         't_category_description',
-        't_category_stats',
         't_item',
         't_item_description',
         't_item_location',
         't_item_stats',
         't_item_stats_daily',
-        't_item_resource',
+        't_resource',
         't_item_comment',
         't_preference',
         't_pages',
         't_pages_description',
-        't_plugin_category',
-        't_cron',
         't_alerts',
         't_meta_fields',
         't_meta_categories',
@@ -84,7 +81,7 @@ final class DatabaseDump
     public static function tables(): array
     {
         $tables = array();
-        foreach (Dump::newInstance()->showTables() as $row) {
+        foreach (Dump::getInstance()->showTables() as $row) {
             $name = (string) current($row);
             if (TablePrefix::owns($name, DB_TABLE_PREFIX)) {
                 $tables[] = $name;
@@ -112,7 +109,7 @@ final class DatabaseDump
         if (@file_put_contents($file, '/* Shopclass database backup ' . date('c') . " */\n", FILE_APPEND) === false) {
             throw new RuntimeException('Could not write the database backup');
         }
-        $dump = Dump::newInstance();
+        $dump = Dump::getInstance();
         foreach ($tables as $i => $table) {
             if ($each !== null) {
                 $each($i, count($tables), $table);

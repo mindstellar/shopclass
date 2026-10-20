@@ -15,14 +15,18 @@ use Admin;
 use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
+use mindstellar\database\Db;
+use mindstellar\language\LanguageService;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
 use mindstellar\market\PackageReconciler;
+use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
+use mindstellar\utility\Formatting;
 use Params;
 use Plugins;
 use Sitemap;
@@ -51,7 +55,7 @@ class Cli
         'db:repair'           => ['cmdDbRepair', 'Bring the schema back in line with struct.sql; never drops anything (--dry-run)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
-        'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=)'],
+        'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=, --listen)'],
         'jobs:status'         => ['cmdJobsStatus', 'Show what is on the job queue per type, and what stopped retrying (--type=)'],
         'storage:work'        => ['cmdJobsWork', 'Deprecated alias for jobs:work'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
@@ -62,7 +66,11 @@ class Cli
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
         'user:2fa-off'        => ['cmdUserTwoFactorOff', 'Turn off an admin\'s two-step sign-in (--user=)'],
+        'api:key:create'      => ['cmdApiKeyCreate', 'Make an API key and print it once (--admin=<username>|id:<n> --name= [--kind=admin|public] [--scopes=] [--expires=YYYY-MM-DD|90d])'],
+        'api:key:list'        => ['cmdApiKeyList', 'List API keys'],
+        'api:key:revoke'      => ['cmdApiKeyRevoke', 'Revoke an API key (<id>)'],
         'plugin:list'         => ['cmdPluginList', 'List plugins and their status'],
+        'plugin:install'      => ['cmdPluginInstall', 'Install and enable a plugin already in oc-content/plugins (--plugin=<folder>)'],
         'plugin:activate'     => ['cmdPluginActivate', 'Enable an installed plugin (--plugin=<folder>)'],
         'plugin:deactivate'   => ['cmdPluginDeactivate', 'Disable an active plugin (--plugin=<folder>)'],
         'theme:list'          => ['cmdThemeList', 'List installed public themes'],
@@ -135,6 +143,14 @@ class Cli
             $this->cmdHelp([]);
 
             return 2;
+        }
+
+        // `<command> --help` prints the summary and never runs the command.
+        if (array_intersect(array_slice($argv, 1), ['-h', '--help']) !== []) {
+            $summary = isset($this->added[$command]) ? $this->added[$command]['summary'] : $this->commands[$command][1];
+            $this->out(sprintf("Usage: php oc-cli.php %s [options]\n\n%s\n", $command, $summary));
+
+            return 0;
         }
 
         $args = $this->parseOptions(array_slice($argv, 1));
@@ -296,9 +312,29 @@ class Cli
             define('REL_WEB_URL', ($path === null || $path === '') ? '/' : $path);
         }
 
+        // A language that is not bundled is downloaded first, as the web installer does.
+        if (!isset(osc_listLocales()[$locale])) {
+            $published = preg_match('/^[a-z]{2,3}(_[A-Z]{2})?$/D', (string) $locale) ? LanguageService::published() : array();
+            if (!isset($published[$locale])) {
+                $this->err(sprintf(
+                    "The language %s is not bundled and %s.\n",
+                    $locale,
+                    $published === null ? 'the translation repository could not be reached' : 'is not published in the translation repository'
+                ));
+
+                return 2;
+            }
+            $this->out(sprintf("Downloading the %s language\n", $locale));
+            if (LanguageService::downloadFiles($locale) === null || !isset(osc_listLocales()[$locale])) {
+                $this->err(sprintf("Could not download the %s language. Check that %s is writable.\n", $locale, osc_translations_path()));
+
+                return 1;
+            }
+        }
+
         // Locale for the seeded site language and admin, mirroring the GUI installer.
-        \Session::newInstance()->_set('userLocale', $locale);
-        \Session::newInstance()->_set('adminLocale', $locale);
+        \Session::getInstance()->_set('userLocale', $locale);
+        \Session::getInstance()->_set('adminLocale', $locale);
 
         // Feed oc_install() the settings it reads from the request in the GUI.
         Params::setParam('dbhost', $dbHost);
@@ -335,7 +371,7 @@ class Cli
         [$adminPassword, $generated] = $this->resolvePassword($adminPwArgs);
 
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_admin')->insert([
+            Db::table(DB_TABLE_PREFIX . 't_admin')->insert([
                 's_name'     => $adminName,
                 's_username' => $adminUser,
                 's_password' => osc_hash_password($adminPassword),
@@ -345,8 +381,8 @@ class Cli
             // Site identity, matching the GUI installer's basic_info().
             $prefTable = DB_TABLE_PREFIX . 't_preference';
             $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-            osc_db_execute($replace, ['pageTitle', $siteTitle, 'osclass', 'STRING']);
-            osc_db_execute($replace, ['contactEmail', $adminEmail, 'osclass', 'STRING']);
+            Db::execute($replace, ['pageTitle', $siteTitle, 'osclass', 'STRING']);
+            Db::execute($replace, ['contactEmail', $adminEmail, 'osclass', 'STRING']);
         } catch (\Throwable $e) {
             $this->err('Schema installed, but creating the admin account failed: ' . $e->getMessage() . "\n");
 
@@ -450,7 +486,7 @@ class Cli
      */
     private function cmdCoreUpdate(array $args): int
     {
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             $this->err("Disabled in demo mode.\n");
 
             return 1;
@@ -507,10 +543,7 @@ class Cli
         }
 
         try {
-            $runner = new \mindstellar\migration\MigrationRunner(
-                Connection::instance(),
-                DatabaseTools::migrationsDir()
-            );
+            $runner = \mindstellar\migration\MigrationRunner::forCore();
             $runner->ensureLedger();
             $pending = $runner->pending();
         } catch (\Throwable $e) {
@@ -525,7 +558,7 @@ class Cli
         }
 
         try {
-            $release = DatabaseTools::upgradeLock(Connection::instance());
+            $release = DatabaseTools::upgradeLock(Connection::getInstance());
         } catch (\Throwable $e) {
             $release = null;
         }
@@ -535,7 +568,7 @@ class Cli
             return 1;
         }
         try {
-            $result = (new \mindstellar\database\SchemaReconciler(Connection::instance()))->repair();
+            $result = (new \mindstellar\database\SchemaReconciler(Connection::getInstance()))->repair();
         } catch (\Throwable $e) {
             $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
 
@@ -572,8 +605,6 @@ class Cli
     /**
      * Report where this database differs from struct.sql, then whether the site is ready for
      * strict SQL mode. --strict prints only the second part. Reads only; changes nothing.
-     *
-     * @param array<string, mixed> $args
      *
      * @return int 0 when the schema matches and the site is ready, 1 otherwise
      */
@@ -672,14 +703,12 @@ class Cli
      * It cannot fix a nullability difference or an index with the wrong columns, and it
      * leaves an extra column or index alone on purpose. Those need a person to look at them.
      *
-     * @param array<string, mixed> $args
-     *
-     * @return int 0 when the schema matches, 1 when it does not
+     * @return int 0 when the schema matches or has only extras, 1 otherwise
      */
     private function schemaReport(): int
     {
         try {
-            $findings = (new \mindstellar\database\SchemaDoctor(Connection::instance()))->diagnose();
+            $findings = (new \mindstellar\database\SchemaDoctor(Connection::getInstance()))->diagnose();
         } catch (\Throwable $e) {
             $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
 
@@ -744,7 +773,9 @@ class Cli
         $this->out("  db:repair does not change a nullability difference or an index with the wrong\n");
         $this->out("  columns. Ask for help before changing those by hand.\n");
 
-        return 1;
+        $problems = array_filter($findings, static fn (array $f): bool => !in_array($f['kind'], DatabaseTools::EXTRA, true));
+
+        return $problems === [] ? 0 : 1;
     }
 
     /**
@@ -811,20 +842,50 @@ class Cli
      *
      *     * * * * * php oc-cli.php jobs:work --max-seconds=50
      *
+     * With --listen it keeps running (an hour by default) and starts a fresh worker as soon
+     * as a job is due: at once with a Redis or Valkey cache, within seconds without one.
+     *
      * @param array<string, mixed> $args
      *
      * @return int Exit code; 1 when a job has stopped retrying
      */
     private function cmdJobsWork(array $args): int
     {
-        $maxSeconds = (int) ($args['max-seconds'] ?? 20);
+        $listen     = !empty($args['listen']);
+        $maxSeconds = (int) ($args['max-seconds'] ?? ($listen ? 3600 : 20));
         if ($maxSeconds < 1) {
             $this->err("--max-seconds must be 1 or more.\n");
 
             return 2;
         }
+        if ($listen && !function_exists('proc_open')) {
+            $this->err("--listen needs proc_open, which this PHP has turned off.\n");
 
-        $queue   = \mindstellar\job\JobQueue::instance();
+            return 2;
+        }
+        if ($listen) {
+            // Each pass is its own process, so no cached data or memory outlives it.
+            $spawn = function (string ...$args): void {
+                $command = array_merge(array(PHP_BINARY, ABS_PATH . 'oc-cli.php'), $args);
+                $process = proc_open($command, array(STDIN, STDOUT, STDERR), $pipes);
+                if (!is_resource($process)) {
+                    $this->err('Could not start ' . implode(' ', $command) . "\n");
+
+                    return;
+                }
+                proc_close($process);
+            };
+            \mindstellar\job\JobWorker::listen(
+                $maxSeconds,
+                static fn () => $spawn('jobs:work', '--max-seconds=50'),
+                null,
+                static fn () => $spawn('cron', '--type=due')
+            );
+
+            return 0;
+        }
+
+        $queue   = \mindstellar\job\JobQueue::getInstance();
         $started = time();
 
         $ran = \mindstellar\job\JobWorker::run($maxSeconds);
@@ -856,7 +917,7 @@ class Cli
      */
     private function cmdJobsStatus(array $args): int
     {
-        $queue = \mindstellar\job\JobQueue::instance();
+        $queue = \mindstellar\job\JobQueue::getInstance();
         $only  = trim((string) ($args['type'] ?? ''));
         $all   = $queue->stats($only === '' ? null : $only);
 
@@ -944,6 +1005,36 @@ class Cli
     }
 
     /**
+     * The api:key:* commands, run by ApiKeyCommands.
+     */
+    private function apiKeys(): ApiKeyCommands
+    {
+        return new ApiKeyCommands(
+            function (string $text): void {
+                $this->out($text);
+            },
+            function (string $text): void {
+                $this->err($text);
+            }
+        );
+    }
+
+    private function cmdApiKeyCreate(array $args): int
+    {
+        return $this->apiKeys()->create($args);
+    }
+
+    private function cmdApiKeyList(array $args): int
+    {
+        return $this->apiKeys()->list($args);
+    }
+
+    private function cmdApiKeyRevoke(array $args): int
+    {
+        return $this->apiKeys()->revoke($args);
+    }
+
+    /**
      * Pre-generate every sitemap document into the cache.
      *
      * @param array<string, mixed> $args
@@ -952,7 +1043,7 @@ class Cli
      */
     private function cmdSitemapWarm(array $args): int
     {
-        $map = Sitemap::newInstance()->warmCache();
+        $map = Sitemap::getInstance()->warmCache();
         foreach ($map as $doc => $ok) {
             $this->out(sprintf("  %-12s %s\n", $doc, $ok ? 'ok' : 'FAILED'));
         }
@@ -983,12 +1074,12 @@ class Cli
 
             return 2;
         }
-        if (Admin::newInstance()->findByUsername($username)) {
+        if (Admin::getInstance()->findByUsername($username)) {
             $this->err(sprintf("An admin with username '%s' already exists.\n", $username));
 
             return 1;
         }
-        if (Admin::newInstance()->findByEmail($email)) {
+        if (Admin::getInstance()->findByEmail($email)) {
             $this->err(sprintf("An admin with email '%s' already exists.\n", $email));
 
             return 1;
@@ -998,7 +1089,7 @@ class Cli
 
         // Mirrors the installer's admin insert: s_secret and b_moderator are left
         // to their column defaults (empty secret, full admin).
-        $inserted = Admin::newInstance()->insert([
+        $inserted = Admin::getInstance()->insert([
             's_name'     => $name,
             's_username' => $username,
             's_password' => osc_hash_password($password),
@@ -1037,8 +1128,8 @@ class Cli
         }
 
         $admin = $username !== ''
-            ? Admin::newInstance()->findByUsername($username)
-            : Admin::newInstance()->findByEmail($email);
+            ? Admin::getInstance()->findByUsername($username)
+            : Admin::getInstance()->findByEmail($email);
         if (!$admin) {
             $this->err("No matching admin found.\n");
 
@@ -1047,17 +1138,13 @@ class Cli
 
         [$password, $generated] = $this->resolvePassword($args);
 
-        $updated = Admin::newInstance()->update(
-            ['s_password' => osc_hash_password($password)],
-            ['pk_i_id' => $admin['pk_i_id']]
-        );
-        if ($updated === false) {
+        if (!\mindstellar\auth\AdminPassword::set((int) $admin['pk_i_id'], $password)) {
             $this->err("Could not update the password.\n");
 
             return 1;
         }
 
-        $this->out(sprintf("Password reset for admin '%s'.\n", $admin['s_username']));
+        $this->out(sprintf("Password reset for admin '%s'; every sign-in of theirs has ended.\n", $admin['s_username']));
         if ($generated) {
             $this->out(sprintf("Generated password: %s\n", $password));
         }
@@ -1074,7 +1161,7 @@ class Cli
      */
     private function cmdUserTwoFactorOff(array $args): int
     {
-        $admin = Admin::newInstance()->findByUsername(trim((string) ($args['user'] ?? '')));
+        $admin = Admin::getInstance()->findByUsername(trim((string) ($args['user'] ?? '')));
         if (!$admin) {
             $this->err("Usage: user:2fa-off --user=<username>\nNo matching admin found.\n");
 
@@ -1154,6 +1241,56 @@ class Cli
     }
 
     /**
+     * Install and enable a plugin whose files are in place, as the admin's Install button does.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
+     */
+    private function cmdPluginInstall(array $args): int
+    {
+        $plugin = trim((string) ($args['plugin'] ?? ''));
+        if ($plugin === '') {
+            $this->err("Usage: plugin:install --plugin=<folder>\n");
+
+            return 2;
+        }
+        if (str_contains($plugin, '..')) {
+            $this->err("Give the plugin's folder in oc-content/plugins, not a path outside it.\n");
+
+            return 2;
+        }
+
+        // Plugins::install() treats any output as a failure, so it must land in a buffer.
+        $level = ob_get_level();
+        ob_start();
+        $result = Plugins::install($this->normalisePluginPath($plugin));
+        while (ob_get_level() > $level) {
+            ob_end_clean();
+        }
+
+        if ($result === true) {
+            $this->out(sprintf("Plugin '%s' installed and enabled.\n", $plugin));
+
+            return 0;
+        }
+
+        $this->err(match ($result['error_code'] ?? '') {
+            'error_installed' => sprintf("Plugin '%s' is already installed.\n", $plugin),
+            'error_file'      => sprintf("Plugin '%s' was not found in oc-content/plugins.\n", $plugin),
+            'custom_error'    => sprintf("Could not install plugin '%s': %s\n", $plugin, $result['msg'] ?? ''),
+            'error_output'    => sprintf(
+                "Plugin '%s' was installed, but printed output while installing:\n%s\n",
+                $plugin,
+                $result['output'] ?? ''
+            ),
+            default           => sprintf("Could not install plugin '%s'.\n", $plugin),
+        });
+
+        return 1;
+    }
+
+    /**
      * Enable an installed plugin.
      *
      * @param array<string, mixed> $args
@@ -1171,7 +1308,7 @@ class Cli
 
         $path = $this->normalisePluginPath($plugin);
         if (!Plugins::isInstalled($path)) {
-            $this->err(sprintf("Plugin '%s' is not installed. Install it from the admin first.\n", $plugin));
+            $this->err(sprintf("Plugin '%s' is not installed. Run plugin:install first.\n", $plugin));
 
             return 1;
         }
@@ -1235,7 +1372,7 @@ class Cli
      */
     private function cmdThemeList(array $args): int
     {
-        $themes  = WebThemes::newInstance()->getListThemes();
+        $themes  = WebThemes::getInstance()->getListThemes();
         $current = osc_theme();
         if ($themes === array()) {
             $this->out("No themes found.\n");
@@ -1267,7 +1404,7 @@ class Cli
             return 2;
         }
 
-        if (!in_array($theme, WebThemes::newInstance()->getListThemes(), true)) {
+        if (!in_array($theme, WebThemes::getInstance()->getListThemes(), true)) {
             $this->err(sprintf("Theme '%s' is not installed. Run theme:list to see available themes.\n", $theme));
 
             return 1;
@@ -1316,7 +1453,7 @@ class Cli
      */
     private function marketWriteGuard(): int
     {
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             $this->err("Disabled in demo mode.\n");
 
             return 1;
@@ -1339,19 +1476,7 @@ class Cli
      */
     private function formatBytes(int $bytes): string
     {
-        if ($bytes <= 0) {
-            return 'unknown size';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $i     = 0;
-        $value = (float) $bytes;
-        while ($value >= 1024 && $i < count($units) - 1) {
-            $value /= 1024;
-            $i++;
-        }
-
-        return sprintf('%.1f %s', $value, $units[$i]);
+        return $bytes > 0 ? Formatting::bytes($bytes) : 'unknown size';
     }
 
     /**
@@ -1705,7 +1830,7 @@ class Cli
 
         // Database connectivity.
         try {
-            $check('ok', 'Database', 'connected, server ' . Connection::instance()->serverInfo());
+            $check('ok', 'Database', 'connected, server ' . Connection::getInstance()->serverInfo());
         } catch (\Throwable $e) {
             $check('fail', 'Database', $e->getMessage());
         }
@@ -1744,7 +1869,7 @@ class Cli
         }
 
         // Job queue: jobs that stopped retrying, and work left waiting.
-        $jobs     = \mindstellar\job\JobQueue::instance()->stats();
+        $jobs     = \mindstellar\job\JobQueue::getInstance()->stats();
         $dueSince = $jobs['due_since'] !== null ? strtotime((string) $jobs['due_since']) : false;
         if ($jobs['error'] > 0) {
             $check('warn', 'Job queue', $jobs['error'] . ' job(s) stopped retrying; run jobs:status');
@@ -1759,6 +1884,25 @@ class Cli
         $driver === 'default'
             ? $check('warn', 'Object cache', 'per-request only (no persistent backend)')
             : $check('ok', 'Object cache', $driver);
+
+        // Apache hides the Authorization header from PHP unless .htaccess passes it on.
+        $htaccess = osc_base_path() . '.htaccess';
+        if (osc_rewrite_enabled() && is_file($htaccess)) {
+            \mindstellar\routing\ServerRules::passesAuthorization($htaccess)
+                ? $check('ok', 'API Authorization header', '.htaccess passes it to PHP')
+                : $check('warn', 'API Authorization header', '.htaccess does not pass it to PHP; add after RewriteEngine On: ' . \mindstellar\routing\ServerRules::AUTHORIZATION);
+        }
+
+        // /api/ is the REST API's, so a page or category slugged api cannot be reached.
+        try {
+            $reserved = \mindstellar\routing\ReservedSlugs::conflicts();
+            $taken    = array_merge($reserved['pages'], $reserved['categories']);
+            $taken === []
+                ? $check('ok', 'Reserved slugs', 'no page or category uses /api/')
+                : $check('warn', 'Reserved slugs', 'rename these, /api/ belongs to the API: ' . implode(', ', $taken));
+        } catch (\Throwable $e) {
+            $check('warn', 'Reserved slugs', 'could not check: ' . $e->getMessage());
+        }
 
         $this->out(sprintf("\nShopclass %s — %s\n", BuildInfo::label((string) osc_version()), strtoupper($worst) === 'OK' ? 'healthy' : 'issues found'));
 

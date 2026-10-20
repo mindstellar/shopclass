@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Item table
  *
@@ -20,16 +22,10 @@
  */
 class Item extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     /** Width of t_item_description.s_title, in characters. */
     public const TITLE_WIDTH = 100;
-
-    /**
-     * It references to self object: Item.
-     * It is used as a singleton
-     *
-     * @var Item
-     */
-    private static $instance;
 
     /**
      * Set data related to t_item table
@@ -66,18 +62,11 @@ class Item extends DAO
     }
 
     /**
-     * It creates a new Item object class if it has been created
-     * before, it return the previous object
-     *
-     * @return Item
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -93,28 +82,23 @@ class Item extends DAO
         // builder's identifier allowlist. There are no caller values: the join
         // conditions and column names are compile-time literals and $limit is
         // (int)-cast into a bound LIMIT placeholder. Location comes back from
-        // extendData() below, so this no longer joins it.
+        // extendData() below.
         //
-        // The stats row holds the running total, so ordering on it is exact.
-        // Previously this grouped by listing without aggregating and ordered on
-        // whichever day's row the server happened to pick — a total only by
-        // accident, and only because ONLY_FULL_GROUP_BY is stripped from the
-        // session. It also listed hidden and expired listings; the visibility
-        // filters below are the same ones the public listing queries apply.
+        // The stats row holds the running total, so ordering on it is exact. The
+        // visibility filters below are the same ones the public listing queries apply.
         $sql = 'SELECT i.*, s.i_num_views FROM ' . $this->getTableName() . ' i'
             . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats s ON s.fk_i_item_id = i.pk_i_id'
-            . ' WHERE i.b_enabled = 1 AND i.b_active = 1 AND i.b_spam = 0'
-            . ' AND i.dt_expiration >= NOW()'
+            . ' WHERE ' . implode(' AND ', \mindstellar\listing\ListingStatus::liveConditions('i.'))
             . ' ORDER BY s.i_num_views DESC'
             . ' LIMIT ?';
 
         try {
-            $items = osc_db_select($sql, array((int)$limit));
+            $items = Db::select($sql, array((int)$limit));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $this->extendData(osc_db_stringify_rows($items));
+        return $this->extendData(Db::stringifyRows($items));
     }
 
     /**
@@ -127,45 +111,43 @@ class Item extends DAO
      */
     public function extendData($items, $prefLocale = null)
     {
+        $items = $this->extendRows($items, $prefLocale);
+
+        // Batch-prime the resource cache for the whole page so the theme's
+        // per-item osc_get_item_resources() calls are cache hits, not an N+1.
+        if (is_array($items) && count($items) > 1) {
+            ItemResource::getInstance()->primeResourcesCache(array_column($items, 'pk_i_id'));
+        }
+
+        return $items;
+    }
+
+    /**
+     * extendData() without priming the photo cache, for a caller that loads photos itself.
+     *
+     * @param array<int,array<string,mixed>>       $items
+     * @param string|null                          $prefLocale   Defaults to the current locale
+     * @param array<int,array<string,mixed>>|null  $descriptions the items' t_item_description rows, when the caller holds them; null reads them
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function extendRows($items, $prefLocale = null, ?array $descriptions = null)
+    {
         if (!empty($items)) {
             if (null === $prefLocale) {
                 $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
             }
-            $items = $this->extendItemDescription($items, $prefLocale);
+            $items = $this->extendItemDescription($items, $prefLocale, $descriptions);
             $items = $this->extendCategoryName($items, $prefLocale);
-            $itemIds = array_column($items, 'pk_i_id');
-            // First get stats and locations data. The s.*/l.* aliases are outside
-            // the query builder's identifier allowlist, so this is hand-written
-            // SQL. The only values are the item ids, bound as an IN (?, ...) list.
-            //
-            // The stats row holds the total, so the seven counters come back as plain
-            // columns rather than an aggregate over every dated row.
-            if (!empty($itemIds)) {
-                $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
-                $sql = 'SELECT s.i_num_views,'
-                    . ' s.i_num_spam,'
-                    . ' s.i_num_bad_classified,'
-                    . ' s.i_num_repeated,'
-                    . ' s.i_num_offensive,'
-                    . ' s.i_num_expired,'
-                    . ' s.i_num_premium_views,'
-                    . ' l.*'
-                    . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats s'
-                    . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
-                    . ' WHERE s.fk_i_item_id IN (' . $placeholders . ')';
-
-                try {
-                    $itemStatsLocations = osc_db_stringify_rows(osc_db_select($sql, array_values($itemIds)));
-                } catch (\mindstellar\database\DbException $e) {
-                    $itemStatsLocations = array();
-                }
-            } else {
+            try {
+                $itemStatsLocations = (new \mindstellar\listing\ListingQuery())->statsAndLocations(array_column($items, 'pk_i_id'));
+            } catch (\mindstellar\database\DbException $e) {
                 $itemStatsLocations = array();
             }
 
             foreach ($items as $k => $aItem) {
                 // Add stats and locations data
-                if (isset($itemStatsLocations)) {
+                if ($itemStatsLocations !== array()) {
                     foreach ($itemStatsLocations as $key => $isl) {
                         if ($aItem['pk_i_id'] === $isl['fk_i_item_id']) {
                             $aItem += $isl;
@@ -174,12 +156,6 @@ class Item extends DAO
                     }
                 }
                 $items[$k] = $aItem;
-            }
-
-            // Batch-prime the resource cache for the whole page so the theme's
-            // per-item osc_get_item_resources() calls are cache hits, not an N+1.
-            if (count($itemIds) > 1) {
-                ItemResource::newInstance()->primeResourcesCache($itemIds);
             }
         }
 
@@ -201,12 +177,12 @@ class Item extends DAO
             . ' WHERE c.pk_i_id = i.fk_i_category_id AND cd.fk_i_category_id = i.fk_i_category_id';
 
         try {
-            $rows = osc_db_select($sql);
+            $rows = Db::select($sql);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -218,7 +194,7 @@ class Item extends DAO
      */
     public function findResourcesByID($id)
     {
-        return ItemResource::newInstance()->getResources($id);
+        return ItemResource::getInstance()->getResources($id);
     }
 
     /**
@@ -230,7 +206,7 @@ class Item extends DAO
      */
     public function findLocationByID($id)
     {
-        return ItemLocation::newInstance()->findByPrimaryKey($id);
+        return ItemLocation::getInstance()->findByPrimaryKey($id);
     }
 
     /**
@@ -274,7 +250,7 @@ class Item extends DAO
                 // placeholder, so the caller's values are bound rather than
                 // escaped-and-concatenated. %d keeps its integer semantics by
                 // casting the value it binds; %s binds the value verbatim as a
-                // string (dropping the legacy numeric coercion, amendment T).
+                // string, with no numeric coercion.
                 $i     = 0;
                 $where = preg_replace_callback('/%[ds]/', static function ($m) use (&$i, &$args) {
                     if ($m[0] === '%d' && array_key_exists($i, $args)) {
@@ -297,12 +273,12 @@ class Item extends DAO
             . ' WHERE l.fk_i_item_id = i.pk_i_id AND ' . $where;
 
         try {
-            $items = osc_db_select($sql, $params);
+            $items = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $this->extendData(osc_db_stringify_rows($items));
+        return $this->extendData(Db::stringifyRows($items));
     }
 
     /**
@@ -356,7 +332,7 @@ class Item extends DAO
         }
 
         try {
-            $total = osc_db_scalar($sql, $params);
+            $total = Db::scalar($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -373,10 +349,10 @@ class Item extends DAO
      * $sql is a compile-time SQL fragment whose only values are '?' placeholders.
      *
      * @param string[] $conditions
-     * @param array    $params
+     * @param array<int,mixed> $params
      * @param string   $sql
      * @param string   $bool 'AND' or 'OR'
-     * @param array    $vals values for the placeholders in $sql, in order
+     * @param array<int,mixed> $vals values for the placeholders in $sql, in order
      */
     private function pushWhere(array &$conditions, array &$params, string $sql, string $bool = 'AND', array $vals = array()): void
     {
@@ -459,14 +435,9 @@ class Item extends DAO
     }
 
     /**
-     * SQL predicate for "this listing is publicly live": enabled, active, not flagged spam, and
-     * either premium or not yet expired. Single source of truth for the visibility rule that
-     * search, category counts and any integrator must agree on — copy it by hand and the copies
-     * drift, which is exactly what makes search disagree with the counts about what is live.
+     * SQL fragments for "this listing is publicly live", to join with AND.
      *
-     * Returns an array of SQL fragments to join with AND. The expiry bound carries PHP's clock
-     * as a quoted literal (matching how the search builder consumes it). Pass an $alias ending
-     * in a dot (e.g. 'i.' or DB_TABLE_PREFIX . 't_item.') to qualify the columns.
+     * Compatibility: use \mindstellar\listing\ListingStatus::liveConditions(), which holds the rule.
      *
      * @param string $alias column qualifier ending in a dot, or '' for none
      *
@@ -474,12 +445,7 @@ class Item extends DAO
      */
     public static function liveConditions($alias = '')
     {
-        return array(
-            $alias . 'b_enabled = 1',
-            $alias . 'b_active = 1',
-            $alias . 'b_spam = 0',
-            sprintf("(%sb_premium = 1 || %sdt_expiration >= '%s')", $alias, $alias, date('Y-m-d H:i:s')),
-        );
+        return \mindstellar\listing\ListingStatus::liveConditions((string) $alias);
     }
 
     /**
@@ -495,40 +461,84 @@ class Item extends DAO
      */
     public function findAdjacentLive(int $itemId, bool $next, string $locale): array
     {
-        $sql = 'SELECT a.pk_i_id, a.fk_i_category_id, l.s_city, d.fk_c_locale_code, d.s_title'
-            . ' FROM (SELECT i.pk_i_id, i.fk_i_category_id FROM ' . $this->getTableName() . ' i'
-            . ' WHERE i.pk_i_id ' . ($next ? '>' : '<') . ' ? AND ' . implode(' AND ', self::liveConditions('i.'))
-            . ' ORDER BY i.pk_i_id ' . ($next ? 'ASC' : 'DESC') . ' LIMIT 1) a'
+        $dir = $next ? 'next' : 'prev';
+
+        return $this->adjacentLive($itemId, array($dir), $locale)[$dir];
+    }
+
+    /**
+     * Both neighbours of findAdjacentLive() in one statement.
+     *
+     * @param int    $itemId Listing to start from
+     * @param string $locale Preferred title locale
+     *
+     * @return array{prev:array<string,string>,next:array<string,string>} Each as findAdjacentLive() returns it
+     * @since 7.0.0
+     */
+    public function findAdjacentLiveBoth(int $itemId, string $locale): array
+    {
+        return $this->adjacentLive($itemId, array('prev', 'next'), $locale);
+    }
+
+    /**
+     * @param string[] $dirs 'prev' and/or 'next'
+     *
+     * @return array<string,array<string,string>> direction => row, empty when there is none
+     */
+    private function adjacentLive(int $itemId, array $dirs, string $locale): array
+    {
+        $live    = implode(' AND ', self::liveConditions('i.'));
+        $selects = array();
+        $params  = array();
+        foreach ($dirs as $dir) {
+            $next      = $dir === 'next';
+            $selects[] = "(SELECT '" . $dir . "' AS dir, i.pk_i_id, i.fk_i_category_id FROM " . $this->getTableName() . ' i'
+                . ' WHERE i.pk_i_id ' . ($next ? '>' : '<') . ' ? AND ' . $live
+                . ' ORDER BY i.pk_i_id ' . ($next ? 'ASC' : 'DESC') . ' LIMIT 1)';
+            $params[]  = $itemId;
+        }
+        $sql = 'SELECT a.dir, a.pk_i_id, a.fk_i_category_id, l.s_city, d.fk_c_locale_code, d.s_title'
+            . ' FROM (' . implode(' UNION ALL ', $selects) . ') a'
             . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON l.fk_i_item_id = a.pk_i_id'
             . ' LEFT JOIN ' . DB_TABLE_PREFIX . "t_item_description d ON d.fk_i_item_id = a.pk_i_id AND d.s_title <> ''"
-            . ' ORDER BY d.fk_c_locale_code';
+            . ' ORDER BY a.dir, d.fk_c_locale_code';
 
+        $result = array_fill_keys($dirs, array());
         try {
-            $rows = osc_db_stringify_rows(osc_db_select($sql, array($itemId)));
+            $rows = Db::stringifyRows(Db::select($sql, $params));
         } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-        if ($rows === array()) {
-            return array();
+            return $result;
         }
 
-        $title = '';
+        $titles  = array();
+        $matched = array();
         foreach ($rows as $row) {
-            if ($row['fk_c_locale_code'] === $locale) {
-                $title = (string)$row['s_title'];
-                break;
+            $dir = (string)$row['dir'];
+            if (!isset($titles[$dir])) {
+                $titles[$dir]  = '';
+                $result[$dir]  = array(
+                    'pk_i_id'          => (string)$row['pk_i_id'],
+                    'fk_i_category_id' => (string)$row['fk_i_category_id'],
+                    's_city'           => (string)$row['s_city'],
+                    's_title'          => '',
+                );
+                $matched[$dir] = false;
             }
-            if ($title === '') {
-                $title = (string)$row['s_title'];
+            if ($matched[$dir]) {
+                continue;
+            }
+            if ($row['fk_c_locale_code'] === $locale) {
+                $titles[$dir]  = (string)$row['s_title'];
+                $matched[$dir] = true;
+            } elseif ($titles[$dir] === '') {
+                $titles[$dir] = (string)$row['s_title'];
             }
         }
+        foreach ($titles as $dir => $title) {
+            $result[$dir]['s_title'] = $title;
+        }
 
-        return array(
-            'pk_i_id'          => (string)$rows[0]['pk_i_id'],
-            'fk_i_category_id' => (string)$rows[0]['fk_i_category_id'],
-            's_city'           => (string)$rows[0]['s_city'],
-            's_title'          => $title,
-        );
+        return $result;
     }
 
     /**
@@ -559,7 +569,7 @@ class Item extends DAO
         $sql = 'SELECT COUNT(*) AS total FROM ' . $this->getTableName() . ' WHERE ' . implode(' ', $conditions);
 
         try {
-            $total = osc_db_scalar($sql, $params);
+            $total = Db::scalar($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -599,7 +609,7 @@ class Item extends DAO
         );
 
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_item_description')->insert($array_set);
+            Db::table(DB_TABLE_PREFIX . 't_item_description')->insert($array_set);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -667,7 +677,7 @@ class Item extends DAO
         if ($count === true) {
             $sql = 'SELECT count(pk_i_id) as total FROM ' . $this->getTableName() . ' i' . $where;
             try {
-                $total = osc_db_scalar($sql, $params);
+                $total = Db::scalar($sql, $params);
             } catch (\mindstellar\database\DbException $e) {
                 return 0;
             }
@@ -694,12 +704,12 @@ class Item extends DAO
         }
 
         try {
-            $items = osc_db_select($sql, $params);
+            $items = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $this->extendData(osc_db_stringify_rows($items));
+        return $this->extendData(Db::stringifyRows($items));
     }
 
     /**
@@ -805,10 +815,11 @@ class Item extends DAO
      */
     public function findByHourExpiration($hours = 24)
     {
-        // Same rows as TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) = $hours, as a range an index can use.
+        // Expiring between $hours and $hours + 1 from now, as a range an index can use.
         $hours      = (int)$hours;
+        $now        = time();
         $conditions = [
-            'dt_expiration >= NOW() + INTERVAL ' . $hours . ' HOUR AND dt_expiration < NOW() + INTERVAL ' . ($hours + 1) . ' HOUR',
+            self::expiresBetween($now + $hours * 3600, $now + ($hours + 1) * 3600),
             'b_active = 1',
             'b_spam = 0'
         ];
@@ -828,12 +839,22 @@ class Item extends DAO
     {
         $days       = (int)$days;
         $conditions = [
-            'dt_expiration >= NOW() + INTERVAL ' . $days . ' DAY AND dt_expiration < NOW() + INTERVAL ' . ($days + 1) . ' DAY',
+            self::expiresBetween(strtotime('+' . $days . ' day'), strtotime('+' . ($days + 1) . ' day')),
             'b_active = 1',
             'b_spam = 0'
         ];
 
         return $this->findItemByTypes($conditions);
+    }
+
+    /**
+     * A bound expiry range from $from up to, not including, $to.
+     *
+     * @return array{0:string,1:array<int,string>}
+     */
+    private static function expiresBetween(int $from, int $to): array
+    {
+        return ['dt_expiration >= ? AND dt_expiration < ?', [date('Y-m-d H:i:s', $from), date('Y-m-d H:i:s', $to)]];
     }
 
     /**
@@ -893,47 +914,15 @@ class Item extends DAO
      * @param int    $id
      * @param string $stat
      *
-     * @return int|false int if updated correctly or false when error occurs
+     * @return int|null rows changed (0 on a failed query); null for an unknown stat
      */
     public function clearStat($id, $stat)
     {
-        switch ($stat) {
-            case 'spam':
-                $array_set = array('i_num_spam' => 0);
-                break;
-            case 'duplicated':
-                $array_set = array('i_num_repeated' => 0);
-                break;
-            case 'bad':
-                $array_set = array('i_num_bad_classified' => 0);
-                break;
-            case 'offensive':
-                $array_set = array('i_num_offensive' => 0);
-                break;
-            case 'expired':
-                $array_set = array('i_num_expired' => 0);
-                break;
-            case 'all':
-                $array_set = array(
-                    'i_num_spam'           => 0,
-                    'i_num_repeated'       => 0,
-                    'i_num_bad_classified' => 0,
-                    'i_num_offensive'      => 0,
-                    'i_num_expired'        => 0
-                );
-                break;
-            default:
-                break;
+        if (!is_string($stat) || !isset(\mindstellar\listing\ListingCounters::REPORTS[$stat])) {
+            return null;
         }
-        if (isset($array_set)) {
-            try {
-                return osc_db_table(DB_TABLE_PREFIX . 't_item_stats')
-                    ->where('fk_i_item_id', $id)
-                    ->update($array_set);
-            } catch (\mindstellar\database\DbException $e) {
-                return false;
-            }
-        }
+
+        return \mindstellar\listing\ListingCounters::clearReport((int) $id, $stat);
     }
 
     /**
@@ -943,7 +932,7 @@ class Item extends DAO
      *
      * @return string|null
      */
-    private static function fitTitle($title): ?string
+    public static function fitTitle($title): ?string
     {
         return $title === null ? null : mb_substr((string) $title, 0, self::TITLE_WIDTH, 'UTF-8');
     }
@@ -966,7 +955,7 @@ class Item extends DAO
             . ' (s_title, s_description, fk_c_locale_code, fk_i_item_id) VALUES (?, ?, ?, ?)';
 
         try {
-            osc_db_execute($sql, array(self::fitTitle($title), $text, $locale, $id));
+            Db::execute($sql, array(self::fitTitle($title), $text, $locale, $id));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -995,7 +984,7 @@ class Item extends DAO
         }
 
         try {
-            $item = osc_db_select_one(
+            $item = Db::selectOne(
                 'SELECT dt_expiration, b_enabled, b_active, b_spam, b_premium FROM ' . $this->getTableName() . ' WHERE pk_i_id = ?',
                 array($id)
             );
@@ -1003,12 +992,9 @@ class Item extends DAO
             $item = null;
         }
 
-        // Legacy entered this block whenever the read did not error, even for a
-        // zero-row (missing id) result — in which case the UPDATE below matched
-        // nothing and the method fell through to false. A missing id here yields a
-        // null row and converges on the same false, so it is guarded up front.
+        // A missing id reads no row and returns false.
         if ($item !== null) {
-            $item        = osc_db_stringify_row($item);
+            $item        = Db::stringifyRow($item);
             $counted_old = osc_item_is_counted($item);
             if (ctype_digit($expiration_time)) {
                 if ($expiration_time > 0) {
@@ -1030,14 +1016,14 @@ class Item extends DAO
             }
 
             try {
-                $result = osc_db_execute($sql, $params);
+                $result = Db::execute($sql, $params);
             } catch (\mindstellar\database\DbException $e) {
                 $result = 0;
             }
 
             if ($result && $result > 0) {
                 try {
-                    $_item = osc_db_select_one(
+                    $_item = Db::selectOne(
                         'SELECT i.dt_expiration, i.fk_i_user_id, i.fk_i_category_id, l.fk_c_country_code,'
                         . ' l.fk_i_region_id, l.fk_i_city_id'
                         . ' FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l'
@@ -1054,7 +1040,7 @@ class Item extends DAO
                     // on the method's own false failure path.
                     return false;
                 }
-                $_item = osc_db_stringify_row($_item);
+                $_item = Db::stringifyRow($_item);
 
                 // Model-level write the controller-layer events never see. Announce the new
                 // expiry so an index or cache mirroring liveness can react (an expiry change can
@@ -1069,20 +1055,20 @@ class Item extends DAO
                 if ($counted !== $counted_old) {
                     if (!$counted) {
                         if ($_item['fk_i_user_id'] != null) {
-                            User::newInstance()->decreaseNumItems($_item['fk_i_user_id']);
+                            User::getInstance()->decreaseNumItems($_item['fk_i_user_id']);
                         }
-                        CategoryStats::newInstance()->decreaseNumItems($_item['fk_i_category_id']);
-                        CountryStats::newInstance()->decreaseNumItems($_item['fk_c_country_code']);
-                        RegionStats::newInstance()->decreaseNumItems($_item['fk_i_region_id']);
-                        CityStats::newInstance()->decreaseNumItems($_item['fk_i_city_id']);
+                        CategoryStats::getInstance()->decreaseNumItems($_item['fk_i_category_id']);
+                        CountryStats::getInstance()->decreaseNumItems($_item['fk_c_country_code']);
+                        RegionStats::getInstance()->decreaseNumItems($_item['fk_i_region_id']);
+                        CityStats::getInstance()->decreaseNumItems($_item['fk_i_city_id']);
                     } else {
                         if ($_item['fk_i_user_id'] != null) {
-                            User::newInstance()->increaseNumItems($_item['fk_i_user_id']);
+                            User::getInstance()->increaseNumItems($_item['fk_i_user_id']);
                         }
-                        CategoryStats::newInstance()->increaseNumItems($_item['fk_i_category_id']);
-                        CountryStats::newInstance()->increaseNumItems($_item['fk_c_country_code']);
-                        RegionStats::newInstance()->increaseNumItems($_item['fk_i_region_id']);
-                        CityStats::newInstance()->increaseNumItems($_item['fk_i_city_id']);
+                        CategoryStats::getInstance()->increaseNumItems($_item['fk_i_category_id']);
+                        CountryStats::getInstance()->increaseNumItems($_item['fk_c_country_code']);
+                        RegionStats::getInstance()->increaseNumItems($_item['fk_i_region_id']);
+                        CityStats::getInstance()->increaseNumItems($_item['fk_i_city_id']);
                     }
                 }
 
@@ -1114,7 +1100,7 @@ class Item extends DAO
             . DB_TABLE_PREFIX . 't_item.fk_i_category_id IN (' . implode(',', $aIds) . ')';
 
         try {
-            osc_db_execute($sql, array((int)$enable));
+            Db::execute($sql, array((int)$enable));
             $result = true;
         } catch (\mindstellar\database\DbException $e) {
             $result = false;
@@ -1177,7 +1163,7 @@ class Item extends DAO
             . ' WHERE 1 = 1' . $extra;
 
         try {
-            $total = osc_db_scalar($sql);
+            $total = Db::scalar($sql);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -1194,7 +1180,7 @@ class Item extends DAO
      */
     public function metaFields($id)
     {
-        $metaFields = Field::newInstance()->findByItem($id);
+        $metaFields = Field::getInstance()->findByItem($id);
         if (empty($metaFields)) {
             return [];
         }
@@ -1231,8 +1217,8 @@ class Item extends DAO
     {
         // Legacy had no error branch here (a failed read fataled on ->result()),
         // so a DbException is left to propagate rather than absorbed.
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_i_city_area_id', $cityAreaId)
                 ->get()
@@ -1244,11 +1230,12 @@ class Item extends DAO
     /**
      * Delete by primary key, delete dependencies too
      *
-     * @param int $id Item id
+     * @param int                          $id    Item id
+     * @param \mindstellar\auth\Actor|null $actor who deletes, for the log; the session when null
      *
      * @return int|false Rows removed from t_item, or false when the transaction failed
      */
-    public function deleteByPrimaryKey($id)
+    public function deleteByPrimaryKey($id, ?\mindstellar\auth\Actor $actor = null)
     {
         $item = $this->findByPrimaryKey($id);
 
@@ -1266,16 +1253,15 @@ class Item extends DAO
         // is about to remove them, but deleting a file cannot be undone — so a delete
         // that rolls back has to leave the listing with its images intact rather than
         // stranding it with none.
-        $resources = ItemResource::newInstance()->getAllResourcesFromItem($id);
+        $resources = ItemResource::getInstance()->getAllResourcesFromItem($id);
 
-        // t_item_moderation_log and t_item_report_log carry no foreign key to the
-        // item, so only this removes them. t_item_comment and t_item_resource are
-        // RESTRICT and must go first; the rest cascade, and stay listed for installs
-        // whose foreign keys were never created.
+        // t_item_moderation_log, t_item_report_log and the photos in t_resource carry no
+        // foreign key to the item, so only this removes them. t_item_comment is RESTRICT
+        // and must go first; the rest cascade, and stay listed for installs whose foreign
+        // keys were never created.
         $dependents = array(
             't_item_description',
             't_item_comment',
-            't_item_resource',
             't_item_location',
             't_item_stats',
             't_item_meta',
@@ -1284,10 +1270,11 @@ class Item extends DAO
         );
 
         try {
-            $deleted = osc_db_transaction(function () use ($id, $dependents) {
+            $deleted = Db::transaction(function () use ($id, $dependents) {
                 foreach ($dependents as $depTable) {
-                    osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
+                    Db::table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
                 }
+                Db::table(DB_TABLE_PREFIX . 't_resource')->where('s_owner_type', ItemResource::OWNER)->where('i_owner_id', $id)->delete();
 
                 // Not parent::deleteByPrimaryKey(): the inherited DAO reports a failed
                 // delete by returning false rather than raising, and a plain return
@@ -1296,26 +1283,26 @@ class Item extends DAO
                 // to it already gone. This is the same statement the DAO would run, from
                 // the layer that raises, which is what makes the rollback real. It still
                 // reports 0 for an id that matched nothing, which is not a failure.
-                return osc_db_table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $id)->delete();
+                return Db::table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $id)->delete();
             });
         } catch (\Throwable $e) {
             return false;
         }
 
-        // The row is gone for good, so the files can go too.
-        ItemActions::deleteResourcesFromHD($id, $isAdmin, $resources);
+        // The files go once the outermost transaction commits, and stay if it rolls back.
+        \mindstellar\listing\PhotoService::deleteFilesFromDisk($id, $isAdmin, $resources, $actor);
 
         // Counters are decremented only once the row is really gone. Doing it first
         // meant a delete that failed still took the listing out of every total, and
         // the numbers stayed wrong until the next stats rebuild.
         if (osc_item_is_counted($item)) {
             if ($item['fk_i_user_id'] != null) {
-                User::newInstance()->decreaseNumItems($item['fk_i_user_id']);
+                User::getInstance()->decreaseNumItems($item['fk_i_user_id']);
             }
-            CategoryStats::newInstance()->decreaseNumItems($item['fk_i_category_id']);
-            CountryStats::newInstance()->decreaseNumItems($item['fk_c_country_code']);
-            RegionStats::newInstance()->decreaseNumItems($item['fk_i_region_id']);
-            CityStats::newInstance()->decreaseNumItems($item['fk_i_city_id']);
+            CategoryStats::getInstance()->decreaseNumItems($item['fk_i_category_id']);
+            CountryStats::getInstance()->decreaseNumItems($item['fk_c_country_code']);
+            RegionStats::getInstance()->decreaseNumItems($item['fk_i_region_id']);
+            CityStats::getInstance()->decreaseNumItems($item['fk_i_city_id']);
         }
 
         Plugins::runHook('delete_item', $id);
@@ -1361,12 +1348,12 @@ class Item extends DAO
      */
     public function findByPrimaryKey($id)
     {
-        if (!is_numeric($id) || $id === null) {
+        if (!is_numeric($id)) {
             return array();
         }
         // Aliased i.* projection; hand-written with the id bound.
         try {
-            $rows = osc_db_select('SELECT i.* FROM ' . $this->getTableName() . ' i WHERE i.pk_i_id = ?', array($id));
+            $rows = Db::select('SELECT i.* FROM ' . $this->getTableName() . ' i WHERE i.pk_i_id = ?', array($id));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -1375,7 +1362,7 @@ class Item extends DAO
             return array();
         }
 
-        return $this->extendDataSingle(osc_db_stringify_row($rows[0]));
+        return $this->extendDataSingle(Db::stringifyRow($rows[0]));
     }
 
     /**
@@ -1400,8 +1387,8 @@ class Item extends DAO
      */
     public function deleteByCity($cityId)
     {
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_i_city_id', $cityId)
                 ->get()
@@ -1420,8 +1407,8 @@ class Item extends DAO
      */
     public function deleteByRegion($regionId)
     {
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_i_region_id', $regionId)
                 ->get()
@@ -1440,8 +1427,8 @@ class Item extends DAO
      */
     public function deleteByCountry($countryId)
     {
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_c_country_code', $countryId)
                 ->get()
@@ -1468,33 +1455,37 @@ class Item extends DAO
         $categoryIds = array_column($items, 'fk_i_category_id');
         $categoryIds = array_unique($categoryIds);
 
-        // Hand-written so the optional category-id IN() and the s_name != ''
-        // filter stay in the legacy order; every value is bound.
-        $conditions = array();
-        $params     = array();
-        if (count($categoryIds) > 0) {
-            $placeholders = implode(', ', array_fill(0, count($categoryIds), '?'));
-            $conditions[] = 'fk_i_category_id IN (' . $placeholders . ')';
-            foreach ($categoryIds as $cid) {
-                $params[] = $cid;
-            }
-        }
-        $conditions[] = 's_name != ?';
-        $params[]     = '';
-
-        $sql = 'SELECT fk_i_category_id, fk_c_locale_code, s_name FROM ' . DB_TABLE_PREFIX . 't_category_description'
-            . ' WHERE ' . implode(' AND ', $conditions);
-
-        try {
-            $categories = osc_db_stringify_rows(osc_db_select($sql, $params));
-        } catch (\mindstellar\database\DbException $e) {
-            return $items;
+        // Names come from the loaded enabled categories; only ids missing there are read.
+        $known = array();
+        foreach (Category::getInstance()->toTree() as $root) {
+            $this->collectCategoryNames($root, $known);
         }
         $aCategories = array();
-        foreach ($categories as $c) {
-            // if category name is not empty
-            if ($c['s_name'] != '') {
-                $aCategories[$c['fk_i_category_id']]['locale'][$c['fk_c_locale_code']]['s_category_name'] = $c['s_name'];
+        $missing     = array();
+        foreach ($categoryIds as $cid) {
+            if (isset($known[$cid])) {
+                $aCategories[$cid]['locale'] = $known[$cid];
+            } else {
+                $missing[] = $cid;
+            }
+        }
+
+        if ($missing !== array()) {
+            $sql = 'SELECT fk_i_category_id, fk_c_locale_code, s_name FROM ' . DB_TABLE_PREFIX . 't_category_description'
+                . ' WHERE fk_i_category_id IN (' . implode(', ', array_fill(0, count($missing), '?')) . ') AND s_name != ?'
+                . ' ORDER BY fk_i_category_id, fk_c_locale_code';
+            $params   = $missing;
+            $params[] = '';
+
+            try {
+                $categories = Db::stringifyRows(Db::select($sql, $params));
+            } catch (\mindstellar\database\DbException $e) {
+                return $items;
+            }
+            foreach ($categories as $c) {
+                if ($c['s_name'] != '') {
+                    $aCategories[$c['fk_i_category_id']]['locale'][$c['fk_c_locale_code']]['s_category_name'] = $c['s_name'];
+                }
             }
         }
 
@@ -1526,29 +1517,41 @@ class Item extends DAO
     }
 
     /**
+     * Each loaded category's names per locale, keyed by id, in locale-code order.
+     *
+     * @param array<string,mixed>                                     $category a tree node
+     * @param array<int|string,array<int|string,array<string,mixed>>> $out
+     */
+    private function collectCategoryNames(array $category, array &$out): void
+    {
+        $names = array();
+        foreach ($category['locale'] ?? array() as $code => $text) {
+            $names[$code] = array('s_category_name' => $text['s_name']);
+        }
+        ksort($names);
+        $out[$category['pk_i_id']] = $names;
+        foreach ($category['categories'] ?? array() as $child) {
+            $this->collectCategoryNames($child, $out);
+        }
+    }
+
+    /**
      * Extends the given array $items with description in available locales
      *
-     * @param array<int,array<string,mixed>> $items array with items
-     * @param string|null                    $prefLocale Defaults to the current locale
+     * @param array<int,array<string,mixed>>      $items        array with items
+     * @param string|null                         $prefLocale   Defaults to the current locale
+     * @param array<int,array<string,mixed>>|null $descriptions the rows to use; null reads them
      *
      * @return array<int,array<string,mixed>> $items with description
      */
-    private function extendItemDescription($items, $prefLocale = null)
+    private function extendItemDescription($items, $prefLocale = null, ?array $descriptions = null)
     {
         if (!empty($items)) {
             if (null === $prefLocale) {
                 $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
             }
-            $itemIds = array_column($items, 'pk_i_id');
-
-            // One fan-out over every listed item's descriptions, bound as IN (?, ...).
-            $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
-            $sql = 'SELECT fk_i_item_id, fk_c_locale_code, s_title, s_description'
-                . ' FROM ' . DB_TABLE_PREFIX . 't_item_description'
-                . ' WHERE fk_i_item_id IN (' . $placeholders . ')';
-
             try {
-                $descriptions = osc_db_stringify_rows(osc_db_select($sql, array_values($itemIds)));
+                $descriptions ??= (new \mindstellar\listing\ListingQuery())->descriptions(array_column($items, 'pk_i_id'));
             } catch (\mindstellar\database\DbException $e) {
                 return $items;
             }

@@ -105,7 +105,7 @@ if (!function_exists('osc_gui_kept')) {
      */
     function osc_gui_kept($key, $default = '')
     {
-        $kept = (string)Session::newInstance()->_getForm($key);
+        $kept = (string)Session::getInstance()->_getForm($key);
 
         return $kept !== '' ? $kept : (string)$default;
     }
@@ -148,7 +148,7 @@ if (!function_exists('osc_gui_listing_list')) {
      */
     function osc_gui_listing_list(string $context, bool $owned): void
     {
-        $html = osc_apply_filter('listing_list_html', null, (array) View::newInstance()->_get('items'), $context);
+        $html = osc_apply_filter('listing_list_html', null, (array) View::getInstance()->_get('items'), $context);
         if (is_string($html)) {
             echo $html;
 

@@ -1,0 +1,123 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace mindstellar\location;
+
+use mindstellar\job\Job;
+use mindstellar\job\JobQueue;
+use mindstellar\job\JobRegistry;
+use mindstellar\listing\ListingCountStore;
+
+/**
+ * Recounts the live listings of every country, region and city on the job queue. Counts
+ * change as listings do; this pass only corrects drift, so it runs weekly and on demand.
+ */
+final class LocationRecountJobs
+{
+    public const TYPE = 'location.recount';
+
+    /** Locations recounted per job run. */
+    public const BATCH = 5000;
+
+    /** The levels recounted, as LocationQuery names them. */
+    private const LEVELS = array(
+        'country' => LocationQuery::COUNTRY,
+        'region'  => LocationQuery::REGION,
+        'city'    => LocationQuery::CITY,
+    );
+
+    public static function register(): void
+    {
+        JobRegistry::register(self::TYPE, static fn (Job $job) => self::recount($job));
+        JobRegistry::describe(self::TYPE, __('Location listing counts'), static fn (array $p): string => (string) ($p['level'] ?? ''));
+    }
+
+    /**
+     * Queue a full recount unless one is already waiting or running.
+     *
+     * @return int locations left to count
+     */
+    public static function queue(): int
+    {
+        $left = self::pending();
+        if ($left > 0) {
+            return $left;
+        }
+        $total = 0;
+        foreach (array_keys(self::LEVELS) as $level) {
+            $total += self::remaining($level, '');
+            osc_job_enqueue(self::TYPE, array('level' => $level, 'after' => ''), array('unique_key' => $level));
+        }
+        osc_set_preference('location_todo', (string) $total);
+
+        return self::pending();
+    }
+
+    /**
+     * Locations a queued or running recount has still to count; 0 when none is queued.
+     */
+    public static function pending(): int
+    {
+        $left = 0;
+        foreach (array(JobQueue::STATUS_PENDING, JobQueue::STATUS_RUNNING) as $status) {
+            foreach (JobQueue::getInstance()->page($status, self::TYPE, 10) as $row) {
+                $payload = json_decode((string) ($row['s_payload'] ?? ''), true);
+                $level   = is_array($payload) ? (string) ($payload['level'] ?? '') : '';
+                if (isset(self::LEVELS[$level])) {
+                    $left += self::remaining($level, (string) ($payload['after'] ?? ''));
+                }
+            }
+        }
+
+        return $left;
+    }
+
+    /**
+     * Count one batch of a level, then queue the next batch while the level has more.
+     */
+    private static function recount(Job $job): void
+    {
+        $level = (string) $job->get('level', '');
+        if (!isset(self::LEVELS[$level])) {
+            return;
+        }
+        $after = (string) $job->get('after', '');
+        $ids   = self::nextIds($level, $after);
+        if ($ids === array()) {
+            return;
+        }
+
+        $store = match ($level) {
+            'country' => ListingCountStore::countries(),
+            'region'  => ListingCountStore::regions(),
+            default   => ListingCountStore::cities(),
+        };
+        $store->set($store->recount($level === 'country' ? $ids : array_map('intval', $ids)));
+
+        if (count($ids) === self::BATCH) {
+            $job->repeat(array('level' => $level, 'after' => (string) end($ids)));
+        }
+    }
+
+    /**
+     * @return string[] the next keys of a level after $after, in key order
+     */
+    private static function nextIds(string $level, string $after): array
+    {
+        return (new LocationQuery())->keysAfter(self::LEVELS[$level], $after, self::BATCH);
+    }
+
+    private static function remaining(string $level, string $after): int
+    {
+        return (new LocationQuery())->countAfter(self::LEVELS[$level], $after);
+    }
+}

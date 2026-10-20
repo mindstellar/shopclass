@@ -1,4 +1,32 @@
 /*!Custom Responsive rules */
+// A table whose rows read as cards on a phone: no header, one bordered wrapping row per
+// record, cells as plain blocks. Each table type then places its cells.
+@mixin phone-card-rows {
+  thead {
+    display: none;
+  }
+  tbody tr {
+    border-block-end: 1px solid var(--osc-rule);
+    display: flex;
+    flex-wrap: wrap;
+    padding: .625rem .75rem;
+    row-gap: .125rem;
+  }
+  td {
+    background: none;
+    border: 0;
+    display: block;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding: 0;
+
+    &:empty {
+      display: none;
+    }
+  }
+}
+
 @media (max-width: 1024px) {
   #header .navbar-toggler {
     display: block;
@@ -44,40 +72,77 @@
   #content-page {
     padding-block: 0.5rem 3rem;
   }
-  #datatablesForm {
-    .table {
-      .col-title {
-        min-width: 100px;
+  // A core list row becomes one compact card: checkbox, the main cell in bold with its actions,
+  // the status badge on the right, then the other cells as one muted line. Scoped to tables
+  // with a bulk-actions column, so a plugin's own table in the form keeps its header.
+  #datatablesForm .table:not(.media-grid):has(.col-bulkactions) {
+    @include phone-card-rows;
+
+    tbody tr {
+      align-items: flex-start;
+      column-gap: .5rem;
+      padding-inline-start: 2.5rem;
+      position: relative;
+
+      // Ends the first line after the status badge; the remaining cells wrap below it.
+      &::after {
+        content: "";
+        flex-basis: 100%;
+        order: 1;
       }
-      .col-status {
-        border-inline-start: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    td {
+      order: 2;
+
+      &.col-status-border {
+        display: none;
       }
-      .col-bulkactions {
-        & ~ {
-          td:not(.col-order) {
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: block;
-          }
-        }
-        & + {
-          td {
-            position: relative;
-            ~ td:not(.col-order) {
-              max-width: 100%;
-              &:before {
-                content: attr(data-col-name) ": ";
-                padding-inline-end: 0.5rem;
-                font-weight: 500;
-              }
-            }
-          }
-          th ~ th:not(.col-order) {
-            display: none;
-          }
-        }
+    }
+    // Undo the tablet rule that cuts every cell to 4rem.
+    .col-bulkactions + td,
+    .col-bulkactions + td ~ td {
+      max-width: 100%;
+      overflow: visible;
+    }
+    .col-bulkactions {
+      inset-block-start: .8rem;
+      inset-inline-start: .75rem;
+      position: absolute;
+    }
+    .col-image {
+      flex: 0 0 3rem;
+      order: 0;
+    }
+    .col-status {
+      order: 1;
+    }
+    // The main cell: the first after the checkbox, or after the thumbnail when there is one.
+    .col-bulkactions + td:not(.col-image),
+    .col-image + td {
+      flex: 1 1 0;
+      font-weight: 600;
+      order: 0;
+
+      .actions {
+        font-weight: 400;
       }
+      // Every later cell is muted; from the second on, a dot separates it from the one before.
+      & ~ td {
+        color: var(--osc-ink-muted);
+        font-size: .8125rem;
+      }
+      & ~ td ~ td::before {
+        content: "·";
+        padding-inline-end: .5rem;
+      }
+    }
+    // Dates and counts mean nothing without their column name.
+    tbody tr td:is(.col-date, .col-expiration, .col-update_date, .col-items, .col-reporters, .col-spam, .col-bad, .col-rep, .col-exp, .col-off)[data-col-name]::before {
+      content: "· " attr(data-col-name) " ";
+    }
+    .actions a {
+      display: inline-block;
+      padding-block: .375rem;
     }
   }
   .table-contains-actions {
@@ -143,43 +208,35 @@
       padding: 1rem 1rem;
     }
   }
-  // Simple content tables (no bulk-actions column) collapse to labelled cards on
-  // phones, mirroring the datatables pattern: drop the header row, make the first
-  // cell the card title, and prefix every other cell with its column name.
+  // Simple content tables (no bulk-actions column) collapse to compact cards on phones:
+  // the first cell is the bold title, the others follow as labelled values on wrapping lines.
   // .osc-table-stack is the same layout for a table of a plugin's own.
   #upload-plugins,
   #email-templates,
-  #media-table,
   .osc-table-stack {
-    thead {
-      display: none;
+    @include phone-card-rows;
+
+    tbody tr {
+      gap: .125rem 1rem;
     }
     td {
-      display: block;
-      &:empty {
-        display: none;
-      }
+      font-size: .8125rem;
+
       &:first-child {
+        flex-basis: 100%;
+        font-size: inherit;
         font-weight: 600;
       }
       &:not(:first-child)[data-col-name]::before {
-        content: attr(data-col-name) ": ";
-        padding-inline-end: 0.5rem;
-        font-weight: 500;
+        color: var(--osc-ink-muted);
+        content: attr(data-col-name) " ";
       }
-    }
-  }
-  #datatablesForm {
-    .table {
-      // Moderation status is core information — on phones show it as a labelled
-      // card row ("Status: …") instead of hiding it.
-      .col-status {
-        display: block;
-        border-inline-start: 0;
+      // The actions cell needs no label; it sits at the end of the last line.
+      &.text-end:last-child {
+        margin-inline-start: auto;
+
         &::before {
-          content: attr(data-col-name) ": ";
-          padding-inline-end: 0.5rem;
-          font-weight: 500;
+          content: none;
         }
       }
     }

@@ -22,7 +22,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/Plugins.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/datatables/abstract/DataTable.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/datatables/DataTable.php';
 require_once __DIR__ . '/lib/harness.php';
 
 if (!function_exists('osc_plugins_path')) {

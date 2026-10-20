@@ -20,6 +20,8 @@ if (!defined('ABS_PATH')) {
 // so it needs pulling in explicitly rather than inheriting the caller's scope.
 global $install_nonce;
 
+/** @var mixed $error */
+
 $ins_field_error = (is_array($error) && !empty($error['field'])) ? $error['field'] : null;
 ?>
 <h1 class="ins-headline"><?php _e('Connect your database'); ?></h1>

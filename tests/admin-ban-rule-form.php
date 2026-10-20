@@ -170,7 +170,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /** The admin theme's view for this screen, drawn where the real one would draw it. */
@@ -322,13 +322,13 @@ $pageId = BanRuleForm::register();
 harness_section('the screen is declared once, and declares the table it is');
 
 pin('the page has an id of its own', 'core.ban_rule', $pageId);
-$spec = SettingsPageRegistry::instance()->get($pageId);
+$spec = SettingsPageRegistry::getInstance()->get($pageId);
 pin(
     'bound to a row of t_ban_rule',
     array('type' => 'table', 'table' => 't_ban_rule', 'pk' => 'pk_i_id'),
     $spec['store']
 );
-$fields = SettingsPageRegistry::instance()->fields($pageId);
+$fields = SettingsPageRegistry::getInstance()->fields($pageId);
 pin('declaring the three fields the screen has always had', array('s_name', 's_ip', 's_email'), array_keys($fields));
 foreach ($fields as $name => $field) {
     pin($name . ' is a text field', 'text', $field['type']);
@@ -913,8 +913,9 @@ check(
     'the store owns the write, through osc_db_table()'
 );
 check(
-    'scan: while the delete path, which is not part of the declared form, still uses it',
-    strpos($controller, 'deleteByPrimaryKey') !== false,
+    'scan: while the delete path, which is not part of the declared form, goes through BanRuleStore, not BanRule',
+    strpos($controller, 'BanRuleStore::delete(') !== false
+        && !str_contains($controller, 'BanRule::getInstance()->deleteByPrimaryKey('),
     'the scan above would pass just as well on a controller with no ban rules in it at all'
 );
 

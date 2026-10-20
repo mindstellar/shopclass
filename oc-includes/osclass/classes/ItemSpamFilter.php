@@ -36,11 +36,10 @@
  */
 class ItemSpamFilter
 {
+    use \mindstellar\base\SharedInstance;
+
     /** Below this length a keyword is refused. See cleanKeywordList(). */
     public const MIN_KEYWORD_LENGTH = 3;
-
-    /** @var ItemSpamFilter */
-    private static $instance;
 
     /**
      * Keywords bucketed by scope, in the engine's string form (a substring
@@ -58,17 +57,11 @@ class ItemSpamFilter
     private $compiledRegexPatterns = array();
 
     /**
-     * The shared ItemSpamFilter instance, created on first call.
-     *
-     * @return ItemSpamFilter
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -102,7 +95,7 @@ class ItemSpamFilter
         }
 
         if (!empty($buckets['meta']) && $itemId > 0) {
-            $metaFields = Item::newInstance()->metaFields($itemId);
+            $metaFields = Item::getInstance()->metaFields($itemId);
             if (!empty($metaFields)) {
                 foreach ($metaFields as $metaField) {
                     if (!isset($metaField['s_value']) || $metaField['s_value'] === '') {
@@ -176,7 +169,7 @@ class ItemSpamFilter
 
         $buckets = array('title' => array(), 'description' => array(), 'all' => array(), 'meta' => array());
 
-        foreach (KeywordBlock::newInstance()->listAll() as $row) {
+        foreach (KeywordBlock::getInstance()->listAll() as $row) {
             $bare = trim(str_replace('*', '', (string)$row['s_keyword']));
             if (mb_strlen($bare) < self::MIN_KEYWORD_LENGTH) {
                 continue;
@@ -304,7 +297,7 @@ class ItemSpamFilter
             $scope = 'all';
         }
 
-        $model    = KeywordBlock::newInstance();
+        $model    = KeywordBlock::getInstance();
         $existing = array();
         foreach ($model->listAll() as $row) {
             $existing[$row['s_scope'] . '|' . mb_strtolower((string)$row['s_keyword'])] = true;

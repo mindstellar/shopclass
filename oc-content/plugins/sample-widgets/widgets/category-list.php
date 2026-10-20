@@ -24,7 +24,7 @@ function sample_widgets_category_options()
         array('value' => '', 'label' => '— Any category —'),
     );
 
-    $tree = Category::newInstance()->toTree();
+    $tree = Category::getInstance()->toTree();
     if (is_array($tree)) {
         sample_widgets_flatten_categories($tree, $options, 0);
     }

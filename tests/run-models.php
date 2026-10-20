@@ -76,8 +76,9 @@ if ($files === array()) {
     exit(0);
 }
 
-$start   = microtime(true);
-$results = array();
+// Model files run in this scope, so the runner's own state uses names no model file uses.
+$runnerStart   = microtime(true);
+$runnerResults = array();
 
 // A model file that calls exit() outside the MODELS_RUNNER guard ends the whole suite
 // where it stands -- and PHP's exit code is the file's own, so the run looks green while
@@ -99,8 +100,9 @@ foreach ($files as $file) {
     $GLOBALS['runnerCurrent'] = $name;
     echo "\n########## $name ##########\n";
 
-    $okBefore   = $GLOBALS['okCount'];
-    $failBefore = $GLOBALS['failCount'];
+    $runnerOkBefore   = $GLOBALS['okCount'];
+    $runnerFailBefore = $GLOBALS['failCount'];
+    $runnerFileStart  = microtime(true);
 
     try {
         require $file;
@@ -110,19 +112,20 @@ foreach ($files as $file) {
         echo 'FAIL  ' . $name . ': uncaught ' . get_class($e) . ' — ' . $e->getMessage() . "\n";
     }
 
-    $results[$name] = array(
-        'ok'   => $GLOBALS['okCount'] - $okBefore,
-        'fail' => $GLOBALS['failCount'] - $failBefore,
+    $runnerResults[$GLOBALS['runnerCurrent']] = array(
+        'ok'   => $GLOBALS['okCount'] - $runnerOkBefore,
+        'fail' => $GLOBALS['failCount'] - $runnerFailBefore,
+        'time' => microtime(true) - $runnerFileStart,
     );
 }
 
 $GLOBALS['runnerFinished'] = true;
 
 echo "\n########## summary ##########\n";
-foreach ($results as $name => $r) {
-    printf("  %-28s %3d passed, %3d failed%s\n", $name, $r['ok'], $r['fail'], $r['fail'] > 0 ? '  <-- FAILED' : '');
+foreach ($runnerResults as $runnerName => $r) {
+    printf("  %-28s %3d passed, %3d failed %6.1fs%s\n", $runnerName, $r['ok'], $r['fail'], $r['time'], $r['fail'] > 0 ? '  <-- FAILED' : '');
 }
-printf("\n%d files in %.1fs\n", count($files), microtime(true) - $start);
+printf("\n%d files in %.1fs\n", count($files), microtime(true) - $runnerStart);
 
 exit(harness_result());
 

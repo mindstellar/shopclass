@@ -53,6 +53,7 @@ this list, and the reference config together.
 |---|---|
 | Anonymous, cacheable GET (no cache-relevant cookie) | `public, s-maxage=30, max-age=0, must-revalidate` |
 | Personalized, POST, or any cache-relevant cookie present | `private, no-store` |
+| Region and city lookups (`AjaxResponse::shared()`), unless the reply sets a cookie | `public, max-age=300, s-maxage=300` |
 
 - `s-maxage` lets a **shared** cache (proxy/CDN) hold the page ~30s; `max-age=0, must-revalidate`
   makes **browsers** revalidate every time, so a page is never served stale from disk cache.
@@ -89,6 +90,7 @@ Public read pages that opt in (`osc_mark_response_cacheable()`):
 - category and static-page slugs
 - item detail
 - **the public user profile -- a user's public listings (`user/items`)**
+- the RSS feed (`search/sFeed,rss`), the XML sitemap and the generated `robots.txt`
 - error pages (`do404()`, and the `do410()`/`do400()` kept for third-party callers), which exit
   before the stamp in `index.php` and so emit the header themselves -- a crawler walking dead
   URLs is otherwise one full theme render per hit

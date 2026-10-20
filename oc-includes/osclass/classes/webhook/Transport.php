@@ -1,0 +1,24 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace mindstellar\webhook;
+
+/**
+ * Sends one webhook POST, connecting only to the address AddressGuard checked.
+ */
+interface Transport
+{
+    /**
+     * @param array<string,string> $headers name => value
+     */
+    public function post(string $url, string $ip, array $headers, string $body): TransportResult;
+}

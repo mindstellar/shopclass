@@ -11,6 +11,8 @@
 
 namespace mindstellar\job;
 
+use mindstellar\cache\CacheGroup;
+use mindstellar\database\Db;
 use Throwable;
 
 /**
@@ -46,7 +48,7 @@ final class JobWorker
     {
         self::registerHandlers();
 
-        $queue = JobQueue::instance();
+        $queue = JobQueue::getInstance();
         if ($queue->count(JobQueue::STATUS_PENDING) === 0) {
             return 0;
         }
@@ -74,7 +76,7 @@ final class JobWorker
                 // A single job can outlast the budget -- a category batch, a large
                 // upload. Stop there, and hand back the claimed jobs not yet run.
                 if ((time() - $start) >= $maxSeconds) {
-                    $queue->release(array_column(array_slice($rows, $i + 1), 'pk_i_id'));
+                    $queue->release(array_map('intval', array_column(array_slice($rows, $i + 1), 'pk_i_id')));
                     break;
                 }
             }
@@ -85,6 +87,60 @@ final class JobWorker
         }
 
         return $ran;
+    }
+
+    /** Seconds a listener waits for a signal before it looks for due jobs anyway. */
+    public const LISTEN_WAIT = 30;
+
+    /** Seconds a listener sleeps between looks when no Redis-protocol cache carries signals. */
+    public const LISTEN_POLL = 5;
+
+    /** Seconds between runs of the scheduled tasks, from a listener or from auto-cron. */
+    public const SCHEDULE_EVERY = 300;
+
+    /**
+     * Run jobs as soon as they are due, for $maxSeconds: while jobs are due, call $work; then
+     * wait for JobQueue's signal, or sleep without one. $schedule runs at the start and every
+     * SCHEDULE_EVERY seconds after.
+     *
+     * @param int                 $maxSeconds how long to listen
+     * @param callable():void     $work       runs due jobs; the CLI starts a fresh `jobs:work`
+     * @param callable(int):void|null $sleep  for tests
+     * @param callable():void|null $schedule  runs the due scheduled tasks; the CLI starts `cron --type=due`
+     *
+     * @return int how many times $work was called
+     */
+    public static function listen(int $maxSeconds, callable $work, ?callable $sleep = null, ?callable $schedule = null): int
+    {
+        $sleep ??= static function (int $seconds): void {
+            sleep($seconds);
+        };
+        $queue  = JobQueue::getInstance();
+        $start  = time();
+        $called = 0;
+        $ticked = null;
+
+        while (($left = $maxSeconds - (time() - $start)) > 0) {
+            if ($schedule !== null && ($ticked === null || time() - $ticked >= self::SCHEDULE_EVERY)) {
+                $ticked = time();
+                CacheGroup::forgetGenerations();
+                $schedule();
+            }
+            $due = $queue->stats()['due'];
+            if ($due > 0) {
+                $work();
+                $called++;
+                // Jobs it could not take, such as other jobs during a restore, are waited out.
+                if ($queue->stats()['due'] < $due) {
+                    continue;
+                }
+            }
+            if ($queue->waitForWake(min(self::LISTEN_WAIT, $left)) === null) {
+                $sleep(min(self::LISTEN_POLL, $left));
+            }
+        }
+
+        return $called;
     }
 
     /**
@@ -129,7 +185,7 @@ final class JobWorker
      */
     public static function log(string $action, int $id, string $text): void
     {
-        \Log::newInstance()->insertLog('jobs', $action, $id, mb_substr($text, 0, 250), 'system', 0);
+        \Log::getInstance()->insertLog('jobs', $action, $id, mb_substr($text, 0, 250), 'system', 0);
     }
 
     /**
@@ -160,6 +216,8 @@ final class JobWorker
     {
         $id   = (int) $row['pk_i_id'];
         $type = (string) $row['s_type'];
+        // The worker outlives a request, so each job reads cache generations afresh.
+        CacheGroup::forgetGenerations();
 
         $handler = JobRegistry::handler($type);
         if ($handler === null) {
@@ -180,7 +238,15 @@ final class JobWorker
         try {
             $handler($job);
         } catch (Throwable $e) {
-            return self::failed($queue, $id, $type, $payload, $e->getMessage());
+            Db::unwind('the end of job ' . $type);
+            $retry = $e instanceof JobRetry ? $e : null;
+
+            return self::failed($queue, $id, $type, $payload, $e->getMessage(), $retry?->delay(), $retry?->maxAttempts());
+        }
+
+        // A begin() the handler left open is undone, so it cannot hold or block the jobs after it.
+        if (Db::unwind('the end of job ' . $type)) {
+            return self::failed($queue, $id, $type, $payload, 'The job left a transaction open, so its writes were rolled back');
         }
 
         $repeat = $job->repeatRequest();
@@ -204,12 +270,14 @@ final class JobWorker
      * @param string              $type
      * @param array<string,mixed> $payload
      * @param string              $error
+     * @param int|null            $delay       the handler's own wait before the next try
+     * @param int|null            $maxAttempts the handler's own try limit
      *
      * @return string retry|gave_up
      */
-    private static function failed(JobQueue $queue, int $id, string $type, array $payload, string $error): string
+    private static function failed(JobQueue $queue, int $id, string $type, array $payload, string $error, ?int $delay = null, ?int $maxAttempts = null): string
     {
-        if (!$queue->fail($id, $error)) {
+        if (!$queue->fail($id, $error, $delay, $maxAttempts)) {
             return 'retry';
         }
         $detail = JobRegistry::detail($type, $payload);

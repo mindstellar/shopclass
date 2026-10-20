@@ -19,7 +19,8 @@ use mindstellar\routing\CoreRoutes;
  */
 class Rewrite
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     private $rules;
     private $routes;
     private $request_uri;
@@ -52,7 +53,7 @@ class Rewrite
      */
     public function getRules()
     {
-        $stored = Preference::newInstance()->get('rewrite_rules');
+        $stored = Preference::getInstance()->get('rewrite_rules');
         if ($stored === '' || $stored === false) {
             return array();
         }
@@ -68,7 +69,7 @@ class Rewrite
      */
     public function setRules()
     {
-        Preference::newInstance()->replace('rewrite_rules', serialize($this->rules));
+        Preference::getInstance()->replace('rewrite_rules', serialize($this->rules));
     }
 
     /**
@@ -92,7 +93,7 @@ class Rewrite
             return true;
         }
 
-        return (string)Preference::newInstance()->get('rewrite_rules_version') !== OSCLASS_VERSION;
+        return (string)Preference::getInstance()->get('rewrite_rules_version') !== OSCLASS_VERSION;
     }
 
     /**
@@ -121,7 +122,7 @@ class Rewrite
     private function persistRules()
     {
         try {
-            $pref = Preference::newInstance();
+            $pref = Preference::getInstance();
             $pref->replace('rewrite_rules', serialize($this->rules));
             $pref->replace('rewrite_rules_version', OSCLASS_VERSION);
         } catch (\Throwable $e) {
@@ -142,6 +143,10 @@ class Rewrite
 
         osc_run_hook('before_rewrite_rules', array(&$rewrite));
         $rewrite->clearRules();
+
+        // The REST API owns api/, ahead of every admin-editable route. The API reads its path
+        // from the raw URI, so nothing in the path can add a query parameter.
+        $rewrite->addRule('^api(?:/.*)?$', 'index.php?page=api');
 
         // Everything with a fixed, admin-editable path comes from one table that the
         // URL builders read too, so a route cannot be matched one way and linked another.
@@ -346,7 +351,7 @@ class Rewrite
             return;
         }
 
-        if (Preference::newInstance()->get('rewriteEnabled')) {
+        if (Preference::getInstance()->get('rewriteEnabled')) {
             $rewrite = $this->resolveRewrite($request_uri);
             if ($rewrite['not_found']) {
                 $this->set_location('error');
@@ -533,17 +538,11 @@ class Rewrite
     }
 
     /**
-     * The shared Rewrite instance, created on first call.
-     *
-     * @return \Rewrite
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**

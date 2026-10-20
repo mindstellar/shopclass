@@ -166,9 +166,14 @@ class Rewrite
 {
     private static $instance;
 
-    public static function newInstance()
+    public static function getInstance()
     {
         return self::$instance ?? (self::$instance = new self());
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function rebuildAndPersistRules()
@@ -237,6 +242,8 @@ if (!function_exists('osc_current_admin_theme_url')) {
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 // After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
 require_once __DIR__ . '/lib/stubs.php';
+// The general screen's save drops the saved update check, which lives in the key-value store.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
@@ -276,7 +283,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /**
@@ -336,18 +343,20 @@ foreach (array(
     require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettings' . $screen . '.php';
 }
 
-use mindstellar\admin\form\AdvancedSettingsForm;
-use mindstellar\admin\form\CommentSettingsForm;
-use mindstellar\admin\form\KeywordBlockSettingsForm;
-use mindstellar\admin\form\LatestSearchSettingsForm;
-use mindstellar\admin\form\MailServerSettingsForm;
-use mindstellar\admin\form\MainSettingsForm;
-use mindstellar\admin\form\MediaSettingsForm;
-use mindstellar\admin\form\PermalinkSettingsForm;
-use mindstellar\admin\form\SitemapSettingsForm;
-use mindstellar\admin\form\SpamSettingsForm;
-use mindstellar\admin\form\StorageSettingsForm;
+use mindstellar\admin\form\AdvancedSettingsScreen;
+use mindstellar\admin\form\CommentSettingsScreen;
+use mindstellar\admin\form\ItemSettingsScreen;
+use mindstellar\admin\form\KeywordBlockSettingsScreen;
+use mindstellar\admin\form\LatestSearchSettingsScreen;
+use mindstellar\admin\form\MailServerSettingsScreen;
+use mindstellar\admin\form\MainSettingsScreen;
+use mindstellar\admin\form\MediaSettingsScreen;
+use mindstellar\admin\form\PermalinkSettingsScreen;
+use mindstellar\admin\form\SitemapSettingsScreen;
+use mindstellar\admin\form\SpamSettingsScreen;
+use mindstellar\admin\form\StorageSettingsScreen;
 use mindstellar\admin\form\store\PreferenceStore;
+use mindstellar\admin\form\UserSettingsScreen;
 use mindstellar\settings\SettingsPageRegistry;
 
 $GLOBALS['flashes']   = array();
@@ -463,7 +472,7 @@ function keymap(string $pageId): array
 {
     $page = osc_settings_page($pageId);
     $map  = array();
-    foreach (SettingsPageRegistry::instance()->fields($pageId) as $name => $field) {
+    foreach (SettingsPageRegistry::getInstance()->fields($pageId) as $name => $field) {
         if ($field['type'] === 'custom') {
             continue;
         }
@@ -490,15 +499,19 @@ pin(
         'num_rss_items'                => 'osclass/num_rss_items',
         'max_latest_items_at_home'     => 'osclass/maxLatestItems@home',
         'default_results_per_page'     => 'osclass/defaultResultsPerPage@search',
+        'geo_search'                   => 'osclass/geo_search',
+        'distance_unit'                => 'osclass/distance_unit',
         'selectable_parent_categories' => 'osclass/selectable_parent_categories',
         'enabled_attachment'           => 'osclass/contact_attachment',
+        'attachment_max_mb'            => 'osclass/attachment_max_mb',
         'auto_cron'                    => 'osclass/auto_cron',
+        'map_type'                     => 'osclass/map_type',
         'googlemaps_api_key'           => 'osclass/googlemaps_api_key',
-        'openstreet_api_key'           => 'osclass/openstreet_api_key',
+        'geocode_provider'             => 'osclass/geocode_provider',
         'update_channel'               => 'osclass/update_channel',
         'auto_security_updates'        => 'osclass/auto_security_updates',
     ),
-    keymap(MainSettingsForm::register())
+    keymap(MainSettingsScreen::register())
 );
 pin(
     'the comment screen, where the moderation count is the switch and not the box',
@@ -512,8 +525,49 @@ pin(
         'notify_new_comment'         => 'osclass/notify_new_comment',
         'notify_new_comment_user'    => 'osclass/notify_new_comment_user',
     ),
-    keymap(CommentSettingsForm::register())
+    keymap(CommentSettingsScreen::register())
 );
+pin(
+    'the listing settings screen keeps the field names and preferences it always had',
+    array(
+        'reg_user_post'               => 'osclass/reg_user_post',
+        'items_wait_time'             => 'osclass/items_wait_time',
+        'moderate_admin_post'         => 'osclass/moderate_admin_post',
+        'moderate_admin_edit'         => 'osclass/moderate_admin_edit',
+        'moderate_items'              => 'osclass/moderate_items',
+        'num_moderate_items'          => '(not stored)',
+        'logged_user_item_validation' => 'osclass/logged_user_item_validation',
+        'enabled_recaptcha_items'     => 'osclass/enabled_recaptcha_items',
+        'reg_user_can_contact'        => 'osclass/reg_user_can_contact',
+        'item_attachment'             => 'osclass/item_attachment',
+        'enable_send_friend'          => 'osclass/enable_send_friend',
+        'reg_user_can_send_friend'    => 'osclass/reg_user_can_send_friend',
+        'notify_new_item'             => 'osclass/notify_new_item',
+        'notify_contact_item'         => 'osclass/notify_contact_item',
+        'notify_contact_friends'      => 'osclass/notify_contact_friends',
+        'warn_expiration'             => 'osclass/warn_expiration',
+        'max_chars_per_title'         => 'osclass/title_character_length',
+        'max_chars_per_description'   => 'osclass/description_character_length',
+        'tinymce'                     => 'osclass/tinymce_frontend',
+        'enableField#f_price@items'   => 'osclass/enableField#f_price@items',
+        'enableField#images@items'    => 'osclass/enableField#images@items',
+        'numImages@items'             => 'osclass/numImages@items',
+    ),
+    keymap(ItemSettingsScreen::register())
+);
+pin(
+    'the user settings screen keeps the field names and preferences it always had',
+    array(
+        'enabled_users'             => 'osclass/enabled_users',
+        'enabled_user_registration' => 'osclass/enabled_user_registration',
+        'enabled_user_validation'   => 'osclass/enabled_user_validation',
+        'notify_new_user'           => 'osclass/notify_new_user',
+        'username_blacklist'        => 'osclass/username_blacklist',
+    ),
+    keymap(UserSettingsScreen::register())
+);
+pin('the listing settings post to the listings controller', array('page' => 'items', 'action' => 'settings_post'), ItemSettingsScreen::formVars()['route']);
+pin('the user settings post to the users controller', array('page' => 'users', 'action' => 'settings_post'), UserSettingsScreen::formVars()['route']);
 pin(
     'the latest-searches screen, where the presets pick and the hidden field carries',
     array(
@@ -521,7 +575,7 @@ pin(
         'purge_searches'       => '(not stored)',
         'customPurge'          => 'osclass/purge_latest_searches',
     ),
-    keymap(LatestSearchSettingsForm::register())
+    keymap(LatestSearchSettingsScreen::register())
 );
 pin(
     'the advanced screen',
@@ -529,7 +583,7 @@ pin(
         'e_type' => 'osclass/subdomain_type',
         's_host' => 'osclass/subdomain_host',
     ),
-    keymap(AdvancedSettingsForm::register())
+    keymap(AdvancedSettingsScreen::register())
 );
 // Only the switch is renamed on the way to storage, and it is the one whose key nothing
 // else spells: every reader asks getBoolPreference('rewriteEnabled'), and a control called
@@ -577,7 +631,7 @@ pin(
         'rewrite_user_change_email_confirm' => 'osclass/rewrite_user_change_email_confirm',
         'rewrite_user_change_username'      => 'osclass/rewrite_user_change_username',
     ),
-    keymap(PermalinkSettingsForm::register())
+    keymap(PermalinkSettingsScreen::register())
 );
 pin(
     'the mail-server screen',
@@ -593,7 +647,7 @@ pin(
         'mailserver_auth'      => 'osclass/mailserver_auth',
         'mailserver_pop'       => 'osclass/mailserver_pop',
     ),
-    keymap(MailServerSettingsForm::register())
+    keymap(MailServerSettingsScreen::register())
 );
 pin(
     'the keyword-blocklist moderation switches',
@@ -604,7 +658,7 @@ pin(
         'report_threshold'          => 'osclass/report_threshold',
         'enabled_recaptcha_reports' => 'osclass/enabled_recaptcha_reports',
     ),
-    keymap(KeywordBlockSettingsForm::register())
+    keymap(KeywordBlockSettingsScreen::register())
 );
 pin(
     'the captcha screen, whose version is a hidden constant',
@@ -616,7 +670,7 @@ pin(
         'turnstileSiteKey'   => 'osclass/turnstileSiteKey',
         'turnstileSecretKey' => 'osclass/turnstileSecretKey',
     ),
-    keymap(SpamSettingsForm::registerCaptcha())
+    keymap(SpamSettingsScreen::registerCaptcha())
 );
 pin(
     'the sign-in limiter, which is the one screen here that is not an osclass preference',
@@ -627,7 +681,7 @@ pin(
         'login_throttle_max_account'   => 'security/login_throttle_max_account',
         'login_attempt_retention_days' => 'security/login_attempt_retention_days',
     ),
-    keymap(SpamSettingsForm::registerLoginThrottle())
+    keymap(SpamSettingsScreen::registerLoginThrottle())
 );
 pin(
     'the hourly limits, one number per public action',
@@ -641,12 +695,12 @@ pin(
         'throttle_send_friend'     => 'osclass/throttle_send_friend',
         'throttle_alert_subscribe' => 'osclass/throttle_alert_subscribe',
     ),
-    keymap(SpamSettingsForm::registerLimits())
+    keymap(SpamSettingsScreen::registerLimits())
 );
 pin(
     'and the Akismet key and the search-alert rule',
-    array('akismetKey' => 'osclass/akismetKey', 'alerts_require_login' => 'osclass/alerts_require_login'),
-    keymap(SpamSettingsForm::registerAkismet()) + keymap(SpamSettingsForm::registerAlerts())
+    array('akismetKey' => 'osclass/akismetKey', 'alerts_require_login' => 'osclass/alerts_require_login', 'alerts_max_per_user' => 'osclass/alerts_max_per_user'),
+    keymap(SpamSettingsScreen::registerAkismet()) + keymap(SpamSettingsScreen::registerAlerts())
 );
 // The sitemap readers ask for these exact keys in the osclass section, and robots.txt is a
 // file: a preference row under its name would be a second copy nothing reads.
@@ -662,9 +716,9 @@ pin(
         'sitemap_cat_regions' => 'osclass/sitemap_cat_regions',
         'sitemap_cat_city'    => 'osclass/sitemap_cat_city',
     ),
-    keymap(SitemapSettingsForm::register())
+    keymap(SitemapSettingsScreen::register())
 );
-pin('and the robots.txt box, which is no preference at all', array('sitemap_robots' => '(not stored)'), keymap(SitemapSettingsForm::registerRobots()));
+pin('and the robots.txt box, which is no preference at all', array('sitemap_robots' => '(not stored)'), keymap(SitemapSettingsScreen::registerRobots()));
 // Two position selects write one preference, each only while its watermark type is chosen.
 // The type itself and the text options are no preference: the type is read back from which
 // watermark is set, and the options travel as one JSON preference the after_save writes.
@@ -683,17 +737,13 @@ pin(
         'use_imagick'           => 'osclass/use_imagick',
         'watermark_type'        => '(not stored)',
         'watermark_text'        => 'osclass/watermark_text',
-        'watermark_width'       => '(not stored)',
-        'watermark_height'      => '(not stored)',
-        'text_offset_x'         => '(not stored)',
-        'text_offset_y'         => '(not stored)',
-        'text_angle'            => '(not stored)',
         'watermark_text_color'  => 'osclass/watermark_text_color',
         'background_color'      => '(not stored)',
         'watermark_text_place'  => 'osclass/watermark_place',
         'watermark_image_place' => 'osclass/watermark_place',
+        'watermark_opacity'     => 'osclass/watermark_opacity',
     ),
-    keymap(MediaSettingsForm::register())
+    keymap(MediaSettingsScreen::register())
 );
 // The storage adapter, the worker and the connection test all read these exact keys, and the
 // Better S3 adoption writes the same ones by hand.
@@ -715,7 +765,7 @@ pin(
         'storage_s3_backup_bucket' => 'osclass/storage_s3_backup_bucket',
         'backup_keep'            => 'osclass/backup_keep',
     ),
-    keymap(StorageSettingsForm::register())
+    keymap(StorageSettingsScreen::register())
 );
 
 /* ------------------------------------------------------------------------------------ */
@@ -739,7 +789,6 @@ $main = array(
     'enabled_attachment'           => '1',
     'auto_cron'                    => '1',
     'googlemaps_api_key'           => ' gmk ',
-    'openstreet_api_key'           => 'osm',
     'update_channel'               => 'beta',
     'auto_security_updates'        => '1',
 );
@@ -795,6 +844,53 @@ $run = drive('CAdminSettingsMain', 'update', array('num_rss_items' => '-1') + $m
 pin('a negative count is refused', array('warning:RSS shows must be 0 or more'), flashed($run));
 $run = drive('CAdminSettingsMain', 'update', array('num_rss_items' => '') + $main);
 pin('and a blank one is the zero the screen has always stored', array('0', 'INTEGER'), pref($admin, 'num_rss_items'));
+drive('CAdminSettingsMain', 'update', array('attachment_max_mb' => '3') + $main);
+pin('the attachment limit is saved as a whole number', array('3', 'INTEGER'), pref($admin, 'attachment_max_mb'));
+$run = drive('CAdminSettingsMain', 'update', array('attachment_max_mb' => '0') + $main);
+pin('an attachment limit below 1 MB is stored as 1', array('1', 'INTEGER'), pref($admin, 'attachment_max_mb'));
+
+harness_section('address lookup choices');
+\mindstellar\location\GeocodeProviderRegistry::getInstance()->register(new class () implements \mindstellar\location\GeocodeProvider {
+    public function id(): string
+    {
+        return 'unready';
+    }
+
+    public function label(): string
+    {
+        return 'Unready Maps';
+    }
+
+    public function isConfigured(): bool
+    {
+        return false;
+    }
+
+    public function geocode(string $address, ?string $countryCode = null): ?array
+    {
+        return null;
+    }
+
+    public function cacheTtl(): ?int
+    {
+        return null;
+    }
+
+    public function attribution(): string
+    {
+        return '';
+    }
+});
+seed_pref($admin, 'geocode_provider', 'gone');
+osc_reset_preferences();
+// The form is declared once per request, so the choice list is read straight from its builder.
+$builder = new ReflectionMethod(\mindstellar\admin\form\MainSettingsScreen::class, 'geocodeProviders');
+$builder->setAccessible(true);
+$choices = $builder->invoke(null);
+pin('a pick whose plugin is gone stays offered', 'gone (plugin not active)', $choices['gone'] ?? null);
+pin('a provider that is not set up says so', 'Unready Maps (not set up yet)', $choices['unready'] ?? null);
+seed_pref($admin, 'geocode_provider', '');
+osc_reset_preferences();
 
 harness_section('comment settings');
 
@@ -864,6 +960,52 @@ pin(
     flashed($run)
 );
 pin('and the -1 lands', array('-1', 'STRING'), pref($admin, 'moderate_comments'));
+
+harness_section('listing settings');
+
+if (!function_exists('osc_is_moderator')) {
+    function osc_is_moderator()
+    {
+        return false;
+    }
+}
+
+$items = array(
+    'items_wait_time'           => '30',
+    'moderate_items'            => '1',
+    'num_moderate_items'        => '4',
+    'max_chars_per_title'       => '80',
+    'max_chars_per_description' => '4000',
+);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = 'reg_user_can_send_friend'");
+osc_reset_preferences();
+check(
+    'sharing is registered-only when never saved',
+    (bool)osc_settings_values(ItemSettingsScreen::register())['reg_user_can_send_friend']
+);
+
+$run = drive('CAdminItems', 'settings_post', $items);
+pin('the save is accepted', array("ok:Listings' settings have been updated"), flashed($run));
+pin('moderation on stores the count', array('4', 'STRING'), pref($admin, 'moderate_items'));
+pin('the wait time lands', '30', pref($admin, 'items_wait_time')[0] ?? null);
+
+drive('CAdminItems', 'settings_post', array('moderate_items' => '') + $items);
+pin('moderation off stores -1', '-1', pref($admin, 'moderate_items')[0] ?? null);
+
+drive('CAdminItems', 'settings_post', array('items_wait_time' => '-5') + $items);
+pin('a negative wait time is saved as 0', '0', pref($admin, 'items_wait_time')[0] ?? null);
+
+$run = drive('CAdminItems', 'settings_post', array('max_chars_per_title' => '101', 'items_wait_time' => '9') + $items);
+pin('a title length past the column is refused with its message', array('warning:Titles can be 1 to 100 characters.'), flashed($run));
+pin('and nothing was written', '0', pref($admin, 'items_wait_time')[0] ?? null);
+$run = drive('CAdminItems', 'settings_post', array('max_chars_per_title' => '0') + $items);
+pin('so is a zero title length', array('warning:Titles can be 1 to 100 characters.'), flashed($run));
+
+harness_section('user settings');
+
+$run = drive('CAdminUsers', 'settings_post', array('username_blacklist' => ' Admin , ROOT,mod '));
+pin('the save is accepted', array('ok:User settings have been updated'), flashed($run));
+pin('the username blacklist is trimmed and lower-cased', 'admin,root,mod', pref($admin, 'username_blacklist')[0] ?? null);
 
 harness_section('latest searches');
 
@@ -978,9 +1120,12 @@ $run = drive('CAdminSettingsSpamnBots', 'limits_post', array('throttle_send_frie
 pin('a limit of 0 is stored, switching it off', array('0', 'INTEGER'), pref($admin, 'throttle_send_friend'));
 pin('a negative limit is floored at 0', array('0', 'INTEGER'), pref($admin, 'throttle_form_submit'));
 pin('the limits save reports itself once', array('ok:Limits have been updated'), flashed($run));
+check('a spam save returns to its tab', str_ends_with((string) end($run['redirects']), '&tab=limits'), (string) end($run['redirects']));
 
 $run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_require_login' => '1'));
 pin('the alert rule is a boolean', array('1', 'BOOLEAN'), pref($admin, 'alerts_require_login'));
+$run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_max_per_user' => '-4'));
+pin('the saved-search limit is a number, floored at 0', array('0', 'INTEGER'), pref($admin, 'alerts_max_per_user'));
 
 harness_section('keyword blocklist moderation');
 
@@ -1006,6 +1151,7 @@ $pricing = array(
 );
 $run = drive('CAdminSettingsBilling', 'billing_pricing_post', $pricing);
 pin('a currency is stored upper-cased', array('EUR', 'STRING'), pref($admin, 'billing_currency'));
+check('a save returns to the tab it came from', str_ends_with((string) end($run['redirects']), '&tab=pricing'), (string) end($run['redirects']));
 pin('a negative price is floored', array('0', 'INTEGER'), pref($admin, 'billing_slot_credits'));
 pin('and a zero quantity at one', array('1', 'INTEGER'), pref($admin, 'billing_slot_quantity'));
 pin('the products are re-registered once each', array('billing:premium', 'billing:slot'), $run['effects']);
@@ -1024,6 +1170,7 @@ pin(
 );
 pin('nothing is re-registered for a save that did not happen', array(), $run['effects']);
 pin('and the stored currency is untouched', array('EUR', 'STRING'), pref($admin, 'billing_currency'));
+pin('a refused save redraws its own tab', 'pricing', __get('billing_tab'));
 
 $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' => '1'));
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
@@ -1320,13 +1467,13 @@ foreach (array(
 }
 osc_reset_preferences();
 
-$limitKb = MediaSettingsForm::uploadLimitKb();
+$limitKb = MediaSettingsScreen::uploadLimitKb();
 $run     = drive('CAdminSettingsMedia', 'media');
 pin('the media screen is drawn', array('settings/media.php'), $run['views']);
 check('with an image set, Image is the type shown', strpos($run['drawn'], 'id="watermark_image" name="watermark_type" value="image" checked') !== false);
 check('its block is drawn open', strpos($run['drawn'], 'id="watermark_image_box" data-osc-depends="watermark_type" data-osc-depends-value="[&quot;image&quot;]">') !== false);
 check('and the text block hidden', strpos($run['drawn'], 'id="watermark_text_box" class="table-backoffice-form" data-osc-depends="watermark_type" data-osc-depends-value="[&quot;text&quot;]" hidden>') !== false);
-check('the text options show their defaults before any are saved', strpos($run['drawn'], 'name="watermark_width" class="input-text field-num" value="200"') !== false);
+check('the outline colour shows its default before any is saved', strpos($run['drawn'], 'name="background_color"') !== false && strpos($run['drawn'], 'value="#000000"') !== false);
 
 $media = array(
     'dimThumbnail'         => '240X200',
@@ -1340,12 +1487,8 @@ $media = array(
     'watermark_type'       => 'text',
     'watermark_text'       => 'Hello <b>there</b>',
     'watermark_text_color' => '#ff0000',
-    'watermark_width'      => '150',
-    'watermark_height'     => '40',
-    'text_offset_x'        => '5',
-    'text_offset_y'        => '',
-    'text_angle'           => '15',
     'background_color'     => '#00ff00',
+    'watermark_opacity'    => '150',
     'watermark_text_place' => 'br',
     'watermark_image_place' => 'tl',
 );
@@ -1370,11 +1513,14 @@ pin('and its colour', array('#ff0000', 'STRING'), pref($admin, 'watermark_text_c
 pin('the text position, not the image one', array('br', 'STRING'), pref($admin, 'watermark_place'));
 pin('and clears the image', array('', 'STRING'), pref($admin, 'watermark_image'));
 pin(
-    'the text options land as one JSON object, the key order and the int casts as they were',
-    array('{"watermark_width":150,"watermark_height":40,"text_offset_x":5,"text_offset_y":0,"text_angle":15,"background_color":"#00ff00"}', 'STRING'),
+    'the text options land as one JSON object',
+    array('{"background_color":"#00ff00"}', 'STRING'),
     pref($admin, 'watermark_text_options')
 );
-foreach (array('watermark_type', 'watermark_width', 'text_angle', 'background_color', 'watermark_text_place', 'watermark_image_place') as $control) {
+pin('the opacity is held to 100%', '100', pref($admin, 'watermark_opacity')[0]);
+drive('CAdminSettingsMedia', 'media_post', array('watermark_opacity' => '') + $media);
+pin('an empty opacity saves as solid, not the lowest', '100', pref($admin, 'watermark_opacity')[0]);
+foreach (array('watermark_type', 'background_color', 'watermark_text_place', 'watermark_image_place') as $control) {
     check('"' . $control . '" is stored in no preference row of its own', pref($admin, $control) === null);
 }
 
@@ -1383,7 +1529,7 @@ pin('no watermark clears the text', array('', 'STRING'), pref($admin, 'watermark
 pin('its colour', array('', 'STRING'), pref($admin, 'watermark_text_color'));
 pin('and the image', array('', 'STRING'), pref($admin, 'watermark_image'));
 pin('and writes no position', array('br', 'STRING'), pref($admin, 'watermark_place'));
-pin('nor the text options', '{"watermark_width":150,"watermark_height":40,"text_offset_x":5,"text_offset_y":0,"text_angle":15,"background_color":"#00ff00"}', pref($admin, 'watermark_text_options')[0]);
+pin('nor the text options', '{"background_color":"#00ff00"}', pref($admin, 'watermark_text_options')[0]);
 
 /** A file as PHP hands a POST upload to the request: marked as received, then described. */
 function upload(string $bytes, int $error = UPLOAD_ERR_OK, bool $received = true): array
@@ -1454,7 +1600,7 @@ pin('and the screen is gone back to', 1, count($run['redirects']));
 // switches the type afterwards must not get an unchecked file moved into place.
 file_put_contents($watermark, $png);
 $toImage = static function ($values, $pageId) {
-    if ($pageId === MediaSettingsForm::PAGE_ID) {
+    if ($pageId === MediaSettingsScreen::PAGE_ID) {
         $values['watermark_type'] = 'image';
     }
 
@@ -1475,13 +1621,14 @@ pin('a watermark type the screen never offered is refused', array('warning:Water
 foreach (array(
     array('200', 'warning:Thumbnail size is not in the expected format', 'a bare number is refused'),
     array('10x10px', 'warning:Thumbnail size is not in the expected format', 'and so is a size with anything after it'),
+    array(' 0x200', 'warning:Thumbnail size is not in the expected format', 'and a size with a zero side'),
     array('', 'warning:Thumbnail size cannot be left empty', 'and a blank one'),
 ) as $case) {
     $run = drive('CAdminSettingsMedia', 'media_post', array('dimThumbnail' => $case[0], 'jpeg_quality' => '33') + $media);
     pin($case[2], array($case[1]), flashed($run));
 }
 pin('none of them writes anything', array('70', 'INTEGER'), pref($admin, 'jpeg_quality'));
-check('and the box carries the shape the browser checks', strpos($run['drawn'], 'name="dimThumbnail" class="input-text field-num" value="" pattern="[0-9]+[xX][0-9]+" required') !== false);
+check('and the box carries the shape the browser checks', strpos($run['drawn'], 'name="dimThumbnail" class="input-text field-num" value="" pattern="[1-9][0-9]*[xX][1-9][0-9]*" required') !== false);
 
 // Corrected rather than refused, as getParamInt() and the clamp did.
 foreach (array(
@@ -1517,26 +1664,25 @@ pin('while the rest still saves', array('500x500', 'STRING'), pref($admin, 'dimP
 pin('and goes back to the screen', 1, count($run['redirects']));
 
 // The limit arithmetic. The hand-written save read "1G" as 1 and multiplied: 1024 KB.
-pin('a gigabyte is a million kilobytes, not 1024', 1048576, MediaSettingsForm::sizeToKb('1G'));
-pin('megabytes', 8192, MediaSettingsForm::sizeToKb('8M'));
-pin('a lower-case suffix', 8192, MediaSettingsForm::sizeToKb('8m'));
-pin('kilobytes as they are', 512, MediaSettingsForm::sizeToKb('512K'));
-pin('a bare number is bytes, as php.ini reads it', 1024, MediaSettingsForm::sizeToKb('1048576'));
-pin('and the controller\'s own converter answers the same', 1048576, (new CAdminSettingsMedia())->_sizeToKB('1G'));
+pin('a gigabyte is a million kilobytes, not 1024', 1048576, MediaSettingsScreen::sizeToKb('1G'));
+pin('megabytes', 8192, MediaSettingsScreen::sizeToKb('8M'));
+pin('a lower-case suffix', 8192, MediaSettingsScreen::sizeToKb('8m'));
+pin('kilobytes as they are', 512, MediaSettingsScreen::sizeToKb('512K'));
+pin('a bare number is bytes, as php.ini reads it', 1024, MediaSettingsScreen::sizeToKb('1048576'));
 $memory = (string)ini_get('memory_limit');
 ini_set('memory_limit', '-1');
-check('an unlimited memory_limit is no limit, not a limit of -1', MediaSettingsForm::uploadLimitKb() > 0);
+check('an unlimited memory_limit is no limit, not a limit of -1', MediaSettingsScreen::uploadLimitKb() > 0);
 pin(
     'so the smallest limit left is the one that applies',
-    min(MediaSettingsForm::sizeToKb((string)ini_get('upload_max_filesize')), MediaSettingsForm::sizeToKb((string)ini_get('post_max_size')) ?: PHP_INT_MAX),
-    MediaSettingsForm::uploadLimitKb()
+    min(MediaSettingsScreen::sizeToKb((string)ini_get('upload_max_filesize')), MediaSettingsScreen::sizeToKb((string)ini_get('post_max_size')) ?: PHP_INT_MAX),
+    MediaSettingsScreen::uploadLimitKb()
 );
 ini_set('memory_limit', $memory);
 
-pin('the maximum size names PHP\'s limit', '<span class="callout-warning">Maximum size PHP configuration allows: 2048 KB</span>', MediaSettingsForm::sizeHelp(2048));
-pin('and says nothing when PHP sets none', '', MediaSettingsForm::sizeHelp(PHP_INT_MAX));
+pin('the maximum size names PHP\'s limit', '<span class="callout-warning">Maximum size PHP configuration allows: 2048 KB</span>', MediaSettingsScreen::sizeHelp(2048));
+pin('and says nothing when PHP sets none', '', MediaSettingsScreen::sizeHelp(PHP_INT_MAX));
 $unlimited = shell_exec(escapeshellarg(PHP_BINARY) . ' -d upload_max_filesize=0 -d post_max_size=0 -d memory_limit=-1 -r '
-    . escapeshellarg('require "' . ABS_PATH . 'oc-includes/vendor/autoload.php"; echo mindstellar\admin\form\MediaSettingsForm::uploadLimitKb();'));
+    . escapeshellarg('require "' . ABS_PATH . 'oc-includes/vendor/autoload.php"; echo mindstellar\admin\form\MediaSettingsScreen::uploadLimitKb();'));
 pin('which is what every limit set to unlimited answers', (string)PHP_INT_MAX, trim((string)$unlimited));
 
 $run = drive('CAdminSettingsMedia', 'images_post');
@@ -1599,7 +1745,7 @@ pin('and local copies', array('none', 'STRING'), pref($admin, 'storage_keep_loca
 // Each of the three is handed the submission; not one of them is handed the secret key.
 pin('before_save, after_save and settings_page_saved each ran once', 3, count($payloads));
 foreach ($payloads as $args) {
-    $values = $args[0] === StorageSettingsForm::PAGE_ID ? $args[1] : $args[0];
+    $values = $args[0] === StorageSettingsScreen::PAGE_ID ? $args[1] : $args[0];
     check('a hook payload carries no secret key', is_array($values) && !array_key_exists('storage_s3_secret_key', $values));
     check('while it still carries the rest', is_array($values) && ($values['storage_s3_bucket'] ?? null) === 'my-bucket');
 }
@@ -1624,9 +1770,17 @@ check(
 );
 check('the form reopens on the stored provider', strpos($run['drawn'], '<option value="aws" selected>') !== false);
 ob_start();
-$redraw = StorageSettingsForm::formVars(array('storage_s3_secret_key' => 'typed-then-refused') + $storage);
+$redraw = StorageSettingsScreen::formVars(array('storage_s3_secret_key' => 'typed-then-refused') + $storage);
 osc_admin_settings_form($redraw['id'], $redraw);
 check('nor is a typed one on a refused redraw', strpos((string)ob_get_clean(), 'typed-then-refused') === false);
+
+$pricing = \mindstellar\admin\form\BillingSettingsScreen::formVars()['pricing'];
+ob_start();
+osc_admin_settings_form($pricing['id'], $pricing);
+check('a settings form prints its group heading', strpos((string)ob_get_clean(), '>Pricing</h2>') !== false);
+ob_start();
+osc_admin_settings_form($pricing['id'], array('titles' => false) + $pricing);
+check('and leaves it out on a tab that names it', strpos((string)ob_get_clean(), '>Pricing</h2>') === false);
 
 // Corrected rather than refused, exactly as the hand-written save did.
 foreach (array(
@@ -1701,7 +1855,7 @@ foreach (array(
 pin('the fallback follows the provider that was stored', array('custom', 'STRING'), pref($admin, 'storage_s3_provider'));
 
 $toR2 = static function ($values, $pageId) {
-    if ($pageId === StorageSettingsForm::PAGE_ID) {
+    if ($pageId === StorageSettingsScreen::PAGE_ID) {
         $values['storage_s3_provider'] = 'r2';
     }
 
@@ -1712,25 +1866,12 @@ $run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_provider
 osc_remove_filter('admin_form_before_save', $toR2);
 pin('a provider a before_save listener switches to r2 is stored', array('r2', 'STRING'), pref($admin, 'storage_s3_provider'));
 pin('and a blank region under it is the preset region', array('auto', 'STRING'), pref($admin, 'storage_s3_region'));
-check('the form reads nothing out of the request', strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/StorageSettingsForm.php'), 'Params::') === false);
+check('the form reads nothing out of the request', strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php'), 'Params::') === false);
 
-pin('the corrections, called directly: provider', array('r2', 'custom', 'custom'), array(StorageSettingsForm::provider('r2'), StorageSettingsForm::provider('nope'), StorageSettingsForm::provider(null)));
-pin('region', array('auto', '', 'x'), array(StorageSettingsForm::region('', 'r2'), StorageSettingsForm::region('', 'custom'), StorageSettingsForm::region('x', 'r2')));
-pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsForm::ttl('59'), StorageSettingsForm::ttl('604801'), StorageSettingsForm::ttl('0'), StorageSettingsForm::ttl(array())));
-
-// The Better S3 adoption writes the endpoint through the controller's own guard, which has to
-// answer exactly as the declared one does.
-$guard = new ReflectionMethod('CAdminSettingsStorage', '_httpUrlOrEmpty');
-if (PHP_VERSION_ID < 80100) {
-    $guard->setAccessible(true);
-}
-foreach (array('https://a.example.test', 'javascript:alert(1)', 'data:text/plain,x', 'https://' . 'x y.test', '') as $url) {
-    pin(
-        'the adoption guard and the declared one agree on "' . $url . '"',
-        StorageSettingsForm::httpUrlOrEmpty($url),
-        $guard->invoke(new CAdminSettingsStorage(), $url)
-    );
-}
+pin('the corrections, called directly: provider', array('r2', 'custom', 'custom'), array(StorageSettingsScreen::provider('r2'), StorageSettingsScreen::provider('nope'), StorageSettingsScreen::provider(null)));
+pin('region', array('auto', '', 'x'), array(StorageSettingsScreen::region('', 'r2'), StorageSettingsScreen::region('', 'custom'), StorageSettingsScreen::region('x', 'r2')));
+pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsScreen::ttl('59'), StorageSettingsScreen::ttl('604801'), StorageSettingsScreen::ttl('0'), StorageSettingsScreen::ttl(array())));
+pin('url: http(s) kept, javascript: and data: blanked', array('https://a.example.test', '', ''), array(StorageSettingsScreen::httpUrlOrEmpty('https://a.example.test'), StorageSettingsScreen::httpUrlOrEmpty('javascript:alert(1)'), StorageSettingsScreen::httpUrlOrEmpty('data:text/plain,x')));
 
 $run = drive('CAdminSettingsStorage', 'storage_migrate_post', array('op' => 'adopt_better_s3'));
 pin('adoption is still its own CSRF-checked action', array('storage_migrate_post'), $run['csrf']);
@@ -1806,7 +1947,7 @@ foreach (array(
 ) as $needle) {
     check('the sitemap screen still draws ' . $needle, strpos($drawn['settings/sitemap.php'], $needle) !== false);
 }
-foreach (array_keys(SitemapSettingsForm::TOGGLES) as $toggle) {
+foreach (array_keys(SitemapSettingsScreen::TOGGLES) as $toggle) {
     check('and the toggle id "' . $toggle . '"', strpos($drawn['settings/sitemap.php'], 'id="' . $toggle . '"') !== false);
 }
 check(
@@ -1942,7 +2083,7 @@ pin(
 );
 unlink($GLOBALS['fakeRoot'] . '/robots.txt');
 drive('CAdminSettingsMedia', 'media');
-pin('the media screen still exports the PHP upload limit, in kilobytes', MediaSettingsForm::uploadLimitKb(), __get('max_size_upload'));
+pin('the media screen still exports the PHP upload limit, in kilobytes', MediaSettingsScreen::uploadLimitKb(), __get('max_size_upload'));
 foreach (array(
     array('storage_active', 's3'),
     array('storage_s3_provider', 'r2'),
@@ -2027,13 +2168,13 @@ $screens = array(
     ),
     'settings/media.php'        => array(
         'CAdminSettingsMedia.php',
-        array('dimThumbnail', 'maxSizeKb', 'jpeg_quality', 'use_imagick', 'watermark_type', 'watermark_text', 'watermark_text_place', 'watermark_image_place', 'background_color', 'text_angle', 'watermark_image'),
+        array('dimThumbnail', 'maxSizeKb', 'jpeg_quality', 'use_imagick', 'watermark_type', 'watermark_text', 'watermark_text_place', 'watermark_image_place', 'background_color', 'watermark_opacity', 'watermark_image'),
     ),
     // The Better S3 adoption writes the same keys the form does, so its allowance is the case
     // it lives in, never a key name: a key-name allowance would hide the same write anywhere.
     'settings/storage.php'      => array(
         'CAdminSettingsStorage.php',
-        array_keys(SettingsPageRegistry::instance()->fields(StorageSettingsForm::register())),
+        array_keys(SettingsPageRegistry::getInstance()->fields(StorageSettingsScreen::register())),
         array(),
         array('adopt_better_s3'),
     ),
@@ -2117,7 +2258,7 @@ $storageSrc = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/
 $storagePost = without_case($storageSrc, 'storage_post');
 check('CAdminSettingsStorage.php has one storage_post arm', $storagePost !== null);
 $storagePost = (string)($storagePost['cut'] ?? '');
-check('storage_post saves through the declaration', strpos($storagePost, 'CoreSettings::attempt(StorageSettingsForm::register())') !== false);
+check('storage_post saves through the declaration', strpos($storagePost, 'CoreSettings::attempt(StorageSettingsScreen::register())') !== false);
 check('and writes no preference of its own', strpos($storagePost, 'osc_set_preference') === false);
 check('and reads nothing out of the request', strpos($storagePost, 'Params::') === false);
 check('the adoption still writes its keys by hand, where the allowance says', strpos((string)(without_case($storageSrc, 'adopt_better_s3')['cut'] ?? ''), "osc_set_preference('storage_s3_secret_key'") !== false);
@@ -2133,12 +2274,12 @@ check(
 // The four keys that are not the field's own name are the ones a rename would break
 // silently, so the declarations are held to spelling them.
 foreach (array(
-    'MainSettingsForm.php'         => array('maxLatestItems@home', 'defaultResultsPerPage@search', 'contact_attachment'),
-    'LatestSearchSettingsForm.php' => array('purge_latest_searches'),
-    'AdvancedSettingsForm.php'     => array('subdomain_type', 'subdomain_host'),
-    'SpamSettingsForm.php'         => array('recaptcha_version'),
-    'PermalinkSettingsForm.php'    => array('rewriteEnabled'),
-    'MediaSettingsForm.php'        => array('watermark_place', 'watermark_text_options', "'/watermark.png'"),
+    'MainSettingsScreen.php'         => array('maxLatestItems@home', 'defaultResultsPerPage@search', 'contact_attachment'),
+    'LatestSearchSettingsScreen.php' => array('purge_latest_searches'),
+    'AdvancedSettingsScreen.php'     => array('subdomain_type', 'subdomain_host'),
+    'SpamSettingsScreen.php'         => array('recaptcha_version'),
+    'PermalinkSettingsScreen.php'    => array('rewriteEnabled'),
+    'MediaSettingsScreen.php'        => array('watermark_place', 'watermark_text_options', "'/watermark.png'"),
 ) as $file => $keys) {
     $src = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/' . $file);
     foreach ($keys as $key) {

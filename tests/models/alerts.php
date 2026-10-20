@@ -114,7 +114,7 @@ $rowCount = static function () use ($admin, $table): int {
     return (int)$admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];
 };
 
-$model = Alerts::newInstance();
+$model = Alerts::getInstance();
 
 /* An old, already-serialized Search blob with everything a byte-identity check
  * must survive: a single quote, a backslash, LIKE wildcards, and multibyte
@@ -232,11 +232,13 @@ harness_section('Alerts: serialized JSON round-trip (write path via createAlert)
 /* createAlert stores $alert into s_search. A blob with special bytes must land
  * byte-for-byte -- no re-encoding, no cleaning. */
 $writeBlob = '{"sPattern":"50%_ \\\\ \"quoted\"","x":"café"}';
-$newId = $model->createAlert(99, 'writer@example.test', $writeBlob, 'writerSecret', 'HOURLY');
+$newId = $model->createAlert(99, 'writer@example.test', $writeBlob, 'writerSecret', 'WEEKLY');
 check('createAlert returns a positive int id for a fresh alert', is_int($newId) && $newId > 0, describe($newId));
 pin('the blob was stored byte-identical (read back with raw mysqli)', $writeBlob, $rawSearchFor((int)$newId));
 pin('createAlert wrote the email verbatim', 'writer@example.test', $rawColFor((int)$newId, 's_email'));
-pin('createAlert wrote the type verbatim', 'HOURLY', $rawColFor((int)$newId, 'e_type'));
+pin('createAlert wrote the type verbatim', 'WEEKLY', $rawColFor((int)$newId, 'e_type'));
+// Out of the per-type counts below.
+$admin->query("UPDATE $table SET e_type = 'HOURLY' WHERE pk_i_id = " . (int) $newId);
 pin('createAlert wrote the secret verbatim', 'writerSecret', $rawColFor((int)$newId, 's_secret'));
 
 /* ----------------------------------------------------------------------------
@@ -382,7 +384,7 @@ pin('a non-existent email does not match', array(), $model->findByEmailByType('g
 harness_section('Alerts::createAlert -- deduplication');
 
 $before = $rowCount();
-$dupResult = $model->createAlert(99, 'writer@example.test', $writeBlob, 'anotherSecret', 'HOURLY');
+$dupResult = $model->createAlert(99, 'writer@example.test', $writeBlob, 'anotherSecret', 'WEEKLY');
 pin('a duplicate (same user + same s_search, not unsubbed) returns false', false, $dupResult);
 pin('no row was written for the duplicate', $before, $rowCount());
 
@@ -396,6 +398,8 @@ pin('the anonymous alert defaulted e_type to DAILY', 'DAILY', $rawColFor((int)$a
 // no anonymous row already matches; a repeat of the exact anon pair dedups.
 pin('a repeat anonymous pair (email+search) dedups to false', false, $model->createAlert(0, 'newanon@example.test', '{"q":"newanon"}', 'anonSecret2'));
 
+$hourlyId = $model->createAlert(0, 'hourly@example.test', '{"q":"hourly"}', 'x', 'HOURLY');
+pin('an hourly alert is stored as daily', 'DAILY', $rawColFor((int) $hourlyId, 'e_type'));
 pin('a null user id is a guest too', false, $model->createAlert(null, 'newanon@example.test', '{"q":"newanon"}', 'x'));
 $seedAlert('nullguest@example.test', null, '{"q":"nullguest"}', 'nullSecret', 'DAILY', 1, '2025-05-02 00:00:00');
 pin('a guest alert dedups against a NULL-user row', false, $model->createAlert(0, 'nullguest@example.test', '{"q":"nullguest"}', 'x'));
@@ -549,6 +553,28 @@ pin(
     array(),
     $model->findByEmail('0')
 );
+
+harness_section('Hourly alerts are gone');
+
+$admin->query("DELETE FROM $table");
+$admin->query("INSERT INTO $table (s_email, s_search, s_secret, b_active, e_type, dt_date) VALUES"
+    . " ('h1@example.test', '{\"q\":\"h1\"}', 's', 1, 'HOURLY', '2026-01-01 00:00:00'),"
+    . " ('h2@example.test', '{\"q\":\"h2\"}', 's', 1, 'HOURLY', '2026-01-01 00:00:00'),"
+    . " ('w1@example.test', '{\"q\":\"w1\"}', 's', 1, 'WEEKLY', '2026-01-01 00:00:00')");
+$hourlyMigration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0069_hourly_alerts_to_daily.php';
+$hourlyMigration->up(\mindstellar\database\Connection::getInstance());
+$hourlyMigration->up(\mindstellar\database\Connection::getInstance());
+pin('migration 0069 makes hourly alerts daily, and runs twice safely', array('DAILY' => 2, 'WEEKLY' => 1), array(
+    'DAILY'  => count($model->findByType('DAILY')),
+    'WEEKLY' => count($model->findByType('WEEKLY')),
+));
+
+require_once ABS_PATH . 'oc-includes/osclass/alerts.php';
+$admin->query("INSERT INTO $table (s_email, s_search, s_secret, b_active, e_type, dt_date) VALUES ('h3@example.test', '{\"q\":\"h3\"}', 's', 1, 'HOURLY', '2026-01-01 00:00:00')");
+pin('osc_runAlert(HOURLY) does nothing, not even a lookup', 0, harness_query_count(static function (): void {
+    osc_runAlert('HOURLY', '2000-01-01 00:00:00');
+}));
+$admin->query("DELETE FROM $table");
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

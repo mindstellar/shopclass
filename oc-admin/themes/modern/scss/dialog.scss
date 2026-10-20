@@ -80,3 +80,73 @@
   justify-content: flex-end;
   padding: 1.35rem;
 }
+
+// A tall dialog keeps its title and buttons in view; only the fields between them scroll.
+.osc-dialog[open]:has(.osc-dialog-body) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  > form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+}
+
+.osc-dialog-body {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+.osc-dialog-actions {
+  flex: none;
+}
+
+.osc-dialog-wide {
+  // Only a body that opens with its title pins it; a dialog with its own head keeps its layout.
+  .osc-dialog-body:has(> .osc-dialog-title:first-child) {
+    padding-block-start: 0;
+
+    > .osc-dialog-title {
+      background-color: var(--osc-bench);
+      padding-block-start: 1.35rem;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+  }
+
+  .osc-dialog-actions {
+    border-block-start: 1px solid var(--osc-rule);
+  }
+}
+
+// On a phone a wide dialog fills the screen, less a thin margin, with tighter padding.
+@media (max-width: 576px) {
+  .osc-dialog-wide {
+    inline-size: calc(100vw - 1rem);
+    max-block-size: calc(100dvh - 1rem);
+    max-inline-size: none;
+
+    .osc-dialog-body {
+      padding-inline: 1rem;
+    }
+
+    .osc-dialog-title {
+      margin-inline: -1rem;
+      padding-inline: 1rem;
+    }
+
+    .osc-dialog-actions {
+      padding: 1rem;
+    }
+  }
+}

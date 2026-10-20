@@ -26,16 +26,30 @@ osc_admin_page(array(
 
 $forms    = __get('billing_forms');
 $gateways = __get('gateways');
+// One form per tab, so the screen has one Save button at a time. The controller checks the tab.
+$tabs = array(
+    'switch'   => __('Billing'),
+    'pricing'  => __('Pricing'),
+    'offline'  => __('Bank transfer'),
+    'upgrades' => __('Upgrades'),
+    'limits'   => __('Seller limits'),
+    'receipts' => __('Receipts'),
+    'methods'  => __('Payment methods'),
+);
+$tab = (string) __get('billing_tab');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-settings">
-    <?php foreach (array('switch', 'pricing', 'offline', 'upgrades', 'limits', 'receipts') as $part) {
-        osc_admin_settings_form($forms[$part]['id'], $forms[$part]);
-    } ?>
+    <?php osc_admin_page_head(__('Billing settings'));
+    osc_admin_tab_nav(array_map(static fn ($key, $label) => array(
+        'label'  => $label,
+        'url'    => osc_admin_base_url(true) . '?page=settings&action=billing&tab=' . $key,
+        'active' => $key === $tab,
+    ), array_keys($tabs), $tabs)); ?>
 
-    <?php osc_admin_page_head(__('Payment methods'));
-
-    if (empty($gateways)) {
+    <?php if ($tab !== 'methods') {
+        osc_admin_settings_form($forms[$tab]['id'], array('titles' => false) + $forms[$tab]);
+    } elseif (empty($gateways)) {
         osc_admin_empty(array(
             'icon'   => 'bi-credit-card',
             'title'  => __('No payment methods installed'),

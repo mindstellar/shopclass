@@ -12,8 +12,8 @@ if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
+use mindstellar\utility\Formatting;
 
 // The checks live in SystemChecks. The oscsi_* helpers stay defined for plugins that call them.
 
@@ -48,7 +48,7 @@ if (!function_exists('oscsi_size')) {
             return '—';
         }
 
-        return DatabaseTools::bytes((int)$bytes);
+        return Formatting::bytes((int)$bytes);
     }
 }
 
@@ -90,7 +90,7 @@ if (!function_exists('oscsi_row')) {
     }
 }
 
-$view   = View::newInstance();
+$view   = View::getInstance();
 $tab    = (string) $view->_get('sysinfo_tab');
 $env    = (array) $view->_get('sysinfo_env');
 $report = (array) $view->_get('sysinfo_report');
@@ -114,14 +114,11 @@ osc_add_hook('admin_footer', static function () { ?>
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('System info')); ?>
     <div id="system-info" class="sysinfo">
-        <ul class="osc-tabnav sysinfo-tabs">
-            <?php foreach ($tabs as $key => $label) { ?>
-                <li>
-                    <a<?php echo $key === $tab ? ' class="is-active" aria-current="page"' : ''; ?>
-                        href="<?php echo osc_esc_html(SystemChecks::url($env, $key)); ?>"><?php echo osc_esc_html($label); ?></a>
-                </li>
-            <?php } ?>
-        </ul>
+        <?php osc_admin_tab_nav(array_map(static fn ($key, $label) => array(
+            'label'  => $label,
+            'url'    => SystemChecks::url($env, $key),
+            'active' => $key === $tab,
+        ), array_keys($tabs), $tabs), 'sysinfo-tabs'); ?>
 
         <?php
         // The update's result joins the tab's verdict: one box, not two.

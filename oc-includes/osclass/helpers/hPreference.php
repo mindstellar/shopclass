@@ -74,7 +74,7 @@ function osc_force_jpeg()
 function osc_save_webp()
 {
     return osc_image_format() === 'webp'
-           && ImageProcessing::canWriteWebp(extension_loaded('imagick') && osc_use_imagick());
+           && ImageProcessing::canWriteWebp(ImageProcessing::usesImagick());
 }
 
 /**
@@ -602,13 +602,60 @@ function osc_normal_dimensions()
 }
 
 /**
+ * The saved result of the last update check for core, plugins, themes, languages or the location catalog.
+ * It lives in the key-value store because preferences load on every request.
+ *
+ * @param string $kind 'core', 'plugins', 'themes', 'languages' or 'location'
+ *
+ * @return array<string,mixed> checked (time), count, to_update, downloaded; core adds available and package
+ */
+function osc_update_check_state(string $kind): array
+{
+    try {
+        $state = osc_kv_get('update_check', $kind);
+    } catch (\Throwable $e) {
+        $state = null;
+    }
+
+    return (is_array($state) ? $state : array())
+        + array('checked' => 0, 'count' => 0, 'to_update' => array(), 'downloaded' => array());
+}
+
+/**
+ * Save an update check's result for $kind, and drop the preference rows it used to live in.
+ *
+ * @param string              $kind  as osc_update_check_state() takes it
+ * @param array<string,mixed> $state as osc_update_check_state() returns it
+ *
+ * @return void
+ */
+function osc_update_check_save(string $kind, array $state): void
+{
+    osc_kv_set('update_check', $kind, $state, 7 * 24 * 3600);
+
+    $legacy = match ($kind) {
+        'core'     => array('update_core_available', 'update_core_json', 'last_version_check'),
+        'location' => array('location_catalog_checked'),
+        default    => array($kind . '_to_update', $kind . '_downloaded', $kind . '_update_count', $kind . '_last_version_check'),
+    };
+    $stored = Preference::getInstance()->getSection('osclass');
+    $found  = array_intersect($legacy, array_keys($stored));
+    foreach ($found as $name) {
+        osc_delete_preference($name);
+    }
+    if ($found !== array()) {
+        osc_reset_preferences();
+    }
+}
+
+/**
  * Gets when was the last version check
  *
  * @return int
  */
 function osc_last_version_check()
 {
-    return (int)getPreference('last_version_check');
+    return (int) osc_update_check_state('core')['checked'];
 }
 
 /**
@@ -618,7 +665,7 @@ function osc_last_version_check()
  */
 function osc_themes_last_version_check()
 {
-    return (int)getPreference('themes_last_version_check');
+    return (int) osc_update_check_state('themes')['checked'];
 }
 
 /**
@@ -628,7 +675,7 @@ function osc_themes_last_version_check()
  */
 function osc_plugins_last_version_check()
 {
-    return (int)getPreference('plugins_last_version_check');
+    return (int) osc_update_check_state('plugins')['checked'];
 }
 
 /**
@@ -638,7 +685,7 @@ function osc_plugins_last_version_check()
  */
 function osc_languages_last_version_check()
 {
-    return (int)getPreference('languages_last_version_check');
+    return (int) osc_update_check_state('languages')['checked'];
 }
 
 /**
@@ -648,7 +695,9 @@ function osc_languages_last_version_check()
  */
 function osc_update_core_json()
 {
-    return getPreference('update_core_json');
+    $package = osc_update_check_state('core')['package'] ?? null;
+
+    return is_array($package) ? (string) json_encode($package) : '';
 }
 
 /**
@@ -992,6 +1041,26 @@ function osc_save_latest_searches()
 }
 
 /**
+ * Whether the search page offers distance search.
+ *
+ * @return bool
+ */
+function osc_geo_search_enabled()
+{
+    return getBoolPreference('geo_search');
+}
+
+/**
+ * The unit distances are shown in: 'km' or 'mi'.
+ *
+ * @return string
+ */
+function osc_distance_unit()
+{
+    return getPreference('distance_unit') === 'mi' ? 'mi' : 'km';
+}
+
+/**
  * How long latest searches are kept before they are purged.
  *
  * @return string
@@ -1190,6 +1259,23 @@ function osc_max_latest_items_at_home()
 }
 
 /**
+ * A number preference: $default while it is unset, and never below $min (no floor unless one is given).
+ *
+ * @param string $key
+ * @param int    $default
+ * @param int    $min
+ * @param string $section
+ *
+ * @return int
+ */
+function osc_get_int_preference($key, int $default, int $min = PHP_INT_MIN, $section = 'osclass'): int
+{
+    $value = getPreference($key, $section);
+
+    return $value === '' || $value === null ? $default : max($min, (int) $value);
+}
+
+/**
  * generic function to retrieve preferences
  *
  * @param string $key
@@ -1229,7 +1315,7 @@ function osc_get_bool_preference($key, $section = 'osclass')
  */
 function osc_get_preference_section($section = 'osclass')
 {
-    $_P = Preference::newInstance();
+    $_P = Preference::getInstance();
 
     return $_P->getSection($section);
 }
@@ -1246,7 +1332,7 @@ function osc_get_preference_section($section = 'osclass')
  */
 function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')
 {
-    return Preference::newInstance()->replace($key, $value, $section, $type);
+    return Preference::getInstance()->replace($key, $value, $section, $type);
 }
 
 /**
@@ -1259,17 +1345,18 @@ function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'ST
  */
 function osc_delete_preference($key = '', $section = 'osclass')
 {
-    return Preference::newInstance()->delete(array('s_name' => $key, 's_section' => $section));
+    return Preference::getInstance()->delete(array('s_name' => $key, 's_section' => $section));
 }
 
 /**
- * Reload preferences
+ * Reload preferences from the table. Call it after writing t_preference with raw SQL: it
+ * also refreshes the copy other requests read from a persistent object cache.
  *
  * @return bool False when nothing could be read
  */
 function osc_reset_preferences()
 {
-    return Preference::newInstance()->toArray();
+    return Preference::getInstance()->toArray();
 }
 
 /**
@@ -1324,6 +1411,16 @@ function osc_watermark_text()
 function osc_watermark_place()
 {
     return getPreference('watermark_place');
+}
+
+/**
+ * How opaque the watermark is, in percent: 10 to 100, and 100 when unset.
+ *
+ * @return int
+ */
+function osc_watermark_opacity(): int
+{
+    return ImageProcessing::watermarkOpacity(getPreference('watermark_opacity'));
 }
 
 /**
@@ -1403,7 +1500,7 @@ function osc_turnstile_secret_key()
  */
 function getBoolPreference($key)
 {
-    $_P = Preference::newInstance();
+    $_P = Preference::getInstance();
 
     if ($_P->get($key)) {
         return true;
@@ -1440,7 +1537,7 @@ function osc_billing_enabled()
  */
 function getPreference($key, $section = 'osclass')
 {
-    $_P = Preference::newInstance();
+    $_P = Preference::getInstance();
 
     return $_P->get($key, $section);
 }

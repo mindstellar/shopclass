@@ -35,6 +35,11 @@ final class Compatibility
     /** `requires` is above the running core, or `requires_php` is above the running PHP. */
     public const INCOMPATIBLE = 'incompatible';
 
+    /** Plugin versions older than these break on this core, though their header allows it. */
+    private const BROKEN_BELOW = [
+        'listing-import' => '0.3.0',
+    ];
+
     /**
      * Not instantiable: every entry point on this class is static.
      */
@@ -105,6 +110,21 @@ final class Compatibility
             'blocked' => false,
             'reason'  => __('Compatibility with this Shopclass version has not been declared.'),
         ];
+    }
+
+    /**
+     * The version a plugin must reach to work on this core, when the installed one is known to break here.
+     *
+     * @param string $slug    the plugin's folder name
+     * @param string $version its installed version
+     *
+     * @return string|null the version to update to, or null when this one is fine
+     */
+    public static function brokenBelow(string $slug, string $version): ?string
+    {
+        $minimum = self::BROKEN_BELOW[$slug] ?? null;
+
+        return $minimum !== null && $version !== '' && version_compare($version, $minimum, '<') ? $minimum : null;
     }
 
     /**

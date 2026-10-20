@@ -15,8 +15,10 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\KeywordBlockSettingsForm;
+use mindstellar\admin\form\KeywordBlockSettingsScreen;
 use mindstellar\admin\ListPaging;
+use mindstellar\database\DbException;
+use mindstellar\moderation\KeywordBlockStore;
 
 /**
  * Admin screens for the keyword blocklist (t_keyword_block, KeywordBlock,
@@ -69,21 +71,9 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 $keywordBlocksDataTable->table($params);
                 $aData = $keywordBlocksDataTable->getData();
 
-                if (count($aData['aRows']) == 0 && $page != 1) {
-                    $total   = (int) $aData['iTotalDisplayRecords'];
-                    $maxPage = ceil($total / (int) $aData['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-
-                    if ($maxPage == 0) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=1', $url);
-                        $this->redirectTo($url);
-                    }
-
-                    if ($page > 1) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url);
-                        $this->redirectTo($url);
-                    }
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
+                if ($pastEnd !== null) {
+                    $this->redirectTo($pastEnd);
                 }
 
                 $this->_exportVariableToView('aData', $aData);
@@ -92,20 +82,14 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 // own view reads it, and View::_get() answers '' for a key nobody exported --
                 // so every switch would draw unticked and the next save would clear them.
                 $this->_exportVariableToView('moderation_prefs', $this->moderationPrefs());
-                $this->_exportVariableToView('moderation_form', KeywordBlockSettingsForm::formVars());
+                $this->_exportVariableToView('moderation_form', KeywordBlockSettingsScreen::formVars());
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
+                $bulk_options = BulkAction::options(
                     array(
-                        'value'               => 'keyword_block_delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected keywords?'),
-                            strtolower(__('Delete'))
-                        ),
-                        'label'               => __('Delete')
-                    )
+                        'keyword_block_delete' => __('Delete')
+                    ),
+                    __('Are you sure you want to %s the selected keywords?')
                 );
-
                 $bulk_options = osc_apply_filter('keyword_block_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
@@ -120,7 +104,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 $this->_saveKeywordBlock(null);
                 break;
             case ('keyword_block_edit'):
-                $keyword = KeywordBlock::newInstance()->findByPrimaryKey(Params::getParam('id'));
+                $keyword = KeywordBlock::getInstance()->findByPrimaryKey(Params::getParam('id'));
                 if (empty($keyword)) {
                     osc_add_flash_error_message(_m('That keyword no longer exists'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
@@ -141,9 +125,8 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 }
 
-                $model = KeywordBlock::newInstance();
                 BulkAction::apply(
-                    static fn ($id) => (bool)$model->deleteByPrimaryKey($id),
+                    static fn (int $id) => KeywordBlockStore::delete($id),
                     'One keyword has been deleted',
                     '%s keywords have been deleted',
                     _m('No keywords have been deleted')
@@ -173,7 +156,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 // sorting, so a rejection goes back to it rather than redrawing it. Nothing
                 // here can be rejected in practice: four switches and a number that is
                 // floored rather than refused.
-                if (CoreSettings::attempt(KeywordBlockSettingsForm::register())['errors'] === array()) {
+                if (CoreSettings::attempt(KeywordBlockSettingsScreen::register())['errors'] === array()) {
                     osc_add_flash_ok_message(_m('Moderation settings have been updated'), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
@@ -194,7 +177,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
         $keyword   = trim((string) Params::getParam('s_keyword'));
         $bare      = trim(str_replace('*', '', $keyword));
         $scope     = (string) Params::getParam('s_scope');
-        $substring = Params::getParam('b_substring') != '' ? 1 : 0;
+        $substring = Params::getParam('b_substring') != '';
 
         if (!in_array($scope, self::$validScopes, true)) {
             $scope = 'all';
@@ -209,29 +192,10 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 . ($id ? 'keyword_block_edit&id=' . $id : 'keyword_block_add'));
         }
 
-        $values = array(
-            's_keyword'   => $bare,
-            's_scope'     => $scope,
-            'b_substring' => $substring,
-            'dt_date'     => date('Y-m-d H:i:s'),
-        );
-
-        $model = KeywordBlock::newInstance();
-        if ($id) {
-            $ok = $model->update($values, array('pk_i_id' => $id));
-            $msgOk = _m('Keyword updated correctly');
-        } else {
-            $ok = $model->insert($values);
-            $msgOk = _m('Keyword saved correctly');
-        }
-
-        // update() returns the affected-row count and false only on a query error,
-        // so re-saving a keyword unchanged affects 0 rows — nothing to do, not a
-        // failure. Testing truthiness reported "An error has occurred" for a save
-        // that was perfectly fine.
-        if ($ok !== false) {
-            osc_add_flash_ok_message($msgOk, 'admin');
-        } else {
+        try {
+            KeywordBlockStore::save($id ?: null, $bare, $scope, $substring);
+            osc_add_flash_ok_message($id ? _m('Keyword updated correctly') : _m('Keyword saved correctly'), 'admin');
+        } catch (DbException $e) {
             osc_add_flash_error_message(_m('An error has occurred'), 'admin');
         }
 

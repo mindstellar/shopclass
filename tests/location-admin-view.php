@@ -24,6 +24,7 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 define('ABS_PATH', dirname(__DIR__) . '/');
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/location/CountryCode.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/location/LocationAdminView.php';
 
 use mindstellar\location\LocationAdminView;
@@ -225,6 +226,10 @@ function osc_admin_form_close($a = null, array $o = array())
 {
     echo '</form>';
 }
+function osc_admin_count(int $count, string $id = ''): string
+{
+    return ' <span class="osc-count">' . number_format($count) . '</span>';
+}
 function osc_admin_status($state, $word)
 {
     echo '<span class="osc-status status-' . $state . '">' . $word . '</span>';
@@ -409,8 +414,8 @@ pin('add region: no import offer', 0, $x->query('//*[@data-loc-offer]')->length)
 
 // ---- Controller contracts (source scan: the controllers need a live admin session) --
 $tools  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
-preg_match("/case \('locations_post'\):(.*?)case \('upgrade'\):/s", $tools, $post);
-check('locations_post is found', isset($post[1]));
+$post = array(1 => harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', 'locations_post'));
+check('locations_post is found', $post[1] !== '');
 $csrfAt  = isset($post[1]) ? strpos($post[1], 'osc_csrf_check();') : false;
 $workAt  = isset($post[1]) ? strpos($post[1], 'osc_update_location_stats(') : false;
 check('locations_post checks CSRF before it counts anything', $csrfAt !== false && $workAt !== false && $csrfAt < $workAt);

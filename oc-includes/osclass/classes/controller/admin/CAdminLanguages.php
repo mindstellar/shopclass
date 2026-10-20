@@ -19,22 +19,43 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminLanguages
  */
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
+use mindstellar\exception\ConflictException;
+use mindstellar\language\LanguageService;
+use mindstellar\language\LocaleStore;
 
 class CAdminLanguages extends AdminSecBaseModel
 {
-    //specific for this class
+    use \mindstellar\base\ActionMap;
+
+    /** Each action and the method that answers it; any other action goes to languages(). */
+    private const ACTIONS = array(
+        'add'                 => 'addForm',
+        'add_post'            => 'addPost',
+        'import_locations'    => 'importLocations',
+        'edit'                => 'editForm',
+        'edit_post'           => 'editPost',
+        'enable_selected'     => 'enableSelected',
+        'disable_selected'    => 'disableSelected',
+        'enable_bo_selected'  => 'enableAdminSelected',
+        'disable_bo_selected' => 'disableAdminSelected',
+        'delete'              => 'deleteSelected',
+    );
+
     private OSCLocale $localeManager;
 
+    private LanguageService $languages;
+
     /**
-     * Take the locale manager for this request.
+     * Take the locale manager and the language service for this request.
      */
     public function __construct()
     {
         parent::__construct();
 
-        //specific things for this class
-        $this->localeManager = OSCLocale::newInstance();
+        $this->localeManager = OSCLocale::getInstance();
+        $this->languages     = LanguageService::make();
         osc_run_hook('init_admin_languages');
     }
 
@@ -44,639 +65,555 @@ class CAdminLanguages extends AdminSecBaseModel
      * Dispatch the requested languages action: add, import from the translation
      * repository, edit, enable/disable, delete, otherwise the list.
      *
-     * @return true|null true once an import has finished
+     * @return null
      */
     public function doModel()
     {
-        switch ($this->action) {
-            case ('add'):                // caliing add view
-                $this->doView('languages/add.php');
-                break;
-            case ('add_post'):           // adding a new language
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages')) {
-                    break;
-                }
-                osc_csrf_check();
-                $filePackage = Params::getFiles('package');
+        $method = $this->actionMethod('languages');
 
-                if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
-                    $path   = osc_translations_path();
-                    $status = osc_unzip_file($filePackage['tmp_name'], $path);
-                    @unlink($filePackage['tmp_name']);
-                } else {
-                    $status = 3;
-                }
+        $this->$method();
 
-                switch ($status) {
-                    case (0):
-                        $msg = _m('The translation folder is not writable');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (1):
-                        if (osc_checkLocales()) {
-                            $msg = _m('The language has been installed correctly');
-                            osc_add_flash_ok_message($msg, 'admin');
-                        } else {
-                            $msg = _m('File uploaded but unable to activate the language');
-                            osc_add_flash_error_message($msg, 'admin');
-                        }
-                        break;
-                    case (2):
-                        $msg = _m('The zip file is not valid');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (3):
-                        $msg = _m('No file was uploaded');
-                        osc_add_flash_warning_message($msg, 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=languages&action=add');
-                        break;
-                    case (-1):
-                    default:
-                        $msg = _m('There was a problem adding the language');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                }
-
-                osc_invalidate_locale_cache();
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            case ('import_locations'):
-                osc_csrf_check();
-                $languageToImport = Params::getParam('language');
-                if ($languageToImport != '') {
-                    if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages')) {
-                        break;
-                    }
-
-                    $url  = osc_get_i18n_repository_url();
-                    $json = json_decode((string) osc_file_get_contents($url), true);
-                    // Without this the button looked broken wherever the server cannot reach
-                    // the translation repository: the page just came back unchanged.
-                    if (!is_array($json)) {
-                        osc_add_flash_error_message(
-                            sprintf(
-                                _m('Could not read the list of translations at %s. This server has to be able to reach it.'),
-                                $url
-                            ),
-                            'admin'
-                        );
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                    }
-
-                    /* example json
-                        [ {
-                        "locale_code": "en_US",
-                        "name": "English (US)",
-                        "short_name": "English",
-                        "description": "American english translation",
-                        "direction": "ltr",
-                        "version": "1.0.0",
-                        "author_name": "navjottomer",
-                        "author_url": "https://github.com/navjottomer",
-                        "currency_format": "{NUMBER} {CURRENCY}",
-                        "date_format": "m/d/Y",
-                        "stop_words": "i,a,about,an,are,as,at,be,by,com,for,from,how,in,is,it,of,on,or,that,the,this,to,was,what,when,where,who,will,with,the",
-                        "mail_json": "en_US/mail.json"
-                        },  {
-                            ... more locales
-                        }]
-                    */
-                    foreach ($json as $l) {
-                        if (isset($l['locale_code']) && $l['locale_code'] === $languageToImport) {
-                            $importedLocale = $l;
-                            break;
-                        }
-                    }
-                    if (isset($importedLocale)) {
-                        OSCLocale::newInstance()->insertLocaleInfo($importedLocale, $languageToImport);
-                        // inserting e-mail translations get mail.json from github
-                        $mailJSON =
-                            osc_file_get_contents(osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/mail.json'));
-                        $this->importEmailJson($mailJSON);
-                        // Get themes.po,themes.mo, core.po, core.mo, messages.po, messages.mo from github and save to local
-                        $uploadDir = osc_translations_path() . $languageToImport;
-                        $uploadDir .= '/';
-                        // check if the folder exists and create it if not
-                        if (!file_exists($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
-                            osc_add_flash_error_message(sprintf(_m('Directory "%s" was not created'), $uploadDir));
-                            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                        }
-                        $poFiles = array(
-                            'theme.po',
-                            'core.po',
-                            'messages.po'
-                        );
-                        $moFiles = array(
-                            'theme.mo',
-                            'core.mo',
-                            'messages.mo'
-                        );
-                        $failed = 0;
-                        foreach ($poFiles as $poFile) {
-                            $poFileFrom = osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/' . $poFile);
-                            $poFileTo   = $uploadDir . $poFile;
-                            $poFile     = osc_file_get_contents($poFileFrom);
-                            if ($poFile) {
-                                file_put_contents($poFileTo, $poFile);
-                            } else {
-                                $failed++;
-                            }
-                        }
-                        foreach ($moFiles as $moFile) {
-                            $moFileFrom = osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/' . $moFile);
-                            $moFileTo   = $uploadDir . $moFile;
-                            $moFile     = osc_file_get_contents($moFileFrom);
-                            if ($moFile) {
-                                file_put_contents($moFileTo, $moFile);
-                            } else {
-                                $failed++;
-                            }
-                        }
-                        // Clear this code from the pending-update list so the row's
-                        // "Update" action disappears until the next version check.
-                        $pending = json_decode(osc_get_preference('languages_to_update'), true);
-                        if (is_array($pending) && ($k = array_search($languageToImport, $pending, true)) !== false) {
-                            unset($pending[$k]);
-                            osc_set_preference('languages_to_update', json_encode(array_values($pending)));
-                            osc_set_preference('languages_update_count', count($pending));
-                            osc_reset_preferences();
-                        }
-                        osc_invalidate_locale_cache();
-                        if ($failed > 0) {
-                            osc_add_flash_warning_message(
-                                sprintf(_m('Language imported, but %d file(s) could not be downloaded.'), $failed),
-                                'admin'
-                            );
-                        } else {
-                            osc_add_flash_ok_message(_m('Language imported successfully'), 'admin');
-                        }
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-
-                        return true;
-                    }
-
-                    osc_add_flash_error_message(
-                        sprintf(_m('No published translation was found for %s.'), $languageToImport),
-                        'admin'
-                    );
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            case ('edit'):               // editing a language
-                $sLocale = Params::getParam('id');
-                if (!preg_match('/.{2}_.{2}/', $sLocale)) {
-                    osc_add_flash_error_message(_m('Language id isn\'t in the correct format'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-
-                $aLocale = $this->localeManager->findByPrimaryKey($sLocale);
-
-                if (count($aLocale) == 0) {
-                    osc_add_flash_error_message(_m('Language id doesn\'t exist'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-
-                $this->_exportVariableToView('aLocale', $aLocale);
-                $this->doView('languages/frm.php');
-                break;
-            case ('edit_post'):          // edit language post
-                osc_csrf_check();
-                $iUpdated               = 0;
-                $languageCode           = Params::getParam('pk_c_code');
-                $enabledWebstie         = Params::getParam('b_enabled');
-                $enabledBackoffice      = Params::getParam('b_enabled_bo');
-                $languageDirection      = Params::getParam('s_direction');
-                $languageName           = Params::getParam('s_name');
-                $languageShortName      = Params::getParam('s_short_name');
-                $languageDescription    = Params::getParam('s_description');
-                $languageCurrencyFormat = Params::getParam('s_currency_format');
-                $languageDecPoint       = Params::getParam('s_dec_point');
-                $languageNumDec         = Params::getParam('i_num_dec');
-                $languageThousandsSep   = Params::getParam('s_thousands_sep');
-                $languageDateFormat     = Params::getParam('s_date_format');
-                $languageStopWords      = Params::getParam('s_stop_words');
-
-                // formatting variables
-                if (!preg_match('/.{2}_.{2}/', $languageCode)) {
-                    osc_add_flash_error_message(_m('Language id isn\'t in the correct format'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-                $enabledWebstie    = ($enabledWebstie != '');
-                $enabledBackoffice = ($enabledBackoffice != '');
-                $languageName      = strip_tags($languageName);
-                $languageName      = trim($languageName);
-
-                $languageShortName = strip_tags($languageShortName);
-                $languageShortName = trim($languageShortName);
-
-                $languageDescription = strip_tags($languageDescription);
-                $languageDescription = trim($languageDescription);
-
-                $languageCurrencyFormat = strip_tags($languageCurrencyFormat);
-                $languageCurrencyFormat = trim($languageCurrencyFormat);
-                $languageDateFormat     = strip_tags($languageDateFormat);
-                $languageDateFormat     = trim($languageDateFormat);
-                $languageStopWords      = strip_tags($languageStopWords);
-                $languageStopWords      = trim($languageStopWords);
-
-                $msg = '';
-                if (!osc_validate_text($languageName)) {
-                    $msg .= _m('Language name field is required') . '<br/>';
-                }
-                if ($languageDirection !== 'ltr' && $languageDirection !== 'rtl') {
-                    $msg .= _m('Language direction field is required') . '<br/>';
-                }
-                if (!osc_validate_text($languageShortName)) {
-                    $msg .= _m('Language short name field is required') . '<br/>';
-                }
-                if (!osc_validate_text($languageDescription)) {
-                    $msg .= _m('Language description field is required') . '<br/>';
-                }
-                if (!osc_validate_text($languageCurrencyFormat)) {
-                    $msg .= _m('Currency format field is required') . '<br/>';
-                }
-                if (!osc_validate_int($languageNumDec)) {
-                    $msg .= _m('Number of decimals must only contain numeric characters') . '<br/>';
-                }
-                if ($msg != '') {
-                    osc_add_flash_error_message($msg, 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages&action=edit&id=' . $languageCode);
-                }
-
-                $array = array(
-                    'b_enabled'         => $enabledWebstie,
-                    'b_enabled_bo'      => $enabledBackoffice,
-                    's_name'            => $languageName,
-                    's_direction'       => $languageDirection,
-                    's_short_name'      => $languageShortName,
-                    's_description'     => $languageDescription,
-                    's_currency_format' => $languageCurrencyFormat,
-                    's_dec_point'       => $languageDecPoint,
-                    'i_num_dec'         => $languageNumDec,
-                    's_thousands_sep'   => $languageThousandsSep,
-                    's_date_format'     => $languageDateFormat,
-                    's_stop_words'      => $languageStopWords
-                );
-
-                $iUpdated = $this->localeManager->update($array, array('pk_c_code' => $languageCode));
-                osc_invalidate_locale_cache();
-                if ($iUpdated > 0) {
-                    osc_purge_page_cache('language');
-                    osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageShortName), 'admin');
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            case ('enable_selected'):
-                osc_csrf_check();
-                $msg      = _m('Selected languages have been enabled for the website');
-                $iUpdated = 0;
-                $aValues  = array('b_enabled' => 1);
-
-                $id = Params::getParam('id');
-
-                if (!is_array($id)) {
-                    osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-
-                foreach ($id as $i) {
-                    osc_translate_categories($i);
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
-                }
-                osc_invalidate_locale_cache();
-
-                if ($iUpdated > 0) {
-                    osc_purge_page_cache('language');
-                    osc_add_flash_ok_message($msg, 'admin');
-                }
-
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            case ('disable_selected'):
-                osc_csrf_check();
-                $msg         = _m('Selected languages have been disabled for the website');
-                $msg_warning = '';
-                $iUpdated    = 0;
-                $aValues     = array('b_enabled' => 0);
-
-                $id = Params::getParam('id');
-
-                if (!is_array($id)) {
-                    osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-
-                foreach ($id as $i) {
-                    if (osc_language() == $i) {
-                        $msg_warning =
-                            sprintf(_m("%s can't be disabled because it's the default language"), osc_language());
-                        continue;
-                    }
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
-                }
-                osc_invalidate_locale_cache();
-                if ($iUpdated > 0) {
-                    osc_purge_page_cache('language');
-                }
-
-                if ($msg_warning != '') {
-                    if ($iUpdated > 0) {
-                        osc_add_flash_warning_message($msg . '</p><p>' . $msg_warning, 'admin');
-                    } else {
-                        osc_add_flash_warning_message($msg_warning, 'admin');
-                    }
-                } else {
-                    osc_add_flash_ok_message($msg, 'admin');
-                }
-
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            case ('enable_bo_selected'):
-                osc_csrf_check();
-                $msg      = _m('Selected languages have been enabled for the backoffice (oc-admin)');
-                $iUpdated = 0;
-                $aValues  = array('b_enabled_bo' => 1);
-
-                $id = Params::getParam('id');
-
-                if (!is_array($id)) {
-                    osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-
-                foreach ($id as $i) {
-                    osc_translate_categories($i);
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
-                }
-                osc_invalidate_locale_cache();
-
-                if ($iUpdated > 0) {
-                    osc_add_flash_ok_message($msg, 'admin');
-                }
-
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            case ('disable_bo_selected'):
-                osc_csrf_check();
-                $msg         = _m('Selected languages have been disabled for the backoffice (oc-admin)');
-                $msg_warning = '';
-                $iUpdated    = 0;
-                $aValues     = array('b_enabled_bo' => 0);
-
-                $id = Params::getParam('id');
-
-                if (!is_array($id)) {
-                    osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
-
-                foreach ($id as $i) {
-                    if (osc_language() == $i) {
-                        $msg_warning =
-                            sprintf(_m("%s can't be disabled because it's the default language"), osc_language());
-                        continue;
-                    }
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
-                }
-                osc_invalidate_locale_cache();
-
-                if ($msg_warning != '') {
-                    if ($iUpdated > 0) {
-                        osc_add_flash_warning_message($msg . '</p><p>' . $msg_warning, 'admin');
-                    } else {
-                        osc_add_flash_warning_message($msg_warning, 'admin');
-                    }
-                } else {
-                    osc_add_flash_ok_message($msg, 'admin');
-                }
-
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            case ('delete'):
-                osc_csrf_check();
-                if (is_array(Params::getParam('id'))) {
-                    $default_lang = osc_language();
-                    foreach (Params::getParam('id') as $code) {
-                        $isDefaultLanguage = ($default_lang === $code);
-                        $isCurrentLanguage = (osc_current_admin_locale() === $code);
-                        if ($isDefaultLanguage || $isCurrentLanguage) {
-                            if ($isCurrentLanguage) {
-                                osc_add_flash_warning_message(
-                                    _m('The current language can\'t be deleted. Please logout and login again with another language.'),
-                                    'admin'
-                                );
-                            } else {
-                                osc_add_flash_error_message(
-                                    sprintf(
-                                        _m(
-                                            "Directory '%s' couldn't be removed because it's the default language. <a href=\"%s\">Set another language</a> as default first and try again"
-                                        ),
-                                        $code,
-                                        osc_admin_base_url(true) . '?page=settings'
-                                    ),
-                                    'admin'
-                                );
-                            }
-                        } elseif ($this->localeManager->deleteLocale($code)) {
-                            osc_purge_page_cache('language');
-                            if (!osc_deleteDir(osc_translations_path() . $code)) {
-                                osc_add_flash_error_message(sprintf(
-                                    _m("Directory '%s' couldn't be removed"),
-                                    $code
-                                ), 'admin');
-                            } else {
-                                osc_add_flash_ok_message(
-                                    sprintf(_m('Directory "%s" has been successfully removed'), $code),
-                                    'admin'
-                                );
-                            }
-                        } else {
-                            osc_add_flash_error_message(
-                                sprintf(_m("Directory '%s' couldn't be removed;)"), $code),
-                                'admin'
-                            );
-                        }
-                    }
-                }
-                osc_invalidate_locale_cache();
-                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                break;
-            default:
-                if (Params::getParam('checkUpdated') != '') {
-                    osc_admin_toolbar_update_languages(true);
-                }
-
-                if (Params::getParam('action') != '') {
-                    osc_run_hook('language_bulk_' . Params::getParam('action'), Params::getParam('id'));
-                }
-
-                // -----
-                Params::setParam('iDisplayLength', ListPaging::length());
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
-
-                $p_iPage = ListPaging::page();
-
-                $aLanguages = OSCLocale::newInstance()->listAll();
-
-                // pagination
-                $limit = ListPaging::length();
-                $start = ListPaging::start($p_iPage, $limit);
-                $count = count($aLanguages);
-
-                $displayRecords = $limit;
-                if (($start + $limit) > $count) {
-                    $displayRecords = ($start + $limit) - $count;
-                }
-                // ----
-                $aLanguagesToUpdate = json_decode(osc_get_preference('languages_to_update'), true);
-                $bLanguagesToUpdate = is_array($aLanguagesToUpdate);
-                // ----
-                $aData = array();
-                $max   = ($start + $limit);
-                if ($max > $count) {
-                    $max = $count;
-                }
-                for ($i = $start; $i < $max; $i++) {
-                    $l     = $aLanguages[$i];
-                    $row   = array();
-                    $row[] = '<input type="checkbox" name="id[]" value="' . $l['pk_c_code'] . '" />';
-
-                    $options   = array();
-                    if ($bLanguagesToUpdate && in_array($l['pk_c_code'], $aLanguagesToUpdate)) {
-                        $options[] = '<a class="strong" href="' . osc_admin_base_url(true)
-                                     . '?page=languages&amp;action=import_locations&amp;language=' . $l['pk_c_code']
-                                     . '&amp;' . osc_csrf_token_url()
-                                     . '">' . __('Update') . '</a>';
-                    }
-                    $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=edit&amp;id='
-                                 . $l['pk_c_code']
-                                 . '">' . __('Edit') . '</a>';
-                    $options[] =
-                        '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . ($l['b_enabled'] == 1
-                            ? 'disable_selected' : 'enable_selected') . '&amp;id[]=' . $l['pk_c_code'] . '&amp;'
-                        . osc_csrf_token_url()
-                        . '">' . ($l['b_enabled'] == 1 ? __('Disable (website)') : __('Enable (website)')) . '</a> ';
-                    $options[] =
-                        '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . ($l['b_enabled_bo']
-                                                                                                  == 1
-                            ? 'disable_bo_selected' : 'enable_bo_selected') . '&amp;id[]=' . $l['pk_c_code'] . '&amp;'
-                        . osc_csrf_token_url() . '">' . ($l['b_enabled_bo'] == 1 ? __('Disable (oc-admin)')
-                            : __('Enable (oc-admin)'))
-                        . '</a>';
-                    $options[] = '<a onclick="return delete_dialog(\'' . $l['pk_c_code'] . '\');"  href="'
-                                 . osc_admin_base_url(true)
-                                 . '?page=languages&amp;action=delete&amp;id[]=' . $l['pk_c_code'] . '&amp;'
-                                 . osc_csrf_token_url() . '">' . __(
-                                     'Delete'
-                                 ) . '</a>';
-
-                    $auxOptions = '<ul>' . PHP_EOL;
-                    foreach ($options as $actual) {
-                        $auxOptions .= '<li>' . $actual . '</li>' . PHP_EOL;
-                    }
-                    $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
-
-                    $row[] = $l['s_name'] . $actions;
-                    $row[] = $l['s_short_name'];
-                    $row[] = $l['s_description'];
-                    $row[] = ($l['b_enabled'] ? __('Yes') : __('No'));
-                    $row[] = ($l['b_enabled_bo'] ? __('Yes') : __('No'));
-
-                    $aData[] = $row;
-                }
-                // ----
-                $array['iTotalRecords']        = $displayRecords;
-                $array['iTotalDisplayRecords'] = count($aLanguages);
-                $array['iDisplayLength']       = $limit;
-                $array['aaData']               = $aData;
-
-                $page = Params::getParamInt('iPage');
-                if (count($array['aaData']) == 0 && $page != 1) {
-                    $total   = $array['iTotalDisplayRecords'];
-                    $maxPage = ceil($total / (int)$array['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-
-                    if ($maxPage == 0) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=1', $url);
-                        $this->redirectTo($url);
-                    }
-
-                    if ($page > 1) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url);
-                        $this->redirectTo($url);
-                    }
-                }
-
-                $this->_exportVariableToView('aLanguages', $array);
-
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'enable_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Enable (Website)'))
-                        ),
-                        'label'               => __('Enable (Website)')
-                    ),
-                    array(
-                        'value'               => 'disable_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Disable (Website)'))
-                        ),
-                        'label'               => __('Disable (Website)')
-                    ),
-                    array(
-                        'value'               => 'enable_bo_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Enable (oc-admin)'))
-                        ),
-                        'label'               => __('Enable (oc-admin)')
-                    ),
-                    array(
-                        'value'               => 'disable_bo_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Disable (oc-admin)'))
-                        ),
-                        'label'               => __('Disable (oc-admin)')
-                    ),
-                    array(
-                        'value'               => 'delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Delete'))
-                        ),
-                        'label'               => __('Delete')
-                    )
-                );
-                $bulk_options = osc_apply_filter('language_bulk_filter', $bulk_options);
-                $this->_exportVariableToView('bulk_options', $bulk_options);
-
-                $this->doView('languages/index.php');
-                break;
-        }
+        return null;
     }
 
     /**
-     * Load the email templates that came with a downloaded language, flashing an error
-     * when they cannot be read.
-     *
-     * @param string|false $mailJSON Raw mail.json, or false when the download failed
-     *
-     * @return void
+     * The form to upload a language package.
      */
-    private function importEmailJson($mailJSON)
+    private function addForm(): void
     {
-        if ($mailJSON) {
-            $mailImported = Page::newInstance()->importEmailJsonTemplates($mailJSON);
-            if (!$mailImported) {
-                osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
+        $this->doView('languages/add.php');
+    }
+
+    /**
+     * Install an uploaded language package.
+     */
+    private function addPost(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages')) {
+            return;
+        }
+        osc_csrf_check();
+        $filePackage = Params::getFiles('package');
+
+        if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
+            $path   = osc_translations_path();
+            $status = osc_unzip_file($filePackage['tmp_name'], $path);
+            @unlink($filePackage['tmp_name']);
+        } else {
+            $status = 3;
+        }
+
+        switch ($status) {
+            case (0):
+                $msg = _m('The translation folder is not writable');
+                osc_add_flash_error_message($msg, 'admin');
+                break;
+            case (1):
+                if (osc_checkLocales()) {
+                    $msg = _m('The language has been installed correctly');
+                    osc_add_flash_ok_message($msg, 'admin');
+                } else {
+                    $msg = _m('File uploaded but unable to activate the language');
+                    osc_add_flash_error_message($msg, 'admin');
+                }
+                break;
+            case (2):
+                $msg = _m('The zip file is not valid');
+                osc_add_flash_error_message($msg, 'admin');
+                break;
+            case (3):
+                $msg = _m('No file was uploaded');
+                osc_add_flash_warning_message($msg, 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=languages&action=add');
+                break;
+            case (-1):
+            default:
+                $msg = _m('There was a problem adding the language');
+                osc_add_flash_error_message($msg, 'admin');
+                break;
+        }
+
+        osc_invalidate_locale_cache();
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * Install a language from the translation repository.
+     */
+    private function importLocations(): void
+    {
+        osc_csrf_check();
+        $languageToImport = Params::getParam('language');
+        if ($languageToImport != '') {
+            if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages')) {
+                return;
+            }
+
+            $published = LanguageService::published();
+            // Without this the button looked broken wherever the server cannot reach
+            // the translation repository: the page just came back unchanged.
+            if ($published === null) {
+                osc_add_flash_error_message(
+                    sprintf(
+                        _m('Could not read the list of translations at %s. This server has to be able to reach it.'),
+                        osc_get_i18n_repository_url()
+                    ),
+                    'admin'
+                );
+                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+            }
+
+            if (isset($published[$languageToImport])) {
+                $result = $this->languages->importPublished($languageToImport, $published[$languageToImport]);
+                if (!$result['mail']) {
+                    osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
+                }
+                $failed = $result['failed'];
+                if ($failed === null) {
+                    osc_add_flash_error_message(sprintf(_m('Directory "%s" was not created'), osc_translations_path() . $languageToImport . '/'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+                }
+                osc_invalidate_locale_cache();
+                if ($failed > 0) {
+                    osc_add_flash_warning_message(
+                        sprintf(_m('Language imported, but %d file(s) could not be downloaded.'), $failed),
+                        'admin'
+                    );
+                } else {
+                    osc_add_flash_ok_message(_m('Language imported successfully'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+
+                return;
+            }
+
+            osc_add_flash_error_message(
+                sprintf(_m('No published translation was found for %s.'), $languageToImport),
+                'admin'
+            );
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * The language editor.
+     */
+    private function editForm(): void
+    {
+        $sLocale = Params::getParamString('id');
+        if (!preg_match('/.{2}_.{2}/', $sLocale)) {
+            osc_add_flash_error_message(_m('Language id isn\'t in the correct format'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+        }
+
+        $aLocale = $this->localeManager->findByPrimaryKey($sLocale);
+
+        if (count($aLocale) == 0) {
+            osc_add_flash_error_message(_m('Language id doesn\'t exist'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+        }
+
+        $this->_exportVariableToView('aLocale', $aLocale);
+        $this->doView('languages/frm.php');
+    }
+
+    /**
+     * Save the language editor.
+     */
+    private function editPost(): void
+    {
+        osc_csrf_check();
+        $iUpdated               = 0;
+        $languageCode           = Params::getParamString('pk_c_code');
+        $enabledWebstie         = Params::getParam('b_enabled');
+        $enabledBackoffice      = Params::getParam('b_enabled_bo');
+        $languageDirection      = Params::getParam('s_direction');
+        $languageName           = Params::getParam('s_name');
+        $languageShortName      = Params::getParam('s_short_name');
+        $languageDescription    = Params::getParam('s_description');
+        $languageCurrencyFormat = Params::getParam('s_currency_format');
+        $languageDecPoint       = Params::getParam('s_dec_point');
+        $languageNumDec         = Params::getParam('i_num_dec');
+        $languageThousandsSep   = Params::getParam('s_thousands_sep');
+        $languageDateFormat     = Params::getParam('s_date_format');
+        $languageStopWords      = Params::getParam('s_stop_words');
+
+        // formatting variables
+        if (!preg_match('/.{2}_.{2}/', $languageCode)) {
+            osc_add_flash_error_message(_m('Language id isn\'t in the correct format'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+        }
+        $enabledWebstie    = ($enabledWebstie != '');
+        $enabledBackoffice = ($enabledBackoffice != '');
+        $languageName      = strip_tags($languageName);
+        $languageName      = trim($languageName);
+
+        $languageShortName = strip_tags($languageShortName);
+        $languageShortName = trim($languageShortName);
+
+        $languageDescription = strip_tags($languageDescription);
+        $languageDescription = trim($languageDescription);
+
+        $languageCurrencyFormat = strip_tags($languageCurrencyFormat);
+        $languageCurrencyFormat = trim($languageCurrencyFormat);
+        $languageDateFormat     = strip_tags($languageDateFormat);
+        $languageDateFormat     = trim($languageDateFormat);
+        $languageStopWords      = strip_tags($languageStopWords);
+        $languageStopWords      = trim($languageStopWords);
+
+        $msg = '';
+        if (!osc_validate_text($languageName)) {
+            $msg .= _m('Language name field is required') . '<br/>';
+        }
+        if ($languageDirection !== 'ltr' && $languageDirection !== 'rtl') {
+            $msg .= _m('Language direction field is required') . '<br/>';
+        }
+        if (!osc_validate_text($languageShortName)) {
+            $msg .= _m('Language short name field is required') . '<br/>';
+        }
+        if (!osc_validate_text($languageDescription)) {
+            $msg .= _m('Language description field is required') . '<br/>';
+        }
+        if (!osc_validate_text($languageCurrencyFormat)) {
+            $msg .= _m('Currency format field is required') . '<br/>';
+        }
+        if (!osc_validate_int($languageNumDec)) {
+            $msg .= _m('Number of decimals must only contain numeric characters') . '<br/>';
+        }
+        if ($msg != '') {
+            osc_add_flash_error_message($msg, 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages&action=edit&id=' . $languageCode);
+        }
+
+        $array = array(
+            'b_enabled'         => $enabledWebstie,
+            'b_enabled_bo'      => $enabledBackoffice,
+            's_name'            => $languageName,
+            's_direction'       => $languageDirection,
+            's_short_name'      => $languageShortName,
+            's_description'     => $languageDescription,
+            's_currency_format' => $languageCurrencyFormat,
+            's_dec_point'       => $languageDecPoint,
+            'i_num_dec'         => $languageNumDec,
+            's_thousands_sep'   => $languageThousandsSep,
+            's_date_format'     => $languageDateFormat,
+            's_stop_words'      => $languageStopWords
+        );
+
+        $iUpdated = LocaleStore::update($languageCode, $array);
+        osc_invalidate_locale_cache();
+        if ($iUpdated > 0) {
+            osc_purge_page_cache('language');
+            osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageShortName), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * Turn the selected languages on for the site.
+     */
+    private function enableSelected(): void
+    {
+        osc_csrf_check();
+        $msg      = _m('Selected languages have been enabled for the website');
+        $iUpdated = 0;
+
+        $id = Params::getParam('id');
+
+        if (!is_array($id)) {
+            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+        }
+
+        foreach ($id as $i) {
+            $iUpdated += $this->languages->enable((string) $i);
+        }
+        osc_invalidate_locale_cache();
+
+        if ($iUpdated > 0) {
+            osc_purge_page_cache('language');
+            osc_add_flash_ok_message($msg, 'admin');
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * Turn the selected languages off for the site.
+     */
+    private function disableSelected(): void
+    {
+        osc_csrf_check();
+        $msg         = _m('Selected languages have been disabled for the website');
+        $msg_warning = '';
+        $iUpdated    = 0;
+
+        $id = Params::getParam('id');
+
+        if (!is_array($id)) {
+            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+        }
+
+        foreach ($id as $i) {
+            try {
+                $iUpdated += $this->languages->disable((string) $i);
+            } catch (ConflictException $e) {
+                $msg_warning = $e->getMessage();
             }
         }
+        osc_invalidate_locale_cache();
+        if ($iUpdated > 0) {
+            osc_purge_page_cache('language');
+        }
+
+        if ($msg_warning != '') {
+            if ($iUpdated > 0) {
+                osc_add_flash_warning_message($msg . '</p><p>' . $msg_warning, 'admin');
+            } else {
+                osc_add_flash_warning_message($msg_warning, 'admin');
+            }
+        } else {
+            osc_add_flash_ok_message($msg, 'admin');
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * Turn the selected languages on for the admin.
+     */
+    private function enableAdminSelected(): void
+    {
+        osc_csrf_check();
+        $msg      = _m('Selected languages have been enabled for the backoffice (oc-admin)');
+        $iUpdated = 0;
+
+        $id = Params::getParam('id');
+
+        if (!is_array($id)) {
+            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+        }
+
+        foreach ($id as $i) {
+            $iUpdated += $this->languages->enable((string) $i, true);
+        }
+        osc_invalidate_locale_cache();
+
+        if ($iUpdated > 0) {
+            osc_add_flash_ok_message($msg, 'admin');
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * Turn the selected languages off for the admin.
+     */
+    private function disableAdminSelected(): void
+    {
+        osc_csrf_check();
+        $msg         = _m('Selected languages have been disabled for the backoffice (oc-admin)');
+        $msg_warning = '';
+        $iUpdated    = 0;
+
+        $id = Params::getParam('id');
+
+        if (!is_array($id)) {
+            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+        }
+
+        foreach ($id as $i) {
+            try {
+                $iUpdated += $this->languages->disable((string) $i, true);
+            } catch (ConflictException $e) {
+                $msg_warning = $e->getMessage();
+            }
+        }
+        osc_invalidate_locale_cache();
+
+        if ($msg_warning != '') {
+            if ($iUpdated > 0) {
+                osc_add_flash_warning_message($msg . '</p><p>' . $msg_warning, 'admin');
+            } else {
+                osc_add_flash_warning_message($msg_warning, 'admin');
+            }
+        } else {
+            osc_add_flash_ok_message($msg, 'admin');
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * Delete the selected languages.
+     */
+    private function deleteSelected(): void
+    {
+        osc_csrf_check();
+        if (is_array(Params::getParam('id'))) {
+            $adminLocale = (string) osc_current_admin_locale();
+            foreach (Params::getParam('id') as $code) {
+                $code = (string) $code;
+                switch ($this->languages->delete($code, $adminLocale)) {
+                    case LanguageService::IS_CURRENT:
+                        osc_add_flash_warning_message(
+                            _m('The current language can\'t be deleted. Please logout and login again with another language.'),
+                            'admin'
+                        );
+                        break;
+                    case LanguageService::IS_DEFAULT:
+                        osc_add_flash_error_message(
+                            sprintf(
+                                _m(
+                                    "Directory '%s' couldn't be removed because it's the default language. <a href=\"%s\">Set another language</a> as default first and try again"
+                                ),
+                                $code,
+                                osc_admin_base_url(true) . '?page=settings'
+                            ),
+                            'admin'
+                        );
+                        break;
+                    case LanguageService::DIR_KEPT:
+                        osc_add_flash_error_message(sprintf(
+                            _m("Directory '%s' couldn't be removed"),
+                            $code
+                        ), 'admin');
+                        break;
+                    case LanguageService::DELETED:
+                        osc_add_flash_ok_message(
+                            sprintf(_m('Directory "%s" has been successfully removed'), $code),
+                            'admin'
+                        );
+                        break;
+                    default:
+                        osc_add_flash_error_message(
+                            sprintf(_m("Directory '%s' couldn't be removed;)"), $code),
+                            'admin'
+                        );
+                }
+            }
+        }
+        osc_invalidate_locale_cache();
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * The languages table.
+     */
+    private function languages(): void
+    {
+        if (Params::getParam('checkUpdated') != '') {
+            osc_admin_toolbar_update_languages(true);
+        }
+
+        if (Params::getParam('action') != '') {
+            osc_run_hook('language_bulk_' . Params::getParam('action'), Params::getParam('id'));
+        }
+
+        // -----
+        $limit = ListPaging::length();
+        Params::setParam('iDisplayLength', $limit);
+        $this->_exportVariableToView('iDisplayLength', $limit);
+
+        $p_iPage = ListPaging::page();
+
+        $aLanguages = OSCLocale::getInstance()->listAll();
+
+        // pagination
+        $start = ListPaging::start($p_iPage, $limit);
+        $count = count($aLanguages);
+
+        $displayRecords = $limit;
+        if (($start + $limit) > $count) {
+            $displayRecords = ($start + $limit) - $count;
+        }
+        // ----
+        $aLanguagesToUpdate = osc_update_check_state('languages')['to_update'];
+        $bLanguagesToUpdate = is_array($aLanguagesToUpdate);
+        // ----
+        $aData = array();
+        $max   = ($start + $limit);
+        if ($max > $count) {
+            $max = $count;
+        }
+        for ($i = $start; $i < $max; $i++) {
+            $l     = $aLanguages[$i];
+            $row   = array();
+            $row[] = '<input type="checkbox" name="id[]" value="' . $l['pk_c_code'] . '" />';
+
+            $options   = array();
+            if ($bLanguagesToUpdate && in_array($l['pk_c_code'], $aLanguagesToUpdate)) {
+                $options[] = '<a class="strong" href="' . osc_admin_base_url(true)
+                             . '?page=languages&amp;action=import_locations&amp;language=' . $l['pk_c_code']
+                             . '&amp;' . osc_csrf_token_url()
+                             . '">' . __('Update') . '</a>';
+            }
+            $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=edit&amp;id='
+                         . $l['pk_c_code']
+                         . '">' . __('Edit') . '</a>';
+            $options[] =
+                '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . ($l['b_enabled'] == 1
+                    ? 'disable_selected' : 'enable_selected') . '&amp;id[]=' . $l['pk_c_code'] . '&amp;'
+                . osc_csrf_token_url()
+                . '">' . ($l['b_enabled'] == 1 ? __('Disable (website)') : __('Enable (website)')) . '</a> ';
+            $options[] =
+                '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . ($l['b_enabled_bo']
+                                                                                          == 1
+                    ? 'disable_bo_selected' : 'enable_bo_selected') . '&amp;id[]=' . $l['pk_c_code'] . '&amp;'
+                . osc_csrf_token_url() . '">' . ($l['b_enabled_bo'] == 1 ? __('Disable (oc-admin)')
+                    : __('Enable (oc-admin)'))
+                . '</a>';
+            $options[] = '<a onclick="return delete_dialog(\'' . $l['pk_c_code'] . '\');"  href="'
+                         . osc_admin_base_url(true)
+                         . '?page=languages&amp;action=delete&amp;id[]=' . $l['pk_c_code'] . '&amp;'
+                         . osc_csrf_token_url() . '">' . __(
+                             'Delete'
+                         ) . '</a>';
+
+            $auxOptions = '<ul>' . PHP_EOL;
+            foreach ($options as $actual) {
+                $auxOptions .= '<li>' . $actual . '</li>' . PHP_EOL;
+            }
+            $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
+
+            $row[] = osc_esc_html($l['s_name']) . $actions;
+            $row[] = osc_esc_html($l['s_short_name']);
+            $row[] = osc_esc_html($l['s_description']);
+            $row[] = ($l['b_enabled'] ? __('Yes') : __('No'));
+            $row[] = ($l['b_enabled_bo'] ? __('Yes') : __('No'));
+
+            $aData[] = $row;
+        }
+        // ----
+        $array['iTotalRecords']        = $displayRecords;
+        $array['iTotalDisplayRecords'] = count($aLanguages);
+        $array['iDisplayLength']       = $limit;
+        $array['aaData']               = $aData;
+
+        $pastEnd = ListPaging::pastEnd($array, $p_iPage);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $this->_exportVariableToView('aLanguages', $array);
+
+        $bulk_options = BulkAction::options(
+            array(
+                'enable_selected' => __('Enable (Website)'),
+                'disable_selected' => __('Disable (Website)'),
+                'enable_bo_selected' => __('Enable (oc-admin)'),
+                'disable_bo_selected' => __('Disable (oc-admin)'),
+                'delete' => __('Delete')
+            ),
+            __('Are you sure you want to %s the selected languages?')
+        );
+        $bulk_options = osc_apply_filter('language_bulk_filter', $bulk_options);
+        $this->_exportVariableToView('bulk_options', $bulk_options);
+
+        $this->doView('languages/index.php');
     }
 }
 

@@ -44,9 +44,7 @@ final class MessageGuard
      */
     public static function maxLinks(): int
     {
-        $v = osc_get_preference('message_max_links');
-
-        return $v === '' || $v === null ? self::DEFAULT_MAX_LINKS : max(0, (int) $v);
+        return osc_get_int_preference('message_max_links', self::DEFAULT_MAX_LINKS, 0);
     }
 
     /**
@@ -56,9 +54,7 @@ final class MessageGuard
      */
     public static function maxLength(): int
     {
-        $v = osc_get_preference('message_max_length');
-
-        return $v === '' || $v === null ? self::DEFAULT_MAX_LENGTH : max(0, (int) $v);
+        return osc_get_int_preference('message_max_length', self::DEFAULT_MAX_LENGTH, 0);
     }
 
     /**
@@ -309,7 +305,7 @@ final class MessageGuard
         if ($report['permanent'] && !osc_is_admin_user_logged_in()) {
             return 'admin';
         }
-        $queue = JobQueue::instance();
+        $queue = JobQueue::getInstance();
         if ($queue->hasKey(self::USED_JOB, $report['nonce'])) {
             return 'used';
         }
@@ -338,34 +334,23 @@ final class MessageGuard
      */
     public static function banSender(string $sender, string $recipient, bool $permanent = false): bool
     {
-        $table   = DB_TABLE_PREFIX . 't_ban_rule';
         $scope   = $permanent ? 'all' : self::SCOPE;
         $expires = $permanent ? null : date('Y-m-d H:i:s', strtotime('+' . self::banDays() . ' days'));
         $pattern = self::literalPattern($sender);
 
         try {
-            $existing = osc_db_select_one(
-                'SELECT pk_i_id FROM ' . $table . ' WHERE s_email = ? AND s_scope = ?'
-                . ' AND (dt_expires IS NULL OR dt_expires > ?)',
-                array($pattern, $scope, date('Y-m-d H:i:s'))
-            );
-            if ($existing) {
-                osc_db_execute(
-                    'UPDATE ' . $table . ' SET dt_expires = ? WHERE pk_i_id = ?',
-                    array($expires, (int) $existing['pk_i_id'])
-                );
+            $existing = BanRuleStore::activeId($pattern, $scope, date('Y-m-d H:i:s'));
+            if ($existing !== null) {
+                BanRuleStore::setExpiry($existing, $expires);
 
                 return true;
             }
-            osc_db_execute(
-                'INSERT INTO ' . $table . ' (s_name, s_ip, s_email, s_scope, dt_expires) VALUES (?, ?, ?, ?, ?)',
-                array(
-                    mb_substr(sprintf(__('Reported by %s'), $recipient), 0, 250),
-                    '',
-                    mb_substr($pattern, 0, 250),
-                    $scope,
-                    $expires,
-                )
+            BanRuleStore::add(
+                mb_substr(sprintf(__('Reported by %s'), $recipient), 0, 250),
+                '',
+                mb_substr($pattern, 0, 250),
+                $scope,
+                $expires
             );
         } catch (\mindstellar\database\DbException $e) {
             return false;
@@ -397,10 +382,7 @@ final class MessageGuard
     public static function purgeExpired(): void
     {
         try {
-            osc_db_execute(
-                'DELETE FROM ' . DB_TABLE_PREFIX . 't_ban_rule WHERE dt_expires IS NOT NULL AND dt_expires <= ?',
-                array(date('Y-m-d H:i:s'))
-            );
+            BanRuleStore::purgeExpired(date('Y-m-d H:i:s'));
         } catch (\mindstellar\database\DbException $e) {
             // Before the upgrade adds dt_expires there is nothing to purge.
         }

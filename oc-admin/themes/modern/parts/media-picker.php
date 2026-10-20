@@ -16,7 +16,8 @@
  * unified media library or upload a new image; the callback receives the chosen
  * image URL. Uploads made here are unattached ("library") resources.
  */
-$mpListUrl   = osc_admin_base_url(true) . '?page=ajax&action=media_list';
+// Site images only: library, page and settings uploads, never a listing or user photo.
+$mpListUrl   = osc_admin_base_url(true) . '?page=ajax&action=media_list&type=:site';
 $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&'
     . osc_csrf_token_url();
 ?>

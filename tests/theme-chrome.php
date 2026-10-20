@@ -28,21 +28,27 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Validate.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
 
 $themeRoot = sys_get_temp_dir() . '/osc-theme-chrome-' . getmypid() . '/';
 
-/** Stands in for WebThemes::newInstance()->getCurrentThemePath(). */
+/** Stands in for WebThemes::getInstance()->getCurrentThemePath(). */
 class WebThemes
 {
     public static string $path = '';
     /** Theme slug of the declared parent, or '' for none. */
     public static string $parent = '';
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getCurrentThemePath(): string
@@ -106,7 +112,7 @@ $rel = static function (?array $chrome) use ($themeRoot) {
 
 harness_section('no chrome at all');
 $makeTheme(array());
-\mindstellar\theme\ThemeSupports::instance()->reset();
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
 check('a theme with neither pair has no chrome', osc_theme_chrome() === null);
 check('osc_theme_has_chrome() agrees', osc_theme_has_chrome() === false);
 
@@ -195,7 +201,7 @@ file_put_contents($parentRoot . 'common/header.php', '<?php /* parent */');
 file_put_contents($parentRoot . 'common/footer.php', '<?php /* parent */');
 
 $makeTheme(array());
-\mindstellar\theme\ThemeSupports::instance()->reset();
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
 WebThemes::$parent = '';
 check('no parent declared: still no chrome', osc_theme_chrome() === null);
 

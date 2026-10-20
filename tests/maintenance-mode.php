@@ -91,7 +91,7 @@ check('admins pass during a restore', osc_maintenance_should_lockout_request(tru
 file_put_contents($restoreFile, '');
 check('a plain maintenance file does not lock out CLI', osc_maintenance_should_lockout_request(true, true, false, true, osc_maintenance_locks_everyone($restoreFile)) === false);
 unlink($restoreFile);
-check('index.php locks out on either marker', strpos((string) file_get_contents(__DIR__ . '/../index.php'), "osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')") !== false);
+check('the front controller locks out on either marker', strpos((string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/routing/FrontController.php'), "osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')") !== false);
 
 harness_section('message sanitizer');
 pin('plain text kept', 'Back soon', osc_sanitize_maintenance_message('  Back soon  '));
@@ -108,5 +108,19 @@ pin(
     strlen(osc_sanitize_maintenance_message($long))
 );
 pin('empty after tags', '', osc_sanitize_maintenance_message('<p></p>'));
+
+harness_section('turning it on and off');
+$purged = array();
+function osc_purge_page_cache($why)
+{
+    $GLOBALS['purged'][] = $why;
+}
+$flag = sys_get_temp_dir() . '/osc-maintenance-' . getmypid();
+@unlink($flag);
+check('on writes the file', osc_maintenance_set(true, $flag) && is_file($flag));
+check('off removes it', osc_maintenance_set(false, $flag) && !is_file($flag));
+pin('each change clears the page cache', array('maintenance', 'maintenance'), $purged);
+check('off with no file reports the failure, and clears nothing', !osc_maintenance_set(false, $flag) && count($purged) === 2);
+check('on in a folder that does not exist reports the failure', !osc_maintenance_set(true, $flag . '/missing/.maintenance'));
 
 exit(harness_result());

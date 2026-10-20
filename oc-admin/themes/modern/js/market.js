@@ -312,7 +312,8 @@
                 return;
             }
             var remaining = updatesList.querySelectorAll('.market-update-item').length;
-            updatesCount.textContent = '(' + remaining + ')';
+            updatesCount.textContent = String(remaining);
+            updatesCount.classList.toggle('is-zero', remaining === 0);
         }
 
         function removeUpdateItem(slug) {
@@ -345,7 +346,7 @@
                     return;
                 }
                 updateAllBtn.disabled = true;
-                var originalLabel = updateAllBtn.textContent;
+                var originalLabel = updateAllBtn.innerHTML;
                 var total = buttons.length;
                 var i = 0;
 
@@ -353,7 +354,7 @@
                     if (i >= buttons.length) {
                         flash('ok', i18n.updateAllDone);
                         if (updateAllBtn.parentNode) {
-                            updateAllBtn.textContent = originalLabel;
+                            updateAllBtn.innerHTML = originalLabel;
                             updateAllBtn.hidden = true;
                         }
                         return;

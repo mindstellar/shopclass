@@ -26,12 +26,12 @@
  */
 function osc_search()
 {
-    if (View::newInstance()->_exists('search')) {
-        return View::newInstance()->_get('search');
+    if (View::getInstance()->_exists('search')) {
+        return View::getInstance()->_get('search');
     }
 
     $search = new Search();
-    View::newInstance()->_exportVariableToView('search', $search);
+    View::getInstance()->_exportVariableToView('search', $search);
 
     return $search;
 }
@@ -55,7 +55,93 @@ function osc_list_orders()
         $list_order[__('Higher price first')] = ['sOrder' => 'i_price', 'iOrderType' => 'desc'];
     }
 
+    if (osc_geo_search_enabled()) {
+        $list_order[__('Nearest first')] = ['sOrder' => 'distance', 'iOrderType' => 'asc'];
+    }
+
     return $list_order;
+}
+
+/**
+ * The search radius in the site's distance unit, or 0 when the search has none.
+ *
+ * @return int
+ */
+function osc_search_radius()
+{
+    return (int) View::getInstance()->_get('search_radius');
+}
+
+/**
+ * The point the current search measures distances from, or null.
+ *
+ * @return array{0:float,1:float}|null latitude, longitude
+ */
+function osc_search_near()
+{
+    $near = View::getInstance()->_get('search_near');
+
+    return is_array($near) ? $near : null;
+}
+
+/**
+ * The radius choices for a search form: value => label, such as 25 => 'Within 25 km'.
+ *
+ * @return array<int,string>
+ */
+function osc_search_radius_options()
+{
+    $options = array();
+    foreach (\mindstellar\search\Distance::BANDS as $band) {
+        $options[$band] = sprintf(__('Within %s'), osc_distance_label($band));
+    }
+
+    return $options;
+}
+
+/**
+ * A distance in the site's unit as text, such as '25 km' or '3 mi'.
+ *
+ * @param int|float $value
+ *
+ * @return string
+ */
+function osc_distance_label($value)
+{
+    return osc_distance_unit() === 'mi'
+        ? sprintf(_n('%d mile', '%d miles', (int) $value), (int) $value)
+        : sprintf(__('%d km'), (int) $value);
+}
+
+/**
+ * The distance field of the search form: a radius choice and a "Use my location" button.
+ * Core adds it to `search_form` when distance search is on; a theme that draws its own removes the hook.
+ *
+ * @return void
+ */
+function osc_search_distance_field()
+{
+    if (!osc_geo_search_enabled()) {
+        return;
+    }
+    osc_enqueue_script('osc-ui-common');
+    $near    = osc_search_near();
+    $current = osc_search_radius();
+    echo '<fieldset class="osc-distance" data-osc-distance>';
+    echo '<label for="osc-radius">' . osc_esc_html(__('Distance')) . '</label>';
+    echo '<select name="iRadius" id="osc-radius">';
+    echo '<option value="">' . osc_esc_html(__('Any distance')) . '</option>';
+    foreach (osc_search_radius_options() as $band => $label) {
+        echo '<option value="' . (int) $band . '"' . ($band === $current ? ' selected' : '') . '>' . osc_esc_html($label) . '</option>';
+    }
+    echo '</select>';
+    if ($near !== null && Params::getParam('sLat') !== '') {
+        echo '<input type="hidden" name="sLat" value="' . osc_esc_html(sprintf('%.2f', $near[0])) . '">';
+        echo '<input type="hidden" name="sLng" value="' . osc_esc_html(sprintf('%.2f', $near[1])) . '">';
+    }
+    echo '<button type="button" class="osc-near-me" data-osc-near-me data-error="'
+        . osc_esc_html(__('Your location is not available.')) . '">' . osc_esc_html(__('Use my location')) . '</button>';
+    echo '</fieldset>';
 }
 
 /**
@@ -65,7 +151,7 @@ function osc_list_orders()
  */
 function osc_search_alert_subscribed()
 {
-    return View::newInstance()->_get('search_alert_subscribed') == 1;
+    return View::getInstance()->_get('search_alert_subscribed') == 1;
 }
 
 /**
@@ -75,7 +161,7 @@ function osc_search_alert_subscribed()
  */
 function osc_search_page()
 {
-    return View::newInstance()->_get('search_page');
+    return View::getInstance()->_get('search_page');
 }
 
 /**
@@ -85,7 +171,7 @@ function osc_search_page()
  */
 function osc_search_total_pages()
 {
-    return View::newInstance()->_get('search_total_pages');
+    return View::getInstance()->_get('search_total_pages');
 }
 
 /**
@@ -95,7 +181,7 @@ function osc_search_total_pages()
  */
 function osc_search_has_pic()
 {
-    return View::newInstance()->_get('search_has_pic');
+    return View::getInstance()->_get('search_has_pic');
 }
 
 /**
@@ -105,7 +191,7 @@ function osc_search_has_pic()
  */
 function osc_search_only_premium()
 {
-    return View::newInstance()->_get('search_only_premium');
+    return View::getInstance()->_get('search_only_premium');
 }
 
 /**
@@ -115,7 +201,7 @@ function osc_search_only_premium()
  */
 function osc_search_order()
 {
-    return View::newInstance()->_get('search_order');
+    return View::getInstance()->_get('search_order');
 }
 
 /**
@@ -125,7 +211,7 @@ function osc_search_order()
  */
 function osc_search_order_type()
 {
-    return View::newInstance()->_get('search_order_type');
+    return View::getInstance()->_get('search_order_type');
 }
 
 /**
@@ -135,8 +221,8 @@ function osc_search_order_type()
  */
 function osc_search_pattern()
 {
-    if (View::newInstance()->_exists('search_pattern')) {
-        return View::newInstance()->_get('search_pattern');
+    if (View::getInstance()->_exists('search_pattern')) {
+        return View::getInstance()->_get('search_pattern');
     }
 
     return '';
@@ -149,7 +235,7 @@ function osc_search_pattern()
  */
 function osc_search_country()
 {
-    return View::newInstance()->_get('search_country');
+    return View::getInstance()->_get('search_country');
 }
 
 /**
@@ -159,7 +245,7 @@ function osc_search_country()
  */
 function osc_search_region()
 {
-    return View::newInstance()->_get('search_region');
+    return View::getInstance()->_get('search_region');
 }
 
 /**
@@ -169,7 +255,7 @@ function osc_search_region()
  */
 function osc_search_city()
 {
-    return View::newInstance()->_get('search_city');
+    return View::getInstance()->_get('search_city');
 }
 
 /**
@@ -179,8 +265,8 @@ function osc_search_city()
  */
 function osc_search_user()
 {
-    if (is_array(View::newInstance()->_get('search_from_user'))) {
-        return View::newInstance()->_get('search_from_user');
+    if (is_array(View::getInstance()->_get('search_from_user'))) {
+        return View::getInstance()->_get('search_from_user');
     }
 
     return array();
@@ -193,7 +279,7 @@ function osc_search_user()
  */
 function osc_search_price_max()
 {
-    return View::newInstance()->_get('search_price_max');
+    return View::getInstance()->_get('search_price_max');
 }
 
 /**
@@ -203,7 +289,7 @@ function osc_search_price_max()
  */
 function osc_search_price_min()
 {
-    return View::newInstance()->_get('search_price_min');
+    return View::getInstance()->_get('search_price_min');
 }
 
 /**
@@ -213,7 +299,7 @@ function osc_search_price_min()
  */
 function osc_search_total_items()
 {
-    return View::newInstance()->_get('search_total_items');
+    return View::getInstance()->_get('search_total_items');
 }
 
 /**
@@ -223,7 +309,7 @@ function osc_search_total_items()
  */
 function osc_search_show_as()
 {
-    return View::newInstance()->_get('search_show_as');
+    return View::getInstance()->_get('search_show_as');
 }
 
 /**
@@ -233,7 +319,7 @@ function osc_search_show_as()
  */
 function osc_search_start()
 {
-    return View::newInstance()->_get('search_start');
+    return View::getInstance()->_get('search_start');
 }
 
 /**
@@ -243,7 +329,7 @@ function osc_search_start()
  */
 function osc_search_end()
 {
-    return View::newInstance()->_get('search_end');
+    return View::getInstance()->_get('search_end');
 }
 
 /**
@@ -253,12 +339,12 @@ function osc_search_end()
  */
 function osc_search_category()
 {
-    if (View::newInstance()->_exists('search_subcategories')) {
-        $category = View::newInstance()->_current('search_subcategories');
-    } elseif (View::newInstance()->_exists('search_categories')) {
-        $category = View::newInstance()->_current('search_categories');
+    if (View::getInstance()->_exists('search_subcategories')) {
+        $category = View::getInstance()->_current('search_subcategories');
+    } elseif (View::getInstance()->_exists('search_categories')) {
+        $category = View::getInstance()->_current('search_categories');
     } else {
-        $category = View::newInstance()->_get('search_category');
+        $category = View::getInstance()->_get('search_category');
     }
     if (!is_array($category)) {
         $category = array();
@@ -276,7 +362,7 @@ function osc_search_category_id()
 {
     $categories = osc_search_category();
     $category   = array();
-    $mCat       = Category::newInstance();
+    $mCat       = Category::getInstance();
 
     foreach ($categories as $cat) {
         if (is_numeric($cat)) {
@@ -312,7 +398,7 @@ function osc_search_category_name($locale = '')
     if (!empty($a_search_category_id)) {
         list($search_category_id) = $a_search_category_id;
         if (is_numeric($search_category_id)) {
-            $tmp = Category::newInstance()->findByPrimaryKey($search_category_id, $locale);
+            $tmp = Category::getInstance()->findByPrimaryKey($search_category_id, $locale);
             if (isset($tmp['s_name'])) {
                 $text = $tmp['s_name'];
             }
@@ -337,7 +423,7 @@ function osc_search_category_description($locale = '')
     if (!empty($a_search_category_id)) {
         list($search_category_id) = $a_search_category_id;
         if (is_numeric($search_category_id)) {
-            $mCat = Category::newInstance();
+            $mCat = Category::getInstance();
             $tmp = $mCat->findByPrimaryKey($search_category_id, $locale);
             if (isset($tmp['s_description'])) {
                 $text = $tmp['s_description'];
@@ -368,7 +454,7 @@ function osc_update_search_url($params = array(), $forced = false)
         unset($request['sUser']);
     }
     unset($request['sUser[]']);
-    if (!$forced && View::newInstance()->_get('subdomain_slug') != '') {
+    if (!$forced && View::getInstance()->_get('subdomain_slug') != '') {
         $subdomain_type = osc_subdomain_type();
         if ($subdomain_type === 'category') {
             unset($request['sCategory']);
@@ -397,7 +483,7 @@ function osc_alert_form()
     // One field on a core-owned contract. A theme that ships the view still owns
     // it; one that does not gets core's rather than nothing, which is what the
     // walk used to leave behind.
-    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . 'alert-form.php')) {
+    if (file_exists(WebThemes::getInstance()->getCurrentThemePath() . 'alert-form.php')) {
         osc_current_web_theme_path('alert-form.php');
 
         return;
@@ -413,7 +499,7 @@ function osc_alert_form()
  */
 function osc_search_alert()
 {
-    return View::newInstance()->_get('search_alert');
+    return View::getInstance()->_get('search_alert');
 }
 
 /**
@@ -424,7 +510,7 @@ function osc_search_alert()
  * @param string $email ignored when a user is signed in
  *
  * @return int 1 done, 0 not saved, -1 bad email or inactive user, -2 bad alert, -4 sign-in required,
- *             -5 too many from this address
+ *             -5 too many from this address, or the user keeps the most saved searches allowed
  */
 function osc_subscribe_alert(string $token, string $email): int
 {
@@ -438,11 +524,16 @@ function osc_subscribe_alert(string $token, string $email): int
         return -2;
     }
 
-    $userid = 0;
     if (osc_is_web_user_logged_in()) {
-        $userid = osc_logged_user_id();
-        $user   = User::newInstance()->findByPrimaryKey($userid);
-        $email  = (string)$user['s_email'];
+        $saved = (new \mindstellar\search\UserAlerts())->subscribe((int) osc_logged_user_id(), $alert);
+
+        return match ($saved['status']) {
+            \mindstellar\search\UserAlerts::CREATED => 1,
+            \mindstellar\search\UserAlerts::REFUSED => -1,
+            \mindstellar\search\UserAlerts::LIMIT,
+            \mindstellar\search\UserAlerts::THROTTLED => -5,
+            default                                  => 0,
+        };
     }
     if ($alert == '' || $email === '') {
         return 0;
@@ -451,33 +542,21 @@ function osc_subscribe_alert(string $token, string $email): int
         return -1;
     }
     // A guest's alert mails a confirmation to any address, so it is limited and ban-checked.
-    if ((int)$userid === 0) {
-        if (osc_is_banned($email) !== 0) {
-            return -1;
-        }
-        if (\mindstellar\security\ActionThrottle::exceededFor('alert_subscribe')) {
-            return -5;
-        }
+    if (osc_is_banned($email) !== 0) {
+        return -1;
+    }
+    if (\mindstellar\security\ActionThrottle::exceededFor('alert_subscribe')) {
+        return -5;
     }
 
     $secret  = osc_genRandomPassword();
-    $alertID = Alerts::newInstance()->createAlert($userid, $email, $alert, $secret);
+    $alertID = Alerts::getInstance()->createAlert(0, $email, $alert, $secret);
     if (!$alertID) {
         return 0;
     }
-    if ((int)$userid > 0) {
-        $user = User::newInstance()->findByPrimaryKey($userid);
-        if ($user['b_active'] == 1 && $user['b_enabled'] == 1) {
-            Alerts::newInstance()->activate($alertID);
-
-            return 1;
-        }
-
-        return -1;
-    }
 
     \mindstellar\security\ActionThrottle::record('alert_subscribe');
-    osc_run_hook('hook_email_alert_validation', Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret);
+    osc_run_hook('hook_email_alert_validation', Alerts::getInstance()->findByPrimaryKey($alertID), $email, $secret);
 
     return 1;
 }
@@ -548,9 +627,15 @@ function osc_search_url($params = null)
 
     if (osc_rewrite_enabled()) {
         foreach ($params as $kp => $vp) {
+            // A friendly URL has no place for any other list, so it must not count.
+            if (is_array($vp) && !in_array($kp, array('sCategory', 'sUser', 'meta'), true)) {
+                unset($params[$kp]);
+                continue;
+            }
             $params[$kp] = osc_remove_slash($vp);
         }
-        $url = $base_url . osc_get_preference('rewrite_search_url');
+        $countP = count($params);
+        $url    = $base_url . osc_get_preference('rewrite_search_url');
         // CANONICAL URLS
         if (isset($params['sCategory']) && !is_array($params['sCategory'])
             && strpos($params['sCategory'], ',') === false
@@ -560,9 +645,9 @@ function osc_search_url($params = null)
                 $category['pk_i_id'] = osc_category_id();
                 $category['s_slug']  = osc_category_slug();
             } elseif (is_numeric($params['sCategory'])) {
-                $category = Category::newInstance()->findByPrimaryKey($params['sCategory']);
+                $category = Category::getInstance()->findByPrimaryKey((int) $params['sCategory']);
             } else {
-                $category = Category::newInstance()->findBySlug($params['sCategory']);
+                $category = Category::getInstance()->findBySlug($params['sCategory']);
             }
             if (isset($category['pk_i_id'])) {
                 $values = array(
@@ -597,7 +682,7 @@ function osc_search_url($params = null)
                 return $place['url'];
             }
             $url = $place['url'];
-        } elseif ($params != null && is_array($params)) {
+        } elseif ($params != null) {
             $names = _aux_search_param_names();
             foreach ($params as $k => $v) {
                 if ($k === 'meta') {
@@ -676,8 +761,8 @@ function osc_remove_slash($var)
  */
 function osc_list_country()
 {
-    if (View::newInstance()->_exists('list_countries')) {
-        return View::newInstance()->_current('list_countries');
+    if (View::getInstance()->_exists('list_countries')) {
+        return View::getInstance()->_current('list_countries');
     }
 
     return null;
@@ -690,8 +775,8 @@ function osc_list_country()
  */
 function osc_list_region()
 {
-    if (View::newInstance()->_exists('list_regions')) {
-        return View::newInstance()->_current('list_regions');
+    if (View::getInstance()->_exists('list_regions')) {
+        return View::getInstance()->_current('list_regions');
     }
 
     return null;
@@ -704,8 +789,8 @@ function osc_list_region()
  */
 function osc_list_city()
 {
-    if (View::newInstance()->_exists('list_cities')) {
-        return View::newInstance()->_current('list_cities');
+    if (View::getInstance()->_exists('list_cities')) {
+        return View::getInstance()->_current('list_cities');
     }
 
     return null;
@@ -721,21 +806,21 @@ function osc_list_city()
  */
 function _aux_search_load_list($key, $filter = '%%%%')
 {
-    if (View::newInstance()->_exists($key)) {
+    if (View::getInstance()->_exists($key)) {
         return;
     }
     $loaders = array(
         'list_countries' => static function () {
-            return CountryStats::newInstance()->listCountries();
+            return CountryStats::getInstance()->listCountries();
         },
         'list_regions'   => static function () use ($filter) {
-            return RegionStats::newInstance()->listRegions($filter);
+            return RegionStats::getInstance()->listRegions($filter);
         },
         'list_cities'    => static function () use ($filter) {
-            return CityStats::newInstance()->listCities($filter);
+            return CityStats::getInstance()->listCities($filter);
         },
     );
-    View::newInstance()->_exportVariableToView($key, $loaders[$key]());
+    View::getInstance()->_exportVariableToView($key, $loaders[$key]());
 }
 
 /**
@@ -748,9 +833,9 @@ function _aux_search_load_list($key, $filter = '%%%%')
  */
 function _aux_search_walk_list($key)
 {
-    $more = View::newInstance()->_next($key);
+    $more = View::getInstance()->_next($key);
     if (!$more) {
-        View::newInstance()->_reset($key);
+        View::getInstance()->_reset($key);
     }
 
     return $more;
@@ -805,7 +890,7 @@ function osc_count_list_countries()
 {
     _aux_search_load_list('list_countries');
 
-    return View::newInstance()->_count('list_countries');
+    return View::getInstance()->_count('list_countries');
 }
 
 /**
@@ -819,7 +904,7 @@ function osc_count_list_regions($country = '%%%%')
 {
     _aux_search_load_list('list_regions', $country);
 
-    return View::newInstance()->_count('list_regions');
+    return View::getInstance()->_count('list_regions');
 }
 
 /**
@@ -833,7 +918,7 @@ function osc_count_list_cities($region = '%%%%')
 {
     _aux_search_load_list('list_cities', $region);
 
-    return View::newInstance()->_count('list_cities');
+    return View::getInstance()->_count('list_cities');
 }
 
 /**
@@ -990,14 +1075,14 @@ function osc_list_city_url()
  */
 function osc_get_latest_searches($limit = 20)
 {
-    if (!View::newInstance()->_exists('latest_searches')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('latest_searches')) {
+        View::getInstance()->_exportVariableToView(
             'latest_searches',
-            LatestSearches::newInstance()->getSearches($limit)
+            LatestSearches::getInstance()->getSearches($limit)
         );
     }
 
-    return View::newInstance()->_get('latest_searches');
+    return View::getInstance()->_get('latest_searches');
 }
 
 /**
@@ -1007,14 +1092,14 @@ function osc_get_latest_searches($limit = 20)
  */
 function osc_count_latest_searches()
 {
-    if (!View::newInstance()->_exists('latest_searches')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('latest_searches')) {
+        View::getInstance()->_exportVariableToView(
             'latest_searches',
-            LatestSearches::newInstance()->getSearches()
+            LatestSearches::getInstance()->getSearches()
         );
     }
 
-    return View::newInstance()->_count('latest_searches');
+    return View::getInstance()->_count('latest_searches');
 }
 
 /**
@@ -1024,14 +1109,14 @@ function osc_count_latest_searches()
  */
 function osc_has_latest_searches()
 {
-    if (!View::newInstance()->_exists('latest_searches')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('latest_searches')) {
+        View::getInstance()->_exportVariableToView(
             'latest_searches',
-            LatestSearches::newInstance()->getSearches()
+            LatestSearches::getInstance()->getSearches()
         );
     }
 
-    return View::newInstance()->_next('latest_searches');
+    return View::getInstance()->_next('latest_searches');
 }
 
 /**
@@ -1041,8 +1126,8 @@ function osc_has_latest_searches()
  */
 function osc_latest_search()
 {
-    if (View::newInstance()->_exists('latest_searches')) {
-        return View::newInstance()->_current('latest_searches');
+    if (View::getInstance()->_exists('latest_searches')) {
+        return View::getInstance()->_current('latest_searches');
     }
 
     return null;
@@ -1085,8 +1170,8 @@ function osc_latest_search_total()
  */
 function osc_get_canonical()
 {
-    if (View::newInstance()->_exists('canonical')) {
-        return View::newInstance()->_get('canonical');
+    if (View::getInstance()->_exists('canonical')) {
+        return View::getInstance()->_get('canonical');
     }
 
     return '';
@@ -1117,7 +1202,7 @@ function osc_get_raw_search($conditions)
             static fn ($v) => $v !== '' && $v !== array() && $v !== 0
         );
         if (isset($raw['aCategories'])) {
-            $mCategory = Category::newInstance();
+            $mCategory = Category::getInstance();
             foreach ($raw['aCategories'] as $k => $id) {
                 $raw['aCategories'][$k] = $mCategory->findNameByPrimaryKey($id);
             }
@@ -1128,7 +1213,7 @@ function osc_get_raw_search($conditions)
     }
 
     $keys      = array('aCategories', 'countries', 'regions', 'cities', 'city_areas');
-    $mCategory = Category::newInstance();
+    $mCategory = Category::getInstance();
     foreach ($keys as $key) {
         if (isset($conditions[$key]) && is_array($conditions[$key]) && !empty($conditions[$key])) {
             foreach ($conditions[$key] as $k => $v) {
@@ -1139,7 +1224,7 @@ function osc_get_raw_search($conditions)
                 }
                 if (preg_match('|([0-9]+)|', (string)$v, $match)) {
                     if ($key === 'aCategories') {
-                        $conditions[$key][$k] = $mCategory->findNameByPrimaryKey($match[1]);
+                        $conditions[$key][$k] = $mCategory->findNameByPrimaryKey((int) $match[1]);
                     } else {
                         $conditions[$key][$k] = $match[1];
                     }
@@ -1203,18 +1288,32 @@ function _aux_search_subdomains()
 /**
  * Look one filter value up: by id when it is numeric, otherwise by the spec's finder.
  *
- * @param array<string,string> $spec  A row of _aux_search_subdomains() or _aux_search_places()
+ * A page links the same place many times (every category link on a city page), so a web
+ * request remembers each place it found. The long-running CLI worker always asks again.
+ *
+ * @param array<string,string> $spec     A row of _aux_search_subdomains() or _aux_search_places()
  * @param mixed                $value
+ * @param bool|null            $remember Keep the answer for this request; null decides by SAPI
  *
  * @return array<string,mixed>|null
  */
-function _aux_search_find(array $spec, $value)
+function _aux_search_find(array $spec, $value, $remember = null)
 {
+    static $found = array();
+    $remember = $remember ?? \mindstellar\utility\Utils::isWebRequest();
+    $key      = $spec['model'] . ':' . $value;
+    if ($remember && array_key_exists($key, $found)) {
+        return $found[$key];
+    }
     $model = call_user_func(array($spec['model'], 'newInstance'));
-
-    return is_numeric($value)
+    $row   = is_numeric($value)
         ? $model->findByPrimaryKey($value)
         : $model->{$spec['finder']}($value);
+    if ($remember && $row) {
+        $found[$key] = $row;
+    }
+
+    return $row;
 }
 
 /**
@@ -1378,10 +1477,98 @@ function _aux_search_category_slug($paramCat)
     if (osc_category_id() == $paramCat) {
         $category['s_slug'] = osc_category_slug();
     } elseif (is_numeric($paramCat)) {
-        $category = Category::newInstance()->findByPrimaryKey($paramCat);
+        $category = Category::getInstance()->findByPrimaryKey($paramCat);
     } else {
-        $category = Category::newInstance()->findBySlug($paramCat);
+        $category = Category::getInstance()->findBySlug($paramCat);
     }
 
     return isset($category['s_slug']) ? $category['s_slug'] : '';
+}
+
+/**
+ * The current listing's search snippet: escaped HTML whose only tags are <mark>.
+ * A search engine plugin may supply it; core marks the searched words in the description.
+ *
+ * @return string '' when the page is not a keyword search
+ * @since 7.0.0
+ */
+function osc_item_search_snippet()
+{
+    $snippet = osc_item_field('s_snippet');
+
+    return is_string($snippet) ? $snippet : '';
+}
+
+/**
+ * Listings found per category on this search, from a search engine plugin. A parent
+ * category's count includes its subcategories.
+ *
+ * @return array<int,int> category id => count; empty when core searched
+ * @since 7.0.0
+ */
+function osc_search_category_counts()
+{
+    $extras = View::getInstance()->_get('search_extras');
+    if (!$extras instanceof \mindstellar\search\SearchExtras) {
+        return array();
+    }
+    $out = array();
+    foreach ($extras->categoryCounts() as $id => $count) {
+        if (!is_array(Category::getInstance()->findByPrimaryKey($id))) {
+            continue;
+        }
+        foreach (Category::getInstance()->hierarchy($id) as $category) {
+            if (!is_array($category) || !isset($category['pk_i_id'])) {
+                continue;
+            }
+            $parent       = (int)$category['pk_i_id'];
+            $out[$parent] = ($out[$parent] ?? 0) + $count;
+        }
+    }
+    ksort($out);
+
+    return $out;
+}
+
+/**
+ * A corrected query from a search engine plugin ("Did you mean ..."). Plain text: escape it.
+ *
+ * @return string '' when there is none
+ * @since 7.0.0
+ */
+function osc_search_suggestion()
+{
+    $extras = View::getInstance()->_get('search_extras');
+
+    return $extras instanceof \mindstellar\search\SearchExtras ? $extras->suggestion() : '';
+}
+
+/**
+ * Whether a search engine plugin widened the search (fuzzy match) to find these results.
+ *
+ * @return bool
+ * @since 7.0.0
+ */
+function osc_search_relaxed()
+{
+    $extras = View::getInstance()->_get('search_extras');
+
+    return $extras instanceof \mindstellar\search\SearchExtras && $extras->relaxed();
+}
+
+/**
+ * The attributes that turn a search input into a suggestion box, with the group headings
+ * in the visitor's language. Use it inside the input tag:
+ * `<input name="sPattern" <?php echo osc_search_suggest_attributes(); ?>>`.
+ *
+ * @param int $limit listings to suggest, 1 to 10
+ *
+ * @return string
+ * @since 7.0.0
+ */
+function osc_search_suggest_attributes($limit = 5)
+{
+    return 'data-osc-suggest data-osc-suggest-limit="' . max(1, min(10, (int)$limit)) . '"'
+        . ' data-osc-suggest-searches="' . osc_esc_html(__('Searches')) . '"'
+        . ' data-osc-suggest-listings="' . osc_esc_html(__('Listings')) . '"';
 }

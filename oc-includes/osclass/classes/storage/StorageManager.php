@@ -11,6 +11,8 @@
 
 namespace mindstellar\storage;
 
+use mindstellar\base\SharedInstance;
+
 /**
  * Class StorageManager
  *
@@ -22,7 +24,7 @@ namespace mindstellar\storage;
  */
 class StorageManager
 {
-    private static ?StorageManager $instance = null;
+    use SharedInstance;
 
     /** @var StorageAdapter[] */
     private array $adapters = [];
@@ -37,17 +39,11 @@ class StorageManager
     }
 
     /**
-     * The process-wide registry.
-     *
-     * @return StorageManager
+     * @deprecated 7.0.0 Use getInstance().
      */
     public static function instance(): StorageManager
     {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -96,7 +92,7 @@ class StorageManager
      * Falls back to the local adapter when the stored id isn't registered
      * (e.g. the plugin that provided it was deactivated).
      *
-     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     * @param array<string,mixed> $resource a t_resource row, or a listing photo row
      *
      * @return StorageAdapter
      */
@@ -144,7 +140,7 @@ class StorageManager
             return $path;
         }
 
-        $adapter = self::instance()->forResource($resource);
+        $adapter = self::getInstance()->forResource($resource);
         if (!$adapter->isRemote() || !$adapter->isPublic()) {
             return $path;
         }
@@ -224,7 +220,7 @@ class StorageManager
             return $fallbackUrl;
         }
 
-        $adapter = self::instance()->forResource($resource);
+        $adapter = self::getInstance()->forResource($resource);
         if (!$adapter->isRemote() || $adapter->isPublic()) {
             return $fallbackUrl;
         }

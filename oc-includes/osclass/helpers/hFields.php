@@ -29,7 +29,7 @@ use mindstellar\fields\FieldTypeRegistry;
  */
 function osc_register_field_type($id, $spec)
 {
-    FieldTypeRegistry::instance()->register($id, $spec);
+    FieldTypeRegistry::getInstance()->register($id, $spec);
 }
 
 /**
@@ -39,7 +39,7 @@ function osc_register_field_type($id, $spec)
  */
 function osc_field_types()
 {
-    return FieldTypeRegistry::instance()->all();
+    return FieldTypeRegistry::getInstance()->all();
 }
 
 /**
@@ -51,7 +51,7 @@ function osc_field_types()
  */
 function osc_field_type($id)
 {
-    return FieldTypeRegistry::instance()->get($id);
+    return FieldTypeRegistry::getInstance()->get($id);
 }
 
 /**
@@ -63,7 +63,7 @@ function osc_field_type($id)
  */
 function osc_field_type_storage($id)
 {
-    return FieldTypeRegistry::instance()->storageOf($id);
+    return FieldTypeRegistry::getInstance()->storageOf($id);
 }
 
 /**
@@ -220,7 +220,7 @@ osc_register_field_type('AUTOCOMPLETE', array(
  */
 function osc_get_field_groups()
 {
-    return FieldGroup::newInstance()->listAll();
+    return FieldGroup::getInstance()->listAll();
 }
 
 /**
@@ -233,7 +233,7 @@ function osc_get_field_groups()
  */
 function osc_get_category_field_groups($categoryId)
 {
-    return FieldGroup::newInstance()->findByCategory($categoryId);
+    return FieldGroup::getInstance()->findByCategory($categoryId);
 }
 
 /**
@@ -279,11 +279,11 @@ function osc_field_is_visible($field, $item = null)
     // Map the item's stored custom-field values by slug so a rule referencing a sibling
     // field can be resolved — the same shape FieldValidator evaluates against.
     $slugValues = array();
-    foreach (Item::newInstance()->metaFields($itemId) as $row) {
+    foreach (Item::getInstance()->metaFields($itemId) as $row) {
         if (isset($row['s_slug'])) {
             $slugValues[$row['s_slug']] = $row['s_value'] ?? null;
         }
     }
 
-    return \mindstellar\forms\FieldValidator::evaluateCondition($rules['show_when'], $slugValues);
+    return \mindstellar\form\builder\FieldValidator::evaluateCondition($rules['show_when'], $slugValues);
 }

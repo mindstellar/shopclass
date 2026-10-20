@@ -41,9 +41,14 @@ namespace mindstellar\model {
         public const OWNER_PAGE    = 'page';
         public const OWNER_SETTING = 'setting';
 
-        public static function newInstance(): self
+        public static function getInstance(): self
         {
             return new self();
+        }
+
+        public static function newInstance(): self
+        {
+            return self::getInstance();
         }
 
         public static function isValidOwnerType(string $type): bool
@@ -152,9 +157,14 @@ namespace {
 
     class Preference
     {
-        public static function newInstance()
+        public static function getInstance()
         {
             return new self();
+        }
+
+        public static function newInstance()
+        {
+            return self::getInstance();
         }
 
         public function get($key, $section = 'osclass')
@@ -257,9 +267,12 @@ namespace {
 
     require_once __DIR__ . '/lib/harness.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+    require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Sanitize.php';
     require_once __DIR__ . '/lib/stubs.php';
+    require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
     require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
     require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsImage.php';
+    require_once ABS_PATH . 'oc-includes/osclass/classes/storage/ResourceLocator.php';
     require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
     require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/StoreException.php';
     require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';
@@ -277,7 +290,7 @@ namespace {
     function image_register(string $id, array $spec): ?string
     {
         try {
-            SettingsPageRegistry::instance()->register($id, $spec);
+            SettingsPageRegistry::getInstance()->register($id, $spec);
         } catch (InvalidArgumentException $e) {
             return $e->getMessage();
         }

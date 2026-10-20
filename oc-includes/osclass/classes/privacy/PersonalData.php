@@ -11,6 +11,7 @@
 namespace mindstellar\privacy;
 
 use Item;
+use mindstellar\database\Db;
 use User;
 
 /**
@@ -52,6 +53,10 @@ class PersonalData
      * false is for records that are about them but are not theirs to receive, which is
      * why each one carries a reason.
      *
+     * t_key_value, the shared key-value store, has no user column and is listed as retained. A
+     * plugin that keeps personal data there adds it to the export through the
+     * `personal_data_export` filter and erases it on the `delete_user` action.
+     *
      * @return array<string,array{user_key:?string,export:bool,erase:string,why:string}>
      */
     public static function map()
@@ -68,12 +73,6 @@ class PersonalData
                 'export'   => true,
                 'erase'    => self::ERASE_DELETED,
                 'why'      => 'The profile text, one row per locale.',
-            ),
-            't_user_email_tmp' => array(
-                'user_key' => 'fk_i_user_id',
-                'export'   => true,
-                'erase'    => self::ERASE_DELETED,
-                'why'      => 'A pending email change they started.',
             ),
             't_item' => array(
                 'user_key' => 'fk_i_user_id',
@@ -124,6 +123,21 @@ class PersonalData
                 'export'   => true,
                 'erase'    => self::ERASE_CASCADE,
                 'why'      => 'Anything they sent through a custom form.',
+            ),
+            't_api_credential' => array(
+                'user_key' => 'fk_i_user_id',
+                'export'   => true,
+                'erase'    => self::ERASE_CASCADE,
+                'why'      => 'Their API keys and signed-in app sessions: name, scopes, last use and address.',
+            ),
+            't_key_value' => array(
+                'user_key' => null,
+                'export'   => false,
+                'erase'    => self::ERASE_RETAINED,
+                'why'      => 'Shared key-value rows, keyed by group and key rather than by account. Core keeps '
+                    . 'stored answers to repeated API writes here; an answer can hold the profile it returned, '
+                    . 'and each is deleted within a day. A pending email change is also kept here; it is '
+                    . 'exported as pending_email_change and deleted with the account.',
             ),
             't_item_report_log' => array(
                 'user_key' => null,
@@ -179,7 +193,7 @@ class PersonalData
     public static function export($userId)
     {
         $userId = (int)$userId;
-        $user   = User::newInstance()->findByPrimaryKey($userId);
+        $user   = User::getInstance()->findByPrimaryKey($userId);
         if (!is_array($user) || $user === array()) {
             return null;
         }
@@ -215,7 +229,23 @@ class PersonalData
         // bytes would turn this back into a file to build, store and clean up.
         $out['data']['t_item']['urls'] = self::itemUrls($userId);
 
-        return $out;
+        $pending = \UserEmailTmp::getInstance()->findByPrimaryKey($userId);
+        $out['data']['pending_email_change'] = array(
+            'retention' => self::ERASE_DELETED,
+            'why'       => 'A pending email change they started.',
+            'rows'      => $pending === false ? array() : array($pending),
+        );
+
+        // A plugin adds its own tables as $out['data']['<plugin>_<name>'] with the same keys.
+        // A broken plugin must not turn the download into an error page.
+        try {
+            $filtered = osc_apply_filter('personal_data_export', $out, $userId);
+        } catch (\Throwable $e) {
+            error_log('personal_data_export filter failed: ' . $e->getMessage());
+            $filtered = $out;
+        }
+
+        return is_array($filtered) ? $filtered : $out;
     }
 
     /**
@@ -230,7 +260,7 @@ class PersonalData
     private static function rows($table, $column, $userId)
     {
         try {
-            return osc_db_select(
+            return Db::select(
                 'SELECT * FROM ' . DB_TABLE_PREFIX . $table . ' WHERE ' . $column . ' = ?',
                 array($userId)
             );
@@ -255,7 +285,7 @@ class PersonalData
      */
     private static function redact($table, array $rows)
     {
-        $secret = array('s_password', 's_secret', 's_pass_code');
+        $secret = array('s_password', 's_secret', 's_pass_code', 's_secret_hash');
 
         foreach ($rows as $i => $row) {
             foreach ($secret as $column) {
@@ -279,7 +309,7 @@ class PersonalData
     {
         $urls = array();
         try {
-            $items = Item::newInstance()->findByUserID((int)$userId);
+            $items = Item::getInstance()->findByUserID((int)$userId);
         } catch (\Throwable $e) {
             return $urls;
         }

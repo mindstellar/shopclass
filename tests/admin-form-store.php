@@ -156,7 +156,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /** Mirrors the real guard: flashes, redirects, and says that it refused. */
@@ -267,8 +267,8 @@ function drive(string $pageId, array $fields, string $action = 'custom_post'): a
 /** What core's shared view actually emits for a page, with the theme chrome stubbed out. */
 function draw(array $spec, array $stored): string
 {
-    View::newInstance()->_exportVariableToView('settings_page', $spec);
-    View::newInstance()->_exportVariableToView('settings_values', $stored);
+    View::getInstance()->_exportVariableToView('settings_page', $spec);
+    View::getInstance()->_exportVariableToView('settings_values', $stored);
 
     ob_start();
     require ABS_PATH . 'oc-includes/osclass/gui/admin/settings-page.php';
@@ -361,7 +361,7 @@ $recordInline = static function ($values, $id) {
 // t_ban_rule is the fixture because it is the shape every entity screen has: an
 // auto-increment key and several independently editable columns, one of which the page
 // below deliberately does not declare.
-SettingsPageRegistry::instance()->register('rule', array(
+SettingsPageRegistry::getInstance()->register('rule', array(
     'title'      => 'Ban rule',
     'menu'       => '',
     'store'      => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -374,7 +374,7 @@ SettingsPageRegistry::instance()->register('rule', array(
 
 // The same table, reached by a field whose name is another column of it. Nothing but a
 // respected 'column' can put the value in s_email and leave s_ip empty.
-SettingsPageRegistry::instance()->register('mapped', array(
+SettingsPageRegistry::getInstance()->register('mapped', array(
     'title'  => 'Mapped',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -384,7 +384,7 @@ SettingsPageRegistry::instance()->register('mapped', array(
 ));
 
 // A preference page declared exactly as one was before the store existed.
-SettingsPageRegistry::instance()->register('prefs_blank', array(
+SettingsPageRegistry::getInstance()->register('prefs_blank', array(
     'title'  => 'Blank',
     'menu'   => '',
     'fields' => array(
@@ -392,7 +392,7 @@ SettingsPageRegistry::instance()->register('prefs_blank', array(
     ),
 ));
 
-SettingsPageRegistry::instance()->register('prefs', array(
+SettingsPageRegistry::getInstance()->register('prefs', array(
     'title'      => 'Prefs',
     'menu'       => '',
     'fields'     => array(
@@ -404,7 +404,7 @@ SettingsPageRegistry::instance()->register('prefs', array(
 // A preference has a key the same way a row has a column, and a control may be stored
 // nowhere or derived from the ones beside it, on either store. This is a preference page
 // that uses all three, which is what every migrated core settings screen does.
-SettingsPageRegistry::instance()->register('prefs_mapped', array(
+SettingsPageRegistry::getInstance()->register('prefs_mapped', array(
     'title'   => 'Mapped prefs',
     'menu'    => '',
     'section' => 'mapped',
@@ -577,7 +577,7 @@ harness_section('casting on the way out');
 // t_keyword_block carries a TINYINT, which the driver hands back as an int: a checkbox
 // that read back as 0 rather than false would render unticked-looking either way but
 // compare wrong in every `if` a page writes around it.
-SettingsPageRegistry::instance()->register('kw', array(
+SettingsPageRegistry::getInstance()->register('kw', array(
     'title'  => 'Keyword',
     'menu'   => '',
     'store'  => array('table' => 't_keyword_block', 'pk' => 'pk_i_id'),
@@ -611,7 +611,7 @@ harness_section('a page that declared no store still writes preferences');
 $result = post('prefs', array('s_name' => 'Carol'));
 pin('the preference page saves cleanly', array(), $result['errors']);
 pin('and writes its one value', 1, $result['updated']);
-pin('into the page section', 'Carol', Preference::newInstance()->get('s_name', 'prefs'));
+pin('into the page section', 'Carol', Preference::getInstance()->get('s_name', 'prefs'));
 pin('reading it back goes through the same store', 'Carol', osc_settings_value('prefs', 's_name'));
 // Preferences are keyed by name, not by row, so there is nothing for an id to mean and
 // the effects keep being handed null -- unchanged from before the store existed.
@@ -626,12 +626,12 @@ pin('and no ban rule was written by it', 4, rows($admin, 't_ban_rule'));
 // unchanged save reports a change and the screen can never say "Nothing to update".
 $result = post('prefs', array('s_name' => 'Carol'));
 pin('re-posting the same value changes nothing', 0, $result['updated']);
-pin('and the stored value is still there', 'Carol', Preference::newInstance()->get('s_name', 'prefs'));
+pin('and the stored value is still there', 'Carol', Preference::getInstance()->get('s_name', 'prefs'));
 $result = post('prefs', array('s_name' => 'Carol '));
 pin('a value that only differs by the trim is no change either', 0, $result['updated']);
 $result = post('prefs', array('s_name' => 'Dave'));
 pin('changing it is one change', 1, $result['updated']);
-pin('and the new value is stored', 'Dave', Preference::newInstance()->get('s_name', 'prefs'));
+pin('and the new value is stored', 'Dave', Preference::getInstance()->get('s_name', 'prefs'));
 
 // get() answers '' both for a key that is absent and for one stored empty, so a
 // write-only-if-changed that compared values would skip the write that creates the row --
@@ -641,8 +641,8 @@ $result = post('prefs_blank', array('s_opt' => ''));
 pin('a first save of a blank value is still a write', 1, $result['updated']);
 check(
     'so the key exists rather than staying absent',
-    array_key_exists('s_opt', Preference::newInstance()->getSection('prefs_blank')),
-    var_export(Preference::newInstance()->getSection('prefs_blank'), true)
+    array_key_exists('s_opt', Preference::getInstance()->getSection('prefs_blank')),
+    var_export(Preference::getInstance()->getSection('prefs_blank'), true)
 );
 $result = post('prefs_blank', array('s_opt' => ''));
 pin('and saving the same blank again changes nothing', 0, $result['updated']);
@@ -663,17 +663,17 @@ pin('the mapped page saves cleanly on update', array(), $result['errors']);
 pin(
     'a field with a column lands under that key, punctuation and all',
     'value',
-    Preference::newInstance()->get('stored@as', 'mapped')
+    Preference::getInstance()->get('stored@as', 'mapped')
 );
-pin('and not under the name of its control', '', Preference::newInstance()->get('shown_as', 'mapped'));
-pin('a field that is stored nowhere is stored nowhere', '', Preference::newInstance()->get('helper', 'mapped'));
+pin('and not under the name of its control', '', Preference::getInstance()->get('shown_as', 'mapped'));
+pin('a field that is stored nowhere is stored nowhere', '', Preference::getInstance()->get('helper', 'mapped'));
 check('with no row of its own in the table', pref_type($admin, 'mapped', 'helper') === null);
-pin('a derived value is what its callable returned', '7', Preference::newInstance()->get('switch', 'mapped'));
-pin('a secret that was typed is written', 'sekrit', Preference::newInstance()->get('token', 'mapped'));
+pin('a derived value is what its callable returned', '7', Preference::getInstance()->get('switch', 'mapped'));
+pin('a secret that was typed is written', 'sekrit', Preference::getInstance()->get('token', 'mapped'));
 
 $result = post('prefs_mapped', array('shown_as' => 'value', 'helper' => '7', 'switch' => '', 'token' => ''));
-pin('the derivation answers the other way when the switch is off', '-1', Preference::newInstance()->get('switch', 'mapped'));
-pin('and a callable returning null leaves the value alone', 'sekrit', Preference::newInstance()->get('token', 'mapped'));
+pin('the derivation answers the other way when the switch is off', '-1', Preference::getInstance()->get('switch', 'mapped'));
+pin('and a callable returning null leaves the value alone', 'sekrit', Preference::getInstance()->get('token', 'mapped'));
 
 // Nothing in core reads e_type, but it is what a site owner sees looking at the table and
 // what the screens this replaced had already decided, so it is derived rather than dropped.
@@ -773,7 +773,7 @@ harness_section('a write the table refuses comes back as an error');
 // QueryBuilder throws by design, and an uncaught throw here is a generic error page: the
 // admin loses everything they typed, which is the failure the declared path exists to
 // prevent.
-SettingsPageRegistry::instance()->register('broken', array(
+SettingsPageRegistry::getInstance()->register('broken', array(
     'title'      => 'Broken',
     'menu'       => '',
     'store'      => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -827,7 +827,7 @@ $secretField = array(
     'persist'    => false,
     'write_only' => true,
 );
-SettingsPageRegistry::instance()->register('brokensecret', array(
+SettingsPageRegistry::getInstance()->register('brokensecret', array(
     'title'  => 'Broken, with a secret',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -836,7 +836,7 @@ SettingsPageRegistry::instance()->register('brokensecret', array(
         $secretField,
     ),
 ));
-SettingsPageRegistry::instance()->register('gonesecret', array(
+SettingsPageRegistry::getInstance()->register('gonesecret', array(
     'title'  => 'Gone, with a secret',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -904,7 +904,7 @@ harness_section('a field core did not collect keeps its column');
 // value to put anywhere, and putting "no value" in its column blanks something the
 // administrator never touched. The custom field is named after a real column on purpose --
 // that is the only way to tell "not written" from "written as nothing".
-SettingsPageRegistry::instance()->register('untouched', array(
+SettingsPageRegistry::getInstance()->register('untouched', array(
     'title'  => 'Untouched',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -944,7 +944,7 @@ pin('and not the column it happens to be named after', 'Keeper edited', $values[
 // Every field uncollected is the same decision taken to its end: no column to set, so an
 // existing row is left exactly as it was and no row is invented for a submission that
 // named nothing to put in one.
-SettingsPageRegistry::instance()->register('nothing', array(
+SettingsPageRegistry::getInstance()->register('nothing', array(
     'title'      => 'Nothing to write',
     'menu'       => '',
     'store'      => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -985,7 +985,7 @@ harness_section('a field says what its column takes, or that it has none');
 // nothing, which is how "blank means unchanged" is declared rather than special-cased.
 // It says nothing about what the control shows on the way back; that is 'write_only',
 // its own key, checked below.
-SettingsPageRegistry::instance()->register('derived', array(
+SettingsPageRegistry::getInstance()->register('derived', array(
     'title'  => 'Derived columns',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -1032,7 +1032,7 @@ pin('while the field beside it still saves', '10.4.0.3', $stored['s_ip'] ?? null
 
 // null means "write nothing", so NULL itself needs its own value: an optional reference
 // cleared on the form has to reach the column as NULL, not as 0 or ''.
-SettingsPageRegistry::instance()->register('nullable', array(
+SettingsPageRegistry::getInstance()->register('nullable', array(
     'title'  => 'Nullable column',
     'menu'   => '',
     'store'  => array('table' => 't_job_queue', 'pk' => 'pk_i_id'),
@@ -1070,7 +1070,7 @@ pin('and a field that is no column reads its default', '', $values['s_email'] ??
 
 harness_section('write_only is the other half, and it is its own key');
 
-SettingsPageRegistry::instance()->register('writeonly', array(
+SettingsPageRegistry::getInstance()->register('writeonly', array(
     'title'  => 'Write-only columns',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -1105,7 +1105,7 @@ pin('and one field at a time reads the same way', '', osc_settings_value('writeo
 
 // The same key on the preference store: a stored API key is as good a reason not to redraw
 // a value as a column holding a hash, so it is not a table-store-only idea.
-SettingsPageRegistry::instance()->register('writeonlypref', array(
+SettingsPageRegistry::getInstance()->register('writeonlypref', array(
     'title'  => 'Write-only preferences',
     'menu'   => '',
     'fields' => array(
@@ -1122,7 +1122,7 @@ pin('while its neighbour reads what was stored', 'a', $values['p_shown'] ?? null
 
 // The validation pipeline still runs over both: they are refused, re-rendered and reported
 // exactly like a column-backed field, which is what makes a confirmation box declarable.
-SettingsPageRegistry::instance()->register('derivedreq', array(
+SettingsPageRegistry::getInstance()->register('derivedreq', array(
     'title'  => 'Derived and required',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -1142,7 +1142,7 @@ harness_section('a dependent field on a table store is left alone, not blanked')
 // A preference simply never gets a key; a column always exists, so the only two answers are
 // to write it or to leave it. It is left: blanking a value because a checkbox elsewhere on
 // the page is off is data loss dressed up as a save.
-SettingsPageRegistry::instance()->register('kwdep', array(
+SettingsPageRegistry::getInstance()->register('kwdep', array(
     'title'  => 'Keyword with a master',
     'menu'   => '',
     'store'  => array('table' => 't_keyword_block', 'pk' => 'pk_i_id'),
@@ -1184,7 +1184,7 @@ harness_section('a value no column can hold is stored as nothing');
 // Nothing declared on a table store expands into an array today, so the only way one gets
 // here is a before_save listener handing one back. (string) on an array is the literal
 // 'Array' plus a warning, which is a column full of nonsense rather than an empty one.
-SettingsPageRegistry::instance()->register('arrayed', array(
+SettingsPageRegistry::getInstance()->register('arrayed', array(
     'title'  => 'Arrayed',
     'menu'   => '',
     'store'  => array('table' => 't_ban_rule', 'pk' => 'pk_i_id'),
@@ -1218,7 +1218,7 @@ seed_locale($admin, 'en_US', 'English');
 seed_locale($admin, 'fr_FR', 'French');
 $pageLocales = array('en_US' => 'English', 'fr_FR' => 'French');
 
-SettingsPageRegistry::instance()->register('paged', array(
+SettingsPageRegistry::getInstance()->register('paged', array(
     'title'  => 'Page',
     'menu'   => '',
     'store'  => array(
@@ -1280,7 +1280,7 @@ pin('and no locale row was added by the update', 2, locale_rows($admin, $pageId)
 // A locale enabled after the entity was saved has no row of its own yet. Writing one is
 // the difference between a new tab that saves and a new tab that swallows everything.
 seed_locale($admin, 'de_DE', 'German');
-SettingsPageRegistry::instance()->register('paged_de', array(
+SettingsPageRegistry::getInstance()->register('paged_de', array(
     'title'  => 'Page',
     'menu'   => '',
     'store'  => array(
@@ -1341,7 +1341,7 @@ pin('and writes no locale row', $before, locale_titles($admin, $pageId));
 // refused at registration rather than writing the word Array into a column.
 $refused = '';
 try {
-    SettingsPageRegistry::instance()->register('paged_noloc', array(
+    SettingsPageRegistry::getInstance()->register('paged_noloc', array(
         'title'  => 'Page',
         'menu'   => '',
         'store'  => array('table' => 't_pages', 'pk' => 'pk_i_id'),
@@ -1359,7 +1359,7 @@ check(
 );
 $refused = '';
 try {
-    SettingsPageRegistry::instance()->register('paged_halfloc', array(
+    SettingsPageRegistry::getInstance()->register('paged_halfloc', array(
         'title'  => 'Page',
         'menu'   => '',
         'store'  => array('table' => 't_pages', 'pk' => 'pk_i_id', 'locale_table' => 't_pages_description'),
@@ -1392,11 +1392,11 @@ harness_section('the generic controller refuses a table-backed page');
 // out of the request it is the section above all over again.
 check(
     'a table-backed page is recognisable before a save is attempted',
-    StoreFactory::isTable(SettingsPageRegistry::instance()->get('rule'))
+    StoreFactory::isTable(SettingsPageRegistry::getInstance()->get('rule'))
 );
 check(
     'and a preference page is not',
-    !StoreFactory::isTable(SettingsPageRegistry::instance()->get('prefs'))
+    !StoreFactory::isTable(SettingsPageRegistry::getInstance()->get('prefs'))
 );
 
 // Driving the controller, not reading it: a guard that is present in the source and never
@@ -1421,7 +1421,7 @@ pin('and nothing was drawn before the refusal', '', $driven['drawn']);
 // The control, without which the guard could refuse every page and still look right.
 $driven = drive('prefs', array('s_name' => 'Through the controller'));
 pin('the same controller serves a preference page', array(array('ok', 'Settings have been updated')), $driven['flashes']);
-pin('writing its value', 'Through the controller', Preference::newInstance()->get('s_name', 'prefs'));
+pin('writing its value', 'Through the controller', Preference::getInstance()->get('s_name', 'prefs'));
 pin('and sending the admin back to the page', array(osc_settings_page_url('prefs')), $driven['redirects']);
 
 // The cheap extra: the guard has to be asked before the action switch, or the save has
@@ -1444,7 +1444,7 @@ harness_section('the shared view carries no row key into the form');
 // and every row of the bound table is then writable by anyone who can reach the page. The
 // key is interpolated from the page spec, so its name never appears in the view's source --
 // the proof has to be the markup the view emits.
-$spec  = SettingsPageRegistry::instance()->get('rule');
+$spec  = SettingsPageRegistry::getInstance()->get('rule');
 $html  = draw($spec, osc_settings_values('rule', $new));
 $names = input_names($html);
 check('the view drew a form', strpos($html, '<form ') !== false, $html);

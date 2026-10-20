@@ -30,8 +30,8 @@ class CommentForm extends Form
         if (isset($comment['pk_i_id'])) {
             $commentId = $comment['pk_i_id'];
         }
-        if (Session::newInstance()->_getForm('commentId') != '') {
-            $commentId = Session::newInstance()->_getForm('commentId');
+        if (Session::getInstance()->_getForm('commentId') != '') {
+            $commentId = Session::getInstance()->_getForm('commentId');
         }
         if (null !== $commentId) {
             parent::generic_input_hidden('id', $commentId);
@@ -51,8 +51,8 @@ class CommentForm extends Form
         if (isset($comment['s_title'])) {
             $commentTitle = $comment['s_title'];
         }
-        if (Session::newInstance()->_getForm('commentTitle') != '') {
-            $commentTitle = Session::newInstance()->_getForm('commentTitle');
+        if (Session::getInstance()->_getForm('commentTitle') != '') {
+            $commentTitle = Session::getInstance()->_getForm('commentTitle');
         }
         parent::generic_input_text('title', $commentTitle);
     }
@@ -70,8 +70,8 @@ class CommentForm extends Form
         if (isset($comment['s_author_name'])) {
             $commentAuthorName = $comment['s_author_name'];
         }
-        if (Session::newInstance()->_getForm('commentAuthorName') != '') {
-            $commentAuthorName = Session::newInstance()->_getForm('commentAuthorName');
+        if (Session::getInstance()->_getForm('commentAuthorName') != '') {
+            $commentAuthorName = Session::getInstance()->_getForm('commentAuthorName');
         }
         parent::generic_input_text('authorName', $commentAuthorName);
     }
@@ -89,8 +89,8 @@ class CommentForm extends Form
         if (isset($comment['s_author_email'])) {
             $commentAuthorEmail = $comment['s_author_email'];
         }
-        if (Session::newInstance()->_getForm('commentAuthorEmail') != '') {
-            $commentAuthorEmail = Session::newInstance()->_getForm('commentAuthorEmail');
+        if (Session::getInstance()->_getForm('commentAuthorEmail') != '') {
+            $commentAuthorEmail = Session::getInstance()->_getForm('commentAuthorEmail');
         }
         parent::generic_input_text('authorEmail', $commentAuthorEmail);
     }
@@ -108,8 +108,8 @@ class CommentForm extends Form
         if (isset($comment['s_body'])) {
             $commentBody = $comment['s_body'];
         }
-        if (Session::newInstance()->_getForm('commentBody') != '') {
-            $commentBody = Session::newInstance()->_getForm('commentBody');
+        if (Session::getInstance()->_getForm('commentBody') != '') {
+            $commentBody = Session::getInstance()->_getForm('commentBody');
         }
         parent::generic_textarea('body', $commentBody);
     }
@@ -124,54 +124,21 @@ class CommentForm extends Form
      */
     public static function js_validation($admin = false, $enqueue = false)
     {
-        // Self-contained vanilla validation (no jQuery / jquery-validate). This form
-        // renders on both the admin (comment edit) and the public theme, so it depends
-        // on neither jQuery nor the admin's ui-osc.js helper.
-        $errorContainer = $admin ? '#error_list' : '#comment_error_list';
         if ($enqueue) {
             ob_start();
         }
         ?>
         <script>
-            (function () {
-                var form = document.querySelector('form[name="comment_form"]');
-                if (!form) { return; }
-                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                form.addEventListener('submit', function (e) {
-                    var errors = [];
-                    var body = form.querySelector('[name="body"]');
-                    var email = form.querySelector('[name="authorEmail"]');
-                    [body, email].forEach(function (el) { if (el) { el.classList.remove('is-invalid'); } });
-                    if (body && body.value.trim() === '') {
-                        errors.push({el: body, msg: "<?php echo osc_esc_js(__('Comment: this field is required')); ?>."});
-                    }
-                    if (email) {
-                        var ev = email.value.trim();
-                        if (ev === '') {
-                            errors.push({el: email, msg: "<?php echo osc_esc_js(__('Email: this field is required')); ?>."});
-                        } else if (!emailRe.test(ev)) {
-                            errors.push({el: email, msg: "<?php echo osc_esc_js(__('Invalid email address')); ?>."});
-                        }
-                    }
-                    var container = document.querySelector('<?php echo $errorContainer; ?>');
-                    if (container) {
-                        container.innerHTML = '';
-                        errors.forEach(function (er) {
-                            var li = document.createElement('li');
-                            li.textContent = er.msg;
-                            container.appendChild(li);
-                            if (er.el) { er.el.classList.add('is-invalid'); }
-                        });
-                    }
-                    if (errors.length) {
-                        e.preventDefault();
-                        if (container && container.scrollIntoView) { container.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
-                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                    } else {
-                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
-                    }
-                });
-            })();
+            <?php echo self::validationJs('comment_form', [
+                'body'        => ['required' => true],
+                'authorEmail' => ['required' => true, 'email' => true],
+            ], [
+                'body'        => __('Comment: this field is required') . '.',
+                'authorEmail' => [
+                    'required' => __('Email: this field is required') . '.',
+                    'email'    => __('Invalid email address') . '.',
+                ],
+            ], ['errorList' => $admin ? '#error_list' : '#comment_error_list', 'scrollToList' => true]); ?>
         </script>
         <?php
         if ($enqueue) {

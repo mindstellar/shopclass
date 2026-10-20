@@ -12,8 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\utility\Deprecate;
-
 /**
  * Class PageForm
  */
@@ -47,8 +45,8 @@ class PageForm extends Form
         if (is_array($page) && isset($page['s_internal_name'])) {
             $internal_name = $page['s_internal_name'];
         }
-        if (Session::newInstance()->_getForm('s_internal_name') != '') {
-            $internal_name = Session::newInstance()->_getForm('s_internal_name');
+        if (Session::getInstance()->_getForm('s_internal_name') != '') {
+            $internal_name = Session::getInstance()->_getForm('s_internal_name');
         }
         $attrs = array();
         if ((isset($page['b_indelible']) && $page['b_indelible'] == 1)) {
@@ -78,76 +76,6 @@ class PageForm extends Form
             $attributes['checked'] = true;
         }
         echo (new self())->checkbox('b_link', 1, $attributes);
-    }
-
-    /**
-     * Echo the per-locale title and body fields in the legacy tabber markup.
-     *
-     * @param array<int,array<string,mixed>> $locales
-     * @param array<string,mixed>|null       $page
-     *
-     * @return void
-     * @deprecated since 5.1.0
-     * @see printMultiLangTitleDesc
-     */
-    public static function multilanguage_name_description($locales, $page = null)
-    {
-        Deprecate::deprecatedFunction(
-            'multilanguage_name_description',
-            '5.1.0',
-            'printMultiLangTitleDesc'
-        );
-        $num_locales = count($locales);
-        if ($num_locales > 1) {
-            echo '<div class="tabber">';
-        }
-        $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
-        foreach ($locales as $locale) {
-            if ($num_locales > 1) {
-                echo '<div class="tabbertab">';
-                echo '<h2>' . $locale['s_name'] . '</h2>';
-            }
-            echo '<div class="FormElement">';
-            echo '<div class="FormElementName">' . __('Title') . '</div>';
-            echo '<div class="FormElementInput">';
-            $title = '';
-            if (isset($page['locale'][$locale['pk_c_code']])) {
-                $title = $page['locale'][$locale['pk_c_code']]['s_title'];
-            }
-            if (isset($aFieldsDescription[$locale['pk_c_code']]['s_title'])
-                && $aFieldsDescription[$locale['pk_c_code']]['s_title']
-            ) {
-                $title = $aFieldsDescription[$locale['pk_c_code']]['s_title'];
-            }
-            $attributes['id'] = $locale['pk_c_code'] . '#s_title';
-
-            echo (new self())->text($locale['pk_c_code'] . '#s_title', $title, $attributes);
-
-            echo '</div>';
-            echo '</div>';
-            echo '<div class="FormElement">';
-            echo '<div class="FormElementName">' . __('Body') . '</div>';
-            echo '<div class="FormElementInput">';
-            $description = '';
-            if (isset($page['locale'][$locale['pk_c_code']])) {
-                $description = $page['locale'][$locale['pk_c_code']]['s_text'];
-            }
-            if (isset($aFieldsDescription[$locale['pk_c_code']]['s_text'])
-                && $aFieldsDescription[$locale['pk_c_code']]['s_text']
-            ) {
-                $description = $aFieldsDescription[$locale['pk_c_code']]['s_text'];
-            }
-            $attributes1['id'] =  $locale['pk_c_code'] . '#s_text';
-            echo (new self())->textarea($locale['pk_c_code'] . '#s_text', $description, $attributes1);
-            echo '</div>';
-            echo '</div>';
-            if ($num_locales > 1) {
-                echo '</div>';
-            }
-        }
-        if ($num_locales > 1) {
-            echo '</div>';
-        }
     }
 
     /**
@@ -204,7 +132,7 @@ class PageForm extends Form
      */
     private static function printPageTitleInput($locale, array $page)
     {
-        $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
+        $aFieldsDescription = Session::getInstance()->_getForm('aFieldsDescription');
         $title = '';
         if (isset($aFieldsDescription[$locale['pk_c_code']]['s_title'])) {
             $title = $aFieldsDescription[$locale['pk_c_code']]['s_title'];
@@ -241,7 +169,7 @@ class PageForm extends Form
     private static function printPageDescriptionInput($locale, ?array $page = null)
     {
         $description = '';
-        $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
+        $aFieldsDescription = Session::getInstance()->_getForm('aFieldsDescription');
         if (isset($page['locale'][$locale['pk_c_code']])) {
             $description = $page['locale'][$locale['pk_c_code']]['s_text'];
         }

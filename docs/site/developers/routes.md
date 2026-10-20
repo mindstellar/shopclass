@@ -140,6 +140,8 @@ Inside `mydynamicroute.php`, read the captured groups with `Params::getParam()`.
   the public site refuses it with a 404. Naming the folder `admin` does not put
   the page in the admin panel. For that, link to the route with
   `osc_route_admin_url()` instead of `osc_route_url()`.
+- Core's URL rules are stored and rebuilt when the version number changes. After you change
+  `CoreRoutes` in your own copy, save **Settings → Permalinks** to rebuild them.
 
 :::danger[Make your patterns unique]
 Regular expressions collide easily, and a greedy pattern can swallow core URLs:
@@ -160,3 +162,20 @@ Unlike a file-backed route, this runs its handler without first emitting the
 theme's `custom.php` chrome, so you can redirect or return a response without
 half a page already sent. Link to it with `osc_route_url($id)` exactly as
 before.
+
+## Page controllers
+
+To answer a `?page=` value of your own with a controller class, add it with the
+`page_routes` filter (`admin_page_routes` in the admin). The class needs a
+`doModel()` method.
+
+```php
+osc_add_filter('page_routes', function (array $routes) {
+    $routes['acme'] = 'AcmePageController';
+
+    return $routes;
+});
+```
+
+A page core already answers cannot be replaced, and a class that does not load
+sends the visitor to the home page, as an unknown page always has.

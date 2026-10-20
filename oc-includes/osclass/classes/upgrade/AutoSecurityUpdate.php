@@ -11,6 +11,8 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\admin\DatabaseTools;
+use mindstellar\security\Demo;
+use mindstellar\utility\Utils;
 use Throwable;
 
 /**
@@ -62,7 +64,7 @@ final class AutoSecurityUpdate
      */
     public static function run(): void
     {
-        if (!osc_get_bool_preference('auto_security_updates') || defined('DEMO') || osc_self_update_disabled()) {
+        if (!osc_get_bool_preference('auto_security_updates') || Demo::active() || osc_self_update_disabled()) {
             return;
         }
         $info = Osclass::getPackageInfo(true, $fresh);
@@ -110,15 +112,7 @@ final class AutoSecurityUpdate
      */
     private static function claim(string $version): bool
     {
-        $table = DB_TABLE_PREFIX . 't_preference';
-        osc_db_execute(
-            'INSERT IGNORE INTO ' . $table . " (s_section, s_name, s_value, e_type) VALUES ('osclass', 'auto_update_tried', '', 'STRING')"
-        );
-
-        return osc_db_execute(
-            'UPDATE ' . $table . " SET s_value = ? WHERE s_section = 'osclass' AND s_name = 'auto_update_tried' AND s_value <> ?",
-            array($version, $version)
-        ) === 1;
+        return \Preference::getInstance()->claim('auto_update_tried', $version);
     }
 
     /**
@@ -135,7 +129,7 @@ final class AutoSecurityUpdate
         $reason = rtrim($reason, '. ');
         if ($stage === 'done') {
             $subject = sprintf(__('[%1$s] Security update %2$s installed'), $site, $to);
-            $body    = PHP_SAPI === 'cli'
+            $body    = !Utils::isWebRequest()
                 ? sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Restart PHP (PHP-FPM) so the site runs the new files.'), $site, $to, $from)
                 : sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing needs doing.'), $site, $to, $from);
         } else {
@@ -145,11 +139,6 @@ final class AutoSecurityUpdate
                 : sprintf(__('Shopclass installed the files of security update %2$s on %1$s, but the database step failed: %3$s. Open Tools, then System info, then Database, in the admin to finish it.'), $site, $to, $reason);
         }
 
-        osc_sendMail(array(
-            'from'    => _osc_from_email_aux(),
-            'to'      => osc_contact_email(),
-            'subject' => $subject,
-            'body'    => '<p>' . osc_esc_html($body) . '</p>',
-        ));
+        \mindstellar\mail\Mailer::admin($subject, array($body));
     }
 }

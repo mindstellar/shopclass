@@ -15,6 +15,7 @@
 namespace mindstellar\database;
 
 use Exception;
+use mindstellar\utility\Utils;
 use mysqli;
 use mysqli_sql_exception;
 
@@ -98,6 +99,12 @@ class ConnectionManager
      * @var bool
      */
     private $dbSelected = false;
+    /**
+     * Whether setSession() already set the utf8mb4 character set.
+     *
+     * @var bool
+     */
+    private $sessionSet = false;
 
     /**
      * Database error number
@@ -183,7 +190,9 @@ class ConnectionManager
             return false;
         }
 
-        $this->setCharset('utf8mb4');
+        if (!$this->sessionSet) {
+            $this->setCharset('utf8mb4');
+        }
 
         if (!$this->dbName || $this->dbSelected) {
             return true;
@@ -222,14 +231,21 @@ class ConnectionManager
             // a PHP worker indefinitely (this matters most for the installer's
             // "Test connection" probe, which dials an arbitrary host:port).
             $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+            // The client escapes in this charset; setSession() sets the same one on the server.
+            $this->connId->options(MYSQLI_SET_CHARSET_NAME, 'utf8mb4');
             // Naming the database in the login saves a select_db() round trip. When the
             // database is missing or refused, log in without it, so select_db() reports
             // that error exactly as before.
             $this->dbSelected = false;
+            // A web worker may keep its connection for the next request when the site asks
+            // for it. mysqli resets the session when it hands the connection back out.
+            $host = defined('OSC_DB_PERSISTENT') && OSC_DB_PERSISTENT && Utils::isWebRequest()
+                ? 'p:' . $this->dbHost
+                : $this->dbHost;
             try {
                 // An unknown host also raises a PHP warning; the exception carries the same error.
                 $this->dbSelected = @$this->connId->real_connect(
-                    $this->dbHost,
+                    $host,
                     $this->dbUser,
                     $this->dbPassword,
                     (string)$this->dbName,
@@ -241,6 +257,7 @@ class ConnectionManager
                 }
                 $this->connId = mysqli_init();
                 $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+                $this->connId->options(MYSQLI_SET_CHARSET_NAME, 'utf8mb4');
                 @$this->connId->real_connect(
                     $this->dbHost,
                     $this->dbUser,
@@ -271,8 +288,9 @@ class ConnectionManager
         }
         // Start every connection in a known-clean autocommit state, so no write can be
         // silently swallowed by a transaction state carried over from anywhere else.
-        // setSQLMode() sets it in the same statement when it runs.
-        if (!$this->setSQLMode()) {
+        // setSession() sets it, with the character set and sql_mode, in one statement.
+        $this->sessionSet = $this->setSession();
+        if (!$this->sessionSet) {
             $this->connId->autocommit(true);
         }
 
@@ -292,7 +310,7 @@ class ConnectionManager
     }
 
     /**
-     * Set sql_mode
+     * Set the session's character set, autocommit and sql_mode in one statement
      *
      * By default this reads the server's session sql_mode and strips a list of
      * strict modes ($incompatible_modes: NO_ZERO_DATE, ONLY_FULL_GROUP_BY,
@@ -301,11 +319,10 @@ class ConnectionManager
      * inserts and non-aggregated GROUP BY.
      *
      * Define the optional constant OSC_DB_STRICT_MODE (truthy) to opt out of that
-     * loosening: when set, the server's own sql_mode is left exactly as configured
-     * (early return, connection untouched). The installer writes that constant into
-     * a new install's config.php, so a fresh site runs strict; an install upgraded
-     * from an earlier release defines nothing and keeps the historic behaviour
-     * byte-for-byte until an operator adds the line.
+     * loosening: when set, the server's own sql_mode is left exactly as configured.
+     * The installer writes that constant into a new install's config.php, so a fresh
+     * site runs strict; an install upgraded from an earlier release defines nothing and
+     * keeps the historic behaviour byte-for-byte until an operator adds the line.
      *
      * tests/db-strict-mode.php replays three things on a session set strict by hand:
      * the bundled schema and seed data, every migration from the oldest supported
@@ -316,16 +333,19 @@ class ConnectionManager
      * an over-length or out-of-range value gets an error where it used to get a
      * silently altered row.
      *
+     * The same statement sets the utf8mb4 character set and autocommit, so a new
+     * connection costs one round trip before its first query.
+     *
      * @param array<int,string> $modes modes to apply; read from the session when empty
      *
-     * @return bool true when the statement ran, which also set autocommit
+     * @return bool true when the statement ran, which also set the character set and autocommit
      */
-    private function setSQLMode($modes = [])
+    private function setSession($modes = [])
     {
+        $set = 'SET NAMES utf8mb4, autocommit = 1';
         if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
-            return false;
-        }
-        if (!empty($modes)) {
+            $mode = null;
+        } elseif (!empty($modes)) {
             $modes = array_values(array_diff(array_map('strtoupper', $modes), $this->incompatible_modes));
             $mode  = "'" . $this->connId->real_escape_string(implode(',', $modes)) . "'";
         } else {
@@ -338,9 +358,12 @@ class ConnectionManager
             }
             $mode = "TRIM(BOTH ',' FROM $mode)";
         }
+        if ($mode !== null) {
+            $set .= ", SESSION sql_mode = $mode";
+        }
 
         try {
-            $this->connId->query("SET autocommit = 1, SESSION sql_mode = $mode");
+            $this->connId->query($set);
         } catch (Exception $e) {
             $this->errorReport();
 
@@ -401,9 +424,9 @@ class ConnectionManager
         // useful "database unavailable" page (and log it) instead of letting a
         // later query fatal with a raw error. The real driver error is passed
         // as debug-only detail.
-        if (class_exists('\\mindstellar\\logger\\OsclassErrors')) {
+        if (class_exists('\\mindstellar\\logger\\ErrorHandler')) {
             $detail = $this->connErrorDesc ?: ($this->errorDesc ?: $message);
-            \mindstellar\logger\OsclassErrors::newInstance()->renderDbError((string)$detail);
+            \mindstellar\logger\ErrorHandler::getInstance()->renderDbError((string)$detail);
             exit(1);
         }
 
@@ -468,7 +491,7 @@ class ConnectionManager
      *
      * The shared instance is a DBConnectionClass (the compat subclass) so that a
      * single physical connection backs both entry points: new code calling
-     * ConnectionManager::newInstance() and legacy/plugin code calling
+     * ConnectionManager::getInstance() and legacy/plugin code calling
      * DBConnectionClass::newInstance() get the same object. Instantiating the
      * subclass here is the one deliberate parent-knows-child coupling that keeps
      * the old public name a first-class, fully-working alias on one connection.
@@ -482,7 +505,7 @@ class ConnectionManager
      *
      * @return ConnectionManager
      */
-    public static function newInstance(
+    public static function getInstance(
         $server = DB_HOST,
         $user = DB_USER,
         $password = DB_PASSWORD,
@@ -494,6 +517,19 @@ class ConnectionManager
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function newInstance(
+        $server = DB_HOST,
+        $user = DB_USER,
+        $password = DB_PASSWORD,
+        $database = DB_NAME,
+        $port = null
+    ) {
+        return self::getInstance($server, $user, $password, $database, $port);
     }
 
     /**
@@ -517,7 +553,7 @@ class ConnectionManager
      */
     private function debug($printFrontend = true)
     {
-        $log = \LogDatabase::newInstance();
+        $log = \LogDatabase::getInstance();
 
         if (OSC_DEBUG_DB_EXPLAIN) {
             $log->writeExplainMessages();

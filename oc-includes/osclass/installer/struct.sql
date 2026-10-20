@@ -6,13 +6,14 @@ SET NAMES 'utf8mb4';
 -- cleanup even if a caller forgets, and a parent delete can no longer half-succeed.
 --
 -- Everything else stays RESTRICT on purpose. A child that is an entity in its own
--- right -- t_item, t_item_comment, t_item_resource, and the location hierarchy --
+-- right -- t_item, t_item_comment, and the location hierarchy --
 -- has files on disk, counter updates or lifecycle hooks attached to its removal, so
 -- it must go through the model that performs them. There, RESTRICT is the safety
 -- net: it turns a forgotten cascade into a loud failure instead of orphaned files.
 --
 -- t_billing_ledger and t_billing_order deliberately carry no foreign key at all, for
--- the reason given in the note above each of them.
+-- the reason given in the note above each of them. t_resource has none either: its owner
+-- can be a listing, a user, a page or a plugin's record, so the owner's model removes it.
 
 CREATE TABLE /*TABLE_PREFIX*/t_locale (
     pk_c_code CHAR(5) NOT NULL,
@@ -40,8 +41,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_country (
     pk_c_code CHAR(2) NOT NULL,
     s_name VARCHAR(80) NOT NULL,
     s_slug VARCHAR(80) NOT NULL DEFAULT '',
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_c_code),
+        INDEX idx_num_items (i_num_items),
         INDEX idx_s_slug (s_slug),
         INDEX idx_s_name (s_name)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
@@ -65,8 +68,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_region (
     i_source_id INT NULL,
     d_coord_lat DECIMAL(10,6) NULL,
     d_coord_long DECIMAL(10,6) NULL,
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
+        INDEX idx_num_items (i_num_items),
         INDEX fk_c_country_code (fk_c_country_code),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
@@ -88,8 +93,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
     i_source_id INT NULL,
     d_coord_lat DECIMAL(10,6) NULL,
     d_coord_long DECIMAL(10,6) NULL,
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
+        INDEX idx_num_items (i_num_items),
         INDEX fk_i_region_id (fk_i_region_id),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
@@ -134,6 +141,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_admin (
     s_secret VARCHAR(40) NULL,
     s_2fa TEXT NULL,
     b_moderator TINYINT(1) NOT NULL DEFAULT 0,
+    i_auth_stamp INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uk_admin_username (s_username),
@@ -174,6 +182,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
     i_comments INT UNSIGNED NULL DEFAULT 0,
     dt_access_date DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
     s_access_ip VARCHAR(50) NOT NULL DEFAULT '',
+    i_auth_stamp INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uk_user_email (s_email),
@@ -196,15 +205,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_user_description (
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_user_email_tmp (
-    fk_i_user_id INT UNSIGNED NOT NULL,
-    s_new_email VARCHAR(100) NOT NULL,
-    dt_date DATETIME NOT NULL,
-
-        PRIMARY KEY (fk_i_user_id),
-        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_category (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_parent_id INT UNSIGNED NULL,
@@ -213,6 +213,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_category (
     b_enabled TINYINT(1) NOT NULL DEFAULT 1,
     b_price_enabled TINYINT(1) NOT NULL DEFAULT 1,
     s_icon VARCHAR(250) NULL,
+    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_parent_id (fk_i_parent_id),
@@ -231,25 +232,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_description (
         INDEX idx_s_slug (s_slug),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE,
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
-    fk_i_category_id INT UNSIGNED NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_category_slug_history (
-    fk_i_category_id INT UNSIGNED NOT NULL,
-    fk_c_locale_code CHAR(5) NOT NULL DEFAULT '',
-    s_slug VARCHAR(191) NOT NULL,
-    dt_date DATETIME NOT NULL,
-
-        PRIMARY KEY (s_slug, fk_c_locale_code),
-        INDEX idx_hist_cat (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item (
@@ -328,8 +310,13 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_location (
     s_city_area VARCHAR(200) NULL,
     d_coord_lat DECIMAL(10,6),
     d_coord_long DECIMAL(10,6),
+    -- The point distance search uses: the listing's own position, else its city or region centre.
+    d_geo_lat DECIMAL(10,6) NULL,
+    d_geo_long DECIMAL(10,6) NULL,
+    e_geo_precision ENUM('exact','city','region') NULL,
 
         PRIMARY KEY (fk_i_item_id),
+        INDEX idx_geo (d_geo_lat, d_geo_long),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
@@ -367,20 +354,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_stats_daily (
         PRIMARY KEY (dt_date, i_bucket)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
-    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    fk_i_item_id INT UNSIGNED NOT NULL,
-    s_name VARCHAR(60) NULL,
-    s_extension VARCHAR(10) NULL,
-    s_content_type VARCHAR(40) NULL,
-    s_path VARCHAR(250) NULL,
-    s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
-
-        PRIMARY KEY (pk_i_id),
-        INDEX fk_i_item_id (fk_i_item_id),
-        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_job_queue (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_type VARCHAR(60) NOT NULL,
@@ -411,6 +384,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_resource (
     s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
     dt_created DATETIME NOT NULL,
     dt_updated DATETIME NULL,
+    s_base_name VARCHAR(40) NULL,
 
         PRIMARY KEY (pk_i_id),
         INDEX idx_owner (s_owner_type, i_owner_id),
@@ -469,23 +443,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_pages_description (
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
-    s_plugin_name VARCHAR(40) NOT NULL,
-    fk_i_category_id INT UNSIGNED NOT NULL,
-
-        PRIMARY KEY (s_plugin_name, fk_i_category_id),
-        INDEX fk_i_category_id (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_cron (
-  e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
-  d_last_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
-  d_next_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
-
-  PRIMARY KEY (e_type)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_email VARCHAR(100) DEFAULT NULL,
@@ -502,13 +459,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     INDEX idx_user (fk_i_user_id),
     INDEX idx_email (s_email),
     FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
-    d_date DATE NOT NULL,
-    i_num_alerts_sent INT UNSIGNED NOT NULL DEFAULT 0,
-
-    PRIMARY KEY (d_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_latest_searches (
@@ -629,39 +579,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_log (
         INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_city_stats (
-    fk_i_city_id INT UNSIGNED NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_i_city_id),
-        INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_region_stats (
-    fk_i_region_id INT UNSIGNED NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_i_region_id),
-        INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
-    fk_c_country_code CHAR(2) NOT NULL,
-    i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
-
-        PRIMARY KEY (fk_c_country_code),
-        INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
-CREATE TABLE /*TABLE_PREFIX*/t_locations_tmp (
-    id_location varchar(10) NOT NULL,
-    e_type enum('COUNTRY','REGION','CITY') NOT NULL,
-    PRIMARY KEY (id_location, e_type)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_ban_rule (
   pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   s_name VARCHAR(250) NOT NULL DEFAULT '',
@@ -742,16 +659,52 @@ CREATE TABLE /*TABLE_PREFIX*/t_rate_counter (
         INDEX idx_expires (i_expires)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (
+-- REST API keys ('key', 'public') and refresh tokens. The secret is stored as a sha256 hash
+-- and looked up by s_token_id, the public half of the token.
+CREATE TABLE /*TABLE_PREFIX*/t_api_credential (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    s_token VARCHAR(64) NOT NULL DEFAULT '',
-    s_uuid VARCHAR(191) NOT NULL DEFAULT '',
-    s_file VARCHAR(191) NOT NULL DEFAULT '',
-    dt_date DATETIME NOT NULL,
+    e_kind ENUM('key', 'public', 'refresh') NOT NULL,
+    s_token_id CHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    s_secret_hash CHAR(64) NOT NULL,
+    s_name VARCHAR(100) NOT NULL DEFAULT '',
+    s_scopes VARCHAR(500) NOT NULL,
+    fk_i_user_id INT UNSIGNED NULL,
+    fk_i_admin_id INT UNSIGNED NULL,
+    s_family CHAR(16) NULL,
+    i_rate_limit INT UNSIGNED NULL,
+    b_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    dt_expires DATETIME NULL,
+    dt_revoked DATETIME NULL,
+    dt_last_used DATETIME NULL,
+    s_last_ip VARCHAR(45) NOT NULL DEFAULT '',
+    dt_created DATETIME NOT NULL,
+    i_auth_stamp INT UNSIGNED NULL,
 
         PRIMARY KEY (pk_i_id),
-        INDEX idx_token (s_token),
-        INDEX idx_date (dt_date)
+        UNIQUE KEY uk_token_id (s_token_id),
+        INDEX idx_user (fk_i_user_id),
+        INDEX idx_admin (fk_i_admin_id),
+        INDEX idx_family (s_family),
+        INDEX idx_kind_expires (e_kind, dt_expires),
+        INDEX idx_kind_revoked (e_kind, dt_revoked),
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_admin_id) REFERENCES /*TABLE_PREFIX*/t_admin (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Shared key-value store for core and plugins: values by group and key, with an optional
+-- expiry (pruned daily) and state. Keys compare byte for byte. No user column: whoever
+-- stores personal data here handles its export and erasure.
+CREATE TABLE /*TABLE_PREFIX*/t_key_value (
+    s_group VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    s_key VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+    s_value MEDIUMTEXT NULL,
+    s_state VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    dt_created DATETIME NOT NULL,
+    dt_updated DATETIME NULL,
+    dt_expires DATETIME NULL,
+
+        PRIMARY KEY (s_group, s_key),
+        INDEX idx_expires (dt_expires)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 -- Credit balance per user. The ledger below is the source of truth. This row is a
@@ -869,17 +822,16 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_upgrade (
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
--- Mirrors t_category_slug_history: the default search-URL scheme embeds the row id
--- ({slug}-r{id}) and self-heals on rename, but subdomain-based location routing
--- resolves purely by slug and has no such fallback, so a rename needs recorded
--- history to redirect from. No foreign key: fk_i_id points into either t_region or
--- t_city depending on e_type, and one column cannot reference two tables.
-CREATE TABLE /*TABLE_PREFIX*/t_location_slug_history (
-    e_type ENUM('REGION', 'CITY') NOT NULL,
-    s_slug VARCHAR(191) NOT NULL,
+-- Old slugs of categories, regions and cities, so links to a renamed one still redirect.
+-- A category slug has its locale, a location slug an empty one. No foreign key: fk_i_id
+-- points into t_category, t_region or t_city by e_type, so a delete removes its rows itself.
+CREATE TABLE /*TABLE_PREFIX*/t_slug_history (
+    e_type ENUM('CATEGORY', 'REGION', 'CITY') NOT NULL,
     fk_i_id INT UNSIGNED NOT NULL,
+    fk_c_locale_code CHAR(5) NOT NULL DEFAULT '',
+    s_slug VARCHAR(191) NOT NULL,
     dt_date DATETIME NOT NULL,
 
-        PRIMARY KEY (e_type, s_slug),
-        INDEX idx_hist_loc (e_type, fk_i_id)
+        PRIMARY KEY (e_type, s_slug, fk_c_locale_code),
+        INDEX idx_owner (e_type, fk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

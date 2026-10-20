@@ -33,8 +33,8 @@ class AlertEnvelope
 
     /** Core search keys, as the search page reads them. */
     public const CORE_KEYS = array(
-        'bPic', 'bPremium', 'meta', 'sCategory', 'sCity', 'sCityArea', 'sCountry',
-        'sLocale', 'sPattern', 'sPriceMax', 'sPriceMin', 'sRegion', 'sUser',
+        'bPic', 'bPremium', 'iRadius', 'meta', 'sCategory', 'sCity', 'sCityArea', 'sCountry',
+        'sLat', 'sLng', 'sLocale', 'sPattern', 'sPriceMax', 'sPriceMin', 'sRegion', 'sUser',
     );
 
     /** Keys of the old SQL-fragment format; never valid in an envelope. */
@@ -69,6 +69,13 @@ class AlertEnvelope
             'sPriceMax' => $criteria->priceMax(),
             'meta'      => $criteria->meta(),
         );
+        $point = $criteria->point();
+        if ($criteria->radius() > 0) {
+            $values['iRadius'] = $criteria->radius();
+            if ($point !== null) {
+                $values += array('sLat' => $point[0], 'sLng' => $point[1]);
+            }
+        }
 
         return self::fromValues($values, $request);
     }
@@ -251,7 +258,7 @@ class AlertEnvelope
                 if (!is_int($value)) {
                     return null;
                 }
-                $row = $model::newInstance()->findByPrimaryKey($value);
+                $row = $model::getInstance()->findByPrimaryKey($value);
 
                 return is_array($row) ? ($row['s_name'] ?? null) : null;
             };
@@ -267,7 +274,7 @@ class AlertEnvelope
                 if (!is_string($value) || strlen($value) !== 2) {
                     return null;
                 }
-                $row = \Country::newInstance()->findByCode($value);
+                $row = \Country::getInstance()->findByCode($value);
 
                 return is_array($row) ? ($row['s_name'] ?? null) : null;
             }),
@@ -303,7 +310,7 @@ class AlertEnvelope
                 $id = (int)$value;
             } elseif (is_string($value) && trim($value, " /") !== '') {
                 $path = explode('/', trim($value, " /"));
-                $row  = \Category::newInstance()->findBySlug(end($path));
+                $row  = \Category::getInstance()->findBySlug(end($path));
                 $id   = is_array($row) ? (int)($row['pk_i_id'] ?? 0) : 0;
             } else {
                 continue;
@@ -316,13 +323,13 @@ class AlertEnvelope
         if (!$roots) {
             sort($ids);
 
-            return array_values($ids);
+            return $ids;
         }
 
         $kept = array();
         foreach ($ids as $id) {
             $covered = false;
-            $row     = \Category::newInstance()->findByPrimaryKey($id);
+            $row     = \Category::getInstance()->findByPrimaryKey($id);
             // Bounded, so a parent loop in bad data cannot hang the page.
             for ($depth = 0; $depth < 32 && is_array($row) && !empty($row['fk_i_parent_id']); $depth++) {
                 $parentId = (int)$row['fk_i_parent_id'];
@@ -330,7 +337,7 @@ class AlertEnvelope
                     $covered = true;
                     break;
                 }
-                $row = \Category::newInstance()->findByPrimaryKey($parentId);
+                $row = \Category::getInstance()->findByPrimaryKey($parentId);
             }
             if (!$covered) {
                 $kept[] = $id;
@@ -365,7 +372,7 @@ class AlertEnvelope
             'sPriceMin' => self::price($values['sPriceMin'] ?? null),
             'sPriceMax' => self::price($values['sPriceMax'] ?? null),
             'meta'      => self::meta($values['meta'] ?? array()),
-        );
+        ) + self::radius($values);
         $params = array_filter($params, static fn ($v) => $v !== '' && $v !== array() && $v !== null);
 
         $out   = $params;
@@ -386,6 +393,25 @@ class AlertEnvelope
     }
 
     /**
+     * iRadius, with sLat and sLng when the radius is around the visitor's point, as the search
+     * page reads them. A point without a radius is dropped.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return array<string,string|int>
+     */
+    private static function radius(array $values): array
+    {
+        $band = Distance::band($values['iRadius'] ?? null);
+        if ($band === 0) {
+            return array();
+        }
+        $point = Distance::point($values['sLat'] ?? null, $values['sLng'] ?? null);
+
+        return array('iRadius' => $band) + ($point === null ? array() : array('sLat' => sprintf('%.2f', $point[0]), 'sLng' => sprintf('%.2f', $point[1])));
+    }
+
+    /**
      * @param mixed $values
      *
      * @return array<int,int>
@@ -400,7 +426,7 @@ class AlertEnvelope
         }
         sort($ids);
 
-        return array_values($ids);
+        return $ids;
     }
 
     /**
@@ -491,7 +517,7 @@ class AlertEnvelope
             return $out;
         }
         foreach ($meta as $key => $value) {
-            if (!is_int($key) && !(is_string($key) && ctype_digit($key))) {
+            if (!is_int($key) && !ctype_digit((string) $key)) {
                 continue;
             }
             $key = (int)$key;

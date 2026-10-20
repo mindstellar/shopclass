@@ -10,14 +10,15 @@
  */
 
 use mindstellar\billing\Billing;
-use mindstellar\billing\Entitlements;
+use mindstellar\billing\EntitlementStore;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\gateway\OfflineGateway;
-use mindstellar\billing\ItemUpgrades;
-use mindstellar\billing\Packages;
+use mindstellar\billing\ItemUpgradeStore;
+use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
+use mindstellar\listing\ListingService;
 
 /**
  * Register a feature so credits can be spent on it. Thin wrapper over
@@ -28,7 +29,7 @@ use mindstellar\billing\Wallet;
  */
 function osc_register_billing_feature(string $id, array $spec): void
 {
-    FeatureRegistry::instance()->register($id, $spec);
+    FeatureRegistry::getInstance()->register($id, $spec);
 }
 
 /**
@@ -40,7 +41,7 @@ function osc_register_billing_feature(string $id, array $spec): void
  */
 function osc_billing_feature(string $id): ?Feature
 {
-    return FeatureRegistry::instance()->get($id);
+    return FeatureRegistry::getInstance()->get($id);
 }
 
 /**
@@ -50,12 +51,12 @@ function osc_billing_feature(string $id): ?Feature
  */
 function osc_billing_features(): array
 {
-    return FeatureRegistry::instance()->all();
+    return FeatureRegistry::getInstance()->all();
 }
 
 /**
  * Free listing slots: how many of a seller's listings may be live (published, not
- * yet expired -- see Entitlements::liveListings()) at once before a listing.slot
+ * yet expired -- see EntitlementStore::liveListings()) at once before a listing.slot
  * entitlement is needed. 0 = unlimited, which is also what an unset preference
  * reads as -- an upgraded install stays unlimited.
  *
@@ -63,9 +64,7 @@ function osc_billing_features(): array
  */
 function osc_billing_free_live_listings(): int
 {
-    $v = osc_get_preference('billing_free_live_listings', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_free_live_listings', 0);
 }
 
 /**
@@ -85,9 +84,7 @@ function osc_billing_slot_enabled(): bool
  */
 function osc_billing_slot_credits(): int
 {
-    $v = osc_get_preference('billing_slot_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_slot_credits', 0);
 }
 
 /**
@@ -97,9 +94,7 @@ function osc_billing_slot_credits(): int
  */
 function osc_billing_slot_quantity(): int
 {
-    $v = osc_get_preference('billing_slot_quantity', 'osclass');
-
-    return $v === '' || $v === null ? 1 : max(1, (int) $v);
+    return osc_get_int_preference('billing_slot_quantity', 1, 1);
 }
 
 /**
@@ -119,9 +114,7 @@ function osc_billing_premium_enabled(): bool
  */
 function osc_billing_premium_credits(): int
 {
-    $v = osc_get_preference('billing_premium_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_premium_credits', 0);
 }
 
 /**
@@ -131,9 +124,7 @@ function osc_billing_premium_credits(): int
  */
 function osc_billing_premium_days(): int
 {
-    $v = osc_get_preference('billing_premium_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_premium_days', 30, 1);
 }
 
 /**
@@ -180,7 +171,7 @@ function osc_billing_offline_instructions(): string
  */
 function osc_billing_gateway_name(string $gatewayId): string
 {
-    $gateway = PaymentGatewayRegistry::instance()->get($gatewayId);
+    $gateway = PaymentGatewayRegistry::getInstance()->get($gatewayId);
 
     return $gateway !== null ? $gateway->getName() : $gatewayId;
 }
@@ -208,9 +199,7 @@ function osc_billing_bump_enabled(): bool
  */
 function osc_billing_bump_credits(): int
 {
-    $v = osc_get_preference('billing_bump_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_bump_credits', 0);
 }
 
 /**
@@ -220,9 +209,7 @@ function osc_billing_bump_credits(): int
  */
 function osc_billing_bump_cooldown_hours(): int
 {
-    $v = osc_get_preference('billing_bump_cooldown_hours', 'osclass');
-
-    return $v === '' || $v === null ? 24 : max(1, (int) $v);
+    return osc_get_int_preference('billing_bump_cooldown_hours', 24, 1);
 }
 
 /**
@@ -242,9 +229,7 @@ function osc_billing_highlight_enabled(): bool
  */
 function osc_billing_highlight_credits(): int
 {
-    $v = osc_get_preference('billing_highlight_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_highlight_credits', 0);
 }
 
 /**
@@ -254,9 +239,7 @@ function osc_billing_highlight_credits(): int
  */
 function osc_billing_highlight_days(): int
 {
-    $v = osc_get_preference('billing_highlight_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_highlight_days', 30, 1);
 }
 
 /**
@@ -276,9 +259,7 @@ function osc_billing_urgent_enabled(): bool
  */
 function osc_billing_urgent_credits(): int
 {
-    $v = osc_get_preference('billing_urgent_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_urgent_credits', 0);
 }
 
 /**
@@ -288,9 +269,7 @@ function osc_billing_urgent_credits(): int
  */
 function osc_billing_urgent_days(): int
 {
-    $v = osc_get_preference('billing_urgent_days', 'osclass');
-
-    return $v === '' || $v === null ? 7 : max(1, (int) $v);
+    return osc_get_int_preference('billing_urgent_days', 7, 1);
 }
 
 /*
@@ -318,9 +297,7 @@ function osc_billing_photos_enabled(): bool
  */
 function osc_billing_photos_credits(): int
 {
-    $v = osc_get_preference('billing_photos_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_photos_credits', 0);
 }
 
 /**
@@ -330,9 +307,7 @@ function osc_billing_photos_credits(): int
  */
 function osc_billing_photos_quantity(): int
 {
-    $v = osc_get_preference('billing_photos_quantity', 'osclass');
-
-    return $v === '' || $v === null ? 10 : max(1, (int) $v);
+    return osc_get_int_preference('billing_photos_quantity', 10, 1);
 }
 
 /**
@@ -352,9 +327,7 @@ function osc_billing_no_wait_enabled(): bool
  */
 function osc_billing_no_wait_credits(): int
 {
-    $v = osc_get_preference('billing_no_wait_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_no_wait_credits', 0);
 }
 
 /**
@@ -364,9 +337,7 @@ function osc_billing_no_wait_credits(): int
  */
 function osc_billing_no_wait_days(): int
 {
-    $v = osc_get_preference('billing_no_wait_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_no_wait_days', 30, 1);
 }
 
 /**
@@ -386,9 +357,7 @@ function osc_billing_runtime_enabled(): bool
  */
 function osc_billing_runtime_credits(): int
 {
-    $v = osc_get_preference('billing_runtime_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_runtime_credits', 0);
 }
 
 /**
@@ -398,9 +367,7 @@ function osc_billing_runtime_credits(): int
  */
 function osc_billing_runtime_days(): int
 {
-    $v = osc_get_preference('billing_runtime_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_runtime_days', 30, 1);
 }
 
 /*
@@ -445,7 +412,7 @@ function osc_max_images_for_user(?int $userId = null): int
         return $default;
     }
 
-    return Entitlements::capacity((int) $userId, 'listing.photos', $default);
+    return EntitlementStore::capacity((int) $userId, 'listing.photos', $default);
 }
 
 /**
@@ -453,7 +420,7 @@ function osc_max_images_for_user(?int $userId = null): int
  * way, never compare it numerically -- which is what billing being off, an unknown user,
  * or a site that never set a cap all read back. Defaults to osc_logged_user_id().
  *
- * Reads Entitlements::listingCeiling(), the same number the post-time gate is measured
+ * Reads EntitlementStore::listingCeiling(), the same number the post-time gate is measured
  * against, so a theme can show a seller their limit without it drifting from the one
  * they are actually held to.
  *
@@ -472,13 +439,13 @@ function osc_user_listing_limit(?int $userId = null): int
         return -1;
     }
 
-    return Entitlements::listingCeiling((int) $userId);
+    return EntitlementStore::listingCeiling((int) $userId);
 }
 
 /**
  * How many live listings $userId currently holds -- what osc_user_listing_limit() is
  * spent against. Counts listings awaiting moderation and admin-disabled ones too (see
- * Entitlements::liveListings()), so it matches the gate rather than what is publicly
+ * EntitlementStore::liveListings()), so it matches the gate rather than what is publicly
  * visible. 0 while billing is off or no user is known.
  *
  * @param int|null $userId
@@ -496,7 +463,7 @@ function osc_user_listings_used(?int $userId = null): int
         return 0;
     }
 
-    return Entitlements::liveListings((int) $userId);
+    return EntitlementStore::liveListings((int) $userId);
 }
 
 /**
@@ -535,7 +502,7 @@ function osc_user_can_publish(?int $userId = null): bool
         return true; // guests are not metered; the post route does not check them either
     }
 
-    return Entitlements::canPublish((int) $userId);
+    return EntitlementStore::canPublish((int) $userId);
 }
 
 /**
@@ -584,7 +551,7 @@ function osc_items_wait_time_for_user(?int $userId = null): int
         return $default;
     }
 
-    return Entitlements::has((int) $userId, 'listing.no_wait') ? 0 : $default;
+    return EntitlementStore::has((int) $userId, 'listing.no_wait') ? 0 : $default;
 }
 
 /**
@@ -610,7 +577,7 @@ function osc_item_extra_runtime_days(?int $userId = null): int
         return 0;
     }
 
-    return Entitlements::capacity((int) $userId, 'listing.runtime', 0);
+    return EntitlementStore::capacity((int) $userId, 'listing.runtime', 0);
 }
 
 /**
@@ -634,7 +601,7 @@ function osc_user_credits(?int $userId = null): int
  */
 function osc_billing_packages(): array
 {
-    return Packages::enabled();
+    return PackageStore::enabled();
 }
 
 /**
@@ -645,7 +612,7 @@ function osc_billing_packages(): array
  */
 function osc_billing_can_buy(): bool
 {
-    return PaymentGatewayRegistry::instance()->available() !== array()
+    return PaymentGatewayRegistry::getInstance()->available() !== array()
         && osc_billing_packages() !== array();
 }
 
@@ -744,7 +711,7 @@ function osc_item_can_be_featured(?array $item = null): bool
 
 /**
  * Batch-load item-upgrade state for $items into the request cache
- * ItemUpgrades::prime() fills, so osc_item_upgrades()/osc_item_is_highlighted()/
+ * ItemUpgradeStore::prime() fills, so osc_item_upgrades()/osc_item_is_highlighted()/
  * osc_item_is_urgent() called inside a listing loop cost one query for the whole
  * page rather than one per card. Call this where a result set is built (core
  * already does, for search/category/home); a theme working a custom loop can
@@ -774,7 +741,7 @@ function osc_prime_item_upgrades(array $items): void
         }
     }
 
-    ItemUpgrades::prime($ids);
+    ItemUpgradeStore::prime($ids);
 }
 
 /**
@@ -791,7 +758,7 @@ function osc_item_upgrades(?array $item = null): array
         return array();
     }
 
-    return ItemUpgrades::active((int) $item['pk_i_id']);
+    return ItemUpgradeStore::active((int) $item['pk_i_id']);
 }
 
 /**
@@ -856,7 +823,7 @@ function osc_item_can_bump(?array $item = null): bool
         return false;
     }
 
-    return !ItemUpgrades::has((int) $item['pk_i_id'], 'item.bump') && !osc_billing_bump_paused((int) $userId);
+    return !ItemUpgradeStore::has((int) $item['pk_i_id'], 'item.bump') && !osc_billing_bump_paused((int) $userId);
 }
 
 /**
@@ -928,13 +895,13 @@ function _osc_billing_bump_pause(int $userId, bool $fresh): array
         return $memo[$userId];
     }
 
-    $feature = FeatureRegistry::instance()->get('item.bump');
+    $feature = FeatureRegistry::getInstance()->get('item.bump');
     $price   = $feature !== null ? $feature->price($userId) : osc_billing_bump_credits();
     $state   = $none;
     if ($price <= 0) {
-        $ceiling = Entitlements::listingCeiling($userId);
+        $ceiling = EntitlementStore::listingCeiling($userId);
         if ($ceiling !== -1) {
-            $live  = Entitlements::liveListings($userId);
+            $live  = EntitlementStore::liveListings($userId);
             $state = array('paused' => $live > $ceiling, 'live' => $live, 'ceiling' => $ceiling);
         }
     }
@@ -1058,8 +1025,17 @@ function osc_account_upgrade_offers(?int $userId = null): array
 
     if ($userId !== null && $userId > 0) {
         $offers = array_values(array_filter($offers, static fn (array $offer): bool => !in_array($offer['feature'], array('listing.photos', 'listing.runtime'), true)
-            || Entitlements::capacity($userId, $offer['feature'], 0) === 0));
+            || EntitlementStore::capacity($userId, $offer['feature'], 0) === 0));
     }
+
+    // Show the price the spend will charge, after billing_feature_price.
+    foreach ($offers as &$offer) {
+        $feature = osc_billing_feature($offer['feature']);
+        if ($feature !== null) {
+            $offer['credits'] = $feature->price($userId);
+        }
+    }
+    unset($offer);
 
     return (array) osc_apply_filter('account_upgrade_offers', $offers, $userId);
 }
@@ -1091,7 +1067,7 @@ function osc_item_upgrade_expiration(string $upgrade, ?array $item = null): ?str
         return null;
     }
 
-    return ItemUpgrades::expiresAt((int) $item['pk_i_id'], $upgrade);
+    return ItemUpgradeStore::expiresAt((int) $item['pk_i_id'], $upgrade);
 }
 
 /**
@@ -1100,7 +1076,7 @@ function osc_item_upgrade_expiration(string $upgrade, ?array $item = null): ?str
  * pattern osc_register_billing_seller_limits() uses: a disabled feature is absent
  * from the registry entirely, not merely free or unpriced. CONSUMES_CAPACITY
  * because it raises the seller's slot ceiling while held and is never spent --
- * Entitlements::withinFreeQuota() reads it back through capacity(), the same way
+ * EntitlementStore::withinFreeQuota() reads it back through capacity(), the same way
  * listing.photos raises osc_max_images_for_user(). Called once below, and callable
  * again by the admin Pricing save.
  */
@@ -1119,7 +1095,7 @@ function osc_register_billing_slot(): void
         // Capacity is granted, not deducted -- same reasoning as listing.photos'
         // apply() in osc_register_billing_seller_limits() below.
         'apply'    => static function (int $userId, array $ctx): bool {
-            return Entitlements::grant($userId, 'listing.slot', osc_billing_slot_quantity(), null);
+            return EntitlementStore::grant($userId, 'listing.slot', osc_billing_slot_quantity(), null);
         },
     ));
 }
@@ -1163,7 +1139,7 @@ function osc_register_billing_premium(): void
             // The write stays here, inside spend()'s transaction; item_premium_on is
             // deferred (see Billing::deferHook()) so it fires once that transaction
             // has committed, not while it still holds the wallet row's lock.
-            if (!(new ItemActions())->premium((int) $itemId, true, $days, false)) {
+            if (!(new \mindstellar\listing\ListingService())->premium((int) $itemId, true, (int) $days, false)) {
                 return false;
             }
             Billing::deferHook('item_premium_on', array((int) $itemId));
@@ -1204,22 +1180,14 @@ function osc_register_billing_item_upgrades(): void
                 }
 
                 // Bump re-sorts the listing by moving the date every "newest first"
-                // query already orders by. It carries no state of its own beyond
-                // that -- the row below exists purely so the cooldown is enforceable.
-                $moved = osc_db_table(DB_TABLE_PREFIX . 't_item')
-                    ->where('pk_i_id', $itemId)
-                    ->update(array('dt_pub_date' => date('Y-m-d H:i:s')));
-                if ($moved !== 1) {
-                    return false;
-                }
-
-                ItemUpgrades::grant($itemId, 'item.bump', null, osc_billing_bump_cooldown_hours());
-                // Deferred (see Billing::deferHook()) so it fires once spend()'s
-                // transaction has committed, not while it still holds the wallet
-                // row's lock -- same reasoning as listing.premium's apply() above.
-                Billing::deferHook('item_bumped', array($itemId));
-
-                return true;
+                // query already orders by. The grant row exists so the cooldown is
+                // enforceable. item_bumped is deferred (see Billing::deferHook()) so it
+                // fires once spend()'s transaction has committed, not while it still holds
+                // the wallet row's lock -- same reasoning as listing.premium's apply() above.
+                return (new ListingService())->bump($itemId, null, static function () use ($itemId): void {
+                    ItemUpgradeStore::grant($itemId, 'item.bump', null, osc_billing_bump_cooldown_hours());
+                    Billing::deferHook('item_bumped', array($itemId));
+                });
             },
         ));
     }
@@ -1243,7 +1211,7 @@ function osc_register_billing_item_upgrades(): void
                 // Same fallback convention as listing.premium's apply() above.
                 $days = $ctx['days'] ?? osc_billing_highlight_days();
 
-                return ItemUpgrades::grant((int) $itemId, 'item.highlight', $days);
+                return ItemUpgradeStore::grant((int) $itemId, 'item.highlight', $days);
             },
         ));
     }
@@ -1267,7 +1235,7 @@ function osc_register_billing_item_upgrades(): void
                 // Same fallback convention as listing.premium's apply() above.
                 $days = $ctx['days'] ?? osc_billing_urgent_days();
 
-                return ItemUpgrades::grant((int) $itemId, 'item.urgent', $days);
+                return ItemUpgradeStore::grant((int) $itemId, 'item.urgent', $days);
             },
         ));
     }
@@ -1291,9 +1259,9 @@ function osc_register_billing_seller_limits(): void
             },
             // Capacity is granted, not deducted -- the wallet debit above this
             // callable already happened once; this only mints the entitlement
-            // Entitlements::capacity() will read back as the raised cap.
+            // EntitlementStore::capacity() will read back as the raised cap.
             'apply'    => static function (int $userId, array $ctx): bool {
-                return Entitlements::grantOnce($userId, 'listing.photos', osc_billing_photos_quantity());
+                return EntitlementStore::grantOnce($userId, 'listing.photos', osc_billing_photos_quantity());
             },
         ));
     }
@@ -1312,7 +1280,7 @@ function osc_register_billing_seller_limits(): void
                 // Same fallback convention as listing.premium's apply() above.
                 $days = $ctx['days'] ?? osc_billing_no_wait_days();
 
-                return Entitlements::grant($userId, 'listing.no_wait', null, $days);
+                return EntitlementStore::grant($userId, 'listing.no_wait', null, $days);
             },
         ));
     }
@@ -1327,7 +1295,7 @@ function osc_register_billing_seller_limits(): void
             // Capacity again: the granted quantity IS the number of extra days
             // over the category ceiling, read by osc_item_extra_runtime_days().
             'apply'    => static function (int $userId, array $ctx): bool {
-                return Entitlements::grantOnce($userId, 'listing.runtime', osc_billing_runtime_days());
+                return EntitlementStore::grantOnce($userId, 'listing.runtime', osc_billing_runtime_days());
             },
         ));
     }
@@ -1336,13 +1304,12 @@ osc_register_billing_seller_limits();
 
 /*
  * Core's reference gateway -- bank transfer settled by hand from the admin order
- * screen. Registered on init, and only once billing is switched on, the same way
- * hStorage.php registers its optional remote adapters: an unconditional registration
+ * screen. Registered only once billing is switched on: an unconditional registration
  * would offer a payment method at checkout that a site never asked for.
  */
-osc_add_hook('init', static function () {
+osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::instance()->register(new OfflineGateway());
+        $registry->register(new OfflineGateway());
     }
 });
 

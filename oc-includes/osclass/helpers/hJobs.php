@@ -59,7 +59,7 @@ if (!function_exists('osc_job_enqueue')) {
      */
     function osc_job_enqueue(string $type, array $payload = array(), array $options = array()): int
     {
-        return JobQueue::instance()->enqueue($type, $payload, $options);
+        return JobQueue::getInstance()->enqueue($type, $payload, $options);
     }
 }
 
@@ -77,7 +77,7 @@ if (!function_exists('osc_job_enqueue_many')) {
      */
     function osc_job_enqueue_many(string $type, array $payloads, array $options = array()): int
     {
-        return JobQueue::instance()->enqueueMany($type, $payloads, $options);
+        return JobQueue::getInstance()->enqueueMany($type, $payloads, $options);
     }
 }
 
@@ -93,7 +93,7 @@ if (!function_exists('osc_job_ensure')) {
      */
     function osc_job_ensure(string $type, array $payload = array(), array $options = array()): bool
     {
-        return JobQueue::instance()->ensure($type, $payload, $options);
+        return JobQueue::getInstance()->ensure($type, $payload, $options);
     }
 }
 
@@ -108,7 +108,7 @@ if (!function_exists('osc_job_stats')) {
      */
     function osc_job_stats(?string $type = null): array
     {
-        return JobQueue::instance()->stats($type);
+        return JobQueue::getInstance()->stats($type);
     }
 }
 
@@ -149,6 +149,8 @@ if (!function_exists('osc_job_describe')) {
 
 if (!function_exists('osc_job_has_handler')) {
     /**
+     * Whether a handler is registered for a job type.
+     *
      * @param string $type
      *
      * @return bool
@@ -182,7 +184,7 @@ if (!function_exists('osc_job_count')) {
      */
     function osc_job_count(string $status = 'pending', ?string $type = null): int
     {
-        return JobQueue::instance()->count($status, $type);
+        return JobQueue::getInstance()->count($status, $type);
     }
 }
 
@@ -194,7 +196,7 @@ if (!function_exists('osc_job_summary')) {
      */
     function osc_job_summary(): array
     {
-        return JobQueue::instance()->summary();
+        return JobQueue::getInstance()->summary();
     }
 }
 
@@ -223,7 +225,7 @@ if (!function_exists('osc_job_retry')) {
      */
     function osc_job_retry(int $id): bool
     {
-        return JobQueue::instance()->retry($id);
+        return JobQueue::getInstance()->retry($id);
     }
 }
 
@@ -237,7 +239,7 @@ if (!function_exists('osc_job_forget')) {
      */
     function osc_job_forget(int $id): bool
     {
-        return JobQueue::instance()->forget($id);
+        return JobQueue::getInstance()->forget($id);
     }
 }
 
@@ -251,7 +253,7 @@ if (!function_exists('osc_job_dead_letters')) {
      */
     function osc_job_dead_letters(int $limit = 50): array
     {
-        return JobQueue::instance()->deadLetters($limit);
+        return JobQueue::getInstance()->deadLetters($limit);
     }
 }
 
@@ -261,10 +263,17 @@ osc_add_hook('register_jobs', static function () {
     \mindstellar\storage\StorageJobs::register();
     \mindstellar\job\CategoryJobs::register();
     \mindstellar\job\CleanupJobs::register();
+    \mindstellar\location\LocationRecountJobs::register();
     \mindstellar\search\AlertJobs::register();
     \mindstellar\backup\BackupJobs::register();
     \mindstellar\security\MessageHold::registerJobs();
     \mindstellar\billing\Receipts::registerJobs();
+    \mindstellar\billing\Premium::registerJobs();
+    \mindstellar\user\SignUpMail::registerJobs();
+    \mindstellar\listing\ListingGeocode::registerJobs();
+    \mindstellar\listing\ListingPointJobs::registerJobs();
+    \mindstellar\listing\ListingCounters::registerJobs();
+    \mindstellar\webhook\Delivery::register();
 });
 
 // A job queued by a web request would otherwise wait for the next cron tick. The worker
@@ -272,3 +281,109 @@ osc_add_hook('register_jobs', static function () {
 osc_add_hook('cron', static function () {
     JobWorker::run();
 });
+
+/**
+ * The file whose mtime throttles auto-cron: a dotfile in uploads/, which a "deny hidden files"
+ * rule keeps unreadable. When PHP cannot write there, one in the temp folder, so a failed touch
+ * does not run cron on every page.
+ *
+ * @internal
+ */
+function _osc_auto_cron_stamp(string $uploads): string
+{
+    $stamp = $uploads . '.autocron_tick';
+    if (is_writable(file_exists($stamp) ? $stamp : $uploads)) {
+        return $stamp;
+    }
+
+    return rtrim(sys_get_temp_dir(), '/\\') . '/osc-autocron-' . md5($uploads);
+}
+
+/**
+ * Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes.
+ * Web pages queue the work to run at shutdown; an API response is already sent, so it runs now.
+ *
+ * @param bool $responseSent true when the caller has already written the whole response
+ */
+function osc_auto_cron_dispatch(bool $responseSent = false): void
+{
+    if (defined('__FROM_CRON__') || !osc_auto_cron() || osc_maintenance_is_restoring(ABS_PATH . '.maintenance')) {
+        return;
+    }
+
+    // Auto-cron sends a fire-and-forget self request to run scheduled tasks. Left ungated it
+    // fires on EVERY page view, so a busy site hammers itself with one internal POST per hit
+    // (each spawns an FPM worker). Throttle it to at most one dispatch per 5 minutes.
+    //
+    // Prefer the object cache as the lock: with a real backend (memcached/apcu) the window is
+    // shared across every web node and every locale (CacheManager directly, not the
+    // locale-suffixed osc_cache_* helpers). The default driver is a per-request array that never
+    // survives between requests and so cannot throttle anything, so there fall back to the
+    // modification time of a stamp file under uploads/, no cache backend required. Either path
+    // fails open (write fails or file unwritable => cron still runs), never closed.
+    // JobWorker::SCHEDULE_EVERY, written out so a page does not load the worker class.
+    $window = 300;
+    $fire   = false;
+    $cache  = \mindstellar\cache\CacheManager::getInstance();
+
+    if (!($cache instanceof \mindstellar\cache\MemoryCache)) {
+        $found = false;
+        if ($cache->get('osclass_autocron_tick', $found) === false) {
+            $cache->set('osclass_autocron_tick', 1, $window);
+            $fire = true;
+        }
+    } else {
+        $stamp = _osc_auto_cron_stamp(osc_uploads_path());
+        if (!@file_exists($stamp) || (time() - (int)@filemtime($stamp)) >= $window) {
+            @touch($stamp);
+            $fire = true;
+        }
+    }
+
+    if (!$fire) {
+        return;
+    }
+
+    $finish = null;
+    if (function_exists('fastcgi_finish_request')) {
+        $finish = 'fastcgi_finish_request';
+    } elseif (function_exists('litespeed_finish_request')) {
+        $finish = 'litespeed_finish_request';
+    }
+
+    if ($finish === null) {
+        // No way to detach on this SAPI, so the self request stays -- unchanged, including
+        // its inability to reach a proxied origin. Shared hosting is where it is still the
+        // only option, and it is also where nobody can add a real crontab.
+        \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
+
+        return;
+    }
+
+    // Under FPM the work runs here, after the response has gone, instead of asking the site to
+    // call itself over HTTP. That self request is only a way to detach, and it cannot survive an
+    // origin behind a proxy, which resolves its own public host to the edge and never hairpins
+    // back. Running it here needs no network and puts failures in the site's own error log.
+    $run = static function () use ($finish, $window) {
+        $finish();
+        // The visitor already has their response, so nothing is waiting on this.
+        ignore_user_abort(true);
+        // Bounded, never 0: this occupies an FPM worker, and one that hangs is one the pool
+        // cannot serve from. The throttle window is the ceiling, so a run cannot overlap the next.
+        @set_time_limit($window);
+        if (!defined('__FROM_CRON__')) {
+            define('__FROM_CRON__', true);
+        }
+        require_once LIB_PATH . 'osclass/cron.php';
+    };
+
+    if ($responseSent) {
+        $run();
+
+        return;
+    }
+
+    // A shutdown function, not an inline call: the CSRF guard holds the page in an output buffer
+    // and injects tokens from its own shutdown function, which must run before the request ends.
+    register_shutdown_function($run);
+}

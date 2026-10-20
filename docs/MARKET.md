@@ -31,13 +31,11 @@ system was built. It explains why the code looks as it does today — several of
 below exist specifically to repair a named defect here — but none of it is the live path
 any more; the sections that follow are.
 
-**The legacy market was hard-disabled, and still is.**
-`_get_market_url()` (`oc-includes/osclass/utils.php:1338`) takes `$disable = true`
-and returns `false` on the first line; so does `_need_update()`
-(`utils.php:1372`). Both remain exactly this way — `@deprecated since 4.0.0`,
-never re-enabled — and every caller (`osc_check_plugin_update()`,
-`osc_check_theme_update()`, `osc_check_language_update()`, `utils.php:1265-1319`)
-still always returns `false`. This path was not repaired; it was replaced.
+**The legacy market was hard-disabled, and is now gone.**
+Its `_get_market_url()` and `_need_update()` helpers were removed in 7.0;
+`osc_check_plugin_update()` and `osc_check_theme_update()` in `utils.php`
+stay as deprecated stubs that return `false`, as they always did.
+This path was not repaired; it was replaced.
 `_osc_check_plugins_update()` (`functions.php:595`) and
 `_osc_check_themes_update()` (`functions.php:674`) no longer depend on it —
 they now resolve against `mindstellar\market\PackageIndex::pendingUpdates()`
@@ -65,7 +63,7 @@ outside the catalog entirely — a catalog package never touches it; `Installer`
 CSV.** `upgrade\Osclass::getPackageInfo()` polls the GitHub Releases API
 directly, scans all releases for the highest version, caches the payload in
 `update_core_json`, and honours a 24h clock with a 1h retry on failure
-(`CAdminAjax.php`). `Upgrade` + `UpgradePackage` then download, unzip, sync
+(`admin/ajax/UpdateAjax.php`). `Upgrade` + `UpgradePackage` then download, unzip, sync
 over the target directory behind a `.maintenance` flag, and run
 `afterProcessUpgrade()`. That machinery was sound and became the substrate
 `Installer` wraps — but its compatibility check was
@@ -351,7 +349,7 @@ Efficiency rules core follows:
   or the mirror) produced them last. A 304 costs ~200 bytes and short-circuits
   everything.
 - **Failure never resets the clock.** `Catalog::fail()` (`Catalog.php:255-262`)
-  follows the same pattern `CAdminAjax::scheduleUpdateCheckRetry()` proved for
+  follows the same pattern `UpdateAjax::scheduleRetry()` proved for
   the core self-updater — back-date `checked_at` by `DAY_SECONDS -
   RETRY_SECONDS` on a failed fetch, so the next check is due in ~1h and the
   cached payload and its badge are untouched, rather than marking the day
@@ -673,7 +671,7 @@ it. A detail dialog — a native `<dialog>`, consistent with the modernised admi
 to the repo and its issue tracker.
 
 Install, update, refresh, and detail fetch are POSTs/GETs through
-`CAdminAjax` (`market_install`, `market_update`, `market_refresh`,
+`MarketAjax` (`market_install`, `market_update`, `market_refresh`,
 `market_detail`) with `osc_csrf_check()`, the `DEMO` guard, and
 `osc_self_update_disabled()` all honoured — container deployments that update
 by image must not grow a second, divergent update path. Directory writability

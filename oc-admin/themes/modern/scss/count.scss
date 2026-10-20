@@ -1,0 +1,62 @@
+// A count beside a label (osc_admin_count()): a small pill with the number, so a tab reads
+// "Pending 3" instead of "Pending (3)". It wears the same neutral chip as the top bar's
+// counts, with a hairline that keeps its shape on any surface.
+.osc-count,
+.osc-tabnav .tab-count {
+  align-items: center;
+  background-color: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: 999px;
+  color: var(--osc-ink-emphasis);
+  display: inline-flex;
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  justify-content: center;
+  line-height: 1.3;
+  margin-inline-start: .35rem;
+  min-inline-size: 1.5rem;
+  padding: 0 .4rem;
+  vertical-align: baseline;
+}
+
+// Nothing there: the number stays for a steady width but carries no weight.
+.osc-count.is-zero {
+  background-color: transparent;
+  color: var(--osc-ink-muted);
+  font-weight: 400;
+}
+
+// On a filled button the chip turns over: the button's colour on the bench.
+.btn-primary .osc-count {
+  background-color: var(--osc-count-on-fill-bg);
+  border-color: transparent;
+  color: var(--osc-count-on-fill-ink);
+}
+
+// A segment spaces its children with a gap, and a selected one is tinted, not filled.
+.loc-segmented label .osc-count,
+.osc-segmented label .osc-count {
+  margin-inline-start: 0;
+}
+
+.loc-segmented input:checked + label .osc-count,
+.osc-segmented input:checked + label .osc-count {
+  background-color: var(--osc-bench);
+  color: inherit;
+}
+
+// Status filters with counts scroll in their own strip on a narrow screen.
+.osc-tabnav-scroll {
+  margin-block-end: 1rem;
+  overflow-x: auto;
+
+  > .osc-tabnav {
+    flex-wrap: nowrap;
+    min-inline-size: max-content;
+  }
+
+  a {
+    white-space: nowrap;
+  }
+}

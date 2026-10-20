@@ -65,7 +65,7 @@ php oc-cli.php sitemap:warm
 
 ## robots.txt
 
-The same screen edits and saves **robots.txt**.
+The same screen edits and saves **robots.txt**. The built-in one disallows the admin folder and lists your sitemap.
 
 The default is fine for most sites. Two things worth adding: your sitemap URL,
 and a `Disallow` for search-result URLs. Search engines only crawl so many
@@ -80,6 +80,8 @@ automatically), and users can subscribe to one as an
 are sent by **cron** (a timer on your server, see
 [Set up cron](/docs/configure/cron/)) on the schedule the user picked; without
 cron they never arrive.
+
+An unknown feed type is a 404, unless a plugin adds a `feed_<name>` handler. A search page past the last page is a 404 too.
 
 **Settings → Latest searches** controls how long queries are kept: an hour, a
 day, a week, forever, the last 1000, or a number you set. That log is worth

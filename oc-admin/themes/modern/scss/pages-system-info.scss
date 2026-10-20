@@ -3,12 +3,8 @@
 
 .sysinfo {
   // One reading column; only the tab strip runs the full width.
-  > :not(.osc-tabnav) {
+  > :not(.osc-tabnav-scroll) {
     max-inline-size: 56rem;
-  }
-
-  > .osc-tabnav {
-    margin-block-end: 1.5rem;
   }
 
   > .callout-block,

@@ -18,8 +18,12 @@ define('LIB_PATH', ABS_PATH . 'oc-includes/');
 define('CONTENT_PATH', ABS_PATH . 'oc-content/');
 define('TRANSLATIONS_PATH', CONTENT_PATH . 'languages/');
 define('OSC_INSTALLING', 1);
+if (!is_file(LIB_PATH . 'vendor/autoload.php')) {
+    http_response_code(503);
+    die('Shopclass is not built yet. Run composer install and npm run build, or install from a release zip.');
+}
 require_once LIB_PATH . 'vendor/autoload.php';
-mindstellar\logger\OsclassErrors::newInstance()->register();
+mindstellar\logger\ErrorHandler::getInstance()->register();
 // Helper load order mirrors the main bootstrap (oc-load.php) and is
 // dependency-ordered: hDefines (osc_plugins_path et al.) before hPlugins, and
 // hPlugins (the hook API) before hCache, which registers item-cache
@@ -49,7 +53,7 @@ require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/locales.php';
 define('WEB_PATH', osc_get_absolute_url());
 Params::init();
-Session::newInstance()->session_start();
+Session::getInstance()->session_start();
 
 $step = Params::getParamInt('step');
 if ($step < 1) {
@@ -69,28 +73,22 @@ foreach ($locales as $localeCode => $localeInfo) {
     $jsonLocales[$localeCode] = $localeInfo['name'] ?? $localeCode;
 }
 
-$publishedLocales = json_decode((string) osc_file_get_contents(osc_get_i18n_repository_url()), true);
-if (is_array($publishedLocales)) {
-    foreach ($publishedLocales as $publishedLocale) {
-        if (is_array($publishedLocale) && isset($publishedLocale['locale_code'])) {
-            $code = (string) $publishedLocale['locale_code'];
-            $jsonLocales[$code] = (string) ($publishedLocale['name'] ?? $code);
-        }
-    }
+foreach (mindstellar\language\LanguageService::published() ?? array() as $code => $publishedLocale) {
+    $jsonLocales[$code] = (string) ($publishedLocale['name'] ?? $code);
 }
 asort($jsonLocales);
-$install_locale = Params::getParam('install_locale');
+$install_locale = Params::getParamString('install_locale');
 
-if (Params::getParam('install_locale') && !(strlen($install_locale) > 5)) {
-    Session::newInstance()->_set('userLocale', Params::getParam('install_locale'));
-    Session::newInstance()->_set('adminLocale', Params::getParam('install_locale'));
+if (Params::getParamString('install_locale') && !(strlen($install_locale) > 5)) {
+    Session::getInstance()->_set('userLocale', Params::getParamString('install_locale'));
+    Session::getInstance()->_set('adminLocale', Params::getParamString('install_locale'));
 }
 
 if (
-    Session::newInstance()->_get('adminLocale')
-    && array_key_exists(Session::newInstance()->_get('adminLocale'), $locales)
+    Session::getInstance()->_get('adminLocale')
+    && array_key_exists(Session::getInstance()->_get('adminLocale'), $locales)
 ) {
-    $current_locale = Session::newInstance()->_get('adminLocale');
+    $current_locale = Session::getInstance()->_get('adminLocale');
 } elseif (isset($locales['en_US'])) {
     $current_locale = 'en_US';
 } elseif (key($locales)) {
@@ -98,10 +96,10 @@ if (
 } else {
     $current_locale = 'en_US';
 }
-Session::newInstance()->_set('userLocale', $current_locale);
-Session::newInstance()->_set('adminLocale', $current_locale);
+Session::getInstance()->_set('userLocale', $current_locale);
+Session::getInstance()->_set('adminLocale', $current_locale);
 
-Translation::newInstance(true);
+Translation::getInstance(true);
 
 // Installer nonce for this session, embedded into every form and the test-db
 // request. Created here so it exists for both the rendered pages and the guards.
@@ -146,48 +144,20 @@ switch ($step) {
             $error === false && $install_locale && !array_key_exists($install_locale, $locales)
             && array_key_exists($install_locale, $jsonLocales)
         ) {
-            $langFolder = osc_translations_path() . $install_locale;
-            mkdir($langFolder, 0755, true);
-
-            $poFiles = array(
-                'theme.po',
-                'core.po',
-                'messages.po'
-            );
-            $moFiles = array(
-                'theme.mo',
-                'core.mo',
-                'messages.mo'
-            );
-            foreach ($poFiles as $poFile) {
-                $poFileFrom = osc_get_i18n_repository_url('src/translations/' . $install_locale . '/' . $poFile);
-                $poFileTo = $langFolder . $poFile;
-                $poFile = osc_file_get_contents($poFileFrom);
-                if ($poFile) {
-                    file_put_contents($poFileTo, $poFile);
-                }
-            }
-            foreach ($moFiles as $moFile) {
-                $moFileFrom = osc_get_i18n_repository_url('src/translations/' . $install_locale . '/' . $moFile);
-                $moFileTo = $langFolder . $moFile;
-                $moFile = osc_file_get_contents($moFileFrom);
-                if ($moFile) {
-                    file_put_contents($moFileTo, $moFile);
-                }
-            }
+            mindstellar\language\LanguageService::downloadFiles($install_locale);
             header('Location: ' . $_SERVER['REQUEST_URI']);
             die;
         }
         break;
     case 2:
         if (Params::getParam('save_stats') == '1' || isset($_COOKIE['osclass_save_stats'])) {
-            setcookie('osclass_save_stats', 1, time() + (24 * 60 * 60));
+            setcookie('osclass_save_stats', '1', time() + (24 * 60 * 60));
         } else {
-            setcookie('osclass_save_stats', 0, time() + (24 * 60 * 60));
+            setcookie('osclass_save_stats', '0', time() + (24 * 60 * 60));
         }
 
         if (isset($_COOKIE['osclass_ping_engines'])) {
-            setcookie('osclass_ping_engines', 1, time() + (24 * 60 * 60));
+            setcookie('osclass_ping_engines', '1', time() + (24 * 60 * 60));
         }
 
         break;

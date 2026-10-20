@@ -32,8 +32,12 @@ define('CONTENT_PATH', ABS_PATH . 'oc-content/');
 define('TRANSLATIONS_PATH', CONTENT_PATH . 'languages/');
 define('OSC_INSTALLING', 1);
 
+if (!is_file(LIB_PATH . 'vendor/autoload.php')) {
+    fwrite(STDERR, "Shopclass is not built yet. Run composer install and npm run build, or install from a release zip.\n");
+    exit(1);
+}
 require_once LIB_PATH . 'vendor/autoload.php';
-mindstellar\logger\OsclassErrors::newInstance()->register();
+mindstellar\logger\ErrorHandler::getInstance()->register();
 
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 // Resolve DB_*, WEB_PATH and OSC_CONFIG_FROM_ENV from the environment (or an
@@ -64,4 +68,4 @@ require_once LIB_PATH . 'osclass/locales.php';
 Params::init();
 // A lazy session backs osc_current_admin_locale() and the installer's
 // sample-content warning flag; harmless under CLI with reporting limited above.
-Session::newInstance()->session_start();
+Session::getInstance()->session_start();

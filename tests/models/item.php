@@ -57,7 +57,7 @@
  * hDefines.php cannot be required from a model test (it redeclares the
  * bootstrap's osc_uploads_path()). This mirrors tests/models/itemresource.php and
  * tests/models/category.php. hUsers.php and utils.php are the REAL files: the
- * delete cascade reaches ItemActions::deleteResourcesFromHD() -> osc_logged_user_id()
+ * delete cascade reaches PhotoService::deleteFilesFromDisk() -> osc_logged_user_id()
  * and osc_isExpired(), and requiring the real files (idempotent) exercises the true
  * paths rather than a fake (amendment L). DEMO is defined so osc_deleteResource()
  * short-circuits instead of touching the filesystem.
@@ -110,27 +110,28 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';      // osc_logged_user_id (delete cascade -> ItemActions)
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';               // osc_isExpired, osc_deleteResource
 
-Preference::newInstance(); // warm the preference map so osc_current_user_locale() never charges a query to a count pin
+Preference::getInstance(); // warm the preference map so osc_current_user_locale() never charges a query to a count pin
 
-$cache        = Object_Cache_Factory::newInstance();
+$cache        = \mindstellar\cache\CacheManager::getInstance();
 $itemTable    = DB_TABLE_PREFIX . 't_item';
 $descTable    = DB_TABLE_PREFIX . 't_item_description';
 $locTable     = DB_TABLE_PREFIX . 't_item_location';
 $statsTable   = DB_TABLE_PREFIX . 't_item_stats';
-$resTable     = DB_TABLE_PREFIX . 't_item_resource';
+$resTable     = DB_TABLE_PREFIX . 't_resource';
 $commentTable = DB_TABLE_PREFIX . 't_item_comment';
 $metaTable    = DB_TABLE_PREFIX . 't_item_meta';
 $fieldTable   = DB_TABLE_PREFIX . 't_meta_fields';
 $locale       = 'en_US';
 $country      = 'US';
 
-$model = Item::newInstance();
+$model = Item::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Local helpers.
  * ------------------------------------------------------------------------- */
 $flush = static function () use ($cache): void {
     $cache->flush();
+    ItemResource::getInstance()->forget();
 };
 
 // The shared DBCommandClass singleton keeps clause state per instance; only
@@ -158,14 +159,11 @@ $itemExists = static function (int $id) use ($countRows, $itemTable): bool {
 $stubRow = static function (int $id, int $catId): array {
     return array('pk_i_id' => (string) $id, 'fk_i_category_id' => (string) $catId);
 };
-$seedResource = static function (int $itemId, string $name, string $storage = 'local') use ($admin, $resTable): int {
-    return seed_exec(
-        $admin,
-        "INSERT INTO $resTable (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
-         VALUES (?, ?, 'jpg', 'image/jpeg', 'oc-content/uploads/0/', ?)",
-        'iss',
-        array($itemId, $name, $storage)
-    );
+$seedResource = static function (int $itemId, string $name, string $storage = 'local') use ($admin): int {
+    return seed_photo($admin, $itemId, array('s_name' => $name, 's_storage' => $storage));
+};
+$countPhotos = static function (int $itemId) use ($admin, $resTable): int {
+    return (int) $admin->query("SELECT COUNT(*) FROM $resTable WHERE s_owner_type = 'item' AND i_owner_id = $itemId")->fetch_row()[0];
 };
 $setItem = static function (int $id, string $assignments) use ($admin, $itemTable): void {
     $admin->query("UPDATE $itemTable SET $assignments WHERE pk_i_id = $id");
@@ -244,7 +242,7 @@ pin(
 );
 pin('clearStat signature is unchanged', 'public clearStat($id, $stat)', harness_method_signature('Item', 'clearStat'));
 pin('enableByCategory signature is unchanged', 'public enableByCategory($enable, $aIds)', harness_method_signature('Item', 'enableByCategory'));
-pin('deleteByPrimaryKey signature is unchanged', 'public deleteByPrimaryKey($id)', harness_method_signature('Item', 'deleteByPrimaryKey'));
+pin('deleteByPrimaryKey signature is unchanged', 'public deleteByPrimaryKey($id, ?mindstellar\\auth\\Actor $actor = NULL)', harness_method_signature('Item', 'deleteByPrimaryKey'));
 pin('metaFields signature is unchanged', 'public metaFields($id)', harness_method_signature('Item', 'metaFields'));
 pin('liveConditions signature is unchanged', 'public static liveConditions($alias = \'\')', harness_method_signature('Item', 'liveConditions'));
 
@@ -270,15 +268,51 @@ pin(
 pin(
     'the model declares exactly these public methods of its own, nothing added or removed',
     array(
-        '__construct', 'clearStat', 'countByMarkas', 'countByUserID', 'countByUserIDEnabled',
-        'countItemTypesByEmail', 'countItemTypesByUserID', 'deleteByCity', 'deleteByCityArea',
-        'deleteByCountry', 'deleteByPrimaryKey', 'deleteByRegion', 'enableByCategory', 'extendCategoryName',
-        'extendData', 'extendDataSingle', 'findAdjacentLive', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
-        'findByHourExpiration', 'findByPhone', 'findByPrimaryKey', 'findByUserID', 'findByUserIDEnabled',
-        'findItemByTypes', 'findItemTypesByUserID', 'findLocationByID', 'findResourcesByID', 'insertLocale',
-        'listAllWithCategories', 'listLatest', 'listWhere', 'liveConditions', 'metaFields', 'mostViewed',
+        '__construct',
+        'clearStat',
+        'countByMarkas',
+        'countByUserID',
+        'countByUserIDEnabled',
+        'countItemTypesByEmail',
+        'countItemTypesByUserID',
+        'deleteByCity',
+        'deleteByCityArea',
+        'deleteByCountry',
+        'deleteByPrimaryKey',
+        'deleteByRegion',
+        'enableByCategory',
+        'extendCategoryName',
+        'extendData',
+        'extendDataSingle',
+        'extendRows',
+        'findAdjacentLive',
+        'findAdjacentLiveBoth',
+        'findByCategoryID',
+        'findByDayExpiration',
+        'findByEmail',
+        'findByHourExpiration',
+        'findByPhone',
+        'findByPrimaryKey',
+        'findByUserID',
+        'findByUserIDEnabled',
+        'findItemByTypes',
+        'findItemTypesByUserID',
+        'findLocationByID',
+        'findResourcesByID',
+        'fitTitle',
+        'getInstance',
+        'insertLocale',
+        'listAllWithCategories',
+        'listLatest',
+        'listWhere',
+        'liveConditions',
+        'metaFields',
+        'mostViewed',
         'newInstance',
-        'numItems', 'totalItems', 'updateExpirationDate', 'updateLocaleForce',
+        'numItems',
+        'totalItems',
+        'updateExpirationDate',
+        'updateLocaleForce',
     ),
     (static function () {
         $own = array();
@@ -402,8 +436,8 @@ $flush();
 $qFive = harness_query_count(static function () use ($model, $five) {
     $model->extendData($five);
 });
-pin('extendData over 2 items issues a fixed 4 queries (desc + category + stats/location + prime)', 4, $qTwo);
-pin('extendData over 5 items issues the SAME 4 queries — the batch is flat, not per-item', 4, $qFive);
+pin('extendData over 2 items issues a fixed 3 queries (desc + stats/location + prime; names come from the loaded categories)', 3, $qTwo);
+pin('extendData over 5 items issues the SAME 3 queries — the batch is flat, not per-item', 3, $qFive);
 
 harness_section('Item::extendData — a single item skips the prime (no >1 fan-out)');
 
@@ -411,7 +445,7 @@ $flush();
 $qOne = harness_query_count(static function () use ($model, $stubRow, $batchIds, $cat) {
     $model->extendData(array($stubRow($batchIds[0], $cat)));
 });
-pin('extendData over 1 item issues 3 queries — the prime only fires for >1 item', 3, $qOne);
+pin('extendData over 1 item issues 2 queries — the prime only fires for >1 item', 2, $qOne);
 
 pin('extendData over an empty set issues no query and returns it unchanged', 0, harness_query_count(static function () use ($model) {
     $model->extendData(array());
@@ -423,10 +457,10 @@ harness_section('Item::extendData — it primes the resource cache so a followin
 $flush();
 $model->extendData($five);
 $primedCost = harness_query_count(static function () use ($batchIds) {
-    ItemResource::newInstance()->getAllResourcesFromItem($batchIds[0]);
+    ItemResource::getInstance()->getAllResourcesFromItem($batchIds[0]);
 });
 pin('after extendData over the set, a per-item resource read costs zero queries — the prime seeded it', 0, $primedCost);
-pin('...and returns that item\'s one seeded resource', 1, count(ItemResource::newInstance()->getAllResourcesFromItem($batchIds[0])));
+pin('...and returns that item\'s one seeded resource', 1, count(ItemResource::getInstance()->getAllResourcesFromItem($batchIds[0])));
 
 harness_section('Item::findByPrimaryKey / extendDataSingle — the single-row path');
 
@@ -437,7 +471,84 @@ $flush();
 $qFbpk = harness_query_count(static function () use ($model, $A) {
     $model->findByPrimaryKey($A);
 });
-pin('findByPrimaryKey costs a fixed 4 queries (own read + the 3-query single-item extendData)', 4, $qFbpk);
+pin('findByPrimaryKey costs a fixed 3 queries (own read + the 2-query single-item extendData)', 3, $qFbpk);
+
+/* ----------------------------------------------------------------------------
+ * extendCategoryName — names come from the loaded category tree; only ids
+ * missing from it (a disabled category) are read. Output is pinned against the
+ * old one-query implementation, reproduced here.
+ * ------------------------------------------------------------------------- */
+harness_section('Item::extendCategoryName — names from the loaded categories, same output');
+
+$catDescTable = DB_TABLE_PREFIX . 't_category_description';
+$oldCategoryName = static function (array $items, string $prefLocale) use ($admin, $catDescTable): array {
+    $ids  = array_map('intval', array_unique(array_column($items, 'fk_i_category_id')));
+    $rows = $admin->query("SELECT fk_i_category_id, fk_c_locale_code, s_name FROM $catDescTable WHERE fk_i_category_id IN (" . implode(',', $ids) . ") AND s_name != ''")->fetch_all(MYSQLI_ASSOC);
+    $aCategories = array();
+    foreach ($rows as $c) {
+        $aCategories[$c['fk_i_category_id']]['locale'][$c['fk_c_locale_code']]['s_category_name'] = $c['s_name'];
+    }
+    $out = array();
+    foreach ($items as $item) {
+        $names = $aCategories[$item['fk_i_category_id']]['locale'] ?? array();
+        foreach ($item['locale'] ?? array() as $code => $unused) {
+            if (isset($names[$code])) {
+                $item['locale'][$code]['s_category_name'] = $names[$code]['s_category_name'];
+            }
+        }
+        $item['s_category_name'] = $names[$prefLocale]['s_category_name'] ?? (reset($names)['s_category_name'] ?? '');
+        $out[] = $item;
+    }
+
+    return $out;
+};
+$addCategoryName = static function (int $catId, string $code, string $name) use ($admin, $catDescTable): void {
+    seed_exec($admin, "INSERT INTO $catDescTable (fk_i_category_id, fk_c_locale_code, s_name, s_description, s_slug) VALUES (?, ?, ?, '', ?)", 'isss', array($catId, $code, $name, $name));
+};
+
+// Enabled: two names; French only (no name in the preferred locale); an empty English name beside a French one.
+$twoNames = seed_category($admin, 'Boats', null, $locale);
+$addCategoryName($twoNames, 'fr_FR', 'Bateaux');
+$frOnly = seed_category($admin, 'Velos', null, 'fr_FR');
+$emptyEn = seed_category($admin, '', null, $locale);
+$admin->query("UPDATE $catDescTable SET s_name = '' WHERE fk_i_category_id = $emptyEn");
+$addCategoryName($emptyEn, 'fr_FR', 'Jardin');
+// Disabled: not in the loaded tree, so it is read.
+$offCat = seed_category($admin, 'Archived', null, $locale, 0);
+$addCategoryName($offCat, 'fr_FR', 'Archive');
+
+$flush();
+(new ReflectionProperty('Category', 'instance'))->setValue(null, null);
+Category::getInstance($locale);
+
+$withLocales = static function (int $catId) use ($A): array {
+    return array('pk_i_id' => (string) $A, 'fk_i_category_id' => (string) $catId, 'locale' => array('en_US' => array('s_title' => 't'), 'fr_FR' => array('s_title' => 't')));
+};
+$enabledSet = array($withLocales($cat), $withLocales($twoNames), $withLocales($frOnly), $withLocales($emptyEn), $withLocales($sub));
+
+pin('enabled categories: names cost no query', 0, harness_query_count(static function () use ($model, $enabledSet, $locale) {
+    $model->extendCategoryName($enabledSet, $locale);
+}));
+pin('enabled categories: same output as the old query (en_US preferred)', $oldCategoryName($enabledSet, $locale), $model->extendCategoryName($enabledSet, $locale));
+pin('enabled categories: same output as the old query (fr_FR preferred)', $oldCategoryName($enabledSet, 'fr_FR'), $model->extendCategoryName($enabledSet, 'fr_FR'));
+pin('no name in the preferred locale falls back to another locale', 'Velos', $model->extendCategoryName(array($withLocales($frOnly)), $locale)[0]['s_category_name']);
+pin('an empty preferred name falls back too', 'Jardin', $model->extendCategoryName(array($withLocales($emptyEn)), $locale)[0]['s_category_name']);
+
+$mixedSet = array($withLocales($offCat), $withLocales($cat), $withLocales($offCat));
+pin('a disabled category costs one query', 1, harness_query_count(static function () use ($model, $mixedSet, $locale) {
+    $model->extendCategoryName($mixedSet, $locale);
+}));
+pin('a disabled category: same output as the old query', $oldCategoryName($mixedSet, 'fr_FR'), $model->extendCategoryName($mixedSet, 'fr_FR'));
+pin('...and its name is read', 'Archived', $model->extendCategoryName($mixedSet, $locale)[0]['s_category_name']);
+
+harness_section('ListingQuery::statusRow — the view beacon\'s owner check');
+
+$flush();
+pin('statusRow costs one query', 1, harness_query_count(static function () use ($A) {
+    (new \mindstellar\listing\ListingQuery())->statusRow($A);
+}));
+pin('...and gives the same owner as findByPrimaryKey', $model->findByPrimaryKey($A)['fk_i_user_id'], (new \mindstellar\listing\ListingQuery())->statusRow($A)['fk_i_user_id']);
+pin('...and null for an unknown listing', null, (new \mindstellar\listing\ListingQuery())->statusRow(999999));
 
 /* ----------------------------------------------------------------------------
  * listWhere / findByCategoryID — the comodin and its printf form.
@@ -609,46 +720,17 @@ $resetDao();
 pin('numItems counts enabled, active, non-spam, unexpired-or-premium items', '6', $model->numItems(array('pk_i_id' => $cat)));
 
 /* ----------------------------------------------------------------------------
- * findByHourExpiration / findByDayExpiration — the NOW() legacy clock.
+ * findByHourExpiration / findByDayExpiration — PHP's clock, not MySQL's.
+ * PHP runs in a zone hours behind the database here, so a query that used
+ * MySQL NOW() would pick the wrong rows.
  * ------------------------------------------------------------------------- */
 harness_section('Item::findByHourExpiration / findByDayExpiration');
 
-$resetDao();
-// A dedicated item expiring ~24.5h out, so TIMESTAMPDIFF(HOUR, NOW(), dt) == 24
-// for the width of the test run. Active, enabled, not-spam so it survives the
-// default itemType filter.
-$hourItem = seed_item($admin, $cat, $user, 'Expiring soon');
-$admin->query("UPDATE $itemTable SET dt_expiration = DATE_ADD(NOW(), INTERVAL '24:30' HOUR_MINUTE) WHERE pk_i_id = $hourItem");
-$flush();
-$hourHits = $model->findByHourExpiration(24);
-check('findByHourExpiration(24) finds the ~24h item', count($hourHits) >= 1, describe(count($hourHits)));
-$resetDao();
-pin('findByHourExpiration(1) matches nothing here', array(), $model->findByHourExpiration(1));
+$dbOffset = (int)$admin->query('SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), NOW()) AS o')->fetch_assoc()['o'];
+$phpZone  = date_default_timezone_get();
+date_default_timezone_set($dbOffset <= -8 * 3600 ? 'Asia/Kolkata' : 'Pacific/Honolulu');
+$at = static fn (int $seconds): string => "dt_expiration = '" . date('Y-m-d H:i:s', time() + $seconds) . "'";
 
-$resetDao();
-$dayItem = seed_item($admin, $cat, $user, 'Expiring in a day');
-$admin->query("UPDATE $itemTable SET dt_expiration = DATE_ADD(NOW(), INTERVAL '1 12' DAY_HOUR) WHERE pk_i_id = $dayItem");
-$flush();
-$dayHits = $model->findByDayExpiration(1);
-check('findByDayExpiration(1) finds the ~1.5-day item', count($dayHits) >= 1, describe(count($dayHits)));
-
-// Boundary parity: the old TIMESTAMPDIFF(...) = N query and the new dt_expiration
-// range must select the same rows right at the edges. Items sit a few seconds off
-// the exact hour so a slow test run can't flip which side of the boundary they land on.
-$oldTimestampDiffIds = static function (string $unit, int $n, array $ids) use ($admin, $itemTable): array {
-    $idList = implode(',', array_map('intval', $ids));
-    $res    = $admin->query(
-        "SELECT pk_i_id FROM $itemTable WHERE TIMESTAMPDIFF($unit, NOW(), dt_expiration) = $n"
-        . " AND b_active = 1 AND b_spam = 0 AND pk_i_id IN ($idList)"
-    );
-    $out = array();
-    while ($row = $res->fetch_assoc()) {
-        $out[] = (int)$row['pk_i_id'];
-    }
-    sort($out);
-
-    return $out;
-};
 $newFinderIds = static function (array $rows, array $ids): array {
     $ours = array_map(static fn ($r) => (int)$r['pk_i_id'], $rows);
     $out  = array_values(array_intersect($ours, $ids));
@@ -657,37 +739,53 @@ $newFinderIds = static function (array $rows, array $ids): array {
     return $out;
 };
 
+// Items sit a few seconds off the edges so a slow run can't flip a side.
 $resetDao();
 $hb1 = seed_item($admin, $cat, $user, 'Hour boundary -5s under 24h');
 $hb2 = seed_item($admin, $cat, $user, 'Hour boundary +5s over 24h');
 $hb3 = seed_item($admin, $cat, $user, 'Hour boundary -5s under 25h');
 $hb4 = seed_item($admin, $cat, $user, 'Hour boundary +5s over 25h');
-$setItem($hb1, "dt_expiration = DATE_ADD(NOW(), INTERVAL '23:59:55' HOUR_SECOND)");
-$setItem($hb2, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:00:05' HOUR_SECOND)");
-$setItem($hb3, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:59:55' HOUR_SECOND)");
-$setItem($hb4, "dt_expiration = DATE_ADD(NOW(), INTERVAL '25:00:05' HOUR_SECOND)");
+$setItem($hb1, $at(24 * 3600 - 5));
+$setItem($hb2, $at(24 * 3600 + 5));
+$setItem($hb3, $at(25 * 3600 - 5));
+$setItem($hb4, $at(25 * 3600 + 5));
 $hourBoundaryIds = array($hb1, $hb2, $hb3, $hb4);
 $flush();
-$oldHour24 = $oldTimestampDiffIds('HOUR', 24, $hourBoundaryIds);
 $newHour24 = $newFinderIds($model->findByHourExpiration(24), $hourBoundaryIds);
-pin('findByHourExpiration(24) matches TIMESTAMPDIFF(HOUR,...) = 24 at the boundary', $oldHour24, $newHour24);
-check('...and it is exactly the two rows inside [24h, 25h)', $newHour24 === array($hb2, $hb3), describe($newHour24));
+pin('findByHourExpiration(24) is exactly the two rows inside [24h, 25h) by PHP time', array($hb2, $hb3), $newHour24);
+$resetDao();
+pin('findByHourExpiration(1) matches none of them', array(), $newFinderIds($model->findByHourExpiration(1), $hourBoundaryIds));
 
 $resetDao();
 $db1 = seed_item($admin, $cat, $user, 'Day boundary -5s under 1d');
 $db2 = seed_item($admin, $cat, $user, 'Day boundary +5s over 1d');
 $db3 = seed_item($admin, $cat, $user, 'Day boundary -5s under 2d');
 $db4 = seed_item($admin, $cat, $user, 'Day boundary +5s over 2d');
-$setItem($db1, "dt_expiration = DATE_ADD(NOW(), INTERVAL '23:59:55' HOUR_SECOND)");
-$setItem($db2, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:00:05' HOUR_SECOND)");
-$setItem($db3, "dt_expiration = DATE_ADD(NOW(), INTERVAL '47:59:55' HOUR_SECOND)");
-$setItem($db4, "dt_expiration = DATE_ADD(NOW(), INTERVAL '48:00:05' HOUR_SECOND)");
+$setItem($db1, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+1 day') - 5) . "'");
+$setItem($db2, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+1 day') + 5) . "'");
+$setItem($db3, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+2 day') - 5) . "'");
+$setItem($db4, "dt_expiration = '" . date('Y-m-d H:i:s', strtotime('+2 day') + 5) . "'");
 $dayBoundaryIds = array($db1, $db2, $db3, $db4);
 $flush();
-$oldDay1 = $oldTimestampDiffIds('DAY', 1, $dayBoundaryIds);
 $newDay1 = $newFinderIds($model->findByDayExpiration(1), $dayBoundaryIds);
-pin('findByDayExpiration(1) matches TIMESTAMPDIFF(DAY,...) = 1 at the boundary', $oldDay1, $newDay1);
-check('...and it is exactly the two rows inside [1d, 2d)', $newDay1 === array($db2, $db3), describe($newDay1));
+pin('findByDayExpiration(1) is exactly the two rows inside [1d, 2d) by PHP time', array($db2, $db3), $newDay1);
+
+harness_section('Item::mostViewed — PHP clock and premium');
+
+$resetDao();
+$mvFresh   = seed_item($admin, $cat, $user, 'Viewed, ends in 1h');
+$mvPremium = seed_item($admin, $cat, $user, 'Viewed, premium, past its date');
+$setItem($mvFresh, $at(3600));
+$setItem($mvPremium, "dt_expiration = '2000-01-01 00:00:00', b_premium = 1");
+$admin->query("UPDATE $statsTable SET i_num_views = 500 WHERE fk_i_item_id IN ($mvFresh, $mvPremium)");
+$flush();
+$mvIds = array_map(static fn ($r) => (int)$r['pk_i_id'], $model->mostViewed(10));
+check('a listing live for another hour by PHP time is listed', in_array($mvFresh, $mvIds, true), describe($mvIds));
+check('a premium listing past its date is listed (premium never expires)', in_array($mvPremium, $mvIds, true), describe($mvIds));
+$admin->query("UPDATE $statsTable SET i_num_views = 0 WHERE fk_i_item_id IN ($mvFresh, $mvPremium)");
+$admin->query("UPDATE $itemTable SET b_premium = 0, dt_expiration = '2000-01-01 00:00:00' WHERE pk_i_id IN ($mvFresh, $mvPremium)");
+
+date_default_timezone_set($phpZone);
 
 /* ----------------------------------------------------------------------------
  * metaFields.
@@ -902,7 +1000,7 @@ check('the second doomed item is gone', !$itemExists($doom2));
 pin('the doomed description rows are gone', 0, $countRows($descTable, 'fk_i_item_id', $doom1) + $countRows($descTable, 'fk_i_item_id', $doom2));
 pin('the doomed location rows are gone', 0, $countRows($locTable, 'fk_i_item_id', $doom1) + $countRows($locTable, 'fk_i_item_id', $doom2));
 pin('the doomed stats rows are gone', 0, $countRows($statsTable, 'fk_i_item_id', $doom1) + $countRows($statsTable, 'fk_i_item_id', $doom2));
-pin('the doomed resource row is gone', 0, $countRows($resTable, 'fk_i_item_id', $doom1));
+pin('the doomed resource row is gone', 0, $countPhotos($doom1));
 pin('the doomed comment row is gone', 0, $countRows($commentTable, 'fk_i_item_id', $doom1));
 pin('the doomed meta row is gone', 0, $countRows($metaTable, 'fk_i_item_id', $doom1));
 
@@ -918,7 +1016,7 @@ $seedResource($directDoom, 'direct-res');
 $directRet = $model->deleteByPrimaryKey($directDoom);
 check('deleteByPrimaryKey returns the affected-row count', is_int($directRet) || $directRet === false, describe($directRet));
 check('the item is gone', !$itemExists($directDoom));
-pin('its resource rows are gone', 0, $countRows($resTable, 'fk_i_item_id', $directDoom));
+pin('its resource rows are gone', 0, $countPhotos($directDoom));
 // findByPrimaryKey(unknown) returns array() (not null), so the null-guard is not
 // taken; the cascade runs over zero rows and the delete reports int 0 affected.
 // Zero rows matched is not a failure, so it does not roll the transaction back.
@@ -1046,7 +1144,7 @@ pin('and cuts it the same way', str_repeat('ü', 100), $afterReplace);
 harness_section('osc_max_characters_per_title — never wider than the column');
 
 $titlePref = static function ($value): int {
-    Preference::newInstance()->set('title_character_length', $value);
+    Preference::getInstance()->set('title_character_length', $value);
 
     return osc_max_characters_per_title();
 };

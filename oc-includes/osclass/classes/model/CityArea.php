@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for CityArea table
  *
@@ -20,13 +22,7 @@
  */
 class CityArea extends DAO
 {
-    /**
-     * It references to self object: CityArea.
-     * It is used as a singleton
-     *
-     * @var CityArea
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_city_area table
@@ -40,18 +36,11 @@ class CityArea extends DAO
     }
 
     /**
-     * It creates a new CityArea object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return CityArea
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -64,7 +53,7 @@ class CityArea extends DAO
      */
     public function findByName($cityAreaName, $cityId = null)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->select(...$this->getFields())
             ->where('s_name', $cityAreaName);
 
@@ -82,7 +71,7 @@ class CityArea extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -96,7 +85,7 @@ class CityArea extends DAO
     public function findByCity($cityId)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('fk_i_city_id', $cityId)
                 ->get();
@@ -104,7 +93,7 @@ class CityArea extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -119,8 +108,8 @@ class CityArea extends DAO
     {
         osc_run_hook('before_delete_city_area', $pk);
 
-        Item::newInstance()->deleteByCityArea($pk);
-        User::newInstance()->update(
+        Item::getInstance()->deleteByCityArea($pk);
+        User::getInstance()->update(
             array('fk_i_city_area_id' => null, 's_city_area' => ''),
             array('fk_i_city_area_id' => $pk)
         );

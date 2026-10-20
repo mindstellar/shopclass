@@ -328,20 +328,22 @@ check('...nor one that was refused', !osc_page_cache_purge_pending());
 
 // Controllers need the whole app to run, so their calls are pinned by source.
 $direct = array(
-    'controller/admin/CAdminTools.php'                        => array('maintenance', 3),
-    'controller/admin/CAdminLanguages.php'                    => array('language', 4),
-    'controller/admin/settings/CAdminSettingsCurrencies.php'  => array('currency', 3),
+    'controller/admin/CAdminTools.php'                        => array('maintenance', 1),
+    'controller/admin/CAdminLanguages.php'                    => array('language', 3),
+    'language/LanguageService.php'                             => array('language', 1),
+    'currency/CurrencyService.php'                             => array('currency', 3),
     'controller/admin/CAdminAppearance.php'                   => array('widget', 5),
-    'controller/admin/ajax/CAdminAjax.php'                    => array('category', 2),
+    'category/CategoryService.php'                             => array('category', 1),
     'controller/admin/CAdminPages.php'                        => array('page', 1),
     'upgrade/Upgrade.php'                                     => array('upgrade', 1),
     'backup/BackupJobs.php'                                   => array('restore', 1),
-    'backup/BackupManager.php'                                => array('restore', 1),
+    'backup/BackupService.php'                                => array('restore', 1),
 );
 foreach ($direct as $file => [$reason, $count]) {
     $src = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/' . $file);
     pin("$file asks $count time(s)", $count, substr_count($src, "osc_purge_page_cache('$reason')"));
 }
+pin('osc_maintenance_set() asks once, for turning maintenance on or off', 1, substr_count((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hMaintenance.php'), "osc_purge_page_cache('maintenance')"));
 
 fresh();
 @unlink($log);

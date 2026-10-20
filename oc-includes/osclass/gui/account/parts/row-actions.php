@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * with 'group' => 'promote' go on their own line.
  */
 
+/** @var array $rowActions */
 $rowGroups = array('' => array(), 'promote' => array());
 foreach ((array) $rowActions as $action) {
     if (is_array($action) && isset($action['label'], $action['url'])) {

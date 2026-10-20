@@ -18,7 +18,7 @@ if (!defined('ABS_PATH')) {
  * "not configured", and maintenance mode.
  *
  * Now an adapter onto gui/page.php's card layout. The path and the $oscSys keys
- * stay exactly as they were: osc_die() and OsclassErrors require this file
+ * stay exactly as they were: osc_die() and ErrorHandler require this file
  * directly, and one of them runs when the database is unreachable.
  *
  * The caller provides $oscSys:

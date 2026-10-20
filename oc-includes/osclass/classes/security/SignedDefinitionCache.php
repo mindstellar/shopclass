@@ -104,21 +104,9 @@ class SignedDefinitionCache extends HTMLPurifier_DefinitionCache_Serializer
             return false;
         }
         $data = serialize($def);
-        // A leading dot keeps the half-written file out of flush() and cleanup().
-        $tmp = $dir . '/.' . bin2hex(random_bytes(6)) . '.tmp';
-        if (@file_put_contents($tmp, $this->sign($data, $config, $key) . $data) === false) {
-            @unlink($tmp);
 
-            return false;
-        }
-        @chmod($tmp, 0644);
-        if (!@rename($tmp, $file)) {
-            @unlink($tmp);
-
-            return false;
-        }
-
-        return true;
+        // The temp file's leading dot keeps it out of flush() and cleanup().
+        return \mindstellar\utility\FileSystem::writeAtomic($file, $this->sign($data, $config, $key) . $data, 0644);
     }
 
     /**

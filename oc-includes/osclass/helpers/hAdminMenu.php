@@ -26,7 +26,7 @@
  */
 function osc_draw_admin_menu()
 {
-    AdminMenu::newInstance()->renderAdminMenu();
+    AdminMenu::getInstance()->renderAdminMenu();
 }
 
 /**
@@ -49,7 +49,7 @@ function osc_add_admin_menu_page(
     $icon_url = null,
     $position = null
 ) {
-    AdminMenu::newInstance()->add_menu($menu_title, $url, $menu_id, $capability, $icon_url, $position);
+    AdminMenu::getInstance()->add_menu($menu_title, $url, $menu_id, $capability, $icon_url, $position);
 }
 
 /**
@@ -59,7 +59,7 @@ function osc_add_admin_menu_page(
  */
 function osc_remove_admin_menu()
 {
-    AdminMenu::newInstance()->clear_menu();
+    AdminMenu::getInstance()->clear_menu();
 }
 
 /**
@@ -71,7 +71,7 @@ function osc_remove_admin_menu()
  */
 function osc_remove_admin_menu_page($menu_id)
 {
-    AdminMenu::newInstance()->remove_menu($menu_id);
+    AdminMenu::getInstance()->remove_menu($menu_id);
 }
 
 /**
@@ -87,7 +87,7 @@ function osc_remove_admin_menu_page($menu_id)
  */
 function osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator')
 {
-    AdminMenu::newInstance()->add_submenu($menu_id, $submenu_title, $url, $submenu_id, $capability);
+    AdminMenu::getInstance()->add_submenu($menu_id, $submenu_title, $url, $submenu_id, $capability);
 }
 
 /**
@@ -100,7 +100,7 @@ function osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id,
  */
 function osc_remove_admin_submenu_page($menu_id, $submenu_id)
 {
-    AdminMenu::newInstance()->remove_submenu($menu_id, $submenu_id);
+    AdminMenu::getInstance()->remove_submenu($menu_id, $submenu_id);
 }
 
 /**
@@ -116,7 +116,7 @@ function osc_remove_admin_submenu_page($menu_id, $submenu_id)
  */
 function osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability = null)
 {
-    AdminMenu::newInstance()->add_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability);
+    AdminMenu::getInstance()->add_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability);
 }
 
 /**
@@ -130,7 +130,7 @@ function osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $c
  */
 function osc_remove_admin_submenu_divider($menu_id, $submenu_id)
 {
-    AdminMenu::newInstance()->remove_submenu_divider($menu_id, $submenu_id);
+    AdminMenu::getInstance()->remove_submenu_divider($menu_id, $submenu_id);
 }
 
 /**
@@ -146,7 +146,7 @@ function osc_remove_admin_submenu_divider($menu_id, $submenu_id)
  */
 function osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_items($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_items($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -162,7 +162,7 @@ function osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = n
  */
 function osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_categories($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_categories($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -178,7 +178,7 @@ function osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capabilit
  */
 function osc_admin_menu_pages($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_pages($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_pages($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -194,7 +194,7 @@ function osc_admin_menu_pages($submenu_title, $url, $submenu_id, $capability = n
  */
 function osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_appearance($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_appearance($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -210,7 +210,7 @@ function osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capabilit
  */
 function osc_admin_menu_plugins($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_plugins($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_plugins($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -226,7 +226,7 @@ function osc_admin_menu_plugins($submenu_title, $url, $submenu_id, $capability =
  */
 function osc_admin_menu_settings($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_settings($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_settings($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -242,7 +242,7 @@ function osc_admin_menu_settings($submenu_title, $url, $submenu_id, $capability 
  */
 function osc_admin_menu_tools($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_tools($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_tools($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -258,7 +258,7 @@ function osc_admin_menu_tools($submenu_title, $url, $submenu_id, $capability = n
  */
 function osc_admin_menu_users($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_users($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_users($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -274,7 +274,7 @@ function osc_admin_menu_users($submenu_title, $url, $submenu_id, $capability = n
  */
 function osc_admin_menu_stats($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
-    AdminMenu::newInstance()->add_menu_stats($submenu_title, $url, $submenu_id, $capability, $icon_url);
+    AdminMenu::getInstance()->add_menu_stats($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
 /**
@@ -287,7 +287,7 @@ function osc_current_menu()
     $menu_id            = '';
     $current_menu       = 'dash';
     $something_selected = false;
-    $aMenu              = AdminMenu::newInstance()->get_array_menu();
+    $aMenu              = AdminMenu::getInstance()->get_array_menu();
 
     $url_actual = '?' . Params::getServerParam('QUERY_STRING', false, false);
     if (preg_match('/(^.*action=\w+)/', $url_actual, $matches)) {

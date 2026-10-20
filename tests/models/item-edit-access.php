@@ -24,6 +24,8 @@ $admin = scratchdb_session('osc_models_item_edit_access');
 require_once __DIR__ . '/../lib/action-standins.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/security/ItemAccess.php';
 
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingPolicy;
 use mindstellar\security\ItemAccess;
 
 seed_locale($admin);
@@ -62,12 +64,12 @@ foreach (array($guestItem, $userItem) as $id) {
 
 // What the edit-form ajax call renders for the item id it ends up with.
 $storedValue = static function (int $itemId) use ($cat): string {
-    $fields = Field::newInstance()->findByCategoryItem($cat, $itemId);
+    $fields = Field::getInstance()->findByCategoryItem($cat, $itemId);
 
     return (string)($fields[0]['s_value'] ?? '');
 };
 $ajaxItemId = static function (int $itemId, $userId, string $secret): int {
-    return ItemAccess::manageable($itemId, $userId, false, $secret) === array() ? 0 : $itemId;
+    return ListingPolicy::manageable($itemId, new Actor($userId, null, '', $secret)) === null ? 0 : $itemId;
 };
 
 harness_section('edit form values for a hidden guest listing');
@@ -89,7 +91,12 @@ pin('anonymous: no stored values', '', $storedValue($ajaxItemId($userItem, null,
 pin('another user: no stored values', '', $storedValue($ajaxItemId($userItem, $owner + 1, '')));
 pin('the secret does not open a registered listing', '', $storedValue($ajaxItemId($userItem, null, $secret)));
 pin('the owner gets the stored values', 'secret-value-' . $userItem, $storedValue($ajaxItemId($userItem, $owner, '')));
-pin('a missing listing yields nothing', array(), ItemAccess::manageable(999999, $owner, false, ''));
+pin('a missing listing yields nothing', null, ListingPolicy::manageable(999999, Actor::user($owner)));
+
+harness_section('the deprecated ItemAccess::manageable() forwards to the policy');
+pin('the secret holder gets the listing', $guestItem, (int)(ItemAccess::manageable($guestItem, null, false, $secret)['pk_i_id'] ?? 0));
+pin('a wrong-case secret gets nothing', array(), ItemAccess::manageable($guestItem, null, false, strtoupper($secret)));
+pin('a missing listing yields an empty array', array(), ItemAccess::manageable(999999, $owner, false, ''));
 
 harness_section('the public edit screen');
 
@@ -133,10 +140,10 @@ $openEdit = static function (string $id, string $secret): int {
     $_GET = $_REQUEST = array('page' => 'item', 'action' => 'item_edit', 'id' => $id, 'secret' => $secret);
     $_POST = array();
     Params::init();
-    View::newInstance()->_erase('item');
+    View::getInstance()->_erase('item');
     $GLOBALS['editView'] = null;
     $web = (new ReflectionClass('TestWebItem'))->newInstanceWithoutConstructor();
-    foreach (array('action' => 'item_edit', 'itemManager' => Item::newInstance(), 'userId' => null, 'user' => null) as $name => $value) {
+    foreach (array('action' => 'item_edit', 'itemManager' => Item::getInstance(), 'user' => null) as $name => $value) {
         $prop = new ReflectionProperty('CWebItem', $name);
         $prop->setAccessible(true);
         $prop->setValue($web, $value);
@@ -146,7 +153,7 @@ $openEdit = static function (string $id, string $secret): int {
     } catch (EditRedirect $e) {
         return 0;
     }
-    $item = View::newInstance()->_get('item');
+    $item = View::getInstance()->_get('item');
 
     return $GLOBALS['editView'] !== null ? (int) ($item['pk_i_id'] ?? 0) : 0;
 };
@@ -154,7 +161,7 @@ pin('the secret holder gets the form', $guestItem, $openEdit((string) $guestItem
 pin('a secret in the wrong case is refused', 0, $openEdit((string) $guestItem, strtoupper($secret)));
 pin('a fractional id opens the listing the owner check passed', $guestItem, $openEdit($guestItem . '.9', $secret));
 
-View::newInstance()->_erase('item');
+View::getInstance()->_erase('item');
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

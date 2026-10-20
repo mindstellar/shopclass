@@ -398,7 +398,7 @@ BackupBucket::use($fake);
 BackupBucket::useBase(null);
 pin('with no WEB_PATH there is no bucket', null, BackupBucket::adapter());
 pin('...and the page and the command line say why', 'Set WEB_PATH in config.php or the environment to use the bucket.', BackupBucket::addressProblem());
-pin('...as does a backup started for the bucket', BackupBucket::addressMessage(), \mindstellar\backup\BackupManager::startBackup('database', 'bucket'));
+pin('...as does a backup started for the bucket', BackupBucket::addressMessage(), \mindstellar\backup\BackupService::startBackup('database', 'bucket'));
 define('WEB_PATH', 'https://shop.example.com/');
 pin('a WEB_PATH from config.php gives the bucket', $fake, BackupBucket::adapter());
 pin('...with nothing to complain about', '', BackupBucket::addressProblem());

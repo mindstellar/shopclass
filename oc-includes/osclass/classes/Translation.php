@@ -52,6 +52,9 @@ class Translation
             $core_file = osc_apply_filter('mo_core_path', osc_translations_path() . $locale . '/core.mo', $locale);
             $this->_load($core_file, 'core');
 
+            // The API sends no themed text, so it skips the theme's catalogues.
+            $themed = !function_exists('osc_is_api_request') || !osc_is_api_request();
+
             // load messages
             $domain        = osc_apply_filter('theme', osc_theme());
             $messages_file = osc_apply_filter(
@@ -61,7 +64,7 @@ class Translation
                 $domain
             );
 
-            if (!file_exists($messages_file)) {
+            if (!$themed || !file_exists($messages_file)) {
                 $messages_file =
                     osc_apply_filter(
                         'mo_core_messages_path',
@@ -85,7 +88,9 @@ class Translation
                 }
                 $theme_file = osc_translations_path() . $locale . '/theme.mo';
             }
-            $this->_load($theme_file, $domain);
+            if ($themed) {
+                $this->_load($theme_file, $domain);
+            }
 
             // load plugins
             $aPlugins = Plugins::listEnabled();
@@ -204,16 +209,7 @@ class Translation
      */
     private function writeCache($cache, $translations)
     {
-        $payload = serialize(Gettext\Generators\PhpArray::generate($translations));
-
-        $tmp = $cache . '.' . getmypid() . '.tmp';
-        if (@file_put_contents($tmp, $payload, LOCK_EX) === false) {
-            return;
-        }
-
-        if (!@rename($tmp, $cache)) {
-            @unlink($tmp);
-        }
+        \mindstellar\utility\FileSystem::writeAtomic($cache, serialize(Gettext\Generators\PhpArray::generate($translations)));
     }
 
     /**
@@ -223,13 +219,21 @@ class Translation
      *
      * @return \Translation
      */
-    public static function newInstance($install = false)
+    public static function getInstance($install = false)
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self($install);
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance($install = false)
+    {
+        return self::getInstance($install);
     }
 
     /**

@@ -1,3 +1,12 @@
+<?php
+/**
+ * @var string $message
+ * @var string $file
+ * @var int|string $line
+ * @var string $type
+ * @var string $trace
+ */
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,9 +15,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="icon" href="<?php osc_base_url() ?>/favicon.ico">
+    <link rel="icon" href="<?php echo osc_base_url(); ?>/favicon.ico">
     <title>OSClass Error</title>
-    <link href="<?php osc_base_url() ?>/oc-admin/themes/modern/css/main.css" rel="stylesheet">
+    <link href="<?php echo osc_base_url(); ?>/oc-admin/themes/modern/css/main.css" rel="stylesheet">
 </head>
 
 <body style="background:var(--bs-gray-dark);">

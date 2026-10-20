@@ -11,6 +11,7 @@
 use mindstellar\admin\form\store\StoreException;
 use mindstellar\admin\form\store\StoreFactory;
 use mindstellar\admin\ui\Field;
+use mindstellar\category\CategoryModes;
 use mindstellar\database\DbException;
 use mindstellar\settings\SettingsImage;
 use mindstellar\settings\SettingsPageRegistry;
@@ -47,9 +48,9 @@ if (!function_exists('osc_register_settings_page')) {
      */
     function osc_register_settings_page($id, $spec)
     {
-        SettingsPageRegistry::instance()->register($id, $spec);
+        SettingsPageRegistry::getInstance()->register($id, $spec);
         // A theme declares its pages after admin_menu_init has run, so add the entry now.
-        if (SettingsPageRegistry::instance()->menuReady() && function_exists('osc_settings_menu_init')) {
+        if (SettingsPageRegistry::getInstance()->menuReady() && function_exists('osc_settings_menu_init')) {
             osc_settings_menu_init();
         }
     }
@@ -91,7 +92,7 @@ if (!function_exists('osc_settings_pages')) {
      */
     function osc_settings_pages()
     {
-        return SettingsPageRegistry::instance()->all();
+        return SettingsPageRegistry::getInstance()->all();
     }
 }
 
@@ -105,7 +106,7 @@ if (!function_exists('osc_settings_page')) {
      */
     function osc_settings_page($id)
     {
-        return SettingsPageRegistry::instance()->get($id);
+        return SettingsPageRegistry::getInstance()->get($id);
     }
 }
 
@@ -119,7 +120,7 @@ if (!function_exists('osc_settings_page_conflicts')) {
      */
     function osc_settings_page_conflicts()
     {
-        return SettingsPageRegistry::instance()->conflicts();
+        return SettingsPageRegistry::getInstance()->conflicts();
     }
 }
 
@@ -167,7 +168,7 @@ if (!function_exists('osc_settings_value')) {
             return null;
         }
 
-        $fields = SettingsPageRegistry::instance()->fields($pageId);
+        $fields = SettingsPageRegistry::getInstance()->fields($pageId);
         $field  = $fields[$name] ?? null;
         if ($field === null) {
             return null;
@@ -227,7 +228,7 @@ if (!function_exists('osc_settings_values')) {
             return array();
         }
 
-        $fields = SettingsPageRegistry::instance()->fields($pageId);
+        $fields = SettingsPageRegistry::getInstance()->fields($pageId);
 
         try {
             return $store->load($fields, $id);
@@ -256,7 +257,7 @@ if (!function_exists('osc_settings_locales')) {
         }
 
         $cache = array();
-        foreach (OSCLocale::newInstance()->listAllEnabled() as $locale) {
+        foreach (OSCLocale::getInstance()->listAllEnabled() as $locale) {
             $code = (string)($locale['pk_c_code'] ?? '');
             if ($code !== '') {
                 $cache[$code] = (string)($locale['s_name'] ?? $code);
@@ -395,7 +396,7 @@ if (!function_exists('osc_settings_field_active')) {
     function osc_settings_field_active($pageId, $name, array $values, ?array $fields = null)
     {
         if ($fields === null) {
-            $fields = SettingsPageRegistry::instance()->fields($pageId);
+            $fields = SettingsPageRegistry::getInstance()->fields($pageId);
         }
 
         return osc_settings_depends_met($fields, $name, $values);
@@ -434,6 +435,13 @@ if (!function_exists('osc_settings_sanitize')) {
             // comparing against whatever string the browser invents for a checked one is
             // how a setting ends up impossible to switch on.
             return Params::getParam($name) !== '';
+        }
+
+        if ($field['type'] === 'category_modes') {
+            $posted = Params::getParam($name, false, false);
+            $value  = (string)json_encode((object)CategoryModes::parse(is_array($posted) ? $posted : array(), (array)($field['modes'] ?? array())));
+
+            return isset($field['sanitize']) ? call_user_func($field['sanitize'], $value) : $value;
         }
 
         // Raw on purpose: a secret may legitimately contain characters osc_sanitize_string
@@ -640,7 +648,7 @@ if (!function_exists('osc_settings_save')) {
             return array('errors' => $errors, 'updated' => 0, 'values' => array(), 'id' => null);
         }
 
-        $fields  = SettingsPageRegistry::instance()->fields($pageId);
+        $fields  = SettingsPageRegistry::getInstance()->fields($pageId);
         $locales = array();
         $values  = array();
         $errors  = array();
@@ -885,14 +893,14 @@ if (!function_exists('osc_settings_image_url')) {
      */
     function osc_settings_image_url(string $pageId, string $name, string $variant = ''): string
     {
-        $fields = SettingsPageRegistry::instance()->fields($pageId);
+        $fields = SettingsPageRegistry::getInstance()->fields($pageId);
         if (isset($fields[$name])) {
             if ($fields[$name]['type'] !== 'image') {
                 return '';
             }
             $id = osc_settings_value($pageId, $name);
         } elseif (osc_settings_page($pageId) === null) {
-            $id = Preference::newInstance()->get($name, $pageId);
+            $id = Preference::getInstance()->get($name, $pageId);
         } else {
             return '';
         }
@@ -923,10 +931,43 @@ if (!function_exists('osc_settings_menu_init')) {
                 $page['capability']
             );
         }
-        SettingsPageRegistry::instance()->menuReady(true);
+        SettingsPageRegistry::getInstance()->menuReady(true);
     }
 }
 
 osc_add_hook('admin_menu_init', 'osc_settings_menu_init');
+
+if (!function_exists('osc_category_modes_parse')) {
+    /**
+     * A category_modes value as category id => mode: the stored JSON or an array of the same
+     * shape. Anything that is not a positive id with a mode-shaped value is dropped.
+     *
+     * @param mixed $value
+     *
+     * @return array<int,string>
+     * @since 7.0.0
+     */
+    function osc_category_modes_parse($value): array
+    {
+        return CategoryModes::parse($value);
+    }
+}
+
+if (!function_exists('osc_category_mode')) {
+    /**
+     * The mode a category_modes value gives $categoryId: its own, or the nearest parent's.
+     * '' when it is off or nothing above it is set.
+     *
+     * @param mixed $value the stored JSON or an id => mode array
+     * @param int   $categoryId
+     *
+     * @return string
+     * @since 7.0.0
+     */
+    function osc_category_mode($value, int $categoryId): string
+    {
+        return CategoryModes::modeFor($value, $categoryId);
+    }
+}
 
 /* file end: ./oc-includes/osclass/helpers/hSettings.php */

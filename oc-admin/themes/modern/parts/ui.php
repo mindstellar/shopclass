@@ -110,7 +110,7 @@ if (!function_exists('osc_admin_page_header')) {
      * upload), then where to configure it, then help last.
      *
      * Each action: icon (bootstrap-icon name), url, title, and optionally onclick or
-     * attrs (associative, escaped). The title is both the tooltip and the accessible name
+     * attrs (associative, escaped). An action with a plus icon shows its title as text. The title is both the tooltip and the accessible name
      * -- an icon with neither is a button that a screen reader announces as nothing.
      * `attrs` is how a header action keeps the id its page's JavaScript binds to.
      *
@@ -133,17 +133,21 @@ if (!function_exists('osc_admin_page_header')) {
                 $attrs = '';
                 foreach (($action['attrs'] ?? array()) as $name => $value) {
                     $attrs .= ' ' . osc_esc_html($name) . '="' . osc_esc_html($value) . '"';
-                } ?>
-                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"
+                }
+                // A plus icon marks the page's add action, which shows its title as text.
+                $isAdd = in_array($action['icon'] ?? '', array('bi-plus', 'bi-plus-lg', 'bi-plus-circle', 'bi-plus-circle-fill'), true); ?>
+                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"<?php echo $isAdd ? ' class="osc-head-add"' : ''; ?>
                    <?php if (!empty($action['onclick'])) { ?>onclick="<?php echo osc_esc_html($action['onclick']); ?>"<?php } ?>
                    title="<?php echo osc_esc_html($label); ?>"
-                   aria-label="<?php echo osc_esc_html($label); ?>"<?php echo $attrs; ?>>
+                   <?php if (!$isAdd) { ?>aria-label="<?php echo osc_esc_html($label); ?>"<?php } ?><?php echo $attrs; ?>>
                     <i class="bi <?php echo osc_esc_html($action['icon'] ?? 'bi-circle'); ?>" aria-hidden="true"></i>
+                    <?php if ($isAdd) { ?><span><?php echo osc_esc_html($label); ?></span><?php } ?>
                 </a>
             <?php } ?>
             <?php if (!empty($opts['help'])) { ?>
-                <a class="bi bi-question-circle" data-bs-target="#help-box" data-bs-toggle="collapse"
-                   href="#help-box" title="<?php echo osc_esc_html(__('Help')); ?>"
+                <a class="bi bi-question-circle" data-osc-collapse="#help-box" href="#help-box"
+                   aria-controls="help-box" aria-expanded="false" role="button"
+                   title="<?php echo osc_esc_html(__('Help')); ?>"
                    aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
             <?php } ?>
         </h1>
@@ -168,7 +172,7 @@ if (!function_exists('osc_admin_page_head')) {
      */
     function osc_admin_page_head($title, array $actions = array(), array $opts = array())
     {
-        $class = 'render-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        $class = 'render-title osc-page-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
         if ($actions === array() && empty($opts['actions_html'])) {
             echo '<h2 class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h2>';
@@ -244,10 +248,34 @@ if (!function_exists('osc_admin_action_button')) {
     }
 }
 
+if (!function_exists('osc_admin_tab_nav')) {
+    /**
+     * A row of page tabs, each a link with one current; it scrolls sideways on a phone.
+     * Each link: label, url, active (bool), and optionally count, drawn as a badge.
+     *
+     * @param array<int,array<string,mixed>> $links
+     * @param string                         $class an extra class on the list
+     *
+     * @return void
+     */
+    function osc_admin_tab_nav(array $links, $class = '')
+    {
+        echo '<nav class="osc-tabnav-scroll"><ul class="osc-tabnav' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">';
+        foreach ($links as $link) {
+            $active = !empty($link['active']);
+            echo '<li><a href="' . osc_esc_html($link['url'] ?? '#') . '"' . ($active ? ' class="is-active" aria-current="page"' : '') . '>'
+                . osc_esc_html($link['label'] ?? '')
+                . (isset($link['count']) ? osc_admin_count((int)$link['count']) : '') . '</a></li>';
+        }
+        echo '</ul></nav>';
+    }
+}
+
 if (!function_exists('osc_admin_link_group')) {
     /**
      * A segmented group of links where exactly one is current -- a range switch, a view
-     * switch. Each link: label, url, active (bool).
+     * switch. Each link: label, url, active (bool), and optionally count, drawn as a badge;
+     * a group with counts is drawn as a tab strip.
      *
      * The four statistics screens each rebuilt this loop verbatim, inside their own
      * hand-written two-column grid. The grid is `osc_admin_page_head()`'s job; this is the
@@ -259,6 +287,14 @@ if (!function_exists('osc_admin_link_group')) {
      */
     function osc_admin_link_group(array $links)
     {
+        // Links with counts are status filters: an underline strip that scrolls on a phone
+        // rather than a button group that cannot wrap.
+        if (array_filter($links, static fn ($link) => isset($link['count'])) !== array()) {
+            osc_admin_tab_nav($links);
+
+            return;
+        }
+
         echo '<div class="btn-group btn-group-sm" role="group">';
         foreach ($links as $link) {
             $classes = 'btn btn-outline-primary' . (!empty($link['active']) ? ' active' : '');
@@ -525,14 +561,7 @@ if (!function_exists('osc_admin_toolbar_close')) {
 
 if (!function_exists('osc_admin_pager')) {
     /**
-     * Page through a list.
-     *
-     * Renders nothing at all when everything fits on one page — a pager under a
-     * three-row table is chrome reporting on itself.
-     *
-     * The range ("1–25 of 240") is stated in words rather than as a strip of numbered
-     * links, because the question an admin actually has is "how much of this is there",
-     * and a row of page numbers answers a question nobody asked.
+     * Page through a list given its numbers; draws the same pager as osc_admin_pagination(), and nothing for a single page.
      *
      * @param array<string,mixed> $opts 'total', 'per_page', 'page' (1-based), 'base_url', 'params'
      *
@@ -543,59 +572,26 @@ if (!function_exists('osc_admin_pager')) {
         $total   = max(0, (int) ($opts['total'] ?? 0));
         $perPage = max(1, (int) ($opts['per_page'] ?? 25));
         $page    = max(1, (int) ($opts['page'] ?? 1));
-        $pages   = (int) ceil($total / $perPage);
+        $params  = $opts['params'] ?? array();
 
-        if ($pages < 2) {
+        if ($total <= $perPage) {
             return;
         }
 
-        $page  = min($page, $pages);
-        $first = (($page - 1) * $perPage) + 1;
-        $last  = min($total, $page * $perPage);
-
-        $link = static function ($target) use ($opts) {
-            $params         = $opts['params'] ?? array();
-            $params['pageNum'] = $target;
-
-            return osc_esc_html(($opts['base_url'] ?? '') . '&' . http_build_query($params));
-        }; ?>
-        <nav class="osc-pager" aria-label="<?php echo osc_esc_html(__('Pagination')); ?>">
-            <p class="osc-pager-range">
-                <?php printf(
-                    osc_esc_html(__('%1$s–%2$s of %3$s')),
-                    number_format($first),
-                    number_format($last),
-                    number_format($total)
-                ); ?>
-            </p>
-            <div class="osc-pager-controls">
-                <?php if ($page > 1) { ?>
-                    <a class="btn btn-secondary btn-sm" href="<?php echo $link($page - 1); ?>"
-                       rel="prev"><?php _e('Previous'); ?></a>
-                <?php } else { ?>
-                    <span class="btn btn-secondary btn-sm disabled" aria-disabled="true"><?php _e('Previous'); ?></span>
-                <?php } ?>
-                <?php if ($page < $pages) { ?>
-                    <a class="btn btn-secondary btn-sm" href="<?php echo $link($page + 1); ?>"
-                       rel="next"><?php _e('Next'); ?></a>
-                <?php } else { ?>
-                    <span class="btn btn-secondary btn-sm disabled" aria-disabled="true"><?php _e('Next'); ?></span>
-                <?php } ?>
-            </div>
-        </nav>
-        <?php
+        osc_admin_pagination(array(
+            'iTotalDisplayRecords' => $total,
+            'iDisplayLength'       => $perPage,
+            'iPage'                => $page,
+            'iShown'               => max(0, min($perPage, $total - (($page - 1) * $perPage))),
+            'base_url'             => ($opts['base_url'] ?? '') . ($params === array() ? '' : '&' . http_build_query($params)),
+        ));
     }
 }
 
 if (!function_exists('osc_admin_money')) {
     /**
-     * Format a micros amount for display.
-     *
-     * Money is stored as the value times 1,000,000 (matching t_item.i_price) and is
-     * divided only here, at the edge, so no arithmetic anywhere else ever touches a float.
-     * The currency code is shown rather than a symbol: an admin reconciling against a
-     * gateway needs to know it was EUR, and one glyph does not distinguish the several
-     * currencies that use "$".
+     * Format a micros amount for display, with the currency code rather than a symbol:
+     * an admin reconciling against a gateway needs to know it was EUR, not just "$".
      *
      * @param int    $micros
      * @param string $currency ISO 4217
@@ -604,10 +600,7 @@ if (!function_exists('osc_admin_money')) {
      */
     function osc_admin_money($micros, $currency)
     {
-        $value = (int) $micros / 1000000;
-
-        return number_format($value, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
-               . ' ' . strtoupper((string) $currency);
+        return \mindstellar\currency\Money::format((int) $micros, (string) $currency);
     }
 }
 
@@ -649,6 +642,24 @@ if (!function_exists('osc_admin_form_actions')) {
             osc_admin_action_button($action);
         }
         echo '</div>';
+    }
+}
+
+if (!function_exists('osc_admin_col_name')) {
+    /**
+     * A list column's header as plain text, escaped for a data-col-name attribute. The phone
+     * layout prints it before a date or count; a header can hold a sort link.
+     *
+     * @param array<string,string> $columns the datatable's aColumns
+     * @param string               $key     the column id
+     *
+     * @return string
+     */
+    function osc_admin_col_name(array $columns, $key)
+    {
+        $name = trim(html_entity_decode(strip_tags((string) ($columns[$key] ?? '')), ENT_QUOTES, 'UTF-8'));
+
+        return osc_esc_html($name !== '' ? $name : ucfirst(str_replace('_', ' ', (string) $key)));
     }
 }
 
@@ -972,14 +983,8 @@ if (!function_exists('osc_admin_pagination')) {
     /**
      * The range line and page controls under a DataTables-shaped list.
      *
-     * Every list screen defined its own `showingResults` closure over the same numbers and
-     * hung it on `before_show_pagination_admin`. This computes them from the one array they
-     * all already have.
-     *
-     * Two shapes exist in the admin: rows under `aaData` or under `aRows`, and a filtered
-     * count with or without an unfiltered `iTotalRecords` beside it. Both are handled here,
-     * because a screen that silently lost its "filtered from N total" line would be
-     * reporting a smaller catalogue than it holds.
+     * Rows come under `aaData` or `aRows`; a filtered count may sit beside an unfiltered
+     * `iTotalRecords`, which adds the "filtered from N total" part of the range line.
      *
      * @param array<string,mixed> $aData The controller's row set plus its display/total counts
      *
@@ -987,28 +992,7 @@ if (!function_exists('osc_admin_pagination')) {
      */
     function osc_admin_pagination(array $aData)
     {
-        $perPage  = (int) ($aData['iDisplayLength'] ?? 0);
-        $page     = max(1, (int) (Params::getParam('iPage') ?: 1));
-        $shown    = count($aData['aRows'] ?? $aData['aaData'] ?? array());
-        $filtered = (int) ($aData['iTotalDisplayRecords'] ?? 0);
-        // Only widens the sentence when it is genuinely larger than the filtered count.
-        $total    = isset($aData['iTotalRecords']) ? (int) $aData['iTotalRecords'] : null;
-
-        osc_add_hook(
-            'before_show_pagination_admin',
-            static function () use ($perPage, $page, $shown, $filtered, $total) {
-                // An empty list has no range to state; the empty row inside the table says it.
-                if ($shown === 0) {
-                    return;
-                }
-                $from = (($page - 1) * $perPage) + 1;
-                echo '<ul class="showing-results"><li><span>'
-                     . osc_pagination_showing($from, $from + $shown - 1, $filtered, $total)
-                     . '</span></li></ul>';
-            }
-        );
-
-        osc_show_pagination_admin($aData);
+        osc_show_pagination_admin(array('show_range' => true) + $aData);
     }
 }
 

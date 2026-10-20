@@ -37,7 +37,6 @@ class AlertsDataTable extends DataTable
         'email' => 's_email',
         'date'  => 'dt_date',
     );
-    private $total_filtered;
 
     /**
      * Builds the saved-searches (alerts) listing for the admin datatable.
@@ -61,7 +60,7 @@ class AlertsDataTable extends DataTable
                 (string)$this->search
             );
         } else {
-            $alerts = Alerts::newInstance()
+            $alerts = Alerts::getInstance()
                 ->search(
                     $this->start,
                     $this->limit,
@@ -72,7 +71,6 @@ class AlertsDataTable extends DataTable
         }
         $this->processData($alerts);
         $this->total          = $alerts['rows'];
-        $this->total_filtered = $alerts['total_results'];
         $this->totalFiltered  = $alerts['total_results'];
 
         return $this->getData();
@@ -117,7 +115,7 @@ class AlertsDataTable extends DataTable
             }
         }
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 

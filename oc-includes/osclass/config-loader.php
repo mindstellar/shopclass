@@ -27,7 +27,9 @@
  * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, OSC_DB_STRICT_MODE, optionally
  * REL_WEB_URL / WEB_PATH (or OSC_CLI_URL, the address for the command line
  * only), and the object cache — OSC_CACHE (driver name) plus
- * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached/memcache server.
+ * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached or redis server, and
+ * OSC_CACHE_PASSWORD / OSC_CACHE_USERNAME / OSC_CACHE_DB for redis, and
+ * OSC_ADMIN_IP_ALLOW, the addresses the admin panel answers.
  *
  * Safe to include more than once.
  */
@@ -101,6 +103,11 @@ if (!defined('DEMO') && filter_var((string)getenv('OSC_DEMO'), FILTER_VALIDATE_B
     define('DEMO', true);
 }
 
+// Admin panel address allow list (optional): see AdminIpAllowlist. A value in config.php still wins.
+if (!defined('OSC_ADMIN_IP_ALLOW') && $oscEnv('OSC_ADMIN_IP_ALLOW') !== null) {
+    define('OSC_ADMIN_IP_ALLOW', $oscEnv('OSC_ADMIN_IP_ALLOW'));
+}
+
 // Strict SQL modes (optional). Lets an env-only deploy keep the server's own strict
 // modes without a config.php, the same opt-in the installer writes for a new install.
 // A value in config.php still wins; anything falsy or unset leaves the constant
@@ -114,8 +121,20 @@ if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_M
     define('OSC_DB_STRICT_MODE', true);
 }
 
+// Persistent database connections (optional): each PHP worker keeps its connection for
+// the next request. Off by default, since on shared hosting each idle worker would hold one.
+if (!defined('OSC_DB_PERSISTENT') && filter_var((string)getenv('OSC_DB_PERSISTENT'), FILTER_VALIDATE_BOOLEAN)) {
+    define('OSC_DB_PERSISTENT', true);
+}
+
+// Per-worker APCu copies of cached values (optional). Off by default, since on shared
+// hosting other sites under the same PHP can read and write APCu.
+if (!defined('OSC_CACHE_LOCAL') && filter_var((string)getenv('OSC_CACHE_LOCAL'), FILTER_VALIDATE_BOOLEAN)) {
+    define('OSC_CACHE_LOCAL', true);
+}
+
 // Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',
-// 'memcache' — and the memcached/memcache drivers read their server list from the
+// 'redis' ('memcache' now means memcached) — and the memcached and redis drivers read their server from the
 // $_cache_config global. Bridge both from the environment so a containerised deploy can
 // enable a persistent cache without a config.php. A value set in config.php (the constant,
 // or the $_cache_config global) still wins; when OSC_CACHE is unset the app keeps its
@@ -124,15 +143,19 @@ if (!defined('OSC_CACHE') && $oscEnv('OSC_CACHE') !== null) {
     define('OSC_CACHE', $oscEnv('OSC_CACHE'));
 }
 if (defined('OSC_CACHE')
-    && in_array(OSC_CACHE, array('memcached', 'memcache'), true)
+    && in_array(OSC_CACHE, array('memcached', 'memcache', 'redis'), true)
     && !isset($GLOBALS['_cache_config'])
     && $oscEnv('OSC_CACHE_HOST') !== null
 ) {
     $GLOBALS['_cache_config'] = array(
         array(
             'default_host'   => $oscEnv('OSC_CACHE_HOST'),
-            'default_port'   => (int)($oscEnv('OSC_CACHE_PORT') ?? 11211),
+            'default_port'   => (int)($oscEnv('OSC_CACHE_PORT') ?? (OSC_CACHE === 'redis' ? 6379 : 11211)),
             'default_weight' => 1,
+            // Redis and Valkey only.
+            'password'       => (string)($oscEnv('OSC_CACHE_PASSWORD') ?? ''),
+            'username'       => (string)($oscEnv('OSC_CACHE_USERNAME') ?? ''),
+            'database'       => (int)($oscEnv('OSC_CACHE_DB') ?? 0),
         ),
     );
 }

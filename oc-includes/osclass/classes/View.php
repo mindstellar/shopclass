@@ -17,7 +17,8 @@
  */
 class View
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     private $aExported;
     private $aCurrent;
 
@@ -30,17 +31,11 @@ class View
     }
 
     /**
-     * The shared View instance, created on first call.
-     *
-     * @return \View
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**

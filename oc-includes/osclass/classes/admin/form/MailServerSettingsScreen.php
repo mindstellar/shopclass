@@ -1,0 +1,75 @@
+<?php
+
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+namespace mindstellar\admin\form;
+
+use mindstellar\base\SettingsScreen;
+
+/**
+ * The mail-server settings screen.
+ *
+ * The password is the only control here that is not simply what it looks like: it renders
+ * masked, so the stored value never reaches the page as text, and a blank box means "leave
+ * it as it was" rather than "clear it" -- declared as a persist callable that writes nothing
+ * for an empty value, which is what the hand-written controller did by reading the old
+ * password back and writing it again.
+ *
+ * @package mindstellar\admin\form
+ */
+final class MailServerSettingsScreen extends SettingsScreen
+{
+    public const PAGE_ID = 'core.settings_mailserver';
+    protected const ACTION    = 'mailserver_post';
+    protected const FORM_NAME = 'settings_form';
+
+    protected static function declareFields(): void
+    {
+        // SMTP over SSL/TLS goes through PHP's openssl extension, not Apache's mod_ssl.
+        $sslWarning = extension_loaded('openssl')
+            ? ''
+            : __('The PHP <b>openssl</b> extension is not loaded, so SSL and TLS will not work.');
+
+        CoreSettings::page(self::PAGE_ID, __('Mail Settings'))
+            ->select('mailserver_type', __('Server type'), array(
+                'custom' => __('Custom Server'),
+                'gmail'  => __('GMail Server'),
+            ))
+            ->text('mailserver_host', __('Hostname'))
+            ->email('mailserver_mail_from', __('Mail from'))
+            ->text('mailserver_name_from', __('Name from'))
+            ->number('mailserver_port', __('Server port'))
+                ->set('min', 0)
+                ->set('max', 65535)
+                ->default(0)
+            ->text('mailserver_username', __('Username'))
+            ->secret('mailserver_password', __('Password'), __('Leave blank to keep the current password.'))
+                ->set('masked', true)
+                ->set('reveal', true)
+                // Masked, so the stored value is read back only to know there is one -- the
+                // control draws a placeholder, never the password.
+                ->writeOnly(false)
+                ->persist(static fn ($value) => $value === '' ? null : $value)
+            ->select('mailserver_ssl', __('Encryption'), array(
+                ''    => __('None'),
+                'ssl' => 'SSL',
+                'tls' => 'TLS',
+            ))
+                ->set(
+                    'help_html',
+                    $sslWarning === '' ? '' : '<span class="callout-warning">' . $sslWarning . '</span>'
+                )
+            ->checkbox('mailserver_auth', __('SMTP authentication enabled'))
+                ->rowLabel(__('SMTP'))
+            ->checkbox('mailserver_pop', __('Use POP before SMTP'))
+                ->rowLabel(__('POP'))
+            ->register();
+    }
+}

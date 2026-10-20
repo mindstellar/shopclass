@@ -31,6 +31,7 @@ if (!defined('ABS_PATH')) {
  * CSRF is injected on shutdown into any form not marked nocsrf.
  */
 
+/** @var array<string, mixed> $contactForm */
 $cf       = $contactForm;
 $cfPrefix = osc_esc_html((string) $cf['prefix']);
 $cfMax    = \mindstellar\security\MessageGuard::maxLength();
@@ -90,7 +91,8 @@ $cfMax    = \mindstellar\security\MessageGuard::maxLength();
     <?php if (!empty($cf['attachment'])) { ?>
         <div class="oe-field">
             <label class="oe-label" for="<?php echo $cfPrefix; ?>-attachment"><?php echo osc_esc_html(_m('Attachment')); ?></label>
-            <input class="oe-input" id="<?php echo $cfPrefix; ?>-attachment" type="file" name="attachment" />
+            <input class="oe-input" id="<?php echo $cfPrefix; ?>-attachment" type="file" name="attachment"
+                   accept="<?php echo osc_esc_html('.' . implode(',.', \mindstellar\storage\UploadMimes::attachmentExtensions())); ?>" />
         </div>
     <?php } ?>
 

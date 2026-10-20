@@ -28,7 +28,8 @@ $values = __get('settings_values');
 osc_admin_page(array(
     'section' => __('Settings'),
     'title'   => $page['title'],
-    'help'    => $page['help'],
+    // No help text, no "?" icon: it would open an empty box.
+    'help'    => $page['help'] !== '' ? $page['help'] : null,
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>

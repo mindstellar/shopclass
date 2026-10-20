@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Currency table
  *
@@ -20,15 +22,10 @@
  */
 class Currency extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     protected $cacheGroup = 'currency';
 
-    /**
-     * It references to self object: Currency.
-     * It is used as a singleton
-     *
-     * @var Currency
-     */
-    private static $instance;
     private static $_currencies;
 
     /**
@@ -43,18 +40,11 @@ class Currency extends DAO
     }
 
     /**
-     * It creates a new Currency object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return Currency
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -73,13 +63,13 @@ class Currency extends DAO
         // The table holds a handful of rows, so it is cached whole.
         $all = \mindstellar\cache\CacheGroup::remember('currency', 'all', function () {
             try {
-                $rows = osc_db_table($this->getTableName())->select(...$this->getFields())->get();
+                $rows = Db::table($this->getTableName())->select(...$this->getFields())->get();
             } catch (\mindstellar\database\DbException $e) {
                 return null;
             }
 
             // Upper-cased keys: the old lookup went through a case-insensitive collation.
-            return array_change_key_case(array_column(osc_db_stringify_rows($rows), null, $this->getPrimaryKey()), CASE_UPPER);
+            return array_change_key_case(array_column(Db::stringifyRows($rows), null, $this->getPrimaryKey()), CASE_UPPER);
         }) ?? array();
 
         // A miss is left out of the map, so a currency added later in the same request is found.

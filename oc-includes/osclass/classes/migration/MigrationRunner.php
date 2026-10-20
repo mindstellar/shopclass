@@ -28,25 +28,67 @@ use Throwable;
  * Migration files are named NNNN_description.sql or NNNN_description.php (zero-padded prefix
  * so string order == numeric order). `.sql` files run their statements verbatim; `.php`
  * files return an object with an up(Connection) method (see MigrationInterface).
+ *
+ * A plugin's runner (forPlugin()) shares the ledger: it records each file as `<folder>/<file>`,
+ * so its names never meet core's or another plugin's.
  */
 class MigrationRunner
 {
-    /** Seconds to wait for another run to finish before giving up. */
+    /** Seconds to wait for another run to finish before giving up. Tests set OSC_LOCK_WAIT to 0. */
     private const LOCK_WAIT = 5;
 
     private Connection $conn;
     private string $dir;
     private string $table;
+    /** Empty for core; a plugin's folder name otherwise. */
+    private string $scope;
 
     /**
      * @param Connection $conn          connection bound to the database being migrated
      * @param string     $migrationsDir absolute path to the migrations directory
+     * @param string     $scope         ledger prefix; empty for core, a plugin's folder name otherwise
      */
-    public function __construct(Connection $conn, string $migrationsDir)
+    public function __construct(Connection $conn, string $migrationsDir, string $scope = '')
     {
+        if ($scope !== '' && !preg_match('/^[A-Za-z0-9_-]+\z/', $scope)) {
+            throw new \InvalidArgumentException('Invalid migration scope: ' . $scope);
+        }
         $this->conn  = $conn;
         $this->dir   = rtrim($migrationsDir, '/\\');
         $this->table = DB_TABLE_PREFIX . 't_migration';
+        $this->scope = $scope;
+    }
+
+    /**
+     * A runner for core's migrations on this site's connection.
+     *
+     * @return self
+     */
+    public static function forCore(): self
+    {
+        return new self(Connection::getInstance(), self::coreDir());
+    }
+
+    /**
+     * A runner for one plugin's migrations, kept in `<plugin folder>/migrations/`.
+     *
+     * @param string $folder the plugin's folder name, e.g. `manticore-search`
+     *
+     * @return self
+     */
+    public static function forPlugin(string $folder): self
+    {
+        return new self(Connection::getInstance(), PLUGINS_PATH . $folder . '/migrations', $folder);
+    }
+
+    /**
+     * The core migrations directory.
+     *
+     * @return string
+     */
+    public static function coreDir(): string
+    {
+        return dirname(__DIR__, 2) . '/installer/migrations';
     }
 
     /**
@@ -77,9 +119,15 @@ class MigrationRunner
      */
     public function applied(): array
     {
+        // Core's list also holds plugin rows; pending() only checks files on disk, so they never match.
+        if ($this->scope === '') {
+            return array_column($this->conn->select('SELECT s_migration FROM ' . $this->table), 's_migration');
+        }
+
+        [$where, $params] = $this->scopeWhere();
         $names = array();
-        foreach ($this->conn->select('SELECT s_migration FROM ' . $this->table) as $row) {
-            $names[] = $row['s_migration'];
+        foreach ($this->conn->select('SELECT s_migration FROM ' . $this->table . $where, $params) as $row) {
+            $names[] = substr($row['s_migration'], strlen($this->scope) + 1);
         }
 
         return $names;
@@ -117,18 +165,9 @@ class MigrationRunner
      */
     public function run(): array
     {
-        $lock = $this->lockName();
-        if ((int) $this->conn->scalar('SELECT GET_LOCK(?, ?)', array($lock, self::LOCK_WAIT)) !== 1) {
-            return array(
-                'ok'      => false,
-                'applied' => array(),
-                'failed'  => null,
-                'error'   => 'Another upgrade is already running.',
-                'busy'    => true,
-            );
-        }
+        $wait = \defined('OSC_LOCK_WAIT') ? (int) \constant('OSC_LOCK_WAIT') : self::LOCK_WAIT;
 
-        try {
+        $result = $this->conn->withNamedLock($this->lockName(), $wait, function (): array {
             $applied = array();
             foreach ($this->pending() as $name) {
                 try {
@@ -146,13 +185,15 @@ class MigrationRunner
             }
 
             return array('ok' => true, 'applied' => $applied, 'failed' => null, 'error' => null);
-        } finally {
-            try {
-                $this->conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
-            } catch (Throwable $e) {
-                // The server drops the lock with the session anyway.
-            }
-        }
+        });
+
+        return $result ?? array(
+            'ok'      => false,
+            'applied' => array(),
+            'failed'  => null,
+            'error'   => 'Another upgrade is already running.',
+            'busy'    => true,
+        );
     }
 
     /**
@@ -164,7 +205,9 @@ class MigrationRunner
     public function lockName(): string
     {
         // GET_LOCK names are capped at 64 characters, so the scope is hashed.
-        return 'osc_migrate_' . md5((string) $this->conn->scalar('SELECT DATABASE()') . '|' . DB_TABLE_PREFIX);
+        $scope = $this->scope === '' ? '' : '|' . $this->scope;
+
+        return 'osc_migrate_' . md5((string) $this->conn->scalar('SELECT DATABASE()') . '|' . DB_TABLE_PREFIX . $scope);
     }
 
     /**
@@ -183,6 +226,36 @@ class MigrationRunner
                 $this->record($name);
             }
         }
+    }
+
+    /**
+     * Drop this plugin's rows from the ledger, so a reinstall runs its migrations again.
+     * Call it from the plugin's uninstall hook after dropping its tables.
+     *
+     * @return void
+     * @throws \LogicException for core's runner
+     * @throws \mindstellar\database\DbException
+     */
+    public function forget(): void
+    {
+        if ($this->scope === '') {
+            throw new \LogicException('Core migrations cannot be forgotten.');
+        }
+        [$where, $params] = $this->scopeWhere();
+        $this->conn->execute('DELETE FROM ' . $this->table . $where, $params);
+    }
+
+    /**
+     * The WHERE clause for this plugin's ledger rows. A prefix compare, not LIKE: under
+     * NO_BACKSLASH_ESCAPES a LIKE escape stops working and `_` matches any character.
+     *
+     * @return array{0:string,1:array<int,mixed>}
+     */
+    private function scopeWhere(): array
+    {
+        $prefix = $this->scope . '/';
+
+        return array(' WHERE LEFT(s_migration, ?) = ?', array(strlen($prefix), $prefix));
     }
 
     /**
@@ -285,7 +358,7 @@ class MigrationRunner
     {
         $this->conn->execute(
             'INSERT INTO ' . $this->table . ' (s_migration, dt_applied) VALUES (?, NOW())',
-            array($name)
+            array($this->scope === '' ? $name : $this->scope . '/' . $name)
         );
     }
 }

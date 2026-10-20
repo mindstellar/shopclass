@@ -1,10 +1,14 @@
 <?php
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 01/07/20
- * Time: 11:34 AM
- * License is provided in root directory.
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. The original
+ * Osclass code it derives from was licensed under the Apache License 2.0.
+ * See LICENSE (GPL-3.0) and LICENSE-APACHE (Apache-2.0).
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 namespace mindstellar\utility;
@@ -47,9 +51,9 @@ class Formatting
     public function formatSlug($string)
     {
         $string = strip_tags($string);
-        $string = preg_replace('/%([a-fA-F0-9]{...})/', '--$1--', $string);
+        $string = preg_replace('/%([a-fA-F0-9][a-fA-F0-9])/', '--$1--', $string);
         $string = str_replace('%', '', $string);
-        $string = preg_replace('/--([a-fA-F0-9]{...})--/', '%$1', $string);
+        $string = preg_replace('/--([a-fA-F0-9][a-fA-F0-9])--/', '%$1', $string);
 
         $string = $this->removeAccents($string);
 
@@ -58,7 +62,7 @@ class Formatting
         $string = preg_replace('/\s+/', '-', $string);
         $string = preg_replace('|[\p{Ps}\p{Pe}\p{Pi}\p{Pf}\p{Po}\p{S}\p{Z}\p{C}\p{No}]+|u', '', $string);
 
-        if (is_utf8($string)) {
+        if ($this->isUtf8($string)) {
             $string = urlencode($string);
             // mdash & ndash
             $string = str_replace(array('%e2%80%93', '%e2%80%94'), '-', strtolower($string));
@@ -501,9 +505,7 @@ class Formatting
     }
 
     /**
-     * Format name.
-     * Capitalize first letter of each name.
-     * If all-caps, remove all-caps.
+     * Format a name by the one rule in Sanitize::name().
      *
      * @param string $value value to sanitize
      *
@@ -511,38 +513,47 @@ class Formatting
      */
     public function name($value)
     {
-        $value = trim($value);
-        // remove all special characters with space except . and space
-        $value = preg_replace('/[^a-zA-Z0-9\s\.]/', ' ', $value);
-        // remove double spaces and trim after that
-        $value = preg_replace('/\s\s+/', ' ', $value);
-        $value = trim($value);
-        // capitalize first letter of each word
-        // and remove all-caps
-        $value = ucwords(strtolower($value));
-
-        return $value;
+        return (new Sanitize())->name($value);
     }
 
     /**
-     * Format username.
-     * Remove all special characters except . and _ and replace spaces with _
+     * Format a username by the one rule in Sanitize::username().
      *
-     * @param string $value value to format
+     * @param mixed $value value to format
      *
      * @return string formatted
      */
     public function username($value)
     {
-        $value = trim($value);
-        // remove all special characters with space except . and space
-        $value = preg_replace('/[^a-zA-Z0-9\s\._]/', ' ', $value);
-        // remove double spaces and trim after that
-        $value = preg_replace('/\s\s+/', ' ', $value);
-        $value = trim($value);
-        // replace spaces with _
-        $value = str_replace(' ', '_', $value);
+        return (new Sanitize())->username($value);
+    }
 
-        return $value;
+    /**
+     * A byte count in words: "63.9 MB".
+     *
+     * @param int $bytes
+     *
+     * @return string
+     */
+    public static function bytes(int $bytes): string
+    {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        $i     = $bytes > 0 ? (int) min(floor(log($bytes, 1024)), count($units) - 1) : 0;
+
+        return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
+    }
+
+    /**
+     * A php.ini size ("128M", "1G", "512K") in bytes. A bare number is bytes, and -1 (no limit) stays -1.
+     */
+    public static function iniBytes(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '' || (int) $value === -1) {
+            return (int) $value;
+        }
+        $power = strpos('KMGTP', strtoupper(substr($value, -1)));
+
+        return $power === false ? (int) $value : (int) $value * (1024 ** ($power + 1));
     }
 }

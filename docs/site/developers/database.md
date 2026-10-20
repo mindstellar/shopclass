@@ -20,13 +20,13 @@ $prefix = DB_TABLE_PREFIX;             // in raw SQL
 |---|---|
 | `t_item` | Listings: price, dates, contact, coordinates, flags. |
 | `t_item_description` | Title and description, one row per language. Carries the full-text index. |
-| `t_item_resource` | Uploaded photos and files attached to a listing. |
+| `t_resource` | Uploaded files: listing photos (owner type `item`), avatars, page and settings images. Read listing photos with the `osc_*resource*` helpers. |
 | `t_category` / `t_category_description` | The category tree and its translations. |
 | `t_country`, `t_region`, `t_city` | [Location data](/docs/configure/locations/). |
 | `t_user` | Accounts, with `t_admin` for admin users. |
-| `t_preference` | Every setting, grouped by section: the row that decides how the site behaves. |
+| `t_preference` | Every setting, grouped by section: the row that decides how the site behaves. After writing it with raw SQL, call `osc_reset_preferences()`. |
 | `t_pages` | Static pages. |
-| `t_plugin_category` | Per-plugin, per-category configuration. |
+| `t_key_value` | Small values by group and key. See [Key-value store](/docs/developers/kv-store/). |
 
 Column names follow a typed prefix: `i_` integer, `s_` string, `d_` decimal,
 `b_` boolean, `dt_` datetime, `pk_` primary key, `fk_` foreign key, so
@@ -59,9 +59,19 @@ Use the DAO layer rather than raw SQL where one exists, since it applies the pre
 escapes parameters and keeps working across schema migrations:
 
 ```php
-$items = Item::newInstance()->findByCategoryID($categoryId);
-$user  = User::newInstance()->findByPrimaryKey($userId);
+$items = Item::getInstance()->findByCategoryID($categoryId);
+$user  = User::getInstance()->findByPrimaryKey($userId);
 ```
+
+`getInstance()` needs Shopclass 7.0. A plugin that also supports 6.x calls `newInstance()`, which still works on 7.0.
+
+The old query builder a model gives out as `$model->dao` (`DBCommandClass`) is deprecated in 7.0
+and goes away in 8.0. In debug mode the first read of `->dao` on each model logs a notice. Move those queries to
+the `osc_db_*` helpers below.
+
+These DAO classes stay as they are for plugins. Core's own new code reads and writes
+through each module's `…Store` and `…Query` classes instead; see
+[where new code goes](/docs/developers/architecture/#where-new-code-goes).
 
 For your own queries, use the query builder. It binds every value and checks
 every table and column name:
@@ -71,8 +81,8 @@ $p = DB_TABLE_PREFIX;
 
 $rows = osc_db_table($p . 't_item AS i')
     ->select('i.pk_i_id')
-    ->selectRaw('COUNT(r.pk_i_id) AS n_pic')
-    ->leftJoin($p . 't_item_resource AS r', 'r.fk_i_item_id', '=', 'i.pk_i_id')
+    ->selectRaw('COUNT(c.pk_i_id) AS n_comments')
+    ->leftJoin($p . 't_item_comment AS c', 'c.fk_i_item_id', '=', 'i.pk_i_id')
     ->where('i.b_active', 1)
     ->whereNotNull('i.dt_pub_date')
     ->groupBy('i.pk_i_id')
@@ -90,6 +100,15 @@ $rows = osc_db_table($p . 't_item AS i')
 When you need raw SQL, use `osc_db_select()` or `osc_db_execute()` with `?`
 placeholders, and never put request input into the string.
 
+Since 7.0, values go to the database escaped inside the query, in one trip, and every
+column comes back as a string. Pass `LIMIT ?` and `OFFSET ?` an int, not a numeric string.
+To send real prepared statements instead, add `define('OSC_DB_REAL_PREPARES', true);`
+to `config.php`.
+
+Each `osc_db_*` helper calls the same method on `mindstellar\database\Db`, such as
+`Db::table()` and `Db::select()`, which core uses. The class needs Shopclass 7.0; the
+helpers also work on 6.x.
+
 ## Adding your own tables
 
 Create them on plugin install, drop them on uninstall, and prefix them with both
@@ -98,6 +117,30 @@ Create them on plugin install, drop them on uninstall, and prefix them with both
 ```php
 $table = DB_TABLE_PREFIX . 't_myplugin_data';
 ```
+
+### Migrations for your tables
+
+Put numbered files in your plugin's `migrations/` folder (`0001_create_data.sql`,
+`0002_add_column.php`). They work like core's: a `.sql` file runs as written, a `.php` file
+returns an object with `up(Connection $conn)`. Each file runs once. Shopclass 7.0 and later.
+
+```php
+use mindstellar\migration\MigrationRunner;
+
+// install hook, and on `init` after an update (check your own version first)
+$runner = MigrationRunner::forPlugin('myplugin');
+$runner->ensureLedger();
+$result = $runner->run(); // ['ok' => bool, 'applied' => [files run], 'failed' => ?string, 'error' => ?string]
+
+// uninstall hook, after dropping your tables
+MigrationRunner::forPlugin('myplugin')->forget();
+```
+
+A file that throws stops the run and is not recorded, so the next run tries it again. When
+`ok` is false, log `error` and carry on; when another run holds the lock, `failed` is null.
+
+The name is your plugin's folder. Core records each file as `myplugin/0001_create_data.sql`,
+so your file names never clash with core's or another plugin's.
 
 Do not add columns to core tables. A migration will not know about them, and
 `db:repair` never removes a column: it stays flagged as extra until someone

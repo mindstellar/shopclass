@@ -13,7 +13,6 @@ namespace mindstellar\storage;
 
 use ImageProcessing;
 use mindstellar\model\Resource;
-use mindstellar\utility\FileSystem;
 use Throwable;
 
 /**
@@ -56,6 +55,39 @@ final class ResourceUploader
     }
 
     /**
+     * Write a photo's sizes from its clean normal image. Each smaller size is cut from it and
+     * stamped on its own, so the mark is scaled to each one; the normal image is stamped last.
+     *
+     * @param string               $box      the normal size, "WxH", the mark is drawn for
+     * @param array<string,string> $sizes    path => "WxH" for each size below normal
+     * @param bool                 $fit      scale down to fit each size, never pad or upscale
+     * @param string[]             $unmarked paths in $sizes that never get the mark (thumbnails)
+     */
+    public static function writeSizes(
+        ImageProcessing $normal,
+        string $box,
+        string $normalPath,
+        array $sizes,
+        ?string $extension,
+        bool $mark,
+        bool $fit = false,
+        array $unmarked = []
+    ): void {
+        foreach ($sizes as $path => $dims) {
+            [$width, $height] = ImageProcessing::parseSize($dims);
+            $img = (clone $normal)->resizeTo($width, $height, $fit ? true : null, !$fit);
+            if ($mark && !in_array($path, $unmarked, true)) {
+                $img->doSiteWatermark($box);
+            }
+            $img->saveToFile($path, $extension);
+        }
+        if ($mark) {
+            $normal->doSiteWatermark($box);
+        }
+        $normal->saveToFile($normalPath, $extension);
+    }
+
+    /**
      * Validate an image, write its variants and record a t_resource row.
      *
      * $options keys (all optional):
@@ -64,7 +96,7 @@ final class ResourceUploader
      *                            Defaults to normal/preview/thumbnail at the
      *                            configured item dimensions.
      *   - 'keep_original' bool   also store the untouched source as {id}_original.
-     *   - 'watermark'     bool   apply the configured watermark to the base image.
+     *   - 'watermark'     bool   apply the configured watermark to every size but the thumbnail.
      *   - 'fit'           bool   scale down to fit each size, never pad or upscale.
      *
      * @param string $ownerType
@@ -103,29 +135,17 @@ final class ResourceUploader
 
         try {
             $baseDims = (string) ($variants['normal'] ?? reset($variants));
-            $size     = explode('x', $baseDims);
-            $img      = $imgres->autoRotate()->resizeTo((int) ($size[0] ?? 0), (int) ($size[1] ?? 0), $fit ? true : null, !$fit);
-            if ($watermark) {
-                if (osc_is_watermark_text()) {
-                    $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-                } elseif (osc_is_watermark_image()) {
-                    $img->doWatermarkImage();
-                }
-            }
-            $img->saveToFile($normalTmp, $extension);
+            [$width, $height] = ImageProcessing::parseSize($baseDims);
+            $img = $imgres->autoRotate()->resizeTo($width, $height, $fit ? true : null, !$fit);
 
+            $sizes = array();
             foreach ($variants as $name => $dims) {
-                if ($name === 'normal') {
-                    continue;
+                if ($name !== 'normal') {
+                    $secondary['_' . $name] = $tmpFile . '_' . $name;
+                    $sizes[$tmpFile . '_' . $name] = (string) $dims;
                 }
-                $suffix = '_' . $name;
-                $vtmp   = $tmpFile . $suffix;
-                $s      = explode('x', (string) $dims);
-                ImageProcessing::fromFile($normalTmp)
-                    ->resizeTo((int) ($s[0] ?? 0), (int) ($s[1] ?? 0), $fit ? true : null, !$fit)
-                    ->saveToFile($vtmp, $extension);
-                $secondary[$suffix] = $vtmp;
             }
+            self::writeSizes($img, $baseDims, $normalTmp, $sizes, $extension, $watermark, $fit, [$tmpFile . '_thumbnail']);
         } catch (Throwable $e) {
             $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
 
@@ -137,7 +157,7 @@ final class ResourceUploader
         $sName  = osc_genRandomPassword();
         $now    = date('Y-m-d H:i:s');
 
-        $id = Resource::newInstance()->insertResource($ownerType, $ownerId, array(
+        $id = (new Resource())->insertResource($ownerType, $ownerId, array(
             's_path'         => $sPath,
             's_name'         => $sName,
             's_extension'    => $extension,
@@ -153,7 +173,7 @@ final class ResourceUploader
         }
 
         if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
-            Resource::newInstance()->deleteResourcesIds(array($id));
+            (new Resource())->deleteResourcesIds(array($id));
             $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
 
             return false;
@@ -169,7 +189,7 @@ final class ResourceUploader
         }
         if (!$copied) {
             array_map(static fn ($to) => @unlink($to), $copies);
-            Resource::newInstance()->deleteResourcesIds(array($id));
+            (new Resource())->deleteResourcesIds(array($id));
             $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
 
             return false;
@@ -214,10 +234,10 @@ final class ResourceUploader
             return;
         }
 
-        $this->purgeFiles($resourceRow);
+        StorageJobs::purgeAfterCommit(array($resourceRow));
 
-        Resource::newInstance()->deleteResourcesIds(array((int) $resourceRow['pk_i_id']));
-        Resource::newInstance()->invalidateOwnerCache(
+        (new Resource())->deleteResourcesIds(array((int) $resourceRow['pk_i_id']));
+        (new Resource())->invalidateOwnerCache(
             (string) ($resourceRow['s_owner_type'] ?? ''),
             (int) ($resourceRow['i_owner_id'] ?? 0)
         );
@@ -241,14 +261,14 @@ final class ResourceUploader
             return;
         }
 
-        $rows = Resource::newInstance()->findByOwner($ownerType, $ownerId);
+        $rows = (new Resource())->findByOwner($ownerType, $ownerId);
+        StorageJobs::purgeAfterCommit($rows);
         foreach ($rows as $row) {
-            $this->purgeFiles($row);
             osc_run_hook('delete_resource', $row);
         }
 
         // Single row+cache delete for the whole owner, after files are handled.
-        Resource::newInstance()->deleteByOwner($ownerType, $ownerId);
+        (new Resource())->deleteByOwner($ownerType, $ownerId);
     }
 
     /**
@@ -262,47 +282,17 @@ final class ResourceUploader
     public function purgeDeleted(array $rows): void
     {
         $owners = array();
+        StorageJobs::purgeAfterCommit($rows);
         foreach ($rows as $row) {
-            $this->purgeFiles($row);
             osc_run_hook('delete_resource', $row);
             $owners[($row['s_owner_type'] ?? '') . ':' . ($row['i_owner_id'] ?? 0)] = $row;
         }
         foreach ($owners as $row) {
-            Resource::newInstance()->invalidateOwnerCache(
+            (new Resource())->invalidateOwnerCache(
                 (string) ($row['s_owner_type'] ?? ''),
                 (int) ($row['i_owner_id'] ?? 0)
             );
         }
-    }
-
-    /**
-     * Remove a resource's files, or queue their removal when the row lives on (or
-     * an install has configured) a remote adapter. Never touches the database.
-     *
-     * @param array<string,mixed> $row a t_resource row
-     *
-     * @return void
-     */
-    private function purgeFiles(array $row): void
-    {
-        if (empty($row['pk_i_id'])) {
-            return;
-        }
-
-        $storage = $row['s_storage'] ?? 'local';
-
-        if ($storage === 'local' && StorageManager::instance()->remote() === null) {
-            foreach (ResourceLocator::variants() as $variant) {
-                $path = ResourceLocator::localPath($row, $variant);
-                if (file_exists($path) && !is_dir($path)) {
-                    (new FileSystem())->remove($path);
-                }
-            }
-
-            return;
-        }
-
-        StorageJobs::enqueue('delete', $storage, $row);
     }
 
     /**

@@ -37,10 +37,11 @@ $cache      = (string) file_get_contents($theme . 'tools/system-info/cache.php')
 $spamView   = (string) file_get_contents($theme . 'settings/spamNbots.php');
 $spamCtl    = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php');
 
-/** The body of a case label up to the next case, or of a private method. */
+/** The method an action runs, or a private method by its name. */
 $body = static function (string $name) use ($controller): string {
-    if (preg_match("/case \\(?'" . preg_quote($name, '/') . "'\\)?:(.*?)(?=\\n\\s*case |\\n\\s*default:)/s", $controller, $m)) {
-        return $m[1];
+    $action = harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $name);
+    if ($action !== '') {
+        return $action;
     }
     if (preg_match('/private (?:static )?function ' . preg_quote($name, '/') . '\(.*?\n    \}\n/s', $controller, $m)) {
         return $m[0];
@@ -75,17 +76,19 @@ harness_section('Old URLs');
 
 $routes = array('database', 'system_info', 'system-info', 'upgrade', 'backup', 'import', 'import_post', 'jobs', 'cache', 'jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear');
 foreach ($routes as $action) {
-    check("the controller routes action=$action", (bool) preg_match("/case \\(?'" . preg_quote($action, '/') . "'\\)?:/", $controller));
+    check("the controller routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
-check('action=database redirects to the Database tab', (bool) preg_match("/case 'database':\\s*(?:\\/\\/[^\\n]*\\s*)?\\\$this->redirectTo\\(self::databaseUrl\\(\\)\\);/", $controller));
-check('...which is System info > Database', strpos($body('databaseUrl'), "DatabaseTools::movedTo('database')") !== false);
-pin('...at this address', '?page=tools&action=system-info&tab=database', \mindstellar\admin\DatabaseTools::movedTo('database'));
-check('no action lands on System info', (bool) preg_match("/case 'system-info':\\s*default:\\s*\\\$this->systemInfoPage\\(\\);/", $controller));
+check('action=database redirects to the Database tab', strpos($body('database'), '$this->redirectTo(self::databaseUrl());') !== false);
+check('...which is System info > Database', strpos($body('databaseUrl'), "self::movedTo('database')") !== false);
+pin('...at this address', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
+check('no action lands on System info', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', 'doModel'), "actionMethod('systemInfo')") !== false
+    && strpos($body('system-info'), '$this->systemInfoPage();') !== false);
 check('#backup and #restore on the old Database URL follow to Backup and restore', strpos($shell, "location.hash === '#backup' || location.hash === '#restore'") !== false);
 check('the old Database page file is gone', !is_file($theme . 'tools/database.php'));
-check('action=jobs and action=cache redirect through movedTo', (bool) preg_match("/case \\(?'cache'\\)?:\\s*case 'jobs':\\s*(?:\\/\\/[^\\n]*\\s*)?\\\$this->redirectTo\\(osc_admin_base_url\\(true\\) \\. DatabaseTools::movedTo\\(\\\$this->action\\)\\);/", $controller));
-pin('...to the Jobs tab', '?page=tools&action=system-info&tab=jobs', \mindstellar\admin\DatabaseTools::movedTo('jobs'));
-pin('...and the Cache tab', '?page=tools&action=system-info&tab=cache', \mindstellar\admin\DatabaseTools::movedTo('cache'));
+check('action=jobs and action=cache redirect through movedTo', $body('jobs') === $body('cache')
+    && strpos($body('jobs'), '$this->redirectTo(osc_admin_base_url(true) . self::movedTo($this->action));') !== false);
+pin('...to the Jobs tab', '?page=tools&action=system-info&tab=jobs', CAdminTools::movedTo('jobs'));
+pin('...and the Cache tab', '?page=tools&action=system-info&tab=cache', CAdminTools::movedTo('cache'));
 check('the old Background jobs and Cache page files are gone', !is_file($theme . 'tools/jobs.php') && !is_file($theme . 'tools/cache.php'));
 check('reopening after a restore lands on the Database tab', strpos($body('backup_reopen'), 'self::databaseUrl()') !== false);
 
@@ -114,17 +117,19 @@ foreach (array("Params::getParam('upgrade')", "Params::getParam('repair')") as $
 check('posts are read only on the Database tab', strpos($body('systemInfoPage'), "\$tab === 'database' && Params::getServerParam('REQUEST_METHOD') === 'POST'") !== false);
 check('Repair is refused while an update waits', (static function (string $c): bool {
     $wait = strpos($c, 'if ($pending !== array())');
-    $run  = strpos($c, 'SchemaReconciler($conn))->repair()');
+    $run  = strpos($c, 'DatabaseTools::repair()');
 
     return $wait !== false && $run !== false && $wait < $run;
 })($post));
 check('Repair is refused when nothing is fixable', (static function (string $c): bool {
     $refuse = strpos($c, '!DatabaseTools::repairAllowed($findings, $pending)');
-    $run    = strpos($c, 'SchemaReconciler($conn))->repair()');
+    $run    = strpos($c, 'DatabaseTools::repair()');
 
     return $refuse !== false && $run !== false && $refuse < $run;
 })($post));
-check('Repair waits for a running upgrade', strpos($post, 'DatabaseTools::upgradeLock($conn)') !== false && strpos($post, '$release();') !== false);
+$repair = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/DatabaseTools.php');
+check('Repair waits for a running upgrade', strpos($post, 'if ($repair === null)') !== false
+    && strpos($repair, 'self::upgradeLock($conn)') !== false && strpos($repair, '$release();') !== false);
 check('the update dialog posts to the Database tab', (bool) preg_match("/'id'\\s*=> 'db-update-dialog',.*?'url'\\s*=> SystemChecks::url\\(\\\$env, 'database', 'db-update'\\)/s", $shell));
 check('the Repair dialog posts to the Database tab', strpos($database, "\$self       = SystemChecks::url(\$env, 'database');") !== false);
 check('the Repair dialog renders only when Repair may run', (bool) preg_match(
@@ -142,6 +147,13 @@ check('the report is read for the Overview and the Database tab only', (bool) pr
 ));
 check('a fact group can carry the anchor See which points at', strpos($shell, "isset(\$group['id']) ? ' id=\"' . osc_esc_html(\$group['id']) . '\"' : ''") !== false);
 check('the Database tab partial adds no verdict box or empty-state block for it', strpos($database, 'strict') === false && strpos($database, 'osc_admin_empty(') === false);
+
+harness_section('Admin address allow list');
+
+check('the Security tab is told how many entries OSC_ADMIN_IP_ALLOW has, or null when it is off', strpos(
+    $body('systemEnvironment'),
+    "'admin_ip_allow'   => (\$allow = \\mindstellar\\security\\AdminIpAllowlist::fromConfig()) === null ? null : \$allow->count(),"
+) !== false);
 
 harness_section('Actions on the new tabs');
 
@@ -174,7 +186,7 @@ foreach (array('login_throttle_unblock', 'login_throttle_reset') as $action) {
     check("...which the Security tab posts to", strpos($security, "'action'     => '$action'") !== false || strpos($security, "'action' => '$action'") !== false);
 }
 check('Security tab URL', strpos($spamCtl, "'?page=tools&action=system-info&tab=security#signin-activity'") !== false);
-check('Spam and bots keeps its settings form', strpos($spamView, "\$forms['login_throttle']") !== false);
+check('Spam and bots keeps its settings form', strpos($spamView, "'signin'   => array(") !== false && strpos($spamView, "'login_throttle'") !== false && strpos($spamView, 'osc_admin_settings_form($forms[$form][\'id\']') !== false);
 check('...but no longer lists who is blocked', strpos($spamView, 'login_throttle_activity') === false && strpos($spamView, 'login_throttle_unblock') === false);
 check('...and links to the Security tab instead', strpos($spamView, 'tab=security#signin-activity') !== false);
 

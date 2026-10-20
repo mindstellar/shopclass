@@ -34,7 +34,7 @@ class CAdminEmails extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->emailManager = Page::newInstance();
+        $this->emailManager = Page::getInstance();
         osc_run_hook('init_admin_emails');
     }
 
@@ -56,21 +56,21 @@ class CAdminEmails extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
                 }
 
-                $form     = count(Session::newInstance()->_getForm());
-                $keepForm = count(Session::newInstance()->_getKeepForm());
+                $form     = count(Session::getInstance()->_getForm());
+                $keepForm = count(Session::getInstance()->_getKeepForm());
                 if ($form == 0 || $form == $keepForm) {
-                    Session::newInstance()->_dropKeepForm();
+                    Session::getInstance()->_dropKeepForm();
                 }
 
-                $this->_exportVariableToView('email', $this->emailManager->findByPrimaryKey(Params::getParam('id')));
+                $this->_exportVariableToView('email', $this->emailManager->findByPrimaryKey(Params::getParamInt('id')));
                 $this->doView('emails/frm.php');
                 break;
             case 'edit_post':
                 osc_csrf_check();
-                $id = Params::getParam('id');
+                $id = Params::getParamInt('id');
 
                 $aFieldsDescription = self::descriptions(Params::getParamsAsArray('', false));
-                Session::newInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
+                Session::getInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
 
                 if (!self::save($id, $aFieldsDescription, $this->emailManager)) {
                     $error = _m('The email couldn\'t be updated, at least one title should not be empty');
@@ -81,20 +81,20 @@ class CAdminEmails extends AdminSecBaseModel
                     break;
                 }
 
-                Session::newInstance()->_clearVariables();
+                Session::getInstance()->_clearVariables();
                 osc_add_flash_ok_message(_m('The email/alert has been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
                 break;
             default:
                 //-
-                Params::setParam('iDisplayLength', ListPaging::length());
+                $limit = ListPaging::length();
+                Params::setParam('iDisplayLength', $limit);
                 $p_iPage = ListPaging::page();
 
                 $prefLocale = osc_current_admin_locale();
                 $emails     = $this->emailManager->listAll(1);
 
                 // pagination
-                $limit = ListPaging::length();
                 $start = ListPaging::start($p_iPage, $limit);
                 $count = count($emails);
 
@@ -137,22 +137,9 @@ class CAdminEmails extends AdminSecBaseModel
                 $array['iDisplayLength']       = $limit;
                 $array['aaData']               = $aData;
 
-                $page = Params::getParamInt('iPage');
-                if (count($array['aaData']) == 0 && $page != 1) {
-                    $total   = $array['iTotalDisplayRecords'];
-                    $maxPage = ceil($total / (int)$array['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-
-                    if ($maxPage == 0) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=1', $url);
-                        $this->redirectTo($url);
-                    }
-
-                    if ($page > 1) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url);
-                        $this->redirectTo($url);
-                    }
+                $pastEnd = ListPaging::pastEnd($array, $p_iPage);
+                if ($pastEnd !== null) {
+                    $this->redirectTo($pastEnd);
                 }
 
                 $this->_exportVariableToView('aEmails', $array);

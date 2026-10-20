@@ -16,7 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\admin\form\CommentSettingsForm;
+use mindstellar\admin\form\CommentSettingsScreen;
 use mindstellar\admin\form\CoreSettings;
 
 /**
@@ -50,7 +50,7 @@ class CAdminSettingsComments extends AdminSecBaseModel
                 // updating comment
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(CommentSettingsForm::register());
+                $result = CoreSettings::attempt(CommentSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     // Redrawn with what was typed rather than thrown away with a redirect.
                     $this->drawForm($result['values']);
@@ -72,7 +72,7 @@ class CAdminSettingsComments extends AdminSecBaseModel
      */
     private function drawForm(?array $values = null)
     {
-        $this->_exportVariableToView('comment_form', CommentSettingsForm::formVars($values));
+        $this->_exportVariableToView('comment_form', CommentSettingsScreen::formVars($values));
         $this->doView('settings/comments.php');
     }
 }

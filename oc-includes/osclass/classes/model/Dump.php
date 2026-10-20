@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
 use mindstellar\database\TablePrefix;
 
 /**
@@ -22,13 +23,7 @@ use mindstellar\database\TablePrefix;
  */
 class Dump extends DAO
 {
-    /**
-     * It references to self object: Dump.
-     * It is used as a singleton
-     *
-     * @var Dump
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /** Bytes collected before table_data() writes them out. */
     private const CHUNK = 1048576;
@@ -40,17 +35,11 @@ class Dump extends DAO
     private const INSERT_BYTES = 1048576;
 
     /**
-     * Return the shared Dump model instance, creating it on first use.
-     *
-     * @return \Dump
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -92,12 +81,12 @@ class Dump extends DAO
         // SHOW TABLES is not a SELECT/INSERT/UPDATE/DELETE and carries no values,
         // so it runs as raw SQL through the parameterized layer with no bindings.
         try {
-            $rows = osc_db_select('SHOW TABLES');
+            $rows = Db::select('SHOW TABLES');
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -124,7 +113,7 @@ class Dump extends DAO
         $result = array();
         if ($this->isValidTableName($table)) {
             try {
-                $result = osc_db_select('SHOW CREATE TABLE `' . $table . '`');
+                $result = Db::select('SHOW CREATE TABLE `' . $table . '`');
             } catch (\mindstellar\database\DbException $e) {
                 $result = array();
             }
@@ -177,7 +166,7 @@ class Dump extends DAO
         // An unusable identifier or a failed query writes only the trailing newline.
         $res = false;
         if ($this->isValidTableName($table)) {
-            $conn = \mindstellar\database\ConnectionManager::newInstance()->getHandle();
+            $conn = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
             if ($conn instanceof mysqli) {
                 try {
                     $res = $conn->query('SELECT * FROM `' . $table . '`', MYSQLI_USE_RESULT);
@@ -378,7 +367,7 @@ class Dump extends DAO
             return $value;
         }
 
-        $conn = \mindstellar\database\ConnectionManager::newInstance()->getHandle();
+        $conn = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
         $escaped = $conn instanceof mysqli ? $conn->real_escape_string((string)$value) : addslashes((string)$value);
 
         return "'" . $escaped . "'";

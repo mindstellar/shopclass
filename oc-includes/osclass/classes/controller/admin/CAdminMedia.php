@@ -16,6 +16,10 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
+use mindstellar\auth\Actor;
+use mindstellar\listing\PhotoService;
+
 /**
  * Class CAdminMedia
  */
@@ -24,17 +28,14 @@ class CAdminMedia extends AdminSecBaseModel
     /** Page sizes offered in the toolbar; anything else falls back to the default. */
     public const PER_PAGE_OPTIONS = array(10, 25, 50, 100, 250, 500);
 
-    private ItemResource $resourcesManager;
-
     /**
-     * Take the item-resource manager for this request.
+     * Fires `init_admin_media`.
      */
     public function __construct()
     {
         parent::__construct();
 
         //specific things for this class
-        $this->resourcesManager = ItemResource::newInstance();
         osc_run_hook('init_admin_media');
     }
 
@@ -57,24 +58,43 @@ class CAdminMedia extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
                 $this->redirectTo($this->libraryUrl(Params::getParam('type')));
                 break;
+            case ('bulk'):
+                osc_csrf_check();
+                $deleted = 0;
+                if (Params::getParamString('bulk_actions') === 'delete') {
+                    // Each pick is "src:id", the same pair the single delete takes.
+                    foreach (Params::getParamArray('media') as $pick) {
+                        [$src, $id] = array_pad(explode(':', (string) $pick, 2), 2, '');
+                        if (in_array($src, array('item', 'resource'), true) && (int) $id > 0) {
+                            $this->deleteMedia($src, (int) $id);
+                            $deleted++;
+                        }
+                    }
+                }
+                if ($deleted > 0) {
+                    osc_add_flash_ok_message(sprintf(_mn('One file deleted', '%d files deleted', $deleted), $deleted), 'admin');
+                } else {
+                    osc_add_flash_info_message(_m('No files were selected'), 'admin');
+                }
+                $this->redirectTo($this->libraryUrl(Params::getParam('type')));
+                break;
             default:
-                $type = $this->resolveType(Params::getParam('type'));
-                // Same ladder every other list screen offers, so the control means the
-                // same thing here as it does on listings or users.
-                $perPage = Params::getParamInt('iDisplayLength');
-                if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
-                    $perPage = 25;
-                }
-                $iPage = max(1, Params::getParamInt('iPage'));
-                $data    = osc_media_library_query($type, $iPage, $perPage);
+                $type    = $this->resolveType(Params::getParam('type'));
+                $search  = Params::getParamString('q');
+                $perPage = ListPaging::length(25);
+                $iPage   = ListPaging::page();
+                $data    = osc_media_library_query($type, $iPage, $perPage, $search);
 
-                // Snap a too-high page back to the last one with results.
-                $maxPage = max(1, (int) ceil($data['total'] / $perPage));
-                if ($iPage > $maxPage) {
-                    $this->redirectTo($this->libraryUrl($type) . '&iPage=' . $maxPage);
+                $pastEnd = ListPaging::pastEndUrl(count($data['rows']), (int) $data['total'], $perPage, $iPage);
+                if ($pastEnd !== null) {
+                    $this->redirectTo($pastEnd);
                 }
 
+                $summary = \mindstellar\storage\MediaQuery::summary();
                 $this->_exportVariableToView('mediaType', $type);
+                $this->_exportVariableToView('mediaSearch', $search);
+                $this->_exportVariableToView('mediaSummary', $summary);
+                $this->_exportVariableToView('mediaView', Params::getParamString('view') === 'grid' ? 'grid' : 'list');
                 $this->_exportVariableToView('mediaFilters', $this->getFilters());
                 $this->_exportVariableToView('mediaRows', $data['rows']);
                 $this->_exportVariableToView('mediaTotal', $data['total']);
@@ -125,7 +145,7 @@ class CAdminMedia extends AdminSecBaseModel
      * Filter pills for the library: All, Listings (item), then a pill per owner
      * type in t_resource (Users, Pages, or a plugin-defined type).
      *
-     * @return array<int,array{type:string,label:string}>
+     * @return array<int,array<string,mixed>>
      */
     private function getFilters()
     {
@@ -161,14 +181,17 @@ class CAdminMedia extends AdminSecBaseModel
         }
 
         if ($src === 'item') {
-            osc_deleteResource($id, true);
-            $this->resourcesManager->deleteResourcesIds(array($id));
-            Log::newInstance()->insertLog('media', 'delete', (string) $id, (string) $id, 'admin', osc_logged_admin_id());
+            (new PhotoService())->delete(
+                $id,
+                null,
+                Actor::fromSession(true)
+            );
         } elseif ($src === 'resource') {
-            $row = \mindstellar\model\Resource::newInstance()->findByPrimaryKey($id);
-            if ($row !== null) {
+            $row = (new \mindstellar\model\Resource())->findByPrimaryKey($id);
+            // A listing photo goes through PhotoService, which clears the listing's cache and fires its hooks.
+            if ($row !== null && $row['s_owner_type'] !== \ItemResource::OWNER) {
                 (new \mindstellar\storage\ResourceUploader())->delete($row);
-                Log::newInstance()
+                Log::getInstance()
                     ->insertLog('media', 'delete', (string) $id, (string) $id, 'admin', osc_logged_admin_id());
             }
         }

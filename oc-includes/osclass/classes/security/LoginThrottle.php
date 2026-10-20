@@ -11,7 +11,6 @@
 namespace mindstellar\security;
 
 use LoginAttempt;
-use Params;
 
 /**
  * Rate limit for the sign-in and password-reset forms.
@@ -24,8 +23,8 @@ use Params;
  *
  * Two counters over one rolling window, both fed by {@see LoginAttempt}:
  *
- *   by address  every failure from one IP, whichever account it aimed at.
- *               Over the limit blocks that address outright.
+ *   by address  every failure from one IP (an IPv6 /64, see {@see AddressBucket}),
+ *               whichever account it aimed at. Over the limit blocks that address outright.
  *   by account  every failure against one submitted name, from wherever.
  *               Over the limit blocks, unless the caller solved a captcha.
  *
@@ -74,7 +73,7 @@ class LoginThrottle
      * Call it after the form's own captcha check, and pass whether that check
      * actually cleared a captcha on this request.
      *
-     * @param string $context       'web' or 'admin'
+     * @param string $context       'web' or 'admin', or a recovery context
      * @param string $account       identifier as submitted
      * @param bool   $captchaSolved true only when this request presented a
      *                              captcha and it verified. Excuses the
@@ -92,11 +91,11 @@ class LoginThrottle
 
         $window  = self::windowSeconds();
         $since   = self::since($window);
-        $ip      = self::ip();
+        $ip      = AddressBucket::ofRequest();
         $account = self::normalise($account);
 
         try {
-            $model = LoginAttempt::newInstance();
+            $model = LoginAttempt::getInstance();
 
             $byIp = $ip !== '' ? self::ipWindow($ip, $since) : array('n' => 0, 'oldest' => null);
             if ($byIp['n'] >= osc_login_throttle_max_ip()) {
@@ -123,24 +122,71 @@ class LoginThrottle
     }
 
     /**
+     * Check one account's budget across all its names (username, e-mail) at once.
+     * The address is not checked here; evaluate() on the name as typed does that.
+     *
+     * @param string        $context
+     * @param array<string> $names         every name the account goes by
+     * @param bool          $captchaSolved as for evaluate()
+     *
+     * @return array{status:string,retry_after:int}
+     */
+    public static function evaluateAccount($context, array $names, $captchaSolved = false)
+    {
+        $pass  = array('status' => self::OK, 'retry_after' => 0);
+        $names = array_values(array_unique(array_filter(array_map(array(self::class, 'normalise'), $names), static fn (string $n): bool => $n !== '')));
+        if ($captchaSolved || $names === array() || !osc_login_throttle_enabled()) {
+            return $pass;
+        }
+
+        $window = self::windowSeconds();
+        $since  = self::since($window);
+        try {
+            $model = LoginAttempt::getInstance();
+            $total = 0;
+            foreach ($names as $name) {
+                $total += $model->countByAccount($context, $name, $since);
+            }
+            if ($total < osc_login_throttle_max_account()) {
+                return $pass;
+            }
+            $oldest = null;
+            foreach ($names as $name) {
+                $at = $model->oldestByAccount($context, $name, $since);
+                if ($at !== null && ($oldest === null || $at < $oldest)) {
+                    $oldest = $at;
+                }
+            }
+
+            return array('status' => self::BLOCKED, 'retry_after' => self::retryAfter($oldest, $window));
+        } catch (\Throwable $e) {
+            self::unavailable($e);
+        }
+
+        return $pass;
+    }
+
+    /**
      * Record one rejected attempt.
      *
      * @param string $context
-     * @param string $account identifier as submitted
+     * @param string $account     identifier as submitted
+     * @param bool   $withAddress false records it for the account only, for a second name of
+     *                            an attempt the address was already counted for
      *
      * @return void
      */
-    public static function recordFailure($context, $account)
+    public static function recordFailure($context, $account, $withAddress = true)
     {
         if (!osc_login_throttle_enabled()) {
             return;
         }
 
         try {
-            LoginAttempt::newInstance()->record(
+            LoginAttempt::getInstance()->record(
                 $context,
                 self::normalise($account),
-                self::ip(),
+                $withAddress ? AddressBucket::ofRequest() : '',
                 date('Y-m-d H:i:s')
             );
         } catch (\Throwable $e) {
@@ -154,9 +200,9 @@ class LoginThrottle
      *
      * @param string $context
      * @param string $account     identifier as submitted
-     * @param bool   $withAddress false keeps the address's failures: an API client can
-     *                            hold one account's password and guess at others from the
-     *                            same address
+     * @param bool   $withAddress false keeps the address's failures: a user can hold their
+     *                            own password and guess at other accounts from the same
+     *                            address, so a user sign-in passes false
      *
      * @return void
      */
@@ -167,12 +213,12 @@ class LoginThrottle
         }
 
         try {
-            $model   = LoginAttempt::newInstance();
+            $model   = LoginAttempt::getInstance();
             $account = self::normalise($account);
             if ($account !== '') {
                 $model->clearAccount($context, $account);
             }
-            $ip = self::ip();
+            $ip = AddressBucket::ofRequest();
             if ($withAddress && $ip !== '') {
                 self::clearSignInIp($ip);
             }
@@ -194,20 +240,10 @@ class LoginThrottle
     {
         $window = self::windowSeconds();
         $since  = self::since($window);
-        $table  = DB_TABLE_PREFIX . 't_login_attempt';
         $out    = array();
 
         try {
-            $rows = osc_db_table($table)
-                ->select('s_ip')
-                ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-                ->where('dt_date', '>', $since)
-                ->whereIn('s_context', self::CONTEXTS)
-                ->where('s_ip', '!=', '')
-                ->groupBy('s_ip')
-                ->orderBy('n', 'DESC')
-                ->limit((int)$limit)
-                ->get();
+            $rows = LoginAttemptStore::byIp(self::CONTEXTS, $since, (int)$limit);
             foreach ($rows as $row) {
                 $out[] = self::activityRow($row, osc_login_throttle_max_ip(), $window) + array(
                     'kind' => 'ip',
@@ -215,16 +251,7 @@ class LoginThrottle
                 );
             }
 
-            $rows = osc_db_table($table)
-                ->select('s_context', 's_account')
-                ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-                ->where('dt_date', '>', $since)
-                ->whereIn('s_context', self::CONTEXTS)
-                ->where('s_account', '!=', '')
-                ->groupBy('s_context', 's_account')
-                ->orderBy('n', 'DESC')
-                ->limit((int)$limit)
-                ->get();
+            $rows = LoginAttemptStore::byAccount(self::CONTEXTS, $since, (int)$limit);
             foreach ($rows as $row) {
                 // With a captcha, the account limit is off, so no account is blocked.
                 $max   = osc_captcha_enabled() ? PHP_INT_MAX : osc_login_throttle_max_account();
@@ -246,14 +273,14 @@ class LoginThrottle
     /**
      * Let one address sign in again straight away.
      *
-     * @param string $ip
+     * @param string $ip an address or its bucket; an IPv6 address frees its whole /64
      *
      * @return void
      */
     public static function unblockIp($ip)
     {
         try {
-            self::clearSignInIp((string)$ip);
+            self::clearSignInIp(AddressBucket::of((string)$ip));
         } catch (\Throwable $e) {
             self::unavailable($e);
         }
@@ -270,12 +297,7 @@ class LoginThrottle
      */
     private static function ipWindow($ip, $since)
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_login_attempt')
-            ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-            ->where('s_ip', (string)$ip)
-            ->whereIn('s_context', self::CONTEXTS)
-            ->where('dt_date', '>', $since)
-            ->first();
+        $row = LoginAttemptStore::ipWindow((string)$ip, self::CONTEXTS, (string)$since);
 
         return array(
             'n'      => (int)($row['n'] ?? 0),
@@ -293,10 +315,7 @@ class LoginThrottle
      */
     private static function clearSignInIp($ip)
     {
-        osc_db_table(DB_TABLE_PREFIX . 't_login_attempt')
-            ->where('s_ip', (string)$ip)
-            ->whereIn('s_context', self::CONTEXTS)
-            ->delete();
+        LoginAttemptStore::clearIp((string)$ip, self::CONTEXTS);
     }
 
     /**
@@ -310,7 +329,7 @@ class LoginThrottle
     public static function unblockAccount($context, $account)
     {
         try {
-            LoginAttempt::newInstance()->clearAccount((string)$context, (string)$account);
+            LoginAttempt::getInstance()->clearAccount((string)$context, (string)$account);
         } catch (\Throwable $e) {
             self::unavailable($e);
         }
@@ -347,14 +366,23 @@ class LoginThrottle
         }
 
         try {
-            return LoginAttempt::newInstance()->pruneBefore(
-                date('Y-m-d H:i:s', time() - ($days * 86400))
-            );
+            return LoginAttemptStore::pruneBefore(date('Y-m-d H:i:s', time() - ($days * 86400)));
         } catch (\Throwable $e) {
             self::unavailable($e);
 
             return 0;
         }
+    }
+
+    /**
+     * Forget every recorded attempt, so anyone locked out can sign in again.
+     *
+     * @return int rows removed
+     * @throws \mindstellar\database\DbException
+     */
+    public static function clearAll()
+    {
+        return LoginAttemptStore::pruneBefore(date('Y-m-d H:i:s'));
     }
 
     /**
@@ -439,20 +467,5 @@ class LoginThrottle
     private static function since($window)
     {
         return date('Y-m-d H:i:s', time() - $window);
-    }
-
-    /**
-     * The address the request came from.
-     *
-     * REMOTE_ADDR only. A forwarded-for header is written by the client, so
-     * trusting it here would let an attacker reset their own counter on every
-     * request by inventing a new one. An install behind a proxy needs the proxy
-     * to set REMOTE_ADDR, which is what the ban rules already assume.
-     *
-     * @return string
-     */
-    private static function ip()
-    {
-        return (string)Params::getServerParam('REMOTE_ADDR');
     }
 }

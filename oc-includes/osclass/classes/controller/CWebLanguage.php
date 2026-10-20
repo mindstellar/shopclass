@@ -37,7 +37,7 @@ class CWebLanguage extends BaseModel
      */
     public function doModel()
     {
-        $locale = Params::getParam('locale');
+        $locale = Params::getParamString('locale');
         if ($locale && (new Validate())->localeCode($locale)) {
             osc_set_current_user_locale($locale);
         }

@@ -253,6 +253,9 @@ $table-cell-vertical-align: middle;
   --osc-chrome:        #e4e9ef;
   --osc-chrome-edge:   #cfd6df;
   --osc-chrome-hover:  rgba(15, 24, 40, .07);
+  --osc-tab-indicator:      var(--osc-ink-emphasis); // the current tab's underline: slate, quieter than teal
+  --osc-count-on-fill-bg:   var(--osc-bench);   // a count chip on a filled teal button
+  --osc-count-on-fill-ink:  var(--osc-bronze);
   // Resting nav-label ink. It sits on --osc-chrome, NOT white, so it cannot use --osc-ink-muted
   // (#5f6b7a): that pair is 4.44:1 on chrome, just under the 4.5 text bar. This is one step
   // darker — 5.02:1 on chrome — and still reads as "resting/muted" against the ink the label

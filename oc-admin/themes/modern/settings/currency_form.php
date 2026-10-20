@@ -95,7 +95,7 @@ function customPageTitle($string)
 
 osc_add_filter('admin_title', 'customPageTitle');
 
-$aCurrency = View::newInstance()->_get('aCurrency');
+$aCurrency = View::getInstance()->_get('aCurrency');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="add-currency-settings">

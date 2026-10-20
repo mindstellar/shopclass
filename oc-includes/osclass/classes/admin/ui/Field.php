@@ -146,6 +146,10 @@ class Field
                 echo '<label class="field-prefix"' . $affixFor . '>' . osc_esc_html($prefix) . '</label>';
             }
 
+            // The help explains the choices, so a category list reads it before its cards.
+            if ($type === 'category_modes') {
+                self::help($spec);
+            }
             self::control($type, $id, $spec);
 
             if ($suffix !== '') {
@@ -157,7 +161,9 @@ class Field
 
             if ($type !== 'hidden') {
                 self::errorText($id, $spec);
-                self::help($spec);
+                if ($type !== 'category_modes') {
+                    self::help($spec);
+                }
             }
         }
 
@@ -277,6 +283,15 @@ class Field
                 if (isset($spec['render']) && is_callable($spec['render'])) {
                     call_user_func($spec['render'], $spec);
                 }
+                break;
+
+            case 'category_modes':
+                Picker::categoryModes(array(
+                    'id'    => $id,
+                    'name'  => $name,
+                    'modes' => $spec['modes'] ?? array(),
+                    'value' => $value,
+                ) + (isset($spec['categories']) ? array('categories' => $spec['categories']) : array()));
                 break;
 
             case 'select':
@@ -583,8 +598,9 @@ class Field
         if (!empty($spec['media'])) {
             // The library picker and the paste/drop upload are the script's to wire, since
             // both are callbacks; what it cannot invent is the signed endpoint.
-            $overrides['osc_media']      = true;
-            $overrides['osc_upload_url'] = (string)($spec['upload_url'] ?? '');
+            $overrides['osc_media']         = true;
+            $overrides['osc_upload_url']    = (string)($spec['upload_url'] ?? '');
+            $overrides['osc_library_label'] = __('Insert from media library');
         }
 
         if (!function_exists('osc_tinymce_config')) {

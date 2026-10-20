@@ -62,3 +62,18 @@ osc_add_filter('mail_layout', function (string $html, array $mail, array $params
 
 A body that is already a whole HTML document (it contains `<html`) is sent as it
 is. To skip the layout on purpose, pass `'layout' => false` to `osc_sendMail()`.
+
+## Telling the site owner
+
+`osc_mail_admin($subject, $lines)` (7.0+) e-mails the site's contact address in this layout.
+Each line is plain text and becomes its own escaped paragraph.
+
+```php
+osc_mail_admin('[Acme] Payout failed', [
+    'The payout for order #' . $orderId . ' was refused.',
+    'Open Billing, then Orders, to retry it.',
+]);
+```
+
+It returns `false` instead of throwing when the mail cannot be sent, so it is safe to call
+from a callback or a job.

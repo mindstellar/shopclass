@@ -12,6 +12,8 @@
 namespace mindstellar\job;
 
 use InvalidArgumentException;
+use mindstellar\base\SharedInstance;
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
 
@@ -32,6 +34,8 @@ use mindstellar\database\QueryBuilder;
  */
 final class JobQueue
 {
+    use SharedInstance;
+
     public const STATUS_PENDING = 'pending';
     public const STATUS_RUNNING = 'running';
     public const STATUS_ERROR   = 'error';
@@ -42,22 +46,18 @@ final class JobQueue
     /** A `running` row older than this is treated as a dead worker's and recovered. */
     public const STALE_LOCK_SECONDS = 900;
 
+    /** The signal a listening worker waits on; see wake(). */
+    public const SIGNAL = 'jobs';
+
     /** The largest encoded payload s_payload (TEXT) holds. */
     public const MAX_PAYLOAD_BYTES = 65535;
 
-    /** @var JobQueue|null */
-    private static $instance;
-
     /**
-     * @return JobQueue
+     * @deprecated 7.0.0 Use getInstance().
      */
     public static function instance(): self
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -68,6 +68,42 @@ final class JobQueue
     public function table(): string
     {
         return DB_TABLE_PREFIX . 't_job_queue';
+    }
+
+    /**
+     * Waiting and finished jobs of one type whose payload contains $needle.
+     */
+    public function ofTypeContaining(string $type, string $needle): QueryBuilder
+    {
+        return Db::table($this->table())->where('s_type', $type)->like('s_payload', $needle);
+    }
+
+    /**
+     * Put a running job's row back under its own id after a restore replaced the table.
+     * Rows of types matching $dropLike go; another row restored under the id is moved aside.
+     *
+     * @throws DbException
+     */
+    public function reinstate(int $id, string $type, string $dropLike): void
+    {
+        $table = $this->table();
+        Db::execute('DELETE FROM ' . $table . ' WHERE s_type LIKE ?', array($dropLike));
+        $other = Db::table($table)->where('pk_i_id', $id)->first();
+        if ($other !== null) {
+            unset($other['pk_i_id']);
+            Db::table($table)->insert($other);
+            Db::table($table)->where('pk_i_id', $id)->delete();
+        }
+        $now = date('Y-m-d H:i:s');
+        Db::table($table)->insert(array(
+            'pk_i_id'     => $id,
+            's_type'      => $type,
+            's_payload'   => '{}',
+            's_status'    => 'running',
+            'dt_next_run' => $now,
+            'dt_created'  => $now,
+            'dt_locked'   => $now,
+        ));
     }
 
     /** Rows per INSERT in enqueueMany(). */
@@ -108,18 +144,23 @@ final class JobQueue
         try {
             // keep_existing: a key clash leaves the waiting job alone and queues nothing.
             if ($unique === null || !empty($options['keep_existing'])) {
-                return osc_db_table($this->table())->insert($row);
+                $id = (int) Db::table($this->table())->insert($row);
+            } else {
+                // LAST_INSERT_ID(pk_i_id) makes a matched row's id the insert id.
+                $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'
+                    . ' VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')'
+                    . self::onDuplicate() . ', pk_i_id = LAST_INSERT_ID(pk_i_id)';
+
+                $id = (int) Db::retryOnce(static fn () => Db::insertGetId($sql, array_values($row)));
             }
-
-            // LAST_INSERT_ID(pk_i_id) makes a matched row's id the insert id.
-            $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'
-                . ' VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')'
-                . self::onDuplicate() . ', pk_i_id = LAST_INSERT_ID(pk_i_id)';
-
-            return (int) self::retryOnce(static fn () => osc_db_insert_id($sql, array_values($row)));
         } catch (DbException $e) {
             return 0;
         }
+        if ($id > 0 && empty($options['delay'])) {
+            self::wake();
+        }
+
+        return $id;
     }
 
     /**
@@ -187,11 +228,14 @@ final class JobQueue
                 . ' VALUES ' . implode(', ', array_fill(0, count($chunk), $tuple))
                 . self::onDuplicate();
             try {
-                self::retryOnce(static fn () => osc_db_execute($sql, $params));
+                Db::retryOnce(static fn () => Db::execute($sql, $params));
                 $queued += count($chunk);
             } catch (DbException $e) {
                 // A failed chunk is not counted; the others still go in.
             }
+        }
+        if ($queued > 0 && empty($options['delay'])) {
+            self::wake();
         }
 
         return $queued;
@@ -235,7 +279,7 @@ final class JobQueue
 
         try {
             $q = self::whereType(
-                osc_db_table($this->table())
+                Db::table($this->table())
                     ->select('s_status')
                     ->selectRaw('COUNT(*) AS i_count')
                     ->selectRaw('MIN(dt_created) AS dt_oldest')
@@ -297,26 +341,6 @@ final class JobQueue
     }
 
     /**
-     * Run $fn, and once more if it fails: a keyed insert can lose a lock race (deadlock)
-     * with another insert or a claim, and the second try almost always goes through.
-     *
-     * @param callable $fn
-     *
-     * @return mixed
-     * @throws DbException when both tries fail
-     */
-    private static function retryOnce(callable $fn)
-    {
-        try {
-            return $fn();
-        } catch (DbException $e) {
-            usleep(50000);
-
-            return $fn();
-        }
-    }
-
-    /**
      * The update a key clash applies: the new payload, and a fresh retry state.
      *
      * @return string
@@ -371,7 +395,7 @@ final class JobQueue
         // A hiccup recovering stale locks must not abort the claim below, so it is
         // absorbed: the worst case is that a dead worker's rows wait one more tick.
         try {
-            osc_db_execute(
+            Db::execute(
                 'UPDATE ' . $table . ' SET s_status = ?, s_worker = NULL'
                 . ' WHERE s_status = ? AND dt_locked < ?',
                 array(self::STATUS_PENDING, self::STATUS_RUNNING, $stale)
@@ -390,14 +414,14 @@ final class JobQueue
                 $only     = " AND s_type LIKE ? ESCAPE '!'";
                 $params[] = str_replace(array('!', '%', '_'), array('!!', '!%', '!_'), $typePrefix) . '%';
             }
-            osc_db_execute(
+            Db::execute(
                 'UPDATE ' . $table . ' SET s_status = ?, s_worker = ?, dt_locked = ?'
                 . ' WHERE s_status = ? AND dt_next_run <= ?' . $only
                 . ' ORDER BY pk_i_id LIMIT ' . (int) max(1, $batch),
                 $params
             );
 
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT * FROM ' . $table . ' WHERE s_worker = ? AND s_status = ?'
                 . ' ORDER BY pk_i_id',
                 array($token, self::STATUS_RUNNING)
@@ -418,13 +442,13 @@ final class JobQueue
         }
         if ($keyed !== array()) {
             try {
-                osc_db_table($table)->whereIn('pk_i_id', $keyed)->update(array('s_unique' => null));
+                Db::table($table)->whereIn('pk_i_id', $keyed)->update(array('s_unique' => null));
             } catch (DbException $e) {
                 // absorbed
             }
         }
 
-        return $rows === array() ? array() : osc_db_stringify_rows($rows);
+        return $rows === array() ? array() : Db::stringifyRows($rows);
     }
 
     /**
@@ -448,8 +472,8 @@ final class JobQueue
         }
 
         try {
-            $row = osc_db_select_one('SELECT s_payload FROM ' . $table . $where, $args);
-            if (!$row || (int) osc_db_execute('DELETE FROM ' . $table . $where, $args) !== 1) {
+            $row = Db::selectOne('SELECT s_payload FROM ' . $table . $where, $args);
+            if (!$row || (int) Db::execute('DELETE FROM ' . $table . $where, $args) !== 1) {
                 return null;
             }
         } catch (DbException $e) {
@@ -472,7 +496,7 @@ final class JobQueue
     public function peek(int $id, string $type, string $key): ?array
     {
         try {
-            $row = osc_db_select_one(
+            $row = Db::selectOne(
                 'SELECT s_payload FROM ' . $this->table() . ' WHERE pk_i_id = ? AND s_type = ? AND s_status = ? AND s_unique = ?',
                 array($id, $type, self::STATUS_PENDING, $key)
             );
@@ -495,7 +519,7 @@ final class JobQueue
     public function hasKey(string $type, string $key): bool
     {
         try {
-            return (int) osc_db_scalar(
+            return (int) Db::scalar(
                 'SELECT COUNT(*) FROM ' . $this->table() . ' WHERE s_type = ? AND s_unique = ?',
                 array($type, $key)
             ) > 0;
@@ -514,7 +538,7 @@ final class JobQueue
     public function complete(int $id): void
     {
         try {
-            osc_db_table($this->table())->where('pk_i_id', $id)->delete();
+            Db::table($this->table())->where('pk_i_id', $id)->delete();
         } catch (DbException $e) {
             // The row stays claimed and a later tick recovers it as a stale lock. A
             // handler that ran twice is what idempotence is for.
@@ -542,14 +566,42 @@ final class JobQueue
         }
 
         try {
-            osc_db_table($this->table())->where('pk_i_id', $id)->update(self::resetColumns(array(
+            Db::table($this->table())->where('pk_i_id', $id)->update(self::resetColumns(array(
                 's_payload'   => $encoded,
                 's_status'    => self::STATUS_PENDING,
                 'dt_next_run' => date('Y-m-d H:i:s', time() + max(0, $delaySeconds)),
             )));
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers it
+            return;
         }
+        if ($delaySeconds <= 0) {
+            self::wake();
+        }
+    }
+
+    /**
+     * Tell a listening worker (`jobs:work --listen`) that a job is due now. Only a Redis-protocol
+     * cache carries the signal; the job itself is always in the table.
+     *
+     * @return void
+     */
+    private static function wake(): void
+    {
+        \mindstellar\cache\RedisCache::site()?->signal(self::SIGNAL);
+    }
+
+    /**
+     * Wait up to $seconds for wake().
+     *
+     * @param int $seconds
+     *
+     * @return bool|null true when woken, false on a timeout, null when no signal can come
+     *                   (no Redis-protocol cache, or its server is down)
+     */
+    public function waitForWake(int $seconds): ?bool
+    {
+        return \mindstellar\cache\RedisCache::site()?->waitSignal(self::SIGNAL, $seconds);
     }
 
     /**
@@ -617,27 +669,31 @@ final class JobQueue
             return;
         }
         try {
-            osc_db_table($this->table())
+            Db::table($this->table())
                 ->whereIn('pk_i_id', array_map('intval', $ids))
                 ->where('s_status', self::STATUS_RUNNING)
                 ->update(self::resetColumns(array('s_status' => self::STATUS_PENDING)));
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers them
+            return;
         }
+        self::wake();
     }
 
     /**
      * Record a failed attempt: back off, or dead-letter past the ceiling.
      *
-     * @param int    $id
-     * @param string $error
+     * @param int      $id
+     * @param string   $error
+     * @param int|null $delay       seconds until the next try, in place of the standard backoff
+     * @param int|null $maxAttempts tries before giving up, in place of MAX_ATTEMPTS
      *
      * @return bool true when the job gave up for good
      */
-    public function fail(int $id, string $error): bool
+    public function fail(int $id, string $error, ?int $delay = null, ?int $maxAttempts = null): bool
     {
         try {
-            $row = osc_db_table($this->table())->where('pk_i_id', $id)->first();
+            $row = Db::table($this->table())->where('pk_i_id', $id)->first();
         } catch (DbException $e) {
             return false;
         }
@@ -652,15 +708,16 @@ final class JobQueue
             's_last_error' => substr($error, 0, 250),
         ));
 
-        if ($attempts >= self::MAX_ATTEMPTS) {
+        if ($attempts >= ($maxAttempts ?? self::MAX_ATTEMPTS)) {
             $values['s_status'] = self::STATUS_ERROR;
         } else {
+            $wait                  = $delay !== null ? max(1, $delay) : (2 ** min($attempts - 1, 6)) * 60;
             $values['s_status']    = self::STATUS_PENDING;
-            $values['dt_next_run'] = date('Y-m-d H:i:s', time() + (2 ** min($attempts - 1, 6)) * 60);
+            $values['dt_next_run'] = date('Y-m-d H:i:s', time() + $wait);
         }
 
         try {
-            osc_db_table($this->table())->where('pk_i_id', $id)->update($values);
+            Db::table($this->table())->where('pk_i_id', $id)->update($values);
         } catch (DbException $e) {
             // absorbed
         }
@@ -669,7 +726,7 @@ final class JobQueue
         // that never runs. Its own statement, as in claim().
         if ($values['s_status'] === self::STATUS_ERROR) {
             try {
-                osc_db_execute('UPDATE ' . $this->table() . ' SET s_unique = NULL WHERE pk_i_id = ?', array($id));
+                Db::execute('UPDATE ' . $this->table() . ' SET s_unique = NULL WHERE pk_i_id = ?', array($id));
             } catch (DbException $e) {
                 // absorbed
             }
@@ -689,7 +746,7 @@ final class JobQueue
     public function count(string $status = self::STATUS_PENDING, ?string $type = null): int
     {
         try {
-            $q = self::whereType(osc_db_table($this->table())->where('s_status', $status), $type);
+            $q = self::whereType(Db::table($this->table())->where('s_status', $status), $type);
 
             return $q->count();
         } catch (DbException $e) {
@@ -721,11 +778,11 @@ final class JobQueue
     {
         $health = array('stuck' => 0, 'overdue' => null);
         try {
-            $health['stuck'] = osc_db_table($this->table())
+            $health['stuck'] = Db::table($this->table())
                 ->where('s_status', self::STATUS_RUNNING)
                 ->where('dt_locked', '<', date('Y-m-d H:i:s', time() - self::STALE_LOCK_SECONDS))
                 ->count();
-            $row = osc_db_select_one(
+            $row = Db::selectOne(
                 'SELECT MIN(dt_next_run) AS dt_due FROM ' . $this->table() . ' WHERE s_status = ?',
                 array(self::STATUS_PENDING)
             );
@@ -750,7 +807,7 @@ final class JobQueue
     public function page(?string $status = null, ?string $type = null, int $limit = 25, int $offset = 0): array
     {
         try {
-            $q = osc_db_table($this->table());
+            $q = Db::table($this->table());
             if ($status !== null && $status !== '') {
                 $q = $q->where('s_status', $status);
             }
@@ -764,7 +821,7 @@ final class JobQueue
             return array();
         }
 
-        return $rows === array() ? array() : osc_db_stringify_rows($rows);
+        return $rows === array() ? array() : Db::stringifyRows($rows);
     }
 
     /**
@@ -776,7 +833,7 @@ final class JobQueue
     public function queuedTypes(): array
     {
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT DISTINCT s_type FROM ' . $this->table() . ' ORDER BY s_type'
             );
         } catch (DbException $e) {
@@ -796,7 +853,7 @@ final class JobQueue
     public function retry(int $id): bool
     {
         try {
-            return osc_db_table($this->table())
+            $retried = Db::table($this->table())
                 ->where('pk_i_id', $id)
                 ->where('s_status', self::STATUS_ERROR)
                 ->update(self::resetColumns(array(
@@ -808,6 +865,11 @@ final class JobQueue
         } catch (DbException $e) {
             return false;
         }
+        if ($retried) {
+            self::wake();
+        }
+
+        return $retried;
     }
 
     /**
@@ -820,9 +882,9 @@ final class JobQueue
     public function retryAll(?string $type = null): int
     {
         try {
-            $q = self::whereType(osc_db_table($this->table())->where('s_status', self::STATUS_ERROR), $type);
+            $q = self::whereType(Db::table($this->table())->where('s_status', self::STATUS_ERROR), $type);
 
-            return $q->update(self::resetColumns(array(
+            $retried = $q->update(self::resetColumns(array(
                 's_status'     => self::STATUS_PENDING,
                 'i_attempts'   => 0,
                 's_last_error' => null,
@@ -831,6 +893,11 @@ final class JobQueue
         } catch (DbException $e) {
             return 0;
         }
+        if ($retried > 0) {
+            self::wake();
+        }
+
+        return $retried;
     }
 
     /**
@@ -843,7 +910,7 @@ final class JobQueue
     public function forget(int $id): bool
     {
         try {
-            return osc_db_table($this->table())
+            return Db::table($this->table())
                 ->where('pk_i_id', $id)
                 ->where('s_status', self::STATUS_ERROR)
                 ->delete() > 0;
@@ -862,7 +929,7 @@ final class JobQueue
     public function forgetAll(?string $type = null): int
     {
         try {
-            $q = self::whereType(osc_db_table($this->table())->where('s_status', self::STATUS_ERROR), $type);
+            $q = self::whereType(Db::table($this->table())->where('s_status', self::STATUS_ERROR), $type);
 
             return $q->delete();
         } catch (DbException $e) {

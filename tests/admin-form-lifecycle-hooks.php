@@ -43,6 +43,8 @@ if (!defined('OC_ADMIN')) {
 
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Sanitize.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';
@@ -76,9 +78,14 @@ class Params
 
 class Preference
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function get($key, $section = 'osclass')
@@ -206,7 +213,7 @@ function reset_log(): void
 }
 
 // --- a page with no hooks at all: the regression guard -----------------------------
-SettingsPageRegistry::instance()->register('plain', array(
+SettingsPageRegistry::getInstance()->register('plain', array(
     'title'  => 'Plain',
     'fields' => array(
         array('type' => 'text', 'name' => 's_name', 'label' => 'Name', 'required' => true),
@@ -238,7 +245,7 @@ check('settings_page_saved does not fire on a rejected save', !in_array('setting
 
 // --- a page with an after_save hook AND an inline after_save -----------------------
 $inlineCalls = array();
-SettingsPageRegistry::instance()->register('withhooks', array(
+SettingsPageRegistry::getInstance()->register('withhooks', array(
     'title'      => 'With hooks',
     'fields'     => array(
         array('type' => 'text', 'name' => 's_name', 'label' => 'Name', 'required' => true),
@@ -309,7 +316,7 @@ pin('a listener returning nothing leaves the values intact', 'Alice', $GLOBALS['
 // admin_form_before_save hands a listener the whole value array, so the write loop has to
 // walk the *declared* fields and not the array it was handed. Walking $values instead would
 // let any listener write an arbitrary preference under any page's section, on every page.
-SettingsPageRegistry::instance()->register('writeset', array(
+SettingsPageRegistry::getInstance()->register('writeset', array(
     'title'  => 'Write set',
     'fields' => array(
         array('type' => 'text', 'name' => 's_one', 'label' => 'One'),
@@ -483,7 +490,7 @@ harness_section('no hook payload carries a secret');
 // forward it. A 'secret' is the one field type whose value must not travel: on this screen
 // it is the acting administrator's own password, typed on every attempt including the ones
 // that are rejected.
-SettingsPageRegistry::instance()->register('secrets', array(
+SettingsPageRegistry::getInstance()->register('secrets', array(
     'title'      => 'Secrets',
     'after_save' => static function ($values, $id) {
         $GLOBALS['inlineValues'] = $values;
@@ -562,7 +569,7 @@ pin('and what the caller sees', 'typed-by-the-admin', $result['values']['s_passw
 
 // The helper on its own, so the rule is pinned where it is stated rather than only through
 // four call sites.
-$fields = SettingsPageRegistry::instance()->fields('secrets');
+$fields = SettingsPageRegistry::getInstance()->fields('secrets');
 pin(
     'osc_settings_hook_values withholds the secrets and nothing else',
     array('s_name' => 'Erin'),

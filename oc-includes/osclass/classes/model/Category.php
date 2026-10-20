@@ -12,6 +12,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+use mindstellar\model\SlugHistory;
+
 /**
  * Category DAO
  */
@@ -22,17 +25,22 @@ class Category extends DAO
      * @var \Category
      */
     private static $instance;
+
+    /** @var array<string,array<int,array<string,mixed>>> branches built by this object, in its language */
+    private array $hierarchies = array();
+
     private $language;
     private $tree;
     private $categories;
     private $categoriesEnabled;
     private $relation;
-    private $emptyTree;
     private $slugs;
-    /**
-     * @var bool
-     */
-    private $empty_tree;
+
+    /** @var array<string,array<int|string,int>>|null folded slug => category id => index in the enabled rows; null until first use */
+    private ?array $slugMap = null;
+
+    /** Set by this object's writes. findBySlug() then reads the table, since the rows it holds may be out of date. */
+    private bool $slugsWritten = false;
 
     /**
      * Set data related to t_category table
@@ -62,8 +70,7 @@ class Category extends DAO
             }
         }
 
-        $this->language  = $l;
-        $this->emptyTree = true;
+        $this->language = $l;
         $this->toTree();
     }
 
@@ -76,56 +83,27 @@ class Category extends DAO
      */
     public function toTree(bool $empty = true)
     {
-        $key   = md5(osc_cache_category_generation() . osc_base_url() . (string)$this->language . (string)$empty);
-        $found = null;
-        $cache = osc_cache_get($key, $found);
-        if ($cache === false) {
-            if ($empty == $this->emptyTree && $this->tree != null) {
-                return $this->tree;
-            }
-            $this->empty_tree = $empty;
-            // if listEnabled has been called before, don't redo the query
-            if ($this->categoriesEnabled) {
-                $categories = $this->categoriesEnabled;
-            } else {
-                $this->categoriesEnabled = $this->listEnabled();
-                $categories              = $this->categoriesEnabled;
-            }
-            $this->categories = array();
-            $this->relation   = array();
-            foreach ($categories as $c) {
-                if ($empty || ($c['i_num_items'] > 0)) {
-                    $this->categories[$c['pk_i_id']] = $c;
-                    if ($c['fk_i_parent_id'] == null) {
-                        $this->tree[]        = $c;
-                        $this->relation[0][] = $c['pk_i_id'];
-                    } else {
-                        $this->relation[$c['fk_i_parent_id']][] = $c['pk_i_id'];
-                    }
+        // Only the rows are cached; the tree is rebuilt from them, which is faster than reading three copies.
+        if (!$this->categoriesEnabled) {
+            $this->categoriesEnabled = \mindstellar\cache\CacheGroup::remember('category', 'enabled:' . $this->language, fn (): array => $this->listEnabled()) ?? array();
+        }
+        $this->tree       = array();
+        $this->categories = array();
+        $this->relation   = array();
+        foreach ($this->categoriesEnabled as $c) {
+            if ($empty || ($c['i_num_items'] > 0)) {
+                $this->categories[$c['pk_i_id']] = $c;
+                if ($c['fk_i_parent_id'] == null) {
+                    $this->relation[0][] = $c['pk_i_id'];
+                } else {
+                    $this->relation[$c['fk_i_parent_id']][] = $c['pk_i_id'];
                 }
             }
-
-            if (count($this->relation) == 0 || !isset($this->relation[0])) {
-                return array();
-            }
-
-            $this->tree = $this->sideTree($this->relation[0], $this->categories, $this->relation);
-            $cache                      = [];
-            $cache['tree']              = $this->tree;
-            $cache['empty_tree']        = $this->emptyTree;
-            $cache['relation']          = $this->relation;
-            $cache['categories']        = $this->categories;
-            $cache['categoriesEnabled'] = $this->categoriesEnabled;
-            osc_cache_set($key, $cache, OSC_CACHE_TTL);
-
-            return $this->tree;
         }
-
-        $this->tree              = $cache['tree'];
-        $this->empty_tree        = $cache['empty_tree'];
-        $this->relation          = $cache['relation'];
-        $this->categories        = $cache['categories'];
-        $this->categoriesEnabled = $cache['categoriesEnabled'];
+        if (!isset($this->relation[0])) {
+            return array();
+        }
+        $this->tree = $this->sideTree($this->relation[0], $this->categories, $this->relation);
 
         return $this->tree;
     }
@@ -137,7 +115,7 @@ class Category extends DAO
      */
     public function listEnabled()
     {
-        return $this->listWhere("b.s_name != '' AND a.b_enabled = 1");
+        return $this->mergeLocales(\mindstellar\category\CategoryQuery::enabledRows() ?? array());
     }
 
     /**
@@ -145,8 +123,8 @@ class Category extends DAO
      *
      * *Note: param needs to be escaped, inside function will not be escaped
      *
-     * @param string $where   A raw WHERE fragment the caller owns, or a printf-style format
-     * @param mixed  ...$args  Values bound to the format's %d/%s conversions
+     * Takes a raw WHERE fragment the caller owns, or a printf-style format followed by the
+     * values bound to its %d/%s conversions.
      *
      * @return array<int,array<string,mixed>> Empty when there is no argument, no match or a query failure
      */
@@ -182,7 +160,7 @@ class Category extends DAO
 
                     return '?';
                 }, $format);
-                $params = array_values($args);
+                $params = $args;
                 break;
         }
 
@@ -190,29 +168,39 @@ class Category extends DAO
         // a compile-time literal or the table-prefix constant; the only caller
         // values are the bound placeholders built above.
         $prefix = $this->getTablePrefix();
-        $sql    = 'SELECT a.*, b.*, c.i_num_items'
+        $sql    = 'SELECT a.*, b.*'
             . ' FROM ' . $this->getTableName() . ' as a'
-            . ' LEFT JOIN ' . $prefix . 't_category_description as b ON (a.pk_i_id = b.fk_i_category_id )'
-            . ' LEFT JOIN ' . $prefix . 't_category_stats as c ON a.pk_i_id = c.fk_i_category_id';
+            . ' LEFT JOIN ' . $prefix . 't_category_description as b ON (a.pk_i_id = b.fk_i_category_id )';
         if ($where !== null) {
             $sql .= ' WHERE ' . $where;
         }
         $sql .= ' ORDER BY i_position ASC';
 
         try {
-            $allResults = osc_db_select($sql, $params);
+            $allResults = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        if ($allResults === array()) {
             return array();
         }
 
         // The prepared path (%d/%s callers) returns native ints; the unprepared
         // path (literal callers) returns strings. Normalise to the legacy
         // all-strings row shape before the per-locale merge.
-        $allResults       = osc_db_stringify_rows($allResults);
+        return $this->mergeLocales(Db::stringifyRows($allResults));
+    }
+
+    /**
+     * One row per category from its rows per language: each language's text under `locale`,
+     * and the category's own text in this model's language, else its first.
+     *
+     * @param array<int,array<string,mixed>> $allResults joined category and description rows
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function mergeLocales(array $allResults): array
+    {
+        if ($allResults === array()) {
+            return array();
+        }
         $mergedCategories = [];
         foreach ($allResults as $cat) {
             // merge all the array with the same pk_i_id
@@ -279,13 +267,21 @@ class Category extends DAO
      *
      * @return \Category
      */
-    public static function newInstance($l = '')
+    public static function getInstance($l = '')
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self($l);
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance($l = '')
+    {
+        return self::getInstance($l);
     }
 
     /**
@@ -403,44 +399,34 @@ class Category extends DAO
         if ($categoryID == null) {
             return false;
         }
-        $key   = md5(osc_cache_category_generation() . osc_base_url() . 'Category:findByPrimaryKey:' . $categoryID . $locale);
-        $found = null;
-        $cache = osc_cache_get($key, $found);
-        if ($cache === false) {
-            $category = array();
+        $known = $this->knownRow($categoryID, $locale);
+        if ($known !== null) {
+            return $known;
+        }
+        $key = 'row:' . $categoryID . ':' . $this->language . ':' . $locale;
 
+        return \mindstellar\cache\CacheGroup::remember('category', $key, function () use ($categoryID, $locale): ?array {
             if (isset($this->categories[$categoryID])) {
                 $category = $this->categories[$categoryID];
-
-                // if we already have locale data, we return the category
-                if ($locale == '' || ($locale != '' && isset($category['locale']))) {
-                    if ($locale != '' && isset($category['locale'][$locale])) {
-                        $category['s_name']        = $category['locale'][$locale]['s_name'];
-                        $category['s_description'] = $category['locale'][$locale]['s_description'];
-                    }
-                    osc_cache_set($key, $category, OSC_CACHE_TTL);
-
-                    return $category;
-                }
             } else {
                 $category = $this->listWhere('a.pk_i_id = %d', (int)$categoryID);
 
                 if (!isset($category[0]) || !isset($category[0]['pk_i_id'])) {
-                    return false;
+                    return null;
                 }
                 $category = $category[0];
             }
 
             try {
-                $sub_rows = osc_db_table($this->getTablePrefix() . 't_category_description')
+                $sub_rows = Db::table($this->getTablePrefix() . 't_category_description')
                     ->where('fk_i_category_id', $category['pk_i_id'])
                     ->orderBy('fk_c_locale_code')
                     ->get();
             } catch (\mindstellar\database\DbException $e) {
-                return false;
+                return null;
             }
 
-            $sub_rows = osc_db_stringify_rows($sub_rows);
+            $sub_rows = Db::stringifyRows($sub_rows);
             $row      = array();
             foreach ($sub_rows as $sub_row) {
                 if (isset($sub_row['fk_c_locale_code'])) {
@@ -453,16 +439,42 @@ class Category extends DAO
             if (array_key_exists($categoryID, $this->categories)) {
                 $this->categories[$categoryID] = $category;
             }
-            if ($locale != '' && isset($category['locale'][$locale])) {
-                $category['s_name']        = $category['locale'][$locale]['s_name'];
-                $category['s_description'] = $category['locale'][$locale]['s_description'];
-            }
-            osc_cache_set($key, $category, OSC_CACHE_TTL);
+            return self::inLocale($category, $locale);
+        }) ?? false;
+    }
 
-            return $category;
+    /**
+     * A category already loaded by this object, in $locale, or null when its locale data is not loaded.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function knownRow(int|string $categoryID, string $locale): ?array
+    {
+        if (!isset($this->categories[$categoryID])) {
+            return null;
+        }
+        $category = $this->categories[$categoryID];
+        if ($locale != '' && !isset($category['locale'])) {
+            return null;
+        }
+        return self::inLocale($category, $locale);
+    }
+
+    /**
+     * The row with its name and description in $locale, when it has that locale.
+     *
+     * @param array<string,mixed> $category
+     *
+     * @return array<string,mixed>
+     */
+    private static function inLocale(array $category, string $locale): array
+    {
+        if ($locale != '' && isset($category['locale'][$locale])) {
+            $category['s_name']        = $category['locale'][$locale]['s_name'];
+            $category['s_description'] = $category['locale'][$locale]['s_description'];
         }
 
-        return $cache;
+        return $category;
     }
 
     /**
@@ -474,7 +486,8 @@ class Category extends DAO
      */
     public function deleteByPrimaryKey($pk)
     {
-        $items   = Item::newInstance()->findByCategoryID((int)($pk));
+        $this->slugsWritten = true;
+        $items   = Item::getInstance()->findByCategoryID((int)($pk));
         $subcats = $this->findSubcategories((int)($pk));
         if (count($subcats) > 0) {
             foreach ($subcats as $s) {
@@ -484,7 +497,7 @@ class Category extends DAO
 
         if (count($items) > 0) {
             foreach ($items as $item) {
-                Item::newInstance()->deleteByPrimaryKey($item['pk_i_id']);
+                Item::getInstance()->deleteByPrimaryKey($item['pk_i_id']);
             }
         }
 
@@ -496,21 +509,19 @@ class Category extends DAO
         // would clear it regardless. They stay here for an install whose foreign
         // keys were never created, where nothing else would.
         $dependents = array(
-            't_plugin_category',
             't_category_description',
-            't_category_stats',
             't_meta_categories',
             't_meta_group_categories',
-            't_category_slug_history',
         );
 
         try {
-            $deleted = osc_db_transaction(function () use ($pkInt, $dependents) {
+            $deleted = Db::transaction(function () use ($pkInt, $dependents) {
                 foreach ($dependents as $table) {
-                    osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_category_id', $pkInt)->delete();
+                    Db::table(DB_TABLE_PREFIX . $table)->where('fk_i_category_id', $pkInt)->delete();
                 }
+                SlugHistory::forget(SlugHistory::CATEGORY, $pkInt);
 
-                return osc_db_table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $pkInt)->delete();
+                return Db::table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $pkInt)->delete();
             });
         } catch (\Throwable $e) {
             // Rolled back together: a category that cannot be removed keeps its
@@ -519,6 +530,9 @@ class Category extends DAO
             return false;
         }
 
+        if ($deleted) {
+            (new PluginCategory())->removeCategory($pkInt);
+        }
         osc_run_hook('after_delete_category', $pkInt);
 
         return $deleted;
@@ -546,14 +560,14 @@ class Category extends DAO
      */
     public function updateByPrimaryKey($data, $pk)
     {
+        $this->slugsWritten = true;
         $fields = $data['fields'];
 
         $aFieldsDescription = $data['aFieldsDescription'];
-        $return             = true;
         $affectedRows       = 0;
         //UPDATE for category
         try {
-            $res = osc_db_table($this->getTableName())->where('pk_i_id', $pk)->update($fields);
+            $res = Db::table($this->getTableName())->where('pk_i_id', $pk)->update($fields);
         } catch (\mindstellar\database\DbException $e) {
             $res = false;
         }
@@ -561,9 +575,11 @@ class Category extends DAO
             // update dt_expiration (table t_item) using category.i_expiration_days.
             // Both branches discarded their result before this conversion, so a
             // failure is swallowed rather than raised, keeping the rest running.
-            if ($fields['i_expiration_days'] > 0) {
+            // Without i_expiration_days the expiry is not being saved, and listings keep theirs.
+            $expiry = $fields['i_expiration_days'] ?? null;
+            if ($expiry !== null && $expiry > 0) {
                 try {
-                    osc_db_execute(
+                    Db::execute(
                         'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
                         . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_category as b ON b.pk_i_id = a.fk_i_category_id'
                         . ' SET a.dt_expiration = DATE_ADD(a.dt_pub_date, INTERVAL b.i_expiration_days DAY)'
@@ -574,9 +590,9 @@ class Category extends DAO
                     // Discarded, as before.
                 }
                 // update dt_expiration (table t_item) using the max date value
-            } elseif ($fields['i_expiration_days'] == 0) {
+            } elseif ($expiry !== null && $expiry == 0) {
                 try {
-                    osc_db_execute(
+                    Db::execute(
                         'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
                         . " SET a.dt_expiration = '9999-12-31 23:59:59'"
                         . ' WHERE a.fk_i_category_id = ?',
@@ -601,18 +617,11 @@ class Category extends DAO
                         isset($fieldsDescription['s_name']) ? $fieldsDescription['s_name'] : ''
                     ));
                 }
-                $slug_tmp                              = $slug;
-                $slug_unique                           = 1;
-                while (true) {
-                    $cat_slug = $this->findBySlug($slug);
-                    if (!isset($cat_slug['pk_i_id']) || $cat_slug['pk_i_id'] == $pk) {
-                        break;
-                    }
+                $fieldsDescription['s_slug'] = \mindstellar\routing\ReservedSlugs::unique($slug, function (string $candidate) use ($pk): bool {
+                    $row = $this->findBySlug($candidate);
 
-                    $slug = $slug_tmp . '_' . $slug_unique;
-                    $slug_unique++;
-                }
-                $fieldsDescription['s_slug'] = $slug;
+                    return isset($row['pk_i_id']) && $row['pk_i_id'] != $pk;
+                });
                 $array_where                 = array(
                     'fk_i_category_id' => $pk,
                     'fk_c_locale_code' => $fieldsDescription['fk_c_locale_code']
@@ -620,7 +629,7 @@ class Category extends DAO
 
                 $oldSlug = '';
                 try {
-                    $prev = osc_db_select(
+                    $prev = Db::select(
                         'SELECT s_slug FROM ' . DB_TABLE_PREFIX . 't_category_description'
                         . ' WHERE fk_i_category_id = ? AND fk_c_locale_code = ?',
                         array($pk, $k)
@@ -633,7 +642,7 @@ class Category extends DAO
                 }
 
                 try {
-                    $rs = osc_db_table(DB_TABLE_PREFIX . 't_category_description')
+                    $rs = Db::table(DB_TABLE_PREFIX . 't_category_description')
                         ->where('fk_i_category_id', $array_where['fk_i_category_id'])
                         ->where('fk_c_locale_code', $array_where['fk_c_locale_code'])
                         ->update($fieldsDescription);
@@ -641,30 +650,17 @@ class Category extends DAO
                     $rs = false;
                 }
 
-                $newSlug = $fieldsDescription['s_slug'];
-                // A slug that is now live must never redirect - drop any stale history row for it.
+                // The vacated old slug 301s to the new one, and the now-live slug stops redirecting.
                 try {
-                    osc_db_execute(
-                        'DELETE FROM ' . DB_TABLE_PREFIX . 't_category_slug_history'
-                        . ' WHERE s_slug = ? AND fk_c_locale_code = ?',
-                        array($newSlug, $k)
+                    SlugHistory::record(
+                        SlugHistory::CATEGORY,
+                        (int) $pk,
+                        $oldSlug,
+                        (string) $fieldsDescription['s_slug'],
+                        (string) $k
                     );
                 } catch (\mindstellar\database\DbException $e) {
                     // best-effort
-                }
-                // Record the vacated old slug so its inbound links 301 to the new one.
-                if ($oldSlug !== '' && $oldSlug !== $newSlug) {
-                    try {
-                        osc_db_execute(
-                            'INSERT INTO ' . DB_TABLE_PREFIX . 't_category_slug_history'
-                            . ' (fk_i_category_id, fk_c_locale_code, s_slug, dt_date) VALUES (?, ?, ?, ?)'
-                            . ' ON DUPLICATE KEY UPDATE fk_i_category_id = VALUES(fk_i_category_id),'
-                            . ' dt_date = VALUES(dt_date)',
-                            array($pk, $k, $oldSlug, date('Y-m-d H:i:s'))
-                        );
-                    } catch (\mindstellar\database\DbException $e) {
-                        // best-effort
-                    }
                 }
 
                 if ($rs == 0) {
@@ -672,7 +668,7 @@ class Category extends DAO
                     // both identifiers are compile-time literals and the two
                     // values are bound. Assumed to succeed, exactly as the legacy
                     // body did when it called result() on the handle unguarded.
-                    $exists = osc_db_select(
+                    $exists = Db::select(
                         'SELECT a.pk_i_id FROM ' . $this->tableName . ' as a'
                         . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_category_description as b'
                         . ' ON a.pk_i_id = b.fk_i_category_id'
@@ -685,21 +681,11 @@ class Category extends DAO
                     }
                 } elseif ($rs > 0) {
                     $affectedRows += $rs;
-                } elseif (is_bool($rs)) { // catch error
-                    if ($return) {
-                        $return = $rs;
-                    }
                 }
             }
-        } else {
-            $return = $res;
         }
 
-        if ($return) {
-            return $affectedRows;
-        }
-
-        return $return;
+        return $affectedRows;
     }
 
     /**
@@ -716,7 +702,11 @@ class Category extends DAO
             if (isset($this->slugs[$slug])) {
                 return $this->findByPrimaryKey($this->slugs[$slug]);
             }
-            $slug = urlencode($slug);
+            $slug  = urlencode($slug);
+            $known = $this->slugsWritten ? null : $this->knownSlug($slug);
+            if ($known !== null) {
+                return $known;
+            }
             $results = $this->listWhere('b.s_slug = %s', $slug);
             if (count($results) > 0) {
                 $this->slugs[$slug] = $results[0]['pk_i_id'];
@@ -729,6 +719,50 @@ class Category extends DAO
     }
 
     /**
+     * The row the slug query would return, built from the enabled rows this object holds, or
+     * null when the slug is not there or more than one category could match it.
+     *
+     * @param string $slug urlencoded, as the query binds it
+     *
+     * @return array<string,mixed>|null
+     */
+    private function knownSlug(string $slug): ?array
+    {
+        if ($this->slugMap === null) {
+            $this->slugMap = array();
+            foreach ((array) $this->categoriesEnabled as $i => $c) {
+                foreach ($c['locale'] ?? array() as $text) {
+                    // The column compares without case or trailing spaces, so ids are grouped that way.
+                    $this->slugMap[strtolower(rtrim((string) $text['s_slug'], ' '))][$c['pk_i_id']] = $i;
+                }
+            }
+        }
+        $folded = strtolower(rtrim($slug, ' '));
+        $rows   = $this->slugMap[$folded] ?? array();
+        if (count($rows) === 1) {
+            $c       = $this->categoriesEnabled[reset($rows)];
+            $matched = array();
+            foreach ($c['locale'] as $code => $text) {
+                if (strtolower(rtrim((string) $text['s_slug'], ' ')) === $folded) {
+                    $matched[$code] = $text;
+                }
+            }
+            // Same shape as mergeLocales() gives the query's rows: only the matching texts,
+            // and this model's language when it is one of them.
+            $text = $matched[$this->language] ?? reset($matched);
+            $c['s_name']           = $text['s_name'];
+            $c['s_description']    = $text['s_description'];
+            $c['s_slug']           = $text['s_slug'];
+            $c['fk_c_locale_code'] = $this->language;
+            $c['locale']           = $matched;
+
+            return $c;
+        }
+
+        return null;
+    }
+
+    /**
      * Insert the description of a category
      *
      * @param array<string,mixed> $fields_description
@@ -737,15 +771,18 @@ class Category extends DAO
      */
     public function insertDescription($fields_description)
     {
+        $this->slugsWritten = true;
         if (!empty($fields_description['s_name'])) {
             try {
-                osc_db_table(DB_TABLE_PREFIX . 't_category_description')->insert($fields_description);
+                Db::table(DB_TABLE_PREFIX . 't_category_description')->insert($fields_description);
             } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
 
             return true;
         }
+
+        return null;
     }
 
     /**
@@ -757,33 +794,24 @@ class Category extends DAO
      * @return int The new category id
      * @throws \mindstellar\database\DbException when the category row cannot be written
      */
+    // @phpstan-ignore method.childReturnType (the id is returned, as plugins expect)
     public function insert($fields, $aFieldsDescription = null)
     {
+        $this->slugsWritten = true;
         // Assumed to succeed, as the legacy body did (it read insertedId()
         // straight after with no error check); a genuine failure propagates.
-        $category_id = osc_db_table($this->getTableName())->insert($fields);
+        $category_id = Db::table($this->getTableName())->insert($fields);
         foreach ($aFieldsDescription as $k => $fieldsDescription) {
             $fieldsDescription['fk_i_category_id'] = $category_id;
             $fieldsDescription['fk_c_locale_code'] = $k;
-            $slug                                  = osc_sanitizeString(osc_apply_filter(
-                'slug',
-                $fieldsDescription['s_name']
-            ));
-            $slug_tmp                              = $slug;
-            $slug_unique                           = 1;
-            while (true) {
-                if (!$this->findBySlug($slug)) {
-                    break;
-                }
-
-                $slug = $slug_tmp . '_' . $slug_unique;
-                $slug_unique++;
-            }
-            $fieldsDescription['s_slug'] = $slug;
+            $fieldsDescription['s_slug']           = \mindstellar\routing\ReservedSlugs::unique(
+                osc_sanitizeString(osc_apply_filter('slug', $fieldsDescription['s_name'])),
+                fn (string $slug): bool => (bool) $this->findBySlug($slug)
+            );
             // The result was discarded here before this conversion, so a
             // per-locale failure is swallowed rather than aborting the rest.
             try {
-                osc_db_table(DB_TABLE_PREFIX . 't_category_description')->insert($fieldsDescription);
+                Db::table(DB_TABLE_PREFIX . 't_category_description')->insert($fieldsDescription);
             } catch (\mindstellar\database\DbException $e) {
                 // Discarded, as before.
             }
@@ -797,11 +825,12 @@ class Category extends DAO
      *
      * @param int $category_id
      *
-     * @return array<int,array<string,mixed>> From the root down to the category
+     * @return array<int,array<string,mixed>> From the category up to the root
      */
     public function hierarchy($category_id)
     {
-        return array_reverse($this->toRootTree($category_id));
+        // Every listing link on a page asks. This object already holds the tree it was built with.
+        return $this->hierarchies[(string) $category_id] ??= array_reverse($this->toRootTree($category_id));
     }
 
     /**
@@ -809,7 +838,7 @@ class Category extends DAO
      *
      * @param int|null $cat
      *
-     * @return array<int,array<string,mixed>> From the category up to the root
+     * @return array<int,array<string,mixed>> From the root down to the category
      */
     public function toRootTree($cat = null)
     {
@@ -878,7 +907,7 @@ class Category extends DAO
             $category = $this->categories[$categoryID];
         } else {
             try {
-                $row = osc_db_table($this->getTablePrefix() . 't_category_description')
+                $row = Db::table($this->getTablePrefix() . 't_category_description')
                     ->select('s_name')
                     ->where('fk_i_category_id', $categoryID)
                     ->first();
@@ -888,7 +917,7 @@ class Category extends DAO
 
             // Legacy row() returned an empty array for zero rows, not false; the
             // isset() below then falls through to the "Non-Existent" default.
-            $category = ($row === null) ? array() : osc_db_stringify_row($row);
+            $category = ($row === null) ? array() : Db::stringifyRow($row);
         }
 
         if (isset($category['s_name'])) {
@@ -916,7 +945,7 @@ class Category extends DAO
         // value is bound. Prepared-path native ints are normalised back to the
         // legacy all-strings row shape.
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT s_name, fk_i_category_id as pk_i_id FROM '
                 . $this->getTablePrefix() . 't_category_description WHERE fk_c_locale_code = ?',
                 array($locale)
@@ -925,7 +954,7 @@ class Category extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -939,7 +968,7 @@ class Category extends DAO
     public function updateOrder($pk_i_id, $order)
     {
         try {
-            return osc_db_table($this->tableName)->where('pk_i_id', $pk_i_id)->update(array('i_position' => $order));
+            return Db::table($this->tableName)->where('pk_i_id', $pk_i_id)->update(array('i_position' => $order));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -956,14 +985,14 @@ class Category extends DAO
      */
     public function updateExpiration($pk_i_id, $expiration, $updateSubcategories = false)
     {
-        $itemManager = Item::newInstance();
+        $itemManager = Item::getInstance();
 
         try {
-            $items = osc_db_table(DB_TABLE_PREFIX . 't_item')
+            $items = Db::table(DB_TABLE_PREFIX . 't_item')
                 ->select('pk_i_id')
                 ->where('fk_i_category_id', (int)$pk_i_id)
                 ->get();
-            $items = osc_db_stringify_rows($items);
+            $items = Db::stringifyRows($items);
         } catch (\mindstellar\database\DbException $e) {
             $items = array();
         }
@@ -971,7 +1000,7 @@ class Category extends DAO
             $itemManager->updateExpirationDate($item['pk_i_id'], $expiration);
         }
         try {
-            $result = osc_db_table($this->tableName)
+            $result = Db::table($this->tableName)
                 ->where('pk_i_id', $pk_i_id)
                 ->update(array('i_expiration_days' => $expiration));
         } catch (\mindstellar\database\DbException $e) {
@@ -999,7 +1028,7 @@ class Category extends DAO
     public function updatePriceEnabled($pk_i_id, $enabled, $updateSubcategories = false)
     {
         try {
-            $result = osc_db_table($this->tableName)
+            $result = Db::table($this->tableName)
                 ->where('pk_i_id', $pk_i_id)
                 ->update(array('b_price_enabled' => $enabled));
         } catch (\mindstellar\database\DbException $e) {
@@ -1026,8 +1055,9 @@ class Category extends DAO
      */
     public function updateName($pk_i_id, $locale, $name)
     {
+        $this->slugsWritten = true;
         try {
-            return osc_db_table(DB_TABLE_PREFIX . 't_category_description')
+            return Db::table(DB_TABLE_PREFIX . 't_category_description')
                 ->where('fk_i_category_id', $pk_i_id)
                 ->where('fk_c_locale_code', $locale)
                 ->update(array('s_name' => $name));

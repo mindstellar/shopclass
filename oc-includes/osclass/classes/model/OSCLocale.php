@@ -12,18 +12,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * OSCLocale DAO
  */
 class OSCLocale extends DAO
 {
-    protected $cacheGroup = 'locale';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     *
-     * @var \OSCLocale
-     */
-    private static $instance;
+    protected $cacheGroup = 'locale';
 
     /**
      * Set data related to t_locale table
@@ -55,17 +53,11 @@ class OSCLocale extends DAO
     }
 
     /**
-     * Return the shared OSCLocale model instance, creating it on first use.
-     *
-     * @return \OSCLocale
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -76,14 +68,14 @@ class OSCLocale extends DAO
     public function listAllCodes()
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select('pk_c_code')
                 ->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $rows   = osc_db_stringify_rows($rows);
+        $rows   = Db::stringifyRows($rows);
         $aCodes = array();
 
         foreach ($rows as $row) {
@@ -105,7 +97,7 @@ class OSCLocale extends DAO
     {
         $rows = \mindstellar\cache\CacheGroup::remember('locale', 'enabled:' . (int)$isBo, function () use ($isBo) {
             try {
-                return osc_db_stringify_rows(osc_db_table($this->getTableName())
+                return Db::stringifyRows(Db::table($this->getTableName())
                     ->select(...$this->getFields())
                     ->where($isBo ? 'b_enabled_bo' : 'b_enabled', 1)
                     ->orderBy('s_name', 'ASC')
@@ -137,7 +129,7 @@ class OSCLocale extends DAO
     public function findByCode($code)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('pk_c_code', $code)
                 ->get();
@@ -145,7 +137,7 @@ class OSCLocale extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -183,14 +175,14 @@ class OSCLocale extends DAO
                 ) as $table
             ) {
                 try {
-                    osc_db_table($table)->where('fk_c_locale_code', $locale)->delete();
+                    Db::table($table)->where('fk_c_locale_code', $locale)->delete();
                 } catch (\mindstellar\database\DbException $e) {
                     // Discarded, as above.
                 }
             }
 
             try {
-                $deleted = osc_db_table($this->getTableName())->where('pk_c_code', $locale)->delete();
+                $deleted = Db::table($this->getTableName())->where('pk_c_code', $locale)->delete();
             } catch (\mindstellar\database\DbException $e) {
                 $deleted = false;
             }

@@ -18,7 +18,8 @@
  */
 class Styles extends Dependencies
 {
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
     public $styles = [];
 
     /**
@@ -29,7 +30,7 @@ class Styles extends Dependencies
     public static function init()
     {
         $print_styles = static function () {
-            self::newInstance()->printStyles();
+            self::getInstance()->printStyles();
         };
 
         if (defined('OC_ADMIN') && OC_ADMIN) {
@@ -37,6 +38,10 @@ class Styles extends Dependencies
         } else {
             Plugins::addHook('header', $print_styles, 9);
         }
+
+        // Core's styles; their scripts are registered in Scripts::init().
+        osc_register_style('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.css')));
+        osc_register_style('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.css')));
     }
 
     /**
@@ -85,17 +90,11 @@ class Styles extends Dependencies
     }
 
     /**
-     * The shared Styles instance, created on first call.
-     *
-     * @return \Styles
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance(): Styles
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**

@@ -1,0 +1,426 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace mindstellar\listing;
+
+use mindstellar\database\Db;
+use mindstellar\database\QueryBuilder;
+use mindstellar\utility\Clock;
+use mindstellar\utility\SystemClock;
+
+/**
+ * Listing reads in any status: one listing's status columns, and listings newest first by
+ * status, seller, category or title, paged by id. A seller's own list and the moderation
+ * list both read here.
+ */
+final class ListingQuery
+{
+    /** The columns ListingStatus and ListingPolicy read. */
+    private const STATUS_COLUMNS = ['pk_i_id', 'fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'];
+
+    /** What a listing write reads: the t_item columns with the location's. */
+    private const EDIT_COLUMNS = 'i.pk_i_id, i.fk_i_user_id, i.fk_i_category_id, i.i_price, i.fk_c_currency_code, i.s_contact_phone,'
+        . ' i.b_show_email, i.s_secret, i.b_enabled, i.b_active, i.b_spam, i.b_premium, i.dt_expiration,'
+        . ' i.s_contact_name, i.s_contact_email,'
+        . ' l.fk_c_country_code, l.s_country, l.fk_i_region_id, l.s_region, l.fk_i_city_id, l.s_city, l.s_city_area,'
+        . ' l.s_address, l.s_zip, l.d_coord_lat, l.d_coord_long';
+
+    /** How many of the newest candidates related() scores. */
+    public const RELATED_POOL = 500;
+
+    /** How many title matches titleMatches() ranks, so a common prefix costs the same on any site. */
+    public const TITLE_POOL = 1000;
+
+    /** The shortest word the title full-text index holds. */
+    public const MIN_WORD = 3;
+
+    private Clock $clock;
+
+    public function __construct(?Clock $clock = null)
+    {
+        $this->clock = $clock ?? new SystemClock();
+    }
+
+    /**
+     * @return array<string,mixed>|null the listing's status columns, or null for no such listing
+     */
+    public function statusRow(int $id): ?array
+    {
+        $row = $this->table()->select(...self::STATUS_COLUMNS)->where('pk_i_id', $id)->first();
+
+        return $row === null ? null : Db::stringifyRow($row);
+    }
+
+    /**
+     * Bare t_item rows, newest first, below $beforeId when given.
+     *
+     * @param string[] $statuses    names from ListingStatus::ALL; all when empty
+     * @param int[]    $userIds     only these sellers; any when empty
+     * @param int[]    $categoryIds only these categories; any when empty
+     * @param string   $title       keep titles containing this; '' for any
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function newest(array $statuses, array $userIds, array $categoryIds, string $title, ?int $beforeId, int $limit): array
+    {
+        return Db::stringifyRows($this->filtered($statuses, $userIds, $categoryIds, $title)->newestBefore($beforeId, $limit));
+    }
+
+    /**
+     * @param string[] $statuses    names from ListingStatus::ALL; all when empty
+     * @param int[]    $userIds     only these sellers; any when empty
+     * @param int[]    $categoryIds only these categories; any when empty
+     */
+    public function count(array $statuses, array $userIds, array $categoryIds, string $title): int
+    {
+        return $this->filtered($statuses, $userIds, $categoryIds, $title)->count();
+    }
+
+    /**
+     * @param string[] $statuses
+     * @param int[]    $userIds
+     * @param int[]    $categoryIds
+     */
+    private function filtered(array $statuses, array $userIds, array $categoryIds, string $title): QueryBuilder
+    {
+        $query = ListingStatus::condition($this->table(), $statuses, $this->clock->now());
+        if ($userIds !== []) {
+            $query = $query->whereIn('fk_i_user_id', $userIds);
+        }
+        if ($categoryIds !== []) {
+            $query = $query->whereIn('fk_i_category_id', $categoryIds);
+        }
+        if ($title !== '') {
+            $query = $query->whereRaw(
+                'pk_i_id IN (SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_description WHERE s_title LIKE ?)',
+                ['%' . QueryBuilder::escapeLike($title) . '%']
+            );
+        }
+
+        return $query;
+    }
+
+    /**
+     * The listing as a write needs it, one row per language when $withTexts.
+     *
+     * @return array<int,array<string,mixed>> empty for no such listing
+     * @throws \mindstellar\database\DbException
+     */
+    public function editRows(int $id, bool $withTexts): array
+    {
+        $p   = DB_TABLE_PREFIX;
+        $sql = 'SELECT ' . self::EDIT_COLUMNS . ($withTexts ? ', d.fk_c_locale_code, d.s_title, d.s_description' : '')
+            . ' FROM ' . $p . 't_item i LEFT JOIN ' . $p . 't_item_location l ON l.fk_i_item_id = i.pk_i_id'
+            . ($withTexts ? ' LEFT JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = i.pk_i_id' : '')
+            . ' WHERE i.pk_i_id = ?';
+
+        return Db::select($sql, [$id]);
+    }
+
+    /**
+     * Region or city links for the search footer: one representative listing per location
+     * group with the group's live listing count.
+     *
+     * @param int[]    $categoryIds only these categories; any when empty
+     * @param int|null $regionId    group a region's cities; regions when null
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function footerLocations(array $categoryIds, ?int $regionId): array
+    {
+        $where  = array();
+        $params = array();
+
+        if ($categoryIds !== array()) {
+            $where[] = 'i.fk_i_category_id IN (' . implode(', ', array_fill(0, count($categoryIds), '?')) . ')';
+            $params  = array_merge($params, $categoryIds);
+        }
+
+        $where[]  = 'i.pk_i_id = l.fk_i_item_id';
+        $where[]  = 'i.b_enabled = 1';
+        $where[]  = 'i.b_active = 1';
+        $where[]  = 'dt_expiration >= ?';
+        $params[] = date('Y-m-d H:i:s', $this->clock->now());
+        $where[]  = 'l.fk_i_region_id IS NOT NULL';
+        $where[]  = 'l.fk_i_city_id IS NOT NULL';
+
+        if ($regionId !== null) {
+            $where[]  = 'l.fk_i_region_id = ?';
+            $params[] = $regionId;
+            $groupBy  = 'l.fk_i_city_id';
+        } else {
+            $groupBy = 'l.fk_i_region_id';
+        }
+
+        // The count is grouped in a subquery that also names one representative listing
+        // per group; l.* beside GROUP BY on one column is rejected under ONLY_FULL_GROUP_BY.
+        $p   = DB_TABLE_PREFIX;
+        $sql = 'SELECT i.fk_i_category_id, l.*, g.total'
+            . ' FROM (SELECT MIN(l.fk_i_item_id) AS rep_id, COUNT(*) AS total'
+            . ' FROM ' . $p . 't_item as i, ' . $p . 't_item_location as l'
+            . ' WHERE ' . implode(' AND ', $where)
+            . ' GROUP BY ' . $groupBy . ') AS g'
+            . ' JOIN ' . $p . 't_item_location as l ON l.fk_i_item_id = g.rep_id'
+            . ' JOIN ' . $p . 't_item as i ON i.pk_i_id = g.rep_id';
+
+        return Db::select($sql, $params);
+    }
+
+    /**
+     * The bare t_item row, or null.
+     *
+     * @return array<string,mixed>|null
+     * @throws \mindstellar\database\DbException
+     */
+    public function find(int $id): ?array
+    {
+        $row = $this->table()->where('pk_i_id', $id)->first();
+
+        return $row === null ? null : Db::stringifyRow($row);
+    }
+
+    /**
+     * The bare t_item rows of some listings, keyed by id; missing ids are left out.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function findMany(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $rows = [];
+        foreach ($this->table()->whereIn('pk_i_id', $ids)->get() as $row) {
+            $rows[(int) $row['pk_i_id']] = Db::stringifyRow($row);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Up to $max distinct lower-case words of MIN_WORD letters or more: the words the title
+     * full-text index holds, with no full-text operators.
+     *
+     * @return string[]
+     */
+    public static function titleWords(string $text, int $max = 5): array
+    {
+        $words = [];
+        foreach (preg_split('/[^\pL\pM\pN]+/u', mb_strtolower($text, 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+            if (mb_strlen($word, 'UTF-8') >= self::MIN_WORD) {
+                $words[$word] = $word;
+            }
+        }
+
+        return array_slice(array_values($words), 0, $max);
+    }
+
+    /**
+     * Positive listing ids, each once, in order, without $without: ids a plugin returned.
+     *
+     * @param array<mixed> $ids
+     *
+     * @return int[]
+     */
+    public static function cleanIds(array $ids, int $without = 0): array
+    {
+        $out = [];
+        foreach ($ids as $id) {
+            $id = is_numeric($id) ? (int) $id : 0;
+            if ($id > 0 && $id !== $without) {
+                $out[$id] = $id;
+            }
+        }
+
+        return array_values($out);
+    }
+
+    /**
+     * The live ones of these listings, in the order given.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> bare t_item rows
+     * @throws \mindstellar\database\DbException
+     */
+    public function findLive(array $ids): array
+    {
+        $rows = $this->findMany($ids);
+        $out  = [];
+        foreach ($ids as $id) {
+            if (isset($rows[$id]) && ListingStatus::isLive($rows[$id], $this->clock->now())) {
+                $out[] = $rows[$id];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Title and description rows of some listings, in one query.
+     *
+     * @param int[]       $ids
+     * @param string|null $locale only this language; every language when null
+     *
+     * @return array<int,array<string,mixed>> fk_i_item_id, fk_c_locale_code, s_title, s_description
+     * @throws \mindstellar\database\DbException
+     */
+    public function descriptions(array $ids, ?string $locale = null): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $sql    = 'SELECT fk_i_item_id, fk_c_locale_code, s_title, s_description FROM ' . DB_TABLE_PREFIX . 't_item_description'
+            . ' WHERE fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')';
+        $params = array_values($ids);
+        if ($locale !== null) {
+            $sql     .= ' AND fk_c_locale_code = ?';
+            $params[] = $locale;
+        }
+
+        return Db::stringifyRows(Db::select($sql, $params));
+    }
+
+    /**
+     * View counters and the location of some listings, in one query.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> the t_item_stats counters with the t_item_location columns
+     * @throws \mindstellar\database\DbException
+     */
+    public function statsAndLocations(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $p = DB_TABLE_PREFIX;
+
+        return Db::stringifyRows(Db::select(
+            'SELECT s.i_num_views, s.i_num_spam, s.i_num_bad_classified, s.i_num_repeated, s.i_num_offensive,'
+            . ' s.i_num_expired, s.i_num_premium_views, l.*'
+            . ' FROM ' . $p . 't_item_stats s INNER JOIN ' . $p . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
+            . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')',
+            array_values($ids)
+        ));
+    }
+
+    /**
+     * Photos of some listings, in upload order, in one query.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> listing photo rows
+     * @throws \mindstellar\database\DbException
+     */
+    public function photos(array $ids): array
+    {
+        return $ids === [] ? [] : Db::stringifyRows(PhotoStore::ofItems($ids));
+    }
+
+    /**
+     * Ids of live listings whose title has the words as word starts (title full-text index):
+     * titles that start with $prefix first, then the best match, then newest. $everyWord
+     * false also takes titles with only some of the words. Only the TITLE_POOL best matches
+     * are ranked.
+     *
+     * @param string[] $words from titleWords()
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    public function titleMatches(array $words, string $prefix, int $limit, bool $everyWord = true): array
+    {
+        if ($words === []) {
+            return [];
+        }
+        $p     = DB_TABLE_PREFIX;
+        $match = implode(' ', array_map(static fn (string $w): string => ($everyWord ? '+' : '') . $w . '*', $words));
+        $rows  = Db::select(
+            'SELECT i.pk_i_id, MAX(m.s_title LIKE ?) AS starts, MAX(m.score) AS score FROM ('
+            . 'SELECT fk_i_item_id, s_title, MATCH(s_title) AGAINST(? IN BOOLEAN MODE) AS score FROM ' . $p . 't_item_description'
+            . ' WHERE MATCH(s_title) AGAINST(? IN BOOLEAN MODE) ORDER BY score DESC LIMIT ' . self::TITLE_POOL
+            . ') m INNER JOIN ' . $p . 't_item i ON i.pk_i_id = m.fk_i_item_id'
+            . ' WHERE ' . implode(' AND ', ListingStatus::liveConditions('i.'))
+            . ' GROUP BY i.pk_i_id, i.dt_pub_date ORDER BY starts DESC, score DESC, i.dt_pub_date DESC, i.pk_i_id DESC LIMIT ?',
+            [addcslashes($prefix, '%_\\') . '%', $match, $match, $limit]
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
+    }
+
+    /**
+     * Ids of live listings that share the most of $words in their title, then newest. Only
+     * the newest RELATED_POOL listings that pass the filters are scored, so a big category
+     * costs the same as a small one.
+     *
+     * @param array{category?:int,country?:string,region?:int,premium?:bool,photos?:bool} $match
+     * @param string[] $words lower-case title words
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    public function related(int $excludeId, array $match, array $words, int $limit): array
+    {
+        $p      = DB_TABLE_PREFIX;
+        $where  = [...ListingStatus::liveConditions('i.'), 'i.pk_i_id <> ?'];
+        $params = [$excludeId];
+        $join   = '';
+        if (isset($match['category'])) {
+            $where[]  = 'i.fk_i_category_id = ?';
+            $params[] = $match['category'];
+        }
+        foreach (['country' => 'fk_c_country_code', 'region' => 'fk_i_region_id'] as $key => $column) {
+            if (isset($match[$key])) {
+                $join     = ' INNER JOIN ' . $p . 't_item_location l ON l.fk_i_item_id = i.pk_i_id';
+                $where[]  = 'l.' . $column . ' = ?';
+                $params[] = $match[$key];
+            }
+        }
+        if (!empty($match['premium'])) {
+            $where[] = 'i.b_premium = 1';
+        }
+        if (!empty($match['photos'])) {
+            $where[] = PhotoStore::hasImageSql('i.pk_i_id');
+        }
+        $score = $words === [] ? '0' : implode(' + ', array_fill(0, count($words), '(d.s_title LIKE ?)'));
+        $likes = array_map(static fn (string $w): string => '%' . addcslashes($w, '%_\\') . '%', $words);
+
+        $rows = Db::select(
+            'SELECT c.pk_i_id, MAX(' . $score . ') AS score FROM ('
+            . 'SELECT i.pk_i_id, i.dt_pub_date FROM ' . $p . 't_item i' . $join
+            . ' WHERE ' . implode(' AND ', $where) . ' ORDER BY i.dt_pub_date DESC LIMIT ' . self::RELATED_POOL
+            . ') c INNER JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = c.pk_i_id'
+            . ' GROUP BY c.pk_i_id, c.dt_pub_date ORDER BY score DESC, c.dt_pub_date DESC, c.pk_i_id DESC LIMIT ?',
+            [...$likes, ...$params, $limit]
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
+    }
+
+    /**
+     * The listing table's full name, for SQL fragments the search compiler takes.
+     */
+    public static function tableName(): string
+    {
+        return DB_TABLE_PREFIX . 't_item';
+    }
+
+    private function table(): QueryBuilder
+    {
+        return Db::table(self::tableName());
+    }
+}

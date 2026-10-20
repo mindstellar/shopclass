@@ -300,13 +300,23 @@ textarea {
 }
 
 .has-pagination {
-  text-align: end;
+  // One row: the "Showing" count on the left, the page links on the right.
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  justify-content: space-between;
+  margin-block-start: 1.5rem;
+
   ul {
     display: inline-block;
-    height: 36px;
-    margin: 25px 0 0;
+    height: 32px;
+    margin: 0;
+    padding: 0;
     @include rounded-corners;
-
+  }
+  form {
+    margin-inline-start: auto;
   }
   li {
     display: inline;
@@ -348,14 +358,17 @@ textarea {
 }
 
 ul.showing-results {
-  float: inline-start;
-  margin: 25px 0 0;
+  height: auto;
   padding: 0;
 }
 
-.showing-results span {
-  border-inline-start-width: 1px;
-  @include rounded-corners(3px);
+// The count is plain text, not a box that looks like a button.
+.has-pagination .showing-results span {
+  border: 0;
+  color: var(--osc-ink-muted);
+  float: none;
+  line-height: 1.5;
+  padding: 0;
 }
 
 .pagination-centered {

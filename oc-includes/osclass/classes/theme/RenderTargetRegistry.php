@@ -12,6 +12,7 @@
 namespace mindstellar\theme;
 
 use InvalidArgumentException;
+use mindstellar\base\Registry;
 
 /**
  * Registry of named render targets: opaque id -> absolute file path.
@@ -25,34 +26,8 @@ use InvalidArgumentException;
  *
  * @package mindstellar\theme
  */
-final class RenderTargetRegistry
+final class RenderTargetRegistry extends Registry
 {
-    private static ?self $instance = null;
-
-    /** @var array<string,string> absolute path, keyed by target id */
-    private array $targets = [];
-
-    /**
-     * Singleton: obtain the registry through instance().
-     */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Shared registry instance, created on first use.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
     /**
      * Register a render target.
      *
@@ -75,7 +50,7 @@ final class RenderTargetRegistry
             );
         }
 
-        $this->targets[$id] = $path;
+        $this->entries[$id] = $path;
     }
 
     /**
@@ -87,7 +62,7 @@ final class RenderTargetRegistry
      */
     public function get(string $id): ?string
     {
-        return $this->targets[$id] ?? null;
+        return $this->entries[$id] ?? null;
     }
 
     /**

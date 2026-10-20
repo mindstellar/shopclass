@@ -21,26 +21,6 @@ use mindstellar\utility\Sanitize;
 class FieldForm extends Form
 {
     private static $instance;
-    /**
-     * Enabled admin locale
-     * @var array
-     */
-    private $adminLocales;
-    /**
-     * Current admin locale
-     * @var string
-     */
-    private $activeAdminLocale;
-    /**
-     * Enabled user locales
-     * @var array
-     */
-    private $userLocales;
-    /**
-     * Current User Locale
-     * @var string
-     */
-    private $activeUserLocale;
 
     /**
      * @param \mindstellar\utility\Escape|null   $escape   Defaults to a new Escape instance
@@ -48,11 +28,6 @@ class FieldForm extends Form
      */
     public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
-        $this->adminLocales = osc_get_admin_locales();
-        $this->activeAdminLocale = osc_current_admin_locale();
-
-        $this->userLocales = osc_get_locales();
-        $this->activeUserLocale = osc_current_user_locale();
         parent::__construct($escape, $sanitize);
     }
 
@@ -241,7 +216,7 @@ class FieldForm extends Form
         $aCustomFields = array();
         // we check if the category is the same as our plugin
         foreach ($catId as $id) {
-            $aTemp = Field::newInstance()->findByCategory($id);
+            $aTemp = Field::getInstance()->findByCategory($id);
             foreach ($aTemp as $field) {
                 if ($field['b_searchable']) {
                     $aCustomFields[$field['pk_i_id']] = $field;
@@ -317,7 +292,7 @@ class FieldForm extends Form
             }
 
             if ($field['e_type'] === 'DATEINTERVAL' && !$search) {
-                $aInterval = Field::newInstance()
+                $aInterval = Field::getInstance()
                                   ->getDateIntervalByPrimaryKey($field['fk_i_item_id'], $field['pk_i_id']);
 
                 if (is_array($aInterval) && $aInterval !== array()) {
@@ -330,8 +305,8 @@ class FieldForm extends Form
                 $field['s_value'] = self::rangeFromRequest($field['pk_i_id']);
             }
 
-            if (Session::newInstance()->_getForm('meta_' . $field['pk_i_id']) != '') {
-                $field['s_value'] = Session::newInstance()->_getForm('meta_' . $field['pk_i_id']);
+            if (Session::getInstance()->_getForm('meta_' . $field['pk_i_id']) != '') {
+                $field['s_value'] = Session::getInstance()->_getForm('meta_' . $field['pk_i_id']);
             } elseif (!isset($field['s_value']) || !$field['s_value']) {
                 $s_value          = Params::getParam('meta');
                 $field['s_value'] = '';
@@ -453,7 +428,7 @@ class FieldForm extends Form
                     if ($search) {
                         $options['sanitize'] = 'html';
 
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                         echo self::getInstance()->text($name, $value, $attributes, $options);
                     } else {
                         $value              = osc_apply_filter(
@@ -468,7 +443,7 @@ class FieldForm extends Form
                     break;
                 case 'DROPDOWN':
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                     } else {
                         $options['label'] = $label;
                     }
@@ -481,7 +456,7 @@ class FieldForm extends Form
                     break;
                 case 'RADIO':
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                     } else {
                         $options['label'] = $label;
                     }
@@ -500,7 +475,7 @@ class FieldForm extends Form
                     break;
                 case 'DATE':
                     if ($search) {
-                        echo '<h6 id="' . $id . '-label">' . $label . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
                         $attributes['aria-labelledby'] = $id . '-label';
                     } else {
                         $options['label'] = $label;
@@ -519,9 +494,9 @@ class FieldForm extends Form
                 case 'DATEINTERVAL':
                     $groupLabelId = $id . '-label';
                     if ($search) {
-                        echo '<h6 id="' . $groupLabelId . '">' . $label . '</h6>';
+                        echo '<h6 id="' . $groupLabelId . '">' . osc_esc_html((string) $label) . '</h6>';
                     } else {
-                        echo '<label id="' . $groupLabelId . '">' . $label . '</label>';
+                        echo '<label id="' . $groupLabelId . '">' . osc_esc_html((string) $label) . '</label>';
                     }
                     unset($attributes['id']);
                     echo self::getInstance()->hidden($name . '[from]', $value['from'], ['id' => $id . '_from']);
@@ -542,7 +517,7 @@ class FieldForm extends Form
                     break;
                 case 'NUMBER':
                     if ($search) {
-                        echo '<h6 id="' . $id . '-label">' . $label . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
 
                         echo '<div class="input-group input-group-sm" role="group" aria-labelledby="' . $id . '-label">';
                         unset($attributes['id']);
@@ -565,7 +540,7 @@ class FieldForm extends Form
                     break;
                 default:
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                     } else {
                         $options['label'] = $label;
                     }
@@ -774,7 +749,7 @@ class FieldForm extends Form
      */
     public static function meta_fields_input($catId = null, $itemId = null)
     {
-        $fields = Field::newInstance()->findByCategoryItem($catId, $itemId);
+        $fields = Field::getInstance()->findByCategoryItem($catId, $itemId);
         self::renderFieldList($fields, 'meta_list card-body');
     }
 
@@ -802,8 +777,7 @@ class FieldForm extends Form
         // section heading, loose fields under the default (no header) section.
         $sections = array();
         foreach ($fields as $field) {
-            $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== null
-                      && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
+            $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
             if (!isset($sections[$gname])) {
                 $sections[$gname] = array();
             }

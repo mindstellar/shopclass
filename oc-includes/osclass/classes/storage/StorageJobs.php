@@ -48,6 +48,7 @@ final class StorageJobs
         JobRegistry::register('storage.adopt', static fn (Job $job) => self::adopt($job));
         JobRegistry::register('storage.regenerate', static fn (Job $job) => self::regenerate($job));
         JobRegistry::register('storage.seed', static fn (Job $job) => self::seed($job));
+        JobRegistry::register('storage.purge', static fn (Job $job) => self::purge($job));
 
         $photo = static fn (array $p): string => !empty($p['fk_i_item_id'])
             ? sprintf(__('Photo #%1$d of listing #%2$d'), (int) ($p['pk_i_id'] ?? 0), (int) $p['fk_i_item_id'])
@@ -58,6 +59,11 @@ final class StorageJobs
         JobRegistry::describe('storage.adopt', __('Adopt a file already in remote storage'), $photo);
         JobRegistry::describe('storage.regenerate', __('Rebuild photo sizes'), $photo);
         JobRegistry::describe('storage.seed', __('Queue files for a storage move'));
+        JobRegistry::describe(
+            'storage.purge',
+            __('Delete files from storage'),
+            static fn (array $p): string => sprintf(__('%d files'), count((array) ($p['rows'] ?? array())))
+        );
     }
 
     /**
@@ -73,16 +79,8 @@ final class StorageJobs
      */
     public static function enqueue(string $op, string $storageId, array $snapshot): int
     {
-        $payload = array(
-            'pk_i_id'        => $snapshot['pk_i_id'] ?? null,
-            'fk_i_item_id'   => $snapshot['fk_i_item_id'] ?? null,
-            's_owner_type'   => $snapshot['s_owner_type'] ?? null,
-            'i_owner_id'     => $snapshot['i_owner_id'] ?? null,
-            's_path'         => $snapshot['s_path'] ?? null,
-            's_extension'    => $snapshot['s_extension'] ?? null,
-            's_content_type' => $snapshot['s_content_type'] ?? null,
-            's_storage'      => $snapshot['s_storage'] ?? $storageId,
-        );
+        $payload              = self::snapshot($snapshot);
+        $payload['s_storage'] = $snapshot['s_storage'] ?? $storageId;
         if (array_key_exists('local', $snapshot)) {
             $payload['local'] = (bool) $snapshot['local'];
         }
@@ -111,6 +109,92 @@ final class StorageJobs
         );
     }
 
+    /** The row fields a storage job needs to find a resource's files and its owner. */
+    private const ROW_FIELDS = array(
+        'pk_i_id', 's_base_name', 'fk_i_item_id', 's_owner_type', 'i_owner_id', 's_path', 's_extension', 's_content_type', 's_storage',
+    );
+
+    /** Rows one purge job carries at most, so a job with a remote delete per variant stays short. */
+    public const PURGE_BATCH = 50;
+
+    /**
+     * Remove the files of deleted resource rows once the delete has committed. Files on this
+     * server go at once; rows on remote storage, or on an install with a remote adapter, go
+     * through one `storage.purge` job per batch instead of one job per file.
+     *
+     * @param array<int,array<string,mixed>> $rows deleted t_resource rows or listing photo rows
+     *
+     * @return void
+     */
+    public static function purgeAfterCommit(array $rows): void
+    {
+        if ($rows === array()) {
+            return;
+        }
+        \mindstellar\database\Db::afterCommit(static function () use ($rows): void {
+            $queued = array();
+            $local  = StorageManager::getInstance()->remote() === null;
+            foreach ($rows as $row) {
+                if (empty($row['pk_i_id'])) {
+                    continue;
+                }
+                if ($local && ($row['s_storage'] ?? 'local') === 'local') {
+                    self::removeFiles(array($row));
+                } else {
+                    $queued[] = self::snapshot($row);
+                }
+            }
+            foreach (array_chunk($queued, self::PURGE_BATCH) as $batch) {
+                osc_job_enqueue('storage.purge', array('rows' => $batch));
+            }
+        });
+    }
+
+    /**
+     * Remove every file of the rows a purge job carries, on their storage and on this server.
+     * Idempotent: a file or key that is already gone is not an error.
+     *
+     * @param Job $job
+     *
+     * @return void
+     * @throws RuntimeException when a local file exists but cannot be removed
+     */
+    private static function purge(Job $job): void
+    {
+        $failed = null;
+        foreach ((array) $job->get('rows', array()) as $row) {
+            if (!is_array($row) || empty($row['pk_i_id'])) {
+                continue;
+            }
+            try {
+                self::deleteFiles($row, (string) ($row['s_storage'] ?? 'local'), true);
+            } catch (RuntimeException $e) {
+                $failed ??= $e;
+            }
+        }
+        // Every row was tried; a retry of the whole job is safe, as each removal is idempotent.
+        if ($failed !== null) {
+            throw $failed;
+        }
+    }
+
+    /**
+     * The fields a job needs to find a row's files after the row is gone.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array<string,mixed>
+     */
+    private static function snapshot(array $row): array
+    {
+        $out = array();
+        foreach (self::ROW_FIELDS as $field) {
+            $out[$field] = $row[$field] ?? null;
+        }
+
+        return $out;
+    }
+
     /**
      * Idempotent: removing a key or file that is already gone is not an error.
      *
@@ -121,22 +205,55 @@ final class StorageJobs
      */
     private static function delete(Job $job): void
     {
-        $snapshot    = $job->payload();
-        $adapter     = StorageManager::instance()->adapter($job->storage());
-        $removeLocal = ($snapshot['local'] ?? true) !== false;
+        $snapshot = $job->payload();
+        self::deleteFiles($snapshot, $job->storage(), ($snapshot['local'] ?? true) !== false);
+    }
 
+    /**
+     * Remove a resource's files from a remote adapter and, unless told not to, from this server.
+     * Missing files and keys are not errors.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return void
+     * @throws RuntimeException when a local file exists but cannot be removed
+     */
+    private static function deleteFiles(array $row, string $storage, bool $removeLocal): void
+    {
+        if (!ResourceLocator::isUploadPath($row)) {
+            return;
+        }
+        $adapter = StorageManager::getInstance()->adapter($storage);
         if ($adapter !== null && $adapter->isRemote()) {
             foreach (ResourceLocator::variants() as $variant) {
                 try {
-                    $adapter->delete(ResourceLocator::storageKey($snapshot, $variant));
+                    $adapter->delete(ResourceLocator::storageKey($row, $variant));
                 } catch (Throwable $e) {
                     // Missing-key errors from the remote adapter are not fatal here.
                 }
             }
         }
-
         if ($removeLocal) {
-            self::removeLocal($snapshot);
+            self::removeLocal($row);
+        }
+    }
+
+    /**
+     * Remove the files of resources on this server now, one row at a time, so a file that
+     * cannot be removed does not keep the others.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     *
+     * @return void
+     */
+    public static function removeFiles(array $rows): void
+    {
+        foreach ($rows as $row) {
+            try {
+                self::removeLocal($row);
+            } catch (Throwable $e) {
+                error_log('Resource ' . ($row['pk_i_id'] ?? '?') . ' files not removed: ' . $e->getMessage());
+            }
         }
     }
 
@@ -149,6 +266,9 @@ final class StorageJobs
      */
     private static function removeLocal(array $snapshot): void
     {
+        if (!ResourceLocator::isUploadPath($snapshot)) {
+            return;
+        }
         foreach (ResourceLocator::variants() as $variant) {
             $path = ResourceLocator::localPath($snapshot, $variant);
             if (file_exists($path) && !is_dir($path)) {
@@ -170,7 +290,7 @@ final class StorageJobs
     {
         $snapshot = $job->payload();
         $storage  = (string) $job->storage();
-        $adapter  = StorageManager::instance()->adapter($storage);
+        $adapter  = StorageManager::getInstance()->adapter($storage);
         if ($adapter === null || !$adapter->isRemote()) {
             return;
         }
@@ -221,7 +341,7 @@ final class StorageJobs
     {
         $snapshot = $job->payload();
         $storage  = (string) $job->storage();
-        $adapter  = StorageManager::instance()->adapter($storage);
+        $adapter  = StorageManager::getInstance()->adapter($storage);
         if ($adapter === null) {
             throw new RuntimeException('Unknown storage adapter: ' . $storage);
         }
@@ -261,7 +381,7 @@ final class StorageJobs
     {
         $snapshot = $job->payload();
         $storage  = (string) $job->storage();
-        $adapter  = StorageManager::instance()->adapter($storage);
+        $adapter  = StorageManager::getInstance()->adapter($storage);
         if ($adapter === null || !$adapter->isRemote()) {
             return;
         }
@@ -284,7 +404,7 @@ final class StorageJobs
      * action instead of run inline, one job per resource, when a remote adapter is
      * active -- that keeps each regeneration, and any pull-back of a remote-only source,
      * off the request thread. The `regenerated_image` hook fired from inside
-     * regenerateResourceImages() queues the offload back to remote storage.
+     * PhotoService::regenerateImages() queues the offload back to remote storage.
      *
      * @param Job $job
      *
@@ -292,12 +412,12 @@ final class StorageJobs
      */
     private static function regenerate(Job $job): void
     {
-        $resource = ItemResource::newInstance()->findByPrimaryKey($job->get('pk_i_id', 0));
+        $resource = ItemResource::getInstance()->findByPrimaryKey($job->get('pk_i_id', 0));
         if ($resource === false) {
             return; // resource deleted meanwhile; nothing to regenerate
         }
 
-        \ItemActions::regenerateResourceImages($resource);
+        \mindstellar\listing\PhotoService::regenerateImages($resource);
     }
 
     /**
@@ -324,7 +444,7 @@ final class StorageJobs
             return;
         }
 
-        $rows = ItemResource::newInstance()->getResourcesBatchByStorage($source, $offset, self::SEED_BATCH);
+        $rows = ItemResource::getInstance()->getResourcesBatchByStorage($source, $offset, self::SEED_BATCH);
 
         foreach ($rows as $row) {
             self::enqueue($op, $target, $row);
@@ -340,10 +460,9 @@ final class StorageJobs
     }
 
     /**
-     * Resolve the resource row a snapshot points at from the right table: snapshots
-     * carrying an s_owner_type belong to t_resource (the polymorphic table), everything
-     * else is a legacy item snapshot in t_item_resource. Jobs queued before that upgrade
-     * have no owner fields and take the item path exactly as before.
+     * Resolve the resource row a snapshot points at: a snapshot carrying an s_owner_type
+     * is read for that owner type, anything else is a listing photo. Item snapshots
+     * have no owner fields.
      *
      * @param array<string,mixed> $snapshot
      *
@@ -356,11 +475,12 @@ final class StorageJobs
             return null;
         }
 
-        $model = !empty($snapshot['s_owner_type'])
-            ? Resource::newInstance()
-            : ItemResource::newInstance();
+        if (!empty($snapshot['s_owner_type'])) {
+            // The owner type must match, so a job queued before a row was renumbered cannot reach another row.
+            return (new Resource())->findOwned((string) $snapshot['s_owner_type'], $pk);
+        }
 
-        $row = $model->findByPrimaryKey($pk);
+        $row = ItemResource::getInstance()->findByPrimaryKey($pk);
 
         // Both models inherit DAO::findByPrimaryKey, which returns false (not null) for a
         // missing row; normalise so callers only have to guard one shape.
@@ -384,12 +504,15 @@ final class StorageJobs
         }
 
         if (!empty($snapshot['s_owner_type'])) {
-            Resource::newInstance()->updateResource($pk, array('s_storage' => $storageId));
+            $row = self::resolveRow($snapshot);
+            if ($row !== null) {
+                (new Resource())->updateResource((int) $row['pk_i_id'], array('s_storage' => $storageId));
+            }
 
             return;
         }
 
-        ItemResource::newInstance()->updateByPrimaryKey(array('s_storage' => $storageId), $pk);
+        ItemResource::getInstance()->updateByPrimaryKey(array('s_storage' => $storageId), $pk);
     }
 
     /**
@@ -404,7 +527,7 @@ final class StorageJobs
     private static function invalidateOwnerCaches(array $snapshot): void
     {
         if (!empty($snapshot['s_owner_type'])) {
-            Resource::newInstance()->invalidateOwnerCache(
+            (new Resource())->invalidateOwnerCache(
                 (string) $snapshot['s_owner_type'],
                 (int) ($snapshot['i_owner_id'] ?? 0)
             );

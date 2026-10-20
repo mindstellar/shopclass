@@ -10,6 +10,7 @@
 
 namespace mindstellar\security;
 
+use mindstellar\auth\AdminStore;
 use mindstellar\database\DbException;
 
 /**
@@ -19,6 +20,11 @@ use mindstellar\database\DbException;
  */
 final class AdminTwoFactor
 {
+    /** Seconds the code step stays open after the password passed. */
+    public const PENDING_TTL = 300;
+
+    private const PENDING_PURPOSE = 'admin-2fa-pending';
+
     /**
      * @param array<string,mixed> $admin a t_admin row
      *
@@ -55,15 +61,14 @@ final class AdminTwoFactor
      */
     public static function admins(): array
     {
-        $table = DB_TABLE_PREFIX . 't_admin';
         try {
-            $rows = osc_db_select('SELECT pk_i_id, s_name, s_username, b_moderator, s_2fa FROM ' . $table . ' ORDER BY pk_i_id');
+            $rows = AdminStore::listing(true);
         } catch (DbException $e) {
             if ($e->getCode() !== 1054) {
                 return array();
             }
             // A database not upgraded yet has no s_2fa column: everyone is off.
-            $rows = osc_db_select('SELECT pk_i_id, s_name, s_username, b_moderator FROM ' . $table . ' ORDER BY pk_i_id');
+            $rows = AdminStore::listing(false);
         }
 
         return array_map(static function (array $row): array {
@@ -120,10 +125,7 @@ final class AdminTwoFactor
         }
 
         // Only if nothing changed since the read, so one code cannot pass two requests at once.
-        return osc_db_execute(
-            'UPDATE ' . DB_TABLE_PREFIX . 't_admin SET s_2fa = ? WHERE pk_i_id = ? AND s_2fa = ?',
-            array((string)json_encode($settings), $id, $stored)
-        ) === 1;
+        return AdminStore::swapTwoFactor($id, (string)json_encode($settings), $stored) === 1;
     }
 
     /**
@@ -195,6 +197,64 @@ final class AdminTwoFactor
         $data = json_decode((string)self::read((int)($admin['pk_i_id'] ?? 0)), true);
 
         return (string)$admin['s_password'] . (is_array($data) ? (string)($data['secret'] ?? $data['off'] ?? '') : '');
+    }
+
+    /**
+     * A signed token saying this admin passed the password step, kept in a cookie instead of
+     * the session. It ends when the password or the 2FA data changes, so a passed code ends it.
+     *
+     * @param array<string,mixed> $admin   a t_admin row
+     * @param array<string,mixed> $choices what to carry to the code step, e.g. remember, locale
+     * @param int|null            $now     the current time; time() when null
+     *
+     * @return string
+     */
+    public static function issuePending(array $admin, array $choices, ?int $now = null): string
+    {
+        $id = (int)$admin['pk_i_id'];
+
+        return SignedPayload::pack(self::PENDING_PURPOSE, array(
+            'id'      => $id,
+            'choices' => $choices,
+            'bind'    => self::pendingBinding((string)($admin['s_password'] ?? ''), self::read($id)),
+        ), self::PENDING_TTL, 0, $now);
+    }
+
+    /**
+     * Read a pending token: the admin it names and the choices it carries. Null when it is
+     * forged, expired, for an admin that is gone, or used up.
+     *
+     * @param string   $token
+     * @param int|null $now
+     *
+     * @return array{admin:array<string,mixed>,choices:array<string,mixed>}|null
+     */
+    public static function readPending(string $token, ?int $now = null): ?array
+    {
+        $data = SignedPayload::unpack(self::PENDING_PURPOSE, $token, $now);
+        $id   = (int)($data['id'] ?? 0);
+        $row  = $id > 0 ? AdminStore::find($id) : null;
+        if ($row === null) {
+            return null;
+        }
+        $stored = isset($row['s_2fa']) ? (string)$row['s_2fa'] : null;
+        unset($row['s_2fa']);
+        if (!hash_equals(self::pendingBinding((string)$row['s_password'], $stored), (string)($data['bind'] ?? ''))) {
+            return null;
+        }
+
+        return array('admin' => $row, 'choices' => is_array($data['choices'] ?? null) ? $data['choices'] : array());
+    }
+
+    /**
+     * @param string      $password the stored password hash
+     * @param string|null $stored   the stored 2FA data
+     *
+     * @return string
+     */
+    private static function pendingBinding(string $password, ?string $stored): string
+    {
+        return hash_hmac('sha256', 'admin-2fa-bind|' . $password . '|' . (string)$stored, SigningKey::get());
     }
 
     /**
@@ -271,7 +331,7 @@ final class AdminTwoFactor
     private static function read(int $adminId): ?string
     {
         try {
-            $row = osc_db_select_one('SELECT s_2fa FROM ' . DB_TABLE_PREFIX . 't_admin WHERE pk_i_id = ?', array($adminId));
+            $row = AdminStore::twoFactorRow($adminId);
         } catch (DbException $e) {
             // Only a missing column (MySQL error 1054) reads as off; any other failure must not
             // let a password alone through.
@@ -292,6 +352,6 @@ final class AdminTwoFactor
      */
     private static function write(int $adminId, ?string $value): void
     {
-        osc_db_execute('UPDATE ' . DB_TABLE_PREFIX . 't_admin SET s_2fa = ? WHERE pk_i_id = ?', array($value, $adminId));
+        AdminStore::setTwoFactor($adminId, $value);
     }
 }

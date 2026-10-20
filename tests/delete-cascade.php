@@ -25,7 +25,7 @@
  *    what t_meta_categories did to category deletion, and what
  *    t_form_submission_value did to custom-field deletion.
  *  - A child table with no foreign key at all, which nothing blocks and nothing
- *    cleans up: t_item_report_log, t_item_moderation_log, t_location_slug_history.
+ *    cleans up: t_item_report_log, t_item_moderation_log, t_slug_history.
  *    t_alerts and t_form_submission were in this list until 0054 gave them keys;
  *    their models still delete them for installs without the keys.
  *  - t_billing_ledger and t_billing_order carry no foreign key either, but for the
@@ -85,6 +85,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 
@@ -153,7 +154,7 @@ seed_exec(
 
 pin('the submitted value is there to begin with', 1, $rows('t_form_submission_value', "fk_i_field_id = $field"));
 
-$deleted = Field::newInstance()->deleteByPrimaryKey($field);
+$deleted = Field::getInstance()->deleteByPrimaryKey($field);
 
 pin('the field reports one row removed', 1, $deleted);
 pin('the field is gone', 0, $rows('t_meta_fields', "pk_i_id = $field"));
@@ -189,7 +190,7 @@ seed_exec(
     array($submission, $loose)
 );
 
-$deleted = FieldGroup::newInstance()->deleteByPrimaryKey($group);
+$deleted = FieldGroup::getInstance()->deleteByPrimaryKey($group);
 
 pin('the form reports one row removed', 1, $deleted);
 pin('the form is gone', 0, $rows('t_meta_group', "pk_i_id = $group"));
@@ -233,13 +234,7 @@ seed_exec(
     'ii',
     array($item, $user)
 );
-seed_exec(
-    $admin,
-    "INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
-     VALUES (?, 'photo', 'jpg', 'image/jpeg', 'oc-content/uploads/', 'local')",
-    'i',
-    array($item)
-);
+seed_photo($admin, $item, array('s_path' => 'oc-content/uploads/'));
 seed_exec(
     $admin,
     "INSERT INTO {$prefix}t_item_report_log (fk_i_item_id, s_reporter, fk_i_user_id, s_ip, s_reason, dt_date)
@@ -264,7 +259,7 @@ seed_exec(
     array($item)
 );
 
-$deleted = Item::newInstance()->deleteByPrimaryKey($item);
+$deleted = Item::getInstance()->deleteByPrimaryKey($item);
 
 pin('the item reports one row removed', 1, $deleted);
 pin('the item is gone', 0, $rows('t_item', "pk_i_id = $item"));
@@ -272,7 +267,6 @@ foreach (
     array(
         't_item_description',
         't_item_comment',
-        't_item_resource',
         't_item_location',
         't_item_stats',
         't_item_meta',
@@ -283,6 +277,7 @@ foreach (
 ) {
     pin("$child has nothing left for the item", 0, $rows($child, "fk_i_item_id = $item"));
 }
+pin('t_resource has no photo left for the item', 0, $rows('t_resource', "s_owner_type = 'item' AND i_owner_id = $item"));
 
 /* ---------------------------------------------------------------------------
  * The rollback. This is the guarantee the transaction exists for, and the one that
@@ -306,13 +301,7 @@ $admin->query(
 );
 
 $blocked = seed_item($admin, $cat, $user, 'A listing that cannot be deleted');
-seed_exec(
-    $admin,
-    "INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
-     VALUES (?, 'photo', 'jpg', 'image/jpeg', 'oc-content/uploads/', 'local')",
-    'i',
-    array($blocked)
-);
+seed_photo($admin, $blocked, array('s_path' => 'oc-content/uploads/'));
 seed_exec(
     $admin,
     "INSERT INTO {$prefix}t_delete_blocker (fk_i_item_id) VALUES (?)",
@@ -320,14 +309,14 @@ seed_exec(
     array($blocked)
 );
 
-$refused = Item::newInstance()->deleteByPrimaryKey($blocked);
+$refused = Item::getInstance()->deleteByPrimaryKey($blocked);
 
 pin('the delete reports failure rather than a row count', false, $refused);
 pin('the listing is still there', 1, $rows('t_item', "pk_i_id = $blocked"));
 pin('its description survived the rollback', 1, $rows('t_item_description', "fk_i_item_id = $blocked"));
 // The row surviving is also what keeps the files: they are unlinked only after the
 // commit, from rows read before it, so a rollback never reaches the filesystem.
-pin('its images survived the rollback', 1, $rows('t_item_resource', "fk_i_item_id = $blocked"));
+pin('its images survived the rollback', 1, $rows('t_resource', "s_owner_type = 'item' AND i_owner_id = $blocked"));
 pin('its location survived the rollback', 1, $rows('t_item_location', "fk_i_item_id = $blocked"));
 pin('its stats survived the rollback', 1, $rows('t_item_stats', "fk_i_item_id = $blocked"));
 
@@ -352,25 +341,20 @@ seed_exec(
 );
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_category_slug_history (fk_i_category_id, fk_c_locale_code, s_slug, dt_date)
-     VALUES (?, 'en_US', 'old-rentals-slug', NOW())",
+    "INSERT INTO {$prefix}t_slug_history (e_type, fk_i_id, fk_c_locale_code, s_slug, dt_date)
+     VALUES ('CATEGORY', ?, 'en_US', 'old-rentals-slug', NOW())",
     'i',
     array($child)
 );
+(new PluginCategory())->add('demo', array($child));
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_plugin_category (s_plugin_name, fk_i_category_id) VALUES ('demo', ?)",
-    'i',
-    array($child)
-);
-seed_exec(
-    $admin,
-    "INSERT INTO {$prefix}t_category_stats (fk_i_category_id, i_num_items) VALUES (?, 1)",
+    "UPDATE {$prefix}t_category SET i_num_items = 1 WHERE pk_i_id = ?",
     'i',
     array($child)
 );
 
-$deleted = Category::newInstance()->deleteByPrimaryKey($parent);
+$deleted = Category::getInstance()->deleteByPrimaryKey($parent);
 
 pin('the parent category reports one row removed', 1, $deleted);
 pin('the parent is gone', 0, $rows('t_category', "pk_i_id = $parent"));
@@ -378,9 +362,8 @@ pin('the subcategory went with it', 0, $rows('t_category', "pk_i_id = $child"));
 pin('the subcategory items went too', 0, $rows('t_item', "pk_i_id = $childItem"));
 pin('descriptions are gone', 0, $rows('t_category_description', "fk_i_category_id IN ($parent, $child)"));
 pin('field assignments are gone', 0, $rows('t_meta_categories', "fk_i_category_id = $child"));
-pin('slug history is gone', 0, $rows('t_category_slug_history', "fk_i_category_id = $child"));
-pin('plugin links are gone', 0, $rows('t_plugin_category', "fk_i_category_id = $child"));
-pin('stats are gone', 0, $rows('t_category_stats', "fk_i_category_id = $child"));
+pin('slug history is gone', 0, $rows('t_slug_history', "e_type = 'CATEGORY' AND fk_i_id = $child"));
+pin('plugin links are gone', 0, count((new PluginCategory())->findByCategoryId($child)));
 
 /* ---------------------------------------------------------------------------
  * User, including t_alerts.
@@ -419,9 +402,9 @@ seed_exec(
 );
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_user_email_tmp (fk_i_user_id, s_new_email, dt_date) VALUES (?, 'new@example.test', NOW())",
-    'i',
-    array($owner)
+    "INSERT INTO {$prefix}t_key_value (s_group, s_key, s_value, dt_created) VALUES ('email_change', ?, 'new@example.test', NOW())",
+    's',
+    array((string) $owner)
 );
 // t_billing_wallet and t_user_entitlement both carry a real ON DELETE CASCADE FK to
 // t_user -- seeded here so that cascade is actually exercised rather than passing
@@ -460,7 +443,7 @@ seed_exec(
     array($owner)
 );
 
-$ok = User::newInstance()->deleteUser($owner);
+$ok = User::getInstance()->deleteUser($owner);
 
 pin('the user delete reports success', true, $ok);
 pin('the user is gone', 0, $rows('t_user', "pk_i_id = $owner"));
@@ -469,7 +452,7 @@ pin('their alerts went with them', 0, $rows('t_alerts', "fk_i_user_id = $owner")
 pin('their form submissions went with them', 0, $rows('t_form_submission', "fk_i_user_id = $owner"));
 pin('and their submission id is gone', 0, $rows('t_form_submission', "pk_i_id = $ownerSubmission"));
 pin('their profile went with them', 0, $rows('t_user_description', "fk_i_user_id = $owner"));
-pin('their pending email change went with them', 0, $rows('t_user_email_tmp', "fk_i_user_id = $owner"));
+pin('their pending email change went with them', 0, $rows('t_key_value', "s_group = 'email_change' AND s_key = '$owner'"));
 pin('their wallet went with them', 0, $rows('t_billing_wallet', "fk_i_user_id = $owner"));
 pin('their entitlements went with them', 0, $rows('t_user_entitlement', "fk_i_user_id = $owner"));
 pin('their ledger history survives -- deliberately, it is the audit trail', 1, $rows('t_billing_ledger', "fk_i_user_id = $owner"));
@@ -486,26 +469,26 @@ $histCity   = seed_city($admin, $histRegion, 'Shelbyville');
 
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_location_slug_history (e_type, s_slug, fk_i_id, dt_date)
+    "INSERT INTO {$prefix}t_slug_history (e_type, s_slug, fk_i_id, dt_date)
      VALUES ('CITY', 'old-shelbyville', ?, NOW())",
     'i',
     array($histCity)
 );
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_location_slug_history (e_type, s_slug, fk_i_id, dt_date)
+    "INSERT INTO {$prefix}t_slug_history (e_type, s_slug, fk_i_id, dt_date)
      VALUES ('REGION', 'old-beta', ?, NOW())",
     'i',
     array($histRegion)
 );
 
-City::newInstance()->deleteByPrimaryKey($histCity);
+City::getInstance()->deleteByPrimaryKey($histCity);
 pin('the city is gone', 0, $rows('t_city', "pk_i_id = $histCity"));
-pin("the city's slug history is gone", 0, $rows('t_location_slug_history', "e_type = 'CITY' AND fk_i_id = $histCity"));
+pin("the city's slug history is gone", 0, $rows('t_slug_history', "e_type = 'CITY' AND fk_i_id = $histCity"));
 
-Region::newInstance()->deleteByPrimaryKey($histRegion);
+Region::getInstance()->deleteByPrimaryKey($histRegion);
 pin('the region is gone', 0, $rows('t_region', "pk_i_id = $histRegion"));
-pin("the region's slug history is gone", 0, $rows('t_location_slug_history', "e_type = 'REGION' AND fk_i_id = $histRegion"));
+pin("the region's slug history is gone", 0, $rows('t_slug_history', "e_type = 'REGION' AND fk_i_id = $histRegion"));
 
 /* ---------------------------------------------------------------------------
  * Page.
@@ -515,7 +498,7 @@ harness_section('Page::deleteByPrimaryKey');
 
 $page = seed_page($admin, 'terms', 'Terms');
 
-$deleted = Page::newInstance()->deleteByPrimaryKey($page);
+$deleted = Page::getInstance()->deleteByPrimaryKey($page);
 
 pin('the page reports one row removed', 1, $deleted);
 pin('the page is gone', 0, $rows('t_pages', "pk_i_id = $page"));
@@ -572,13 +555,23 @@ pin('no moderation log for a missing item', 0, $count(
        LEFT JOIN {$prefix}t_item i ON m.fk_i_item_id = i.pk_i_id
       WHERE i.pk_i_id IS NULL"
 ));
+pin('no listing photo for a missing item', 0, $count(
+    "SELECT COUNT(*) c FROM {$prefix}t_resource r
+       LEFT JOIN {$prefix}t_item i ON r.i_owner_id = i.pk_i_id
+      WHERE r.s_owner_type = 'item' AND i.pk_i_id IS NULL"
+));
+pin('no category slug history for a missing category', 0, $count(
+    "SELECT COUNT(*) c FROM {$prefix}t_slug_history h
+       LEFT JOIN {$prefix}t_category c ON h.fk_i_id = c.pk_i_id
+      WHERE h.e_type = 'CATEGORY' AND c.pk_i_id IS NULL"
+));
 pin('no city slug history for a missing city', 0, $count(
-    "SELECT COUNT(*) c FROM {$prefix}t_location_slug_history h
+    "SELECT COUNT(*) c FROM {$prefix}t_slug_history h
        LEFT JOIN {$prefix}t_city ci ON h.fk_i_id = ci.pk_i_id
       WHERE h.e_type = 'CITY' AND ci.pk_i_id IS NULL"
 ));
 pin('no region slug history for a missing region', 0, $count(
-    "SELECT COUNT(*) c FROM {$prefix}t_location_slug_history h
+    "SELECT COUNT(*) c FROM {$prefix}t_slug_history h
        LEFT JOIN {$prefix}t_region r ON h.fk_i_id = r.pk_i_id
       WHERE h.e_type = 'REGION' AND r.pk_i_id IS NULL"
 ));

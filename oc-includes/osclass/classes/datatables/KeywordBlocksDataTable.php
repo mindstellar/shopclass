@@ -41,7 +41,7 @@ class KeywordBlocksDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $list = KeywordBlock::newInstance()->search(
+        $list = KeywordBlock::getInstance()->search(
             $this->start,
             $this->limit,
             $this->order_by['column_name'],
@@ -87,7 +87,7 @@ class KeywordBlocksDataTable extends DataTable
 
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 

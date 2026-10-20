@@ -72,7 +72,7 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
             <li><a href="#market-tab-installed"><?php _e('Installed'); ?></a></li>
             <li><a href="#market-tab-browse"><?php _e('Browse'); ?></a></li>
             <li><a href="#market-tab-updates"><?php _e('Updates'); ?>
-                    <span class="market-tab-count" id="market-updates-count">(<?php echo (int) count($aMarketUpdates); ?>)</span>
+                    <?php echo osc_admin_count(count($aMarketUpdates), 'market-updates-count'); ?>
                 </a></li>
         </ul>
     </div>

@@ -15,7 +15,7 @@
 
 $category    = __get('category');
 $has_subcats = __get('has_subcategories');
-$locales     = OSCLocale::newInstance()->listAllEnabled();
+$locales     = OSCLocale::getInstance()->listAllEnabled();
 ?>
 <div class="iframe-category">
     <h3><?php _e('Edit category'); ?></h3>

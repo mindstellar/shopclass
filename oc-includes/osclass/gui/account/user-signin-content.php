@@ -14,7 +14,7 @@ if (!defined('ABS_PATH')) {
 
 /**
  * Sign-in details: the email address, the username and the password, on one
- * page. Three single-field settings answering one question -- how do I sign in --
+ * page, and signing out of all devices. Three single-field settings answering one question -- how do I sign in --
  * and one destination to find rather than three near-identical ones.
  *
  * Each section keeps its own form and posts to its own existing action, so the
@@ -111,21 +111,42 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     <label class="oe-label" for="oe-new-password"><?php
                         echo osc_esc_html(_m('New password')); ?></label>
                     <input class="oe-input" id="oe-new-password" type="password" name="new_password"
-                           autocomplete="new-password" required minlength="6"
+                           autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>"
                            aria-describedby="oe-new-password-hint" />
                     <span class="oe-hint" id="oe-new-password-hint"><?php echo osc_esc_html(
-                        _m('At least six characters.')
+                        sprintf(_m('At least %d characters.'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH)
                     ); ?></span>
                 </div>
                 <div class="oe-field">
                     <label class="oe-label" for="oe-new-password2"><?php
                         echo osc_esc_html(_m('Repeat the new password')); ?></label>
                     <input class="oe-input" id="oe-new-password2" type="password" name="new_password2"
-                           autocomplete="new-password" required minlength="6" data-match="new_password"
+                           autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>" data-match="new_password"
                            data-match-message="<?php echo osc_esc_html(_m('The two passwords do not match.')); ?>" />
                 </div>
                 <div class="oe-actions">
                     <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>
+                </div>
+            </form>
+        </section>
+
+        <section id="sign-out-all" class="oe-panel">
+            <h2><?php echo osc_esc_html(_m('Sign out of all devices')); ?></h2>
+            <p class="oe-muted"><?php echo osc_esc_html(
+                _m('Ends every sign-in to this account: other browsers and phones, apps and personal API keys, and this browser too.')
+            ); ?></p>
+
+            <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
+                <input type="hidden" name="page" value="user" />
+                <input type="hidden" name="action" value="sign_out_all_post" />
+                <div class="oe-field">
+                    <label class="oe-label" for="oe-sign-out-password"><?php
+                        echo osc_esc_html(_m('Current password')); ?></label>
+                    <input class="oe-input" id="oe-sign-out-password" type="password" name="password"
+                           autocomplete="current-password" required />
+                </div>
+                <div class="oe-actions">
+                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Sign out everywhere')); ?></button>
                 </div>
             </form>
         </section>

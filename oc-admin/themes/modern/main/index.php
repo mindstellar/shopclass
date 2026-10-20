@@ -222,8 +222,7 @@ if (!empty($numItemsPerCategory)) { ?>
                                             } else {
                                                 $even = true;
                                             } ?>>
-                                                <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;
-                                            catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
+                                                <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
                                                 </td>
                                                 <td><?php echo $subc['i_num_items'] . ' ' . (($subc['i_num_items'] == 1)
                                                      ? __('Listing') : __('Listings')); ?></td>
@@ -251,14 +250,6 @@ if (!empty($numItemsPerCategory)) { ?>
                 </div>
                 <div class="widget-box-content widget-box-content-stats">
                     <div id="widget-box-stats-listings" class="widget-box-stats">
-                        <div class="stats-detail"><?php printf(
-                            __('Total number of listings: %s'),
-                            $numItems
-                        ); ?></div>
-                        <div class="stats-detail"><?php printf(
-                            __('Total number of users: %s'),
-                            $numUsers
-                        ); ?></div>
                         <div id="placeholder-listing" class="graph-placeholder" height="120"></div>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=items" class="btn btn-sm btn-dim"><?php _e('Listing statistics'); ?></a>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=users" class="btn btn-sm btn-dim"><?php _e('User statistics'); ?></a>
@@ -274,18 +265,10 @@ if (!empty($numItemsPerCategory)) { ?>
                 <div class="widget-box-content">
                     <?php
                     $freeDisk = function_exists('disk_free_space') ? @disk_free_space(osc_uploads_path()) : false;
-$fmtBytes = static function ($bytes) {
-    if (!is_numeric($bytes) || $bytes <= 0) {
-        return '—';
-    }
-    $units = array('B', 'KB', 'MB', 'GB', 'TB');
-    $i     = (int) min(floor(log($bytes, 1024)), count($units) - 1);
-    return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
-};
 $rows = array(
     array('bi-box-seam', __('Shopclass version'), OSCLASS_VERSION),
     array('bi-filetype-php', __('PHP version'), PHP_VERSION),
-    array('bi-hdd', __('Free disk space'), $fmtBytes($freeDisk)),
+    array('bi-hdd', __('Free disk space'), is_numeric($freeDisk) && $freeDisk > 0 ? \mindstellar\utility\Formatting::bytes((int) $freeDisk) : '—'),
     array('bi-cloud-arrow-up', __('Max upload size'), ini_get('upload_max_filesize') ?: '—'),
     array('bi-database', __('Memory limit'), ini_get('memory_limit') ?: '—'),
 );

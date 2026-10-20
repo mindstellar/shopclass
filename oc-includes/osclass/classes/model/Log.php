@@ -12,16 +12,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Log DAO
  */
 class Log extends DAO
 {
-    /**
-     *
-     * @var \Log
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_log table
@@ -44,17 +42,11 @@ class Log extends DAO
     }
 
     /**
-     * Return the shared Log model instance, creating it on first use.
-     *
-     * @return \Log
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -103,7 +95,7 @@ class Log extends DAO
         );
 
         try {
-            osc_db_table($this->getTableName())->insert($array_set);
+            Db::table($this->getTableName())->insert($array_set);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -154,7 +146,7 @@ class Log extends DAO
             // Same wildcard escaping the builder applies before a LIKE: a literal
             // % or _ typed by an admin stays literal rather than acting as a
             // SQL wildcard.
-            $pattern  = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $filters['q']) . '%';
+            $pattern  = '%' . \mindstellar\database\QueryBuilder::escapeLike((string) $filters['q']) . '%';
             $where[]  = '(s_data LIKE ? OR s_action LIKE ? OR s_ip LIKE ?)';
             $params[] = $pattern;
             $params[] = $pattern;
@@ -178,12 +170,12 @@ class Log extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $result;
         }
 
-        $result['logs'] = osc_db_stringify_rows($rows);
+        $result['logs'] = Db::stringifyRows($rows);
 
         $counts = $this->pagedCounts(implode(' AND ', $where), $params);
         if ($counts === null) {
@@ -202,7 +194,7 @@ class Log extends DAO
     public function distinctSections()
     {
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT DISTINCT s_section FROM ' . $this->getTableName() . ' ORDER BY s_section ASC'
             );
         } catch (\mindstellar\database\DbException $e) {
@@ -210,7 +202,7 @@ class Log extends DAO
         }
 
         $out = array();
-        foreach (osc_db_stringify_rows($rows) as $r) {
+        foreach (Db::stringifyRows($rows) as $r) {
             if ($r['s_section'] !== '') {
                 $out[] = $r['s_section'];
             }
@@ -233,7 +225,7 @@ class Log extends DAO
         }
 
         try {
-            return (int) osc_db_table($this->getTableName())
+            return (int) Db::table($this->getTableName())
                 ->where('dt_date', '<', $date)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {
@@ -249,11 +241,7 @@ class Log extends DAO
     public function clearAll()
     {
         try {
-            $conn = \mindstellar\database\Connection::instance();
-            $n    = (int) $conn->scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
-            $conn->execute('DELETE FROM ' . $this->getTableName());
-
-            return $n;
+            return \mindstellar\logger\LogStore::clearAll();
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }

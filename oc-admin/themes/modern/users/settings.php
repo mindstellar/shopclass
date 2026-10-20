@@ -13,6 +13,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+$form = __get('user_form');
+
 osc_admin_page(array(
     'section' => __('Users'),
     'title'   => __('User Settings'),
@@ -21,45 +23,5 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('User Settings')); ?>
-    <?php osc_admin_form_open(array('page' => 'users', 'action' => 'settings_post')); ?>
-        <?php osc_admin_form_row_open(__('Settings')); ?>
-                <?php osc_admin_checkbox(array(
-                    'name'    => 'enabled_users',
-                    'id'      => 'enabled_users',
-                    'label'   => __('Users enabled'),
-                    'checked' => osc_users_enabled(),
-                ));
-                osc_admin_checkbox(array(
-                    'name'    => 'enabled_user_registration',
-                    'id'      => 'enabled_user_registration',
-                    'label'   => __('Anyone can register'),
-                    'checked' => osc_user_registration_enabled(),
-                ));
-                osc_admin_checkbox(array(
-                    'name'    => 'enabled_user_validation',
-                    'id'      => 'enabled_user_validation',
-                    'label'   => __('Users need to validate their account'),
-                    'checked' => osc_user_validation_enabled(),
-                )); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Admin notifications')); ?>
-                <?php osc_admin_checkbox(array(
-                    'name'    => 'notify_new_user',
-                    'id'      => 'notify_new_user',
-                    'label'   => __('When a new user is registered'),
-                    'checked' => osc_notify_new_user(),
-                )); ?>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_text(array(
-            'id'    => 'username_blacklist',
-            'name'  => 'username_blacklist',
-            'label' => __('Username blacklist'),
-            'value' => osc_username_blacklist(),
-            'width' => 'key',
-            'help'  => __('List of terms not allowed in usernames, separated by commas'),
-        )); ?>
-    <?php osc_admin_form_close(array(
-        array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary', 'attrs' => array('id' => 'save_changes')),
-    )); ?>
+    <?php osc_admin_settings_form($form['id'], $form); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

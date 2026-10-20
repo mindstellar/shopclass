@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Core maintenance engine: finds and removes stale content — expired, unactivated, spam,
  * blocked and reported listings, unactivated users and avatars left by deleted users.
@@ -15,6 +17,8 @@
  */
 class Cleanup extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     /** All cleanup rules, in the order they run. */
     public const RULES = array(
         'reported',
@@ -32,20 +36,12 @@ class Cleanup extends DAO
     /** Rows per batch when none is saved. */
     public const DEFAULT_BATCH = 250;
 
-    private static $instance;
-
     /**
-     * The shared Cleanup instance, created on first call.
-     *
-     * @return self
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -141,7 +137,7 @@ class Cleanup extends DAO
         list($from, $where, $params) = $this->ruleQuery($rule, (int)$days);
 
         try {
-            return (int)osc_db_scalar('SELECT COUNT(*) FROM ' . $from . ' WHERE ' . $where, $params);
+            return (int)Db::scalar('SELECT COUNT(*) FROM ' . $from . ' WHERE ' . $where, $params);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -168,7 +164,7 @@ class Cleanup extends DAO
             . ' LIMIT ' . max(1, (int)$limit);
 
         try {
-            return osc_db_stringify_rows(osc_db_select($sql, $params));
+            return Db::stringifyRows(Db::select($sql, $params));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -256,7 +252,7 @@ class Cleanup extends DAO
         $deleted = 0;
         if (self::isResourceRule($rule)) {
             $ids     = array_map('intval', array_column($rows, 'pk_i_id'));
-            $deleted = (int)\mindstellar\model\Resource::newInstance()->deleteResourcesIds($ids);
+            $deleted = (int)(new \mindstellar\model\Resource())->deleteResourcesIds($ids);
             if ($deleted > 0) {
                 try {
                     (new \mindstellar\storage\ResourceUploader())->purgeDeleted($rows);
@@ -265,16 +261,16 @@ class Cleanup extends DAO
                 }
             }
         } elseif (self::isUserRule($rule)) {
-            $users = User::newInstance();
+            $users = User::getInstance();
             foreach ($rows as $row) {
-                if ($users->deleteUser($row['pk_i_id'])) {
+                if ($users->deleteUser((int) $row['pk_i_id'])) {
                     $deleted++;
                 }
             }
         } else {
             $items = new ItemActions(true);
             foreach ($rows as $row) {
-                if ($items->delete($row['s_secret'], $row['pk_i_id'])) {
+                if ($items->delete($row['s_secret'], (int) $row['pk_i_id'])) {
                     $deleted++;
                 }
             }

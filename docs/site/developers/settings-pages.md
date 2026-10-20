@@ -88,7 +88,13 @@ gives you its URL.
 
 `text`, `email`, `url`, `tel`, `number`, `color`, `secret`, `textarea`,
 `richtext`, `select`, `radio`, `checkbox`, `hidden`, `image` (see
-[Images](#images)), and `custom` for markup core does not own.
+[Images](#images)), `category_modes`, and `custom` for markup core does not own.
+
+`category_modes` sets a mode per category. Give it `'modes' => array('nights' =>
+__('Nights'), 'slots' => __('Time slots'))`. Each main category gets an Off switch with
+your modes; a subcategory follows its parent unless the admin sets it apart. The value is
+stored as JSON of category id => mode, with `off` for a subcategory switched off. Read
+it with `osc_category_mode($value, $categoryId)`, which returns the nearest mode or `''`.
 
 Keys every field takes:
 
@@ -317,7 +323,7 @@ one.
 |---|---|
 | `osc_admin_field($spec)` | One labelled field. Everything below is sugar over it, so this is the only name you must depend on. |
 | `osc_admin_text()` · `osc_admin_number()` · `osc_admin_select()` · `osc_admin_textarea()` · `osc_admin_checkbox()` · `osc_admin_radio_group()` · `osc_admin_secret()` | One field of that type. |
-| `osc_admin_tree_picker()` | The category / location picker. |
+| `osc_admin_tree_picker()` | The category checkbox tree: a card per main category, subcategories folded below. |
 | `osc_admin_form_open()` · `osc_admin_form_close()` | The form element, the hidden route, the CSRF token, and the submit row. |
 | `osc_admin_form_section($title)` | A titled group of fields. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |

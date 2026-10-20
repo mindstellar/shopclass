@@ -12,6 +12,7 @@ namespace mindstellar\search;
 
 /**
  * A listing search, normalised out of a request bag built by Params::getParamsAsArray().
+ * Search::filters() gives what the built search runs, after core and plugins change it.
  */
 class SearchCriteria
 {
@@ -56,6 +57,43 @@ class SearchCriteria
 
     /** @var array<int|string,mixed>|string */
     private $meta;
+
+    /** @var mixed */
+    private $order;
+
+    /** @var int|string */
+    private $orderType;
+
+    /** @var int */
+    private $page = 0;
+
+    /** @var int */
+    private $pageSize;
+
+    /** @var mixed */
+    private $showAs;
+
+    /** @var mixed */
+    private $feed;
+
+    /** @var int */
+    private $rssItems;
+
+    /** @var array{0:float,1:float}|null sLat/sLng, rounded to two decimals */
+    private ?array $point = null;
+
+    /** iRadius as a band in the site's unit, 0 for none. */
+    private int $radius = 0;
+
+    /** Defaults for the listing options; the search page passes the site's preferences. */
+    private const LIMITS = array(
+        'orderField'  => 'dt_pub_date',
+        'orderType'   => 1,
+        'showAs'      => 'list',
+        'pageSize'    => 12,
+        'maxPageSize' => 50,
+        'rssItems'    => 50,
+    );
 
     /**
      * @param array<int,mixed>        $categories
@@ -108,16 +146,20 @@ class SearchCriteria
     /**
      * Build from a purified request bag — feed it Params::getParamsAsArray(), not $_GET/$_POST.
      *
+     * $limits sets the listing defaults and caps: orderField, orderType, showAs, pageSize,
+     * maxPageSize, rssItems. A missing key falls back to the install defaults.
+     *
      * @param array<string,mixed> $params
+     * @param array<string,mixed> $limits
      *
      * @return self
      */
-    public static function fromRequest(array $params): self
+    public static function fromRequest(array $params, array $limits = array()): self
     {
         $params['sPattern'] = self::scalar($params['sPattern'] ?? '');
-        $rawPattern         = trim(strip_tags($params['sPattern']));
+        $rawPattern         = self::cleanPattern($params['sPattern']);
 
-        return new self(
+        $criteria = new self(
             self::splitOrKeep($params['sCategory'] ?? ''),
             self::splitOrKeep($params['sCityArea'] ?? ''),
             self::splitOrKeep($params['sCity'] ?? ''),
@@ -125,7 +167,7 @@ class SearchCriteria
             self::splitOrKeep($params['sCountry'] ?? ''),
             self::splitOrKeepScalarEmpty($params['sUser'] ?? ''),
             self::splitOrKeepScalarEmpty($params['sLocale'] ?? ''),
-            osc_apply_filter('search_pattern', trim(strip_tags($params['sPattern'] ?? ''))),
+            osc_apply_filter('search_pattern', $rawPattern),
             $rawPattern,
             ($params['bPic'] ?? '') == 1,
             ($params['bPremium'] ?? '') == 1,
@@ -133,6 +175,65 @@ class SearchCriteria
             self::scalar($params['sPriceMax'] ?? ''),
             is_array($params['meta'] ?? null) ? $params['meta'] : ''
         );
+        $criteria->setListing($params, array_merge(self::LIMITS, $limits));
+        $criteria->setNear($params);
+
+        return $criteria;
+    }
+
+    /**
+     * Sort, paging, display and feed options, each checked against what core allows.
+     *
+     * @param array<string,mixed> $params
+     * @param array<string,mixed> $limits
+     *
+     * @return void
+     */
+    private function setListing(array $params, array $limits): void
+    {
+        $order       = $params['sOrder'] ?? '';
+        $this->order = in_array($order, \Search::getAllowedColumnsForSorting()) ? $order : $limits['orderField'];
+
+        // iOrderType is 'asc' or 'desc'; it is stored as the sort-type key.
+        $this->orderType = $limits['orderType'];
+        $orderType       = $params['iOrderType'] ?? '';
+        foreach (\Search::getAllowedTypesForSorting() as $k => $v) {
+            if ($orderType == $v) {
+                $this->orderType = $k;
+                break;
+            }
+        }
+
+        $page = $params['iPage'] ?? '';
+        if (is_numeric($page) && $page > 0) {
+            $this->page = (int)$page - 1;
+        }
+
+        $pageSize = $params['iPagesize'] ?? null;
+        $pageSize = ($pageSize === null || is_array($pageSize)) ? 0 : (int)$pageSize;
+        if ($pageSize > 0) {
+            $this->pageSize = min($pageSize, (int)$limits['maxPageSize']);
+        } else {
+            $this->pageSize = (int)$limits['pageSize'];
+        }
+
+        $showAs       = $params['sShowAs'] ?? '';
+        $this->showAs = in_array($showAs, array('list', 'gallery')) ? $showAs : $limits['showAs'];
+
+        $this->feed     = $params['sFeed'] ?? '';
+        $this->rssItems = (int)$limits['rssItems'];
+    }
+
+    /**
+     * The distance search values as sent: iRadius snapped to a band, and the visitor's point.
+     * SearchBuilder decides whether the site offers distance search and where it measures from.
+     *
+     * @param array<string,mixed> $params
+     */
+    private function setNear(array $params): void
+    {
+        $this->radius = Distance::band(self::scalar($params['iRadius'] ?? ''));
+        $this->point  = Distance::point(self::scalar($params['sLat'] ?? ''), self::scalar($params['sLng'] ?? ''));
     }
 
     /**
@@ -188,6 +289,16 @@ class SearchCriteria
     private static function scalars(array $values): array
     {
         return array_filter($values, 'is_scalar');
+    }
+
+    /**
+     * The keyword as searched: no tags, no braces (no search gives them a meaning), trimmed.
+     *
+     * @param mixed $value
+     */
+    public static function cleanPattern($value): string
+    {
+        return trim(str_replace(array('{', '}'), '', strip_tags((string) self::scalar($value))));
     }
 
     /**
@@ -289,5 +400,98 @@ class SearchCriteria
     public function meta()
     {
         return $this->meta;
+    }
+
+    /**
+     * The requested sort column, or the default when it is not allowed. 'relevance' is
+     * kept even without a pattern; sortColumn() is what the query uses.
+     *
+     * @return mixed
+     */
+    public function order()
+    {
+        return $this->order;
+    }
+
+    /**
+     * The sort-type key (0 asc, 1 desc), or the default preference value as stored.
+     *
+     * @return int|string
+     */
+    public function orderType()
+    {
+        return $this->orderType;
+    }
+
+    /**
+     * The column the query sorts by: a pattern-less 'relevance' sort is newest first.
+     *
+     * @return mixed
+     */
+    public function sortColumn()
+    {
+        return (!$this->hasPattern() && $this->order === 'relevance') ? 'dt_pub_date' : $this->order;
+    }
+
+    /**
+     * The visitor's point from sLat/sLng, or null.
+     *
+     * @return array{0:float,1:float}|null
+     */
+    public function point(): ?array
+    {
+        return $this->point;
+    }
+
+    /** The radius asked for, a band in the site's unit; 0 for none. */
+    public function radius(): int
+    {
+        return $this->radius;
+    }
+
+    /**
+     * 'asc' or 'desc' for orderType(), or null when the default is not a sort type.
+     */
+    public function sortDirection(): ?string
+    {
+        return \Search::getAllowedTypesForSorting()[$this->orderType] ?? null;
+    }
+
+    /** Zero-based page number. */
+    public function page(): int
+    {
+        return $this->page;
+    }
+
+    /** Results per page, capped at maxPageSize. */
+    public function pageSize(): int
+    {
+        return $this->pageSize;
+    }
+
+    /**
+     * 'list' or 'gallery', or the default.
+     *
+     * @return mixed
+     */
+    public function showAs()
+    {
+        return $this->showAs;
+    }
+
+    /**
+     * The sFeed value as sent: '' for none, 'rss', or a plugin feed name.
+     *
+     * @return mixed
+     */
+    public function feed()
+    {
+        return $this->feed;
+    }
+
+    /** Items an rss feed lists, from the first one. */
+    public function pageSizeForFeed(): int
+    {
+        return $this->rssItems;
     }
 }

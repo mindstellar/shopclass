@@ -107,11 +107,9 @@ jobs:
     uses: ./.github/workflows/lint.yml
   i18n:
     uses: ./.github/workflows/i18n-drift.yml
-  vendor:
-    uses: ./.github/workflows/vendor-drift.yml
 
   release:
-    needs: [gate, test, drift, lint, i18n, vendor]
+    needs: [gate, test, drift, lint, i18n]
     if: needs.gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     # For the install smoke test below: the zip is installed against a real
@@ -138,6 +136,14 @@ jobs:
       # Build and package BEFORE tagging: the tag is created only by a successful
       # release (below), so a failed build can never leave a dangling tag that blocks
       # the next run.
+      # Pinned rather than taking whatever the runner ships: the smoke test needs
+      # mysqli for the app and to prepare the database, and composer runs on it too.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, mbstring, intl, gd, curl, zip
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
@@ -148,6 +154,9 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
 
       - name: Package release
         # Archive from the pushed commit, not a tag — the tag does not exist yet.
@@ -174,26 +183,12 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf package-ci
-          mkdir -p package-ci/deprecation-collector
-          cp tools/package-lint.php package-ci/
-          cp oc-includes/osclass/classes/market/Compatibility.php package-ci/
-          cp deprecated-api.json package-ci/
-          cp tools/ci/deprecation-scan.php package-ci/
-          cp tools/ci/annotate.php package-ci/
-          cp tools/ci/smoke-install.sh package-ci/
-          cp tools/ci/build-catalog.php package-ci/
-          cp oc-includes/osclass/classes/market/Markdown.php package-ci/
-          cp tools/ci/deprecation-collector/index.php package-ci/deprecation-collector/
+          grep -v '^#' tools/ci/package-ci-files.txt | while read -r src dest; do
+            [ -n "$src" ] || continue
+            mkdir -p "package-ci/$(dirname "$dest")"
+            cp "$src" "package-ci/$dest"
+          done
           tar czf shopclass-package-ci.tar.gz package-ci
-
-      # Pinned rather than taking whatever the runner happens to ship: the smoke
-      # test needs mysqli both for the app and to prepare the database, and the
-      # preinstalled PHP carries no guarantee of it.
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: mysqli, mbstring, intl, gd, curl, zip
 
       # Everything else tests the repository. This tests the artefact: unpack the
       # zip a site owner would download, run the installer against a real
@@ -241,6 +236,11 @@ jobs:
         run: |
           sed "s/__SHOPCLASS_VERSION__/${OSCLASS_VERSION}/" .docker/install.sh > release/install.sh
           (cd release && sha256sum install.sh > install.sh.sha256)
+
+      # The market's package CI downloads these from the release, so a broken one only shows
+      # later as wrong warnings on someone's pull request. Check them before they ship.
+      - name: Check the market and install files
+        run: php tools/ci/check-release-assets.php "${OSCLASS_VERSION}" deprecated-api.json shopclass-package-ci.tar.gz release/install.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -321,6 +321,27 @@ jobs:
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
           echo "Image tags: ${TAGS}"
 
+      # The image copies the working tree, so the built output has to exist first.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build admin assets
+        run: |
+          npm ci
+          npm run build
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -379,7 +400,7 @@ jobs:
   # same test/drift/lint as a release so a broken commit can never ship an image.
   # edge-nightly.yml builds the same image once a night when develop has moved.
   edge:
-    needs: [test, drift, lint, i18n, vendor]
+    needs: [test, drift, lint, i18n]
     if: github.ref_name == 'develop' && contains(github.event.head_commit.message, '[publish-edge]')
     permissions:
       contents: read

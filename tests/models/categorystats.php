@@ -9,74 +9,33 @@
  */
 
 /**
- * Characterization pins for the CategoryStats model.
+ * Pins for the CategoryStats model.
  *
- * Written against the legacy implementation and required to pass UNCHANGED once
- * increaseNumItems()/decreaseNumItems()/setNumItems()/countItemsFromCategory()
- * move to the parameterized query layer. Everything below was established by
- * running the code, never by reading a method name, docblock or comment. The
- * quirks that surprised, all reproduced rather than fixed:
+ * The live listing count of a category is the i_num_items column on t_category
+ * itself; there is no separate stats table. Established by running the code:
  *
- *  - increaseNumItems() and decreaseNumItems() recurse up the parent chain.
- *    Each level that actually ran a write contributes bool true; PHP's `+=`
- *    then folds that into an int as soon as a second level adds to it, so a
- *    root-only call returns bool true, but a call with n ancestors returns
- *    int (n + 1) on success — the "number of affected rows" the docblock
- *    claims is really a level count, not a row count.
- *  - increaseNumItems() calls Category::findByPrimaryKey($categoryId)
- *    UNCONDITIONALLY, even when its own write already failed — the `&&`
- *    short-circuit only skips the recursive *add*, not the lookup. A
- *    foreign-key rejection therefore still costs a second query.
- *  - increaseNumItems() truncates its category id through a raw `sprintf('%d',
- *    ...)` before ever building SQL, so a non-integer numeric string
- *    ("1.7") referencing a real category succeeds. Binding that same string
- *    straight into a prepared statement does NOT reproduce this: MySQL's
- *    foreign-key check on an InnoDB child table does not apply the same
- *    fractional-truncation coercion a plain value assignment gets, so an
- *    uncast bound "1.7" fails FK 1452 where legacy's already-int SQL text
- *    succeeds. The conversion has to truncate with (int) before binding,
- *    exactly mirroring the sprintf, or this is a silent regression.
- *  - decreaseNumItems() has no such cast anywhere and passes $categoryId
- *    through as-is on every branch. Its own literal-SQL insert branch hits
- *    the identical FK/fractional quirk on a non-integer numeric string with
- *    no existing stats row, so legacy ITSELF returns false there — the two
- *    stacks converge without any special-casing.
- *  - decreaseNumItems(null) fails at the SELECT (a bare "col =" with no
- *    right-hand side, per the null-where correction) and returns false
- *    after exactly one query, without ever reaching the Category lookup. A
- *    bound null is valid SQL that matches no rows, so a naive conversion
- *    still converges on false eventually (through the insert branch's own
- *    NOT-NULL-constraint failure) but at the cost of a second, wasted query
- *    — the conversion needs an explicit null guard to keep the cost, not
- *    just the return value, unchanged.
- *  - countItemsFromCategory(null) converges by itself: the malformed WHERE
- *    fails at exactly the same one-query cost a bound null matching zero
- *    rows would, so no special-casing is needed there.
- *  - findByCategoryId() is pure delegation to the inherited (base DAO)
- *    findByPrimaryKey() — no query of its own, out of scope, pinned only as
- *    a regression guard.
- *  - toNumItemsMap() has no query of its own either: it is pure composition
- *    of the inherited listAll() plus calls into Category. It short-circuits
- *    to an empty array the instant t_category_stats has zero rows at all,
- *    regardless of how many categories exist. When it does run, a root
- *    category's missing count is read with an `@`-suppressed lookup (silent
- *    null); the identical situation for a SUBcategory has no `@` and raises
- *    a genuine "Undefined array key" warning while still yielding null — an
- *    asymmetry between the two branches, not a difference in outcome.
+ *  - increaseNumItems() adds 1 to the category and every ancestor in ONE UPDATE.
+ *    It returns bool true for a top category and int (levels counted) for a
+ *    subcategory, false for a non-numeric id or a database error. It never
+ *    creates a row, so an id that is not a category is a silent no-op that still
+ *    reports true.
+ *  - decreaseNumItems() runs one UPDATE per level (the category, then each
+ *    ancestor), never below zero, and returns the total rows changed as an int
+ *    (0 when every level was already at 0). null or a non-numeric id returns
+ *    false without a query.
+ *  - setNumItems() is one UPDATE; it sets, it does not add.
+ *  - findByCategoryId() keeps the old stats-row shape (fk_i_category_id and
+ *    i_num_items, both strings) or false when there is no such category.
+ *  - countItemsFromCategory() returns the count as a string, or int 0.
+ *  - toNumItemsMap() reads pk_i_id and i_num_items from t_category. It returns an
+ *    empty array only when t_category has no rows; a category with no listings
+ *    reads back as "0".
  *  - getNumItems() resolves both a root and a subcategory. The subcategories
- *    map is keyed by ROOT id, each root holding a map of its own children by
- *    id, so a subcategory is found by searching those child maps rather than
- *    indexing the root level with the child's id (which is what an earlier
- *    version did, so a subcategory always returned 0).
+ *    map is keyed by ROOT id, each root holding a map of its own children by id.
  *  - getNumItems()'s cache is a function-static local (`static $numItemsMap
- *    = null;`), NOT a class property — `ReflectionProperty` (the pattern
- *    tests/models/currency.php uses to reset Currency's cache) cannot see
- *    or reset it; PHP's reflection API only exposes function-static values
- *    for reading (`ReflectionMethod::getStaticVariables()`), never for
- *    writing. There is no way to force it cold a second time within one
- *    process. The cold/warm pair below is therefore exercised exactly once,
- *    deliberately placed last, using its own dedicated fixture untouched by
- *    anything earlier in this file.
+ *    = null;`), NOT a class property, so ReflectionProperty cannot reset it.
+ *    The cold/warm pair below is exercised exactly once, deliberately placed
+ *    last, using its own dedicated fixture untouched by anything earlier.
  *
  * This model reaches Category::findByPrimaryKey()/findRootCategories()/
  * findSubcategories(), which in turn reach osc_cache_get()/osc_cache_set()
@@ -129,30 +88,35 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php'; // osc_la
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';     // osc_current_user_locale
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 
-$table = DB_TABLE_PREFIX . 't_category_stats';
+$table = DB_TABLE_PREFIX . 't_category';
 
 /**
- * Row for one category in t_category_stats, read with raw UNPREPARED mysqli
- * (a prepared readback would come back natively typed and disagree with the
- * all-string legacy row this is meant to check against).
+ * Count of one category in the old stats-row shape, read with raw UNPREPARED
+ * mysqli (a prepared readback would come back natively typed and disagree with
+ * the all-string row this is meant to check against).
  */
 $rowFor = static function (int $categoryId) use ($admin, $table): ?array {
-    $row = $admin->query("SELECT * FROM $table WHERE fk_i_category_id = $categoryId")->fetch_assoc();
+    $row = $admin->query("SELECT pk_i_id AS fk_i_category_id, i_num_items FROM $table WHERE pk_i_id = $categoryId")->fetch_assoc();
 
     return $row ?: null;
 };
 
+/** Sum of every category's count: 0 means nothing was written anywhere. */
 $rowCount = static function () use ($admin, $table): int {
-    return (int)$admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];
+    return (int)$admin->query("SELECT COALESCE(SUM(i_num_items), 0) c FROM $table")->fetch_assoc()['c'];
 };
 
 $truncateStats = static function () use ($admin, $table): void {
-    $admin->query("TRUNCATE TABLE $table");
+    $admin->query("UPDATE $table SET i_num_items = 0");
+};
+
+$setCount = static function (int $categoryId, int $n) use ($admin, $table): void {
+    $admin->query("UPDATE $table SET i_num_items = $n WHERE pk_i_id = $categoryId");
 };
 
 /* ----------------------------------------------------------------------------
  * Fixtures. Every category this file will ever touch is seeded UP FRONT and
- * BEFORE the first Category::newInstance(), so Category's one-time tree
+ * BEFORE the first Category::getInstance(), so Category's one-time tree
  * snapshot (built lazily in its constructor) captures all of them. That makes
  * every findByPrimaryKey() lookup below a tree hit costing zero extra
  * queries, which is what isolates the query-cost pins to CategoryStats' own
@@ -175,10 +139,10 @@ $mapSub  = seed_category($admin, 'MapSub', $mapRoot);
 $cacheRoot = seed_category($admin, 'CacheRoot');
 $cacheSub  = seed_category($admin, 'CacheSub', $cacheRoot);
 
-Preference::newInstance(); // osc_current_user_locale() reads a preference; warm it so it is never attributed to a query-count pin
-Category::newInstance();   // one-time tree snapshot over every category seeded above
+Preference::getInstance(); // osc_current_user_locale() reads a preference; warm it so it is never attributed to a query-count pin
+Category::getInstance();   // one-time tree snapshot over every category seeded above
 
-$model = CategoryStats::newInstance();
+$model = CategoryStats::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2).
@@ -219,9 +183,13 @@ pin(
 );
 check('CategoryStats still extends DAO', is_subclass_of('CategoryStats', 'DAO'));
 check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBCommandClass);
-pin('table name is unchanged', $table, $model->getTableName());
-pin('primary key is unchanged', 'fk_i_category_id', $model->getPrimaryKey());
-pin('field allowlist is unchanged', array('fk_i_category_id', 'i_num_items'), $model->getFields());
+pin('the DAO names the old stats table, so its inherited methods have no table to act on', DB_TABLE_PREFIX . 't_category_stats', $model->getTableName());
+pin('primary key', 'fk_i_category_id', $model->getPrimaryKey());
+pin('field allowlist', array('fk_i_category_id', 'i_num_items'), $model->getFields());
+$leafCat     = seed_category($admin, 'Delete leaf');
+$quietDelete = @$model->deleteByPrimaryKey($leafCat);
+pin('an inherited deleteByPrimaryKey() cannot delete the real row', array(false, 1), array($quietDelete, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE pk_i_id = '" . $leafCat . "'")->fetch_row()[0]));
+$admin->query("DELETE FROM $table WHERE pk_i_id = $leafCat");
 pin(
     'the model declares exactly these seven methods of its own',
     array(
@@ -268,11 +236,9 @@ pin('a rejected category id costs no queries at all', 0, harness_query_count(sta
 
 /* ----------------------------------------------------------------------------
  * increaseNumItems() — a well-formed, numeric id that does not reference a
- * real category. t_category_stats carries a FOREIGN KEY on fk_i_category_id,
- * so the INSERT ... ON DUPLICATE KEY UPDATE fails at the database. The
- * Category::findByPrimaryKey() lookup still runs afterward (the && only
- * short-circuits the recursive add, not the lookup itself), so this costs
- * TWO queries even though it returns false.
+ * real category. The UPDATE matches no row and never creates one, so nothing
+ * is written. The Category::findByPrimaryKey() lookup runs first, so this
+ * costs TWO queries.
  * ------------------------------------------------------------------------- */
 harness_section('increaseNumItems — well-formed, unknown category id');
 
@@ -280,14 +246,14 @@ $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 $ret       = $model->increaseNumItems(999999);
 error_reporting($prevLevel);
 
-pin('an unknown category id returns bool false', false, $ret);
+pin('an unknown category id is refused with bool false (no row is created)', false, $ret);
 pin('nothing was written for it', 0, $rowCount());
 $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 $cost = harness_query_count(static function () use ($model) {
     $model->increaseNumItems(999999);
 });
 error_reporting($prevLevel);
-pin('the failed insert PLUS the unconditional Category lookup costs two queries', 2, $cost);
+pin('the Category lookup PLUS the no-match update costs two queries', 2, $cost);
 
 /* ----------------------------------------------------------------------------
  * increaseNumItems() — a root category (no parent): the recursion never
@@ -296,7 +262,7 @@ pin('the failed insert PLUS the unconditional Category lookup costs two queries'
 harness_section('increaseNumItems — a root category, no parent');
 
 pin('a root category returns bool true, not an int', true, $model->increaseNumItems($decRoot));
-pin('its row was created at 1', '1', $rowFor($decRoot)['i_num_items']);
+pin('its count went from 0 to 1', '1', $rowFor($decRoot)['i_num_items']);
 
 $truncateStats();
 
@@ -311,7 +277,7 @@ pin('the leaf-of-three call returns int 3 (one per level)', 3, $model->increaseN
 pin('the leaf got its own +1', '1', $rowFor($incLeaf)['i_num_items']);
 pin('the mid ancestor got +1 too', '1', $rowFor($incMid)['i_num_items']);
 pin('the root ancestor got +1 too', '1', $rowFor($incRoot)['i_num_items']);
-pin('exactly three rows exist', 3, $rowCount());
+pin('exactly three counts were added (no other category moved)', 3, $rowCount());
 
 harness_section('increaseNumItems — the same leaf again, accumulates');
 
@@ -329,7 +295,7 @@ pin('the leaf is untouched by a call that never reaches it', '2', $rowFor($incLe
 
 harness_section('increaseNumItems — query cost of a three-level chain');
 
-pin('a three-level increase costs exactly three queries (one insert per level)', 3, harness_query_count(
+pin('a three-level increase costs one query (one update for every level)', 1, harness_query_count(
     static function () use ($model, $incLeaf) {
         $model->increaseNumItems($incLeaf);
     }
@@ -338,74 +304,50 @@ pin('a three-level increase costs exactly three queries (one insert per level)',
 harness_section('increaseNumItems — a non-integer numeric string on a real category');
 
 /*
- * Legacy builds this INSERT with sprintf('%d', $categoryId), which truncates
- * "$plainCat.7" to a real integer BEFORE the SQL is ever sent, so this
- * succeeds. The converted method has to reproduce that truncation itself:
- * MySQL's foreign-key check on a bound (prepared) value does not coerce a
- * fractional string the way a plain value assignment does, so an uncast bind
- * of "$plainCat.7" fails FK 1452 where the legacy SQL text does not.
+ * The id is cast with (int) before it is bound, so "$plainCat.7" truncates to
+ * the real category's integer id.
  */
 pin(
     'a fractional-but-numeric string referencing a real category still succeeds',
     true,
     $model->increaseNumItems($plainCat . '.7')
 );
-pin('it wrote to the truncated integer id, not a new row', '1', $rowFor($plainCat)['i_num_items']);
+pin('it wrote to the truncated integer id', '1', $rowFor($plainCat)['i_num_items']);
 
 $truncateStats();
 
 /* ----------------------------------------------------------------------------
- * decreaseNumItems() — the null-where divergence. The malformed WHERE fails
- * in exactly one query; a naive bound-null conversion would instead run a
- * valid zero-row SELECT and then attempt (and fail) an INSERT with a NULL
- * foreign key, reaching the same false two queries later. That extra query
- * is the thing an explicit null guard has to remove.
+ * decreaseNumItems() — null and non-numeric ids are rejected before any query.
  * ------------------------------------------------------------------------- */
 harness_section('decreaseNumItems — null category id');
 
-$prevLevel = error_reporting(E_ALL & ~E_WARNING);
-$ret       = $model->decreaseNumItems(null);
-error_reporting($prevLevel);
-pin('a null category id returns bool false', false, $ret);
-
-$prevLevel = error_reporting(E_ALL & ~E_WARNING);
-$nullCost = harness_query_count(static function () use ($model) {
+pin('a null category id returns bool false', false, $model->decreaseNumItems(null));
+pin('a null category id costs no queries', 0, harness_query_count(static function () use ($model) {
     $model->decreaseNumItems(null);
-});
-error_reporting($prevLevel);
-check('a null category id costs no more than the legacy one failed query (' . $nullCost . ')', $nullCost <= 1);
+}));
 
 /* ----------------------------------------------------------------------------
- * decreaseNumItems() — a well-formed, numeric id that does not reference a
- * real category. The SELECT matches zero rows cleanly (no error yet); the
- * fallback INSERT is what fails the foreign key. Because $return is false
- * only from that point, the Category lookup this time is never reached.
+ * decreaseNumItems() — a well-formed, numeric id that is not a category. The
+ * UPDATE matches nothing, so the total is int 0 and nothing is created.
  * ------------------------------------------------------------------------- */
 harness_section('decreaseNumItems — well-formed, unknown category id');
 
-$prevLevel = error_reporting(E_ALL & ~E_WARNING);
-$ret       = $model->decreaseNumItems(999999);
-error_reporting($prevLevel);
-pin('an unknown category id returns bool false', false, $ret);
+pin('an unknown category id changes no rows: int 0', 0, $model->decreaseNumItems(999999));
 pin('nothing was written for it', 0, $rowCount());
+check('no row was created for it', $rowFor(999999) === null);
 
-$prevLevel = error_reporting(E_ALL & ~E_WARNING);
-$cost = harness_query_count(static function () use ($model) {
+pin('the Category lookup plus one update costs exactly two queries', 2, harness_query_count(static function () use ($model) {
     $model->decreaseNumItems(999999);
-});
-error_reporting($prevLevel);
-pin('the select plus the failed fallback insert costs exactly two queries', 2, $cost);
+}));
 
 /* ----------------------------------------------------------------------------
- * decreaseNumItems() — a real category with no existing stats row: the
- * fallback insert succeeds, but $return stays its initial 0 (NOT the
- * insert's own return value) -- decreasing a category that never had a row
- * is reported as "0 decreased", never as a fresh count.
+ * decreaseNumItems() — a real category already at 0: nothing to take, so the
+ * total is int 0 and the count stays 0.
  * ------------------------------------------------------------------------- */
-harness_section('decreaseNumItems — a real category, no existing row');
+harness_section('decreaseNumItems — a real category already at zero');
 
-pin('a fresh insert-branch call returns int 0, not true/1', 0, $model->decreaseNumItems($noStatCat));
-pin('the row now exists at 0', '0', $rowFor($noStatCat)['i_num_items']);
+pin('decreasing a category at 0 returns int 0', 0, $model->decreaseNumItems($noStatCat));
+pin('it is still 0, not negative', '0', $rowFor($noStatCat)['i_num_items']);
 
 $truncateStats();
 
@@ -414,58 +356,47 @@ $truncateStats();
  * ------------------------------------------------------------------------- */
 harness_section('decreaseNumItems — a three-level chain, decrementing an existing count');
 
-$admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($decLeaf, 3)");
-$admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($decMid, 3)");
-$admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($decRoot, 3)");
+$setCount($decLeaf, 3);
+$setCount($decMid, 3);
+$setCount($decRoot, 3);
 
 pin('the leaf-of-three call returns int 3 (one affected row per level)', 3, $model->decreaseNumItems($decLeaf));
 pin('the leaf is now at 2', '2', $rowFor($decLeaf)['i_num_items']);
 pin('the mid ancestor is now at 2', '2', $rowFor($decMid)['i_num_items']);
 pin('the root ancestor is now at 2', '2', $rowFor($decRoot)['i_num_items']);
 
-harness_section('decreaseNumItems — the floor: WHERE i_num_items > 0 stops it at zero');
+harness_section('decreaseNumItems — the floor: a level at zero is skipped, the chain still climbs');
 
-$admin->query("UPDATE $table SET i_num_items = 0 WHERE fk_i_category_id = $decLeaf");
+$setCount($decLeaf, 0);
 /*
- * The leaf's own UPDATE matches zero rows (i_num_items > 0 excludes it), so
- * its own contribution is int 0 -- but 0 !== false, so the recursion still
- * climbs and adds whatever the ancestors' own decrements return (1 each,
- * both still at 2). 0 + 1 + 1 = 2: the floor stops that ONE level from
- * decrementing further, it does not stop the chain from continuing to climb.
+ * The leaf's own UPDATE matches zero rows (it is already 0), so it adds 0 to
+ * the total, but the ancestors (both at 2) still drop by 1 each: 0 + 1 + 1 = 2.
  */
-pin('the floored level still returns the sum of what its ancestors decremented', 2, $model->decreaseNumItems($decLeaf));
+pin('the floored level adds nothing; its ancestors still count', 2, $model->decreaseNumItems($decLeaf));
 pin('the row is still 0, not negative', '0', $rowFor($decLeaf)['i_num_items']);
 pin(
-    'the recursion still climbed: mid dropped even though the leaf floor matched nothing',
+    'the recursion still climbed: mid dropped even though the leaf was at the floor',
     '1',
     $rowFor($decMid)['i_num_items']
 );
 
 harness_section('decreaseNumItems — query cost of a three-level chain');
 
-$admin->query("UPDATE $table SET i_num_items = 5 WHERE fk_i_category_id = $decLeaf");
-$admin->query("UPDATE $table SET i_num_items = 5 WHERE fk_i_category_id = $decMid");
-$admin->query("UPDATE $table SET i_num_items = 5 WHERE fk_i_category_id = $decRoot");
-pin('a three-level decrease costs exactly six queries (select + update per level)', 6, harness_query_count(
+$setCount($decLeaf, 5);
+$setCount($decMid, 5);
+$setCount($decRoot, 5);
+pin('a three-level decrease costs exactly three queries (one update per level)', 3, harness_query_count(
     static function () use ($model, $decLeaf) {
         $model->decreaseNumItems($decLeaf);
     }
 ));
 
-harness_section('decreaseNumItems — a non-numeric category id, no existing row');
+harness_section('decreaseNumItems — a non-numeric category id');
 
-/*
- * decreaseNumItems() never validates $categoryId at all -- unlike
- * increaseNumItems(), there is no is_numeric() guard anywhere. The SELECT's
- * implicit comparison against a non-numeric string matches zero rows (no
- * error), so it falls to the insert branch, which then fails the foreign
- * key (a non-numeric id cannot reference any real category).
- */
-$prevLevel = error_reporting(E_ALL & ~E_WARNING);
-$ret       = $model->decreaseNumItems('abc');
-error_reporting($prevLevel);
-pin('a non-numeric category id with no existing row returns bool false', false, $ret);
-check('no row exists for a non-existent numeric key', $rowFor(999999) === null);
+pin('a non-numeric category id returns bool false', false, $model->decreaseNumItems('abc'));
+pin('a non-numeric category id costs no queries', 0, harness_query_count(static function () use ($model) {
+    $model->decreaseNumItems('abc');
+}));
 
 $truncateStats();
 
@@ -475,28 +406,25 @@ $truncateStats();
  * is wrong: it is a write-type raw query, so dao->query() only ever returns
  * bool, never a DBRecordsetClass.
  * ------------------------------------------------------------------------- */
-harness_section('setNumItems — a fresh row, then an overwrite');
+harness_section('setNumItems — a first write, then an overwrite');
 
-pin('a fresh insert returns bool true', true, $model->setNumItems($plainCat, 5));
+pin('a write returns bool true', true, $model->setNumItems($plainCat, 5));
 pin('the row landed at 5', '5', $rowFor($plainCat)['i_num_items']);
 
-pin('calling it again overwrites (ON DUPLICATE KEY UPDATE), still bool true', true, $model->setNumItems($plainCat, 9));
+pin('calling it again overwrites, still bool true', true, $model->setNumItems($plainCat, 9));
 pin('the row is now 9, not 14 -- this SETS, it does not add', '9', $rowFor($plainCat)['i_num_items']);
-pin('still exactly one row for this category', 1, (int)$admin->query(
-    "SELECT COUNT(*) c FROM $table WHERE fk_i_category_id = $plainCat"
-)->fetch_assoc()['c']);
+pin('no other category moved', 9, $rowCount());
 
 harness_section('setNumItems — both arguments are cast through (int)');
 
 pin('a numeric string category id still works', true, $model->setNumItems((string)$plainCat, '7'));
 pin('the string amount landed as the integer 7', '7', $rowFor($plainCat)['i_num_items']);
 
-harness_section('setNumItems — an unknown category id (foreign key rejection)');
+harness_section('setNumItems — an unknown category id');
 
-$prevLevel = error_reporting(E_ALL & ~E_WARNING);
-$ret       = $model->setNumItems(999999, 3);
-error_reporting($prevLevel);
-pin('an unknown category id returns bool false', false, $ret);
+pin('an unknown category id changes nothing and still returns bool true', true, $model->setNumItems(999999, 3));
+check('no row was created for it', $rowFor(999999) === null);
+pin('no category moved besides plainCat', 7, $rowCount());
 
 $truncateStats();
 
@@ -505,18 +433,18 @@ $truncateStats();
  * ------------------------------------------------------------------------- */
 harness_section('countItemsFromCategory — a match');
 
-$admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($plainCat, 42)");
+$setCount($plainCat, 42);
 pin('a matching row returns the string "42", not an int', '42', $model->countItemsFromCategory($plainCat));
 
-harness_section('countItemsFromCategory — a real category with no stats row');
+harness_section('countItemsFromCategory — a real category with no listings');
 
-pin('no matching row returns int 0', 0, $model->countItemsFromCategory($noStatCat));
+pin('a category at 0 returns the string "0"', '0', $model->countItemsFromCategory($noStatCat));
 
 harness_section('countItemsFromCategory — an unknown category id');
 
-pin('an unknown category id also returns int 0 (no error)', 0, $model->countItemsFromCategory(999999));
+pin('an unknown category id returns int 0 (no error)', 0, $model->countItemsFromCategory(999999));
 
-harness_section('countItemsFromCategory — a null category id (converges by itself)');
+harness_section('countItemsFromCategory — a null category id ');
 
 $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 $ret       = $model->countItemsFromCategory(null);
@@ -537,14 +465,13 @@ pin('a matching lookup costs exactly one query', 1, harness_query_count(static f
 }));
 
 /* ----------------------------------------------------------------------------
- * findByCategoryId() — pure delegation to the inherited findByPrimaryKey(),
- * no query of its own. Pinned as a regression guard only.
+ * findByCategoryId() — the count in the old stats-row shape.
  * ------------------------------------------------------------------------- */
-harness_section('findByCategoryId — delegates to the inherited findByPrimaryKey (not converted)');
+harness_section('findByCategoryId — the old stats-row shape, read from t_category');
 
 $row = $model->findByCategoryId($plainCat);
 check('a match returns an array', is_array($row), describe($row));
-pin('the row carries exactly the two schema columns', array('fk_i_category_id', 'i_num_items'), array_keys($row));
+pin('the row carries exactly the two old stats columns', array('fk_i_category_id', 'i_num_items'), array_keys($row));
 pin('fk_i_category_id round-trips as a string (C4)', (string)$plainCat, $row['fk_i_category_id']);
 check('every value in the row is a string or null (C4)', all_values_string($row), describe($row));
 pin('an unknown category id returns bool false', false, $model->findByCategoryId(999999));
@@ -552,37 +479,26 @@ pin('an unknown category id returns bool false', false, $model->findByCategoryId
 $truncateStats();
 
 /* ----------------------------------------------------------------------------
- * toNumItemsMap() — no query of its own (pure composition of the inherited
- * listAll() and calls into Category). Pinned as a regression guard,
- * including the early-exit and the warning asymmetry, both established by
- * running the code.
+ * toNumItemsMap() — reads pk_i_id and i_num_items from t_category, then
+ * composes with Category. A category with no listings reads back as "0",
+ * for roots and subcategories alike.
  * ------------------------------------------------------------------------- */
-harness_section('toNumItemsMap — t_category_stats has zero rows anywhere');
-
-pin('an empty stats table short-circuits to an empty array, however many categories exist', array(), $model->toNumItemsMap());
-
 harness_section('toNumItemsMap — a root with a real count, a subcategory with none');
 
-$admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($mapRoot, 5)");
+$setCount($mapRoot, 5);
 
-$map = null;
-$prevLevel = error_reporting(E_ALL & ~E_WARNING); // the subcategory branch's own missing-@ warning
 $map = $model->toNumItemsMap();
-error_reporting($prevLevel);
 
 check('the map has a parent entry and a subcategories entry', isset($map['parent'], $map['subcategories']), describe($map));
-pin("the root's numItems is the string \"5\" (the \"@\"-suppressed branch)", '5', $map['parent'][$mapRoot]['numItems']);
+pin('the root numItems is the string "5"', '5', $map['parent'][$mapRoot]['numItems']);
 pin('the root s_name round-trips', 'MapRoot', $map['parent'][$mapRoot]['s_name']);
 pin(
     "the subcategories entry is keyed by the ROOT's id, not the subcategory's",
     true,
     isset($map['subcategories'][$mapRoot]) && !isset($map['subcategories'][$mapSub])
 );
-pin(
-    "a subcategory with no stats row reads back as null (the un-suppressed branch), same value as the root's suppressed one would be",
-    null,
-    $map['subcategories'][$mapRoot][$mapSub]['numItems']
-);
+pin('a subcategory with no listings reads back as the string "0"', '0', $map['subcategories'][$mapRoot][$mapSub]['numItems']);
+pin('a root with no listings reads back as the string "0"', '0', $map['parent'][$plainCat]['numItems']);
 pin('the subcategory s_name still round-trips', 'MapSub', $map['subcategories'][$mapRoot][$mapSub]['s_name']);
 
 $truncateStats();
@@ -597,14 +513,14 @@ $truncateStats();
  * ------------------------------------------------------------------------- */
 harness_section('getNumItems — the C9 static cache (one-shot: cannot be reset and re-observed)');
 
-$admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($cacheRoot, 7)");
-$admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($cacheSub, 4)");
+$setCount($cacheRoot, 7);
+$setCount($cacheSub, 4);
 
-$rootCat = Category::newInstance()->findByPrimaryKey($cacheRoot);
-$subCat  = Category::newInstance()->findByPrimaryKey($cacheSub);
+$rootCat = Category::getInstance()->findByPrimaryKey($cacheRoot);
+$subCat  = Category::getInstance()->findByPrimaryKey($cacheSub);
 
 /*
- * toNumItemsMap()'s cost is 1 (listAll) + 1 (findRootCategories) + one
+ * toNumItemsMap()'s cost is 1 (t_category read) + 1 (findRootCategories) + one
  * findSubcategories() call PER ROOT -- and every category fixture seeded
  * earlier in this file with no parent (incRoot, decRoot, plainCat,
  * noStatCat, mapRoot, cacheRoot: six) is itself a root as far as
@@ -633,7 +549,7 @@ harness_section('getNumItems — a write does not invalidate the static map');
 
 $model->increaseNumItems($cacheRoot);
 $freshRow = $rowFor($cacheRoot);
-pin("the underlying row really did change to \"8\"", '8', $freshRow['i_num_items']);
+pin("the underlying count really did change to \"8\"", '8', $freshRow['i_num_items']);
 pin(
     'getNumItems still reports the stale "7" -- the map was built once and is never rebuilt for the rest of the process',
     '7',
@@ -644,12 +560,12 @@ harness_section('Utils recount writes — bound statements');
 
 $truncateStats();
 \mindstellar\utility\Utils::updateCategoryStatsById($incLeaf);
-pin('a leaf recount writes its own row', '0', ($rowFor($incLeaf) ?? array())['i_num_items'] ?? null);
-pin('... and its parents rows', '0', ($rowFor($incRoot) ?? array())['i_num_items'] ?? null);
-$truncateStats();
+pin('a leaf recount of an empty leaf leaves it at 0', '0', $rowFor($incLeaf)['i_num_items']);
+pin('... and its parents at 0', '0', $rowFor($incRoot)['i_num_items']);
+$setCount($incLeaf, 4);
+$setCount($incRoot, 4);
 \mindstellar\utility\Utils::updateAllCategoriesStats();
-pin('a full recount writes a row for every category', (int) $admin->query('SELECT COUNT(*) FROM '
-    . DB_TABLE_PREFIX . 't_category')->fetch_row()[0], $rowCount());
+pin('a full recount corrects stale counts (no listings -> 0 everywhere)', 0, $rowCount());
 
 harness_section('Utils recount by id — counts every level below');
 
@@ -660,9 +576,9 @@ seed_item($admin, $deepLeaf, null, 'Deep listing');
 seed_item($admin, $deepMid, null, 'Mid listing');
 $truncateStats();
 \mindstellar\utility\Utils::updateCategoryStatsById($deepLeaf);
-pin('the leaf counts its own listing', '1', ($rowFor($deepLeaf) ?? array())['i_num_items'] ?? null);
-pin('the middle counts its own and the leaf listing', '2', ($rowFor($deepMid) ?? array())['i_num_items'] ?? null);
-pin('the root counts its grandchild listing too', '2', ($rowFor($deepRoot) ?? array())['i_num_items'] ?? null);
+pin('the leaf counts its own listing', '1', $rowFor($deepLeaf)['i_num_items']);
+pin('the middle counts its own and the leaf listing', '2', $rowFor($deepMid)['i_num_items']);
+pin('the root counts its grandchild listing too', '2', $rowFor($deepRoot)['i_num_items']);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

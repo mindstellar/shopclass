@@ -20,9 +20,12 @@ Set them before you have users, not after.
 | **Hold edited listings for admin moderation** | The same, for edits to an existing listing. An admin's own edits are never held. |
 | **Users have to validate their listings** | A new listing stays inactive until the user validates it, with a threshold: **After *n* validated listings the user doesn't need to validate the listings any more**. So regulars post freely while newcomers are checked. |
 | **Logged in users don't need to validate their listings** | Skips that validation step for anyone who is logged in. |
-| **Warn about expiration** | Days of notice a seller gets before a listing expires. |
-| **Attach *n* images per listing** | The photo limit. |
-| **An user has to wait *n* seconds between each listing added** | Rate limit on posting: the cheapest defence against a bulk poster. |
+| **Warn about expiration** | Days of notice a seller gets before a listing expires. 0 sends no warning. |
+| **Attach *n* images per listing** | The photo limit. 0 means no limit. |
+| **Title length** and **Description length** | The most characters a seller may type. The page refuses a length outside the allowed range and shows why. |
+| **Show reCAPTCHA in add/edit listing form** | A captcha on the posting form, once reCAPTCHA is set up. |
+| **Allow attached files in contact publisher form** | Whether the contact form takes a file: a picture, PDF, text or office document, up to the size set in **Settings → General**. |
+| **An user has to wait *n* seconds between each listing added** | Rate limit on posting: the cheapest defence against a bulk poster. 0 means no wait. |
 | **Only allow registered users to contact publisher** | Whether the contact form needs an account. |
 | **Notify admin when a new listing is added** | An e-mail to you on every publish. Useful early, unbearable at volume. |
 | **Enable the "send to a friend" form** | A sharing form on the listing page. |
@@ -30,6 +33,8 @@ Set them before you have users, not after.
 :::note
 **RSS shows** and **Latest listings shown** (how many listings appear in the
 RSS feed and on the home page) live under **Settings → General**, not here.
+So do the site contact form's **Attachments** switch and **Largest attached file**
+(5 MB unless you change it), which also limits files sent to a publisher.
 :::
 
 ## Moderating
@@ -91,10 +96,12 @@ account, enable or disable one, edit its details, or add a user yourself.
 
 **Users → Settings** carries the registration rules:
 
-- **Anyone can register**: the master switch.
+- **Users enabled**: whether the site has user accounts at all.
+- **Anyone can register**: the master switch for sign-up.
 - **Users need to validate their account**: e-mail confirmation before the
   account works.
 - **When a new user is registered**: notify the admin.
+- **Username blacklist**: words a username may not contain, separated by commas.
 
 ### Ban rules
 
@@ -109,8 +116,8 @@ member's report and only stop contact mail; see
 **Users → Alerts** lists saved searches. As the admin explains: *alerts
 notify a user by email when a new listing matches their saved search.*
 
-Alerts are sent by **cron**, on the schedule each user picked for their
-saved search: hourly, daily or weekly. If your users say they never receive
+Alerts are sent by **cron**, once a day, or once a week for alerts set to
+weekly. If your users say they never receive
 them, check cron before anything else. See
 [setting up cron](/docs/configure/cron/).
 

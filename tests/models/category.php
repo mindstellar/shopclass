@@ -35,8 +35,8 @@
  *    WHERE fragment (its own docblock: "param needs to be escaped, inside
  *    function will not be escaped"), its multi-argument form is a printf format
  *    whose values legacy escapes through dao->escape() + vsprintf. The three
- *    joined tables (t_category a, t_category_description b, t_category_stats c)
- *    and the a.*, b.*, c.i_num_items projection are the contract; so is the
+ *    joined tables (t_category a, t_category_description b) and the a.*, b.* projection
+ *    (a.i_num_items is the live listing count, 0 for a category with none) are the contract; so is the
  *    per-pk merge that folds the description locales into a 'locale' sub-array
  *    and overlays $this->language's names at the top level.
  *  - Value typing (C4). Legacy rows are all strings/null. listWhere() runs
@@ -48,7 +48,7 @@
  *    findSubcategories(), NOT the stale tree), delegates item cleanup to Item
  *    (out of scope, and exercised over zero item rows here, as Region's cascade
  *    does), fires the delete_category hook, then deletes the plugin/description/
- *    stats/meta rows and finally the category. The first four deletes have
+ *    meta rows and finally the category. The first four deletes have
  *    always discarded their result and must keep per-call swallowed catches so
  *    one failure never aborts the rest; only the final category delete's value
  *    is returned. A survivor subtree proves the cascade is scoped.
@@ -105,15 +105,14 @@ require_once __DIR__ . '/../lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php'; // osc_language
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';     // osc_current_user_locale
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';          // osc_sanitizeString (slug generation in insert/updateByPrimaryKey)
 
-Preference::newInstance(); // osc_current_user_locale() -> osc_language() reads a preference; warm it so it is never charged to a query-count pin
+Preference::getInstance(); // osc_current_user_locale() -> osc_language() reads a preference; warm it so it is never charged to a query-count pin
 
-$cache      = Object_Cache_Factory::newInstance();
+$cache      = \mindstellar\cache\CacheManager::getInstance();
 $catTable   = DB_TABLE_PREFIX . 't_category';
 $descTable  = DB_TABLE_PREFIX . 't_category_description';
-$statsTable = DB_TABLE_PREFIX . 't_category_stats';
-$pluginCatT = DB_TABLE_PREFIX . 't_plugin_category';
 $metaCatT   = DB_TABLE_PREFIX . 't_meta_categories';
 $locale     = 'en_US';
 
@@ -142,7 +141,7 @@ $rowsScalarStrings = static function (array $rows): bool {
 };
 
 /* ----------------------------------------------------------------------------
- * Reset helpers. Category::newInstance() is a process-lifetime singleton and its
+ * Reset helpers. Category::getInstance() is a process-lifetime singleton and its
  * tree lives ALSO in the object cache; the runner shares one process across every
  * model file. Both have to be forced cold to get a snapshot of the current
  * fixtures, and both are reset again at the end so the CategoryStats/CityStats
@@ -161,7 +160,7 @@ $resetCategory = static function () use ($instanceProp, $cache): void {
 $freshCategory = static function () use ($resetCategory, $locale): Category {
     $resetCategory();
 
-    return Category::newInstance($locale);
+    return Category::getInstance($locale);
 };
 
 /* ----------------------------------------------------------------------------
@@ -169,22 +168,18 @@ $freshCategory = static function () use ($resetCategory, $locale): Category {
  * checks are off on the admin session, so the fk_i_field_id below need not point
  * at a real field row.
  * ------------------------------------------------------------------------- */
-$seedStats = static function (int $categoryId, int $numItems) use ($admin, $statsTable): void {
+$seedStats = static function (int $categoryId, int $numItems) use ($admin, $catTable): void {
     seed_exec(
         $admin,
-        "INSERT INTO $statsTable (fk_i_category_id, i_num_items) VALUES (?, ?)",
+        "UPDATE $catTable SET i_num_items = ? WHERE pk_i_id = ?",
         'ii',
-        array($categoryId, $numItems)
+        array($numItems, $categoryId)
     );
 };
-$seedPluginCat = static function (int $categoryId, string $plugin = 'demo_plugin') use ($admin, $pluginCatT): void {
-    seed_exec(
-        $admin,
-        "INSERT INTO $pluginCatT (s_plugin_name, fk_i_category_id) VALUES (?, ?)",
-        'si',
-        array($plugin, $categoryId)
-    );
+$seedPluginCat = static function (int $categoryId, string $plugin = 'demo_plugin'): void {
+    (new PluginCategory())->add($plugin, array($categoryId));
 };
+$pluginsOn = static fn (int $categoryId): int => count((new PluginCategory())->findByCategoryId($categoryId));
 $seedMetaCat = static function (int $categoryId, int $fieldId) use ($admin, $metaCatT): void {
     seed_exec(
         $admin,
@@ -212,7 +207,7 @@ $catExists = static function (int $id) use ($countWhere, $catTable): bool {
 
 /* ----------------------------------------------------------------------------
  * The read fixture: a small enabled tree plus one disabled root, all seeded
- * BEFORE the first Category::newInstance() so the one-time snapshot captures
+ * BEFORE the first Category::getInstance() so the one-time snapshot captures
  * them. i_position is made distinct so the ORDER BY i_position ASC pins are
  * deterministic (seed_category defaults every row to 0).
  *
@@ -232,7 +227,7 @@ $setPosition($property, 1);
 $setPosition($cars, 0);
 $setPosition($bikes, 1);
 $setPosition($hidden, 2);
-$seedStats($cars, 5);   // Cars has an item count; the rest have no stats row (i_num_items -> null via LEFT JOIN)
+$seedStats($cars, 5);   // Cars has an item count; the rest have no listings (i_num_items 0)
 
 $model = $freshCategory();
 
@@ -273,12 +268,36 @@ pin('_findNameIDByLocale signature is unchanged', 'public _findNameIDByLocale($l
 pin(
     'the model declares exactly these public methods of its own, nothing added or removed',
     array(
-        '__construct', '_findNameIDByLocale', 'deleteByPrimaryKey', 'findByPrimaryKey', 'findBySlug',
-        'findNameByPrimaryKey', 'findRootCategories', 'findRootCategoriesEnabled', 'findRootCategory',
-        'findSubcategories', 'findSubcategoriesEnabled', 'formatValue', 'hierarchy', 'insert',
-        'insertDescription', 'isRoot', 'listAll', 'listEnabled', 'listWhere', 'newInstance',
-        'toRootTree', 'toSubTree', 'toTree', 'toTreeAll', 'updateByPrimaryKey', 'updateExpiration',
-        'updateName', 'updateOrder', 'updatePriceEnabled',
+        '__construct',
+        '_findNameIDByLocale',
+        'deleteByPrimaryKey',
+        'findByPrimaryKey',
+        'findBySlug',
+        'findNameByPrimaryKey',
+        'findRootCategories',
+        'findRootCategoriesEnabled',
+        'findRootCategory',
+        'findSubcategories',
+        'findSubcategoriesEnabled',
+        'formatValue',
+        'getInstance',
+        'hierarchy',
+        'insert',
+        'insertDescription',
+        'isRoot',
+        'listAll',
+        'listEnabled',
+        'listWhere',
+        'newInstance',
+        'toRootTree',
+        'toSubTree',
+        'toTree',
+        'toTreeAll',
+        'updateByPrimaryKey',
+        'updateExpiration',
+        'updateName',
+        'updateOrder',
+        'updatePriceEnabled',
     ),
     (static function () {
         $own = array();
@@ -300,11 +319,11 @@ harness_section('Category: tree cache — construction cost and warm reads');
 
 $cold = harness_query_count(static function () use ($resetCategory, $locale) {
     $resetCategory();
-    Category::newInstance($locale);
+    Category::getInstance($locale);
 });
 pin('constructing the model cold costs exactly one query (listEnabled)', 1, $cold);
 
-$m = Category::newInstance($locale);
+$m = Category::getInstance($locale);
 pin('toTree() on the constructed model costs zero queries — it is served from the snapshot', 0, harness_query_count(static function () use ($m) {
     $m->toTree();
 }));
@@ -361,16 +380,16 @@ pin('ordered by i_position ASC (Vehicles pos0, Property pos1, Hidden pos2)', arr
 check('every scalar value in every row is a string or null (C4)', $rowsScalarStrings($roots), describe($roots));
 pin('pk_i_id round-trips as a string, not an int (C4)', (string) $vehicles, $roots[0]['pk_i_id']);
 pin(
-    'the merged row carries the joined a.* / b.* / c.i_num_items columns plus the locale sub-array, in this order',
+    'the merged row carries the joined a.* (with i_num_items) / b.* columns plus the locale sub-array, in this order',
     array(
         'pk_i_id', 'fk_i_parent_id', 'i_expiration_days', 'i_position', 'b_enabled', 'b_price_enabled', 's_icon',
-        'fk_i_category_id', 'fk_c_locale_code', 's_name', 's_description', 's_slug', 'i_num_items', 'locale',
+        'i_num_items', 'fk_i_category_id', 'fk_c_locale_code', 's_name', 's_description', 's_slug', 'locale',
     ),
     array_keys($roots[0])
 );
 pin('fk_c_locale_code is overlaid with $this->language', $locale, $roots[0]['fk_c_locale_code']);
 check('the locale sub-array is keyed by locale code', isset($roots[0]['locale'][$locale]), describe($roots[0]));
-pin('a root with no stats row reports a null i_num_items (LEFT JOIN)', null, $roots[0]['i_num_items']);
+pin('a root with no listings reports i_num_items "0", never null', '0', $roots[0]['i_num_items']);
 pin('one findRootCategories() call costs one query', 1, harness_query_count(static function () use ($m) {
     $m->findRootCategories();
 }));
@@ -381,7 +400,7 @@ $subs = $m->findSubcategories($vehicles);
 pin('Vehicles has two children', 2, count($subs));
 pin('ordered by i_position ASC (Cars pos0, Bikes pos1)', array('Cars', 'Bikes'), array_column($subs, 's_name'));
 check('every scalar value in every row is a string or null even though this path binds a parameter (C4)', $rowsScalarStrings($subs), describe($subs));
-pin('the child that has a stats row reports its count as a string', '5', $subs[0]['i_num_items']);
+pin('the child with listings reports its count as a string', '5', $subs[0]['i_num_items']);
 pin('fk_i_parent_id round-trips as a string', (string) $vehicles, $subs[0]['fk_i_parent_id']);
 pin('a leaf category has no subcategories', array(), $m->findSubcategories($sedans));
 pin('one findSubcategories() call costs one query', 1, harness_query_count(static function () use ($m, $vehicles) {
@@ -465,10 +484,53 @@ $m = $freshCategory();
 $firstCost = harness_query_count(static function () use ($m) {
     $m->findBySlug('cars');
 });
-pin('a cold findBySlug costs one query', 1, $firstCost);
+pin('an enabled category\'s slug is served from the loaded rows, at zero queries', 0, $firstCost);
 pin('a warm findBySlug is served from the slug cache -> the tree, at zero queries', 0, harness_query_count(static function () use ($m) {
     $m->findBySlug('cars');
 }));
+
+harness_section('Category::findBySlug — the loaded rows answer as the query does');
+
+// Cars gains a French slug of its own and a Spanish one it shares with English.
+seed_exec($admin, "INSERT INTO $descTable (fk_i_category_id, fk_c_locale_code, s_name, s_description, s_slug) VALUES (?, 'fr_FR', 'Voitures', 'Voitures description', 'voitures'), (?, 'es_ES', 'Coches', 'Coches description', 'cars')", 'ii', array($cars, $cars));
+$queried = static fn (Category $c, string $slug): array => $c->listWhere('b.s_slug = %s', urlencode(trim($slug)))[0] ?? array();
+foreach (array($locale, 'fr_FR') as $lang) {
+    $resetCategory();
+    $c = new Category($lang);
+    foreach (array('cars', 'voitures', 'CARS', 'cars ') as $slug) {
+        $hit = null;
+        pin("[$lang] '$slug' costs zero queries", 0, harness_query_count(static function () use ($c, $slug, &$hit) {
+            $hit = $c->findBySlug($slug);
+        }));
+        pin("[$lang] '$slug' returns the same row as the query", $queried($c, $slug), $hit);
+    }
+}
+
+$m = $freshCategory();
+$hiddenRow = null;
+pin('a disabled category is not in the loaded rows, so its slug is queried', 1, harness_query_count(static function () use ($m, &$hiddenRow) {
+    $hiddenRow = $m->findBySlug('hidden');
+}));
+pin('...and found', (string) $hidden, $hiddenRow['pk_i_id'] ?? null);
+
+seed_exec($admin, "UPDATE $descTable SET s_slug = 'cars' WHERE fk_i_category_id = ? AND fk_c_locale_code = ?", 'is', array($bikes, $locale));
+$m = $freshCategory();
+$shared = null;
+pin('a slug two categories hold is queried', 1, harness_query_count(static function () use ($m, &$shared) {
+    $shared = $m->findBySlug('cars');
+}));
+pin('...and answers as the query does', $queried($m, 'cars'), $shared);
+seed_exec($admin, "UPDATE $descTable SET s_slug = 'bikes' WHERE fk_i_category_id = ? AND fk_c_locale_code = ?", 'is', array($bikes, $locale));
+
+$m = $freshCategory();
+$m->findBySlug('voitures');
+$m->updateName($property, $locale, 'Property');
+pin('after this object writes, findBySlug reads the table again', 1, harness_query_count(static function () use ($m) {
+    $m->findBySlug('voitures');
+}));
+
+seed_exec($admin, "DELETE FROM $descTable WHERE fk_i_category_id = ? AND fk_c_locale_code IN ('fr_FR', 'es_ES')", 'i', array($cars));
+$m = $freshCategory();
 
 /* ----------------------------------------------------------------------------
  * findNameByPrimaryKey() — tree hit, live query, and the missing-name fallback.
@@ -558,6 +620,102 @@ $dupSlug = (static function () use ($admin, $descTable, $dupId) {
     return $r;
 })();
 pin('a colliding slug is uniquified with a numeric suffix', 'boats_1', $dupSlug);
+
+harness_section('Utils::translateCategories — a translated slug skips the reserved prefix');
+
+if (!function_exists('osc_translations_path')) {
+    function osc_translations_path()
+    {
+        return __DIR__ . '/no-translations/';
+    }
+}
+$m     = $freshCategory();
+$apiId = $m->insert(
+    array('fk_i_parent_id' => null, 'i_expiration_days' => 0, 'i_position' => 0, 'b_enabled' => 1, 'b_price_enabled' => 1),
+    array($locale => array('s_name' => 'API'))
+);
+seed_exec($admin, "UPDATE $descTable SET s_slug = 'api-old' WHERE fk_i_category_id = ?", 'i', array($apiId));
+// No catalogue to load: an unconstructed Translation answers a missing .mo with false.
+$translationProp = new ReflectionProperty('Translation', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $translationProp->setAccessible(true);
+}
+$translationProp->setValue(null, (new ReflectionClass('Translation'))->newInstanceWithoutConstructor());
+$_SESSION = array();
+@Session::getInstance()->_set('adminLocale', $locale);
+\mindstellar\utility\Utils::translateCategories('es_ES');
+$translationProp->setValue(null, null);
+$sessionProp = new ReflectionProperty('Session', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $sessionProp->setAccessible(true);
+}
+$sessionProp->setValue(null, null);
+unset($_SESSION);
+$apiSlug = (static function () use ($admin, $descTable, $apiId) {
+    $stmt = $admin->prepare("SELECT s_slug FROM $descTable WHERE fk_i_category_id = ? AND fk_c_locale_code = 'es_ES'");
+    $stmt->bind_param('i', $apiId);
+    $stmt->execute();
+    $r = $stmt->get_result()->fetch_assoc()['s_slug'] ?? null;
+    $stmt->close();
+
+    return $r;
+})();
+pin('a category translated as "API" is saved as api_1, not the reserved "api"', 'api_1', $apiSlug);
+seed_exec($admin, "DELETE FROM $descTable WHERE fk_i_category_id = ?", 'i', array($apiId));
+seed_exec($admin, "DELETE FROM $catTable WHERE pk_i_id = ?", 'i', array($apiId));
+$freshCategory();
+
+harness_section('Category::toTree — a cache read of null is a miss');
+
+$m = $freshCategory();
+$treeIds = array_column($m->toTree(), 'pk_i_id');
+// A driver that answers null on a miss used to be read as a stored tree.
+$nullCache = new class () implements \mindstellar\cache\CacheDriver {
+    public static function is_supported()
+    {
+        return true;
+    }
+    public function add($key, $data, $expire = 0)
+    {
+        return false;
+    }
+    public function set($key, $data, $expire = 0)
+    {
+        return true;
+    }
+    public function delete($key)
+    {
+        return true;
+    }
+    public function flush()
+    {
+        return true;
+    }
+    public function get($key, &$found = null)
+    {
+        $found = false;
+
+        return null;
+    }
+    public function stats()
+    {
+    }
+    public function _get_cache()
+    {
+        return 'null';
+    }
+    public function __destruct()
+    {
+    }
+};
+$factoryProp = new ReflectionProperty('mindstellar\\cache\\CacheManager', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $factoryProp->setAccessible(true);
+}
+$factoryProp->setValue(null, $nullCache);
+pin('toTree() over a driver that answers null rebuilds the same tree', $treeIds, array_column($m->toTree(), 'pk_i_id'));
+$factoryProp->setValue(null, $cache);
+$freshCategory();
 
 /* ----------------------------------------------------------------------------
  * insertDescription().
@@ -687,6 +845,30 @@ $esCount = (static function () use ($admin, $descTable, $upTarget) {
 })();
 pin('the es_ES description now exists', 1, $esCount);
 
+harness_section('Category::updateByPrimaryKey — a reserved or taken slug gets the next free one');
+
+$slugAfterUpdate = static function (string $wanted) use ($admin, $descTable, $upTarget, $locale, $freshCategory): ?string {
+    $freshCategory()->updateByPrimaryKey(
+        array('fields' => array('i_expiration_days' => 0), 'aFieldsDescription' => array($locale => array('s_name' => 'UpTarget Edited', 's_slug' => $wanted))),
+        $upTarget
+    );
+    $stmt = $admin->prepare("SELECT s_slug FROM $descTable WHERE fk_i_category_id = ? AND fk_c_locale_code = ?");
+    $stmt->bind_param('is', $upTarget, $locale);
+    $stmt->execute();
+    $v = $stmt->get_result()->fetch_assoc()['s_slug'] ?? null;
+    $stmt->close();
+
+    return $v;
+};
+pin('the reserved "api" becomes api_1', 'api_1', $slugAfterUpdate('api'));
+$kayaks = seed_category($admin, 'Kayaks', null, $locale, 1, 0);
+pin('a slug another category holds takes the next free suffix', 'kayaks_1', $slugAfterUpdate('kayaks'));
+pin('the category\'s own slug is kept', 'kayaks_1', $slugAfterUpdate('kayaks_1'));
+seed_exec($admin, "DELETE FROM $descTable WHERE fk_i_category_id = ?", 'i', array($kayaks));
+seed_exec($admin, "DELETE FROM $catTable WHERE pk_i_id = ?", 'i', array($kayaks));
+pin('a free slug is taken as given', 'uptarget-edited', $slugAfterUpdate('uptarget-edited'));
+$freshCategory();
+
 /* ----------------------------------------------------------------------------
  * deleteByPrimaryKey — the full cascade, a survivor subtree, and cache staleness.
  * Destructive, so it runs last on a freshly rebuilt fixture. No items are seeded:
@@ -697,7 +879,8 @@ harness_section('Category::deleteByPrimaryKey — cascade + survivor subtree');
 
 // Wipe the category tables and build an isolated doomed/survivor pair.
 $admin->query("SET FOREIGN_KEY_CHECKS = 0");
-foreach (array($metaCatT, $pluginCatT, $statsTable, $descTable, $catTable) as $t) {
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'plugin_categories'");
+foreach (array($metaCatT, $descTable, $catTable) as $t) {
     $admin->query("TRUNCATE TABLE $t");
 }
 
@@ -728,15 +911,14 @@ check('the doomed root is gone', !$catExists($doomRoot));
 check('the doomed middle category is gone (recursion)', !$catExists($doomMid));
 check('the doomed leaf is gone (recursion)', !$catExists($doomLeaf));
 pin('every doomed description row is gone', 0, $countWhere($descTable, 'fk_i_category_id', $doomRoot) + $countWhere($descTable, 'fk_i_category_id', $doomMid) + $countWhere($descTable, 'fk_i_category_id', $doomLeaf));
-pin('every doomed stats row is gone', 0, $countWhere($statsTable, 'fk_i_category_id', $doomRoot) + $countWhere($statsTable, 'fk_i_category_id', $doomMid) + $countWhere($statsTable, 'fk_i_category_id', $doomLeaf));
-pin('every doomed plugin-category row is gone', 0, $countWhere($pluginCatT, 'fk_i_category_id', $doomRoot) + $countWhere($pluginCatT, 'fk_i_category_id', $doomLeaf));
+pin('every doomed plugin-category row is gone', 0, $pluginsOn($doomRoot) + $pluginsOn($doomLeaf));
 pin('every doomed meta-category row is gone', 0, $countWhere($metaCatT, 'fk_i_category_id', $doomRoot) + $countWhere($metaCatT, 'fk_i_category_id', $doomLeaf));
 
 check('the survivor root is untouched', $catExists($survRoot));
 check('the survivor child is untouched', $catExists($survChild));
 pin('the survivor description rows are untouched', 2, $countWhere($descTable, 'fk_i_category_id', $survRoot) + $countWhere($descTable, 'fk_i_category_id', $survChild));
-pin('the survivor stats row is untouched', 1, $countWhere($statsTable, 'fk_i_category_id', $survRoot));
-pin('the survivor plugin-category row is untouched', 1, $countWhere($pluginCatT, 'fk_i_category_id', $survRoot));
+pin('the survivor count is untouched', 9, (int) $admin->query("SELECT i_num_items FROM $catTable WHERE pk_i_id = $survRoot")->fetch_row()[0]);
+pin('the survivor plugin-category row is untouched', 1, $pluginsOn($survRoot));
 pin('the survivor meta-category row is untouched', 1, $countWhere($metaCatT, 'fk_i_category_id', $survRoot));
 
 harness_section('Category::deleteByPrimaryKey — the tree cache is not invalidated by the delete');
@@ -748,6 +930,12 @@ pin('a fresh instance no longer finds the deleted root', false, $m->findByPrimar
 harness_section('Category::deleteByPrimaryKey — deleting a nonexistent id');
 
 pin('deleting an id that never existed returns int 0 (no rows affected, no error)', 0, $m->deleteByPrimaryKey(999999));
+
+harness_section('listEnabled reads the shared enabled rows');
+$shared = $freshCategory();
+$oldRead = $shared->listWhere("b.s_name != '' AND a.b_enabled = 1");
+pin('listEnabled() matches the old listWhere() read, row for row and in order', [array_column($oldRead, 'pk_i_id'), $oldRead], [array_column($shared->listEnabled(), 'pk_i_id'), $shared->listEnabled()]);
+pin('...and costs no query once the enabled tree has read them', 0, harness_query_count(static fn () => (new \mindstellar\category\CategoryQuery())->enabledTree($locale)));
 
 /* ----------------------------------------------------------------------------
  * formatValue — pure helper, no query.

@@ -427,7 +427,7 @@ class SchemaReconciler
     private function createNewIndex($tbl_indexes, &$indexes, $table, &$struct_queries, $has_primary = true)
     {
         if ($tbl_indexes) {
-            unset($indexes_array);
+            $indexes_array = array();
             foreach ($tbl_indexes as $tbl_index) {
                 $indexes_array[$tbl_index['Key_name']]['columns'][]  =
                     array('fieldname' => $tbl_index['Column_name'], 'subpart' => $tbl_index['Sub_part']);

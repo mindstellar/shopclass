@@ -30,8 +30,8 @@ Download the latest package from the
 
 :::caution[Install from a release, never from a branch]
 `master` and `develop` may contain untested code, and they do not carry the
-compiled admin CSS and JavaScript that a release package includes. A site
-deployed from a branch will look broken in the admin panel.
+PHP packages and compiled admin files that a release package includes. A site
+deployed from a branch will not start.
 :::
 
 ## 2. Unpack it into your web root
@@ -102,7 +102,7 @@ notice instead of re-running.
 A fresh install works, but three things are worth doing on day one:
 
 1. **[Set up cron](/docs/configure/cron/)**: without it, e-mail alerts never
-   send and expired listings never expire.
+   send and expired listings never expire. The Docker image runs it for you.
 2. **[Configure your mail server](/docs/configure/mail-server/)**: registration
    and contact e-mails depend on it.
 3. **[Install location data](/docs/configure/locations/)** for the countries you
@@ -129,6 +129,11 @@ avoiding.
 
 **"Allowed memory size of X bytes exhausted".**
 See [increase the PHP memory limit](/docs/configure/memory-limit/).
+
+**What the `.htaccess` holds.** Core writes the friendly-URL rules, then compression
+(`mod_deflate`) and browser cache times for static files (`mod_headers`: CSS and JavaScript an
+hour, images and fonts a week). Each block is skipped when its module is missing. An older
+file core wrote is updated on upgrade; a file you edited is left alone.
 
 **The site loads but every link 404s.**
 Your web server is not rewriting URLs. On Apache, confirm `mod_rewrite` is

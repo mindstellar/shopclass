@@ -73,7 +73,7 @@ $regionId   = seed_region($admin, $country);
 $cityId     = seed_city($admin, $regionId, 'Springfield', $country);
 $cityAreaId = $seedCityArea($admin, 1, $cityId, 'Downtown');
 
-$model = ItemLocation::newInstance();
+$model = ItemLocation::getInstance();
 $table = DB_TABLE_PREFIX . 't_item_location';
 
 /* ----------------------------------------------------------------------------
@@ -124,7 +124,11 @@ $ownMethods = array_values(array_map(
 sort($ownMethods);
 pin(
     'ItemLocation declares only construction and the singleton accessor — no query method of its own',
-    array('__construct', 'newInstance'),
+    array(
+        '__construct',
+        'getInstance',
+        'newInstance',
+    ),
     $ownMethods
 );
 

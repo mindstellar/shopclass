@@ -16,10 +16,18 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
+use mindstellar\database\DbException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
+use mindstellar\location\CountryCode;
 use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
 use mindstellar\location\LocationCatalog;
 use mindstellar\location\LocationImporter;
+use mindstellar\location\LocationQuery;
+use mindstellar\location\LocationService;
+use mindstellar\security\Demo;
 use mindstellar\utility\AjaxResponse;
 
 /**
@@ -162,7 +170,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     private function listModel(): array
     {
         $query    = new LocationAdminQuery();
-        $page     = max(1, Params::getParamInt('pageNum', 1));
+        $page     = ListPaging::page();
         $per      = LocationAdminQuery::DEFAULT_PER;
         $regionId = Params::getParamInt('region');
         $country  = strtoupper(trim(Params::getParamString('country_code') ?: Params::getParamString('country')));
@@ -216,7 +224,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             : $fetch('', 1, 1)['total'];
 
         if ($model['level'] !== 'country') {
-            $parent = $result['parent'];
+            $parent = $result['parent'] ?? null;
             if ($parent === null) {
                 $model['found']   = false;
                 $model['missing'] = $model['level'] === 'city'
@@ -321,11 +329,11 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function guard(): void
     {
-        if (defined('DEMO')) {
-            $this->respond('warning', _m("This action can't be done because it's a demo site"), $this->backUrl());
+        if (Demo::active()) {
+            $this->respond('warning', Demo::message(), $this->backUrl());
         }
         // A fetch() caller reads the CSRF refusal as JSON rather than following a redirect.
-        if ($this->isXhr() && !defined('IS_AJAX')) {
+        if ($this->isXhrRequest() && !defined('IS_AJAX')) {
             define('IS_AJAX', true);
         }
         osc_csrf_check();
@@ -336,7 +344,6 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function addCountry(): void
     {
-        $mCountries  = new Country();
         $countryCode = strtoupper(trim(Params::getParamString('c_country')));
         $countryName = trim(Params::getParamString('country'));
 
@@ -346,14 +353,14 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             switch (LocationAdminView::importInsteadRefusal($countryCode, $status)) {
                 case 'malformed':
                     $this->respond('error', _m('The country code must be two letters, like IN or DE'), $this->listUrl());
-                    break;
+                    // no break
                 case 'unknown':
                     $this->respond(
                         'error',
                         sprintf(_m('The catalog has no country with the code %s. Add it by hand instead.'), $countryCode),
                         $this->listUrl()
                     );
-                    break;
+                    // no break
                 case 'installed':
                     $this->respond(
                         'error',
@@ -363,29 +370,15 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                         ),
                         $this->dataUrl()
                     );
-                    break;
             }
             $this->runImport($countryCode, $this->listUrl());
         }
 
-        if (!osc_validate_min($countryName, 1)) {
-            $this->respond('error', _m('Country name cannot be blank'), $this->listUrl());
-        }
-        if (preg_match('/^[A-Z]{2}$/', $countryCode) !== 1) {
-            $this->respond('error', _m('The country code must be two letters, like IN or DE'), $this->listUrl());
-        }
-
-        $exists = $mCountries->findByCode($countryCode);
-        if (isset($exists['s_name'])) {
-            $this->respond('error', sprintf(_m('%s already was in the database'), $countryName), $this->listUrl());
-        }
-
-        if ($mCountries->insert(array('pk_c_code' => $countryCode, 's_name' => $countryName)) === false) {
-            $this->respond('error', _m('There were some problems adding the country'), $this->listUrl());
-        }
-        osc_calculate_location_slug('country');
-        osc_calculate_location_slug('region');
-        osc_calculate_location_slug('city');
+        $this->write(
+            static fn (LocationService $editor) => $editor->addCountry($countryCode, $countryName),
+            $this->listUrl(),
+            _m('There were some problems adding the country')
+        );
         $this->respond('ok', sprintf(_m('%s has been added as a new country'), $countryName), $this->listUrl());
     }
 
@@ -394,25 +387,18 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function editCountry(): void
     {
-        $mCountries = new Country();
-        $code       = Params::getParamString('country_code');
-        $name       = Params::getParamString('e_country');
-        $back       = $this->listUrl($this->keep());
+        $code    = Params::getParamString('country_code');
+        $name    = Params::getParamString('e_country');
+        $slug    = Params::getParamString('e_country_slug');
+        $back    = $this->listUrl($this->keep());
+        $problem = _m('There were some problems editing the country');
 
-        if (!osc_validate_min($name, 1)) {
-            $this->respond('error', _m('Country name cannot be blank'), $back);
-        }
-        if (!isset($mCountries->findByCode($code)['pk_c_code'])) {
-            $this->respond('error', _m('There were some problems editing the country'), $back);
-        }
-
-        $slug = $this->uniqueSlug($mCountries, 'pk_c_code', $code, $name, Params::getParamString('e_country_slug'));
-        $ok   = $mCountries->update(array('s_name' => $name, 's_slug' => $slug), array('pk_c_code' => $code));
-
-        // Affected rows, false only on error: re-saving a country with the
-        // same name changes nothing and must not read as a failure.
-        if ($ok === false) {
-            $this->respond('error', _m('There were some problems editing the country'), $back);
+        try {
+            (new LocationService())->editCountry($code, $name, $slug);
+        } catch (NotFoundException | DbException $e) {
+            $this->respond('error', $problem, $back);
+        } catch (RefusedException $e) {
+            $this->respond('error', $e->getMessage(), $back);
         }
         $this->respond('ok', _m('Country has been edited'), $back);
     }
@@ -422,30 +408,14 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function addRegion(): void
     {
-        $mRegions    = new Region();
         $regionName  = Params::getParamString('region');
         $countryCode = Params::getParamString('country_c_parent');
-        $country     = Country::newInstance()->findByCode($countryCode);
-
+        $country     = Country::getInstance()->findByCode($countryCode);
         if (!isset($country['pk_c_code'])) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
         $back = $this->listUrl(array('country' => $country['pk_c_code']) + $this->keep());
-
-        if (!osc_validate_min($regionName, 1)) {
-            $this->respond('error', _m('Region name cannot be blank'), $back);
-        }
-        if (isset($mRegions->findByName($regionName, $countryCode)['s_name'])) {
-            $this->respond('error', sprintf(_m('%s already was in the database'), $regionName), $back);
-        }
-
-        $id = $mRegions->insertGetId(array(
-            'fk_c_country_code' => $country['pk_c_code'],
-            's_name'            => $regionName,
-        ));
-        RegionStats::newInstance()->setNumItems($id, 0);
-        osc_calculate_location_slug('region');
-        osc_calculate_location_slug('city');
+        $this->write(static fn (LocationService $editor) => $editor->addRegion($countryCode, $regionName), $back);
         $this->respond('ok', sprintf(_m('%s has been added as a new region'), $regionName), $back);
     }
 
@@ -454,27 +424,15 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function editRegion(): void
     {
-        $mRegions  = new Region();
         $newRegion = Params::getParamString('e_region');
         $regionId  = Params::getParamInt('region_id');
-        $aRegion   = $regionId > 0 ? $mRegions->findByPrimaryKey($regionId) : false;
-
+        $aRegion   = $regionId > 0 ? Region::getInstance()->findByPrimaryKey($regionId) : false;
         if (!is_array($aRegion)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
         $back = $this->listUrl(array('country' => $aRegion['fk_c_country_code']) + $this->keep());
-
-        if (!osc_validate_min($newRegion, 1)) {
-            $this->respond('error', _m('Region name cannot be blank'), $back);
-        }
-        $exists = $mRegions->findByName($newRegion, $aRegion['fk_c_country_code']);
-        if (isset($exists['pk_i_id']) && (int) $exists['pk_i_id'] !== $regionId) {
-            $this->respond('error', sprintf(_m('%s already was in the database'), $newRegion), $back);
-        }
-
-        $slug = $this->uniqueSlug($mRegions, 'pk_i_id', $regionId, $newRegion, Params::getParamString('e_region_slug'));
-        $mRegions->update(array('s_name' => $newRegion, 's_slug' => $slug), array('pk_i_id' => $regionId));
-        ItemLocation::newInstance()->update(array('s_region' => $newRegion), array('fk_i_region_id' => $regionId));
+        $slug = Params::getParamString('e_region_slug');
+        $this->write(static fn (LocationService $editor) => $editor->editRegion($regionId, $newRegion, $slug), $back);
         $this->respond('ok', sprintf(_m('%s has been edited'), $newRegion), $back);
     }
 
@@ -484,31 +442,13 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     private function addCity(): void
     {
         $regionId = Params::getParamInt('region_parent');
-        $region   = $regionId > 0 ? Region::newInstance()->findByPrimaryKey($regionId) : false;
-        $mCities  = new City();
+        $region   = $regionId > 0 ? Region::getInstance()->findByPrimaryKey($regionId) : false;
         $newCity  = Params::getParamString('city');
-
         if (!is_array($region)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
         $back = $this->listUrl(array('country' => $region['fk_c_country_code'], 'region' => $regionId) + $this->keep());
-
-        if (!osc_validate_min($newCity, 1)) {
-            $this->respond('error', _m('New city name cannot be blank'), $back);
-        }
-        if (isset($mCities->findByName($newCity, $regionId)['s_name'])) {
-            $this->respond('error', sprintf(_m('%s already was in the database'), $newCity), $back);
-        }
-
-        // The region's country, not the posted one: a city stored under another country's code
-        // falls out of that country's listings.
-        $id = $mCities->insertGetId(array(
-            'fk_i_region_id'    => $regionId,
-            's_name'            => $newCity,
-            'fk_c_country_code' => $region['fk_c_country_code'],
-        ));
-        CityStats::newInstance()->setNumItems($id, 0);
-        osc_calculate_location_slug('city');
+        $this->write(static fn (LocationService $editor) => $editor->addCity($regionId, $newCity), $back);
         $this->respond('ok', sprintf(_m('%s has been added as a new city'), $newCity), $back);
     }
 
@@ -517,32 +457,40 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function editCity(): void
     {
-        $mCities = new City();
         $newCity = Params::getParamString('e_city');
         $cityId  = Params::getParamInt('city_id');
-        $city    = $cityId > 0 ? $mCities->findByPrimaryKey($cityId) : false;
-
+        $city    = $cityId > 0 ? City::getInstance()->findByPrimaryKey($cityId) : false;
         if (!is_array($city)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
-        $region = Region::newInstance()->findByPrimaryKey($city['fk_i_region_id']);
+        $region = Region::getInstance()->findByPrimaryKey($city['fk_i_region_id']);
         $back   = $this->listUrl(array(
             'country' => is_array($region) ? $region['fk_c_country_code'] : '',
             'region'  => (int) $city['fk_i_region_id'],
         ) + $this->keep());
-
-        if (!osc_validate_min($newCity, 1)) {
-            $this->respond('error', _m('City name cannot be blank'), $back);
-        }
-        $exists = $mCities->findByName($newCity, $city['fk_i_region_id']);
-        if (isset($exists['pk_i_id']) && (int) $exists['pk_i_id'] !== $cityId) {
-            $this->respond('error', sprintf(_m('%s already was in the database'), $newCity), $back);
-        }
-
-        $slug = $this->uniqueSlug($mCities, 'pk_i_id', $cityId, $newCity, Params::getParamString('e_city_slug'));
-        $mCities->update(array('s_name' => $newCity, 's_slug' => $slug), array('pk_i_id' => $cityId));
-        ItemLocation::newInstance()->update(array('s_city' => $newCity), array('fk_i_city_id' => $cityId));
+        $slug = Params::getParamString('e_city_slug');
+        $this->write(static fn (LocationService $editor) => $editor->editCity($cityId, $newCity, $slug), $back);
         $this->respond('ok', sprintf(_m('%s has been edited'), $newCity), $back);
+    }
+
+    /**
+     * Run one location write; a refusal is answered with its reason.
+     * With $failed, a database error is answered with it too.
+     *
+     * @param callable(LocationService): mixed $write
+     */
+    private function write(callable $write, string $back, ?string $failed = null): void
+    {
+        try {
+            $write(new LocationService());
+        } catch (RefusedException $e) {
+            $this->respond('error', $e->getMessage(), $e instanceof NotFoundException ? $this->listUrl() : $back);
+        } catch (DbException $e) {
+            if ($failed === null) {
+                throw $e;
+            }
+            $this->respond('error', $failed, $back);
+        }
     }
 
     /**
@@ -565,7 +513,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
 
         switch ($level) {
             case 'country':
-                $model = new Country();
+                $model = Country::getInstance();
                 $none  = _m('No country was selected');
                 break;
             case 'region':
@@ -583,7 +531,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         foreach ($posted as $id) {
             if ($level === 'country') {
                 $code = strtoupper($id);
-                $row  = preg_match('/^[A-Z]{2}$/', $code) === 1 ? $model->findByCode($code) : array();
+                $row  = CountryCode::valid($code) ? $model->findByCode($code) : array();
                 if (isset($row['pk_c_code'])) {
                     $rows[$code] = $row;
                 }
@@ -600,7 +548,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $region  = Params::getParamInt('region');
         if ($country === '' && $region === 0 && $rows !== array() && $level !== 'country') {
             $first   = reset($rows);
-            $parent  = $level === 'city' ? Region::newInstance()->findByPrimaryKey($first['fk_i_region_id']) : $first;
+            $parent  = $level === 'city' ? Region::getInstance()->findByPrimaryKey($first['fk_i_region_id']) : $first;
             $country = is_array($parent) ? (string) $parent['fk_c_country_code'] : '';
             $region  = $level === 'city' ? (int) $first['fk_i_region_id'] : 0;
         }
@@ -618,10 +566,12 @@ class CAdminSettingsLocations extends AdminSecBaseModel
 
         $deleted = 0;
         $failed  = 0;
+        $editor  = new LocationService();
         foreach (array_keys($rows) as $id) {
-            if ($model->deleteByPrimaryKey($id) === 0) {
+            try {
+                $editor->delete($level, $id);
                 $deleted++;
-            } else {
+            } catch (RefusedException | RuntimeException $e) {
                 $failed++;
             }
         }
@@ -721,14 +671,14 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('error', sprintf(_m('%s could not be read from the catalog'), $offer['name']), $this->dataUrl());
         }
 
-        if ($this->isXhr()) {
+        if ($this->isXhrRequest()) {
             $this->_exportVariableToView('locationPreview', $preview);
             ob_start();
             osc_current_admin_theme_path('settings/locations/preview.php');
             $this->respond('ok', '', $this->dataUrl(), array('html' => (string) ob_get_clean()));
         }
 
-        Session::newInstance()->_set(self::PREVIEW_SESSION, $preview);
+        Session::getInstance()->_set(self::PREVIEW_SESSION, $preview);
         $this->redirectTo($this->dataUrl(array('preview' => $offer['code'])));
     }
 
@@ -764,9 +714,9 @@ class CAdminSettingsLocations extends AdminSecBaseModel
 
         $preview = null;
         $code    = strtoupper(Params::getParamString('preview'));
-        $stored  = Session::newInstance()->_get(self::PREVIEW_SESSION);
+        $stored  = Session::getInstance()->_get(self::PREVIEW_SESSION);
         if ($code !== '' && is_array($stored)) {
-            Session::newInstance()->_drop(self::PREVIEW_SESSION);
+            Session::getInstance()->_drop(self::PREVIEW_SESSION);
             $preview = ($stored['code'] ?? '') === $code ? $stored : null;
             $this->_exportVariableToView('locationPreview', $preview);
         }
@@ -782,7 +732,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             'show'      => $filter['show'],
             'preview'   => $preview,
             'recalc'    => LocationAdminView::recalcProgress(
-                (int) LocationsTmp::newInstance()->count(),
+                \mindstellar\location\LocationRecountJobs::pending(),
                 (int) osc_get_preference('location_todo')
             ),
         );
@@ -819,17 +769,10 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         }
 
         $names = array();
-        foreach (array('REGION' => 't_region', 'CITY' => 't_city') as $type => $table) {
-            if ($ids[$type] === array()) {
-                continue;
-            }
-            $rows = osc_db_select(
-                'SELECT pk_i_id, s_name FROM ' . DB_TABLE_PREFIX . $table
-                . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids[$type]), '?')) . ')',
-                $ids[$type]
-            );
-            foreach ($rows as $row) {
-                $names[$type][(int) $row['pk_i_id']] = (string) $row['s_name'];
+        foreach (array('REGION' => LocationQuery::REGION, 'CITY' => LocationQuery::CITY) as $type => $level) {
+            $found = (new LocationQuery())->names($level, $ids[$type]);
+            if ($found !== array()) {
+                $names[$type] = $found;
             }
         }
 
@@ -872,35 +815,6 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     }
 
     /**
-     * A slug for the row: the posted one, or one derived from the name when blank or taken
-     * by another row, suffixed -1, -2… until no other row holds it.
-     *
-     * @param Country|Region|City $model
-     * @param string              $pkField pk_c_code|pk_i_id
-     * @param string|int          $self    this row's key
-     * @param string              $name
-     * @param string              $posted
-     *
-     * @return string
-     */
-    private function uniqueSlug($model, string $pkField, $self, string $name, string $posted): string
-    {
-        $takenByOther = static function (string $slug) use ($model, $pkField, $self): bool {
-            $row = $model->findBySlug($slug);
-
-            return isset($row['s_slug']) && (string) $row[$pkField] !== (string) $self;
-        };
-
-        $base = osc_sanitizeString($posted === '' || $takenByOther($posted) ? $name : $posted);
-        $slug = $base;
-        for ($n = 1; $takenByOther($slug); $n++) {
-            $slug = $base . '-' . $n;
-        }
-
-        return $slug;
-    }
-
-    /**
      * Finish a write: JSON for a fetch() caller, otherwise a flash message and a redirect.
      *
      * @param string              $status   ok|error|warning
@@ -912,7 +826,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function respond(string $status, string $message, string $redirect, array $extra = array())
     {
-        if ($this->isXhr()) {
+        if ($this->isXhrRequest()) {
             header('Content-Type: application/json');
             header('Cache-Control: no-store');
             // Tags escaped, so the CSRF injector finds no <form> inside the JSON.
@@ -947,15 +861,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     {
         $search = LocationAdminView::search(Params::getParamString('q', false, false, false), '');
 
-        return array('q' => $search['q'], 'pageNum' => Params::getParamInt('pageNum'));
-    }
-
-    /**
-     * @return bool
-     */
-    private function isXhr(): bool
-    {
-        return strtolower(Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+        return array('q' => $search['q'], 'iPage' => ListPaging::page());
     }
 
     /**
@@ -982,7 +888,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     }
 
     /**
-     * The canonical list URL: country=…&region=…&pageNum=…, empty values left out.
+     * The canonical list URL: country=…&region=…&iPage=…, empty values left out.
      *
      * @param array<string,string|int> $params
      *
@@ -990,8 +896,8 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function listUrl(array $params = array()): string
     {
-        if (isset($params['pageNum']) && (int) $params['pageNum'] <= 1) {
-            unset($params['pageNum']);
+        if (isset($params['iPage']) && (int) $params['iPage'] <= 1) {
+            unset($params['iPage']);
         }
         // Some rows store the country code lowercase; every URL this builds carries it upper.
         if (isset($params['country']) && is_string($params['country'])) {

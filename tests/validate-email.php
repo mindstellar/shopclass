@@ -22,6 +22,7 @@
  * validates an address any other way.  Usage:  php tests/validate-email.php
  */
 
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hValidate.php';
 require_once __DIR__ . '/lib/harness.php';
 
@@ -106,5 +107,141 @@ foreach ($roots as $root) {
     }
 }
 pin('every form validates through osc_validate_email()', '', implode(', ', $offenders));
+
+harness_section('osc_validate_* forward to Validate');
+
+$v = new \mindstellar\utility\Validate();
+foreach (array('a@b.co', 'bad name@x.com', '', 'u@nodot') as $email) {
+    pin('email ' . var_export($email, true), $v->email($email, false), osc_validate_email($email, false));
+}
+foreach (array('12', '0', '007', '-1', '1.5', ' 5', array('1')) as $n) {
+    pin('int ' . json_encode($n), $v->int($n), osc_validate_int($n));
+    pin('nozero ' . json_encode($n), $v->nozero($n), osc_validate_nozero($n));
+}
+check('nozero keeps the digits-only rule', osc_validate_nozero('007') && !osc_validate_nozero(' 5') && !osc_validate_nozero('+5'));
+check('nozero refuses an array instead of throwing', !osc_validate_nozero(array('1')));
+check('an empty optional number passes', osc_validate_number('') && osc_validate_number(null));
+check('an empty required number fails', !osc_validate_number('', true));
+check('a numeric string passes', osc_validate_number('12.5', true));
+pin('text', $v->text('ab', 2), osc_validate_text('ab', 2));
+pin('phone', $v->phone('+1 555 0100', 7), osc_validate_phone('+1 555 0100', 7));
+pin('range', $v->range('abc', 1, 2), osc_validate_range('abc', 1, 2));
+pin('username', $v->username('john_doe'), osc_validate_username('john_doe'));
+foreach (array('https://example.com/a?b=1', 'not a url', '') as $url) {
+    pin('url ' . var_export($url, true), $v->url($url), osc_validate_url($url));
+}
+
+harness_section('osc_validate_* defaults and model-backed rules match Validate');
+
+pin('text defaults: required, one character', array($v->text(''), $v->text('a')), array(osc_validate_text(''), osc_validate_text('a')));
+check('...which refuse empty input and take one character', !osc_validate_text('') && osc_validate_text('a'));
+pin('phone default count is 10 digits', array($v->phone('123456789'), $v->phone('1234567890')), array(osc_validate_phone('123456789'), osc_validate_phone('1234567890')));
+check('...nine refused, ten taken', !osc_validate_phone('123456789') && osc_validate_phone('1234567890'));
+pin('email default is required', $v->email(''), osc_validate_email(''));
+check('...so empty input is refused', !osc_validate_email(''));
+pin('min', array($v->min('abc', 5), $v->min('abcde')), array(osc_validate_min('abc', 5), osc_validate_min('abcde')));
+check('...too short is refused, at the 6 default too', !osc_validate_min('abc', 5) && !osc_validate_min('abcde') && osc_validate_min('abcdef'));
+
+if (!function_exists('osc_get_locales')) {
+    function osc_get_locales()
+    {
+        return array(array('pk_c_code' => 'en_US'));
+    }
+}
+if (!function_exists('osc_get_admin_locales')) {
+    function osc_get_admin_locales()
+    {
+        return array(array('pk_c_code' => 'de_DE'));
+    }
+}
+pin('locale, public and admin', array($v->localeCode('en_US'), $v->localeCode('de_DE', true), $v->localeCode('de_DE')), array(osc_validate_locale('en_US'), osc_validate_locale('de_DE', true), osc_validate_locale('de_DE')));
+check('...a public locale checks the public list by default', osc_validate_locale('en_US') && !osc_validate_locale('de_DE'));
+
+/** Puts $double in place of the shared instance of $class. */
+$swap = static function (string $class, object $double): void {
+    $p = new ReflectionProperty($class, 'instance');
+    $p->setAccessible(true);
+    $p->setValue(null, $double);
+};
+$make = static fn (string $class): object => (new ReflectionClass($class))->newInstanceWithoutConstructor();
+
+class CategoryDouble extends Category
+{
+    public function findByPrimaryKey($categoryID, $locale = '')
+    {
+        return array('7' => array('b_enabled' => '1', 'fk_i_parent_id' => '1'), '8' => array('b_enabled' => '0', 'fk_i_parent_id' => '1'))[(string) $categoryID] ?? array();
+    }
+}
+class CountryDouble extends Country
+{
+    public function findByCode($code)
+    {
+        return strtoupper((string) $code) === 'US' ? array('pk_c_code' => 'US') : null;
+    }
+}
+class RegionDouble extends Region
+{
+    public function findByPrimaryKey($value)
+    {
+        return array('pk_i_id' => (string) $value, 'b_active' => (string) $value === '3' ? '1' : '0');
+    }
+}
+class CityDouble extends City
+{
+    public function findByPrimaryKey($value)
+    {
+        return array('b_active' => '1', 'fk_i_region_id' => '3', 'fk_c_country_code' => 'US');
+    }
+}
+if (!function_exists('osc_selectable_parent_categories')) {
+    function osc_selectable_parent_categories()
+    {
+        return false;
+    }
+}
+if (!function_exists('osc_item_spam_delay')) {
+    function osc_item_spam_delay()
+    {
+        return 60;
+    }
+}
+if (!function_exists('osc_comment_spam_delay')) {
+    function osc_comment_spam_delay()
+    {
+        return 60;
+    }
+}
+$swap('Category', $make(CategoryDouble::class));
+$swap('Country', $make(CountryDouble::class));
+$swap('Region', $make(RegionDouble::class));
+$swap('City', $make(CityDouble::class));
+
+$cats = array('7', '8', '0');
+pin('category', array_map(array($v, 'category'), $cats), array_map('osc_validate_category', $cats));
+check('...an enabled one is taken, a disabled one refused', osc_validate_category('7') && !osc_validate_category('8'));
+$places = array(
+    array('5', '', '3', '', 'US', ''),
+    array('5', '', '4', '', 'US', ''),
+    array('', 'Austin', '', 'Texas', '', 'USA'),
+    array('', '', '', '', '', ''),
+);
+foreach ($places as $args) {
+    pin('location ' . json_encode($args), $v->location(...$args), osc_validate_location(...$args));
+}
+check('...an active city in its region is taken, an inactive region refused', osc_validate_location('5', '', '3', '', 'US', '') && !osc_validate_location('5', '', '4', '', 'US', ''));
+$_SERVER['REMOTE_ADDR'] = '198.51.100.7';
+Params::init();
+pin('spam delay, item and comment', array($v->delay(), $v->delay('comment')), array(osc_validate_spam_delay(), osc_validate_spam_delay('comment')));
+check('...with no counter to read, both are allowed', osc_validate_spam_delay() && osc_validate_spam_delay('comment'));
+
+$hv = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hValidate.php');
+preg_match_all('/^function (osc_validate_\w+)\(.*?\n\{\n(.*?)^\}/ms', $hv, $m, PREG_SET_ORDER);
+$fat = array();
+foreach ($m as $fn) {
+    if (substr_count(trim($fn[2]), "\n") > 0 || strpos($fn[2], 'Validate())->') === false) {
+        $fat[] = $fn[1];
+    }
+}
+pin('every osc_validate_* is a one-line forwarder', '', implode(', ', $fat));
 
 exit(harness_result());

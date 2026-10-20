@@ -38,7 +38,7 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_cityarea');
 
-$model = CityArea::newInstance();
+$model = CityArea::getInstance();
 $table = DB_TABLE_PREFIX . 't_city_area';
 
 /**

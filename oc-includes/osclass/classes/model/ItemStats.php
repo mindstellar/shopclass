@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for ItemStat table
  *
@@ -32,13 +34,7 @@
  */
 class ItemStats extends DAO
 {
-    /**
-     * It references to self object: ItemStats.
-     * It is used as a singleton
-     *
-     * @var ItemStats
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /** Counter columns that may be incremented. */
     private const COUNTERS = array(
@@ -84,18 +80,11 @@ class ItemStats extends DAO
     }
 
     /**
-     * It creates a new ItemStats object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return ItemStats
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -123,11 +112,11 @@ class ItemStats extends DAO
         // $column is validated against the fixed allowlist above. dt_date is no
         // longer part of the key; it records when the listing was last active.
         $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_item_id, dt_date, ' . $column . ')
-                VALUES (?, CURDATE(), 1)
-                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = CURDATE()';
+                VALUES (?, ?, 1)
+                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = VALUES(dt_date)';
 
         try {
-            osc_db_execute($sql, array($itemId));
+            Db::execute($sql, array($itemId, date('Y-m-d')));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -155,13 +144,36 @@ class ItemStats extends DAO
      */
     public function increaseBatch($column, array $itemIds)
     {
+        // Deduplicated: the same id twice in one statement would increment twice.
+        $ids = array_values(array_unique(array_map('intval', array_filter($itemIds, 'is_numeric'))));
+
+        return $this->increaseBy($column, array_fill_keys($ids, 1));
+    }
+
+    /**
+     * Add a count per listing to one counter, in one statement plus one rollup write.
+     *
+     * @param string          $column
+     * @param array<int,int>  $counts listing id => how much to add
+     *
+     * @return bool false if the column is rejected or the statement fails
+     * @since  7.0.0
+     */
+    public function increaseBy($column, array $counts)
+    {
         if (!in_array($column, self::COUNTERS, true)) {
             return false;
         }
 
-        // Deduplicated: the same id twice in one statement would increment twice.
-        $ids = array_values(array_unique(array_map('intval', array_filter($itemIds, 'is_numeric'))));
-        if (!$ids) {
+        $params = array();
+        $total  = 0;
+        foreach ($counts as $id => $by) {
+            if ((int) $id > 0 && (int) $by > 0) {
+                array_push($params, (int) $id, (int) $by);
+                $total += (int) $by;
+            }
+        }
+        if (!$params) {
             return true;
         }
 
@@ -169,19 +181,24 @@ class ItemStats extends DAO
             return true;
         }
 
-        $values = implode(', ', array_fill(0, count($ids), '(?, CURDATE(), 1)'));
+        $today  = date('Y-m-d');
+        $rows   = array();
+        for ($i = 0, $n = count($params); $i < $n; $i += 2) {
+            array_push($rows, $params[$i], $today, $params[$i + 1]);
+        }
+        $values = implode(', ', array_fill(0, count($params) / 2, '(?, ?, ?)'));
 
         $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_item_id, dt_date, ' . $column . ')
                 VALUES ' . $values . '
-                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = CURDATE()';
+                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + VALUES(' . $column . '), dt_date = VALUES(dt_date)';
 
         try {
-            osc_db_execute($sql, $ids);
+            Db::execute($sql, $rows);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        $this->increaseDaily($column, count($ids));
+        $this->increaseDaily($column, $total);
 
         return true;
     }
@@ -200,13 +217,13 @@ class ItemStats extends DAO
     private function increaseDaily($column, $by)
     {
         $sql = 'INSERT INTO ' . $this->dailyTableName() . ' (dt_date, i_bucket, ' . $column . ')
-                VALUES (CURDATE(), ?, ?)
+                VALUES (?, ?, ?)
                 ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + ?';
 
         $bucket = mt_rand(0, self::DAILY_BUCKETS - 1);
 
         try {
-            osc_db_execute($sql, array($bucket, $by, $by));
+            Db::execute($sql, array(date('Y-m-d'), $bucket, $by, $by));
         } catch (\mindstellar\database\DbException $e) {
             // ignore: a missing chart point is not worth failing a request for
         }
@@ -267,7 +284,7 @@ class ItemStats extends DAO
         }
 
         try {
-            return (int)osc_db_table($this->dailyTableName())
+            return (int)Db::table($this->dailyTableName())
                 ->where('dt_date', '<', $date)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {
@@ -299,7 +316,7 @@ class ItemStats extends DAO
         // stays: it is what makes a listing with no stats row return SQL NULL
         // rather than no row at all, and callers distinguish the two.
         try {
-            $row = osc_db_select_one(
+            $row = Db::selectOne(
                 'SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName() . ' WHERE fk_i_item_id = ?',
                 array($itemId)
             );
@@ -307,7 +324,7 @@ class ItemStats extends DAO
             return 0;
         }
 
-        $row = osc_db_stringify_row($row);
+        $row = Db::stringifyRow($row);
 
         return $row['i_num_views'];
     }
@@ -321,12 +338,12 @@ class ItemStats extends DAO
     public function getAllViews()
     {
         try {
-            $row = osc_db_select_one('SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName());
+            $row = Db::selectOne('SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        $row = osc_db_stringify_row($row);
+        $row = Db::stringifyRow($row);
 
         return $row['i_num_views'];
     }
@@ -358,7 +375,7 @@ class ItemStats extends DAO
         }
 
         try {
-            $total = osc_db_scalar($sql, array((int)$userId));
+            $total = Db::scalar($sql, array((int)$userId));
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }

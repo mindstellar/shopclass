@@ -8,8 +8,8 @@
 # the Osclass templates ended up at 1399 strings against a codebase with 2280.
 #
 # The whole languages directory is checked rather than just the .pot files:
-# compiled .mo output is committed too, and a .po edited without rebuilding
-# ships stale translations the same silent way.
+# a .po edited without regenerating the templates ships stale translations
+# the same silent way.
 name: i18n Drift
 
 on:

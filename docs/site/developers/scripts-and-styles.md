@@ -125,6 +125,81 @@ The endpoints match on the first letters of a name and return `{id, value}` rows
 If your theme already ships its own binder, it wins the race and core's becomes a
 no-op for that field, so adopting this is safe and can be done one field at a time.
 
+## Search box suggestions without writing JavaScript
+
+Add `data-osc-suggest` to a search input. While someone types, core lists matching listings (a
+thumbnail, the title, the price and the place) from `GET /search/suggest`; a click opens the listing. A search plugin may
+add suggested searches; a click on one fills the box and submits its form.
+
+```php
+<input type="search" name="sPattern" <?php echo osc_search_suggest_attributes(5); ?>>
+```
+
+`osc_search_suggest_attributes()` prints `data-osc-suggest`, the limit, and the translated "Searches"
+and "Listings" headings shown when both groups are in the list.
+
+`data-osc-suggest-limit` is 1 to 10 (default 5). Core matches listing titles, by word start, once a
+word has three letters. It needs the page token, which `osc_head()` prints, and `osc-ui-common`, which core loads on the home,
+search and post pages. On other pages, call `osc_enqueue_script('osc-ui-common')` and
+`osc_enqueue_style('osc-ui-common')`. Style `.osc-ac-list`, `.osc-ac-option`, `.osc-suggest-heading`,
+`.osc-suggest-thumb`, `.osc-suggest-title`, `.osc-suggest-meta`, `.osc-suggest-count` and
+`.osc-ac-option.is-search`.
+
+## Show and hide a panel in the admin
+
+`osc.collapse` (in `admin-ui-osc`, loaded on every admin page) opens and closes a panel with
+no framework. Give the button `data-osc-collapse` with the panel's selector, and the panel
+the class `collapse`, plus `show` when it starts open:
+
+```html
+<button type="button" data-osc-collapse="#more" aria-controls="more" aria-expanded="false">More</button>
+<div id="more" class="collapse">…</div>
+```
+
+The button's `aria-expanded` and its `collapsed` class follow the panel once it is used; a
+panel that starts open needs `aria-expanded="true"` on its button in the markup. Use the
+`osc.*` namespace and `data-osc-*` attributes the same way for new admin components. Panels that share
+a `data-osc-parent` value work as an accordion: opening one closes the others.
+
+From script, call `osc.collapse.show(panel)`, `osc.collapse.hide(panel)` or
+`osc.collapse.toggle(panel)`. The panel fires these events, which bubble:
+
+| Event | When |
+|---|---|
+| `osc:collapse:show` | before it opens; `preventDefault()` stops it |
+| `osc:collapse:shown` | once it is open |
+| `osc:collapse:hide` | before it closes; `preventDefault()` stops it |
+| `osc:collapse:hidden` | once it is closed |
+
+The admin menu uses it, so a plugin can listen for `osc:collapse:shown` on
+`#sidebar-wrapper` to know a section was opened.
+
+## Slide-in panels and dropdowns in the admin
+
+`osc.offcanvas` slides in a panel with class `offcanvas offcanvas-start` from a button with
+`data-osc-offcanvas="#panel"`. Escape or a click on the backdrop closes it. From script, call
+`osc.offcanvas.show(panel)` or `osc.offcanvas.hide(panel)`. The panel fires
+`osc:offcanvas:show`, `shown`, `hide` and `hidden`.
+
+`osc.dropdown` opens the `.dropdown-menu` beside a button with `data-osc-dropdown`, inside a
+`.dropdown` wrapper. An outside click or Escape closes it, and the arrow keys move between its
+`.dropdown-item` links. Add `dropdown-menu-end` to align the menu to the button's end edge.
+
+```html
+<div class="dropdown">
+    <button type="button" data-osc-dropdown aria-expanded="false">Actions</button>
+    <div class="dropdown-menu dropdown-menu-end">
+        <a class="dropdown-item" href="…">Edit</a>
+    </div>
+</div>
+```
+
+## Bootstrap's JavaScript
+
+The admin does not load Bootstrap's JavaScript. A plugin that still uses `data-bs-toggle`
+or `bootstrap.Modal` calls `osc_enqueue_script('bootstrap5')` on its own screens. Bootstrap's
+CSS classes are still there.
+
 ## Cache-busting
 
 Append a version to your asset URL so an update actually reaches returning

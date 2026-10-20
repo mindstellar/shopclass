@@ -109,7 +109,7 @@ if (PHP_VERSION_ID < 80100) {
 }
 $prefInstance->setValue(null, null);
 
-$model = Preference::newInstance();
+$model = Preference::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2): the public API must survive the conversion byte-identical.
@@ -370,14 +370,14 @@ pin('one replace() call costs one query', 1, harness_query_count(static function
  * ------------------------------------------------------------------------- */
 harness_section('Preference: singleton persistence (C9)');
 
-$modelAgain = Preference::newInstance();
+$modelAgain = Preference::getInstance();
 check('newInstance() returns the SAME object on a later call', $model === $modelAgain);
 pin('the cache built earlier in this process is still there', 'newVal', $modelAgain->get('newKey', 'osclass'));
 
 /* ----------------------------------------------------------------------------
  * Constructor-time loading, exercised on a FRESH instance.
  *
- * Preference::newInstance() is a process-lifetime singleton, so it only ever
+ * Preference::getInstance() is a process-lifetime singleton, so it only ever
  * runs its constructor once per process — not enough to characterize what the
  * constructor does at construction time against different table states.
  * __construct() is public and does nothing singleton-specific itself (only
@@ -413,8 +413,178 @@ pin(
 
 check(
     'nothing above touched the process-wide singleton',
-    Preference::newInstance() === $modelAgain
+    Preference::getInstance() === $modelAgain
 );
+
+/* ----------------------------------------------------------------------------
+ * The shared map: with a cache that outlives the request, a new instance reads
+ * the map from it instead of the table, and every write drops it.
+ * ------------------------------------------------------------------------- */
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
+
+/** Keeps what it is given for the life of the test, like Redis across requests. Broken, it answers as an unreachable Redis does. */
+$lasting = new class () implements \mindstellar\cache\CacheDriver {
+    /** @var array<string,mixed> */
+    public array $data = array();
+    /** @var array<string,int> */
+    public array $ttl = array();
+    public bool $broken = false;
+
+    public static function is_supported()
+    {
+        return true;
+    }
+    public function add($key, $data, $expire = 0)
+    {
+        return $this->set($key, $data, $expire);
+    }
+    public function set($key, $data, $expire = 0)
+    {
+        if ($this->broken) {
+            return false;
+        }
+        $this->data[$key] = $data;
+        $this->ttl[$key]  = $expire;
+
+        return true;
+    }
+    public function get($key, &$found = null)
+    {
+        if ($this->broken) {
+            $found = false;
+
+            return false;
+        }
+        $found = array_key_exists($key, $this->data);
+
+        return $found ? $this->data[$key] : false;
+    }
+    public function delete($key)
+    {
+        unset($this->data[$key]);
+
+        return true;
+    }
+    public function flush()
+    {
+        $this->data = array();
+
+        return true;
+    }
+    public function stats()
+    {
+    }
+    public function _get_cache()
+    {
+        return 'lasting';
+    }
+    public function __destruct()
+    {
+    }
+};
+$driverProp = new ReflectionProperty('mindstellar\\cache\\CacheManager', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $driverProp->setAccessible(true);
+}
+$requestDriver = \mindstellar\cache\CacheManager::getInstance();
+$driverProp->setValue(null, $lasting);
+\mindstellar\cache\CacheGroup::forgetGenerations();
+
+/** A new request: the per-request generation memo is gone, the shared cache is not. */
+$nextRequest = static function (): Preference {
+    \mindstellar\cache\CacheGroup::forgetGenerations();
+
+    return new Preference();
+};
+$costOfRequest = static function () use ($nextRequest): int {
+    return harness_query_count(static function () use ($nextRequest) {
+        $nextRequest();
+    });
+};
+
+harness_section('Preference: the shared map skips the table');
+
+$admin->query("TRUNCATE TABLE $table");
+$seedPref('osclass', 'osclass_installed', '1');
+$seedPref('osclass', 'siteName', 'A');
+
+pin('the first request reads the table once', 1, $costOfRequest());
+pin('the next request reads no table at all', 0, $costOfRequest());
+pin('...and gets the same values', 'A', $nextRequest()->get('siteName'));
+$mapKeys = array_values(array_filter(array_keys($lasting->ttl), static fn (string $k): bool => str_starts_with($k, 'osc_preference:')));
+pin('the map is stored once, for 300 seconds', array(300), array_map(static fn (string $k): int => $lasting->ttl[$k], $mapKeys));
+
+harness_section('Preference: a raw write shows after a reload');
+
+$admin->query("UPDATE $table SET s_value = 'B' WHERE s_section = 'osclass' AND s_name = 'siteName'");
+pin('a raw SQL write is not seen through the shared map', 'A', $nextRequest()->get('siteName'));
+pin('toArray() reads the table', 'B', (static function () use ($nextRequest) {
+    $p = $nextRequest();
+    $p->toArray();
+
+    return $p->get('siteName');
+})());
+pin('...and refreshes the shared map for the next request', 'B', $nextRequest()->get('siteName'));
+pin('...which still reads no table', 0, $costOfRequest());
+$admin->query("UPDATE $table SET s_value = 'B2' WHERE s_section = 'osclass' AND s_name = 'siteName'");
+osc_reset_preferences();
+pin('osc_reset_preferences() refreshes it too', 'B2', $nextRequest()->get('siteName'));
+
+harness_section('Preference: every write drops the shared map');
+
+$writes = array(
+    'replace()'               => static fn () => $nextRequest()->replace('siteName', 'C'),
+    'osc_set_preference()'    => static fn () => osc_set_preference('siteName', 'D'),
+    'DAO insert()'            => static fn () => $nextRequest()->insert(array('s_section' => 'osclass', 's_name' => 'extra', 's_value' => 'E', 'e_type' => 'STRING')),
+    'DAO update()'            => static fn () => $nextRequest()->update(array('s_value' => 'F'), array('s_section' => 'osclass', 's_name' => 'extra')),
+    'claim()'                 => static fn () => $nextRequest()->claim('claimed', 'G'),
+    'DAO delete()'            => static fn () => $nextRequest()->delete(array('s_section' => 'osclass', 's_name' => 'extra')),
+    'osc_delete_preference()' => static fn () => osc_delete_preference('claimed'),
+);
+$expect = array(
+    'replace()'               => array('siteName', 'C'),
+    'osc_set_preference()'    => array('siteName', 'D'),
+    'DAO insert()'            => array('extra', 'E'),
+    'DAO update()'            => array('extra', 'F'),
+    'claim()'                 => array('claimed', 'G'),
+    'DAO delete()'            => array('extra', ''),
+    'osc_delete_preference()' => array('claimed', ''),
+);
+foreach ($writes as $label => $write) {
+    $nextRequest();
+    $write();
+    pin($label . ' makes the next request read the table', 1, $costOfRequest());
+    pin($label . ' is seen by the next request', $expect[$label][1], $nextRequest()->get($expect[$label][0]));
+}
+$nextRequest();
+pin('a claim() that changes nothing returns false', false, $nextRequest()->claim('siteName', 'D'));
+pin('...and keeps the shared map', 0, $costOfRequest());
+
+harness_section('Preference: what is never shared');
+
+$admin->query("TRUNCATE TABLE $table");
+$seedPref('osclass', 'siteName', 'Installing');
+$nextRequest();
+pin('a map without osclass_installed is read from the table on every request', 1, $costOfRequest());
+pin('...and still loaded', 'Installing', $nextRequest()->get('siteName'));
+
+harness_section('Preference: a cache that fails falls back to the table');
+
+$seedPref('osclass', 'osclass_installed', '1');
+$lasting->broken = true;
+$broken = null;
+pin('a request with the cache down reads the table once', 1, harness_query_count(static function () use (&$broken, $nextRequest) {
+    $broken = $nextRequest();
+}));
+pin('...and has the values', 'Installing', $broken->get('siteName'));
+pin('a write with the cache down still lands', true, $broken->replace('siteName', 'Down'));
+$lasting->broken = false;
+
+harness_section('Preference: the in-request cache is not used');
+
+$driverProp->setValue(null, $requestDriver);
+\mindstellar\cache\CacheGroup::forgetGenerations();
+pin('with the default cache every new instance reads the table, as before', array(1, 1), array($costOfRequest(), $costOfRequest()));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

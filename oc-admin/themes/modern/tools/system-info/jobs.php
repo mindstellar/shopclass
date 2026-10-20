@@ -13,11 +13,11 @@
 use mindstellar\job\JobRegistry;
 
 // System info > Jobs, below the verdict and the facts: failed jobs, the queue, and what ran.
-$view    = View::newInstance();
+$view    = View::getInstance();
 $failed  = (array) ($view->_get('jobs_failed') ?: array());
 $active  = (array) ($view->_get('jobs_active') ?: array());
 $history = (array) ($view->_get('jobs_history') ?: array());
-$demo    = defined('DEMO');
+$demo    = \mindstellar\security\Demo::active();
 
 $historyWords = array(
     'run'     => __('Worker run'),

@@ -122,7 +122,7 @@ php oc-cli.php help          # list every command
 
 | Command | What it does |
 |---|---|
-| `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks (alerts, cleanup, sitemap warm). Default runs all three. |
+| `cron [--type=due\|hourly\|daily\|weekly\|all]` | Run the scheduled tasks that are due (alerts, cleanup, sitemap warm). A named type, or `all`, forces it. |
 | `db:upgrade` | Run pending migrations after an update. |
 | `db:doctor [--strict]` | Report where the database differs from what ShopClass declares, and whether the site is ready for strict SQL mode. Changes nothing. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. `--dry-run` only reports. |
@@ -133,6 +133,7 @@ php oc-cli.php help          # list every command
 | `user:reset-password --user=\|--email= [--password=]` | Reset an admin's password: the way back in when you're locked out. |
 | `user:2fa-off --user=` | Turn off an admin's two-step sign-in, for one who lost their phone and backup codes. |
 | `plugin:list` | List plugins with their enabled/disabled status, version, and folder. |
+| `plugin:install --plugin=<folder>` | Install and enable a plugin whose folder is already in `oc-content/plugins`. |
 | `plugin:activate --plugin=<folder>` | Enable an installed plugin (accepts the folder name or `folder/index.php`). |
 | `plugin:deactivate --plugin=<folder>` | Disable an active plugin. |
 | `theme:list` | List installed public themes and mark the active one. |
@@ -157,27 +158,19 @@ slot into schedulers and monitoring. A typical crontab entry:
 
 ## Local development
 
-The runtime needs no build tools, but the admin theme's CSS/JS are compiled from
-source. You only need Node to work on them.
+Site owners install from a release zip; CI builds it. After cloning, build the generated
+files yourself: PHP packages, vendored assets, and the admin CSS and JS.
 
 ```bash
 git clone git@github.com:mindstellar/shopclass.git
 cd shopclass
-npm install
-npm run build        # vendor assets + SCSS → CSS + JS
-npm run watch        # rebuild CSS on change while developing
+composer install
+npm ci && npm run build   # vendor assets + SCSS → CSS + JS
+npm run watch             # rebuild CSS on change while developing
 ```
 
-Compiled output (`oc-admin/themes/modern/css/main.css`, `oc-includes/assets/…`)
-is **committed**. Releases are cut with `git archive`, so whatever is committed
-is exactly what users receive. Rebuild and commit the output with any SCSS/JS
-change.
-
-The same applies to PHP dependencies. Nothing runs `composer install` at release,
-so `oc-includes/vendor/` is the library users actually get: a change to
-`composer.json` that is not accompanied by a rebuilt vendor tree ships the old
-code under the new version number. Run `composer update <package>` and commit
-`vendor/` alongside the manifest. CI fails the build otherwise.
+With Docker, `npm run setup` does the same in one step (Composer runs inside the PHP-FPM container).
+These generated files are not in git. Do not commit them.
 
 Dependencies must also resolve on the PHP floor. `config.platform` pins composer
 to 8.0.0, so a package requiring more is refused at resolution even when your own
@@ -185,11 +178,12 @@ PHP is newer.
 
 ### Run it with Docker
 
-A full local stack (PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin)
+A full local stack (PHP-FPM, MariaDB, Nginx, Valkey, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`, alongside `docker-compose.prod.yml` for the
 production image:
 
 ```bash
+npm run setup         # first run: installs and builds the generated files
 npm run dev:build     # first run: builds the PHP-FPM image
 npm run dev           # start
 npm run dev:down      # stop
@@ -328,12 +322,9 @@ Installation, local development, and the production image are covered in the sec
 
 ## Contributing
 
-Contributions are welcome: bug fixes, features, translations, docs.
-
-1. Open an issue describing the change before you start.
-2. Branch from **`develop`** (never target `master`).
-3. Make your change; if it touches the admin theme, run `npm run build` and commit the compiled output.
-4. Open a pull request against `develop`.
+Contributions are welcome: bug fixes, features, translations, docs. Open an issue
+first, branch from **`develop`**, and see [CONTRIBUTING.md](CONTRIBUTING.md) for the
+steps and [tests/README.md](tests/README.md) for the tests.
 
 Because ShopClass runs on installs with third-party themes and plugins, treat the
 `osc_*` helpers, hook names, admin CSS class names, and `oc-includes/assets/`

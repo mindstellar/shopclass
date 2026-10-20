@@ -14,6 +14,7 @@ namespace mindstellar\job;
 use Category;
 use Item;
 use mindstellar\database\DbException;
+use mindstellar\listing\ListingStore;
 use Throwable;
 
 /**
@@ -39,7 +40,7 @@ final class CategoryJobs
         JobRegistry::register(self::TYPE, static fn (Job $job) => self::delete($job));
         JobRegistry::describe(self::TYPE, __('Empty and delete a category'), static function (array $p): string {
             $id  = (int) ($p['category_id'] ?? 0);
-            $row = $id > 0 ? \Category::newInstance()->findByPrimaryKey($id) : null;
+            $row = $id > 0 ? \Category::getInstance()->findByPrimaryKey($id) : null;
 
             return is_array($row) && !empty($row['s_name'])
                 ? sprintf('%s (#%d)', $row['s_name'], $id)
@@ -67,7 +68,7 @@ final class CategoryJobs
         }
 
         if (self::countItems($ids) <= self::INLINE_LIMIT) {
-            return Category::newInstance()->deleteByPrimaryKey($categoryId) === false ? 'failed' : 'done';
+            return Category::getInstance()->deleteByPrimaryKey($categoryId) === false ? 'failed' : 'done';
         }
 
         // Take the tree out of the public site now. The listings are still there until
@@ -129,7 +130,7 @@ final class CategoryJobs
 
         // One batch or fewer left, so the ordinary path is bounded now, and it keeps every hook,
         // cascade and cache flush in one place.
-        if (Category::newInstance()->deleteByPrimaryKey($categoryId) === false) {
+        if (Category::getInstance()->deleteByPrimaryKey($categoryId) === false) {
             throw new \RuntimeException('Could not delete category ' . $categoryId);
         }
     }
@@ -143,7 +144,7 @@ final class CategoryJobs
      */
     public static function treeIds(int $categoryId): array
     {
-        $category = Category::newInstance()->findByPrimaryKey($categoryId);
+        $category = Category::getInstance()->findByPrimaryKey($categoryId);
         if ($category === false || $category === null) {
             return array();
         }
@@ -155,7 +156,7 @@ final class CategoryJobs
             $id    = (int) array_pop($stack);
             $ids[] = $id;
 
-            foreach (Category::newInstance()->findSubcategories($id) as $child) {
+            foreach (Category::getInstance()->findSubcategories($id) as $child) {
                 $stack[] = (int) $child['pk_i_id'];
             }
         }
@@ -178,9 +179,7 @@ final class CategoryJobs
         }
 
         try {
-            return osc_db_table(DB_TABLE_PREFIX . 't_item')
-                ->whereIn('fk_i_category_id', $ids)
-                ->count();
+            return ListingStore::countInCategories($ids);
         } catch (DbException $e) {
             // Unknown size. Treat it as big: queuing a small category costs one cron
             // tick, while running a huge one inline is the failure this exists to stop.
@@ -200,12 +199,7 @@ final class CategoryJobs
     private static function deleteItemBatch(array $ids, int $limit): int
     {
         try {
-            $rows = osc_db_table(DB_TABLE_PREFIX . 't_item')
-                ->select('pk_i_id')
-                ->whereIn('fk_i_category_id', $ids)
-                ->orderBy('pk_i_id', 'ASC')
-                ->limit(max(1, $limit))
-                ->get();
+            $rows = ListingStore::idsInCategories($ids, max(1, $limit));
         } catch (DbException $e) {
             return 0;
         }
@@ -213,7 +207,7 @@ final class CategoryJobs
         $removed = 0;
         foreach ($rows as $row) {
             try {
-                Item::newInstance()->deleteByPrimaryKey((int) $row['pk_i_id']);
+                Item::getInstance()->deleteByPrimaryKey((int) $row['pk_i_id']);
                 $removed++;
             } catch (Throwable $e) {
                 // One unremovable listing must not stop the rest of the category. It is
@@ -240,9 +234,7 @@ final class CategoryJobs
     private static function disable(array $ids): void
     {
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_category')
-                ->whereIn('pk_i_id', $ids)
-                ->update(array('b_enabled' => 0));
+            \mindstellar\category\CategoryStore::disable($ids);
         } catch (DbException $e) {
             // Not fatal: the delete still runs, the tree is just visible until it does.
         }

@@ -43,7 +43,7 @@ class Picker
         $listId  = $id . '-list';
         $rows    = $opts['categories'] ?? null;
         if (!is_array($rows)) {
-            $rows = \Category::newInstance()->listEnabled();
+            $rows = \Category::getInstance()->listEnabled();
         }
         $options = self::categoryOptions($rows);
         $chosen  = $options[$value] ?? null;
@@ -246,7 +246,7 @@ class Picker
      *
      * @param array<int,array<string,mixed>> $rows Category rows carrying pk_i_id, fk_i_parent_id, s_name
      *
-     * @return array<string,array{name:string,parent:string,path:string,depth:int}>
+     * @return array<string,array{name:string,parent:string,path:string,depth:int,trail:array<int,string>}>
      */
     public static function categoryOptions(array $rows)
     {
@@ -275,6 +275,284 @@ class Picker
         $walk('0', array(), 0);
 
         return $options;
+    }
+
+    /**
+     * A category checkbox tree drawn as one card per main category. Body of
+     * osc_admin_tree_picker().
+     *
+     * The posted name (categories[]), the root id, the ul#cat<id> branches checkCat() ticks
+     * and the "Check all / Uncheck all" links are the ones the tree has always had, so
+     * screens and plugins that read or script it keep working.
+     *
+     * @param array<string,mixed> $opts
+     *
+     * @return void
+     */
+    public static function categoryChecks(array $opts)
+    {
+        $id       = (string)($opts['id'] ?? '');
+        $name     = (string)($opts['name'] ?? 'categories[]');
+        $selected = array_map('intval', (array)($opts['selected'] ?? array()));
+        $tree     = is_array($opts['categories'] ?? null) ? $opts['categories'] : array();
+
+        echo '<div class="form-row osc-catcards-row"'
+            . (!empty($opts['wrapper_id']) ? ' id="' . osc_esc_html((string)$opts['wrapper_id']) . '"' : '') . '>';
+        if (($opts['intro'] ?? '') !== '') {
+            echo '<div class="form-label" id="' . osc_esc_html($id . '-intro') . '">' . osc_esc_html((string)$opts['intro']) . '</div>';
+        }
+        echo '<div class="form-controls">';
+        echo '<div class="osc-catcards-bar">'
+            . '<span class="osc-catcards-summary" data-osc-catcards-summary="' . osc_esc_html($id) . '" aria-live="polite"></span>'
+            . '<span class="osc-catcards-actions">'
+            . '<button type="button" class="osc-catcards-action" data-tree-toggle="' . osc_esc_html($id) . '" data-tree-check="1">'
+            . osc_esc_html(__('Check all')) . '</button>'
+            . '<button type="button" class="osc-catcards-action" data-tree-toggle="' . osc_esc_html($id) . '" data-tree-check="0">'
+            . osc_esc_html(__('Uncheck all')) . '</button>'
+            . '</span></div>';
+        echo '<ul id="' . osc_esc_html($id) . '" class="osc-catcards" data-osc-catcards="checks"'
+            . (($opts['intro'] ?? '') !== '' ? ' aria-labelledby="' . osc_esc_html($id . '-intro') . '"' : '')
+            . ' data-toggle-label="' . osc_esc_html(__('Subcategories of %s')) . '"'
+            . ' data-label-count="' . osc_esc_html(__('%1$s of %2$s selected')) . '"'
+            . ' data-label-selected="' . osc_esc_html(__('%s selected')) . '">';
+        self::categoryCheckItems($tree, $id, $name, $selected, 0);
+        echo '</ul>';
+        if ($tree === array()) {
+            echo '<p class="osc-catcards-intro">' . osc_esc_html(__('There are no categories yet.')) . '</p>';
+        }
+        echo '</div></div>';
+    }
+
+    /**
+     * One level of categoryChecks(): a checkbox and its label per category, and the
+     * category's children in a ul#cat<id> below it.
+     *
+     * @param array<int,array<string,mixed>> $nodes
+     * @param string                         $id
+     * @param string                         $name
+     * @param int[]                          $selected
+     * @param int                            $depth
+     *
+     * @return void
+     */
+    private static function categoryCheckItems(array $nodes, $id, $name, array $selected, $depth)
+    {
+        foreach ($nodes as $node) {
+            $catId    = (int)$node['pk_i_id'];
+            $children = self::childrenOf($node);
+            $boxId    = $id . '-cat-' . $catId;
+
+            echo '<li' . ($depth === 0 ? ' class="osc-catcard"' : '') . '>'
+                . '<input type="checkbox" id="' . osc_esc_html($boxId) . '" name="' . osc_esc_html($name) . '"'
+                . ' value="' . $catId . '" onclick="checkCat(\'' . $catId . '\', this.checked);"'
+                . (in_array($catId, $selected, true) ? ' checked' : '') . ' />'
+                . '<label for="' . osc_esc_html($boxId) . '">' . osc_esc_html((string)($node['s_name'] ?? '')) . '</label>';
+            if ($depth === 0 && $children !== array()) {
+                echo '<span class="osc-catcard-meta" data-osc-catcard-meta>' . osc_esc_html(self::subcategoryCount($children)) . '</span>';
+            }
+            if ($children !== array()) {
+                echo '<ul id="cat' . $catId . '">';
+                self::categoryCheckItems($children, $id, $name, $selected, $depth + 1);
+                echo '</ul>';
+            }
+            echo '</li>';
+        }
+    }
+
+    /**
+     * A mode per category, drawn like categoryChecks(): a switch on each main category and
+     * a select on each subcategory, which follows its parent until it is set apart. Body of
+     * the category_modes settings field.
+     *
+     * Posts $name[<category id>] = mode; an empty value means "off" on a main category and
+     * "same as parent" on a subcategory.
+     *
+     * @param array<string,mixed> $opts 'id', 'name', 'modes' (value => label), 'value' (the
+     *                                  stored JSON or an id => mode array), 'categories'
+     *                                  (defaults to the whole tree)
+     *
+     * @return void
+     */
+    public static function categoryModes(array $opts)
+    {
+        $id    = (string)($opts['id'] ?? '');
+        $name  = (string)($opts['name'] ?? '');
+        $modes = array_map('strval', (array)($opts['modes'] ?? array()));
+        $saved = \mindstellar\category\CategoryModes::parse($opts['value'] ?? array());
+        $tree  = $opts['categories'] ?? \Category::getInstance()->toTree(true);
+
+        if (!is_array($tree) || $tree === array()) {
+            echo '<p class="osc-catcards-intro">' . osc_esc_html(__('There are no categories yet.')) . '</p>';
+
+            return;
+        }
+
+        // No summary line: each card already shows its own mode.
+        echo '<ul id="' . osc_esc_html($id) . '" class="osc-catcards" data-osc-catcards="modes"'
+            . ' data-toggle-label="' . osc_esc_html(__('Subcategories of %s')) . '"'
+            . ' data-label-apart="' . osc_esc_html(__('%s set differently')) . '"'
+            . ' data-label-inherit="' . osc_esc_html(__('Same as parent (%s)')) . '">';
+
+        $off = array('' => __('Off')) + $modes;
+        foreach ($tree as $node) {
+            $catId    = (int)$node['pk_i_id'];
+            $children = self::childrenOf($node);
+            $current  = isset($modes[$saved[$catId] ?? '']) ? $saved[$catId] : '';
+            $labelId  = $id . '-cat-' . $catId;
+            $setApart = $children !== array() ? self::countSetApart($children, $saved) : 0;
+
+            echo '<li class="osc-catcard"' . ($setApart > 0 ? ' data-osc-tree-open' : '') . '>'
+                . '<span class="osc-catcard-name" id="' . osc_esc_html($labelId) . '">'
+                . osc_esc_html((string)($node['s_name'] ?? '')) . '</span>';
+            if ($children !== array()) {
+                $count = self::subcategoryCount($children);
+                echo '<span class="osc-catcard-meta" data-osc-catcard-meta data-base="' . osc_esc_html($count) . '">'
+                    . osc_esc_html($count . ($setApart > 0 ? ' · ' . sprintf(__('%s set differently'), $setApart) : ''))
+                    . '</span>';
+            }
+            self::segmented($labelId, $name . '[' . $catId . ']', $off, $current, 'osc-segmented');
+            if ($children !== array()) {
+                echo '<ul class="osc-catmatrix" role="presentation">'
+                    . '<li class="osc-catmatrix-head" aria-hidden="true"><span></span>';
+                foreach (self::subChoices($modes) as $value => $label) {
+                    echo '<span' . ($value === '' ? ' data-osc-catmatrix-same' : '') . '>' . osc_esc_html((string)$label) . '</span>';
+                }
+                echo '</li>';
+                self::categoryModeItems($children, $id, $name, $modes, $saved);
+                echo '</ul>';
+            }
+            echo '</li>';
+        }
+        echo '</ul>';
+    }
+
+    /**
+     * The subcategory rows of categoryModes(), nested like the tree.
+     *
+     * @param array<int,array<string,mixed>> $nodes
+     * @param string                         $id
+     * @param string                         $name
+     * @param array<string,string>           $modes
+     * @param array<int,string>              $saved
+     *
+     * @return void
+     */
+    private static function categoryModeItems(array $nodes, $id, $name, array $modes, array $saved, $depth = 0)
+    {
+        foreach ($nodes as $node) {
+            $catId    = (int)$node['pk_i_id'];
+            $children = self::childrenOf($node);
+            $labelId  = $id . '-cat-' . $catId;
+            $choices  = self::subChoices($modes);
+            // A saved mode no longer offered reads as following the parent, as it saves.
+            $current  = isset($choices[$saved[$catId] ?? '']) ? $saved[$catId] : '';
+
+            echo '<li class="osc-catmatrix-row" role="radiogroup" data-depth="' . (int)$depth . '" aria-labelledby="' . osc_esc_html($labelId) . '">'
+                . '<span class="osc-catcard-subname" id="' . osc_esc_html($labelId) . '">'
+                . osc_esc_html((string)($node['s_name'] ?? '')) . '</span>';
+            foreach ($choices as $value => $label) {
+                echo '<label class="osc-catmatrix-cell"><input type="radio" name="' . osc_esc_html($name . '[' . $catId . ']') . '"'
+                    . ' value="' . osc_esc_html((string)$value) . '"' . ((string)$value === (string)$current ? ' checked' : '') . ' />'
+                    . '<span class="osc-catmatrix-label">' . osc_esc_html((string)$label) . '</span></label>';
+            }
+            echo '</li>';
+            if ($children !== array()) {
+                self::categoryModeItems($children, $id, $name, $modes, $saved, $depth + 1);
+            }
+        }
+    }
+
+    /**
+     * A subcategory's choices: follow the parent, off, or one of the modes.
+     *
+     * @param array<string,string> $modes
+     *
+     * @return array<string,string>
+     */
+    private static function subChoices(array $modes)
+    {
+        return array('' => __('Same as parent'), \mindstellar\category\CategoryModes::OFF => __('Off')) + $modes;
+    }
+
+    /**
+     * One radio switch, labelled by the element with id $labelId.
+     *
+     * @param string               $labelId
+     * @param string               $name
+     * @param array<string,string> $choices value => label
+     * @param string               $current
+     * @param string               $class
+     *
+     * @return void
+     */
+    private static function segmented($labelId, $name, array $choices, $current, $class)
+    {
+        echo '<fieldset class="' . osc_esc_html($class) . '" aria-labelledby="' . osc_esc_html($labelId) . '">';
+        $i = 0;
+        foreach ($choices as $value => $label) {
+            $optId = $labelId . '-' . $i++;
+            echo '<input type="radio" id="' . osc_esc_html($optId) . '" name="' . osc_esc_html($name) . '"'
+                . ' value="' . osc_esc_html((string)$value) . '"' . ((string)$value === (string)$current ? ' checked' : '') . ' />'
+                . '<label for="' . osc_esc_html($optId) . '">' . osc_esc_html((string)$label) . '</label>';
+        }
+        echo '</fieldset>';
+    }
+
+    /**
+     * A tree node's children.
+     *
+     * @param array<string,mixed> $node
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function childrenOf(array $node)
+    {
+        return !empty($node['categories']) && is_array($node['categories']) ? $node['categories'] : array();
+    }
+
+    /**
+     * Every category id at every level under these nodes.
+     *
+     * @param array<int,array<string,mixed>> $nodes
+     *
+     * @return int[]
+     */
+    private static function descendantIds(array $nodes)
+    {
+        $ids = array();
+        foreach ($nodes as $node) {
+            $ids[] = (int)$node['pk_i_id'];
+            $ids   = array_merge($ids, self::descendantIds(self::childrenOf($node)));
+        }
+
+        return $ids;
+    }
+
+    /**
+     * "N subcategories", counting every level below a main category.
+     *
+     * @param array<int,array<string,mixed>> $children
+     *
+     * @return string
+     */
+    private static function subcategoryCount(array $children)
+    {
+        $count = count(self::descendantIds($children));
+
+        return sprintf(_n('%d subcategory', '%d subcategories', $count), $count);
+    }
+
+    /**
+     * How many categories under these nodes have a mode of their own.
+     *
+     * @param array<int,array<string,mixed>> $nodes
+     * @param array<int,string>              $saved
+     *
+     * @return int
+     */
+    private static function countSetApart(array $nodes, array $saved)
+    {
+        return count(array_intersect_key(array_flip(self::descendantIds($nodes)), $saved));
     }
 
     /**

@@ -35,7 +35,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_widget');
 $table = DB_TABLE_PREFIX . 't_widget';
 
-$model = Widget::newInstance();
+$model = Widget::getInstance();
 
 $rowCount = static function () use ($admin, $table): int {
     return (int) $admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];
@@ -140,6 +140,19 @@ $sidebarOne = seed_widget($admin, 'sidebar', 'Sidebar widget', '<p>s</p>', 0);
 
 pin('the other location still has exactly one widget', 1, count($model->findByLocation('sidebar')));
 pin('the header location is unaffected by the other location\'s widget', 3, count($model->findByLocation('header')));
+
+harness_section('Widget::findByLocation — one query for every location');
+
+\mindstellar\cache\CacheGroup::invalidate('widget');
+pin(
+    'reading three locations costs one statement',
+    1,
+    harness_query_count(static function () use ($model): void {
+        $model->findByLocation('header');
+        $model->findByLocation('sidebar');
+        $model->findByLocation('footer');
+    })
+);
 
 harness_section('Widget::findByLocation — no match');
 

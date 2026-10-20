@@ -37,7 +37,7 @@ function osc_admin_render_theme_url($file = '')
  */
 function osc_add_theme_support(string $feature, $args = true): void
 {
-    \mindstellar\theme\ThemeSupports::instance()->add($feature, $args);
+    \mindstellar\theme\ThemeSupports::getInstance()->add($feature, $args);
 }
 
 /**
@@ -51,7 +51,7 @@ function osc_add_theme_support(string $feature, $args = true): void
  */
 function osc_theme_supports(string $feature)
 {
-    return \mindstellar\theme\ThemeSupports::instance()->get($feature);
+    return \mindstellar\theme\ThemeSupports::getInstance()->get($feature);
 }
 
 /**
@@ -63,7 +63,7 @@ function osc_theme_supports(string $feature)
  */
 function osc_remove_theme_support(string $feature): void
 {
-    \mindstellar\theme\ThemeSupports::instance()->remove($feature);
+    \mindstellar\theme\ThemeSupports::getInstance()->remove($feature);
 }
 
 /**
@@ -101,7 +101,7 @@ function osc_theme_template_paths(): array
 {
     static $cache = array();
 
-    $themes = WebThemes::newInstance();
+    $themes = WebThemes::getInstance();
     $active = $themes->getCurrentThemePath();
     $key    = (string) $themes->getCurrentTheme();
 
@@ -229,7 +229,7 @@ function osc_locate_template($candidates, string $context = ''): string
  */
 function osc_theme_chrome(): ?array
 {
-    $themes = WebThemes::newInstance();
+    $themes = WebThemes::getInstance();
     $bases  = array($themes->getCurrentThemePath());
 
     // A declared parent theme is part of the active theme's own identity, so a
@@ -402,7 +402,7 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
     require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 
     if ($themeView !== '') {
-        $themes = WebThemes::newInstance();
+        $themes = WebThemes::getInstance();
         if (file_exists($themes->getCurrentThemePath() . $themeView)) {
             require $themes->getCurrentThemePath() . $themeView;
 
@@ -492,7 +492,7 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
  */
 function osc_gui_custom_heading(): string
 {
-    $title = trim((string) Rewrite::newInstance()->get_title());
+    $title = trim((string) Rewrite::getInstance()->get_title());
 
     return ($title === '' || $title === 'Custom') ? _m('Your account') : $title;
 }
@@ -537,12 +537,12 @@ function osc_gui_account_view(string $themeView): bool
         'user-forgot_password.php' => array('heading' => _m('Choose a new password')),
         'user-public-profile.php'  => array('heading' => (string) osc_user_name()),
         'user-custom.php'          => array('heading' => osc_gui_custom_heading()),
+        'user-api_access.php'      => array('heading' => _m('API access')),
         'user-delete_account.php'  => array(
             'heading' => _m('Delete your account'),
             'tone'    => 'danger',
-            'intro'   => _m('This page has not deleted the account yet. Enter your password and click '
-                            . 'Delete my account. Your listings and messages will be removed. This '
-                            . 'cannot be undone.'),
+            'intro'   => _m('Your account is not deleted yet. Enter your password and click Delete my '
+                            . 'account. Your listings and messages will be removed. This cannot be undone.'),
         ),
     );
 
@@ -794,6 +794,10 @@ function osc_head(): void
         echo '<link rel="alternate" type="application/rss+xml" title="'
             . osc_esc_html(osc_page_title()) . '" href="' . osc_esc_html((string) $feed) . '">' . PHP_EOL;
     }
+    if ($want('api')) {
+        // The REST API address and this page's token, for the site's own JavaScript.
+        echo osc_api_session_meta();
+    }
 
     // Enqueued styles and scripts, robots meta, and everything plugins add.
     osc_run_hook('header');
@@ -840,7 +844,7 @@ function osc_head_hook_guard(): void
  */
 function osc_register_render_target(string $id, string $path): void
 {
-    \mindstellar\theme\RenderTargetRegistry::instance()->register($id, $path);
+    \mindstellar\theme\RenderTargetRegistry::getInstance()->register($id, $path);
 }
 
 /**
@@ -852,7 +856,7 @@ function osc_register_render_target(string $id, string $path): void
  */
 function osc_render_target(string $id): ?string
 {
-    return \mindstellar\theme\RenderTargetRegistry::instance()->get($id);
+    return \mindstellar\theme\RenderTargetRegistry::getInstance()->get($id);
 }
 
 /**
@@ -868,14 +872,12 @@ function osc_render_file($file = '')
     if ($file == '') {
         $file = __get('file');
     }
-    // Clean $file to prevent hacking of some
-    osc_sanitize_url($file);
     $file = str_replace(array(
                             "..\\",
                             '../'
                         ), '', str_replace('://', '', preg_replace('|http([s]*)|', '', $file)));
 
-    $target = \mindstellar\theme\RenderTargetRegistry::instance()->get($file);
+    $target = \mindstellar\theme\RenderTargetRegistry::getInstance()->get($file);
     if ($target !== null) {
         include $target;
 
@@ -899,7 +901,6 @@ function osc_render_file($file = '')
  */
 function osc_render_file_url($file = '')
 {
-    osc_sanitize_url($file);
     $file = str_replace(array(
                             "..\\",
                             '../'
@@ -917,10 +918,10 @@ function osc_render_file_url($file = '')
  */
 function osc_resend_flash_messages($section = 'pubMessages')
 {
-    $messages = Session::newInstance()->_getMessage($section);
+    $messages = Session::getInstance()->_getMessage($section);
     if (is_array($messages)) {
         foreach ($messages as $message) {
-            $message = Session::newInstance()->_getMessage($section);
+            $message = Session::getInstance()->_getMessage($section);
             if (isset($message['msg'])) {
                 if (isset($message['type']) && $message['type'] === 'info') {
                     osc_add_flash_info_message($message['msg'], $section);
@@ -943,7 +944,7 @@ function osc_resend_flash_messages($section = 'pubMessages')
  */
 function osc_enqueue_script($id)
 {
-    Scripts::newInstance()->enqueueScript($id);
+    Scripts::getInstance()->enqueueScript($id);
 }
 
 /**
@@ -970,7 +971,7 @@ function osc_enqueue_script_code($code, $dependencies = null, $id = null)
  */
 function osc_remove_script($id)
 {
-    Scripts::newInstance()->removeScript($id);
+    Scripts::getInstance()->removeScript($id);
 }
 
 /**
@@ -984,7 +985,7 @@ function osc_remove_script($id)
  */
 function osc_register_script($id, $url, $dependencies = null)
 {
-    Scripts::newInstance()->registerScript($id, $url, $dependencies);
+    Scripts::getInstance()->registerScript($id, $url, $dependencies);
 }
 
 /**
@@ -996,7 +997,7 @@ function osc_register_script($id, $url, $dependencies = null)
  */
 function osc_unregister_script($id)
 {
-    Scripts::newInstance()->unregisterScript($id);
+    Scripts::getInstance()->unregisterScript($id);
 }
 
 /**
@@ -1006,7 +1007,7 @@ function osc_unregister_script($id)
  */
 function osc_load_scripts()
 {
-    Scripts::newInstance()->printScripts();
+    Scripts::getInstance()->printScripts();
     if (defined('OC_ADMIN') && OC_ADMIN) {
         osc_run_hook('admin_scripts_loaded');
     } else {
@@ -1025,7 +1026,7 @@ function osc_load_scripts()
  */
 function osc_register_style($id, $url, $dependencies = null)
 {
-    Styles::newInstance()->register($id, $url, $dependencies);
+    Styles::getInstance()->register($id, $url, $dependencies);
 }
 
 /**
@@ -1037,7 +1038,7 @@ function osc_register_style($id, $url, $dependencies = null)
  */
 function osc_unregister_style($id)
 {
-    Styles::newInstance()->unregister($id);
+    Styles::getInstance()->unregister($id);
 }
 
 /**
@@ -1052,9 +1053,9 @@ function osc_unregister_style($id)
 function osc_enqueue_style($id, $url = null)
 {
     if ($url === null) {
-        Styles::newInstance()->enqueue($id);
+        Styles::getInstance()->enqueue($id);
     } else {
-        Styles::newInstance()->addStyle($id, $url);
+        Styles::getInstance()->addStyle($id, $url);
     }
 }
 
@@ -1067,7 +1068,7 @@ function osc_enqueue_style($id, $url = null)
  */
 function osc_remove_style($id)
 {
-    Styles::newInstance()->removeStyle($id);
+    Styles::getInstance()->removeStyle($id);
 }
 
 /**
@@ -1077,7 +1078,7 @@ function osc_remove_style($id)
  */
 function osc_load_styles()
 {
-    Styles::newInstance()->printStyles();
+    Styles::getInstance()->printStyles();
 }
 
 /**

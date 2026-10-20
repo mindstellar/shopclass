@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Admin table
  *
@@ -20,13 +22,7 @@
  */
 class Admin extends DAO
 {
-    /**
-     * It references to self object: Admin.
-     * It is used as a singleton
-     *
-     * @var Admin
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * array for save currencies
@@ -49,41 +45,29 @@ class Admin extends DAO
         // SHOW COLUMNS cannot go through the query builder (it is not a
         // SELECT/INSERT/UPDATE/DELETE statement). $this->getTableName() is fixed
         // by setTableName() immediately above and is never runtime input.
+        // Columns added by upgrades are read only once they exist, so an admin can still sign
+        // in to run the upgrade that adds them.
         try {
-            $columns = osc_db_select(
-                'SHOW COLUMNS FROM ' . $this->getTableName() . ' where Field = "b_moderator" '
+            $columns = Db::select(
+                'SHOW COLUMNS FROM ' . $this->getTableName() . ' WHERE Field IN ("b_moderator", "i_auth_stamp")'
             );
         } catch (\mindstellar\database\DbException $e) {
             throw new mysqli_sql_exception($e->getMessage(), (int)$e->getCode(), $e);
         }
 
-        if (count($columns) > 0) {
-            $this->setFields(array(
-                'pk_i_id',
-                's_name',
-                's_username',
-                's_password',
-                's_email',
-                's_secret',
-                'b_moderator'
-            ));
-        } else {
-            $this->setFields(array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret'));
+        $fields = array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret');
+        foreach ($columns as $column) {
+            $fields[] = (string)$column['Field'];
         }
+        $this->setFields($fields);
     }
 
     /**
-     * Return the shared Admin model instance, creating it on first use.
-     *
-     * @return \Admin
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -118,7 +102,7 @@ class Admin extends DAO
     public function findByEmail($email)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('s_email', $email)->first();
+            $row = Db::table($this->getTableName())->where('s_email', $email)->first();
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -127,7 +111,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -160,7 +144,7 @@ class Admin extends DAO
     public function findByUsername($username)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('s_username', $username)->first();
+            $row = Db::table($this->getTableName())->where('s_username', $username)->first();
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -169,7 +153,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -184,7 +168,7 @@ class Admin extends DAO
     public function findByIdSecret($id, $secret)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->where('s_secret', $secret)
                 ->first();
@@ -196,7 +180,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -211,7 +195,7 @@ class Admin extends DAO
     public function findByIdPassword($id, $password)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->where('s_password', $password)
                 ->first();
@@ -223,7 +207,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -236,21 +220,7 @@ class Admin extends DAO
      */
     public function deleteBatch($id)
     {
-        $ids = is_array($id) ? array_values($id) : array($id);
-
-        // Deleting with an empty id list reports false, not 0. QueryBuilder's
-        // whereIn() turns an empty array into a harmless `1 = 0` and would run a
-        // no-op delete returning int 0; callers test this result loosely, so
-        // return the false they expect rather than a value that differs in kind.
-        if ($ids === array()) {
-            return false;
-        }
-
-        try {
-            return osc_db_table($this->getTableName())->whereIn('pk_i_id', $ids)->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
-        }
+        return \mindstellar\auth\AdminStore::delete(is_array($id) ? $id : array($id));
     }
 }
 

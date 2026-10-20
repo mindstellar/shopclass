@@ -41,10 +41,10 @@ function osc_locale_field($field, $locale = '')
 function osc_locale()
 {
     $locale = null;
-    if (View::newInstance()->_exists('locales')) {
-        $locale = View::newInstance()->_current('locales');
-    } elseif (View::newInstance()->_exists('locale')) {
-        $locale = View::newInstance()->_get('locale');
+    if (View::getInstance()->_exists('locales')) {
+        $locale = View::getInstance()->_current('locales');
+    } elseif (View::getInstance()->_exists('locale')) {
+        $locale = View::getInstance()->_get('locale');
     }
 
     return $locale;
@@ -57,11 +57,11 @@ function osc_locale()
  */
 function osc_get_locales()
 {
-    if (!View::newInstance()->_exists('locales')) {
-        $locale = OSCLocale::newInstance()->listAllEnabled();
-        View::newInstance()->_exportVariableToView('locales', $locale);
+    if (!View::getInstance()->_exists('locales')) {
+        $locale = OSCLocale::getInstance()->listAllEnabled();
+        View::getInstance()->_exportVariableToView('locales', $locale);
     } else {
-        $locale = View::newInstance()->_get('locales');
+        $locale = View::getInstance()->_get('locales');
     }
 
     return $locale;
@@ -74,7 +74,7 @@ function osc_get_locales()
  */
 function osc_priv_count_locales()
 {
-    return View::newInstance()->_count('locales');
+    return View::getInstance()->_count('locales');
 }
 
 /**
@@ -84,7 +84,7 @@ function osc_priv_count_locales()
  */
 function osc_goto_first_locale()
 {
-    View::newInstance()->_reset('locales');
+    View::getInstance()->_reset('locales');
 }
 
 /**
@@ -108,7 +108,7 @@ function osc_has_web_enabled_locales()
 {
     osc_get_locales();
 
-    return View::newInstance()->_next('locales');
+    return View::getInstance()->_next('locales');
 }
 
 /**
@@ -132,23 +132,32 @@ function osc_locale_name()
 }
 
 /**
+ * The visitor's language row, or the first enabled language when theirs is not listed.
+ *
+ * @return array<string,mixed>
+ * @internal
+ */
+function _osc_user_locale_row(): array
+{
+    $locales = osc_get_locales();
+    $code    = osc_current_user_locale();
+    foreach ($locales as $locale) {
+        if ($locale['pk_c_code'] === $code) {
+            return $locale;
+        }
+    }
+
+    return $locales[0];
+}
+
+/**
  * Gets current locale's currency format
  *
  * @return string
  */
 function osc_locale_currency_format()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] == osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_currency_format'];
+    return _osc_user_locale_row()['s_currency_format'];
 }
 
 /**
@@ -158,17 +167,7 @@ function osc_locale_currency_format()
  */
 function osc_locale_dec_point()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] == osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_dec_point'];
+    return _osc_user_locale_row()['s_dec_point'];
 }
 
 /**
@@ -178,17 +177,7 @@ function osc_locale_dec_point()
  */
 function osc_locale_thousands_sep()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] === osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_thousands_sep'];
+    return _osc_user_locale_row()['s_thousands_sep'];
 }
 
 /**
@@ -198,17 +187,7 @@ function osc_locale_thousands_sep()
  */
 function osc_locale_text_direction()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] === osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['s_direction'];
+    return _osc_user_locale_row()['s_direction'];
 }
 
 /**
@@ -218,17 +197,7 @@ function osc_locale_text_direction()
  */
 function osc_locale_num_dec()
 {
-    $aLocales = osc_get_locales();
-    $cLocale  = $aLocales[0];
-
-    foreach ($aLocales as $locale) {
-        if ($locale['pk_c_code'] == osc_current_user_locale()) {
-            $cLocale = $locale;
-            break;
-        }
-    }
-
-    return $cLocale['i_num_dec'];
+    return _osc_user_locale_row()['i_num_dec'];
 }
 /**
  * Gets list of enabled admin locales
@@ -238,11 +207,11 @@ function osc_locale_num_dec()
  */
 function osc_get_admin_locales()
 {
-    if (!View::newInstance()->_exists('adminLocales')) {
-        $locale = OSCLocale::newInstance()->listAllEnabled(true);
-        View::newInstance()->_exportVariableToView('adminLocales', $locale);
+    if (!View::getInstance()->_exists('adminLocales')) {
+        $locale = OSCLocale::getInstance()->listAllEnabled(true);
+        View::getInstance()->_exportVariableToView('adminLocales', $locale);
     } else {
-        $locale = View::newInstance()->_get('adminLocales');
+        $locale = View::getInstance()->_get('adminLocales');
     }
 
     return $locale;
@@ -257,7 +226,7 @@ function osc_get_admin_locales()
  */
 function osc_all_enabled_locales_for_admin($indexed_by_pk = false)
 {
-    return OSCLocale::newInstance()->listAllEnabled(true, $indexed_by_pk);
+    return OSCLocale::getInstance()->listAllEnabled(true, $indexed_by_pk);
 }
 
 /**
@@ -267,8 +236,8 @@ function osc_all_enabled_locales_for_admin($indexed_by_pk = false)
  */
 function osc_get_current_user_locale()
 {
-    $locale = OSCLocale::newInstance()->findByPrimaryKey(osc_current_user_locale());
-    View::newInstance()->_exportVariableToView('locale', $locale);
+    $locale = OSCLocale::getInstance()->findByPrimaryKey(osc_current_user_locale());
+    View::getInstance()->_exportVariableToView('locale', $locale);
 
     return $locale;
 }
@@ -298,7 +267,7 @@ function osc_current_user_locale()
     // Backward-compat during upgrade: honour a locale left in an already-active
     // session. Read-only — Session::_get() resumes a session only when its cookie is
     // already present, so this never starts one for an anonymous visitor.
-    $sessionLocale = Session::newInstance()->_get('userLocale');
+    $sessionLocale = Session::getInstance()->_get('userLocale');
     if ($sessionLocale !== ''
         && (new \mindstellar\utility\Validate())->localeCode($sessionLocale)
     ) {
@@ -331,21 +300,7 @@ function osc_set_current_user_locale($locale)
         return;
     }
 
-    $options = array(
-        'expires'  => time() + 86400,
-        'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    );
-    if (osc_is_ssl()) {
-        $options['secure'] = true;
-    }
-    if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-        $options['domain'] = COOKIE_DOMAIN;
-    }
-    if (!headers_sent()) {
-        setcookie('oc_userLocale', $locale, $options);
-    }
+    Cookie::write('oc_userLocale', $locale, time() + 86400);
     // Reflect the choice within the current request too — an item/page rendered right
     // after a ?lang= switch reads it back through osc_current_user_locale().
     $_COOKIE['oc_userLocale'] = $locale;
@@ -361,8 +316,8 @@ function osc_set_current_user_locale($locale)
  */
 function osc_current_admin_locale()
 {
-    if (Session::newInstance()->_get('adminLocale') != '') {
-        return Session::newInstance()->_get('adminLocale');
+    if (Session::getInstance()->_get('adminLocale') != '') {
+        return Session::getInstance()->_get('adminLocale');
     }
 
     return osc_admin_language();

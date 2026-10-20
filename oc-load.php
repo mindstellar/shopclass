@@ -11,40 +11,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\Csrf;
-use mindstellar\logger\OsclassErrors;
+use mindstellar\boot\Boot;
+use mindstellar\logger\ErrorHandler;
+use mindstellar\security\AdminIpAllowlist;
+use mindstellar\security\Csrf;
 
+// Stage 1, config: paths and the settings from config.php or the environment.
 if (!defined('ABS_PATH')) {
     define('ABS_PATH', __DIR__ . '/');
 }
-
-define('LIB_PATH', ABS_PATH . 'oc-includes/');
+if (!defined('LIB_PATH')) {
+    define('LIB_PATH', ABS_PATH . 'oc-includes/');
+}
 
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
-// Load configuration from config.php when present, otherwise from environment
-// variables (config.php is optional — Shopclass can run entirely from env).
+// config.php is optional: Shopclass can run entirely from environment variables.
 require_once LIB_PATH . 'osclass/config-loader.php';
 
 if (!osc_is_configured()) {
-    osc_die(
+    _osc_die_not_ready(
         'Shopclass isn\'t set up yet',
         'There\'s no <code>config.php</code> file and no database settings in the environment yet. '
         . 'Run the installer to get started.',
-        array(
-            'tone'    => 'info',
-            'status'  => 503,
-            'actions' => array(
-                array(
-                    'label'   => 'Run the installer',
-                    'href'    => osc_get_absolute_url() . 'oc-includes/osclass/install.php',
-                    'primary' => true,
-                ),
-                array(
-                    'label' => 'Need help?',
-                    'href'  => 'https://github.com/mindstellar/shopclass/discussions',
-                ),
-            ),
-        )
+        true
     );
 }
 
@@ -54,75 +43,26 @@ if (PHP_SAPI === 'cli' && !defined('WEB_PATH')) {
     exit(1);
 }
 
-// load default constants
 require_once LIB_PATH . 'osclass/default-constants.php';
 
-//Load Autoloader
+// Stage 2, autoload: stop here when the code is not built or the database is not installed.
+if (!is_file(LIB_PATH . 'vendor/autoload.php')) {
+    osc_die('Shopclass is not built yet', 'Run composer install and npm run build, or install from a release zip.', ['tone' => 'info', 'status' => 503]);
+}
 require_once LIB_PATH . 'vendor/autoload.php';
-//Register error handler
-OsclassErrors::newInstance()->register();
-require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
-require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
-require_once LIB_PATH . 'osclass/helpers/hPreference.php';
-require_once LIB_PATH . 'osclass/helpers/hMaintenance.php';
-// check if Shopclass is installed
-if (!Preference::newInstance()->get('osclass_installed')) {
-    osc_die(
+ErrorHandler::getInstance()->register();
+if (!Preference::getInstance()->get('osclass_installed')) {
+    _osc_die_not_ready(
         'Shopclass isn\'t installed yet',
-        'Your settings are in place, but the database hasn\'t been set up yet. Run the installer to finish.',
-        array(
-            'tone'    => 'info',
-            'status'  => 503,
-            'actions' => array(
-                array(
-                    'label'   => 'Run the installer',
-                    'href'    => osc_get_absolute_url() . 'oc-includes/osclass/install.php',
-                    'primary' => true,
-                ),
-            ),
-        )
+        'Your settings are in place, but the database hasn\'t been set up yet. Run the installer to finish.'
     );
 }
-require_once LIB_PATH . 'osclass/helpers/hDefines.php';
-require_once LIB_PATH . 'osclass/helpers/hLocale.php';
-require_once LIB_PATH . 'osclass/helpers/hMessages.php';
-require_once LIB_PATH . 'osclass/helpers/hUsers.php';
-require_once LIB_PATH . 'osclass/helpers/hItems.php';
-require_once LIB_PATH . 'osclass/helpers/hSearch.php';
-require_once LIB_PATH . 'osclass/helpers/hUtils.php';
-require_once LIB_PATH . 'osclass/helpers/hCategories.php';
-require_once LIB_PATH . 'osclass/helpers/hTranslations.php';
-require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
-require_once LIB_PATH . 'osclass/helpers/hSanitize.php';
-require_once LIB_PATH . 'osclass/helpers/hValidate.php';
-require_once LIB_PATH . 'osclass/helpers/hPage.php';
-require_once LIB_PATH . 'osclass/helpers/hPagination.php';
-require_once LIB_PATH . 'osclass/helpers/hPremium.php';
-require_once LIB_PATH . 'osclass/helpers/hTheme.php';
-require_once LIB_PATH . 'osclass/helpers/hLocation.php';
-require_once LIB_PATH . 'osclass/utils.php';
-require_once LIB_PATH . 'osclass/formatting.php';
-require_once LIB_PATH . 'osclass/locales.php';
-require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
-require_once LIB_PATH . 'osclass/helpers/hJobs.php';
-require_once LIB_PATH . 'osclass/helpers/hStorage.php';
-require_once LIB_PATH . 'osclass/helpers/hResources.php';
-require_once LIB_PATH . 'osclass/emails.php';
-require_once LIB_PATH . 'osclass/alerts.php';
-require_once LIB_PATH . 'osclass/functions.php';
-require_once LIB_PATH . 'osclass/helpers/hAdminMenu.php';
-require_once LIB_PATH . 'osclass/helpers/hCache.php';
-require_once LIB_PATH . 'osclass/helpers/hHttpCache.php';
-require_once LIB_PATH . 'osclass/helpers/hViews.php';
-require_once LIB_PATH . 'osclass/helpers/hSitemap.php';
-require_once LIB_PATH . 'osclass/helpers/hSpam.php';
-require_once LIB_PATH . 'osclass/helpers/hWidgets.php';
-require_once LIB_PATH . 'osclass/helpers/hPageTemplates.php';
-require_once LIB_PATH . 'osclass/helpers/hFields.php';
-require_once LIB_PATH . 'osclass/helpers/hSettings.php';
-require_once LIB_PATH . 'osclass/helpers/hForms.php';
-require_once LIB_PATH . 'osclass/helpers/hBilling.php';
-require_once LIB_PATH . 'osclass/compatibility.php';
+
+// Stage 3, helpers: the osc_* functions listed in Boot::HELPERS, required here so they load in global scope.
+foreach (Boot::HELPERS as $oscHelper) {
+    require_once LIB_PATH . $oscHelper;
+}
+unset($oscHelper);
 
 if (!defined('OSC_CRYPT_KEY')) {
     define('OSC_CRYPT_KEY', osc_get_preference('crypt_key'));
@@ -130,63 +70,35 @@ if (!defined('OSC_CRYPT_KEY')) {
 
 osc_cache_init();
 
+// Stage 4, request: the request values, then the visitor's session.
 define('__OSC_LOADED__', true);
 Params::init();
-// Core owns Cache-Control on the front end (see hHttpCache.php). Silence PHP's session module so
-// it never injects its own no-store/no-cache headers when a session starts — those would fight the
-// app's public/private decision. Admin keeps PHP's default limiter: it is never cached, and its
-// implicit no-cache stays its safety net.
-if (!defined('OC_ADMIN') || OC_ADMIN !== true) {
-    session_cache_limiter('');
+// Before the session, so a refused admin request gets no cookie.
+if (defined('OC_ADMIN') && OC_ADMIN && PHP_SAPI !== 'cli') {
+    AdminIpAllowlist::guard();
 }
-Session::newInstance()->session_resume();
-// Consume flash messages left by the previous request from their signed cookie (and clear
-// it) before any output — so a page that only shows a flash never starts a session.
-Session::newInstance()->_loadFlashMessages();
-// Same for form-repopulation values, so a form that refills after a validation error does
-// not need a session either.
-Session::newInstance()->_loadFormData();
-// Resolve a cookie-authenticated front-end identity into the request scope so the
-// historical Session::_get('userId') readers work without a server session. No-op for
-// anonymous, cookieless visitors, so their requests stay session-free and cacheable.
-osc_run_web_user_identity();
+Boot::session();
 
 if (osc_timezone()) {
     date_default_timezone_set(osc_timezone());
 }
 
+// Stage 5, extensions: assets, plugins, themes, translations, CSRF and URL rules.
 Scripts::init();
 Styles::init();
 
-// register scripts
-osc_register_script('tiny_mce', osc_assets_url('tinymce/tinymce.min.js'));
-
-// Shared vanilla UI helpers (oscAutocomplete, …) — no jQuery. Used by the admin
-// (as a dependency of ui-osc.js) and by the public item form via osc_ui_common_header().
-osc_register_script('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.js')));
-osc_register_style('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.css')));
-
-// Vanilla image uploader for the item form (replaces the jQuery fine-uploader plugin).
-osc_register_script('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.js')));
-osc_register_style('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.css')));
-
-//Legacy js libraries
-osc_register_script('php-date', osc_assets_url('osclass-legacy/js/date.js'));
-
 Plugins::init();
 if (defined('OC_ADMIN') && OC_ADMIN) {
-    // init admin menu
-    AdminMenu::newInstance()->init();
-    $functions_path = AdminThemes::newInstance()->getCurrentThemePath() . 'functions.php';
+    AdminMenu::getInstance()->init();
+    $functions_path = AdminThemes::getInstance()->getCurrentThemePath() . 'functions.php';
     if (file_exists($functions_path)) {
         require_once $functions_path;
     }
+    // Admin only, and after the admin theme's functions.php: every function in it is
+    // function_exists()-guarded, so a theme's own copy wins and core fills the gaps.
+    require_once LIB_PATH . 'osclass/helpers/hAdminUi.php';
 }
-// Deliberately after the admin theme's functions.php, not up with the helpers above: every
-// function in here is function_exists()-guarded, so a theme shipping its own copy wins and
-// core only fills the gaps. Moving this line up inverts that.
-require_once LIB_PATH . 'osclass/helpers/hAdminUi.php';
 WebThemes::init();
 Translation::init();
 Csrf::init();
-Rewrite::newInstance()->init();
+Rewrite::getInstance()->init();

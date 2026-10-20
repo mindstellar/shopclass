@@ -178,6 +178,17 @@ This is what answers "who disabled that category" and "when did this setting
 change" on a site with more than one admin. It can be filtered, and cleared
 entirely.
 
+Two settings on that page control it:
+
+- **Record admin and listing activity** is on by default. Turn it off to stop
+  recording new entries.
+- **Keep entries for** is a number of days, 90 by default. The daily task deletes
+  older entries. Set it to 0 to keep them forever.
+
+A **paid after close** entry means a buyer paid for an order that had already
+failed. Mark the order paid in **Billing → Orders**, or refund the payment at the
+provider. See [paid listings](/docs/use/currencies-and-paid-listings/#what-buyers-see).
+
 Behind a reverse proxy (a server such as a CDN or load balancer sitting in
 front of yours), the logged IP is only meaningful if the real client IP is
 being passed through. See the
@@ -228,7 +239,7 @@ php oc-cli.php backup:restore 2026-09-29-140213-everything-k7f3q9abcdefghij.zip
 ## Cache
 
 **Tools → System info → Cache** shows which object-cache driver is running (in-request only
-by default, or APCu, Memcached or Memcache if installed), whether it keeps
+by default, or APCu, Memcached or Redis/Valkey if set up), whether it keeps
 data between requests, and stats such as entries, hit rate and memory use when
 the driver reports them. It warns when the driver config.php asks for is not
 installed, or does not answer.

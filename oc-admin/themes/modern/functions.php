@@ -47,6 +47,33 @@ function admin_js_lang_string()
 
 osc_add_hook('admin_header', 'admin_js_lang_string');
 
+/**
+ * Warn about an active plugin version that is known to break on this core.
+ *
+ * @return void
+ */
+function admin_broken_plugin_notice()
+{
+    foreach (Plugins::listEnabled() as $plugin) {
+        if (!is_file(osc_plugins_path() . $plugin)) {
+            continue;
+        }
+        $info   = Plugins::getInfo($plugin);
+        $needed = \mindstellar\market\Compatibility::brokenBelow(dirname($plugin), (string) ($info['version'] ?? ''));
+        if ($needed !== null) {
+            osc_add_flash_warning_message(sprintf(
+                __('%1$s %2$s does not fully work on this version of Shopclass. Update it to %3$s or newer.'),
+                (string) ($info['plugin_name'] ?? dirname($plugin)),
+                (string) $info['version'],
+                $needed
+            ), 'admin');
+        }
+    }
+}
+
+// Early, so the warning is queued before the page prints its flash messages.
+osc_add_hook('admin_page_header', 'admin_broken_plugin_notice', 1);
+
 // favicons
 /**
  * Emit the admin favicon and manifest <link> tags, after the `admin_favicons` filter.
@@ -146,13 +173,8 @@ function check_market_language_compatibility($slug, $language_version)
  */
 function check_market_compatibility($versions)
 {
-    $versions        = explode(',', $versions);
-    $current_version = OSCLASS_VERSION;
-
-    foreach ($versions as $_version) {
-        $result = version_compare2(OSCLASS_VERSION, $_version);
-
-        if ($result == 0 || $result == -1) {
+    foreach (explode(',', $versions) as $_version) {
+        if (version_compare(OSCLASS_VERSION, trim($_version), '<=')) {
             return true;
         }
     }
@@ -352,7 +374,7 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 osc_admin_checkbox(array_merge($spec, array(
                     'label'   => $label,
                     'value'   => '1',
-                    'checked' => !empty($val) && $val !== '0',
+                    'checked' => !empty($val),
                     'attrs'   => $disabled ? array('disabled' => true) : array(),
                 )));
                 break;

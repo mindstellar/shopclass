@@ -11,6 +11,9 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\auth\AdminStore;
+use mindstellar\database\Db;
+
 /**
  * The administrator account screen, declared once: its fields, the row of t_admin they
  * are, the rules that span more than one of them, and the route the form posts back to.
@@ -25,9 +28,9 @@ namespace mindstellar\admin\form;
  * Three of the controls are not columns. The confirmation box exists to be compared with
  * the new password, and the current-password box is the re-authentication this screen has
  * always required before an administrator is created or changed; both are declared with
- * 'persist' => false so core collects and validates them and writes neither. The new
- * password itself is declared with a persist callable, so the column takes the hash and a
- * blank box writes nothing at all. All three are write-only, so nothing about a stored
+ * 'persist' => false so core collects and validates them and writes neither. A new account's
+ * password is declared with a persist callable, so the column takes the hash; on an edit the
+ * screen stores a non-blank one itself, so the change signs the admin out everywhere. All three are write-only, so nothing about a stored
  * password is ever drawn into the page.
  *
  * @package mindstellar\admin\form
@@ -113,10 +116,10 @@ final class AdminAccountForm
         $form
             ->secret('s_password', __('New password'))
                 ->width('text')
-                // The column takes the hash, and a blank box takes nothing: on an edit that
-                // leaves the password exactly as it was, which is what the empty box has
-                // always meant here.
-                ->persist(static fn ($value) => $value === '' ? null : osc_hash_password($value))
+                // A new account's column takes the hash. On an edit the screen stores it through
+                // AdminPassword::set(), which also signs the admin out everywhere; a blank box
+                // leaves the password as it was.
+                ->persist($edit ? false : static fn ($value) => osc_hash_password($value))
                 // The stored form is a hash, which is not the thing this control shows.
                 ->writeOnly();
 
@@ -229,13 +232,9 @@ final class AdminAccountForm
             return array();
         }
 
-        // The builder is immutable: a clause that is not reassigned is dropped, and a
-        // dropped WHERE here would hand back the first administrator in the table.
-        $query = osc_db_table(DB_TABLE_PREFIX . self::TABLE);
-        $query = $query->where(self::PK, $id);
-        $row   = $query->first();
+        $row = AdminStore::find($id);
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**
@@ -279,9 +278,7 @@ final class AdminAccountForm
             if ($value === '') {
                 continue;
             }
-            $query = osc_db_table(DB_TABLE_PREFIX . self::TABLE);
-            $query = $query->where($column, $value);
-            $row   = $query->first();
+            $row = AdminStore::findBy($column, $value);
             if ($row !== null && (int)$row[self::PK] !== (int)$rowId) {
                 $errors[] = $message;
             }

@@ -1,0 +1,325 @@
+// Category cards: one card per main category, subcategories folded below it. Drawn by
+// osc_admin_tree_picker() (checkboxes) and the category_modes settings field (a switch per
+// card, a select per subcategory). oscTreeview() adds the fold toggles.
+
+.osc-catcards-intro {
+  color: var(--osc-ink-muted);
+  margin: 0 0 .5rem;
+}
+
+.osc-catcards-bar {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+  justify-content: space-between;
+  margin-block-end: .5rem;
+  max-inline-size: 52rem;
+}
+
+.osc-catcards-summary {
+  color: var(--osc-ink-emphasis);
+  font-size: .875rem;
+}
+
+.osc-catcards-actions {
+  display: inline-flex;
+  gap: .25rem;
+}
+
+// Check all / Uncheck all: buttons that read as links.
+.osc-catcards-action {
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius-sm;
+  color: var(--osc-bronze);
+  cursor: pointer;
+  font-size: .875rem;
+  padding: .25rem .5rem;
+  text-decoration: underline;
+  text-underline-offset: .15em;
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+.osc-catcards.osc-tree,
+.osc-catcards {
+  --osc-catcard-toggle: 1.75rem;
+
+  display: grid;
+  gap: .5rem;
+  list-style: none;
+  margin: 0;
+  max-inline-size: 52rem;
+  padding: 0;
+}
+
+.osc-catcards > .osc-catcard {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  column-gap: .5rem;
+  display: flex;
+  flex-wrap: wrap;
+  padding: .5rem .75rem;
+  row-gap: .5rem;
+
+  > label,
+  > .osc-catcard-name {
+    font-weight: 600;
+    margin: 0;
+  }
+
+  > input[type="checkbox"] {
+    margin: 0;
+  }
+
+  > .osc-catcard-meta {
+    color: var(--osc-ink-muted);
+    font-size: .875rem;
+  }
+
+  > .osc-segmented {
+    margin-inline-start: auto;
+  }
+
+  // The list of a card that has no switch: the count sits at the far end instead.
+  &:not(:has(> .osc-segmented)) > .osc-catcard-meta {
+    margin-inline-start: auto;
+  }
+
+  > ul {
+    border-block-start: 1px solid var(--osc-rule);
+    flex-basis: 100%;
+    margin: 0;
+    padding-block-start: .25rem;
+  }
+}
+
+// The fold toggle meets the 24px touch minimum inside the cards.
+.osc-catcards .osc-tree-toggle {
+  block-size: var(--osc-catcard-toggle);
+  border-radius: $border-radius-sm;
+  inline-size: var(--osc-catcard-toggle);
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+  }
+}
+
+// A row with no toggle lines up with the rows that have one.
+.osc-catcards.osc-tree > li.osc-catcard:not(.osc-tree-parent) {
+  padding-inline-start: calc(.75rem + var(--osc-catcard-toggle) + .5rem);
+}
+
+.osc-catcards.osc-tree .osc-catcard li:not(.osc-tree-parent) {
+  padding-inline-start: var(--osc-catcard-toggle);
+}
+
+// Inside a panel the cards become rows, so there is no card inside a card.
+:is(.card, .widget-box) .osc-catcards {
+  gap: 0;
+
+  > .osc-catcard {
+    background-color: transparent;
+    border: 0;
+    border-block-end: 1px solid var(--osc-rule);
+    border-radius: 0;
+    padding-inline: 0;
+
+    &:first-child {
+      border-block-start: 1px solid var(--osc-rule);
+    }
+  }
+}
+
+:is(.card, .widget-box) .osc-catcards.osc-tree > li.osc-catcard:not(.osc-tree-parent) {
+  padding-inline-start: calc(var(--osc-catcard-toggle) + .5rem);
+}
+
+// A subcategory checkbox sits on its label's line, and the first level lines up under
+// the main category's checkbox.
+.osc-catcards[data-osc-catcards="checks"] .osc-catcard li {
+  align-items: flex-start;
+  column-gap: .5rem;
+  display: flex;
+  flex-wrap: wrap;
+  padding-block: .2rem;
+
+  > input[type="checkbox"] {
+    margin: .3em 0 0;
+  }
+
+  > label {
+    flex: 1 1 0;
+    margin: 0;
+    min-inline-size: 0;
+  }
+
+  > ul {
+    flex-basis: 100%;
+  }
+}
+
+// The first level starts under the main category's name (past the toggle, the checkbox
+// and both gaps) and flows into columns on a wide screen.
+.osc-catcards[data-osc-catcards="checks"] > .osc-catcard > ul {
+  column-gap: 1.5rem;
+  columns: 3 14rem;
+  padding-inline-start: calc(var(--osc-catcard-toggle) + 1rem + 13px);
+
+  > li {
+    break-inside: avoid;
+  }
+
+  > li:not(.osc-tree-parent) {
+    padding-inline-start: 0;
+  }
+}
+
+// A subcategory with a select of its own (category_modes).
+// Off reads as resting: no tint and no dot, only the weight.
+.osc-segmented input[value=""]:checked + label {
+  background-color: var(--osc-chrome-hover);
+  color: var(--osc-ink);
+
+  &::before {
+    display: none;
+  }
+}
+
+// The subcategories of a modes card: one header naming each choice, then a row of radios
+// per subcategory, every column lined up.
+.osc-catcards .osc-catmatrix > li {
+  align-items: center;
+  column-gap: .5rem;
+  display: grid;
+  // The name takes what is left; each choice gets a column of its own, however many there are.
+  grid-auto-columns: minmax(4.5rem, 1fr);
+  grid-auto-flow: column;
+  grid-template-columns: minmax(10rem, 2.5fr);
+  padding: .35rem 0;
+}
+
+// A deeper subcategory is indented under its parent.
+.osc-catmatrix-row[data-depth="1"] .osc-catcard-subname { padding-inline-start: 1.25rem; }
+.osc-catmatrix-row[data-depth="2"] .osc-catcard-subname { padding-inline-start: 2.5rem; }
+.osc-catmatrix-row:is([data-depth="3"], [data-depth="4"], [data-depth="5"]) .osc-catcard-subname { padding-inline-start: 3.75rem; }
+
+.osc-catmatrix-head {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.osc-catmatrix-row {
+  border-block-start: 1px solid var(--osc-rule);
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+  }
+
+  // A subcategory with a choice of its own is named in bold.
+  &.is-set .osc-catcard-subname {
+    font-weight: 600;
+  }
+}
+
+.osc-catmatrix-cell {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: .35rem;
+  justify-content: center;
+  margin: 0;
+  min-block-size: 2rem;
+
+  input {
+    accent-color: var(--osc-bronze);
+    block-size: 1rem;
+    inline-size: 1rem;
+    margin: 0;
+  }
+}
+
+// The header names the columns; each radio keeps its own label for a screen reader.
+.osc-catmatrix-label {
+  block-size: 1px;
+  clip-path: inset(50%);
+  inline-size: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .osc-catcards .osc-catmatrix > li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+  }
+
+  .osc-catmatrix-head {
+    display: none !important;
+  }
+
+  .osc-catcard-subname {
+    flex-basis: 100%;
+  }
+
+  .osc-catmatrix-label {
+    block-size: auto;
+    clip-path: none;
+    font-size: .875rem;
+    inline-size: auto;
+    position: static;
+  }
+}
+
+// The help above a category list explains its choices; the summary follows after a gap.
+.help-box + .osc-catcards-bar {
+  margin-block-start: .75rem;
+}
+
+// The modes summary is the page's answer to "where is this on?", so it reads as text, not a hint.
+[data-osc-catcards-summary] {
+  color: var(--osc-ink);
+  font-weight: 600;
+
+  &.is-off {
+    color: var(--osc-ink-muted);
+    font-weight: 400;
+  }
+}
+
+// Equal segments, so the mode switches line up from card to card.
+.osc-catcards > .osc-catcard > .osc-segmented {
+  display: inline-grid;
+  grid-auto-columns: 7.5rem;
+  grid-auto-flow: column;
+
+  label {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .osc-catcards > .osc-catcard > .osc-segmented {
+    flex-wrap: wrap;
+    margin-inline-start: 0;
+  }
+
+  .osc-catcards .osc-segmented label {
+    white-space: normal;
+  }
+}

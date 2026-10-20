@@ -15,17 +15,13 @@
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
-$drivers = __DIR__ . '/../oc-includes/osclass/classes/cache/drivers/';
-require_once $drivers . 'index.php';
-
 harness_section('memcached with a server that does not answer');
 
 if (!class_exists('Memcached')) {
     check('memcached extension is loaded (skipped: not installed)', true);
 } else {
-    require_once $drivers . 'Object_Cache_memcached.php';
     $GLOBALS['_cache_config'] = array(array('default_host' => '127.0.0.1', 'default_port' => 1, 'default_weight' => 1));
-    $cache = new Object_Cache_memcached();
+    $cache = new \mindstellar\cache\MemcachedCache();
 
     $found = null;
     $value = $cache->get('osc_test:locales', $found);
@@ -37,6 +33,7 @@ if (!class_exists('Memcached')) {
     pin('a second read is still a miss', false, $found);
     pin('a write to a dead server reports failure', false, $cache->set('osc_test:x', 'v'));
     pin('the value is still readable in this request', 'v', $cache->get('osc_test:x'));
+    pin('getMany on a dead server finds only what this request holds', ['osc_test:x' => 'v'], $cache->getMany(['osc_test:x', 'osc_test:y']));
 
     // After one failure the rest of the request skips the server entirely.
     $probe = new ReflectionProperty($cache, 'down');

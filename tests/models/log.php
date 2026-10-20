@@ -43,7 +43,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_log');
 $table = DB_TABLE_PREFIX . 't_log';
 
-$log = Log::newInstance();
+$log = Log::getInstance();
 
 // t_log declares no primary key, so a fixture reads back cleanly only when the
 // table holds exactly the row(s) the current scenario just wrote.
@@ -195,6 +195,14 @@ if ($savedRemoteAddr !== null) {
     unset($_SERVER['REMOTE_ADDR']);
 }
 Params::init(); // resync the snapshot so later model tests under the runner see the restored state
+
+harness_section('clearing the log');
+$truncateLog();
+$log->insertLog('items', 'edit', 1, 'a', 'admin', 1);
+$log->insertLog('items', 'edit', 2, 'b', 'admin', 1);
+pin('LogStore::clearAll() removes every row and says how many', array(2, array()), array(\mindstellar\logger\LogStore::clearAll(), $logRows()));
+$log->insertLog('items', 'edit', 3, 'c', 'admin', 1);
+pin('the model goes through it', 1, $log->clearAll());
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

@@ -24,8 +24,6 @@ use mindstellar\admin\ListPaging;
 
 class UsersDataTable extends DataTable
 {
-    private $withUserId;
-    private $search;
     /**
      * Header column id => the t_user column it sorts by.
      *
@@ -63,15 +61,13 @@ class UsersDataTable extends DataTable
     public function table($params)
     {
 
-        $this->withUserId = false;
-        $this->search     = '';
         $this->addTableHeader();
         $this->getDBParams($params);
 
         $dummy = &$this;
         osc_run_hook('manage_user_search_conditions', $dummy);
 
-        $list_users = User::newInstance()->search(
+        $list_users = User::getInstance()->search(
             $this->start,
             $this->limit,
             $this->order_by['column_name'],
@@ -122,8 +118,8 @@ class UsersDataTable extends DataTable
      */
     private function like(array $columns, $term)
     {
-        $value = str_replace(array('\\', '%', '_'), array('\\\\', '\%', '\_'), (string)$term);
-        $value = strpos($term, '*') === false
+        $value = \mindstellar\database\QueryBuilder::escapeLike((string)$term);
+        $value = strpos($value, '*') === false
             ? '%' . $value . '%'
             : str_replace('*', '%', $value);
 
@@ -214,7 +210,7 @@ class UsersDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 
@@ -245,7 +241,7 @@ class UsersDataTable extends DataTable
                     . __('Public profile') . '</a>';
 
                 $options[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=user_login&id='
-                    . $aRow['pk_i_id'] . '&' . $csrf_token_url . '" target="_blank">' . __('Login') . '</a>';
+                    . $aRow['pk_i_id'] . '&' . $csrf_token_url . '" target="_blank">' . __('Log in as user') . '</a>';
 
                 if ($aRow['b_active'] == 1) {
                     $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=deactivate&amp;id[]='
@@ -261,6 +257,8 @@ class UsersDataTable extends DataTable
                     $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=enable&amp;id[]='
                         . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Unblock') . '</a>';
                 }
+                $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=sign_out_all&amp;id[]='
+                    . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Sign out of all devices') . '</a>';
                 if (osc_user_validation_enabled() && ($aRow['b_active'] == 0)) {
                     $options_more[] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=resend_activation&amp;id[]='

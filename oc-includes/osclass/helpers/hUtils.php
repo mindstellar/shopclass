@@ -30,7 +30,7 @@ use mindstellar\utility\Deprecate;
  */
 function __get($key)
 {
-    return View::newInstance()->_get($key);
+    return View::getInstance()->_get($key);
 }
 
 /**
@@ -91,7 +91,7 @@ function osc_field($item, $field, $locale)
  */
 function osc_show_widgets($location)
 {
-    $widgets = Widget::newInstance()->findByLocation($location);
+    $widgets = Widget::getInstance()->findByLocation($location);
     foreach ($widgets as $w) {
         osc_render_widget($w);
     }
@@ -106,7 +106,7 @@ function osc_show_widgets($location)
  */
 function osc_show_widgets_by_description($description)
 {
-    $widgets = Widget::newInstance()->findByDescription($description);
+    $widgets = Widget::getInstance()->findByDescription($description);
     foreach ($widgets as $w) {
         osc_render_widget($w);
     }
@@ -129,7 +129,8 @@ function osc_show_widgets_by_description($description)
 function osc_show_recaptcha($section = '')
 {
     if (osc_recaptcha_public_key()) {
-        echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
+        _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2));
+        echo '<br />';
     }
 }
 
@@ -357,13 +358,22 @@ function osc_format_date($date, $dateformat = null)
     }
     [$month, $month_short, $day, $day_short, $ampm] = $names[$locale];
 
-    $time       = strtotime($date);
-    $dateformat = preg_replace('|(?<!\\\)F|', osc_escape_string($month[date('n', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)M|', osc_escape_string($month_short[date('n', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)l|', osc_escape_string($day[date('N', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)D|', osc_escape_string($day_short[date('N', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)A|', osc_escape_string($ampm[date('A', $time)]), $dateformat);
-    $dateformat = preg_replace('|(?<!\\\)a|', osc_escape_string($ampm[date('a', $time)]), $dateformat);
+    $time = strtotime($date);
+    // Only the letters the format holds are translated; most formats hold one or two.
+    foreach (array('F', 'M', 'l', 'D', 'A', 'a') as $letter) {
+        if (strpos($dateformat, $letter) === false) {
+            continue;
+        }
+        $name       = match ($letter) {
+            'F' => $month[date('n', $time)],
+            'M' => $month_short[date('n', $time)],
+            'l' => $day[date('N', $time)],
+            'D' => $day_short[date('N', $time)],
+            'A' => $ampm[date('A', $time)],
+            'a' => $ampm[date('a', $time)],
+        };
+        $dateformat = preg_replace('|(?<!\\\)' . $letter . '|', osc_escape_string($name), $dateformat);
+    }
 
     return date($dateformat, $time);
 }
@@ -397,7 +407,7 @@ function osc_admin_date_format($dateOnly = false)
  */
 function osc_admin_date($date, $dateOnly = false)
 {
-    if ($date == null || $date === '') {
+    if ($date == null) {
         return '';
     }
 
@@ -741,7 +751,7 @@ function osc_get_http_referer()
 /**
  * The unguessable token that ties temp photo uploads on a listing form to the browser that
  * made them, without a session. Read from (or minted into) the `oc_upload` cookie once per
- * request; it is the capability {@see ItemTmpUpload} checks so a visitor can only delete the
+ * request; it is the capability the upload store checks so a visitor can only delete the
  * photos they uploaded.
  *
  * @return string 32 hex characters
@@ -764,22 +774,8 @@ function osc_upload_token()
         $token = md5(uniqid('', true));
     }
 
-    if (!headers_sent()) {
-        $options = array(
-            // A posting session — long enough to fill out a listing, short enough to expire.
-            'expires'  => time() + (4 * 3600),
-            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-        );
-        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
-            $options['secure'] = true;
-        }
-        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-            $options['domain'] = COOKIE_DOMAIN;
-        }
-        setcookie('oc_upload', $token, $options);
-    }
+    // A posting session: long enough to fill out a listing, short enough to expire.
+    Cookie::write('oc_upload', $token, time() + (4 * 3600));
     $_COOKIE['oc_upload'] = $token;
 
     return $token;
@@ -832,7 +828,7 @@ function osc_pop_login_redirect()
  */
 function osc_set_admin_login_redirect($url, $keepExisting = false)
 {
-    osc_set_signed_redirect('oc_admin_login_redirect', $url, $keepExisting);
+    osc_set_signed_redirect('oc_admin_login_redirect', $url, $keepExisting, osc_admin_cookie_path());
 }
 
 /**
@@ -842,20 +838,33 @@ function osc_set_admin_login_redirect($url, $keepExisting = false)
  */
 function osc_pop_admin_login_redirect()
 {
-    return osc_pop_signed_redirect('oc_admin_login_redirect');
+    return osc_pop_signed_redirect('oc_admin_login_redirect', osc_admin_cookie_path());
+}
+
+/**
+ * The URL path of the admin, e.g. /oc-admin/ or /sub/oc-admin/, for cookies only the admin reads.
+ *
+ * @return string
+ */
+function osc_admin_cookie_path()
+{
+    $path = (string) parse_url(osc_admin_base_url(), PHP_URL_PATH);
+
+    return $path === '' ? '/' : $path;
 }
 
 /**
  * Store a same-site destination in a short-lived, HMAC-signed standalone cookie — the shared
  * core behind the login/admin-login redirect helpers. Never starts a session.
  *
- * @param string $cookieName
- * @param string $url
- * @param bool   $keepExisting skip when a valid destination is already stored under this name
+ * @param string      $cookieName
+ * @param string      $url
+ * @param bool        $keepExisting skip when a valid destination is already stored under this name
+ * @param string|null $path         cookie path; null for the site path
  *
  * @return void
  */
-function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
+function osc_set_signed_redirect($cookieName, $url, $keepExisting = false, $path = null)
 {
     if (!is_string($url) || $url === '' || strpos($url, osc_base_url()) !== 0) {
         return;
@@ -869,26 +878,26 @@ function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
     }
 
     // 10 minutes: long enough to complete a login, short enough to expire promptly.
-    $expiry  = time() + 600;
-    $payload = $expiry . ':' . base64_encode($url);
-    $value   = $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+    $expiry = time() + 600;
+    $value  = \mindstellar\security\SignedPayload::pack('signed-redirect', array('u' => $url), 600);
 
-    osc_write_signed_redirect_cookie($cookieName, $value, $expiry);
+    osc_write_signed_redirect_cookie($cookieName, $value, $expiry, $path);
     $_COOKIE[$cookieName] = $value;
 }
 
 /**
  * Read, validate and clear a signed-redirect cookie. Always deletes it (single-use).
  *
- * @param string $cookieName
+ * @param string      $cookieName
+ * @param string|null $path the path it was set on; null for the site path
  *
  * @return string same-site destination, or '' when absent, tampered, expired or off-site
  */
-function osc_pop_signed_redirect($cookieName)
+function osc_pop_signed_redirect($cookieName, $path = null)
 {
     $value = $_COOKIE[$cookieName] ?? '';
     if ($value !== '') {
-        osc_write_signed_redirect_cookie($cookieName, '', time() - 3600);
+        osc_write_signed_redirect_cookie($cookieName, '', time() - 3600, $path);
         unset($_COOKIE[$cookieName]);
     }
 
@@ -905,21 +914,11 @@ function osc_pop_signed_redirect($cookieName)
  */
 function osc_signed_redirect_verify($value)
 {
-    if (!is_string($value) || $value === '' || strpos($value, '.') === false) {
+    if (!is_string($value) || $value === '') {
         return '';
     }
-    $dot     = strrpos($value, '.');
-    $payload = substr($value, 0, $dot);
-    $sig     = substr($value, $dot + 1);
-    if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
-        return '';
-    }
-    $parts = explode(':', $payload, 2);
-    if (count($parts) !== 2 || !ctype_digit($parts[0]) || (int)$parts[0] < time()) {
-        return '';
-    }
-    $url = base64_decode($parts[1], true);
-    if ($url === false || strpos($url, osc_base_url()) !== 0) {
+    $url = \mindstellar\security\SignedPayload::unpack('signed-redirect', $value)['u'] ?? null;
+    if (!is_string($url) || strpos($url, osc_base_url()) !== 0) {
         return '';
     }
 
@@ -930,30 +929,16 @@ function osc_signed_redirect_verify($value)
  * Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone —
  * not the session container — so it never starts a session.
  *
- * @param string $cookieName
- * @param string $value
- * @param int    $expiry
+ * @param string      $cookieName
+ * @param string      $value
+ * @param int         $expiry
+ * @param string|null $path   cookie path; null for the site path
  *
  * @return void
  */
-function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
+function osc_write_signed_redirect_cookie($cookieName, $value, $expiry, $path = null)
 {
-    if (headers_sent()) {
-        return;
-    }
-    $options = array(
-        'expires'  => $expiry,
-        'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    );
-    if (function_exists('osc_is_ssl') && osc_is_ssl()) {
-        $options['secure'] = true;
-    }
-    if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-        $options['domain'] = COOKIE_DOMAIN;
-    }
-    setcookie($cookieName, $value, $options);
+    Cookie::write((string) $cookieName, (string) $value, (int) $expiry, $path === null ? null : (string) $path);
 }
 
 /**
@@ -980,7 +965,7 @@ function osc_add_route(
     $section = 'custom',
     $title = 'Custom'
 ) {
-    Rewrite::newInstance()->addRoute($id, $regexp, $url, $file, $user_menu, $location, $section, $title);
+    Rewrite::getInstance()->addRoute($id, $regexp, $url, $file, $user_menu, $location, $section, $title);
 }
 
 /**
@@ -998,7 +983,7 @@ function osc_add_route(
  */
 function osc_add_route_hook($id, $regexp, $url)
 {
-    Rewrite::newInstance()->addRouteHook($id, $regexp, $url);
+    Rewrite::getInstance()->addRouteHook($id, $regexp, $url);
 }
 
 /**
@@ -1010,20 +995,20 @@ function osc_get_subdomain_params()
 {
     $options = array();
     if (osc_subdomain_name() != '') {
-        if (Params::getParam('sCountry') != '') {
-            $options['sCountry'] = Params::getParam('sCountry');
+        if (Params::getParamString('sCountry') != '') {
+            $options['sCountry'] = Params::getParamString('sCountry');
         }
-        if (Params::getParam('sRegion') != '') {
-            $options['sRegion'] = Params::getParam('sRegion');
+        if (Params::getParamString('sRegion') != '') {
+            $options['sRegion'] = Params::getParamString('sRegion');
         }
-        if (Params::getParam('sCity') != '') {
-            $options['sCity'] = Params::getParam('sCity');
+        if (Params::getParamString('sCity') != '') {
+            $options['sCity'] = Params::getParamString('sCity');
         }
         if (Params::getParam('sCategory') != '') {
             $options['sCategory'] = Params::getParam('sCategory');
         }
-        if (Params::getParam('sUser') != '') {
-            $options['sUser'] = Params::getParam('sUser');
+        if (Params::getParamString('sUser') != '') {
+            $options['sUser'] = Params::getParamString('sUser');
         }
     }
 
@@ -1061,9 +1046,12 @@ function osc_google_maps_api_key()
  * Get Open Street Maps API key.
  *
  * @return string
+ * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin
  */
 function osc_openstreet_api_key()
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '7.0.0');
+
     return osc_get_preference('openstreet_api_key');
 }
 
@@ -1073,9 +1061,12 @@ function osc_openstreet_api_key()
  * @param string $address
  *
  * @return string
+ * @deprecated 7.0.0 core looks addresses up only through a geocode provider plugin
  */
 function osc_google_maps_geocode_url($address)
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '7.0.0');
+
     return 'https://maps.googleapis.com/maps/api/geocode/json?address='
         . urlencode($address) . '&sensor=false&key='.osc_google_maps_api_key();
 }
@@ -1086,9 +1077,12 @@ function osc_google_maps_geocode_url($address)
  * @param string $address
  *
  * @return string
+ * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin
  */
 function osc_openstreet_geocode_url($address)
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '7.0.0');
+
     return 'https://www.mapquestapi.com/geocoding/v1/address?location='
         . urlencode($address) . '&key='.osc_openstreet_api_key();
 }
@@ -1302,17 +1296,7 @@ if (!function_exists('osc_server_rewrite_rules')) {
                    . '}';
         }
 
-        return "<IfModule mod_rewrite.c>\n"
-               . "RewriteEngine On\n"
-               . "RewriteBase {$base}\n"
-               . "RewriteRule ^index\\.php$ - [L]\n"
-               . "RewriteCond %{REQUEST_FILENAME} !-f\n"
-               . "RewriteCond %{REQUEST_FILENAME} !-d\n"
-               . "RewriteRule . {$base}index.php [L]\n"
-               . "</IfModule>\n"
-               . "<IfModule mod_mime.c>\n"
-               . "AddType text/xsl .xsl\n"
-               . '</IfModule>';
+        return \mindstellar\routing\ServerRules::apache($base);
     }
 }
 
@@ -1327,7 +1311,7 @@ if (!function_exists('osc_server_rewrite_rules')) {
  */
 function osc_keep_form(array $values, string $error): void
 {
-    $session = Session::newInstance();
+    $session = Session::getInstance();
     foreach ($values as $key => $value) {
         $session->_setForm($key, (string) $value);
     }
@@ -1360,7 +1344,7 @@ if (!function_exists('osc_cron_last_run')) {
     {
         $last = 0;
         try {
-            foreach ((array)Cron::newInstance()->listAll() as $row) {
+            foreach ((array)Cron::getInstance()->listAll() as $row) {
                 $time = !empty($row['d_last_exec']) ? (int)strtotime($row['d_last_exec']) : 0;
                 $last = max($last, $time);
             }

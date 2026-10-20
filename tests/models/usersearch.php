@@ -89,7 +89,7 @@ seed_user($admin, 'tester_one', 'tester_one@example.com');
 seed_user($admin, 'pct', 'has%percent@example.com');
 seed_user($admin, 'elsewhere', 'someone@other.test');
 
-$model = User::newInstance();
+$model = User::getInstance();
 
 /** Run a search and return the matched usernames, sorted, as one comparable string. */
 $found = static function (array $conditions) use ($model): string {

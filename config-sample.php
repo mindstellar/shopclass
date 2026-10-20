@@ -46,11 +46,24 @@ define('DB_TABLE_PREFIX', getenv('DB_TABLE_PREFIX') ?: 'oc_');
  */
 define('OSC_DB_STRICT_MODE', true);
 
+/*
+ * Values in a query are escaped and sent with it in one trip. Uncomment to send them as
+ * real prepared statements instead: a little safer, one or two more trips per query.
+ */
+//define('OSC_DB_REAL_PREPARES', true);
+
 /** Website relative root path */
 define('REL_WEB_URL', 'rel_here');
 
 /** Website base url */
 defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localhost/
+
+/**
+ * Answer the admin panel only from these addresses: IPv4 and IPv6 addresses and CIDR ranges,
+ * separated by commas. Other addresses get a 404. 127.0.0.1 and ::1 always get in, so an SSH
+ * tunnel works if you lock yourself out; or remove the line. Admin API keys are not limited.
+ */
+//define('OSC_ADMIN_IP_ALLOW', '203.0.113.7, 2001:db8::/32');
 
 /** Turn off restoring a backup from the admin; backups still work. */
 //define('OSC_DISABLE_WEB_RESTORE', true);
@@ -79,7 +92,9 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
  *
  *   'memcached' - modern memcached extension (recommended)
  *   'apcu'      - APCu user cache (single server)
- *   'memcache'  - DEPRECATED legacy memcache extension; use 'memcached' instead
+ *   'redis'     - Redis or Valkey; uses the phpredis extension when installed, and a
+ *                 built-in client otherwise, so it needs no extension
+ *   'memcache'  - the old driver is gone; this value now uses 'memcached'
  */
 //define('OSC_CACHE', 'memcached');
 
@@ -87,9 +102,17 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
 //define('OSC_CACHE_TTL', 60);
 
 /**
- * Optional memcached/memcache server list. Omit to use 127.0.0.1:11211.
+ * Optional memcached server list. Omit to use 127.0.0.1:11211.
  * Each entry needs default_host, default_port and default_weight.
  */
 //$_cache_config = array(
 //    array('default_host' => '127.0.0.1', 'default_port' => 11211, 'default_weight' => 1),
+//);
+
+/**
+ * Optional Redis/Valkey server. Omit to use 127.0.0.1:6379. A host starting with "/" is a
+ * Unix socket; "tls://host" connects over TLS. Only the first entry is used.
+ */
+//$_cache_config = array(
+//    array('default_host' => '127.0.0.1', 'default_port' => 6379, 'password' => '', 'username' => '', 'database' => 0),
 //);

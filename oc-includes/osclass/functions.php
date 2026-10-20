@@ -20,7 +20,6 @@
  */
 function osc_meta_publish($catId = null)
 {
-    osc_enqueue_script('php-date');
     echo '<div class="row">';
     FieldForm::meta_fields_input($catId);
     echo '</div>';
@@ -36,7 +35,6 @@ function osc_meta_publish($catId = null)
  */
 function osc_meta_edit($catId = null, $item_id = null)
 {
-    osc_enqueue_script('php-date');
     echo '<div class="row">';
     FieldForm::meta_fields_input($catId, $item_id);
     echo '</div>';
@@ -56,10 +54,11 @@ osc_add_hook('item_edit', 'osc_meta_edit');
  */
 function osc_meta_search($catId = null)
 {
-    FieldForm::meta_fields_search($catId);
+    FieldForm::meta_fields_search($catId === null ? null : (array) $catId);
 }
 
 osc_add_hook('search_form', 'osc_meta_search');
+osc_add_hook('search_form', 'osc_search_distance_field');
 
 /**
  * Human-readable heading for the current search: keyword prefix, category and place.
@@ -87,7 +86,7 @@ function search_title()
     }
 
     if ($b_category && !empty($category)) {
-        $cat = Category::newInstance()->findByPrimaryKey($category[0]);
+        $cat = Category::getInstance()->findByPrimaryKey($category[0]);
         if (isset($cat['s_name'])) {
             $result .= $cat['s_name'] . ' ';
         }
@@ -109,8 +108,8 @@ function search_title()
  */
 function meta_title()
 {
-    $location = Rewrite::newInstance()->get_location();
-    $section  = Rewrite::newInstance()->get_section();
+    $location = Rewrite::getInstance()->get_location();
+    $section  = Rewrite::getInstance()->get_section();
     $text     = '';
 
     switch ($location) {
@@ -167,7 +166,7 @@ function meta_title()
             }
 
             if ($b_category && is_array($category) && count($category) > 0) {
-                $cat = Category::newInstance()->findByPrimaryKey($category[0]);
+                $cat = Category::getInstance()->findByPrimaryKey($category[0]);
                 if ($cat) {
                     $result .= $cat['s_name'] . ' ';
                 }
@@ -252,7 +251,7 @@ function meta_title()
             $text = __('Contact');
             break;
         case ('custom'):
-            $text = Rewrite::newInstance()->get_title();
+            $text = Rewrite::getInstance()->get_title();
             break;
         default:
             // Empty, not the site name: the tail below adds that. Setting it here
@@ -439,8 +438,8 @@ function osc_search_footer_links()
     }
 
     $categoryID = osc_search_category_id();
-    if (!empty($categoryID) && Category::newInstance()->isRoot(current($categoryID))) {
-        $cat = Category::newInstance()->findSubcategories(current($categoryID));
+    if (!empty($categoryID) && Category::getInstance()->isRoot(current($categoryID))) {
+        $cat = Category::getInstance()->findSubcategories(current($categoryID));
         if (count($cat) > 0) {
             $categoryID = array();
             foreach ($cat as $c) {
@@ -455,7 +454,7 @@ function osc_search_footer_links()
 
     $regionID = '';
     if (osc_search_region() != '') {
-        $aRegion = Region::newInstance()->findByName(osc_search_region());
+        $aRegion = Region::getInstance()->findByName(osc_search_region());
         if (isset($aRegion['pk_i_id'])) {
             $regionID = $aRegion['pk_i_id'];
         }
@@ -468,44 +467,10 @@ function osc_search_footer_links()
         $ids[] = (int)$c;
     }
 
-    $where  = array();
-    $params = array();
-
-    if ($ids !== array()) {
-        $where[]  = 'i.fk_i_category_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')';
-        $params   = array_merge($params, $ids);
-    }
-
-    $where[]  = 'i.pk_i_id = l.fk_i_item_id';
-    $where[]  = 'i.b_enabled = 1';
-    $where[]  = 'i.b_active = 1';
-    $where[]  = 'dt_expiration >= ?';
-    $params[] = date('Y-m-d H:i:s');
-    $where[]  = 'l.fk_i_region_id IS NOT NULL';
-    $where[]  = 'l.fk_i_city_id IS NOT NULL';
-
-    if ($regionID != '') {
-        $where[]  = 'l.fk_i_region_id = ?';
-        $params[] = (int)$regionID;
-        $groupBy  = 'l.fk_i_city_id';
-    } else {
-        $groupBy = 'l.fk_i_region_id';
-    }
-
-    // The count is grouped in a subquery that also names one representative listing
-    // per group, and the displayed columns are read back from that listing. Selecting
-    // l.* beside GROUP BY on a single location column is rejected under
-    // ONLY_FULL_GROUP_BY, which emptied the footer links entirely.
-    $sql = 'SELECT i.fk_i_category_id, l.*, g.total'
-        . ' FROM (SELECT MIN(l.fk_i_item_id) AS rep_id, COUNT(*) AS total'
-        . ' FROM ' . DB_TABLE_PREFIX . 't_item as i, ' . DB_TABLE_PREFIX . 't_item_location as l'
-        . ' WHERE ' . implode(' AND ', $where)
-        . ' GROUP BY ' . $groupBy . ') AS g'
-        . ' JOIN ' . DB_TABLE_PREFIX . 't_item_location as l ON l.fk_i_item_id = g.rep_id'
-        . ' JOIN ' . DB_TABLE_PREFIX . 't_item as i ON i.pk_i_id = g.rep_id';
-
     try {
-        return osc_db_stringify_rows(osc_db_select($sql, $params));
+        return \mindstellar\database\Db::stringifyRows(
+            (new \mindstellar\listing\ListingQuery())->footerLocations($ids, $regionID != '' ? (int)$regionID : null)
+        );
     } catch (\mindstellar\database\DbException $e) {
         return array();
     }
@@ -521,13 +486,13 @@ function osc_search_footer_links()
 function osc_footer_link_url($f = null)
 {
     if ($f === null) {
-        if (View::newInstance()->_exists('footer_link')) {
-            $f = View::newInstance()->_get('footer_link');
+        if (View::getInstance()->_exists('footer_link')) {
+            $f = View::getInstance()->_get('footer_link');
         } else {
             return '';
         }
     } else {
-        View::newInstance()->_exportVariableToView('footer_link', $f);
+        View::getInstance()->_exportVariableToView('footer_link', $f);
     }
     $params = array();
     $tmp    = osc_search_category_id();
@@ -554,13 +519,13 @@ function osc_footer_link_url($f = null)
 function osc_footer_link_title($f = null)
 {
     if ($f == null) {
-        if (View::newInstance()->_exists('footer_link')) {
-            $f = View::newInstance()->_get('footer_link');
+        if (View::getInstance()->_exists('footer_link')) {
+            $f = View::getInstance()->_get('footer_link');
         } else {
             return '';
         }
     } else {
-        View::newInstance()->_exportVariableToView('footer_link', $f);
+        View::getInstance()->_exportVariableToView('footer_link', $f);
     }
     $text = '';
 
@@ -592,7 +557,7 @@ function osc_footer_link_title($f = null)
  */
 function _osc_admin_toolbar_init()
 {
-    $adminToolbar = AdminToolbar::newInstance();
+    $adminToolbar = AdminToolbar::getInstance();
 
     $adminToolbar->init();
     $adminToolbar->add_menus();
@@ -610,7 +575,7 @@ osc_add_hook('init_admin', '_osc_admin_toolbar_init');
  */
 function osc_draw_admin_toolbar()
 {
-    $adminToolbar = AdminToolbar::newInstance();
+    $adminToolbar = AdminToolbar::getInstance();
 
     // run hook for adding
     osc_run_hook('add_admin_toolbar_menus');
@@ -624,7 +589,7 @@ function osc_draw_admin_toolbar()
  */
 function osc_admin_toolbar_logout()
 {
-    AdminToolbar::newInstance()->add_menu(array(
+    AdminToolbar::getInstance()->add_menu(array(
                                               'id'    => 'logout',
                                               'title' => __('Logout'),
                                               'href'  => osc_admin_base_url(true) . '?action=logout',
@@ -639,14 +604,14 @@ function osc_admin_toolbar_logout()
  */
 function osc_admin_toolbar_comments()
 {
-    $total = ItemComment::newInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )');
+    $total = ItemComment::getInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )');
     if ($total > 0) {
         $label = __('New comments');
         $title = '<i class="bi bi-chat-left-text" aria-hidden="true"></i>'
             . '<span class="toolbar-label">' . $label . '</span>'
             . '<i class="circle circle-green">' . $total . '</i>';
 
-        AdminToolbar::newInstance()->add_menu(
+        AdminToolbar::getInstance()->add_menu(
             array(
                 'id'    => 'comments',
                 'title' => $title,
@@ -664,18 +629,137 @@ function osc_admin_toolbar_comments()
  */
 function osc_admin_toolbar_spam()
 {
-    $total = Item::newInstance()->countByMarkas('spam');
+    $total = Item::getInstance()->countByMarkas('spam');
     if ($total > 0) {
         $label = __('Spam');
         $title = '<i class="bi bi-shield-exclamation" aria-hidden="true"></i>'
             . '<span class="toolbar-label">' . $label . '</span>'
             . '<i class="circle circle-red">' . $total . '</i>';
 
-        AdminToolbar::newInstance()->add_menu(
+        AdminToolbar::getInstance()->add_menu(
             array(
                 'id'    => 'spam',
                 'title' => $title,
                 'href'  => osc_admin_base_url(true) . '?page=items&action=items_reported&sort=spam',
+                'meta'  => array('class' => 'action-btn ', 'title' => $label)
+            )
+        );
+    }
+}
+
+/**
+ * Re-scan installed plugins, themes or languages for updates and save the result.
+ *
+ * @param string $kind 'plugins', 'themes' or 'languages'
+ *
+ * @return int How many have an update available
+ */
+function osc_update_check_scan(string $kind): int
+{
+    $toUpdate   = array();
+    $downloaded = array();
+    // Catalog failures are absorbed internally; a hard throw still must not break the admin footer poll or the CLI.
+    try {
+        $pending = match ($kind) {
+            'plugins' => \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates(),
+            'themes'  => \mindstellar\market\PackageIndex::forThemes()->pendingUpdates(),
+            default   => array(),
+        };
+    } catch (\Throwable $e) {
+        $pending = array();
+    }
+
+    if ($kind === 'plugins') {
+        foreach (Plugins::listAll() as $plugin) {
+            $info = osc_plugin_get_info($plugin);
+            if (isset($pending[dirname($plugin)])) {
+                $toUpdate[] = $info['plugin_update_uri'] ?? null;
+            }
+            $downloaded[] = $info['plugin_update_uri'] ?? null;
+        }
+    } elseif ($kind === 'themes') {
+        foreach (WebThemes::getInstance()->getListThemes() as $theme) {
+            $info = WebThemes::getInstance()->loadThemeInfo($theme);
+            if (isset($pending[$theme])) {
+                $toUpdate[] = $theme;
+            }
+            $downloaded[] = $info['theme_update_uri'] ?? null;
+        }
+    } elseif ($kind === 'languages') {
+        foreach (OSCLocale::getInstance()->listAll() as $lang) {
+            if (osc_check_language_update($lang['pk_c_code'], $lang['s_version'])) {
+                $toUpdate[] = $lang['pk_c_code'];
+            }
+            $downloaded[] = $lang['pk_c_code'];
+        }
+    } else {
+        throw new InvalidArgumentException('Unknown update check: ' . $kind);
+    }
+
+    osc_update_check_save($kind, array(
+        'checked'    => time(),
+        'count'      => count($toUpdate),
+        'to_update'  => $toUpdate,
+        'downloaded' => $downloaded,
+    ));
+
+    return count($toUpdate);
+}
+
+/**
+ * Number of plugins, themes or languages with an update, from the saved check unless forced.
+ * Without $force it schedules a background re-check once the saved one is a day old.
+ *
+ * @param string $kind  'plugins', 'themes' or 'languages'
+ * @param bool   $force Re-scan now instead of returning the saved count
+ *
+ * @return int
+ */
+function osc_update_check_count(string $kind, bool $force = false): int
+{
+    if ($force) {
+        return osc_update_check_scan($kind);
+    }
+    $state = osc_update_check_state($kind);
+    if ((time() - (int) $state['checked']) > (24 * 3600)) {
+        osc_add_hook('admin_footer', 'check_' . $kind . '_admin_footer');
+    }
+
+    return (int) $state['count'];
+}
+
+/**
+ * Add a toolbar counter for plugin, theme or language updates, when any are available.
+ *
+ * @param string $kind  'plugins', 'themes' or 'languages'
+ * @param bool   $force Re-scan for updates and rebuild the entry
+ *
+ * @return void
+ */
+function osc_admin_toolbar_update_counter(string $kind, bool $force = false): void
+{
+    if (osc_is_moderator()) {
+        return;
+    }
+    $entries = array(
+        'plugins'   => array('update_plugin', __('Plugin updates'), 'bi-plug', '?page=plugins#update-plugins'),
+        'themes'    => array('update_theme', __('Theme updates'), 'bi-brush', '?page=appearance'),
+        'languages' => array('update_language', __('Language updates'), 'bi-translate', '?page=languages'),
+    );
+    [$id, $label, $icon, $query] = $entries[$kind];
+    $total = osc_update_check_count($kind, $force);
+
+    if ($force) {
+        AdminToolbar::getInstance()->remove_menu($id);
+    }
+    if ($total > 0) {
+        AdminToolbar::getInstance()->add_menu(
+            array(
+                'id'    => $id,
+                'title' => '<i class="bi ' . $icon . '" aria-hidden="true"></i>'
+                    . '<span class="toolbar-label">' . $label . '</span>'
+                    . '<i class="circle circle-gray">' . $total . '</i>',
+                'href'  => osc_admin_base_url(true) . $query,
                 'meta'  => array('class' => 'action-btn ', 'title' => $label)
             )
         );
@@ -693,25 +777,24 @@ function osc_admin_toolbar_update_core($force = false)
 {
     if (!osc_is_moderator()) {
         if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_core');
+            AdminToolbar::getInstance()->remove_menu('update_core');
         }
-        if (getPreference('update_core_available') && !\mindstellar\upgrade\BuildInfo::isEdge()) {
-            $update_json = json_decode(Preference::newInstance()->get('update_core_json'), false);
+        $core = osc_update_check_state('core');
+        if (!empty($core['available']) && !\mindstellar\upgrade\BuildInfo::isEdge()) {
+            $package = is_array($core['package'] ?? null) ? $core['package'] : array();
             // The core can also be replaced outside the admin (a new container image, a manual
             // deploy), which leaves this announcing a version already running.
-            if (!isset($update_json->s_new_version)
-                || version_compare($update_json->s_new_version, OSCLASS_VERSION, 'le')
+            if (!isset($package['s_new_version'])
+                || version_compare($package['s_new_version'], OSCLASS_VERSION, 'le')
             ) {
-                osc_set_preference('update_core_available');
-                osc_set_preference('update_core_json');
-                osc_reset_preferences();
+                osc_update_check_save('core', array('checked' => (int) $core['checked']));
 
                 return;
             }
-            $label       = __('Shopclass ') . $update_json->s_new_version . __(' is available');
+            $label       = __('Shopclass ') . $package['s_new_version'] . __(' is available');
             $title       = '<i class="bi bi-arrow-up-circle" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>';
-            AdminToolbar::newInstance()->add_menu(
+            AdminToolbar::getInstance()->add_menu(
                 array(
                     'id'    => 'update_core',
                     'title' => $title,
@@ -724,68 +807,29 @@ function osc_admin_toolbar_update_core($force = false)
 }
 
 /**
- * Number of plugins with an update available, from the cached count unless forced.
- * Without $force it schedules a background re-check once the cached count is a day old.
+ * Number of plugins with an update available; see osc_update_check_count().
  *
- * @param bool $force Re-scan now instead of returning the cached count
+ * @param bool $force Re-scan now instead of returning the saved count
  *
- * @return int|string Int when re-scanned, the stored preference string otherwise
+ * @return int
  */
 function osc_check_plugins_update($force = false)
 {
-    $total = getPreference('plugins_update_count');
-    if ($force) {
-        return _osc_check_plugins_update();
-    }
-
-    if ((time() - (int)osc_plugins_last_version_check()) > (24 * 3600)) {
-        osc_add_hook('admin_footer', 'check_plugins_admin_footer');
-    }
-
-    return $total;
+    return osc_update_check_count('plugins', (bool) $force);
 }
 
 /**
- * Re-scan every installed plugin against the catalogue and cache the result.
+ * Re-scan every installed plugin against the catalogue; see osc_update_check_scan().
  *
- * @return int Number of plugins with an update available
+ * @return int
  */
 function _osc_check_plugins_update()
 {
-    $total            = 0;
-    $array            = array();
-    $array_downloaded = array();
-    $plugins          = Plugins::listAll();
-
-    // Catalog failures are absorbed internally (cached payload + retry clock);
-    // a hard throw here still must not break the admin footer poll or the CLI.
-    try {
-        $pending = \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates();
-    } catch (\Throwable $e) {
-        $pending = array();
-    }
-
-    foreach ($plugins as $plugin) {
-        $info = osc_plugin_get_info($plugin);
-        $slug = dirname($plugin);
-        if (isset($pending[$slug])) {
-            $array[] = @$info['plugin_update_uri'];
-            $total++;
-        }
-        $array_downloaded[] = @$info['plugin_update_uri'];
-    }
-
-    osc_set_preference('plugins_to_update', json_encode($array));
-    osc_set_preference('plugins_downloaded', json_encode($array_downloaded));
-    osc_set_preference('plugins_update_count', $total);
-    osc_set_preference('plugins_last_version_check', time());
-    osc_reset_preferences();
-
-    return $total;
+    return osc_update_check_scan('plugins');
 }
 
 /**
- * Add the toolbar counter for plugin updates, when any are available.
+ * Toolbar counter for plugin updates; see osc_admin_toolbar_update_counter().
  *
  * @param bool $force Re-scan for updates and rebuild the entry
  *
@@ -793,86 +837,33 @@ function _osc_check_plugins_update()
  */
 function osc_admin_toolbar_update_plugins($force = false)
 {
-    if (!osc_is_moderator()) {
-        $total = osc_check_plugins_update($force);
-
-        if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_plugin');
-        }
-        if ($total > 0) {
-            $label = __('Plugin updates');
-            $title = '<i class="bi bi-plug" aria-hidden="true"></i>'
-                . '<span class="toolbar-label">' . $label . '</span>'
-                . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::newInstance()->add_menu(
-                array(
-                    'id'    => 'update_plugin',
-                    'title' => $title,
-                    'href'  => osc_admin_base_url(true) . '?page=plugins#update-plugins',
-                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
-                )
-            );
-        }
-    }
+    osc_admin_toolbar_update_counter('plugins', (bool) $force);
 }
 
 /**
- * Number of themes with an update available, from the cached count unless forced.
- * Without $force it schedules a background re-check once the cached count is a day old.
+ * Number of themes with an update available; see osc_update_check_count().
  *
- * @param bool $force Re-scan now instead of returning the cached count
+ * @param bool $force Re-scan now instead of returning the saved count
  *
- * @return int|string Int when re-scanned, the stored preference string otherwise
+ * @return int
  */
 function osc_check_themes_update($force = false)
 {
-    $total = getPreference('themes_update_count');
-    if ($force) {
-        return _osc_check_themes_update();
-    } elseif ((time() - (int)osc_themes_last_version_check()) > (24 * 3600)) {
-        osc_add_hook('admin_footer', 'check_themes_admin_footer');
-    }
-
-    return $total;
+    return osc_update_check_count('themes', (bool) $force);
 }
 
 /**
- * Re-scan every installed theme against the catalogue and cache the result.
+ * Re-scan every installed theme against the catalogue; see osc_update_check_scan().
  *
- * @return int Number of themes with an update available
+ * @return int
  */
 function _osc_check_themes_update()
 {
-    $total            = 0;
-    $array            = array();
-    $array_downloaded = array();
-    $themes           = WebThemes::newInstance()->getListThemes();
-
-    try {
-        $pending = \mindstellar\market\PackageIndex::forThemes()->pendingUpdates();
-    } catch (\Throwable $e) {
-        $pending = array();
-    }
-
-    foreach ($themes as $theme) {
-        $info = WebThemes::newInstance()->loadThemeInfo($theme);
-        if (isset($pending[$theme])) {
-            $array[] = $theme;
-            $total++;
-        }
-        $array_downloaded[] = @$info['theme_update_uri'];
-    }
-    osc_set_preference('themes_to_update', json_encode($array));
-    osc_set_preference('themes_downloaded', json_encode($array_downloaded));
-    osc_set_preference('themes_update_count', $total);
-    osc_set_preference('themes_last_version_check', time());
-    osc_reset_preferences();
-
-    return $total;
+    return osc_update_check_scan('themes');
 }
 
 /**
- * Add the toolbar counter for theme updates, when any are available.
+ * Toolbar counter for theme updates; see osc_admin_toolbar_update_counter().
  *
  * @param bool $force Re-scan for updates and rebuild the entry
  *
@@ -880,80 +871,33 @@ function _osc_check_themes_update()
  */
 function osc_admin_toolbar_update_themes($force = false)
 {
-    if (!osc_is_moderator()) {
-        $total = osc_check_themes_update($force);
-
-        if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_theme');
-        }
-        if ($total > 0) {
-            $label = __('Theme updates');
-            $title = '<i class="bi bi-brush" aria-hidden="true"></i>'
-                . '<span class="toolbar-label">' . $label . '</span>'
-                . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::newInstance()->add_menu(
-                array(
-                    'id'    => 'update_theme',
-                    'title' => $title,
-                    'href'  => osc_admin_base_url(true) . '?page=appearance',
-                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
-                )
-            );
-        }
-    }
+    osc_admin_toolbar_update_counter('themes', (bool) $force);
 }
 
 /**
- * Number of languages with an update available, from the cached count unless forced.
- * Without $force it schedules a background re-check once the cached count is a day old.
+ * Number of languages with an update available; see osc_update_check_count().
  *
- * @param bool $force Re-scan now instead of returning the cached count
+ * @param bool $force Re-scan now instead of returning the saved count
  *
- * @return int|string Int when re-scanned, the stored preference string otherwise
+ * @return int
  */
 function osc_check_languages_update($force = false)
 {
-    $total = getPreference('languages_update_count');
-    if ($force) {
-        return _osc_check_languages_update();
-    }
-
-    if ((time() - (int)osc_languages_last_version_check()) > (24 * 3600)) {
-        osc_add_hook('admin_footer', 'check_languages_admin_footer');
-    }
-
-    return $total;
+    return osc_update_check_count('languages', (bool) $force);
 }
 
 /**
- * Re-check every installed language against its published version and cache the result.
+ * Re-check every installed language against its published version; see osc_update_check_scan().
  *
- * @return int Number of languages with an update available
+ * @return int
  */
 function _osc_check_languages_update()
 {
-    $total            = 0;
-    $array            = array();
-    $array_downloaded = array();
-    $languages        = OSCLocale::newInstance()->listAll();
-    foreach ($languages as $lang) {
-        if (osc_check_language_update($lang['pk_c_code'], $lang['s_version'])) {
-            $array[] = $lang['pk_c_code'];
-            $total++;
-        }
-        $array_downloaded[] = $lang['pk_c_code'];
-    }
-    osc_set_preference('languages_to_update', json_encode($array));
-    osc_set_preference('languages_downloaded', json_encode($array_downloaded));
-    osc_set_preference('languages_update_count', $total);
-    osc_set_preference('languages_last_version_check', time());
-    osc_reset_preferences();
-
-    return $total;
+    return osc_update_check_scan('languages');
 }
 
 /**
- * Add the toolbar counter for language updates, when any are available.
+ * Toolbar counter for language updates; see osc_admin_toolbar_update_counter().
  *
  * @param bool $force Re-scan for updates and rebuild the entry
  *
@@ -961,27 +905,7 @@ function _osc_check_languages_update()
  */
 function osc_admin_toolbar_update_languages($force = false)
 {
-    if (!osc_is_moderator()) {
-        $total = osc_check_languages_update($force);
-
-        if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_language');
-        }
-        if ($total > 0) {
-            $label = __('Language updates');
-            $title = '<i class="bi bi-translate" aria-hidden="true"></i>'
-                . '<span class="toolbar-label">' . $label . '</span>'
-                . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::newInstance()->add_menu(
-                array(
-                    'id'    => 'update_language',
-                    'title' => $title,
-                    'href'  => osc_admin_base_url(true) . '?page=languages',
-                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
-                )
-            );
-        }
-    }
+    osc_admin_toolbar_update_counter('languages', (bool) $force);
 }
 
 /**
@@ -1069,7 +993,7 @@ if (osc_tinymce_frontend()) {
  */
 function osc_run_cleanup()
 {
-    $engine = Cleanup::newInstance();
+    $engine = Cleanup::getInstance();
     $total  = 0;
     foreach (Cleanup::RULES as $rule) {
         if (Cleanup::isEnabled($rule)) {
@@ -1082,6 +1006,8 @@ function osc_run_cleanup()
 }
 osc_add_hook('cron_daily', array(\mindstellar\job\CleanupJobs::class, 'queue'));
 osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class, 'run'));
+// Catches city and region centres edited in the admin or the API, which no import queues.
+osc_add_hook('cron_weekly', array(\mindstellar\listing\ListingPointJobs::class, 'queue'));
 
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.
@@ -1095,8 +1021,8 @@ osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class,
  */
 function osc_expire_premium_items()
 {
-    \mindstellar\billing\Entitlements::purge();
-    \mindstellar\billing\ItemUpgrades::purge();
+    \mindstellar\billing\EntitlementStore::purge();
+    \mindstellar\billing\ItemUpgradeStore::purge();
 
     return \mindstellar\billing\Premium::expire();
 }
@@ -1191,7 +1117,7 @@ osc_add_hook('header', 'osc_meta_generator');
  */
 function osc_meta_noindex()
 {
-    if (View::newInstance()->_exists('meta_noindex') && View::newInstance()->_get('meta_noindex')) {
+    if (View::getInstance()->_exists('meta_noindex') && View::getInstance()->_get('meta_noindex')) {
         echo '<meta name="robots" content="noindex, follow" />';
     }
 }
@@ -1225,7 +1151,8 @@ if (osc_force_jpeg()) {
 
     osc_add_filter('upload_image_extension', 'osc_force_jpeg_extension');
     osc_add_filter('upload_image_mime', 'osc_force_jpeg_mime');
-} elseif (osc_save_webp()) {
-    osc_add_filter('upload_image_extension', static fn ($content) => 'webp');
-    osc_add_filter('upload_image_mime', static fn ($content) => 'image/webp');
+} elseif (osc_image_format() === 'webp') {
+    // Whether the server can write WebP is asked at upload time, not on every request.
+    osc_add_filter('upload_image_extension', static fn ($content) => osc_save_webp() ? 'webp' : $content);
+    osc_add_filter('upload_image_mime', static fn ($content) => osc_save_webp() ? 'image/webp' : $content);
 }

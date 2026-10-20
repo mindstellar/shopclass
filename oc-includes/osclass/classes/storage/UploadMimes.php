@@ -19,8 +19,48 @@ namespace mindstellar\storage;
  */
 final class UploadMimes
 {
+    /** The image types an upload may be, by extension. Uploads are always photos. */
+    private const IMAGE_MIMES = [
+        'bmp'  => ['image/bmp'],
+        'gif'  => ['image/gif'],
+        'jpeg' => ['image/jpeg', 'image/pjpeg'],
+        'jpg'  => ['image/jpeg', 'image/pjpeg'],
+        'jpe'  => ['image/jpeg', 'image/pjpeg'],
+        'png'  => ['image/png', 'image/x-png'],
+        'tiff' => ['image/tiff'],
+        'tif'  => ['image/tiff'],
+        'webp' => ['image/webp'],
+    ];
+
     /**
-     * Every mime the configured extensions map to.
+     * The files a visitor may attach to a contact e-mail: the name's extension and the real type
+     * must agree. Kept apart from IMAGE_MIMES, which follows the owner's photo extensions.
+     */
+    private const ATTACHMENT_MIMES = [
+        'jpg'  => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png'  => ['image/png'],
+        'gif'  => ['image/gif'],
+        'webp' => ['image/webp'],
+        'pdf'  => ['application/pdf'],
+        'txt'  => ['text/plain'],
+        'csv'  => ['text/csv', 'text/plain'],
+        'doc'  => ['application/msword', 'application/vnd.ms-office'],
+        'xls'  => ['application/vnd.ms-excel', 'application/vnd.ms-office'],
+        'ppt'  => ['application/vnd.ms-powerpoint', 'application/vnd.ms-office'],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+        'pptx' => ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+        'odt'  => ['application/vnd.oasis.opendocument.text'],
+        'ods'  => ['application/vnd.oasis.opendocument.spreadsheet'],
+        'odp'  => ['application/vnd.oasis.opendocument.presentation'],
+    ];
+
+    /** The largest attachment, in MB, until the owner sets one. */
+    public const DEFAULT_ATTACHMENT_MAX_MB = 5;
+
+    /**
+     * Every mime the configured extensions map to. An extension that is not an image adds none.
      *
      * @return string[]
      */
@@ -31,18 +71,11 @@ final class UploadMimes
             return $cached;
         }
 
-        $mimes = array();
-        require LIB_PATH . 'osclass/mimes.php';
-
         $out = array();
         foreach (explode(',', (string)osc_allowed_extension()) as $ext) {
             $ext = strtolower(trim($ext));
-            if ($ext === '' || !isset($mimes[$ext])) {
-                continue;
-            }
-            foreach ((array)$mimes[$ext] as $mime) {
-                $mime = (string)$mime;
-                if ($mime !== '' && !in_array($mime, $out, true)) {
+            foreach (self::IMAGE_MIMES[$ext] ?? [] as $mime) {
+                if (!in_array($mime, $out, true)) {
                     $out[] = $mime;
                 }
             }
@@ -102,6 +135,45 @@ final class UploadMimes
         $mime = self::detect($path);
 
         return $mime !== '' && in_array($mime, self::allowed(), true);
+    }
+
+    /**
+     * Whether a visitor's file may be attached to a contact e-mail: a picture, PDF, text or
+     * office document whose name and content agree, no larger than the owner's limit.
+     *
+     * @param string $path the uploaded file
+     * @param string $name the name the visitor gave it
+     *
+     * @return bool
+     */
+    public static function isAllowedAttachment(string $path, string $name): bool
+    {
+        $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $size = is_file($path) ? (int) filesize($path) : 0;
+
+        return $size > 0
+            && $size <= self::attachmentMaxMb() * 1024 * 1024
+            && in_array(self::detect($path), self::ATTACHMENT_MIMES[$ext] ?? [], true);
+    }
+
+    /**
+     * The extensions a contact e-mail attachment may have, for the form's accept list and its message.
+     *
+     * @return string[]
+     */
+    public static function attachmentExtensions(): array
+    {
+        return array_keys(self::ATTACHMENT_MIMES);
+    }
+
+    /**
+     * The largest contact e-mail attachment, in MB, from Settings → General.
+     *
+     * @return int
+     */
+    public static function attachmentMaxMb(): int
+    {
+        return osc_get_int_preference('attachment_max_mb', self::DEFAULT_ATTACHMENT_MAX_MB, 1);
     }
 
     /**

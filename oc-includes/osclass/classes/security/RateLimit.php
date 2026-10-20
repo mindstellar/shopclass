@@ -10,16 +10,27 @@
 
 namespace mindstellar\security;
 
+use mindstellar\base\Model;
+use mindstellar\cache\RedisCache;
+use mindstellar\database\Db;
+
 /**
- * A rate limit on any key: an API key, an account, a token. ActionThrottle limits by
- * address; this limits by what the caller names.
+ * A rate limit on any key: an API key, an account, a token, an address (ActionThrottle).
  *
- * One counter row per key per fixed window, so a busy key costs one row, not one per
- * request. The key is stored hashed, so a secret passed as the key is never written.
- * Like ActionThrottle it fails open: a counter that cannot be reached allows the request.
+ * One counter row per key per fixed window, or per SLICE for a rolling count, so a busy key
+ * costs one row, not one per request. With a Redis-protocol cache the counters live there and
+ * the database is not written, except for a limit that fails closed; when that server does not
+ * answer, the table takes over. The key
+ * is stored hashed, so a secret passed as the key is never written. It fails open: a counter
+ * that cannot be reached allows the request.
  */
-final class RateLimit
+final class RateLimit extends Model
 {
+    protected const TABLE = 't_rate_counter';
+
+    /** Seconds per row of a rolling count. */
+    public const SLICE = 10;
+
     /**
      * Count one request for $key and say whether it is within the limit.
      *
@@ -29,64 +40,258 @@ final class RateLimit
      * @param int    $windowSeconds
      * @param bool   $failOpen what to answer when the counter cannot be reached: allow, or
      *                         refuse where a missed count would let guessing through
+     * @param int|null $now    the current time; time() when null
      *
      * @return bool false when this request is over the limit
      */
-    public static function hit(string $context, string $key, int $max, int $windowSeconds = 60, bool $failOpen = true): bool
+    public static function hit(string $context, string $key, int $max, int $windowSeconds = 60, bool $failOpen = true, ?int $now = null): bool
     {
         if ($max <= 0) {
             return true;
         }
-        $windowSeconds = max(1, $windowSeconds);
-        $now           = time();
-        $window        = $now - ($now % $windowSeconds);
-        $bucket        = substr($context, 0, 40) . ':' . $windowSeconds . ':' . sha1($key);
-        $table         = DB_TABLE_PREFIX . 't_rate_counter';
+        $hits = self::increment($context, $key, $windowSeconds, $failOpen, $now);
 
-        $increment = static function () use ($table, $bucket, $window, $windowSeconds): void {
-            osc_db_execute(
-                'INSERT INTO ' . $table . ' (s_bucket, i_window, i_expires, i_count) VALUES (?, ?, ?, 1)'
-                . ' ON DUPLICATE KEY UPDATE i_count = i_count + 1',
-                array($bucket, $window, $window + $windowSeconds)
-            );
-        };
-
-        try {
-            try {
-                $increment();
-            } catch (\Throwable $e) {
-                // A burst on one key can deadlock its own row; one retry settles that.
-                $increment();
-            }
-            $hits = (int) osc_db_scalar(
-                'SELECT i_count FROM ' . $table . ' WHERE s_bucket = ? AND i_window = ?',
-                array($bucket, $window)
-            );
-        } catch (\Throwable $e) {
-            FailOpen::log('RateLimit', 'the request', $e, $failOpen);
-
-            return $failOpen;
-        }
-
-        return $hits <= $max;
+        return $hits === null ? $failOpen : $hits <= $max;
     }
 
     /**
-     * Drop the windows that have ended. Called from the daily cron.
+     * Count one request for $key and return the count in the current window, in one query.
      *
-     * @return int rows removed
+     * @param string $context as for hit()
+     * @param string $key
+     * @param int    $windowSeconds
+     * @param bool   $failOpen only changes how an unreachable counter is logged
+     * @param int|null $now    the current time; time() when null
+     *
+     * @return int|null null when the counter cannot be reached
      */
-    public static function prune(): int
+    public static function increment(string $context, string $key, int $windowSeconds = 60, bool $failOpen = true, ?int $now = null): ?int
     {
+        return self::add($context, $key, 1, $windowSeconds, $failOpen, $now);
+    }
+
+    /**
+     * Count $by requests for $key at once and return the count in the current window.
+     *
+     * @param string $context as for hit()
+     * @param string $key
+     * @param int    $by      requests to add; at least 1
+     * @param int    $windowSeconds
+     * @param bool   $failOpen only changes how an unreachable counter is logged
+     * @param int|null $now    the current time; time() when null
+     *
+     * @return int|null null when the counter cannot be reached
+     */
+    public static function add(string $context, string $key, int $by, int $windowSeconds = 60, bool $failOpen = true, ?int $now = null): ?int
+    {
+        $by            = max(1, $by);
+        $windowSeconds = max(1, $windowSeconds);
+        $now         ??= time();
+        $window        = $now - ($now % $windowSeconds);
+        $bucket        = self::bucket($context, $key, $windowSeconds);
+        // A limit that must refuse when unsure stays in the table, which never drops a count.
+        $count         = $failOpen ? RedisCache::site()?->counter('rl:' . $bucket . ':' . $window, $by, $window + $windowSeconds - $now) : null;
+        if ($count !== null) {
+            return $count;
+        }
+
+        return self::write(self::bucket($context, $key, $windowSeconds), $window, $window + $windowSeconds, $by, $failOpen);
+    }
+
+    /**
+     * Count one event for $key in a rolling window: kept in SLICE-second rows, so a burst costs
+     * one row per slice rather than one per event.
+     *
+     * @param string   $context as for hit()
+     * @param string   $key
+     * @param int      $keepSeconds the longest window countRolling() will be asked about
+     * @param int|null $now the current time; time() when null
+     *
+     * @return bool false when the counter cannot be reached
+     */
+    public static function addRolling(string $context, string $key, int $keepSeconds, ?int $now = null): bool
+    {
+        $now  ??= time();
+        $slice  = $now - ($now % self::SLICE);
+        $bucket = self::bucket($context, $key, 0);
+        $keep   = self::SLICE + max(1, $keepSeconds);
+        $redis  = RedisCache::site();
+        $added  = $redis?->hashAdd('rl:' . $bucket, (string) $slice, 1, $keep);
+        if ($added !== null) {
+            // Once per slice, drop the slices no count can reach any more.
+            if ($added === 1) {
+                $old = array_filter(array_keys($redis->hashRead('rl:' . $bucket) ?? array()), static fn ($s): bool => (int) $s <= $now - $keep);
+                $redis->hashDelete('rl:' . $bucket, array_map('strval', $old));
+            }
+
+            return true;
+        }
+
+        return self::write($bucket, $slice, $slice + $keep, 1, true) !== null;
+    }
+
+    /**
+     * Events counted by addRolling() for $key in the trailing $windowSeconds. An event up to
+     * SLICE seconds older can still count, never one inside the window missed.
+     *
+     * @param string   $context as passed to addRolling()
+     * @param string   $key
+     * @param int      $windowSeconds
+     * @param int|null $now the current time; time() when null
+     *
+     * @return int|null null when the counter cannot be reached
+     */
+    public static function countRolling(string $context, string $key, int $windowSeconds, ?int $now = null): ?int
+    {
+        $now  ??= time();
+        $bucket = self::bucket($context, $key, 0);
+        $after  = $now - max(1, $windowSeconds) - self::SLICE;
+        $slices = RedisCache::site()?->hashRead('rl:' . $bucket);
+        if ($slices !== null) {
+            $total = 0;
+            foreach ($slices as $slice => $count) {
+                $total += (int) $slice > $after ? $count : 0;
+            }
+
+            return $total;
+        }
         try {
-            return (int) osc_db_execute(
-                'DELETE FROM ' . DB_TABLE_PREFIX . 't_rate_counter WHERE i_expires < ?',
-                array(time())
+            return (int) Db::scalar(
+                'SELECT COALESCE(SUM(i_count), 0) FROM ' . self::tableName() . ' WHERE s_bucket = ? AND i_window > ?',
+                array($bucket, $after)
             );
         } catch (\Throwable $e) {
             FailOpen::log('RateLimit', 'the request', $e);
 
-            return 0;
+            return null;
         }
+    }
+
+    /**
+     * Add $by to one counter row and return its new count.
+     */
+    private static function write(string $bucket, int $window, int $expires, int $by, bool $failOpen): ?int
+    {
+        // LAST_INSERT_ID(expr) hands the new count back with the insert; a fresh row reports 0.
+        $sql = 'INSERT INTO ' . self::tableName() . ' (s_bucket, i_window, i_expires, i_count) VALUES (?, ?, ?, ?)'
+            . ' ON DUPLICATE KEY UPDATE i_count = LAST_INSERT_ID(i_count + ?)';
+        $params = array($bucket, $window, $expires, $by, $by);
+
+        try {
+            // A burst on one key can deadlock its own row; one retry settles that.
+            $count = Db::retryOnce(static fn (): int => Db::insertGetId($sql, $params));
+        } catch (\Throwable $e) {
+            FailOpen::log('RateLimit', 'the request', $e, $failOpen);
+
+            return null;
+        }
+
+        return max($by, $count);
+    }
+
+    /**
+     * How many requests $key has made in the current window, without counting one.
+     *
+     * @param string $context as passed to hit()
+     * @param string $key
+     * @param int    $windowSeconds as passed to hit()
+     * @param int|null $now    the current time; time() when null
+     *
+     * @return int|null null when the counter cannot be reached
+     */
+    public static function count(string $context, string $key, int $windowSeconds = 60, ?int $now = null): ?int
+    {
+        return self::countMany($context, array($key), $windowSeconds, $now)[$key] ?? null;
+    }
+
+    /**
+     * count() for several keys of one context, in one query. Like count(), it reads where a
+     * fail-open hit() counts.
+     *
+     * @param string   $context
+     * @param string[] $keys
+     * @param int      $windowSeconds
+     * @param int|null $now the current time; time() when null
+     *
+     * @return array<string,int>|null key => requests so far; null when the counter cannot be reached
+     */
+    public static function countMany(string $context, array $keys, int $windowSeconds = 60, ?int $now = null): ?array
+    {
+        $windowSeconds = max(1, $windowSeconds);
+        $now         ??= time();
+        $buckets       = array();
+        foreach ($keys as $key) {
+            $buckets[self::bucket($context, (string) $key, $windowSeconds)] = (string) $key;
+        }
+        $counts = array_fill_keys(array_values($buckets), 0);
+        if ($buckets === array()) {
+            return $counts;
+        }
+        $window = $now - ($now % $windowSeconds);
+        $cached = RedisCache::site()?->counters(array_map(static fn (string $b): string => 'rl:' . $b . ':' . $window, array_keys($buckets)));
+        if ($cached !== null) {
+            foreach (array_combine(array_keys($buckets), array_values($cached)) as $bucket => $count) {
+                $counts[$buckets[$bucket]] = $count;
+            }
+
+            return $counts;
+        }
+        try {
+            $rows = Db::select(
+                'SELECT s_bucket, i_count FROM ' . self::tableName() . ' WHERE i_window = ? AND s_bucket IN ('
+                . implode(', ', array_fill(0, count($buckets), '?')) . ')',
+                array_merge(array($window), array_keys($buckets))
+            );
+        } catch (\Throwable $e) {
+            FailOpen::log('RateLimit', 'the request', $e);
+
+            return null;
+        }
+        foreach ($rows as $row) {
+            $counts[$buckets[$row['s_bucket']]] = (int) $row['i_count'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @param string $context
+     * @param string $key
+     * @param int    $windowSeconds 0 for a rolling count
+     *
+     * @return string
+     */
+    private static function bucket(string $context, string $key, int $windowSeconds): string
+    {
+        return substr($context, 0, 40) . ':' . $windowSeconds . ':' . sha1($key);
+    }
+
+    /**
+     * Drop the windows that have ended, $batch rows at a time so no single delete holds the
+     * table for long. Called from the hourly cron.
+     *
+     * @param int $batch     rows per delete
+     * @param int $maxRounds stop after this many batches; the next run carries on
+     *
+     * @return int rows removed
+     */
+    public static function prune(int $batch = 5000, int $maxRounds = 100): int
+    {
+        $batch   = max(1, $batch);
+        $sql     = 'DELETE FROM ' . self::tableName() . ' WHERE i_expires < ? ORDER BY i_expires LIMIT ' . $batch;
+        $removed = 0;
+        try {
+            for ($round = 0; $round < $maxRounds; $round++) {
+                $rows     = (int) Db::execute($sql, array(time()));
+                $removed += $rows;
+                if ($rows < $batch) {
+                    break;
+                }
+            }
+        } catch (\Throwable $e) {
+            FailOpen::log('RateLimit', 'the request', $e);
+        }
+
+        return $removed;
     }
 }

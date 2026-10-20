@@ -34,6 +34,8 @@ bulk change. **Recalculate** counts them again. It shows its progress, for
 example *27% counted: 24,198 of 88,301 locations*. The site stays online while it
 runs.
 
+Shopclass also recounts every place once a week, as background jobs.
+
 ### Browse: edit what you have
 
 **Browse** shows your installed places: countries, then regions, then cities. The

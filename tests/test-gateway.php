@@ -88,7 +88,7 @@ use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
 use mindstellar\settings\SettingsPageRegistry;
@@ -99,7 +99,7 @@ $setting = static function (string $name, string $value, string $type = 'STRING'
     osc_reset_preferences();
 };
 $status = static function (Order $order): string {
-    return Orders::find($order->getId())->getStatus();
+    return OrderStore::find($order->getId())->getStatus();
 };
 $ledgerRows = static function (Order $order) use ($admin): int {
     return (int) $admin->query(
@@ -121,7 +121,7 @@ try {
 }
 pin('the declaration registers', null, $threw);
 
-$fields = SettingsPageRegistry::instance()->fields(TestGateway::PAGE);
+$fields = SettingsPageRegistry::getInstance()->fields(TestGateway::PAGE);
 pin('test mode is off until an admin turns it on', false, TestGateway::setting('enabled'));
 pin('the callback window defaults to 30 minutes', 30, TestGateway::setting('window'));
 check(
@@ -140,11 +140,11 @@ osc_set_preference(\mindstellar\billing\Receipts::PREF_EMAIL, '0', Billing::PREF
 osc_reset_preferences();
 
 $gateway = new TestGateway();
-PaymentGatewayRegistry::instance()->register($gateway);
+PaymentGatewayRegistry::getInstance()->register($gateway);
 
 $buyer = seed_user($admin, 'buyer', 'buyer@example.test');
 $newOrder = static function (int $credits = 100) use ($buyer): Order {
-    return Orders::create($buyer, TestGateway::ID, 9_990_000, 'USD', $credits);
+    return OrderStore::create($buyer, TestGateway::ID, 9_990_000, 'USD', $credits);
 };
 
 /* ----------------------------------------------------------------------------
@@ -154,13 +154,13 @@ harness_section('Refused while test mode is off');
 
 $order  = $newOrder();
 $result = Billing::handleCallback(TestGateway::ID, TestGateway::payload($order, 'paid'));
-check('the gateway is not offered', !$gateway->isConfigured() && !isset(PaymentGatewayRegistry::instance()->available()[TestGateway::ID]));
+check('the gateway is not offered', !$gateway->isConfigured() && !isset(PaymentGatewayRegistry::getInstance()->available()[TestGateway::ID]));
 pin('a valid callback is ignored', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
 pin('nothing is credited', 0, Wallet::balance($buyer));
 pin('the order stays pending', Order::STATUS_PENDING, $status($order));
 
 $setting('enabled', '1', 'BOOLEAN');
-check('switching test mode on offers the gateway', isset(PaymentGatewayRegistry::instance()->available('USD')[TestGateway::ID]));
+check('switching test mode on offers the gateway', isset(PaymentGatewayRegistry::getInstance()->available('USD')[TestGateway::ID]));
 check('billing off takes it away again', (static function () {
     osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
     osc_reset_preferences();
@@ -231,7 +231,7 @@ $result = Billing::handleCallback(TestGateway::ID, $payload);
 pin('a valid paid callback settles', CallbackResult::OUTCOME_PAID, $result->getOutcome());
 pin('the credits land', 100, Wallet::balance($buyer));
 pin('the order is paid', Order::STATUS_PAID, $status($order));
-pin('the provider reference is stored', $payload['ref'], Orders::find($order->getId())->getExternalRef());
+pin('the provider reference is stored', $payload['ref'], OrderStore::find($order->getId())->getExternalRef());
 
 Billing::handleCallback(TestGateway::ID, $payload);
 Billing::handleCallback(TestGateway::ID, TestGateway::payload($order, 'paid'));
@@ -316,7 +316,7 @@ pin('a pending order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->ref
 pin('no refund button for a pending order', null, Billing::refundableGateway($adminRefund));
 
 Billing::markPaid($adminRefund, 'test_paid');
-$paid    = Orders::find($adminRefund->getId());
+$paid    = OrderStore::find($adminRefund->getId());
 $balance = Wallet::balance($buyer);
 check('a paid order offers the refund button', Billing::refundableGateway($paid) === $gateway);
 
@@ -326,9 +326,9 @@ pin('refused while test mode is off', CallbackResult::OUTCOME_IGNORED, Billing::
 pin('the order stays paid', Order::STATUS_PAID, $status($paid));
 $setting('enabled', '1', 'BOOLEAN');
 
-$other = Orders::create($buyer, 'other', 1_000_000, 'USD', 5);
-Orders::settle($other->getId(), Order::STATUS_PAID, 'x');
-pin('another gateway\'s order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->refund(Orders::find($other->getId()))->getOutcome());
+$other = OrderStore::create($buyer, 'other', 1_000_000, 'USD', 5);
+OrderStore::settle($other->getId(), Order::STATUS_PAID, 'x');
+pin('another gateway\'s order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->refund(OrderStore::find($other->getId()))->getOutcome());
 
 $result = Billing::refundThroughGateway($paid);
 pin('a paid order is refunded', CallbackResult::OUTCOME_REFUNDED, $result->getOutcome());

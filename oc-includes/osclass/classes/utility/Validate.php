@@ -1,11 +1,14 @@
 <?php
-
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 01/07/20
- * Time: 3:07 PM
- * License is provided in root directory.
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. The original
+ * Osclass code it derives from was licensed under the Apache License 2.0.
+ * See LICENSE (GPL-3.0) and LICENSE-APACHE (Apache-2.0).
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 namespace mindstellar\utility;
@@ -13,10 +16,9 @@ namespace mindstellar\utility;
 use Category;
 use City;
 use Country;
-use LoginAttempt;
-use Params;
+use mindstellar\security\ActionThrottle;
+use mindstellar\security\AddressGuard;
 use Region;
-use Session;
 
 /**
  * Class Validate
@@ -36,6 +38,21 @@ class Validate
     public static function packageName($name): bool
     {
         return is_string($name) && preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $name) === 1;
+    }
+
+    /**
+     * Whether $url is a valid URL with an http or https scheme. FILTER_VALIDATE_URL alone
+     * also passes javascript: and data: URLs.
+     *
+     * @param mixed $url
+     *
+     * @return bool
+     */
+    public static function httpUrl($url): bool
+    {
+        return is_string($url)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && preg_match('#^https?://#i', $url) === 1;
     }
 
     /**
@@ -219,26 +236,43 @@ class Validate
     }
 
     /**
+     * Validate one or more digits (no sign, no periods)
+     *
+     * @param mixed $value
+     *
+     * @return boolean
+     */
+    public function int($value)
+    {
+        return is_scalar($value) && preg_match('/^[0-9]+$/', (string) $value) === 1;
+    }
+
+    /**
      * Validate one or more numbers (no periods), must be more than 0.
      *
-     * @param string $value
+     * @param mixed $value
      *
      * @return boolean
      */
     public function nozero($value)
     {
-        return $this->filterInt($value) && $value > 0;
+        return $this->int($value) && $value > 0;
     }
 
     /**
      * Validate $value is a number or a numeric string
      *
-     * @param string|int|float $value
+     * @param mixed   $value
+     * @param boolean $required when false, an empty value passes
      *
      * @return boolean
      */
-    public function number($value)
+    public function number($value, $required = true)
     {
+        if (!$required && ($value === null || $value === '')) {
+            return true;
+        }
+
         return is_numeric($value);
     }
 
@@ -318,14 +352,14 @@ class Validate
     public function location($city, $sCity, $region, $sRegion, $country, $sCountry)
     {
         if ($this->nozero($city) && $this->nozero($region) && $this->text($country, 2)) {
-            $data      = Country::newInstance()->findByCode($country);
+            $data      = Country::getInstance()->findByCode($country);
             $countryId = $data['pk_c_code'];
             if ($countryId) {
-                $data     = Region::newInstance()->findByPrimaryKey($region);
+                $data     = Region::getInstance()->findByPrimaryKey($region);
                 $regionId = $data['pk_i_id'];
-                if ($data['b_active'] === 1) {
-                    $data = City::newInstance()->findByPrimaryKey($city);
-                    if ($data['b_active'] === 1 && $data['fk_i_region_id'] === $regionId
+                if ((int) $data['b_active'] === 1) {
+                    $data = City::getInstance()->findByPrimaryKey($city);
+                    if ((int) $data['b_active'] === 1 && (string) $data['fk_i_region_id'] === (string) $regionId
                         && strtolower($data['fk_c_country_code']) === strtolower($countryId)
                     ) {
                         return true;
@@ -353,13 +387,13 @@ class Validate
     public function category($value)
     {
         if ($this->nozero($value)) {
-            $data = Category::newInstance()->findByPrimaryKey($value);
-            if (isset($data['b_enabled']) && $data['b_enabled'] === 1) {
+            $data = Category::getInstance()->findByPrimaryKey($value);
+            if (isset($data['b_enabled']) && (int) $data['b_enabled'] === 1) {
                 if (osc_selectable_parent_categories()) {
                     return true;
                 }
 
-                if ($data['fk_i_parent_id'] !== null) {
+                if ($data['fk_i_parent_id'] !== null && $data['fk_i_parent_id'] !== '') {
                     return true;
                 }
             }
@@ -369,12 +403,25 @@ class Validate
     }
 
     /**
+     * Whether a public address answers a HEAD request with 200, 301 or 302 within 3 seconds.
+     */
+    private static function answers(string $url): bool
+    {
+        $checked = (new AddressGuard())->check($url);
+        if (!$checked['ok']) {
+            return false;
+        }
+
+        return in_array((new FileSystem())->head($url, 3, AddressGuard::curlOptions($url, $checked['ip'])), array(200, 301, 302), true);
+    }
+
+    /**
      * Validate if $value url is a valid url.
-     * Check header response to validate.
      *
      * @param string  $value
      * @param boolean $required
-     * @param bool    $get_headers
+     * @param bool    $get_headers also ask the address with a HEAD request and want 200, 301 or 302;
+     *                             a private or reserved host fails without being asked
      *
      * @return boolean
      */
@@ -386,11 +433,8 @@ class Validate
             $success = $this->filterURL($sanitizedValue);
 
             if ($success) {
-                if ($get_headers) {
-                    @$headers = get_headers($sanitizedValue);
-                    if (!preg_match('/^HTTP\/\d\.\d\s+(200|301|302)/', $headers[0])) {
-                        return false;
-                    }
+                if ($get_headers && !self::answers($sanitizedValue)) {
+                    return false;
                 }
             } else {
                 return false;
@@ -410,20 +454,15 @@ class Validate
     public function delay($type = 'item')
     {
         if ($type === 'item') {
-            $delay   = osc_item_spam_delay();
+            $delay   = (int) osc_item_spam_delay();
             $context = 'item_post';
         } else {
-            $delay   = osc_comment_spam_delay();
+            $delay   = (int) osc_comment_spam_delay();
             $context = 'comment_post';
         }
 
-        // Allowed when this address has not posted of this kind within the delay window. The
-        // throttle records live in the DB now (see ItemActions), not the session.
-        return LoginAttempt::newInstance()->countByIpContext(
-            $context,
-            (string)Params::getServerParam('REMOTE_ADDR'),
-            date('Y-m-d H:i:s', time() - (int)$delay)
-        ) === 0;
+        // Allowed when this address has not posted of this kind within the delay window.
+        return $delay <= 0 || !ActionThrottle::exceeded($context, 1, $delay);
     }
 
     /**

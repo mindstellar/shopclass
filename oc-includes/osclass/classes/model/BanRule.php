@@ -12,16 +12,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * BanRule DAO
  */
 class BanRule extends DAO
 {
-    /**
-     *
-     * @var \BanRule
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
+    protected $cacheGroup = 'ban_rule';
 
     /**
      * Set data related to t_ban_rule table
@@ -41,17 +41,11 @@ class BanRule extends DAO
     }
 
     /**
-     * Return the shared BanRule model instance, creating it on first use.
-     *
-     * @return \BanRule
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -101,7 +95,7 @@ class BanRule extends DAO
             // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
             // payload before the wildcard boundaries are added, so a literal
             // wildcard character typed by the caller stays literal.
-            $escaped   = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
+            $escaped   = \mindstellar\database\QueryBuilder::escapeLike((string)$name);
             $where     = 's_name LIKE ?';
             $params[]  = '%' . $escaped . '%';
         }
@@ -122,12 +116,12 @@ class BanRule extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $rules;
         }
 
-        $rules['rules'] = osc_db_stringify_rows($rows);
+        $rules['rules'] = Db::stringifyRows($rows);
 
         $counts = $this->pagedCounts($where, $params);
         if ($counts === null) {
@@ -150,6 +144,6 @@ class BanRule extends DAO
         // COUNT(*) always returns exactly one row, so the legacy numRows() == 0
         // branch was unreachable; only the query-failure branch matters, and
         // this table/query can't realistically produce one.
-        return (string)osc_db_scalar('SELECT COUNT(*) as i_total FROM ' . $this->getTableName());
+        return (string)Db::scalar('SELECT COUNT(*) as i_total FROM ' . $this->getTableName());
     }
 }

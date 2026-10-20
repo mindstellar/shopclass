@@ -11,6 +11,8 @@
 namespace mindstellar\security;
 
 use mindstellar\job\JobQueue;
+use mindstellar\user\UserStore;
+use mindstellar\utility\ViewScope;
 
 /**
  * Message mail leaves only from a confirmed sender address. A signed-in member's own
@@ -67,7 +69,7 @@ final class MessageHold
             return self::send($kind, $args);
         }
 
-        $queue = JobQueue::instance();
+        $queue = JobQueue::getInstance();
         $key   = self::key($email);
         $id    = 0;
         if (!$queue->hasKey(self::JOB, $key)) {
@@ -80,6 +82,7 @@ final class MessageHold
             } catch (\InvalidArgumentException $e) {
                 $id = 0;
             }
+            // @phpstan-ignore booleanNot.alwaysTrue (a concurrent request may have queued it meanwhile)
             if ($id <= 0 && !$queue->hasKey(self::JOB, $key)) {
                 osc_add_flash_error_message(_m('Your message could not be sent. Please try again later.'));
 
@@ -110,7 +113,10 @@ final class MessageHold
     public static function attachmentError(string $email, $attachment): ?string
     {
         if ($attachment === false) {
-            return _m('That type of file cannot be attached.');
+            return sprintf(
+                _m('That file cannot be attached. Attach a picture, PDF, text or office document of up to %d MB.'),
+                \mindstellar\storage\UploadMimes::attachmentMaxMb()
+            );
         }
         if (is_array($attachment) && !self::verified($email)) {
             return _m('Send one message without a file first and confirm your e-mail. After that you can attach files.');
@@ -129,7 +135,7 @@ final class MessageHold
     public static function preview(string $token): ?array
     {
         $link = self::readConfirm($token);
-        $held = $link === null ? null : JobQueue::instance()->peek($link['id'], self::JOB, $link['key']);
+        $held = $link === null ? null : JobQueue::getInstance()->peek($link['id'], self::JOB, $link['key']);
         if ($held === null) {
             return null;
         }
@@ -139,11 +145,11 @@ final class MessageHold
                 $to = _m('the site owner');
                 break;
             case 'item_contact':
-                $item = \Item::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $item = \Item::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
                 $to   = sprintf(_m('the seller of "%s"'), $item ? (string) $item['s_title'] : '');
                 break;
             case 'user_contact':
-                $user = \User::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $user = \User::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
                 $to   = $user ? (string) $user['s_name'] : '';
                 break;
             default:
@@ -169,7 +175,7 @@ final class MessageHold
             return 'invalid';
         }
         // The job's key is the sender's address hash, so a link only takes its own message.
-        $held = JobQueue::instance()->take($link['id'], self::JOB, $link['key']);
+        $held = JobQueue::getInstance()->take($link['id'], self::JOB, $link['key']);
         if ($held === null) {
             return 'gone';
         }
@@ -213,34 +219,34 @@ final class MessageHold
                 return osc_sendMail((array) ($args['params'] ?? array())) !== false;
             case 'item_contact':
             case 'send_friend':
-                $item = \Item::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $item = \Item::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
                 if (!$item) {
                     return false;
                 }
-                \View::newInstance()->_exportVariableToView('item', $item);
                 $args['item'] = $item;
-                if ($kind === 'send_friend') {
-                    $args['s_title'] = $item['s_title'];
-                    osc_run_hook('hook_email_send_friend', $args);
-                } else {
-                    osc_run_hook('hook_email_item_inquiry', $args);
-                }
+                ViewScope::withItem($item, static function () use ($kind, $item, $args): void {
+                    if ($kind === 'send_friend') {
+                        $args['s_title'] = $item['s_title'];
+                        osc_run_hook('hook_email_send_friend', $args);
+                    } else {
+                        osc_run_hook('hook_email_item_inquiry', $args);
+                    }
+                });
 
                 return true;
             case 'user_contact':
-                $user = \User::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
-                if (!$user || !$user['b_active'] || !$user['b_enabled']) {
+                $user = \User::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                if (!$user || !UserStore::isLive($user)) {
                     return false;
                 }
-                \View::newInstance()->_exportVariableToView('user', $user);
-                osc_run_hook(
+                ViewScope::with('user', $user, static fn () => osc_run_hook(
                     'hook_email_contact_user',
                     (int) $user['pk_i_id'],
                     (string) $args['yourEmail'],
                     (string) $args['yourName'],
                     (string) $args['phoneNumber'],
                     (string) $args['message']
-                );
+                ));
 
                 return true;
         }

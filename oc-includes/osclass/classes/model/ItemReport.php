@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Deduplicated item-report log.
  *
@@ -19,8 +21,7 @@
  */
 class ItemReport extends DAO
 {
-    /** @var ItemReport */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_item_report_log table
@@ -40,17 +41,11 @@ class ItemReport extends DAO
     }
 
     /**
-     * Return the shared ItemReport model instance, creating it on first use.
-     *
-     * @return ItemReport
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -68,29 +63,8 @@ class ItemReport extends DAO
             return 'u:' . (int)osc_logged_user_id();
         }
 
-        return 'ip:' . self::ipReporterScope((string)Params::getServerParam('REMOTE_ADDR'));
-    }
-
-    /**
-     * Collapse an anonymous reporter's address to the block one actor realistically
-     * controls, so IP rotation cannot manufacture distinct votes toward the auto-block
-     * threshold. An IPv6 host is routinely handed a whole /64 (2^64 addresses), so those
-     * key on the /64 network prefix; IPv4 is left whole (a distinct IPv4 has real cost,
-     * and collapsing further would fold CGNAT'd users onto a single vote).
-     *
-     * @param string $ip
-     *
-     * @return string
-     */
-    private static function ipReporterScope($ip)
-    {
-        $packed = @inet_pton($ip);
-        if ($packed !== false && strlen($packed) === 16) {
-            // IPv6: keep the 64-bit network prefix, zero the interface identifier.
-            return inet_ntop(substr($packed, 0, 8) . str_repeat("\x00", 8)) . '/64';
-        }
-
-        return substr($ip, 0, 64);
+        // An IPv6 host holds a whole /64, so rotating addresses inside it gives no extra votes.
+        return 'ip:' . substr(\mindstellar\security\AddressBucket::ofRequest(), 0, 64);
     }
 
     /**
@@ -113,19 +87,20 @@ class ItemReport extends DAO
         $userId = osc_is_web_user_logged_in() ? (int)osc_logged_user_id() : null;
 
         // A bound null for fk_i_user_id inserts SQL NULL, exactly as the legacy
-        // 'NULL' literal did; NOW() stays literal so MySQL, not PHP, is the clock.
+        // 'NULL' literal did. The time is PHP's, like every other listing date.
         // The write's result was never read, so a failed query stays absorbed.
         try {
-            osc_db_execute(
+            Db::execute(
                 'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_item_report_log'
                 . ' (fk_i_item_id, s_reporter, fk_i_user_id, s_ip, s_reason, dt_date)'
-                . ' VALUES (?, ?, ?, ?, ?, NOW())',
+                . ' VALUES (?, ?, ?, ?, ?, ?)',
                 array(
                     $itemId,
                     $this->reporterKey(),
                     $userId,
                     substr((string)Params::getServerParam('REMOTE_ADDR'), 0, 64),
                     substr((string)$reason, 0, 20),
+                    date('Y-m-d H:i:s'),
                 )
             );
         } catch (\mindstellar\database\DbException $e) {
@@ -143,7 +118,7 @@ class ItemReport extends DAO
     public function countReporters($itemId)
     {
         try {
-            $count = osc_db_scalar(
+            $count = Db::scalar(
                 'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item_report_log WHERE fk_i_item_id = ?',
                 array((int)$itemId)
             );
@@ -164,7 +139,7 @@ class ItemReport extends DAO
     public function reasonBreakdown($itemId)
     {
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT s_reason, COUNT(*) AS c FROM ' . DB_TABLE_PREFIX . 't_item_report_log'
                 . ' WHERE fk_i_item_id = ? GROUP BY s_reason',
                 array((int)$itemId)
@@ -194,7 +169,7 @@ class ItemReport extends DAO
     {
         // The delete result was never read, so a failed query stays absorbed.
         try {
-            osc_db_execute(
+            Db::execute(
                 'DELETE FROM ' . DB_TABLE_PREFIX . 't_item_report_log WHERE fk_i_item_id = ?',
                 array((int)$itemId)
             );

@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use DomainException;
 use Log;
+use mindstellar\database\Db;
 use Throwable;
 
 /**
@@ -84,7 +85,7 @@ final class Billing
      */
     public static function checkout(Order $order): ?CheckoutIntent
     {
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
         if ($gateway === null || !$gateway->isConfigured()) {
             return null;
         }
@@ -119,7 +120,7 @@ final class Billing
      */
     public static function handleCallback(string $gatewayId, array $request): CallbackResult
     {
-        $gateway = PaymentGatewayRegistry::instance()->get($gatewayId);
+        $gateway = PaymentGatewayRegistry::getInstance()->get($gatewayId);
         if ($gateway === null) {
             // Gateways register only while billing is enabled, so this is usually an
             // "off" window rather than a bogus request -- core never got to look at
@@ -138,7 +139,7 @@ final class Billing
             case CallbackResult::OUTCOME_FAILED:
                 $order = self::resolve($gatewayId, $result);
                 if ($order !== null) {
-                    Orders::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef());
+                    OrderStore::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef());
                 }
 
                 return $result;
@@ -179,11 +180,11 @@ final class Billing
      */
     public static function markPaid(Order $order, ?string $externalRef = null, bool $allowFailed = false): bool
     {
-        $settled = osc_db_transaction(static function () use ($order, $externalRef, $allowFailed): bool {
+        $settled = Db::transaction(static function () use ($order, $externalRef, $allowFailed): bool {
             $from = $allowFailed
                 ? array(Order::STATUS_PENDING, Order::STATUS_FAILED)
                 : array(Order::STATUS_PENDING);
-            if (!Orders::settle($order->getId(), Order::STATUS_PAID, $externalRef, $from)) {
+            if (!OrderStore::settle($order->getId(), Order::STATUS_PAID, $externalRef, $from)) {
                 return false;
             }
 
@@ -227,8 +228,8 @@ final class Billing
      */
     public static function refund(Order $order): bool
     {
-        $reversed = osc_db_transaction(static function () use ($order): bool {
-            if (!Orders::refund($order->getId())) {
+        $reversed = Db::transaction(static function () use ($order): bool {
+            if (!OrderStore::refund($order->getId())) {
                 return false;
             }
 
@@ -265,11 +266,11 @@ final class Billing
      */
     public static function refundableGateway(Order $order): ?RefundableGateway
     {
-        if (!$order->isPaid() || $order->meta(Orders::REFUND_REQUESTED) !== null) {
+        if (!$order->isPaid() || $order->meta(OrderStore::REFUND_REQUESTED) !== null) {
             return null;
         }
 
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
 
         return $gateway instanceof RefundableGateway && $gateway->isConfigured() ? $gateway : null;
     }
@@ -285,7 +286,7 @@ final class Billing
      */
     public static function dashboardUrl(Order $order): ?string
     {
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
         if (!$gateway instanceof DashboardLinkGateway) {
             return null;
         }
@@ -324,6 +325,7 @@ final class Billing
      * changes nothing.
      *
      * @param Order     $order
+     * @param-out bool  $providerAccepted
      * @param bool|null $providerAccepted Set to true when the provider accepted the refund,
      *                                    including when it could not be recorded here
      *
@@ -333,26 +335,15 @@ final class Billing
     public static function refundThroughGateway(Order $order, ?bool &$providerAccepted = null): CallbackResult
     {
         $providerAccepted = false;
-        $lock             = self::refundLockName($order->getId());
 
-        try {
-            $locked = (int) osc_db_scalar('SELECT GET_LOCK(?, 2)', array($lock)) === 1;
-        } catch (Throwable $e) {
-            $locked = false;
-        }
-        if (!$locked) {
-            return CallbackResult::ignored(__('A refund for this order is already running'));
-        }
-
-        try {
-            return self::refundLocked($order, $providerAccepted);
-        } finally {
-            try {
-                osc_db_scalar('SELECT RELEASE_LOCK(?)', array($lock));
-            } catch (Throwable $e) {
-                // The lock goes with the connection anyway.
-            }
-        }
+        return Db::withNamedLock(
+            self::refundLockName($order->getId()),
+            2,
+            static function () use ($order, &$providerAccepted): CallbackResult {
+                return self::refundLocked($order, $providerAccepted);
+            },
+            static fn (): CallbackResult => CallbackResult::ignored(__('A refund for this order is already running'))
+        );
     }
 
     /**
@@ -380,7 +371,7 @@ final class Billing
      */
     private static function refundLocked(Order $order, bool &$providerAccepted): CallbackResult
     {
-        $fresh = Orders::find($order->getId());
+        $fresh = OrderStore::find($order->getId());
         if ($fresh === null) {
             return CallbackResult::ignored(__('That order no longer exists'));
         }
@@ -391,14 +382,14 @@ final class Billing
                 return CallbackResult::ignored(__('Only a paid order can be refunded'));
             }
 
-            return CallbackResult::ignored($fresh->meta(Orders::REFUND_REQUESTED) !== null
+            return CallbackResult::ignored($fresh->meta(OrderStore::REFUND_REQUESTED) !== null
                 ? __('A refund was already sent to the payment provider. Check its dashboard, then use Record a refund.')
                 : __('This payment method cannot refund from here'));
         }
 
         // Marked before the call: if the provider takes the refund and anything after
         // fails, even a crash mid-call, a later press cannot send a second one.
-        if (!Orders::markRefundRequested($fresh->getId())) {
+        if (!OrderStore::markRefundRequested($fresh->getId())) {
             return CallbackResult::ignored(__('The refund could not be started. Try again.'));
         }
 
@@ -419,7 +410,7 @@ final class Billing
 
         if ($result->getOutcome() === CallbackResult::OUTCOME_IGNORED) {
             // A clear no from the provider: nothing was sent, so the button comes back.
-            Orders::markRefundRequested($fresh->getId(), false);
+            OrderStore::markRefundRequested($fresh->getId(), false);
         }
 
         if ($result->getOutcome() !== CallbackResult::OUTCOME_REFUNDED) {
@@ -451,7 +442,7 @@ final class Billing
             ));
             // The write can commit and a hook after it throw; then the refund is recorded.
             try {
-                $now = Orders::find($fresh->getId());
+                $now = OrderStore::find($fresh->getId());
             } catch (Throwable $ignored) {
                 $now = null;
             }
@@ -511,7 +502,7 @@ final class Billing
             return false;
         }
 
-        $feature = FeatureRegistry::instance()->get($featureId);
+        $feature = FeatureRegistry::getInstance()->get($featureId);
         if ($feature === null) {
             return false;
         }
@@ -528,7 +519,7 @@ final class Billing
         self::$hookBatches[] = array();
 
         try {
-            $applied = osc_db_transaction(static function () use ($userId, $price, $feature, $ctx, $refType, $refId): bool {
+            $applied = Db::transaction(static function () use ($userId, $price, $feature, $ctx, $refType, $refId): bool {
                 if ($price > 0 && !Wallet::debit($userId, $price, Wallet::REASON_SPEND, null, $refType, $refId)) {
                     return false; // insufficient credit -- nothing was written
                 }
@@ -596,7 +587,15 @@ final class Billing
             return CallbackResult::ignored('currency mismatch');
         }
 
-        self::markPaid($order, $result->getExternalRef());
+        if (!self::markPaid($order, $result->getExternalRef())) {
+            // The provider took the money for an order already closed as failed, and a callback
+            // may not reopen it. The entry shows in Tools → Activity log, one per provider retry;
+            // the admin marks the order paid (CAdminBilling order_paid) or refunds it.
+            $now = OrderStore::find($order->getId());
+            if ($now !== null && $now->getStatus() === Order::STATUS_FAILED) {
+                self::log('paid after close', $now, $result->getExternalRef());
+            }
+        }
 
         return $result;
     }
@@ -618,9 +617,9 @@ final class Billing
         $order = null;
 
         if ($result->getOrderId() !== null) {
-            $order = Orders::find($result->getOrderId());
+            $order = OrderStore::find($result->getOrderId());
         } elseif ($result->getExternalRef() !== null) {
-            $order = Orders::findByGatewayRef($gatewayId, $result->getExternalRef());
+            $order = OrderStore::findByGatewayRef($gatewayId, $result->getExternalRef());
         }
 
         if ($order === null || $order->getGateway() !== $gatewayId) {
@@ -641,7 +640,7 @@ final class Billing
      */
     private static function log(string $action, Order $order, ?string $externalRef): void
     {
-        Log::newInstance()->insertLog(
+        Log::getInstance()->insertLog(
             'billing',
             $action,
             $order->getId(),

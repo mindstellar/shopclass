@@ -27,7 +27,6 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupStore;
 
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
@@ -37,10 +36,11 @@ $sysinfo    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tool
 $upgrade    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/upgrade.php');
 $menu       = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php');
 
-/** The body of a case label up to the next case, or of a private method. */
+/** The method an action runs, or a private method by its name. */
 $body = static function (string $name) use ($controller): string {
-    if (preg_match("/case \\('" . preg_quote($name, '/') . "'\\):(.*?)(?=\\n\\s*case |\\n\\s*default:)/s", $controller, $m)) {
-        return $m[1];
+    $action = harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $name);
+    if ($action !== '') {
+        return $action;
     }
     if (preg_match('/private function ' . preg_quote($name, '/') . '\(.*?\n    \}\n/s', $controller, $m)) {
         return $m[0];
@@ -53,11 +53,11 @@ harness_section('Old URLs');
 
 foreach (array('backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post',
     'backup_start', 'backup_cancel', 'backup_download', 'backup_delete', 'backup_restore', 'backup_upload', 'backup_dismiss', 'backup_reopen') as $action) {
-    check("the controller routes action=$action", (bool) preg_match("/case \\('" . preg_quote($action, '/') . "'\\):/", $controller));
+    check("the controller routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
-pin('import lands on the restore part of the new page', '?page=tools&action=backup#restore', DatabaseTools::movedTo('import'));
-pin('backup has its own page again', null, DatabaseTools::movedTo('backup'));
-pin('backup_post too', null, DatabaseTools::movedTo('backup_post'));
+pin('import lands on the restore part of the new page', '?page=tools&action=backup#restore', CAdminTools::movedTo('import'));
+pin('backup has its own page again', null, CAdminTools::movedTo('backup'));
+pin('backup_post too', null, CAdminTools::movedTo('backup_post'));
 check('the old backup actions run the new engine', (bool) preg_match(
     "/'backup-sql'\\s*=> array\\('database', 'server'\\),\\s*'backup-sql_file' => array\\('database', 'download'\\),\\s*"
     . "'backup-zip'\\s*=> array\\('files', 'server'\\),\\s*'backup-zip_file' => array\\('files', 'download'\\)/",
@@ -81,10 +81,7 @@ check('a plain visit to the page forgets no finished run', $page !== '' && strpo
     && strpos($page, 'dismiss') === false && strpos($page, 'osc_add_flash_ok_message') === false);
 check('...it shows the run with a Dismiss button that posts', strpos($view, "\$postButton('backup_dismiss', __('Dismiss'))") !== false
     && substr_count($view, "\$postButton('backup_dismiss'") >= 2);
-check('the status poll checks the token', (bool) preg_match(
-    "/case 'backup_status':\\s*osc_csrf_check\\(\\);/",
-    (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php')
-));
+check('the status poll checks the token', (\mindstellar\admin\ajax\AjaxRegistry::route('backup_status')['csrf'] ?? false) === true);
 
 harness_section('Downloads take listed names only');
 
@@ -175,20 +172,36 @@ $store->saveState(array('status' => 'running'));
 pin('the state file is private', '600', substr(sprintf('%o', fileperms($store->dir() . '.state.json')), -3));
 exec('rm -rf ' . escapeshellarg($store->dir()));
 
+harness_section('Every write on the Tools screen checks the token');
+$toolsFile = ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php';
+foreach (array(
+    'logs_clear', 'logs_settings_post', 'cleanup_post', 'cleanup_run', 'jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear',
+    'category_post', 'locations_post', 'backup_cancel', 'backup_delete', 'backup_restore', 'backup_dismiss', 'backup_reopen',
+) as $action) {
+    check("$action checks the CSRF token", str_contains(harness_action_source($toolsFile, $action), 'osc_csrf_check();'));
+}
+foreach (array('backup_start' => 'backupStart', 'backup_upload' => 'backupUpload', 'import_post' => 'backupUpload') as $action => $method) {
+    check("$action checks the CSRF token in $method()", str_contains(harness_action_source($toolsFile, $action), '$this->' . $method . '(')
+        && str_contains($body($method), 'osc_csrf_check();'));
+}
+$uploadBody = $body('backupUpload');
+check('an upload checks the token, then stores through RestoreUpload::store(), which checks the file came from the form', str_contains($uploadBody, 'osc_csrf_check();')
+    && strpos($uploadBody, 'osc_csrf_check();') < strpos($uploadBody, 'RestoreUpload::store($file)'));
+
 harness_section('A restore asks for the password again');
 
 $restore = $body('backup_restore');
 $verify  = strpos($restore, 'AdminReauth::verify(');
-$start   = strpos($restore, 'BackupManager::startRestore(');
+$start   = strpos($restore, 'BackupService::startRestore(');
 check('backup_restore checks the password before it starts anything', $verify !== false && $start !== false && $verify < $start);
 check('...with the posted password and code', strpos($restore, "Params::getParamString('password', false, false)") !== false
     && strpos($restore, "Params::getParamString('code')") !== false);
 check('...and a refusal leaves before startRestore', (bool) preg_match(
-    '/if \(\$reauth !== \'\'\) \{[^}]*redirectTo\([^}]*break;\s*\}/s',
+    '/if \(\$reauth !== \'\'\) \{[^}]*redirectTo\([^}]*return;\s*\}/s',
     substr($restore, 0, (int) $start)
 ));
 check('an uploaded file reaches a restore only through backup_restore', strpos($body('backupUpload'), 'startRestore') === false
-    && substr_count($controller, 'BackupManager::startRestore(') === 1);
+    && substr_count($controller, 'BackupService::startRestore(') === 1);
 check('the dialog has a password field', strpos($view, "'name'     => 'password'") !== false && strpos($view, "'type'     => 'secret'") !== false);
 check('...and a code field when 2FA is on', (bool) preg_match("/if \\(\\\$twoStep\\) \\{.*?'name'     => 'code'/s", $view));
 check('the page learns whether 2FA is on', strpos($body('backupPage'), 'AdminTwoFactor::enabled($me)') !== false);
@@ -256,7 +269,7 @@ check('an open bucket and a plain http endpoint are warned about in the verdict'
 $delete = $body('backup_delete');
 check('a bucket delete comes after the token', strpos($delete, 'osc_csrf_check()') < strpos($delete, 'bucketDelete('));
 check('...and deletes nothing here when no bucket is set', strpos($delete, "\$bucket === false ? BackupStore::site()->delete(\$name) : \$bucket !== null && BackupStore::site()->bucketDelete(\$bucket, \$name)") !== false);
-check('a bucket restore goes through the same password check, the one startRestore call', (bool) preg_match('/BackupManager::startRestore\(\s*\$name,.*?\$fromBucket\s*\);/s', $restore));
+check('a bucket restore goes through the same password check, the one startRestore call', (bool) preg_match('/BackupService::startRestore\(\s*\$name,.*?\$fromBucket\s*\);/s', $restore));
 check('...and a refusal reopens the bucket dialog', strpos($restore, "(\$fromBucket ? '&from=bucket' : '')") !== false);
 check('the Where column says Bucket for a bucket backup', strpos($view, "=== 'bucket' ? osc_esc_html(__('Bucket')) : osc_esc_html(__('Server'))") !== false);
 check('the public photo bucket warning is part of the one verdict', (bool) preg_match("/\\\$issues\\[\\] = array\\(\\s*'tone'\\s*=> 'warning',\\s*'text'\\s*=> __\\('Your photo bucket is public\\./", $view)

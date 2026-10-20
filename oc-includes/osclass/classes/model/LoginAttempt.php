@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * LoginAttempt DAO — the failed sign-in ledger behind
  * {@see \mindstellar\security\LoginThrottle}.
@@ -24,8 +26,7 @@
  */
 class LoginAttempt extends DAO
 {
-    /** @var LoginAttempt */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_login_attempt table
@@ -45,17 +46,11 @@ class LoginAttempt extends DAO
     }
 
     /**
-     * Return the shared LoginAttempt model instance, creating it on first use.
-     *
-     * @return LoginAttempt
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -71,7 +66,7 @@ class LoginAttempt extends DAO
      */
     public function record($context, $account, $ip, $date)
     {
-        return osc_db_execute(
+        return Db::execute(
             'INSERT INTO ' . $this->getTableName()
             . ' (s_context, s_account, s_ip, dt_date) VALUES (?, ?, ?, ?)',
             array((string)$context, $this->truncate($account), (string)$ip, $date)
@@ -89,7 +84,7 @@ class LoginAttempt extends DAO
      */
     public function countByIp($ip, $since)
     {
-        return (int)osc_db_scalar(
+        return (int)Db::scalar(
             'SELECT COUNT(*) FROM ' . $this->getTableName() . ' WHERE s_ip = ? AND dt_date > ?',
             array((string)$ip, $since)
         );
@@ -108,7 +103,7 @@ class LoginAttempt extends DAO
      */
     public function countByIpContext($context, $ip, $since)
     {
-        return (int)osc_db_scalar(
+        return (int)Db::scalar(
             'SELECT COUNT(*) FROM ' . $this->getTableName()
             . ' WHERE s_context = ? AND s_ip = ? AND dt_date > ?',
             array((string)$context, (string)$ip, $since)
@@ -127,7 +122,7 @@ class LoginAttempt extends DAO
      */
     public function countByAccount($context, $account, $since)
     {
-        return (int)osc_db_scalar(
+        return (int)Db::scalar(
             'SELECT COUNT(*) FROM ' . $this->getTableName()
             . ' WHERE s_context = ? AND s_account = ? AND dt_date > ?',
             array((string)$context, $this->truncate($account), $since)
@@ -147,7 +142,7 @@ class LoginAttempt extends DAO
      */
     public function oldestByIp($ip, $since)
     {
-        $v = osc_db_scalar(
+        $v = Db::scalar(
             'SELECT MIN(dt_date) FROM ' . $this->getTableName() . ' WHERE s_ip = ? AND dt_date > ?',
             array((string)$ip, $since)
         );
@@ -167,7 +162,7 @@ class LoginAttempt extends DAO
      */
     public function oldestByAccount($context, $account, $since)
     {
-        $v = osc_db_scalar(
+        $v = Db::scalar(
             'SELECT MIN(dt_date) FROM ' . $this->getTableName()
             . ' WHERE s_context = ? AND s_account = ? AND dt_date > ?',
             array((string)$context, $this->truncate($account), $since)
@@ -187,7 +182,7 @@ class LoginAttempt extends DAO
      */
     public function clearAccount($context, $account)
     {
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . $this->getTableName() . ' WHERE s_context = ? AND s_account = ?',
             array((string)$context, $this->truncate($account))
         );
@@ -203,7 +198,7 @@ class LoginAttempt extends DAO
      */
     public function clearIp($ip)
     {
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . $this->getTableName() . ' WHERE s_ip = ?',
             array((string)$ip)
         );
@@ -219,10 +214,7 @@ class LoginAttempt extends DAO
      */
     public function pruneBefore($before)
     {
-        return osc_db_execute(
-            'DELETE FROM ' . $this->getTableName() . ' WHERE dt_date <= ?',
-            array($before)
-        );
+        return \mindstellar\security\LoginAttemptStore::pruneBefore((string) $before);
     }
 
     /**

@@ -10,14 +10,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
-use mindstellar\backup\BackupManager;
+use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\Restorer;
+use mindstellar\backup\RestoreUpload;
+use mindstellar\utility\Formatting;
 
-$view    = View::newInstance();
+$view    = View::getInstance();
 $state   = $view->_get('backup_state') ?: array();
 $busy    = (bool) $view->_get('backup_busy');
 $list    = $view->_get('backup_list') ?: array();
@@ -29,13 +30,13 @@ $bucket  = is_array($view->_get('backup_bucket')) ? $view->_get('backup_bucket')
 $address = (string) $view->_get('backup_bucket_address');
 $plain   = $bucket !== null && BackupBucket::insecure();
 $open    = $bucket !== null && BackupBucket::flaggedPublic();
-$demo    = defined('DEMO');
+$demo    = \mindstellar\security\Demo::active();
 $status  = (string) ($state['status'] ?? '');
-$live    = BackupManager::isLive($state);
+$live    = BackupService::isLive($state);
 $locked  = $demo || $busy || $live;
 $offload = osc_get_preference('storage_active') === 's3';
 $keep    = BackupJobs::keepCount();
-$max     = DatabaseTools::uploadLimit();
+$max     = RestoreUpload::limit();
 $poll    = osc_admin_base_url(true) . '?page=ajax&action=backup_status&' . osc_csrf_token_url();
 $noWeb   = osc_web_restore_disabled();
 $offLine = __('Restore is turned off on this site. Use the command line.');
@@ -47,7 +48,7 @@ $describe = static function (array $row): array {
     return array(
         'when' => BackupJobs::when($row['created']),
         'what' => $row['kind'] === 'safety' ? __('Safety copy') : BackupJobs::whatWord($row['what']),
-        'size' => DatabaseTools::bytes($row['size']),
+        'size' => Formatting::bytes($row['size']),
     );
 };
 
@@ -168,7 +169,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ?>
 
     <?php if ($live) {
-        $words   = BackupManager::progress($state);
+        $words   = BackupService::progress($state);
         $restore = $state['kind'] === 'restore'; ?>
         <div class="callout-<?php echo $restore ? 'warning' : 'info'; ?> callout-block backup-callout" id="backup-run"
              data-status-url="<?php echo osc_esc_html($poll); ?>"
@@ -197,7 +198,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             osc_admin_form_close(null, array('horizontal' => false));
         } ?>
     <?php } elseif ($status === 'failed') {
-        $failure = BackupManager::failure($state); ?>
+        $failure = BackupService::failure($state); ?>
         <div class="callout-danger callout-block backup-callout" role="alert">
             <div class="backup-callout-body">
                 <div class="backup-callout-text">
@@ -227,7 +228,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         osc_esc_html(__('Your backup is ready: %1$s, %2$s, %3$s.')),
                         osc_esc_html(BackupJobs::when(date('c', (int) $state['started']))),
                         osc_esc_html(BackupJobs::whatWord((string) $state['what'])),
-                        osc_esc_html(DatabaseTools::bytes((int) $state['size']))
+                        osc_esc_html(Formatting::bytes((int) $state['size']))
                     ); ?></p>
                     <p class="backup-callout-note"><?php _e('It is removed after you download it, or after one hour.'); ?></p>
                     <?php if ($skipped !== '') { ?>
@@ -330,9 +331,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             : __('The bucket could not be read, so backups saved there are not listed. Check the connection in Settings > Storage.')); ?></p>
     <?php } ?>
     <?php if ($list === array()) { ?>
-        <p class="text-muted mb-0" id="backup-list-empty"><?php echo osc_esc_html(__('No saved backups yet.') . ' ' . ($bucket !== null
-            ? __('Backups you save on the server or in the bucket are listed here. Downloads are not kept.')
-            : __('Backups you save on the server are listed here. Downloads are not kept.'))); ?></p>
+        <p class="text-muted mb-0" id="backup-list-empty"><?php _e('No saved backups yet. Downloads are not kept.'); ?></p>
     <?php } else { ?>
         <div class="table-responsive">
             <table class="table" id="backup-list">
@@ -413,7 +412,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'disabled' => $locked,
                 'attrs'    => array('accept' => '.zip,.sql'),
                 'help'     => $max < PHP_INT_MAX
-                    ? sprintf(__('This server accepts files up to %s.'), DatabaseTools::bytes($max))
+                    ? sprintf(__('This server accepts files up to %s.'), Formatting::bytes($max))
                     : '',
             )); ?>
         <?php osc_admin_form_close(array(
@@ -450,13 +449,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 . '<div class="backup-restore-parts" role="group" aria-label="' . osc_esc_html(__('Put back')) . '">'
                 . '<p class="mb-1">' . osc_esc_html(__('Put back:')) . '</p>'
                 . '<label><input type="checkbox" name="parts[]" value="database" checked /> '
-                . osc_esc_html(sprintf(__('Database (%s)'), DatabaseTools::bytes($dbBytes))) . '</label>'
+                . osc_esc_html(sprintf(__('Database (%s)'), Formatting::bytes($dbBytes))) . '</label>'
                 . '<label><input type="checkbox" name="parts[]" value="files" checked /> '
-                . osc_esc_html(sprintf(__('Files (%s)'), DatabaseTools::bytes($fBytes))) . '</label>'
+                . osc_esc_html(sprintf(__('Files (%s)'), Formatting::bytes($fBytes))) . '</label>'
                 . '</div>';
         }
         if ($confirm['from'] === 'bucket') {
-            $body .= '<p class="backup-restore-note">' . osc_esc_html(sprintf(__('It is downloaded from the bucket first (%s).'), DatabaseTools::bytes((int) $confirm['size']))) . '</p>';
+            $body .= '<p class="backup-restore-note">' . osc_esc_html(sprintf(__('It is downloaded from the bucket first (%s).'), Formatting::bytes((int) $confirm['size']))) . '</p>';
         }
         if ($confirm['note'] !== '') {
             $body .= '<p class="backup-restore-note">' . osc_esc_html($confirm['note']) . '</p>';

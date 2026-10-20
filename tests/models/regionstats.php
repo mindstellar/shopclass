@@ -9,49 +9,41 @@
  */
 
 /**
- * Characterization pins for the RegionStats model.
+ * Pins for the RegionStats model.
  *
- * Written against the legacy implementation and required to pass UNCHANGED once
- * increaseNumItems()/decreaseNumItems()/setNumItems()/listRegions()/
- * calculateNumItems()/updateAllStats() move to the parameterized query layer.
+ * Each region keeps its live listing count in t_region.i_num_items (default 0),
+ * so there is no separate counter row: every region always has a count. The pins
+ * are written against the observable behaviour (return values, stored counts,
+ * query counts), not the SQL.
  *
- * t_region_stats is a denormalised counter table: an INT UNSIGNED primary key
- * with a FOREIGN KEY onto t_region, and an INT UNSIGNED counter. Five things
- * shape the pins below, and each one was measured rather than assumed.
+ * tests/models/citystats.php is the companion to this file; the sections are
+ * kept in the same order so the two can be diffed. Where they differ, the pin
+ * says so: listRegions() filters by country and its projection depends on the
+ * ORDER BY, while listCities() filters by region and always selects the same
+ * four columns.
  *
- * 1. Every method that reaches a counter row guards its argument with
- *    is_numeric() or casts it with (int), so no caller value can ever reach the
- *    database malformed. The reachable failure is the foreign key, and the
- *    failure branch of the reads is only reachable by taking a table away —
- *    which is what $withTableMissing() below does.
+ * What the pins fix:
  *
- * 2. Legacy built increaseNumItems()'s SQL through sprintf('%d'), truncating a
- *    fractional id before MySQL ever saw it, and calculateNumItems()/
- *    setNumItems()/updateAllStats() cast with (int). A bound parameter has to
- *    reproduce those casts explicitly, so each one is pinned with a value that
- *    would land somewhere else without it.
+ * 1. increaseNumItems() and decreaseNumItems() are one UPDATE each, with no lookup
+ *    first. increase returns true only when a row changed, so it is false for an
+ *    unknown region; it never creates a row. decrease returns the affected-row
+ *    count (0 for a count already at zero or an unknown region) and never goes
+ *    below zero. A non-numeric id is rejected before any query.
  *
- * 3. Whether an out-of-range counter is clamped or rejected depends on the
+ * 2. setNumItems() is one UPDATE and is true unless the database fails, so it is
+ *    also true for an unknown region (0 rows). Ids and counts are cast to int.
+ *
+ * 3. Whether an out-of-range count is clamped or rejected depends on the
  *    connection, so setNumItems($id, -1) is pinned both ways behind
  *    harness_strict_writes().
  *
- * 4. DBCommandClass::escape() passes an is_numeric() value through UNQUOTED, so
- *    a country code that looks numeric reached MySQL as a number and the CHAR(2)
- *    column was compared numerically — every alphabetic code collapsed to 0, so
- *    listRegions('0') returned the regions of 'US' and 'ES'. The listRegions
- *    section pins that, and records the conversion's deliberate decision not to
- *    reproduce it.
+ * 4. The country filter of listRegions() is bound as a string, so a numeric
+ *    country code matches only its own row. The old unquoted-numeric passthrough
+ *    (every alphabetic code collapsing to 0) survives only for a genuine int.
  *
- * 5. calculateAllStats() (private, reached through updateAllStats) parenthesises
- *    its premium/expiry test — `AND (b_premium = 1 || dt_expiration >= ?) AND` —
- *    so the b_active/b_enabled/b_spam and region filters apply to the whole
- *    WHERE. It therefore agrees with calculateNumItems() on the same fixture: an
- *    inactive listing is excluded, and a premium listing in a region that was not
- *    asked for gets no counter row. (This corrects an earlier missing-parentheses
- *    defect that split the WHERE across the `||`.)
- *
- * findByRegionId() is pure delegation to DAO::findByPrimaryKey(), a base method
- * this effort does not convert; it is pinned as a regression guard only.
+ * 5. calculateAllStats() (private, reached through updateAllStats) agrees with
+ *    calculateNumItems() on the same fixture, then writes every count with one
+ *    UPDATE ... CASE.
  *
  * Usage:  php tests/models/regionstats.php          (standalone, own scratch database)
  *         php tests/run-models.php regionstats      (as part of the suite)
@@ -106,12 +98,12 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
  * preference; the Preference singleton loads the whole table on construction.
  * Warm it here so that one-off query is never attributed to a query-count pin.
  */
-Preference::newInstance();
+Preference::getInstance();
 
-$model     = RegionStats::newInstance();
-$table     = DB_TABLE_PREFIX . 't_region_stats';
+$model     = RegionStats::getInstance();
+$table     = DB_TABLE_PREFIX . 't_region';
 $locations = DB_TABLE_PREFIX . 't_item_location';
-$cache     = Object_Cache_Factory::newInstance();
+$cache     = \mindstellar\cache\CacheManager::getInstance();
 
 seed_country($admin, 'US', 'United States');
 seed_country($admin, 'ES', 'Spain');
@@ -125,30 +117,42 @@ $regionCharlie = seed_region($admin, 'ES', 'Charlie');
 $regionNum     = seed_region($admin, '12', 'Numland');
 
 /**
- * The whole counter table as "id=count,id=count", ordered by id.
+ * Every seeded region's count as "id=count,id=count", ordered by id.
  *
  * Deliberately unprepared (mysqli::query(), not a bound statement): a prepared
  * read returns native-typed columns, which would make this verification read
- * disagree with the all-string rows the legacy path produced.
+ * disagree with the all-string rows the model produces.
  */
-$rows = static function () use ($admin, $table): string {
+$rows = static function () use ($admin, $table, $regionAlpha, $regionBravo, $regionCharlie, $regionNum): string {
     $out = array();
-    $res = $admin->query("SELECT fk_i_region_id, i_num_items FROM $table ORDER BY fk_i_region_id");
+    $ids = implode(',', array($regionAlpha, $regionBravo, $regionCharlie, $regionNum));
+    $res = $admin->query("SELECT pk_i_id, i_num_items FROM $table WHERE pk_i_id IN ($ids) ORDER BY pk_i_id");
     while ($r = $res->fetch_assoc()) {
-        $out[] = $r['fk_i_region_id'] . '=' . $r['i_num_items'];
+        $out[] = $r['pk_i_id'] . '=' . $r['i_num_items'];
     }
     $res->free();
 
     return implode(',', $out);
 };
 
-$truncate = static function () use ($admin, $table): void {
-    $admin->query("TRUNCATE TABLE $table");
+/** The expected $rows() string for the given id => count map; every other region is 0. */
+$expect = static function (array $counts) use ($regionAlpha, $regionBravo, $regionCharlie, $regionNum): string {
+    $out = array();
+    foreach (array($regionAlpha, $regionBravo, $regionCharlie, $regionNum) as $id) {
+        $out[] = $id . '=' . ($counts[$id] ?? 0);
+    }
+
+    return implode(',', $out);
 };
 
-/** Seed one counter row with raw mysqli, never through the code under test. */
+/** Put every region back to a count of 0. */
+$truncate = static function () use ($admin, $table): void {
+    $admin->query("UPDATE $table SET i_num_items = 0");
+};
+
+/** Give one region a count with raw mysqli, never through the code under test. */
 $seedStat = static function (int $regionId, int $num) use ($admin, $table): void {
-    $admin->query("INSERT INTO $table (fk_i_region_id, i_num_items) VALUES ($regionId, $num)");
+    $admin->query("UPDATE $table SET i_num_items = $num WHERE pk_i_id = $regionId");
 };
 
 /** Empty the request-lifetime object cache, which the runner shares across files. */
@@ -232,11 +236,15 @@ pin(
     harness_method_signature('RegionStats', 'newInstance')
 );
 check('RegionStats still extends DAO', is_subclass_of('RegionStats', 'DAO'));
-check('newInstance() is a singleton', RegionStats::newInstance() === $model);
+check('newInstance() is a singleton', RegionStats::getInstance() === $model);
 check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBCommandClass);
-pin('table name is unchanged', $table, $model->getTableName());
-pin('primary key is unchanged', 'fk_i_region_id', $model->getPrimaryKey());
-pin('field allowlist is unchanged', array('fk_i_region_id', 'i_num_items'), $model->getFields());
+pin('the DAO names the old stats table, so its inherited methods have no table to act on', DB_TABLE_PREFIX . 't_region_stats', $model->getTableName());
+pin('primary key', 'fk_i_region_id', $model->getPrimaryKey());
+pin('field allowlist', array('fk_i_region_id', 'i_num_items'), $model->getFields());
+$leafRegion  = seed_region($admin, 'US', 'Delete leaf');
+$quietDelete = @$model->deleteByPrimaryKey($leafRegion);
+pin('an inherited deleteByPrimaryKey() cannot delete the real row', array(false, 1), array($quietDelete, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE pk_i_id = '" . $leafRegion . "'")->fetch_row()[0]));
+$admin->query("DELETE FROM $table WHERE pk_i_id = $leafRegion");
 pin(
     'the model declares exactly these eight public methods of its own',
     array(
@@ -267,33 +275,30 @@ pin(
 );
 
 /* ----------------------------------------------------------------------------
- * increaseNumItems() — the upsert counter. dao->query() on a write returns bool
- * true, so this method is bool-valued despite what its docblock claims.
+ * increaseNumItems() — one UPDATE ... + 1. True only when a row changed, so an
+ * unknown region is false; it never creates a row.
  * ------------------------------------------------------------------------- */
-harness_section('increaseNumItems — first call for a region');
+harness_section('increaseNumItems — a region');
 
 $truncate();
-pin('a fresh region returns bool true', true, $model->increaseNumItems($regionAlpha));
-pin('the row was created at 1', $regionAlpha . '=1', $rows());
-
-harness_section('increaseNumItems — subsequent calls');
-
+pin('a known region returns bool true', true, $model->increaseNumItems($regionAlpha));
+pin('its count went from 0 to 1', $expect(array($regionAlpha => 1)), $rows());
 pin('a repeat call also returns bool true', true, $model->increaseNumItems($regionAlpha));
-pin('the counter incremented rather than duplicating the row', $regionAlpha . '=2', $rows());
+pin('the count incremented', $expect(array($regionAlpha => 2)), $rows());
 pin('a second region is independent', true, $model->increaseNumItems($regionBravo));
-pin('both rows now exist', $regionAlpha . '=2,' . $regionBravo . '=1', $rows());
+pin('both counts are right', $expect(array($regionAlpha => 2, $regionBravo => 1)), $rows());
 
 harness_section('increaseNumItems — query cost');
 
-pin('a fresh insert costs exactly one query', 1, harness_query_count(static function () use ($model, $regionCharlie) {
+pin('an increment costs exactly one query', 1, harness_query_count(static function () use ($model, $regionCharlie) {
     $model->increaseNumItems($regionCharlie);
 }));
-pin('an increment costs exactly one query', 1, harness_query_count(static function () use ($model, $regionCharlie) {
+pin('a second increment costs exactly one query', 1, harness_query_count(static function () use ($model, $regionCharlie) {
     $model->increaseNumItems($regionCharlie);
 }));
 pin(
     'the two counted calls landed',
-    $regionAlpha . '=2,' . $regionBravo . '=1,' . $regionCharlie . '=2',
+    $expect(array($regionAlpha => 2, $regionBravo => 1, $regionCharlie => 2)),
     $rows()
 );
 
@@ -309,91 +314,91 @@ pin('a rejected id costs no queries at all', 0, harness_query_count(static funct
 }));
 pin(
     'none of them wrote anything',
-    $regionAlpha . '=2,' . $regionBravo . '=1,' . $regionCharlie . '=2',
+    $expect(array($regionAlpha => 2, $regionBravo => 1, $regionCharlie => 2)),
     $rows()
 );
 
-harness_section('increaseNumItems — a numeric id with no region behind it (foreign key)');
+harness_section('increaseNumItems — a numeric id with no region behind it');
 
-pin('an unknown region returns bool false', false, $quiet(static function () use ($model) {
-    return $model->increaseNumItems(999);
+pin('an unknown region returns bool false', false, $model->increaseNumItems(999));
+pin('and costs one query', 1, harness_query_count(static function () use ($model) {
+    $model->increaseNumItems(999);
 }));
-pin('the rejected insert still costs one query', 1, harness_query_count(static function () use ($model, $quiet) {
-    $quiet(static function () use ($model) {
-        $model->increaseNumItems(999);
-    });
-}));
+pin('no row was created for it', '0', (function () use ($admin, $table) {
+    $res = $admin->query("SELECT COUNT(*) AS c FROM $table WHERE pk_i_id = 999");
+    $c   = $res->fetch_assoc()['c'];
+    $res->free();
+
+    return $c;
+})());
 pin(
-    'nothing was written for it',
-    $regionAlpha . '=2,' . $regionBravo . '=1,' . $regionCharlie . '=2',
+    'no existing count changed',
+    $expect(array($regionAlpha => 2, $regionBravo => 1, $regionCharlie => 2)),
     $rows()
 );
 
-harness_section('increaseNumItems — sprintf("%d") truncated a fractional id before the query');
+harness_section('increaseNumItems — a fractional id is truncated to its integer part');
 
-/* Legacy interpolated the id through sprintf('%d', ...), so "1.7" reached MySQL
- * as 1 and incremented that region. A bound parameter is checked as given, so
- * the conversion needs the same truncation spelled out as an (int) cast — without
- * it the foreign-key check rejects the value and this pin flips to false. */
+/* The id is cast to int before it is bound, so "1.7" lands on region 1. */
 pin(
     'a fractional id is truncated to its integer part and succeeds',
     true,
     $model->increaseNumItems($regionAlpha . '.7')
 );
 pin(
-    'and it landed on the truncated region, not a new row',
-    $regionAlpha . '=3,' . $regionBravo . '=1,' . $regionCharlie . '=2',
+    'and it landed on the truncated region',
+    $expect(array($regionAlpha => 3, $regionBravo => 1, $regionCharlie => 2)),
     $rows()
 );
 pin('a numeric string id works like the int form', true, $model->increaseNumItems((string)$regionBravo));
 pin(
-    'still one row for it',
-    $regionAlpha . '=3,' . $regionBravo . '=2,' . $regionCharlie . '=2',
+    'and incremented that region',
+    $expect(array($regionAlpha => 3, $regionBravo => 2, $regionCharlie => 2)),
     $rows()
 );
 
 /* ----------------------------------------------------------------------------
- * decreaseNumItems() — read then conditional update. Returns the affected-row
- * count, so 1 and 0 are both success values and false means "no row to work on".
+ * decreaseNumItems() — one UPDATE, no lookup first, never below zero. Returns the
+ * affected-row count, so 1 and 0 are both success values; false means a rejected
+ * id or a database error.
  * ------------------------------------------------------------------------- */
-harness_section('decreaseNumItems — a region with a positive counter');
+harness_section('decreaseNumItems — a region with a positive count');
 
 $truncate();
 $seedStat($regionAlpha, 3);
 pin('decrementing returns int 1, the affected-row count', 1, $model->decreaseNumItems($regionAlpha));
-pin('the counter went down by one', $regionAlpha . '=2', $rows());
+pin('the count went down by one', $expect(array($regionAlpha => 2)), $rows());
 
-harness_section('decreaseNumItems — a counter already at zero');
+harness_section('decreaseNumItems — a count already at zero');
 
 $truncate();
-$seedStat($regionAlpha, 0);
 pin(
-    'a zero counter returns int 0 — the row exists, the guarded update matched nothing',
+    'a zero count returns int 0 — the guarded update matched nothing',
     0,
     $model->decreaseNumItems($regionAlpha)
 );
-pin('the counter did not go negative', $regionAlpha . '=0', $rows());
+pin('the count did not go negative', $expect(array()), $rows());
 
-harness_section('decreaseNumItems — no row for that region');
+harness_section('decreaseNumItems — no such region');
 
-pin('a region with no counter row returns bool false', false, $model->decreaseNumItems($regionBravo));
-pin('a missing row costs exactly one query (the lookup only)', 1, harness_query_count(
-    static function () use ($model, $regionBravo) {
-        $model->decreaseNumItems($regionBravo);
+pin('an unknown region returns int 0', 0, $model->decreaseNumItems(999));
+pin('and costs exactly one query', 1, harness_query_count(
+    static function () use ($model) {
+        $model->decreaseNumItems(999);
     }
 ));
-pin('nothing was created for it', $regionAlpha . '=0', $rows());
+pin('nothing changed', $expect(array()), $rows());
 
-harness_section('decreaseNumItems — query cost when the row exists');
+harness_section('decreaseNumItems — query cost');
 
 $truncate();
 $seedStat($regionAlpha, 5);
-pin('a decrement costs two queries: lookup then update', 2, harness_query_count(
+pin('a decrement costs one query, with no lookup first', 1, harness_query_count(
     static function () use ($model, $regionAlpha) {
         $model->decreaseNumItems($regionAlpha);
     }
 ));
-pin('the decrement landed', $regionAlpha . '=4', $rows());
+pin('the decrement landed', $expect(array($regionAlpha => 4)), $rows());
 
 harness_section('decreaseNumItems — the is_numeric guard rejects before any query');
 
@@ -404,27 +409,20 @@ pin('bool true returns bool false', false, $model->decreaseNumItems(true));
 pin('a rejected id costs no queries at all', 0, harness_query_count(static function () use ($model) {
     $model->decreaseNumItems('abc');
 }));
-pin('nothing changed', $regionAlpha . '=4', $rows());
+pin('nothing changed', $expect(array($regionAlpha => 4)), $rows());
 
-harness_section('decreaseNumItems — a fractional id is compared as given, not truncated');
+harness_section('decreaseNumItems — a fractional id is truncated to its integer part');
 
-/* Unlike increaseNumItems, the lookup goes through where(), whose escape() hands
- * a numeric value straight through: MySQL compares the INT column against the
- * decimal, finds no row, and the method returns false before any write. */
 pin(
-    'a fractional id finds no counter row and returns bool false',
-    false,
+    'a fractional id decrements the truncated region',
+    1,
     $model->decreaseNumItems($regionAlpha . '.7')
 );
-pin('nothing changed', $regionAlpha . '=4', $rows());
+pin('and it landed there', $expect(array($regionAlpha => 3)), $rows());
 
-harness_section('decreaseNumItems — the failed-lookup branch');
+harness_section('decreaseNumItems — a database error');
 
-/* The only reachable failure: every argument shape is caught by is_numeric()
- * above, so the table has to go away. The lookup fails, the row is never seen,
- * and the method returns bool false after exactly one query — the same value the
- * "no row" case gives, which is why the conversion can absorb it identically. */
-pin('a failed lookup returns bool false', false, $withTableMissing(
+pin('a failed update returns bool false', false, $withTableMissing(
     $table,
     static function () use ($model, $regionAlpha) {
         return $model->decreaseNumItems($regionAlpha);
@@ -432,93 +430,95 @@ pin('a failed lookup returns bool false', false, $withTableMissing(
 ));
 
 /* ----------------------------------------------------------------------------
- * setNumItems() — absolute upsert. Both arguments are cast to int in the method
- * itself, so no guard is needed and no argument can reach SQL malformed.
+ * setNumItems() — one UPDATE. True unless the database fails, so an unknown region
+ * (0 rows) is true too. Both arguments are cast to int in the method itself.
  * ------------------------------------------------------------------------- */
-harness_section('setNumItems — insert and overwrite');
+harness_section('setNumItems — set and overwrite');
 
 $truncate();
-pin('setting a region with no row returns bool true', true, $model->setNumItems($regionBravo, 7));
-pin('the row was created with that count', $regionBravo . '=7', $rows());
+pin('setting a region returns bool true', true, $model->setNumItems($regionBravo, 7));
+pin('the region has that count', $expect(array($regionBravo => 7)), $rows());
 pin('setting it again returns bool true', true, $model->setNumItems($regionBravo, 3));
-pin('the count was overwritten, not incremented', $regionBravo . '=3', $rows());
+pin('the count was overwritten, not incremented', $expect(array($regionBravo => 3)), $rows());
 pin('re-setting the same value still returns bool true', true, $model->setNumItems($regionBravo, 3));
-pin('the row is unchanged', $regionBravo . '=3', $rows());
+pin('the count is unchanged', $expect(array($regionBravo => 3)), $rows());
 
 harness_section('setNumItems — both arguments are cast to int');
 
 pin('a numeric-prefixed count returns bool true', true, $model->setNumItems($regionBravo, '9abc'));
-pin('and stores its integer prefix', $regionBravo . '=9', $rows());
+pin('and stores its integer prefix', $expect(array($regionBravo => 9)), $rows());
 pin('a null count returns bool true', true, $model->setNumItems($regionBravo, null));
-pin('and stores 0', $regionBravo . '=0', $rows());
+pin('and stores 0', $expect(array()), $rows());
 pin('a fractional region id is truncated onto that region', true, $model->setNumItems($regionBravo . '.9', 4));
-pin('and it landed on the truncated row', $regionBravo . '=4', $rows());
+pin('and it landed on the truncated region', $expect(array($regionBravo => 4)), $rows());
 
 harness_section('setNumItems — a negative count');
 
 // i_num_items is UNSIGNED, so -1 cannot be stored. Loose mode clamps it to 0 and
-// reports success; strict mode refuses the write and leaves the row as it was.
+// reports success; strict mode refuses the write and leaves the count as it was.
 if (harness_strict_writes()) {
     pin('a negative count is rejected', false, $quiet(static function () use ($model, $regionBravo) {
         return $model->setNumItems($regionBravo, -1);
     }));
-    pin('the row keeps its previous value', $regionBravo . '=4', $rows());
+    pin('the count keeps its previous value', $expect(array($regionBravo => 4)), $rows());
 } else {
     pin('a negative count still reports success', true, $model->setNumItems($regionBravo, -1));
-    pin('the unsigned column clamped it to 0', $regionBravo . '=0', $rows());
+    pin('the unsigned column clamped it to 0', $expect(array()), $rows());
 }
-$afterNegative = harness_strict_writes() ? $regionBravo . '=4' : $regionBravo . '=0';
+$afterNegative = harness_strict_writes() ? $expect(array($regionBravo => 4)) : $expect(array());
 
-harness_section('setNumItems — rejected by the database');
+harness_section('setNumItems — a region that does not exist');
 
-pin('an unknown region returns bool false', false, $quiet(static function () use ($model) {
-    return $model->setNumItems(999, 3);
-}));
-pin('a non-numeric id casts to 0, which has no region, and returns bool false', false, $quiet(
-    static function () use ($model) {
-        return $model->setNumItems('abc', 3);
+pin('an unknown region returns bool true (0 rows changed)', true, $model->setNumItems(999, 3));
+pin('a non-numeric id casts to 0, which has no region, and returns bool true', true, $model->setNumItems('abc', 3));
+pin('a null id casts to 0 and returns bool true', true, $model->setNumItems(null, 3));
+pin('none of them wrote anything', $afterNegative, $rows());
+pin('a failed update returns bool false', false, $withTableMissing(
+    $table,
+    static function () use ($model, $regionBravo) {
+        return $model->setNumItems($regionBravo, 3);
     }
 ));
-pin('a null id casts to 0 and returns bool false', false, $quiet(static function () use ($model) {
-    return $model->setNumItems(null, 3);
-}));
-pin('none of them wrote anything', $afterNegative, $rows());
 
 harness_section('setNumItems — query cost');
 
 pin('one call costs exactly one query', 1, harness_query_count(static function () use ($model, $regionBravo) {
     $model->setNumItems($regionBravo, 2);
 }));
-pin('the counted call landed', $regionBravo . '=2', $rows());
-pin('a rejected call costs one query too', 1, harness_query_count(static function () use ($model, $quiet) {
-    $quiet(static function () use ($model) {
-        $model->setNumItems(999, 3);
-    });
+pin('the counted call landed', $expect(array($regionBravo => 2)), $rows());
+pin('an unknown region costs one query too', 1, harness_query_count(static function () use ($model) {
+    $model->setNumItems(999, 3);
 }));
 
 /* ----------------------------------------------------------------------------
- * findByRegionId() — regression guard only; it delegates straight to
- * DAO::findByPrimaryKey(), a base method out of scope for this effort.
+ * findByRegionId() — a region's count under the old stats-row keys, or false when
+ * there is no such region.
  * ------------------------------------------------------------------------- */
-harness_section('findByRegionId — regression guard (not converted)');
+harness_section('findByRegionId');
 
 $truncate();
 $seedStat($regionAlpha, 8);
 $found = $model->findByRegionId($regionAlpha);
 check('a known region returns an array', is_array($found));
 pin(
-    'with both columns as strings',
+    'with both keys as strings',
     array('fk_i_region_id' => (string)$regionAlpha, 'i_num_items' => '8'),
     $found
 );
 check('every value is a string (C4)', is_array($found) && all_values_string($found));
+pin(
+    'a region with no listings has a count of "0"',
+    array('fk_i_region_id' => (string)$regionBravo, 'i_num_items' => '0'),
+    $model->findByRegionId($regionBravo)
+);
 pin('an unknown region returns bool false', false, $model->findByRegionId(999));
 pin('a null id returns bool false', false, $quiet(static function () use ($model) {
     return $model->findByRegionId(null);
 }));
 
 /* ----------------------------------------------------------------------------
- * listRegions() — the joined listing, cached. Both the comparison operator and
+ * listRegions() — the listing, cached, read from t_region alone. Every region has
+ * a count (default 0), so '>=' lists every region and '>' those with listings. Both the comparison operator and
  * the ORDER BY are validated in the method itself, one against a hardcoded
  * operator list and one against a hardcoded pattern, and both fall back to their
  * defaults when they fail.
@@ -537,7 +537,7 @@ $seedStat($regionCharlie, 3);
 $seedStat($regionNum, 2);
 
 $list = $model->listRegions();
-pin('the default lists only regions with a positive counter', 3, count($list));
+pin('the default lists only regions with a positive count', 3, count($list));
 pin(
     'the row shape is the four aliased columns',
     array('region_id', 'items', 'region_name', 'region_slug'),
@@ -570,7 +570,7 @@ pin(
     array_keys($list[0])
 );
 pin(
-    'and orders by the counter alias',
+    'and orders by the count alias',
     'Alpha,Charlie,Numland',
     implode(',', array_column($list, 'region_name'))
 );
@@ -582,10 +582,8 @@ $list = $model->listRegions('%%%%', '>', 's_name ASC');
 /* Spelled out rather than derived, and it has to be updated whenever t_region
  * gains a column -- which is the point. This branch selects the whole row, so a
  * column added to the table starts being handed to every caller of listRegions()
- * the moment it exists, and having to come here is how that gets noticed. The
- * order is t_region's columns then t_region_stats', matching FROM ... CROSS JOIN.
- * The last three arrived with the location import. */
-pin('the projection is every column of both joined tables', array(
+ * the moment it exists, and having to come here is how that gets noticed. */
+pin('the projection is every column of t_region', array(
     'pk_i_id',
     'fk_c_country_code',
     's_name',
@@ -594,29 +592,30 @@ pin('the projection is every column of both joined tables', array(
     'i_source_id',
     'd_coord_lat',
     'd_coord_long',
-    'fk_i_region_id',
     'i_num_items',
 ), array_keys($list[0]));
 pin('with the same three rows', 3, count($list));
 check('every value is still a string (C4)', all_rows_string($list));
 
-harness_section('listRegions — the join is an inner join, so an orphan counter row is dropped');
+harness_section('listRegions — a region with no listings is still a place');
 
-/* Foreign-key checks are off on the ADMIN session only, so a counter row with no
- * region behind it can be seeded here even though the model could never create
- * one. RegionStats joins through a comma/CROSS JOIN plus an equality WHERE — an
- * inner join — where its CityStats mirror uses a LEFT JOIN and keeps the orphan. */
-$admin->query("INSERT INTO $table (fk_i_region_id, i_num_items) VALUES (999, 7)");
 $flush();
-pin('the orphan counter row does not appear', 3, count($model->listRegions()));
-$admin->query("DELETE FROM $table WHERE fk_i_region_id = 999");
+$list = $model->listRegions('%%%%', '=');
+pin(
+    'a zero-count region is listed under "=" with its name and slug',
+    array(
+        array('region_id' => (string)$regionBravo, 'items' => '0', 'region_name' => 'Bravo', 'region_slug' => 'bravo'),
+    ),
+    $list
+);
+check('every value is a string (C4)', all_rows_string($list));
 
 harness_section('listRegions — the comparison argument');
 
 $flush();
-pin('">=" includes the zero-counter region', 4, count($model->listRegions('%%%%', '>=')));
+pin('">=" includes the zero-count region', 4, count($model->listRegions('%%%%', '>=')));
 $flush();
-pin('"=" selects only the zero-counter region', 1, count($model->listRegions('%%%%', '=')));
+pin('"=" selects only the zero-count region', 1, count($model->listRegions('%%%%', '=')));
 $flush();
 pin('"<" matches nothing and returns an empty array', array(), $model->listRegions('%%%%', '<'));
 $flush();
@@ -680,14 +679,14 @@ pin(
 
 /* The country filter is the only clause that carries a value, so it is the only
  * form of this query that compiles to a PREPARED statement — and a prepared read
- * hands back native ints for the counter column where the unfiltered form does
+ * hands back native ints for the count column where the unfiltered form does
  * not. Both shapes have to look identical to a caller, so the filtered one gets
  * its own C4 pin rather than relying on the unfiltered pins above. */
 $flush();
 $filtered = $model->listRegions('US', '>=');
 check('a filtered listing is all strings too (C4)', all_rows_string($filtered));
 pin(
-    'including the counter column, which is an INT in the schema',
+    'including the count column, which is an INT in the schema',
     array(
         'region_id'   => (string)$regionAlpha,
         'items'       => '5',
@@ -739,17 +738,8 @@ pin(
 $flush();
 pin('the string "0" matches no country at all', array(), $model->listRegions('0', '>='));
 
-/* The change only reaches values that arrive as strings. A genuine int binds as
- * an int, which is still a numeric comparison, so the coercion survives there
- * exactly as before. Callers pass codes read from request params or the
- * database, i.e. strings, so this residue is not reachable in practice — but it
- * is the honest boundary of the change and is pinned as such. */
 $flush();
-pin(
-    'an int 0 still coerces and sweeps up every alphabetically-coded country',
-    'Alpha,Bravo,Charlie',
-    implode(',', array_column($model->listRegions(0, '>='), 'region_name'))
-);
+pin('an int 0 matches no country either', array(), $model->listRegions(0, '>='));
 
 harness_section('listRegions — the error fallback is reachable through the order argument');
 
@@ -823,11 +813,13 @@ $flush();
 pin('and picks the write up once the cache is cleared', 4, count($model->listRegions()));
 $model->setNumItems($regionBravo, 0);
 
-harness_section('listRegions — an empty counter table');
+harness_section('listRegions — no region has listings');
 
 $truncate();
 $flush();
-pin('no counter rows at all gives an empty array', array(), $model->listRegions());
+pin('"> 0" gives an empty array', array(), $model->listRegions());
+$flush();
+pin('but ">=" still lists every region', 4, count($model->listRegions('%%%%', '>=')));
 
 /* ----------------------------------------------------------------------------
  * calculateNumItems() — the recount aggregate over t_item_location/t_item/
@@ -906,8 +898,8 @@ pin('one call costs exactly one query', 1, harness_query_count(static function (
 
 /* ----------------------------------------------------------------------------
  * updateAllStats() — the batch recount. It runs the private calculateAllStats()
- * aggregate and writes every result back in ONE multi-row upsert, returning the
- * bool that dao->query() gives a write.
+ * aggregate and writes every result back in ONE UPDATE ... CASE, returning false
+ * only when there is nothing to write or the write fails.
  *
  * calculateAllStats() is private, so it is characterized here only through what
  * updateAllStats() writes — which is also where its two latent bugs show up.
@@ -919,7 +911,7 @@ pin('an empty array returns bool false', false, $model->updateAllStats(array()))
 pin('and costs no queries at all', 0, harness_query_count(static function () use ($model) {
     $model->updateAllStats(array());
 }));
-pin('nothing was written', '', $rows());
+pin('nothing was written', $expect(array()), $rows());
 
 harness_section('updateAllStats — the happy path');
 
@@ -929,10 +921,10 @@ harness_section('updateAllStats — the happy path');
 pin('a list of known regions returns bool true', true, $model->updateAllStats(array($regionAlpha, $regionBravo)));
 pin(
     'both counters were written',
-    $regionAlpha . '=2,' . $regionBravo . '=1',
+    $expect(array($regionAlpha => 2, $regionBravo => 1)),
     $rows()
 );
-pin('one call costs two queries: the aggregate then the upsert', 2, harness_query_count(
+pin('one call costs two queries: the aggregate then the update', 2, harness_query_count(
     static function () use ($model, $regionAlpha, $regionBravo) {
         $model->updateAllStats(array($regionAlpha, $regionBravo));
     }
@@ -940,42 +932,43 @@ pin('one call costs two queries: the aggregate then the upsert', 2, harness_quer
 
 harness_section('updateAllStats — an existing counter is overwritten, not incremented');
 
-$admin->query("UPDATE $table SET i_num_items = 99 WHERE fk_i_region_id = $regionAlpha");
+$seedStat($regionAlpha, 99);
 pin('rewriting returns bool true', true, $model->updateAllStats(array($regionAlpha)));
-pin('and the stale value was replaced', $regionAlpha . '=2,' . $regionBravo . '=1', $rows());
+pin('and the stale value was replaced', $expect(array($regionAlpha => 2, $regionBravo => 1)), $rows());
 
 harness_section('updateAllStats — a region with nothing to count is written as zero');
 
+$seedStat($regionCharlie, 5);
 pin('a region with no items returns bool true', true, $model->updateAllStats(array($regionCharlie)));
 pin(
-    'and gets an explicit zero row',
-    $regionAlpha . '=2,' . $regionBravo . '=1,' . $regionCharlie . '=0',
+    'and its stale count is reset to zero',
+    $expect(array($regionAlpha => 2, $regionBravo => 1)),
     $rows()
 );
 
-harness_section('updateAllStats — ids are cast to int on the way into the upsert');
+harness_section('updateAllStats — ids are cast to int on the way into the update');
 
 pin('a numeric string id works', true, $model->updateAllStats(array((string)$regionAlpha)));
-pin('a duplicated id collapses to one row', true, $model->updateAllStats(array($regionAlpha, $regionAlpha)));
+pin('a duplicated id collapses to one entry', true, $model->updateAllStats(array($regionAlpha, $regionAlpha)));
 pin(
-    'the table is unchanged by either',
-    $regionAlpha . '=2,' . $regionBravo . '=1,' . $regionCharlie . '=0',
+    'the counts are unchanged by either',
+    $expect(array($regionAlpha => 2, $regionBravo => 1)),
     $rows()
 );
 
-harness_section('updateAllStats — rejected by the foreign key');
+harness_section('updateAllStats — regions that do not exist');
 
-pin('an unknown region id returns bool false', false, $quiet(static function () use ($model) {
+pin('an unknown region id returns bool true and changes nothing', true, $quiet(static function () use ($model) {
     return $model->updateAllStats(array(999));
 }));
-pin('a non-numeric member casts to 0, which has no region, and returns bool false', false, $quiet(
+pin('a non-numeric member matches no region and returns bool true', true, $quiet(
     static function () use ($model) {
         return $model->updateAllStats(array('abc'));
     }
 ));
 pin(
     'neither wrote anything',
-    $regionAlpha . '=2,' . $regionBravo . '=1,' . $regionCharlie . '=0',
+    $expect(array($regionAlpha => 2, $regionBravo => 1)),
     $rows()
 );
 
@@ -989,24 +982,24 @@ harness_section('updateAllStats — the batch recount agrees with the single-reg
 $truncate();
 pin('the single-region recount excludes the inactive listing', '2', $model->calculateNumItems($regionAlpha));
 pin('the batch recount runs', true, $model->updateAllStats(array($regionAlpha)));
-pin('and writes 2 — the inactive listing is excluded, matching the single recount', $regionAlpha . '=2', $rows());
+pin('and writes 2 — the inactive listing is excluded, matching the single recount', $expect(array($regionAlpha => 2)), $rows());
 
 $admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_item SET dt_expiration = '2000-01-01 00:00:00' WHERE pk_i_id = $itemA3");
 pin('expiring the already-excluded listing leaves the count unchanged', true, $model->updateAllStats(array($regionAlpha)));
-pin('still 2', $regionAlpha . '=2', $rows());
+pin('still 2', $expect(array($regionAlpha => 2)), $rows());
 
 harness_section('updateAllStats — a premium listing outside the requested set stays out');
 
 /* Same parentheses fix: the region filter now applies to the whole WHERE, so a
- * premium listing in another region no longer produces a counter row for a
+ * premium listing in another region no longer produces a count for a
  * region the caller never named. */
 $truncate();
 $admin->query('UPDATE ' . DB_TABLE_PREFIX
     . "t_item SET b_premium = 1, dt_expiration = '2000-01-01 00:00:00' WHERE pk_i_id = $itemB1");
 pin('asking for one region returns bool true', true, $model->updateAllStats(array($regionAlpha)));
 pin(
-    'and only that region gets a counter row',
-    $regionAlpha . '=2',
+    'and only that region gets a count',
+    $expect(array($regionAlpha => 2)),
     $rows()
 );
 $admin->query('UPDATE ' . DB_TABLE_PREFIX
@@ -1018,15 +1011,16 @@ harness_section('updateAllStats — the failed-aggregate branch');
 
 /* When the aggregate query fails, calculateAllStats returns an empty array
  * BEFORE its fill-with-zero loop, so updateAllStats sees "nothing calculated"
- * and returns false after exactly one query — the upsert never runs. */
+ * and returns false after exactly one query — the update never runs. */
 $truncate();
+$seedStat($regionAlpha, 6);
 pin('a failed aggregate returns bool false', false, $withTableMissing(
     $locations,
     static function () use ($model, $regionAlpha) {
         return $model->updateAllStats(array($regionAlpha));
     }
 ));
-pin('and nothing was written', '', $rows());
+pin('and nothing was written', $expect(array($regionAlpha => 6)), $rows());
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

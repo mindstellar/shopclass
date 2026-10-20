@@ -29,8 +29,8 @@ class SendFriendForm extends Form
     public static function your_name()
     {
 
-        if (Session::newInstance()->_getForm('yourName') != '') {
-            $yourName = Session::newInstance()->_getForm('yourName');
+        if (Session::getInstance()->_getForm('yourName') != '') {
+            $yourName = Session::getInstance()->_getForm('yourName');
             parent::generic_input_text('yourName', $yourName);
         } else {
             parent::generic_input_text('yourName', '');
@@ -47,8 +47,8 @@ class SendFriendForm extends Form
     public static function your_email()
     {
 
-        if (Session::newInstance()->_getForm('yourEmail') != '') {
-            $yourEmail = Session::newInstance()->_getForm('yourEmail');
+        if (Session::getInstance()->_getForm('yourEmail') != '') {
+            $yourEmail = Session::getInstance()->_getForm('yourEmail');
             parent::generic_input_text('yourEmail', $yourEmail);
         } else {
             parent::generic_input_text('yourEmail', '');
@@ -64,8 +64,8 @@ class SendFriendForm extends Form
      */
     public static function friend_name()
     {
-        if (Session::newInstance()->_getForm('friendName') != '') {
-            $friendName = Session::newInstance()->_getForm('friendName');
+        if (Session::getInstance()->_getForm('friendName') != '') {
+            $friendName = Session::getInstance()->_getForm('friendName');
             parent::generic_input_text('friendName', $friendName);
         } else {
             parent::generic_input_text('friendName', '');
@@ -81,8 +81,8 @@ class SendFriendForm extends Form
      */
     public static function friend_email()
     {
-        if (Session::newInstance()->_getForm('friendEmail') != '') {
-            $friendEmail = Session::newInstance()->_getForm('friendEmail');
+        if (Session::getInstance()->_getForm('friendEmail') != '') {
+            $friendEmail = Session::getInstance()->_getForm('friendEmail');
             parent::generic_input_text('friendEmail', $friendEmail);
         } else {
             parent::generic_input_text('friendEmail', '');
@@ -98,8 +98,8 @@ class SendFriendForm extends Form
      */
     public static function your_message()
     {
-        if (Session::newInstance()->_getForm('message_body') != '') {
-            $message_body = Session::newInstance()->_getForm('message_body');
+        if (Session::getInstance()->_getForm('message_body') != '') {
+            $message_body = Session::getInstance()->_getForm('message_body');
             parent::generic_textarea('message', $message_body);
         } else {
             parent::generic_textarea('message', '');
@@ -117,57 +117,30 @@ class SendFriendForm extends Form
      */
     public static function js_validation($enqueue = false)
     {
-        // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no
-        // external helper so it runs on any public theme.
         if ($enqueue) {
             ob_start();
         }
         ?>
         <script type="text/javascript">
-            (function () {
-                var form = document.querySelector('form[name="sendfriend"]');
-                if (!form) { return; }
-                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                var fields = [
-                    {name: 'yourName', required: "<?php echo osc_esc_js(__('Your name: this field is required')); ?>."},
-                    {
-                        name: 'yourEmail',
-                        required: "<?php echo osc_esc_js(__('Email: this field is required')); ?>.",
-                        email: "<?php echo osc_esc_js(__('Invalid email address')); ?>."
-                    },
-                    {name: 'friendName', required: "<?php echo osc_esc_js(__("Friend's name: this field is required")); ?>."},
-                    {
-                        name: 'friendEmail',
-                        required: "<?php echo osc_esc_js(__("Friend's email: this field is required")); ?>.",
-                        email: "<?php echo osc_esc_js(__("Invalid friend's email address")); ?>."
-                    },
-                    {name: 'message', required: "<?php echo osc_esc_js(__('Message: this field is required')); ?>."}
-                ];
-                form.addEventListener('submit', function (e) {
-                    var errors = [];
-                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
-                    fields.forEach(function (f) {
-                        var el = form.querySelector('[name="' + f.name + '"]');
-                        if (!el) { return; }
-                        var v = el.value.trim(), msg = null;
-                        if (v === '') { msg = f.required; }
-                        else if (f.email && !emailRe.test(v)) { msg = f.email; }
-                        if (msg) { errors.push({el: el, msg: msg}); el.classList.add('is-invalid'); }
-                    });
-                    var container = document.querySelector('#error_list');
-                    if (container) {
-                        container.innerHTML = '';
-                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
-                    }
-                    if (errors.length) {
-                        e.preventDefault();
-                        window.scrollTo({top: 0, behavior: 'smooth'});
-                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                    } else {
-                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
-                    }
-                });
-            })();
+            <?php echo self::validationJs('sendfriend', [
+                'yourName'    => ['required' => true],
+                'yourEmail'   => ['required' => true, 'email' => true],
+                'friendName'  => ['required' => true],
+                'friendEmail' => ['required' => true, 'email' => true],
+                'message'     => ['required' => true],
+            ], [
+                'yourName'    => __('Your name: this field is required') . '.',
+                'yourEmail'   => [
+                    'required' => __('Email: this field is required') . '.',
+                    'email'    => __('Invalid email address') . '.',
+                ],
+                'friendName'  => __("Friend's name: this field is required") . '.',
+                'friendEmail' => [
+                    'required' => __("Friend's email: this field is required") . '.',
+                    'email'    => __("Invalid friend's email address") . '.',
+                ],
+                'message'     => __('Message: this field is required') . '.',
+            ]); ?>
         </script>
         <?php
         if ($enqueue) {

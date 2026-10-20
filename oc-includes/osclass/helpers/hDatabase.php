@@ -23,8 +23,8 @@ if (!function_exists('osc_db_select')) {
     /**
      * Run a parameterized SELECT and return every row as an associative array.
      *
-     * Values in $params are bound as positional '?' parameters, so they can
-     * never be interpreted as SQL.
+     * Values in $params fill the positional '?' placeholders, escaped for the
+     * connection, so they can never be interpreted as SQL.
      *
      * @param string $sql
      * @param array  $params
@@ -34,7 +34,7 @@ if (!function_exists('osc_db_select')) {
      */
     function osc_db_select(string $sql, array $params = []): array
     {
-        return \mindstellar\database\Connection::instance()->select($sql, $params);
+        return \mindstellar\database\Db::select($sql, $params);
     }
 }
 
@@ -50,7 +50,7 @@ if (!function_exists('osc_db_select_one')) {
      */
     function osc_db_select_one(string $sql, array $params = []): ?array
     {
-        return \mindstellar\database\Connection::instance()->selectOne($sql, $params);
+        return \mindstellar\database\Db::selectOne($sql, $params);
     }
 }
 
@@ -66,7 +66,7 @@ if (!function_exists('osc_db_scalar')) {
      */
     function osc_db_scalar(string $sql, array $params = [])
     {
-        return \mindstellar\database\Connection::instance()->scalar($sql, $params);
+        return \mindstellar\database\Db::scalar($sql, $params);
     }
 }
 
@@ -86,9 +86,7 @@ if (!function_exists('osc_db_count')) {
      */
     function osc_db_count(string $table, string $where = '', array $params = []): int
     {
-        $sql = 'SELECT COUNT(*) FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : '');
-
-        return (int) \mindstellar\database\Connection::instance()->scalar($sql, $params);
+        return \mindstellar\database\Db::count($table, $where, $params);
     }
 }
 
@@ -104,7 +102,7 @@ if (!function_exists('osc_db_execute')) {
      */
     function osc_db_execute(string $sql, array $params = []): int
     {
-        return \mindstellar\database\Connection::instance()->execute($sql, $params);
+        return \mindstellar\database\Db::execute($sql, $params);
     }
 }
 
@@ -120,7 +118,7 @@ if (!function_exists('osc_db_insert_id')) {
      */
     function osc_db_insert_id(string $sql, array $params = []): int
     {
-        return \mindstellar\database\Connection::instance()->insertGetId($sql, $params);
+        return \mindstellar\database\Db::insertGetId($sql, $params);
     }
 }
 
@@ -210,28 +208,7 @@ if (!function_exists('osc_db_in_transaction')) {
 
 if (!function_exists('osc_db_stringify_row')) {
     /**
-     * Coerce every value in a result row to a string, leaving null as null.
-     *
-     * The legacy query layer returns every column as a PHP string because it
-     * reads results through mysqli::query(). The parameterized layer returns
-     * native types for INT/FLOAT/DOUBLE columns, because a prepared statement
-     * carries column metadata. A model whose body moves from one to the other
-     * would therefore start handing callers ints where they have always had
-     * strings, and comparisons such as `$row['b_active'] === '1'` would begin
-     * failing silently across the call sites that consume these rows.
-     *
-     * Converted read methods pipe their rows through this so their observable
-     * row shape is unchanged.
-     *
-     * Booleans map to '1'/'0' rather than PHP's '' for false, matching how
-     * MySQL renders a boolean column through the legacy path.
-     *
-     * Fidelity limit: this restores the string TYPE, not the exact lexical form
-     * the legacy driver produced. A FLOAT/DOUBLE column arrives already widened
-     * to a PHP float, so trailing-zero formatting is lost ('1.50' becomes
-     * '1.5'). DECIMAL is unaffected — the driver hands it back as a string. When
-     * a caller depends on the rendered form of a floating-point column, select
-     * it with an explicit CAST rather than relying on this helper.
+     * A row with every value a string, as Db::stringifyRow() gives it.
      *
      * @param array $row
      *
@@ -239,14 +216,7 @@ if (!function_exists('osc_db_stringify_row')) {
      */
     function osc_db_stringify_row(array $row): array
     {
-        foreach ($row as $k => $v) {
-            if ($v === null || is_string($v)) {
-                continue;
-            }
-            $row[$k] = is_bool($v) ? ($v ? '1' : '0') : (string)$v;
-        }
-
-        return $row;
+        return \mindstellar\database\Db::stringifyRow($row);
     }
 }
 
@@ -260,13 +230,7 @@ if (!function_exists('osc_db_stringify_rows')) {
      */
     function osc_db_stringify_rows(array $rows): array
     {
-        foreach ($rows as $i => $row) {
-            if (is_array($row)) {
-                $rows[$i] = osc_db_stringify_row($row);
-            }
-        }
-
-        return $rows;
+        return \mindstellar\database\Db::stringifyRows($rows);
     }
 }
 

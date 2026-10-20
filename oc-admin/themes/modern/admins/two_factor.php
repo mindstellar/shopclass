@@ -22,7 +22,7 @@ $enabled = AdminTwoFactor::enabled($admin);
 if (!$own && (!$enabled || osc_is_moderator())) {
     return;
 }
-$session = Session::newInstance();
+$session = Session::getInstance();
 $setup   = $own && !$enabled ? (string)$session->_get('admin2faSetup') : '';
 $codes   = $own ? $session->_get('admin2faCodes') : null;
 $session->_drop('admin2faCodes');

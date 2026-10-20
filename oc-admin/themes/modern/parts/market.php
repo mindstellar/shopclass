@@ -189,8 +189,7 @@ function osc_market_render_untested_note($compat)
 }
 
 /**
- * Bytes -> a short human-readable size ("340 KB", "1.2 MB"). No core helper for this
- * exists yet; kept local since only the Updates tab needs it.
+ * Bytes -> a short human-readable size ("340 KB", "1.2 MB"); empty for nothing.
  *
  * @param int $bytes
  *
@@ -198,19 +197,7 @@ function osc_market_render_untested_note($compat)
  */
 function osc_market_format_size($bytes)
 {
-    $bytes = max(0, (int) $bytes);
-    if ($bytes === 0) {
-        return '';
-    }
-    $units = array('B', 'KB', 'MB', 'GB');
-    $i     = 0;
-    $value = (float) $bytes;
-    while ($value >= 1024 && $i < count($units) - 1) {
-        $value /= 1024;
-        $i++;
-    }
-
-    return ($i === 0 ? (string) $bytes : number_format($value, $value < 10 ? 1 : 0)) . ' ' . $units[$i];
+    return (int) $bytes > 0 ? \mindstellar\utility\Formatting::bytes((int) $bytes) : '';
 }
 
 /**
@@ -322,7 +309,7 @@ function osc_market_render_meta_notices($meta, $type)
     if (!empty($meta['disabled'])) {
         ?>
         <div class="callout-warning callout-block">
-            <?php echo osc_esc_html(defined('DEMO')
+            <?php echo osc_esc_html(\mindstellar\security\Demo::active()
                 ? __('This is a demo site, so nothing can be installed or updated here.')
                 : __('In-app updates are disabled on this deployment. Install and update by deploying a new image or file set; this screen is read-only.')); ?>
         </div>
@@ -512,7 +499,7 @@ function osc_market_render_updates($rows, $meta, $type)
         <?php if (!empty($rows)) : ?>
             <button type="button" class="btn btn-sm btn-primary market-update-all"
                     <?php echo empty($updatable) ? 'disabled' : ''; ?>>
-                <?php echo osc_esc_html(sprintf(__('Update all (%d)'), count($updatable))); ?>
+                <?php _e('Update all'); ?><?php echo $updatable !== array() ? osc_admin_count(count($updatable)) : ''; ?>
             </button>
         <?php endif; ?>
         <button type="button" class="btn btn-sm btn-secondary market-refresh-btn">

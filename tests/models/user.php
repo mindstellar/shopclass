@@ -76,8 +76,8 @@ if (!function_exists('osc_test_cache_flush')) {
     function osc_test_cache_flush()
     {
         $GLOBALS['__user_test_cache'] = array();
-        if (class_exists('Object_Cache_Factory')) {
-            Object_Cache_Factory::newInstance()->flush();
+        if (class_exists('mindstellar\\cache\\CacheManager')) {
+            \mindstellar\cache\CacheManager::getInstance()->flush();
         }
     }
 }
@@ -126,7 +126,7 @@ seed_locale($admin);
 seed_locale($admin, 'fr_FR', 'French');
 
 $prefix = DB_TABLE_PREFIX;
-$model  = User::newInstance();
+$model  = User::getInstance();
 
 /** Insert a user description row with raw mysqli. */
 $seedDescription = static function (int $uid, string $locale, string $info) use ($admin, $prefix) {
@@ -207,6 +207,14 @@ $model->update(array('b_enabled' => 1), array('pk_i_id' => $victim));
 if ($busts !== null) {
     pin('every pk-targeted write busts the cache', 4, $GLOBALS['__user_cache_busts'] - $busts);
 }
+
+// The profile text lives in the cached row too.
+osc_test_cache_flush();
+$model->findByPrimaryKey($victim);
+$model->updateDescription($victim, 'en_US', 'Bio changed');
+pin('a changed bio is visible at once', 'Bio changed', $model->findByPrimaryKey($victim)['locale']['en_US']['s_info']);
+$model->updateDescription($victim, 'fr_FR', 'Nouvelle bio');
+pin('...and so is a bio added for a new locale', 'Nouvelle bio', $model->findByPrimaryKey($victim)['locale']['fr_FR']['s_info']);
 
 // A write with no pk has no single row to drop; it must not blow up either.
 check('an update without a pk is still accepted', $model->update(array('b_enabled' => 1), array('s_email' => 'victim@example.test')) !== false);
@@ -362,14 +370,14 @@ $doomed = seed_user($admin, 'doomed', 'doomed@example.test', 1, 1);
 $seedDescription($doomed, 'en_US', 'to be removed');
 seed_exec(
     $admin,
-    "INSERT INTO {$prefix}t_user_email_tmp (fk_i_user_id, s_new_email, dt_date) VALUES (?, ?, NOW())",
-    'is',
-    array($doomed, 'new@example.test')
+    "INSERT INTO {$prefix}t_key_value (s_group, s_key, s_value, dt_created) VALUES ('email_change', ?, ?, NOW())",
+    'ss',
+    array((string) $doomed, 'new@example.test')
 );
 
 /* Avatars are t_resource rows owned by the user: the rows go with the user, and the
  * local files are unlinked after the delete commits. */
-$avatarDir = 'tests/tmp-avatar-' . getmypid() . '/';
+$avatarDir = 'oc-content/uploads/tmp-avatar-' . getmypid() . '/';
 @mkdir(ABS_PATH . $avatarDir, 0777, true);
 $seedAvatar = static function (int $uid) use ($admin, $prefix, $avatarDir): int {
     return seed_exec(
@@ -391,7 +399,7 @@ pin('deleteUser(null) is a no-op returning false', false, $model->deleteUser(nul
 pin('deleting a user reports true', true, $model->deleteUser($doomed));
 pin('the user row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE pk_i_id = $doomed"));
 pin('its description rows are gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user_description WHERE fk_i_user_id = $doomed"));
-pin('its pending email-change row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user_email_tmp WHERE fk_i_user_id = $doomed"));
+pin('its pending email-change row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_key_value WHERE s_group = 'email_change' AND s_key = '$doomed'"));
 pin('the victim survives untouched', 1, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE pk_i_id = $victim"));
 pin('deleting a missing id returns false', false, $model->deleteUser(999999));
 pin('its avatar row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_resource WHERE s_owner_type = 'user' AND i_owner_id = $doomed"));

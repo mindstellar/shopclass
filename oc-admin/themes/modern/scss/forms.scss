@@ -117,13 +117,11 @@
 }
 
 .form-horizontal {
-  // Was a float layout: the label floated into a 150px well and the control was given a
-  // matching 170px inline-start margin to clear it. Floats need clearfix hacks (there is
-  // a stray `clear:both` in the settings template that existed only for this) and can
-  // collapse under wrapping content. A flex row holds the identical geometry — a 150px
-  // label plus a 20px gutter puts the control edge at 170px — without any of that, and
-  // min-width:0 lets long control content shrink instead of forcing overflow. Only the
-  // rows are flex; the section headings (h2.render-title) stay block-flow siblings.
+  // A flex row: the label column, a 20px gutter, then the control. min-width:0 lets long
+  // control content shrink instead of overflowing. Section headings stay block-flow siblings.
+  // The label column is wide enough that most labels fit on one line.
+  --osc-form-label: 13rem;
+
   .form-row {
     column-gap: 20px;
     display: flex;
@@ -132,7 +130,7 @@
   }
 
   .form-label {
-    flex: 0 0 150px;
+    flex: 0 0 var(--osc-form-label);
     // Optically drop the label to the small input's text baseline (the input carries its
     // own top padding + border). The row stays top-aligned, so a tall control like the
     // date-format radio list keeps its label pinned to the first line rather than centred.
@@ -146,8 +144,17 @@
     min-width: 0;
   }
 
+  // A row with no label, such as a checkbox that carries its own, lines up with the
+  // controls above it rather than running under the label column.
+  // On a phone the label sits above the control, so no column needs clearing.
+  @media (min-width: 577px) {
+    .form-row:not(.form-row-stacked) > .form-controls:first-child {
+      margin-inline-start: calc(var(--osc-form-label) + 20px);
+    }
+  }
+
   .form-actions {
-    padding-inline-start: 170px;
+    padding-inline-start: calc(var(--osc-form-label) + 20px);
   }
 
   // A row that stacks its label above a full-width control instead of the two-column

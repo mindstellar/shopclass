@@ -21,6 +21,22 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminLogin extends AdminBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
+    /** The cookie that carries a sign-in waiting for its code, on the admin path. */
+    private const TWO_FACTOR_COOKIE = 'oc_admin_2fa';
+
+    /** Each action and the method that answers it; any other action goes to loginForm(). */
+    private const ACTIONS = array(
+        'login_post'   => 'loginPost',
+        '2fa'          => 'twoFactorForm',
+        '2fa_post'     => 'twoFactorPost',
+        'recover'      => 'recoverForm',
+        'recover_post' => 'recoverPost',
+        'forgot'       => 'forgotForm',
+        'forgot_post'  => 'forgotPost',
+    );
+
     /**
      * Let plugins hook the admin login before anything is dispatched.
      */
@@ -40,241 +56,272 @@ class CAdminLogin extends AdminBaseModel
      */
     public function doModel()
     {
-        switch ($this->action) {
-            case ('login_post'):     //post execution for the login
-                osc_csrf_check();
-                osc_run_hook('before_login_admin');
-                $url_redirect  = osc_pop_admin_login_redirect();
-                $page_redirect = '';
-                $password      = Params::getParam('password', false, false);
-                if (preg_match('|[?&]page=([^&]+)|', $url_redirect . '&', $match)) {
-                    $page_redirect = $match[1];
-                }
-                if ($page_redirect == '' || $page_redirect === 'login' || $url_redirect == '') {
-                    $url_redirect = osc_admin_base_url();
-                }
+        $method = $this->actionMethod('loginForm');
 
-                if (Params::getParam('user') == '') {
-                    osc_add_flash_error_message(_m('The username field is empty'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                }
+        return $this->$method() === false ? false : null;
+    }
 
-                if (Params::getParam('password', false, false) == '') {
-                    osc_add_flash_error_message(_m('The password field is empty'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                }
+    /**
+     * Sign in, or ask for the two-step code.
+     */
+    private function loginPost(): void
+    {
+        osc_csrf_check();
+        osc_run_hook('before_login_admin');
+        $url_redirect  = osc_pop_admin_login_redirect();
+        $page_redirect = '';
+        $password      = Params::getParamString('password', false, false);
+        if (preg_match('|[?&]page=([^&]+)|', $url_redirect . '&', $match)) {
+            $page_redirect = $match[1];
+        }
+        if ($page_redirect == '' || $page_redirect === 'login' || $url_redirect == '') {
+            $url_redirect = osc_admin_base_url();
+        }
 
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                }
+        if (Params::getParamString('user') == '') {
+            osc_add_flash_error_message(_m('The username field is empty'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        }
 
-                // fields are not empty
-                // Before the account is looked up and before any password is
-                // hashed, so that a refused attempt costs neither.
-                $throttle = \mindstellar\security\LoginThrottle::evaluate('admin', Params::getParam('user'), osc_captcha_enabled());
-                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
-                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                }
+        if (Params::getParamString('password', false, false) == '') {
+            osc_add_flash_error_message(_m('The password field is empty'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        }
 
-                $admin = Admin::newInstance()->findByUsername(Params::getParam('user'));
+        if (!\mindstellar\security\Captcha::passes()) {
+            osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage(), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        }
 
-                // An unknown account and a wrong password must answer the same way,
-                // and take about as long, or the form tells anyone who asks which
-                // administrator names exist.
-                $authenticated = !$admin
-                    ? osc_dummy_password_verify($password)
-                    : osc_verify_password($password, $admin['s_password']);
+        // fields are not empty
+        // Before the account is looked up and before any password is
+        // hashed, so that a refused attempt costs neither.
+        $throttle = \mindstellar\security\LoginThrottle::evaluate('admin', Params::getParamString('user'), osc_captcha_enabled());
+        if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+            osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        }
 
-                if (!$authenticated) {
-                    // Counted against the name as submitted, so one nobody holds
-                    // accumulates exactly like a real one.
-                    \mindstellar\security\LoginThrottle::recordFailure('admin', Params::getParam('user'));
-                    osc_add_flash_error_message(sprintf(
-                        _m('Sorry, incorrect username or password. <a href="%s">Have you lost your password?</a>'),
-                        osc_admin_base_url(true) . '?page=login&amp;action=recover'
-                    ), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                } elseif (@$admin['s_password'] != '') {
-                    $needs_rehash = true;
-                    if (preg_match('|\$2y\$([0-9]{2})\$|', $admin['s_password'], $cost)) {
-                        $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
-                    }
-                    if ($needs_rehash) {
-                        // Mirror the rehash into the in-memory row so the remember-me token below
-                        // binds to the hash actually persisted, not the stale one.
-                        $admin['s_password'] = osc_hash_password($password);
-                        Admin::newInstance()->update(
-                            array('s_password' => $admin['s_password']),
-                            array('pk_i_id' => $admin['pk_i_id'])
-                        );
-                    }
-                }
+        $admin = Admin::getInstance()->findByUsername(Params::getParamString('user'));
 
-                \mindstellar\security\LoginThrottle::clear('admin', Params::getParam('user'));
+        // An unknown account and a wrong password must answer the same way,
+        // and take about as long, or the form tells anyone who asks which
+        // administrator names exist.
+        $authenticated = !$admin
+            ? osc_dummy_password_verify($password)
+            : osc_verify_password($password, $admin['s_password']);
 
-                $remember = (bool)Params::getParam('remember');
-                $locale   = (string)Params::getParam('locale');
-                if (\mindstellar\security\AdminTwoFactor::enabled($admin)) {
-                    // The password is right, but nothing is signed in until the code passes.
-                    Session::newInstance()->_set('admin2fa', array(
-                        'id'       => (int)$admin['pk_i_id'],
-                        'remember' => $remember,
-                        'locale'   => $locale,
-                        'redirect' => $url_redirect,
-                        'until'    => time() + 300,
-                    ));
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
-                }
+        if (!$authenticated) {
+            // Counted against the name as submitted, so one nobody holds
+            // accumulates exactly like a real one.
+            \mindstellar\security\LoginThrottle::recordFailure('admin', Params::getParamString('user'));
+            osc_add_flash_error_message(sprintf(
+                _m('Sorry, incorrect username or password. <a href="%s">Have you lost your password?</a>'),
+                osc_admin_base_url(true) . '?page=login&amp;action=recover'
+            ), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        } elseif (@$admin['s_password'] != '') {
+            $needs_rehash = true;
+            if (preg_match('|\$2y\$([0-9]{2})\$|', $admin['s_password'], $cost)) {
+                $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
+            }
+            if ($needs_rehash) {
+                // Mirror the rehash into the in-memory row so the remember-me token below
+                // binds to the hash actually persisted, not the stale one.
+                $admin['s_password'] = \mindstellar\auth\AdminPassword::rehash((int) $admin['pk_i_id'], $password);
+            }
+        }
 
-                $this->signIn($admin, $remember, $locale);
-                $this->redirectTo($url_redirect);
-                break;
-            case ('2fa'):
-                if ($this->pendingTwoFactor() === null) {
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                }
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title() . ' &raquo; ' . __('Two-step sign-in'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/two_factor.php');
-                $this->doView();
-                break;
-            case ('2fa_post'):
-                osc_csrf_check();
-                $pending = $this->pendingTwoFactor();
-                $admin   = $pending === null ? false : Admin::newInstance()->findByPrimaryKey($pending['id']);
-                if (!$admin) {
-                    Session::newInstance()->_drop('admin2fa');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                }
-                if (!\mindstellar\security\AdminTwoFactor::check($admin, Params::getParamString('code'))) {
-                    \mindstellar\security\AdminTwoFactor::noteFailure($admin);
-                    osc_add_flash_error_message(\mindstellar\security\AdminTwoFactor::refusedMessage(), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
-                }
-                Session::newInstance()->_drop('admin2fa');
-                $this->signIn($admin, $pending['remember'], $pending['locale']);
-                $this->redirectTo($pending['redirect']);
-                break;
-            case ('recover'):        // form to recover the password (in this case we have the form in /gui/)
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Lost your password'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/recover.php');
-                $this->doView();
-                break;
-            case ('recover_post'):
-                if ($this->refuseOnDemo(osc_admin_base_url())) {
-                    break;
-                }
-                osc_csrf_check();
+        \mindstellar\security\LoginThrottle::clear('admin', Params::getParamString('user'));
 
-                // post execution to recover the password
+        $remember = (bool)Params::getParam('remember');
+        $locale   = Params::getParamString('locale');
+        if (\mindstellar\security\AdminTwoFactor::enabled($admin)) {
+            // The password is right, but nothing is signed in until the code passes. A cookie,
+            // not the session, so leaving at the code page leaves no session behind.
+            self::writeTwoFactorCookie(\mindstellar\security\AdminTwoFactor::issuePending(
+                $admin,
+                array('remember' => $remember, 'locale' => $locale, 'redirect' => $url_redirect)
+            ));
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
+        }
 
-                // The security check runs before the account is looked up. Inside the
-                // branch below it would only ever fail for names that exist, which
-                // would hand back the answer the shared message is meant to withhold.
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
+        self::clearTwoFactorCookie();
+        $this->signIn($admin, $remember, $locale);
+        $this->redirectTo($url_redirect);
+    }
 
-                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
-                }
+    /**
+     * The form for the two-step code.
+     */
+    private function twoFactorForm(): void
+    {
+        if ($this->pendingTwoFactor() === null) {
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        }
+        View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title() . ' &raquo; ' . __('Two-step sign-in'));
+        View::getInstance()->_exportVariableToView('login_admin_form', 'gui/two_factor.php');
+        $this->doView();
+    }
 
-                // Counted on its own, so that reset requests cannot lock anyone
-                // out of signing in. Every request counts, not only the ones
-                // that match an account: sending mail to an address someone else
-                // owns is the abuse being bounded here, and that only happens
-                // when the address does match.
-                $recoverAccount = trim((string)Params::getParam('email'));
-                $throttle       = \mindstellar\security\LoginThrottle::evaluate('admin-recover', $recoverAccount, osc_captcha_enabled());
-                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
-                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
+    /**
+     * Check the two-step code and finish signing in.
+     */
+    private function twoFactorPost(): void
+    {
+        osc_csrf_check();
+        $pending = $this->pendingTwoFactor();
+        if ($pending === null) {
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        }
+        $admin = $pending['admin'];
+        if (!\mindstellar\security\AdminTwoFactor::check($admin, Params::getParamString('code'))) {
+            \mindstellar\security\AdminTwoFactor::noteFailure($admin);
+            osc_add_flash_error_message(\mindstellar\security\AdminTwoFactor::refusedMessage(), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
+        }
+        self::clearTwoFactorCookie();
+        $choices = $pending['choices'];
+        $this->signIn($admin, (bool)($choices['remember'] ?? false), (string)($choices['locale'] ?? ''));
+        $this->redirectTo((string)($choices['redirect'] ?? osc_admin_base_url()));
+    }
 
-                    return false;
-                }
-                \mindstellar\security\LoginThrottle::recordFailure('admin-recover', $recoverAccount);
+    /**
+     * The form that asks for a password reset link.
+     */
+    private function recoverForm(): void
+    {
+        View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Lost your password'));
+        View::getInstance()->_exportVariableToView('login_admin_form', 'gui/recover.php');
+        $this->doView();
+    }
 
-                $admin = Admin::newInstance()->findByEmail(Params::getParam('email'));
-                if (!isset($admin['pk_i_id'])) {
-                    $admin = Admin::newInstance()->findByUsername(Params::getParam('email'));
-                }
-                if (isset($admin['pk_i_id'])) {
-                    require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
-                    $newPassword = osc_genRandomPassword(40);
+    /**
+     * Send a password reset link.
+     *
+     * @return false|null false when the form was refused and is shown again
+     */
+    private function recoverPost(): ?bool
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url())) {
+            return null;
+        }
+        osc_csrf_check();
 
-                    // Persist only a fingerprint; the plaintext code lives solely in the emailed link.
-                    Admin::newInstance()->update(
-                        array('s_secret' => \mindstellar\security\ActionToken::hash($newPassword)),
-                        array('pk_i_id' => $admin['pk_i_id'])
-                    );
-                    $password_url = osc_forgot_admin_password_confirm_url($admin['pk_i_id'], $newPassword);
+        // post execution to recover the password
 
-                    osc_run_hook('hook_email_user_forgot_password', $admin, $password_url);
-                }
+        // The security check runs before the account is looked up. Inside the
+        // branch below it would only ever fail for names that exist, which
+        // would hand back the answer the shared message is meant to withhold.
+        if (!\mindstellar\security\Captcha::passes()) {
+            osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage(), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
 
-                osc_add_flash_ok_message(_m('A new password has been sent to your e-mail'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                break;
-            case ('forgot'):         // form to recover the password (in this case we have the form in /gui/)
-                $admin = Admin::newInstance()->findByIdSecret(
-                    Params::getParam('adminId'),
-                    \mindstellar\security\ActionToken::hash(Params::getParam('code'))
-                );
-                if (!$admin) {
-                    osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url());
-                }
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Change your password'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/forgot_password.php');
-                $this->doView();
-                break;
-            case ('forgot_post'):
-                osc_csrf_check();
-                $admin = Admin::newInstance()->findByIdSecret(
-                    Params::getParam('adminId'),
-                    \mindstellar\security\ActionToken::hash(Params::getParam('code'))
-                );
-                if (!$admin) {
-                    osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url());
-                }
+            return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+        }
 
-                if (Params::getParam('new_password', false, false) === Params::getParam(
-                    'new_password2',
-                    false,
-                    false
-                )) {
-                    // Consume the reset code (single-use) by replacing its fingerprint with a
-                    // fresh dead one, alongside the new password.
-                    Admin::newInstance()->update(
-                        array(
-                            's_secret'   => \mindstellar\security\ActionToken::hash(osc_genRandomPassword(40)),
-                            's_password' => osc_hash_password(Params::getParam('new_password', false, false))
-                        ),
-                        array('pk_i_id' => $admin['pk_i_id'])
-                    );
-                    osc_add_flash_ok_message(_m('The password has been changed'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                } else {
-                    osc_add_flash_error_message(_m("Error, the passwords don't match"), 'admin');
-                    $this->redirectTo(osc_forgot_admin_password_confirm_url(
-                        Params::getParam('adminId'),
-                        Params::getParam('code')
-                    ));
-                }
-                break;
-            default:
-                //osc_run_hook( 'init_admin' );
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Log in'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/login.php');
-                // Signed cookie instead of the session, so opening the admin login page does
-                // not start a session; keep a destination the auth gate already recorded.
-                osc_set_admin_login_redirect(osc_get_http_referer(), true);
-                $this->doView();
-                break;
+        // Counted on its own, so that reset requests cannot lock anyone
+        // out of signing in. Every request counts, not only the ones
+        // that match an account: sending mail to an address someone else
+        // owns is the abuse being bounded here, and that only happens
+        // when the address does match.
+        $recoverAccount = trim(Params::getParamString('email'));
+        $throttle       = \mindstellar\security\LoginThrottle::evaluate('admin-recover', $recoverAccount, osc_captcha_enabled());
+        if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+            osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
+
+            return false;
+        }
+        \mindstellar\security\LoginThrottle::recordFailure('admin-recover', $recoverAccount);
+
+        $admin = Admin::getInstance()->findByEmail(Params::getParamString('email'));
+        if (!isset($admin['pk_i_id'])) {
+            $admin = Admin::getInstance()->findByUsername(Params::getParamString('email'));
+        }
+        if (isset($admin['pk_i_id'])) {
+            // Only a fingerprint is stored; the plaintext code lives solely in the emailed link.
+            $newPassword  = \mindstellar\auth\AdminPassword::issueReset((int) $admin['pk_i_id']);
+            $password_url = osc_forgot_admin_password_confirm_url((int) $admin['pk_i_id'], $newPassword);
+
+            osc_run_hook('hook_email_user_forgot_password', $admin, $password_url);
+        }
+
+        osc_add_flash_ok_message(_m('A new password has been sent to your e-mail'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+
+        return null;
+    }
+
+    /**
+     * The form, reached from the reset link, that sets a new password.
+     */
+    private function forgotForm(): void
+    {
+        $admin = Admin::getInstance()->findByIdSecret(
+            Params::getParamInt('adminId'),
+            \mindstellar\security\ActionToken::hash(Params::getParamString('code'))
+        );
+        if (!$admin) {
+            osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
+            $this->redirectTo(osc_admin_base_url());
+        }
+        View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Change your password'));
+        View::getInstance()->_exportVariableToView('login_admin_form', 'gui/forgot_password.php');
+        $this->doView();
+    }
+
+    /**
+     * Set the new password from the reset link.
+     */
+    private function forgotPost(): void
+    {
+        osc_csrf_check();
+        $admin = Admin::getInstance()->findByIdSecret(
+            Params::getParamInt('adminId'),
+            \mindstellar\security\ActionToken::hash(Params::getParamString('code'))
+        );
+        if (!$admin) {
+            osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
+            $this->redirectTo(osc_admin_base_url());
+        }
+
+        if (Params::getParamString('new_password', false, false) === Params::getParamString(
+            'new_password2',
+            false,
+            false
+        )) {
+            // Consume the reset code (single-use) by replacing its fingerprint with a
+            // fresh dead one, alongside the new password.
+            \mindstellar\auth\AdminPassword::set(
+                (int)$admin['pk_i_id'],
+                Params::getParamString('new_password', false, false),
+                array('s_secret' => \mindstellar\security\ActionToken::hash(osc_genRandomPassword(40)))
+            );
+            osc_add_flash_ok_message(_m('The password has been changed'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+        } else {
+            osc_add_flash_error_message(_m("Error, the passwords don't match"), 'admin');
+            $this->redirectTo(osc_forgot_admin_password_confirm_url(
+                Params::getParamInt('adminId'),
+                Params::getParamString('code')
+            ));
         }
     }
 
+    /**
+     * The sign-in form.
+     */
+    private function loginForm(): void
+    {
+        //osc_run_hook( 'init_admin' );
+        View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Log in'));
+        View::getInstance()->_exportVariableToView('login_admin_form', 'gui/login.php');
+        // Signed cookie instead of the session, so opening the admin login page does
+        // not start a session; keep a destination the auth gate already recorded.
+        osc_set_admin_login_redirect(osc_get_http_referer(), true);
+        $this->doView();
+    }
     //in this case, this function is prepared for the "recover your password" form
 
     /**
@@ -292,53 +339,94 @@ class CAdminLogin extends AdminBaseModel
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
         }
+        // Releases before 7.0 set the login redirect cookie on the site path; drop that copy. Can go in 8.0.
+        if (osc_admin_cookie_path() !== Cookie::options(0)['path']) {
+            osc_write_signed_redirect_cookie('oc_admin_login_redirect', '', time() - 3600);
+        }
         $is_valid_locale = osc_validate_locale($locale, true);
         if ($remember) {
-            Cookie::newInstance()->set_expires(osc_time_cookie());
-            Cookie::newInstance()->push('oc_adminId', $admin['pk_i_id']);
-            Cookie::newInstance()->push(
+            Cookie::getInstance()->set_expires(osc_time_cookie());
+            Cookie::getInstance()->push('oc_adminId', $admin['pk_i_id']);
+            Cookie::getInstance()->push(
                 'oc_adminSecret',
                 \mindstellar\security\RememberMe::issue(
                     'admin',
                     $admin['pk_i_id'],
                     \mindstellar\security\AdminTwoFactor::rememberBinding($admin),
-                    osc_time_cookie()
+                    osc_time_cookie(),
+                    \mindstellar\auth\AuthStamp::of($admin)
                 )
             );
             if ($is_valid_locale === true) {
-                Cookie::newInstance()->push('oc_adminLocale', $locale);
+                Cookie::getInstance()->push('oc_adminLocale', $locale);
             } else {
-                Cookie::newInstance()->push('oc_adminLocale', osc_admin_language());
+                Cookie::getInstance()->push('oc_adminLocale', osc_admin_language());
             }
-            Cookie::newInstance()->set();
+            Cookie::getInstance()->set();
         }
 
         // we are logged in... let's go!
-        Session::newInstance()->_set('adminId', $admin['pk_i_id']);
-        Session::newInstance()->_set('adminUserName', $admin['s_username']);
-        Session::newInstance()->_set('adminName', $admin['s_name']);
-        Session::newInstance()->_set('adminEmail', $admin['s_email']);
+        Session::getInstance()->_set('adminId', $admin['pk_i_id']);
+        Session::getInstance()->_set('adminUserName', $admin['s_username']);
+        Session::getInstance()->_set('adminName', $admin['s_name']);
+        Session::getInstance()->_set('adminEmail', $admin['s_email']);
+        Session::getInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
         if ($is_valid_locale === true) {
-            Session::newInstance()->_set('adminLocale', $locale);
+            Session::getInstance()->_set('adminLocale', $locale);
         } else {
-            Session::newInstance()->_set('adminLocale', osc_admin_language());
+            Session::getInstance()->_set('adminLocale', osc_admin_language());
         }
         osc_run_hook('login_admin', $admin);
     }
 
     /**
-     * The sign-in waiting for its second step, or null when there is none or it expired.
+     * The sign-in waiting for its second step, or null when there is none or its cookie is
+     * forged, expired, for an admin that is gone or already used; a bad cookie is cleared.
      *
-     * @return array{id:int,remember:bool,locale:string,redirect:string,until:int}|null
+     * @return array{admin:array<string,mixed>,choices:array<string,mixed>}|null
      */
     private function pendingTwoFactor(): ?array
     {
-        $pending = Session::newInstance()->_get('admin2fa');
-        if (!is_array($pending) || (int)($pending['until'] ?? 0) < time()) {
+        $token = $_COOKIE[self::TWO_FACTOR_COOKIE] ?? null;
+        if (!is_string($token) || $token === '') {
             return null;
+        }
+        $pending = \mindstellar\security\AdminTwoFactor::readPending($token);
+        if ($pending === null) {
+            self::clearTwoFactorCookie();
         }
 
         return $pending;
+    }
+
+    /**
+     * Keep the sign-in waiting for its code in a cookie on the admin path.
+     *
+     * @param string $token
+     *
+     * @return void
+     */
+    private static function writeTwoFactorCookie(string $token): void
+    {
+        Cookie::write(
+            self::TWO_FACTOR_COOKIE,
+            $token,
+            time() + \mindstellar\security\AdminTwoFactor::PENDING_TTL,
+            osc_admin_cookie_path()
+        );
+    }
+
+    /**
+     * Clear the code-step cookie, when the browser has one; also called at logout.
+     *
+     * @return void
+     */
+    public static function clearTwoFactorCookie(): void
+    {
+        if (isset($_COOKIE[self::TWO_FACTOR_COOKIE])) {
+            Cookie::write(self::TWO_FACTOR_COOKIE, '', time() - 3600, osc_admin_cookie_path());
+            unset($_COOKIE[self::TWO_FACTOR_COOKIE]);
+        }
     }
 
     /**
@@ -354,9 +442,9 @@ class CAdminLogin extends AdminBaseModel
         $login_admin_url   = osc_apply_filter('login_admin_url', 'https://github.com/mindstellar/shopclass/');
         $login_admin_image = osc_apply_filter('login_admin_image', osc_admin_base_url() . 'images/shopclass-logo.svg');
 
-        View::newInstance()->_exportVariableToView('login_admin_title', $login_admin_title);
-        View::newInstance()->_exportVariableToView('login_admin_url', $login_admin_url);
-        View::newInstance()->_exportVariableToView('login_admin_image', $login_admin_image);
+        View::getInstance()->_exportVariableToView('login_admin_title', $login_admin_title);
+        View::getInstance()->_exportVariableToView('login_admin_url', $login_admin_url);
+        View::getInstance()->_exportVariableToView('login_admin_image', $login_admin_image);
 
         osc_run_hook('before_admin_html');
         require osc_admin_base_path() . $file;

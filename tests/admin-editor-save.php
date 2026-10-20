@@ -194,7 +194,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     public function doView($view)
@@ -383,7 +383,7 @@ pin(
         'b_show_email'       => '1',
         's_contact_name'     => 'Grace Hopper',
         's_contact_email'    => 'grace@example.test',
-        's_contact_phone'    => '5550199',
+        's_contact_phone'    => '555-0199',
     ),
     only(row($admin, 't_item', 'pk_i_id', $itemId), array(
         'fk_i_category_id', 'i_price', 'fk_c_currency_code', 'b_show_email',
@@ -561,6 +561,16 @@ pin(
     'about-our-shop',
     row($admin, 't_pages', 'pk_i_id', $pageId)['s_internal_name']
 );
+
+$apiSlug                    = $pagePost;
+$apiSlug['s_internal_name'] = 'api';
+$result                     = drive('CAdminPages', $apiSlug, array('page' => 'pages', 'action' => 'edit_post'));
+pin(
+    'the API\'s /api/ prefix is refused as an internal name',
+    array(array('error', 'A slug of "api", or one starting with "api/", is reserved for the site\'s API. Choose another.')),
+    $result['flashes']
+);
+pin('and the page keeps its name', 'about-our-shop', row($admin, 't_pages', 'pk_i_id', $pageId)['s_internal_name']);
 
 /* ----------------------------------------------------------------------------
  * The page editor's save is the declaration's, not the controller's.

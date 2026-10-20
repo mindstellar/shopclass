@@ -36,6 +36,28 @@ final class AjaxResponse
      */
     public static function json($data, int $status = 200, int $flags = 0): void
     {
+        self::send($data, $status, $flags, 'private, no-store');
+    }
+
+    /**
+     * JSON that is the same for every visitor, such as a list of places, which a browser or
+     * shared cache may keep for five minutes.
+     *
+     * @param mixed $data
+     *
+     * @return void
+     */
+    public static function shared($data): void
+    {
+        $setsCookie = preg_grep('/^Set-Cookie:/i', headers_list()) !== array();
+        self::send($data, 200, 0, $setsCookie ? 'private, no-store' : 'public, max-age=300, s-maxage=300');
+    }
+
+    /**
+     * @param mixed $data
+     */
+    private static function send($data, int $status, int $flags, string $cacheControl): void
+    {
         if (headers_sent()) {
             // The one way this class fails is by quietly not running, which puts the
             // response back to text/html -- the thing it exists to prevent. Say so.
@@ -47,9 +69,9 @@ final class AjaxResponse
             header('Content-Type: application/json; charset=UTF-8');
             // The Content-Type above is only worth having if the browser believes it.
             header('X-Content-Type-Options: nosniff');
-            // Front ajax skips osc_send_response_cache_headers(), so without this a JSON
-            // answer carrying somebody's data is heuristically cacheable by a shared cache.
-            header('Cache-Control: private, no-store');
+            // Front ajax skips osc_send_response_cache_headers(), so every answer states its own
+            // cache rule; without one a shared cache may guess.
+            header('Cache-Control: ' . $cacheControl);
         }
 
         echo json_encode($data, $flags);

@@ -8,18 +8,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 06-08-2021
- * Time: 16:03
- * License is provided in root directory.
- */
-
 namespace mindstellar\form\admin;
 
 use Exception;
-use mindstellar\form\base\FormInputs;
+use mindstellar\base\SharedInstance;
+use mindstellar\form\FormInputs;
 use mindstellar\utility\Escape;
 use mindstellar\utility\Sanitize;
 use Session;
@@ -29,10 +22,8 @@ use Session;
  */
 class Item extends FormInputs
 {
-    /**
-     * @var \mindstellar\form\admin\Item
-     */
-    private static $instance;
+    use SharedInstance;
+
     protected $textClass = 'form-control form-control-sm';
     protected $selectClass = 'form-select form-select-sm';
     protected $passwordClass = 'form-control form-control-sm';
@@ -40,10 +31,6 @@ class Item extends FormInputs
      * @var \Session
      */
     private $Session;
-    /**
-     * @var array
-     */
-    private $adminLocales;
     /**
      * @var string
      */
@@ -60,24 +47,17 @@ class Item extends FormInputs
     public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         parent::__construct($escape, $sanitize);
-        $this->Session           = Session::newInstance();
-        $this->adminLocales      = osc_get_admin_locales();
+        $this->Session           = Session::getInstance();
         $this->adminLocaleCode   = osc_current_admin_locale();
         $this->userLocales       = osc_get_locales();
     }
 
     /**
-     * The shared admin item form instance.
-     *
-     * @return \mindstellar\form\admin\Item
+     * @deprecated 7.0.0 Use getInstance().
      */
     public static function instance(): Item
     {
-        if (!isset(self::$instance)) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -213,7 +193,7 @@ class Item extends FormInputs
             }
             if (count($currencies) > 1) {
                 $default_key = null;
-                $currency    = \Preference::newInstance()->get('currency');
+                $currency    = \Preference::getInstance()->get('currency');
                 if (isset($item['fk_c_currency_code'])) {
                     $default_key = $item['fk_c_currency_code'];
                 } elseif (isset($currency)) {

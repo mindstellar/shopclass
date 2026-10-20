@@ -772,3 +772,54 @@
 #adminItemForm #error_list:not(:empty) {
   display: block;
 }
+
+// The user form, laid out as a settings page: plain values, status pills and the action buttons
+// sit on the same baseline as the inputs in other rows.
+.user-editor-text {
+  padding-block-start: 6px;
+}
+
+.user-editor-status,
+.user-editor-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+// The photo, its file box and the remove tick stack in one column.
+.user-editor-photo {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.user-editor-status {
+  padding-block-start: 4px;
+}
+
+.user-editor-photo .form-control {
+  max-width: 20rem;
+}
+
+.user-editor-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-editor-remove {
+  align-items: center;
+  display: flex;
+  font-size: $font-size-label;
+  gap: .35rem;
+}
+
+// The About box keeps the width of the other fields and a few lines of height.
+#register .osc-tab {
+  max-width: 40rem;
+
+  textarea {
+    height: 7rem;
+    min-height: 7rem;
+  }
+}

@@ -170,7 +170,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
                                         // word for any plugin hooked on the `items_processing_row` filter.
                                     ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
                                                                                                                     echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>
                                 <?php } ?>
@@ -221,7 +221,7 @@ osc_admin_pagination($aData);
                             <?php osc_admin_form_row_open(__('Pattern')); ?>
                                     <input class="form-control" type="text" name="sSearch" id="sSearch"
                                            placeholder="<?php echo osc_esc_html(__('Title or description')); ?>"
-                                           value="<?php echo osc_esc_html(Params::getParam('sSearch')); ?>" />
+                                           value="<?php echo osc_esc_html(Params::getParamString('sSearch')); ?>" />
                             <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open(__('Category')); ?>
                                     <?php ManageItemsForm::category_select($categories, null, null, true); ?>
@@ -248,7 +248,7 @@ osc_admin_pagination($aData);
                             <?php osc_admin_form_row_open(__('Region')); ?>
                                     <input class="form-control" type="text" id="region" name="region"
                                            placeholder="<?php echo osc_esc_html(__('Any region')); ?>"
-                                           value="<?php echo osc_esc_html(Params::getParam('region')); ?>"
+                                           value="<?php echo osc_esc_html(Params::getParamString('region')); ?>"
                                            autocomplete="off"
                                            data-ac="location_regions"
                                            data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
@@ -256,19 +256,19 @@ osc_admin_pagination($aData);
                                            data-ac-scope="#countryId" data-ac-scope-param="country"
                                            data-ac-clears="#cityId,#city"/>
                                     <input type="hidden" id="regionId" name="regionId"
-                                           value="<?php echo osc_esc_html(Params::getParam('regionId')); ?>"/>
+                                           value="<?php echo osc_esc_html(Params::getParamString('regionId')); ?>"/>
                             <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open(__('City')); ?>
                                     <input class="form-control" type="text" id="city" name="city"
                                            placeholder="<?php echo osc_esc_html(__('Any city')); ?>"
-                                           value="<?php echo osc_esc_html(Params::getParam('city')); ?>"
+                                           value="<?php echo osc_esc_html(Params::getParamString('city')); ?>"
                                            autocomplete="off"
                                            data-ac="location_cities"
                                            data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
                                            data-ac-target="#cityId"
                                            data-ac-scope="#regionId" data-ac-scope-param="region"/>
                                     <input type="hidden" id="cityId" name="cityId"
-                                           value="<?php echo osc_esc_html(Params::getParam('cityId')); ?>"/>
+                                           value="<?php echo osc_esc_html(Params::getParamString('cityId')); ?>"/>
                             <?php osc_admin_form_row_close(); ?>
                         </div>
                     </div>
@@ -277,8 +277,8 @@ osc_admin_pagination($aData);
                             <?php osc_admin_form_row_open(__('Email')); ?>
                                     <input class="form-control" id="user" name="user" type="text"
                                            placeholder="<?php echo osc_esc_html(__('Any seller')); ?>"
-                                           value="<?php echo osc_esc_html(Params::getParam('user')); ?>" />
-                                    <input id="userId" name="userId" type="hidden" value="<?php echo osc_esc_html(Params::getParam('userId')); ?>" />
+                                           value="<?php echo osc_esc_html(Params::getParamString('user')); ?>" />
+                                    <input id="userId" name="userId" type="hidden" value="<?php echo osc_esc_html(Params::getParamString('userId')); ?>" />
                             <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open(__('Premium')); ?>
                                     <select class="form-select" id="b_premium" name="b_premium">

@@ -44,6 +44,8 @@ if (!defined('OC_ADMIN')) {
 
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Sanitize.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';
@@ -82,9 +84,14 @@ class Params
 
 class Preference
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function get($key, $section = 'osclass')
@@ -110,9 +117,14 @@ class Preference
 /** Read at call time, so a test can change which locales are enabled. */
 class OSCLocale
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function listAllEnabled($isBo = false, $indexedByPk = false)
@@ -341,7 +353,7 @@ function stored(string $section): array
     return $keys;
 }
 
-SettingsPageRegistry::instance()->register('cond', array(
+SettingsPageRegistry::getInstance()->register('cond', array(
     'title'  => 'Conditional',
     'fields' => array(
         array('type' => 'checkbox', 'name' => 'b_enabled', 'label' => 'Enable it'),
@@ -410,7 +422,7 @@ check('an empty array is off', osc_settings_master_on(array()) === false);
 
 harness_section('what counts as "off" for a master that is not a checkbox');
 
-SettingsPageRegistry::instance()->register('masters', array(
+SettingsPageRegistry::getInstance()->register('masters', array(
     'title'  => 'Masters',
     'fields' => array(
         array('type' => 'select', 'name' => 'mode', 'label' => 'Mode',
@@ -440,7 +452,7 @@ pin('and a text master with anything in it', 'y', $GLOBALS['preferences']['maste
 
 harness_section('a chain of dependencies');
 
-SettingsPageRegistry::instance()->register('chain', array(
+SettingsPageRegistry::getInstance()->register('chain', array(
     'title'  => 'Chain',
     'fields' => array(
         array('type' => 'checkbox', 'name' => 'b_one', 'label' => 'One'),
@@ -469,7 +481,7 @@ pin('while the master itself is still written', array('b_one'), stored('chain'))
 // submission as it arrived: resolve and discard field by field and this page keeps the
 // grandchild, because by the time it is reached its master has already been dropped for
 // an unrelated reason.
-SettingsPageRegistry::instance()->register('chainup', array(
+SettingsPageRegistry::getInstance()->register('chainup', array(
     'title'  => 'Chain, declared bottom-up',
     'fields' => array(
         array('type' => 'text', 'name' => 's_three', 'label' => 'Three', 'depends' => 'b_two'),
@@ -483,7 +495,7 @@ pin('declaration order does not change what is discarded', array('b_one'), store
 
 harness_section('a dependent field that follows one value of its master');
 
-SettingsPageRegistry::instance()->register('byvalue', array(
+SettingsPageRegistry::getInstance()->register('byvalue', array(
     'title'  => 'By value',
     'fields' => array(
         array('type' => 'checkbox', 'name' => 'b_wm', 'label' => 'Watermark on'),
@@ -586,7 +598,7 @@ foreach (array(
     pin($label . ': what is stored', $keys, stored('byvalue'));
 }
 
-$byValueFields = SettingsPageRegistry::instance()->fields('byvalue');
+$byValueFields = SettingsPageRegistry::getInstance()->fields('byvalue');
 // Straight at the rule, past the select's own validation: a string compare, not a loose one.
 check('"text" is met with the chain above it on', osc_settings_depends_met($byValueFields, 's_wm_text', array('b_wm' => true, 'wm_type' => 'text')) === true);
 check('"text " is not "text"', osc_settings_depends_met($byValueFields, 's_wm_text', array('b_wm' => true, 'wm_type' => 'text ')) === false);
@@ -760,7 +772,7 @@ set_locales($GLOBALS['locales']);
 
 harness_section('a translated field, two enabled locales');
 
-SettingsPageRegistry::instance()->register('multi', array(
+SettingsPageRegistry::getInstance()->register('multi', array(
     'title'  => 'Multi',
     'fields' => array(
         array('type' => 'text', 'name' => 's_title', 'label' => 'Title', 'translate' => true),
@@ -769,7 +781,7 @@ SettingsPageRegistry::instance()->register('multi', array(
     ),
 ));
 
-$fields = SettingsPageRegistry::instance()->fields('multi');
+$fields = SettingsPageRegistry::getInstance()->fields('multi');
 pin(
     'a translated field expands over every enabled locale',
     array('en_US' => 'English', 'es_ES' => 'Español'),
@@ -914,7 +926,7 @@ if ($chrome === '') {
 
 harness_section('a translated field whose value has not been set yet');
 
-SettingsPageRegistry::instance()->register('transdefault', array(
+SettingsPageRegistry::getInstance()->register('transdefault', array(
     'title'  => 'Translated with a default',
     'fields' => array(
         array('type' => 'text', 'name' => 's_motto', 'label' => 'Motto', 'translate' => true, 'default' => 'Nothing yet'),
@@ -994,7 +1006,7 @@ set_locales(array(
 
 harness_section('translated and required');
 
-SettingsPageRegistry::instance()->register('reqtrans', array(
+SettingsPageRegistry::getInstance()->register('reqtrans', array(
     'title'  => 'Required translation',
     'fields' => array(
         array('type' => 'text', 'name' => 's_name', 'label' => 'Name', 'translate' => true, 'required' => true),
@@ -1014,7 +1026,7 @@ pin('and writes both', 2, count(stored('reqtrans')));
 
 harness_section('the two features on one field');
 
-SettingsPageRegistry::instance()->register('both', array(
+SettingsPageRegistry::getInstance()->register('both', array(
     'title'  => 'Both',
     'fields' => array(
         array('type' => 'checkbox', 'name' => 'b_on', 'label' => 'On'),

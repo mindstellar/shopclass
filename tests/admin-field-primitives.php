@@ -572,6 +572,7 @@ emits('a field with no row label still labels the row with its own', $html, '<la
 harness_section('the length hint, and the mirror it depends on');
 // Field keeps its own copy of the purified-type list so a markup primitive need not load
 // the settings registry. The copy is only safe while it stays a copy.
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
 $mirror = new ReflectionClassConstant('mindstellar\\admin\\ui\\Field', 'PURIFIED_TYPES');
 pin(

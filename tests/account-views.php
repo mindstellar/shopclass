@@ -62,6 +62,7 @@ $expected = array(
     'user-public-profile.php',
     'user-custom.php',
     'user-delete_account.php',
+    'user-api_access.php',
 );
 
 // ---------------------------------------------------------------- the map --
@@ -182,6 +183,7 @@ $slotPages = array(
     'user-signin'         => $accountIn . 'user-signin-content.php',
     'user-custom'         => $accountIn . 'user-custom-content.php',
     'user-delete_account' => $guiDir . 'user-delete_account-content.php',
+    'user-api_access'     => $accountIn . 'user-api_access-content.php',
     'billing-wallet'      => $guiDir . 'billing/wallet-content.php',
     'billing-buy'         => $guiDir . 'billing/buy-content.php',
     'billing-orders'      => $guiDir . 'billing/orders-content.php',
@@ -223,8 +225,7 @@ foreach (array($guiDir . 'contact-content.php', $guiDir . 'item-contact-content.
     check(basename($file) . ' uses the shared contact form', strpos($src, "parts/contact-form.php'") !== false
         && strpos($src, 'name="yourName"') === false);
 }
-$nonSecure = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php');
-preg_match("/case 'contact_post':.*?break;/s", $nonSecure, $contactCase);
+$contactCase = array(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php', 'contactPost'));
 check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
 check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceededFor('user_contact'") !== false);
 

@@ -51,7 +51,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_country');
 $table = DB_TABLE_PREFIX . 't_country';
 
-$model = Country::newInstance();
+$model = Country::getInstance();
 
 $rowCount = static function () use ($admin, $table): int {
     return (int) $admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];
@@ -137,7 +137,7 @@ seed_country($admin, 'FR', 'France');
 
 $row = $model->findByCode('US');
 check('a match returns an array', is_array($row), describe($row));
-pin('the row carries exactly the three schema columns', array('pk_c_code', 's_name', 's_slug'), array_keys($row));
+pin('the row carries exactly the four schema columns', array('pk_c_code', 's_name', 's_slug', 'i_num_items'), array_keys($row));
 pin('pk_c_code round-trips', 'US', $row['pk_c_code']);
 pin('s_name round-trips', 'United States', $row['s_name']);
 pin('s_slug round-trips', 'us', $row['s_slug']);
@@ -222,7 +222,7 @@ pin(
     array('FR', 'DE', 'US'),
     array_column($rows, 'pk_c_code')
 );
-pin('each row carries exactly the three schema columns', array('pk_c_code', 's_name', 's_slug'), array_keys($rows[0]));
+pin('each row carries exactly the four schema columns', array('pk_c_code', 's_name', 's_slug', 'i_num_items'), array_keys($rows[0]));
 check('every value in every row is a string or null (C4)', all_rows_string($rows), describe($rows));
 
 /* ----------------------------------------------------------------------------
@@ -385,6 +385,26 @@ pin('one listByEmptySlug() call costs one query', 1, harness_query_count(static 
 }));
 
 check('nothing was written by any of the read-only pins above', $rowCount() === 3, (string) $rowCount());
+
+harness_section('Country::listAll — cached until a country is written');
+
+pin('a second listAll() call costs no query', 0, harness_query_count(static function () use ($model) {
+    $model->listAll();
+}));
+$model->insert(array('pk_c_code' => 'AT', 's_name' => 'Austria', 's_slug' => 'at'));
+pin('an insert shows on the next read', array('AT', 'FR', 'DE', 'US'), array_column($model->listAll(), 'pk_c_code'));
+$model->update(array('s_name' => 'Zambia'), array('pk_c_code' => 'AT'));
+pin('an update shows on the next read', array('FR', 'DE', 'US', 'AT'), array_column($model->listAll(), 'pk_c_code'));
+$model->delete(array('pk_c_code' => 'AT'));
+pin('a delete shows on the next read', array('FR', 'DE', 'US'), array_column($model->listAll(), 'pk_c_code'));
+$names = static fn (): array => array_column($model->listAll(), 's_name', 'pk_c_code');
+$before = $names();
+\mindstellar\location\LocationStore::renameCountry('FR', 'Frankreich', 'fr');
+pin('a rename through LocationStore shows on the next read', 'Frankreich', $names()['FR']);
+\mindstellar\location\LocationStore::renameCountry('FR', $before['FR'], 'fr');
+\mindstellar\location\LocationStore::addCountry('AT', 'Austria', 'at');
+pin('an add through LocationStore shows on the next read', true, isset($names()['AT']));
+$model->delete(array('pk_c_code' => 'AT'));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

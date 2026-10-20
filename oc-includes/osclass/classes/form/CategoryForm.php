@@ -99,9 +99,9 @@ class CategoryForm extends Form
         foreach ($categories as $c) {
             if ((isset($category['pk_i_id']) && $category['pk_i_id'] === $c['pk_i_id'])) {
                 echo '<option value="' . $c['pk_i_id'] . '"' . ('selected="selected"') . '>' . $deep_string
-                    . $c['s_name'] . '</option>';
+                    . osc_esc_html((string) $c['s_name']) . '</option>';
             } else {
-                echo '<option value="' . $c['pk_i_id'] . '"' . ('') . '>' . $deep_string . $c['s_name'] . '</option>';
+                echo '<option value="' . $c['pk_i_id'] . '"' . ('') . '>' . $deep_string . osc_esc_html((string) $c['s_name']) . '</option>';
             }
             if (isset($c['categories']) && is_array($c['categories'])) {
                 self::subcategory_select($c['categories'], $category, $default_item, $deep);
@@ -131,7 +131,7 @@ class CategoryForm extends Form
                     . $c['pk_i_id'] . '" onclick="javascript:checkCat(\'' . $c['pk_i_id']
                     . '\', this.checked);" ' . (in_array($c['pk_i_id'], $selected)
                         ? 'checked="checked"' : '') . ' />' . (($depth == 0) ? '<span>' : '')
-                    . $c['s_name'] . (($depth == 0) ? '</span>' : '');
+                    . osc_esc_html((string) $c['s_name']) . (($depth == 0) ? '</span>' : '');
                 self::categories_tree($c['categories'], $selected, $depth + 1);
                 echo '</li>';
             }

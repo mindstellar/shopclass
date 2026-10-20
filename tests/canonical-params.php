@@ -30,7 +30,7 @@ $GLOBALS['failLabels'] = array();
 // lifted out rather than loading BaseModel and the whole web-controller stack.
 $src  = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebSearch.php');
 $from = strpos($src, 'public static function canonicalParams(array $params)');
-$to   = strpos($src, 'private function categorySlugRedirect(');
+$to   = strpos($src, '/**', $from);
 if ($from === false || $to === false || $to <= $from) {
     fwrite(STDERR, "CWebSearch::canonicalParams() not found\n");
     exit(1);

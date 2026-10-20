@@ -17,6 +17,8 @@
 // `input`, debounce-fetches JSON [{id,label,value}] from opts.source (adds a
 // `term` param), shows a listbox, and drives it with the standard combobox
 // keyboard model. opts: { source, minLength=1, onSearch(input), onSelect(item) }.
+// Optional: load(term) returns a Promise of items in place of fetching source, and
+// renderItem(item, li) fills an option instead of its label text.
 // onSelect returning false suppresses writing item.value into the input.
 //
 // The dropdown's *structural* styles (fixed positioning, stacking) are applied
@@ -92,7 +94,11 @@ function oscAutocomplete(input, opts) {
             li.className = 'osc-ac-option';
             li.id = uid + '-' + i;
             li.setAttribute('role', 'option');
-            li.textContent = item.label != null ? item.label : item.value;
+            if (opts.renderItem) {
+                opts.renderItem(item, li);
+            } else {
+                li.textContent = item.label != null ? item.label : item.value;
+            }
             li.addEventListener('mousedown', function (e) {
                 e.preventDefault(); // keep focus so blur doesn't close before select
                 choose(i);
@@ -132,6 +138,12 @@ function oscAutocomplete(input, opts) {
         var term = input.value;
         if (term.length < minLength) {
             close();
+            return;
+        }
+        if (opts.load) {
+            opts.load(term)
+                .then(function (data) { if (input.value === term) { render(Array.isArray(data) ? data : []); } })
+                .catch(function () { close(); });
             return;
         }
         // source may be a string, or a function resolved at fetch time (so a
@@ -282,4 +294,197 @@ function oscAutocomplete(input, opts) {
     } else {
         initLocationAutocomplete();
     }
+})();
+
+// Search form distance field. "Use my location" puts the browser's position, rounded to two
+// decimals (about 1 km), in place of the picked city and region and sends the form. Picking
+// a place again drops that position, so the radius measures from the place.
+(function () {
+    var PLACE = ['sCity', 'sRegion', 'cityId', 'regionId', 'sCityArea'];
+
+    function setPoint(form, name, value) {
+        var input = form.querySelector('input[name="' + name + '"]');
+        if (value === null) {
+            if (input) { input.parentNode.removeChild(input); }
+            return;
+        }
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            form.appendChild(input);
+        }
+        input.value = value;
+    }
+
+    document.addEventListener('click', function (e) {
+        var button = e.target.closest ? e.target.closest('[data-osc-near-me]') : null;
+        if (!button || !button.form) { return; }
+        var form = button.form;
+        if (!navigator.geolocation) {
+            window.alert(button.getAttribute('data-error'));
+            return;
+        }
+        button.disabled = true;
+        navigator.geolocation.getCurrentPosition(function (pos) {
+            setPoint(form, 'sLat', pos.coords.latitude.toFixed(2));
+            setPoint(form, 'sLng', pos.coords.longitude.toFixed(2));
+            for (var i = 0; i < PLACE.length; i++) {
+                var field = form.querySelector('[name="' + PLACE[i] + '"]');
+                if (field) { field.value = ''; }
+            }
+            var radius = form.querySelector('select[name="iRadius"]');
+            if (radius && radius.value === '' && radius.options.length > 3) { radius.selectedIndex = 3; }
+            form.submit();
+        }, function () {
+            button.disabled = false;
+            window.alert(button.getAttribute('data-error'));
+        }, { timeout: 10000, maximumAge: 600000 });
+    });
+
+    document.addEventListener('change', function (e) {
+        var field = e.target;
+        if (field.form && field.form.querySelector('[data-osc-distance]') && PLACE.indexOf(field.name) !== -1) {
+            setPoint(field.form, 'sLat', null);
+            setPoint(field.form, 'sLng', null);
+        }
+    });
+})();
+
+// ---------------------------------------------------------------------------
+// Search box suggestions: an input[data-osc-suggest] lists matching listings
+// (thumbnail and title) and any searches a search plugin adds, from the REST API's
+// GET /search/suggest, sent with the page token from <meta name="shopclass-api">.
+// A listing opens its page; a search fills the box and submits its form.
+// Optional data-osc-suggest-limit (1-10); data-osc-suggest-searches and
+// data-osc-suggest-listings head the groups when both show (osc_search_suggest_attributes()
+// prints all of them). Theme styles: .osc-suggest-thumb, .osc-suggest-title,
+// .osc-suggest-meta, .osc-suggest-count, .osc-suggest-heading and .osc-ac-option.is-search.
+// ---------------------------------------------------------------------------
+(function () {
+    function apiMeta() {
+        var meta = document.querySelector('meta[name="shopclass-api"]');
+        try {
+            return meta ? JSON.parse(meta.getAttribute('content')) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function initSuggest() {
+        if (typeof oscAutocomplete !== 'function') { return; }
+        var api = apiMeta();
+        var inputs = document.querySelectorAll('input[data-osc-suggest]');
+        if (!api || !api.url || !inputs.length) { return; }
+        // Either .../api/v1 or .../index.php?page=api&path=v1 when friendly URLs are off.
+        var endpoint = api.url.replace(/\/$/, '') + '/search/suggest';
+        var joiner = endpoint.indexOf('?') > -1 ? '&' : '?';
+
+        for (var i = 0; i < inputs.length; i++) {
+            (function (input) {
+                var limit = Math.min(10, Math.max(1, parseInt(input.getAttribute('data-osc-suggest-limit'), 10) || 5));
+                var headings = {
+                    searches: input.getAttribute('data-osc-suggest-searches'),
+                    listings: input.getAttribute('data-osc-suggest-listings')
+                };
+                oscAutocomplete(input, {
+                    minLength: 2,
+                    load: function (term) {
+                        var url = endpoint + joiner + 'q=' + encodeURIComponent(term) + '&limit=' + limit;
+                        var headers = { Accept: 'application/json' };
+                        headers[api.header] = api.token;
+                        return fetch(url, { credentials: 'same-origin', headers: headers })
+                            .then(function (r) { return r.ok ? r.json() : { data: {} }; })
+                            .then(function (body) {
+                                var data = body.data || {};
+                                var searches = (data.searches || []).map(function (s) {
+                                    return { kind: 'search', label: s.term, value: s.term, countLabel: s.count_label };
+                                });
+                                var listings = (data.listings || []).map(function (l) {
+                                    return { kind: 'listing', label: l.title, value: input.value, url: l.url, thumbnail: l.thumbnail, price: l.price, place: l.place };
+                                });
+                                var both = searches.length && listings.length;
+                                if (both && headings.searches) { searches[0].heading = headings.searches; }
+                                if (both && headings.listings) { listings[0].heading = headings.listings; }
+                                return searches.concat(listings);
+                            });
+                    },
+                    renderItem: function (item, li) {
+                        if (item.heading) {
+                            var heading = document.createElement('span');
+                            heading.className = 'osc-suggest-heading';
+                            heading.setAttribute('aria-hidden', 'true');
+                            heading.textContent = item.heading;
+                            li.appendChild(heading);
+                        }
+                        if (item.kind === 'listing' && item.thumbnail) {
+                            var img = document.createElement('img');
+                            img.className = 'osc-suggest-thumb';
+                            img.src = item.thumbnail;
+                            img.alt = '';
+                            img.loading = 'lazy';
+                            li.appendChild(img);
+                        }
+                        var title = document.createElement('span');
+                        title.className = 'osc-suggest-title';
+                        title.textContent = item.label;
+                        li.appendChild(title);
+                        var meta = item.kind === 'listing' ? [item.price, item.place].filter(Boolean).join(' · ') : item.countLabel;
+                        if (meta) {
+                            var extra = document.createElement('span');
+                            extra.className = item.kind === 'search' ? 'osc-suggest-count' : 'osc-suggest-meta';
+                            extra.textContent = meta;
+                            li.appendChild(extra);
+                        }
+                        if (item.kind === 'search') {
+                            li.classList.add('is-search');
+                        }
+                    },
+                    onSelect: function (item) {
+                        if (item.kind === 'listing') {
+                            window.location.href = item.url;
+                            return false;
+                        }
+                        input.value = item.value;
+                        if (input.form) {
+                            if (input.form.requestSubmit) { input.form.requestSubmit(); } else { input.form.submit(); }
+                        }
+                        return false;
+                    }
+                });
+            })(inputs[i]);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSuggest);
+    } else {
+        initSuggest();
+    }
+})();
+
+// A listing form sends once: a second submit while the first is on its way is dropped, so a
+// double click posts one listing. A submit that a theme's own check stops does not count.
+(function () {
+    var sending = new WeakSet();
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        var action = form.querySelector ? form.querySelector('input[name="action"]') : null;
+        if (!action || (action.value !== 'item_add_post' && action.value !== 'item_edit_post')) { return; }
+        if (sending.has(form)) {
+            e.preventDefault();
+            return;
+        }
+        setTimeout(function () {
+            if (e.defaultPrevented) { return; }
+            sending.add(form);
+            // A stopped page load or a post into a frame leaves this page in place; let it send again.
+            setTimeout(function () { sending.delete(form); }, 10000);
+        }, 0);
+    });
+
+    // Back from the next page restores this one from the browser's cache, so it may send again.
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) { sending = new WeakSet(); }
+    });
 })();

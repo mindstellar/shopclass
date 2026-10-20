@@ -1,27 +1,29 @@
 <?php
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 08/05/20
- * Time: 6:26 PM
- * License is provided in root directory.
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. The original
+ * Osclass code it derives from was licensed under the Apache License 2.0.
+ * See LICENSE (GPL-3.0) and LICENSE-APACHE (Apache-2.0).
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 namespace mindstellar\utility;
 
 use Category;
 use City;
-use CityStats;
 use Country;
-use CountryStats;
 use DateTimeZone;
 use Item;
-use LocationsTmp;
-use mindstellar\database\DbException;
+use mindstellar\job\JobWorker;
+use mindstellar\location\LocationRecountJobs;
+use mindstellar\routing\ReservedSlugs;
 use Params;
 use Preference;
 use Region;
-use RegionStats;
 use Rewrite;
 use RuntimeException;
 use Session;
@@ -52,36 +54,26 @@ class Utils
         if (ini_get('allow_url_fopen') === false) {
             throw new RuntimeException(__('Is allow_url_fopen enabled?'));
         }
-        // parse the given URL
+        // fsockopen rather than FileSystem: curl waits for the answer, and this only sends.
         $parsed_url = parse_url($target_url);
-
-        if (!isset($parsed_url['host'], $parsed_url['path']) || $parsed_url === false) {
+        if ($parsed_url === false || !isset($parsed_url['host'])) {
             return false;
         }
-        // extract host, path, port:
-        $host = $parsed_url['host'];
-        $path = $parsed_url['path'];
-        $port = 80;
-        if (isset($parsed_url['port'])) {
-            $port = $parsed_url['port'];
-        }
+        $https = strtolower($parsed_url['scheme'] ?? 'http') === 'https';
+        $port  = (int) ($parsed_url['port'] ?? ($https ? 443 : 80));
+        $path  = ($parsed_url['path'] ?? '/') . (isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '');
 
-        if (isset($parsed_url['scheme']) && $parsed_url['scheme'] === 'https') {
-            $host = 'ssl://' . $host;
-            $port = 443;
-        }
-        $fp = fsockopen($host, $port);
-
+        $fp = @fsockopen(($https ? 'ssl://' : '') . $parsed_url['host'], $port, $errno, $errstr, 5);
         if ($fp === false) {
             return false;
         }
         $data              = http_build_query($query_data);
-        $out               = 'POST ' . $path . ' HTTP/1.1' . PHP_EOL;
-        $out               .= 'Host: ' . $parsed_url['host'] . PHP_EOL;
-        $out               .= 'Referer: Shopclass ' . OSCLASS_VERSION . PHP_EOL;
-        $out               .= 'Content-type: application/x-www-form-urlencoded' . PHP_EOL;
-        $out               .= 'Content-Length: ' . strlen($data) . PHP_EOL;
-        $out               .= 'Connection: close' . PHP_EOL . PHP_EOL;
+        $out               = 'POST ' . $path . " HTTP/1.1\r\n";
+        $out               .= 'Host: ' . $parsed_url['host'] . (isset($parsed_url['port']) ? ':' . $port : '') . "\r\n";
+        $out               .= 'Referer: Shopclass ' . OSCLASS_VERSION . "\r\n";
+        $out               .= "Content-Type: application/x-www-form-urlencoded\r\n";
+        $out               .= 'Content-Length: ' . strlen($data) . "\r\n";
+        $out               .= "Connection: close\r\n\r\n";
         $out               .= $data;
         $number_bytes_sent = fwrite($fp, $out);
         fclose($fp);
@@ -120,13 +112,13 @@ class Utils
      *
      * @param string|null $version
      *
-     * @return array<string,mixed>|false the refreshed preferences, or false when no version was given
+     * @return array<string,mixed>|bool the refreshed preferences, or false when no version was given
      */
     public static function changeOsclassVersionTo($version = null)
     {
         if ($version) {
-            Preference::newInstance()->replace('version', $version);
-            return Preference::newInstance()->toArray();
+            Preference::getInstance()->replace('version', $version);
+            return Preference::getInstance()->toArray();
         }
 
         return false;
@@ -177,7 +169,7 @@ class Utils
     public static function preparePrice($price)
     {
         return number_format(
-            $price / 1000000,
+            $price / \mindstellar\currency\Money::MICROS,
             osc_locale_num_dec(),
             osc_locale_dec_point(),
             osc_locale_thousands_sep()
@@ -213,7 +205,7 @@ class Utils
     public static function updateAllCategoriesStats()
     {
         $categoryTotal = array();
-        $aCategories   = Category::newInstance()->toTreeAll();
+        $aCategories   = Category::getInstance()->toTreeAll();
 
         foreach ($aCategories as &$category) {
             if ($category['fk_i_parent_id'] === null) {
@@ -224,17 +216,8 @@ class Utils
 
         // Bound and written in chunks; a site with no categories writes nothing.
         foreach (array_chunk($categoryTotal, 500, true) as $chunk) {
-            $params = array();
-            foreach ($chunk as $categoryId => $total) {
-                $params[] = (int)$categoryId;
-                $params[] = (int)$total;
-            }
             try {
-                osc_db_execute(
-                    'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES '
-                    . implode(', ', array_fill(0, count($chunk), '(?, ?)')),
-                    $params
-                );
+                \mindstellar\listing\ListingCountStore::categories()->set($chunk);
             } catch (\mindstellar\database\DbException $e) {
                 return;
             }
@@ -245,13 +228,13 @@ class Utils
      * Return Category Stats in array
      *
      * @param array<string,mixed> $aux           category row, with a nested 'categories' list
-     * @param array<int,int>      $categoryTotal accumulator, filled in place
+     * @param array<mixed>        $categoryTotal accumulator, filled in place
      *
      * @return int
      */
     public static function recursiveCategoryStats(&$aux, &$categoryTotal)
     {
-        $count_items = Item::newInstance()->numItems($aux);
+        $count_items = Item::getInstance()->numItems($aux);
         if (is_array($aux['categories'])) {
             foreach ($aux['categories'] as &$cat) {
                 $count_items += self::recursiveCategoryStats($cat, $categoryTotal);
@@ -276,17 +259,14 @@ class Utils
         if (!is_numeric($id)) {
             throw new \InvalidArgumentException(__('Category id is not a valid integer'));
         }
-        $category = Category::newInstance()->findByPrimaryKey($id);
+        $category = Category::getInstance()->findByPrimaryKey($id);
         if (!$category) {
             return;
         }
         $categoryTotal = self::subtreeItemCount($category);
 
         try {
-            osc_db_execute(
-                'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES (?, ?)',
-                array((int)$id, (int)$categoryTotal)
-            );
+            \mindstellar\listing\ListingCountStore::categories()->set(array((int)$id => (int)$categoryTotal));
         } catch (\mindstellar\database\DbException $e) {
             // A failed write leaves the old count, as the legacy query did; the parents still update.
         }
@@ -312,8 +292,8 @@ class Utils
         }
         $seen[$id] = true;
 
-        $total = (int)Item::newInstance()->numItems($category);
-        foreach (Category::newInstance()->findSubcategories($id) as $sub) {
+        $total = (int)Item::getInstance()->numItems($category);
+        foreach (Category::getInstance()->findSubcategories($id) as $sub) {
             $total += self::subtreeItemCount($sub, $seen);
         }
 
@@ -331,143 +311,23 @@ class Utils
     }
 
     /**
-     * Update locations stats.
+     * Recount listings per country, region and city on the job queue.
      *
-     * @param bool $force
-     * @param int  $limit
+     * @param bool       $force queue a full recount when none is queued
+     * @param int|string $limit unused; kept for callers of the old signature
      *
-     * @return int
+     * @return int locations still to count
      */
     public static function updateLocationStats($force = false, $limit = 1000)
     {
-        $loctmp   = LocationsTmp::newInstance();
-        $workToDo = $loctmp->count();
-
-        if ($workToDo > 0) {
-            // there is work to do
-            if ($limit === 'auto') {
-                $total_cities = City::newInstance()->count();
-                $limit        = max(1000, ceil($total_cities / 22));
-            }
-            $aLocations = self::dropDeletedLocations($loctmp, $loctmp->getLocations($limit));
-            $regionIds = [];
-            $cityIds = [];
-            foreach ($aLocations as $location) {
-                $id   = $location['id_location'];
-                $type = $location['e_type'];
-                $data = null;
-                // update locations stats
-                switch ($type) {
-                    case 'COUNTRY':
-                        $numItems = CountryStats::newInstance()->calculateNumItems($id);
-                        $data     = CountryStats::newInstance()->setNumItems($id, $numItems);
-                        unset($numItems);
-                        break;
-                    case 'REGION':
-                        $regionIds[] = $id;
-                        break;
-                    case 'CITY':
-                        $cityIds[] = $id;
-                        break;
-                    default:
-                        break;
-                }
-
-                // Strict: these return bool, and a failed write must not be
-                // dequeued or it never gets retried.
-                if ($type === 'COUNTRY' && $data === true) {
-                    $loctmp->delete(array(
-                        'e_type'      => $location['e_type'],
-                        'id_location' => $location['id_location']
-                    ));
-                }
-            }
-            if (count($regionIds) > 0) {
-                $regionUpdate = RegionStats::newInstance()->updateAllStats($regionIds);
-                if ($regionUpdate === true) {
-                    // batch delete $regionIds from locations_tmp
-                    $loctmp->batchDelete($regionIds, 'REGION');
-                }
-            }
-
-            if (count($cityIds) > 0) {
-                $cityUpdate = CityStats::newInstance()->updateAllStats($cityIds);
-                if ($cityUpdate === true) {
-                    // batch delete $cityIds from locations_tmp
-                    $loctmp->batchDelete($cityIds, 'CITY');
-                }
-            }
-            unset($regionIds, $cityIds);
-        } elseif ($force) {
-            // we need to populate location tmp table
-            LocationsTmp::newInstance()->populateCountries();
-            LocationsTmp::newInstance()->populateRegions();
-            LocationsTmp::newInstance()->populateCities();
-
-            Preference::newInstance()->replace('location_todo', LocationsTmp::newInstance()->count());
+        if ($force) {
+            return LocationRecountJobs::queue();
+        }
+        if (LocationRecountJobs::pending() > 0) {
+            JobWorker::run(10);
         }
 
-        return LocationsTmp::newInstance()->count();
-    }
-
-    /**
-     * Remove queued locations whose row was deleted after they were queued.
-     *
-     * Their stats rows can no longer be written, so each batch would fail on them.
-     *
-     * @param LocationsTmp                    $loctmp
-     * @param array<int,array<string,string>> $queued Rows from LocationsTmp::getLocations()
-     *
-     * @return array<int,array<string,string>> The rows that still exist
-     */
-    private static function dropDeletedLocations(LocationsTmp $loctmp, array $queued): array
-    {
-        $tables = [
-            'COUNTRY' => [Country::newInstance()->getTableName(), 'pk_c_code'],
-            'REGION'  => [Region::newInstance()->getTableName(), 'pk_i_id'],
-            'CITY'    => [City::newInstance()->getTableName(), 'pk_i_id'],
-        ];
-
-        $byType = [];
-        foreach ($queued as $row) {
-            $byType[$row['e_type']][] = $row['id_location'];
-        }
-
-        $exists = [];
-        foreach ($byType as $type => $ids) {
-            if (!isset($tables[$type])) {
-                continue;
-            }
-            [$table, $pk] = $tables[$type];
-            foreach (array_chunk($ids, 1000) as $chunk) {
-                try {
-                    $rows = osc_db_table($table)->select($pk)->whereIn($pk, $chunk)->get();
-                } catch (DbException $e) {
-                    return $queued;
-                }
-                foreach ($rows as $row) {
-                    $exists[$type][strtoupper((string)$row[$pk])] = true;
-                }
-            }
-        }
-
-        $kept = [];
-        $gone = [];
-        foreach ($queued as $row) {
-            $type = $row['e_type'];
-            if (!isset($tables[$type]) || isset($exists[$type][strtoupper((string)$row['id_location'])])) {
-                $kept[] = $row;
-            } elseif ($type === 'COUNTRY') {
-                $loctmp->delete(['e_type' => $type, 'id_location' => $row['id_location']]);
-            } else {
-                $gone[$type][] = $row['id_location'];
-            }
-        }
-        foreach ($gone as $type => $ids) {
-            $loctmp->batchDelete($ids, $type);
-        }
-
-        return $kept;
+        return LocationRecountJobs::pending();
     }
 
     /**
@@ -479,10 +339,10 @@ class Utils
      */
     public static function translateCategories($locale)
     {
-        $old_locale = Session::newInstance()->_get('adminLocale');
-        Session::newInstance()->_set('adminLocale', $locale);
-        Translation::newInstance()->_load(osc_translations_path() . $locale . '/core.mo', 'cat_' . $locale);
-        $catManager     = Category::newInstance();
+        $old_locale = Session::getInstance()->_get('adminLocale');
+        Session::getInstance()->_set('adminLocale', $locale);
+        Translation::getInstance()->_load(osc_translations_path() . $locale . '/core.mo', 'cat_' . $locale);
+        $catManager     = Category::getInstance();
         $old_categories = $catManager->_findNameIDByLocale($old_locale);
         $tmp_categories = $catManager->_findNameIDByLocale($locale);
         foreach ($tmp_categories as $category) {
@@ -495,24 +355,14 @@ class Utils
                 $fieldsDescription['s_description']    = '';
                 $fieldsDescription['fk_i_category_id'] = $category['pk_i_id'];
                 $fieldsDescription['fk_c_locale_code'] = $locale;
-                $slug                                  = osc_sanitizeString(
-                    osc_apply_filter('slug', $fieldsDescription['s_name'])
+                $fieldsDescription['s_slug']           = ReservedSlugs::unique(
+                    osc_sanitizeString(osc_apply_filter('slug', $fieldsDescription['s_name'])),
+                    static fn (string $slug): bool => (bool) $catManager->findBySlug($slug)
                 );
-                $slug_tmp                              = $slug;
-                $slug_unique                           = 1;
-                while (true) {
-                    if (!$catManager->findBySlug($slug)) {
-                        break;
-                    }
-
-                    $slug = $slug_tmp . '_' . $slug_unique;
-                    $slug_unique++;
-                }
-                $fieldsDescription['s_slug'] = $slug;
                 $catManager->insertDescription($fieldsDescription);
             }
         }
-        Session::newInstance()->_set('adminLocale', $old_locale);
+        Session::getInstance()->_set('adminLocale', $old_locale);
     }
 
     /**
@@ -559,8 +409,8 @@ class Utils
     {
         // Carry any pending flash messages across the redirect in their signed cookie,
         // while headers can still be sent (before the Location header below).
-        Session::newInstance()->_flushFlashMessages();
-        Session::newInstance()->_flushFormData();
+        Session::getInstance()->_flushFlashMessages();
+        Session::getInstance()->_flushFormData();
         if (ob_get_length() > 0) {
             ob_end_flush();
         }
@@ -587,33 +437,26 @@ class Utils
         $field = 'pk_i_id';
         switch ($type) {
             case 'country':
-                $manager = Country::newInstance();
+                $manager = Country::getInstance();
                 $field   = 'pk_c_code';
                 break;
             case 'region':
-                $manager = Region::newInstance();
+                $manager = Region::getInstance();
                 break;
             case 'city':
-                $manager = City::newInstance();
+                $manager = City::getInstance();
                 break;
             default:
                 return false;
-                break;
         }
         $locations         = $manager->listByEmptySlug();
         $locations_changed = 0;
         foreach ($locations as $location) {
-            $slug_tmp    = $slug = osc_sanitizeString($location['s_name']);
-            $slug_unique = 1;
-            while (true) {
-                $location_slug = $manager->findBySlug($slug);
-                if (!isset($location_slug[$field])) {
-                    break;
-                }
-
-                $slug = $slug_tmp . '-' . $slug_unique;
-                $slug_unique++;
-            }
+            $slug = ReservedSlugs::unique(
+                osc_sanitizeString($location['s_name']),
+                static fn (string $slug): bool => isset($manager->findBySlug($slug)[$field]),
+                '-'
+            );
             $locations_changed += $manager->update(array('s_slug' => $slug), array($field => $location[$field]));
         }
 
@@ -631,6 +474,16 @@ class Utils
                 && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
             || (isset($_SERVER['HTTPS'])
                 && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === 1)));
+    }
+
+    /**
+     * True when PHP answers a web request, false on the command line (the job worker, cron, tests).
+     *
+     * @return bool
+     */
+    public static function isWebRequest(): bool
+    {
+        return PHP_SAPI !== 'cli';
     }
 
     /**
@@ -681,8 +534,8 @@ class Utils
     public static function getHttpReferer()
     {
         $candidates = array(
-            (string) Rewrite::newInstance()->get_http_referer(),
-            (string) Session::newInstance()->_getReferer(),
+            (string) Rewrite::getInstance()->get_http_referer(),
+            (string) Session::getInstance()->_getReferer(),
             (string) Params::getServerParam('HTTP_REFERER', false, false),
         );
         foreach ($candidates as $url) {

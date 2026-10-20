@@ -358,6 +358,6 @@ final class BackupBucket
             osc_storage_register_remote();
         }
 
-        return StorageManager::instance()->remote();
+        return StorageManager::getInstance()->remote();
     }
 }

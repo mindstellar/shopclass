@@ -15,6 +15,15 @@ if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
+/**
+ * @var int                  $step
+ * @var mixed                $error
+ * @var array                $requirements
+ * @var array<string,string> $jsonLocales
+ * @var bool                 $already_installed
+ * @var string               $password
+ */
+
 // Which rail stop to render as current. $step tracks the backend's own state
 // machine, which folds two different screens into step 3 (the target form on
 // success, the database form again on error) — the rail needs to show the
@@ -136,7 +145,7 @@ $ins_i18n = array(
                                         <label for="install_locale"><?php _e('Language'); ?></label>
                                         <select class="ins-input" id="install_locale" name="install_locale">
                                             <?php foreach ($jsonLocales as $ins_locale_code => $ins_locale_label) { ?>
-                                                <option value="<?php echo osc_esc_html($ins_locale_code); ?>" <?php echo $ins_locale_code === Session::newInstance()->_get('userLocale') ? 'selected="selected"' : ''; ?>><?php echo osc_esc_html($ins_locale_label); ?></option>
+                                                <option value="<?php echo osc_esc_html($ins_locale_code); ?>" <?php echo $ins_locale_code === Session::getInstance()->_get('userLocale') ? 'selected="selected"' : ''; ?>><?php echo osc_esc_html($ins_locale_label); ?></option>
                                             <?php } ?>
                                         </select>
                                     </div>
@@ -208,7 +217,7 @@ $ins_i18n = array(
                                 );
                                 display_database_config($form_data, $error);
                             }
-                        } elseif ($step === 4 && install_nonce_check() && Session::newInstance()->_get('install_db_done')) {
+                        } elseif ($step === 4 && install_nonce_check() && Session::getInstance()->_get('install_db_done')) {
                             if (!headers_sent()) {
                                 setcookie('osclass_save_stats', '', time() - 3600);
                                 setcookie('osclass_ping_engines', '', time() - 3600);

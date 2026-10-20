@@ -21,7 +21,7 @@ use mindstellar\upgrade\AutoSecurityUpdate;
 
 $admin = scratchdb_session('osc_models_updatechannel');
 $table = DB_TABLE_PREFIX . 't_preference';
-$conn  = Connection::instance();
+$conn  = Connection::getInstance();
 $pref  = static function (string $name) use ($admin, $table) {
     $row = $admin->query("SELECT s_value FROM $table WHERE s_section = 'osclass' AND s_name = '$name'")->fetch_row();
 

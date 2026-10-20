@@ -84,4 +84,30 @@ final class BulkAction
 
         return $changed;
     }
+
+    /**
+     * The bulk-actions dropdown options, led by the empty "Bulk actions" choice.
+     *
+     * $actions maps each option value to its label, or to array(label, verb) when the
+     * confirm question needs other wording. $question is translated and takes the verb.
+     *
+     * @param array<string,string|array{0:string,1:string}> $actions
+     * @param string                                        $question
+     *
+     * @return array<int,array<string,string>>
+     */
+    public static function options(array $actions, string $question): array
+    {
+        $options = array(array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')));
+        foreach ($actions as $value => $label) {
+            [$label, $verb] = is_array($label) ? $label : array($label, $label);
+            $options[]      = array(
+                'value'               => (string)$value,
+                'data-dialog-content' => sprintf($question, strtolower($verb)),
+                'label'               => $label
+            );
+        }
+
+        return $options;
+    }
 }

@@ -113,7 +113,7 @@ class PhotoGrid
         return (int)$max > 0
             ? str_replace(
                 array('{n}', '{max}'),
-                array((int)$count, (int)$max),
+                array((string)(int)$count, (string)(int)$max),
                 __('{n} of {max} photos.')
             )
             : str_replace('{n}', (string)(int)$count, __('{n} photos.'));
@@ -212,7 +212,7 @@ class PhotoGrid
         $list    = is_array($allowed) ? $allowed : explode(',', (string)$allowed);
         $list    = array_map(static fn ($e) => strtolower(trim((string)$e)), $list);
 
-        return array_values(array_filter($list, 'strlen'));
+        return array_values(array_filter($list, static fn (string $e): bool => $e !== ''));
     }
 
     /**

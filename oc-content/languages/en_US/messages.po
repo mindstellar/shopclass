@@ -1712,7 +1712,7 @@ msgstr ""
 msgid "Sharing listings by email has been disabled by the administrator"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
+#: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
 msgid "Shopclass has been updated to %s"
 msgstr ""
 
@@ -1812,7 +1812,7 @@ msgstr ""
 msgid "Telephone"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
+#: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
 msgid "Thank you very much for your donation"
 msgstr ""
 
@@ -2672,7 +2672,7 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
-#: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
+#: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
 msgid "You don't have enough permissions"
 msgstr ""
 

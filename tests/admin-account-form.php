@@ -220,7 +220,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /** The admin theme's view for this screen, drawn where the real one would draw it. */
@@ -434,7 +434,7 @@ pin('editing another account another', 'core.admin_account.edit', $editId);
 pin('and editing your own a third', 'core.admin_account.self', $selfId);
 
 foreach (array($addId, $editId, $selfId) as $pageId) {
-    $spec = SettingsPageRegistry::instance()->get($pageId);
+    $spec = SettingsPageRegistry::getInstance()->get($pageId);
     pin(
         $pageId . ' is bound to a row of t_admin',
         array('type' => 'table', 'table' => 't_admin', 'pk' => 'pk_i_id'),
@@ -448,13 +448,13 @@ pin(
     'the add form declares no confirmation box, and demands a password',
     array('form_js', 's_name', 's_username', 's_email', 'b_moderator', 's_password',
         'password_separator', 'old_password', 'profile_hook'),
-    array_keys(SettingsPageRegistry::instance()->fields($addId))
+    array_keys(SettingsPageRegistry::getInstance()->fields($addId))
 );
 pin(
     'the edit form adds one, and does not demand a password',
     array('form_js', 's_name', 's_username', 's_email', 'b_moderator', 's_password', 's_password2',
         'password_separator', 'old_password', 'profile_hook'),
-    array_keys(SettingsPageRegistry::instance()->fields($editId))
+    array_keys(SettingsPageRegistry::getInstance()->fields($editId))
 );
 // Not a layout decision: a field the page does not declare is a column the store cannot
 // write, so this is what stops an administrator changing their own account type.
@@ -462,15 +462,15 @@ pin(
     'and your own account has no account type on it at all',
     array('form_js', 's_name', 's_username', 's_email', 's_password', 's_password2',
         'password_separator', 'old_password', 'profile_hook'),
-    array_keys(SettingsPageRegistry::instance()->fields($selfId))
+    array_keys(SettingsPageRegistry::getInstance()->fields($selfId))
 );
 pin(
     'the password is required only where there is no password yet',
     array(true, null, null),
     array(
-        SettingsPageRegistry::instance()->fields($addId)['s_password']['required'] ?? null,
-        SettingsPageRegistry::instance()->fields($editId)['s_password']['required'] ?? null,
-        SettingsPageRegistry::instance()->fields($selfId)['s_password']['required'] ?? null,
+        SettingsPageRegistry::getInstance()->fields($addId)['s_password']['required'] ?? null,
+        SettingsPageRegistry::getInstance()->fields($editId)['s_password']['required'] ?? null,
+        SettingsPageRegistry::getInstance()->fields($selfId)['s_password']['required'] ?? null,
     )
 );
 // The two boxes that are not the account: one confirms the new password, the other proves
@@ -480,7 +480,7 @@ foreach (array('s_password2', 'old_password') as $name) {
     pin(
         $name . ' is declared as no column at all',
         false,
-        SettingsPageRegistry::instance()->fields($editId)[$name]['persist'] ?? null
+        SettingsPageRegistry::getInstance()->fields($editId)[$name]['persist'] ?? null
     );
 }
 
@@ -494,10 +494,10 @@ if ($res) {
 }
 pin(
     'the table is the shape the page declares',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator'),
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator', 'i_auth_stamp'),
     $columns
 );
-foreach (SettingsPageRegistry::instance()->fields($editId) as $name => $field) {
+foreach (SettingsPageRegistry::getInstance()->fields($editId) as $name => $field) {
     if ($field['type'] === 'custom' || ($field['persist'] ?? null) === false) {
         continue;
     }
@@ -528,7 +528,7 @@ foreach (AdminAccountForm::WIDTHS as $name => $width) {
     pin(
         'and the ' . $name . ' field carries that number',
         $width,
-        SettingsPageRegistry::instance()->fields($addId)[$name]['maxlength'] ?? null
+        SettingsPageRegistry::getInstance()->fields($addId)[$name]['maxlength'] ?? null
     );
 }
 
@@ -778,8 +778,8 @@ check(
 // can be made. An unchanged edit, so the row this section borrows is left as it was.
 check(
     'the edit screen does declare the confirmation box',
-    array_key_exists('s_password2', SettingsPageRegistry::instance()->fields($editId)),
-    implode(', ', array_keys(SettingsPageRegistry::instance()->fields($editId)))
+    array_key_exists('s_password2', SettingsPageRegistry::getInstance()->fields($editId)),
+    implode(', ', array_keys(SettingsPageRegistry::getInstance()->fields($editId)))
 );
 $driven = drive('edit_post', submission(array(
     's_password'  => '',
@@ -1313,8 +1313,8 @@ check(
     'the store owns the write, through osc_db_table()'
 );
 check(
-    'scan: while the delete path, which is not part of the declared form, still uses the model',
-    strpos($controller, 'deleteBatch') !== false,
+    'scan: while the delete path, which is not part of the declared form, goes through AdminStore',
+    strpos($controller, 'AdminStore::delete(') !== false,
     'the scan above would pass just as well on a controller with no accounts in it at all'
 );
 // The declaration is where the hashing lives now, and it is the core helper rather than a
@@ -1324,6 +1324,77 @@ $form = (string)file_get_contents(
 );
 check('scan: the declaration hashes through osc_hash_password()', strpos($form, 'osc_hash_password(') !== false);
 check('scan: and verifies through osc_verify_password()', strpos($form, 'osc_verify_password(') !== false);
+
+harness_section('sign out of all devices says how many API keys it revokes');
+
+if (!function_exists('_n')) {
+    function _n($single, $plural, $n, $domain = 'core')
+    {
+        return $n === 1 ? $single : $plural;
+    }
+}
+$signOutPanel = static function () use ($root): string {
+    drive('edit', array(), array('id' => (string)$root));
+    ob_start();
+    include ABS_PATH . 'oc-admin/themes/modern/admins/sign_out_all.php';
+
+    return (string)ob_get_clean();
+};
+check('with no key, no count is shown', !str_contains($signOutPanel(), 'API key'));
+$rootOwner = \mindstellar\apikey\KeyOwner::admin($root, false);
+$rootKeys  = new \mindstellar\apikey\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\apikey\Scopes(), new \mindstellar\utility\SystemClock());
+$rootKeys->create('key', 'script', array('admin:users'), $rootOwner);
+$rootKeys->create('public', 'app', array(\mindstellar\apikey\Scopes::PUBLIC_READ), $rootOwner);
+check('with two keys, the panel says both are revoked', str_contains($signOutPanel(), 'This also revokes your 2 API keys.'));
+
+harness_section('a new password signs the admin out everywhere');
+
+$signedOut = array();
+osc_add_hook('admin_signout_all_after', static function ($id) use (&$signedOut) {
+    $signedOut[] = (int)$id;
+});
+$stampOf = static fn (int $id): int => (int)row($admin, $id)['i_auth_stamp'];
+$target  = seed_admin($admin, 'stamped', 'stamped@example.test', 'stamped-password');
+$was     = $stampOf($target);
+// Output has gone out, so no real session can start: a plain array stands in for it.
+$_SESSION = array();
+$session  = Session::getInstance();
+$session->_set('adminId', (string)$root);
+$session->_set('adminStamp', $stampOf($root));
+$rootStamp = $stampOf($root);
+drive('edit_post', submission(array(
+    's_name'      => 'Stamped',
+    's_username'  => 'stamped',
+    's_email'     => 'stamped@example.test',
+    's_password'  => 'stamped-new',
+    's_password2' => 'stamped-new',
+)), array('id' => (string)$target));
+pin('another admin\'s new password raises their stamp and runs the sign-out action', array(true, $was + 1, array($target)), array(
+    password_verify('stamped-new', (string)row($admin, $target)['s_password']), $stampOf($target), $signedOut,
+));
+pin('and leaves the acting admin\'s session as it was', $rootStamp, (int)$session->_get('adminStamp'));
+$signedOut = array();
+drive('edit_post', submission(array(
+    's_name'      => 'Stamped',
+    's_username'  => 'stamped',
+    's_email'     => 'stamped@example.test',
+    's_password'  => '',
+    's_password2' => '',
+)), array('id' => (string)$target));
+pin('an edit with a blank password signs no one out', array($was + 1, array()), array($stampOf($target), $signedOut));
+
+drive('edit_post', array(
+    's_name'       => 'Root',
+    's_username'   => 'root',
+    's_email'      => 'root@example.test',
+    's_password'   => 'topsecret2',
+    's_password2'  => 'topsecret2',
+    'old_password' => 'topsecret',
+), array('id' => (string)$root));
+pin('changing your own password signs you out everywhere', array($rootStamp + 1, array($root)), array($stampOf($root), $signedOut));
+pin('but this browser\'s session takes the new stamp, so it stays signed in', $rootStamp + 1, (int)$session->_get('adminStamp'));
+$session->_drop('adminId');
+$session->_drop('adminStamp');
 
 harness_section('a demo install saves none of it');
 

@@ -43,7 +43,16 @@ class RecordingMailer extends PHPMailer
 
     public function send()
     {
-        self::$last = array('Body' => $this->Body, 'AltBody' => $this->AltBody, 'Subject' => $this->Subject);
+        self::$last = array(
+            'Body'       => $this->Body,
+            'AltBody'    => $this->AltBody,
+            'Subject'    => $this->Subject,
+            'SMTPSecure' => $this->SMTPSecure,
+            'Username'   => $this->Username,
+            'Password'   => $this->Password,
+            'Host'       => $this->Host,
+            'Port'       => $this->Port,
+        );
 
         return true;
     }
@@ -73,7 +82,7 @@ function osc_apply_filter($tag, $value, ...$args)
 }
 function osc_mailserver_pop()
 {
-    return false;
+    return $GLOBALS['__pop'] ?? false;
 }
 function osc_mailserver_auth()
 {
@@ -81,23 +90,23 @@ function osc_mailserver_auth()
 }
 function osc_mailserver_ssl()
 {
-    return '';
+    return $GLOBALS['__server']['ssl'] ?? '';
 }
 function osc_mailserver_username()
 {
-    return '';
+    return $GLOBALS['__server']['username'] ?? '';
 }
 function osc_mailserver_password()
 {
-    return '';
+    return $GLOBALS['__server']['password'] ?? '';
 }
 function osc_mailserver_host()
 {
-    return '';
+    return $GLOBALS['__server']['host'] ?? '';
 }
 function osc_mailserver_port()
 {
-    return '';
+    return $GLOBALS['__server']['port'] ?? '';
 }
 function osc_mailserver_mail_from()
 {
@@ -136,6 +145,14 @@ function osc_themes_path()
 {
     return sys_get_temp_dir() . '/';
 }
+function osc_date_format()
+{
+    return 'Y-m-d';
+}
+function osc_time_format()
+{
+    return 'H:i';
+}
 function osc_theme()
 {
     return $GLOBALS['__siteTheme'] ?? '';
@@ -145,9 +162,14 @@ class WebThemes
 {
     public static $path = '';
 
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function getCurrentThemePath()
@@ -423,5 +445,69 @@ $accentFor = static function (string $accent) use ($html): bool {
 };
 check('a six-digit accent is used', $accentFor('#c2410c'));
 check('a five-digit one is not', !$accentFor('#c2410'));
+
+harness_section('mail server settings a caller overrides');
+
+$GLOBALS['__server'] = array('ssl' => 'tls', 'username' => 'site', 'password' => 'stored', 'host' => 'smtp.example.com', 'port' => '587');
+$base = array('to' => 'jo@example.com', 'subject' => 'Hi', 'body' => '<p>Hi</p>', 'layout' => false);
+
+osc_sendMail($base);
+pin('stored settings are used', array('tls', 'site', 'stored', 'smtp.example.com', '587'), array_values(array_slice(RecordingMailer::$last, 3)));
+
+osc_sendMail($base + array('password' => 'given'));
+pin('a password alone keeps the stored ssl', array('tls', 'site', 'given'), array_values(array_slice(RecordingMailer::$last, 3, 3)));
+
+osc_sendMail($base + array('ssl' => 'ssl', 'username' => 'u', 'host' => 'mx.example.org', 'port' => '465'));
+pin('each key overrides its own setting', array('ssl', 'u', 'stored', 'mx.example.org', '465'), array_values(array_slice(RecordingMailer::$last, 3)));
+unset($GLOBALS['__server']);
+
+harness_section('an empty mail server setting leaves the mailer default');
+
+$GLOBALS['__server'] = array('ssl' => '', 'username' => '', 'password' => '', 'host' => '', 'port' => '');
+$defaults = new RecordingMailer(true);
+osc_sendMail($base);
+pin('empty host and port keep PHPMailer\'s own', array($defaults->Host, $defaults->Port), array(RecordingMailer::$last['Host'], RecordingMailer::$last['Port']));
+unset($GLOBALS['__server']);
+
+harness_section('POP-before-SMTP signs in with the same settings');
+
+// A one-connection POP3 server in a child process; it prints its port, then what it was sent.
+$pop = proc_open(
+    array(PHP_BINARY, '-r', '
+        $s = stream_socket_server("tcp://127.0.0.1:0");
+        echo substr(strrchr(stream_socket_get_name($s, false), ":"), 1), "\n";
+        $c = @stream_socket_accept($s, 10);
+        if ($c === false) { exit(1); }
+        stream_set_timeout($c, 5);
+        fwrite($c, "+OK ready\r\n");
+        while (($line = fgets($c)) !== false) {
+            echo trim($line), "\n";
+            fwrite($c, "+OK\r\n");
+            if (trim($line) === "QUIT") { break; }
+        }
+    '),
+    array(1 => array('pipe', 'w')),
+    $popPipes
+);
+$popPort = (int) fgets($popPipes[1]);
+$GLOBALS['__pop']    = true;
+$GLOBALS['__server'] = array('ssl' => '', 'username' => 'stored-user', 'password' => 'stored-pass', 'host' => '127.0.0.1', 'port' => '1');
+osc_sendMail($base + array('host' => '127.0.0.1', 'port' => (string) $popPort, 'username' => 'given-user', 'password' => 'given-pass'));
+$popSaw = trim((string) stream_get_contents($popPipes[1]));
+proc_close($pop);
+pin('it signs in to the given host and port, with the given account', "USER given-user\nPASS given-pass\nQUIT", $popSaw);
+unset($GLOBALS['__server'], $GLOBALS['__pop']);
+
+harness_section('placeholders in a mail');
+$_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+Params::init();
+pin(
+    'the caller\'s words first, then the site\'s',
+    'Hi Jo, from Example (https://example.com/) at 203.0.113.9 on <a href="https://example.com/">Example</a>',
+    osc_mailBeauty('Hi {USER_NAME}, from {WEB_TITLE} ({WEB_URL}) at {IP_ADDRESS} on {WEB_LINK}', array(array('{USER_NAME}'), array('Jo')))
+);
+pin('case does not matter', 'Jo Example', osc_mailBeauty('{user_name} {web_title}', array(array('{USER_NAME}'), array('Jo'))));
+pin('a site placeholder in a caller value stays as typed', 'see {WEB_URL}', osc_mailBeauty('see {LINK}', array(array('{LINK}'), array('{WEB_URL}'))));
+check('the date and hour are filled in', (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} \d{2}:\d{2}$/', osc_mailBeauty('{CURRENT_DATE} {HOUR}', array(array(), array()))));
 
 exit(harness_result());

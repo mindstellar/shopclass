@@ -21,10 +21,25 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
+use mindstellar\exception\InvalidException;
+use mindstellar\moderation\CommentModeration;
 
 class CAdminItemComments extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
+    /** Each action and the method that answers it; any other action goes to comments(). */
+    private const ACTIONS = array(
+        'bulk_actions'      => 'bulkActions',
+        'status'            => 'setStatus',
+        'comment_edit'      => 'editForm',
+        'comment_edit_post' => 'editPost',
+        'delete'            => 'deleteComment',
+    );
+
     private ItemComment $itemCommentManager;
+
+    private CommentModeration $moderation;
 
     /**
      * Take the comment manager for this request.
@@ -34,7 +49,8 @@ class CAdminItemComments extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->itemCommentManager = ItemComment::newInstance();
+        $this->itemCommentManager = ItemComment::getInstance();
+        $this->moderation         = new CommentModeration($this->itemCommentManager);
         osc_run_hook('init_admin_comments');
     }
 
@@ -50,284 +66,198 @@ class CAdminItemComments extends AdminSecBaseModel
     {
         parent::doModel();
 
-        //specific things for this class
-        switch ($this->action) {
-            case ('bulk_actions'):
-                osc_csrf_check();
-                $manager = $this->itemCommentManager;
-                switch (Params::getParam('bulk_actions')) {
-                    case ('delete_all'):
-                        BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                $deleted = $manager->delete(array('pk_i_id' => $id));
-                                osc_run_hook('delete_comment', $id);
+        $method = $this->actionMethod('comments');
 
-                                return (bool)$deleted;
-                            },
-                            '%d comment has been deleted',
-                            '%d comments have been deleted'
-                        );
-                        break;
-                    case ('activate_all'):
-                        $self = $this;
-                        BulkAction::apply(
-                            static function ($id) use ($manager, $self) {
-                                $updated = $manager->update(array('b_active' => 1), array('pk_i_id' => $id));
-                                if ($updated) {
-                                    $self->sendCommentActivated($id);
-                                }
-                                osc_run_hook('activate_comment', $id);
-
-                                return (bool)$updated;
-                            },
-                            '%d comment has been approved',
-                            '%d comments have been approved'
-                        );
-                        break;
-                    case ('deactivate_all'):
-                        BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                $updated = $manager->update(array('b_active' => 0), array('pk_i_id' => $id));
-                                osc_run_hook('deactivate_comment', $id);
-
-                                return (bool)$updated;
-                            },
-                            '%d comment has been disapproved',
-                            '%d comments have been disapproved'
-                        );
-                        break;
-                    case ('enable_all'):
-                        $self = $this;
-                        BulkAction::apply(
-                            static function ($id) use ($manager, $self) {
-                                $updated = $manager->update(array('b_enabled' => 1), array('pk_i_id' => $id));
-                                if ($updated) {
-                                    $self->sendCommentActivated($id);
-                                }
-                                osc_run_hook('enable_comment', $id);
-
-                                return (bool)$updated;
-                            },
-                            '%d comment has been unblocked',
-                            '%d comments have been unblocked'
-                        );
-                        break;
-                    case ('disable_all'):
-                        BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                $updated = $manager->update(array('b_enabled' => 0), array('pk_i_id' => $id));
-                                osc_run_hook('disable_comment', $id);
-
-                                return (bool)$updated;
-                            },
-                            '%d comment has been blocked',
-                            '%d comments have been blocked'
-                        );
-                        break;
-                    default:
-                        // Guarded on a selection, as the whole switch used to be: a plugin
-                        // listening here has never been handed an empty one.
-                        if (Params::getParam('bulk_actions') != '' && Params::getParam('id')) {
-                            osc_run_hook('item_bulk_' . Params::getParam('bulk_actions'), Params::getParam('id'));
-                        }
-                        break;
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
-                break;
-            case ('status'):
-                osc_csrf_check();
-                $id    = Params::getParam('id');
-                $value = Params::getParam('value');
-
-                if (!$id) {
-                    return false;
-                }
-                $id = (int)$id;
-                if (!is_numeric($id)) {
-                    return false;
-                }
-                if (!in_array($value, array('ACTIVE', 'INACTIVE', 'ENABLE', 'DISABLE'))) {
-                    return false;
-                }
-
-                if ($value === 'ACTIVE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_active' => 1),
-                        array('pk_i_id' => $id)
-                    );
-                    if ($iUpdated) {
-                        $this->sendCommentActivated($id);
-                    }
-                    osc_run_hook('activate_comment', $id);
-                    osc_add_flash_ok_message(_m('The comment has been approved'), 'admin');
-                } elseif ($value === 'INACTIVE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_active' => 0),
-                        array('pk_i_id' => $id)
-                    );
-                    osc_run_hook('deactivate_comment', $id);
-                    osc_add_flash_ok_message(_m('The comment has been disapproved'), 'admin');
-                } elseif ($value === 'ENABLE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_enabled' => 1),
-                        array('pk_i_id' => $id)
-                    );
-                    osc_run_hook('enable_comment', $id);
-                    osc_add_flash_ok_message(_m('The comment has been enabled'), 'admin');
-                } elseif ($value === 'DISABLE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_enabled' => 0),
-                        array('pk_i_id' => $id)
-                    );
-                    osc_run_hook('disable_comment', $id);
-                    osc_add_flash_ok_message(_m('The comment has been disabled'), 'admin');
-                }
-
-                $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
-                break;
-            case ('comment_edit'):
-                $comment = ItemComment::newInstance()->findByPrimaryKey(Params::getParam('id'));
-
-                $this->_exportVariableToView('comment', $comment);
-                $this->doView('comments/frm.php');
-                break;
-            case ('comment_edit_post'):
-                osc_csrf_check();
-
-                $msg = '';
-                if (!osc_validate_email(Params::getParam('authorEmail'), true)) {
-                    $msg .= _m('Email is not correct') . '<br/>';
-                }
-                if (!osc_validate_text(Params::getParam('body'), 1, true)) {
-                    $msg .= _m('Comment is required') . '<br/>';
-                }
-
-                if ($msg != '') {
-                    osc_add_flash_error_message($msg, 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=comments&action=comment_edit&id='
-                        . Params::getParam('id'));
-                }
-
-                // Strip markup on write, mirroring the public comment path
-                // (ItemActions::add_comment) so stored values stay plain text.
-                $this->itemCommentManager->update(
-                    array(
-                        's_title'        => trim(strip_tags(Params::getParam('title'))),
-                        's_body'         => trim(strip_tags(Params::getParam('body'))),
-                        's_author_name'  => trim(strip_tags(Params::getParam('authorName'))),
-                        's_author_email' => trim(strip_tags(Params::getParam('authorEmail')))
-                    ),
-                    array(
-                        'pk_i_id' => Params::getParam('id')
-                    )
-                );
-
-                osc_run_hook('edit_comment', Params::getParam('id'));
-
-                osc_add_flash_ok_message(_m('Great! We just updated your comment'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
-                break;
-            case ('delete'):
-                osc_csrf_check();
-                $this->itemCommentManager->deleteByPrimaryKey(Params::getParam('id'));
-                osc_add_flash_ok_message(_m('The comment has been deleted'), 'admin');
-                osc_run_hook('delete_comment', Params::getParam('id'));
-                $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
-                break;
-            default:
-                // set default iDisplayLength
-                ListPaging::rememberedLength();
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
-
-                // Table header order by related
-                if (Params::getParam('sort') == '') {
-                    Params::setParam('sort', 'date');
-                }
-                if (Params::getParam('direction') == '') {
-                    Params::setParam('direction', 'desc');
-                }
-
-                $page = ListPaging::page();
-
-                $params = Params::getParamsAsArray();
-
-                $commentsDataTable = new CommentsDataTable();
-                $commentsDataTable->table($params);
-                $aData = $commentsDataTable->getData();
-
-                if (count($aData['aRows']) == 0 && $page != 1) {
-                    $total   = (int)$aData['iTotalDisplayRecords'];
-                    $maxPage = ceil($total / (int)$aData['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-
-                    if ($maxPage == 0) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=1', $url);
-                        $this->redirectTo($url);
-                    }
-
-                    if ($page > 1) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url);
-                        $this->redirectTo($url);
-                    }
-                }
-
-                $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('aRawRows', $commentsDataTable->rawRows());
-                $this->_exportVariableToView('withFilters', $commentsDataTable->withFilters);
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
-
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'delete_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Delete'))
-                        ),
-                        'label'               => __('Delete')
-                    ),
-                    array(
-                        'value'               => 'activate_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Activate'))
-                        ),
-                        'label'               => __('Activate')
-                    ),
-                    array(
-                        'value'               => 'deactivate_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Deactivate'))
-                        ),
-                        'label'               => __('Deactivate')
-                    ),
-                    array(
-                        'value'               => 'disable_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Block'))
-                        ),
-                        'label'               => __('Block')
-                    ),
-                    array(
-                        'value'               => 'enable_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Unblock'))
-                        ),
-                        'label'               => __('Unblock')
-                    )
-                );
-                $bulk_options = osc_apply_filter('comment_bulk_filter', $bulk_options);
-                $this->_exportVariableToView('bulk_options', $bulk_options);
-
-                $this->doView('comments/index.php');
-                break;
-        }
+        return $this->$method() === false ? false : null;
     }
 
+    /**
+     * Apply a bulk action to the selected comments.
+     */
+    private function bulkActions(): void
+    {
+        osc_csrf_check();
+        $moderation = $this->moderation;
+        switch (Params::getParam('bulk_actions')) {
+            case ('delete_all'):
+                BulkAction::apply(
+                    static fn ($id) => $moderation->delete((int) $id),
+                    '%d comment has been deleted',
+                    '%d comments have been deleted'
+                );
+                break;
+            case ('activate_all'):
+                BulkAction::apply(
+                    static fn ($id) => $moderation->activate((int) $id),
+                    '%d comment has been approved',
+                    '%d comments have been approved'
+                );
+                break;
+            case ('deactivate_all'):
+                BulkAction::apply(
+                    static fn ($id) => $moderation->deactivate((int) $id),
+                    '%d comment has been disapproved',
+                    '%d comments have been disapproved'
+                );
+                break;
+            case ('enable_all'):
+                BulkAction::apply(
+                    static fn ($id) => $moderation->enable((int) $id),
+                    '%d comment has been unblocked',
+                    '%d comments have been unblocked'
+                );
+                break;
+            case ('disable_all'):
+                BulkAction::apply(
+                    static fn ($id) => $moderation->disable((int) $id),
+                    '%d comment has been blocked',
+                    '%d comments have been blocked'
+                );
+                break;
+            default:
+                // Guarded on a selection, as the whole switch used to be: a plugin
+                // listening here has never been handed an empty one.
+                if (Params::getParam('bulk_actions') != '' && Params::getParam('id')) {
+                    osc_run_hook('item_bulk_' . Params::getParam('bulk_actions'), Params::getParam('id'));
+                }
+                break;
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
+    }
+
+    /**
+     * Activate, deactivate, enable or disable one comment.
+     *
+     * @return false|null false when there was nothing usable to act on
+     */
+    private function setStatus(): ?bool
+    {
+        osc_csrf_check();
+        $id    = Params::getParam('id');
+        $value = Params::getParam('value');
+
+        if (!$id) {
+            return false;
+        }
+        $id = (int)$id;
+        if (!in_array($value, array('ACTIVE', 'INACTIVE', 'ENABLE', 'DISABLE'))) {
+            return false;
+        }
+
+        if ($value === 'ACTIVE') {
+            $this->moderation->activate($id);
+            osc_add_flash_ok_message(_m('The comment has been approved'), 'admin');
+        } elseif ($value === 'INACTIVE') {
+            $this->moderation->deactivate($id);
+            osc_add_flash_ok_message(_m('The comment has been disapproved'), 'admin');
+        } elseif ($value === 'ENABLE') {
+            $this->moderation->enable($id);
+            osc_add_flash_ok_message(_m('The comment has been enabled'), 'admin');
+        } elseif ($value === 'DISABLE') {
+            $this->moderation->disable($id);
+            osc_add_flash_ok_message(_m('The comment has been disabled'), 'admin');
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
+
+        return null;
+    }
+
+    /**
+     * The comment editor.
+     */
+    private function editForm(): void
+    {
+        $comment = ItemComment::getInstance()->findByPrimaryKey(Params::getParam('id'));
+
+        $this->_exportVariableToView('comment', $comment);
+        $this->doView('comments/frm.php');
+    }
+
+    /**
+     * Save the comment editor.
+     */
+    private function editPost(): void
+    {
+        osc_csrf_check();
+        $id = Params::getParamInt('id');
+        try {
+            $this->moderation->edit($id, array(
+                'title'        => Params::getParamString('title'),
+                'body'         => Params::getParamString('body'),
+                'author_name'  => Params::getParamString('authorName'),
+                'author_email' => Params::getParamString('authorEmail'),
+            ));
+        } catch (InvalidException $e) {
+            osc_add_flash_error_message(implode('<br/>', array_column($e->errors(), 'message')), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=comments&action=comment_edit&id=' . $id);
+        }
+
+        osc_add_flash_ok_message(_m('Great! We just updated your comment'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
+    }
+
+    /**
+     * Delete one comment.
+     */
+    private function deleteComment(): void
+    {
+        osc_csrf_check();
+        $this->moderation->delete(Params::getParamInt('id'));
+        osc_add_flash_ok_message(_m('The comment has been deleted'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
+    }
+
+    /**
+     * The comments table.
+     */
+    private function comments(): void
+    {
+        // set default iDisplayLength
+        ListPaging::rememberedLength();
+        $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+        // Table header order by related
+        if (Params::getParam('sort') == '') {
+            Params::setParam('sort', 'date');
+        }
+        if (Params::getParam('direction') == '') {
+            Params::setParam('direction', 'desc');
+        }
+
+        $page = ListPaging::page();
+
+        $params = Params::getParamsAsArray();
+
+        $commentsDataTable = new CommentsDataTable();
+        $commentsDataTable->table($params);
+        $aData = $commentsDataTable->getData();
+
+        $pastEnd = ListPaging::pastEnd($aData, (int) $page);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $this->_exportVariableToView('aData', $aData);
+        $this->_exportVariableToView('aRawRows', $commentsDataTable->rawRows());
+        $this->_exportVariableToView('withFilters', $commentsDataTable->withFilters);
+        $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+        $bulk_options = BulkAction::options(
+            array(
+                'delete_all' => __('Delete'),
+                'activate_all' => __('Activate'),
+                'deactivate_all' => __('Deactivate'),
+                'disable_all' => __('Block'),
+                'enable_all' => __('Unblock')
+            ),
+            __('Are you sure you want to %s the selected comments?')
+        );
+        $bulk_options = osc_apply_filter('comment_bulk_filter', $bulk_options);
+        $this->_exportVariableToView('bulk_options', $bulk_options);
+
+        $this->doView('comments/index.php');
+    }
     //hopefully generic...
 
     /**
@@ -339,11 +269,7 @@ class CAdminItemComments extends AdminSecBaseModel
      */
     public function sendCommentActivated($commentId)
     {
-        $aComment = $this->itemCommentManager->findByPrimaryKey($commentId);
-        $aItem    = Item::newInstance()->findByPrimaryKey($aComment['fk_i_item_id']);
-        View::newInstance()->_exportVariableToView('item', $aItem);
-
-        osc_run_hook('hook_email_comment_validated', $aComment);
+        $this->moderation->notifyAuthor((int) $commentId);
     }
 
 }

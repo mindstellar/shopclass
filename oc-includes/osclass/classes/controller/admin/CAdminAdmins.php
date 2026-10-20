@@ -16,17 +16,35 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\AdminAccountForm;
 use mindstellar\admin\ListPaging;
 
 /**
  * Class CAdminAdmins
  */
+use mindstellar\security\AdminReauth;
 use mindstellar\security\AdminTwoFactor;
 use mindstellar\security\Totp;
 
 class CAdminAdmins extends AdminSecBaseModel
 {
+    use \mindstellar\base\ActionMap;
+
+    /** Each action and the method that answers it; any other action goes to admins(). */
+    private const ACTIONS = array(
+        'add'          => 'addForm',
+        'add_post'     => 'addPost',
+        'edit'         => 'editForm',
+        'edit_post'    => 'editPost',
+        '2fa_setup'    => 'twoFactorPost',
+        '2fa_enable'   => 'twoFactorPost',
+        '2fa_codes'    => 'twoFactorPost',
+        '2fa_off'      => 'twoFactorPost',
+        'sign_out_all' => 'signOutAll',
+        'delete'       => 'deleteAdmins',
+    );
+
     //specific for this class
     private Admin $adminManager;
 
@@ -38,7 +56,7 @@ class CAdminAdmins extends AdminSecBaseModel
         parent::__construct();
 
         if ($this->isModerator()) {
-            if (!in_array($this->action, array('edit', 'edit_post', '2fa_setup', '2fa_enable', '2fa_codes', '2fa_off'), true)
+            if (!in_array($this->action, array('edit', 'edit_post', '2fa_setup', '2fa_enable', '2fa_codes', '2fa_off', 'sign_out_all'), true)
                 || (Params::getParam('id') != ''
                     && Params::getParam('id') != osc_logged_admin_id())
             ) {
@@ -48,7 +66,7 @@ class CAdminAdmins extends AdminSecBaseModel
         }
 
         //specific things for this class
-        $this->adminManager = Admin::newInstance();
+        $this->adminManager = Admin::getInstance();
         osc_run_hook('init_admin_admins');
     }
 
@@ -64,170 +82,196 @@ class CAdminAdmins extends AdminSecBaseModel
     {
         parent::doModel();
 
-        switch ($this->action) {
-            case ('add'):
-                $this->drawForm(null);
-                break;
-            case ('add_post'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
-                    break;
-                }
-                osc_csrf_check();
-                $this->saveAdmin(null);
-                break;
-            case ('edit'):
-                $adminId = $this->adminRowId(true);
-                if ($adminId === null) {
-                    break;
-                }
-                $this->drawForm($adminId);
-                break;
-            case ('edit_post'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
-                    break;
-                }
-                osc_csrf_check();
-                $adminId = $this->adminRowId(false);
-                if ($adminId === null) {
-                    break;
-                }
-                $this->saveAdmin($adminId);
-                break;
-            case ('2fa_setup'):
-            case ('2fa_enable'):
-            case ('2fa_codes'):
-            case ('2fa_off'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins&action=edit')) {
-                    break;
-                }
-                osc_csrf_check();
-                $this->twoFactor($this->action);
-                break;
-            case ('delete'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
-                    break;
-                }
-                osc_csrf_check();
-                // deleting and admin
-                $isDeleted = false;
-                $adminId   = Params::getParam('id');
+        $method = $this->actionMethod('admins');
 
-                if (!is_array($adminId)) {
-                    osc_add_flash_error_message(_m("The admin id isn't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-                }
-
-                // Verification to avoid an administrator trying to remove to itself
-                if (in_array(Session::newInstance()->_get('adminId'), $adminId)) {
-                    osc_add_flash_error_message(
-                        _m("The operation hasn't been completed. You're trying to remove yourself!"),
-                        'admin'
-                    );
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-                }
-
-                $isDeleted = $this->adminManager->deleteBatch($adminId);
-
-                if ($isDeleted) {
-                    osc_add_flash_ok_message(_m('The admin has been deleted correctly'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m('The admin couldn\'t be deleted'), 'admin');
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-                break;
-            default:
-                if (Params::getParam('action') != '') {
-                    osc_run_hook('admin_bulk_' . Params::getParam('action'), Params::getParam('id'));
-                }
-
-                Params::setParam('iDisplayLength', ListPaging::length());
-                $p_iPage = ListPaging::page();
-
-                $admins = $this->adminManager->listAll();
-
-                // pagination
-                $limit = ListPaging::length();
-                $start = ListPaging::start($p_iPage, $limit);
-                $count = count($admins);
-
-                $displayRecords = $limit;
-                if (($start + $limit) > $count) {
-                    $displayRecords = ($start + $limit) - $count;
-                }
-                // ----
-                $aData = array();
-                $max   = ($start + $limit);
-                if ($max > $count) {
-                    $max = $count;
-                }
-                for ($i = $start; $i < $max; $i++) {
-                    $admin = $admins[$i];
-
-                    $options    = array();
-                    $options[]  =
-                        '<a href="' . osc_admin_base_url(true) . '?page=admins&action=edit&amp;id=' . $admin['pk_i_id']
-                        . '">' . __('Edit') . '</a>';
-                    $options[]  = '<a onclick="return delete_dialog(\'' . $admin['pk_i_id'] . '\');" href="'
-                        . osc_admin_base_url(true) . '?page=admins&action=delete&amp;id[]=' . $admin['pk_i_id'] . '">'
-                        . __('Delete') . '</a>';
-                    $auxOptions = '<ul>' . PHP_EOL;
-                    foreach ($options as $actual) {
-                        $auxOptions .= '<li>' . $actual . '</li>' . PHP_EOL;
-                    }
-                    $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
-
-                    $row   = array();
-                    $row[] = '<input type="checkbox" name="id[]" value="' . $admin['pk_i_id'] . '" />';
-                    $row[] = osc_esc_html($admin['s_username']) . $actions;
-                    $row[] = osc_esc_html($admin['s_name']);
-                    $row[] = osc_esc_html($admin['s_email']);
-
-                    $aData[] = $row;
-                }
-                $array['iTotalRecords']        = $displayRecords;
-                $array['iTotalDisplayRecords'] = count($admins);
-                $array['iDisplayLength']       = $limit;
-                $array['aaData']               = $aData;
-
-                $page = Params::getParamInt('iPage');
-                if (count($array['aaData']) == 0 && $page != 1) {
-                    $total   = $array['iTotalDisplayRecords'];
-                    $maxPage = ceil($total / (int)$array['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-
-                    if ($maxPage == 0) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=1', $url);
-                        $this->redirectTo($url);
-                    }
-
-                    if ($page > 1) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url);
-                        $this->redirectTo($url);
-                    }
-                }
-
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected admins?'),
-                            strtolower(__('Delete'))
-                        ),
-                        'label'               => __('Delete')
-                    )
-                );
-                $bulk_options = osc_apply_filter('admin_bulk_filter', $bulk_options);
-                $this->_exportVariableToView('bulk_options', $bulk_options);
-
-                $this->_exportVariableToView('aAdmins', $array);
-                // calling manage admins view
-                $this->doView('admins/index.php');
-                break;
-        }
+        $this->$method();
     }
 
+    /**
+     * The form for a new admin.
+     */
+    private function addForm(): void
+    {
+        $this->drawForm(null);
+    }
+
+    /**
+     * Create an admin from the form.
+     */
+    private function addPost(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
+            return;
+        }
+        osc_csrf_check();
+        $this->saveAdmin(null);
+    }
+
+    /**
+     * The admin editor; your own account when no id is given.
+     */
+    private function editForm(): void
+    {
+        $adminId = $this->adminRowId(true);
+        if ($adminId === null) {
+            return;
+        }
+        $this->drawForm($adminId);
+    }
+
+    /**
+     * Save the admin editor.
+     */
+    private function editPost(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
+            return;
+        }
+        osc_csrf_check();
+        $adminId = $this->adminRowId(false);
+        if ($adminId === null) {
+            return;
+        }
+        $this->saveAdmin($adminId);
+    }
+
+    /**
+     * Set up, turn on, renew codes for or turn off two-step sign-in.
+     */
+    private function twoFactorPost(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins&action=edit')) {
+            return;
+        }
+        osc_csrf_check();
+        $this->twoFactor($this->action);
+    }
+
+    /**
+     * Sign your own account out on every device, after the password and code.
+     */
+    private function signOutAll(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins&action=edit')) {
+            return;
+        }
+        osc_csrf_check();
+        $this->signOutEverywhere();
+    }
+
+    /**
+     * Delete the selected admins.
+     */
+    private function deleteAdmins(): void
+    {
+        if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
+            return;
+        }
+        osc_csrf_check();
+        // deleting and admin
+        $isDeleted = false;
+        $adminId   = Params::getParam('id');
+
+        if (!is_array($adminId)) {
+            osc_add_flash_error_message(_m("The admin id isn't in the correct format"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+        }
+
+        // Verification to avoid an administrator trying to remove to itself
+        if (in_array((int) Session::getInstance()->_get('adminId'), array_map(static fn ($id): int => is_scalar($id) ? (int) $id : 0, $adminId), true)) {
+            osc_add_flash_error_message(
+                _m("The operation hasn't been completed. You're trying to remove yourself!"),
+                'admin'
+            );
+            $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+        }
+
+        $isDeleted = \mindstellar\auth\AdminStore::delete($adminId);
+
+        if ($isDeleted) {
+            osc_add_flash_ok_message(_m('The admin has been deleted correctly'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('The admin couldn\'t be deleted'), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+    }
+
+    /**
+     * The admins table.
+     */
+    private function admins(): void
+    {
+        if (Params::getParam('action') != '') {
+            osc_run_hook('admin_bulk_' . Params::getParam('action'), Params::getParam('id'));
+        }
+
+        $limit = ListPaging::length();
+        Params::setParam('iDisplayLength', $limit);
+        $p_iPage = ListPaging::page();
+
+        $admins = $this->adminManager->listAll();
+
+        // pagination
+        $start = ListPaging::start($p_iPage, $limit);
+        $count = count($admins);
+
+        $displayRecords = $limit;
+        if (($start + $limit) > $count) {
+            $displayRecords = ($start + $limit) - $count;
+        }
+        // ----
+        $aData = array();
+        $max   = ($start + $limit);
+        if ($max > $count) {
+            $max = $count;
+        }
+        for ($i = $start; $i < $max; $i++) {
+            $admin = $admins[$i];
+
+            $options    = array();
+            $options[]  =
+                '<a href="' . osc_admin_base_url(true) . '?page=admins&action=edit&amp;id=' . $admin['pk_i_id']
+                . '">' . __('Edit') . '</a>';
+            $options[]  = '<a onclick="return delete_dialog(\'' . $admin['pk_i_id'] . '\');" href="'
+                . osc_admin_base_url(true) . '?page=admins&action=delete&amp;id[]=' . $admin['pk_i_id'] . '">'
+                . __('Delete') . '</a>';
+            $auxOptions = '<ul>' . PHP_EOL;
+            foreach ($options as $actual) {
+                $auxOptions .= '<li>' . $actual . '</li>' . PHP_EOL;
+            }
+            $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
+
+            $row   = array();
+            $row[] = '<input type="checkbox" name="id[]" value="' . $admin['pk_i_id'] . '" />';
+            $row[] = osc_esc_html($admin['s_username']) . $actions;
+            $row[] = osc_esc_html($admin['s_name']);
+            $row[] = osc_esc_html($admin['s_email']);
+
+            $aData[] = $row;
+        }
+        $array['iTotalRecords']        = $displayRecords;
+        $array['iTotalDisplayRecords'] = count($admins);
+        $array['iDisplayLength']       = $limit;
+        $array['aaData']               = $aData;
+
+        $pastEnd = ListPaging::pastEnd($array, $p_iPage);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $bulk_options = BulkAction::options(
+            array(
+                'delete' => __('Delete')
+            ),
+            __('Are you sure you want to %s the selected admins?')
+        );
+        $bulk_options = osc_apply_filter('admin_bulk_filter', $bulk_options);
+        $this->_exportVariableToView('bulk_options', $bulk_options);
+
+        $this->_exportVariableToView('aAdmins', $array);
+        // calling manage admins view
+        $this->doView('admins/index.php');
+    }
     //hopefully generic...
 
     /**
@@ -286,6 +330,9 @@ class CAdminAdmins extends AdminSecBaseModel
         // The row itself, for the admin_profile_form hook a plugin adds its own controls
         // through. Null while an account is being added, exactly as before.
         $this->_exportVariableToView('admin', $id === null ? null : AdminAccountForm::row($id));
+        if ($id !== null && $id === osc_logged_admin_id()) {
+            $this->_exportVariableToView('admin_api_key_count', count((new \mindstellar\model\ApiCredential())->listBy(null, null, $id, true)));
+        }
         $this->_exportVariableToView('admin_form', AdminAccountForm::formVars(
             $id,
             $values ?? osc_settings_values($pageId, $id),
@@ -331,6 +378,16 @@ class CAdminAdmins extends AdminSecBaseModel
             return;
         }
 
+        $password = (string)($result['values']['s_password'] ?? '');
+        if ($password !== '') {
+            \mindstellar\auth\AdminPassword::set((int)$id, $password);
+            // Changing your own password keeps you signed in here, and only here.
+            $stamp = (int)$id === (int)Session::getInstance()->_get('adminId') ? \mindstellar\auth\AdminPassword::stamp((int)$id) : null;
+            if ($stamp !== null) {
+                Session::getInstance()->_set('adminStamp', $stamp);
+            }
+        }
+
         osc_run_hook('admin_edit_completed', $id, $result['updated']);
 
         // An update that changed nothing affects no rows and is still a save: the store
@@ -359,8 +416,8 @@ class CAdminAdmins extends AdminSecBaseModel
         $own     = osc_logged_admin_id();
         $target  = Params::getParamInt('id') ?: $own;
         $back    = osc_admin_base_url(true) . '?page=admins&action=edit' . ($target === $own ? '' : '&id=' . $target);
-        $admin   = Admin::newInstance()->findByPrimaryKey($target);
-        $session = Session::newInstance();
+        $admin   = Admin::getInstance()->findByPrimaryKey($target);
+        $session = Session::getInstance();
         $code    = Params::getParamString('code');
 
         if (!$admin || ($target !== $own && ($action !== '2fa_off' || $this->isModerator()))) {
@@ -403,6 +460,30 @@ class CAdminAdmins extends AdminSecBaseModel
                 break;
         }
         $this->redirectTo($back);
+    }
+
+    /**
+     * Sign the current admin out of every device, this one too, and revoke their API keys,
+     * after their password (and a code when two-step sign-in is on).
+     *
+     * @return void
+     */
+    private function signOutEverywhere()
+    {
+        $admin  = Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
+        $reason = is_array($admin) && isset($admin['pk_i_id'])
+            ? AdminReauth::verify($admin, Params::getParamString('password', false, false), Params::getParamString('code'))
+            : _m("You don't have enough permissions");
+        if ($reason !== '') {
+            osc_add_flash_error_message($reason, 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit#sign-out-all');
+
+            return;
+        }
+        \mindstellar\auth\SignOut::everywhereAdmin((int)$admin['pk_i_id']);
+        $this->logout();
+        osc_add_flash_ok_message(_m('You are signed out on every device, this one too. Sign in again.'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true));
     }
 
     /**

@@ -4,10 +4,11 @@
 ##
 ## Osclass release packager.
 ##
-## Packages the release zips for the version in OSCLASS_VERSION. Assets are built
-## in CI (`npm ci && npm run build`) BEFORE this runs; this script does not build.
+## Packages the release zips for the version in OSCLASS_VERSION. Assets and PHP
+## dependencies are built in CI (`npm ci && npm run build`, `composer install --no-dev`)
+## BEFORE this runs; this script does not build.
 ## It layers the freshly built runtime output onto a clean `git archive` base
-## (so .gitattributes export-ignore stays the single source of exclusions) and
+## (so .gitattributes export-ignore applies to the sources) and
 ## bundles the storefront theme.
 ##
 ## Environment:
@@ -54,6 +55,23 @@ fi
 rm -rf "$DIR/osclass/oc-includes/assets"
 mkdir -p "$DIR/osclass/oc-includes/assets"
 cp -R oc-includes/assets/. "$DIR/osclass/oc-includes/assets/"
+
+if [ ! -f oc-includes/vendor/autoload.php ]; then
+  echo "expected composer vendor tree missing: oc-includes/vendor (did 'composer install --no-dev' run?)" >&2
+  exit 1
+fi
+if grep -q "'dev' => true" oc-includes/vendor/composer/installed.php; then
+  echo "oc-includes/vendor is a dev install; run 'composer install --no-dev' first" >&2
+  exit 1
+fi
+rm -rf "$DIR/osclass/oc-includes/vendor"
+mkdir -p "$DIR/osclass/oc-includes/vendor"
+cp -R oc-includes/vendor/. "$DIR/osclass/oc-includes/vendor/"
+# Drop dev-only and test files from the vendor tree.
+rm -rf "$DIR/osclass/oc-includes/vendor/bin" \
+  "$DIR/osclass/oc-includes/vendor/async-aws/core/src/Test" \
+  "$DIR/osclass/oc-includes/vendor/symfony/http-client-contracts/Test" \
+  "$DIR/osclass/oc-includes/vendor/symfony/service-contracts/Test"
 
 # Bundle the newest storefront release this core supports (the Docker builds use the same picker).
 THEME_URL=$(bash scripts/storefront-release.sh "$VERSION" | cut -f2)

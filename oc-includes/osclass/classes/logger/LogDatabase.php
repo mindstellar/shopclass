@@ -17,19 +17,16 @@
  */
 class LogDatabase
 {
+    use \mindstellar\base\SharedInstance;
+
     /**
      *
-     * @var
-     */
-    private static $instance;
-    /**
-     *
-     * @var
+     * @var array<int, array<string, mixed>>
      */
     public $messages;
     /**
      *
-     * @var
+     * @var array<int, array<string, mixed>>
      */
     public $explain_messages;
 
@@ -43,17 +40,11 @@ class LogDatabase
     }
 
     /**
-     * The shared query log for this request.
-     *
-     * @return \LogDatabase
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -245,7 +236,7 @@ class LogDatabase
         $re = "/('(?:[^'\\\\]|\\\\.)*'|\"(?:[^\"\\\\]|\\\\.)*\")|(\\b\\d+\\b)|([A-Za-z_][A-Za-z0-9_]*)|([^'\"A-Za-z0-9_]+)/s";
 
         return preg_replace_callback($re, static function ($m) use ($kw) {
-            if (($m[1] ?? '') !== '') {
+            if ($m[1] !== '') {
                 return '<span class="osc-qdbg__str">' . htmlspecialchars($m[1], ENT_QUOTES) . '</span>';
             }
             if (($m[2] ?? '') !== '') {

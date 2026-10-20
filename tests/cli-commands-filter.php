@@ -76,6 +76,16 @@ pin(
     $GLOBALS['__seen']
 );
 
+harness_section('a command given --help prints help and does not run');
+
+unset($GLOBALS['__seen']);
+[$code] = cli(array('demo:echo', '--help'));
+pin('a plugin command with --help is not run', array(0, false), array($code, isset($GLOBALS['__seen'])));
+[$code] = cli(array('demo:echo', '--source=3', '-h'));
+pin('nor with -h after other options', array(0, false), array($code, isset($GLOBALS['__seen'])));
+[$code] = cli(array('backup:restore', '--help'));
+pin('a core command with --help exits 0 without running', 0, $code);
+
 harness_section('what a plugin cannot do');
 
 // cmdVersion writes to STDOUT directly, so only the exit code is observable here.
@@ -97,7 +107,8 @@ pin('the core commands, in help order', array(
     'install', 'cron', 'db:upgrade', 'core:update', 'db:doctor', 'db:repair', 'package:reconcile', 'cache:flush',
     'jobs:work', 'jobs:status', 'storage:work', 'sitemap:warm',
     'backup:create', 'backup:list', 'backup:restore', 'backup:delete',
-    'user:create-admin', 'user:reset-password', 'user:2fa-off', 'plugin:list', 'plugin:activate',
+    'user:create-admin', 'user:reset-password', 'user:2fa-off', 'api:key:create', 'api:key:list', 'api:key:revoke',
+    'plugin:list', 'plugin:install', 'plugin:activate',
     'plugin:deactivate', 'theme:list', 'theme:activate', 'market:refresh', 'market:search', 'market:info',
     'market:install', 'market:update', 'location:status', 'location:update', 'doctor', 'version', 'help',
 ), array_keys($commands->getValue($cli)));

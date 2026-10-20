@@ -80,6 +80,11 @@ final class FakeConnection extends Connection
 
         return 0;
     }
+
+    public function scalar(string $sql, array $params = array())
+    {
+        return null;
+    }
 }
 
 $base    = sys_get_temp_dir() . '/osc_backup_jobs_' . getmypid();
@@ -321,7 +326,7 @@ foreach ($shapes as $label => $state) {
     $store->prune('safety', BackupJobs::SAFETY_KEEP);
     try {
         $builder->step(array('stage' => 'bogus', 'run' => 'x', 'name' => $source));
-    } catch (\mindstellar\backup\BackupFailure $e) {
+    } catch (\mindstellar\backup\BackupException $e) {
     }
     $runJob($restoreJob($make()), Restorer::begin($source, true, true));
     pin($label . ': the restore finishes', 'done', $store->state()['status']);
@@ -433,7 +438,7 @@ check('...among the saved backups', in_array($failName, array_column($store->all
 pin('...with no half of it in the bucket', array(), array_values(array_filter(array_keys($s3->objects), static function ($k) use ($failName) {
     return strpos($k, substr($failName, 0, -4)) !== false;
 })));
-$words = \mindstellar\backup\BackupManager::failure($state);
+$words = \mindstellar\backup\BackupService::failure($state);
 check('...and the page does not say nothing was saved', !in_array('Nothing was saved.', $words['lines'], true), implode(' | ', $words['lines']));
 $store->delete($failName);
 

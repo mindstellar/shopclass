@@ -11,17 +11,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
- * Created by Navjot Tomer (Mindstellar).
- * User: navjottomer
- * Date: 15/07/20
- * Time: 7:03 PM
- * License is provided in root directory.
- */
-
 namespace mindstellar\upgrade;
 
 use mindstellar\market\Compatibility;
+use mindstellar\utility\Validate;
 use RuntimeException;
 
 /**
@@ -123,11 +116,11 @@ abstract class UpgradePackage
     private function setVariable(array $package_info)
     {
 
-        if (isset($package_info) && !empty($package_info)) {
+        if (!empty($package_info)) {
             $this->s_title = $package_info['s_title'];
 
             if (isset($package_info['s_source_url'])
-                && filter_var($package_info['s_source_url'], FILTER_VALIDATE_URL)
+                && Validate::httpUrl($package_info['s_source_url'])
             ) {
                 $this->s_source_url = $package_info['s_source_url'];
             } else {

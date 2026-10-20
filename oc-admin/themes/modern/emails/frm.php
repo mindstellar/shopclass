@@ -22,13 +22,13 @@ osc_admin_page(array(
 ));
 
 $email      = __get('email');
-$aEmailVars   = EmailVariables::newInstance()->getVariables($email);
-$aCommonVars  = EmailVariables::newInstance()->getCommonVariables();
+$aEmailVars   = EmailVariables::getInstance()->getVariables($email);
+$aCommonVars  = EmailVariables::getInstance()->getCommonVariables();
 
 // What was typed wins over what is stored, so a refused save comes back with the work in it.
 $emailErrors    = __get('editorErrors');
 $emailErrors    = is_array($emailErrors) ? $emailErrors : array();
-$emailSubmitted = Session::newInstance()->_getForm('aFieldsDescription');
+$emailSubmitted = Session::getInstance()->_getForm('aFieldsDescription');
 $emailName      = (string)($email['s_internal_name'] ?? '');
 $emailLocales  = array();
 $emailSubjects = array();

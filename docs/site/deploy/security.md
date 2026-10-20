@@ -110,10 +110,43 @@ database structure and sometimes credentials to anyone who can trigger one.
 - **Remove accounts when people leave.**
 
 For a site where the admin panel has no reason to be publicly reachable, put it
-behind an IP allowlist, a VPN, or an identity proxy (a separate login wall in
-front of the admin panel) at the web-server layer.
+behind an IP allow list, a VPN, or an identity proxy (a separate login wall in
+front of the admin panel). Shopclass has an allow list built in.
 
-Locked out? `php oc-cli.php user:reset-password --user=<name>`: see the
+### Allow the admin panel from your addresses only
+
+List the addresses that may open `/oc-admin/` in `config.php`:
+
+```php
+define('OSC_ADMIN_IP_ALLOW', '203.0.113.7, 2001:db8::/32, 10.0.0.0/8');
+```
+
+Or set the `OSC_ADMIN_IP_ALLOW` environment variable to the same text (a value in
+`config.php` wins). Entries are IPv4 or IPv6 addresses and CIDR ranges, separated
+by commas or spaces. Any other address gets a plain 404 page, with no cookie set. A
+wrong entry is left out; with `OSC_DEBUG` on, it is named in the PHP error log. If
+every entry is wrong, only loopback gets in.
+
+- It covers everything under `/oc-admin/`: sign-in, admin pages, AJAX and the
+  upgrade screen. The public site, cron, `oc-cli.php` and the installer are not
+  affected.
+- It covers the `/oc-admin/` panel only. An admin who is already signed in keeps
+  their admin abilities on the public site (editing or deleting listings) from any
+  address, and admin API keys work from anywhere. Limit keys with their scopes.
+- Loopback (`127.0.0.0/8` and `::1`) always gets in, so an SSH tunnel to the server works.
+- The address checked is `REMOTE_ADDR`. Behind a proxy, set up the real client IP
+  first (see [below](#login-throttling-and-the-real-client-ip)), or the list sees
+  only the proxy. A proxy on the same server then arrives as `127.0.0.1`, so the
+  list lets everyone in. `Tools → System info → Security` shows the list and warns
+  about this.
+
+**Locked yourself out?** Remove the line from `config.php` or unset the variable.
+Or open an SSH tunnel and use the panel through it:
+`ssh -L 8080:127.0.0.1:80 you@server`, then `http://localhost:8080/oc-admin/`.
+
+### Lost the admin password?
+
+Run `php oc-cli.php user:reset-password --user=<name>`: see the
 [CLI reference](/docs/cli/).
 
 ## Login throttling and the real client IP
@@ -218,6 +251,7 @@ which sets out how to report privately and which versions are supported.
 - [ ] PHP execution denied under `oc-content/uploads/`
 - [ ] Admin username is not `admin`; one account per person
 - [ ] Real client IP configured if behind a proxy
+- [ ] Admin panel limited to your addresses with `OSC_ADMIN_IP_ALLOW`, if it has no reason to be public
 - [ ] CAPTCHA on publishing and registration
 - [ ] Database user scoped to one database, not reachable publicly
 - [ ] Offsite backups, and one of them restored successfully

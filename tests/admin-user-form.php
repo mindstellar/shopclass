@@ -64,6 +64,11 @@ if (!function_exists('osc_current_admin_theme_path')) {
     {
     }
 }
+if (!function_exists('osc_enqueue_script')) {
+    function osc_enqueue_script($id)
+    {
+    }
+}
 if (!function_exists('osc_current_admin_theme_url')) {
     function osc_current_admin_theme_url($file = '')
     {
@@ -83,11 +88,11 @@ require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 /** Render the add-user form the way the controller draws it for 'add'. */
 function render_add_user_form(): string
 {
-    View::newInstance()->_exportVariableToView('user', null);
-    View::newInstance()->_exportVariableToView('countries', array());
-    View::newInstance()->_exportVariableToView('regions', array());
-    View::newInstance()->_exportVariableToView('cities', array());
-    View::newInstance()->_exportVariableToView('locales', array());
+    View::getInstance()->_exportVariableToView('user', null);
+    View::getInstance()->_exportVariableToView('countries', array());
+    View::getInstance()->_exportVariableToView('regions', array());
+    View::getInstance()->_exportVariableToView('cities', array());
+    View::getInstance()->_exportVariableToView('locales', array());
 
     ob_start();
     include ABS_PATH . 'oc-admin/themes/modern/users/frm.php';
@@ -129,7 +134,8 @@ $html = render_add_user_form();
 harness_section('the e-mail row has its own field back');
 
 check('an s_email input is drawn', strpos($html, 'name="s_email"') !== false, $html);
-pin('labelled E-mail (required)', 'E-mail (required)', row_label($html, 's_email'));
+pin('labelled E-mail', 'E-mail', row_label($html, 's_email'));
+check('and marked required', strpos($html, 'E-mail <span class="osc-field-required"></span>') !== false);
 // The bug put mobile_text() under the E-mail label instead of email_text(), so the
 // e-mail row never carried an s_email input at all.
 check(

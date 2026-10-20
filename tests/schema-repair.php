@@ -38,7 +38,7 @@ if (!function_exists('osc_lib_path')) {
     }
 }
 
-$conn = Connection::instance();
+$conn = Connection::getInstance();
 
 /** Whether $table has an index named $name. */
 $hasIndex = static function (string $table, string $name) use ($admin): bool {
@@ -120,6 +120,10 @@ check('upgradeDB() leaves the dropped index missing', !$hasIndex('oc_t_country',
 check('upgradeDB() no longer reports repairs', is_array($result) && !array_key_exists('repairs', $result));
 
 harness_section('MigrationRunner: one run at a time');
+// A refused run would wait 5 s for the lock each time; the refusal is the same at 0.
+if (!defined('OSC_LOCK_WAIT')) {
+    define('OSC_LOCK_WAIT', 0);
+}
 
 $tmpDir = sys_get_temp_dir() . '/osc_runner_lock_' . getmypid();
 @mkdir($tmpDir);
@@ -156,6 +160,13 @@ pin('db:repair exits 0', 0, \mindstellar\cli\Cli::run(array('db:repair')));
 check('db:repair restores the dropped index', $hasIndex('oc_t_country', 'idx_s_name'));
 
 pin('db:doctor is clean afterwards', 0, \mindstellar\cli\Cli::run(array('db:doctor')));
+
+$admin->query('ALTER TABLE oc_t_country ADD INDEX idx_site_extra (s_slug, s_name)');
+pin('db:doctor exits 0 when the only difference is an extra index', 0, \mindstellar\cli\Cli::run(array('db:doctor')));
+$admin->query('ALTER TABLE oc_t_country DROP INDEX idx_s_name');
+pin('db:doctor exits 1 when an index is also missing', 1, \mindstellar\cli\Cli::run(array('db:doctor')));
+$admin->query('ALTER TABLE oc_t_country DROP INDEX idx_site_extra');
+$admin->query('ALTER TABLE oc_t_country ADD INDEX idx_s_name (s_name)');
 
 harness_section('db:repair refuses while a migration is pending');
 

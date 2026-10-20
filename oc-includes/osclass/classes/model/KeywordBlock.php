@@ -8,14 +8,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * KeywordBlock DAO — the operator-managed keyword blocklist consumed by
  * ItemSpamFilter. Table-backed and admin-managed in the same shape as BanRule.
  */
 class KeywordBlock extends DAO
 {
-    /** @var KeywordBlock */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_keyword_block table
@@ -35,17 +36,11 @@ class KeywordBlock extends DAO
     }
 
     /**
-     * Return the shared KeywordBlock model instance, creating it on first use.
-     *
-     * @return KeywordBlock
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -107,7 +102,7 @@ class KeywordBlock extends DAO
             // Same wildcard escaping DBCommandClass::escapeStr($v, true) applied
             // before the legacy LIKE: a literal % or _ typed by an admin stays
             // literal rather than acting as a SQL wildcard.
-            $pattern  = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $keyword) . '%';
+            $pattern  = '%' . \mindstellar\database\QueryBuilder::escapeLike((string) $keyword) . '%';
             $where    = 's_keyword LIKE ?';
             $params[] = $pattern;
         }
@@ -121,12 +116,12 @@ class KeywordBlock extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $result;
         }
 
-        $result['keywords'] = osc_db_stringify_rows($rows);
+        $result['keywords'] = Db::stringifyRows($rows);
 
         $counts = $this->pagedCounts($where, $params);
         if ($counts === null) {
@@ -145,7 +140,7 @@ class KeywordBlock extends DAO
     public function countKeywords()
     {
         try {
-            return osc_db_table($this->getTableName())->count();
+            return Db::table($this->getTableName())->count();
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }

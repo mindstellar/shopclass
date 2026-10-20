@@ -23,7 +23,7 @@ $base      = osc_admin_base_url(true) . '?page=billing';
 $actionUrl = osc_admin_base_url(true);
 
 $name     = $isEdit ? $package['s_name'] : '';
-$amount   = $isEdit ? number_format(((int) $package['i_amount']) / 1000000, 2, '.', '') : '';
+$amount   = $isEdit ? \mindstellar\currency\Money::fromMicros((int) $package['i_amount']) : '';
 $currency = $isEdit ? $package['s_currency'] : osc_billing_currency();
 $credits  = $isEdit ? (int) $package['i_credits'] : '';
 $position = $isEdit ? (int) $package['i_position'] : 0;

@@ -9,12 +9,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\billing\Billing;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
-use mindstellar\billing\ItemUpgrades;
-use mindstellar\billing\Orders;
-use mindstellar\billing\Packages;
+use mindstellar\billing\ItemUpgradeStore;
+use mindstellar\billing\OrderStore;
+use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
@@ -127,8 +128,8 @@ class CWebBilling extends WebSecBaseModel
     private function walletView()
     {
         $userId = osc_logged_user_id();
-        $page   = max(1, Params::getParamInt('pageNum'));
-        $offset = ($page - 1) * self::PER_PAGE;
+        $page   = ListPaging::page('pageNum');
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
         $this->_exportVariableToView('balance', Wallet::balance($userId));
         $this->_exportVariableToView('entries', Wallet::history($userId, self::PER_PAGE, $offset));
@@ -145,8 +146,8 @@ class CWebBilling extends WebSecBaseModel
      */
     private function buyView()
     {
-        $this->_exportVariableToView('packages', Packages::enabled());
-        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::instance()->available());
+        $this->_exportVariableToView('packages', PackageStore::enabled());
+        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::getInstance()->available());
         $this->doView('user-billing-buy.php');
     }
 
@@ -158,11 +159,11 @@ class CWebBilling extends WebSecBaseModel
     private function ordersView()
     {
         $userId = osc_logged_user_id();
-        $page   = max(1, Params::getParamInt('pageNum'));
-        $offset = ($page - 1) * self::PER_PAGE;
+        $page   = ListPaging::page('pageNum');
+        $offset = ListPaging::start($page, self::PER_PAGE);
 
-        $this->_exportVariableToView('orders', Orders::forUser($userId, self::PER_PAGE, $offset));
-        $this->_exportVariableToView('total', Orders::searchCount(array('user_id' => $userId)));
+        $this->_exportVariableToView('orders', OrderStore::forUser($userId, self::PER_PAGE, $offset));
+        $this->_exportVariableToView('total', OrderStore::searchCount(array('user_id' => $userId)));
         $this->_exportVariableToView('pageNum', $page);
         $this->_exportVariableToView('perPage', self::PER_PAGE);
         $this->doView('user-billing-orders.php');
@@ -176,7 +177,7 @@ class CWebBilling extends WebSecBaseModel
      */
     private function receiptView()
     {
-        $order = Orders::find(Params::getParamInt('id'));
+        $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null || !Receipts::canView($order, (int) osc_logged_user_id(), false)) {
             $this->do404();
 
@@ -205,19 +206,19 @@ class CWebBilling extends WebSecBaseModel
         $packageId = Params::getParamInt('packageId');
         $gatewayId = Params::getParamString('gateway');
 
-        $package = Packages::find($packageId);
+        $package = PackageStore::find($packageId);
         if ($package === null || empty($package['b_enabled'])) {
             osc_add_flash_error_message(_m('That package is no longer available'));
             $this->redirectTo($this->url('buy'));
         }
 
-        $available = PaymentGatewayRegistry::instance()->available((string) $package['s_currency']);
+        $available = PaymentGatewayRegistry::getInstance()->available((string) $package['s_currency']);
         if (!isset($available[$gatewayId])) {
             osc_add_flash_error_message(_m('That payment method is not available'));
             $this->redirectTo($this->url('buy'));
         }
 
-        $order = Orders::create(
+        $order = OrderStore::create(
             $userId,
             $gatewayId,
             (int) $package['i_amount'],
@@ -239,8 +240,8 @@ class CWebBilling extends WebSecBaseModel
         // is shown on the buy page itself rather than a dedicated screen of its own.
         $this->_exportVariableToView('checkoutHtml', $intent->getPayload());
         $this->_exportVariableToView('order', $order);
-        $this->_exportVariableToView('packages', Packages::enabled());
-        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::instance()->available());
+        $this->_exportVariableToView('packages', PackageStore::enabled());
+        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::getInstance()->available());
         $this->doView('user-billing-buy.php');
     }
 
@@ -272,7 +273,7 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
-        $item = Item::newInstance()->findByPrimaryKey($itemId);
+        $item = Item::getInstance()->findByPrimaryKey($itemId);
         if (empty($item) || (int) $item['fk_i_user_id'] !== $userId) {
             osc_add_flash_error_message(_m('That listing does not belong to you'));
             $this->redirectTo(osc_user_list_items_url());
@@ -281,7 +282,7 @@ class CWebBilling extends WebSecBaseModel
         // A feature id in the allow-list is simply unregistered when its own
         // *_enabled preference is off -- listing.premium included, now that it
         // follows the same split as every other feature here.
-        $feature = FeatureRegistry::instance()->get($featureId);
+        $feature = FeatureRegistry::getInstance()->get($featureId);
         if ($feature === null) {
             osc_add_flash_error_message(_m('This upgrade is not available right now'));
             $this->redirectTo(osc_user_list_items_url());
@@ -382,7 +383,7 @@ class CWebBilling extends WebSecBaseModel
     private static function accountOffer(string $featureId, int $userId): ?array
     {
         $offered = array_column(osc_account_upgrade_offers($userId), null, 'feature');
-        $feature = isset($offered[$featureId]) ? FeatureRegistry::instance()->get($featureId) : null;
+        $feature = isset($offered[$featureId]) ? FeatureRegistry::getInstance()->get($featureId) : null;
 
         return $feature !== null && $feature->getScope() === Feature::SCOPE_USER ? $offered[$featureId] : null;
     }
@@ -398,7 +399,7 @@ class CWebBilling extends WebSecBaseModel
     private static function itemScopedFeatureIds(): array
     {
         $ids = array();
-        foreach (FeatureRegistry::instance()->all() as $id => $feature) {
+        foreach (FeatureRegistry::getInstance()->all() as $id => $feature) {
             if ($feature->getScope() === Feature::SCOPE_ITEM) {
                 $ids[] = $id;
             }
@@ -472,11 +473,11 @@ class CWebBilling extends WebSecBaseModel
         }
 
         $itemId = (int) $item['pk_i_id'];
-        if (!ItemUpgrades::has($itemId, $featureId)) {
+        if (!ItemUpgradeStore::has($itemId, $featureId)) {
             return self::HELD_NOT;
         }
 
-        return ItemUpgrades::expiresAt($itemId, $featureId) === null ? self::HELD_PERMANENT : self::HELD_LIVE;
+        return ItemUpgradeStore::expiresAt($itemId, $featureId) === null ? self::HELD_PERMANENT : self::HELD_LIVE;
     }
 
     /**
@@ -534,7 +535,7 @@ class CWebBilling extends WebSecBaseModel
             osc_current_web_theme_path($file);
         }
 
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 
@@ -551,7 +552,7 @@ class CWebBilling extends WebSecBaseModel
      */
     private function themeProvides(string $file): bool
     {
-        return file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file);
+        return file_exists(WebThemes::getInstance()->getCurrentThemePath() . $file);
     }
 
     /**

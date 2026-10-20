@@ -59,11 +59,11 @@ function osc_is_subdomain()
 }
 function osc_category_id()
 {
-    return View::newInstance()->_get('category_id') ?: 0;
+    return View::getInstance()->_get('category_id') ?: 0;
 }
 function osc_category_slug()
 {
-    return View::newInstance()->_get('category_slug');
+    return View::getInstance()->_get('category_slug');
 }
 function osc_field($item, $field, $locale)
 {
@@ -88,13 +88,20 @@ abstract class FakeModel
 {
     protected static $rows = array();
 
-    public static function newInstance()
+    public static function getInstance()
     {
         return new static();
     }
 
+    public static function newInstance()
+    {
+        return self::getInstance();
+    }
+
     public function findByPrimaryKey($id)
     {
+        $GLOBALS['__finds'][] = static::class . ':' . $id;
+
         return static::$rows[(int)$id] ?? null;
     }
 
@@ -191,6 +198,7 @@ class User extends FakeModel
 
 // The real View: it is standalone, and its cursor behaviour is exactly what the
 // place-list helpers lean on.
+require_once __DIR__ . '/../oc-includes/osclass/classes/base/SharedInstance.php';
 require_once __DIR__ . '/../oc-includes/osclass/classes/View.php';
 
 /** Counts of what each list loader was asked for, so a second load would show up. */
@@ -198,9 +206,14 @@ $GLOBALS['__loads'] = array();
 
 abstract class FakeStats
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new static();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 }
 
@@ -296,7 +309,7 @@ function searchUrl($params, array $state = array())
     $GLOBALS['__request'] = $state['request'] ?? array();
     viewReset();
     foreach (($state['view'] ?? array()) as $key => $value) {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
     if (isset($state['prefs'])) {
         foreach ($state['prefs'] as $k => $v) {
@@ -396,5 +409,29 @@ pin('counting cities needs no second fetch', 2, osc_count_list_cities(7));
 viewReset();
 pin('cities with no region asked use the wildcard', 2, osc_count_list_cities());
 pin('and say so', array('cities:%%%%'), $GLOBALS['__loads']);
+
+$GLOBALS['__finds'] = array();
+$city = _aux_search_places()['sCity'];
+_aux_search_find($city, 11, true);
+_aux_search_find($city, 11, true);
+pin('a web request looks a place up once', array('City:11'), $GLOBALS['__finds']);
+$GLOBALS['__finds'] = array();
+_aux_search_find($city, 11, false);
+_aux_search_find($city, 11, false);
+pin('the CLI worker asks every time', array('City:11', 'City:11'), $GLOBALS['__finds']);
+$GLOBALS['__finds'] = array();
+_aux_search_find($city, 11, true);
+_aux_search_find(_aux_search_places()['sRegion'], 11, true);
+_aux_search_find($city, 99, true);
+_aux_search_find($city, 99, true);
+pin(
+    'a region is not taken for the city with its id, and a missing place is asked again',
+    array('Region:11', 'City:99', 'City:99'),
+    $GLOBALS['__finds']
+);
+$GLOBALS['__finds'] = array();
+_aux_search_find($city, 13);
+_aux_search_find($city, 13);
+pin('on the command line nothing is remembered by default', array('City:13', 'City:13'), $GLOBALS['__finds']);
 
 exit(harness_result());

@@ -204,11 +204,16 @@ return new class () implements MigrationInterface {
                     && $originalName !== $currentName
                     && !$this->indexNameInUse($indexesAfter[$table], $originalName)
                 ) {
+                    // RENAME INDEX needs MariaDB 10.5.2, so the index is dropped and re-added in one ALTER.
+                    $definition = $this->indexDefinition($conn, $table, $currentName, $originalName);
+                    if ($definition === null) {
+                        continue;
+                    }
                     $this->run(
                         $conn,
                         'ALTER TABLE ' . $this->quoteIdent($table)
-                        . ' RENAME INDEX ' . $this->quoteIdent($currentName)
-                        . ' TO ' . $this->quoteIdent($originalName),
+                        . ' DROP INDEX ' . $this->quoteIdent($currentName)
+                        . ', ADD ' . $definition,
                         'restore index name ' . $originalName . ' on ' . $table
                     );
                     $indexesAfter[$table][$signature] = $originalName;
@@ -614,6 +619,49 @@ return new class () implements MigrationInterface {
         }
 
         return $out;
+    }
+
+    /**
+     * The ADD clause that rebuilds index $index of $table under the name $name, with the
+     * same kind, columns, prefix lengths, order and comment.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $index the index as it is now
+     * @param string     $name  the name the rebuilt index takes
+     *
+     * @return string|null null when the index is gone
+     * @throws \mindstellar\database\DbException
+     */
+    private function indexDefinition(Connection $conn, string $table, string $index, string $name): ?string
+    {
+        $rows = $conn->select(
+            'SELECT NON_UNIQUE, INDEX_TYPE, COLUMN_NAME, SUB_PART, COLLATION, INDEX_COMMENT'
+            . ' FROM information_schema.STATISTICS'
+            . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+            . ' ORDER BY SEQ_IN_INDEX',
+            array($table, $index)
+        );
+
+        if ($rows === array()) {
+            return null;
+        }
+        $parts = array();
+        foreach ($rows as $row) {
+            $parts[] = $this->quoteIdent($row['COLUMN_NAME'])
+                . ($row['SUB_PART'] !== null ? '(' . (int) $row['SUB_PART'] . ')' : '')
+                . ($row['COLLATION'] === 'D' ? ' DESC' : '');
+        }
+        $first = $rows[0] ?? array();
+        $type  = strtoupper((string) ($first['INDEX_TYPE'] ?? ''));
+        $kind  = in_array($type, array('FULLTEXT', 'SPATIAL'), true) ? $type . ' ' : '';
+        if ($kind === '' && (string) ($first['NON_UNIQUE'] ?? '1') === '0') {
+            $kind = 'UNIQUE ';
+        }
+        $comment = (string) ($first['INDEX_COMMENT'] ?? '');
+
+        return $kind . 'INDEX ' . $this->quoteIdent($name) . ' (' . implode(', ', $parts) . ')'
+            . ($comment !== '' ? " COMMENT '" . $conn->escape($comment) . "'" : '');
     }
 
     /**

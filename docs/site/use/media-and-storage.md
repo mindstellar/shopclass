@@ -20,7 +20,7 @@ from every upload:
 | **Preview size** | The gallery strip on a listing page |
 | **Normal size** | The full view a visitor opens |
 
-Sizes are entered as dimensions. Bigger is not better here: thumbnails are what
+Sizes are entered as width x height, such as `640x480`; neither side may be 0. Bigger is not better here: thumbnails are what
 a browse page loads dozens of at once, and they set how fast the page feels.
 
 **Photo shape → Keep each photo's own shape** (on for new sites) only makes photos
@@ -64,7 +64,8 @@ Photos already uploaded keep their format.
 
 ## Upload restrictions
 
-**Maximum size** caps what a visitor may upload, in KB. The screen shows the
+**Maximum size** caps a listing photo a visitor may upload, in KB. Files attached to a
+contact message have their own limit, in **Settings → General**. The screen shows the
 ceiling PHP itself imposes (*Maximum size PHP configuration allows: n KB*), and
 your setting cannot exceed it.
 
@@ -81,12 +82,26 @@ The photo count per listing is set separately, in **Listings → Settings**.
 ShopClass can watermark uploaded images with **text** or with an **image**,
 configured separately.
 
+- **Text** is drawn in its colour with an outline in the **Outline Color**, so
+  it reads on light and dark photos.
+- **Position** is one of nine places (corners, edge centres and the centre), or
+  **Tiled across the photo**: a repeated pattern that cropping cannot remove.
+- **Opacity** from 10% to 100%. Lower lets the photo show through the mark.
+
 Watermarking is applied as images are processed, so it affects new uploads.
-Existing images take it on when they are regenerated.
+The normal and preview sizes each get their own mark: it is drawn for the
+normal size, scaled down for the preview, and never covers more than 40% of a
+photo's width or height. Thumbnails stay clean. A mark on an edge sits a little in from it. A mark too small to
+read is left off.
+
+Existing photos change only when you regenerate them, and only if **Keep the
+photo at its full size** was on when they were uploaded. Without the full-size
+copy, a regenerated photo keeps its old mark, shrunk with the photo.
 
 A watermark discourages your listings being scraped and re-posted elsewhere.
 Keep it small and in a corner: a watermark across the middle of the photo
-devalues the listing for the seller who posted it.
+devalues the listing for the seller who posted it. If you use the centre or the
+tiled pattern, lower the opacity so the photo still shows.
 
 ## Offloading to S3-compatible storage
 

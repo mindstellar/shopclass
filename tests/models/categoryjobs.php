@@ -75,9 +75,9 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hJobs.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
 
-Preference::newInstance();
+Preference::getInstance();
 
-$queue = JobQueue::instance();
+$queue = JobQueue::getInstance();
 
 $locale = 'en_US';
 seed_locale($admin, $locale, 'English');

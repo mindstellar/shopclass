@@ -30,6 +30,11 @@
  * the seeded dev harness on 3307.
  */
 
+// Password hashes at the live cost take about 0.2 s each; tests only need them valid.
+if (!defined('BCRYPT_COST')) {
+    define('BCRYPT_COST', 4);
+}
+
 if (!function_exists('scratchdb_bootstrap')) {
     /**
      * Define the constants the DB classes need, load the autoloader and the
@@ -133,9 +138,7 @@ if (!function_exists('scratchdb_bootstrap')) {
         $admin = new mysqli($host, $user, $pass, '', $port);
         if ($admin->connect_errno) {
             fwrite(STDERR, 'admin connect failed: ' . $admin->connect_error . "\n");
-            fwrite(STDERR, "Is the throwaway container up?\n");
-            fwrite(STDERR, "  docker run -d --name shopclass-scratch -p 33061:3306 "
-                . "-e MYSQL_ROOT_PASSWORD=root mysql:8.0\n");
+            fwrite(STDERR, "Is the test database up? Start it with: npm run test:db (see tests/README.md)\n");
             exit(2);
         }
 
@@ -324,8 +327,9 @@ if (!function_exists('seed_exec')) {
      */
     function scratchdb_forget_cache(): void
     {
-        if (class_exists('Object_Cache_Factory')) {
-            Object_Cache_Factory::newInstance()->flush();
+        if (class_exists('mindstellar\\cache\\CacheManager')) {
+            \mindstellar\cache\CacheManager::getInstance()->flush();
+            \mindstellar\cache\CacheGroup::forgetGenerations();
         }
     }
 
@@ -572,6 +576,38 @@ if (!function_exists('seed_item')) {
     }
 }
 
+if (!function_exists('seed_photo')) {
+    /**
+     * Insert a listing photo: an `item` row of t_resource.
+     *
+     * @param array<string,string> $overrides s_name, s_extension, s_content_type, s_path, s_storage
+     *
+     * @return int The photo id
+     */
+    function seed_photo(mysqli $admin, int $itemId, array $overrides = []): int
+    {
+        $row = array_merge(
+            array(
+                's_name'         => 'photo',
+                's_extension'    => 'jpg',
+                's_content_type' => 'image/jpeg',
+                's_path'         => 'oc-content/uploads/0/',
+                's_storage'      => 'local',
+            ),
+            $overrides
+        );
+
+        return seed_exec(
+            $admin,
+            'INSERT INTO ' . DB_TABLE_PREFIX . "t_resource
+             (s_owner_type, i_owner_id, s_name, s_extension, s_content_type, s_path, s_storage, dt_created)
+             VALUES ('item', ?, ?, ?, ?, ?, ?, NOW())",
+            'isssss',
+            array($itemId, $row['s_name'], $row['s_extension'], $row['s_content_type'], $row['s_path'], $row['s_storage'])
+        );
+    }
+}
+
 if (!function_exists('seed_page')) {
     /**
      * Insert a static page and its description row.
@@ -627,8 +663,7 @@ if (!function_exists('seed_widget')) {
 
 if (!function_exists('seed_cron')) {
     /**
-     * t_cron has no primary key, so the same e_type can legitimately appear more
-     * than once; this helper does not deduplicate.
+     * One schedule's times in the `cron` group of t_key_value, replacing any there.
      *
      * @return int Always 0 — the table has no AUTO_INCREMENT column
      */
@@ -640,9 +675,9 @@ if (!function_exists('seed_cron')) {
     ): int {
         return seed_exec(
             $admin,
-            'INSERT INTO ' . DB_TABLE_PREFIX . 't_cron (e_type, d_last_exec, d_next_exec) VALUES (?, ?, ?)',
-            'sss',
-            array($type, $lastExec, $nextExec)
+            'REPLACE INTO ' . DB_TABLE_PREFIX . "t_key_value (s_group, s_key, s_value, dt_created) VALUES ('cron', ?, ?, NOW())",
+            'ss',
+            array($type, (string) json_encode(array('last' => $lastExec, 'next' => $nextExec)))
         );
     }
 }

@@ -17,7 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\PermalinkSettingsForm;
+use mindstellar\admin\form\PermalinkSettingsScreen;
 
 /**
  * Class CAdminSettingsPermalinks
@@ -50,7 +50,7 @@ class CAdminSettingsPermalinks extends AdminSecBaseModel
                 // updating permalinks option
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(PermalinkSettingsForm::register());
+                $result = CoreSettings::attempt(PermalinkSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     // Nothing was written and nothing was put on disk: the rules file must
                     // never describe a structure the database does not hold. Redrawn with
@@ -75,7 +75,7 @@ class CAdminSettingsPermalinks extends AdminSecBaseModel
      */
     private function drawForm(?array $values = null)
     {
-        $this->_exportVariableToView('permalinks_form', PermalinkSettingsForm::formVars($values));
+        $this->_exportVariableToView('permalinks_form', PermalinkSettingsScreen::formVars($values));
         $this->doView('settings/permalinks.php');
     }
 }

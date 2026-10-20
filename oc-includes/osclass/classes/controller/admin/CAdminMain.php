@@ -48,36 +48,36 @@ class CAdminMain extends AdminSecBaseModel
             default:            //default dashboard page (main page at oc-admin)
                 $this->_exportVariableToView('numItemsPerCategory', osc_get_non_empty_categories());
 
-                $this->_exportVariableToView('numUsers', User::newInstance()->count());
-                $this->_exportVariableToView('numItems', Item::newInstance()->count());
+                $this->_exportVariableToView('numUsers', User::getInstance()->count());
+                $this->_exportVariableToView('numItems', Item::getInstance()->count());
 
                 // At-a-glance moderation counters for the dashboard. Each is a single
                 // indexed COUNT on a boolean column, cheap enough to run on load.
                 $this->_exportVariableToView(
                     'numPendingComments',
-                    ItemComment::newInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )')
+                    ItemComment::getInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )')
                 );
-                $this->_exportVariableToView('numReportedItems', Item::newInstance()->countByMarkas('spam'));
+                $this->_exportVariableToView('numReportedItems', Item::getInstance()->countByMarkas('spam'));
 
                 // stats
                 $items       = array();
-                $stats_items = Stats::newInstance()->new_items_count(date(
+                $stats_items = Stats::getInstance()->new_items_count(date(
                     'Y-m-d H:i:s',
-                    mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                    mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                 ), 'day');
                 for ($k = 10; $k >= 0; $k--) {
-                    $items[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))] = 0;
+                    $items[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))] = 0;
                 }
                 foreach ($stats_items as $item) {
                     $items[$item['d_date']] = $item['num'];
                 }
                 $users       = array();
-                $stats_users = Stats::newInstance()->new_users_count(date(
+                $stats_users = Stats::getInstance()->new_users_count(date(
                     'Y-m-d H:i:s',
-                    mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                    mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                 ), 'day');
                 for ($k = 10; $k >= 0; $k--) {
-                    $users[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))] = 0;
+                    $users[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))] = 0;
                 }
                 foreach ($stats_users as $user) {
                     $users[$user['d_date']] = $user['num'];

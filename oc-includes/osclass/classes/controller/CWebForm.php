@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\forms\FieldValidator;
+use mindstellar\form\builder\FieldValidator;
 use mindstellar\model\FormSubmission;
 
 /**
@@ -67,7 +67,7 @@ class CWebForm extends BaseModel
             return true;
         }
 
-        return FieldGroup::newInstance()->categories((int)$form['pk_i_id']) === array();
+        return FieldGroup::getInstance()->categories((int)$form['pk_i_id']) === array();
     }
 
     /**
@@ -83,7 +83,7 @@ class CWebForm extends BaseModel
         $return = $this->safeReturnUrl();
 
         $formId = Params::getParamInt('osc_form_id');
-        $form   = $formId > 0 ? FieldGroup::newInstance()->findByPrimaryKey($formId) : array();
+        $form   = $formId > 0 ? FieldGroup::getInstance()->findByPrimaryKey($formId) : array();
         if (!$this->takesSubmissions($form)) {
             osc_add_flash_error_message(_m('That form is no longer available.'));
             $this->redirectTo($return);
@@ -162,7 +162,7 @@ class CWebForm extends BaseModel
         osc_run_hook('form_submit', $form, $result['values'], $contextType, $contextId);
 
         $userId = osc_is_web_user_logged_in() ? (int) osc_logged_user_id() : null;
-        $submissionId = FormSubmission::newInstance()->create(
+        $submissionId = (new FormSubmission())->create(
             $formId,
             $contextType,
             $contextId,

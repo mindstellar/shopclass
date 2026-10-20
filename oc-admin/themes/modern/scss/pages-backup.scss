@@ -231,14 +231,3 @@
     margin: 0;
   }
 }
-
-// A row with no label (the S3 note, the one-at-a-time note, the restore warning) lines up
-// with the controls above it rather than running under the label column.
-@media (min-width: 577px) {
-  #backup-form,
-  #backup-upload-form {
-    .form-row > .form-controls:first-child {
-      margin-inline-start: 170px;
-    }
-  }
-}

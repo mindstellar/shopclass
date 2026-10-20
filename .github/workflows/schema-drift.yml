@@ -72,6 +72,8 @@ jobs:
         with:
           php-version: '8.2'
           extensions: mysqli
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
 
       - name: Resolve baselines (one per distinct schema at or above the supported floor)
         id: baselines

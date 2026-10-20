@@ -10,6 +10,8 @@
 
 namespace mindstellar\cache;
 
+use mindstellar\utility\Utils;
+
 /**
  * Cached lookups grouped by a generation number. Every key in a group carries the group's
  * generation, so bumping it drops the whole group at once, however many keys it holds.
@@ -17,6 +19,21 @@ namespace mindstellar\cache;
  */
 final class CacheGroup
 {
+    /** Groups most pages read; with a driver that reads many keys at once they come in one round trip. */
+    private const COMMON = array('preference', 'locale', 'category', 'currency', 'widget', 'page', 'search');
+
+    /** 30 days, the longest relative expiry memcached accepts. */
+    private const GENERATION_TTL = 2592000;
+
+    /** Seconds a web worker keeps its own copy of a group value; see localCopies(). */
+    private const LOCAL_TTL = 15;
+
+    /** @var array<string,int> generations read in this request; a page asks for the same one dozens of times */
+    private static array $generations = array();
+
+    /** Whether localCopies() is on, decided on first use. */
+    private static ?bool $local = null;
+
     /**
      * The group's current generation, the same on every site locale.
      *
@@ -26,10 +43,46 @@ final class CacheGroup
      */
     public static function generation(string $group): int
     {
-        $found = null;
-        $gen   = \Object_Cache_Factory::newInstance()->get('osc_' . $group . '_cache_gen', $found);
+        if (!isset(self::$generations[$group])) {
+            $cache = CacheManager::getInstance();
+            $read  = true;
+            if (method_exists($cache, 'getMany')) {
+                $groups = array_diff(array_unique(array_merge(self::COMMON, array($group))), array_keys(self::$generations));
+                $keys   = array_combine(array_map(static fn (string $name): string => self::key($name), $groups), $groups);
+                foreach ($cache->getMany(array_keys($keys)) as $key => $gen) {
+                    if (is_numeric($gen)) {
+                        self::$generations[$keys[$key]] = (int)$gen;
+                    }
+                }
+                $read = false;
+            }
+            self::$generations[$group] ??= self::load($cache, $group, $read);
+        }
 
-        return is_numeric($gen) ? (int)$gen : 0;
+        return self::$generations[$group];
+    }
+
+    /**
+     * Read every generation from the cache again. A process that outlives a request, such as
+     * the job worker, calls it before each job so it sees what other processes dropped.
+     */
+    public static function forgetGenerations(): void
+    {
+        self::$generations = array();
+    }
+
+    /**
+     * Drop the group after a write. Inside a transaction it is dropped again once the write
+     * commits, so a request that reads between the two cannot keep the old rows.
+     */
+    public static function changed(string $group): void
+    {
+        self::invalidate($group);
+        if (\mindstellar\database\Db::inTransaction()) {
+            \mindstellar\database\Db::afterCommit(static function () use ($group): void {
+                self::invalidate($group);
+            });
+        }
     }
 
     /**
@@ -41,35 +94,113 @@ final class CacheGroup
      */
     public static function invalidate(string $group): int
     {
-        $gen = self::generation($group) + 1;
-        \Object_Cache_Factory::newInstance()->set('osc_' . $group . '_cache_gen', $gen, 0);
+        $old = self::$generations[$group] ?? 0;
+        unset(self::$generations[$group]);
+        $cache = CacheManager::getInstance();
+        if (method_exists($cache, 'increment')) {
+            // Atomic, so two drops at once both count; a missing key starts from the clock as in load().
+            $gen = (int)$cache->increment(self::key($group), 1, self::fresh(), self::GENERATION_TTL);
+        } else {
+            $gen = self::generation($group) + 1;
+            $cache->set(self::key($group), $gen, self::GENERATION_TTL);
+        }
+        if ($gen <= $old) {
+            // The store lost the key (a flush or eviction) and the clock restart landed on the old value.
+            $gen = $old + 1;
+            $cache->set(self::key($group), $gen, self::GENERATION_TTL);
+        }
+        self::$generations[$group] = $gen;
 
         return $gen;
     }
 
     /**
-     * The cached value, or what $load returns, stored for OSC_CACHE_TTL seconds. A null
-     * from $load (a failed query) is returned but not stored.
+     * The stored generation, or a new one stored when there is none. A new one starts from the
+     * clock, not 0, so entries kept from before the key expired or was evicted stay unreachable.
+     */
+    private static function load(CacheDriver $cache, string $group, bool $read): int
+    {
+        $key   = self::key($group);
+        $found = false;
+        $gen   = $read ? $cache->get($key, $found) : null;
+        $start = self::fresh();
+        if (!$found) {
+            if ($cache->add($key, $start, self::GENERATION_TTL)) {
+                return $start;
+            }
+            // Another request created it first, or the store is down.
+            $gen = $cache->get($key, $found);
+        }
+        if ($found && is_numeric($gen)) {
+            return (int)$gen;
+        }
+        if ($found) {
+            $cache->set($key, $start, self::GENERATION_TTL);
+        }
+
+        return $start;
+    }
+
+    /**
+     * Whether a web worker keeps its own copy of a shared cache's group values in APCu, which
+     * the site turns on with OSC_CACHE_LOCAL. A key carries its group's generation, so a
+     * dropped group is never read from a copy.
+     */
+    private static function localCopies(CacheDriver $cache): bool
+    {
+        return self::$local ??= defined('OSC_CACHE_LOCAL') && OSC_CACHE_LOCAL
+            && Utils::isWebRequest()
+            && function_exists('apcu_fetch')
+            && apcu_enabled()
+            && in_array($cache->_get_cache(), array('redis', 'memcached'), true);
+    }
+
+    private static function key(string $group): string
+    {
+        return \mindstellar\base\Cache::SHARED . 'osc_' . $group . '_cache_gen';
+    }
+
+    /** Milliseconds now: above any generation counted up from an older start. */
+    private static function fresh(): int
+    {
+        return (int)floor(microtime(true) * 1000);
+    }
+
+    /**
+     * The cached value, or what $load returns, stored for $ttl seconds (OSC_CACHE_TTL when
+     * null). A null from $load (a failed query) is returned but not stored.
      *
      * @param string   $group
      * @param string   $key   unique within the group
      * @param callable $load
+     * @param int|null $ttl
      *
      * @return mixed
      */
-    public static function remember(string $group, string $key, callable $load)
+    public static function remember(string $group, string $key, callable $load, ?int $ttl = null)
     {
-        $cache = \Object_Cache_Factory::newInstance();
+        $cache = CacheManager::getInstance();
         $base  = defined('WEB_PATH') ? WEB_PATH : '';
         $full  = 'osc_' . $group . ':' . md5($base . '|' . self::generation($group) . '|' . $key);
+        $ttl ??= defined('OSC_CACHE_TTL') ? OSC_CACHE_TTL : 60;
+        $local = self::localCopies($cache);
+        if ($local) {
+            $value = apcu_fetch($full, $found);
+            if ($found) {
+                return $value;
+            }
+        }
         $found = null;
         $value = $cache->get($full, $found);
-        if ($found) {
-            return $value;
+        if (!$found) {
+            $value = $load();
+            if ($value === null) {
+                return null;
+            }
+            $cache->set($full, $value, $ttl);
         }
-        $value = $load();
-        if ($value !== null) {
-            $cache->set($full, $value, defined('OSC_CACHE_TTL') ? OSC_CACHE_TTL : 60);
+        if ($local) {
+            apcu_store($full, $value, $ttl > 0 ? min($ttl, self::LOCAL_TTL) : self::LOCAL_TTL);
         }
 
         return $value;

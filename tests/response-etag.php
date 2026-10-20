@@ -30,7 +30,8 @@
  */
 
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/Csrf.php';
+require_once __DIR__ . '/../oc-includes/osclass/classes/base/SharedInstance.php';
+require_once __DIR__ . '/../oc-includes/osclass/classes/security/Csrf.php';
 require_once __DIR__ . '/lib/harness.php';
 
 $GLOBALS['okCount']    = 0;
@@ -65,18 +66,35 @@ check(
     osc_response_etag_value($page) !== osc_response_etag_value($page . '<!-- 12 ms -->')
 );
 
+harness_section('If-None-Match is read as a list, weak tags included');
+
+$tag = osc_response_etag_value($page);
+check('the exact tag matches', osc_etag_matches($tag, $tag));
+check('a tag weakened by gzip or a CDN matches', osc_etag_matches('W/' . $tag, $tag));
+check('a tag anywhere in a list matches', osc_etag_matches('"other", W/' . $tag . ' , "third"', $tag));
+check('* matches', osc_etag_matches(' * ', $tag));
+check('another tag does not', !osc_etag_matches('"other", W/"x"', $tag));
+check('an empty header does not', !osc_etag_matches('', $tag));
+check('the tag without its quotes does not', !osc_etag_matches(trim($tag, '"'), $tag));
+pin('tags come back quoted, W/ removed', array('"a"', '"b"'), osc_etag_tags('"a", W/"b",'));
+$source = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php');
+check(
+    'the page 304 goes through the same matcher',
+    preg_match('/osc_etag_matches\(\(string\)Params::getServerParam\(\'HTTP_IF_NONE_MATCH\'/', $source) === 1
+);
+
 harness_section('Server-Timing reports the build time without touching the page');
 
 pin('milliseconds with one decimal', 'app;dur=84.2;desc="Page build"', osc_server_timing_value(100.0, 100.0842));
 pin('a clock that went backwards reads zero', 'app;dur=0.0;desc="Page build"', osc_server_timing_value(100.0, 99.0));
 pin('the body passes through unchanged', '<html><body>hello</body></html>', osc_response_server_timing('<html><body>hello</body></html>'));
-check('HTML is HTML', \mindstellar\Csrf::isHtmlResponse('<html></html>', array('Content-Type: text/html; charset=UTF-8')));
-check('JSON is not', !\mindstellar\Csrf::isHtmlResponse('{"a":1}', array('Content-Type: application/json')));
-check('undeclared JSON is not', !\mindstellar\Csrf::isHtmlResponse('{"a":1}', array()));
+check('HTML is HTML', \mindstellar\security\Csrf::isHtmlResponse('<html></html>', array('Content-Type: text/html; charset=UTF-8')));
+check('JSON is not', !\mindstellar\security\Csrf::isHtmlResponse('{"a":1}', array('Content-Type: application/json')));
+check('undeclared JSON is not', !\mindstellar\security\Csrf::isHtmlResponse('{"a":1}', array()));
 
 harness_section('the token stamp is bucketed, which is what makes a render repeatable');
 
-$ref    = new ReflectionClass('mindstellar\\Csrf');
+$ref    = new ReflectionClass('mindstellar\\security\\Csrf');
 $bucket = $ref->getConstant('ISSUE_BUCKET');
 $life   = $ref->getConstant('TOKEN_LIFETIME');
 $skew   = $ref->getConstant('CLOCK_SKEW');

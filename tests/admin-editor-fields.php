@@ -114,9 +114,14 @@ $GLOBALS['fixturePage'] = array(
 /** The category tree, as much of it as the listing view reads. */
 class Category
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function toRootTree($id = null)
@@ -149,9 +154,14 @@ class Category
 /** Only the site currency is read, by the price block. */
 class Preference
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function get($key, $section = 'osclass')
@@ -368,7 +378,7 @@ require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
  */
 function render_screen(string $screen): string
 {
-    $view = View::newInstance();
+    $view = View::getInstance();
 
     if ($screen === 'item-add' || $screen === 'item-edit') {
         $isNew = ($screen === 'item-add');

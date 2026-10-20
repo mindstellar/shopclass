@@ -1,0 +1,124 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace mindstellar\api\auth;
+
+use mindstellar\api\Problem;
+use mindstellar\api\ProblemException;
+use mindstellar\api\Request;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\KeyCheck;
+
+/**
+ * Turns a request's token into a Credential: an API key (`sck_`, `scp_`) or a user's access token
+ * (`sca_`), from an `Authorization: Bearer` header or `?api_key=` on a public-key GET. With no
+ * token, a page token asks for the same-site session mode; a cookie alone never authenticates.
+ */
+final class Authenticator
+{
+    /** @var (\Closure(int, string): bool)|null */
+    private ?\Closure $banned;
+
+    public function __construct(
+        private ApiKeys $keys,
+        private FailureCounter $failures,
+        private AccessTokens $tokens,
+        private ?PageTokenAuth $session = null,
+        ?callable $banned = null
+    ) {
+        $this->banned = $banned === null ? null : \Closure::fromCallable($banned);
+    }
+
+    /**
+     * The token a request carries, or '' when it carries none. Another scheme in the header
+     * (Basic auth on a staging site, say) is not a token.
+     */
+    public static function token(Request $request): string
+    {
+        if (preg_match('/^Bearer\s+(\S+)$/iD', $request->authorization(), $m) === 1) {
+            return $m[1];
+        }
+        $key = $request->query()['api_key'] ?? null;
+        if ($request->isRead() && is_string($key) && str_starts_with($key, ApiKeys::PUBLIC_PREFIX)) {
+            return $key;
+        }
+
+        return '';
+    }
+
+    /**
+     * Whether `?api_key=` carries something token() would not take: any key on a write, or a
+     * key that is not public.
+     */
+    private static function queryKeyRefused(Request $request): bool
+    {
+        $key = $request->query()['api_key'] ?? null;
+
+        return $key !== null && $key !== '' && self::token($request) === '';
+    }
+
+    /**
+     * @return Credential|null null when the request carries no token and no page token
+     * @throws ProblemException 429 when this key is shut out from this address or a token fails from
+     *                    an address that failed too often, 401 for a refused token, 403 for a
+     *                    banned user, 401 or 403 for a refused session call
+     */
+    public function authenticate(Request $request): ?Credential
+    {
+        $token = self::token($request);
+        if ($token === '' && self::queryKeyRefused($request)) {
+            // A secret in the URL ends up in logs; only a public key on a read may sit there.
+            throw ProblemException::from(Problem::unauthorized(true));
+        }
+        if ($token === '') {
+            return $this->session?->authenticate($request);
+        }
+        $tokenId = ApiKeys::tokenId($token);
+        if ($this->failures->keyBlocked($request->ip(), $tokenId)) {
+            throw self::tooManyFailures();
+        }
+
+        $check = match (true) {
+            ApiKeys::looksLikeKey($token) => $this->keys->check($token, $request->ip()),
+            AccessTokens::looksLikeToken($token) => $this->tokens->check($token),
+            default => KeyCheck::refused(false),
+        };
+        $credential = $check->credential();
+        if ($credential === null && $check->genuine()) {
+            // Signed by this site, so not a guess: not counted.
+            throw ProblemException::from($check->expired()
+                ? Problem::make('token_expired', 'The access token has expired. Get a new one with the refresh token.')
+                    ->withHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token expired"')
+                : Problem::unauthorized(true));
+        }
+        if ($credential === null) {
+            $this->failures->record($request->ip(), $tokenId, $check->known());
+
+            throw $this->failures->addressBlocked($request->ip()) ? self::tooManyFailures() : ProblemException::from(Problem::unauthorized(true));
+        }
+        $userId = $credential->userId();
+        if ($userId !== null && $this->banned !== null && ($this->banned)($userId, $request->ip())) {
+            throw ProblemException::of('banned', 'This account or address may not use the API.');
+        }
+
+        return $credential;
+    }
+
+    private static function tooManyFailures(): ProblemException
+    {
+        return ProblemException::from(
+            Problem::make('too_many_failures', 'Too many failed attempts from this address. Try again later.')
+                ->withHeader('Retry-After', (string) FailureCounter::WINDOW)
+        );
+    }
+}

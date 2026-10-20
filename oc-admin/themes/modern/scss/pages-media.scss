@@ -192,3 +192,94 @@
   }
 }
 
+
+// ---- Library summary, search and the size list ------------------------------
+.media-summary {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+  margin-block: -.5rem 1rem;
+}
+
+.media-search .form-control {
+  min-width: 14rem;
+}
+
+.media-preview-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.25rem;
+  list-style: none;
+  margin: .75rem 0 0;
+  padding: 0;
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+}
+
+// ---- Grid view: the same table rows drawn as thumbnail cards ----------------
+#media-library #datatablesForm .table.media-grid {
+  border: 0;
+
+  thead {
+    display: none;
+  }
+
+  tbody {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  }
+
+  // The picture, its owner and the actions take a full line each; type, size and date share one.
+  tbody tr {
+    align-content: flex-start;
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: $border-radius;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .2rem .6rem;
+    padding: .5rem;
+    position: relative;
+  }
+
+  .media-col-preview,
+  .col-bulkactions + td + td,
+  .media-row-actions {
+    flex-basis: 100%;
+  }
+
+  td {
+    background: none;
+    border: 0;
+    display: block;
+    font-size: $font-size-label;
+    padding: 0;
+  }
+
+  .col-bulkactions {
+    inset-block-start: .9rem;
+    inset-inline-start: .9rem;
+    position: absolute;
+    z-index: 1;
+  }
+
+  .media-col-preview {
+    width: auto;
+  }
+
+  // Fills the card; the list view's thumbnail is a fixed 48px square.
+  .media-col-preview .media-thumb {
+    aspect-ratio: 4 / 3;
+    display: block;
+    height: auto;
+    width: 100%;
+  }
+
+  td:not(.media-col-preview, .col-bulkactions, .media-row-actions) {
+    color: var(--osc-ink-muted);
+  }
+
+  .media-row-actions {
+    margin-block-start: auto;
+  }
+}

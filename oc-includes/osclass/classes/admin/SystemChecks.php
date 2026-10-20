@@ -13,6 +13,8 @@ namespace mindstellar\admin;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupStore;
 use mindstellar\database\StrictModeReadiness;
+use mindstellar\routing\ServerRules;
+use mindstellar\utility\Formatting;
 
 /**
  * The checks behind Tools > System info. Each tab gets the issues to act on and the
@@ -45,7 +47,7 @@ final class SystemChecks
     public const JOBS_OVERDUE = 3600;
 
     /** The object-cache drivers Shopclass ships, in the order the Cache tab lists them. */
-    public const CACHE_DRIVERS = array('apcu', 'memcached', 'memcache');
+    public const CACHE_DRIVERS = array('apcu', 'memcached', 'redis');
 
     private const RANK = array('danger' => 0, 'warning' => 1, 'info' => 2);
 
@@ -404,6 +406,19 @@ final class SystemChecks
         if (is_numeric($disk) && $disk > 0 && $disk < self::DISK_FLOOR) {
             $issues[] = self::issue('disk_low', 'warning', sprintf(__('Only %s of disk space is left. Uploads and backups fail when it runs out.'), self::size((int) $disk)));
         }
+        if (($env['htaccess_auth'] ?? null) === false) {
+            $issues[] = self::issue('htaccess_no_authorization', 'warning', sprintf(
+                __('The .htaccess file does not pass the Authorization header to PHP, so the API cannot see keys sent in it. Add this line after "RewriteEngine On": %s'),
+                ServerRules::AUTHORIZATION
+            ));
+        }
+        $reserved = array_merge((array) ($env['reserved_slugs']['pages'] ?? array()), (array) ($env['reserved_slugs']['categories'] ?? array()));
+        if ($reserved !== array()) {
+            $issues[] = self::issue('api_slug_taken', 'warning', sprintf(
+                __('/api/ belongs to the site\'s API, so these static pages or categories cannot be reached. Give them another slug: %s'),
+                implode(', ', $reserved)
+            ));
+        }
         $maintenance = (string) ($env['maintenance'] ?? '');
         if ($maintenance !== '') {
             $issues[] = self::issue(
@@ -646,6 +661,19 @@ final class SystemChecks
     }
 
     /**
+     * The name of the system user with this id; '#id' when it has none, '' with no id.
+     */
+    public static function userName(?int $uid): string
+    {
+        if ($uid === null) {
+            return '';
+        }
+        $info = function_exists('posix_getpwuid') ? @posix_getpwuid($uid) : false;
+
+        return is_array($info) ? (string) $info['name'] : '#' . $uid;
+    }
+
+    /**
      * A PHP ini size ("128M") in bytes. -1 (no limit) stays -1.
      *
      * @param string $value
@@ -654,24 +682,7 @@ final class SystemChecks
      */
     public static function iniBytes(string $value): int
     {
-        $value = trim($value);
-        if ($value === '') {
-            return 0;
-        }
-        if ((int) $value === -1) {
-            return -1;
-        }
-        $number = (int) $value;
-        switch (strtolower(substr($value, -1))) {
-            case 'g':
-                return $number * 1024 * 1024 * 1024;
-            case 'm':
-                return $number * 1024 * 1024;
-            case 'k':
-                return $number * 1024;
-            default:
-                return $number;
-        }
+        return \mindstellar\utility\Formatting::iniBytes($value);
     }
 
     /**
@@ -714,7 +725,7 @@ final class SystemChecks
         if (is_array($size)) {
             $rows[] = array(
                 'label' => __('Size'),
-                'value' => sprintf(_n('%d table', '%d tables', (int) $size['tables']), (int) $size['tables']) . ' · ' . DatabaseTools::bytes((int) $size['bytes']),
+                'value' => sprintf(_n('%d table', '%d tables', (int) $size['tables']), (int) $size['tables']) . ' · ' . Formatting::bytes((int) $size['bytes']),
             );
         }
         $rows[] = array('label' => __('Table prefix'), 'value' => (string) ($env['prefix'] ?? ''), 'mono' => true);
@@ -912,7 +923,7 @@ final class SystemChecks
             array('label' => __('Preferences'), 'value' => sprintf(
                 __('%1$d entries, %2$s'),
                 (int) ($env['prefs_count'] ?? 0),
-                DatabaseTools::bytes((int) ($env['prefs_bytes'] ?? 0))
+                Formatting::bytes((int) ($env['prefs_bytes'] ?? 0))
             )),
         );
 
@@ -986,6 +997,7 @@ final class SystemChecks
             array('label' => __('Visitor addresses'), 'value' => !empty($proxy)
                 ? sprintf(__('all seen as %s (behind a proxy)'), (string) ($proxy['proxy'] ?? ''))
                 : __('as reported')),
+            self::adminIpRow($env['admin_ip_allow'] ?? null, !empty($proxy)),
             array('label' => __('Backups folder'), 'value' => BackupStore::FOLDER . ' · ' . ($probe === true
                 ? __('reachable from the web')
                 : ($probe === false ? __('not reachable from the web') : __('not checked yet')))),
@@ -1006,6 +1018,30 @@ final class SystemChecks
             array('title' => __('Admins'), 'rows' => $admins),
             array('title' => __('Site'), 'rows' => $site),
         );
+    }
+
+    /**
+     * The admin address allow list row: off, or how many entries it has. Behind a proxy it
+     * warns that the list sees the proxy's address.
+     *
+     * @param mixed $count good entries in OSC_ADMIN_IP_ALLOW, or null when it is off
+     *
+     * @return array<string,string>
+     */
+    private static function adminIpRow($count, bool $proxy): array
+    {
+        if ($count === null) {
+            return array('label' => __('Admin panel addresses'), 'value' => __('any address'));
+        }
+        $row = array('label' => __('Admin panel addresses'), 'value' => sprintf(
+            _n('%d listed address or range, and this server', '%d listed addresses or ranges, and this server', (int) $count),
+            (int) $count
+        ));
+        if ($proxy) {
+            $row['note'] = __('The allow list checks the proxy\'s address, not the visitor\'s.');
+        }
+
+        return $row;
     }
 
     /**
@@ -1062,9 +1098,9 @@ final class SystemChecks
         $hits   = $stats['hits'] ?? null;
         $misses = $stats['misses'] ?? null;
         $total  = (int) $hits + (int) $misses;
-        $memory = isset($stats['memory_used']) ? DatabaseTools::bytes((int) $stats['memory_used']) : null;
+        $memory = isset($stats['memory_used']) ? Formatting::bytes((int) $stats['memory_used']) : null;
         if ($memory !== null && isset($stats['memory_total'])) {
-            $memory = sprintf(__('%1$s of %2$s'), $memory, DatabaseTools::bytes((int) $stats['memory_total']));
+            $memory = sprintf(__('%1$s of %2$s'), $memory, Formatting::bytes((int) $stats['memory_total']));
         }
         $cells = array(
             __('Hit rate')  => $hits !== null && $misses !== null && $total > 0
@@ -1099,7 +1135,8 @@ final class SystemChecks
             'default'   => __('In-request only (default)'),
             'apcu'      => 'APCu',
             'memcached' => 'Memcached',
-            'memcache'  => 'Memcache',
+            'redis'     => 'Redis / Valkey',
+            'memcache'  => 'Memcached',
         );
 
         return $names[$driver] ?? $driver;
@@ -1112,7 +1149,7 @@ final class SystemChecks
      */
     private static function spamSettingsUrl(array $env): string
     {
-        return (string) ($env['admin_url'] ?? '') . '?page=settings&action=spamNbots#login-throttle-settings';
+        return (string) ($env['admin_url'] ?? '') . '?page=settings&action=spamNbots&tab=signin';
     }
 
     /**
@@ -1209,7 +1246,7 @@ final class SystemChecks
             return __('unlimited');
         }
 
-        return $bytes > 0 ? DatabaseTools::bytes($bytes) : '—';
+        return $bytes > 0 ? Formatting::bytes($bytes) : '—';
     }
 
     /**
@@ -1222,14 +1259,6 @@ final class SystemChecks
         return (int) ($env['now'] ?? time());
     }
 
-    /**
-     * @param string              $id
-     * @param string              $tone
-     * @param string              $text
-     * @param array<string,mixed> $action
-     *
-     * @return array<string,mixed>
-     */
     private static function folderName(string $key): string
     {
         $names = array(
@@ -1243,6 +1272,14 @@ final class SystemChecks
         return $names[$key] ?? $key;
     }
 
+    /**
+     * @param string              $id
+     * @param string              $tone
+     * @param string              $text
+     * @param array<string,mixed> $action
+     *
+     * @return array<string,mixed>
+     */
     private static function issue(string $id, string $tone, string $text, array $action = array()): array
     {
         return array('id' => $id, 'tone' => $tone, 'text' => $text, 'action' => $action === array() ? null : $action);

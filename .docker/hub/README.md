@@ -65,7 +65,10 @@ With no `OSC_ADMIN_PASSWORD`, a strong admin password is made and printed in the
 | `OSC_ADMIN_USER`, `OSC_ADMIN_EMAIL`, `OSC_ADMIN_PASSWORD` | The first admin account |
 | `OSC_TLS_DOMAIN`, `OSC_TLS_REDIRECT_FROM` | Serve HTTPS with a free Let's Encrypt certificate. Publish ports 80 and 443 and keep `/var/lib/shopclass-tls` on a volume |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages |
+| `OSC_FPM_MAX_CHILDREN` | How many pages PHP builds at once; by default three per CPU, at least 5 |
+| `OSC_DB_PERSISTENT` | Set to `1` to keep each PHP worker's database connection between pages |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | Outgoing mail |
+| `SMTP_FROM`, `SMTP_STARTTLS` | The sender address (`Name <a@b.c>` is read as `a@b.c`; set the name in **Settings → Mail**) and `on`/`off` for STARTTLS, off by default on port 465 |
 
 Every setting is in the [Docker guide](https://mindstellar.com/docs/deploy/docker/).
 

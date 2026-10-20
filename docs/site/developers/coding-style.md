@@ -30,11 +30,23 @@ or functions newer than that, even if your local PHP is happy with it:
 ```bash
 composer lint:install    # once
 composer compat
-composer lint            # cs:check + compat together
+composer lint            # cs:check + compat + analyse together
 ```
 
 Composer's `config.platform` is pinned to 8.0.0, so a dependency requiring more
 is refused at resolution rather than at runtime on somebody's shared host.
+
+## Static analysis
+
+PHPStan (level 5) checks `oc-includes/osclass` and `oc-admin`. It comes with the
+`composer lint:install` linters:
+
+```bash
+composer analyse
+```
+
+There is no baseline: the whole tree is clean, and CI keeps it so. When PHPStan is wrong about a
+line, put `// @phpstan-ignore <identifier> (reason)` above it.
 
 ## Editor setup
 

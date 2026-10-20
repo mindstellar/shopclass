@@ -11,6 +11,7 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\currency\Money;
 use RuntimeException;
 use Throwable;
 use User;
@@ -118,9 +119,9 @@ final class Receipts
      */
     public static function send(int $orderId): bool
     {
-        $order = Orders::find($orderId);
+        $order = OrderStore::find($orderId);
         if ($order === null || $order->getStatus() !== Order::STATUS_PAID
-            || $order->meta(Orders::RECEIPT_SENT) !== null
+            || $order->meta(OrderStore::RECEIPT_SENT) !== null
         ) {
             return true;
         }
@@ -141,7 +142,7 @@ final class Receipts
 
         $sent = self::$mailer !== null ? (bool) (self::$mailer)($params) : (bool) osc_sendMail($params);
         if ($sent) {
-            Orders::markReceiptSent($orderId);
+            OrderStore::markReceiptSent($orderId);
         }
 
         return $sent;
@@ -220,21 +221,6 @@ final class Receipts
     }
 
     /**
-     * Money the way the account pages show it: two decimals in the site's locale and the
-     * currency code.
-     *
-     * @param int    $micros
-     * @param string $currency
-     *
-     * @return string
-     */
-    public static function money(int $micros, string $currency): string
-    {
-        return number_format($micros / 1000000, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
-               . ' ' . strtoupper($currency);
-    }
-
-    /**
      * Everything a receipt shows, as plain text. Escaping is the caller's.
      *
      * @param Order $order
@@ -243,7 +229,7 @@ final class Receipts
      */
     public static function vars(Order $order): array
     {
-        $user = User::newInstance()->findByPrimaryKey($order->getUserId());
+        $user = User::getInstance()->findByPrimaryKey($order->getUserId());
         $user = is_array($user) ? $user : array();
         $paid = $order->getPaidDate() ?? $order->getDate();
 
@@ -252,7 +238,7 @@ final class Receipts
             'number'   => $order->getId(),
             'date'     => osc_format_date($paid),
             'credits'  => sprintf(__('%s credits'), number_format($order->getCredits())),
-            'amount'   => self::money($order->getAmount(), $order->getCurrency()),
+            'amount'   => Money::format($order->getAmount(), $order->getCurrency()),
             'method'   => osc_billing_gateway_name($order->getGateway()),
             'ref'      => (string) $order->getExternalRef(),
             'email'    => (string) ($user['s_email'] ?? ''),

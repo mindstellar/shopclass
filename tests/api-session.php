@@ -1,0 +1,468 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * The same-site session mode: the page token guard, origin check, scopes and no CORS grant.
+ * Usage: php tests/api-session.php
+ */
+
+define('OSC_CSRF_SECRET', 'api-session-test-secret');
+define('WEB_PATH', 'https://shop.example.test/sub/');
+
+require_once __DIR__ . '/lib/api-boot.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
+require_once __DIR__ . '/lib/test-clock.php';
+
+use mindstellar\api\ApiCall;
+use mindstellar\api\auth\MemoisedRows;
+use mindstellar\api\auth\PageTokenAuth;
+use mindstellar\api\controller\AuthController;
+use mindstellar\api\http\Cors;
+use mindstellar\api\http\SiteOrigin;
+use mindstellar\api\identity\SignInCookie;
+use mindstellar\api\identity\WebIdentity;
+use mindstellar\api\Kernel;
+use mindstellar\api\ratelimit\RatePolicy;
+use mindstellar\api\Request;
+use mindstellar\api\Response;
+use mindstellar\api\RouteSpec;
+use mindstellar\api\routing\Router;
+use mindstellar\api\schema\Validator;
+use mindstellar\apikey\ApiKeys;
+use mindstellar\apikey\ApiSettings;
+use mindstellar\apikey\Credential;
+use mindstellar\apikey\CredentialKind;
+use mindstellar\apikey\CredentialStore;
+use mindstellar\apikey\PageTokens;
+use mindstellar\apikey\Scopes;
+use mindstellar\apikey\StoredKey;
+use mindstellar\security\RememberMe;
+use mindstellar\utility\SystemClock;
+
+/** No stored keys at all. */
+final class NoKeys implements CredentialStore
+{
+    public function findByTokenId(string $tokenId): ?StoredKey
+    {
+        return null;
+    }
+
+    public function find(int $id): ?StoredKey
+    {
+        return null;
+    }
+
+    public function insert(StoredKey $key): int
+    {
+        return 0;
+    }
+
+    public function touch(int $id, string $ip, int $time): void
+    {
+    }
+
+    public function revoke(int $id): bool
+    {
+        return false;
+    }
+}
+
+$user  = static fn (int $id, string $email, int $enabled = 1, int $active = 1): array => [
+    'pk_i_id' => (string) $id, 's_name' => 'User ' . $id, 's_email' => $email, 's_password' => '$2y$12$hash' . $id,
+    's_phone_mobile' => '', 's_phone_land' => '', 'b_enabled' => (string) $enabled, 'b_active' => (string) $active,
+];
+$rows = [
+    10 => $user(10, 'uma@x.test'),
+    11 => $user(11, 'otto@x.test'),
+    12 => $user(12, 'sue@x.test', 0),
+    13 => $user(13, 'banned@x.test'),
+];
+$accounts = static function () use (&$rows) {
+    return api_test_users($rows);
+};
+
+$scopes  = new Scopes(['ext:acme:offers:write' => ['description' => 'Make offers.', 'audience' => 'user']]);
+$tokens  = new PageTokens();
+$cookie  = static fn (int $id): SignInCookie => new SignInCookie((string) $id, RememberMe::issue('web', $id, $rows[$id]['s_password'], 3600));
+$page    = static fn (int $id): string => $tokens->issue($rows[$id])->token();
+$site    = 'https://shop.example.test';
+$session = static fn (array $headers = [], ?SignInCookie $signIn = null, string $method = 'GET', string $path = 'v1/me', array $query = [], string $body = ''): Request
+    => new Request($method, $path, $query, $headers, '192.0.2.10', $body, signIn: $signIn);
+
+$calls  = 0;
+$routes = [
+    'GET me'       => ['handler' => static fn (ApiCall $call): Response => Response::ok([
+        'user' => osc_logged_user_id(), 'kind' => $call->credential()->kind(), 'scopes' => $call->credential()->scopes(),
+    ]), 'auth' => 'public', 'scope' => 'listings:read'],
+    'POST notes'   => ['handler' => static function (ApiCall $call) use (&$calls): Response {
+        $calls++;
+
+        return Response::ok(['calls' => $calls, 'user' => $call->credential()->userId()], 201);
+    }, 'auth' => 'user', 'scope' => 'listings:write'],
+    'POST secret'  => ['handler' => static fn (): Response => Response::ok(['done' => true]), 'auth' => 'user', 'scope' => 'account:write'],
+    'GET admin/x'  => ['handler' => static fn (): Response => Response::ok(['admin' => true]), 'auth' => 'admin', 'scope' => 'admin:users'],
+    'GET admin/staff' => ['handler' => static fn (ApiCall $call): Response => Response::ok(['admin' => $call->credential()->adminId(), 'seen' => osc_logged_admin_id()]), 'auth' => 'admin'],
+    'GET open'     => ['handler' => static fn (): Response => Response::ok(['open' => true]), 'auth' => 'none'],
+    'GET auth/session' => [
+        'handler' => static fn (ApiCall $call): Response => (new AuthController(new \mindstellar\api\ApiServices(new ApiSettings(true), $scopes, new \mindstellar\model\ApiCredential(), $accounts(), new SystemClock(), api_test_limiter())))->pageToken($call),
+        'auth'    => 'user',
+        'scope'   => 'account:read',
+    ],
+];
+
+$kernelFor = static function (array $settings = [], ?PageTokens $with = null, ?callable $banned = null, ?callable $admin = null) use ($routes, $scopes, $tokens, $accounts): Kernel {
+    $users = $accounts();
+    $auth  = new PageTokenAuth(
+        $with ?? $tokens,
+        $users,
+        $scopes,
+        new SiteOrigin(WEB_PATH),
+        $banned ?? static fn (array $u, string $ip): bool => $u['s_email'] === 'banned@x.test',
+        $admin
+    );
+
+    return api_test_kernel(
+        new Router(new Validator(), $routes),
+        api_test_authenticator(new ApiKeys(new NoKeys(), $scopes, new SystemClock()), tokens: api_test_access_tokens($scopes, $users), session: $auth),
+        new ApiSettings(...($settings + ['enabled' => true])),
+        users: $users,
+        admins: new MemoisedRows(static fn (int $id): ?array => $admin !== null ? $admin() : null)
+    );
+};
+$kernel = $kernelFor();
+$same   = ['Origin' => $site];
+$ok     = static fn (int $id) => ['Origin' => $site, 'X-Shopclass-Token' => $page($id)];
+$code   = static fn (Response $r): array => [$r->status(), $r->body()['code'] ?? null];
+$reset  = static function (): void {
+    WebIdentity::forget();
+};
+
+harness_section('guard 1: the page token');
+$reset();
+$r = $kernel->handle($session($same, $cookie(10)));
+pin('the sign-in cookie alone is no credential', [401, 'unauthorized'], [$r->status(), $r->body()['code']]);
+$reset();
+$r = $kernel->handle($session($ok(10), $cookie(10)));
+pin('cookie plus a valid page token is that user', [200, 10, CredentialKind::SESSION], [$r->status(), $r->body()['data']['user'], $r->body()['data']['kind']]);
+$reset();
+$r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => $page(11)], $cookie(10)));
+pin('another user\'s page token is refused', [401, 'session_required'], $code($r));
+$reset();
+$r = $kernel->handle($session($ok(10)));
+pin('a page token with no sign-in cookie is refused', [401, 'session_required'], $code($r));
+$reset();
+$r = $kernel->handle($session($ok(10), new SignInCookie('10', 'forged.' . str_repeat('0', 64))));
+pin('a forged sign-in cookie is refused', [401, 'session_required'], $code($r));
+$reset();
+$r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => 'scs_garbage.sig'], $cookie(10)));
+pin('a forged page token is refused', [401, 'session_required'], $code($r));
+$reset();
+$r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => (new PageTokens(-10))->issue($rows[10])->token()], $cookie(10)));
+pin('an expired page token answers token_expired', [401, 'token_expired'], $code($r));
+$accessToken = (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['listings:read'], 'fam');
+$reset();
+$r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => substr_replace($accessToken, 'scs_', 0, 4)], $cookie(10)));
+pin('an access token\'s payload is not a page token', [401, 'session_required'], $code($r));
+
+$before = $page(10);
+$kept   = $rows[10]['s_password'];
+$rows[10]['s_password'] = '$2y$12$rehashed';
+pin('a new hash alone (a rehash) leaves the page token working', PageTokens::VALID, $tokens->check($before, $rows[10]));
+$rows[10]['s_password']   = $kept;
+$rows[10]['i_auth_stamp'] = 1;
+pin('a raised sign-out stamp (a password change, or signing out everywhere) ends the page token', PageTokens::REFUSED, $tokens->check($before, $rows[10]));
+$reset();
+$r = $kernelFor()->handle($session(['Origin' => $site, 'X-Shopclass-Token' => $before], $cookie(10)));
+pin('a call with a page token from before the stamp rise is 401 session_required', [401, 'session_required'], $code($r));
+unset($rows[10]['i_auth_stamp']);
+$twin                = $rows[10];
+$twin['pk_i_id']     = '11';
+pin('a token names its user, not only a stamp fingerprint', PageTokens::REFUSED, $tokens->check($before, $twin));
+pin('the token checks the right user and password', [PageTokens::VALID, PageTokens::REFUSED], [$tokens->check($before, $rows[10]), $tokens->check($before, $rows[11])]);
+
+$reset();
+$r = $kernel->handle($session(['Origin' => $site], $cookie(10), 'GET', 'v1/me', ['X-Shopclass-Token' => $page(10), 'token' => $page(10)]));
+pin('a page token in the query string is ignored', 401, $r->status());
+$reset();
+$r = $kernel->handle($session(['Origin' => $site, 'Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes', [], (string) json_encode(['X-Shopclass-Token' => $page(10), 'token' => $page(10)])));
+pin('a page token in the body is ignored', [401, 'unauthorized'], $code($r));
+$reset();
+$r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => $page(10), 'Authorization' => 'Bearer ' . $accessToken], $cookie(11)));
+pin('a Bearer token wins over a page token', [200, 10, CredentialKind::USER], [$r->status(), $r->body()['data']['user'], $r->body()['data']['kind']]);
+
+harness_section('guard 2: the site\'s own origin');
+$call = static function (array $headers, string $method = 'GET') use ($kernel, $session, $cookie, $page, $reset): array {
+    $reset();
+    $path = $method === 'GET' ? 'v1/me' : 'v1/notes';
+    $r    = $kernel->handle($session($headers + ['X-Shopclass-Token' => $page(10)], $cookie(10), $method, $path));
+
+    return [$r->status(), $r->body()['code'] ?? null];
+};
+pin('another site\'s Origin is refused', [403, 'cross_origin'], $call(['Origin' => 'https://evil.test']));
+pin('plain http when the site is https is refused', [403, 'cross_origin'], $call(['Origin' => 'http://shop.example.test']));
+pin('another port is refused', [403, 'cross_origin'], $call(['Origin' => 'https://shop.example.test:8443']));
+pin('a subdomain is refused', [403, 'cross_origin'], $call(['Origin' => 'https://evil.shop.example.test']));
+pin('an opaque origin is refused', [403, 'cross_origin'], $call(['Origin' => 'null']));
+pin('an Origin with a path is refused', [403, 'cross_origin'], $call(['Origin' => 'https://shop.example.test/sub']));
+pin('the site origin is accepted, whatever case and default port, for a site in a subdirectory', [200, null], $call(['Origin' => 'HTTPS://Shop.Example.Test:443']));
+pin('no Origin and Sec-Fetch-Site cross-site is refused', [403, 'cross_origin'], $call(['Sec-Fetch-Site' => 'cross-site']));
+pin('no Origin and Sec-Fetch-Site same-site is refused', [403, 'cross_origin'], $call(['Sec-Fetch-Site' => 'same-site']));
+pin('a same Origin with Sec-Fetch-Site cross-site is refused', [403, 'cross_origin'], $call(['Origin' => $site, 'Sec-Fetch-Site' => 'cross-site']));
+pin('no Origin and Sec-Fetch-Site same-origin is accepted', [200, null], $call(['Sec-Fetch-Site' => 'same-origin']));
+pin('a GET with only a Referer from the site is accepted', [200, null], $call(['Referer' => 'https://shop.example.test/sub/item/1']));
+pin('a GET with a Referer from another site is refused', [403, 'cross_origin'], $call(['Referer' => 'https://evil.test/page']));
+pin('a GET that shows nothing is refused', [403, 'cross_origin'], $call([]));
+pin('a write with only a Referer is refused', [403, 'cross_origin'], $call(['Referer' => 'https://shop.example.test/sub/'], 'POST'));
+pin('a write from the site is accepted', [201, null], $call(['Origin' => $site, 'Content-Type' => 'application/json'], 'POST'));
+pin('the site origin drops the subdirectory and default port', ['https://shop.example.test', 'http://a.test:8080', null], [
+    SiteOrigin::of('https://shop.example.test:443/sub/'), SiteOrigin::of('http://A.test:8080/x'), SiteOrigin::of('ftp://a.test'),
+]);
+check('a site with no usable base URL accepts nobody', !(new SiteOrigin(''))->matches($session(['Origin' => ''])));
+
+harness_section('guard 3: SameSite on the cookies this mode reads');
+$cookieSource  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Cookie.php');
+$sessionSource = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Session.php');
+check('the sign-in cookie container is SameSite=Lax and HttpOnly', str_contains($cookieSource, "'samesite' => 'Lax'") && str_contains($cookieSource, "'httponly' => true"));
+check('the PHP session cookie is SameSite=Lax too', substr_count($sessionSource, "'samesite' => 'Lax'") >= 1);
+$_COOKIE = [];
+$jar     = Cookie::getInstance();
+$jar->clear();
+$jar->push('oc_userId', '10');
+$jar->push('oc_userSecret', 'signed');
+$jar->push('oc_adminId', '1');
+$jar->push('oc_adminSecret', 'admin-signed');
+WebIdentity::forget();
+pin('forget() keeps only the user sign-in cookie aside', ['10', 'signed'], [WebIdentity::signInCookie()?->rawUserId(), WebIdentity::signInCookie()?->secret()]);
+pin('forget() drops every identity cookie from the request', [[], '', ''], [
+    array_values(array_intersect(array_keys($_COOKIE), WebIdentity::COOKIES)), $jar->get_value('oc_userId'), $jar->get_value('oc_adminId'),
+]);
+$jar->push('oc_adminId', '1');
+$jar->push('oc_adminSecret', 'admin-signed');
+WebIdentity::forget();
+pin('an admin cookie is never kept', null, WebIdentity::signInCookie());
+pin('a half cookie or a non-numeric id is no cookie', [null, null], [SignInCookie::from(['oc_userId' => '10']), SignInCookie::from(['oc_userId' => '1 OR 1', 'oc_userSecret' => 's'])]);
+
+harness_section('guard 4: user scopes, users who may sign in');
+$reset();
+$r = $kernel->handle($session($ok(10), $cookie(10)));
+$held = $r->body()['data']['scopes'];
+pin('a session holds the user scopes without account:write, plus plugin user scopes', [
+    'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:read', 'alerts:write', 'account:read', 'ext:acme:offers:write',
+], $held);
+$reset();
+$r = $kernel->handle($session($ok(10) + ['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/secret'));
+pin('an account:write route is refused', [403, 'insufficient_scope'], $code($r));
+$reset();
+$r = $kernel->handle($session($ok(10), $cookie(10), 'GET', 'v1/admin/x'));
+pin('an admin route is refused', [403, 'wrong_credential'], $code($r));
+$reset();
+$r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => 'scs_x'], null, 'GET', 'v1/admin/x'));
+pin('an admin web cookie gives nothing: no user cookie, no session', [401, 'session_required'], $code($r));
+$reset();
+$r = $kernel->handle($session($ok(12), $cookie(12)));
+pin('a suspended user is refused', [401, 'session_required'], $code($r));
+$rows[12]['b_enabled'] = '1';
+$rows[12]['b_active']  = '0';
+$reset();
+$r = $kernelFor()->handle($session($ok(12), $cookie(12)));
+pin('an unconfirmed user is refused', [401, 'session_required'], $code($r));
+$reset();
+$r = $kernel->handle($session($ok(13), $cookie(13)));
+pin('a banned user is refused', [403, 'banned'], $code($r));
+$reset();
+$r = $kernel->handle($session($ok(10) + ['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes'));
+pin('core actions run as the session user', [201, 10, 10], [$r->status(), $r->body()['data']['user'], osc_logged_user_id()]);
+$bucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor(
+    $session(),
+    new RouteSpec('GET', 'me', $routes['GET me']),
+    new Credential(CredentialKind::SESSION, [], 10)
+)[0];
+pin('a session counts in the user\'s bucket, shared with their tokens', ['api_user', '10'], [$bucket->name(), $bucket->key()]);
+$keyBucket = static fn (Credential $c): array => (static fn ($b): array => [$b->name(), $b->key()])((new RatePolicy(new ApiSettings(true)))->bucketsFor(
+    $session(),
+    new RouteSpec('GET', 'me', $routes['GET me']),
+    $c
+)[0]);
+pin('every personal key of a user counts in that user\'s bucket, not one bucket per key', [['api_user', '10'], ['api_user', '10']], [
+    $keyBucket(new Credential(CredentialKind::KEY, [], 10, null, 55)), $keyBucket(new Credential(CredentialKind::KEY, [], 10, null, 56)),
+]);
+pin('an admin key still counts per key', ['api_key', '57'], $keyBucket(new Credential(CredentialKind::KEY, [], null, 1, 57)));
+$writeBuckets = (new RatePolicy(new ApiSettings(true)))->bucketsFor(
+    $session($ok(10), $cookie(10), 'POST', 'v1/notes'),
+    new RouteSpec('GET', 'me', $routes['GET me']),
+    new Credential(CredentialKind::SESSION, [], 10)
+);
+pin('the request bucket may count in memory, the write bucket only in the database', [['api_user', false], ['api_write', true]], array_map(static fn ($b): array => [$b->name(), $b->exact()], $writeBuckets));
+
+harness_section('guest page tokens');
+$guest   = static fn (): string => $tokens->issueGuest()->token();
+$asGuest = static fn (array $headers = [], ?SignInCookie $signIn = null, string $method = 'GET', string $path = 'v1/me'): Request
+    => $session($headers + ['Origin' => $site, 'X-Shopclass-Token' => $guest()], $signIn, $method, $path);
+$reset();
+$r = $kernel->handle($asGuest());
+pin('a guest token reads public data as nobody', [200, 0, CredentialKind::GUEST, ['listings:read']], [$r->status(), $r->body()['data']['user'], $r->body()['data']['kind'], $r->body()['data']['scopes']]);
+check('a guest answer is not cached publicly', str_starts_with((string) $r->header('Cache-Control'), 'private'));
+$reset();
+pin('a guest token cannot write', [403, 'wrong_credential'], $code($kernel->handle($asGuest(['Content-Type' => 'application/json'], null, 'POST', 'v1/notes'))));
+$reset();
+pin('nor call an admin route', [403, 'wrong_credential'], $code($kernel->handle($asGuest([], null, 'GET', 'v1/admin/x'))));
+$reset();
+pin('nor a user route, even with a valid sign-in cookie', [403, 'wrong_credential'], $code($kernel->handle($asGuest(['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes'))));
+$reset();
+pin('a guest token from another site is refused', [403, 'cross_origin'], $code($kernel->handle($asGuest(['Origin' => 'https://evil.test']))));
+$past    = new PageTokens(PageTokens::TTL, new TestClock(static fn (): int => time() - PageTokens::TTL - 600));
+$reset();
+pin('an expired guest token is 401 token_expired', [401, 'token_expired'], $code($kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => $past->issueGuest()->token()]))));
+$reset();
+pin('a forged guest token is refused', [401, 'session_required'], $code($kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => substr($guest(), 0, -2) . 'xx']))));
+$stepClock = new PageTokens(PageTokens::TTL, new TestClock(static fn (): int => 1_800_000_001));
+$nextSec   = new PageTokens(PageTokens::TTL, new TestClock(static fn (): int => 1_800_000_002));
+pin('a guest token stays the same from one second to the next, so public pages render the same', $stepClock->issueGuest()->token(), $nextSec->issueGuest()->token());
+pin('its expiry is the rounded one the token carries', 1_800_007_500, $stepClock->issueGuest()->expiresAt());
+pin('a user\'s token is not a guest token', PageTokens::REFUSED, $tokens->checkGuest($page(10)));
+pin('nor a guest token a user\'s', PageTokens::REFUSED, $tokens->check($guest(), $rows[10]));
+$reset();
+$byAddress = $kernelFor([], null, static fn (array $u, string $ip): bool => $ip === '192.0.2.10');
+pin('a banned address is refused', [403, 'banned'], $code($byAddress->handle($asGuest())));
+$guestBucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor($session(), new RouteSpec('GET', 'me', $routes['GET me']), new Credential(CredentialKind::GUEST, Scopes::PUBLIC))[0];
+pin('a guest counts per address, at the no-key limit', ['api_anon', '192.0.2.10', 60], [$guestBucket->name(), $guestBucket->key(), $guestBucket->max()]);
+
+harness_section('with the API switched off');
+$off = $kernelFor(['enabled' => false]);
+$reset();
+pin('a guest token still reads', [200, CredentialKind::GUEST], [($r = $off->handle($asGuest()))->status(), $r->body()['data']['kind']]);
+$reset();
+pin('a signed-in page still writes', 201, $off->handle($session($ok(10) + ['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes'))->status());
+$reset();
+pin('a call with no credential is api_disabled', [403, 'api_disabled'], $code($off->handle($session(['Origin' => $site]))));
+$reset();
+pin('an access token is api_disabled', [403, 'api_disabled'], $code($off->handle($session(['Authorization' => 'Bearer ' . $accessToken]))));
+$reset();
+pin('a public key in the query string is api_disabled, page token or not', [403, 'api_disabled'], $code($off->handle($session($ok(10), $cookie(10), 'GET', 'v1/me', ['api_key' => 'scp_' . str_repeat('A', 16) . '.' . str_repeat('a', 64)]))));
+$reset();
+pin('a route that needs no credential is api_disabled, even with a page token', [403, 'api_disabled'], $code($off->handle($asGuest([], null, 'GET', 'v1/open'))));
+$reset();
+pin('a page token from another site is still refused', [403, 'cross_origin'], $code($off->handle($asGuest(['Origin' => 'https://evil.test']))));
+
+harness_section('admin page tokens');
+$staff     = static fn (int $id, int $stamp = 0, int $moderator = 0): array => ['pk_i_id' => (string) $id, 's_username' => 'admin' . $id, 's_name' => 'Admin ' . $id, 's_email' => 'a' . $id . '@x.test', 'i_auth_stamp' => (string) $stamp, 'b_moderator' => (string) $moderator];
+$panel     = null;
+$withPanel = $kernelFor([], null, null, static function () use (&$panel): ?array {
+    return $panel;
+});
+$adminCall = static function (string $token, string $path = 'v1/admin/staff', array $headers = [], string $method = 'GET', ?Kernel $k = null) use (&$withPanel, $session, $site, $reset): Response {
+    $reset();
+
+    return ($k ?? $withPanel)->handle($session($headers + ['Origin' => $site, 'X-Shopclass-Token' => $token, 'Content-Type' => 'application/json'], null, $method, $path));
+};
+$panel = $staff(1);
+$r     = $adminCall($tokens->issueAdmin($staff(1))->token());
+pin('the signed-in admin\'s token calls an admin route as that admin', [200, 1, 1], [$r->status(), $r->body()['data']['admin'], $r->body()['data']['seen']]);
+pin('an admin answer is never stored', 'private, no-store', $r->header('Cache-Control'));
+pin('a scoped admin route answers too', 200, $adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/x')->status());
+pin('an admin token cannot act as a user', [403, 'wrong_credential'], $code($adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/notes', [], 'POST')));
+$panel = $staff(2, 0, 1);
+pin('a moderator\'s token is turned away from a full-admin route', [403, 'wrong_credential'], $code($adminCall($tokens->issueAdmin($staff(2, 0, 1))->token())));
+$panel = null;
+pin('with no admin session the token is refused', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token())));
+$panel = $staff(2);
+pin('another admin\'s token is refused', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token())));
+$panel = $staff(1, 5);
+pin('a token from before a sign-out everywhere is refused', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token())));
+$panel = $staff(1);
+$pastAdmin = new PageTokens(PageTokens::TTL, new TestClock(static fn (): int => time() - PageTokens::TTL - 10));
+pin('an expired admin token is 401 token_expired', [401, 'token_expired'], $code($adminCall($pastAdmin->issueAdmin($staff(1))->token())));
+pin('an admin token from another site is refused', [403, 'cross_origin'], $code($adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/staff', ['Origin' => 'https://evil.test'])));
+pin('without the admin session reader, admin tokens never work', [401, 'session_required'], $code($adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/staff', [], 'GET', $kernel)));
+$adminOff = $kernelFor(['enabled' => false], null, null, static fn (): array => $staff(1));
+pin('an admin token works while the API is off', 200, $adminCall($tokens->issueAdmin($staff(1))->token(), 'v1/admin/staff', [], 'GET', $adminOff)->status());
+pin('a user\'s token is not an admin token, nor a guest\'s', [false, false], [$tokens->isAdminToken($page(10)), $tokens->isAdminToken($tokens->issueGuest()->token())]);
+pin('an admin token is neither a user\'s nor a guest\'s', [PageTokens::REFUSED, PageTokens::REFUSED], [$tokens->check($tokens->issueAdmin($staff(10))->token(), $rows[10]), $tokens->checkGuest($tokens->issueAdmin($staff(1))->token())]);
+$adminBucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor($session(), new RouteSpec('GET', 'me', $routes['GET me']), new Credential(CredentialKind::SESSION, [], null, 1))[0];
+pin('an admin page session counts per admin', ['api_admin', '1'], [$adminBucket->name(), $adminBucket->key()]);
+check('an admin page session is an admin, not a user session', (static fn (Credential $c): bool => $c->isAdmin() && $c->isAdminSession() && !$c->isSession() && !$c->isUser())(new Credential(CredentialKind::SESSION, [], null, 1)));
+
+harness_section('guard 5: no CORS, never stored');
+$cors = $kernelFor(['corsOrigins' => "*\n" . $site]);
+$reset();
+$r = $cors->handle($session($ok(10), $cookie(10)));
+pin('a session answer has no CORS grant, though * and the site are listed', [200, null, null], [
+    $r->status(), $r->header('Access-Control-Allow-Origin'), $r->header('Access-Control-Expose-Headers'),
+]);
+pin('a session answer is never stored', 'private, no-store', $r->header('Cache-Control'));
+pin('a session answer varies on the cookie', 'Authorization, X-Shopclass-Token, Cookie, Origin', $r->header('Vary'));
+check('a session answer keeps its rate limit headers', $r->header('RateLimit-Policy') !== null);
+$reset();
+$r = $cors->handle($session(['Origin' => 'https://evil.test', 'X-Shopclass-Token' => $page(10)], $cookie(10)));
+pin('a refused cross-origin session call gets no CORS grant either', [403, null], [$r->status(), $r->header('Access-Control-Allow-Origin')]);
+$reset();
+$r = $cors->handle($session(['Origin' => 'https://evil.test'], $cookie(10)));
+pin('while a cookie-only anonymous read still gets *', '*', $r->header('Access-Control-Allow-Origin'));
+$preflight = $cors->handle(new Request('OPTIONS', 'v1/me', [], [
+    'Origin' => 'https://evil.test', 'Access-Control-Request-Method' => 'GET', 'Access-Control-Request-Headers' => 'x-shopclass-token',
+]));
+check('a preflight never allows the page token header', !str_contains(strtolower((string) $preflight->header('Access-Control-Allow-Headers')), 'x-shopclass-token'));
+check('nor does the allowed header list', !in_array(PageTokens::HEADER, Cors::ALLOW_HEADERS, true));
+$headers = array_change_key_case($r->headers(), CASE_LOWER);
+check('no answer sets a cookie', !isset($headers['set-cookie']));
+pin('a handler cannot add a Set-Cookie header', null, Response::ok([])->withHeader('Set-Cookie', 'a=b')->header('Set-Cookie'));
+
+harness_section('Idempotency-Key per user and session');
+$calls = 0;
+$write = static fn (array $headers): Request => $session($headers + ['Content-Type' => 'application/json', 'Idempotency-Key' => 'k-1'], $cookie(10), 'POST', 'v1/notes');
+$reset();
+$first = $kernel->handle($write($ok(10)));
+$reset();
+$again = $kernel->handle($write($ok(10)));
+pin('the same key from the same session replays', [1, 1, 'true'], [$first->body()['data']['calls'], $again->body()['data']['calls'], $again->header('Idempotency-Replayed')]);
+$reset();
+$token = $kernel->handle($write(['Authorization' => 'Bearer ' . (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['listings:write'], 'fam')]));
+$reset();
+$other = $kernel->handle($session($ok(11) + ['Content-Type' => 'application/json', 'Idempotency-Key' => 'k-1'], $cookie(11), 'POST', 'v1/notes'));
+pin('the same key from another user\'s session is its own', [11, null], [$other->body()['data']['user'], $other->header('Idempotency-Replayed')]);
+pin('the same key from the same user\'s access token is its own', [2, null], [$token->body()['data']['calls'], $token->header('Idempotency-Replayed')]);
+
+harness_section('GET /auth/session');
+$reset();
+$r = $kernel->handle($session($ok(10), $cookie(10), 'GET', 'v1/auth/session'));
+$fresh = $r->body()['data']['token'] ?? '';
+pin('a session gets a fresh page token', [200, PageTokens::HEADER, true, 'private, no-store'], [
+    $r->status(), $r->body()['data']['header'] ?? null, str_starts_with($fresh, PageTokens::PREFIX), $r->header('Cache-Control'),
+]);
+pin('which works', PageTokens::VALID, $tokens->check($fresh, $rows[10]));
+$reset();
+$r = $kernel->handle($session(['Authorization' => 'Bearer ' . (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['account:read'], 'fam')], null, 'GET', 'v1/auth/session'));
+pin('an access token cannot get one', [403, 'wrong_credential'], $code($r));
+
+harness_section('signed cookie stores and redirects');
+if (!function_exists('osc_base_url')) {
+    function osc_base_url()
+    {
+        return WEB_PATH;
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+$store  = Session::getInstance();
+$encode = new ReflectionMethod($store, 'encodeSignedStore');
+$decode = new ReflectionMethod($store, 'decodeSignedStore');
+$encode->setAccessible(true);
+$decode->setAccessible(true);
+$flash = $encode->invoke($store, 'oc_flash', ['pubMessages' => ['ok']], 300);
+pin('a flash cookie reads back', ['pubMessages' => ['ok']], $decode->invoke($store, 'oc_flash', $flash));
+pin('but not as a form cookie', [], $decode->invoke($store, 'oc_form', $flash));
+$oldPayload = base64_encode((string) json_encode(['pubMessages' => ['ok']]));
+pin('an old unexpiring value is refused', [], $decode->invoke($store, 'oc_flash', $oldPayload . '.' . hash_hmac('sha256', $oldPayload, (string) mindstellar\security\SigningKey::get())));
+osc_set_signed_redirect('oc_ref', WEB_PATH . 'item/1');
+pin('a signed redirect reads back', WEB_PATH . 'item/1', osc_signed_redirect_verify($_COOKIE['oc_ref']));
+pin('a token signed for another purpose is no redirect', '', osc_signed_redirect_verify(mindstellar\security\SignedPayload::pack('report-sender', ['u' => WEB_PATH], 600)));
+pin('an expired one neither', '', osc_signed_redirect_verify(mindstellar\security\SignedPayload::pack('signed-redirect', ['u' => WEB_PATH], -1)));
+pin('cookies share one set of attributes', ['expires' => 5, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax'], array_intersect_key(Cookie::options(5), ['expires' => 1, 'path' => 1, 'httponly' => 1, 'samesite' => 1]));
+
+exit(harness_result());

@@ -25,6 +25,7 @@ if ($oscSidebar !== 'collapsed') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="content-language" content="<?php echo osc_current_admin_locale(); ?>"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <?php echo osc_api_admin_session_meta(); ?>
     <?php osc_run_hook('admin_header'); ?>
 </head>
 <body class="<?php echo implode(' ', osc_apply_filter('admin_body_class', array())); ?>">
@@ -45,6 +46,7 @@ if ($oscSidebar !== 'collapsed') {
             </div>
             <div class="sidebar-footer">
                 <button type="button" id="oscSidebarToggle" class="sidebar-collapse-toggle"
+                        data-osc-save-url="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=ajax&action=save_sidebar_state&' . osc_csrf_token_url()); ?>"
                         aria-controls="sidebar-wrapper"
                         aria-expanded="<?php echo $oscSidebar === 'collapsed' ? 'false' : 'true'; ?>"
                         aria-label="<?php echo osc_esc_html(__('Collapse or expand the menu')); ?>">
@@ -55,12 +57,12 @@ if ($oscSidebar !== 'collapsed') {
         </nav>
         <main id="content-render" class="col">
             <header id="header" class="admin-topbar navbar navbar-expand-md">
-                <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar-wrapper"
+                <button class="navbar-toggler" type="button" data-osc-offcanvas="#sidebar-wrapper" aria-controls="sidebar-wrapper"
                         aria-label="<?php echo osc_esc_html(__('Menu')); ?>">
                     <div class="toggle-icon"><span></span><span></span><span></span></div>
                 </button>
                 <ul class="navbar-nav admin-topbar-tools ms-auto">
-                    <?php AdminToolbar::newInstance()->render(); ?>
+                    <?php AdminToolbar::getInstance()->render(); ?>
                     <li class="nav-item admin-topbar-divider" aria-hidden="true"></li>
                     <li class="nav-item">
                         <button type="button" id="oscThemeToggle" class="admin-topbar-btn"
@@ -71,7 +73,7 @@ if ($oscSidebar !== 'collapsed') {
                     </li>
                     <li class="nav-item dropdown admin-topbar-account">
                         <button type="button" id="userDropdown" class="admin-topbar-btn admin-topbar-account-btn"
-                                data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false"
+                                data-osc-dropdown aria-haspopup="true" aria-expanded="false"
                                 title="<?php echo osc_esc_html(__('User Menu')); ?>">
                             <i class="bi bi-person-circle admin-topbar-avatar" aria-hidden="true"></i>
                             <span class="admin-topbar-account-name"><?php echo osc_esc_html(osc_logged_admin_username()); ?></span>
@@ -111,7 +113,7 @@ if ($oscSidebar !== 'collapsed') {
                             <div class="help-callout-body">
                                 <?php osc_run_hook('help_box'); ?>
                             </div>
-                            <button type="button" class="help-callout-close" data-bs-toggle="collapse" href="#help-box"
+                            <button type="button" class="help-callout-close" data-osc-collapse="#help-box" aria-controls="help-box"
                                     aria-label="<?php echo osc_esc_html(__('Close')); ?>">
                                 <i class="bi bi-x-lg" aria-hidden="true"></i>
                             </button>

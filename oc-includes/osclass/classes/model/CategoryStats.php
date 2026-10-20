@@ -12,24 +12,21 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\listing\ListingCountStore;
+
 /**
- * Model database for CategoryStats table
+ * The live listing count of each category, kept in t_category.i_num_items
  *
  * @package    Shopclass
  * @subpackage Model
  */
 class CategoryStats extends DAO
 {
-    /**
-     * It references to self object: CategotyStats.
-     * It is used as a singleton
-     *
-     * @var CategoryStats
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
-     * Set data related to t_category_stats table
+     * No table is behind this DAO: the counts are in t_category.i_num_items, through ListingCountStore.
+     * The DAO names a table that no longer exists, so the inherited DAO methods fail on purpose.
      */
     public function __construct()
     {
@@ -40,203 +37,129 @@ class CategoryStats extends DAO
     }
 
     /**
-     * It creates a new CategoryStats object class if it has been created
-     * before, it return the previous object
-     *
-     * @return CategoryStats
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
-     * Increase number of category items, given a category id
+     * Add one to a category's count and to each of its parents'.
      *
-     * @param int $categoryId Category id
+     * @param int $categoryId
      *
-     * @return bool|int True once written, false on a non-numeric id or a failed
-     *                   write; an int once the parent chain has been walked
+     * @return bool|int true for a top category, the number of categories counted for a
+     *                  subcategory, or false when the id is not a number or the write fails
      */
     public function increaseNumItems($categoryId)
     {
         if (!is_numeric($categoryId)) {
             return false;
         }
-
-        // Legacy built this SQL with sprintf('%d', $categoryId), truncating to
-        // an integer before the query ever reached the database. A bound
-        // parameter has to reproduce that same truncation explicitly: MySQL's
-        // foreign-key check on a prepared value does not coerce a fractional
-        // numeric string the way a plain integer literal does, so an uncast
-        // bind of e.g. "5.7" fails where the legacy, already-truncated SQL
-        // text succeeds.
-        $categoryId = (int)$categoryId;
-
-        $sql = 'INSERT INTO ' . $this->getTableName()
-            . ' (fk_i_category_id, i_num_items) VALUES (?, 1)
-               ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1';
+        $ids = iterator_to_array($this->chain((int)$categoryId), false);
+        if ($ids === array()) {
+            return false;
+        }
 
         try {
-            osc_db_execute($sql, array($categoryId));
-            $return = true;
+            $changed = ListingCountStore::categories()->add($ids, 1);
         } catch (\mindstellar\database\DbException $e) {
-            $return = false;
+            return false;
+        }
+        if ($changed === 0) {
+            return false;
         }
 
-        // Runs unconditionally, exactly as legacy did: the && below only
-        // short-circuits the recursive add, not this lookup.
-        $result = Category::newInstance()->findByPrimaryKey($categoryId);
-        if (($return !== false) && $result['fk_i_parent_id'] != null) {
-            $parent_res = $this->increaseNumItems($result['fk_i_parent_id']);
-            if ($parent_res !== false) {
-                $return += $parent_res;
-            } else {
-                $return = false;
-            }
-        }
-
-        return $return;
+        return count($ids) === 1 ? true : count($ids);
     }
 
     /**
-     * Decrease number of category items, given a category id
+     * Take one from a category's count and from each of its parents', never below zero.
      *
-     * @param int|null $categoryId Category id
+     * @param int $categoryId
      *
-     * @return int|false Affected rows across the category and its ancestors,
-     *                   false on a null id or a failed query
+     * @return int|false rows changed, or false when the id is missing or a write fails
      */
     public function decreaseNumItems($categoryId)
     {
-        if ($categoryId === null) {
-            // Legacy where('fk_i_category_id', null) only appends a value when
-            // it is non-null, so it emits a bare "fk_i_category_id =" with no
-            // right-hand side -- a SQL syntax error that fails the SELECT and
-            // returns bool false after exactly one query, before ever reaching
-            // a write. A bound null is valid SQL matching zero rows, so a
-            // naive conversion would fall through to the insert branch and
-            // fail there instead (NULL into a NOT NULL column) -- reaching
-            // the same false, but at the cost of a second, wasted query.
-            // Guarded explicitly so the cost matches, not just the return
-            // value.
+        if ($categoryId === null || !is_numeric($categoryId)) {
             return false;
         }
 
+        $return = 0;
         try {
-            $row = osc_db_table($this->getTableName())
-                ->select('i_num_items')
-                ->where($this->getPrimaryKey(), $categoryId)
-                ->first();
+            foreach ($this->chain((int)$categoryId) as $id) {
+                $return += ListingCountStore::categories()->add(array($id), -1);
+            }
         } catch (\mindstellar\database\DbException $e) {
             return false;
-        }
-
-        $categoryStat = $row !== null ? osc_db_stringify_row($row) : array();
-        $return       = 0;
-
-        if (isset($categoryStat['i_num_items'])) {
-            try {
-                $return = osc_db_execute(
-                    'UPDATE ' . $this->getTableName()
-                    . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_category_id = ?',
-                    array($categoryId)
-                );
-            } catch (\mindstellar\database\DbException $e) {
-                $return = false;
-            }
-        } else {
-            try {
-                osc_db_table($this->getTableName())->insert(array(
-                    'fk_i_category_id' => $categoryId,
-                    'i_num_items'      => 0,
-                ));
-            } catch (\mindstellar\database\DbException $e) {
-                $return = false;
-            }
-        }
-
-        if ($return !== false) {
-            $result = Category::newInstance()->findByPrimaryKey($categoryId);
-            if ($result['fk_i_parent_id'] != null) {
-                $parent_res = $this->decreaseNumItems($result['fk_i_parent_id']);
-                if ($parent_res !== false) {
-                    $return += $parent_res;
-                } else {
-                    $return = false;
-                }
-            }
         }
 
         return $return;
     }
 
     /**
-     * Set i_num_items outright for a category, inserting the row if needed.
+     * A category's id, then its ancestors' ids. A parent is looked up only when the caller asks for it.
+     *
+     * @return \Generator<int,int>
+     */
+    private function chain(int $categoryId): \Generator
+    {
+        $seen = array();
+        for ($id = $categoryId; $id > 0 && !in_array($id, $seen, true);) {
+            $seen[] = $id;
+            yield $id;
+            $result = Category::getInstance()->findByPrimaryKey($id);
+            $id     = isset($result['fk_i_parent_id']) ? (int)$result['fk_i_parent_id'] : 0;
+        }
+    }
+
+    /**
+     * Set a category's count.
      *
      * @param int $categoryID
      * @param int $numItems
      *
-     * @return bool False when the write failed
+     * @return bool false when the write fails
      */
     public function setNumItems($categoryID, $numItems)
     {
-        $categoryID = (int)$categoryID;
-        $numItems   = (int)$numItems;
-
-        $sql = 'INSERT INTO ' . $this->getTableName()
-            . ' (fk_i_category_id, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
-
         try {
-            osc_db_execute($sql, array($categoryID, $numItems, $numItems));
+            return ListingCountStore::categories()->set(array((int)$categoryID => (int)$numItems));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
-
-        return true;
     }
 
     /**
-     * Find stats by category id
+     * A category's count, as the old stats row: fk_i_category_id and i_num_items.
      *
-     * @param int $categoryId Category id
+     * @param int $categoryId
      *
-     * @return array<string,string|null>|false False when the category has no stats row
+     * @return array<string,string>|false False when there is no such category
      */
     public function findByCategoryId($categoryId)
     {
-        return $this->findByPrimaryKey($categoryId);
+        try {
+            return (ListingCountStore::categories()->row((int)$categoryId, 'fk_i_category_id') ?? false);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
-     * Count items,  given a category id
+     * A category's count.
      *
-     * @param int $categoryId Category id
+     * @param int $categoryId
      *
-     * @return int|string number of items into category, int 0 when there is no row
+     * @return int|string the count as a string, or 0 when there is no such category
      */
     public function countItemsFromCategory($categoryId)
     {
-        try {
-            $row = osc_db_table($this->getTableName())
-                ->select('i_num_items')
-                ->where('fk_i_category_id', $categoryId)
-                ->first();
-        } catch (\mindstellar\database\DbException $e) {
-            return 0;
-        }
+        $row = $this->findByCategoryId($categoryId);
 
-        if ($row === null) {
-            return 0;
-        }
-
-        $row = osc_db_stringify_row($row);
-
-        return $row['i_num_items'];
+        return $row === false ? 0 : $row['i_num_items'];
     }
 
     /**
@@ -278,28 +201,27 @@ class CategoryStats extends DAO
      */
     public function toNumItemsMap()
     {
-        $map = array();
-        $all = $this->listAll();
+        try {
+            $map = ListingCountStore::categories()->all();
+        } catch (\mindstellar\database\DbException $e) {
+            $map = array();
+        }
 
-        if (empty($all)) {
+        if (empty($map)) {
             return array();
         }
 
-        $roots = Category::newInstance()->findRootCategories();
-
-        foreach ($all as $a) {
-            $map[$a['fk_i_category_id']] = $a['i_num_items'];
-        }
+        $roots = Category::getInstance()->findRootCategories();
 
         $new_map = array();
         foreach ($roots as $root) {
-            $root_description                    = Category::newInstance()->findByPrimaryKey($root['pk_i_id']);
+            $root_description                    = Category::getInstance()->findByPrimaryKey($root['pk_i_id']);
             $new_map['parent'][$root['pk_i_id']] =
                 array('numItems' => @$map[$root['pk_i_id']], 's_name' => @$root_description['s_name']);
-            $subcategories                       = Category::newInstance()->findSubcategories($root['pk_i_id']);
+            $subcategories                       = Category::getInstance()->findSubcategories($root['pk_i_id']);
             $aux                                 = array();
             foreach ($subcategories as $sub) {
-                $sub_description      = Category::newInstance()->findByPrimaryKey($sub['pk_i_id']);
+                $sub_description      = Category::getInstance()->findByPrimaryKey($sub['pk_i_id']);
                 $aux[$sub['pk_i_id']] =
                     array('numItems' => $map[$sub['pk_i_id']], 's_name' => $sub_description['s_name']);
             }

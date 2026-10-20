@@ -45,7 +45,7 @@ final class AlertJobs
      */
     public static function ensureQueued(int $after): bool
     {
-        return JobQueue::instance()->ensure(self::TYPE, array('after' => $after));
+        return JobQueue::getInstance()->ensure(self::TYPE, array('after' => $after));
     }
 
     /**
@@ -61,7 +61,7 @@ final class AlertJobs
         $restarts = (int)$job->get('restarts', 0);
         $missed   = (int)$job->get('missed', 0);
 
-        $result = AlertStore::convertBatch(Connection::instance(), (int)$job->get('after', 0));
+        $result = AlertStore::convertBatch(Connection::getInstance(), (int)$job->get('after', 0));
         $missed += $result['missed'];
         if (!$result['done']) {
             $job->repeat(array('after' => $result['last'], 'restarts' => $restarts, 'missed' => $missed));

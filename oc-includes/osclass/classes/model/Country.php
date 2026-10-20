@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Country table
  *
@@ -20,11 +22,9 @@
  */
 class Country extends DAO
 {
-    /**
-     *
-     * @var Country
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
+
+    protected $cacheGroup = 'country';
 
     /**
      * Set data related to t_country table
@@ -38,17 +38,11 @@ class Country extends DAO
     }
 
     /**
-     * Return the shared Country model instance, creating it on first use.
-     *
-     * @return \Country
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -61,14 +55,14 @@ class Country extends DAO
     public function findByCode($code)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_c_code', $code)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**
@@ -81,14 +75,14 @@ class Country extends DAO
     public function findByName($name)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('s_name', $name)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**
@@ -98,15 +92,18 @@ class Country extends DAO
      */
     public function listAll()
     {
-        try {
-            // The table name comes from getTableName(), fixed in the constructor
-            // — never runtime input — so the query needs no placeholder for it.
-            $rows = osc_db_select(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
+        // i_num_items may lag by the cache lifetime, as the category tree's counts do.
+        return \mindstellar\cache\CacheGroup::remember('country', 'all', function (): ?array {
+            try {
+                // The table name comes from getTableName(), fixed in the constructor
+                // — never runtime input — so the query needs no placeholder for it.
+                $rows = Db::select(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
 
-        return osc_db_stringify_rows($rows);
+            return Db::stringifyRows($rows);
+        }) ?? array();
     }
 
     /**
@@ -121,15 +118,14 @@ class Country extends DAO
     {
         osc_run_hook('before_delete_country', $pk);
 
-        $mRegions = Region::newInstance();
+        $mRegions = Region::getInstance();
         $aRegions = $mRegions->findByCountry($pk);
         $result   = 0;
         foreach ($aRegions as $region) {
-            $result += $mRegions->deleteByPrimaryKey($region['pk_i_id']);
+            $result += $mRegions->deleteByPrimaryKey((int) $region['pk_i_id']);
         }
-        Item::newInstance()->deleteByCountry($pk);
-        CountryStats::newInstance()->delete(array('fk_c_country_code' => $pk));
-        User::newInstance()->update(
+        Item::getInstance()->deleteByCountry($pk);
+        User::getInstance()->update(
             array('fk_c_country_code' => null, 's_country' => ''),
             array('fk_c_country_code' => $pk)
         );
@@ -156,12 +152,12 @@ class Country extends DAO
         try {
             // The table name comes from getTableName(), fixed in the constructor
             // — never runtime input — so the query needs no placeholder for it.
-            $rows = osc_db_select(sprintf('SELECT s_name FROM %s ORDER BY s_name ASC', $this->getTableName()));
+            $rows = Db::select(sprintf('SELECT s_name FROM %s ORDER BY s_name ASC', $this->getTableName()));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return array_column(osc_db_stringify_rows($rows), 's_name');
+        return array_column(Db::stringifyRows($rows), 's_name');
     }
 
     /**
@@ -178,12 +174,12 @@ class Country extends DAO
         // through escapeStr($v, true), which escapes LIKE metacharacters
         // before adding the wildcard, so a literal '%'/'_' typed by a caller
         // is preserved here the same way.
-        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string) $query) . '%';
+        $pattern = \mindstellar\database\QueryBuilder::escapeLike((string) $query) . '%';
 
         try {
             // The table name comes from getTableName(), fixed in the constructor
             // — never runtime input — so the query needs no placeholder for it.
-            $rows = osc_db_select(
+            $rows = Db::select(
                 sprintf(
                     'SELECT pk_c_code as id, s_name as label, s_name as value FROM %s WHERE s_name LIKE ? LIMIT 5',
                     $this->getTableName()
@@ -194,7 +190,7 @@ class Country extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -208,14 +204,14 @@ class Country extends DAO
     public function findBySlug($slug)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('s_slug', $slug)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**
@@ -227,14 +223,14 @@ class Country extends DAO
     public function listByEmptySlug()
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('s_slug', '')
                 ->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

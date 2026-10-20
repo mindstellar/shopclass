@@ -11,7 +11,7 @@
 /**
  * Every core aggregate, run on a connection with the strict SQL modes ON.
  *
- * ConnectionManager::setSQLMode() strips five modes from every connection —
+ * ConnectionManager::setSession() strips five modes from every connection —
  * NO_ZERO_DATE, ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, STRICT_ALL_TABLES and
  * TRADITIONAL — unless OSC_DB_STRICT_MODE is defined. ONLY_FULL_GROUP_BY is the
  * dangerous one: it does not degrade a query, it rejects it outright, and every
@@ -227,9 +227,9 @@ seed_exec(
 );
 
 /* ----------------------------------------------------------------------------
- * setSQLMode()'s default: the five modes it takes off every connection.
+ * setSession()'s default: the five modes it takes off every connection.
  * ------------------------------------------------------------------------- */
-harness_section('setSQLMode — what a default install strips');
+harness_section('setSession — what a default install strips');
 
 $reflected = new ReflectionClass('mindstellar\database\ConnectionManager');
 $stripList = $reflected->getProperty('incompatible_modes');
@@ -247,7 +247,7 @@ pin(
  * it had on first: a server with none of these configured would make the pin below
  * pass for the wrong reason.
  *
- * Both branches of setSQLMode() are covered, whichever way the process was started.
+ * Both branches of setSession() are covered, whichever way the process was started.
  * Run plainly the constant is undefined and the modes must be gone; run with
  * OSC_DB_STRICT_MODE already defined (which is how a new install runs) the method
  * returns early and every one of them must have survived.
@@ -302,7 +302,7 @@ check(
  * ------------------------------------------------------------------------- */
 harness_section('Alerts::findByTypeGroup');
 
-$daily = Alerts::newInstance()->findByTypeGroup('DAILY', true);
+$daily = Alerts::getInstance()->findByTypeGroup('DAILY', true);
 check('two saved searches survive the grouping', count($daily) === 2, describe($daily));
 $searches = array_map(static function ($row) {
     return $row['s_search'];
@@ -310,7 +310,7 @@ $searches = array_map(static function ($row) {
 sort($searches);
 pin('one row per distinct search', array('{"q":"boats"}', '{"q":"cars"}'), $searches);
 check('the rows are whole alert rows, not just the grouped column', isset($daily[0]['pk_i_id'], $daily[0]['e_type']), describe($daily[0]));
-pin('an unmatched type still groups to an empty array', array(), Alerts::newInstance()->findByTypeGroup('CUSTOM', true));
+pin('an unmatched type still groups to an empty array', array(), Alerts::getInstance()->findByTypeGroup('CUSTOM', true));
 
 /* ----------------------------------------------------------------------------
  * Custom fields. An empty return here is a listing form with no custom fields on
@@ -318,7 +318,7 @@ pin('an unmatched type still groups to an empty array', array(), Alerts::newInst
  * ------------------------------------------------------------------------- */
 harness_section('Field::findByCategory');
 
-$fields = Field::newInstance()->findByCategory($catChild);
+$fields = Field::getInstance()->findByCategory($catChild);
 check('the child category sees three fields', count($fields) === 3, describe(array_column($fields, 's_slug')));
 pin(
     'loose fields sort before grouped ones, then by field position',
@@ -326,11 +326,11 @@ pin(
     array_column($fields, 's_slug')
 );
 check('each row carries the field columns', isset($fields[0]['pk_i_id'], $fields[0]['e_type']), describe($fields[0]));
-pin('a category with no fields returns an empty array', array(), Field::newInstance()->findByCategory($catParent + 9000));
+pin('a category with no fields returns an empty array', array(), Field::getInstance()->findByCategory($catParent + 9000));
 
 harness_section('FieldGroup::findByCategory');
 
-$groups = FieldGroup::newInstance()->findByCategory($catChild);
+$groups = FieldGroup::getInstance()->findByCategory($catChild);
 check('the form assigned to the category is found once', count($groups) === 1, describe($groups));
 pin('and it is the right one', 'vehicle', $groups[0]['s_slug'] ?? null);
 
@@ -340,7 +340,7 @@ pin('and it is the right one', 'vehicle', $groups[0]['s_slug'] ?? null);
  * ------------------------------------------------------------------------- */
 harness_section('LatestSearches');
 
-$model   = LatestSearches::newInstance();
+$model   = LatestSearches::getInstance();
 $grouped = $model->getSearches(20);
 check('three rows collapse into two groups', is_array($grouped) && count($grouped) === 2, describe($grouped));
 pin('the three selected columns are unchanged', array('d_date', 's_search', 'i_total'), array_keys($grouped[0]));
@@ -359,7 +359,7 @@ check('purgeNumber() runs its grouped read', is_int($model->purgeNumber(1)), des
  * ------------------------------------------------------------------------- */
 harness_section('Stats — the bucketed counts, all three granularities');
 
-$stats = Stats::newInstance();
+$stats = Stats::getInstance();
 $from  = '2000-01-01 00:00:00';
 
 foreach (array('day', 'week', 'month') as $bucket) {

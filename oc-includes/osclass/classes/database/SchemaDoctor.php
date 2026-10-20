@@ -241,7 +241,7 @@ final class SchemaDoctor
                 // PRIMARY KEY (a, b) / UNIQUE KEY name (a, b) / INDEX name (a, b(10))
                 if (preg_match('/^(PRIMARY\s+KEY|UNIQUE\s+KEY|FULLTEXT(?:\s+KEY)?|INDEX|KEY)\s*(\w+)?\s*\((.+)\)$/i', $line, $k)) {
                     $keyword = strtoupper(preg_replace('/\s+/', ' ', $k[1]));
-                    $name    = $keyword === 'PRIMARY KEY' ? 'PRIMARY' : (string) ($k[2] ?? '');
+                    $name    = $keyword === 'PRIMARY KEY' ? 'PRIMARY' : (string) $k[2];
                     if ($name === '') {
                         continue; // Unnamed: the server invents a name, so there is nothing to match on.
                     }

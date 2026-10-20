@@ -24,14 +24,13 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 osc_register_script('admin-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('osc.js')));
 osc_register_script('admin-ui-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('ui-osc.js')), array('admin-osc', 'osc-ui-common'));
 osc_register_script('admin-editor', osc_asset_url_versioned(osc_current_admin_theme_js_url('editor.js')), 'admin-ui-osc');
-osc_register_script('admin-location', osc_asset_url_versioned(osc_current_admin_theme_js_url('location.min.js')), 'bootstrap5');
+osc_register_script('admin-location', osc_asset_url_versioned(osc_current_admin_theme_js_url('location.min.js')), 'admin-ui-osc');
 osc_register_script('popper', osc_asset_url_versioned(osc_assets_url('popper/popper.min.js')));
 osc_register_script('bootstrap5', osc_asset_url_versioned(osc_assets_url('bootstrap/bootstrap.min.js')), 'popper');
 osc_register_script('sortablejs', osc_asset_url_versioned(osc_assets_url('sortablejs/Sortable.min.js')));
 osc_register_script('qrcode-generator', osc_asset_url_versioned(osc_assets_url('qrcode-generator/qrcode.js')));
 osc_register_script('admin-categories', osc_asset_url_versioned(osc_current_admin_theme_js_url('categories.js')), 'sortablejs');
-// enqueue scripts
-osc_enqueue_script('bootstrap5');
+// enqueue scripts. Bootstrap's JS (bootstrap5) stays registered for plugins that enqueue it.
 osc_enqueue_script('admin-osc');
 osc_enqueue_script('admin-ui-osc');
 
@@ -43,86 +42,7 @@ osc_register_style('bootstrap-icons', osc_asset_url_versioned(osc_assets_url('bo
 osc_enqueue_style('admin-css');
 osc_enqueue_style('bootstrap-icons');
 
-switch (Params::getParam('page')) {
-    case ('items'):
-        $do = new CAdminItems();
-        $do->doModel();
-        break;
-    case ('comments'):
-        $do = new CAdminItemComments();
-        $do->doModel();
-        break;
-    case ('media'):
-        $do = new CAdminMedia();
-        $do->doModel();
-        break;
-    case ('login'):
-        $do = new CAdminLogin();
-        $do->doModel();
-        break;
-    case ('categories'):
-        $do = new CAdminCategories();
-        $do->doModel();
-        break;
-    case ('emails'):
-        $do = new CAdminEmails();
-        $do->doModel();
-        break;
-    case ('pages'):
-        $do = new CAdminPages();
-        $do->doModel();
-        break;
-    case ('settings'):
-        $do = new CAdminSettings();
-        $do->doModel();
-        break;
-    case ('plugins'):
-        $do = new CAdminPlugins();
-        $do->doModel();
-        break;
-    case ('languages'):
-        $do = new CAdminLanguages();
-        $do->doModel();
-        break;
-    case ('admins'):
-        $do = new CAdminAdmins();
-        $do->doModel();
-        break;
-    case ('users'):
-        $do = new CAdminUsers();
-        $do->doModel();
-        break;
-    case ('ajax'):
-        $do = new CAdminAjax();
-        $do->doModel();
-        break;
-    case ('appearance'):
-        $do = new CAdminAppearance();
-        $do->doModel();
-        break;
-    case ('tools'):
-        $do = new CAdminTools();
-        $do->doModel();
-        break;
-    case ('billing'):
-        $do = new CAdminBilling();
-        $do->doModel();
-        break;
-    case ('stats'):
-        $do = new CAdminStats();
-        $do->doModel();
-        break;
-    case ('cfields'):
-        $do = new CAdminCFields();
-        $do->doModel();
-        break;
-    case ('upgrade'):
-        $do = new CAdminUpgrade();
-        $do->doModel();
-        break;
-    default:            //login of oc-admin
-        $do = new CAdminMain();
-        $do->doModel();
-}
+// The ?page= routes live in mindstellar\routing\PageRoutes.
+\mindstellar\routing\PageDispatcher::admin()->dispatch(Params::getParamString('page'), Params::getParamString('action'));
 
 /* file end: ./oc-admin/index.php */

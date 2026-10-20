@@ -1,5 +1,5 @@
-# Keep the build context lean. vendor/ and oc-includes/assets/ are committed and
-# MUST ship in the image, so they are deliberately not ignored.
+# Keep the build context lean. vendor/ and oc-includes/assets/ are built before
+# `docker build` and MUST ship in the image, so they are deliberately not ignored.
 .git
 .github
 .gitattributes

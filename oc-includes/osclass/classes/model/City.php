@@ -12,6 +12,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+use mindstellar\model\SlugHistory;
+
 /**
  * Model database for City table
  *
@@ -20,13 +23,7 @@
  */
 class City extends DAO
 {
-    /**
-     * It references to self object: City.
-     * It is used as a singleton
-     *
-     * @var City
-     */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /**
      * Set data related to t_city table
@@ -40,18 +37,11 @@ class City extends DAO
     }
 
     /**
-     * It creates a new City object class ir if it has been created
-     * before, it return the previous object
-     *
-     * @return City
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -74,13 +64,13 @@ class City extends DAO
         // constructor, never user input, so they are safe to concatenate.
         $sql = 'SELECT a.pk_i_id AS id, a.s_name AS label, a.s_name AS value, aux.s_name AS region'
             . ' FROM ' . $this->getTableName() . ' AS a'
-            . ' LEFT JOIN ' . Region::newInstance()->getTableName() . ' AS aux'
+            . ' LEFT JOIN ' . Region::getInstance()->getTableName() . ' AS aux'
             . ' ON aux.pk_i_id = a.fk_i_region_id'
             . ' WHERE a.s_name LIKE ?';
         // Matches dao->like()'s escaping: '%'/'_' in the payload are escaped
         // before the wildcard is appended, so a literal '%' typed by a caller
         // stays literal instead of being read back as a SQL wildcard.
-        $params = array(str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $query) . '%');
+        $params = array(\mindstellar\database\QueryBuilder::escapeLike((string) $query) . '%');
 
         if ($regionId != null) {
             if (is_numeric($regionId)) {
@@ -90,15 +80,17 @@ class City extends DAO
             }
             $params[] = $regionId;
         }
-        $sql .= ' LIMIT 10';
+        // A big city must not be pushed out by villages that sort before it.
+        $sql     .= ' ORDER BY a.s_name = ? DESC, a.i_num_items DESC, a.s_name LIMIT 10';
+        $params[] = $query;
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -126,7 +118,7 @@ class City extends DAO
     public function findByRegion($regionId)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('fk_i_region_id', $regionId)
                 ->orderBy('s_name', 'ASC')
@@ -135,7 +127,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -148,7 +140,7 @@ class City extends DAO
      */
     public function findByName($cityName, $regionId = null)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->select(...$this->getFields())
             ->where('s_name', $cityName);
 
@@ -166,7 +158,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -177,7 +169,7 @@ class City extends DAO
     public function listAll()
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->orderBy('s_name', 'ASC')
                 ->get();
@@ -185,7 +177,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -200,23 +192,18 @@ class City extends DAO
     {
         osc_run_hook('before_delete_city', $pk);
 
-        $mCityAreas = CityArea::newInstance();
+        $mCityAreas = CityArea::getInstance();
         $aCityAreas = $mCityAreas->findByCity($pk);
         $result     = 0;
         foreach ($aCityAreas as $cityarea) {
-            $result += $mCityAreas->deleteByPrimaryKey($cityarea['pk_i_id']);
+            $result += $mCityAreas->deleteByPrimaryKey((int) $cityarea['pk_i_id']);
         }
-        Item::newInstance()->deleteByCity($pk);
-        CityStats::newInstance()->delete(array('fk_i_city_id' => $pk));
-        User::newInstance()->update(array('fk_i_city_id' => null, 's_city' => ''), array('fk_i_city_id' => $pk));
+        Item::getInstance()->deleteByCity($pk);
+        User::getInstance()->update(array('fk_i_city_id' => null, 's_city' => ''), array('fk_i_city_id' => $pk));
 
-        // See Region::deleteByPrimaryKey(): the slug history has no foreign key to
-        // clean it up, so a rename recorded for this city would outlive the city.
+        // Old slugs would keep redirecting to a city that is gone.
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_location_slug_history')
-                ->where('e_type', 'CITY')
-                ->where('fk_i_id', (int)$pk)
-                ->delete();
+            SlugHistory::forget(SlugHistory::CITY, (int)$pk);
         } catch (\Throwable $e) {
             // A stale redirect is not worth failing the delete over.
         }
@@ -246,7 +233,7 @@ class City extends DAO
     public function findBySlug($slug)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('s_slug', $slug)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
@@ -257,7 +244,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -276,7 +263,7 @@ class City extends DAO
     public function findBySourceId($sourceId)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('i_source_id', $sourceId)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
@@ -287,7 +274,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -299,14 +286,14 @@ class City extends DAO
     public function listByEmptySlug()
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('s_slug', '')
                 ->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

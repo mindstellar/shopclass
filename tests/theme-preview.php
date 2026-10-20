@@ -33,6 +33,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Validate.php';
 
 $root = sys_get_temp_dir() . '/osc-theme-preview-' . getmypid() . '/';
@@ -49,8 +50,8 @@ if (!function_exists('osc_apply_filter')) {
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hDefines.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/themes/abstract/Themes.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/themes/WebThemes.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/theme/Themes.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/theme/WebThemes.php';
 
 /** A theme directory, valid enough for getListThemes() to count it. */
 $makeTheme = static function (string $slug) use ($root) {

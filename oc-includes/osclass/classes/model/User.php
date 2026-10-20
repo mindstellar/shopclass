@@ -12,23 +12,21 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * User DAO
  */
 class User extends DAO
 {
+    use \mindstellar\base\SharedInstance;
+
     /** Seconds an s_pass_code stays valid, for both password reset and e-mail change. */
     public const PASS_CODE_TTL = 86400;
 
     /** Purposes an s_pass_code is bound to, so a code issued for one never passes as the other. */
     public const PASS_CODE_RESET = 'reset';
     public const PASS_CODE_EMAIL = 'email';
-
-    /**
-     *
-     * @var \User
-     */
-    private static $instance;
 
     /**
      * The stored form of an account code: its purpose plus a SHA-256 of the code.
@@ -113,17 +111,11 @@ class User extends DAO
     }
 
     /**
-     * Return the shared User model instance, creating it on first use.
-     *
-     * @return \User
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -140,7 +132,7 @@ class User extends DAO
         // builder's identifier allowlist, so this is hand-written. The search
         // term is bound; legacy like(..., 'after') matched a prefix and escaped
         // %/_ in the payload, reproduced here. LIMIT 0, 10 is offset 0, count 10.
-        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
+        $pattern = \mindstellar\database\QueryBuilder::escapeLike((string)$query) . '%';
         // The e-mail is its own key as well as part of the label: the admin listing editor
         // resolves a seller by e-mail, and reading it back out of a label is guesswork.
         $sql     = 'SELECT pk_i_id as id, CONCAT(s_name, \' (\', s_email, \')\') as label, s_name as value,'
@@ -149,12 +141,12 @@ class User extends DAO
             . ' WHERE s_name LIKE ? OR s_email LIKE ? LIMIT 10';
 
         try {
-            $rows = osc_db_select($sql, array($pattern, $pattern));
+            $rows = Db::select($sql, array($pattern, $pattern));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -168,14 +160,14 @@ class User extends DAO
     public function findByPrimaryKey($id, $locale = null)
     {
         $key   = md5(osc_base_url() . 'User:findByPrimaryKey:' . $id . $locale);
-        $found = null;
+        $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache !== false) {
             return $cache;
         }
 
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where($this->getPrimaryKey(), $id)
                 ->limit(2)
                 ->get();
@@ -187,7 +179,7 @@ class User extends DAO
             return array();
         }
 
-        $user = $this->extendData(osc_db_stringify_row($rows[0]), $locale);
+        $user = $this->extendData(Db::stringifyRow($rows[0]), $locale);
         osc_cache_set($key, $user, OSC_CACHE_TTL);
 
         return $user;
@@ -231,12 +223,12 @@ class User extends DAO
      */
     private function extendData($user, $locale = null)
     {
-        $query = osc_db_table(DB_TABLE_PREFIX . 't_user_description')
+        $query = Db::table(DB_TABLE_PREFIX . 't_user_description')
             ->where('fk_i_user_id', $user['pk_i_id']);
         if (null !== $locale) {
             $query = $query->where('fk_c_locale_code', $locale);
         }
-        $descriptions = osc_db_stringify_rows($query->get());
+        $descriptions = Db::stringifyRows($query->get());
 
         $user['locale'] = array();
         foreach ($descriptions as $sub_row) {
@@ -258,7 +250,7 @@ class User extends DAO
     public function findByUsername($username, $locale = null)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('s_username', $username)
                 ->limit(2)
                 ->get();
@@ -267,7 +259,7 @@ class User extends DAO
         }
 
         if (count($rows) == 1) {
-            return $this->extendData(osc_db_stringify_row($rows[0]), $locale);
+            return $this->extendData(Db::stringifyRow($rows[0]), $locale);
         }
 
         return array();
@@ -303,7 +295,7 @@ class User extends DAO
     public function findByEmail($email, $locale = null)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('s_email', $email)
                 ->limit(2)
                 ->get();
@@ -312,7 +304,7 @@ class User extends DAO
         }
 
         if (count($rows) == 1) {
-            return $this->extendData(osc_db_stringify_row($rows[0]), $locale);
+            return $this->extendData(Db::stringifyRow($rows[0]), $locale);
         }
 
         return array();
@@ -335,7 +327,7 @@ class User extends DAO
         // beginning with a letter evaluates to 0, so the cookie value "0" matched
         // almost every account.
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->where('s_secret', (string)$secret)
                 ->limit(2)
@@ -345,7 +337,7 @@ class User extends DAO
         }
 
         if (count($row) === 1) {
-            return $this->extendData(osc_db_stringify_row($row[0]), $locale);
+            return $this->extendData(Db::stringifyRow($row[0]), $locale);
         }
 
         return array();
@@ -372,7 +364,7 @@ class User extends DAO
         // and comparing it numerically let "0" match any code beginning with a
         // letter. The cut-off date is bound rather than interpolated.
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->where('s_pass_code', self::passCodeHash(self::PASS_CODE_RESET, (string)$secret))
                 ->where('s_pass_date', '>=', $date)
@@ -383,7 +375,7 @@ class User extends DAO
         }
 
         if (count($row) === 1) {
-            return $this->extendData(osc_db_stringify_row($row[0]), $locale);
+            return $this->extendData(Db::stringifyRow($row[0]), $locale);
         }
 
         return array();
@@ -402,7 +394,7 @@ class User extends DAO
             osc_run_hook('delete_user', $id);
 
             try {
-                $items = osc_db_table(DB_TABLE_PREFIX . 't_item')
+                $items = Db::table(DB_TABLE_PREFIX . 't_item')
                     ->select('pk_i_id', 'fk_i_category_id')
                     ->where('fk_i_user_id', $id)
                     ->get();
@@ -410,24 +402,24 @@ class User extends DAO
                 $items = array();
             }
 
-            $itemManager = Item::newInstance();
+            $itemManager = Item::getInstance();
             foreach ($items as $item) {
                 $itemManager->deleteByPrimaryKey($item['pk_i_id']);
             }
 
-            ItemComment::newInstance()->delete(array('fk_i_user_id' => $id));
+            ItemComment::getInstance()->delete(array('fk_i_user_id' => $id));
 
-            // All four cascade, and stay listed for installs whose foreign keys were
+            // All three cascade, and stay listed for installs whose foreign keys were
             // never created. t_billing_ledger and t_billing_order are deliberately left
             // alone: the accounting record has to outlive the account, so neither has a
             // foreign key.
-            $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts', 't_form_submission');
+            $dependents = array('t_user_description', 't_alerts', 't_form_submission');
 
             // The user's own t_resource rows (avatars) go in the same transaction; their
-            // stored files are removed only after it commits.
+            // stored files are removed only after the outermost transaction commits.
             $ownerType = \mindstellar\model\Resource::OWNER_USER;
             try {
-                $resources = osc_db_table(DB_TABLE_PREFIX . 't_resource')
+                $resources = Db::table(DB_TABLE_PREFIX . 't_resource')
                     ->where('s_owner_type', $ownerType)
                     ->where('i_owner_id', (int)$id)
                     ->get();
@@ -436,16 +428,17 @@ class User extends DAO
             }
 
             try {
-                $deleted = osc_db_transaction(function () use ($id, $dependents, $ownerType) {
+                $deleted = Db::transaction(function () use ($id, $dependents, $ownerType) {
                     foreach ($dependents as $depTable) {
-                        osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_user_id', $id)->delete();
+                        Db::table(DB_TABLE_PREFIX . $depTable)->where('fk_i_user_id', $id)->delete();
                     }
-                    osc_db_table(DB_TABLE_PREFIX . 't_resource')
+                    \UserEmailTmp::getInstance()->deleteByUser($id);
+                    Db::table(DB_TABLE_PREFIX . 't_resource')
                         ->where('s_owner_type', $ownerType)
                         ->where('i_owner_id', (int)$id)
                         ->delete();
 
-                    return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+                    return Db::table($this->getTableName())->where('pk_i_id', $id)->delete();
                 });
             } catch (\Throwable $e) {
                 // Rolled back together, so a user who cannot be removed keeps their
@@ -454,11 +447,13 @@ class User extends DAO
             }
 
             if ($deleted === 1) {
-                try {
-                    (new \mindstellar\storage\ResourceUploader())->purgeDeleted($resources);
-                } catch (\Throwable $e) {
-                    error_log('deleteUser: stored files of user ' . (int)$id . ' not removed: ' . $e->getMessage());
-                }
+                Db::afterCommit(static function () use ($resources, $id): void {
+                    try {
+                        (new \mindstellar\storage\ResourceUploader())->purgeDeleted($resources);
+                    } catch (\Throwable $e) {
+                        error_log('deleteUser: stored files of user ' . (int)$id . ' not removed: ' . $e->getMessage());
+                    }
+                });
                 osc_run_hook('after_delete_user', $id);
 
                 return true;
@@ -484,7 +479,10 @@ class User extends DAO
         $exist      = $this->existDescription($conditions);
 
         if (!$exist) {
-            return $this->insertDescription($id, $locale, $info);
+            $inserted = $this->insertDescription($id, $locale, $info);
+            $this->dropCachedUser($id);
+
+            return $inserted;
         }
 
         $array_where = array(
@@ -493,12 +491,29 @@ class User extends DAO
         );
 
         try {
-            return osc_db_table(DB_TABLE_PREFIX . 't_user_description')
+            $result = Db::table(DB_TABLE_PREFIX . 't_user_description')
                 ->where('fk_c_locale_code', $locale)
                 ->where('fk_i_user_id', $id)
                 ->update(array('s_info' => $info));
         } catch (\mindstellar\database\DbException $e) {
             return false;
+        }
+        $this->dropCachedUser($id);
+
+        return $result;
+    }
+
+    /**
+     * Drop the cached user row (it holds the description).
+     *
+     * @param int|string $id
+     *
+     * @return void
+     */
+    private function dropCachedUser($id): void
+    {
+        if (function_exists('osc_invalidate_user_cache')) {
+            osc_invalidate_user_cache($id);
         }
     }
 
@@ -511,7 +526,7 @@ class User extends DAO
      */
     private function existDescription($conditions)
     {
-        $query = osc_db_table(DB_TABLE_PREFIX . 't_user_description');
+        $query = Db::table(DB_TABLE_PREFIX . 't_user_description');
         foreach ($conditions as $column => $value) {
             $query = $query->where($column, $value);
         }
@@ -535,7 +550,7 @@ class User extends DAO
     private function insertDescription($id, $locale, $info)
     {
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_user_description')->insert(array(
+            Db::table(DB_TABLE_PREFIX . 't_user_description')->insert(array(
                 'fk_i_user_id'     => $id,
                 'fk_c_locale_code' => $locale,
                 's_info'           => $info
@@ -660,7 +675,7 @@ class User extends DAO
             . ' LIMIT ' . (int)$start . ', ' . (int)$end;
 
         try {
-            $users['users'] = osc_db_stringify_rows(osc_db_select($sql, $params));
+            $users['users'] = Db::stringifyRows(Db::select($sql, $params));
         } catch (\mindstellar\database\DbException $e) {
             return $users;
         }
@@ -736,7 +751,7 @@ class User extends DAO
         // parameterizing an arbitrary fragment is not possible without breaking
         // the contract. The count is cast back to a string, as the row value was.
         try {
-            return (string)osc_db_table(DB_TABLE_PREFIX . 't_user')
+            return (string)Db::table(DB_TABLE_PREFIX . 't_user')
                 ->whereRaw($condition)
                 ->count();
         } catch (\mindstellar\database\DbException $e) {
@@ -758,15 +773,8 @@ class User extends DAO
     {
         if ($time != null) {
             try {
-                $row = osc_db_table(DB_TABLE_PREFIX . 't_user')
-                    ->select('dt_access_date', 's_access_ip')
-                    ->where('pk_i_id', $userId)
-                    ->where('dt_access_date', '<=', date('Y-m-d H:i:s', time() - $time))
-                    ->first();
+                return \mindstellar\user\UserStore::touchAccess((int) $userId, (string) $date, (string) $ip, (int) $time) ? 1 : false;
             } catch (\mindstellar\database\DbException $e) {
-                return false;
-            }
-            if ($row === null) {
                 return false;
             }
         }
@@ -792,7 +800,7 @@ class User extends DAO
         // int-cast before binding to reproduce that truncation. Returns the
         // affected-row count, as the legacy write did.
         try {
-            return osc_db_execute(
+            return Db::execute(
                 'UPDATE ' . $this->getTableName() . ' SET i_items = i_items + ? WHERE pk_i_id = ?',
                 array((int)$items, (int)$id)
             );
@@ -815,7 +823,7 @@ class User extends DAO
         }
 
         try {
-            return osc_db_execute(
+            return Db::execute(
                 'UPDATE ' . $this->getTableName()
                 . ' SET i_items = IF(i_items > 0, i_items - 1, i_items) WHERE pk_i_id = ?',
                 array((int)$id)

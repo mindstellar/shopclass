@@ -12,18 +12,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Page DAO
  */
 class Page extends DAO
 {
-    protected $cacheGroup = 'page';
+    use \mindstellar\base\SharedInstance;
 
-    /**
-     *
-     * @var Page
-     */
-    private static $instance;
+    protected $cacheGroup = 'page';
 
     /**
      * Set data related to t_pages table
@@ -47,17 +45,11 @@ class Page extends DAO
     }
 
     /**
-     * Return the shared Page model instance, creating it on first use.
-     *
-     * @return \Page
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -71,7 +63,7 @@ class Page extends DAO
     public function findByOrder($order, $locale = null)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('i_order', $order)
                 ->where('b_indelible', 0)
                 ->first();
@@ -83,7 +75,7 @@ class Page extends DAO
             return array();
         }
 
-        return $this->extendDescription(osc_db_stringify_row($row), $locale);
+        return $this->extendDescription(Db::stringifyRow($row), $locale);
     }
 
     /**
@@ -96,14 +88,14 @@ class Page extends DAO
      */
     public function extendDescription($aPage, $locale = null)
     {
-        $query = osc_db_table($this->getDescriptionTableName())
+        $query = Db::table($this->getDescriptionTableName())
             ->where('fk_i_pages_id', $aPage['pk_i_id']);
         if (null !== $locale) {
             $query = $query->where('fk_c_locale_code', $locale);
         }
 
         try {
-            $aDescriptions = osc_db_stringify_rows($query->get());
+            $aDescriptions = Db::stringifyRows($query->get());
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -142,14 +134,14 @@ class Page extends DAO
             return array();
         }
 
-        $query = osc_db_table($this->getDescriptionTableName())
+        $query = Db::table($this->getDescriptionTableName())
             ->whereIn('fk_i_pages_id', array_column($aPages, 'pk_i_id'));
         if (null !== $locale) {
             $query = $query->where('fk_c_locale_code', $locale);
         }
 
         try {
-            $aDescriptions = osc_db_stringify_rows($query->get());
+            $aDescriptions = Db::stringifyRows($query->get());
         } catch (\mindstellar\database\DbException $e) {
             // A failed lookup dropped every page before, because each page's own
             // description query returned nothing usable.
@@ -214,7 +206,7 @@ class Page extends DAO
     public function findByInternalName($intName, $locale = null)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('s_internal_name', $intName)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
@@ -225,7 +217,7 @@ class Page extends DAO
             return array();
         }
 
-        return $this->extendDescription(osc_db_stringify_row($row), $locale);
+        return $this->extendDescription(Db::stringifyRow($row), $locale);
     }
 
     /**
@@ -249,16 +241,16 @@ class Page extends DAO
             $order = isset($row['i_order']) ? $row['i_order'] : null;
 
             try {
-                $deleted = osc_db_transaction(function () use ($id, $order) {
+                $deleted = Db::transaction(function () use ($id, $order) {
                     if ($order !== null) {
                         // Inside the transaction so a failed delete does not renumber
                         // the pages that are still there.
                         $this->reOrderPages($order);
                     }
 
-                    osc_db_table($this->getDescriptionTableName())->where('fk_i_pages_id', $id)->delete();
+                    Db::table($this->getDescriptionTableName())->where('fk_i_pages_id', $id)->delete();
 
-                    return osc_db_table($this->tableName)->where('pk_i_id', $id)->delete();
+                    return Db::table($this->tableName)->where('pk_i_id', $id)->delete();
                 });
             } catch (\Throwable $e) {
                 return false;
@@ -286,7 +278,7 @@ class Page extends DAO
     public function findByPrimaryKey($id, $locale = null)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
@@ -297,15 +289,15 @@ class Page extends DAO
             return array();
         }
 
-        $row = osc_db_stringify_row($row);
+        $row = Db::stringifyRow($row);
 
         // page_description
-        $query = osc_db_table($this->getDescriptionTableName())
+        $query = Db::table($this->getDescriptionTableName())
             ->where('fk_i_pages_id', $id);
         if (null !== $locale) {
             $query = $query->where('fk_c_locale_code', $locale);
         }
-        $aRows = osc_db_stringify_rows($query->get());
+        $aRows = Db::stringifyRows($query->get());
 
         $row['locale'] = array();
         foreach ($aRows as $r) {
@@ -330,7 +322,7 @@ class Page extends DAO
             if ($page['i_order'] > $order) {
                 $new_order = $page['i_order'] - 1;
                 try {
-                    $arows += osc_db_table($this->tableName)
+                    $arows += Db::table($this->tableName)
                         ->where('pk_i_id', $page['pk_i_id'])
                         ->update(array('i_order' => $new_order));
                 } catch (\mindstellar\database\DbException $e) {
@@ -377,7 +369,7 @@ class Page extends DAO
      */
     private function loadList($indelible, $b_link, $locale, $start, $limit)
     {
-        $query = osc_db_table($this->getTableName());
+        $query = Db::table($this->getTableName());
         if (null !== $indelible) {
             $query = $query->where('b_indelible', $indelible);
         }
@@ -398,7 +390,7 @@ class Page extends DAO
         }
 
         try {
-            $aPages = osc_db_stringify_rows($query->get());
+            $aPages = Db::stringifyRows($query->get());
         } catch (\mindstellar\database\DbException $e) {
             return null;
         }
@@ -416,7 +408,7 @@ class Page extends DAO
      */
     public function count($indelible = null)
     {
-        $query = osc_db_table($this->getTableName());
+        $query = Db::table($this->getTableName());
         if (null !== $indelible) {
             $query = $query->where('b_indelible', $indelible);
         }
@@ -442,7 +434,7 @@ class Page extends DAO
     public function insert($aFields, $aFieldsDescription = null)
     {
         try {
-            $order = osc_db_scalar('SELECT MAX(i_order) AS o FROM ' . $this->tableName);
+            $order = Db::scalar('SELECT MAX(i_order) AS o FROM ' . $this->tableName);
             if (null === $order) {
                 $order = -1;
             }
@@ -458,7 +450,7 @@ class Page extends DAO
             // The builder hands back the new id directly, and a write that does not raise has
             // inserted its row -- which is what an affected-row check stands in for.
             try {
-                $id = osc_db_table($this->tableName)->insert(array(
+                $id = Db::table($this->tableName)->insert(array(
                     's_internal_name' => $aFields['s_internal_name'],
                     'b_indelible'     => $aFields['b_indelible'],
                     'dt_pub_date'     => date('Y-m-d H:i:s'),
@@ -498,7 +490,7 @@ class Page extends DAO
     {
 
         try {
-            osc_db_table($this->getDescriptionTableName())->insert(array(
+            Db::table($this->getDescriptionTableName())->insert(array(
                 'fk_i_pages_id'    => $id,
                 'fk_c_locale_code' => $locale,
                 's_title'          => $title,
@@ -522,7 +514,7 @@ class Page extends DAO
     public function findPrevPage($order)
     {
         try {
-            $row = osc_db_table($this->tableName)
+            $row = Db::table($this->tableName)
                 ->where('b_indelible', 0)
                 ->where('i_order', '<', (int)$order)
                 ->orderBy('i_order', 'DESC')
@@ -535,7 +527,7 @@ class Page extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -549,7 +541,7 @@ class Page extends DAO
     public function findNextPage($order)
     {
         try {
-            $row = osc_db_table($this->tableName)
+            $row = Db::table($this->tableName)
                 ->where('b_indelible', 0)
                 ->where('i_order', '>', (int)$order)
                 ->orderBy('i_order', 'ASC')
@@ -562,7 +554,7 @@ class Page extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -588,7 +580,7 @@ class Page extends DAO
             }
 
             try {
-                return osc_db_table($this->getDescriptionTableName())
+                return Db::table($this->getDescriptionTableName())
                     ->where('fk_c_locale_code', $locale)
                     ->where('fk_i_pages_id', $id)
                     ->update(array('s_title' => $title, 's_text' => $text));
@@ -610,7 +602,7 @@ class Page extends DAO
      */
     public function existDescription($conditions)
     {
-        $query = osc_db_table($this->getDescriptionTableName());
+        $query = Db::table($this->getDescriptionTableName());
         foreach ($conditions as $key => $value) {
             $query = $query->where($key, $value);
         }
@@ -634,7 +626,7 @@ class Page extends DAO
                 'dt_mod_date'     => date('Y-m-d H:i:s')
             );
             try {
-                return osc_db_table($this->tableName)
+                return Db::table($this->tableName)
                     ->where('pk_i_id', $id)
                     ->update($fields);
             } catch (\mindstellar\database\DbException $e) {
@@ -661,7 +653,7 @@ class Page extends DAO
                 'dt_mod_date' => date('Y-m-d H:i:s')
             );
             try {
-                return osc_db_table($this->tableName)
+                return Db::table($this->tableName)
                     ->where('pk_i_id', $id)
                     ->update($fields);
             } catch (\mindstellar\database\DbException $e) {
@@ -689,7 +681,7 @@ class Page extends DAO
                 'dt_mod_date' => date('Y-m-d H:i:s')
             );
             try {
-                return osc_db_table($this->tableName)
+                return Db::table($this->tableName)
                     ->where('pk_i_id', $id)
                     ->update($fields);
             } catch (\mindstellar\database\DbException $e) {
@@ -726,7 +718,7 @@ class Page extends DAO
      */
     public function internalNameExists($id, $internalName)
     {
-        return osc_db_table($this->tableName)
+        return Db::table($this->tableName)
             ->where('s_internal_name', $internalName)
             ->where('pk_i_id', '<>', (int)$id)
             ->count() > 0;
@@ -758,7 +750,12 @@ class Page extends DAO
             return false;
         }
 
+        // A translation can still carry a template for a page this version no longer has.
+        $pages = array_map('strval', array_column(Db::table($this->getTableName())->select('pk_i_id')->get(), 'pk_i_id'));
         foreach ($templates as $template) {
+            if (!in_array((string) $template['fk_i_page_id'], $pages, true)) {
+                continue;
+            }
             $result = $this->updateDescription($template['fk_i_page_id'], $language, $template['s_title'], $template['s_description']);
             if (!$result) {
                 $errorPageIds [] = $template['fk_i_page_id'];

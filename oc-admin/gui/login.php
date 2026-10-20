@@ -19,14 +19,14 @@ if (!defined('ABS_PATH')) {
     <input type="hidden" name="action" value="login_post"/>
     <div class="form-floating mb-3">
         <input type="text" name="user" class="form-control" id="user_login"
-               value="<?php if (defined('DEMO')) {
+               value="<?php if (\mindstellar\security\Demo::active()) {
                    echo 'admin';
                } ?>" size="20" placeholder="Enter your username">
         <label for="user_login"><?php _e('Username'); ?></label>
     </div>
     <div class="form-floating mb-3">
         <input type="password" name="password" id="user_pass" class="form-control" placeholder="Password"
-               value="<?php if (defined('DEMO')) {
+               value="<?php if (\mindstellar\security\Demo::active()) {
                    echo 'admin';
                } ?>" size="20" autocomplete="off">
         <label for="user_pass"><?php _e('Password'); ?></label>

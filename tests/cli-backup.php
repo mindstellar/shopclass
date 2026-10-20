@@ -175,7 +175,7 @@ $GLOBALS['busy'] = false;
 
 $setMarker('locked');
 $copies = count($store->all());
-$lock = (new \mindstellar\migration\MigrationRunner(\mindstellar\database\Connection::instance(), ABS_PATH . 'oc-includes/osclass/installer/migrations'))->lockName();
+$lock = (new \mindstellar\migration\MigrationRunner(\mindstellar\database\Connection::getInstance(), ABS_PATH . 'oc-includes/osclass/installer/migrations'))->lockName();
 $admin->query("SELECT GET_LOCK('" . $admin->real_escape_string($lock) . "', 0)");
 list($code, , $err) = backup_cli('restore', array('_' => array($name), 'yes' => true));
 pin('a restore while a database update holds the lock is refused', 1, $code);

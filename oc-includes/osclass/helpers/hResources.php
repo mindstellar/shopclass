@@ -9,6 +9,7 @@
  */
 
 use mindstellar\model\Resource;
+use mindstellar\storage\ResourceLocator;
 use mindstellar\storage\ResourceUploader;
 use mindstellar\storage\StorageManager;
 
@@ -22,7 +23,7 @@ use mindstellar\storage\StorageManager;
  */
 function osc_get_resources(string $ownerType, int $ownerId): array
 {
-    return Resource::newInstance()->findByOwner($ownerType, $ownerId);
+    return (new Resource())->findByOwner($ownerType, $ownerId);
 }
 
 /**
@@ -54,7 +55,7 @@ function osc_get_resource_url(array $resource, string $variant = ''): string
         default     => array('', 'resource_url'),
     };
 
-    $url = $base . ($resource['pk_i_id'] ?? '') . $suffix . '.' . ($resource['s_extension'] ?? '');
+    $url = $base . ResourceLocator::baseName($resource) . $suffix . '.' . ($resource['s_extension'] ?? '');
 
     return (string) osc_apply_filter($filter, $url, $resource);
 }
@@ -76,7 +77,7 @@ function osc_get_resource_url(array $resource, string $variant = ''): string
 // this is the owner-agnostic equivalent for ResourceUploader uploads. The row
 // carries s_owner_type, so the worker routes it through the Resource model.
 osc_add_hook('uploaded_resource', static function ($resource) {
-    $remote = StorageManager::instance()->remote();
+    $remote = StorageManager::getInstance()->remote();
     if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
         return;
     }
@@ -86,12 +87,8 @@ osc_add_hook('uploaded_resource', static function ($resource) {
 // A user's resources are removed by User::deleteUser(), with the user row, so a delete
 // that rolls back keeps them.
 
-// Future-proofing: no t_resource rows use owner type 'item' until the item
-// backfill lands, but registering the cascade now means they are covered the
-// moment they exist. The legacy t_item_resource path is unaffected.
-osc_add_hook('delete_item', static function ($id) {
-    (new ResourceUploader())->deleteByOwner(Resource::OWNER_ITEM, (int) $id);
-});
+// A listing's photos are removed by Item::deleteByPrimaryKey(), with the listing, so a
+// delete that rolls back keeps them.
 
 // Daily orphan sweep: reclaim resources whose owner record is gone.
 osc_add_hook('cron_daily', 'osc_sweep_orphan_resources');
@@ -116,7 +113,7 @@ function osc_sweep_orphan_resources(): void
 
     // Each run continues where the last stopped, and wraps to the start at the end.
     $offset        = (int) osc_get_preference('resource_sweep_offset');
-    $resourceModel = Resource::newInstance();
+    $resourceModel = new Resource();
     $ids = $resourceModel->getResourceIdsBatch($offset, $sweepCap);
     osc_set_preference('resource_sweep_offset', count($ids) < $sweepCap ? 0 : $offset + $sweepCap, 'osclass', 'INTEGER');
     if (empty($ids)) {
@@ -155,7 +152,7 @@ function osc_sweep_orphan_resources(): void
     }
 
     if ($removed > 0 && class_exists('Log')) {
-        Log::newInstance()->insertLog(
+        Log::getInstance()->insertLog(
             'resources',
             'orphan_sweep',
             0,
@@ -181,9 +178,9 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
     }
 
     $owner = match ($ownerType) {
-        Resource::OWNER_ITEM => Item::newInstance()->findByPrimaryKey($ownerId),
-        Resource::OWNER_USER => User::newInstance()->findByPrimaryKey($ownerId),
-        Resource::OWNER_PAGE => Page::newInstance()->findByPrimaryKey($ownerId),
+        Resource::OWNER_ITEM => Item::getInstance()->findByPrimaryKey($ownerId),
+        Resource::OWNER_USER => User::getInstance()->findByPrimaryKey($ownerId),
+        Resource::OWNER_PAGE => Page::getInstance()->findByPrimaryKey($ownerId),
         default              => null,
     };
 
@@ -195,27 +192,21 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
  * Unified media library (read layer over both resource tables)
  * -------------------------------------------------------------------------
  * The admin Media page and the editor's media picker both browse every uploaded
- * image: listing photos (t_item_resource) plus everything in the polymorphic
- * t_resource (avatars, page images, unattached library uploads, plugin types).
- * These helpers project both tables onto one shape so callers don't repeat the
- * union. t_item_resource stays the source of truth for listing images — this is
- * a view layer only.
+ * file in t_resource: listing photos (owner type `item`), avatars, page images,
+ * unattached library uploads and plugin types, in one shape.
  */
 
 /**
- * Distinct, well-formed owner types currently present in t_resource.
+ * Distinct, well-formed owner types currently present in t_resource, listing photos left out.
  *
  * @return string[]
  */
 function osc_media_owner_types(): array
 {
-    $rows = osc_db_select(
-        'SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource ORDER BY s_owner_type'
-    );
     $out = array();
-    foreach ($rows as $row) {
-        if (Resource::isValidOwnerType((string) $row['s_owner_type'])) {
-            $out[] = (string) $row['s_owner_type'];
+    foreach (\mindstellar\storage\MediaQuery::ownerTypes() as $type) {
+        if (Resource::isValidOwnerType($type)) {
+            $out[] = $type;
         }
     }
 
@@ -224,45 +215,20 @@ function osc_media_owner_types(): array
 
 /**
  * A page of normalised media rows plus the total for a filter. $type is 'all',
- * 'item' (listing photos), or a t_resource owner type ('user', 'page',
- * 'library', a plugin type). Each row carries: src ('item'|'resource'), id,
- * owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage.
+ * 'item' (listing photos), ':site' (all but listing and user photos), or a t_resource owner type ('user', 'page', 'library', a
+ * plugin type). Each row carries: src ('item'|'resource'),
+ * id, owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage, s_base_name.
  *
  * @param string $type
  * @param int    $iPage    1-based page number
  * @param int    $perPage
+ * @param string $search   words in the file name, listing title, or user name or e-mail
  *
  * @return array{rows:array<int,array>,total:int}
  */
-function osc_media_library_query(string $type, int $iPage, int $perPage): array
+function osc_media_library_query(string $type, int $iPage, int $perPage, string $search = ''): array
 {
-    $itemT  = DB_TABLE_PREFIX . 't_item_resource';
-    $resT   = DB_TABLE_PREFIX . 't_resource';
-    $offset = max(0, ($iPage - 1) * $perPage);
-
-    $itemSel = "SELECT 'item' AS src, pk_i_id AS id, fk_i_item_id AS owner_id, 'item' AS owner_type,"
-        . " s_name, s_extension, s_content_type, s_path, s_storage, NULL AS dt FROM $itemT";
-    $resSel  = "SELECT 'resource' AS src, pk_i_id AS id, i_owner_id AS owner_id, s_owner_type AS owner_type,"
-        . " s_name, s_extension, s_content_type, s_path, s_storage, dt_created AS dt FROM $resT";
-
-    $params = array();
-    if ($type === 'item') {
-        $base = $itemSel;
-    } elseif ($type === 'all') {
-        $base = "($itemSel) UNION ALL ($resSel)";
-    } else {
-        $base     = $resSel . ' WHERE s_owner_type = ?';
-        $params[] = $type;
-    }
-
-    $total = (int) osc_db_scalar("SELECT COUNT(*) FROM ($base) AS m", $params);
-    $rows  = osc_db_select(
-        "SELECT * FROM ($base) AS m ORDER BY (dt IS NULL), dt DESC, id DESC"
-        . ' LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset,
-        $params
-    );
-
-    return array('rows' => $rows, 'total' => $total);
+    return \mindstellar\storage\MediaQuery::page($type, $iPage, $perPage, $search);
 }
 
 /**
@@ -278,6 +244,7 @@ function osc_media_row_urls(array $row): array
 {
     $res = array(
         'pk_i_id'        => $row['id'] ?? '',
+        's_base_name'    => $row['s_base_name'] ?? null,
         's_path'         => $row['s_path'] ?? '',
         's_extension'    => $row['s_extension'] ?? '',
         's_storage'      => $row['s_storage'] ?? 'local',

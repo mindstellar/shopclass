@@ -62,7 +62,8 @@ characters. The namespace is required. Without it the first plugin to claim `sen
 take the word from every other plugin.
 
 Use your plugin's own prefix: `acme.send_digest`, `acme.mail.retry`. Core uses
-`storage.*`, `category.*`, `alerts.*`, `cleanup.*` and `message.*`.
+`storage.*`, `category.*`, `alerts.*`, `cleanup.*`, `message.*`, `listing.*`, `billing.*`,
+`user.*`, `backup.*`, `location.*` and `api.*`.
 
 An invalid type throws at the call site, not hours later in a cron run.
 
@@ -169,6 +170,13 @@ queue and does nothing else, so it is safe to run every minute:
 ```
 * * * * * php /path/to/oc-cli.php jobs:work --max-seconds=50
 ```
+
+Or keep one worker running with `jobs:work --listen`. With a Redis or Valkey cache, queueing
+a job wakes it at once (a delayed job runs within 30 seconds of its time); without one it
+looks every five seconds. Every job is still a row in
+`t_job_queue`, so cron, `jobs:work` and the listener can run side by side, and turning Redis
+off loses nothing. The listener also runs the due scheduled tasks every five minutes, so it
+needs no cron line. The Docker image runs it for you.
 
 `php oc-cli.php jobs:status` reports what is waiting and names anything that gave up. Both
 exit non-zero when a job has stopped retrying, so a cron log can notice. `php oc-cli.php doctor`

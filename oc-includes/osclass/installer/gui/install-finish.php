@@ -21,6 +21,8 @@ if (!defined('ABS_PATH')) {
 // than inheriting the caller's scope.
 global $error;
 
+/** @var string $password */
+
 $data = finish_installation($password);
 $ins_email_failed = !empty($error) || empty($data['s_email']);
 ?>
@@ -37,7 +39,7 @@ $ins_email_failed = !empty($error) || empty($data['s_email']);
     </div>
 <?php } ?>
 
-<?php if (Session::newInstance()->_get('install_sample_warning')) { ?>
+<?php if (Session::getInstance()->_get('install_sample_warning')) { ?>
     <div class="ins-panel ins-panel-warning">
         <div class="ins-panel-body"><?php _e("Some sample content couldn't be added. Your site will still work fine."); ?></div>
     </div>

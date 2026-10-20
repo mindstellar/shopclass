@@ -1,6 +1,6 @@
 ---
 title: Object caching
-description: "Speed up ShopClass by keeping repeated database results in memcached or APCu: setup, how long entries last, environment variables, and how it differs from a page cache."
+description: "Speed up ShopClass by keeping repeated database results in memcached, Redis, Valkey or APCu: setup, how long entries last, environment variables, and how it differs from a page cache."
 sidebar:
   order: 4
 ---
@@ -23,14 +23,16 @@ finished pages in front of PHP. You can use both. See
 
 ## Before you start
 
-The cache needs a PHP extension (an add-on module for PHP). Install the one you
-want, then check that PHP can see it:
+memcached and APCu need a PHP extension (an add-on module for PHP). Install the
+one you want, then check that PHP can see it:
 
 ```bash
-php -m | grep -E 'memcached|apcu'
+php -m | grep -E 'memcached|apcu|redis'
 ```
 
-If the extension is missing, the setting does nothing.
+If the extension is missing, the setting does nothing. Redis and Valkey need no
+extension: ShopClass uses `phpredis` when it is installed, and its own client
+otherwise.
 
 ## memcached (recommended)
 
@@ -52,6 +54,80 @@ $_cache_config = array(
 );
 ```
 
+Each PHP worker keeps its connection between pages, as it does with Redis and phpredis.
+
+If PHP has the **igbinary** extension, Redis, Valkey and memcached store values in its format:
+smaller and faster to read. The Docker image includes it. A server without it treats such a value
+as missing and rebuilds it, so mixed servers are safe.
+
+## Redis or Valkey
+
+**Redis** and **Valkey** are cache servers like memcached. Use them if your host
+offers one, or if you run other things on Redis already. KeyDB and Dragonfly work
+too.
+
+```php
+define('OSC_CACHE', 'redis');
+```
+
+This connects to `127.0.0.1:6379`. For another server, a password or a database
+number:
+
+```php
+define('OSC_CACHE', 'redis');
+$_cache_config = array(
+    array('default_host' => '10.0.0.5', 'default_port' => 6379, 'password' => 'secret', 'database' => 1),
+);
+```
+
+A host starting with `/` is a Unix socket, and `tls://host` connects over TLS. Add
+`'username'` for a server with users (ACL). Several sites can share one server:
+each keeps its own keys, and emptying the cache empties only that site's.
+
+With Redis or Valkey, a background job also starts the moment it is queued, when the
+job listener runs (`oc-cli.php jobs:work --listen`; the Docker image runs it). See
+[Background jobs](/docs/developers/jobs/).
+
+Redis or Valkey also takes two busy writes off the database:
+
+- **Listing views** add up there and a background job saves them about once a minute, so a
+  view count can be a minute behind. Without the job listener or a cron line running
+  `jobs:work` each minute, it is as far behind as your cron runs.
+- **Rate limits** (sign-up, comments, contact forms, the REST API) count there. A limit that
+  must refuse when unsure, such as the admin two-step sign-in, stays in the database.
+
+If the server stops answering, both go back to the database on their own. Give the server
+enough memory that it never has to drop keys (the Docker compose file gives 128 MB): a
+dropped rate-limit key starts that limit again from zero.
+
+Run the server as a cache only, with no snapshot to disk (`--save "" --appendonly no`), as the
+Docker stacks do. A restart then starts empty instead of bringing back old data; it loses
+up to a minute of view counts not yet saved.
+
+With memcached or APCu, only the REST API's per-minute limits count in the cache: with
+memcached every web server shares one count, with APCu each server counts its own. Everything
+else counts in the database, as it does with no `OSC_CACHE`.
+
+Settings, including secret keys, are stored in the cache. Use a Redis or
+memcached server that only this site can reach.
+
+A change made from the command line reaches web pages at once, even when `OSC_CLI_URL` names
+another address than visitors use: the "this changed" markers are kept per database.
+
+## A copy in each PHP worker
+
+With Redis, Valkey or memcached and the APCu extension, `define('OSC_CACHE_LOCAL', true);`
+lets each PHP worker keep its own copy of the settings, categories, pages and other values
+every page reads. It then asks the cache server for them at most every 15 seconds. A change
+still shows on the next page; a value that only runs out of time can be read up to 15
+seconds late.
+
+Turn it on only when no other site runs under the same PHP: other sites there can read
+and change APCu. The Docker image turns it on.
+
+Themes and plugins get the same copies when they cache through `osc_cache_remember()`; see
+[Helper functions](/docs/developers/helpers/).
+
 ## APCu (one server only)
 
 **APCu** keeps the cache inside PHP itself. It is simpler and faster, but each
@@ -71,8 +147,10 @@ change, keep entries longer:
 define('OSC_CACHE_TTL', 300);
 ```
 
-The number is in seconds. The longer it is, the longer a change in the admin
-panel can take to show on the site.
+The number is in seconds. Saving in the admin panel clears what it changed, so
+those edits show at once. A longer time only delays changes made outside the
+admin, such as a plugin writing to the database directly. Settings are always
+kept for 5 minutes at most.
 
 ## Setting it with environment variables
 
@@ -81,9 +159,12 @@ environment variables instead:
 
 | Variable | What it sets |
 |---|---|
-| `OSC_CACHE` | The cache type: `memcached`, `apcu` or `memcache` |
-| `OSC_CACHE_HOST` | The cache server's host, for memcached or memcache |
-| `OSC_CACHE_PORT` | The cache server's port. Default `11211` |
+| `OSC_CACHE` | The cache type: `memcached`, `redis` or `apcu` |
+| `OSC_CACHE_HOST` | The cache server's host, for memcached or redis |
+| `OSC_CACHE_PORT` | The cache server's port. Default `11211`, or `6379` for redis |
+| `OSC_CACHE_PASSWORD` | Redis only: the server's password |
+| `OSC_CACHE_USERNAME` | Redis only: the user name, for a server with users |
+| `OSC_CACHE_DB` | Redis only: the database number. Default `0` |
 
 A `define()` in `config.php`, or a `$_cache_config` array, always wins over
 these variables.
@@ -97,10 +178,25 @@ ShopClass, empty the cache:
 php oc-cli.php cache:flush
 ```
 
-## The old memcache driver
+## The memcache driver is gone
 
-`define('OSC_CACHE', 'memcache')` still works. It uses the old `memcache`
-extension, which nobody maintains any more. It is deprecated: use `memcached`.
+The `memcache` driver is gone. `define('OSC_CACHE', 'memcache')` now uses the
+`memcached` driver with the same servers, so install the `memcached` extension.
+Without it, the site falls back to the one-request cache.
+
+## Writing your own driver
+
+A plugin can add a cache: a class named `Object_Cache_<name>`, picked with
+`OSC_CACHE` set to `<name>`. It must be loaded before the first cache call.
+
+- Extend `mindstellar\base\Cache` and write `is_supported()`, `fetch()`, `add()`,
+  `set()`, `delete()`, `flush()`, `_get_cache()` and `statsTitle()`. The base keeps
+  the in-request copy, the hit and miss counts and the site key prefix.
+- Or implement `mindstellar\cache\CacheDriver` yourself. Drivers written for the
+  old `iObject_Cache` interface keep working.
+
+An unknown name, or a driver whose `is_supported()` says no, falls back to the
+one-request cache with a PHP notice.
 
 ## Troubleshooting
 
@@ -110,8 +206,9 @@ The cache still holds the old answer until the entry ends. Lower
 
 **The site got slower after turning it on.**
 ShopClass probably cannot reach the cache server. Every lookup then waits for the
-connection to time out first. Check the host and port, and check that memcached
-is running.
+connection to time out first. Check the host and port, and check that the cache
+server is running. ShopClass stops asking a server after its first failure in a page
+load, and the reason is in the PHP error log.
 
 **Two web servers show different versions of the site.**
-You are using APCu, which keeps one cache per server. Move to memcached.
+You are using APCu, which keeps one cache per server. Move to memcached or Redis.

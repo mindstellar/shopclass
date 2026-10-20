@@ -30,7 +30,7 @@
  */
 function osc_add_flash_message($msg, $section = 'pubMessages')
 {
-    Session::newInstance()->_setMessage($section, $msg, 'error');
+    Session::getInstance()->_setMessage($section, $msg, 'error');
 }
 
 /**
@@ -43,7 +43,7 @@ function osc_add_flash_message($msg, $section = 'pubMessages')
  */
 function osc_add_flash_ok_message($msg, $section = 'pubMessages')
 {
-    Session::newInstance()->_setMessage($section, $msg, 'ok');
+    Session::getInstance()->_setMessage($section, $msg, 'ok');
 }
 
 /**
@@ -56,7 +56,7 @@ function osc_add_flash_ok_message($msg, $section = 'pubMessages')
  */
 function osc_add_flash_error_message($msg, $section = 'pubMessages')
 {
-    Session::newInstance()->_setMessage($section, $msg, 'error');
+    Session::getInstance()->_setMessage($section, $msg, 'error');
 }
 
 /**
@@ -69,7 +69,7 @@ function osc_add_flash_error_message($msg, $section = 'pubMessages')
  */
 function osc_add_flash_info_message($msg, $section = 'pubMessages')
 {
-    Session::newInstance()->_setMessage($section, $msg, 'info');
+    Session::getInstance()->_setMessage($section, $msg, 'info');
 }
 
 /**
@@ -82,7 +82,7 @@ function osc_add_flash_info_message($msg, $section = 'pubMessages')
  */
 function osc_add_flash_warning_message($msg, $section = 'pubMessages')
 {
-    Session::newInstance()->_setMessage($section, $msg, 'warning');
+    Session::getInstance()->_setMessage($section, $msg, 'warning');
 }
 
 /**
@@ -108,7 +108,7 @@ function osc_add_flash_warning_message($msg, $section = 'pubMessages')
  */
 function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage', $id = 'flashmessage')
 {
-    $messages = Session::newInstance()->_getMessage($section);
+    $messages = Session::getInstance()->_getMessage($section);
     if (is_array($messages) && $messages !== array()) {
         // Mount point for scripts that show a message after load (ItemForm's image
         // delete writes into it). Printed once, before the loop: inside it, two
@@ -158,7 +158,7 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
             }
         }
     }
-    Session::newInstance()->_dropMessage($section);
+    Session::getInstance()->_dropMessage($section);
 }
 
 /**
@@ -171,9 +171,9 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
  */
 function osc_get_flash_message($section = 'pubMessages', $dropMessages = true)
 {
-    $message = Session::newInstance()->_getMessage($section);
+    $message = Session::getInstance()->_getMessage($section);
     if ($dropMessages) {
-        Session::newInstance()->_dropMessage($section);
+        Session::getInstance()->_dropMessage($section);
     }
 
     return $message;

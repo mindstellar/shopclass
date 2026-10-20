@@ -147,6 +147,42 @@ CONF
 }
 write_microcache_conf
 
+# PHP worker pool: php-fpm's own default of 5 workers leaves a multi-core host idle.
+# OSC_FPM_MAX_CHILDREN sets it; unset, it is three per CPU, at least 5, at most memory / 64 MB.
+write_fpm_pool_conf() {
+    conf=/usr/local/etc/php-fpm.d/zz-osc-pool.conf
+    max="${OSC_FPM_MAX_CHILDREN:-}"
+    if [ -z "$max" ]; then
+        cpus=$(nproc 2>/dev/null || echo 1)
+        if read -r quota period < /sys/fs/cgroup/cpu.max 2>/dev/null && [ "$quota" != "max" ]; then
+            cpus=$(( (quota + period - 1) / period ))
+        fi
+        max=$(( cpus * 3 ))
+        mem_kb=$(awk '/^MemTotal:/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+        if read -r limit < /sys/fs/cgroup/memory.max 2>/dev/null && [ "$limit" != "max" ]; then
+            mem_kb=$(( limit / 1024 ))
+        fi
+        by_mem=$(( (mem_kb / 1024 - 256) / 64 ))
+        [ "$by_mem" -gt 0 ] && [ "$max" -gt "$by_mem" ] && max=$by_mem
+        [ "$max" -lt 5 ] && max=5
+    fi
+    case "$max" in
+        ''|*[!0-9]*|0) echo "entrypoint: OSC_FPM_MAX_CHILDREN must be a whole number above 0; keeping php-fpm's default." >&2; return 0 ;;
+    esac
+    spare=$(( (max + 3) / 4 ))
+    {
+        echo "; Rendered by entrypoint from the environment; do not edit."
+        echo "[www]"
+        echo "pm = dynamic"
+        echo "pm.max_children = $max"
+        echo "pm.start_servers = $spare"
+        echo "pm.min_spare_servers = $spare"
+        echo "pm.max_spare_servers = $(( (max + 1) / 2 ))"
+    } > "$conf"
+    echo "entrypoint: php-fpm runs up to $max workers."
+}
+write_fpm_pool_conf
+
 # Built-in HTTPS: serve the certificate already on the volume from the first request.
 /application/.docker/prod/tls.sh conf
 
@@ -160,7 +196,10 @@ write_microcache_conf
 #   SMTP_PORT      default 25. 587/465 (or SMTP_TLS=1) enables STARTTLS/TLS.
 #   SMTP_USER      set to enable SMTP AUTH; omit for an unauthenticated sidecar.
 #   SMTP_PASSWORD  password for SMTP_USER.
-#   SMTP_FROM      default envelope From. Defaults to root@<hostname>.
+#   SMTP_FROM      default envelope From. Defaults to root@<hostname>. "Name <a@b.c>"
+#                  is taken as a@b.c; the display name comes from Settings -> Mail.
+#   SMTP_STARTTLS  on/off (also 1/0, true/false). Defaults to on, and off for port 465,
+#                  which starts TLS at once.
 configure_mail() {
     ini=/usr/local/etc/php/conf.d/zz-mail.ini   # loads after 99-shopclass.ini
     host="${SMTP_HOST:-}"
@@ -180,13 +219,23 @@ SH
     fi
     port="${SMTP_PORT:-25}"
     from="${SMTP_FROM:-root@$(hostname)}"
+    # msmtp wants a bare address here; it is the envelope sender, not the From: header.
+    case "$from" in
+        *"<"*">"*) from="${from##*<}"; from="${from%%>*}" ;;
+    esac
+    starttls="${SMTP_STARTTLS:-}"
+    [ -z "$starttls" ] && { [ "$port" = "465" ] && starttls=off || starttls=on; }
+    case "$starttls" in
+        0|off|OFF|Off|false|FALSE|False|no|NO|No) starttls=off ;;
+        *) starttls=on ;;
+    esac
     {
         echo "# Rendered by entrypoint from the environment; do not edit."
         echo "defaults"
         echo "logfile -"
         if [ "${SMTP_TLS:-}" = "1" ] || [ "$port" = "587" ] || [ "$port" = "465" ]; then
             echo "tls on"
-            echo "tls_starttls ${SMTP_STARTTLS:-on}"
+            echo "tls_starttls $starttls"
             echo "tls_trust_file /etc/ssl/certs/ca-certificates.crt"
         else
             echo "tls off"
@@ -251,6 +300,8 @@ if ! php "$CLI" install --unattended; then
     echo "entrypoint: install failed — check DB_*/WEB_PATH/OSC_ADMIN_* environment" >&2
     exit 1
 fi
+# A language the install downloaded was written as root; the site updates and deletes it as www-data.
+chown -R www-data:www-data /application/oc-content/languages 2>/dev/null || true
 
 # Reconcile bundled plugins/themes onto the persistent oc-content volume: install
 # ones this image bundles that the volume is missing, refresh ones the image

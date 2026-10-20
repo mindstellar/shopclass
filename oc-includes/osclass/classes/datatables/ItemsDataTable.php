@@ -13,6 +13,7 @@
  */
 
 use mindstellar\admin\ListPaging;
+use mindstellar\search\SearchRunner;
 use mindstellar\utility\Sanitize;
 
 /**
@@ -56,9 +57,17 @@ class ItemsDataTable extends DataTable
 
         osc_run_hook('manage_item_search_conditions', $this->mSearch);
 
-        $this->processData(Item::newInstance()->extendCategoryName($this->mSearch->doSearch()));
-        $this->totalFiltered = $this->mSearch->count();
-        $this->total         = $this->mSearch->countAll();
+        // A search backend may answer first; it gets the same full rows doSearch() gives.
+        $answer = SearchRunner::answer($this->mSearch, 'admin', false);
+        if ($answer !== null) {
+            $items               = $answer['items'];
+            $this->totalFiltered = (int)($answer['total'] ?? count($items));
+        } else {
+            $items               = $this->mSearch->doSearch();
+            $this->totalFiltered = $this->mSearch->count();
+        }
+        $this->processData(Item::getInstance()->extendCategoryName($items));
+        $this->total = $this->mSearch->countAll();
 
         return $this->getData();
     }
@@ -80,16 +89,12 @@ class ItemsDataTable extends DataTable
             $arg_expiration .= '&direction=asc';
         }
 
-        Rewrite::newInstance()->init();
-        $page = Params::getParamInt('iPage');
-        if ($page == 0) {
-            $page = 1;
-        }
-        Params::setParam('iPage', $page);
+        Rewrite::getInstance()->init();
+        ListPaging::page();
         $url_base = preg_replace(
             '|&direction=([^&]*)|',
             '',
-            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::newInstance()->get_raw_request_uri())
+            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::getInstance()->get_raw_request_uri())
         );
 
         $this->addColumn('status-border', '');
@@ -120,19 +125,7 @@ class ItemsDataTable extends DataTable
     private function getDBParams($_get)
     {
 
-        if (!isset($_get['iDisplayStart'])) {
-            $_get['iDisplayStart'] = 0;
-        }
-        if (!isset($_get['iDisplayLength'])) {
-            $_get['iDisplayLength'] = 10;
-        }
-
-        if (!is_numeric($_get['iPage']) || $_get['iPage'] < 1) {
-            Params::setParam('iPage', 1);
-            $this->iPage = 1;
-        } else {
-            $this->iPage = $_get['iPage'];
-        }
+        $this->iPage = ListPaging::page();
 
         $withUserId    = false;
         $no_user_email = '';
@@ -150,7 +143,7 @@ class ItemsDataTable extends DataTable
                 $withUserId        = true;
             }
             if ($k === 'itemId' && $v != '') {
-                $this->mSearch->addItemId($sanitizer->int($v));
+                $this->mSearch->addItemId((int) $sanitizer->int($v));
                 $this->withFilters = true;
             }
             if ($k === 'countryId' && $v != '') {
@@ -183,19 +176,19 @@ class ItemsDataTable extends DataTable
                 $this->withFilters = true;
             }
             if ($k === 'b_premium' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_premium = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_premium', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'b_active' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_active = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_active', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'b_enabled' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_enabled = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_enabled', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'b_spam' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_spam = ' . $sanitizer->int($v));
+                $this->mSearch->addFlag('b_spam', $sanitizer->int($v) === 1);
                 $this->withFilters = true;
             }
             if ($k === 'user' && $v != '') {
@@ -210,7 +203,7 @@ class ItemsDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start($this->iPage, $this->limit);
         $this->mSearch->limit($this->start, $this->limit);
 
@@ -247,7 +240,7 @@ class ItemsDataTable extends DataTable
         if (!empty($items)) {
             $csrf_token_url = osc_csrf_token_url();
             foreach ($items as $aRow) {
-                View::newInstance()->_exportVariableToView('item', $aRow);
+                View::getInstance()->_exportVariableToView('item', $aRow);
                 $row     = array();
                 $options = array();
                 // -- prepare data --
@@ -311,11 +304,11 @@ class ItemsDataTable extends DataTable
                     . '?page=items&amp;action=delete&amp;id[]=' . $aRow['pk_i_id'] . '">' . __('Delete') . '</a>';
 
                 // only show if there are data
-                if (ItemComment::newInstance()->totalComments($aRow['pk_i_id']) > 0) {
+                if (ItemComment::getInstance()->totalComments($aRow['pk_i_id']) > 0) {
                     $options[] = '<a href="' . osc_admin_base_url(true) . '?page=comments&amp;action=list&amp;id='
                         . $aRow['pk_i_id'] . '">' . __('View comments') . '</a>';
                 }
-                if (ItemResource::newInstance()->countResources($aRow['pk_i_id']) > 0) {
+                if (ItemResource::getInstance()->countResources($aRow['pk_i_id']) > 0) {
                     $options[] = '<a href="' . osc_admin_base_url(true) . '?page=media&amp;action=list&amp;resourceId='
                         . $aRow['pk_i_id'] . '">' . __('View media') . '</a>';
                 }
@@ -358,7 +351,7 @@ class ItemsDataTable extends DataTable
                 // the lookup only runs for the rows that actually need it.
                 $moderationBadge = '';
                 if ($aRow['b_spam']) {
-                    $modLog = ItemModerationLog::newInstance()->latestForItem((int) $aRow['pk_i_id']);
+                    $modLog = ItemModerationLog::getInstance()->latestForItem((int) $aRow['pk_i_id']);
                     if ($modLog !== null) {
                         $moderationBadge = ' <span class="badge bg-warning text-dark" title="'
                             . osc_esc_html(osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format()))
@@ -414,16 +407,10 @@ class ItemsDataTable extends DataTable
      */
     private function listingThumb($itemId)
     {
-        $rows = osc_db_select(
-            'SELECT pk_i_id, s_path, s_extension, s_content_type, s_storage FROM '
-            . DB_TABLE_PREFIX . "t_item_resource WHERE fk_i_item_id = ? AND s_content_type LIKE 'image/%' "
-            . 'ORDER BY pk_i_id ASC LIMIT 1',
-            array((int) $itemId)
-        );
-        if (empty($rows)) {
+        $r = \mindstellar\listing\PhotoStore::firstImage((int) $itemId);
+        if ($r === null) {
             return '';
         }
-        $r = (array) $rows[0];
 
         return (string) osc_get_resource_url(array(
             'pk_i_id'        => $r['pk_i_id'],
@@ -533,14 +520,14 @@ class ItemsDataTable extends DataTable
         $this->mSearch = new Search(true);
         $this->getDBParams($params);
         // only some fields can be ordered
-        $direction      = Params::getParam('direction');
+        $direction      = Params::getParamString('direction');
         $arrayDirection = array('desc', 'asc');
         if (!in_array($direction, $arrayDirection)) {
             Params::setParam('direction', 'desc');
             $direction = 'desc';
         }
 
-        $sort             = Params::getParam('sort');
+        $sort             = Params::getParamString('sort');
         $arraySortColumns = array(
             'spam'       => 'i_num_spam',
             'bad'        => 'i_num_bad_classified',
@@ -570,17 +557,17 @@ class ItemsDataTable extends DataTable
         // One stats row per listing, so the counters are plain columns: no aggregate to
         // build them, no GROUP BY, and therefore no HAVING -- the filter is an ordinary
         // WHERE over indexed columns.
-        $this->mSearch->addTable(sprintf('%st_item_stats s', DB_TABLE_PREFIX));
+        $this->mSearch->addTable(\ItemStats::getInstance()->getTableName() . ' s');
         $this->mSearch->addField('s.`i_num_spam` as i_num_spam');
         $this->mSearch->addField('s.`i_num_bad_classified` as i_num_bad_classified');
         $this->mSearch->addField('s.`i_num_repeated` as i_num_repeated');
         $this->mSearch->addField('s.`i_num_offensive` as i_num_offensive');
         $this->mSearch->addField('s.`i_num_expired` as i_num_expired');
 
-        $this->mSearch->addConditions(sprintf('%st_item.pk_i_id = s.fk_i_item_id', DB_TABLE_PREFIX));
+        $this->mSearch->addConditions(\Item::getInstance()->getTableName() . '.pk_i_id = s.fk_i_item_id');
         $this->mSearch->addConditions('(' . $filter . ')');
         // do Search
-        $this->processDataReported(Item::newInstance()->extendCategoryName($this->mSearch->doSearch()));
+        $this->processDataReported(Item::getInstance()->extendCategoryName($this->mSearch->doSearch()));
         $this->totalFiltered = $this->mSearch->count();
         $this->total         = $this->mSearch->count();
 
@@ -596,16 +583,12 @@ class ItemsDataTable extends DataTable
     private function addTableHeaderReported()
     {
 
-        Rewrite::newInstance()->init();
-        $page = Params::getParamInt('iPage');
-        if ($page == 0) {
-            $page = 1;
-        }
-        Params::setParam('iPage', $page);
+        Rewrite::getInstance()->init();
+        ListPaging::page();
         $url_base       = preg_replace(
             '|&direction=([^&]*)|',
             '',
-            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::newInstance()->get_raw_request_uri())
+            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::getInstance()->get_raw_request_uri())
         );
         $arg_spam       = '&sort=spam';
         $arg_bad        = '&sort=bad';
@@ -703,7 +686,7 @@ class ItemsDataTable extends DataTable
         if (!empty($items)) {
             $csrf_token_url = osc_csrf_token_url();
             foreach ($items as $aRow) {
-                View::newInstance()->_exportVariableToView('item', $aRow);
+                View::getInstance()->_exportVariableToView('item', $aRow);
                 $row     = array();
                 $options = array();
                 // -- prepare data --
@@ -797,13 +780,13 @@ class ItemsDataTable extends DataTable
      */
     private function reportersCell($itemId)
     {
-        $count = ItemReport::newInstance()->countReporters($itemId);
+        $count = ItemReport::getInstance()->countReporters($itemId);
         if ($count === 0) {
             return '<span class="text-muted">' . osc_esc_html(__('None')) . '</span>';
         }
 
         $parts = array();
-        foreach (ItemReport::newInstance()->reasonBreakdown($itemId) as $reason => $reasonCount) {
+        foreach (ItemReport::getInstance()->reasonBreakdown($itemId) as $reason => $reasonCount) {
             $parts[] = osc_esc_html($reason) . ': ' . (int) $reasonCount;
         }
 
@@ -821,7 +804,7 @@ class ItemsDataTable extends DataTable
      */
     private function reasonCell($itemId)
     {
-        $modLog = ItemModerationLog::newInstance()->latestForItem($itemId);
+        $modLog = ItemModerationLog::getInstance()->latestForItem($itemId);
         if ($modLog === null) {
             return '';
         }
@@ -874,10 +857,10 @@ class ItemsDataTable extends DataTable
      */
     public function row_class($class, $rawRow, $row)
     {
-        View::newInstance()->_exportVariableToView('item', $rawRow);
+        View::getInstance()->_exportVariableToView('item', $rawRow);
         $status  = $this->get_row_status();
         $class[] = $status['class'];
-        View::newInstance()->_erase('item');
+        View::getInstance()->_erase('item');
 
         return $class;
     }

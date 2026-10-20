@@ -701,7 +701,7 @@ if (!function_exists('osc_admin_page_head')) {
      */
     function osc_admin_page_head($title, array $actions = array(), array $opts = array())
     {
-        $class = 'render-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        $class = 'render-title osc-page-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
         if ($actions === array()) {
             echo '<h2 class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h2>';
@@ -923,6 +923,28 @@ if (!function_exists('osc_admin_status')) {
     }
 }
 
+if (!function_exists('osc_admin_count')) {
+    /**
+     * A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather
+     * than "Pending (3)". Returns the markup, led by a space so the label and number never run
+     * together; a zero is drawn muted.
+     *
+     * @param int    $count
+     * @param string $id    Optional id, for a script that updates the number
+     *
+     * @return string
+     * @since 7.0.0
+     */
+    function osc_admin_count(int $count, string $id = ''): string
+    {
+        $sep = function_exists('osc_locale_thousands_sep') ? (string)osc_locale_thousands_sep() : ',';
+
+        return ' <span class="osc-count' . ($count === 0 ? ' is-zero' : '') . '"'
+            . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '') . '>'
+            . osc_esc_html(number_format($count, 0, '.', $sep)) . '</span>';
+    }
+}
+
 if (!function_exists('osc_admin_definition')) {
     /**
      * Label/value rows -- the read-only counterpart to a form. A row may set 'html' => true
@@ -1006,11 +1028,12 @@ if (!function_exists('osc_admin_checkbox')) {
 if (!function_exists('osc_admin_tree_picker')) {
     /**
      * A category checkbox tree with "Check all / Uncheck all" toggles, shared by every
-     * screen that assigns fields, groups or plugin config to categories.
+     * screen that assigns fields, groups or plugin config to categories. Each main category
+     * is a card; its subcategories fold below it.
      *
-     * Keys: 'id' (required, the <ul> id and the toggles' target), 'intro', 'categories',
-     * 'selected' (passed straight to CategoryForm::categories_tree()), 'wrapper_id'
-     * (id on the outer .form-row).
+     * Keys: 'id' (required, the <ul> id and the toggles' target), 'intro', 'categories'
+     * (a Category::toTree() tree), 'selected' (checked ids), 'wrapper_id' (id on the outer
+     * .form-row), 'name' (posted name, default categories[]).
      *
      * @param array $opts
      *
@@ -1018,25 +1041,7 @@ if (!function_exists('osc_admin_tree_picker')) {
      */
     function osc_admin_tree_picker(array $opts)
     {
-        $id = osc_esc_html($opts['id'] ?? '');
-
-        echo '<div class="form-row"'
-            . (!empty($opts['wrapper_id']) ? ' id="' . osc_esc_html($opts['wrapper_id']) . '"' : '')
-            . '>';
-        echo '<div>' . osc_esc_html($opts['intro'] ?? '') . '</div>';
-        echo '<div class="separate-top">';
-        echo '<div class="form-label">';
-        echo '<a href="#" data-tree-toggle="' . $id . '" data-tree-check="1">' . osc_esc_html(__('Check all')) . '</a>';
-        echo ' &middot; ';
-        echo '<a href="#" data-tree-toggle="' . $id . '" data-tree-check="0">' . osc_esc_html(__('Uncheck all')) . '</a>';
-        echo '</div>';
-        echo '<div class="form-controls">';
-        echo '<ul id="' . $id . '">';
-        CategoryForm::categories_tree($opts['categories'] ?? array(), $opts['selected'] ?? array());
-        echo '</ul>';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
+        \mindstellar\admin\ui\Picker::categoryChecks($opts);
     }
 }
 

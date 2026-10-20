@@ -87,4 +87,10 @@
   td {
     vertical-align: middle;
   }
+
+  th:first-child,
+  td:first-child {
+    width: 1%;
+    white-space: nowrap;
+  }
 }

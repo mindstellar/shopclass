@@ -16,7 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\admin\form\AdvancedSettingsForm;
+use mindstellar\admin\form\AdvancedSettingsScreen;
 use mindstellar\admin\form\CoreSettings;
 
 /**
@@ -53,7 +53,7 @@ class CAdminSettingsAdvanced extends AdminSecBaseModel
                 }
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(AdvancedSettingsForm::register());
+                $result = CoreSettings::attempt(AdvancedSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     // Redrawn with what was typed rather than thrown away with a redirect.
                     $this->drawForm($result['values']);
@@ -75,7 +75,7 @@ class CAdminSettingsAdvanced extends AdminSecBaseModel
      */
     private function drawForm(?array $values = null)
     {
-        $this->_exportVariableToView('advanced_form', AdvancedSettingsForm::formVars($values));
+        $this->_exportVariableToView('advanced_form', AdvancedSettingsScreen::formVars($values));
         $this->doView('settings/advanced.php');
     }
 }

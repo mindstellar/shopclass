@@ -9,6 +9,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+use mindstellar\utility\Validate;
+
 /**
  * Hookable XML sitemap generator.
  *
@@ -38,8 +41,7 @@
  */
 class Sitemap extends DAO
 {
-    /** @var Sitemap */
-    private static $instance;
+    use \mindstellar\base\SharedInstance;
 
     /** Object-cache TTL for every generated document, in seconds (6 hours). */
     public static $cacheTTL = 21600;
@@ -71,17 +73,11 @@ class Sitemap extends DAO
     }
 
     /**
-     * The shared Sitemap instance, created on first call.
-     *
-     * @return Sitemap
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
      */
     public static function newInstance()
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return self::getInstance();
     }
 
     /**
@@ -168,7 +164,7 @@ class Sitemap extends DAO
         }
 
         if (class_exists('Session', false)) {
-            Session::newInstance()->_clearVariables();
+            Session::getInstance()->_clearVariables();
         }
         exit;
     }
@@ -281,7 +277,7 @@ class Sitemap extends DAO
     {
         $xml = $this->render('sitemap_category_xml', false, function () {
             $categories = new Category();
-            View::newInstance()->_exportVariableToView('categories', $categories->listWhere('i_num_items > 0'));
+            View::getInstance()->_exportVariableToView('categories', $categories->listWhere('i_num_items > 0'));
 
             if (osc_count_categories() > 0) {
                 while (osc_has_categories()) {
@@ -490,7 +486,7 @@ class Sitemap extends DAO
             . ' GROUP BY t.pk_i_id, t.fk_i_category_id, t.dt_pub_date, t.dt_mod_date';
 
         try {
-            return osc_db_stringify_rows(osc_db_select($sql));
+            return Db::stringifyRows(Db::select($sql));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -515,7 +511,7 @@ class Sitemap extends DAO
             . ' LIMIT ' . self::MAX_SITEMAP_URLS;
 
         try {
-            return osc_db_stringify_rows(osc_db_select($sql));
+            return Db::stringifyRows(Db::select($sql));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -561,7 +557,7 @@ class Sitemap extends DAO
     {
         if ($this->total_results_table === null) {
             try {
-                $total = osc_db_scalar(
+                $total = Db::scalar(
                     'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
                     . ' WHERE ' . self::liveItemCondition()
                 );
@@ -598,7 +594,7 @@ class Sitemap extends DAO
     private function pagesModificationDate()
     {
         try {
-            $row = osc_db_select_one(
+            $row = Db::selectOne(
                 'SELECT MAX(dt_pub_date) AS max_pub_date, MAX(dt_mod_date) AS max_mod_date'
                 . ' FROM ' . DB_TABLE_PREFIX . 't_pages WHERE b_indelible < 1'
             );
@@ -746,8 +742,10 @@ class Sitemap extends DAO
      */
     public static function defaultRobotsTxt()
     {
+        $adminPath = (string)parse_url(osc_admin_base_url(), PHP_URL_PATH);
+
         return "User-agent: *\n"
-            . 'Disallow: ' . str_replace(osc_base_url(), '/', osc_admin_base_url()) . "\n"
+            . 'Disallow: ' . ($adminPath !== '' ? $adminPath : '/oc-admin/') . "\n"
             . self::robotsLine() . "\n";
     }
 
@@ -759,7 +757,19 @@ class Sitemap extends DAO
     private function serveRobots()
     {
         header('Content-Type: text/plain; charset=UTF-8');
+        $this->sendCacheHeaders();
         echo self::defaultRobotsTxt();
+    }
+
+    /**
+     * Public sitemap and robots.txt responses are cacheable like public pages.
+     *
+     * @return void
+     */
+    private function sendCacheHeaders()
+    {
+        osc_mark_response_cacheable();
+        osc_send_response_cache_headers();
     }
 
     /* ------------------------------------------------------------------ *
@@ -805,6 +815,7 @@ class Sitemap extends DAO
     {
         if ($output) {
             header('Content-Type: text/xml; charset=UTF-8');
+            $this->sendCacheHeaders();
             echo $xml;
         }
 
@@ -868,13 +879,8 @@ class Sitemap extends DAO
             $type
         );
 
-        if (!isset($entry['loc']) || !filter_var($entry['loc'], FILTER_VALIDATE_URL)) {
-            return;
-        }
-        // Only http(s) locs. FILTER_VALIDATE_URL also passes javascript:/data:
-        // URIs, which the bundled XSL viewer renders as a clickable link.
-        $scheme = strtolower((string) parse_url($entry['loc'], PHP_URL_SCHEME));
-        if ($scheme !== 'http' && $scheme !== 'https') {
+        // Only http(s) locs: the bundled XSL viewer renders a javascript:/data: loc as a link.
+        if (!isset($entry['loc']) || !Validate::httpUrl($entry['loc'])) {
             return;
         }
 
@@ -925,11 +931,7 @@ class Sitemap extends DAO
      */
     private function addSitemap($loc, $lastmod)
     {
-        if (!filter_var($loc, FILTER_VALIDATE_URL)) {
-            return;
-        }
-        $scheme = strtolower((string) parse_url($loc, PHP_URL_SCHEME));
-        if ($scheme !== 'http' && $scheme !== 'https') {
+        if (!Validate::httpUrl($loc)) {
             return;
         }
 

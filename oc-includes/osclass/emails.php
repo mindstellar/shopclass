@@ -16,85 +16,17 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+// Old names kept for plugins and the hooks below; the code is in mindstellar\mail\CoreEmails.
+// Edit the class, not these.
+
 /**
  * Email the confirmation link for a newly created search alert.
  *
- * @param array<string,mixed> $alert  Alert row; only pk_i_id is read
- * @param string              $email  Subscriber address the alert was created with
- * @param string              $secret Alert secret used to build the activation link
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::alertValidation()
  */
 function fn_email_alert_validation($alert, $email, $secret)
 {
-    $user['s_name'] = '';
-
-    // send alert validation email
-    $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('email_alert_validation');
-    $page_description = $page['locale'];
-
-    $_title = osc_apply_filter(
-        'email_title',
-        osc_apply_filter(
-            'email_alert_validation_title',
-            $page_description[$prefLocale]['s_title'],
-            $alert,
-            $email,
-            $secret
-        )
-    );
-    $_body  = osc_apply_filter(
-        'email_description',
-        osc_apply_filter(
-            'email_alert_validation_description',
-            $page_description[$prefLocale]['s_text'],
-            $alert,
-            $email,
-            $secret
-        )
-    );
-
-    $validation_link = osc_user_activate_alert_url($alert['pk_i_id'], $secret, $email);
-    $validation_link = '<a href ="' . $validation_link . '" target="_blank" >' . $validation_link . '</a>';
-
-    $words   = array();
-    $words[] = array(
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{VALIDATION_LINK}'
-    );
-    $words[] = array(
-        $user['s_name'],
-        $email,
-        $validation_link
-    );
-
-    $title = osc_apply_filter(
-        'email_alert_validation_title_after',
-        osc_mailBeauty($_title, $words),
-        $alert,
-        $email,
-        $secret
-    );
-    $body  = osc_apply_filter(
-        'email_alert_validation_description_after',
-        osc_mailBeauty($_body, $words),
-        $alert,
-        $email,
-        $secret
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $email,
-        'to_name'  => $user['s_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'secret_link' => true,
-    );
-
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::alertValidation($alert, $email, $secret);
 }
 
 osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
@@ -102,159 +34,41 @@ osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
 /**
  * The editable page a digest is written from, in the site's language.
  *
- * @param string $internalName alert_email_hourly or alert_email_weekly
- *
- * @return array<string,string> The s_title and s_text of that page
+ * @see \mindstellar\mail\CoreEmails::alertTemplate()
  */
 function _alert_email_template($internalName)
 {
-    $page = Page::newInstance()->findByInternalName($internalName);
-
-    return $page['locale'][osc_language()];
+    return \mindstellar\mail\CoreEmails::alertTemplate($internalName);
 }
 
 /**
  * Who a digest goes to, and the placeholder values for their copy of it.
  *
- * osc_runAlert() has already looked the account up, so a registered subscriber
- * arrives as their user row. That row has no fk_i_user_id, and testing for one sent
- * every registered subscriber into the no-account branch, greeting them by address.
- * A plugin firing the hook may still hand over an alert row, so that case still
- * finds the account behind it.
- *
- * The subject is plain text and the body is HTML, so the words come twice: as
- * written for the subject, escaped for the body.
- *
- * @param array<string,mixed> $user     A user row, or an alert row
- * @param string              $ads      Rendered listings block
- * @param array<string,mixed> $s_search The alert, for its unsubscribe secret
- *
- * @return array{user:array<string,mixed>,words:array<int,array<int,string>>,htmlWords:array<int,array<int,string>>}
+ * @see \mindstellar\mail\CoreEmails::alertRecipient()
  */
 function _alert_email_recipient($user, $ads, $s_search)
 {
-    if (empty($user['s_name']) && !empty($user['fk_i_user_id'])) {
-        $account = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
-        if (isset($account['s_email'])) {
-            $user = $account;
-        }
-    }
-    if (empty($user['s_name'])) {
-        $user['s_name'] = $user['s_email'];
-    }
-
-    $unsub_link = osc_user_unsubscribe_alert_url(
-        $s_search['pk_i_id'],
-        $user['s_email'],
-        $s_search['s_secret']
-    );
-    $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
-
-    [$words, $htmlWords] = _osc_mail_words(
-        array(
-            '{USER_NAME}'  => $user['s_name'],
-            '{USER_EMAIL}' => $user['s_email'],
-            '{ADS}'        => $ads,
-            '{UNSUB_LINK}' => $unsub_link,
-        ),
-        array('{USER_NAME}', '{USER_EMAIL}')
-    );
-
-    return array(
-        'user'      => $user,
-        'words'     => $words,
-        'htmlWords' => $htmlWords,
-    );
+    return \mindstellar\mail\CoreEmails::alertRecipient($user, $ads, $s_search);
 }
 
 /**
  * Send a finished digest. The plain-text part is the HTML one, as it always was.
  *
- * @param array<string,mixed> $user
- * @param string              $title
- * @param string              $body
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::alertDeliver()
  */
 function _alert_email_deliver($user, $title, $body)
 {
-    osc_sendMail(array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $user['s_email'],
-        'to_name'  => $user['s_name'],
-        'subject'  => $title,
-        'body'     => $body,
-    ));
+    \mindstellar\mail\CoreEmails::alertDeliver($user, $title, $body);
 }
 
 /**
  * Email one subscriber the hourly digest of new listings matching their saved search.
  *
- * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
- * @param string              $ads        Pre-rendered HTML list of the matching listings
- * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
- * @param array<int,array<string,mixed>> $items New listings found since the last run
- * @param int                 $totalItems Total number of matches, which may exceed count($items)
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::alertHourly()
  */
 function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
 {
-    $template = _alert_email_template('alert_email_hourly');
-
-    $_title = osc_apply_filter(
-        'email_title',
-        osc_apply_filter(
-            'alert_email_hourly_title',
-            $template['s_title'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
-    $_body  = osc_apply_filter(
-        'email_description',
-        osc_apply_filter(
-            'alert_email_hourly_description',
-            $template['s_text'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
-
-    // The two filters above see the alert row; from here $user is the account it
-    // belongs to, which is what the _after filters and the mail itself get.
-    $recipient = _alert_email_recipient($user, $ads, $s_search);
-    $user      = $recipient['user'];
-    $words     = $recipient['words'];
-    $htmlWords = $recipient['htmlWords'];
-
-    _alert_email_deliver(
-        $user,
-        osc_apply_filter(
-            'alert_email_hourly_title_after',
-            osc_mailBeauty($_title, $words),
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        ),
-        osc_apply_filter(
-            'alert_email_hourly_description_after',
-            osc_mailBeauty($_body, $htmlWords),
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
+    \mindstellar\mail\CoreEmails::alertHourly($user, $ads, $s_search, $items, $totalItems);
 }
 
 osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
@@ -262,71 +76,11 @@ osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
 /**
  * Email one subscriber the daily digest of new listings matching their saved search.
  *
- * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
- * @param string              $ads        Pre-rendered HTML list of the matching listings
- * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
- * @param array<int,array<string,mixed>> $items New listings found since the last run
- * @param int                 $totalItems Total number of matches, which may exceed count($items)
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::alertDaily()
  */
 function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
 {
-    $template = _alert_email_template('alert_email_daily');
-
-    $_title = osc_apply_filter(
-        'email_title',
-        osc_apply_filter(
-            'alert_email_daily_title',
-            $template['s_title'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
-    $_body  = osc_apply_filter(
-        'email_description',
-        osc_apply_filter(
-            'alert_email_daily_description',
-            $template['s_text'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
-
-    // The two filters above see the alert row; from here $user is the account it
-    // belongs to, which is what the _after filters and the mail itself get.
-    $recipient = _alert_email_recipient($user, $ads, $s_search);
-    $user      = $recipient['user'];
-    $words     = $recipient['words'];
-    $htmlWords = $recipient['htmlWords'];
-
-    _alert_email_deliver(
-        $user,
-        osc_apply_filter(
-            'alert_email_daily_title_after',
-            osc_mailBeauty($_title, $words),
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        ),
-        osc_apply_filter(
-            'alert_email_daily_description_after',
-            osc_mailBeauty($_body, $htmlWords),
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
+    \mindstellar\mail\CoreEmails::alertDaily($user, $ads, $s_search, $items, $totalItems);
 }
 
 osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
@@ -334,71 +88,11 @@ osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
 /**
  * Email one subscriber the weekly digest of new listings matching their saved search.
  *
- * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
- * @param string              $ads        Pre-rendered HTML list of the matching listings
- * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
- * @param array<int,array<string,mixed>> $items New listings found since the last run
- * @param int                 $totalItems Total number of matches, which may exceed count($items)
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::alertWeekly()
  */
 function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
 {
-    $template = _alert_email_template('alert_email_weekly');
-
-    $_title = osc_apply_filter(
-        'email_title',
-        osc_apply_filter(
-            'alert_email_weekly_title',
-            $template['s_title'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
-    $_body  = osc_apply_filter(
-        'email_description',
-        osc_apply_filter(
-            'alert_email_weekly_description',
-            $template['s_text'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
-
-    // The two filters above see the alert row; from here $user is the account it
-    // belongs to, which is what the _after filters and the mail itself get.
-    $recipient = _alert_email_recipient($user, $ads, $s_search);
-    $user      = $recipient['user'];
-    $words     = $recipient['words'];
-    $htmlWords = $recipient['htmlWords'];
-
-    _alert_email_deliver(
-        $user,
-        osc_apply_filter(
-            'alert_email_weekly_title_after',
-            osc_mailBeauty($_title, $words),
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        ),
-        osc_apply_filter(
-            'alert_email_weekly_description_after',
-            osc_mailBeauty($_body, $htmlWords),
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
+    \mindstellar\mail\CoreEmails::alertWeekly($user, $ads, $s_search, $items, $totalItems);
 }
 
 osc_add_hook('hook_alert_email_weekly', 'fn_alert_email_weekly');
@@ -406,69 +100,11 @@ osc_add_hook('hook_alert_email_weekly', 'fn_alert_email_weekly');
 /**
  * Tell a comment author their comment has been approved.
  *
- * @param array<string,mixed> $aComment Comment row; s_author_name, s_author_email, s_title and s_body are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::commentValidated()
  */
 function fn_email_comment_validated($aComment)
 {
-    $mPages = new Page();
-    $locale = osc_current_user_locale();
-    $aPage  = $mPages->findByInternalName('email_comment_validated');
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    if (null !== $content) {
-        $words   = array();
-        $words[] = array(
-            '{COMMENT_AUTHOR}',
-            '{COMMENT_EMAIL}',
-            '{COMMENT_TITLE}',
-            '{COMMENT_BODY}',
-            '{ITEM_URL}',
-            '{ITEM_LINK}',
-            '{ITEM_TITLE}'
-        );
-        $words[] = array(
-            $aComment['s_author_name'],
-            $aComment['s_author_email'],
-            $aComment['s_title'],
-            $aComment['s_body'],
-            osc_item_url(),
-            '<a href="' . osc_item_url() . '">' . osc_item_url() . '</a>',
-            osc_item_title()
-        );
-
-        $title = osc_apply_filter(
-            'email_comment_validated_title_after',
-            osc_mailBeauty(osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_comment_validated_title', $content['s_title'], $aComment)
-            ), $words),
-            $aComment
-        );
-        $body  = osc_apply_filter(
-            'email_comment_validated_description_after',
-            osc_mailBeauty(osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_comment_validated_description', $content['s_text'], $aComment)
-            ), $words),
-            $aComment
-        );
-
-        $emailParams = array(
-            'from'     => _osc_from_email_aux(),
-            'to'       => $aComment['s_author_email'],
-            'to_name'  => $aComment['s_author_name'],
-            'subject'  => $title,
-            'body'     => $body,
-        );
-        osc_sendMail($emailParams);
-    }
+    \mindstellar\mail\CoreEmails::commentValidated($aComment);
 }
 
 osc_add_hook('hook_email_comment_validated', 'fn_email_comment_validated');
@@ -476,80 +112,11 @@ osc_add_hook('hook_email_comment_validated', 'fn_email_comment_validated');
 /**
  * Confirm to a guest poster that their listing was published, with its edit link.
  *
- * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, s_title and the contact fields are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::newItemNonRegisterUser()
  */
 function fn_email_new_item_non_register_user($item)
 {
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_new_item_non_register_user');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $item_url   = osc_item_url();
-    $item_url   = '<a href="' . $item_url . '" >' . $item_url . '</a>';
-    $edit_url   = osc_item_edit_url($item['s_secret'], $item['pk_i_id']);
-    $delete_url = osc_item_delete_url($item['s_secret'], $item['pk_i_id']);
-
-    $words   = array();
-    $words[] = array(
-        '{ITEM_ID}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ITEM_TITLE}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{EDIT_LINK}',
-        '{EDIT_URL}',
-        '{DELETE_LINK}',
-        '{DELETE_URL}'
-    );
-    $words[] = array(
-        $item['pk_i_id'],
-        $item['s_contact_name'],
-        $item['s_contact_email'],
-        $item['s_title'],
-        osc_item_url(),
-        $item_url,
-        '<a href="' . $edit_url . '">' . $edit_url . '</a>',
-        $edit_url,
-        '<a href="' . $delete_url . '">' . $delete_url . '</a>',
-        $delete_url
-    );
-
-    $title = osc_apply_filter(
-        'email_new_item_non_register_user_title_after',
-        osc_mailBeauty(osc_apply_filter(
-            'email_title',
-            osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item)
-        ), $words),
-        $item
-    );
-    $body  = osc_apply_filter(
-        'email_new_item_non_register_user_description_after',
-        osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item)
-        ), $words),
-        $item
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $item['s_contact_email'],
-        'to_name'  => $item['s_contact_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'secret_link' => true,
-    );
-
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::newItemNonRegisterUser($item);
 }
 
 osc_add_hook('hook_email_new_item_non_register_user', 'fn_email_new_item_non_register_user');
@@ -557,80 +124,11 @@ osc_add_hook('hook_email_new_item_non_register_user', 'fn_email_new_item_non_reg
 /**
  * Email a user the link that lets them set a new password.
  *
- * @param array<string,mixed> $user         User row; s_name and s_email are read
- * @param string              $password_url Password-recovery URL
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::userForgotPassword()
  */
 function fn_email_user_forgot_password($user, $password_url)
 {
-    $aPage  = Page::newInstance()->findByInternalName('email_user_forgot_password');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    if (null !== $content) {
-        $words   = array();
-        $words[] = array(
-            '{USER_NAME}',
-            '{USER_EMAIL}',
-            '{PASSWORD_LINK}',
-            '{PASSWORD_URL}',
-            '{DATE_TIME}'
-        );
-        $words[] = array(
-            $user['s_name'],
-            $user['s_email'],
-            '<a href="' . $password_url . '">' . $password_url . '</a>',
-            $password_url,
-            date(osc_date_format() ?: 'Y-m-d') . ' ' . date(osc_time_format() ?: 'H:i:00')
-        );
-
-        $title = osc_apply_filter(
-            'email_user_forgot_pass_word_title_after',
-            osc_mailBeauty(
-                osc_apply_filter(
-                    'email_title',
-                    osc_apply_filter('email_user_forgot_pass_word_title', $content['s_title'], $user, $password_url)
-                ),
-                $words
-            ),
-            $user,
-            $password_url
-        );
-        $body  = osc_apply_filter(
-            'email_user_forgot_password_description_after',
-            osc_mailBeauty(
-                osc_apply_filter(
-                    'email_description',
-                    osc_apply_filter(
-                        'email_user_forgot_password_description',
-                        $content['s_text'],
-                        $user,
-                        $password_url
-                    )
-                ),
-                $words
-            ),
-            $user,
-            $password_url
-        );
-
-        $emailParams = array(
-            'from'     => _osc_from_email_aux(),
-            'to'       => $user['s_email'],
-            'to_name'  => $user['s_name'],
-            'subject'  => $title,
-            'body'     => $body,
-            'secret_link' => true,
-        );
-
-        osc_sendMail($emailParams);
-    }
+    \mindstellar\mail\CoreEmails::userForgotPassword($user, $password_url);
 }
 
 osc_add_hook('hook_email_user_forgot_password', 'fn_email_user_forgot_password');
@@ -638,63 +136,11 @@ osc_add_hook('hook_email_user_forgot_password', 'fn_email_user_forgot_password')
 /**
  * Send the welcome email that follows a successful registration.
  *
- * @param array<string,mixed> $user User row; s_name and s_email are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::userRegistration()
  */
 function fn_email_user_registration($user)
 {
-    $pageManager = new Page();
-    $locale      = osc_current_user_locale();
-    $aPage       = $pageManager->findByInternalName('email_user_registration');
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    if (null !== $content) {
-        $words   = array();
-        $words[] = array(
-            '{USER_NAME}',
-            '{USER_EMAIL}'
-        );
-        $words[] = array(
-            $user['s_name'],
-            $user['s_email']
-        );
-
-        $title = osc_apply_filter(
-            'email_user_registration_title_after',
-            osc_mailBeauty(
-                osc_apply_filter(
-                    'email_title',
-                    osc_apply_filter('email_user_registration_title', $content['s_title'], $user)
-                ),
-                $words
-            ),
-            $user
-        );
-        $body  = osc_apply_filter(
-            'email_user_registration_description_after',
-            osc_mailBeauty(osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_user_registration_description', $content['s_text'], $user)
-            ), $words),
-            $user
-        );
-
-        $emailParams = array(
-            'from'     => _osc_from_email_aux(),
-            'to'       => $user['s_email'],
-            'to_name'  => $user['s_name'],
-            'subject'  => $title,
-            'body'     => $body,
-        );
-
-        osc_sendMail($emailParams);
-    }
+    \mindstellar\mail\CoreEmails::userRegistration($user);
 }
 
 osc_add_hook('hook_email_user_registration', 'fn_email_user_registration');
@@ -702,74 +148,11 @@ osc_add_hook('hook_email_user_registration', 'fn_email_user_registration');
 /**
  * Email the confirmation link to an address a user is changing to.
  *
- * @param string $new_email      Address awaiting confirmation
- * @param string $validation_url Link that confirms the change
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::newEmail()
  */
 function fn_email_new_email($new_email, $validation_url)
 {
-    $locale = osc_current_user_locale();
-    $aPage  = Page::newInstance()->findByInternalName('email_new_email');
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    if (null !== $content) {
-        $words   = array();
-        $words[] = array(
-            '{USER_NAME}',
-            '{USER_EMAIL}',
-            '{VALIDATION_LINK}',
-            '{VALIDATION_URL}'
-        );
-        $words[] = array(
-            Session::newInstance()->_get('userName'),
-            Params::getParam('new_email'),
-            '<a href="' . $validation_url . '" >' . $validation_url . '</a>',
-            $validation_url
-        );
-
-        $title = osc_apply_filter(
-            'email_new_email_title_after',
-            osc_mailBeauty(osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_new_email_title', $content['s_title'], $new_email, $validation_url)
-            ), $words),
-            $new_email,
-            $validation_url
-        );
-        $body  = osc_apply_filter(
-            'email_new_email_description_after',
-            osc_mailBeauty(
-                osc_apply_filter(
-                    'email_description',
-                    osc_apply_filter('email_new_email_description', $content['s_text'], $new_email, $validation_url)
-                ),
-                $words
-            ),
-            $new_email,
-            $validation_url
-        );
-
-        $emailParams = array(
-            'from'     => _osc_from_email_aux(),
-            'to'       => $new_email,
-            'to_name'  => Session::newInstance()->_get('userName'),
-            'subject'  => $title,
-            'body'     => $body,
-            'secret_link' => true,
-        );
-        osc_sendMail($emailParams);
-        osc_add_flash_ok_message(_m("We've sent you an e-mail. Follow its instructions to validate the changes"));
-    } else {
-        osc_add_flash_error_message(
-            _m('We tried to sent you an e-mail, but it failed. Please, contact an administrator')
-        );
-    }
+    \mindstellar\mail\CoreEmails::newEmail($new_email, $validation_url);
 }
 
 osc_add_hook('hook_email_new_email', 'fn_email_new_email');
@@ -777,71 +160,11 @@ osc_add_hook('hook_email_new_email', 'fn_email_new_email');
 /**
  * Email a new account its activation link.
  *
- * @param array<string,mixed> $user  User row; pk_i_id, s_name and s_email are read
- * @param array<string,mixed> $input Insert payload the account was created from; s_secret is read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::userValidation()
  */
 function fn_email_user_validation($user, $input)
 {
-    $mPages = new Page();
-    $locale = osc_current_user_locale();
-    $aPage  = $mPages->findByInternalName('email_user_validation');
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    if (null !== $content) {
-        $validation_url = osc_user_activate_url($user['pk_i_id'], $input['s_secret']);
-        $words          = array();
-        $words[]        = array(
-            '{USER_NAME}',
-            '{USER_EMAIL}',
-            '{VALIDATION_LINK}',
-            '{VALIDATION_URL}'
-        );
-        $words[]        = array(
-            $user['s_name'],
-            $user['s_email'],
-            '<a href="' . $validation_url . '" >' . $validation_url . '</a>',
-            $validation_url
-        );
-
-        $title = osc_apply_filter(
-            'email_user_validation_title_after',
-            osc_mailBeauty(osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_user_validation_title', $content['s_title'], $user, $input)
-            ), $words),
-            $user,
-            $input
-        );
-        $body  = osc_apply_filter(
-            'email_user_validation_description_after',
-            osc_mailBeauty(
-                osc_apply_filter(
-                    'email_description',
-                    osc_apply_filter('email_user_validation_description', $content['s_text'], $user, $input)
-                ),
-                $words
-            ),
-            $user,
-            $input
-        );
-
-        $emailParams = array(
-            'from'     => _osc_from_email_aux(),
-            'to'       => $user['s_email'],
-            'to_name'  => $user['s_name'],
-            'subject'  => $title,
-            'body'     => $body,
-            'secret_link' => true,
-        );
-        osc_sendMail($emailParams);
-    }
+    \mindstellar\mail\CoreEmails::userValidation($user, $input);
 }
 
 osc_add_hook('hook_email_user_validation', 'fn_email_user_validation');
@@ -849,77 +172,11 @@ osc_add_hook('hook_email_user_validation', 'fn_email_user_validation');
 /**
  * Forward a listing to the address given in the "send to a friend" form.
  *
- * @param array<string,mixed> $aItem Form payload: yourName, yourEmail, friendName, friendEmail, message, s_title
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::sendFriend()
  */
 function fn_email_send_friend($aItem)
 {
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_send_friend');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $item_url = osc_item_url();
-    $item_url = '<a href="' . $item_url . '" >' . $item_url . '</a>';
-
-    [$titleWords, $words] = _osc_mail_words(array(
-        '{FRIEND_NAME}'  => $aItem['friendName'],
-        '{USER_NAME}'    => $aItem['yourName'],
-        '{USER_EMAIL}'   => $aItem['yourEmail'],
-        '{FRIEND_EMAIL}' => $aItem['friendEmail'],
-        '{ITEM_TITLE}'   => $aItem['s_title'],
-        '{COMMENT}'      => $aItem['message'],
-        '{ITEM_URL}'     => osc_item_url(),
-        '{ITEM_LINK}'    => $item_url,
-    ), array('{FRIEND_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{FRIEND_EMAIL}', '{COMMENT}'));
-
-    $title = osc_apply_filter('email_send_friend_title_after', osc_mailBeauty(osc_apply_filter(
-        'email_title',
-        osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem)
-    ), $titleWords), $aItem);
-    $body  = osc_apply_filter(
-        'email_send_friend_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem)
-            ),
-            $words
-        ),
-        $aItem
-    );
-
-    $emailParams = array(
-        'from'      => _osc_from_email_aux(),
-        'from_name' => osc_page_title(),
-        'to'        => $aItem['friendEmail'],
-        'to_name'   => $aItem['friendName'],
-        'reply_to'  => $aItem['yourEmail'],
-        'subject'   => $title,
-        'body'      => $body . \mindstellar\security\MessageGuard::reportFooter(
-            (string) $aItem['yourEmail'],
-            (string) $aItem['friendEmail']
-        ),
-    );
-
-    if (osc_notify_contact_friends()) {
-        $admins      = Admin::newInstance()->listAll();
-        $adminEmails = array();
-        foreach ($admins as $admin) {
-            if (!empty($admin['s_email'])) {
-                $adminEmails[] = $admin['s_email'];
-            }
-        }
-        $emailParams['add_bcc'] = $adminEmails;
-    }
-
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::sendFriend($aItem);
 }
 
 osc_add_hook('hook_email_send_friend', 'fn_email_send_friend');
@@ -929,118 +186,21 @@ osc_add_hook('hook_email_send_friend', 'fn_email_send_friend');
  * visitor typed is escaped in the body, with its line breaks kept, and has its tags removed in
  * the subject.
  *
- * @param array<string,mixed> $values  placeholder => value
- * @param string[]            $visitor the placeholders that hold what a visitor typed
- *
- * @return array{0:array<int,array<int,mixed>>,1:array<int,array<int,mixed>>} subject words, body words
+ * @see \mindstellar\mail\CoreEmails::words()
  */
 function _osc_mail_words(array $values, array $visitor): array
 {
-    $title = $values;
-    $body  = $values;
-    foreach ($visitor as $key) {
-        $title[$key] = strip_tags((string) $values[$key]);
-        $body[$key]  = nl2br(osc_esc_html((string) $values[$key]));
-    }
-
-    return array(
-        array(array_keys($title), array_values($title)),
-        array(array_keys($body), array_values($body)),
-    );
+    return \mindstellar\mail\CoreEmails::words($values, $visitor);
 }
 
 /**
  * Deliver a listing contact-form enquiry to the seller.
  *
- * @param array<string,mixed> $aItem Form payload: id, yourName, yourEmail, phoneNumber, message
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::itemInquiry()
  */
 function fn_email_item_inquiry($aItem)
 {
-    $id          = $aItem['id'];
-    $yourEmail   = $aItem['yourEmail'];
-    $yourName    = $aItem['yourName'];
-    $phoneNumber = $aItem['phoneNumber'];
-    $message     = $aItem['message'];
-
-    $path = null;
-    $item = Item::newInstance()->findByPrimaryKey($id);
-    View::newInstance()->_exportVariableToView('item', $item);
-
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_item_inquiry');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $item_url  = osc_item_url();
-    $item_link = '<a href="' . $item_url . '" >' . $item_url . '</a>';
-
-    [$titleWords, $words] = _osc_mail_words(array(
-        '{CONTACT_NAME}' => $item['s_contact_name'],
-        '{USER_NAME}'    => $yourName,
-        '{USER_EMAIL}'   => $yourEmail,
-        '{USER_PHONE}'   => $phoneNumber,
-        '{ITEM_TITLE}'   => $item['s_title'],
-        '{ITEM_URL}'     => $item_url,
-        '{ITEM_LINK}'    => $item_link,
-        '{COMMENT}'      => $message,
-    ), array('{CONTACT_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{USER_PHONE}', '{COMMENT}'));
-
-    $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
-        'email_title',
-        osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem)
-    ), $titleWords), $aItem);
-    $body  = osc_apply_filter(
-        'email_item_inquiry_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_item_inquiry_description', $content['s_text'], $aItem)
-            ),
-            $words
-        ),
-        $aItem
-    );
-
-    $emailParams = array(
-        'from'      => _osc_from_email_aux(),
-        'from_name' => osc_page_title(),
-        'to'        => $item['s_contact_email'],
-        'to_name'   => $item['s_contact_name'],
-        'reply_to'  => $yourEmail,
-        'subject'   => $title,
-        'body'      => $body . \mindstellar\security\MessageGuard::reportFooter(
-            (string) $yourEmail,
-            (string) $item['s_contact_email']
-        ),
-    );
-
-    if (osc_notify_contact_item()) {
-        $admins      = Admin::newInstance()->listAll();
-        $adminEmails = array();
-        foreach ($admins as $admin) {
-            if (!empty($admin['s_email'])) {
-                $adminEmails[] = $admin['s_email'];
-            }
-        }
-        $emailParams['add_bcc'] = $adminEmails;
-    }
-
-    if (osc_item_attachment()) {
-        // CWebItem refuses a bad file before the mail is built.
-        $attachment = osc_mail_upload_attachment('attachment');
-        if (is_array($attachment)) {
-            $emailParams['attachment'] = $attachment;
-        }
-    }
-
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::itemInquiry($aItem);
 }
 
 osc_add_hook('hook_email_item_inquiry', 'fn_email_item_inquiry');
@@ -1048,90 +208,11 @@ osc_add_hook('hook_email_item_inquiry', 'fn_email_item_inquiry');
 /**
  * Notify every administrator that a comment was posted on a listing.
  *
- * @param array<string,mixed> $aItem Comment payload: id, title, body, authorName, authorEmail
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::newCommentAdmin()
  */
 function fn_email_new_comment_admin($aItem)
 {
-    $authorName  = trim(strip_tags($aItem['authorName']));
-    $authorEmail = trim(strip_tags($aItem['authorEmail']));
-    $body        = trim($aItem['body']);
-    // only \n -> <br/>
-    $body   = nl2br(strip_tags($body));
-    $title  = $aItem['title'];
-    $itemId = $aItem['id'];
-
-    $item = Item::newInstance()->findByPrimaryKey($itemId);
-    View::newInstance()->_exportVariableToView('item', $item);
-    $itemURL = osc_item_url();
-    $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
-
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_new_comment_admin');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $words   = array();
-    $words[] = array(
-        '{COMMENT_AUTHOR}',
-        '{COMMENT_EMAIL}',
-        '{COMMENT_TITLE}',
-        '{COMMENT_TEXT}',
-        '{ITEM_TITLE}',
-        '{ITEM_ID}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}'
-    );
-    $words[] = array(
-        $authorName,
-        $authorEmail,
-        $title,
-        $body,
-        $item['s_title'],
-        $itemId,
-        osc_item_url(),
-        $itemURL
-    );
-
-    $title_email = osc_apply_filter(
-        'email_new_comment_admin_title_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_new_comment_admin_title', $content['s_title'], $aItem)
-            ),
-            $words
-        ),
-        $aItem
-    );
-    $body_email  = osc_apply_filter(
-        'email_new_comment_admin_description_after',
-        osc_mailBeauty(osc_apply_filter(
-            'email_description',
-            osc_apply_filter('email_new_comment_admin_description', $content['s_text'], $aItem)
-        ), $words),
-        $aItem
-    );
-
-    $admins = Admin::newInstance()->listAll();
-    foreach ($admins as $admin) {
-        if (!empty($admin['s_email'])) {
-            $emailParams = array(
-                'from'     => _osc_from_email_aux(),
-                'to'       => $admin['s_email'],
-                'to_name'  => __('Admin'),
-                'subject'  => $title_email,
-                'body'     => $body_email,
-            );
-            osc_sendMail($emailParams);
-        }
-    }
+    \mindstellar\mail\CoreEmails::newCommentAdmin($aItem);
 }
 
 osc_add_hook('hook_email_new_comment_admin', 'fn_email_new_comment_admin');
@@ -1139,110 +220,11 @@ osc_add_hook('hook_email_new_comment_admin', 'fn_email_new_comment_admin');
 /**
  * Email a registered poster the activation link for their new listing.
  *
- * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, locale and the contact fields are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::itemValidation()
  */
 function fn_email_item_validation($item)
 {
-    View::newInstance()->_exportVariableToView('item', $item);
-    $contactEmail = $item['s_contact_email'];
-    $contactName  = $item['s_contact_name'];
-    $mPages       = new Page();
-    $locale       = osc_current_user_locale();
-    $aPage        = $mPages->findByInternalName('email_item_validation');
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $item_url  = osc_item_url();
-    $item_link = '<a href="' . $item_url . '" >' . $item_url . '</a>';
-
-    $all = '';
-
-    if (isset($item['locale'])) {
-        foreach ($item['locale'] as $locale => $data) {
-            $locale_name = OSCLocale::newInstance()->findByCode($locale);
-            $all         .= '<br/>';
-            if (isset($locale_name[0]) && isset($locale_name[0]['s_name'])) {
-                $all .= __('Language') . ': ' . $locale_name[0]['s_name'] . '<br/>';
-            } else {
-                $all .= __('Language') . ': ' . $locale . '<br/>';
-            }
-            $all .= __('Title') . ': ' . $data['s_title'] . '<br/>';
-            $all .= __('Description') . ': ' . $data['s_description'] . '<br/>';
-            $all .= '<br/>';
-        }
-    } else {
-        $all .= __('Title') . ': ' . $item['s_title'] . '<br/>';
-        $all .= __('Description') . ': ' . $item['s_description'] . '<br/>';
-    }
-
-    // Format activation URL
-    $validation_url = osc_item_activate_url($item['s_secret'], $item['pk_i_id']);
-
-    $words   = array();
-    $words[] = array(
-        '{ITEM_DESCRIPTION_ALL_LANGUAGES}',
-        '{ITEM_DESCRIPTION}',
-        '{ITEM_COUNTRY}',
-        '{ITEM_PRICE}',
-        '{ITEM_REGION}',
-        '{ITEM_CITY}',
-        '{ITEM_ID}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ITEM_TITLE}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{VALIDATION_LINK}',
-        '{VALIDATION_URL}'
-    );
-    $words[] = array(
-        $all,
-        $item['s_description'],
-        $item['s_country'],
-        osc_format_price($item['i_price']),
-        $item['s_region'],
-        $item['s_city'],
-        $item['pk_i_id'],
-        $item['s_contact_name'],
-        $item['s_contact_email'],
-        $item['s_title'],
-        $item_url,
-        $item_link,
-        '<a href="' . $validation_url . '" >' . $validation_url . '</a>',
-        $validation_url
-    );
-
-    $title = osc_apply_filter('email_item_validation_title_after', osc_mailBeauty(osc_apply_filter(
-        'email_title',
-        osc_apply_filter('email_item_validation_title', $content['s_title'], $item)
-    ), $words), $item);
-    $body  = osc_apply_filter(
-        'email_item_validation_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_item_validation_description', $content['s_text'], $item)
-            ),
-            $words
-        ),
-        $item
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $contactEmail,
-        'to_name'  => $contactName,
-        'subject'  => $title,
-        'body'     => $body,
-        'secret_link' => true,
-    );
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::itemValidation($item);
 }
 
 osc_add_hook('hook_email_item_validation', 'fn_email_item_validation');
@@ -1250,121 +232,11 @@ osc_add_hook('hook_email_item_validation', 'fn_email_item_validation');
 /**
  * Notify every administrator that a listing was posted.
  *
- * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, locale and the contact fields are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::adminNewItem()
  */
 function fn_email_admin_new_item($item)
 {
-    View::newInstance()->_exportVariableToView('item', $item);
-    $title  = osc_item_title();
-    $mPages = new Page();
-    $locale = osc_current_user_locale();
-    $aPage  = $mPages->findByInternalName('email_admin_new_item');
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $item_url  = osc_item_url();
-    $item_link = '<a href="' . $item_url . '" >' . $item_url . '</a>';
-
-    $all = '';
-
-    if (isset($item['locale'])) {
-        foreach ($item['locale'] as $locale => $data) {
-            $locale_name = OSCLocale::newInstance()->findByCode($locale);
-            $all         .= '<br/>';
-            if (isset($locale_name[0]) && isset($locale_name[0]['s_name'])) {
-                $all .= __('Language') . ': ' . $locale_name[0]['s_name'] . '<br/>';
-            } else {
-                $all .= __('Language') . ': ' . $locale . '<br/>';
-            }
-            $all .= __('Title') . ': ' . $data['s_title'] . '<br/>';
-            $all .= __('Description') . ': ' . $data['s_description'] . '<br/>';
-            $all .= '<br/>';
-        }
-    } else {
-        $all .= __('Title') . ': ' . $item['s_title'] . '<br/>';
-        $all .= __('Description') . ': ' . $item['s_description'] . '<br/>';
-    }
-
-    // Format activation URL
-    $validation_url = osc_item_activate_url($item['s_secret'], $item['pk_i_id']);
-
-    // Format admin edit URL
-    $admin_edit_url = osc_item_admin_edit_url($item['pk_i_id']);
-
-    $words   = array();
-    $words[] = array(
-        '{EDIT_LINK}',
-        '{EDIT_URL}',
-        '{ITEM_DESCRIPTION_ALL_LANGUAGES}',
-        '{ITEM_DESCRIPTION}',
-        '{ITEM_COUNTRY}',
-        '{ITEM_PRICE}',
-        '{ITEM_REGION}',
-        '{ITEM_CITY}',
-        '{ITEM_ID}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ITEM_TITLE}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{VALIDATION_LINK}',
-        '{VALIDATION_URL}'
-    );
-    $words[] = array(
-        '<a href="' . $admin_edit_url . '" >' . $admin_edit_url . '</a>',
-        $admin_edit_url,
-        $all,
-        $item['s_description'],
-        $item['s_country'],
-        osc_format_price($item['i_price']),
-        $item['s_region'],
-        $item['s_city'],
-        $item['pk_i_id'],
-        $item['s_contact_name'],
-        $item['s_contact_email'],
-        $item['s_title'],
-        $item_url,
-        $item_link,
-        '<a href="' . $validation_url . '" >' . $validation_url . '</a>',
-        $validation_url
-    );
-
-    $title = osc_apply_filter('email_admin_new_item_title_after', osc_mailBeauty(osc_apply_filter(
-        'email_title',
-        osc_apply_filter('email_admin_new_item_title', $content['s_title'], $item)
-    ), $words), $item);
-    $body  = osc_apply_filter(
-        'email_admin_new_item_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_admin_new_item_description', $content['s_text'], $item)
-            ),
-            $words
-        ),
-        $item
-    );
-
-    $admins = Admin::newInstance()->listAll();
-    foreach ($admins as $admin) {
-        if (!empty($admin['s_email'])) {
-            $emailParams = array(
-                'from'     => _osc_from_email_aux(),
-                'to'       => $admin['s_email'],
-                'to_name'  => __('Admin'),
-                'subject'  => $title,
-                'body'     => $body,
-                'secret_link' => true,
-            );
-            osc_sendMail($emailParams);
-        }
-    }
+    \mindstellar\mail\CoreEmails::adminNewItem($item);
 }
 
 osc_add_hook('hook_email_admin_new_item', 'fn_email_admin_new_item');
@@ -1372,127 +244,11 @@ osc_add_hook('hook_email_admin_new_item', 'fn_email_admin_new_item');
 /**
  * Email a guest poster the activation link for their new listing.
  *
- * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, locale and the contact fields are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::itemValidationNonRegisterUser()
  */
 function fn_email_item_validation_non_register_user($item)
 {
-    View::newInstance()->_exportVariableToView('item', $item);
-
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_item_validation_non_register_user');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $item_url   = osc_item_url();
-    $item_link  = '<a href="' . $item_url . '" >' . $item_url . '</a>';
-    $edit_url   = osc_item_edit_url($item['s_secret'], $item['pk_i_id']);
-    $delete_url = osc_item_delete_url($item['s_secret'], $item['pk_i_id']);
-
-    $all = '';
-
-    if (isset($item['locale'])) {
-        foreach ($item['locale'] as $locale => $data) {
-            $locale_name = OSCLocale::newInstance()->findByCode($locale);
-            $all         .= '<br/>';
-            if (isset($locale_name[0]) && isset($locale_name[0]['s_name'])) {
-                $all .= __('Language') . ': ' . $locale_name[0]['s_name'] . '<br/>';
-            } else {
-                $all .= __('Language') . ': ' . $locale . '<br/>';
-            }
-            $all .= __('Title') . ': ' . $data['s_title'] . '<br/>';
-            $all .= __('Description') . ': ' . $data['s_description'] . '<br/>';
-            $all .= '<br/>';
-        }
-    } else {
-        $all .= __('Title') . ': ' . $item['s_title'] . '<br/>';
-        $all .= __('Description') . ': ' . $item['s_description'] . '<br/>';
-    }
-
-    // Format activation URL
-    $validation_url = osc_item_activate_url($item['s_secret'], $item['pk_i_id']);
-
-    $words   = array();
-    $words[] = array(
-        '{ITEM_DESCRIPTION_ALL_LANGUAGES}',
-        '{ITEM_DESCRIPTION}',
-        '{ITEM_COUNTRY}',
-        '{ITEM_PRICE}',
-        '{ITEM_REGION}',
-        '{ITEM_CITY}',
-        '{ITEM_ID}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ITEM_TITLE}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{VALIDATION_LINK}',
-        '{VALIDATION_URL}',
-        '{EDIT_LINK}',
-        '{EDIT_URL}',
-        '{DELETE_LINK}',
-        '{DELETE_URL}'
-    );
-    $words[] = array(
-        $all,
-        $item['s_description'],
-        $item['s_country'],
-        osc_format_price($item['i_price']),
-        $item['s_region'],
-        $item['s_city'],
-        $item['pk_i_id'],
-        $item['s_contact_name'],
-        $item['s_contact_email'],
-        $item['s_title'],
-        $item_url,
-        $item_link,
-        '<a href="' . $validation_url . '" >' . $validation_url . '</a>',
-        $validation_url,
-        '<a href="' . $edit_url . '">' . $edit_url . '</a>',
-        $edit_url,
-        '<a href="' . $delete_url . '">' . $delete_url . '</a>',
-        $delete_url
-    );
-
-    $title = osc_apply_filter(
-        'email_item_validation_non_register_user_title_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_item_validation_non_register_user_title', $content['s_title'], $item)
-            ),
-            $words
-        ),
-        $item
-    );
-    $body  = osc_apply_filter(
-        'email_item_validation_non_register_user_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_item_validation_non_register_user_description', $content['s_text'], $item)
-            ),
-            $words
-        ),
-        $item
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $item['s_contact_email'],
-        'to_name'  => $item['s_contact_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'secret_link' => true,
-    );
-
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::itemValidationNonRegisterUser($item);
 }
 
 osc_add_hook('hook_email_item_validation_non_register_user', 'fn_email_item_validation_non_register_user');
@@ -1500,67 +256,11 @@ osc_add_hook('hook_email_item_validation_non_register_user', 'fn_email_item_vali
 /**
  * Notify every administrator that a user account was created.
  *
- * @param array<string,mixed> $user User row; s_name and s_email are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::adminNewUser()
  */
 function fn_email_admin_new_user($user)
 {
-    $pageManager = new Page();
-    $locale      = osc_current_user_locale();
-    $aPage       = $pageManager->findByInternalName('email_admin_new_user');
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    if (null !== $content) {
-        $words   = array();
-        $words[] = array(
-            '{USER_NAME}',
-            '{USER_EMAIL}'
-        );
-        $words[] = array(
-            $user['s_name'],
-            $user['s_email']
-        );
-
-        $title = osc_apply_filter(
-            'email_admin_user_registration_title_after',
-            osc_mailBeauty(osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_admin_user_registration_title', $content['s_title'], $user)
-            ), $words),
-            $user
-        );
-        $body  = osc_apply_filter(
-            'email_admin_user_regsitration_description_after',
-            osc_mailBeauty(
-                osc_apply_filter(
-                    'email_description',
-                    osc_apply_filter('email_admin_user_regsitration_description', $content['s_text'], $user)
-                ),
-                $words
-            ),
-            $user
-        );
-
-        $admins = Admin::newInstance()->listAll();
-        foreach ($admins as $admin) {
-            if (!empty($admin['s_email'])) {
-                $emailParams = array(
-                    'from'     => _osc_from_email_aux(),
-                    'to'       => $admin['s_email'],
-                    'to_name'  => osc_page_title(),
-                    'subject'  => $title,
-                    'body'     => $body,
-                );
-                osc_sendMail($emailParams);
-            }
-        }
-    }
+    \mindstellar\mail\CoreEmails::adminNewUser($user);
 }
 
 osc_add_hook('hook_email_admin_new_user', 'fn_email_admin_new_user');
@@ -1568,91 +268,11 @@ osc_add_hook('hook_email_admin_new_user', 'fn_email_admin_new_user');
 /**
  * Deliver a message sent from a user's public profile contact form.
  *
- * @param int|string $id          Id of the user being contacted, as supplied by the request
- * @param string     $yourEmail   Sender address
- * @param string     $yourName    Sender name
- * @param string     $phoneNumber Sender phone number
- * @param string     $message     Message body
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::contactUser()
  */
 function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $message)
 {
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_contact_user');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    [$titleWords, $words] = _osc_mail_words(array(
-        '{CONTACT_NAME}' => osc_user_name(),
-        '{USER_NAME}'    => $yourName,
-        '{USER_EMAIL}'   => $yourEmail,
-        '{USER_PHONE}'   => $phoneNumber,
-        '{COMMENT}'      => $message,
-    ), array('{CONTACT_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{USER_PHONE}', '{COMMENT}'));
-
-    $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
-        'email_title',
-        osc_apply_filter(
-            'email_item_inquiry_title',
-            $content['s_title'],
-            $id,
-            $yourEmail,
-            $yourName,
-            $phoneNumber,
-            $message
-        )
-    ), $titleWords), $id, $yourEmail, $yourName, $phoneNumber, $message);
-    $body  = osc_apply_filter(
-        'email_item_inquiry_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter(
-                    'email_item_inquiry_description',
-                    $content['s_text'],
-                    $id,
-                    $yourEmail,
-                    $yourName,
-                    $phoneNumber,
-                    $message
-                )
-            ),
-            $words
-        ),
-        $id,
-        $yourEmail,
-        $yourName,
-        $phoneNumber,
-        $message
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => osc_user_email(),
-        'to_name'  => osc_user_name(),
-        'reply_to' => $yourEmail,
-        'subject'  => $title,
-        'body'     => $body . \mindstellar\security\MessageGuard::reportFooter((string) $yourEmail, (string) osc_user_email()),
-    );
-
-    if (osc_notify_contact_item()) {
-        $admins      = Admin::newInstance()->listAll();
-        $adminEmails = array();
-        foreach ($admins as $admin) {
-            if (!empty($admin['s_email'])) {
-                $adminEmails[] = $admin['s_email'];
-            }
-        }
-        $emailParams['add_bcc'] = $adminEmails;
-    }
-
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::contactUser($id, $yourEmail, $yourName, $phoneNumber, $message);
 }
 
 osc_add_hook('hook_email_contact_user', 'fn_email_contact_user');
@@ -1660,91 +280,11 @@ osc_add_hook('hook_email_contact_user', 'fn_email_contact_user');
 /**
  * Notify a listing's owner that a comment was posted on it.
  *
- * @param array<string,mixed> $aItem Comment payload: id, title, body, authorName, authorEmail
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::newCommentUser()
  */
 function fn_email_new_comment_user($aItem)
 {
-    $authorName  = trim(strip_tags($aItem['authorName']));
-    $authorEmail = trim(strip_tags($aItem['authorEmail']));
-    $body        = trim(strip_tags($aItem['body']));
-    $body        = nl2br($body);
-    $title       = $aItem['title'];
-    $itemId      = $aItem['id'];
-
-    $item = Item::newInstance()->findByPrimaryKey($itemId);
-    View::newInstance()->_exportVariableToView('item', $item);
-    $itemURL = osc_item_url();
-    $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
-
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_new_comment_user');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $words   = array();
-    $words[] = array(
-        '{COMMENT_AUTHOR}',
-        '{COMMENT_EMAIL}',
-        '{COMMENT_TITLE}',
-        '{COMMENT_TEXT}',
-        '{ITEM_TITLE}',
-        '{ITEM_ID}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{SELLER_NAME}',
-        '{SELLER_EMAIL}'
-    );
-    $words[] = array(
-        $authorName,
-        $authorEmail,
-        $title,
-        $body,
-        $item['s_title'],
-        $itemId,
-        osc_item_url(),
-        $itemURL,
-        $item['s_contact_name'],
-        $item['s_contact_email']
-    );
-
-    $title_email = osc_apply_filter(
-        'email_new_comment_user_title_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_new_comment_user_title', $content['s_title'], $aItem)
-            ),
-            $words
-        ),
-        $aItem
-    );
-    $body_email  = osc_apply_filter(
-        'email_new_comment_user_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_new_comment_user_description', $content['s_text'], $aItem)
-            ),
-            $words
-        ),
-        $aItem
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $item['s_contact_email'],
-        'to_name'  => $item['s_contact_name'],
-        'subject'  => $title_email,
-        'body'     => $body_email,
-    );
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::newCommentUser($aItem);
 }
 
 osc_add_hook('hook_email_new_comment_user', 'fn_email_new_comment_user');
@@ -1752,64 +292,11 @@ osc_add_hook('hook_email_new_comment_user', 'fn_email_new_comment_user');
 /**
  * Email a newly created administrator their account credentials.
  *
- * @param array<string,mixed> $data New admin row: s_name, s_username, s_password, s_email
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::newAdmin()
  */
 function fn_email_new_admin($data)
 {
-
-    $name     = trim(strip_tags($data['s_name']));
-    $username = trim(strip_tags($data['s_username']));
-
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_new_admin');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $words   = array();
-    $words[] = array(
-        '{ADMIN_NAME}',
-        '{USERNAME}',
-        '{PASSWORD}',
-        '{WEB_ADMIN_LINK}'
-    );
-    $words[] = array(
-        $name,
-        $username,
-        $data['s_password'],
-        '<a href="' . osc_admin_base_url() . '">' . osc_page_title() . '</a>',
-    );
-
-    $title_email = osc_apply_filter('email_new_admin_title_after', osc_mailBeauty(osc_apply_filter(
-        'email_title',
-        osc_apply_filter('email_new_admin_title', $content['s_title'], $data)
-    ), $words), $data);
-    $body_email  = osc_apply_filter(
-        'email_new_admin_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_new_admin_description', $content['s_text'], $data)
-            ),
-            $words
-        ),
-        $data
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $data['s_email'],
-        'to_name'  => $data['s_name'],
-        'subject'  => $title_email,
-        'body'     => $body_email,
-    );
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::newAdmin($data);
 }
 
 osc_add_hook('hook_email_new_admin', 'fn_email_new_admin');
@@ -1817,85 +304,11 @@ osc_add_hook('hook_email_new_admin', 'fn_email_new_admin');
 /**
  * Warn a listing's contact that the listing is about to expire.
  *
- * @param array<string,mixed> $aItem Listing row; pk_i_id, s_title, dt_expiration and the contact fields are read
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::warnExpiration()
  */
 function fn_email_warn_expiration($aItem)
 {
-
-    $itemId = $aItem['pk_i_id'];
-
-    View::newInstance()->_exportVariableToView('item', $aItem);
-    $itemURL = osc_item_url();
-    $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
-
-    $mPages = new Page();
-    $aPage  = $mPages->findByInternalName('email_warn_expiration');
-    $locale = osc_current_user_locale();
-
-    if (isset($aPage['locale'][$locale]['s_title'])) {
-        $content = $aPage['locale'][$locale];
-    } else {
-        $content = current($aPage['locale']);
-    }
-
-    $words       = array();
-    $words[]     = array(
-        '{USER_NAME}',
-        '{ITEM_TITLE}',
-        '{ITEM_ID}',
-        '{ITEM_EXPIRATION_DATE}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{SELLER_NAME}',
-        '{SELLER_EMAIL}',
-        '{CONTACT_NAME}',
-        '{CONTACT_EMAIL}'
-    );
-    $words[]     = array(
-        $aItem['s_contact_name'],
-        $aItem['s_title'],
-        $itemId,
-        $aItem['dt_expiration'],
-        osc_item_url(),
-        $itemURL,
-        $aItem['s_contact_name'],
-        $aItem['s_contact_email'],
-        $aItem['s_contact_name'],
-        $aItem['s_contact_email']
-    );
-    $title_email = osc_apply_filter(
-        'email_warn_expiration_title_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_title',
-                osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem)
-            ),
-            $words
-        ),
-        $aItem
-    );
-    $body_email  = osc_apply_filter(
-        'email_warn_expiration_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_warn_expiration_description', $content['s_text'], $aItem)
-            ),
-            $words
-        ),
-        $aItem
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $aItem['s_contact_email'],
-        'to_name'  => $aItem['s_contact_name'],
-        'subject'  => $title_email,
-        'body'     => $body_email,
-    );
-    osc_sendMail($emailParams);
+    \mindstellar\mail\CoreEmails::warnExpiration($aItem);
 }
 
 osc_add_hook('hook_email_warn_expiration', 'fn_email_warn_expiration');
@@ -1903,68 +316,11 @@ osc_add_hook('hook_email_warn_expiration', 'fn_email_warn_expiration');
 /**
  * Report the outcome of an automatic core upgrade to every administrator.
  *
- * @param array<string,mixed> $result Upgrade outcome: error code, message and version
- *
- * @return void
+ * @see \mindstellar\mail\CoreEmails::autoUpgrade()
  */
 function fn_email_auto_upgrade($result)
 {
-
-    $body = __('<p>Dear {WEB_TITLE} admin,</p>');
-    if ($result['error'] == 0 || $result['error'] == 6) {
-        $title = __('{WEB_TITLE} - Your site has upgraded to Shopclass {VERSION}');
-        $body  .= __('<p>Your site at {WEB_LINK} has been updated automatically to Shopclass {VERSION}</p>');
-        if ($result['error'] == 6) {
-            $body .= __('<p>There were some minor errors removing temporary files. '
-                .'Please manually remove the "oc-content/downloads/oc-temp" folder</p>');
-        }
-    } else {
-        $title = __('{WEB_TITLE} - We failed trying to upgrade your site to Shopclass {VERSION}');
-        $body  .= '<p>We failed trying to upgrade your site to Shopclass {VERSION}. Heres is the error message: {MESSAGE}</p>';
-    }
-    $body .= '<p>If you experience any issues or need support, we will be happy to help you at the Shopclass support forums</p>';
-    $body .= '<p><a href="https://github.com/mindstellar/shopclass/discussions">https://github.com/mindstellar/shopclass/discussions</a></p>';
-    $body .= '<p>The Shopclass team</p>';
-
-    $words   = array();
-    $words[] = array(
-        '{MESSAGE}',
-        '{VERSION}'
-    );
-    $words[] = array(
-        $result['message'],
-        $result['version']
-    );
-
-    $title = osc_apply_filter('email_after_auto_upgrade_title_after', osc_mailBeauty(osc_apply_filter(
-        'email_title',
-        osc_apply_filter('email_after_auto_upgrade_title', $title, $result)
-    ), $words), $result);
-    $body  = osc_apply_filter(
-        'email_after_auto_upgrade_description_after',
-        osc_mailBeauty(
-            osc_apply_filter(
-                'email_description',
-                osc_apply_filter('email_after_auto_upgrade_description', $body, $result)
-            ),
-            $words
-        ),
-        $result
-    );
-
-    $admins = Admin::newInstance()->listAll();
-    foreach ($admins as $admin) {
-        if (!empty($admin['s_email']) && ($admin['b_moderator'] == 0)) {
-            $emailParams = array(
-                'from'     => _osc_from_email_aux(),
-                'to'       => $admin['s_email'],
-                'to_name'  => osc_page_title(),
-                'subject'  => $title,
-                'body'     => $body,
-            );
-            osc_sendMail($emailParams);
-        }
-    }
+    \mindstellar\mail\CoreEmails::autoUpgrade($result);
 }
 
 osc_add_hook('after_auto_upgrade', 'fn_email_auto_upgrade', 10);
@@ -1972,13 +328,11 @@ osc_add_hook('after_auto_upgrade', 'fn_email_auto_upgrade', 10);
 /**
  * The address outgoing mail is sent from, falling back to the site contact address.
  *
- * @return string
+ * @see \mindstellar\mail\CoreEmails::fromAddress()
  */
 function _osc_from_email_aux()
 {
-    $tmp = osc_mailserver_mail_from();
-
-    return !empty($tmp) ? $tmp : osc_contact_email();
+    return \mindstellar\mail\CoreEmails::fromAddress();
 }
 
 /* file end: ./oc-includes/osclass/emails.php */

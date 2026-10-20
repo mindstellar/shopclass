@@ -10,6 +10,8 @@
 
 namespace mindstellar\model;
 
+use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 use Throwable;
 
@@ -30,29 +32,18 @@ use Throwable;
  * @subpackage Model
  * @since      5.3.0
  */
-class FormSubmission
+class FormSubmission extends Model
 {
-    private const TABLE       = 't_form_submission';
+    protected const TABLE     = 't_form_submission';
     private const VALUE_TABLE = 't_form_submission_value';
 
     /** Triage statuses. */
     public const STATUSES = array('new', 'read', 'spam', 'archived');
 
-    /** @var FormSubmission */
-    private static $instance;
-
-    /**
-     * Return the shared FormSubmission model instance, creating it on first use.
-     *
-     * @return self
-     */
+    /** @deprecated 7.0.0 Use new FormSubmission(). */
     public static function newInstance(): self
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return new self();
     }
 
     /**
@@ -68,23 +59,13 @@ class FormSubmission
     }
 
     /**
-     * A fresh query builder over the submissions table.
-     *
-     * @return QueryBuilder
-     */
-    private function table(): QueryBuilder
-    {
-        return osc_db_table(DB_TABLE_PREFIX . self::TABLE);
-    }
-
-    /**
      * A fresh query builder over the submission-values table.
      *
      * @return QueryBuilder
      */
     private function valueTable(): QueryBuilder
     {
-        return osc_db_table(DB_TABLE_PREFIX . self::VALUE_TABLE);
+        return Db::table(DB_TABLE_PREFIX . self::VALUE_TABLE);
     }
 
     /**
@@ -104,8 +85,8 @@ class FormSubmission
     {
         try {
             $submissionId = 0;
-            osc_db_transaction(function () use (&$submissionId, $formId, $contextType, $contextId, $userId, $ip, $values) {
-                $submissionId = osc_db_table(DB_TABLE_PREFIX . self::TABLE)->insert(array(
+            Db::transaction(function () use (&$submissionId, $formId, $contextType, $contextId, $userId, $ip, $values) {
+                $submissionId = Db::table(DB_TABLE_PREFIX . self::TABLE)->insert(array(
                     'fk_i_group_id'  => $formId,
                     's_context_type' => $contextType,
                     'i_context_id'   => $contextId,
@@ -118,7 +99,7 @@ class FormSubmission
                 foreach ($values as $fieldId => $value) {
                     if (is_array($value)) {
                         foreach ($value as $multi => $v) {
-                            osc_db_table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
+                            Db::table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
                                 'fk_i_submission_id' => $submissionId,
                                 'fk_i_field_id'      => (int) $fieldId,
                                 's_multi'            => (string) $multi,
@@ -126,7 +107,7 @@ class FormSubmission
                             ));
                         }
                     } else {
-                        osc_db_table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
+                        Db::table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
                             'fk_i_submission_id' => $submissionId,
                             'fk_i_field_id'      => (int) $fieldId,
                             's_multi'            => '',
