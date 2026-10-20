@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\security;
 
+use mindstellar\utility\Utils;
+
 /**
  * The addresses the admin panel answers, from OSC_ADMIN_IP_ALLOW: IPv4 and IPv6 addresses and
  * CIDR ranges, separated by commas. Unset or empty, every address is let in. Loopback is always
@@ -87,6 +89,26 @@ final class AdminIpAllowlist
         }
 
         return false;
+    }
+
+    /**
+     * Answer an admin request from an address outside the list with a plain 404, before any
+     * session or cookie. Does nothing when the list is off or the address is in it.
+     */
+    public static function guard(): void
+    {
+        $list = self::fromConfig();
+        $ip   = Utils::getClientIp();
+        if ($list === null || $list->allows($ip)) {
+            return;
+        }
+        if (defined('OSC_DEBUG') && OSC_DEBUG) {
+            error_log('Admin panel refused for ' . substr(preg_replace('/[^0-9A-Fa-f.:]/', '?', $ip) ?? '', 0, 45));
+        }
+        if (!headers_sent()) {
+            header('Cache-Control: no-store');
+        }
+        osc_die('Not found', '<p>The page you asked for does not exist.</p>', array('status' => 404));
     }
 
     /** "network/bits" for an address or a CIDR range, or null when it is not one. */
