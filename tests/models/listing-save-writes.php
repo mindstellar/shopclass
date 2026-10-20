@@ -283,7 +283,7 @@ $conflict = static function (): void {
         // swallowed, as the DAO write helpers do
     }
 };
-osc_add_hook('pre_item_add', $conflict);
+osc_add_hook('item_increase_stat', $conflict);
 $before  = $items();
 $refused = null;
 try {
@@ -291,7 +291,7 @@ try {
 } catch (InvalidException $e) {
     $refused = $e;
 }
-osc_remove_hook('pre_item_add', $conflict);
+osc_remove_hook('item_increase_stat', $conflict);
 pin('the post is refused with "rejected"', 'rejected', $refused?->errors()[0]['code'] ?? null);
 pin('no listing row is written outside the transaction', $before, $items());
 pin('the next post works', $before + 1, ($service->create(ListingInput::fromArray($form(), $actor, true), $actor)->id() > 0) ? $items() : -1);
