@@ -112,10 +112,16 @@ final class AdminIpAllowlist
         if (defined('OSC_DEBUG') && OSC_DEBUG) {
             error_log('Admin panel refused for ' . substr(preg_replace('/[^0-9A-Fa-f.:]/', '?', $ip) ?? '', 0, 45));
         }
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         if (!headers_sent()) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=utf-8');
             header('Cache-Control: no-store');
         }
-        osc_die('Not found', '<p>The page you asked for does not exist.</p>', array('status' => 404));
+        echo 'Not Found';
+        exit;
     }
 
     /** The IPv4 address inside an IPv4-mapped IPv6 address (::ffff:a.b.c.d), or null. */
