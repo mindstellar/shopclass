@@ -102,6 +102,29 @@ if (!function_exists('osc_admin_page')) {
     }
 }
 
+if (!function_exists('osc_admin_section_label')) {
+    /**
+     * The name shown above a screen's title. A "Settings" screen that belongs to a section
+     * (Listings, Users, Media, Billing) shows that section's name instead.
+     *
+     * @param string $section
+     *
+     * @return string
+     */
+    function osc_admin_section_label($section)
+    {
+        if (!in_array($section, array(__('Settings'), __('Plugins')), true) || !function_exists('osc_is_moderator')) {
+            return $section;
+        }
+        $menu = AdminMenu::getInstance();
+        [$lit] = $menu->currentIds();
+
+        return in_array($lit, array('items', 'users', 'media', 'billing'), true)
+            ? (string) ($menu->get_array_menu()[$lit][0] ?? $section)
+            : $section;
+    }
+}
+
 if (!function_exists('osc_admin_page_header')) {
     /**
      * The page <h1> and the icon actions that belong beside it.
@@ -123,8 +146,9 @@ if (!function_exists('osc_admin_page_header')) {
     {
         if (!is_string($section) && is_callable($section)) {
             $section = $section();
-        } ?>
-        <h1><?php echo osc_esc_html((string) $section); ?>
+        }
+        $section = osc_admin_section_label((string) $section); ?>
+        <h1><?php echo osc_esc_html($section); ?>
             <?php foreach (($opts['actions'] ?? array()) as $action) {
                 // `label` is what osc_admin_action_button() calls the visible text, so a
                 // caller who builds an action spec there and reuses it here would
