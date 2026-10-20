@@ -353,13 +353,18 @@
 }
 
 // A plugin's icon is the same tile as on the cards, beside the title.
+.market-detail-dialog--plugin .market-detail-body {
+  flex-wrap: nowrap;
+}
+
 .market-detail-dialog--plugin .market-detail-thumb {
   background-color: var(--osc-bench-sunk);
-  block-size: 5rem;
+  block-size: 4.5rem;
   border: 1px solid var(--osc-rule);
   border-radius: $border-radius-lg;
   box-sizing: border-box;
-  inline-size: 5rem;
+  flex-shrink: 0;
+  inline-size: 4.5rem;
   overflow: hidden;
 
   .osc-thumb {
