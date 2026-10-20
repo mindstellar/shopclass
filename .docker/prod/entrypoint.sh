@@ -70,7 +70,7 @@ fastcgi_cache_path /var/cache/nginx/microcache levels=1:2 keys_zone=MICROCACHE:1
                    max_size=500m inactive=1d use_temp_path=off;
 map $http_cookie $mc_private {
     default 0;
-    "~(^|;\s*)(oc_cache_bypass|oc_userLocale|osclass|PHPSESSID)=" 1;
+    "~(^|;\s*)(oc_cache_bypass|oc_userLocale|oc_theme|osclass|PHPSESSID)=" 1;
 }
 CONF
             cat >> "$php_conf" <<'CONF'

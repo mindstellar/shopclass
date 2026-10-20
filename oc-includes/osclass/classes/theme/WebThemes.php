@@ -47,26 +47,15 @@ class WebThemes extends Themes
     }
 
     /**
-     * Select the active theme -- the ?theme= preview when an admin is logged in,
-     * otherwise the configured one -- and require its functions.php, then the
-     * parent theme's when it declares one.
+     * Select the active theme -- a preview (see previewTheme()), otherwise the
+     * configured one -- and require its functions.php, then the parent theme's
+     * when it declares one.
      *
      * @return void
      */
     private function loadActive()
     {
-        // ?theme= is request input that decides which directory functions.php is
-        // required from, so it is matched against the installed themes rather than
-        // trusted. An admin session was the only gate: "../../../tmp/evil" resolved
-        // and its functions.php ran, which is arbitrary code from a query string.
-        $preview = Params::getParamString('theme');
-        if ($preview !== '' && Session::getInstance()->_get('adminId') != ''
-            && in_array($preview, $this->getListThemes(), true)
-        ) {
-            $this->setCurrentTheme($preview);
-        } else {
-            $this->setCurrentTheme(osc_theme());
-        }
+        $this->setCurrentTheme($this->previewTheme() ?? osc_theme());
 
         // The API renders nothing, so it skips the theme's code unless a plugin asks for it.
         if (osc_is_api_request() && !osc_apply_filter('api_theme_functions_enabled', false)) {
@@ -98,6 +87,43 @@ class WebThemes extends Themes
             }
         }
     }
+    /**
+     * The theme a preview asks for: ?theme=<slug>, kept for the visit in the oc_theme
+     * cookie. Only an admin may preview, or any visitor on a demo site. ?theme= with
+     * the active theme or nothing ends the preview.
+     *
+     * @return string|null null for the configured theme
+     */
+    private function previewTheme(): ?string
+    {
+        if (osc_is_api_request()
+            || (!\mindstellar\security\Demo::active() && Session::getInstance()->_get('adminId') == '')
+        ) {
+            return null;
+        }
+        // The name picks the directory functions.php is required from, so it must be an installed theme.
+        $installed = fn (string $slug): bool => $slug !== '' && in_array($slug, $this->getListThemes(), true);
+
+        if (!Params::existParam('theme')) {
+            $kept = (string) ($_COOKIE['oc_theme'] ?? '');
+
+            return $installed($kept) ? $kept : null;
+        }
+        $asked = Params::getParamString('theme');
+        $keep  = $installed($asked) && $asked !== osc_theme();
+        if ($keep || isset($_COOKIE['oc_theme'])) {
+            Cookie::write('oc_theme', $keep ? $asked : '', $keep ? 0 : time() - 3600);
+        }
+        if ($keep) {
+            $_COOKIE['oc_theme'] = $asked;
+
+            return $asked;
+        }
+        unset($_COOKIE['oc_theme']);
+
+        return null;
+    }
+
     /**
      * Header fields read out of a theme's index.php, falling back to the legacy
      * <theme>_theme_info() function. False when the theme has neither.

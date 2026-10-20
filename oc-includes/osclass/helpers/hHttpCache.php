@@ -68,6 +68,7 @@ function osc_cache_relevant_cookies()
         'osclass',
         'oc_cache_bypass',
         'oc_userLocale',
+        'oc_theme',
     ))));
 }
 
