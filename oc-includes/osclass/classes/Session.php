@@ -502,9 +502,10 @@ class Session
             return array();
         }
 
-        // Even the first message alone is too long: cut its text until it fits.
+        // Even the first message alone is too long: cut it, as plain text, until it fits.
         [$bucket, $message] = $queue[0];
-        $text = is_array($message) ? (string)($message['msg'] ?? '') : '';
+        $html = is_array($message) ? (string)($message['msg'] ?? '') : '';
+        $text = html_entity_decode(strip_tags(str_replace('<br />', ' ', $html)), ENT_QUOTES, 'UTF-8');
         $low  = 0;
         $high = mb_strlen($text);
         $best = array();
@@ -549,16 +550,10 @@ class Session
         return $kept;
     }
 
-    /** $text cut to $width characters plus "…", with no half HTML tag left at the end. */
+    /** Plain $text cut to $width characters plus "…", escaped for HTML. */
     private static function cutText(string $text, int $width): string
     {
-        $cut = mb_substr($text, 0, $width);
-        $lt  = strrpos($cut, '<');
-        if ($lt !== false && strpos($cut, '>', $lt) === false) {
-            $cut = substr($cut, 0, $lt);
-        }
-
-        return $cut . '…';
+        return htmlspecialchars(mb_substr($text, 0, $width), ENT_QUOTES, 'UTF-8') . '…';
     }
 
     /**

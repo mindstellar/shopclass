@@ -56,10 +56,12 @@ $fit  = Session::fitFlashMessages(array('adminMessages' => array($big)));
 $text = $fit['adminMessages'][0]['msg'] ?? '';
 check('is cut to fit', $packed($fit) <= 3800 && $packed($fit) > 3000, (string) $packed($fit));
 check('...ends with an ellipsis', str_ends_with($text, '…'));
-check('...and keeps its start', str_starts_with($text, '<b>Bulk failed</b>'));
+check('...and keeps its start, as plain text', str_starts_with($text, 'Bulk failed Listing could not'), substr($text, 0, 40));
 pin('...and stays one message', 1, count($fit['adminMessages'] ?? array()));
-$tag = Session::fitFlashMessages(array('adminMessages' => array($msg(str_repeat('a', 2700) . '<a href="' . str_repeat('y', 3000) . '">x</a>'))));
-check('a cut never leaves half a tag', !preg_match('/<[^>]*…$/', (string) ($tag['adminMessages'][0]['msg'] ?? '')));
+$tag = Session::fitFlashMessages(array('adminMessages' => array($msg('<a title="a>b" href="#">' . str_repeat('Tom &amp; Jerry ', 400) . '</a>'))));
+$tag = (string) ($tag['adminMessages'][0]['msg'] ?? '');
+check('a cut message carries no markup', !str_contains($tag, '<') && !str_contains($tag, '>') && !str_contains($tag, '"'), substr($tag, 0, 60));
+check('...and its entities stay escaped', str_starts_with($tag, 'Tom &amp; Jerry Tom'), substr($tag, 0, 60));
 $wide = Session::fitFlashMessages(array('pubMessages' => array($msg(str_repeat('é', 3000)))));
 check('a message JSON escapes is measured escaped', $packed($wide) <= 3800, (string) $packed($wide));
 
