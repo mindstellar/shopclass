@@ -89,7 +89,7 @@ $watch = static function (string $hook, bool $filter = false) use (&$open): void
 foreach (['item_add_prepare_data', 'pre_item_add_error', 'item_edit_prepare_data', 'pre_item_edit_error'] as $hook) {
     $watch($hook, true);
 }
-foreach (['pre_item_add', 'pre_item_edit', 'before_delete_item', 'before_user_delete', 'before_add_comment', 'before_user_register', 'pre_user_post'] as $hook) {
+foreach (['pre_item_add', 'pre_item_edit', 'before_delete_item', 'before_user_delete', 'before_add_comment', 'pre_item_add_comment_post', 'before_user_register', 'pre_user_post'] as $hook) {
     $watch($hook);
 }
 
@@ -144,6 +144,16 @@ check('an admin edit with flags is saved', $adminEdit());
 pin('pre_item_edit runs with no transaction open on the admin edit too', false, $open['pre_item_edit'] ?? null);
 pin('the edit and the flag are both kept', ['1700', '1'], array_map('strval', array_values((array) $admin->query("SELECT i_price DIV 1000000, b_premium FROM {$p}t_item WHERE pk_i_id = $id")->fetch_assoc())));
 pin('a pre_item_edit that redirects on the admin edit keeps the rule', [true, 2, false], $redirects('pre_item_edit', $adminEdit));
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0 WHERE pk_i_id = $id");
+$refusedFlag = null;
+try {
+    ListingModeration::make()->edit($id, ListingInput::fromArray($form(['id' => (string) $id, 'price' => '1800']), $actor, false), $actor, ['active' => true], 1, '');
+} catch (\mindstellar\exception\ConflictException $e) {
+    $refusedFlag = $e;
+}
+check('a flag that is refused refuses the admin edit', $refusedFlag !== null);
+pin('and the edit is rolled back with it', '1700', (string) ((int) $admin->query("SELECT i_price FROM {$p}t_item WHERE pk_i_id = $id")->fetch_row()[0] / 1000000));
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1, b_active = 1 WHERE pk_i_id = $id");
 
 harness_section('deleting a listing');
 $secret = static fn (int $item): string => (string) $admin->query("SELECT s_secret FROM {$p}t_item WHERE pk_i_id = $item")->fetch_row()[0];
@@ -159,7 +169,7 @@ $commenter = new Actor($sue, null, '192.0.2.72');
 $open      = [];
 $saved     = (new CommentService())->post($id, ['title' => '', 'body' => 'Is it still for sale?'], $commenter);
 check('the comment is saved', $saved->id() > 0);
-pin('before_add_comment runs with no transaction open', false, $open['before_add_comment'] ?? null);
+pin('pre_item_add_comment_post and before_add_comment run with no transaction open', [false, false], [$open['pre_item_add_comment_post'] ?? null, $open['before_add_comment'] ?? null]);
 pin('a before_add_comment that writes a ban rule and redirects keeps the rule', [true, 1, false], $redirects('before_add_comment', static fn () => (new CommentService())->post($id, ['title' => '', 'body' => 'Second question'], $commenter)));
 pin('and only the first comment is written', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE fk_i_item_id = $id")->fetch_row()[0]);
 
