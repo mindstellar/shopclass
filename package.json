@@ -45,6 +45,6 @@
     "npm-font-open-sans": "^1.1.0",
     "qrcode-generator": "^2.0.4",
     "sortablejs": "^1.15.7",
-    "tinymce": "^8.9.2"
+    "tinymce": "^8.10.0"
   }
 }
