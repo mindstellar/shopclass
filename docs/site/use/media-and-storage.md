@@ -6,12 +6,12 @@ sidebar:
 ---
 
 Photos are most of what a classifieds site serves, and most of what it stores.
-Two admin screens cover them: **Media → Settings** for how images are processed,
+Two admin screens cover them: **Settings → Media** for how images are processed,
 and **Settings → Storage** for where they live.
 
 ## Image sizes
 
-**Media → Settings → Image sizes** defines the three sizes ShopClass generates
+**Settings → Media → Image sizes** defines the three sizes ShopClass generates
 from every upload:
 
 | Size | Used for |
@@ -75,7 +75,7 @@ setting will not override them. It uses whichever of the three gives the
 lowest number. A too-low PHP limit shows up as an upload that silently fails on
 large photos. See [debugging PHP errors](/docs/developers/debug-php-errors/).
 
-The photo count per listing is set separately, in **Listings → Settings**.
+The photo count per listing is set separately, in **Settings → Listings**.
 
 ## Watermarks
 

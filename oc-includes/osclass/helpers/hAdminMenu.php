@@ -82,7 +82,7 @@ function osc_remove_admin_menu_page($menu_id)
  * @param string $url
  * @param string $submenu_id
  * @param string $capability
- * @param string|null $group a group heading in the menu: 'shop' or 'settings_group_shop';
+ * @param string|null $group a group heading in the menu: 'selling' or 'settings_group_selling';
  *                            the entry goes at the end of that group
  * @param string[]    $match  further admin urls that mark this entry as the current one
  *

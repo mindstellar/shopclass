@@ -24,7 +24,7 @@ payment gateway in core. It is **off by default**. Nothing changes until you
 turn it on.
 
 The settings move once you switch it on: while billing is **off** they live at
-**Settings → Billing**; enabling it promotes **Billing** to a top-level menu with
+**Settings → Selling → Billing**; enabling it promotes **Billing** to a top-level menu with
 **Orders**, **Packages**, **Credits** and **Settings** under it, and removes the
 entry from Settings. If you cannot find the screen you were just on, that is why.
 
@@ -38,7 +38,7 @@ plugin sells, rather than a currency core would have to charge in.
 
 ### Turning it on
 
-**Settings → Billing → Enable billing** is the master switch. Until a payment method is installed,
+**Settings → Selling → Billing → Enable billing** is the master switch. Until a payment method is installed,
 the screen tells you plainly: *No payment methods installed*, with **Browse
 plugins** to find one. Each installed method shows as **Ready** or **Needs
 setting up**.
@@ -48,10 +48,10 @@ payment instructions and settle each order by hand once the money arrives, with
 no card processor or API keys involved. Right for a local site with a handful of
 paying sellers.
 
-**Cash on delivery** is built in too. Switch it on under **Settings → Billing → Shop**,
+**Cash on delivery** is built in too. Switch it on under **Settings → Selling → Billing → Shop**,
 with an optional fee added to the order. The buyer pays the courier: ship the order
 unpaid, and marking it delivered marks it paid. An unshipped order left unpaid is
-cancelled after **Cancel unpaid orders after (days)** (Settings → Billing → Shop).
+cancelled after **Cancel unpaid orders after (days)** (Settings → Selling → Billing → Shop).
 
 ### Selling goods
 
@@ -129,7 +129,7 @@ method. Each paid or refunded order also has a **Receipt** link on the buyer's
 orders page: a page they can print or save as PDF. You open the same page from
 **View receipt** on the order in **Billing → Orders**.
 
-Under **Settings → Billing → Receipts** you can switch the e-mail off and add your
+Under **Settings → Selling → Billing → Receipts** you can switch the e-mail off and add your
 business name, address and tax number to every receipt. A receipt is not a tax
 invoice.
 
@@ -159,10 +159,10 @@ listings and no photo cap, nobody needs extra slots or extra photos.
 
 Set the free allowance to what a casual seller needs and a dealer does not.
 
-**Take payment at the end of posting** (Settings → Billing → Pricing, on by default
+**Take payment at the end of posting** (Settings → Selling → Billing → Pricing, on by default
 when extra slots are for sale). A seller over the limit fills in the whole form, the
 listing is saved hidden as **Waiting for payment**, and they pay on the last step with
-credits or a package. It is deleted after **Cancel unpaid orders after (days)** (Settings → Billing → Shop) if they never pay, and they
+credits or a package. It is deleted after **Cancel unpaid orders after (days)** (Settings → Selling → Billing → Shop) if they never pay, and they
 get a reminder e-mail a day before (edit it in Settings → Emails). Turn the switch off
 and an over-limit seller is stopped at the form. In **Listings**, filter by Waiting for
 payment, and use **Publish without payment** to put one live free.

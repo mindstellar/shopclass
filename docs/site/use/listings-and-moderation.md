@@ -10,7 +10,7 @@ appears, and where you post listings yourself.
 
 ## The listing rules
 
-**Listings → Settings.** These decide how the site behaves for everyone.
+**Settings → Listings.** These decide how the site behaves for everyone.
 Set them before you have users, not after.
 
 | Setting | What it decides |
@@ -110,7 +110,7 @@ open and unwatched is the one option that always ends badly.
 **Users** lists everyone registered. From there you can activate an
 account, enable or disable one, edit its details, or add a user yourself.
 
-**Users → Settings** carries the registration rules:
+**Settings → Users** carries the registration rules:
 
 - **Users enabled**: whether the site has user accounts at all.
 - **Anyone can register**: the master switch for sign-up.
@@ -121,7 +121,7 @@ account, enable or disable one, edit its details, or add a user yourself.
 
 ### Ban rules
 
-**Users → Ban rules** blocks registrations and posts matching a pattern: an
+**Settings → Security → Ban rules** blocks registrations and posts matching a pattern: an
 e-mail domain, an address, an IP range. This is how you stop a returning
 abuser without watching for them. Rules marked *Messages only* come from a
 member's report and only stop contact mail; see

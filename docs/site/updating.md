@@ -103,7 +103,7 @@ It exits `1` until the site is ready. Fix each line it flags:
 - **Zero-date defaults**: columns whose default is a zero date. Strict mode refuses any
   later change to that table.
 - **Length settings**: a setting such as the title length that is larger than its
-  column. Lower it under **Listings → Settings**.
+  column. Lower it under **Settings → Listings**.
 - **Refused writes, last 7 days**: writes strict mode refused, by table, column and kind.
   They are also in the activity log. The value itself is never recorded.
 

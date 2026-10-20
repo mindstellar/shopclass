@@ -41,32 +41,33 @@ osc_add_admin_submenu_page(
 );
 ```
 
-`$group` is the id of a heading inside the section, such as `settings_group_shop`
-(Settings has `site`, `content`, `email`, `shop` and `system` headings). The entry goes at the
-end of that group. `$match` lists other admin URLs that should light this entry, for the
-tabs of one screen. A declared settings page takes the same placement with `'group' => 'shop'`
-and can draw tabs with `'tabs'`.
+`$group` names a heading inside the section, such as `selling` or its full id
+`settings_group_selling`. Settings has these headings: `general`, `listings`, `users`,
+`media`, `email`, `security`, `selling` and `system`. The entry goes at the end of that
+group. `$match` lists other admin URLs that should light this entry, for the tabs of one
+screen. A declared settings page takes the same placement with `'group' => 'selling'` and
+can draw tabs with `'tabs'`.
 
 The Settings sidebar lists the groups, not the entries. Each Settings screen draws a tab
 row of its group's entries, so a plugin entry placed by `$group` appears as a tab. An entry
-added to Settings with no group goes to an "Other" group. To keep a second tab row off a
+added to Settings with no group, or an unknown one, goes to an "Other" group. The "Find a setting" box in the top bar searches every entry, and the sections and fields of every declared settings page. To keep a second tab row off a
 screen, draw the page's form inside it with `osc_admin_settings_form($page, array('titles' => false))`
 and set `'return_url'` on the page so a save comes back to that screen.
 
 ## Add your page to a settings tab
 
-A page in a group appears as a tab of that group on every screen of the group, with no further code. Group names are `site`, `content`, `email`, `shop` and `system`.
+A page in a group appears as a tab of that group on every screen of the group, with no further code. Group names are `general`, `listings`, `users`, `media`, `email`, `security`, `selling` and `system`.
 
 ```php
 osc_register_settings_page('shipping', array(
     'title' => __('Shipping', 'shipping'),
     'menu'  => 'settings',
-    'group' => 'shop',
+    'group' => 'selling',
 ));
 
 osc_add_admin_submenu_page(
     'settings', __('Shipping', 'shipping'), $zonesUrl, 'shipping-zones',
-    'administrator', 'shop', array($settingsUrl)  // $match: other URLs that light this entry
+    'administrator', 'selling', array($settingsUrl)  // $match: other URLs that light this entry
 );
 ```
 

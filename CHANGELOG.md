@@ -17,7 +17,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - A listing can have option rows (Colour x Size and so on), each with its own SKU, price and stock, set in the admin item form or by an admin through the API. `GET /listings` takes `option[name][]=value` and `ids`.
 - **Goods orders**: a cart is priced on the server and placed as an order, paid by a card plugin, bank transfer or cash on delivery. Stock is taken once when the order is paid (bank transfer and cash on delivery hold it from placement) and given back on refund or cancel; a line paid after the last one sold is marked oversold.
 - **Billing → Orders** shows a goods order's items, address, buyer and oversold lines, and can mark it shipped (carrier, tracking number, https link), delivered or cancelled. **To ship** lists paid orders not yet sent.
-- **Settings → Billing → Shop** sets the delivery charge, free delivery from, cash on delivery and its fee, hold days, open unpaid orders per buyer and the order number prefix.
+- **Settings → Selling → Billing → Shop** sets the delivery charge, free delivery from, cash on delivery and its fee, hold days, open unpaid orders per buyer and the order number prefix.
 - The shop API: `GET /cart/quote` prices a cart, `POST /account/orders` places an order, and `GET /account/orders`, `/account/orders/{id}`, `/cancel` and `/pay` read, cancel and pay it again. `GET` and `PUT /account/cart` keep a signed-in shopper's cart for 90 days.
 - The cart hooks (`cart_shipping_methods`, `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`, `cart_free_over`, `cart_problems`, `cart_needs_shipping`, `cart_item_add_after` and `cart_checkout_before`) are fired, so shipping, tax and promotion plugins price a cart. See [Hooks](https://shopclass.org/docs/developers/hooks/) and [Billing](https://shopclass.org/docs/developers/payment-gateways/).
 - Buyers get an e-mail when an order is placed, paid, shipped, delivered, cancelled or refunded; one that fails to send is tried again once from the job queue. The owner gets one when a new order comes in.
@@ -36,7 +36,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `GET /listings` takes `in_stock=true` and `on_sale=true` to list only what a shop can sell now or has marked down.
 - `GET /categories?include=cover` adds each category's cover: the first photo of the newest live listing in it or below it.
 - `GET /categories?roots=true` lists only the top-level categories.
-- **Pay at the end of posting**: over the limit, the listing is saved and paid for on the last step. Switch it in `Settings → Billing → Pricing → Take payment at the end of posting`.
+- **Pay at the end of posting**: over the limit, the listing is saved and paid for on the last step. Switch it in `Settings → Selling → Billing → Pricing → Take payment at the end of posting`.
 - A saved listing shows as "Waiting for payment" on My listings and in the admin Listings filter; an admin can use "Publish without payment".
 - A seller gets a reminder e-mail a day before an unpaid listing is deleted; edit it in `Settings → Emails`.
 - `POST /listings/{id}/publish` and `POST /admin/listings/{id}/publish` publish a listing that is waiting for payment.
@@ -44,6 +44,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
 
 ### Changed
+- All settings are under **Settings**, one entry per area (General, Listings, Users, Media, Email, Security, Selling, System), and a "Find a setting" box in the top bar that searches every setting. The Settings entries of Listings, Users, Media and Billing and the Users > Ban rules entry are gone; their URLs still work.
 - `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
 - A cash on delivery order ships before it is paid and is marked paid when marked delivered; neither the buyer nor the hold job cancels one once shipped.
 - Mails, receipts, bank transfer references and the API show an order number with its prefix.

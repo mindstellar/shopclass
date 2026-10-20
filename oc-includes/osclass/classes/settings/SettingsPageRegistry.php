@@ -130,8 +130,8 @@ final class SettingsPageRegistry extends Registry
      *                             (reached from a link the plugin puts somewhere else).
      *                             Defaults to 'plugins'.
      *   'menu_title' => string    Menu label; defaults to 'title'.
-     *   'group'      => string    A heading inside the Settings menu to sit under: 'site',
-     *                             'content', 'email', 'shop' or 'system'. Settings only.
+     *   'group'      => string    A heading inside the Settings menu to sit under: 'general',
+     *                             'listings', 'users', 'media', 'email', 'security', 'selling' or 'system'. Settings only.
      *   'tabs'       => array|callable  Tab links (label, url, active) drawn above the form,
      *                             or a callable returning them. For a page that is one tab
      *                             of a larger screen.

@@ -13,8 +13,8 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
 1. **Settings → General → Site is a**: pick **Shop**. In shop mode only admins add products.
    A shop also sells digital goods and credit packages. A classifieds site keeps the cart,
    orders and payment plugins too.
-2. **Settings → Billing**: switch **Enable billing** on and set your currency.
-3. **Settings → Billing → Shop**: set the delivery charge, the amount that makes delivery free,
+2. **Settings → Selling → Billing**: switch **Enable billing** on and set your currency.
+3. **Settings → Selling → Billing → Shop**: set the delivery charge, the amount that makes delivery free,
    cash on delivery and its fee, how long unpaid orders wait before they are cancelled, and the
    order number prefix.
 4. **Appearance**: activate the shop theme. If it asks for plugins, one screen installs and turns

@@ -102,13 +102,6 @@ class AdminMenu
             'settings_currencies',
             'administrator'
         );
-        $this->add_submenu(
-            'items',
-            __('Settings'),
-            osc_admin_base_url(true) . '?page=items&action=settings',
-            'items_settings',
-            'administrator'
-        );
 
         // Administrator-only, unlike the sections above it: every screen in here is user
         // administration and a moderator is refused all of them, so showing the section
@@ -120,13 +113,6 @@ class AdminMenu
             __('Manage users'),
             osc_admin_base_url(true) . '?page=users',
             'users_manage',
-            'administrator'
-        );
-        $this->add_submenu(
-            'users',
-            __('Ban rules'),
-            osc_admin_base_url(true) . '?page=users&action=ban',
-            'users_ban',
             'administrator'
         );
         $this->add_submenu(
@@ -143,13 +129,6 @@ class AdminMenu
             'users_administrators_manage',
             'administrator'
         );
-        $this->add_submenu(
-            'users',
-            __('Settings'),
-            osc_admin_base_url(true) . '?page=users&action=settings',
-            'users_settings',
-            'administrator'
-        );
 
         $this->add_menu(__('Media'), osc_admin_base_url(true) . '?page=media', 'media', 'moderator', 'bi bi-images');
         $this->add_submenu(
@@ -158,13 +137,6 @@ class AdminMenu
             osc_admin_base_url(true) . '?page=media',
             'media_library',
             'moderator'
-        );
-        $this->add_submenu(
-            'media',
-            __('Settings'),
-            osc_admin_base_url(true) . '?page=settings&action=media',
-            'media_settings',
-            'administrator'
         );
 
         $this->add_menu(
@@ -225,13 +197,6 @@ class AdminMenu
                 __('Credits'),
                 osc_admin_base_url(true) . '?page=billing&action=credits',
                 'billing_credits',
-                'administrator'
-            );
-            $this->add_submenu(
-                'billing',
-                __('Settings'),
-                osc_admin_base_url(true) . '?page=settings&action=billing',
-                'billing_settings',
                 'administrator'
             );
         }
@@ -320,118 +285,52 @@ class AdminMenu
             'administrator'
         );
 
-        // Thirteen entries is too many to scan as one list, so they are grouped by what
-        // the setting governs. Every group heading is a plain subhead, not a link.
-        $this->add_menu(__('Settings'), osc_admin_base_url(true) . '?page=settings', 'settings', 'administrator', 'bi bi-gear');
-        $this->add_submenu_divider('settings', __('Site'), 'settings_group_site', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('General'),
-            osc_admin_base_url(true) . '?page=settings',
-            'settings_general',
-            'administrator'
+        // Every setting lives here, under one heading per area. The headings are plain
+        // subheads; the sidebar lists them and each screen draws its group's tabs.
+        $b = osc_admin_base_url(true);
+        $this->add_menu(__('Settings'), $b . '?page=settings', 'settings', 'administrator', 'bi bi-gear');
+        $rows = array(
+            'general'   => array(__('General'), array(
+                array(__('General'), '?page=settings', 'settings_general'),
+                array(__('Permalinks'), '?page=settings&action=permalinks', 'settings_permalinks'),
+                array(__('Languages'), '?page=languages', 'settings_language'),
+                array(__('Sitemap'), '?page=settings&action=sitemap', 'settings_sitemap'),
+            )),
+            'listings'  => array(__('Listings'), array(
+                array(__('Listings'), '?page=items&action=settings', 'items_settings'),
+                array(__('Comments'), '?page=settings&action=comments', 'settings_comments'),
+                array(__('Latest searches'), '?page=settings&action=latestsearches', 'settings_searches'),
+            )),
+            'users'     => array(__('Users'), array(
+                array(__('Users'), '?page=users&action=settings', 'users_settings'),
+            )),
+            'media'     => array(__('Media'), array(
+                array(__('Media'), '?page=settings&action=media', 'media_settings'),
+                array(__('Storage'), '?page=settings&action=storage', 'settings_storage'),
+            )),
+            'email'     => array(__('Email'), array(
+                array(__('Email templates'), '?page=emails', 'settings_emails_manage'),
+                array(__('Mail server'), '?page=settings&action=mailserver', 'settings_mailserver'),
+            )),
+            'security'  => array(__('Security'), array(
+                array(__('Spam and bots'), '?page=settings&action=spamNbots', 'settings_spambots'),
+                array(__('Keyword blocklist'), '?page=settings&action=keyword_block', 'settings_keyword_block'),
+                array(__('Ban rules'), '?page=users&action=ban', 'users_ban'),
+            )),
+            'selling'   => array(__('Selling'), array(
+                array(__('Billing'), '?page=settings&action=billing', 'settings_billing'),
+            )),
+            'system'    => array(__('System'), array(
+                array(__('API'), '?page=settings&action=api', 'settings_api'),
+                array(__('Advanced'), '?page=settings&action=advanced', 'settings_advanced'),
+            )),
         );
-        $this->add_submenu(
-            'settings',
-            __('Permalinks'),
-            osc_admin_base_url(true) . '?page=settings&action=permalinks',
-            'settings_permalinks',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Languages'),
-            osc_admin_base_url(true) . '?page=languages',
-            'settings_language',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Sitemap'),
-            osc_admin_base_url(true) . '?page=settings&action=sitemap',
-            'settings_sitemap',
-            'administrator'
-        );
-        $this->add_submenu_divider('settings', __('Content'), 'settings_group_content', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('Comments'),
-            osc_admin_base_url(true) . '?page=settings&action=comments',
-            'settings_comments',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Spam and bots'),
-            osc_admin_base_url(true) . '?page=settings&action=spamNbots',
-            'settings_spambots',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Keyword blocklist'),
-            osc_admin_base_url(true) . '?page=settings&action=keyword_block',
-            'settings_keyword_block',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Latest searches'),
-            osc_admin_base_url(true) . '?page=settings&action=latestsearches',
-            'settings_searches',
-            'administrator'
-        );
-        $this->add_submenu_divider('settings', __('Email'), 'settings_group_email', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('Email templates'),
-            osc_admin_base_url(true) . '?page=emails',
-            'settings_emails_manage',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Mail server'),
-            osc_admin_base_url(true) . '?page=settings&action=mailserver',
-            'settings_mailserver',
-            'administrator'
-        );
-        // Drawn only while a plugin has put something under it: the shop plugins' screens.
-        $this->add_submenu_divider('settings', __('Shop'), 'settings_group_shop', 'administrator');
-        $this->add_submenu_divider('settings', __('System'), 'settings_group_system', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('Storage'),
-            osc_admin_base_url(true) . '?page=settings&action=storage',
-            'settings_storage',
-            'administrator'
-        );
-        // Only while billing is off — this is the switch that turns it on, so it has to be
-        // reachable. Once it is on, the Billing section carries its own Settings entry and
-        // listing the same page twice would leave two menu rows fighting to look current.
-        if (!osc_billing_enabled()) {
-            $this->add_submenu(
-                'settings',
-                __('Billing'),
-                osc_admin_base_url(true) . '?page=settings&action=billing',
-                'settings_billing',
-                'administrator'
-            );
+        foreach ($rows as $group => list($title, $entries)) {
+            $this->add_submenu_divider('settings', $title, 'settings_group_' . $group, 'administrator');
+            foreach ($entries as list($label, $path, $id)) {
+                $this->add_submenu('settings', $label, $b . $path, $id, 'administrator');
+            }
         }
-        $this->add_submenu(
-            'settings',
-            __('API'),
-            osc_admin_base_url(true) . '?page=settings&action=api',
-            'settings_api',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Advanced'),
-            osc_admin_base_url(true) . '?page=settings&action=advanced',
-            'settings_advanced',
-            'administrator'
-        );
 
         $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=system-info', 'tools', 'administrator', 'bi bi-tools');
         $this->add_submenu(
@@ -521,7 +420,7 @@ class AdminMenu
      * @param string|null $capability 'moderator' to keep it visible to moderators
      * @param string|null $icon_url
      * @param string|null $group     a group heading in this section: its short name such as
-     *                               'shop', or its full id 'settings_group_shop'; the entry goes at the end of that
+     *                               'selling', or its full id 'settings_group_selling'. The entry goes at the end of that
      *                               group. Unknown or null: it is appended to the section.
      * @param string[]    $match     further admin urls that mark this entry as the current one,
      *                               such as the other tabs of a screen
@@ -554,7 +453,7 @@ class AdminMenu
         unset($sub[$submenu_id]);
         $at = null;
         if ($group !== null) {
-            // The short name ('shop') and the full heading id ('settings_group_shop') mean the same group.
+            // The short name ('selling') and the full heading id ('settings_group_selling') mean the same group.
             $at = self::groupEnd($sub, 'divider_' . $group)
                 ?? self::groupEnd($sub, 'divider_' . $menu_id . '_group_' . $group);
         }
