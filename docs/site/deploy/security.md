@@ -123,14 +123,15 @@ define('OSC_ADMIN_IP_ALLOW', '203.0.113.7, 2001:db8::/32, 10.0.0.0/8');
 
 Or set the `OSC_ADMIN_IP_ALLOW` environment variable to the same text (a value in
 `config.php` wins). Entries are IPv4 or IPv6 addresses and CIDR ranges, separated
-by commas. Any other address gets a plain 404 page, with no cookie set. A wrong
-entry is left out and named in the PHP error log.
+by commas or spaces. Any other address gets a plain 404 page, with no cookie set. A
+wrong entry is left out and named in the PHP error log. If every entry is wrong, only
+loopback gets in.
 
 - It covers everything under `/oc-admin/`: sign-in, admin pages, AJAX and the
   upgrade screen. The public site, cron, `oc-cli.php` and the installer are not
   affected.
 - Admin API keys work from any address. Limit them with their scopes instead.
-- `127.0.0.1` and `::1` always get in, so an SSH tunnel to the server works.
+- Loopback (`127.0.0.0/8` and `::1`) always gets in, so an SSH tunnel to the server works.
 - The address checked is `REMOTE_ADDR`. Behind a proxy, set up the real client IP
   first (see [below](#login-throttling-and-the-real-client-ip)), or the list sees
   only the proxy. `Tools → System info → Security` shows the list and warns about this.
@@ -246,6 +247,7 @@ which sets out how to report privately and which versions are supported.
 - [ ] PHP execution denied under `oc-content/uploads/`
 - [ ] Admin username is not `admin`; one account per person
 - [ ] Real client IP configured if behind a proxy
+- [ ] Admin panel limited to your addresses with `OSC_ADMIN_IP_ALLOW`, if it has no reason to be public
 - [ ] CAPTCHA on publishing and registration
 - [ ] Database user scoped to one database, not reachable publicly
 - [ ] Offsite backups, and one of them restored successfully
