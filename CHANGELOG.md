@@ -4,10 +4,11 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 7.0.1
 
-Fixes for 7.0.0.
+This release fixes the search filter sidebar, which listed custom fields in the Fields library order instead of the order set inside the form.
 
 ### Fixed
 - The search filter sidebar lists custom fields in the order set inside the form, like the post form (#574).
+- Migrations 0001 and 0025 can run again on a 7.0 database without changing it.
 
 ## Shopclass 7.0.0
 
