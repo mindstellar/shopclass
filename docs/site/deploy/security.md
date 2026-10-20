@@ -124,8 +124,8 @@ define('OSC_ADMIN_IP_ALLOW', '203.0.113.7, 2001:db8::/32, 10.0.0.0/8');
 Or set the `OSC_ADMIN_IP_ALLOW` environment variable to the same text (a value in
 `config.php` wins). Entries are IPv4 or IPv6 addresses and CIDR ranges, separated
 by commas or spaces. Any other address gets a plain 404 page, with no cookie set. A
-wrong entry is left out and named in the PHP error log. If every entry is wrong, only
-loopback gets in.
+wrong entry is left out; with `OSC_DEBUG` on, it is named in the PHP error log. If
+every entry is wrong, only loopback gets in.
 
 - It covers everything under `/oc-admin/`: sign-in, admin pages, AJAX and the
   upgrade screen. The public site, cron, `oc-cli.php` and the installer are not

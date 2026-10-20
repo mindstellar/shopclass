@@ -56,7 +56,8 @@ final class AdminIpAllowlist
     }
 
     /**
-     * Each good entry as "network/bits"; a bad entry is left out and named in the error log.
+     * Each good entry as "network/bits"; a bad entry is left out, and named in the error log when
+     * OSC_DEBUG is on.
      *
      * @return array<int,string>
      */
@@ -72,7 +73,7 @@ final class AdminIpAllowlist
                 $ranges[] = $range;
             }
         }
-        if ($bad !== array()) {
+        if ($bad !== array() && defined('OSC_DEBUG') && OSC_DEBUG) {
             error_log('OSC_ADMIN_IP_ALLOW: ignored ' . implode(', ', array_map(static fn ($e) => substr(preg_replace('/[^0-9A-Fa-f.:\/]/', '?', $e) ?? '', 0, 64), $bad)));
         }
 

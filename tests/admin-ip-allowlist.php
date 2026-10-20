@@ -11,7 +11,8 @@
 /**
  * Pins AdminIpAllowlist, the OSC_ADMIN_IP_ALLOW matcher: exact addresses and CIDR ranges in
  * IPv4 and IPv6, an IPv4 address written as IPv6, loopback always let in, an empty list
- * meaning off, and bad entries left out. Also pins AddressGuard::inRange(), which it uses.
+ * meaning off, and bad entries left out (and logged only with OSC_DEBUG). Also pins
+ * AddressGuard::inRange(), which it uses.
  *
  * DB-free. Usage:  php tests/admin-ip-allowlist.php
  */
@@ -74,9 +75,18 @@ pin('count() leaves loopback out', 4, $list->count());
 pin('bad entries are left out', array('203.0.113.7/32', '10.20.0.0/16', '2001:db8::5/128', '2001:db8:aa00::/40'), AdminIpAllowlist::parse(
     '203.0.113.7, 10.20.0.0/16 2001:db8::5,2001:db8:aa00::/40 256.1.1.1, 10.0.0.0/33, admin.example, 1.2.3.4/x'
 ));
-check('256.1.1.1 is named in the log', str_contains($logged, '256.1.1.1'));
-check('...and 10.0.0.0/33', str_contains($logged, '10.0.0.0/33'));
-pin('...in one line', 1, substr_count(trim($logged), "\n") + 1);
+pin('without OSC_DEBUG bad entries are not logged', '', $logged);
+$debugLog = (string) tempnam(sys_get_temp_dir(), 'oscallowdbg_');
+shell_exec(escapeshellarg(PHP_BINARY) . ' -d error_log=' . escapeshellarg($debugLog) . ' -r ' . escapeshellarg(
+    'require ' . var_export(dirname(__DIR__) . '/oc-includes/vendor/autoload.php', true) . ';'
+    . 'define("OSC_DEBUG", true);'
+    . '\\mindstellar\\security\\AdminIpAllowlist::parse("203.0.113.7, 256.1.1.1, 10.0.0.0/33");'
+));
+$debugLogged = (string) file_get_contents($debugLog);
+@unlink($debugLog);
+check('with OSC_DEBUG, 256.1.1.1 is named in the log', str_contains($debugLogged, '256.1.1.1'), $debugLogged);
+check('...and 10.0.0.0/33', str_contains($debugLogged, '10.0.0.0/33'));
+pin('...in one line', 1, substr_count(trim($debugLogged), "\n") + 1);
 check('a range wider than its family is left out', AdminIpAllowlist::parse('::/129, 1.2.3.4/-1') === array());
 check('an empty list parses to nothing', AdminIpAllowlist::parse(' , ') === array());
 check('a value that is not an address is refused', !$list->allows('') && !$list->allows('not-an-ip'));
