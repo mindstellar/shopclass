@@ -52,6 +52,23 @@ row of its group's entries, so a plugin entry placed by `$group` appears as a ta
 added to Settings with no group goes to an "Other" group. A screen's own `'tabs'` show as a
 second row under it.
 
+## Add your page to a settings tab
+
+A page in a group appears as a tab of that group on every screen of the group, with no further code. Group names are `site`, `content`, `email`, `shop` and `system`.
+
+```php
+osc_register_settings_page('shipping', array(
+    'title' => __('Shipping', 'shipping'),
+    'menu'  => 'settings',
+    'group' => 'shop',
+));
+
+osc_add_admin_submenu_page(
+    'settings', __('Shipping', 'shipping'), $zonesUrl, 'shipping-zones',
+    'administrator', 'shop', array($settingsUrl)  // $match: the screen's own sub-tabs
+);
+```
+
 ## Removing entries
 
 ```php

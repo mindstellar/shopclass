@@ -69,6 +69,16 @@ pin('entries land at the end of their group, in order; unknown group and old cal
     array_keys($m->get_array_menu()['settings']['sub']));
 
 $tabbed = $m->get_array_menu();
+$n = new AdminMenu();
+$n->add_menu('Settings', $base . '?page=settings', 'settings', 'administrator');
+$n->add_submenu_divider('settings', 'Shop', 'settings_group_shop');
+$n->add_submenu_divider('settings', 'System', 'settings_group_system');
+$n->add_submenu('settings', 'Long', $base . '?a', 's-long', 'administrator', null, 'settings_group_shop');
+$n->add_submenu('settings', 'Short', $base . '?b', 's-short', 'administrator', null, 'shop');
+pin('the short and the long group name place an entry in the same group',
+    ['divider_settings_group_shop', 's-long', 's-short', 'divider_settings_group_system'],
+    array_keys($n->get_array_menu()['settings']['sub']));
+
 pin('a tab url highlights the entry that claims it', ['settings', 's-ship'], AdminMenu::current($tabbed, 'page=settings&action=custom&id=shipping', 'settings', false, $bases));
 pin('the first tab highlights it too', ['settings', 's-ship'], AdminMenu::current($tabbed, 'page=plugins&action=renderplugin&route=shipping-zones', 'plugins', false, $bases));
 pin('another settings page keeps its own', ['settings', 's-tax'], AdminMenu::current($tabbed, 'page=settings&action=custom&id=tax', 'settings', false, $bases));

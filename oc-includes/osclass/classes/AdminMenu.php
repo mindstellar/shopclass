@@ -520,8 +520,8 @@ class AdminMenu
      * @param string      $submenu_id
      * @param string|null $capability 'moderator' to keep it visible to moderators
      * @param string|null $icon_url
-     * @param string|null $group     id of a group heading in this section, such as
-     *                               'settings_group_shop'; the entry goes at the end of that
+     * @param string|null $group     a group heading in this section: its short name such as
+     *                               'shop', or its full id 'settings_group_shop'; the entry goes at the end of that
      *                               group. Unknown or null: it is appended to the section.
      * @param string[]    $match     further admin urls that mark this entry as the current one,
      *                               such as the other tabs of a screen
@@ -552,7 +552,12 @@ class AdminMenu
 
         $sub = $this->aMenu[$menu_id]['sub'] ?? array();
         unset($sub[$submenu_id]);
-        $at = $group !== null ? self::groupEnd($sub, 'divider_' . $group) : null;
+        $at = null;
+        if ($group !== null) {
+            // The short name ('shop') and the full heading id ('settings_group_shop') mean the same group.
+            $at = self::groupEnd($sub, 'divider_' . $group)
+                ?? self::groupEnd($sub, 'divider_' . $menu_id . '_group_' . $group);
+        }
         if ($at === null) {
             $sub[$submenu_id] = $array;
         } else {
