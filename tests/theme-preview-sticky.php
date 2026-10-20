@@ -134,12 +134,18 @@ $GLOBALS['osc_test_api'] = false;
 
 harness_section('On a demo site any visitor previews');
 
-// DEMO cannot be undefined again, so this section stays last.
+// DEMO and OC_ADMIN cannot be undefined again, so these sections come last.
 define('DEMO', true);
 pin('a visitor asking for a theme gets it', 'glance', $request(array('theme' => 'glance'), null));
 pin('a visitor keeps it on the next request', 'glance', $request(array(), 'glance'));
 pin('and can end it', null, $request(array('theme' => ''), 'glance'));
 pin('a theme that is not installed is still ignored', null, $request(array('theme' => '../outside'), null));
+
+harness_section('Admin pages leave the preview alone');
+
+define('OC_ADMIN', true);
+pin('an admin page never previews', null, $request(array('theme' => 'glance'), 'glance', '1'));
+check('and does not touch the cookie', Cookie::$writes === array());
 
 $rm = static function (string $dir) use (&$rm) {
     foreach (array_diff(scandir($dir) ?: array(), array('.', '..')) as $entry) {

@@ -104,7 +104,8 @@ class WebThemes extends Themes
      */
     private function previewTheme(): ?string
     {
-        if (osc_is_api_request() || !self::previewAllowed()) {
+        // Admin pages take their own ?theme= (activate, dark mode) and never change the preview.
+        if (defined('OC_ADMIN') || osc_is_api_request() || !self::previewAllowed()) {
             return null;
         }
         // The name picks the directory functions.php is required from, so it must be an installed theme.
