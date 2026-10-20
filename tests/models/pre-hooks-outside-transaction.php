@@ -154,4 +154,13 @@ pin('before_delete_item runs with no transaction open', false, $open['before_del
 pin('a before_delete_item that writes a ban rule and redirects keeps the rule', [true, 1, false], $redirects('before_delete_item', static fn () => $service->delete($id, $secret($id), $actor)));
 pin('and the listing is kept', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id = $id")->fetch_row()[0]);
 
+harness_section('commenting');
+$commenter = new Actor($sue, null, '192.0.2.72');
+$open      = [];
+$saved     = (new CommentService())->post($id, ['title' => '', 'body' => 'Is it still for sale?'], $commenter);
+check('the comment is saved', $saved->id() > 0);
+pin('before_add_comment runs with no transaction open', false, $open['before_add_comment'] ?? null);
+pin('a before_add_comment that writes a ban rule and redirects keeps the rule', [true, 1, false], $redirects('before_add_comment', static fn () => (new CommentService())->post($id, ['title' => '', 'body' => 'Second question'], $commenter)));
+pin('and only the first comment is written', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE fk_i_item_id = $id")->fetch_row()[0]);
+
 exit(harness_result());

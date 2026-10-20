@@ -145,8 +145,10 @@ final class CommentService
             'userId'      => $actor->userId(),
         ];
 
+        // Before the transaction opens, so a plugin that redirects from it leaves none open.
+        osc_run_hook('before_add_comment', $row);
+
         return DeferredMail::transaction(function () use ($row, $mail, $status, $actor): SavedComment {
-            osc_run_hook('before_add_comment', $row);
             $id = (int) $this->comments->insertGetId($row);
             if ($id <= 0) {
                 throw new \RuntimeException('The comment could not be saved.');
