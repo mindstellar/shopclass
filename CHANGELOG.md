@@ -2,6 +2,14 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.10
+
+This release fixes the search filter sidebar, which listed custom fields in the Fields library order instead of the order set inside the form.
+
+### Fixed
+
+- The search filter sidebar lists custom fields in the order set inside the form, like the post form (#574).
+
 ## Shopclass 6.4.9
 
 This release makes buying an extra listing slot one clear step: a seller at the limit gets a button
