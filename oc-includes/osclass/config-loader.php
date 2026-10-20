@@ -28,7 +28,8 @@
  * REL_WEB_URL / WEB_PATH (or OSC_CLI_URL, the address for the command line
  * only), and the object cache — OSC_CACHE (driver name) plus
  * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached or redis server, and
- * OSC_CACHE_PASSWORD / OSC_CACHE_USERNAME / OSC_CACHE_DB for redis.
+ * OSC_CACHE_PASSWORD / OSC_CACHE_USERNAME / OSC_CACHE_DB for redis, and
+ * OSC_ADMIN_IP_ALLOW, the addresses the admin panel answers.
  *
  * Safe to include more than once.
  */
@@ -100,6 +101,11 @@ if (!defined('WEB_PATH') && $oscEnv('WEB_PATH') !== null) {
 // in config.php still wins; anything falsy or unset leaves DEMO undefined.
 if (!defined('DEMO') && filter_var((string)getenv('OSC_DEMO'), FILTER_VALIDATE_BOOLEAN)) {
     define('DEMO', true);
+}
+
+// Admin panel address allow list (optional): see AdminIpAllowlist. A value in config.php still wins.
+if (!defined('OSC_ADMIN_IP_ALLOW') && $oscEnv('OSC_ADMIN_IP_ALLOW') !== null) {
+    define('OSC_ADMIN_IP_ALLOW', $oscEnv('OSC_ADMIN_IP_ALLOW'));
 }
 
 // Strict SQL modes (optional). Lets an env-only deploy keep the server's own strict

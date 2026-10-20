@@ -58,6 +58,13 @@ define('REL_WEB_URL', 'rel_here');
 /** Website base url */
 defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localhost/
 
+/**
+ * Answer the admin panel only from these addresses: IPv4 and IPv6 addresses and CIDR ranges,
+ * separated by commas. Other addresses get a 404. 127.0.0.1 and ::1 always get in, so an SSH
+ * tunnel works if you lock yourself out; or remove the line. Admin API keys are not limited.
+ */
+//define('OSC_ADMIN_IP_ALLOW', '203.0.113.7, 2001:db8::/32');
+
 /** Turn off restoring a backup from the admin; backups still work. */
 //define('OSC_DISABLE_WEB_RESTORE', true);
 

@@ -1212,6 +1212,7 @@ class CAdminTools extends AdminSecBaseModel
             'cron_last'        => osc_cron_last_run(),
             // This request came through the same proxy every visitor does.
             'proxy'            => osc_proxy_ip_mismatch(),
+            'admin_ip_allow'   => ($allow = \mindstellar\security\AdminIpAllowlist::fromConfig()) === null ? null : $allow->count(),
             'backup_last'      => is_array($last) ? $last : null,
             'backup_probe'     => BackupService::probe(),
             'storage'          => array(
