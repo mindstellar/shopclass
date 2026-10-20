@@ -77,6 +77,7 @@ Everything is set from environment variables:
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |
 | `OSC_DISABLE_WEB_RESTORE` | Set to `1` to turn off restoring backups from the admin. Backups still work: see [backups](/docs/use/backups-and-maintenance/#turning-web-restore-off) |
 | `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing and updating plugins and themes from the admin market and `oc-cli.php market:*` |
+| `OSC_ADMIN_IP_ALLOW` | Addresses and CIDR ranges, comma-separated, that may open `/oc-admin/`; any other address gets a 404. Unset is off. Set `OSC_REAL_IP_HEADER` too when behind a proxy: see [the admin allow list](/docs/deploy/security/#allow-the-admin-panel-from-your-addresses-only) |
 | `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`): see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/); for Redis also `OSC_CACHE_PASSWORD`, `OSC_CACHE_USERNAME` and `OSC_CACHE_DB` |
 | `OSC_CACHE_LOCAL` | `1` by default in the image: each PHP worker keeps a [copy of the cached values](/docs/configure/cache/#a-copy-in-each-php-worker) for up to 15 seconds. Set to `0` to turn it off |

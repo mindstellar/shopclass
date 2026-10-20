@@ -85,6 +85,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Removed methods and classes: `Params::_view()`, `PageForm::multilanguage_name_description()`, `Object_Cache_Factory::getCache()` (use `getInstance()`), `LocationsTmp`, `StorageQueue` and `StorageWorker` (use the job queue), and `oc-includes/osclass/timezones.php` (use `DateTimeZone::listIdentifiers()`).
 
 ### Security
+- `OSC_ADMIN_IP_ALLOW` (in `config.php` or the environment) limits the admin panel to listed addresses and ranges; any other address gets a 404. See [Security](https://shopclass.org/docs/deploy/security/#allow-the-admin-panel-from-your-addresses-only).
 - `CurlHttpClient` takes a `resolve` option that pins a host to an address the caller checked, so a plugin fetching a user's URL can close the DNS rebinding gap.
 
 - The admin Languages list escapes each language's name and description, and the installer escapes its language error.
@@ -191,6 +192,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
+- A long batch of flash messages no longer gets lost after a redirect; the first ones show with "…and N more".
 - Admin login cookies stay on the admin path, and a two-step sign-in left at the code page no longer starts a session that skips the page cache.
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.

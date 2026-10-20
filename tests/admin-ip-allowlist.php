@@ -65,6 +65,7 @@ check('a list of only bad entries lets nobody else in', !(new AdminIpAllowlist(A
 harness_section('off and bad entries');
 
 check('no constant means off', AdminIpAllowlist::fromConfig() === null);
+pin('count() leaves loopback out', 4, $list->count());
 pin('bad entries are left out', array('203.0.113.7/32', '10.20.0.0/16', '2001:db8::5/128', '2001:db8:aa00::/40'), AdminIpAllowlist::parse(
     '203.0.113.7, 10.20.0.0/16 2001:db8::5,2001:db8:aa00::/40 256.1.1.1, 10.0.0.0/33, admin.example, 1.2.3.4/x'
 ));

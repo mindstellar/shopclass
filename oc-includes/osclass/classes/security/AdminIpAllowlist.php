@@ -27,12 +27,22 @@ final class AdminIpAllowlist
     /** @var array<int,string> */
     private $ranges;
 
+    /** @var int */
+    private $listed;
+
     /**
      * @param array<int,string> $ranges CIDR ranges, as parse() returns them
      */
     public function __construct(array $ranges)
     {
+        $this->listed = count($ranges);
         $this->ranges = array_merge($ranges, self::LOOPBACK);
+    }
+
+    /** How many good entries the list has, loopback not counted. */
+    public function count(): int
+    {
+        return $this->listed;
     }
 
     /**

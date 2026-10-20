@@ -148,6 +148,13 @@ check('the report is read for the Overview and the Database tab only', (bool) pr
 check('a fact group can carry the anchor See which points at', strpos($shell, "isset(\$group['id']) ? ' id=\"' . osc_esc_html(\$group['id']) . '\"' : ''") !== false);
 check('the Database tab partial adds no verdict box or empty-state block for it', strpos($database, 'strict') === false && strpos($database, 'osc_admin_empty(') === false);
 
+harness_section('Admin address allow list');
+
+check('the Security tab is told how many entries OSC_ADMIN_IP_ALLOW has, or null when it is off', strpos(
+    $body('systemEnvironment'),
+    "'admin_ip_allow'   => (\$allow = \\mindstellar\\security\\AdminIpAllowlist::fromConfig()) === null ? null : \$allow->count(),"
+) !== false);
+
 harness_section('Actions on the new tabs');
 
 foreach (array('jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear') as $action) {
