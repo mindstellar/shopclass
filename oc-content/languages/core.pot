@@ -621,6 +621,10 @@ msgstr ""
 msgid "%s set differently"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/SettingsSearch.php
+msgid "%s settings"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "%s user keeps their account but loses their location."
 msgid_plural "%s users keep their account but lose their location."
@@ -2290,6 +2294,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/wallet.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Billing"
 msgstr ""
@@ -3311,6 +3316,7 @@ msgstr ""
 msgid "Contact, feed &amp; language"
 msgstr ""
 
+#: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Content"
 msgstr ""
@@ -6677,6 +6683,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "Listings"
@@ -7226,6 +7233,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/settings/media.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/SettingsSearch.php
 msgid "Media"
 msgstr ""
 
@@ -10770,10 +10778,6 @@ msgstr ""
 msgid "Seller name"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php
-msgid "Selling"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Selling on this site"
 msgstr ""
@@ -10961,7 +10965,6 @@ msgstr ""
 #: oc-admin/themes/modern/users/ban.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
-#: oc-includes/osclass/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
@@ -13863,6 +13866,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/index.php
 #: oc-admin/themes/modern/users/settings.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 msgid "Users"
