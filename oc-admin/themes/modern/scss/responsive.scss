@@ -216,6 +216,15 @@
   .osc-table-stack {
     @include phone-card-rows;
 
+    // A table-layout grid sizes to its widest control and runs past the screen; as blocks it
+    // takes the card's width.
+    table,
+    tbody {
+      display: block;
+    }
+    td :is(input, select) {
+      max-width: 100% !important;
+    }
     tbody tr {
       gap: .125rem 1rem;
     }
