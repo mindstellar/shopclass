@@ -47,6 +47,9 @@ class AdminMenu
     /** Submenu keys per section as core left them, before anyone else registered. */
     private $aCoreSubmenus = array();
 
+    /** @var array<string,array<string,int>> weight a plugin gave each entry it added, per section */
+    private $aWeight = array();
+
     /** Submenu keys a plugin placed inside a group heading, per section. */
     private $aPlaced = array();
 
@@ -458,6 +461,8 @@ class AdminMenu
      *                               group. Unknown or null: it is appended to the section.
      * @param string[]    $match     further admin urls that mark this entry as the current one,
      *                               such as the other tabs of a screen
+     * @param int         $weight    in Listings, Users, Media and Billing: where a plugin's list screen goes
+     *                               among the plugin entries, lowest first
      *
      * @return void
      */
@@ -469,7 +474,8 @@ class AdminMenu
         $capability = null,
         $icon_url = null,
         $group = null,
-        $match = array()
+        $match = array(),
+        $weight = 0
     ) {
         $array = array(
             $submenu_title,
@@ -493,11 +499,6 @@ class AdminMenu
         $sub = $this->aMenu[$menu_id]['sub'] ?? array();
         unset($sub[$submenu_id]);
         $at = null;
-        // A section's own Settings entry stays last: pages a plugin adds go before it.
-        $last = self::SETTINGS_ENTRY[$menu_id] ?? null;
-        if ($group === null && $last !== null && $submenu_id !== $last && isset($sub[$last])) {
-            $at = array_search($last, array_keys($sub), true);
-        }
         if ($group !== null) {
             // The short name ('content') and the full heading id ('settings_group_content') mean the same group.
             $at = self::groupEnd($sub, 'divider_' . $group)
@@ -510,6 +511,46 @@ class AdminMenu
             $this->aPlaced[$menu_id][] = $submenu_id;
         }
         $this->aMenu[$menu_id]['sub'] = $sub;
+        $this->aWeight[$menu_id][$submenu_id] = (int)$weight;
+        $this->arrange($menu_id);
+    }
+
+    /**
+     * Order a section that closes with its own Settings entry: what core registered keeps its
+     * place, then plugin list screens by weight (lowest first, then the order they were
+     * added), then plugin settings pages, then the Settings entry. Load order alone decides
+     * nothing a plugin can set.
+     */
+    private function arrange(string $menuId): void
+    {
+        $last = self::SETTINGS_ENTRY[$menuId] ?? null;
+        $core = $this->aCoreSubmenus[$menuId] ?? null;
+        if ($last === null || $core === null) {
+            return;
+        }
+        $sub    = $this->aMenu[$menuId]['sub'];
+        $kept   = array();
+        $added  = array();
+        $seq    = 0;
+        foreach ($sub as $key => $entry) {
+            if ($key === $last) {
+                continue;
+            }
+            if (in_array($key, $core, true)) {
+                $kept[$key] = $entry;
+                continue;
+            }
+            $added[$key] = array(strpos($key, 'settings-page-') === 0 ? 1 : 0, $this->aWeight[$menuId][$key] ?? 0, $seq++);
+        }
+        uasort($added, static fn ($a, $b) => $a <=> $b);
+        $out = $kept;
+        foreach (array_keys($added) as $key) {
+            $out[$key] = $sub[$key];
+        }
+        if (isset($sub[$last])) {
+            $out[$last] = $sub[$last];
+        }
+        $this->aMenu[$menuId]['sub'] = $out;
     }
 
     /**

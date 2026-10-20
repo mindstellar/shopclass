@@ -176,6 +176,15 @@ $after = [];
 foreach ($real->settingsGroups() as $grp) {
     $after[$grp['id']] = array_column($grp['entries'], 'id');
 }
+$ord = new AdminMenu();
+$ord->init();
+$ord->add_submenu('billing', 'Tax', 'https://example.test/t', 'settings-page-tax', 'administrator');
+$ord->add_submenu('billing', 'Offers', 'https://example.test/o', 'p-offers', 'administrator', null, null, [], 20);
+$ord->add_submenu('billing', 'Shipping', 'https://example.test/s', 'p-ship', 'administrator', null, null, [], 10);
+$ord->add_submenu('billing', 'Downloads', 'https://example.test/d', 'p-dl', 'administrator');
+pin('Billing: core first, plugin lists by weight, plugin settings pages, then Settings',
+    ['billing_orders', 'billing_packages', 'billing_credits', 'p-dl', 'p-ship', 'p-offers', 'settings-page-tax', 'billing_settings'],
+    array_map(static fn ($e) => $e[2], array_values($ord->get_array_menu()['billing']['sub'])));
 pin('a plugin page in Users goes before its Settings entry', ['p-subs', 'users_settings'], array_slice(array_map(static fn ($e) => $e[2], array_values($real->get_array_menu()['users']['sub'])), -2));
 pin('an unknown group goes to Other', ['p-lost'], $after['settings_group_other']);
 pin('a long group id places into Email', true, in_array('p-mail', $after['settings_group_email'], true));

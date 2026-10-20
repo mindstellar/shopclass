@@ -87,7 +87,7 @@ Core defines 1213 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_add_admin_menu_page($menu_title, $url, $menu_id, $capability = 'administrator', $icon_url = null, $position = null)` | Add menu entry |
 | `osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability = null)` | Add submenu divider under menu id $menu_id |
-| `osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator', $group = null, $match = array())` | Add submenu under menu id $menu_id |
+| `osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator', $group = null, $match = array(), $weight = 0)` | Add submenu under menu id $menu_id |
 | `osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the appearance menu page |
 | `osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the categories menu page |
 | `osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the listings menu page |

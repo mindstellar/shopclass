@@ -85,6 +85,7 @@ function osc_remove_admin_menu_page($menu_id)
  * @param string|null $group a group heading in the menu: 'content' or 'settings_group_content';
  *                            the entry goes at the end of that group
  * @param string[]    $match  further admin urls that mark this entry as the current one
+ * @param int         $weight in Listings, Users, Media and Billing: the order among plugin entries, lowest first
  *
  * @return void
  */
@@ -95,9 +96,10 @@ function osc_add_admin_submenu_page(
     $submenu_id,
     $capability = 'administrator',
     $group = null,
-    $match = array()
+    $match = array(),
+    $weight = 0
 ) {
-    AdminMenu::getInstance()->add_submenu($menu_id, $submenu_title, $url, $submenu_id, $capability, null, $group, $match);
+    AdminMenu::getInstance()->add_submenu($menu_id, $submenu_title, $url, $submenu_id, $capability, null, $group, $match, $weight);
 }
 
 /**
