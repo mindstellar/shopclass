@@ -219,8 +219,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/fields/index.php
-msgid "%d cats · no form"
-msgstr ""
+msgid "%d category · not in a form"
+msgid_plural "%d categories · not in a form"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "%d change"
@@ -301,8 +303,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/fields/index.php
-msgid "%d fields from before Forms are attached straight to categories."
-msgstr ""
+msgid "%d field from before Forms is attached straight to categories."
+msgid_plural "%d fields from before Forms are attached straight to categories."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/classes/storage/StorageJobs.php
@@ -361,6 +365,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
 msgid "%d per page"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/header.php
+msgid "%d results"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -2001,9 +2009,13 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid ""
+"Attached directly to %d category, outside any form: %s. Drag it into a form "
+"to manage it here."
+msgid_plural ""
 "Attached directly to %d categories, outside any form: %s. Drag it into a "
 "form to manage it here."
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/datatables/MediaDataTable.php
 msgid "Attached to"
@@ -3299,7 +3311,6 @@ msgstr ""
 msgid "Contact, feed &amp; language"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Content"
 msgstr ""
@@ -5171,6 +5182,10 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "Find a registered user"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/header.php
+msgid "Find a setting"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -8046,6 +8061,10 @@ msgstr ""
 msgid "No sections yet. Add one below."
 msgstr ""
 
+#: oc-admin/themes/modern/parts/header.php
+msgid "No setting matches."
+msgstr ""
+
 #: oc-admin/themes/modern/functions.php
 msgid "No subcategory"
 msgstr ""
@@ -8956,6 +8975,7 @@ msgid "Payment method"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
+#: oc-includes/osclass/classes/admin/SettingsSearch.php
 msgid "Payment methods"
 msgstr ""
 
@@ -10556,6 +10576,7 @@ msgstr ""
 msgid "Sections"
 msgstr ""
 
+#: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Security"
 msgstr ""
@@ -10749,6 +10770,10 @@ msgstr ""
 msgid "Seller name"
 msgstr ""
 
+#: oc-includes/osclass/classes/AdminMenu.php
+msgid "Selling"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Selling on this site"
 msgstr ""
@@ -10936,6 +10961,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/ban.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
@@ -10976,7 +11002,6 @@ msgid "Shipping class"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
-#: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Shop"
 msgstr ""
@@ -11271,7 +11296,6 @@ msgstr ""
 msgid "Signed URLs"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Site"
 msgstr ""
@@ -12312,7 +12336,7 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid ""
 "The sender cannot send messages for this long. Sign-in and posting still "
-"work. You can lift it under Users → Ban rules."
+"work. You can lift it under Settings → Security → Ban rules."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -14596,6 +14620,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/Receipts.php
 msgid "Your receipt from %1$s, order #%2$d"
+msgstr ""
+
+#: oc-admin/themes/modern/fields/index.php
+msgid ""
+"Your reusable fields. Create a form first, then drag a field into it. The "
+"same field can be placed in several forms."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php

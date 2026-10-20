@@ -444,7 +444,7 @@ msgstr ""
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid ""
 "Ban %s from this site for good? They will not be able to sign in, post or "
-"send messages. You can undo this under Users → Ban rules."
+"send messages. You can undo this under Settings → Security → Ban rules."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/gateway/OfflineGateway.php
