@@ -134,7 +134,9 @@ loopback gets in.
 - Loopback (`127.0.0.0/8` and `::1`) always gets in, so an SSH tunnel to the server works.
 - The address checked is `REMOTE_ADDR`. Behind a proxy, set up the real client IP
   first (see [below](#login-throttling-and-the-real-client-ip)), or the list sees
-  only the proxy. `Tools → System info → Security` shows the list and warns about this.
+  only the proxy. A proxy on the same server then arrives as `127.0.0.1`, so the
+  list lets everyone in. `Tools → System info → Security` shows the list and warns
+  about this.
 
 **Locked yourself out?** Remove the line from `config.php` or unset the variable.
 Or open an SSH tunnel and use the panel through it:
