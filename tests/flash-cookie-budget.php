@@ -76,6 +76,17 @@ pin('the second ends with the rest counted', '…and ' . (40 - (count($second) -
 pin('...in its own type', 'info', end($second)['type'] ?? null);
 check('the whole fits', $packed($two) <= 3800, (string) $packed($two));
 
+harness_section('the line goes where the first message was left out');
+
+$split = Session::fitFlashMessages(array(
+    'pubMessages'   => array_slice($many, 0, 10),
+    'adminMessages' => array($msg(str_repeat('z', 900), 'warning')),
+));
+pin('a whole first bucket is kept', array_slice($many, 0, 10), $split['pubMessages'] ?? null);
+pin('...and the line is the second bucket\'s only entry, in its type', array(array('msg' => '…and 1 more', 'type' => 'warning')), $split['adminMessages'] ?? null);
+$gap = Session::fitFlashMessages(array('pubMessages' => array($msg('first'), $msg(str_repeat('w', 3000)), $msg('third'), $msg('fourth'))));
+pin('nothing after the first message that does not fit is kept', array($msg('first'), $msg('…and 3 more')), $gap['pubMessages'] ?? null);
+
 exit(harness_result());
 
 /* file end: ./tests/flash-cookie-budget.php */
