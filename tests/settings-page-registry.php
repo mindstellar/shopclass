@@ -743,6 +743,14 @@ check('a well-formed page with after_save registers', register_error('x9', array
 check('its after_save is the very callable that was declared', osc_settings_page('x9')['after_save'] === $x9AfterSave);
 pin('a page that declared none has a null after_save', null, osc_settings_page('myplugin')['after_save']);
 
+harness_section('return_url');
+check('a page may declare where a save returns to', register_error('rt1', array(
+    'title'      => 'X',
+    'fields'     => array(array('name' => 'a')),
+    'return_url' => 'https://example.test/back',
+)) === null && osc_settings_page('rt1')['return_url'] === 'https://example.test/back');
+pin('a page that declared none has a null return_url', null, osc_settings_page('x9')['return_url']);
+
 harness_section('the page\'s own validate');
 // The rule spanning more than one field. Refused here rather than at save time: a page
 // whose cross-field rule is a typo registers cleanly and then never rejects anything,

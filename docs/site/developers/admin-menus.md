@@ -49,8 +49,9 @@ and can draw tabs with `'tabs'`.
 
 The Settings sidebar lists the groups, not the entries. Each Settings screen draws a tab
 row of its group's entries, so a plugin entry placed by `$group` appears as a tab. An entry
-added to Settings with no group goes to an "Other" group. A screen's own `'tabs'` show as a
-second row under it.
+added to Settings with no group goes to an "Other" group. To keep a second tab row off a
+screen, draw the page's form inside it with `osc_admin_settings_form($page, array('titles' => false))`
+and set `'return_url'` on the page so a save comes back to that screen.
 
 ## Add your page to a settings tab
 
@@ -65,7 +66,7 @@ osc_register_settings_page('shipping', array(
 
 osc_add_admin_submenu_page(
     'settings', __('Shipping', 'shipping'), $zonesUrl, 'shipping-zones',
-    'administrator', 'shop', array($settingsUrl)  // $match: the screen's own sub-tabs
+    'administrator', 'shop', array($settingsUrl)  // $match: other URLs that light this entry
 );
 ```
 

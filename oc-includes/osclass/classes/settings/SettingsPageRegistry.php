@@ -135,6 +135,9 @@ final class SettingsPageRegistry extends Registry
      *   'tabs'       => array|callable  Tab links (label, url, active) drawn above the form,
      *                             or a callable returning them. For a page that is one tab
      *                             of a larger screen.
+     *   'return_url' => string|callable  Where to go after a successful save (a callable
+     *                             returns the URL); defaults to the page's own URL. For a
+     *                             page whose form is shown inside another screen.
      *   'section'    => string    Preference section the values are stored in.
      *                             Defaults to the page id, which is what keeps one
      *                             plugin's keys out of core's 'osclass' section.
@@ -298,6 +301,7 @@ final class SettingsPageRegistry extends Registry
                 ? $spec['group']
                 : '',
             'tabs'       => isset($spec['tabs']) && (is_array($spec['tabs']) || is_callable($spec['tabs'])) ? $spec['tabs'] : null,
+            'return_url' => isset($spec['return_url']) && (is_string($spec['return_url']) || is_callable($spec['return_url'])) ? $spec['return_url'] : null,
             'menu_title' => isset($spec['menu_title']) && is_string($spec['menu_title'])
                 ? $spec['menu_title']
                 : $spec['title'],
