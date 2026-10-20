@@ -179,6 +179,24 @@ if (!function_exists('osc_admin_page_header')) {
     }
 }
 
+if (!function_exists('osc_admin_page_titled')) {
+    /**
+     * Whether this request has drawn its page title yet. Passing true records that it has.
+     * A screen whose first section heading is also its title asks this to pick the level.
+     *
+     * @param bool $drawn
+     *
+     * @return bool
+     */
+    function osc_admin_page_titled($drawn = false)
+    {
+        static $titled = false;
+        $titled = $titled || $drawn;
+
+        return $titled;
+    }
+}
+
 if (!function_exists('osc_admin_page_head')) {
     /**
      * The page title, and the actions that belong to the page as a whole.
@@ -188,7 +206,7 @@ if (!function_exists('osc_admin_page_head')) {
      *
      * @param string                         $title
      * @param array<int,array<string,mixed>> $actions Action specs; see osc_admin_action_button()
-     * @param array<string,mixed>            $opts    'class' => extra classes on the <h2>; 'actions_html' =>
+     * @param array<string,mixed>            $opts    'class' => extra classes on the heading; 'level' => 3 for a section inside a page; 'actions_html' =>
      *                                                callable printing a control that is not a button (a segmented
      *                                                toggle, a select), used instead of $actions
      *
@@ -196,16 +214,19 @@ if (!function_exists('osc_admin_page_head')) {
      */
     function osc_admin_page_head($title, array $actions = array(), array $opts = array())
     {
-        $class = 'render-title osc-page-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        // Level 2 is the page title; a section inside a page asks for 3 (see the heading scale in render-page.scss).
+        $level = (int)($opts['level'] ?? 2) === 3 ? 3 : 2;
+        osc_admin_page_titled($level === 2);
+        $class = 'render-title' . ($level === 2 ? ' osc-page-title' : '') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
         if ($actions === array() && empty($opts['actions_html'])) {
-            echo '<h2 class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h2>';
+            echo '<h' . $level . ' class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h' . $level . '>';
             osc_admin_settings_group_tabs();
 
             return;
         } ?>
         <div class="page-head">
-            <h2 class="<?php echo osc_esc_html($class); ?>"><?php echo osc_esc_html($title); ?></h2>
+            <h<?php echo $level; ?> class="<?php echo osc_esc_html($class); ?>"><?php echo osc_esc_html($title); ?></h<?php echo $level; ?>>
             <div class="page-head-actions">
                 <?php foreach ($actions as $action) {
                     osc_admin_action_button($action);

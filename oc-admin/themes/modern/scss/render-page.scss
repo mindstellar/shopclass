@@ -108,8 +108,14 @@
   margin: 0 0 20px;
 }
 
+// One heading scale on every screen: the page title is an h2 (1.3125rem), a section inside
+// the page an h3 (1.125rem), a sub-section of a section an h4 (.9375rem). Never skip a level.
 h3.render-title {
   font-size: 1.125rem;
+}
+
+h4.render-title {
+  font-size: .9375rem;
 }
 
 // A section heading that follows content needs air above it; the first heading inside a
@@ -124,7 +130,9 @@ h3.render-title {
 }
 
 * + h3.render-title,
-h3.render-title.separate-top {
+h3.render-title.separate-top,
+* + h4.render-title,
+h4.render-title.separate-top {
   margin-block-start: 20px;
 }
 

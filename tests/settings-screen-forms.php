@@ -1855,7 +1855,7 @@ check('nor is a typed one on a refused redraw', strpos((string)ob_get_clean(), '
 $pricing = \mindstellar\admin\form\BillingSettingsScreen::formVars()['pricing'];
 ob_start();
 osc_admin_settings_form($pricing['id'], $pricing);
-check('a settings form prints its group heading', strpos((string)ob_get_clean(), '>Pricing</h2>') !== false);
+check('a settings form prints its group heading', preg_match('~<h[23][^>]*>Pricing</h[23]>~', (string)ob_get_clean()) === 1);
 ob_start();
 osc_admin_settings_form($pricing['id'], array('titles' => false) + $pricing);
 check('and leaves it out on a tab that names it', strpos((string)ob_get_clean(), '>Pricing</h2>') === false);

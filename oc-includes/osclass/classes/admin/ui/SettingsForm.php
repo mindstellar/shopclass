@@ -75,7 +75,7 @@ final class SettingsForm
                 echo '<span id="' . Form::anchor($group['title']) . '"></span>';
             }
             if ($group['title'] !== '' && ($opts['titles'] ?? true)) {
-                osc_admin_page_head($group['title']);
+                osc_admin_page_head($group['title'], array(), array('level' => osc_admin_page_titled() ? 3 : 2));
             }
             if ($group['intro'] !== '') {
                 echo '<p class="form-intro">' . osc_esc_html($group['intro']) . '</p>';
