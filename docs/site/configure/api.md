@@ -225,8 +225,13 @@ every time stops, and stays in **Tools → System info → Jobs** with its last 
 
 A receiver that answers `410 Gone` pauses the endpoint at once, with one e-mail.
 
-Deliveries go out when cron runs. With **Automatic cron process** on, an API call or a page
-view starts it, at most every 5 minutes; a real cron line is faster and steadier.
+How fast a delivery goes out depends on what runs your background jobs:
+
+- **Job listener** (`oc-cli.php jobs:work --listen`, which the Docker image runs): within five
+  seconds, and at once with Redis or Valkey.
+- **Cron line** running `jobs:work` each minute: within a minute.
+- **Automatic cron process** only (shared hosting with no cron): an API call or a page view
+  starts it, at most every 5 minutes. See [Cron](/docs/configure/cron/).
 
 When 8 deliveries in a row fail, the endpoint is paused and your site's contact address gets
 one e-mail. Fix the receiver, then press **Switch on**. Events that happened while it was
