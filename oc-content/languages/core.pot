@@ -9207,6 +9207,7 @@ msgstr ""
 msgid "Plugin was installed, but printed this output while installing: %s"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/plugins/add.php
 #: oc-admin/themes/modern/plugins/configuration.php
 #: oc-admin/themes/modern/plugins/index.php
@@ -10946,6 +10947,7 @@ msgstr ""
 #: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/header.php
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/plugins/view.php
 #: oc-admin/themes/modern/settings/advanced.php
