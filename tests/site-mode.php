@@ -61,6 +61,8 @@ $packages = ['Aisle' => ['shop'], 'Bender' => ['classifieds'], 'Both' => ['class
 pin('classifieds', ['Aisle'], SiteMode::lacking('classifieds', $packages));
 pin('shop', ['Bender', 'Plain'], SiteMode::lacking('shop', $packages));
 pin('a stored both needs classifieds', ['Aisle'], SiteMode::lacking('both', $packages));
+pin('a package that declares the mode works with it', [true, false, false], [SiteMode::declares('shop', ['shop']), SiteMode::declares('shop', ['classifieds']), SiteMode::declares('classifieds', [])]);
+pin('the mode in words', ['shop sites', 'classifieds sites'], [SiteMode::noun('shop'), SiteMode::noun('classifieds')]);
 pin('nothing lacks when nothing is active', [], SiteMode::lacking('shop', []));
 
 harness_section('the settings screen and the API');

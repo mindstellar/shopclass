@@ -80,11 +80,17 @@ final class MainSettingsScreen extends SettingsScreen
                 SiteMode::CLASSIFIEDS => __('Classifieds site'),
                 SiteMode::SHOP        => __('Shop (only admins add products)'),
             ), __('Your theme and plugins say which of these they work for.'))
-                ->default(SiteMode::CLASSIFIEDS)
-            ->custom('site_mode_notice', static function () {
-                self::drawModeNotice();
-            })
-                ->set('row', false)
+                ->default(SiteMode::CLASSIFIEDS);
+        // Under "Site is a": for each mode, who does not say they work with it. The shared
+        // dependsOn() shows the one for the chosen mode, before anything is saved.
+        foreach (self::modeNotices() as $mode => $html) {
+            $form
+                ->custom('site_mode_notice_' . $mode, static function () use ($html) {
+                    osc_admin_field_help(array('help_html' => $html, 'help_tone' => 'warning'));
+                }, '')
+                    ->dependsOn('site_mode', $mode);
+        }
+        $form
             ->select('language', __('Default language'), self::locales())
             ->select('currency', __('Default currency'), self::currencies())
                 // The one id on this screen that is not the control's own name, so it is
@@ -305,36 +311,98 @@ final class MainSettingsScreen extends SettingsScreen
     }
 
     /**
-     * Names the theme and active plugins that do not declare the saved site mode.
+     * For each mode that has packages not saying they work with it, the sentence naming them.
      *
-     * @return void
+     * @return array<string,string> mode => html
      */
-    private static function drawModeNotice()
+    private static function modeNotices(): array
     {
-        $lacking = SiteMode::lacking(osc_site_mode(), self::declaredModes());
-        if ($lacking === array()) {
-            return;
+        // Declaring the form must not fail where the theme and plugin lists cannot be read.
+        try {
+            $packages = self::declaredModes();
+        } catch (\Throwable $e) {
+            return array();
         }
-        echo '<div class="alert alert-warning" role="alert">'
-            . osc_esc_html(sprintf(__('These do not say they work with this site type: %s'), implode(', ', $lacking)))
-            . '</div>';
+        $notices = array();
+        foreach (SiteMode::ALL as $mode) {
+            $lacking = array_filter($packages, static fn ($pkg) => !SiteMode::declares($mode, $pkg['modes']));
+            if ($lacking !== array()) {
+                $notices[$mode] = self::modeNoticeText($lacking, SiteMode::noun($mode));
+            }
+        }
+
+        return $notices;
     }
 
     /**
-     * The modes the active theme and each active plugin declare, by name.
+     * The sentence for one mode: the name for one package, a count and the names for several.
      *
-     * @return array<string,list<string>>
+     * @param array<string,array{modes:list<string>,url:string,theme:bool}> $lacking
+     * @param string                                                        $noun   "shop sites"
+     *
+     * @return string html
+     */
+    private static function modeNoticeText(array $lacking, string $noun): string
+    {
+        $links   = array();
+        $themes  = false;
+        $onlyThm = true;
+        foreach ($lacking as $name => $pkg) {
+            $links[] = '<a href="' . osc_esc_html($pkg['url']) . '">' . osc_esc_html($name) . '</a>';
+            $themes  = $themes || $pkg['theme'];
+            $onlyThm = $onlyThm && $pkg['theme'];
+        }
+        $updates = osc_esc_html(osc_admin_base_url(true) . ($onlyThm ? '?page=appearance' : '?page=plugins') . '#market-tab-updates');
+        if (count($links) === 1) {
+            return sprintf(
+                osc_esc_html(__('%1$s does not say it works with %2$s. It may still work; %3$s.')),
+                $links[0],
+                osc_esc_html($noun),
+                '<a href="' . $updates . '">' . osc_esc_html(__('check for an update')) . '</a>'
+            );
+        }
+        $check = ' <a href="' . $updates . '">' . osc_esc_html(__('Check for updates')) . '</a>';
+        $count = count($links);
+        $head  = $themes
+            ? _n(
+                '%1$d package does not say it works with %2$s:',
+                '%1$d packages do not say they work with %2$s:',
+                $count
+            )
+            : _n(
+                '%1$d plugin does not say it works with %2$s:',
+                '%1$d plugins do not say they work with %2$s:',
+                $count
+            );
+
+        return sprintf(osc_esc_html($head), $count, osc_esc_html($noun)) . ' ' . implode(', ', $links) . '.' . $check;
+    }
+
+    /**
+     * The modes the active theme and each active plugin declare, by name, with where to find
+     * each on its own screen.
+     *
+     * @return array<string,array{modes:list<string>,url:string,theme:bool}>
      */
     private static function declaredModes(): array
     {
         $declared = array();
         $theme    = \WebThemes::newInstance()->loadThemeInfo((string) osc_theme());
         if (is_array($theme)) {
-            $declared[(string) ($theme['name'] ?? osc_theme())] = (array) ($theme['modes'] ?? array());
+            $declared[(string) ($theme['name'] ?? osc_theme())] = array(
+                'modes' => (array) ($theme['modes'] ?? array()),
+                'url'   => osc_admin_base_url(true) . '?page=appearance',
+                'theme' => true,
+            );
         }
         foreach (\Plugins::listEnabled() as $path) {
             $info = \Plugins::getInfo($path);
-            $declared[(string) ($info['plugin_name'] ?? $path)] = (array) ($info['modes'] ?? array());
+            $slug = dirname($path) !== '.' ? dirname($path) : $path;
+            $declared[(string) ($info['plugin_name'] ?? $path)] = array(
+                'modes' => (array) ($info['modes'] ?? array()),
+                'url'   => osc_admin_base_url(true) . '?page=plugins#pkg-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $slug),
+                'theme' => false,
+            );
         }
 
         return $declared;

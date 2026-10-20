@@ -53,6 +53,24 @@ final class SiteMode
     }
 
     /**
+     * The mode in words, for a sentence: "shop sites" or "classifieds sites".
+     */
+    public static function noun(string $mode): string
+    {
+        return self::normalize($mode) === self::SHOP ? __('shop sites') : __('classifieds sites');
+    }
+
+    /**
+     * Whether a package that declares $modes says it works with the site mode.
+     *
+     * @param list<string> $modes
+     */
+    public static function declares(string $mode, array $modes): bool
+    {
+        return array_diff(self::needed($mode), $modes) === [];
+    }
+
+    /**
      * The packages that do not declare every mode the site mode needs.
      *
      * @param array<string,list<string>> $packages name => modes the package declares
