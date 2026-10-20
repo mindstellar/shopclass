@@ -97,10 +97,17 @@ jobs:
             CANDIDATES="$CANDIDATES $NAME=$FIXTURE"
           done
 
+          # A release branch upgrades only from releases at or below its own version: a newer
+          # line's schema (7.0.0 on release/6.4) is a downgrade, not an upgrade.
+          CEILING=$(grep -oE "'OSCLASS_VERSION', '[0-9]+\.[0-9]+\.[0-9]+" oc-includes/osclass/default-constants.php | grep -oE '[0-9]+\.[0-9]+\.[0-9]+$')
           for TAG in $(git tag --sort=v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true); do
             # sort -V puts the floor first only when the tag is at or above it.
             OLDEST=$(printf '%s\n%s\n' "$TAG" "$SUPPORTED_UPGRADE_FLOOR" | sort -V | head -1)
             [ "$OLDEST" = "$SUPPORTED_UPGRADE_FLOOR" ] || continue
+            if [ -n "$CEILING" ]; then
+              NEWEST=$(printf '%s\n%s\n' "$TAG" "$CEILING" | sort -V | tail -1)
+              [ "$NEWEST" = "$CEILING" ] || continue
+            fi
             git show "$TAG:oc-includes/osclass/installer/struct.sql" > "/tmp/struct-$TAG.sql" 2>/dev/null || continue
             CANDIDATES="$CANDIDATES $TAG=/tmp/struct-$TAG.sql"
           done
