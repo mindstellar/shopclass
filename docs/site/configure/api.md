@@ -229,9 +229,11 @@ How fast a delivery goes out depends on what runs your background jobs:
 
 - **Job listener** (`oc-cli.php jobs:work --listen`, which the Docker image runs): within five
   seconds, and at once with Redis or Valkey.
-- **Cron line** running `jobs:work` each minute: within a minute.
+- **Cron line** running `jobs:work` each minute: within a minute. The usual 5-minute cron line
+  alone sends them within 5 minutes.
 - **Automatic cron process** only (shared hosting with no cron): an API call or a page view
-  starts it, at most every 5 minutes. See [Cron](/docs/configure/cron/).
+  starts it, at most every 5 minutes. Behind a CDN or proxy it can fail with no warning, so
+  deliveries never go out; use a cron line there. See [Cron](/docs/configure/cron/).
 
 When 8 deliveries in a row fail, the endpoint is paused and your site's contact address gets
 one e-mail. Fix the receiver, then press **Switch on**. Events that happened while it was
