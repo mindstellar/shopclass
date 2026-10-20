@@ -2,6 +2,14 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.1
+
+This release fixes the search filter sidebar, which listed custom fields in the Fields library order instead of the order set inside the form.
+
+### Fixed
+- The search filter sidebar lists custom fields in the order set inside the form, like the post form (#574).
+- Migrations 0001 and 0025 can run again on a 7.0 database without changing it.
+
 ## Shopclass 7.0.0
 
 Shopclass 7.0 is a big release and the base for the features that come next in the 7.x line. It opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
