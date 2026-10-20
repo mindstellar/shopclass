@@ -163,4 +163,16 @@ pin('before_add_comment runs with no transaction open', false, $open['before_add
 pin('a before_add_comment that writes a ban rule and redirects keeps the rule', [true, 1, false], $redirects('before_add_comment', static fn () => (new CommentService())->post($id, ['title' => '', 'body' => 'Second question'], $commenter)));
 pin('and only the first comment is written', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE fk_i_item_id = $id")->fetch_row()[0]);
 
+harness_section('signing up and deleting an account');
+$open = [];
+(new AccountService())->register(['s_name' => 'Dee', 's_email' => 'dee@example.test', 's_password' => 'pass word', 's_password2' => 'pass word', 's_username' => ''], Actor::guest('192.0.2.72'));
+pin('before_user_register and pre_user_post run with no transaction open', [false, false], [$open['before_user_register'] ?? null, $open['pre_user_post'] ?? null]);
+$tom  = seed_user($admin, 'tom', 'tom@example.test');
+$open = [];
+(new AccountService())->delete($tom, $actor);
+pin('before_user_delete runs with no transaction open', false, $open['before_user_delete'] ?? null);
+$ann = seed_user($admin, 'ann', 'ann@example.test');
+pin('a before_user_delete that writes a ban rule and redirects keeps the rule', [true, 1, false], $redirects('before_user_delete', static fn () => (new AccountService())->delete($ann, $actor)));
+pin('and the account is kept', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE pk_i_id = $ann")->fetch_row()[0]);
+
 exit(harness_result());
