@@ -88,10 +88,7 @@ final class AdminIpAllowlist
         if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
             return false;
         }
-        $packed = inet_pton($ip);
-        if ($packed !== false && strlen($packed) === 16 && strncmp($packed, str_repeat("\0", 10) . "\xff\xff", 12) === 0) {
-            $ip = (string) inet_ntop(substr($packed, 12));
-        }
+        $ip = self::mappedV4($ip) ?? $ip;
         foreach ($this->ranges as $range) {
             if (AddressGuard::inRange($ip, $range)) {
                 return true;
@@ -121,6 +118,17 @@ final class AdminIpAllowlist
         osc_die('Not found', '<p>The page you asked for does not exist.</p>', array('status' => 404));
     }
 
+    /** The IPv4 address inside an IPv4-mapped IPv6 address (::ffff:a.b.c.d), or null. */
+    private static function mappedV4(string $ip): ?string
+    {
+        $packed = inet_pton($ip);
+        if ($packed === false || strlen($packed) !== 16 || strncmp($packed, str_repeat("\0", 10) . "\xff\xff", 12) !== 0) {
+            return null;
+        }
+
+        return (string) inet_ntop(substr($packed, 12));
+    }
+
     /** "network/bits" for an address or a CIDR range, or null when it is not one. */
     private static function range(string $entry): ?string
     {
@@ -129,13 +137,21 @@ final class AdminIpAllowlist
             return null;
         }
         $max = str_contains($parts[0], ':') ? 128 : 32;
-        if (!isset($parts[1])) {
-            return $parts[0] . '/' . $max;
-        }
-        if (!ctype_digit($parts[1]) || (int) $parts[1] > $max) {
+        $bits = $parts[1] ?? (string) $max;
+        if (!ctype_digit($bits) || (int) $bits > $max) {
             return null;
         }
+        $ip   = $parts[0];
+        $bits = (int) $bits;
+        // Client addresses written as ::ffff:a.b.c.d are matched as IPv4, so such an entry is too.
+        $v4 = self::mappedV4($ip);
+        if ($v4 !== null) {
+            if ($bits < 96) {
+                return null;
+            }
+            [$ip, $bits] = array($v4, $bits - 96);
+        }
 
-        return $parts[0] . '/' . (int) $parts[1];
+        return $ip . '/' . $bits;
     }
 }

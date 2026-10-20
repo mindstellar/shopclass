@@ -54,6 +54,11 @@ check('::ffff: plus a listed address is let in', $list->allows('::ffff:203.0.113
 check('...and one inside a range', $list->allows('::ffff:10.20.1.1'));
 check('...an unlisted one is not', !$list->allows('::ffff:198.51.100.1'));
 
+pin('a mapped entry is read as IPv4', array('192.0.2.9/32', '198.51.100.0/24'), AdminIpAllowlist::parse('::ffff:192.0.2.9, ::ffff:198.51.100.0/120'));
+check('...so it lets that address in, written either way', (new AdminIpAllowlist(AdminIpAllowlist::parse('::ffff:192.0.2.9')))->allows('192.0.2.9')
+    && (new AdminIpAllowlist(AdminIpAllowlist::parse('::ffff:192.0.2.9')))->allows('::ffff:192.0.2.9'));
+check('...and a mapped range wider than IPv4 is left out', AdminIpAllowlist::parse('::ffff:0.0.0.0/95') === array());
+
 harness_section('loopback');
 
 check('127.0.0.1 is always let in', $list->allows('127.0.0.1'));
