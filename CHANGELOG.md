@@ -191,6 +191,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
+- Plugins and themes that refuse a listing, comment or account delete from a pre-save hook no longer leave the save's database transaction open.
 - Admin login cookies stay on the admin path, and a two-step sign-in left at the code page no longer starts a session that skips the page cache.
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
