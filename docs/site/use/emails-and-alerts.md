@@ -70,8 +70,8 @@ is how core finds the template, so it cannot be changed.
 
 Several settings decide when the admin gets mail:
 
-- **Settings → Listings → notify admin when a new listing is added**
-- **Settings → Users → when a new user is registered**
+- **Listings → Settings → notify admin when a new listing is added**
+- **Users → Settings → when a new user is registered**
 - **Settings → Comments → Notifications**: when a comment is posted, and when
   one is held for moderation
 

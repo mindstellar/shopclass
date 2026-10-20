@@ -70,7 +70,7 @@ find an open publish form within days of a site going live. See
 
 ## 7. Listing rules
 
-**Settings → Listings.**
+**Listings → Settings.**
 
 Decide these before people start posting. Changing them later is visible to
 everyone:

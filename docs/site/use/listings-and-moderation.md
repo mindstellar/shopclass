@@ -10,7 +10,7 @@ appears, and where you post listings yourself.
 
 ## The listing rules
 
-**Settings → Listings.** These decide how the site behaves for everyone.
+**Listings → Settings.** These decide how the site behaves for everyone.
 Set them before you have users, not after.
 
 | Setting | What it decides |
@@ -110,7 +110,7 @@ open and unwatched is the one option that always ends badly.
 **Users** lists everyone registered. From there you can activate an
 account, enable or disable one, edit its details, or add a user yourself.
 
-**Settings → Users** carries the registration rules:
+**Users → Settings** carries the registration rules:
 
 - **Users enabled**: whether the site has user accounts at all.
 - **Anyone can register**: the master switch for sign-up.

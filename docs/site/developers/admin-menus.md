@@ -41,12 +41,17 @@ osc_add_admin_submenu_page(
 );
 ```
 
-`$group` names a heading inside the section, such as `selling` or its full id
-`settings_group_selling`. Settings has these headings: `general`, `listings`, `users`,
-`media`, `email`, `security`, `selling` and `system`. The entry goes at the end of that
-group. `$match` lists other admin URLs that should light this entry, for the tabs of one
-screen. A declared settings page takes the same placement with `'group' => 'selling'` and
-can draw tabs with `'tabs'`.
+`$group` names a heading inside the section, such as `content` or its full id
+`settings_group_content`. Settings has these headings: `general`, `content`, `email`,
+`security` and `system`. The entry goes at the end of that group. `$match` lists other admin
+URLs that should light this entry, for the tabs of one screen. A declared settings page
+takes the same placement with `'group' => 'content'` and can draw tabs with `'tabs'`.
+
+A section keeps its own settings: Listings, Users, Media and Billing each end with a
+Settings entry, and those screens draw no group tabs. Pages for selling (shipping, tax, offers,
+digital goods) go into Billing with `'menu' => 'billing'` and no group; they sit before
+Billing's own Settings entry. With billing switched off there is no Billing section, and such
+a page goes to the "Other" group of Settings.
 
 The Settings sidebar lists the groups, not the entries. Each Settings screen draws a tab
 row of its group's entries, so a plugin entry placed by `$group` appears as a tab. An entry
@@ -56,18 +61,18 @@ and set `'return_url'` on the page so a save comes back to that screen.
 
 ## Add your page to a settings tab
 
-A page in a group appears as a tab of that group on every screen of the group, with no further code. Group names are `general`, `listings`, `users`, `media`, `email`, `security`, `selling` and `system`.
+A page in a group appears as a tab of that group on every screen of the group, with no further code. Group names are `general`, `content`, `email`, `security` and `system`. A page for the shop belongs in Billing instead: `'menu' => 'billing'`.
 
 ```php
-osc_register_settings_page('shipping', array(
-    'title' => __('Shipping', 'shipping'),
+osc_register_settings_page('reports', array(
+    'title' => __('Reports', 'reports'),
     'menu'  => 'settings',
-    'group' => 'selling',
+    'group' => 'content',
 ));
 
 osc_add_admin_submenu_page(
-    'settings', __('Shipping', 'shipping'), $zonesUrl, 'shipping-zones',
-    'administrator', 'selling', array($settingsUrl)  // $match: other URLs that light this entry
+    'settings', __('Reports', 'reports'), $listUrl, 'reports-list',
+    'administrator', 'content', array($settingsUrl)  // $match: other URLs that light this entry
 );
 ```
 

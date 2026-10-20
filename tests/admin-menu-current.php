@@ -135,46 +135,64 @@ foreach ($real->settingsGroups() as $grp) {
 }
 pin('Settings groups and tabs, in order', [
     'settings_group_general'  => ['General', 'Permalinks', 'Languages', 'Sitemap'],
-    'settings_group_listings' => ['Listings', 'Comments', 'Latest searches'],
-    'settings_group_users'    => ['Users'],
-    'settings_group_media'    => ['Media', 'Storage'],
+    'settings_group_content'  => ['Comments', 'Latest searches'],
     'settings_group_email'    => ['Email templates', 'Mail server'],
     'settings_group_security' => ['Spam and bots', 'Keyword blocklist', 'Ban rules'],
-    'settings_group_selling'  => ['Billing'],
-    'settings_group_system'   => ['API', 'Advanced'],
+    'settings_group_system'   => ['Storage', 'API', 'Advanced'],
 ], $map);
 
 $full = $real->get_array_menu();
 $subIds = static fn (string $menu): array => array_map(static fn ($e) => $e[2], array_values($full[$menu]['sub'] ?? []));
-pin('Listings, Users, Media and Billing no longer carry a Settings entry', [false, false, false, false, false],
-    [in_array('items_settings', $subIds('items'), true), in_array('users_settings', $subIds('users'), true),
-     in_array('users_ban', $subIds('users'), true), in_array('media_settings', $subIds('media'), true),
-     in_array('billing_settings', $subIds('billing'), true)]);
+pin('Listings, Users, Media and Billing keep their own Settings entry, last', [
+    ['items_settings'], ['users_settings'], ['media_settings'], ['billing_settings'],
+], [
+    array_slice($subIds('items'), -1), array_slice($subIds('users'), -1),
+    array_slice($subIds('media'), -1), array_slice($subIds('billing'), -1),
+]);
+pin('Ban rules is no longer in Users', false, in_array('users_ban', $subIds('users'), true));
 
 $basesReal = ['https://example.test/oc-admin/index.php?', 'https://example.test/oc-admin/'];
 foreach ([
-    'page=items&action=settings'           => 'items_settings',
-    'page=users&action=settings'           => 'users_settings',
-    'page=users&action=ban'                => 'users_ban',
-    'page=users&action=ban_edit&id=3'      => 'users_ban',
-    'page=settings&action=media'           => 'media_settings',
-    'page=settings&action=billing'         => 'settings_billing',
-] as $query => $id) {
-    pin("$query lights Settings > $id", ['settings', $id], AdminMenu::current($full, $query, 'x', false, $basesReal));
+    'page=items&action=settings'           => ['items', 'items_settings'],
+    'page=users&action=settings'           => ['users', 'users_settings'],
+    'page=settings&action=media'           => ['media', 'media_settings'],
+    'page=settings&action=billing'         => ['billing', 'billing_settings'],
+    'page=settings&action=billing&tab=pricing' => ['billing', 'billing_settings'],
+    'page=users&action=ban'                => ['settings', 'users_ban'],
+    'page=users&action=ban_edit&id=3'      => ['settings', 'users_ban'],
+] as $query => $want) {
+    pin("$query lights " . implode(' > ', $want), $want, AdminMenu::current($full, $query, 'x', false, $basesReal));
 }
 pin('Manage users stays in Users', ['users', 'users_manage'], AdminMenu::current($full, 'page=users', 'users', false, $basesReal));
+pin('a section settings screen has no group tab row', [], $real->settingsGroupTabs('items_settings'));
 
-$real->add_submenu('settings', 'Tax', 'https://example.test/t', 'p-tax', 'administrator', null, 'selling');
+$real->add_submenu('users', 'Subscribers', 'https://example.test/s', 'p-subs', 'administrator');
+$real->add_submenu('billing', 'Tax', 'https://example.test/t', 'p-tax', 'administrator');
 $real->add_submenu('settings', 'Mail extra', 'https://example.test/m', 'p-mail', 'administrator', null, 'settings_group_email');
 $real->add_submenu('settings', 'Lost', 'https://example.test/l', 'p-lost', 'administrator', null, 'nope');
+pin('a plugin page placed in billing goes before Settings', ['billing_credits', 'p-tax', 'billing_settings'],
+    array_slice(array_map(static fn ($e) => $e[2], array_values($real->get_array_menu()['billing']['sub'])), -3));
 $after = [];
 foreach ($real->settingsGroups() as $grp) {
     $after[$grp['id']] = array_column($grp['entries'], 'id');
 }
-pin('selling and settings_group_selling place into Selling', ['settings_billing', 'p-tax'], $after['settings_group_selling']);
+pin('a plugin page in Users goes before its Settings entry', ['p-subs', 'users_settings'], array_slice(array_map(static fn ($e) => $e[2], array_values($real->get_array_menu()['users']['sub'])), -2));
 pin('an unknown group goes to Other', ['p-lost'], $after['settings_group_other']);
+pin('a long group id places into Email', true, in_array('p-mail', $after['settings_group_email'], true));
 pin('the tab row of Security holds the three screens', ['Spam and bots', 'Keyword blocklist', 'Ban rules'],
     array_column($real->settingsGroupTabs('users_ban'), 'label'));
+
+$GLOBALS['__stub_osc_billing_enabled'] = static fn () => false;
+$off = new AdminMenu();
+$off->init();
+$off->add_submenu('billing', 'Tax', 'https://example.test/t', 'p-tax', 'administrator');
+$offGroups = [];
+foreach ($off->settingsGroups() as $grp) {
+    $offGroups[$grp['id']] = array_column($grp['entries'], 'id');
+}
+pin('with billing off the switch is in System and a billing page falls to Other',
+    [true, ['p-tax']], [in_array('settings_billing', $offGroups['settings_group_system'], true), $offGroups['settings_group_other']]);
+pin('with billing off there is no Billing section', false, isset($off->get_array_menu()['billing']));
 
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
 pin('a section heading id is a stable slug of its title', ['s-server-rules-nginx', 's-server-rules-htaccess', 's-keys'],

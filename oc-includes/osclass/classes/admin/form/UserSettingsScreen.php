@@ -15,7 +15,7 @@ namespace mindstellar\admin\form;
 use mindstellar\base\SettingsScreen;
 
 /**
- * The user settings screen (Settings > Users).
+ * The user settings screen (Users > Settings).
  */
 final class UserSettingsScreen extends SettingsScreen
 {

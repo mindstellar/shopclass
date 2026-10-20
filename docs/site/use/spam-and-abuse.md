@@ -180,16 +180,16 @@ sign-ups (10). 0 means no limit. Developers can still change them with the
 
 The settings that do the most, and are easiest to forget:
 
-- **Settings → Listings → An user has to wait _n_ seconds between each listing
+- **Listings → Settings → An user has to wait _n_ seconds between each listing
   added.** A bulk poster is stopped by a delay long before they are stopped by a
   CAPTCHA.
-- **Settings → Listings → Only logged in users can post listings.** The single
+- **Listings → Settings → Only logged in users can post listings.** The single
   biggest reduction in spam volume, at the cost of some genuine posts.
-- **Settings → Listings → Users have to validate their listings.** Holding new
+- **Listings → Users → Settings have to validate their listings.** Holding new
   listings until they are validated stops spam reaching visitors at all. Set the
   threshold so a user stops needing to validate after a few approved listings,
   and the cost falls to almost nothing once your regulars are established.
-- **Settings → Users → Users need to validate their account.** The same idea,
+- **Users → Settings → Users need to validate their account.** The same idea,
   for registration.
 - **Settings → Security → Ban rules.** Block a returning abuser's address, domain or IP
   pattern.

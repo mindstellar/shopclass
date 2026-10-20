@@ -16,7 +16,7 @@ use mindstellar\admin\ui\FormSpec;
 use mindstellar\base\SettingsScreen;
 
 /**
- * The listing settings screen (Settings > Listings).
+ * The listing settings screen (Listings > Settings).
  *
  * 'moderate_items' holds -1 while moderation is off and otherwise the number of validated
  * listings a user needs, so the switch stores the number box beside it.
