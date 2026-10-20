@@ -130,7 +130,9 @@ every entry is wrong, only loopback gets in.
 - It covers everything under `/oc-admin/`: sign-in, admin pages, AJAX and the
   upgrade screen. The public site, cron, `oc-cli.php` and the installer are not
   affected.
-- Admin API keys work from any address. Limit them with their scopes instead.
+- It covers the `/oc-admin/` panel only. An admin who is already signed in keeps
+  their admin abilities on the public site (editing or deleting listings) from any
+  address, and admin API keys work from anywhere. Limit keys with their scopes.
 - Loopback (`127.0.0.0/8` and `::1`) always gets in, so an SSH tunnel to the server works.
 - The address checked is `REMOTE_ADDR`. Behind a proxy, set up the real client IP
   first (see [below](#login-throttling-and-the-real-client-ip)), or the list sees
