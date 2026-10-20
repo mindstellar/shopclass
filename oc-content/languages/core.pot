@@ -33,6 +33,18 @@ msgid_plural "%1$d linked folders were skipped: %2$s (they point outside oc-cont
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "%1$d package does not say it works with %2$s:"
+msgid_plural "%1$d packages do not say they work with %2$s:"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "%1$d plugin does not say it works with %2$s:"
+msgid_plural "%1$d plugins do not say they work with %2$s:"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "%1$s %2$s"
@@ -82,6 +94,10 @@ msgstr[1] ""
 
 #: oc-admin/themes/modern/billing/credits.php
 msgid "%1$s credits held across %2$s accounts"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "%1$s does not say it works with %2$s. It may still work; %3$s."
 msgstr ""
 
 #: oc-includes/osclass/functions.php
@@ -2792,6 +2808,7 @@ msgid "Check and repair"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Check for updates"
 msgstr ""
 
@@ -8206,6 +8223,10 @@ msgstr ""
 msgid "Not installed"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/package-ui.php
+msgid "Not marked for %s"
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Not saved yet"
@@ -12562,10 +12583,6 @@ msgstr ""
 msgid "These bring your existing data in line with the new version."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
-msgid "These do not say they work with this site type: %s"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/customise.php
 msgid ""
 "These sections were changed elsewhere, such as on the Widgets screen, after "
@@ -14803,6 +14820,14 @@ msgstr ""
 msgid "characters"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "check for an update"
+msgstr ""
+
+#: oc-includes/osclass/classes/site/SiteMode.php
+msgid "classifieds sites"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "comments per page"
@@ -15220,6 +15245,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
 msgid "settings images"
+msgstr ""
+
+#: oc-includes/osclass/classes/site/SiteMode.php
+msgid "shop sites"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
