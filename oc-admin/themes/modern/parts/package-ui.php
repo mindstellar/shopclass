@@ -49,6 +49,24 @@ if (!function_exists('osc_package_state')) {
     }
 }
 
+if (!function_exists('osc_package_mode_badge')) {
+    /**
+     * A status pill (osc_admin_status) for a package that does not declare the site's mode ("Not marked for shop
+     * sites"). The same badge on the Plugins and Appearance screens.
+     *
+     * @param array|null $modes the modes the package declares; null draws nothing
+     *
+     * @return void
+     */
+    function osc_package_mode_badge($modes)
+    {
+        if (!is_array($modes) || \mindstellar\site\SiteMode::declares(osc_site_mode(), $modes)) {
+            return;
+        }
+        osc_admin_status('unmarked', sprintf(__('Not marked for %s'), \mindstellar\site\SiteMode::noun(osc_site_mode())));
+    }
+}
+
 if (!function_exists('osc_package_art')) {
     /**
      * The artwork box: a plugin's square icon or a theme's screenshot.
@@ -137,7 +155,7 @@ if (!function_exists('osc_package_row')) {
      *
      * @param array $pkg {art:array, slug:string, name:string, state:string, state_word?:string,
      *                    meta?:array<int,string>, description?:string, note?:string,
-     *                    note_variant?:string, actions?:array, size?:string, class?:string,
+     *                    note_variant?:string, modes?:array<int,string>, actions?:array, size?:string, class?:string,
      *                    detail?:array} detail: what the market detail dialog shows before it
      *                    loads the rest -- name, author, version, short_description, tags.
      *                    With it, the art and a Details link open that dialog.
@@ -156,7 +174,7 @@ if (!function_exists('osc_package_row')) {
             );
         }
         ?>
-        <li class="osc-pkg osc-pkg--<?php echo osc_esc_html($size); ?> <?php
+        <li id="pkg-<?php echo osc_esc_html(preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $pkg['slug'])); ?>" class="osc-pkg osc-pkg--<?php echo osc_esc_html($size); ?> <?php
             echo osc_esc_html(isset($pkg['class']) ? $pkg['class'] : ''); ?>"<?php if ($detail !== null) : ?>
             data-market-item="<?php echo htmlspecialchars((string) json_encode($detail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES); ?>"<?php endif; ?>>
             <?php osc_package_art($pkg['art'], $pkg['slug'], $pkg['name'], $size, $detail !== null); ?>
@@ -171,10 +189,13 @@ if (!function_exists('osc_package_row')) {
                 <?php if (!empty($pkg['description'])) : ?>
                     <p class="osc-pkg-desc" dir="auto"><?php echo osc_esc_html($pkg['description']); ?></p>
                 <?php endif; ?>
-                <?php if (!empty($pkg['note'])) : ?>
+                <?php ob_start();
+                osc_package_mode_badge($pkg['modes'] ?? null);
+                $badge = (string) ob_get_clean(); ?>
+                <?php if (!empty($pkg['note']) || $badge !== '') : ?>
                     <p class="osc-pkg-note osc-pkg-note--<?php
-                        echo osc_esc_html(isset($pkg['note_variant']) ? $pkg['note_variant'] : 'info'); ?>">
-                        <?php echo $pkg['note']; ?>
+                        echo osc_esc_html(isset($pkg['note_variant']) && !empty($pkg['note']) ? $pkg['note_variant'] : 'info'); ?>">
+                        <?php echo $pkg['note'] ?? ''; ?> <?php echo $badge; ?>
                     </p>
                 <?php endif; ?>
             </div>

@@ -208,6 +208,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     ? $clashNote($clashesOf(osc_theme()), $activeParent)
                     : ''),
             'note_variant' => 'warning',
+            'modes'       => (array) ($info['modes'] ?? array()),
             'actions'     => array(
                 'primary' => osc_customiser_spec() !== null ? array(
                     'label' => __('Customise'),
@@ -266,6 +267,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                   . 'Open the Updates tab to apply it.'))
                                 : '')),
                     'note_variant' => ($clashes !== array() || $isParent) ? 'warning' : 'update',
+                    'modes'        => (array) ($tInfo['modes'] ?? array()),
                     'actions'     => array(
                         // A theme that clashes with its parent cannot run, so it offers no Activate.
                         'primary' => $clashes !== array() ? null : array(

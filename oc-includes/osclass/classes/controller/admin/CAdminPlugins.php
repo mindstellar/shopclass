@@ -517,6 +517,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 'enabled'     => (bool) $enabled,
                 'update'      => $sUpdate !== '',
                 'configurable' => isset($active_plugins[$plugin . '_configure']),
+                'modes'       => (array) ($pInfo['modes'] ?? array()),
             );
             $row[]   =
                 '<input type="hidden" name="installed" value="' . $installed . '" enabled="' . $enabled . '" />'
