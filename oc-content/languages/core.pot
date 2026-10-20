@@ -14319,3 +14319,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "— Shopclass"
 msgstr ""
+
+#: oc-includes/osclass/classes/Session.php
+msgid "…and %d more"
+msgstr ""

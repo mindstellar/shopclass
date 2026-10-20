@@ -458,7 +458,8 @@ class Session
         if (empty($this->messages)) {
             return;
         }
-        \Cookie::write('oc_flash', $this->encodeSignedStore('oc_flash', $this->messages, 300), time() + 300);
+        $messages = self::fitFlashMessages($this->messages);
+        \Cookie::write('oc_flash', $this->encodeSignedStore('oc_flash', $messages, 300), time() + 300);
     }
 
     /**
