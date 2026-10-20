@@ -275,6 +275,12 @@ commits, and a failure rolls back the whole write. Don't call a slow remote serv
 hooks: the transaction stays open while it runs. Queue a [background job](/docs/developers/jobs/)
 instead.
 
+The hooks that can refuse a write run before its transaction opens: `item_add_prepare_data`,
+`pre_item_add`, `pre_item_add_error`, their `item_edit_*` and `pre_item_edit*` twins,
+`before_delete_item`, `pre_item_add_comment_post`, `before_add_comment`, `before_user_register`,
+`pre_user_post` and `before_user_delete`. A hook there that redirects keeps what it wrote, and a
+failure in the write does not undo it.
+
 ## What a plugin should call
 
 New code calls the services:
