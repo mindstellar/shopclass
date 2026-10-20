@@ -345,6 +345,37 @@
   }
 }
 
+// The whole dialog scrolls, so the header, screenshots and text stack instead of squeezing
+// into the fixed-height flex column every other dialog uses.
+.market-detail-dialog.osc-dialog[open]:has(.osc-dialog-body) {
+  display: block;
+  overflow: auto;
+}
+
+// A plugin's icon is the same tile as on the cards, beside the title.
+.market-detail-dialog--plugin .market-detail-thumb {
+  background-color: var(--osc-bench-sunk);
+  block-size: 5rem;
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  box-sizing: border-box;
+  inline-size: 5rem;
+  overflow: hidden;
+
+  .osc-thumb {
+    aspect-ratio: auto;
+    block-size: 100%;
+    border-radius: 0;
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: .5rem;
+  }
+
+  .osc-thumb-letter {
+    font-size: 2rem;
+  }
+}
+
 .market-detail-body {
   display: flex;
   flex-wrap: wrap;
