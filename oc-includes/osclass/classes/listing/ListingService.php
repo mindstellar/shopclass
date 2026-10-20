@@ -202,11 +202,11 @@ final class ListingService
      */
     public function delete(int $itemId, string $secret, Actor $actor): int|false
     {
-        return DeferredMail::transaction(function () use ($itemId, $secret, $actor) {
-            $item = $this->items->findByPrimaryKey($itemId);
+        $item = $this->items->findByPrimaryKey($itemId);
+        // Before the transaction opens, so a plugin that redirects from it leaves none open.
+        osc_run_hook('before_delete_item', $itemId);
 
-            osc_run_hook('before_delete_item', $itemId);
-
+        return DeferredMail::transaction(function () use ($itemId, $secret, $actor, $item) {
             if (is_array($item) && hash_equals((string) ($item['s_secret'] ?? ''), $secret)) {
                 \Log::getInstance()
                     ->insertLog(

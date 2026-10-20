@@ -145,4 +145,13 @@ pin('pre_item_edit runs with no transaction open on the admin edit too', false, 
 pin('the edit and the flag are both kept', ['1700', '1'], array_map('strval', array_values((array) $admin->query("SELECT i_price DIV 1000000, b_premium FROM {$p}t_item WHERE pk_i_id = $id")->fetch_assoc())));
 pin('a pre_item_edit that redirects on the admin edit keeps the rule', [true, 2, false], $redirects('pre_item_edit', $adminEdit));
 
+harness_section('deleting a listing');
+$secret = static fn (int $item): string => (string) $admin->query("SELECT s_secret FROM {$p}t_item WHERE pk_i_id = $item")->fetch_row()[0];
+$gone   = $post();
+$open   = [];
+check('the listing is deleted', $service->delete($gone, $secret($gone), $actor) === 1);
+pin('before_delete_item runs with no transaction open', false, $open['before_delete_item'] ?? null);
+pin('a before_delete_item that writes a ban rule and redirects keeps the rule', [true, 1, false], $redirects('before_delete_item', static fn () => $service->delete($id, $secret($id), $actor)));
+pin('and the listing is kept', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id = $id")->fetch_row()[0]);
+
 exit(harness_result());
