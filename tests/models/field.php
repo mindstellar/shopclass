@@ -537,6 +537,39 @@ $linkGroupToCat($gDup, $eCat);
 // field that is both loose and grouped comes purely from the grouped arm here.
 pin('a field reachable by both arms appears exactly once', 1, count($model->findByCategory($eCat)));
 
+harness_section('Field::findByCategory — form order, not library order');
+
+// Library order A, B, C; the form places them C, A, B. A loose field still comes first.
+scratchdb_truncate_all($admin);
+$oCat   = seed_category($admin, 'Ordered');
+$oA     = $seedField('A', 'ord-a', 'TEXT', 0, 1, null, null, 1);
+$oB     = $seedField('B', 'ord-b', 'TEXT', 0, 1, null, null, 2);
+$oC     = $seedField('C', 'ord-c', 'TEXT', 0, 1, null, null, 3);
+$oLoose = $seedField('Loose', 'ord-loose', 'TEXT', 0, 1, null, null, 9);
+$oForm  = $seedGroup('Ordered form', 'ordered-form', 1);
+$linkFieldToGroup($oForm, $oC, 0);
+$linkFieldToGroup($oForm, $oA, 1);
+$linkFieldToGroup($oForm, $oB, 2);
+$linkGroupToCat($oForm, $oCat);
+$linkFieldToCat($oCat, $oLoose);
+scratchdb_forget_cache();
+pin(
+    'the search list follows the order set inside the form, loose fields first',
+    array((string)$oLoose, (string)$oC, (string)$oA, (string)$oB),
+    array_column($model->findByCategory($oCat), 'pk_i_id')
+);
+pin(
+    'it matches the order the post form uses',
+    array_column($model->findByCategoryItem($oCat, 0), 'pk_i_id'),
+    array_column($model->findByCategory($oCat), 'pk_i_id')
+);
+\mindstellar\form\builder\FormFieldLinkStore::replace($oForm, array($oB, $oC, $oA));
+pin(
+    'reordering the form shows the new order at once',
+    array((string)$oLoose, (string)$oB, (string)$oC, (string)$oA),
+    array_column($model->findByCategory($oCat), 'pk_i_id')
+);
+
 harness_section('Field::findByCategory — the parent does not see the child\'s fields');
 
 scratchdb_truncate_all($admin);
