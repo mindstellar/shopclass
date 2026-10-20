@@ -128,6 +128,29 @@
   object-position: top;
 }
 
+// A plugin icon is a fixed tile, whatever its art: full-bleed squares and rounded or padded
+// icons all sit in the same clipped, bordered box, level with the name beside it.
+.osc-pkg-list:not(.osc-pkg-list--themes) .osc-pkg-art,
+.market-app:not([data-type="theme"]) .market-card .market-card-thumb-btn {
+  aspect-ratio: 1;
+  background-color: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  box-sizing: border-box;
+  inline-size: 3.5rem;
+  margin: .85rem 0 0 1rem;
+  overflow: hidden;
+
+  .osc-thumb {
+    box-sizing: border-box;
+    padding: .375rem;
+  }
+
+  .osc-thumb-letter {
+    font-size: 1.5rem;
+  }
+}
+
 // The details wrapper lays out nothing itself: its parts are placed on the card's grid.
 .osc-pkg-main {
   display: contents;
