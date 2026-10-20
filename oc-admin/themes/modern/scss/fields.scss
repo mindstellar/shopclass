@@ -39,6 +39,12 @@
   color: var(--osc-ink-muted);
   cursor: pointer;
   white-space: nowrap;
+
+  // A long sentence around a field must wrap on a phone, not push the page sideways.
+  @media (max-width: 575.98px) {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
 }
 
 // Three widths, tied to meaning: a number, prose, a long opaque token.
