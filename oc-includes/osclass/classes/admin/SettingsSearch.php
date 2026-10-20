@@ -70,13 +70,13 @@ final class SettingsSearch
         'core.settings_login_throttle' => array('settings_spambots', '&tab=signin', 'Sign-in protection'),
         'core.settings_messages'       => array('settings_spambots', '&tab=messages', 'Messages'),
         'core.settings_limits'         => array('settings_spambots', '&tab=limits', 'Limits'),
-        'core.settings_billing'        => array('settings_billing', '&tab=switch', 'Billing'),
-        'core.settings_billing_pricing' => array('settings_billing', '&tab=pricing', 'Pricing'),
-        'core.settings_billing_offline' => array('settings_billing', '&tab=offline', 'Bank transfer'),
-        'core.settings_billing_upgrades' => array('settings_billing', '&tab=upgrades', 'Upgrades'),
-        'core.settings_billing_limits' => array('settings_billing', '&tab=limits', 'Seller limits'),
-        'core.settings_billing_receipts' => array('settings_billing', '&tab=receipts', 'Receipts'),
-        'core.settings_billing_shop'   => array('settings_billing', '&tab=shop', 'Shop'),
+        'core.settings_billing'        => array('billing_settings', '&tab=switch', 'Billing'),
+        'core.settings_billing_pricing' => array('billing_settings', '&tab=pricing', 'Pricing'),
+        'core.settings_billing_offline' => array('billing_settings', '&tab=offline', 'Bank transfer'),
+        'core.settings_billing_upgrades' => array('billing_settings', '&tab=upgrades', 'Upgrades'),
+        'core.settings_billing_limits' => array('billing_settings', '&tab=limits', 'Seller limits'),
+        'core.settings_billing_receipts' => array('billing_settings', '&tab=receipts', 'Receipts'),
+        'core.settings_billing_shop'   => array('billing_settings', '&tab=shop', 'Shop'),
         'core.settings_api'            => array('settings_api', '', null),
         'core.settings_advanced'       => array('settings_advanced', '', null),
     );
@@ -99,6 +99,7 @@ final class SettingsSearch
         'settings_keyword_block' => 'banned words filter profanity',
         'users_ban'              => 'block ip address email ban user',
         'settings_billing'       => 'payment currency price tax invoice paypal stripe credits packages checkout',
+        'billing_settings'       => 'payment currency price tax invoice paypal stripe credits packages checkout',
         'settings_api'           => 'rest token key webhook endpoint',
         'settings_advanced'      => 'cache debug cron cookie session',
     );
@@ -153,13 +154,24 @@ final class SettingsSearch
         $menu    = AdminMenu::getInstance();
         $rows    = array();
         $entries = array();
-        $root    = __('Settings');
-        foreach ($menu->settingsGroups() as $group) {
-            foreach ($group['entries'] as $entry) {
-                $path                    = $root . ' › ' . $group['title'] . ' › ' . $entry['title'];
-                $entries[$entry['id']]   = array('path' => $path, 'url' => $entry['url']);
-                $rows[]                  = array(self::TYPE_PAGE, $entry['title'], $root . ' › ' . $group['title'], $entry['url'], self::WORDS[$entry['id']] ?? '');
+        $own     = array(
+            'items_settings' => __('Listings'), 'users_settings' => __('Users'),
+            'media_settings' => __('Media'), 'billing_settings' => __('Billing'),
+        );
+        foreach ($menu->settingsLocations() as $id => $where) {
+            $path    = implode(' › ', $where['path']);
+            $label   = array_slice($where['path'], -1)[0];
+            $parent  = implode(' › ', array_slice($where['path'], 0, -1));
+            if (isset($own[$id])) {
+                $label = sprintf(__('%s settings'), $own[$id]);
             }
+            $entries[$id] = array('path' => $path, 'url' => $where['url']);
+            $rows[]       = array(self::TYPE_PAGE, $label, $parent, $where['url'], self::WORDS[$id] ?? '');
+        }
+
+        // With billing off, its switch sits in Settings under this other id.
+        if (isset($entries['settings_billing'])) {
+            $entries['billing_settings'] = $entries['settings_billing'];
         }
 
         foreach (self::SECTIONS as $entryId => $titles) {
@@ -171,9 +183,9 @@ final class SettingsSearch
                 $rows[] = array(self::TYPE_SECTION, $title, $entries[$entryId]['path'], $entries[$entryId]['url'] . '#' . Form::anchor($title), '');
             }
         }
-        if (isset($entries['settings_billing'])) {
+        if (isset($entries['billing_settings'])) {
             $title  = __('Payment methods');
-            $rows[] = array(self::TYPE_SECTION, $title, $entries['settings_billing']['path'], $entries['settings_billing']['url'] . '&tab=methods', '');
+            $rows[] = array(self::TYPE_SECTION, $title, $entries['billing_settings']['path'], $entries['billing_settings']['url'] . '&tab=methods', '');
         }
 
         $menus = $menu->get_array_menu();
