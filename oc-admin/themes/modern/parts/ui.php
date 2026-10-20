@@ -176,6 +176,7 @@ if (!function_exists('osc_admin_page_head')) {
 
         if ($actions === array() && empty($opts['actions_html'])) {
             echo '<h2 class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h2>';
+            osc_admin_settings_group_tabs();
 
             return;
         } ?>
@@ -193,6 +194,33 @@ if (!function_exists('osc_admin_page_head')) {
             </div>
         </div>
         <?php
+        osc_admin_settings_group_tabs();
+    }
+}
+
+if (!function_exists('osc_admin_settings_group_tabs')) {
+    /**
+     * On a Settings screen, the row of tabs for its group (Site, Content, Email, ...).
+     * Drawn once per page, by osc_admin_page_head(); a screen's own tabs sit under it.
+     *
+     * @return void
+     */
+    function osc_admin_settings_group_tabs()
+    {
+        static $drawn = false;
+        if ($drawn || !function_exists('osc_is_moderator')) {
+            return;
+        }
+        $menu = AdminMenu::getInstance();
+        [$section, $entry] = $menu->currentIds();
+        if ($section !== 'settings') {
+            return;
+        }
+        $tabs = $menu->settingsGroupTabs($entry, osc_is_moderator());
+        if ($tabs !== array()) {
+            $drawn = true;
+            osc_admin_tab_nav($tabs, 'osc-tabnav-group');
+        }
     }
 }
 

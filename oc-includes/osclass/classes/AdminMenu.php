@@ -595,21 +595,8 @@ class AdminMenu
      */
     public function renderAdminMenu()
     {
-        // actual url
-        $actual_url  = urldecode(Params::getServerParam('QUERY_STRING', false, false));
-        $actual_page = Params::getParam('page');
-        // A refused save redraws its form from a POST, which has no query string.
-        if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
-            $actual_url = 'page=' . $actual_page;
-        }
-
-        $adminMenu = self::getInstance();
-        $aMenu     = $adminMenu->get_array_menu();
-
-        $is_moderator = osc_is_moderator();
-        [$current_menu, $current_submenu] = self::current($aMenu, $actual_url, $actual_page, $is_moderator, array(osc_admin_base_url(true) . '?', osc_admin_base_url()));
-
-        $currentMenuId = $current_menu;
+        $aMenu = $this->get_array_menu();
+        [$current_menu, $current_submenu] = $this->currentIds();
 
         $sMenu = '<!-- menu -->' . PHP_EOL;
 
@@ -624,6 +611,118 @@ class AdminMenu
 
         $sMenu .= '</ul></div>' . PHP_EOL;
         echo $sMenu;
+    }
+
+    /**
+     * The section and entry ids that the request being served lights up, as [menu, submenu].
+     *
+     * @return array{0:string,1:string}
+     */
+    public function currentIds(): array
+    {
+        $actual_url  = urldecode(Params::getServerParam('QUERY_STRING', false, false));
+        $actual_page = Params::getParam('page');
+        // A refused save redraws its form from a POST, which has no query string.
+        if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
+            $actual_url = 'page=' . $actual_page;
+        }
+
+        return self::current(
+            $this->get_array_menu(),
+            $actual_url,
+            $actual_page,
+            osc_is_moderator(),
+            array(osc_admin_base_url(true) . '?', osc_admin_base_url())
+        );
+    }
+
+    /**
+     * The Settings entries gathered by the heading they sit under, in menu order. Entries
+     * a plugin added with no group of its own are gathered under "Other". A group with
+     * nothing visible in it is left out.
+     *
+     * @param bool $isModerator hide entries a moderator may not see
+     *
+     * @return array<int,array{id:string,title:string,entries:array<int,array{title:string,url:string,id:string}>}>
+     */
+    public function settingsGroups(bool $isModerator = false): array
+    {
+        $core   = array_merge($this->aCoreSubmenus['settings'] ?? array(), $this->aPlaced['settings'] ?? array());
+        $groups = array();
+        $other  = array();
+        $cur    = null;
+        $curOwn = false;
+        foreach ($this->aMenu['settings']['sub'] ?? array() as $key => $entry) {
+            if (strpos($entry[1], 'divider_') === 0) {
+                $cur            = substr($entry[1], 8);
+                $curOwn         = !in_array($key, $core, true);
+                $groups[$cur]   = array('id' => $cur, 'title' => $entry[0], 'entries' => array());
+                continue;
+            }
+            if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
+                continue;
+            }
+            $row = array('title' => $entry[0], 'url' => $entry[1], 'id' => $entry[2]);
+            if ($cur !== null && (in_array($key, $core, true) || $curOwn)) {
+                $groups[$cur]['entries'][] = $row;
+            } else {
+                $other[] = $row;
+            }
+        }
+        $groups = array_values(array_filter($groups, static fn ($group) => $group['entries'] !== array()));
+        if ($other !== array()) {
+            $groups[] = array('id' => 'settings_group_other', 'title' => __('Other'), 'entries' => $other);
+        }
+
+        return $groups;
+    }
+
+    /**
+     * The tab links for the Settings group that holds the entry $currentId: label, url,
+     * active. Empty when the entry is in no group, or its group has one screen only.
+     *
+     * @return array<int,array{label:string,url:string,active:bool}>
+     */
+    public function settingsGroupTabs(string $currentId, bool $isModerator = false): array
+    {
+        foreach ($this->settingsGroups($isModerator) as $group) {
+            foreach ($group['entries'] as $entry) {
+                if ($entry['id'] !== $currentId) {
+                    continue;
+                }
+                if (count($group['entries']) < 2) {
+                    return array();
+                }
+
+                return array_map(static fn ($e) => array(
+                    'label'  => $e['title'],
+                    'url'    => $e['url'],
+                    'active' => $e['id'] === $currentId,
+                ), $group['entries']);
+            }
+        }
+
+        return array();
+    }
+
+    /**
+     * The sidebar list for Settings: one entry per group, linking to the group's first screen.
+     *
+     * @return string
+     */
+    private function renderGroupList($parentMenuId, $activeMenu, $activeSubmenu)
+    {
+        $str = '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
+               . '-submenu" data-osc-parent="#dashboard-menu">';
+        foreach ($this->settingsGroups(osc_is_moderator()) as $group) {
+            $isCurrent = in_array($activeSubmenu, array_column($group['entries'], 'id'), true);
+            $str       .= '<li><a class="nav-link py-1 ' . ($isCurrent ? 'sub-active' : '')
+                          . '" id="' . $group['id'] . '" href="' . $group['entries'][0]['url'] . '"'
+                          . ($isCurrent ? ' aria-current="page"' : '') . '>'
+                          . $group['title'] . '</a></li>' . PHP_EOL;
+        }
+
+        return $str . '</ul>';
     }
 
     /**
@@ -863,6 +962,9 @@ class AdminMenu
      */
     private function renderSubMenu($parentMenuId, $subMenu, $is_moderator, $activeMenu, $activeSubmenu)
     {
+        if ($parentMenuId === 'settings') {
+            return $this->renderGroupList($parentMenuId, $activeMenu, $activeSubmenu);
+        }
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
             . '-submenu" data-osc-parent="#dashboard-menu">';

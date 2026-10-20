@@ -47,6 +47,11 @@ end of that group. `$match` lists other admin URLs that should light this entry,
 tabs of one screen. A declared settings page takes the same placement with `'group' => 'shop'`
 and can draw tabs with `'tabs'`.
 
+The Settings sidebar lists the groups, not the entries. Each Settings screen draws a tab
+row of its group's entries, so a plugin entry placed by `$group` appears as a tab. An entry
+added to Settings with no group goes to an "Other" group. A screen's own `'tabs'` show as a
+second row under it.
+
 ## Removing entries
 
 ```php
