@@ -128,7 +128,7 @@ Core defines 1214 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_field_choices($id, $name, $value, array $spec)` | The option list of a radio group. Each option is its own label wrapping its own control, so the whole line is a hit target and no id can drift from its label. |
 | `osc_admin_field_class($type, array $spec)` | The width class a field gets. Width follows the field's meaning, not the page it happens to sit on; 'width' overrides it when a screen genuinely needs something else. |
 | `osc_admin_field_control($type, $id, array $spec)` | The control alone, without its row, label or hint. Split out so every field type shares one escaping path and one width decision. |
-| `osc_admin_field_help(array $spec)` | The hint under a field, in the same help-box the admin already uses. |
+| `osc_admin_field_help(array $spec)` | The hint under a field, in the same help-box the admin already uses. Set 'help_tone' to 'warning' for a caution. |
 | `osc_admin_field_id(array $spec)` | A field's DOM id: its own, or one derived from its name so the label is clickable without every caller having to invent one. |
 | `osc_admin_field_row($label, array $fields, array $opts = array())` | One labelled row holding several fields. |
 | `osc_admin_form_actions(array $actions = array(), array $opts = array())` | The submit row at the foot of a form. With no arguments this is a lone "Save changes" -- the case that covers most settings screens. |

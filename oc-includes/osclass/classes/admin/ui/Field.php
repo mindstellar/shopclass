@@ -783,10 +783,14 @@ class Field
      */
     public static function help(array $spec)
     {
+        // 'help_tone' => 'warning' makes it a caution: warning ink and icon, same box.
+        $warn  = ($spec['help_tone'] ?? '') === 'warning';
+        $class = 'help-box' . ($warn ? ' help-box--warning' : '');
+        $icon  = $warn ? '<i class="bi bi-exclamation-triangle" aria-hidden="true"></i> ' : '';
         if (!empty($spec['help_html'])) {
-            echo '<div class="help-box">' . $spec['help_html'] . '</div>';
+            echo '<div class="' . $class . '">' . $icon . $spec['help_html'] . '</div>';
         } elseif (!empty($spec['help'])) {
-            echo '<div class="help-box">' . osc_esc_html((string)$spec['help']) . '</div>';
+            echo '<div class="' . $class . '">' . $icon . osc_esc_html((string)$spec['help']) . '</div>';
         }
     }
 

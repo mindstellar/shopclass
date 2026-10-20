@@ -138,7 +138,8 @@ if (!function_exists('osc_admin_field_class')) {
 
 if (!function_exists('osc_admin_field_help')) {
     /**
-     * The hint under a field, in the same help-box the admin already uses.
+     * The hint under a field, in the same help-box the admin already uses. Set 'help_tone' to
+     * 'warning' for a caution.
      *
      * @param array $spec
      *

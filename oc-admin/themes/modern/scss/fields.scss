@@ -32,6 +32,16 @@
   display: block;
 }
 
+// A hint that is a caution (osc_admin_field_help with 'help_tone' => 'warning').
+.help-box--warning {
+  color: var(--osc-warning-deep);
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}
+
 // The words either side of a field. Labels, not spans: they name the control they sit
 // against, and the row's own label column is often a category rather than a name.
 .field-prefix,
