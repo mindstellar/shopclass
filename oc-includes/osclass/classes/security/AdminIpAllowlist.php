@@ -113,8 +113,8 @@ final class AdminIpAllowlist
         if (defined('OSC_DEBUG') && OSC_DEBUG) {
             error_log('Admin panel refused for ' . substr(preg_replace('/[^0-9A-Fa-f.:]/', '?', $ip) ?? '', 0, 45));
         }
-        while (ob_get_level() > 0) {
-            ob_end_clean();
+        // Stop at a buffer that cannot be removed, or the loop never ends.
+        while (ob_get_level() > 0 && @ob_end_clean()) {
         }
         if (!headers_sent()) {
             http_response_code(404);

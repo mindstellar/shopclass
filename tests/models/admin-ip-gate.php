@@ -75,6 +75,9 @@ $env  = [
     'DB_TABLE_PREFIX'        => $p,
 ];
 file_put_contents($dir . 'router.php', '<?php
+if (isset($_SERVER["HTTP_X_TEST_LOCKED_BUFFER"])) {
+    ob_start(null, 0, PHP_OUTPUT_HANDLER_STDFLAGS & ~PHP_OUTPUT_HANDLER_REMOVABLE);
+}
 if (isset($_SERVER["HTTP_X_TEST_REMOTE"])) {
     $_SERVER["REMOTE_ADDR"] = $_SERVER["HTTP_X_TEST_REMOTE"];
 }
@@ -163,6 +166,12 @@ pin('the bare /oc-admin/ is refused too', [404, [], 'Not Found'], [$code, $heade
 pin('...and admin AJAX from an IPv6 address outside it', 404, $code);
 [$code] = $call($locked . '/oc-admin/index.php?page=upgrade', '198.51.100.7');
 pin('...and the upgrade screen', 404, $code);
+
+$ch = curl_init($locked . '/oc-admin/index.php?page=login');
+curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_HTTPHEADER => ['X-Test-Remote: 198.51.100.7', 'X-Test-Locked-Buffer: 1']]);
+$lockedBody = curl_exec($ch);
+pin('...even past an output buffer that cannot be removed', [404, 'Not Found'], [(int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE), is_string($lockedBody) ? trim($lockedBody) : null]);
+curl_close($ch);
 
 harness_section('addresses in the list');
 
