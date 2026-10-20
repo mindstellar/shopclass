@@ -245,7 +245,7 @@ final class SettingsSearch
      * Core's own settings forms are declared when their screen is drawn; declare them now so
      * their sections and fields are listed. A form that cannot be declared is left out.
      */
-    private static function registerCore(): void
+    public static function registerCore(): void
     {
         $screens = array(
             MainSettingsScreen::class, ItemSettingsScreen::class, UserSettingsScreen::class,

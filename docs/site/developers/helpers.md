@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1213 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1214 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -104,7 +104,7 @@ Core defines 1213 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (44)
+### hAdminUi (45)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -146,6 +146,7 @@ Core defines 1213 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_publish_panel(array $opts = array())` | The rail's status panel: what state the record is in, the facts about it, and the actions that change that state. |
 | `osc_admin_radio_group(array $opts)` | A choice list. Keys: the shared set, plus 'options', 'selected'. An option may be a string label or array('label' =&gt; …, 'custom_html' =&gt; …). |
 | `osc_admin_secret(array $opts)` | An API key or password. Keys: the shared set, plus 'reveal', 'masked'. |
+| `osc_admin_section_heading($text, $level = 'section', $id = null)` | A heading inside an admin screen, on the one heading scale: the screen's title is an h2, a section an h3 and a sub-section of a section an h4. Use this rather than writing a heading tag, so every screen gets the same size and the levels stay in order. |
 | `osc_admin_select(array $opts)` | A dropdown. Keys: the shared set, plus 'options', 'selected', 'placeholder'. |
 | `osc_admin_settings_form($page, array $opts = array())` | The whole form of a declared page (osc_register_settings_page()): the element, the hidden route, every declared field with the value it should show, and the submit row. |
 | `osc_admin_status($state, $word)` | A status pill: a tint, a shape, and the word. An unmapped state still renders, in the neutral tint, so a plugin's own word degrades instead of vanishing. |

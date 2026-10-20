@@ -364,12 +364,13 @@ final class PermalinkSettingsScreen extends SettingsScreen
         osc_admin_form_section(__('Server rules (.htaccess)'), array('spaced' => true));
         echo '<div class="server-config-grid">';
         if ($exists) {
-            echo '<div class="server-config-block"><h4>' . osc_esc_html(__('Your current .htaccess file')) . '</h4>'
-                 . '<pre>' . htmlentities((string)file_get_contents($file), ENT_COMPAT, 'UTF-8') . '</pre></div>';
+            echo '<div class="server-config-block">';
+            osc_admin_section_heading(__('Your current .htaccess file'), 'subsection', '');
+            echo '<pre>' . htmlentities((string)file_get_contents($file), ENT_COMPAT, 'UTF-8') . '</pre></div>';
         }
-        echo '<div class="server-config-block"><h4>'
-             . osc_esc_html($exists ? __('What it should look like') : __('What your .htaccess file should look like'))
-             . '</h4><pre>' . htmlentities($rules, ENT_COMPAT, 'UTF-8') . '</pre></div></div></div>';
+        echo '<div class="server-config-block">';
+        osc_admin_section_heading($exists ? __('What it should look like') : __('What your .htaccess file should look like'), 'subsection', '');
+        echo '<pre>' . htmlentities($rules, ENT_COMPAT, 'UTF-8') . '</pre></div></div></div>';
     }
 
     /**

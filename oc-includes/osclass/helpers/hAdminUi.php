@@ -306,6 +306,25 @@ if (!function_exists('osc_admin_settings_form')) {
     }
 }
 
+if (!function_exists('osc_admin_section_heading')) {
+    /**
+     * A heading inside an admin screen, on the one heading scale: the screen's title is an h2,
+     * a section an h3 and a sub-section of a section an h4. Use this rather than writing a
+     * heading tag, so every screen gets the same size and the levels stay in order.
+     *
+     * @param string      $text
+     * @param string      $level 'section' (h3) or 'subsection' (h4)
+     * @param string|null $id    the id to link to; null makes one from the text, '' leaves it off
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_section_heading($text, $level = 'section', $id = null)
+    {
+        \mindstellar\admin\ui\Form::heading((string)$text, (string)$level, $id);
+    }
+}
+
 if (!function_exists('osc_admin_form_section')) {
     /**
      * A titled group of fields within a screen, with an optional explanatory paragraph.

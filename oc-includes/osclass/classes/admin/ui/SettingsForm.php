@@ -71,11 +71,15 @@ final class SettingsForm
         ));
 
         foreach ($page['groups'] as $index => $group) {
-            if ($group['title'] !== '') {
-                echo '<span id="' . Form::anchor($group['title']) . '"></span>';
-            }
             if ($group['title'] !== '' && ($opts['titles'] ?? true)) {
-                osc_admin_page_head($group['title'], array(), array('level' => osc_admin_page_titled() ? 3 : 2));
+                if (osc_admin_page_titled()) {
+                    osc_admin_section_heading($group['title']);
+                } else {
+                    echo '<span id="' . Form::anchor($group['title']) . '"></span>';
+                    osc_admin_page_head($group['title']);
+                }
+            } elseif ($group['title'] !== '') {
+                echo '<span id="' . Form::anchor($group['title']) . '"></span>';
             }
             if ($group['intro'] !== '') {
                 echo '<p class="form-intro">' . osc_esc_html($group['intro']) . '</p>';

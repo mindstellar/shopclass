@@ -2376,4 +2376,81 @@ foreach (array_column($screens, 0) as $controller) {
     check($controller . ' reports one through the shared helper', strpos($src, 'CoreSettings::attempt(') !== false);
 }
 
+// ---- The heading scale ------------------------------------------------------------------
+// A screen's title is the one h2; a section inside it is an h3 and a sub-section an h4, each
+// with the shared heading class that sizes it, and a level is never skipped. One scale in one
+// place is what stops a screen drawing its sections as page-sized h2s again.
+harness_section('Heading scale');
+
+/** @return string[] what is wrong with the headings in a screen's markup */
+function heading_scale_problems(string $html): array
+{
+    preg_match_all('~<h([1-6])\b([^>]*)>(.*?)</h\1>~is', $html, $found, PREG_SET_ORDER);
+    $problems = array();
+    $last     = 1;
+    $titles   = 0;
+    foreach ($found as $h) {
+        $level = (int)$h[1];
+        $text  = trim(strip_tags($h[3]));
+        if ($level < 2 || $level > 4) {
+            continue;
+        }
+        if ($level === 2 && ++$titles > 1) {
+            $problems[] = "second h2 \"$text\": a section is an h3";
+        }
+        if ($level > $last + 1) {
+            $problems[] = "h$level \"$text\" skips a level";
+        }
+        if (!preg_match('~class="[^"]*\brender-title\b~', $h[2])) {
+            $problems[] = "h$level \"$text\" lacks the shared heading class";
+        }
+        $last = $level;
+    }
+
+    return $problems;
+}
+
+$oldTax = '<h2 class="render-title osc-page-title">Tax</h2><h2 class="render-title">Prices</h2><h2 class="render-title">Rates</h2>'
+    . '<strong class="d-block">Rates by buyer country</strong><h4>Rates by category</h4>';
+check('the check refuses the old Tax markup (sections as h2, a bare h4)', count(heading_scale_problems($oldTax)) >= 3);
+check('the check refuses an h4 straight under the title', count(heading_scale_problems('<h2 class="render-title">T</h2><h4 class="render-title">x</h4>')) === 1);
+
+\mindstellar\admin\SettingsSearch::registerCore();
+$rendered = 0;
+foreach (osc_settings_pages() as $pageId => $page) {
+    if ($page['menu'] !== '' && strpos($pageId, 'core.') !== 0) {
+        continue;
+    }
+    ob_start();
+    try {
+        osc_admin_page_head($page['title']);
+        osc_admin_settings_form($pageId, array('titles' => true));
+        $html = (string)ob_get_clean();
+    } catch (Throwable $e) {
+        ob_end_clean();
+        continue;
+    }
+    $rendered++;
+    check("$pageId draws its headings on the scale", heading_scale_problems($html) === array(), implode('; ', heading_scale_problems($html)));
+}
+check('the core settings forms were rendered', $rendered >= 20, (string)$rendered);
+
+$screens = array_merge(
+    glob(ABS_PATH . 'oc-admin/themes/modern/settings/*.php') ?: array(),
+    glob(ABS_PATH . 'oc-includes/osclass/classes/admin/form/*.php') ?: array(),
+    array(ABS_PATH . 'oc-admin/themes/modern/items/settings.php', ABS_PATH . 'oc-admin/themes/modern/users/settings.php',
+        ABS_PATH . 'oc-admin/themes/modern/users/ban.php', ABS_PATH . 'oc-admin/themes/modern/emails/index.php')
+);
+foreach ($screens as $file) {
+    $raw = array();
+    if (preg_match_all('~<h[2-4]\b[^>]*>~', (string)file_get_contents($file), $tags)) {
+        foreach ($tags[0] as $tag) {
+            if (strpos($tag, 'render-title') === false) {
+                $raw[] = $tag;
+            }
+        }
+    }
+    check(basename($file) . ' writes no heading tag of its own: it uses osc_admin_section_heading()', $raw === array(), implode(' ', $raw));
+}
+
 exit(harness_result());
