@@ -71,6 +71,9 @@ final class SettingsForm
         ));
 
         foreach ($page['groups'] as $index => $group) {
+            if ($group['title'] !== '') {
+                echo '<span id="' . Form::anchor($group['title']) . '"></span>';
+            }
             if ($group['title'] !== '' && ($opts['titles'] ?? true)) {
                 osc_admin_page_head($group['title']);
             }

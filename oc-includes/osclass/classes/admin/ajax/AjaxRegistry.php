@@ -33,6 +33,7 @@ final class AjaxRegistry
         'test_mail'              => array(SystemAjax::class, 'testMail', true),
         'test_mail_template'     => array(SystemAjax::class, 'testMailTemplate', true),
         'backup_status'          => array(SystemAjax::class, 'backupStatus', true),
+        'settings_index'         => array(SystemAjax::class, 'settingsIndex', false),
         'order_pages'            => array(SystemAjax::class, 'orderPages', true),
 
         'date_format'            => array(PreferenceAjax::class, 'dateFormat', false),

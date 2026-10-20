@@ -62,6 +62,32 @@ if ($oscSidebar !== 'collapsed') {
                     <div class="toggle-icon"><span></span><span></span><span></span></div>
                 </button>
                 <ul class="navbar-nav admin-topbar-tools ms-auto">
+                    <?php if (!osc_is_moderator()) {
+                        $findLabel = osc_esc_html(__('Find a setting')); ?>
+                    <li class="nav-item admin-topbar-find" data-osc-find
+                        data-src="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=ajax&action=settings_index&v=' . \mindstellar\admin\SettingsSearch::version()); ?>"
+                        data-none="<?php echo osc_esc_html(__('No setting matches.')); ?>"
+                        data-count="<?php echo osc_esc_html(__('%d results')); ?>">
+                        <button type="button" class="admin-topbar-btn osc-find-open" aria-expanded="false"
+                                title="<?php echo $findLabel; ?>" aria-label="<?php echo $findLabel; ?>">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </button>
+                        <div class="osc-find-panel" role="search">
+                            <label class="visually-hidden" for="osc-find-input"><?php echo $findLabel; ?></label>
+                            <i class="bi bi-search osc-find-icon" aria-hidden="true"></i>
+                            <input type="search" id="osc-find-input" class="form-control form-control-sm" autocomplete="off"
+                                   placeholder="<?php echo $findLabel; ?>" role="combobox" aria-expanded="false"
+                                   aria-controls="osc-find-list" aria-autocomplete="list">
+                            <kbd class="osc-find-key" aria-hidden="true">/</kbd>
+                            <button type="button" class="osc-find-close" aria-label="<?php echo osc_esc_html(__('Close')); ?>">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            </button>
+                            <ul id="osc-find-list" class="osc-find-list" role="listbox" hidden></ul>
+                            <span class="visually-hidden osc-find-status" role="status" aria-live="polite"></span>
+                        </div>
+                        <script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_current_admin_theme_js_url('settings-find.js'))); ?>" defer></script>
+                    </li>
+                    <?php } ?>
                     <?php AdminToolbar::getInstance()->render(); ?>
                     <li class="nav-item admin-topbar-divider" aria-hidden="true"></li>
                     <li class="nav-item">

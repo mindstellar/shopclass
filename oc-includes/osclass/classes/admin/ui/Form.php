@@ -82,6 +82,21 @@ class Form
     }
 
     /**
+     * The id of a section heading, from its title: "Server rules (nginx)" is "s-server-rules-nginx".
+     * The settings search links to it.
+     *
+     * @param string $title
+     *
+     * @return string
+     */
+    public static function anchor($title)
+    {
+        $slug = trim((string)preg_replace('/[^\p{L}\p{N}]+/u', '-', mb_strtolower((string)$title)), '-');
+
+        return 's-' . $slug;
+    }
+
+    /**
      * A section heading with an optional intro paragraph. Body of osc_admin_form_section().
      *
      * @param string              $title
@@ -95,7 +110,7 @@ class Form
         $class = 'render-title' . (!empty($opts['spaced']) ? ' separate-top' : '');
 
         if ($title !== '') {
-            echo '<h' . $level . ' class="' . $class . '">' . osc_esc_html($title) . '</h' . $level . '>';
+            echo '<h' . $level . ' id="' . self::anchor($title) . '" class="' . $class . '">' . osc_esc_html($title) . '</h' . $level . '>';
         }
         if (!empty($opts['intro_html'])) {
             echo '<p class="form-intro">' . $opts['intro_html'] . '</p>';
