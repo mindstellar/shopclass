@@ -77,8 +77,8 @@ class CWebSearch extends BaseModel
         }
 
         $uriParams = Params::getParamsAsArray();
-        // An admin's ?theme= preview is never redirected.
-        $preview = isset($uriParams['theme']) && Session::getInstance()->_get('adminId') != '';
+        // A ?theme= preview is never redirected.
+        $preview = isset($uriParams['theme']) && \WebThemes::previewAllowed();
         unset($uriParams['theme']);
         // The URL carries the keyword as searched, so a bot's unfilled {query} redirects to the plain word.
         if (isset($uriParams['sPattern'])) {

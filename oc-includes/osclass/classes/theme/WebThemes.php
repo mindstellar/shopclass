@@ -87,39 +87,49 @@ class WebThemes extends Themes
             }
         }
     }
+
+    /**
+     * Whether this request may preview a theme: a signed-in admin, or any visitor on a demo site.
+     */
+    public static function previewAllowed(): bool
+    {
+        return \mindstellar\security\Demo::active() || Session::getInstance()->_get('adminId') != '';
+    }
+
     /**
      * The theme a preview asks for: ?theme=<slug>, kept for the visit in the oc_theme
-     * cookie. Only an admin may preview, or any visitor on a demo site. ?theme= with
-     * the active theme or nothing ends the preview.
+     * cookie. ?theme= with the active theme or nothing ends the preview.
      *
      * @return string|null null for the configured theme
      */
     private function previewTheme(): ?string
     {
-        if (osc_is_api_request()
-            || (!\mindstellar\security\Demo::active() && Session::getInstance()->_get('adminId') == '')
-        ) {
+        if (osc_is_api_request() || !self::previewAllowed()) {
             return null;
         }
         // The name picks the directory functions.php is required from, so it must be an installed theme.
         $installed = fn (string $slug): bool => $slug !== '' && in_array($slug, $this->getListThemes(), true);
+        $kept      = (string) ($_COOKIE['oc_theme'] ?? '');
 
         if (!Params::existParam('theme')) {
-            $kept = (string) ($_COOKIE['oc_theme'] ?? '');
-
             return $installed($kept) ? $kept : null;
         }
+
         $asked = Params::getParamString('theme');
-        $keep  = $installed($asked) && $asked !== osc_theme();
-        if ($keep || isset($_COOKIE['oc_theme'])) {
-            Cookie::write('oc_theme', $keep ? $asked : '', $keep ? 0 : time() - 3600);
-        }
-        if ($keep) {
+        if ($installed($asked) && $asked !== osc_theme()) {
+            // A browser-session cookie: it keeps the visitor off the shared cache, so it must not outlive the visit.
+            if ($asked !== $kept) {
+                Cookie::write('oc_theme', $asked, 0);
+            }
+            // Set for this request too, so its response is not marked cacheable.
             $_COOKIE['oc_theme'] = $asked;
 
             return $asked;
         }
-        unset($_COOKIE['oc_theme']);
+        if (isset($_COOKIE['oc_theme'])) {
+            Cookie::write('oc_theme', '', time() - 3600);
+            unset($_COOKIE['oc_theme']);
+        }
 
         return null;
     }

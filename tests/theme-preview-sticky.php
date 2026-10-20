@@ -115,6 +115,8 @@ pin('a visitor with the cookie gets the active one', null, $request(array(), 'gl
 pin('an admin gets the asked theme', 'glance', $request(array('theme' => 'glance'), null, '1'));
 pin('and the choice is kept in a browser-session cookie', array(array('oc_theme', 'glance', 0)), Cookie::$writes);
 pin('the next admin request, with no ?theme=, keeps it', 'glance', $request(array(), 'glance', '1'));
+pin('asking again for the kept theme', 'glance', $request(array('theme' => 'glance'), 'glance', '1'));
+check('does not write the cookie again', Cookie::$writes === array());
 
 harness_section('Ending and refusing a preview');
 
@@ -132,10 +134,12 @@ $GLOBALS['osc_test_api'] = false;
 
 harness_section('On a demo site any visitor previews');
 
+// DEMO cannot be undefined again, so this section stays last.
 define('DEMO', true);
 pin('a visitor asking for a theme gets it', 'glance', $request(array('theme' => 'glance'), null));
 pin('a visitor keeps it on the next request', 'glance', $request(array(), 'glance'));
 pin('and can end it', null, $request(array('theme' => ''), 'glance'));
+pin('a theme that is not installed is still ignored', null, $request(array('theme' => '../outside'), null));
 
 $rm = static function (string $dir) use (&$rm) {
     foreach (array_diff(scandir($dir) ?: array(), array('.', '..')) as $entry) {
