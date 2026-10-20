@@ -75,6 +75,12 @@ pin('...in one line', 1, substr_count(trim($logged), "\n") + 1);
 check('a range wider than its family is left out', AdminIpAllowlist::parse('::/129, 1.2.3.4/-1') === array());
 check('an empty list parses to nothing', AdminIpAllowlist::parse(' , ') === array());
 check('a value that is not an address is refused', !$list->allows('') && !$list->allows('not-an-ip'));
+$blank = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg(
+    'require ' . var_export(dirname(__DIR__) . '/oc-includes/vendor/autoload.php', true) . ';'
+    . 'define("OSC_ADMIN_IP_ALLOW", " \n ");'
+    . 'echo \\mindstellar\\security\\AdminIpAllowlist::fromConfig() === null ? "off" : "on";'
+));
+pin('a constant of only spaces means off', 'off', $blank);
 define('OSC_ADMIN_IP_ALLOW', ' 192.0.2.1 ');
 check('the constant turns it on', AdminIpAllowlist::fromConfig() !== null && AdminIpAllowlist::fromConfig()->allows('192.0.2.1'));
 check('...for the listed address only', !AdminIpAllowlist::fromConfig()->allows('192.0.2.2'));

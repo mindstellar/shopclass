@@ -285,6 +285,8 @@ $ipRow = static function (array $extra) use ($env): array {
     return array();
 };
 pin('...and counts its entries when on', '2 listed addresses or ranges, and this server', $ipRow(array('admin_ip_allow' => 2))['value'] ?? null);
+pin('...one entry in the singular', '1 listed address or range, and this server', $ipRow(array('admin_ip_allow' => 1))['value'] ?? null);
+pin('...and a list of only bad entries is on, with 0', '0 listed addresses or ranges, and this server', $ipRow(array('admin_ip_allow' => 0))['value'] ?? null);
 check('...with no proxy note when addresses agree', !isset($ipRow(array('admin_ip_allow' => 2))['note']));
 pin('behind a proxy it says what the list sees', 'The allow list checks the proxy\'s address, not the visitor\'s.', $ipRow(array('admin_ip_allow' => 1, 'proxy' => array('header' => 'X-Forwarded-For', 'proxy' => '10.0.0.1')))['note'] ?? null);
 pin('with a captcha there is no account limit', 'A captcha is set up, so there is no limit per account.', array_column(SystemChecks::report('security', $env(array('throttle' => array('enabled' => true, 'captcha' => true))))['groups'][0]['rows'], 'note', 'label')['Limits']);
