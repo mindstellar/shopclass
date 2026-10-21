@@ -9,11 +9,11 @@
  */
 
 /**
- * The search conditions on the listing filter index: the exact SQL of each shape, option SQL
- * with values only as `?` (so Search::addCondition() takes it), field values always quoted and
- * cut as the index stores them; then each shape runs on the scratch database, matches the
- * listings it should, and EXPLAIN reads t_item_facet by an index (PRIMARY or idx_item), never
- * whole. Keys and values are matched through t_facet_term.
+ * The search conditions on the listing filter index by term id: the exact page and count SQL of
+ * each shape, option SQL with term ids only as `?` (so Search::addCondition() takes it), field
+ * SQL with ints only, NONE for an empty term list; then each shape runs on the scratch database
+ * both ways, matches the listings it should, and EXPLAIN reads t_item_facet by an index
+ * (PRIMARY or idx_item), never whole, with the page probes as ref/eq_ref lookups.
  *
  * Usage: php tests/facet-filter.php
  */
@@ -31,47 +31,62 @@ $t     = $p . 't_facet_term';
 $i     = $p . 't_item';
 $v     = $p . 't_item_variant';
 
-harness_section('option probe SQL');
+harness_section('option SQL');
 pin(
     'one option, one value',
-    ["(SELECT 1 FROM $f a JOIN $t ta ON ta.pk_i_id = a.fk_i_term_id WHERE ta.s_key = ? AND ta.s_value = ? AND a.fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL", ['oColour', 'Red']],
-    FacetFilter::optionProbe(['Colour' => ['Red']], false, false)
+    [
+        "(SELECT 1 FROM $f a WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND a.fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL",
+        "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a WHERE a.fk_i_term_id = ? AND a.d_number = 0)",
+        [101],
+    ],
+    FacetFilter::optionProbe(['oColour' => [101]], false, false)
 );
 pin(
     'one option, two values',
-    ["(SELECT 1 FROM $f a JOIN $t ta ON ta.pk_i_id = a.fk_i_term_id WHERE ta.s_key = ? AND ta.s_value IN (?, ?) AND a.fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL", ['oColour', 'Red', 'Blue']],
-    FacetFilter::optionProbe(['Colour' => ['Red', 'Blue']], false, false)
+    [
+        "(SELECT 1 FROM $f a WHERE a.fk_i_term_id IN (?, ?) AND a.d_number = 0 AND a.fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL",
+        "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a WHERE a.fk_i_term_id IN (?, ?) AND a.d_number = 0)",
+        [101, 102],
+    ],
+    FacetFilter::optionProbe(['oColour' => [101, 102]], false, false)
 );
+$join = "JOIN $f b ON b.fk_i_term_id = ? AND b.d_number = 0 AND b.fk_i_item_id = a.fk_i_item_id AND b.fk_i_variant_id = a.fk_i_variant_id";
 pin(
     'two options join on the same variant; values follow the order of the marks',
-    ["(SELECT 1 FROM $f a JOIN $t ta ON ta.pk_i_id = a.fk_i_term_id JOIN $f b ON b.fk_i_item_id = a.fk_i_item_id AND b.fk_i_variant_id = a.fk_i_variant_id"
-        . " JOIN $t tb ON tb.pk_i_id = b.fk_i_term_id AND tb.s_key = ? AND tb.s_value = ?"
-        . " WHERE ta.s_key = ? AND ta.s_value = ? AND a.fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL", ['oSize', 'M', 'oColour', 'Red']],
-    FacetFilter::optionProbe(['Colour' => ['Red'], 'Size' => ['M']], false, false)
+    [
+        "(SELECT 1 FROM $f a $join WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND a.fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL",
+        "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a $join WHERE a.fk_i_term_id = ? AND a.d_number = 0)",
+        [112, 101],
+    ],
+    FacetFilter::optionProbe(['oColour' => [101], 'oSize' => [112]], false, false)
 );
+$joins = "JOIN $f b ON b.fk_i_term_id IN (?, ?) AND b.d_number = 0 AND b.fk_i_item_id = a.fk_i_item_id AND b.fk_i_variant_id = a.fk_i_variant_id"
+    . " JOIN $f c ON c.fk_i_term_id = ? AND c.d_number = 0 AND c.fk_i_item_id = a.fk_i_item_id AND c.fk_i_variant_id = a.fk_i_variant_id"
+    . " JOIN $v v ON v.pk_i_id = a.fk_i_variant_id";
+$flags = "(v.i_stock IS NULL OR v.i_stock > 0) AND v.i_compare_price > COALESCE(v.i_price, $i.i_price)";
 pin(
     'three options, in_stock and on_sale',
-    ["(SELECT 1 FROM $f a JOIN $t ta ON ta.pk_i_id = a.fk_i_term_id"
-        . " JOIN $f b ON b.fk_i_item_id = a.fk_i_item_id AND b.fk_i_variant_id = a.fk_i_variant_id JOIN $t tb ON tb.pk_i_id = b.fk_i_term_id AND tb.s_key = ? AND tb.s_value IN (?, ?)"
-        . " JOIN $f c ON c.fk_i_item_id = a.fk_i_item_id AND c.fk_i_variant_id = a.fk_i_variant_id JOIN $t tc ON tc.pk_i_id = c.fk_i_term_id AND tc.s_key = ? AND tc.s_value = ?"
-        . " JOIN $v v ON v.pk_i_id = a.fk_i_variant_id"
-        . " WHERE ta.s_key = ? AND ta.s_value = ? AND a.fk_i_item_id = $i.pk_i_id"
-        . " AND (v.i_stock IS NULL OR v.i_stock > 0) AND v.i_compare_price > COALESCE(v.i_price, $i.i_price) LIMIT 1) IS NOT NULL",
-        ['oSize', 'M', 'L', 'oMaterial', 'Cotton', 'oColour', 'Red']],
-    FacetFilter::optionProbe(['Colour' => ['Red'], 'Size' => ['M', 'L'], 'Material' => ['Cotton']], true, true)
+    [
+        "(SELECT 1 FROM $f a $joins WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND a.fk_i_item_id = $i.pk_i_id AND $flags LIMIT 1) IS NOT NULL",
+        "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a $joins WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND $flags)",
+        [112, 113, 120, 101],
+    ],
+    FacetFilter::optionProbe(['oColour' => [101], 'oSize' => [112, 113], 'oMaterial' => [120]], true, true)
 );
 pin(
     'option and in_stock',
-    ["(SELECT 1 FROM $f a JOIN $t ta ON ta.pk_i_id = a.fk_i_term_id JOIN $v v ON v.pk_i_id = a.fk_i_variant_id WHERE ta.s_key = ? AND ta.s_value = ? AND a.fk_i_item_id = $i.pk_i_id"
-        . ' AND (v.i_stock IS NULL OR v.i_stock > 0) LIMIT 1) IS NOT NULL', ['oColour', 'Red']],
-    FacetFilter::optionProbe(['Colour' => ['Red']], true, false)
+    [
+        "(SELECT 1 FROM $f a JOIN $v v ON v.pk_i_id = a.fk_i_variant_id WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND a.fk_i_item_id = $i.pk_i_id AND (v.i_stock IS NULL OR v.i_stock > 0) LIMIT 1) IS NOT NULL",
+        "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $v v ON v.pk_i_id = a.fk_i_variant_id WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND (v.i_stock IS NULL OR v.i_stock > 0))",
+        [101],
+    ],
+    FacetFilter::optionProbe(['oColour' => [101]], true, false)
 );
-[$sql, $params] = FacetFilter::optionProbe(['Colour' => [str_repeat('é', 200), " Red'--"], str_repeat('N', 60) => ['x']], true, true);
-check('no quote character in the option SQL', strpbrk($sql, "'\"\\`") === false, $sql);
-pin('as many marks as values', count($params), substr_count($sql, '?'));
-pin('a long value is cut to 191 and trimmed like the index', [str_repeat('é', 191), "Red'--"], [$params[3], $params[4]]);
-pin('a long name is the index key', FacetIndex::optionKey(str_repeat('N', 60)), $params[0]);
-foreach ([[[], 'no name'], [['A' => ['1'], 'B' => ['1'], 'C' => ['1'], 'D' => ['1']], 'a fourth name'], [['A' => []], 'a name with no value']] as [$bad, $label]) {
+pin('a name with no term is NONE both ways', [FacetFilter::NONE, FacetFilter::NONE, []], FacetFilter::optionProbe(['oColour' => [101], 'oSize' => []], true, false));
+[$sql, $count, $params] = FacetFilter::optionProbe(['oColour' => [1, 2], 'oSize' => [3], 'oMaterial' => [4, 5]], true, true);
+check('no quote character in the option SQL', strpbrk($sql . $count, "'\"\\`") === false, $sql);
+pin('as many marks as values, page and count', [5, 5], [substr_count($sql, '?'), substr_count($count, '?')]);
+foreach ([[[], 'no name'], [['A' => [1], 'B' => [1], 'C' => [1], 'D' => [1]], 'a fourth name']] as [$bad, $label]) {
     try {
         FacetFilter::optionProbe($bad, false, false);
         check("$label is refused", false);
@@ -81,38 +96,41 @@ foreach ([[[], 'no name'], [['A' => ['1'], 'B' => ['1'], 'C' => ['1'], 'D' => ['
 }
 $search = new Search();
 try {
-    $search->addCondition($sql, $params);
+    $search->addCondition($sql, $params, $count);
     $conditions = json_decode($search->toJson(), true)['no_catched_conditions'];
-    check('Search::addCondition() takes the option probe', str_contains((string) end($conditions), "ta.s_value IN ('" . str_repeat('é', 191) . "', 'Red\\'--')"), (string) end($conditions));
+    check('Search::addCondition() takes the option probe with its count text', str_contains((string) end($conditions), 'b.fk_i_term_id = 3 AND') && str_contains((string) end($conditions), 'c.fk_i_term_id IN (4, 5) AND') && str_contains((string) end($conditions), 'WHERE a.fk_i_term_id IN (1, 2) AND'), (string) end($conditions));
 } catch (InvalidArgumentException $e) {
-    check('Search::addCondition() takes the option probe', false, $e->getMessage());
+    check('Search::addCondition() takes the option probe with its count text', false, $e->getMessage());
 }
 
 harness_section('field SQL');
-$in = "$i.pk_i_id IN (SELECT f.fk_i_item_id FROM $f f JOIN $t t ON t.pk_i_id = f.fk_i_term_id WHERE ";
-pin('dropdown, one value is =', $in . "t.s_key = 'f12' AND t.s_value = 'Red')", FacetFilter::fieldIn(12, ['Red']));
-pin('dropdown, several values', $in . "t.s_key = 'f12' AND t.s_value IN ('Red', 'Blue'))", FacetFilter::fieldIn(12, ['Red', 'Blue']));
-pin('a number value stays quoted', $in . "t.s_key = 'f12' AND t.s_value = '12')", FacetFilter::fieldIn(12, ['12']));
-pin('a value is escaped', $in . "t.s_key = 'f12' AND t.s_value = 'O\\'Neil')", FacetFilter::fieldIn(12, ["O'Neil"]));
-pin('a 200-char value is cut to 191', $in . "t.s_key = 'f12' AND t.s_value = '" . str_repeat('x', 191) . "')", FacetFilter::fieldIn(12, [str_repeat('x', 200)]));
-pin('checkbox', $in . "t.s_key = 'f7' AND t.s_value = '1')", FacetFilter::fieldFlag(7));
-pin('number range', $in . "t.s_key = 'f9' AND t.s_value = '' AND f.d_number >= 10 AND f.d_number <= 20)", FacetFilter::fieldRange(9, 10.0, 20.0));
-pin('a decimal bound keeps its digits', $in . "t.s_key = 'f9' AND t.s_value = '' AND f.d_number >= 0.1 AND f.d_number <= 1234567890123.456)", FacetFilter::fieldRange(9, 0.1, 1234567890123.456));
-pin('a big bound reads back as the same double', 1.0E+25, (float) explode('d_number <= ', FacetFilter::fieldRange(9, 0, 1.0E+25))[1]);
+$probe = static fn (string $match): string => "(SELECT 1 FROM $f WHERE fk_i_term_id $match AND d_number = 0 AND fk_i_item_id = $i.pk_i_id AND fk_i_variant_id = 0 LIMIT 1) IS NOT NULL";
+$in    = static fn (string $match): string => "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE fk_i_term_id $match AND d_number = 0)";
+pin('dropdown, one term is =', [$probe('= 41'), $in('= 41')], FacetFilter::fieldIn([41]));
+pin('dropdown, several terms', [$probe('IN (41, 42)'), $in('IN (41, 42)')], FacetFilter::fieldIn([41, 42]));
+pin('dropdown, no term is NONE both ways', [FacetFilter::NONE, FacetFilter::NONE], FacetFilter::fieldIn([]));
+pin('checkbox', [$probe('= 3'), $in('= 3')], FacetFilter::fieldFlag(3));
+$range = "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE fk_i_term_id = 16 AND d_number >= 10 AND d_number <= 20)";
+pin('number range, IN both ways', [$range, $range], FacetFilter::fieldRange(16, 10.0, 20.0));
 pin(
-    'date interval covers',
-    "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $t ta ON ta.pk_i_id = a.fk_i_term_id JOIN $f b ON b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= 1700000000"
-        . " JOIN $t tb ON tb.pk_i_id = b.fk_i_term_id AND tb.s_key = 'f5.to' AND tb.s_value = ''"
-        . " WHERE ta.s_key = 'f5.from' AND ta.s_value = '' AND a.d_number <= 1690000000)",
-    FacetFilter::fieldCovers(5, 1690000000, 1700000000)
+    'a decimal bound keeps its digits',
+    "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE fk_i_term_id = 16 AND d_number >= 0.1 AND d_number <= 1234567890123.456)",
+    FacetFilter::fieldRange(16, 0.1, 1234567890123.456)[0]
 );
-foreach (['no value' => static fn () => FacetFilter::fieldIn(12, []), 'an infinite bound' => static fn () => FacetFilter::fieldRange(9, 0, INF), 'a NaN bound' => static fn () => FacetFilter::fieldRange(9, NAN, 1)] as $label => $call) {
+pin('a big bound reads back as the same double', 1.0E+25, (float) explode('d_number <= ', FacetFilter::fieldRange(16, 0, 1.0E+25)[0])[1]);
+$covers = "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $f b ON b.fk_i_term_id = 182 AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= 1700000000"
+    . ' WHERE a.fk_i_term_id = 181 AND a.d_number <= 1690000000)';
+pin('date interval covers, IN both ways', [$covers, $covers], FacetFilter::fieldCovers(181, 182, 1690000000, 1700000000));
+foreach (['an infinite bound' => static fn () => FacetFilter::fieldRange(16, 0, INF), 'a NaN bound' => static fn () => FacetFilter::fieldRange(16, NAN, 1)] as $label => $call) {
     try {
         $call();
         check("$label is refused", false);
     } catch (InvalidArgumentException $e) {
         check("$label is refused", true);
     }
+}
+foreach (['fieldIn' => FacetFilter::fieldIn([41, 42]), 'fieldRange' => FacetFilter::fieldRange(16, 0.5, 2), 'fieldCovers' => FacetFilter::fieldCovers(1, 2, 3, 4)] as $label => $pair) {
+    check("$label: no quote and no mark", strpbrk(implode(' ', $pair), "'\"\\`?") === false, implode(' | ', $pair));
 }
 
 harness_section('on the database');
@@ -182,40 +200,64 @@ foreach (array_chunk($facets, 500) as $chunk) {
 $admin->query("ANALYZE TABLE $f, $t, $i, $v");
 
 $picked = static fn (callable $keep): array => array_values(array_filter($ids, static fn (int $id, int $k): bool => $keep($k), ARRAY_FILTER_USE_BOTH));
-$shapes = [
-    '1 option'                => [FacetFilter::optionProbe(['Colour' => ['Red']], false, false), $picked(static fn (int $k): bool => $k % 2 === 0)],
-    '1 option, 2 values'      => [FacetFilter::optionProbe(['Colour' => ['Red', 'Blue']], false, false), $ids],
-    '2 options, one variant'  => [FacetFilter::optionProbe(['Colour' => ['Red'], 'Size' => ['M']], false, false), $picked(static fn (int $k): bool => $k % 2 === 0)],
-    '2 options, two variants' => [FacetFilter::optionProbe(['Colour' => ['Red'], 'Size' => ['L']], false, false), []],
-    '3 options'               => [FacetFilter::optionProbe(['Colour' => ['Red', 'Blue'], 'Size' => ['M', 'S'], 'Material' => ['Cotton']], false, false), $picked(static fn (int $k): bool => $k % 2 === 0)],
-    'option + in_stock'       => [FacetFilter::optionProbe(['Colour' => ['Red']], true, false), $picked(static fn (int $k): bool => $k % 2 === 0 && $k % 4 !== 0)],
-    'option + on_sale'        => [FacetFilter::optionProbe(['Colour' => ['Red']], false, true), $picked(static fn (int $k): bool => $k % 10 === 0)],
-    'dropdown eq'             => [FacetFilter::fieldIn(12, ['Red']), $picked(static fn (int $k): bool => $k % 10 === 0)],
-    'dropdown in'             => [FacetFilter::fieldIn(12, ['red', '12']), $picked(static fn (int $k): bool => $k % 10 === 0 || $k % 10 === 3)],
-    'checkbox'                => [FacetFilter::fieldFlag(7), $picked(static fn (int $k): bool => $k % 3 === 0)],
-    'number range'            => [FacetFilter::fieldRange(9, 10, 20.5), $picked(static fn (int $k): bool => $k % 50 >= 10 && $k % 50 <= 20)],
-    'date interval covers'    => [FacetFilter::fieldCovers(5, 1100, 2050), $picked(static fn (int $k): bool => $k >= 50 && $k <= 100)],
-];
-foreach ($shapes as $label => [$condition, $expected]) {
-    $keys = ['PRIMARY', 'idx_item'];
-    $s    = new Search();
-    if (is_array($condition)) {
-        $s->addCondition(...$condition);
-        $conditions = json_decode($s->toJson(), true)['no_catched_conditions'];
-        $condition  = (string) end($conditions);
+$terms  = static function (string $key, array $values): array {
+    return array_values(FacetIndex::termIds([$key => $values])[$key] ?? []);
+};
+$option = static function (array $options, bool $inStock, bool $onSale) use ($terms): array {
+    $byKey = [];
+    foreach ($options as $name => $values) {
+        $byKey[FacetIndex::optionKey($name)] = $terms(FacetIndex::optionKey($name), $values);
     }
-    $query = "SELECT $i.pk_i_id FROM $i WHERE $i.b_enabled = 1 AND $condition ORDER BY $i.pk_i_id";
-    pin("$label: the listings it should", $expected, array_map('intval', array_column($admin->query($query)->fetch_all(MYSQLI_ASSOC), 'pk_i_id')));
-    foreach (['page' => $query, 'count' => "SELECT COUNT(*) FROM ($query) search_count"] as $form => $sqlText) {
-        $plan  = $admin->query('EXPLAIN ' . $sqlText)->fetch_all(MYSQLI_ASSOC);
-        $reads = array_values(array_filter($plan, static fn (array $row): bool => in_array((string) $row['table'], [$f, 'f', 'a', 'b', 'c'], true)));
-        $bad   = array_filter($reads, static fn (array $row): bool => $row['type'] === 'ALL' || !in_array((string) $row['key'], $keys, true));
+
+    return FacetFilter::optionProbe($byKey, $inStock, $onSale);
+};
+$one    = static fn (string $key, string $value): int => $terms($key, [$value])[0];
+$shapes = [
+    '1 option'                => [$option(['Colour' => ['Red']], false, false), $picked(static fn (int $k): bool => $k % 2 === 0)],
+    '1 option, 2 values'      => [$option(['Colour' => ['Red', 'Blue']], false, false), $ids],
+    '2 options, one variant'  => [$option(['Colour' => ['Red'], 'Size' => ['M']], false, false), $picked(static fn (int $k): bool => $k % 2 === 0)],
+    '2 options, two variants' => [$option(['Colour' => ['Red'], 'Size' => ['L']], false, false), []],
+    '3 options'               => [$option(['Colour' => ['Red', 'Blue'], 'Size' => ['M', 'S'], 'Material' => ['Cotton']], false, false), $picked(static fn (int $k): bool => $k % 2 === 0)],
+    'option + in_stock'       => [$option(['Colour' => ['Red']], true, false), $picked(static fn (int $k): bool => $k % 2 === 0 && $k % 4 !== 0)],
+    'option + on_sale'        => [$option(['Colour' => ['Red']], false, true), $picked(static fn (int $k): bool => $k % 10 === 0)],
+    'unknown option value'    => [$option(['Colour' => ['Purple']], false, false), []],
+    'dropdown eq'             => [FacetFilter::fieldIn($terms('f12', ['Red'])), $picked(static fn (int $k): bool => $k % 10 === 0)],
+    'dropdown in'             => [FacetFilter::fieldIn($terms('f12', ['red', '12'])), $picked(static fn (int $k): bool => $k % 10 === 0 || $k % 10 === 3)],
+    'unknown dropdown value'  => [FacetFilter::fieldIn($terms('f12', ['Purple'])), []],
+    'checkbox'                => [FacetFilter::fieldFlag($one('f7', '1')), $picked(static fn (int $k): bool => $k % 3 === 0)],
+    'number range'            => [FacetFilter::fieldRange($one('f9', ''), 10, 20.5), $picked(static fn (int $k): bool => $k % 50 >= 10 && $k % 50 <= 20)],
+    'date interval covers'    => [FacetFilter::fieldCovers($one('f5.from', ''), $one('f5.to', ''), 1100, 2050), $picked(static fn (int $k): bool => $k >= 50 && $k <= 100)],
+];
+$probes = ['1 option', '1 option, 2 values', '2 options, one variant', '2 options, two variants', '3 options', 'option + in_stock', 'option + on_sale', 'dropdown eq', 'dropdown in', 'checkbox'];
+foreach ($shapes as $label => [$condition, $expected]) {
+    $s = new Search();
+    $s->addCondition($condition[0], $condition[2] ?? [], $condition[1]);
+    $page  = (string) array_values(array_filter(json_decode($s->toJson(), true)['no_catched_conditions'], 'is_string'))[0];
+    $count = $condition[1];
+    foreach ($condition[2] ?? [] as $param) {
+        $count = (string) preg_replace('/\?/', (string) $param, $count, 1);
+    }
+    $forms = [
+        'page'  => "SELECT $i.pk_i_id FROM $i WHERE $i.b_enabled = 1 AND $page ORDER BY $i.pk_i_id",
+        'count' => "SELECT $i.pk_i_id FROM $i WHERE $i.b_enabled = 1 AND $count ORDER BY $i.pk_i_id",
+    ];
+    foreach ($forms as $form => $query) {
+        pin("$label ($form): the listings it should", $expected, array_map('intval', array_column($admin->query($query)->fetch_all(MYSQLI_ASSOC), 'pk_i_id')));
+        if (str_contains($query, FacetFilter::NONE)) {
+            continue;
+        }
+        $explain = $form === 'page' ? $query : "SELECT COUNT(*) FROM ($query) search_count";
+        $plan    = $admin->query('EXPLAIN ' . $explain)->fetch_all(MYSQLI_ASSOC);
+        $reads   = array_values(array_filter($plan, static fn (array $row): bool => in_array((string) $row['table'], [$f, 'a', 'b', 'c'], true)));
+        $types   = $form === 'page' && in_array($label, $probes, true) ? ['ref', 'eq_ref'] : ['ref', 'eq_ref', 'range'];
+        $bad     = array_filter($reads, static fn (array $row): bool => !in_array((string) $row['type'], $types, true) || !in_array((string) $row['key'], ['PRIMARY', 'idx_item'], true));
         check(
-            "$label ($form): t_item_facet read by " . implode(' or ', $keys),
+            "$label ($form): t_item_facet read by PRIMARY or idx_item (" . implode('/', $types) . ')',
             $reads !== [] && $bad === [],
             implode('; ', array_map(static fn (array $row): string => $row['table'] . ' ' . $row['type'] . ' ' . ($row['key'] ?? 'NULL'), $plan))
         );
     }
+    check("$label: the page and count texts differ only where they should", ($page === $count) === !in_array($label, $probes, true) || $page === FacetFilter::NONE, $page . ' | ' . $count);
 }
 
 exit(harness_result());

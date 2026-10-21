@@ -145,7 +145,7 @@ final class ListingSearch
     {
         $variant = self::variantCondition($inStock, $onSale, $options);
         if ($variant !== null) {
-            $search->addCondition($variant[0], $variant[1]);
+            $search->addCondition($variant[0], $variant[1], $variant[2] ?? null);
         }
         if ($ids !== null) {
             $search->addCondition($ids === [] ? '1 = 0' : ListingQuery::tableName() . '.pk_i_id IN (' . implode(', ', $ids) . ')');
@@ -176,7 +176,7 @@ final class ListingSearch
      *
      * @param array<string,string[]> $options name => values, from optionFilter()
      *
-     * @return array{0:string,1:string[]}|null the SQL with `?` marks, and the values for them
+     * @return array{0:string,1:array<int,int|string>,2?:string}|null the page SQL with `?` marks, the values for them, and the count SQL when it differs
      */
     private static function variantCondition(bool $inStock, bool $onSale, array $options = []): ?array
     {
@@ -184,7 +184,18 @@ final class ListingSearch
             return null;
         }
         if ($options !== [] && FacetIndex::ready()) {
-            return FacetFilter::optionProbe($options, $inStock, $onSale);
+            $pairs = [];
+            foreach ($options as $name => $values) {
+                $pairs[FacetIndex::optionKey((string) $name)] = $values;
+            }
+            $found = FacetIndex::termIds($pairs);
+            $terms = [];
+            foreach (array_keys($pairs) as $key) {
+                $terms[$key] = array_values($found[$key] ?? []);
+            }
+            [$page, $count, $params] = FacetFilter::optionProbe($terms, $inStock, $onSale);
+
+            return [$page, $params, $count];
         }
         $variants = VariantStore::tableName();
         $item     = ListingQuery::tableName();
