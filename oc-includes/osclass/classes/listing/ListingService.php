@@ -979,7 +979,10 @@ final class ListingService
 
         if (!$actor->isAdmin()) {
             // Counts toward the posting wait in ListingPolicy::postingTooSoon().
-            ActionThrottle::record('item_post', (int) osc_items_wait_time_for_user($actor->userId()));
+            $wait = (int) osc_items_wait_time_for_user($actor->userId());
+            Db::afterCommit(static function () use ($wait): void {
+                ActionThrottle::record('item_post', $wait);
+            });
         }
 
         \Log::getInstance()->insertLog(
