@@ -109,7 +109,6 @@ $in    = static fn (string $match): string => "$i.pk_i_id IN (SELECT fk_i_item_i
 pin('dropdown, one term is =', [$probe('= 41'), $in('= 41')], FacetFilter::fieldIn([41]));
 pin('dropdown, several terms', [$probe('IN (41, 42)'), $in('IN (41, 42)')], FacetFilter::fieldIn([41, 42]));
 pin('dropdown, no term is NONE both ways', [FacetFilter::NONE, FacetFilter::NONE], FacetFilter::fieldIn([]));
-pin('checkbox', [$probe('= 3'), $in('= 3')], FacetFilter::fieldFlag(3));
 $range = "fk_i_term_id = 16 AND d_number >= 10 AND d_number <= 20";
 pin(
     'number range, probe for the page and IN for the count',
@@ -232,7 +231,7 @@ $shapes = [
     'dropdown eq'             => [FacetFilter::fieldIn($terms('f12', ['Red'])), $picked(static fn (int $k): bool => $k % 10 === 0)],
     'dropdown in'             => [FacetFilter::fieldIn($terms('f12', ['red', '12'])), $picked(static fn (int $k): bool => $k % 10 === 0 || $k % 10 === 3)],
     'unknown dropdown value'  => [FacetFilter::fieldIn($terms('f12', ['Purple'])), []],
-    'checkbox'                => [FacetFilter::fieldFlag($one('f7', '1')), $picked(static fn (int $k): bool => $k % 3 === 0)],
+    'checkbox'                => [FacetFilter::fieldIn([$one('f7', '1')]), $picked(static fn (int $k): bool => $k % 3 === 0)],
     'number range'            => [FacetFilter::fieldRange($one('f9', ''), 10, 20.5), $picked(static fn (int $k): bool => $k % 50 >= 10 && $k % 50 <= 20)],
     'date interval covers'    => [FacetFilter::fieldCovers($one('f5.from', ''), $one('f5.to', ''), 1100, 2050), $picked(static fn (int $k): bool => $k >= 50 && $k <= 100)],
 ];

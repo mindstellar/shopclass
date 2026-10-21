@@ -110,16 +110,6 @@ final class FacetFilter
     }
 
     /**
-     * A checkbox field is ticked: its term is the field's key with '1'.
-     *
-     * @return array{0:string,1:string} page text, count text
-     */
-    public static function fieldFlag(int $termId): array
-    {
-        return self::fieldIn([$termId]);
-    }
-
-    /**
      * A number or date field is within min and max, both included. The page probes the
      * listing's own rows (index idx_item), the count reads the range once.
      *
