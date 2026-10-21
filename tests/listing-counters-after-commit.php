@@ -18,6 +18,7 @@
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
+require_once __DIR__ . '/lib/race.php';
 
 use mindstellar\database\Db;
 use mindstellar\listing\ListingStats;
@@ -113,22 +114,8 @@ pin('category down after commit', $before - 1, $catCount($cat));
 harness_section('two posts under one category at the same time');
 $dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
 $start  = $catCount($cat);
-$admin->begin_transaction();
-$admin->query("UPDATE {$p}t_category SET i_num_items = i_num_items + 1 WHERE pk_i_id = $cat");
-$child = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/listing-counter-child.php', $dbName, (string) $sue, (string) $cat], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-$watch = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
-$waiting = 0;
-for ($try = 0; $try < 400 && $waiting < 1; $try++) {
-    usleep(50000);
-    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE '%t_category SET i_num_items%'")->fetch_row()[0];
-    if ($waiting === 0 && proc_get_status($child)['running'] === false) {
-        break;
-    }
-}
-$watch->close();
-$admin->commit();
-$printed = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
-proc_close($child);
+[, $out] = race($admin, "UPDATE {$p}t_category SET i_num_items = i_num_items + 1 WHERE pk_i_id = $cat", $dbName, [[__DIR__ . '/lib/listing-counter-child.php', [$sue, $cat]]], '%t_category SET i_num_items%');
+$printed = $out[0];
 pin('the poster is not failed by the other post', 'ok', trim($printed));
 pin('both posts are counted', $start + 2, $catCount($cat));
 
