@@ -411,6 +411,19 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_variant (
         FOREIGN KEY (fk_i_resource_id) REFERENCES /*TABLE_PREFIX*/t_resource (pk_i_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_item_facet (
+    s_key VARCHAR(48) NOT NULL,
+    s_value VARCHAR(191) NOT NULL,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    fk_i_variant_id INT UNSIGNED NOT NULL DEFAULT 0,
+    d_number DOUBLE NULL,
+
+        PRIMARY KEY (s_key, s_value, fk_i_item_id, fk_i_variant_id),
+        INDEX idx_item (fk_i_item_id),
+        INDEX idx_number (s_key, d_number),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_item_id INT UNSIGNED NOT NULL,
