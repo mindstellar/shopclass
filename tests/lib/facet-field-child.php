@@ -13,7 +13,8 @@
  * "threw <class>: <message>".
  *
  * Usage:  php tests/lib/facet-field-child.php <database> <mode> <listing id> <user id> <field id> <value>
- * Modes: edit (a listing save carrying the value), replace (Field::replace() on its own)
+ * Modes: edit (a listing save carrying the value), replace (Field::replace() on its own),
+ * build (FacetIndex::buildStep() over that one listing; the value is unused)
  */
 
 [, $database, $mode, $itemId, $userId, $fieldId, $value] = $argv;
@@ -37,6 +38,9 @@ $userId = (int) $userId;
 try {
     if ($mode === 'replace') {
         $done = Field::getInstance()->replace($itemId, (int) $fieldId, $value);
+    } elseif ($mode === 'build') {
+        \mindstellar\search\FacetIndex::buildStep($itemId - 1, 1);
+        $done = true;
     } else {
         $actor = Actor::admin(1, '192.0.2.82');
         $form  = [

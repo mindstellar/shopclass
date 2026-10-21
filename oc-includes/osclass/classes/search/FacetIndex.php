@@ -224,8 +224,9 @@ final class FacetIndex
     }
 
     /**
-     * Rewrite a listing's rows: all of them, or only one field's. Reads lock what they read
-     * (variants, then meta, as the writers do) so a batch never holds an old snapshot.
+     * Rewrite a listing's rows: all of them, or only one field's. Reads lock what they read and
+     * come before the index write (variants, meta, then the index, as the writers do), so a
+     * build waits for a save in progress and never holds an old snapshot or deadlocks with it.
      *
      * @throws DbException
      */
@@ -233,14 +234,11 @@ final class FacetIndex
     {
         $rows = [];
         if ($fieldId === null) {
-            Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ?', [$itemId]);
             $variants = Db::select(
                 'SELECT pk_i_id, s_options FROM ' . DB_TABLE_PREFIX . 't_item_variant WHERE fk_i_item_id = ? ORDER BY pk_i_id FOR UPDATE',
                 [$itemId]
             );
             $rows = self::variantRows($itemId, $variants);
-        } else {
-            self::deleteField($itemId, $fieldId);
         }
 
         $sql    = 'SELECT m.fk_i_field_id, m.s_multi, m.s_value, f.e_type FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
@@ -262,6 +260,11 @@ final class FacetIndex
         }
         foreach ($fields as $id => $field) {
             $rows = array_merge($rows, self::fieldRows($itemId, $id, $field['storage'], $field['value']));
+        }
+        if ($fieldId === null) {
+            Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ?', [$itemId]);
+        } else {
+            self::deleteField($itemId, $fieldId);
         }
         self::insert($rows);
     }

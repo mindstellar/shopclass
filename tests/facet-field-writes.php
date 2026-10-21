@@ -12,7 +12,8 @@
  * Custom field writers keep t_item_facet in step: Field::replace() writes the rows of each
  * storage type (and removes them for an empty value), deleting a field drops its rows and still
  * fires both hooks, a type change that changes the storage queues one rebuild job for that field,
- * and a listing save or a plugin's own replace() waits for a held meta row and then writes both.
+ * a listing save or a plugin's own replace() waits for a held meta row and then writes both, and
+ * the index build and a save on one listing wait for each other in either order.
  *
  * Usage: php tests/facet-field-writes.php
  */
@@ -230,5 +231,33 @@ harness_section('a plugin calling replace() on its own waits too');
 pin('replace waited on the held meta row', 1, $waiting);
 pin('and then succeeded', 'ok', $out);
 pin('the facet row matches the meta row', ['Plugin', ["f$raced=Plugin|-"]], [$value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $one AND fk_i_field_id = $raced"), $facet($one)]);
+
+harness_section('a build waits for a save in progress');
+$built = seed_item($admin, $cat, $sue);
+$dao->replace($built, $raced, 'Old');
+// The save's first half: the meta row, held uncommitted.
+race_hold($admin, "UPDATE {$p}t_item_meta SET s_value = 'New' WHERE fk_i_item_id = $built AND fk_i_field_id = $raced");
+$run     = race_run($child, $db, ['build', $built, $sue, $raced, '']);
+$waiting = race_wait_for($db, '%t_item_meta%LOCK IN SHARE MODE%');
+// Its second half, the index row: the waiting build must not hold it.
+$admin->query("DELETE FROM {$p}t_item_facet WHERE fk_i_item_id = $built AND s_key = 'f$raced'");
+$admin->query("INSERT INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) VALUES ('f$raced', 'New', $built, 0)");
+$out = race_release($admin, [$run]);
+preg_match('/^(ok|false|threw.*)$/m', $out[0], $m);
+pin('the build waited on the meta read', 1, $waiting);
+pin('and then succeeded', 'ok', $m[1] ?? trim($out[0]));
+pin('the facet row matches the committed meta', ["f$raced=New|-"], $facet($built));
+
+harness_section('a save waits for a build in progress');
+\mindstellar\database\Db::beginTransaction();
+FacetIndex::rewriteItem($built);
+$run     = race_run($child, $db, ['replace', $built, $sue, $raced, 'Later']);
+$waiting = race_wait_for($db, '%REPLACE INTO%t_item_meta%');
+\mindstellar\database\Db::commit();
+$out = race_release($admin, [$run]);
+preg_match('/^(ok|false|threw.*)$/m', $out[0], $m);
+pin('the save waited on the meta row the build read', 1, $waiting);
+pin('and then succeeded', 'ok', $m[1] ?? trim($out[0]));
+pin('meta and facet row both hold the save', ['Later', ["f$raced=Later|-"]], [$value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $built AND fk_i_field_id = $raced"), $facet($built)]);
 
 exit(harness_result());
