@@ -101,7 +101,7 @@ final class ListingStore extends Model
      */
     public static function heldPast(string $before, int $limit): array
     {
-        // The id is cast to ascii_bin, as s_unique is, so the lookup uses the whole unique key.
+        // The id is cast to ascii_bin, as s_unique is, so the two compare without a collation error.
         return Db::select(
             'SELECT i.pk_i_id, i.s_secret FROM ' . self::tableName() . ' i'
             . ' WHERE ' . ListingStatus::heldSql('i.') . ' AND i.dt_expiration < ?'

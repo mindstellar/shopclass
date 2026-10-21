@@ -84,7 +84,7 @@ final class ListingService
         $files   = $tooSoon || empty($data['photos']['error']) ? null : $data['photos'];
 
         return $this->write(
-            fn (array &$notices): array => $this->checkAdd($data, $actor, $import, $tooSoon, $notices),
+            fn (array &$notices): array => $this->checkAdd($data, $actor, $tooSoon, $notices),
             fn (array $checked): SavedListing => $this->insert($checked, $actor, $import),
             $files,
             $files === null ? null : PhotoService::cap(isset($data['userId']) ? (int) $data['userId'] : null)
@@ -831,7 +831,7 @@ final class ListingService
      * @return array{item:array<string,mixed>,meta:mixed,spam:int,active:string}
      * @throws InvalidException with the form's errors
      */
-    private function checkAdd(array $data, Actor $actor, bool $import, bool $tooSoon, array &$notices): array
+    private function checkAdd(array $data, Actor $actor, bool $tooSoon, array &$notices): array
     {
         $aItem   = osc_apply_filter('item_add_prepare_data', $data);
         $is_spam = 0;
