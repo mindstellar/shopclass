@@ -14,14 +14,14 @@ use mindstellar\search\FacetIndex;
 
 /**
  * Add t_item_facet, the filter index of custom field values and variant options, and fill it
- * from the existing listings. Up to 20,000 listings are indexed here; more go to a background
+ * from the existing listings. Up to 5,000 listings are indexed here; more go to a background
  * job. Safe to re-run: the table is made only when missing and a ready index is not rebuilt.
  *
  * @title Listing filter index
  */
 return new class () implements MigrationInterface {
     /** Largest site indexed inside the upgrade request. */
-    public const INLINE_LIMIT = 20000;
+    public const INLINE_LIMIT = 5000;
 
     /**
      * @param Connection $conn
@@ -81,6 +81,10 @@ return new class () implements MigrationInterface {
             return;
         }
 
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        ignore_user_abort(true);
         $after = 0;
         while (($after = FacetIndex::buildStep($after, FacetIndex::BATCH)) !== null) {
         }

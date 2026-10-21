@@ -106,6 +106,6 @@ pin('the flag stays off', '0', $pref('facet_ready'));
 pin('one build job at the start', [['after' => 0]], array_map(static fn (array $r): array => json_decode($r[0], true), $jobs()));
 $migration->build($conn, 2);
 pin('a second call queues no second job', 1, count($jobs()));
-pin('the inline limit is 20000', 20000, $migration::INLINE_LIMIT);
+pin('the inline limit is 5000', 5000, $migration::INLINE_LIMIT);
 
 exit(harness_result());
