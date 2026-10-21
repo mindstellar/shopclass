@@ -149,6 +149,21 @@ FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => '{"Size":"
 pin('option names that differ only by case give one row', ["oSize=M|$v1|-"], $facet($item));
 FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => null]]);
 
+$solo = seed_item($admin, $cat);
+$s1   = seed_exec($admin, "INSERT INTO {$p}t_item_variant (fk_i_item_id, s_options) VALUES (?, ?)", 'is', [$solo, '{"Colour":"Red","Size":"M"}']);
+$s2   = seed_exec($admin, "INSERT INTO {$p}t_item_variant (fk_i_item_id, s_options) VALUES (?, ?)", 'is', [$solo, '{"Colour":"Blue","Size":"L"}']);
+FacetIndex::insertVariants($solo, [['pk_i_id' => $s1, 's_options' => '{"Colour":"Red","Size":"M"}'], ['pk_i_id' => $s2, 's_options' => '{"Colour":"Blue","Size":"L"}']]);
+pin('insertVariants writes the rows of the rows given', ["oColour=Blue|$s2|-", "oColour=Red|$s1|-", "oSize=L|$s2|-", "oSize=M|$s1|-"], $facet($solo));
+FacetIndex::dropVariants($solo, [$s2]);
+pin('dropVariants with ids drops only those variants', ["oColour=Red|$s1|-", "oSize=M|$s1|-"], $facet($solo));
+FacetIndex::insertVariants($solo, [['pk_i_id' => $s2, 's_options' => '{"Colour":"Blue","Size":"XL"}']]);
+pin('insertVariants after dropVariants([id]) leaves the other variant untouched', ["oColour=Blue|$s2|-", "oColour=Red|$s1|-", "oSize=M|$s1|-", "oSize=XL|$s2|-"], $facet($solo));
+pin('dropVariants with no ids runs nothing', 0, harness_query_count(static fn () => FacetIndex::dropVariants($solo, [])));
+pin('insertVariants with no rows runs nothing', 0, harness_query_count(static fn () => FacetIndex::insertVariants($solo, [])));
+FacetIndex::dropVariants($solo);
+pin('dropVariants with null drops every option row', [], $facet($solo));
+$admin->query("DELETE FROM {$p}t_item WHERE pk_i_id = $solo");
+
 harness_section('rewriteItem');
 $admin->query("DELETE FROM {$p}t_item_meta");
 foreach ([[$drop, '', 'Red'], [$check, '', '1'], [$num, '', '7'], [$span, 'from', '1700000000'], [$span, 'to', '1700086400']] as [$f, $multi, $val]) {

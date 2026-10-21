@@ -257,11 +257,33 @@ final class FacetIndex
     }
 
     /**
+     * Write the option rows of new variants.
+     *
+     * @param array<int,array<string,mixed>> $rows t_item_variant rows: pk_i_id and s_options
+     *
      * @throws DbException only when the caller's transaction was lost
      */
-    public static function dropVariants(int $itemId): void
+    public static function insertVariants(int $itemId, array $rows): void
     {
-        self::guard(static fn () => self::deleteVariants($itemId, null));
+        if ($rows === []) {
+            return;
+        }
+        self::guard(static fn () => self::insert($itemId, self::variantRows($rows)));
+    }
+
+    /**
+     * Remove the option rows of these variants, or of every variant of the listing when null.
+     *
+     * @param int[]|null $variantIds
+     *
+     * @throws DbException only when the caller's transaction was lost
+     */
+    public static function dropVariants(int $itemId, ?array $variantIds = null): void
+    {
+        if ($variantIds === []) {
+            return;
+        }
+        self::guard(static fn () => self::deleteVariants($itemId, $variantIds));
     }
 
     /**
