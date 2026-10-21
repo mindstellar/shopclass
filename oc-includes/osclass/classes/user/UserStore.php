@@ -13,8 +13,13 @@ declare(strict_types=1);
 namespace mindstellar\user;
 
 use mindstellar\base\Model;
+use mindstellar\comment\CommentQuery;
 use mindstellar\database\Db;
+use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\ListingStore;
+use mindstellar\listing\VariantStore;
+use mindstellar\search\AlertStore;
 
 /**
  * Writes on t_user and on the rows an account owns elsewhere, plus the small reads the
@@ -56,12 +61,12 @@ final class UserStore extends Model
      */
     public static function lockOwned(int $userId): void
     {
-        $p = DB_TABLE_PREFIX;
         self::lock($userId);
-        $items = self::lockIds('SELECT pk_i_id FROM ' . $p . 't_item WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', $userId);
-        self::lockByItems($items);
-        self::lockIds('SELECT pk_i_id FROM ' . $p . 't_item_comment WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', $userId);
-        self::lockIds('SELECT pk_i_id FROM ' . $p . 't_alerts WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', $userId);
+        $items = ListingStore::lockByUser($userId);
+        ListingCounters::lockByItems($items);
+        VariantStore::lockByItems($items);
+        CommentQuery::lockByUser($userId);
+        AlertStore::lockByUser($userId);
     }
 
     /**
@@ -75,38 +80,10 @@ final class UserStore extends Model
         if ($email === '') {
             return;
         }
-        $p     = DB_TABLE_PREFIX;
-        $items = self::lockIds('SELECT pk_i_id FROM ' . $p . 't_item WHERE s_contact_email = ? AND fk_i_user_id IS NULL ORDER BY pk_i_id FOR UPDATE', $email);
-        self::lockByItems($items);
-        self::lockIds('SELECT pk_i_id FROM ' . $p . 't_alerts WHERE s_email = ? AND (fk_i_user_id IS NULL OR fk_i_user_id = 0) ORDER BY pk_i_id FOR UPDATE', $email);
-    }
-
-    /**
-     * Lock the stats row and the variant rows of these listings.
-     *
-     * @param int[] $items
-     */
-    private static function lockByItems(array $items): void
-    {
-        $p = DB_TABLE_PREFIX;
-        foreach (array_chunk($items, 500) as $chunk) {
-            $in = implode(',', array_fill(0, count($chunk), '?'));
-            Db::select('SELECT fk_i_item_id FROM ' . $p . 't_item_stats WHERE fk_i_item_id IN (' . $in . ') ORDER BY fk_i_item_id FOR UPDATE', $chunk);
-        }
-        foreach (array_chunk($items, 500) as $chunk) {
-            $in = implode(',', array_fill(0, count($chunk), '?'));
-            Db::select('SELECT pk_i_id FROM ' . $p . 't_item_variant WHERE fk_i_item_id IN (' . $in . ') ORDER BY pk_i_id FOR UPDATE', $chunk);
-        }
-    }
-
-    /**
-     * Run a locking read with one parameter and return the first column as ints.
-     *
-     * @return int[]
-     */
-    private static function lockIds(string $sql, int|string $param): array
-    {
-        return array_map('intval', array_column(Db::select($sql, [$param]), 'pk_i_id'));
+        $items = ListingStore::lockGuest($email);
+        ListingCounters::lockByItems($items);
+        VariantStore::lockByItems($items);
+        AlertStore::lockGuest($email);
     }
 
     /**

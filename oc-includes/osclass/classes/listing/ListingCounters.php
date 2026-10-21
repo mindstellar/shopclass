@@ -47,6 +47,21 @@ final class ListingCounters extends Model
     );
 
     /**
+     * Lock the stats rows of these listings in listing id order.
+     *
+     * @param int[] $itemIds
+     *
+     * @throws DbException
+     */
+    public static function lockByItems(array $itemIds): void
+    {
+        foreach (array_chunk($itemIds, 500) as $chunk) {
+            $in = implode(',', array_fill(0, count($chunk), '?'));
+            Db::select('SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_stats WHERE fk_i_item_id IN (' . $in . ') ORDER BY fk_i_item_id FOR UPDATE', $chunk);
+        }
+    }
+
+    /**
      * Count one view. Does nothing when views are switched off.
      */
     public static function addView(int $itemId): bool

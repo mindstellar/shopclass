@@ -84,6 +84,21 @@ final class VariantStore extends Model
     }
 
     /**
+     * Lock the variant rows of these listings in primary key order.
+     *
+     * @param int[] $itemIds
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockByItems(array $itemIds): void
+    {
+        foreach (array_chunk($itemIds, 500) as $chunk) {
+            $in = implode(',', array_fill(0, count($chunk), '?'));
+            Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item_variant WHERE fk_i_item_id IN (' . $in . ') ORDER BY pk_i_id FOR UPDATE', $chunk);
+        }
+    }
+
+    /**
      * The variants of these listings, by listing id. A listing with none has no entry.
      *
      * @param int[] $itemIds

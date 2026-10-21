@@ -56,10 +56,36 @@ final class ListingStore extends Model
         if ($row === null) {
             return null;
         }
-        Db::select('SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_stats WHERE fk_i_item_id = ? FOR UPDATE', array($id));
-        Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item_variant WHERE fk_i_item_id = ? ORDER BY pk_i_id FOR UPDATE', array($id));
+        ListingCounters::lockByItems(array($id));
+        VariantStore::lockByItems(array($id));
 
         return $row;
+    }
+
+    /**
+     * Lock a user's listings in primary key order.
+     *
+     * @return int[] the listing ids
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockByUser(int $userId): array
+    {
+        $rows = Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', array($userId));
+
+        return array_map('intval', array_column($rows, 'pk_i_id'));
+    }
+
+    /**
+     * Lock the guest listings posted with this e-mail in primary key order.
+     *
+     * @return int[] the listing ids
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockGuest(string $email): array
+    {
+        $rows = Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item WHERE s_contact_email = ? AND fk_i_user_id IS NULL ORDER BY pk_i_id FOR UPDATE', array($email));
+
+        return array_map('intval', array_column($rows, 'pk_i_id'));
     }
 
     /**
