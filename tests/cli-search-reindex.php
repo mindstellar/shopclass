@@ -110,6 +110,11 @@ pin('an unrelated table queues nothing', 0, $jobs());
 FacetJobs::afterRepair(["CREATE TABLE IF NOT EXISTS `$facet` (id INT)"]);
 pin('the index table clears the flag', '0', $flag());
 pin('the index table queues one build', 1, $jobs());
+$setFlag('1');
+$admin->query("DELETE FROM {$p}t_job_queue");
+FacetJobs::afterRepair(["CREATE TABLE IF NOT EXISTS `{$p}t_facet_term` (id INT)"]);
+pin('the term table clears the flag', '0', $flag());
+pin('the term table queues one build', 1, $jobs());
 
 harness_section('Command list');
 $cli = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/cli/Cli.php');
