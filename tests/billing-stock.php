@@ -19,6 +19,7 @@
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
+require_once __DIR__ . '/lib/race.php';
 
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
@@ -248,7 +249,7 @@ OrderStore::cancel($held->getId());
 harness_section('a payment and a cancel on one order');
 foreach (['offline', 'card'] as $via) {
     $one = $place([['variant' => $a, 'qty' => 1]], $via);
-    [$waiting, $printed] = $race([[$one->getId(), 'pay'], [$one->getId(), 'cancel']], $lockOrder($one), "UPDATE %t_billing_order%");
+    [$waiting, $printed] = $race([[$one->getId(), 'pay'], [$one->getId(), 'cancel']], $lockOrder($one), "%t_billing_order%");
     $now = OrderStore::find($one->getId());
     pin("$via: both waited on the order row", 2, $waiting);
     pin("$via: exactly one wins, neither throws", [1, 0], [substr_count($printed, 'taken') + substr_count($printed, 'cancelled'), substr_count($printed, 'threw')]);
@@ -258,6 +259,15 @@ foreach (['offline', 'card'] as $via) {
     }
     pin("$via: and is whole again after", '5', $stock($a));
 }
+
+harness_section('a cancel while a payment of the same order commits');
+$child = __DIR__ . '/lib/order-pay-child.php';
+$held  = $place([['variant' => $a, 'qty' => 1]], 'offline');
+[$waiting, $out] = race($admin, "UPDATE {$p}t_billing_order SET s_status = 'paid', dt_paid_date = NOW() WHERE pk_i_id = {$held->getId()}", $dbName, [[$child, [$held->getId(), 'cancel']]], "%{$p}t_billing_order%");
+pin('the cancel waited on the order row', 1, $waiting);
+pin('it finds the order paid and keeps it, without an error', "kept\n", $out[0]);
+pin('the order stays paid and keeps its stock', [true, '4'], [OrderStore::find($held->getId())->isPaid(), $stock($a)]);
+Billing::refund(OrderStore::find($held->getId()));
 
 harness_section('two orders taking the same two variants in opposite order');
 $setStock($r, 5);
