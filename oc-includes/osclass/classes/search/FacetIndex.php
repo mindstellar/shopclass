@@ -701,7 +701,9 @@ final class FacetIndex
     /**
      * Resolve the rows' terms and write them. Rows equal under the table's collation (option
      * names Size and SIZE) are written once. A row whose term this transaction cannot see yet
-     * is left out, and the listing is rebuilt once the transaction commits.
+     * is left out, and the listing is rebuilt once the transaction commits. A term a prune or
+     * another process deleted since it was cached fails the foreign key; the write is then
+     * tried once more with the cache dropped.
      *
      * @param array<int,array{0:string,1:string,2:int,3:float}> $rows key, term value, variant, number
      *
@@ -712,6 +714,32 @@ final class FacetIndex
         if ($rows === []) {
             return;
         }
+        try {
+            $later = self::writeRows($itemId, $rows);
+        } catch (DbException $e) {
+            Db::assertIntact();
+            self::forgetTypes();
+            $later = self::writeRows($itemId, $rows);
+        }
+        if ($later) {
+            Db::afterCommit(static function () use ($itemId): void {
+                try {
+                    self::rebuildLocked($itemId, null);
+                } catch (DbException $e) {
+                    self::queueRebuild($e);
+                }
+            });
+        }
+    }
+
+    /**
+     * @param array<int,array{0:string,1:string,2:int,3:float}> $rows
+     *
+     * @return bool true when a row was left out for a term this transaction cannot see yet
+     * @throws DbException
+     */
+    private static function writeRows(int $itemId, array $rows): bool
+    {
         $pairs = [];
         foreach ($rows as [$key, $value]) {
             $pairs[$key][$value] = $value;
@@ -727,15 +755,6 @@ final class FacetIndex
             }
             $values[] = [$term, $number, $itemId, $variant];
         }
-        if ($later) {
-            Db::afterCommit(static function () use ($itemId): void {
-                try {
-                    self::rebuildLocked($itemId, null);
-                } catch (DbException $e) {
-                    self::queueRebuild($e);
-                }
-            });
-        }
         // Not INSERT IGNORE: that would also hide a row naming a term that is gone.
         foreach (array_chunk($values, self::ROWS_PER_INSERT) as $chunk) {
             Db::execute(
@@ -745,5 +764,7 @@ final class FacetIndex
                 array_merge(...$chunk)
             );
         }
+
+        return $later;
     }
 }
