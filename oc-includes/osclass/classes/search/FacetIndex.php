@@ -27,7 +27,7 @@ final class FacetIndex
     public const TABLE      = 't_item_facet';
     public const JOB_BUILD  = 'search.facet_build';
     public const JOB_FIELD  = 'search.facet_field';
-    public const BATCH      = 2000;
+    public const BATCH      = 500;
     public const VALUE_LEN  = 191;
     public const PREF_READY = 'facet_ready';
     public const PREF_BUILT = 'facet_built_at';
@@ -131,7 +131,8 @@ final class FacetIndex
     }
 
     /**
-     * Rebuild the next listings after $after in one transaction, or only one field's rows of them.
+     * Rebuild the next listings after $after, or only one field's rows of them. Each listing is
+     * its own transaction, so a save waits for one listing at most, never the whole batch.
      *
      * @return int|null the last listing id done, or null when the batch was short
      * @throws \mindstellar\database\DbException
@@ -145,14 +146,13 @@ final class FacetIndex
         if ($ids === []) {
             return null;
         }
-        Db::transaction(static function () use ($ids, $fieldId): void {
-            foreach ($ids as $id) {
-                if (ListingStore::find($id, ['pk_i_id'], true) === null) {
-                    continue;
+        foreach ($ids as $id) {
+            Db::transaction(static function () use ($id, $fieldId): void {
+                if (ListingStore::find($id, ['pk_i_id'], true) !== null) {
+                    self::rewriteScoped($id, $fieldId);
                 }
-                self::rewriteScoped($id, $fieldId);
-            }
-        });
+            });
+        }
 
         return count($ids) < $limit ? null : (int) end($ids);
     }
