@@ -43,7 +43,7 @@ final class FacetIndex
     private const TERMS_PER_SELECT = 200;
     private const PRUNE_RANGE = 2000;
     private const ER_NO_REFERENCED_ROW = 1452;
-    private const PACK_LOCK_WAIT = 10;
+    private const PACK_LOCK_WAIT = 2;
     private const PACK_WEB_MAX_BYTES = 128 * 1024 * 1024;
 
     private static bool $tablePresent = false;
