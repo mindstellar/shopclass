@@ -300,6 +300,45 @@ pin('a rolled-back term is gone', [], $term('oBack', 'Out'));
 $back = FacetIndex::ensureTerms(['oBack' => ['Out']]);
 pin('and is not remembered: ensureTerms makes it again', $term('oBack', 'Out'), [$back['oBack']['Out']]);
 
+harness_section('term locking, order and cache');
+FacetIndex::forgetTypes();
+$ordered = FacetIndex::ensureTerms(['oZeta' => ['b', 'a'], 'oAlpha' => ['c']]);
+pin('terms are made in key and value order, so two writers lock them alike', true, $ordered['oAlpha']['c'] < $ordered['oZeta']['a'] && $ordered['oZeta']['a'] < $ordered['oZeta']['b']);
+
+FacetIndex::forgetTypes();
+$seen = null;
+Db::transaction(static function () use ($admin, $p, &$seen): void {
+    Db::select('SELECT COUNT(*) FROM ' . FacetIndex::termTable());
+    $admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('oLocked', 'Other')");
+    $seen = FacetIndex::ensureTerms(['oLocked' => ['Other']]);
+});
+pin('ensureTerms reads with a lock, so it finds a term committed after its snapshot', [$term('oLocked', 'Other')[0]], [$seen['oLocked']['Other'] ?? null]);
+
+FacetIndex::forgetTypes();
+$inside = null;
+try {
+    Db::transaction(static function () use (&$inside): void {
+        FacetIndex::ensureTerms(['oTemp' => ['Gone']]);
+        $inside = FacetIndex::termIds(['oTemp' => ['Gone']]);
+
+        throw new RuntimeException('roll back');
+    });
+} catch (RuntimeException $e) {
+}
+check('inside the transaction the term is found', isset($inside['oTemp']['Gone']));
+pin('a term made by an open transaction is not remembered, so a rollback leaves nothing stale', [], FacetIndex::termIds(['oTemp' => ['Gone']]));
+
+FacetIndex::forgetTypes();
+Db::transaction(static function (): void {
+    FacetIndex::ensureTerms(['oKept' => ['Yes']]);
+});
+pin('a term made by a transaction that committed is remembered', 0, harness_query_count(static fn () => FacetIndex::termIds(['oKept' => ['Yes']])));
+
+FacetIndex::ensureTerms(['oPruned' => ['Value']]);
+pin('the term is remembered', 0, harness_query_count(static fn () => FacetIndex::termIds(['oPruned' => ['Value']])));
+FacetIndex::pruneTerms();
+pin('pruneTerms drops the remembered ids, so a pruned term is not returned', [], FacetIndex::termIds(['oPruned' => ['Value']]));
+
 harness_section('a term another writer made after the snapshot');
 $teal = $field('DROPDOWN');
 $late = seed_item($admin, $cat);
