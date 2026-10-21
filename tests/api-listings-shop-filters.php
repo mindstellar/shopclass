@@ -18,6 +18,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\listing\VariantStore;
+use mindstellar\search\FacetIndex;
 
 $admin = api_admin_boot('osc_api_shop_filters');
 $p     = DB_TABLE_PREFIX;
@@ -69,6 +70,28 @@ $low = static function (int $listing) use ($call, $key): mixed {
     $variant = $r->body()['data']['product']['variants'][0] ?? [];
 
     return array_key_exists('low_stock', $variant) ? $variant['low_stock'] : 'missing';
+};
+
+// Runs a list call with the filter index off, then on; the first answer is returned when both
+// agree, else a marker so the pin that asked fails. $facetSql keeps the condition text of each run.
+$facetSql = [];
+$bothWays = static function (callable $run) use (&$facetSql): mixed {
+    $out = [];
+    foreach ([false, true] as $ready) {
+        $ready ? FacetIndex::markReady() : FacetIndex::markStale();
+        $seen = '';
+        osc_add_filter('sql_search_conditions', static function (array $c) use (&$seen): array {
+            $seen = implode(' AND ', $c);
+
+            return $c;
+        }, 'facet_probe');
+        $out[$ready ? 'on' : 'off'] = $run();
+        osc_remove_filter('sql_search_conditions', 'facet_probe');
+        $facetSql[$ready ? 'on' : 'off'] = $seen;
+    }
+    FacetIndex::markStale();
+
+    return $out['off'] === $out['on'] ? $out['off'] : ['differs' => $out];
 };
 
 harness_section('low_stock');
@@ -149,7 +172,7 @@ foreach ($shirts as $title => $rows) {
     $shirt[$title] = seed_item($admin, $tees, $sue, $title, 10.0);
     VariantStore::saveSet($shirt[$title], array_map(static fn (array $r): array => ['options' => ['Colour' => $r[0], 'Size' => $r[1], 'Fit' => 'Slim'], 'fields' => ['i_price' => 10000000, 'i_stock' => $r[2]]], $rows));
 }
-$inTees = static fn (array $query): array => $names($list($query + ['category' => (string) $tees]));
+$inTees = static fn (array $query): array => $bothWays(static fn (): array => $names($list($query + ['category' => (string) $tees, 'limit' => 48])));
 pin('one value', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['Cherry']]]));
 pin('values of one name are OR', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['Navy', 'Sunflower']]]));
 pin('names are AND, on one variant', ['Tee'], $inTees(['option' => ['Colour' => ['Cherry'], 'Size' => ['M']]]));
@@ -175,10 +198,42 @@ pin('an empty value beside a real one is dropped', ['Polo', 'Tee'], $inTees(['op
 $legs = seed_category($admin, 'Legwear', null, $locale);
 VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Jeans', 10.0), [['options' => ['Waist Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
 VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Shorts', 10.0), [['options' => ['Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
-pin('a name matches whole, not the end of a longer name', ['Shorts'], $names($list(['option' => ['Size' => ['M']], 'category' => (string) $legs])));
-pin('a listing with no option rows never matches', [], $names($list(['option' => ['Colour' => ['Red']], 'category' => (string) $cat])));
-$r = $list(['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'count' => 'true']);
-pin('the total follows the filter', 2, $r->body()['meta']['total'] ?? null);
+pin('a name matches whole, not the end of a longer name', ['Shorts'], $bothWays(static fn (): array => $names($list(['option' => ['Size' => ['M']], 'category' => (string) $legs]))));
+pin('a listing with no option rows never matches', [], $bothWays(static fn (): array => $names($list(['option' => ['Colour' => ['Red']], 'category' => (string) $cat]))));
+pin('the total follows the filter', 2, $bothWays(static fn (): mixed => $list(['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'count' => 'true'])->body()['meta']['total'] ?? null));
+$pairs = seed_category($admin, 'Pairs', null, $locale);
+pin('Colour=Red and Size=M on one variant, Red/L is not a match', [['Tee'], []], (static function () use ($admin, $pairs, $sue, $bothWays, $names, $list): array {
+    $rb = seed_item($admin, $pairs, $sue, 'Red Blue', 10.0);
+    VariantStore::saveSet($rb, [
+        ['options' => ['Colour' => 'Red', 'Size' => 'M'], 'fields' => ['i_stock' => 1]],
+        ['options' => ['Colour' => 'Blue', 'Size' => 'L'], 'fields' => ['i_stock' => 1]],
+    ]);
+    $ask = static fn (array $o): array => $bothWays(static fn (): array => $names($list(['option' => $o, 'category' => (string) $pairs])));
+
+    return [$ask(['Colour' => ['Red'], 'Size' => ['M']]) === ['Red Blue'] ? ['Tee'] : 'wrong', $ask(['Colour' => ['Red'], 'Size' => ['L']])];
+})());
+pin('option and in_stock need one variant for both: Red is sold out, Blue is in stock', [[], ['Stocky']], (static function () use ($admin, $pairs, $sue, $bothWays, $names, $list): array {
+    $it = seed_item($admin, $pairs, $sue, 'Stocky', 10.0);
+    VariantStore::saveSet($it, [
+        ['options' => ['Hue' => 'Red'], 'fields' => ['i_stock' => 0]],
+        ['options' => ['Hue' => 'Blue'], 'fields' => ['i_stock' => 4]],
+    ]);
+    $ask = static fn (string $hue): array => $bothWays(static fn (): array => $names($list(['option' => ['Hue' => [$hue]], 'in_stock' => 'true', 'category' => (string) $pairs])));
+
+    return [$ask('Red'), $ask('Blue')];
+})());
+pin('the compiled SQL names the filter index only when it is ready', [false, true], (static function () use ($bothWays, $list, $facetSql, $tees): array {
+    $bothWays(static fn (): mixed => $list(['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees]));
+    global $facetSql;
+
+    return [str_contains($facetSql['off'], 'item_facet'), str_contains($facetSql['on'], 'item_facet')];
+})());
+pin('in_stock alone never reads the filter index', false, (static function () use ($bothWays, $list): bool {
+    $bothWays(static fn (): mixed => $list(['in_stock' => 'true']));
+    global $facetSql;
+
+    return str_contains($facetSql['on'], 'item_facet');
+})());
 pin('option filters keep paging', ['Polo', 'Tee'], (static function () use ($call, $key, $tees): array {
     $q     = ['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'limit' => 1];
     $first = $call('GET', 'listings', null, $key, [], $q);
