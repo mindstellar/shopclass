@@ -28,7 +28,7 @@ return new class () implements MigrationInterface {
         $conn->execute(
             'UPDATE ' . DB_TABLE_PREFIX . 't_item i SET i.dt_first_pub_date = COALESCE(i.dt_pub_date, NOW())'
             . ' WHERE i.dt_first_pub_date IS NULL AND NOT EXISTS (SELECT 1 FROM ' . DB_TABLE_PREFIX . 't_job_queue j'
-            . " WHERE j.s_type = 'listing.unpaid_expire' AND j.s_unique = CAST(i.pk_i_id AS CHAR))"
+            . " WHERE j.s_type = 'listing.unpaid_expire' AND j.s_unique = CAST(i.pk_i_id AS CHAR CHARACTER SET ascii) COLLATE ascii_bin)"
         );
     }
 };
