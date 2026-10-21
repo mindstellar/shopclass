@@ -708,33 +708,39 @@ class Field extends DAO
     {
         $table = sprintf('%st_item_meta', DB_TABLE_PREFIX);
         try {
-            // The meta write and its filter rows commit together or not at all. Inside a
-            // listing save this joins that transaction; on its own it retries a deadlock once.
-            Db::retryOnce(static function () use ($table, $itemId, $field, $value): void {
-                $write = static function () use ($table, $itemId, $field, $value): void {
-                    if (is_array($value)) {
-                        foreach ($value as $key => $v) {
+            // Inside a listing save this joins that transaction; on its own it retries a deadlock once.
+            return Db::retryOnce(static fn () => Db::transaction(static function () use ($table, $itemId, $field, $value) {
+                if (is_array($value)) {
+                    // A failing key has never stopped the rest, and the method returns null.
+                    foreach ($value as $key => $v) {
+                        try {
                             Db::execute(
                                 'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_multi, s_value) VALUES (?, ?, ?, ?)',
                                 array($itemId, $field, $key, $v)
                             );
+                        } catch (DbException $e) {
+                            Db::assertIntact();
                         }
-                    } else {
+                    }
+                } else {
+                    try {
                         Db::execute(
                             'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_value) VALUES (?, ?, ?)',
                             array($itemId, $field, $value)
                         );
+                    } catch (DbException $e) {
+                        Db::assertIntact();
+
+                        return false;
                     }
-                    FacetIndex::rewriteField((int) $itemId, (int) $field, $value);
-                };
-                Db::transaction($write);
-            });
+                }
+                FacetIndex::rewriteField((int) $itemId, (int) $field, $value);
+
+                return is_array($value) ? null : true;
+            }));
         } catch (DbException $e) {
-            // Errors have always been discarded here; a scalar write reports false.
             return is_array($value) ? null : false;
         }
-
-        return is_array($value) ? null : true;
     }
 
     /**

@@ -117,6 +117,18 @@ $admin->query('CREATE TABLE ' . $p . 't_item_facet (s_key VARCHAR(48) NOT NULL, 
     . 'INDEX idx_item (fk_i_item_id), INDEX idx_number (s_key, d_number), FOREIGN KEY (fk_i_item_id) REFERENCES ' . $p . 't_item (pk_i_id) ON DELETE CASCADE) '
     . "ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'");
 
+harness_section('a map write is best effort per key');
+$pair = $field('DATEINTERVAL');
+$admin->query("CREATE TRIGGER {$p}meta_block BEFORE INSERT ON {$p}t_item_meta FOR EACH ROW BEGIN IF NEW.s_multi = 'bad' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'blocked'; END IF; END");
+pin('a map write returns null', null, $dao->replace($item, $pair, ['from' => '1700000000', 'bad' => 'x', 'to' => '1700086400']));
+$admin->query("DROP TRIGGER {$p}meta_block");
+pin('a failing key is skipped, the others are written', ['from' => '1700000000', 'to' => '1700086400'], array_column(
+    $admin->query("SELECT s_multi, s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $item AND fk_i_field_id = $pair ORDER BY s_multi")->fetch_all(MYSQLI_ASSOC),
+    's_value',
+    's_multi'
+));
+$dao->replace($item, $pair, ['from' => '', 'to' => '']);
+
 harness_section('deleting a field');
 $gone = $field('DROPDOWN');
 $dao->replace($item, $gone, 'Red');
