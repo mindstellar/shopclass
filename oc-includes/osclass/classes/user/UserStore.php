@@ -47,6 +47,69 @@ final class UserStore extends Model
     }
 
     /**
+     * Lock the user's row and everything the account owns that a profile save, a block or a
+     * delete touches: listings, their stats and variants, comments and alerts. Call it first in
+     * the transaction, before any plain SELECT, so a row another request changes meanwhile makes
+     * this one wait instead of failing with error 1020. Rows are taken in primary key order.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockOwned(int $userId): void
+    {
+        $p = DB_TABLE_PREFIX;
+        self::lock($userId);
+        $items = self::lockIds('SELECT pk_i_id FROM ' . $p . 't_item WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', $userId);
+        self::lockByItems($items);
+        self::lockIds('SELECT pk_i_id FROM ' . $p . 't_item_comment WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', $userId);
+        self::lockIds('SELECT pk_i_id FROM ' . $p . 't_alerts WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', $userId);
+    }
+
+    /**
+     * Lock the guest listings and alerts posted with this e-mail, which an account takes over
+     * once it is confirmed. Same rule as lockOwned(): before any plain SELECT.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockGuestListings(string $email): void
+    {
+        if ($email === '') {
+            return;
+        }
+        $p     = DB_TABLE_PREFIX;
+        $items = self::lockIds('SELECT pk_i_id FROM ' . $p . 't_item WHERE s_contact_email = ? AND fk_i_user_id IS NULL ORDER BY pk_i_id FOR UPDATE', $email);
+        self::lockByItems($items);
+        self::lockIds('SELECT pk_i_id FROM ' . $p . 't_alerts WHERE s_email = ? AND (fk_i_user_id IS NULL OR fk_i_user_id = 0) ORDER BY pk_i_id FOR UPDATE', $email);
+    }
+
+    /**
+     * Lock the stats row and the variant rows of these listings.
+     *
+     * @param int[] $items
+     */
+    private static function lockByItems(array $items): void
+    {
+        $p = DB_TABLE_PREFIX;
+        foreach (array_chunk($items, 500) as $chunk) {
+            $in = implode(',', array_fill(0, count($chunk), '?'));
+            Db::select('SELECT fk_i_item_id FROM ' . $p . 't_item_stats WHERE fk_i_item_id IN (' . $in . ') ORDER BY fk_i_item_id FOR UPDATE', $chunk);
+        }
+        foreach (array_chunk($items, 500) as $chunk) {
+            $in = implode(',', array_fill(0, count($chunk), '?'));
+            Db::select('SELECT pk_i_id FROM ' . $p . 't_item_variant WHERE fk_i_item_id IN (' . $in . ') ORDER BY pk_i_id FOR UPDATE', $chunk);
+        }
+    }
+
+    /**
+     * Run a locking read with one parameter and return the first column as ints.
+     *
+     * @return int[]
+     */
+    private static function lockIds(string $sql, int|string $param): array
+    {
+        return array_map('intval', array_column(Db::select($sql, [$param]), 'pk_i_id'));
+    }
+
+    /**
      * A user row with `b_family_live`: whether the API sign-in $family still has an unrevoked token.
      *
      * @return array<string,mixed>|null

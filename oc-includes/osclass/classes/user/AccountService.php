@@ -223,6 +223,9 @@ final class AccountService
 
                     throw self::refusal(_m('Your account could not be created. Please try again.'));
                 }
+                if ($admin) {
+                    UserStore::lockGuestListings((string) $input['s_email']);
+                }
                 if ($username === '') {
                     $input['s_username'] = Usernames::assignDefault($userId);
                 } else {
@@ -364,6 +367,7 @@ final class AccountService
         }
 
         return (int) DeferredMail::transaction(function () use ($userId, $form, $input, $admin, $actor, $newUsername, $newPassword): int {
+            UserStore::lockOwned($userId);
             $claim = $newUsername !== null ? Usernames::claim($userId, $newUsername, $admin) : 'ok';
             if ($claim === 'taken') {
                 throw self::refusal(_m('The specified username is already in use'));
@@ -416,6 +420,7 @@ final class AccountService
     public function editOwn(int $userId, ?array $form, string $newEmail, Actor $actor): void
     {
         DeferredMail::transaction(function () use ($userId, $form, $newEmail, $actor): void {
+            UserStore::lockOwned($userId);
             if ($form !== null) {
                 $this->update($userId, $form, $actor);
             }
@@ -439,6 +444,7 @@ final class AccountService
     public function adminEdit(int $userId, ?array $form, array $flags, Actor $actor): void
     {
         DeferredMail::transaction(function () use ($userId, $form, $flags, $actor): void {
+            UserStore::lockOwned($userId);
             if ($form !== null) {
                 $this->update($userId, $form, $actor);
             }
@@ -666,6 +672,7 @@ final class AccountService
         // Before the transaction opens, so a plugin that redirects from it leaves none open.
         osc_run_hook('before_user_delete', $user);
         DeferredMail::transaction(function () use ($userId, $user, $actor): void {
+            UserStore::lockOwned($userId);
             \Log::getInstance()->insertLog('user', 'delete', $userId, (string) $user['s_email'], $actor->logRole(), $actor->logId());
             if (!$this->users->deleteUser($userId)) {
                 throw new \RuntimeException('The user could not be deleted.');
@@ -688,6 +695,8 @@ final class AccountService
         }
 
         return (bool) DeferredMail::transaction(function () use ($userId, $user, $actor): bool {
+            UserStore::lockOwned($userId);
+            UserStore::lockGuestListings((string) $user['s_email']);
             $this->users->update(['b_active' => 1], ['pk_i_id' => $userId]);
             if (!$actor->isAdmin()) {
                 osc_run_hook('hook_email_admin_new_user', $user);
@@ -722,7 +731,9 @@ final class AccountService
             throw new ConflictException(_m('Your account has already been validated'));
         }
 
-        $done = (bool) Db::transaction(function () use ($userId, $hash): bool {
+        $done = (bool) Db::transaction(function () use ($userId, $hash, $user): bool {
+            UserStore::lock($userId);
+            UserStore::lockGuestListings((string) $user['s_email']);
             // A fresh plaintext secret replaces the used code; the account-delete link reads it.
             $updated = $this->users->update(
                 ['b_active' => '1', 's_secret' => osc_genRandomPassword()],
@@ -877,6 +888,7 @@ final class AccountService
         }
 
         return (bool) DeferredMail::transaction(function () use ($userId, $user, $actor, $column, $value, $logAction, $other, $itemAction, $hook): bool {
+            UserStore::lockOwned($userId);
             $this->users->update([$column => $value], ['pk_i_id' => $userId]);
             \Log::getInstance()->insertLog('user', $logAction, $userId, $user['s_email'], $actor->logRole(), $actor->logId());
             if ((int) $user[$other] === 1) {
@@ -888,6 +900,9 @@ final class AccountService
         });
     }
 
+    /**
+     * Run a listing action on each of the user's listings. The caller has taken UserStore::lockOwned().
+     */
     private function eachListing(int $userId, string $action): void
     {
         $listings = $this->listings ??= new ListingService();
