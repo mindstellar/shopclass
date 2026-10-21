@@ -39,6 +39,9 @@ final class FacetIndex
 
     private static bool $tablePresent = false;
 
+    /** @var array<int,string> storage primitive by field id, for this request */
+    private static array $storages = [];
+
     public static function tableName(): string
     {
         return DB_TABLE_PREFIX . self::TABLE;
@@ -76,6 +79,33 @@ final class FacetIndex
             'DATE'         => 'number',
             'DATEINTERVAL' => 'interval',
         ][$storage] ?? '';
+    }
+
+    /**
+     * The rowKind() of a field's storage. Reads the request's map first and the field on a miss;
+     * $fresh always reads the field, for a long-running worker.
+     */
+    public static function fieldKind(int $fieldId, bool $fresh = false): string
+    {
+        if ($fresh) {
+            unset(self::$storages[$fieldId]);
+        }
+
+        return self::rowKind(self::storageOfField($fieldId));
+    }
+
+    /**
+     * Remember the storage of fields already read, so a write to them looks nothing up.
+     *
+     * @param array<int,array<string,mixed>> $fieldRows rows with pk_i_id and e_type
+     */
+    public static function rememberTypes(array $fieldRows): void
+    {
+        foreach ($fieldRows as $row) {
+            if (isset($row['pk_i_id'], $row['e_type'])) {
+                self::$storages[(int) $row['pk_i_id']] = self::storageOfType((string) $row['e_type']);
+            }
+        }
     }
 
     public static function number(string $value): ?float
@@ -312,9 +342,15 @@ final class FacetIndex
 
     private static function storageOfField(int $fieldId): string
     {
-        $field = Field::getInstance()->findByPrimaryKey($fieldId);
+        if (!isset(self::$storages[$fieldId])) {
+            $field = Field::getInstance()->findByPrimaryKey($fieldId);
+            if (!isset($field['e_type'])) {
+                return self::storageOfType('TEXT');
+            }
+            self::$storages[$fieldId] = self::storageOfType((string) $field['e_type']);
+        }
 
-        return self::storageOfType((string) ($field['e_type'] ?? 'TEXT'));
+        return self::$storages[$fieldId];
     }
 
     private static function storageOfType(string $type): string

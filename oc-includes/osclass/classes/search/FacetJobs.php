@@ -87,10 +87,23 @@ final class FacetJobs
             }
             $job->repeat(array('after' => $last));
         });
+        /*
+         * A type change queued while this runs is lost with the running row, so the last batch checks the
+         * field's kind against the queued one and starts over when it moved. Two changes in one run that
+         * end on the queued kind are not caught.
+         */
         osc_job_register_handler(FacetIndex::JOB_FIELD, static function (Job $job): void {
-            $last = FacetIndex::buildStep((int) $job->get('after', 0), FacetIndex::BATCH, (int) $job->get('field', 0));
+            $field = (int) $job->get('field', 0);
+            $kind  = $job->get('kind');
+            $last  = FacetIndex::buildStep((int) $job->get('after', 0), FacetIndex::BATCH, $field);
             if ($last !== null) {
-                $job->repeat(array('field' => (int) $job->get('field', 0), 'after' => $last));
+                $job->repeat(array('field' => $field, 'after' => $last, 'kind' => $kind));
+
+                return;
+            }
+            $now = FacetIndex::fieldKind($field, true);
+            if ($kind !== null && $now !== (string) $kind) {
+                $job->repeat(array('field' => $field, 'after' => 0, 'kind' => $now));
             }
         });
         osc_job_describe(FacetIndex::JOB_BUILD, __('Listing filter index'), static fn (array $payload): string => sprintf(__('After listing #%d'), (int) ($payload['after'] ?? 0)));

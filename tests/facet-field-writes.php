@@ -11,7 +11,8 @@
 /**
  * Custom field writers keep t_item_facet in step: Field::replace() writes the rows of each
  * storage type (and removes them for an empty value), deleting a field drops its rows and still
- * fires both hooks, a type change that changes the storage queues one rebuild job for that field,
+ * fires both hooks, a type change that changes the storage queues one rebuild job for that field
+ * (which starts over when the type moved while it ran),
  * a listing save or a plugin's own replace() waits for a held meta row and then writes both, and
  * the index build and a save on one listing wait for each other in either order.
  *
@@ -23,6 +24,9 @@ require_once __DIR__ . '/lib/api-admin-kit.php';
 require_once __DIR__ . '/lib/race.php';
 
 use mindstellar\fields\FieldService;
+use mindstellar\job\Job;
+use mindstellar\job\JobRegistry;
+use mindstellar\job\JobWorker;
 use mindstellar\search\FacetIndex;
 
 $admin  = api_admin_boot('osc_facet_field_writes');
@@ -153,7 +157,7 @@ $jobs   = static fn (): array => $admin->query("SELECT s_unique, s_payload FROM 
 $bare   = $field('DROPDOWN');
 $svc    = FieldService::make('en_US');
 $svc->update($bare, ['type' => 'TEXT']);
-pin('DROPDOWN to TEXT: one job for the field, from the start', [[(string) $bare, json_encode(['field' => $bare, 'after' => 0])]], array_map('array_values', $jobs()));
+pin('DROPDOWN to TEXT: one job for the field, from the start, for the new kind', [[(string) $bare, json_encode(['field' => $bare, 'after' => 0, 'kind' => ''])]], array_map('array_values', $jobs()));
 $svc->update($bare, ['type' => 'DROPDOWN']);
 pin('and back: still one job, not two', 1, count($jobs()));
 $svc->update($bare, ['type' => 'TEXT']);
@@ -255,5 +259,89 @@ preg_match('/^(ok|false|threw.*)$/m', $out[0], $m);
 pin('the save waited on the meta row the build read', 1, $waiting);
 pin('and then succeeded', 'ok', $m[1] ?? trim($out[0]));
 pin('meta and facet row both hold the save', ['Later', ["f$raced=Later|-"]], [$value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $built AND fk_i_field_id = $raced"), $facet($built)]);
+
+harness_section('a field read once is not looked up again');
+$forget = static function (): void {
+    $map = new ReflectionProperty(FacetIndex::class, 'storages');
+    $map->setAccessible(true);
+    $map->setValue(null, []);
+};
+$looked = $field('DROPDOWN');
+$forget();
+$cold = harness_query_count(static fn () => $dao->replace($item, $looked, 'A'));
+$forget();
+FacetIndex::rememberTypes([['pk_i_id' => (string) $looked, 'e_type' => 'DROPDOWN']]);
+$warm = harness_query_count(static fn () => $dao->replace($item, $looked, 'B'));
+pin('after rememberTypes() a replace() runs one query less (no field lookup)', $cold - 1, $warm);
+$again = harness_query_count(static fn () => $dao->replace($item, $looked, 'C'));
+pin('a field looked up once is remembered for the request', $warm, $again);
+pin('the row is still written', 'C', $value("SELECT s_value FROM {$p}t_item_facet WHERE fk_i_item_id = $item AND s_key = 'f$looked'"));
+$svc->update($looked, ['type' => 'NUMBER']);
+pin('a type change updates what the request remembers', 'number', FacetIndex::fieldKind($looked));
+$admin->query("UPDATE {$p}t_meta_fields SET e_type = 'DATEINTERVAL' WHERE pk_i_id = $looked");
+pin('a fresh read sees a change made elsewhere', ['number', 'interval'], [FacetIndex::fieldKind($looked), FacetIndex::fieldKind($looked, true)]);
+$admin->query("DELETE FROM {$p}t_job_queue");
+
+harness_section('a type change lost with a running job is caught at its end');
+$cols = implode(', ', array_column($admin->query(
+    "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$p}t_item' AND COLUMN_NAME <> 'pk_i_id' ORDER BY ORDINAL_POSITION"
+)->fetch_all(MYSQLI_ASSOC), 'COLUMN_NAME'));
+$listings = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item")->fetch_row()[0];
+$total    = $listings() + FacetIndex::BATCH + 1;
+while ($listings() < $total) {
+    $admin->query("INSERT INTO {$p}t_item ($cols) SELECT $cols FROM {$p}t_item LIMIT " . ($total - $listings()));
+}
+$ids   = array_map('intval', array_column($admin->query("SELECT pk_i_id FROM {$p}t_item ORDER BY pk_i_id")->fetch_all(MYSQLI_ASSOC), 'pk_i_id'));
+$moved = $field('DROPDOWN');
+$admin->query("INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) SELECT pk_i_id, $moved, '7', '' FROM {$p}t_item");
+$admin->query("INSERT INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) SELECT 'f$moved', '7', pk_i_id, 0 FROM {$p}t_item");
+$rowsOf = static fn (int $id): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_facet WHERE s_key = 'f$id'")->fetch_row()[0];
+// One pass is one batch: the handler's repeat is held back an hour.
+$pass = static function () use ($admin, $p): int {
+    JobWorker::resetRegistration();
+    JobWorker::registerHandlers();
+    $real = JobRegistry::handler(FacetIndex::JOB_FIELD);
+    JobRegistry::register(FacetIndex::JOB_FIELD, static function (Job $job) use ($real): void {
+        $real($job);
+        $again = $job->repeatRequest();
+        if ($again !== null) {
+            $job->repeat($again['payload'], 3600);
+        }
+    });
+    $admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2000-01-01 00:00:00'");
+
+    return JobWorker::run(10);
+};
+$drain = static function () use ($pass, $jobs): int {
+    $passes = 0;
+    while ($jobs() !== [] && $passes < 20) {
+        $pass();
+        $passes++;
+    }
+
+    return $passes;
+};
+$admin->query("DELETE FROM {$p}t_job_queue");
+$svc->update($moved, ['type' => 'NUMBER']);
+pin('the queued payload carries the kind', ['field' => $moved, 'after' => 0, 'kind' => 'number'], json_decode($jobs()[0]['s_payload'], true));
+$pass();
+$job = $jobs();
+pin('one pass leaves the job pending at the batch-th listing, kind kept', [1, $ids[FacetIndex::BATCH - 1], 'number'], [
+    count($job), (int) (json_decode($job[0]['s_payload'], true)['after'] ?? -1), json_decode($job[0]['s_payload'], true)['kind'] ?? null,
+]);
+pin('the first batch has number rows', FacetIndex::BATCH, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_facet WHERE s_key = 'f$moved' AND d_number = 7")->fetch_row()[0]);
+$svc->update($moved, ['type' => 'TEXT']);
+// The second change folded into the running row and was deleted with it.
+$admin->query("DELETE FROM {$p}t_job_queue WHERE s_unique IS NOT NULL");
+$drain();
+pin('every listing lost its rows: the end check started over for the new kind', 0, $rowsOf($moved));
+
+$plain = $field('DROPDOWN');
+$admin->query("INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) SELECT pk_i_id, $plain, '7', '' FROM {$p}t_item");
+$admin->query("DELETE FROM {$p}t_job_queue");
+$svc->update($plain, ['type' => 'NUMBER']);
+pin('with no change in between the drain runs no extra pass', intdiv(count($ids), FacetIndex::BATCH) + 1, $drain());
+pin('and every listing has its number row', count($ids), $rowsOf($plain));
+$admin->query("DELETE FROM {$p}t_job_queue");
 
 exit(harness_result());
