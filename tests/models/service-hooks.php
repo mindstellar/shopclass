@@ -493,14 +493,14 @@ $nameOf = static fn (string $sql): string => (string) $admin->query($sql)->fetch
 $tomBefore  = $nameOf("SELECT s_name FROM {$p}t_user WHERE pk_i_id = $tom");
 $carBefore  = $nameOf("SELECT s_contact_name FROM {$p}t_item WHERE pk_i_id = $tomCar");
 // The last of the user-row cascades now fails, after the user row and the listing were written.
-$admin->query("ALTER TABLE {$p}t_alerts RENAME COLUMN s_email TO s_email_off");
+$admin->query("ALTER TABLE {$p}t_alerts CHANGE s_email s_email_off VARCHAR(100) DEFAULT NULL");
 $threw = false;
 try {
     $web['adminEdit']($bossId, $tom, ['name' => 'Tom Rolled', 'email' => 'tom.rolled@example.test']);
 } catch (\Throwable $e) {
     $threw = true;
 }
-$admin->query("ALTER TABLE {$p}t_alerts RENAME COLUMN s_email_off TO s_email");
+$admin->query("ALTER TABLE {$p}t_alerts CHANGE s_email_off s_email VARCHAR(100) DEFAULT NULL");
 check('the failed alert update stops the save', $threw);
 pin('the user row is rolled back', $tomBefore, $nameOf("SELECT s_name FROM {$p}t_user WHERE pk_i_id = $tom"));
 pin('the listing contact name is rolled back', $carBefore, $nameOf("SELECT s_contact_name FROM {$p}t_item WHERE pk_i_id = $tomCar"));
