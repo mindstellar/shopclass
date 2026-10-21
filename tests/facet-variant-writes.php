@@ -155,10 +155,68 @@ VariantStore::saveDefault($item, ['i_stock' => 1]);
 $count = harness_query_count(static function () use ($item, $row): void {
     VariantStore::saveSet($item, [$row('Red', 'S'), $row('Red', 'M'), $row('Red', 'L')]);
 });
-// Begin, lock read, 3 inserts, delete of the default row, the two facet statements in their
-// savepoint, commit.
-pin('a 3-row save is 11 statements', 11, $count);
+// Begin, lock read, 3 inserts, delete of the default row, the drop and insert each in their
+// savepoint (two statements apiece), commit.
+pin('a 3-row save is 13 statements', 13, $count);
 pin('with its six option rows', 6, count($facets($item)));
+
+harness_section('a save writes only the rows it changed');
+$com = static function (callable $fn): array {
+    $read = static function (): array {
+        $out = [];
+        $res = DBConnectionClass::newInstance()->getOsclassDb()->query("SHOW SESSION STATUS WHERE Variable_name IN ('Com_insert', 'Com_delete')");
+        foreach ($res as $r) {
+            $out[$r['Variable_name']] = (int) $r['Value'];
+        }
+
+        return $out;
+    };
+    $a = $read();
+    $fn();
+    $b = $read();
+
+    return ['insert' => $b['Com_insert'] - $a['Com_insert'], 'delete' => $b['Com_delete'] - $a['Com_delete']];
+};
+$item = $listing();
+$set  = array_map(static fn (int $i): array => $row('Red', 'S' . $i), range(1, 100));
+$ids  = VariantStore::saveSet($item, $set);
+// A marker row on a kept variant: a rewrite of the listing's option rows would delete it.
+facet_put($admin, 'oColour', 'Marker', $item, $ids[0]);
+$marked = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM " . facet_rows_sql() . " x WHERE fk_i_item_id = $item AND s_value = 'Marker'")->fetch_row()[0];
+$before = $facets($item);
+$run    = $com(static fn () => VariantStore::saveSet($item, $set));
+pin('an unchanged save of 100 rows runs no insert and no delete', ['insert' => 0, 'delete' => 0], $run);
+pin('its facet rows are as they were', $before, $facets($item));
+pin('and the marker on a kept row is still there', 1, $marked());
+VariantStore::saveSet($item, array_reverse($set));
+pin('a reorder leaves the facet rows as they were', $before, $facets($item));
+pin('and the marker', 1, $marked());
+
+$small = $listing();
+[$redM, $blueL] = VariantStore::saveSet($small, [$row('Red', 'M'), $row('Blue', 'L')]);
+facet_put($admin, 'oColour', 'Marker', $small, $redM);
+$run = $com(static fn () => VariantStore::saveSet($small, [$row('Red', 'M'), $row('Blue', 'XL')]));
+$ids = $variantIds($small);
+pin('swapping Blue/L for Blue/XL keeps Red/M\'s id', $redM, $ids['{"Colour":"Red","Size":"M"}'] ?? null);
+$sorted = static function (array $rows): array {
+    usort($rows, static fn (array $x, array $y): int => [$x[2], $x[0], $x[1]] <=> [$y[2], $y[0], $y[1]]);
+
+    return $rows;
+};
+pin('and writes only the new variant\'s rows', $sorted(array_merge(
+    [['oColour', 'Marker', $redM]],
+    $expect([[$redM, 'Red', 'M'], [$ids['{"Colour":"Blue","Size":"XL"}'], 'Blue', 'XL']])
+    )), $sorted($facets($small)));
+pin('one delete for the variant row and one for its option rows', 2, $run['delete']);
+
+$run = $com(static fn () => VariantStore::saveSet($small, [$row('Red', 'M')]));
+pin('dropping one variant inserts no facet row', 0, $run['insert']);
+pin('and removes its rows', 1, count(array_filter($facets($small), static fn (array $r): bool => $r[1] === 'XL')) === 0 ? 1 : 0);
+pin('the kept row keeps the marker', 1, (int) $admin->query("SELECT COUNT(*) FROM " . facet_rows_sql() . " x WHERE fk_i_item_id = $small AND s_value = 'Marker'")->fetch_row()[0]);
+
+$run = $com(static fn () => VariantStore::saveSet($small, [$row('Red', 'M'), $row('Green', 'S')]));
+pin('adding one variant deletes nothing', 0, $run['delete']);
+pin('and the marker is still there', 1, (int) $admin->query("SELECT COUNT(*) FROM " . facet_rows_sql() . " x WHERE fk_i_item_id = $small AND s_value = 'Marker'")->fetch_row()[0]);
 
 harness_section('an edit waits for a held variant row');
 $item = $listing();
@@ -189,8 +247,8 @@ pin('the facet rows match the save', $expect([[$redM, 'Red', 'M'], [$ids['{"Colo
 
 harness_section('a save waits for a held facet row');
 $item = $listing();
-[$redM] = VariantStore::saveSet($item, [$row('Red', 'M'), $row('Blue', 'L')]);
-[$waiting, $out] = race($admin, "INSERT INTO {$p}t_item_facet (fk_i_term_id, fk_i_item_id, fk_i_variant_id) SELECT pk_i_id, $item, 4000000000 FROM {$p}t_facet_term WHERE s_key = 'oColour' AND s_value = 'Red'", $db,
+[$redM, $blueL] = VariantStore::saveSet($item, [$row('Red', 'M'), $row('Blue', 'L')]);
+[$waiting, $out] = race($admin, "INSERT INTO {$p}t_item_facet (fk_i_term_id, fk_i_item_id, fk_i_variant_id) SELECT pk_i_id, $item, $blueL FROM {$p}t_facet_term WHERE s_key = 'oColour' AND s_value = 'Red'", $db,
     [[__DIR__ . '/lib/facet-variant-child.php', ['save', $item]]], '%DELETE FROM%t_item_facet%');
 preg_match('/^(ok|threw.*)$/m', $out[0], $m);
 pin('the save waited on the held row', 1, $waiting);

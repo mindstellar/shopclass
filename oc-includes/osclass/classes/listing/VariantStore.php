@@ -260,8 +260,8 @@ final class VariantStore extends Model
                 }
             }
 
-            $ids     = array();
-            $written = array();
+            $ids      = array();
+            $inserted = array();
             $changes = array();
             foreach ($rows as $position => $row) {
                 $options = array();
@@ -279,10 +279,10 @@ final class VariantStore extends Model
                     self::table()->where('pk_i_id', $id)->update($values);
                     $changes[] = array($id, $old, $values);
                 } else {
-                    $id = self::table()->insert(array('fk_i_item_id' => $itemId) + $values);
+                    $id         = self::table()->insert(array('fk_i_item_id' => $itemId) + $values);
+                    $inserted[] = array('pk_i_id' => $id, 's_options' => $values['s_options']);
                 }
-                $ids[]     = $id;
-                $written[] = array('pk_i_id' => $id, 's_options' => $values['s_options']);
+                $ids[] = $id;
             }
             foreach ($byKey as $row) {
                 $drop[] = (int) $row['pk_i_id'];
@@ -293,7 +293,8 @@ final class VariantStore extends Model
                     $drop
                 );
             }
-            FacetIndex::rewriteVariants($itemId, $written);
+            FacetIndex::dropVariants($itemId, $drop);
+            FacetIndex::insertVariants($itemId, $inserted);
             self::announce($itemId, $changes);
 
             return $ids;
