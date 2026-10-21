@@ -88,6 +88,18 @@ $admin->query("INSERT INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_
 $green = VariantStore::saveSet($item, [$row('Green', 'S')]);
 pin('a save leaves the field row alone', array_merge([['f1', '1', 0]], $expect([[$green[0], 'Green', 'S']])), $facets($item));
 
+harness_section('a facet failure does not stop a variant save');
+$lost = $listing();
+osc_set_preference('facet_ready', '1', 'osclass', 'BOOLEAN');
+$admin->query("DELETE FROM {$p}t_job_queue");
+$admin->query("RENAME TABLE {$p}t_item_facet TO {$p}t_item_facet_away");
+$saved = VariantStore::saveSet($lost, [$row('Red', 'M')]);
+$admin->query("RENAME TABLE {$p}t_item_facet_away TO {$p}t_item_facet");
+pin('the variant row is written', 1, count($saved) === 1 ? count($variantIds($lost)) : 0);
+pin('the index is marked stale', '0', (string) $admin->query("SELECT s_value FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = 'facet_ready'")->fetch_row()[0]);
+pin('and a rebuild is queued', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_BUILD . "'")->fetch_row()[0]);
+$admin->query("DELETE FROM {$p}t_job_queue");
+
 harness_section('saveDefault, removeDefault and deleteForItem');
 // A stale option row seeded by hand, so each writer is seen dropping rows on its own.
 $stale = static fn () => $admin->query("INSERT IGNORE INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) VALUES ('oColour', 'Stale', $item, 4000000001)");
@@ -142,8 +154,9 @@ VariantStore::saveDefault($item, ['i_stock' => 1]);
 $count = harness_query_count(static function () use ($item, $row): void {
     VariantStore::saveSet($item, [$row('Red', 'S'), $row('Red', 'M'), $row('Red', 'L')]);
 });
-// Begin, lock read, 3 inserts, delete of the default row, the two facet statements, commit.
-pin('a 3-row save is 9 statements', 9, $count);
+// Begin, lock read, 3 inserts, delete of the default row, the two facet statements in their
+// savepoint, commit.
+pin('a 3-row save is 11 statements', 11, $count);
 pin('with its six option rows', 6, count($facets($item)));
 
 harness_section('an edit waits for a held variant row');

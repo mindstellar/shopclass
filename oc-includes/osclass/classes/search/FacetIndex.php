@@ -14,13 +14,15 @@ namespace mindstellar\search;
 
 use Field;
 use mindstellar\database\Db;
+use mindstellar\database\DbException;
 use mindstellar\fields\FieldTypeRegistry;
 use mindstellar\listing\ListingStore;
 
 /**
  * t_item_facet: one row per filterable value of a listing (custom field values and variant
  * options), kept in step with t_item_meta and t_item_variant by their writers. Every method
- * that writes expects the listing row to be locked by the caller.
+ * that writes expects the listing row to be locked by the caller. A writer's call that fails
+ * marks the index stale and queues a rebuild instead of failing the listing write.
  */
 final class FacetIndex
 {
@@ -76,20 +78,22 @@ final class FacetIndex
      *
      * @param array<int,array<string,mixed>> $rows t_item_variant rows: pk_i_id and s_options
      *
-     * @throws \mindstellar\database\DbException
+     * @throws DbException only when the caller's transaction was lost
      */
     public static function rewriteVariants(int $itemId, array $rows): void
     {
-        self::dropVariants($itemId);
-        self::insert(self::variantRows($itemId, $rows));
+        self::guard(static function () use ($itemId, $rows): void {
+            self::deleteVariants($itemId);
+            self::insert(self::variantRows($itemId, $rows));
+        });
     }
 
     /**
-     * @throws \mindstellar\database\DbException
+     * @throws DbException only when the caller's transaction was lost
      */
     public static function dropVariants(int $itemId): void
     {
-        Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_variant_id <> 0', [$itemId]);
+        self::guard(static fn () => self::deleteVariants($itemId));
     }
 
     /**
@@ -98,32 +102,34 @@ final class FacetIndex
      * @param string|array<string,mixed>|null $value   as Field::replace() gets it
      * @param string|null                     $storage the field's storage primitive, looked up when null
      *
-     * @throws \mindstellar\database\DbException
+     * @throws DbException only when the caller's transaction was lost
      */
     public static function rewriteField(int $itemId, int $fieldId, $value, ?string $storage = null): void
     {
-        $storage ??= self::storageOfField($fieldId);
-        self::deleteField($itemId, $fieldId);
-        self::insert(self::fieldRows($itemId, $fieldId, $storage, $value));
+        self::guard(static function () use ($itemId, $fieldId, $value, $storage): void {
+            $storage ??= self::storageOfField($fieldId);
+            self::deleteField($itemId, $fieldId);
+            self::insert(self::fieldRows($itemId, $fieldId, $storage, $value));
+        });
     }
 
     /**
      * Remove a field's rows from every listing.
      *
-     * @throws \mindstellar\database\DbException
+     * @throws DbException only when the caller's transaction was lost
      */
     public static function dropField(int $fieldId): void
     {
-        Db::execute(
+        self::guard(static fn () => Db::execute(
             'DELETE FROM ' . self::tableName() . ' WHERE s_key IN (?, ?, ?)',
             [self::key($fieldId), self::key($fieldId, 'from'), self::key($fieldId, 'to')]
-        );
+        ));
     }
 
     /**
      * Rebuild one listing from t_item_meta and t_item_variant.
      *
-     * @throws \mindstellar\database\DbException
+     * @throws DbException
      */
     public static function rewriteItem(int $itemId): void
     {
@@ -135,7 +141,7 @@ final class FacetIndex
      * its own transaction, so a save waits for one listing at most, never the whole batch.
      *
      * @return int|null the last listing id done, or null when the batch was short
-     * @throws \mindstellar\database\DbException
+     * @throws DbException
      */
     public static function buildStep(int $after, int $limit, ?int $fieldId = null): ?int
     {
@@ -192,7 +198,7 @@ final class FacetIndex
      * Rewrite a listing's rows: all of them, or only one field's. Reads lock what they read
      * (variants, then meta, as the writers do) so a batch never holds an old snapshot.
      *
-     * @throws \mindstellar\database\DbException
+     * @throws DbException
      */
     private static function rewriteScoped(int $itemId, ?int $fieldId): void
     {
@@ -232,7 +238,37 @@ final class FacetIndex
     }
 
     /**
-     * @throws \mindstellar\database\DbException
+     * Run a writer's change in a savepoint. On failure the main write goes on: the index is
+     * marked stale and a rebuild queued. A lost transaction is still thrown.
+     *
+     * @throws DbException
+     */
+    private static function guard(callable $write): void
+    {
+        try {
+            Db::transaction($write);
+        } catch (DbException $e) {
+            Db::assertIntact();
+            error_log('Listing filter index write failed, rebuild queued: ' . $e->getMessage());
+            try {
+                self::markStale();
+                osc_job_ensure(self::JOB_BUILD, ['after' => 0]);
+            } catch (\Throwable $ignored) {
+                // The flag stays as it was; db:repair or search:reindex sets it right.
+            }
+        }
+    }
+
+    /**
+     * @throws DbException
+     */
+    private static function deleteVariants(int $itemId): void
+    {
+        Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_variant_id <> 0', [$itemId]);
+    }
+
+    /**
+     * @throws DbException
      */
     private static function deleteField(int $itemId, int $fieldId): void
     {
@@ -332,7 +368,7 @@ final class FacetIndex
      *
      * @param array<int,array{0:string,1:string,2:int,3:int,4:?float}> $rows
      *
-     * @throws \mindstellar\database\DbException
+     * @throws DbException
      */
     private static function insert(array $rows): void
     {

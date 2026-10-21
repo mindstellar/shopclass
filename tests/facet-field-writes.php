@@ -102,11 +102,16 @@ $text = $field('TEXT');
 $dao->replace($item, $text, 'hello');
 pin('text: meta row only', [[], 'hello'], [$facet($item), $value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $item AND fk_i_field_id = $text")]);
 
-harness_section('the meta write and the facet rows agree');
+harness_section('a facet failure does not stop the meta write');
 $fresh = $field('DROPDOWN');
+osc_set_preference('facet_ready', '1', 'osclass', 'BOOLEAN');
+$admin->query("DELETE FROM {$p}t_job_queue");
 $admin->query("DROP TABLE {$p}t_item_facet");
-pin('a facet failure makes replace() report false', false, $dao->replace($item, $fresh, 'Green'));
-pin('and the meta row was not written either', '0', (string) $value("SELECT COUNT(*) FROM {$p}t_item_meta WHERE fk_i_item_id = $item AND fk_i_field_id = $fresh"));
+pin('replace() still reports true', true, $dao->replace($item, $fresh, 'Green'));
+pin('the meta row is written', 'Green', $value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $item AND fk_i_field_id = $fresh"));
+pin('the index is marked stale', '0', $value("SELECT s_value FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = 'facet_ready'"));
+pin('and a rebuild is queued', '1', (string) $value("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_BUILD . "'"));
+$admin->query("DELETE FROM {$p}t_job_queue");
 $admin->query('CREATE TABLE ' . $p . 't_item_facet (s_key VARCHAR(48) NOT NULL, s_value VARCHAR(191) NOT NULL, fk_i_item_id INT UNSIGNED NOT NULL, '
     . 'fk_i_variant_id INT UNSIGNED NOT NULL DEFAULT 0, d_number DOUBLE NULL, PRIMARY KEY (s_key, s_value, fk_i_item_id, fk_i_variant_id), '
     . 'INDEX idx_item (fk_i_item_id), INDEX idx_number (s_key, d_number), FOREIGN KEY (fk_i_item_id) REFERENCES ' . $p . 't_item (pk_i_id) ON DELETE CASCADE) '
