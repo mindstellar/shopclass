@@ -44,6 +44,25 @@ final class ListingStore extends Model
     }
 
     /**
+     * Lock a listing for a write: its t_item row, then its t_item_stats row, then its
+     * t_item_variant rows by id. Take this before any plain SELECT in the transaction.
+     *
+     * @return array<string,mixed>|null the t_item row, or null when there is no such listing
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockForWrite(int $id): ?array
+    {
+        $row = self::find($id, array('*'), true);
+        if ($row === null) {
+            return null;
+        }
+        Db::select('SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_stats WHERE fk_i_item_id = ? FOR UPDATE', array($id));
+        Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item_variant WHERE fk_i_item_id = ? ORDER BY pk_i_id FOR UPDATE', array($id));
+
+        return $row;
+    }
+
+    /**
      * The listing's owner, 0 for a guest listing or no listing.
      *
      * @throws \mindstellar\database\DbException

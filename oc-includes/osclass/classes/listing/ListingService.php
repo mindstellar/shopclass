@@ -212,6 +212,10 @@ final class ListingService
         osc_run_hook('before_delete_item', $itemId);
 
         return DeferredMail::transaction(function () use ($itemId, $secret, $actor, $item) {
+            // Locked before the delete reads anything, so a concurrent edit or views flush waits here.
+            if (ListingStore::lockForWrite($itemId) === null) {
+                return false;
+            }
             if (is_array($item) && hash_equals((string) ($item['s_secret'] ?? ''), $secret)) {
                 \Log::getInstance()
                     ->insertLog(
@@ -1097,7 +1101,7 @@ final class ListingService
 
         // The whole row, read before anything is written; edited_item gets it back with the edit on it.
         // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
-        $old_item = ListingStore::find($aItem['idItem'], array('*'), true);
+        $old_item = ListingStore::lockForWrite((int) $aItem['idItem']);
         $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
         // A listing waiting for payment keeps its hold and its deadline through an edit.
         $unpaid = $old_item !== array() && ListingStatus::isHeld($old_item);
