@@ -257,10 +257,15 @@ pin('an option page probes the listing, the count reads the facet range once', [
 pin('the old text is the same for page and count', true, $off['page'] === $off['count']);
 [$off, $on] = $texts($cf('cb1', '1'));
 pin('a checkbox page probes, the count reads the range', [true, true], [str_contains($on['page'], 'LIMIT 1) IS NOT NULL'), str_contains($on['count'], 'IN (SELECT')]);
+foreach (['a dropdown with one value' => $cf('dd', 'Red'), 'a dropdown with several values' => $cf('dd', ['Red', 'Blue']), 'a radio with one value' => $cf('rd', 'Slim'), 'a radio with several values' => $cf('rd', ['Slim', 'Loose'])] as $label => $query) {
+    [$off, $on] = $texts($query);
+    pin("$label: the page probes, the count reads the range", [true, true, true], [
+        str_contains($on['page'], 'LIMIT 1) IS NOT NULL'), str_contains($on['count'], 'pk_i_id IN (SELECT fk_i_item_id'), !str_contains($on['count'], 'LIMIT 1')]);
+}
 [$off, $on] = $texts($cf('dd', 'Mauve'));
 pin('an unknown value is no row in either text and reads no table', ['1 = 0', '1 = 0'], [trim($on['page']), trim($on['count'])]);
 $askPage([(string) $f['num'] => ['from' => '10', 'to' => '20']]);
-pin('a range is the same text for the page and the count', true, $facetSql['on']['page'] === $facetSql['on']['count'] && str_contains($facetSql['on']['page'], 'IN (SELECT'));
+pin('a range probes on the page and reads the range for the count', [true, true], [str_contains($facetSql['on']['page'], 'LIMIT 1) IS NOT NULL'), str_contains($facetSql['on']['count'], 'IN (SELECT') && !str_contains($facetSql['on']['count'], 'LIMIT 1')]);
 
 harness_section('which table is read');
 $ask($opt(['Colour' => ['Red']]) + ['limit' => 47]);
