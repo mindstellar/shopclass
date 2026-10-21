@@ -20,6 +20,7 @@ use mindstellar\exception\NotFoundException;
 use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStore;
+use mindstellar\listing\SavedListing;
 use mindstellar\utility\Clock;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\SystemClock;
@@ -140,25 +141,34 @@ final class ListingModeration
      */
     public function edit(int $id, ?array $data, Actor $actor, array $flags, int $adminId, string $note, ?ListingService $listings = null): bool
     {
-        $failed = false;
-        try {
-            DeferredMail::transaction(function () use ($id, $data, $actor, $flags, $adminId, $note, $listings, &$failed): void {
-                if ($data !== null && ($listings ?? new ListingService())->update($data, $actor, false, false)->rows() === false) {
-                    $failed = true;
+        $setFlags = function () use ($id, $flags, $adminId, $note): void {
+            if ($flags !== []) {
+                $this->applyFlags($id, $flags, $adminId, $note);
+            }
+        };
+        if ($data === null) {
+            DeferredMail::transaction($setFlags);
 
-                    throw new \RuntimeException('The listing could not be saved.');
+            return true;
+        }
+        $notSaved = new \RuntimeException('The listing could not be saved.');
+        try {
+            // The edit opens the transaction after its pre hooks, and the flags join it.
+            ($listings ?? new ListingService())->update($data, $actor, false, false, static function (SavedListing $saved) use ($setFlags, $notSaved): void {
+                if ($saved->rows() === false) {
+                    throw $notSaved;
                 }
-                if ($flags !== []) {
-                    $this->applyFlags($id, $flags, $adminId, $note);
-                }
+                $setFlags();
             });
         } catch (\RuntimeException $e) {
-            if (!$failed) {
+            if ($e !== $notSaved) {
                 throw $e;
             }
+
+            return false;
         }
 
-        return !$failed;
+        return true;
     }
 
     /**

@@ -11,8 +11,9 @@
 /**
  * Cookie::options() and the cookies written with it, read from real Set-Cookie headers.
  * The CLI keeps no headers, so the writes run in a PHP built-in server and the test reads
- * its responses: the flash cookie lives 300 s, the form cookie 1800 s, and every write
- * carries Secure on HTTPS and the COOKIE_DOMAIN domain.
+ * its responses: the flash cookie lives 300 s and stays under 4096 bytes with 80 messages,
+ * the form cookie lives 1800 s, and every write carries Secure on HTTPS and the COOKIE_DOMAIN
+ * domain.
  *
  * DB-free. Usage:  php tests/cookie-options.php
  */
@@ -65,6 +66,12 @@ switch ($_GET['do'] ?? '') {
         break;
     case 'flash':
         $s->_setMessage('pubMessages', 'saved', 'ok');
+        $s->_flushFlashMessages();
+        break;
+    case 'flashmany':
+        for ($i = 1; $i <= 80; $i++) {
+            $s->_setMessage('pubMessages', sprintf('Photo %02d could not be saved: ', $i) . str_repeat('x', 150), 'error');
+        }
         $s->_flushFlashMessages();
         break;
     case 'readflash':
@@ -158,6 +165,18 @@ pin('...and its signed value expires with it', 0, $signedLead($flash));
 $back = $get('do=readflash', 'oc_flash=' . (string) strtok(substr($flash, 9), ';'));
 pin('the next request reads it back', array(array('msg' => 'saved', 'type' => 'ok')), json_decode($back['body'], true));
 check('...and deletes it', isset($back['cookies']['oc_flash']) && (int) $attr($back['cookies']['oc_flash'], 'Max-Age') === 0);
+
+harness_section('a long flash queue still fits a cookie');
+
+$r    = $get('do=flashmany');
+$many = $r['cookies']['oc_flash'] ?? '';
+check('80 queued messages are written to oc_flash', $many !== '');
+check('...in a Set-Cookie line of at most 4096 bytes', strlen($many) <= 4096, (string) strlen($many));
+$back = json_decode($get('do=readflash', 'oc_flash=' . (string) strtok(substr($many, 9), ';'))['body'], true);
+$back = is_array($back) ? $back : array();
+$kept = count($back) - 1;
+check('the next request shows the first messages', $kept > 0 && str_starts_with((string) ($back[0]['msg'] ?? ''), 'Photo 01 '));
+pin('...and a line counting the rest', '…and ' . (80 - $kept) . ' more', end($back)['msg'] ?? null);
 
 harness_section('the form cookie lives 1800 s');
 

@@ -89,6 +89,11 @@ saying so, at most once an hour: change the password when it comes. Changing the
 (`OSC_CSRF_SECRET`) makes every backup code stop working; the app codes still
 work, and **New backup codes** issues fresh ones.
 
+Open the admin at the site's own admin address, the site URL followed by
+`oc-admin/`. The code step is kept in a cookie for that path only. At another
+address, such as a different domain or folder, the browser does not send it
+back and the sign-in returns to the password form.
+
 If an admin loses both their phone and their backup codes, a full administrator
 can turn it off on that admin's edit screen, or from the command line:
 

@@ -158,7 +158,6 @@ sets `rawSql`, and only `items` and `total` of the answer are used.
 |---|---|---|
 | TEXT, TEXTAREA, URL | `contains`, `value` | the value contains `value` (core uses LIKE, so `%` and `_` act as wildcards) |
 | DROPDOWN, RADIO | `eq`, `value` | the value is `value` |
-| DROPDOWN, RADIO, several values | `in`, `values` (strings, at most 20) | the value is one of `values` |
 | CHECKBOX | `checked` | the value is `1` |
 | DATE | `between`, `from`, `to` | the value is in that day (unix times, both ends included) |
 | DATEINTERVAL | `covers`, `from`, `to` | the stored range starts on or before `from` and ends on or after `to` |
@@ -203,162 +202,6 @@ shows: the theme, settings, a plugin, a category. It runs after the response has
 command line too. Its one argument is the list of reasons, such as `array('theme', 'plugin')`.
 Clear your cache there. Do not print, send headers or read the session. To ask for one yourself,
 call `osc_purge_page_cache('my_reason')`. See [the caching contract](/docs/developers/caching/).
-
-## Typed events
-
-The shop hooks (cart, orders, receipts, shop mails, variants, the customiser) are event objects.
-Names stay the same and you still use `osc_add_hook()` and `osc_add_filter()`. What changes is the
-callback: if its first parameter is typed with an event class, it gets the event; any other
-callback gets the old arguments and return value.
-
-```php
-osc_add_filter('cart_tax_lines', static function (CartTaxLines $e): void {
-    $e->addLine(new Line('tax.vat', 'VAT', 2000000, $e->cart()->currency()));
-}, 10);
-```
-
-The cart events live in `mindstellar\billing\event`. What a listener can call:
-
-| Event | Methods |
-|---|---|
-| every cart event | `cart()` (a `CartView`: `currency()`, `subtotal()`, `lines()`, `address()`, `coupon()`, `userId()`, `shippingMethod()`, `gateway()`, `needsShipping()`), `cartArray()` |
-| `CartShippingLines`, `CartTaxLines`, `CartDiscountLines` | `addLine(Line)`, `removeLine($id)`, `lines()` |
-| `CartFees` | `addFee(Line)`, `totals()` |
-| `CartShipping` | `needsShipping()`, `setNeedsShipping($bool)`, `addMethod($id, $label, $amount, $eta = null)`, `methods()` |
-| `CartFreeOver` | `setFreeOver($amount or null)`, `freeOver()` |
-| `CartProblems` | `add($code, $pointer, $message)` |
-| `CartItemAdded` | `line()`, `variantId()`, `qty()`, `itemId()` |
-| `CheckoutStarting` | `refuse($pointer, $code, $message)`, `refusals()` |
-| `OrderEvent` and its subclasses | `orderId()`, `userId()`, `order()`; `OrderPaid` adds `credits()` |
-| `TrackingUrlResolving` | `carrier()`, `tracking()`, `url()`, `setUrl($url)` |
-| `ReceiptComposing` | `order()`, `title()`, `setTitle()`, `addExtraRow($label, $value)`, `addSummaryRow($label, $value)`, `setFooter()` |
-
-A line is `new Line($id, $label, $amount, $currency, $meta = [])`, with the amount in micros.
-`addLine()`, `addFee()`, `addMethod()` and `add()` throw `InvalidArgumentException` for a bad
-entry: an empty label, a currency other than the cart's, an id outside `[a-z0-9_.-]{1,64}`, an
-amount below zero on anything but a discount, or more than 20 lines on one event. A discount always
-takes off. A label is trimmed and cut at 200 characters. Old filters returning a bad entry have it
-dropped instead.
-
-An old callback and a typed one on one name run in one list, ordered by priority (lower first,
-default 5, same registration order on a tie). `$e->stopPropagation()` ends the run, so later
-callbacks do not fire. A listener typed with a parent class, such as `OrderEvent`, runs for every
-subclass.
-
-Pass `[ClassName::class, 'method']` to have core build the class on its first event. A static
-method is called as is; any other is called on the shared instance from `Container::root()`. Nothing
-is built when you register, so a plugin's `index.php` stays cheap.
-
-A typed callback added on several names of one event, such as `cart_needs_shipping` and
-`cart_shipping_methods`, runs once per event. Removing it from one name removes it from all.
-
-Core never fires these names through `osc_run_hook()` or `osc_apply_filter()`. Their entries in the
-reference below have the kind `event` and name the event class.
-
-### Container and dispatcher
-
-`Container::root()` (`mindstellar\container`) is the site's one container. It builds each service
-on first use and shares it after. Register yours on `init`:
-
-```php
-Container::root()->set(MyNotifier::class, static fn (Container $c): MyNotifier => new MyNotifier($c->get(DispatcherInterface::class)));
-```
-
-`set()` takes a factory; `instance()` takes an object already built, and the later call wins. A
-class whose constructor needs no arguments is built without either. A service that needs itself throws
-`LogicException`.
-
-`CoreServices::dispatcher()` (`mindstellar\boot`) is the site's event dispatcher. To give your own
-event old hook names, extend `Event`, implement `Bridged` and own the names:
-
-```php
-final class StockLow extends Event implements Bridged
-{
-    public function __construct(private int $itemId)
-    {
-    }
-
-    public static function legacyNames(): array
-    {
-        return ['my_stock_low'];
-    }
-
-    public function applyLegacy(string $name, callable $fn): void
-    {
-        $fn($this->itemId);
-    }
-}
-
-HookBridge::active()->own(StockLow::class);
-CoreServices::dispatcher()->dispatch(new StockLow($itemId));
-```
-
-`applyLegacy()` calls an old-style callback with the hook's old arguments. Override `accepts($name)`
-when one class owns names that only some of its events should run.
-
-## Cart hooks
-
-Core prices every cart through these events, in this order, and fires `CheckoutStarting`
-when an order is placed. Each name below is owned by the event class beside it (namespace
-`mindstellar\billing\event`): a callback typed with that class gets the event, any other gets the
-old arguments listed. `$cart` is the cart array; a line is
-`{id, label, amount (micros), currency, meta}`. A filter adds lines and core does the sums, so
-no filter sets an item's price. `cart_totals` adds fee lines under `fees`; the total never goes
-below zero. `cart_item_add_after` is fired by `PUT account/cart` for each variant new to the saved cart.
-
-| Hook | Event | Old arguments |
-|---|---|---|
-| `cart_needs_shipping` | `CartShipping` | `$needs, $cart` |
-| `cart_shipping_methods` | `CartShipping` | `$methods, $cart` |
-| `cart_shipping_lines` | `CartShippingLines` | `$lines, $cart` |
-| `cart_tax_lines` | `CartTaxLines` | `$lines, $cart` |
-| `cart_discount_lines` | `CartDiscountLines` | `$lines, $cart` |
-| `cart_totals` | `CartFees` | `$totals, $cart` |
-| `cart_free_over` | `CartFreeOver` | `$freeOver, $cart` |
-| `cart_problems` | `CartProblems` | `$problems, $cart` |
-| `cart_item_add_after` | `CartItemAdded` | `$cart, $line` |
-| `cart_checkout_before` | `CheckoutStarting` | `$cart` |
-
-`$cart` also holds `coupon` (the code, upper-cased, or null) and `address`. On a quote,
-`address` has only the `country`, `state` and `postcode` the shopper gave; when an order is
-placed it is the full delivery address. A tax line with `meta.included` set to `true` is tax
-already in the prices: it is shown, counted in `totals.tax_included`, and not added to the total.
-`cart_free_over` returns `{amount, remaining}` to replace core's free-delivery meter, or null for
-none; core works out `remaining`. Every `cart_free_over` callback must return its input when it does
-not apply. `cart_needs_shipping` returns false when nothing in the cart is sent; core then skips the
-shipping filters. `cart_problems` entries are `{code, pointer, message}`: a code of
-`a-z` and `_` up to 32, a pointer of `/coupon`, `/address/postcode`, `/address/state`,
-`/address/country` or `/shipping_method`, and plain text up to 200 characters. Any other entry is
-dropped. The quote lists them under `problems`, and placing an order is refused with a 422 at that
-pointer.
-
-Orders and receipts have two filters of their own. `billing_tracking_url` (`$url, $carrier,
-$tracking`) gives a parcel its tracking link when the admin left it empty; only an https link is
-kept. `billing_receipt_details` (`$details, $order`) may set the receipt's `title`, `extra` and
-`summary` rows (`{label, value}`, plain text) and `footer`; core keeps every other key as it was.
-
-A paid order fires `OrderPaid` (`billing_order_paid`; old arguments `$orderId, $userId,
-$credits`). A goods order also fires `OrderPlaced`, `OrderShipped`, `OrderDelivered` and
-`OrderCancelled` (`billing_order_placed`, `_shipped`, `_delivered`, `_cancelled`; old arguments
-`$orderId, $userId`). A failed payment fires `OrderFailed` (`billing_order_failed`). Every order
-event extends `OrderEvent`. `billing_tracking_url` is `TrackingUrlResolving` and
-`billing_receipt_details` is `ReceiptComposing`.
-
-## Order mails
-
-A goods order sends these mails: `order_placed` (the buyer, when a bank transfer or cash on
-delivery order is received), `order_shipped` (with the carrier and tracking link),
-`order_delivered` (with a "Rate it" link per product), `order_cancelled`, `order_refunded` (with
-the amount) and `admin_new_order` (the shop's contact address, once the order is paid or held).
-A product alert (`product_alert`) goes the same way.
-
-Each mail fires one `MailComposing` event (`mindstellar\mail\event`) before it is sent. A
-listener may change the subject or body template, set a word such as `{USER_NAME}`, or call
-`suppress()` to send nothing. `MailSent` follows with the result. The old
-`email_<kind>_title`, `_description`, `_title_after` and `_description_after` filters still
-work: a callback typed `MailComposing $e` gets the event, any other gets `($text, $order)`
-(`($text, $alert, $item, $kind)` for a product alert). A mail that cannot be sent is tried again
-by the job queue; the paid confirmation is the order's receipt.
 
 ## Reference
 
@@ -784,7 +627,7 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `billing_receipt_details` | event | `ReceiptComposing` | `oc-includes/osclass/classes/billing/event/ReceiptComposing.php` |
 | `billing_tracking_url` | event | `TrackingUrlResolving` | `oc-includes/osclass/classes/billing/event/TrackingUrlResolving.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
-| `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
+| `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', 'oc_theme', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `cart_checkout_before` | event | `CheckoutStarting` | `oc-includes/osclass/classes/billing/event/CheckoutStarting.php` |
 | `cart_discount_lines` | event | `CartDiscountLines` | `oc-includes/osclass/classes/billing/event/CartDiscountLines.php` |
 | `cart_free_over` | event | `CartFreeOver` | `oc-includes/osclass/classes/billing/event/CartFreeOver.php` |

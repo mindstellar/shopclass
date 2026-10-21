@@ -109,8 +109,8 @@ $block = implode("\n", $out);
 if (!is_file(REFERENCE)) {
     file_put_contents(REFERENCE, "---\ntitle: API reference\ndescription: \"Every REST API endpoint: method, path, credential, scope, parameters and answers.\"\nsidebar:\n  order: 3\n---\n\n"
         . "Generated from the route table by `tools/gen-api-doc.php`. The same endpoints are in\n"
-        . "[openapi.json](https://github.com/mindstellar/shopclass/blob/master/docs/site/developers/api/openapi.json)\n"
-        . "for Swagger UI, Redoc or Postman. A site also serves its own copy, with its plugins'\n"
+        . "[openapi.json](/docs/developers/api/openapi.json)\n"
+        . "for Swagger UI, Redoc or Postman, and you can browse them in the [API explorer](/docs/developers/api/explorer/). A site also serves its own copy, with its plugins'\n"
         . "endpoints, at `/api/v1/openapi.json`.\n\n" . BEGIN . "\n" . END . "\n");
 }
 

@@ -105,7 +105,7 @@ final class FieldQuery
 
     /**
      * The fields that apply to a category, honouring inheritance: loose fields and the fields
-     * of forms assigned to the category or any ancestor, once each, in form order. The union
+     * of forms assigned to the category or any ancestor, once each, in form order (the position set inside the form, not the library position). The union
      * is grouped in its own subquery to satisfy ONLY_FULL_GROUP_BY; MIN() sorts a field that is
      * both loose and in a form as loose. Cached in FieldGroup::CACHE_GROUP under the category
      * generation, so a write to the field, form or link tables must drop that group.
@@ -138,20 +138,20 @@ final class FieldQuery
 
         return Db::stringifyRows(Db::select(
             'SELECT mf.*, query.cf_group_position FROM ' . $p . 't_meta_fields mf JOIN ('
-            . 'SELECT u.pk_i_id AS pk_i_id, MIN(u.cf_group_position) AS cf_group_position FROM ('
-            . 'SELECT mfa.pk_i_id AS pk_i_id, 0 AS cf_group_position'
+            . 'SELECT u.pk_i_id AS pk_i_id, MIN(u.cf_group_position) AS cf_group_position, MIN(u.cf_field_position) AS cf_field_position FROM ('
+            . 'SELECT mfa.pk_i_id AS pk_i_id, 0 AS cf_group_position, mfa.i_position AS cf_field_position'
             . ' FROM ' . $p . 't_meta_fields mfa, ' . $p . 't_meta_categories mc'
             . ' WHERE mc.fk_i_category_id IN (' . $in . ') AND mfa.pk_i_id = mc.fk_i_field_id'
             . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mfa.pk_i_id)'
             . ' UNION '
-            . 'SELECT mfb.pk_i_id AS pk_i_id, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mfb'
+            . 'SELECT mfb.pk_i_id AS pk_i_id, g.i_position AS cf_group_position, gf.i_position AS cf_field_position FROM ' . $p . 't_meta_fields mfb'
             . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mfb.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
             . ' WHERE gc.fk_i_category_id IN (' . $in . ')'
             . ') AS u GROUP BY u.pk_i_id'
             . ') AS query ON query.pk_i_id = mf.pk_i_id'
-            . ' ORDER BY query.cf_group_position ASC, mf.i_position ASC',
+            . ' ORDER BY query.cf_group_position ASC, query.cf_field_position ASC, mf.pk_i_id ASC',
             array_merge($path, $path)
         ));
     }

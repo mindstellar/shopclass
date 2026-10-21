@@ -20,6 +20,11 @@ use mindstellar\database\DbException;
  */
 final class AdminTwoFactor
 {
+    /** Seconds the code step stays open after the password passed. */
+    public const PENDING_TTL = 300;
+
+    private const PENDING_PURPOSE = 'admin-2fa-pending';
+
     /**
      * @param array<string,mixed> $admin a t_admin row
      *
@@ -192,6 +197,64 @@ final class AdminTwoFactor
         $data = json_decode((string)self::read((int)($admin['pk_i_id'] ?? 0)), true);
 
         return (string)$admin['s_password'] . (is_array($data) ? (string)($data['secret'] ?? $data['off'] ?? '') : '');
+    }
+
+    /**
+     * A signed token saying this admin passed the password step, kept in a cookie instead of
+     * the session. It ends when the password or the 2FA data changes, so a passed code ends it.
+     *
+     * @param array<string,mixed> $admin   a t_admin row
+     * @param array<string,mixed> $choices what to carry to the code step, e.g. remember, locale
+     * @param int|null            $now     the current time; time() when null
+     *
+     * @return string
+     */
+    public static function issuePending(array $admin, array $choices, ?int $now = null): string
+    {
+        $id = (int)$admin['pk_i_id'];
+
+        return SignedPayload::pack(self::PENDING_PURPOSE, array(
+            'id'      => $id,
+            'choices' => $choices,
+            'bind'    => self::pendingBinding((string)($admin['s_password'] ?? ''), self::read($id)),
+        ), self::PENDING_TTL, 0, $now);
+    }
+
+    /**
+     * Read a pending token: the admin it names and the choices it carries. Null when it is
+     * forged, expired, for an admin that is gone, or used up.
+     *
+     * @param string   $token
+     * @param int|null $now
+     *
+     * @return array{admin:array<string,mixed>,choices:array<string,mixed>}|null
+     */
+    public static function readPending(string $token, ?int $now = null): ?array
+    {
+        $data = SignedPayload::unpack(self::PENDING_PURPOSE, $token, $now);
+        $id   = (int)($data['id'] ?? 0);
+        $row  = $id > 0 ? AdminStore::find($id) : null;
+        if ($row === null) {
+            return null;
+        }
+        $stored = isset($row['s_2fa']) ? (string)$row['s_2fa'] : null;
+        unset($row['s_2fa']);
+        if (!hash_equals(self::pendingBinding((string)$row['s_password'], $stored), (string)($data['bind'] ?? ''))) {
+            return null;
+        }
+
+        return array('admin' => $row, 'choices' => is_array($data['choices'] ?? null) ? $data['choices'] : array());
+    }
+
+    /**
+     * @param string      $password the stored password hash
+     * @param string|null $stored   the stored 2FA data
+     *
+     * @return string
+     */
+    private static function pendingBinding(string $password, ?string $stored): string
+    {
+        return hash_hmac('sha256', 'admin-2fa-bind|' . $password . '|' . (string)$stored, SigningKey::get());
     }
 
     /**

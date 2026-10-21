@@ -164,12 +164,14 @@ final class AddressGuard
     }
 
     /**
+     * Whether $ip is inside $cidr ("network/bits"); false when the two are not the same family.
+     *
      * @param string $ip
      * @param string $cidr
      *
      * @return bool
      */
-    private static function inRange(string $ip, string $cidr): bool
+    public static function inRange(string $ip, string $cidr): bool
     {
         [$network, $bits] = explode('/', $cidr);
         $a = inet_pton($ip);

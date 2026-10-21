@@ -997,6 +997,7 @@ final class SystemChecks
             array('label' => __('Visitor addresses'), 'value' => !empty($proxy)
                 ? sprintf(__('all seen as %s (behind a proxy)'), (string) ($proxy['proxy'] ?? ''))
                 : __('as reported')),
+            self::adminIpRow($env['admin_ip_allow'] ?? null, !empty($proxy)),
             array('label' => __('Backups folder'), 'value' => BackupStore::FOLDER . ' · ' . ($probe === true
                 ? __('reachable from the web')
                 : ($probe === false ? __('not reachable from the web') : __('not checked yet')))),
@@ -1017,6 +1018,30 @@ final class SystemChecks
             array('title' => __('Admins'), 'rows' => $admins),
             array('title' => __('Site'), 'rows' => $site),
         );
+    }
+
+    /**
+     * The admin address allow list row: off, or how many entries it has. Behind a proxy it
+     * warns that the list sees the proxy's address.
+     *
+     * @param mixed $count good entries in OSC_ADMIN_IP_ALLOW, or null when it is off
+     *
+     * @return array<string,string>
+     */
+    private static function adminIpRow($count, bool $proxy): array
+    {
+        if ($count === null) {
+            return array('label' => __('Admin panel addresses'), 'value' => __('any address'));
+        }
+        $row = array('label' => __('Admin panel addresses'), 'value' => sprintf(
+            _n('%d listed address or range, and this server', '%d listed addresses or ranges, and this server', (int) $count),
+            (int) $count
+        ));
+        if ($proxy) {
+            $row['note'] = __('The allow list checks the proxy\'s address, not the visitor\'s.');
+        }
+
+        return $row;
     }
 
     /**

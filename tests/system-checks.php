@@ -274,6 +274,21 @@ pin('one row per admin, saying only on or off', array('owner' => 'two-step sign-
 check('no row carries a secret', strpos(json_encode($groups), 'secret') === false);
 $site = array_column($groups[2]['rows'], 'value', 'label');
 pin('the switches', array('off, command line only', 'off'), array($site['Restore from the admin'], $site['Plugin and theme installs']));
+pin('the admin allow list is off by default', 'any address', $site['Admin panel addresses']);
+$ipRow = static function (array $extra) use ($env): array {
+    foreach (SystemChecks::report('security', $env($extra))['groups'][2]['rows'] as $row) {
+        if ($row['label'] === 'Admin panel addresses') {
+            return $row;
+        }
+    }
+
+    return array();
+};
+pin('...and counts its entries when on', '2 listed addresses or ranges, and this server', $ipRow(array('admin_ip_allow' => 2))['value'] ?? null);
+pin('...one entry in the singular', '1 listed address or range, and this server', $ipRow(array('admin_ip_allow' => 1))['value'] ?? null);
+pin('...and a list of only bad entries is on, with 0', '0 listed addresses or ranges, and this server', $ipRow(array('admin_ip_allow' => 0))['value'] ?? null);
+check('...with no proxy note when addresses agree', !isset($ipRow(array('admin_ip_allow' => 2))['note']));
+pin('behind a proxy it says what the list sees', 'The allow list checks the proxy\'s address, not the visitor\'s.', $ipRow(array('admin_ip_allow' => 1, 'proxy' => array('header' => 'X-Forwarded-For', 'proxy' => '10.0.0.1')))['note'] ?? null);
 pin('with a captcha there is no account limit', 'A captcha is set up, so there is no limit per account.', array_column(SystemChecks::report('security', $env(array('throttle' => array('enabled' => true, 'captcha' => true))))['groups'][0]['rows'], 'note', 'label')['Limits']);
 check('protection off: no limits row', !in_array('Limits', array_column(SystemChecks::report('security', $env(array('throttle' => array('enabled' => false))))['groups'][0]['rows'], 'label'), true));
 

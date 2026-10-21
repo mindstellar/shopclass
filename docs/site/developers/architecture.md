@@ -274,10 +274,17 @@ fire the same hooks in the same order. Tests pin that order.
 | Block, unblock, activate a user | `AccountService::disable()` and the others | `disable_item` per listing, then `disable_user` (and so on) |
 | Moderate a comment | `CommentModeration` | `activate_comment`, `deactivate_comment`, `enable_comment`, `disable_comment`, `edit_comment`, `delete_comment` |
 
-Each of these writes runs in one database transaction. E-mails sent from a hook wait until it
-commits, and a failure rolls back the whole write. Don't call a slow remote service from these
-hooks: the transaction stays open while it runs. Queue a [background job](/docs/developers/jobs/)
+Each of these writes runs in one database transaction. E-mails sent from a hook inside it wait until
+it commits, and a failure rolls back the whole write. Don't call a slow remote service from the hooks
+that run inside it (`posted_item`, `edited_item`, `delete_user` and the others listed after the
+write): the transaction stays open while they run. Queue a [background job](/docs/developers/jobs/)
 instead.
+
+The hooks that can refuse a write run before its transaction opens: `item_add_prepare_data`,
+`pre_item_add`, `pre_item_add_error`, their `item_edit_*` and `pre_item_edit*` twins,
+`before_delete_item`, `pre_item_add_comment_post`, `before_add_comment`, `before_user_register`,
+`pre_user_post` and `before_user_delete`. A hook there that redirects keeps what it wrote, and a
+failure in the write does not undo it.
 
 ## What a plugin should call
 

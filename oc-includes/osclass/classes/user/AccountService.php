@@ -663,8 +663,9 @@ final class AccountService
             Reauth::check($user, $password);
         }
 
+        // Before the transaction opens, so a plugin that redirects from it leaves none open.
+        osc_run_hook('before_user_delete', $user);
         DeferredMail::transaction(function () use ($userId, $user, $actor): void {
-            osc_run_hook('before_user_delete', $user);
             \Log::getInstance()->insertLog('user', 'delete', $userId, (string) $user['s_email'], $actor->logRole(), $actor->logId());
             if (!$this->users->deleteUser($userId)) {
                 throw new \RuntimeException('The user could not be deleted.');

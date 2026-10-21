@@ -26,6 +26,9 @@ use mindstellar\migration\SchemaProbes;
  *
  * s_storage names which backend holds a resource, defaulting to 'local' so rows
  * written before any offload existed keep pointing at the filesystem.
+ *
+ * Later migrations rename t_storage_queue to t_job_queue (0042) and drop t_item_resource
+ * (0071), so a re-run on a newer schema skips whichever step's table is gone or renamed.
  */
 return new class () implements MigrationInterface {
     use SchemaProbes;
@@ -39,26 +42,28 @@ return new class () implements MigrationInterface {
      */
     public function up(Connection $conn): void
     {
-        $conn->execute(
-            'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_storage_queue ('
-            . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
-            . ' s_type VARCHAR(20) NOT NULL,'
-            . ' s_storage VARCHAR(30) NOT NULL,'
-            . ' s_payload TEXT NOT NULL,'
-            . " s_status VARCHAR(10) NOT NULL DEFAULT 'pending',"
-            . ' i_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,'
-            . ' s_last_error VARCHAR(250) NULL,'
-            . ' s_worker VARCHAR(30) NULL,'
-            . ' dt_next_run DATETIME NOT NULL,'
-            . ' dt_locked DATETIME NULL,'
-            . ' dt_created DATETIME NOT NULL,'
-            . ' PRIMARY KEY (pk_i_id),'
-            . ' INDEX idx_status_next (s_status, dt_next_run)'
-            . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
-        );
+        if (!$this->tableExists($conn, DB_TABLE_PREFIX . 't_job_queue')) {
+            $conn->execute(
+                'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_storage_queue ('
+                . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
+                . ' s_type VARCHAR(20) NOT NULL,'
+                . ' s_storage VARCHAR(30) NOT NULL,'
+                . ' s_payload TEXT NOT NULL,'
+                . " s_status VARCHAR(10) NOT NULL DEFAULT 'pending',"
+                . ' i_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,'
+                . ' s_last_error VARCHAR(250) NULL,'
+                . ' s_worker VARCHAR(30) NULL,'
+                . ' dt_next_run DATETIME NOT NULL,'
+                . ' dt_locked DATETIME NULL,'
+                . ' dt_created DATETIME NOT NULL,'
+                . ' PRIMARY KEY (pk_i_id),'
+                . ' INDEX idx_status_next (s_status, dt_next_run)'
+                . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
+            );
+        }
 
         $resources = DB_TABLE_PREFIX . 't_item_resource';
-        if (!$this->columnExists($conn, $resources, 's_storage')) {
+        if ($this->tableExists($conn, $resources) && !$this->columnExists($conn, $resources, 's_storage')) {
             $conn->execute(
                 'ALTER TABLE ' . $resources
                 . " ADD COLUMN s_storage VARCHAR(30) NOT NULL DEFAULT 'local'"

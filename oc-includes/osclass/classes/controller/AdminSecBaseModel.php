@@ -134,6 +134,7 @@ class AdminSecBaseModel extends SecBaseModel
         Cookie::getInstance()->pop('oc_adminSecret');
         Cookie::getInstance()->pop('oc_adminLocale');
         Cookie::getInstance()->set();
+        CAdminLogin::clearTwoFactorCookie();
     }
 
     /**

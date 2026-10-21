@@ -14,7 +14,7 @@ and signed webhooks tell your server when something changes.
 | Without friendly URLs | `https://example.com/index.php?page=api&path=v1/…` |
 | Auth | `Authorization: Bearer <key or token>`, see [Authentication](/docs/developers/api/authentication/) |
 | Errors | `application/problem+json`, see [Errors](/docs/developers/api/errors/) |
-| Every endpoint | [Reference](/docs/developers/api/reference/), or the site's own `/api/v1/openapi.json` |
+| Every endpoint | [Reference](/docs/developers/api/reference/), the [API explorer](/docs/developers/api/explorer/), [openapi.json](/docs/developers/api/openapi.json), or the site's own `/api/v1/openapi.json` |
 | Client code | `openapi.json` is OpenAPI 3.1: use a generator that reads 3.1, such as openapi-generator 7 or later. Webhooks are described there but not generated. |
 
 The site owner turns the API on and makes your key:

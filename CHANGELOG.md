@@ -63,19 +63,29 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 ### Fixed
 - The API main menu no longer links a top category to a subcategory that has the same slug.
 
-## Shopclass 7.0.0.beta5
+## Shopclass 7.0.2
 
-Shopclass 7.0 opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
+This release lets a theme preview last for the whole visit, and lets any visitor preview themes on a demo site.
 
-It is also faster on a VPS or in Docker. With Redis or Valkey, background jobs start at once and busy counters stay out of the database, and the Docker image no longer needs a cron line. On plain shared hosting everything still works as before.
+### Changed
+- A theme preview (`?theme=`) now lasts for the whole visit. `?theme=` with no name ends it.
+- On a demo site (`OSC_DEMO=1`), any visitor can preview an installed theme.
 
-Beta 2 gives themes search snippets, related listings and search box suggestions, which a search plugin can take over.
+## Shopclass 7.0.1
 
-Beta 3 gives plugins their own database migrations, an HTTPS client and street address lookup, and carries the security fixes from 6.4.7.
+This release fixes the search filter sidebar, which listed custom fields in the Fields library order instead of the order set inside the form.
 
-Beta 4 drops Bootstrap's JavaScript from the admin, lets a search plugin answer the admin Listings screen, stops a double click from posting a listing twice, and lets address lookups wait for a provider's daily limit.
+### Fixed
+- The search filter sidebar lists custom fields in the order set inside the form, like the post form (#574).
+- Migrations 0001 and 0025 can run again on a 7.0 database without changing it.
 
-Beta 5 makes pages faster, with more caching, kept connections and compressed files, and lets sellers buy account upgrades such as extra listing slots with credits. Address lookup now needs a lookup plugin such as LocationIQ.
+## Shopclass 7.0.0
+
+Shopclass 7.0 is a big release and the base for the features that come next in the 7.x line. It opens your site to apps. A new REST API lets mobile apps, scripts and other sites read your listings, let people post and comment, and run the site with an admin key. Webhooks tell other systems the moment something changes. The API is off until you switch it on in **Settings → API**.
+
+Pages are faster, with more caching, kept database connections and compressed files. With Redis or Valkey on a VPS or in Docker, background jobs start at once and busy counters stay out of the database, and the Docker image needs no cron line. Shared hosting works as before.
+
+Sellers at the listing limit can buy an extra slot or account upgrades with credits. Themes get search snippets, related listings and search suggestions, and plugins get their own database migrations, an HTTPS client and address lookup. The admin is tidier and easier to use: one look for tabs, forms and lists, short help text, a layout that works on a phone, no Bootstrap JavaScript, and a media library for site images.
 
 Plugin authors: please read **Breaking** before you upgrade.
 
@@ -122,6 +132,8 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Search snippets: on a keyword search each listing gets its text with the searched words marked, from `osc_item_search_snippet()` and the API's `snippet`. A search plugin can also send category counts, a "did you mean" query and a fuzzy-match flag (`osc_search_category_counts()`, `osc_search_suggestion()`, `osc_search_relaxed()`, and `meta` in the API).
 - Related listings: `osc_related_listings()` and `GET /listings/{id}/related` show live listings like one listing (same category, shared title words). A search plugin can pick them with the `item_related_ids` filter.
 - Search box and post form suggestions: `GET /search/suggest` lists listings whose titles match, with a thumbnail, and `GET /search/categories` suggests up to three categories for a title. A search plugin can answer either through the `search_suggestions` and `category_suggestions` filters, and may add suggested searches. Themes add `osc_search_suggest_attributes()` to a search input to show the list.
+- **Media library**: one screen lists every stored file with a summary, search, a grid view, bulk delete and all kept photo sizes. Rich text editors get a **Media library** button that inserts a site image.
+- `osc_admin_tab_nav()` draws page tabs (System info, Billing, status filters) with the same look as the other admin tabs.
 
 ### Breaking
 
@@ -150,6 +162,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - Removed methods and classes: `Params::_view()`, `PageForm::multilanguage_name_description()`, `Object_Cache_Factory::getCache()` (use `getInstance()`), `LocationsTmp`, `StorageQueue` and `StorageWorker` (use the job queue), and `oc-includes/osclass/timezones.php` (use `DateTimeZone::listIdentifiers()`).
 
 ### Security
+- `OSC_ADMIN_IP_ALLOW` (in `config.php` or the environment) limits the admin panel to listed addresses and ranges; any other address gets a 404. See [Security](https://shopclass.org/docs/deploy/security/#allow-the-admin-panel-from-your-addresses-only).
 - `CurlHttpClient` takes a `resolve` option that pins a host to an address the caller checked, so a plugin fetching a user's URL can close the DNS rebinding gap.
 
 - The admin Languages list escapes each language's name and description, and the installer escapes its language error.
@@ -205,7 +218,11 @@ Plugin authors: please read **Breaking** before you upgrade.
 - With Redis, Valkey or memcached and APCu, `OSC_CACHE_LOCAL` lets each PHP worker keep its own copy of the cached values every page reads for up to 15 seconds, so the home page reads about 100 KB from Redis instead of 950 KB. The Docker image loads APCu and turns it on.
 
 ### Changed
-- The listing map choice moved from **Listings → Settings** to **Settings → General → Maps**, next to its Google Maps key and the address lookup, with clearer help text.
+- The admin works on a phone: list rows become compact cards, tab strips scroll, dialogs keep their buttons in view, and the pager is one row.
+- One tab look across the admin, and Billing and Spam and bots show one form per tab with one Save button.
+- The user editor is one form with sections, a status panel with the account's actions, and the user's alerts on their own tab.
+- Admin help text is one short line per field, and add buttons name what they add, such as "Add listing".
+- The listing map choice moved from **Settings → Listings** to **Settings → General → Maps**, next to its Google Maps key and the address lookup, with clearer help text.
 - Counts on the Market Updates tab, the Update all button, System info and the Locations filter are badges instead of a number in brackets.
 - The category checkbox tree (`osc_admin_tree_picker()`) shows a card per main category with folded subcategories and a live count; a main category with only some subcategories ticked shows a dash and is not saved itself. Its posted names, ids and Check all / Uncheck all still work.
 - A seller at the listing limit sees a button on My listings, Credits and Orders that buys an extra slot and opens the post form, or a link to buy credits.
@@ -252,6 +269,9 @@ Plugin authors: please read **Breaking** before you upgrade.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters.
 
 ### Fixed
+- Plugins and themes that refuse a listing, comment or account delete from a pre-save hook no longer leave the save's database transaction open.
+- A long batch of flash messages no longer gets lost after a redirect; the first ones show with "…and N more".
+- Admin login cookies stay on the admin path, and a two-step sign-in left at the code page no longer starts a session that skips the page cache.
 - The plugin and theme Browse cards show the release this site can install, not a newer one it cannot run.
 - Two clicks at once can no longer buy extra photos or longer listings twice; the second is refused and its credits kept.
 - The Credits menu link also shows when a free account upgrade is on offer, not only when credits can be bought or are held.
@@ -294,7 +314,7 @@ Plugin authors: please read **Breaking** before you upgrade.
 - API and keyword searches sorted by relevance keep listings with the same score in the same order on every page.
 - A search made only of very short or common words now finds matches instead of nothing, and "sony tv" no longer shows every Sony listing.
 - Search results are cached per language, so a language filter no longer shows another language's results.
-- **Media → Settings** refuses an image size with a zero side, which broke every photo upload.
+- **Settings → Media** refuses an image size with a zero side, which broke every photo upload.
 - Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting.
 - The installer saves a downloaded language into that language's folder.
 - An unknown place in a listing no longer causes a server error.

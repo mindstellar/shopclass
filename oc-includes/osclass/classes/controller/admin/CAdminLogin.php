@@ -23,6 +23,9 @@ class CAdminLogin extends AdminBaseModel
 {
     use \mindstellar\base\ActionMap;
 
+    /** The cookie that carries a sign-in waiting for its code, on the admin path. */
+    private const TWO_FACTOR_COOKIE = 'oc_admin_2fa';
+
     /** Each action and the method that answers it; any other action goes to loginForm(). */
     private const ACTIONS = array(
         'login_post'   => 'loginPost',
@@ -134,17 +137,16 @@ class CAdminLogin extends AdminBaseModel
         $remember = (bool)Params::getParam('remember');
         $locale   = Params::getParamString('locale');
         if (\mindstellar\security\AdminTwoFactor::enabled($admin)) {
-            // The password is right, but nothing is signed in until the code passes.
-            Session::getInstance()->_set('admin2fa', array(
-                'id'       => (int)$admin['pk_i_id'],
-                'remember' => $remember,
-                'locale'   => $locale,
-                'redirect' => $url_redirect,
-                'until'    => time() + 300,
+            // The password is right, but nothing is signed in until the code passes. A cookie,
+            // not the session, so leaving at the code page leaves no session behind.
+            self::writeTwoFactorCookie(\mindstellar\security\AdminTwoFactor::issuePending(
+                $admin,
+                array('remember' => $remember, 'locale' => $locale, 'redirect' => $url_redirect)
             ));
             $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
         }
 
+        self::clearTwoFactorCookie();
         $this->signIn($admin, $remember, $locale);
         $this->redirectTo($url_redirect);
     }
@@ -169,19 +171,19 @@ class CAdminLogin extends AdminBaseModel
     {
         osc_csrf_check();
         $pending = $this->pendingTwoFactor();
-        $admin   = $pending === null ? false : Admin::getInstance()->findByPrimaryKey($pending['id']);
-        if (!$admin) {
-            Session::getInstance()->_drop('admin2fa');
+        if ($pending === null) {
             $this->redirectTo(osc_admin_base_url(true) . '?page=login');
         }
+        $admin = $pending['admin'];
         if (!\mindstellar\security\AdminTwoFactor::check($admin, Params::getParamString('code'))) {
             \mindstellar\security\AdminTwoFactor::noteFailure($admin);
             osc_add_flash_error_message(\mindstellar\security\AdminTwoFactor::refusedMessage(), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
         }
-        Session::getInstance()->_drop('admin2fa');
-        $this->signIn($admin, $pending['remember'], $pending['locale']);
-        $this->redirectTo($pending['redirect']);
+        self::clearTwoFactorCookie();
+        $choices = $pending['choices'];
+        $this->signIn($admin, (bool)($choices['remember'] ?? false), (string)($choices['locale'] ?? ''));
+        $this->redirectTo((string)($choices['redirect'] ?? osc_admin_base_url()));
     }
 
     /**
@@ -337,6 +339,10 @@ class CAdminLogin extends AdminBaseModel
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
         }
+        // Releases before 7.0 set the login redirect cookie on the site path; drop that copy. Can go in 8.0.
+        if (osc_admin_cookie_path() !== Cookie::options(0)['path']) {
+            osc_write_signed_redirect_cookie('oc_admin_login_redirect', '', time() - 3600);
+        }
         $is_valid_locale = osc_validate_locale($locale, true);
         if ($remember) {
             Cookie::getInstance()->set_expires(osc_time_cookie());
@@ -374,18 +380,53 @@ class CAdminLogin extends AdminBaseModel
     }
 
     /**
-     * The sign-in waiting for its second step, or null when there is none or it expired.
+     * The sign-in waiting for its second step, or null when there is none or its cookie is
+     * forged, expired, for an admin that is gone or already used; a bad cookie is cleared.
      *
-     * @return array{id:int,remember:bool,locale:string,redirect:string,until:int}|null
+     * @return array{admin:array<string,mixed>,choices:array<string,mixed>}|null
      */
     private function pendingTwoFactor(): ?array
     {
-        $pending = Session::getInstance()->_get('admin2fa');
-        if (!is_array($pending) || (int)($pending['until'] ?? 0) < time()) {
+        $token = $_COOKIE[self::TWO_FACTOR_COOKIE] ?? null;
+        if (!is_string($token) || $token === '') {
             return null;
+        }
+        $pending = \mindstellar\security\AdminTwoFactor::readPending($token);
+        if ($pending === null) {
+            self::clearTwoFactorCookie();
         }
 
         return $pending;
+    }
+
+    /**
+     * Keep the sign-in waiting for its code in a cookie on the admin path.
+     *
+     * @param string $token
+     *
+     * @return void
+     */
+    private static function writeTwoFactorCookie(string $token): void
+    {
+        Cookie::write(
+            self::TWO_FACTOR_COOKIE,
+            $token,
+            time() + \mindstellar\security\AdminTwoFactor::PENDING_TTL,
+            osc_admin_cookie_path()
+        );
+    }
+
+    /**
+     * Clear the code-step cookie, when the browser has one; also called at logout.
+     *
+     * @return void
+     */
+    public static function clearTwoFactorCookie(): void
+    {
+        if (isset($_COOKIE[self::TWO_FACTOR_COOKIE])) {
+            Cookie::write(self::TWO_FACTOR_COOKIE, '', time() - 3600, osc_admin_cookie_path());
+            unset($_COOKIE[self::TWO_FACTOR_COOKIE]);
+        }
     }
 
     /**

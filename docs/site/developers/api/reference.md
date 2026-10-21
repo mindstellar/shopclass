@@ -6,8 +6,8 @@ sidebar:
 ---
 
 Generated from the route table by `tools/gen-api-doc.php`. The same endpoints are in
-[openapi.json](https://github.com/mindstellar/shopclass/blob/master/docs/site/developers/api/openapi.json)
-for Swagger UI, Redoc or Postman. A site also serves its own copy, with its plugins'
+[openapi.json](/docs/developers/api/openapi.json)
+for Swagger UI, Redoc or Postman, and you can browse them in the [API explorer](/docs/developers/api/explorer/). A site also serves its own copy, with its plugins'
 endpoints, at `/api/v1/openapi.json`.
 
 <!-- generated:api -->

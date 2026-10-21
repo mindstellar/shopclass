@@ -84,7 +84,8 @@ final class ListingService
         $files   = $tooSoon || empty($data['photos']['error']) ? null : $data['photos'];
 
         return $this->write(
-            fn (array &$notices): SavedListing => $this->insert($data, $actor, $import, $tooSoon, $notices),
+            fn (array &$notices): array => $this->checkAdd($data, $actor, $import, $tooSoon, $notices),
+            fn (array $checked): SavedListing => $this->insert($checked, $actor, $import),
             $files,
             $files === null ? null : PhotoService::cap(isset($data['userId']) ? (int) $data['userId'] : null)
         );
@@ -131,10 +132,11 @@ final class ListingService
      * @param bool                $import      admin rights that still apply moderation
      * @param bool                $matchSecret the save matches the secret in $data, as a form
      *                                         carries it; an admin saving plain data has none
+     * @param callable|null       $then        more writes for the edit's transaction, given the saved edit
      *
      * @throws InvalidException with the form's errors, each with its member, code and message
      */
-    public function update(array $data, Actor $actor, bool $import = false, bool $matchSecret = true): SavedListing
+    public function update(array $data, Actor $actor, bool $import = false, bool $matchSecret = true, ?callable $then = null): SavedListing
     {
         // An edit whose secret does not match resizes no photo.
         $files = empty($data['photos']['error']) ? null : $data['photos'];
@@ -145,7 +147,15 @@ final class ListingService
         }
 
         return $this->write(
-            fn (array &$notices): SavedListing => $this->change($data, $actor, $import, $matchSecret, $notices),
+            fn (array &$notices): array => $this->checkEdit($data, $actor, $notices),
+            function (array $checked) use ($actor, $import, $matchSecret, $then): SavedListing {
+                $saved = $this->change($checked, $actor, $import, $matchSecret);
+                if ($then !== null) {
+                    $then($saved);
+                }
+
+                return $saved;
+            },
             $files,
             $row === null ? null : PhotoService::room($id, (int) $row['fk_i_user_id'])
         );
@@ -197,11 +207,11 @@ final class ListingService
      */
     public function delete(int $itemId, string $secret, Actor $actor): int|false
     {
-        return DeferredMail::transaction(function () use ($itemId, $secret, $actor) {
-            $item = $this->items->findByPrimaryKey($itemId);
+        $item = $this->items->findByPrimaryKey($itemId);
+        // Before the transaction opens, so a plugin that redirects from it leaves none open.
+        osc_run_hook('before_delete_item', $itemId);
 
-            osc_run_hook('before_delete_item', $itemId);
-
+        return DeferredMail::transaction(function () use ($itemId, $secret, $actor, $item) {
             if (is_array($item) && hash_equals((string) ($item['s_secret'] ?? ''), $secret)) {
                 \Log::getInstance()
                     ->insertLog(
@@ -768,26 +778,28 @@ final class ListingService
     /**
      * Run a write in one transaction with e-mails held until it commits, and remove the
      * files of photos it stored when it fails. What went wrong with a photo goes with the
-     * result, or with the refusal, for the form to show. The photos are resized before the
-     * transaction opens, so it holds its locks only while rows are written.
+     * result, or with the refusal, for the form to show. The photos are resized and the
+     * form is checked before the transaction opens: a plugin hook that redirects from the
+     * check leaves no transaction open, and the transaction holds its locks only while rows
+     * are written.
      *
-     * @param callable(string[]&): SavedListing $fn
+     * @param callable(string[]&): array<string,mixed> $check the prepare filter, validation and pre hooks
+     * @param callable(array<string,mixed>): SavedListing $fn the writes, given what $check returned
      * @param mixed                             $files the photos to resize first; null for none
      * @param int|null                          $cap   how many of them the listing may take; null for no cap
      */
-    private function write(callable $fn, mixed $files, ?int $cap): SavedListing
+    private function write(callable $check, callable $fn, mixed $files, ?int $cap): SavedListing
     {
         $notices = array();
         $photos  = $this->photos;
         try {
             $saved = PhotoService::cleanUpOnFailure(
                 $photos,
-                static function () use ($fn, &$notices, $photos, $files, $cap): SavedListing {
+                static function () use ($check, $fn, &$notices, $photos, $files, $cap): SavedListing {
                     $photos->prepare($files, $cap);
+                    $checked = $check($notices);
 
-                    return DeferredMail::transaction(static function () use ($fn, &$notices): SavedListing {
-                        return $fn($notices);
-                    });
+                    return DeferredMail::transaction(static fn (): SavedListing => $fn($checked));
                 }
             );
         } catch (DbException $e) {
@@ -810,15 +822,19 @@ final class ListingService
     }
 
     /**
+     * Filter and check a new listing: `item_add_prepare_data`, the validation, `pre_item_add`
+     * and `pre_item_add_error`. Reads only, so it runs before the transaction opens.
+     *
      * @param array<string,mixed> $data
      * @param string[]            $notices
+     *
+     * @return array{item:array<string,mixed>,meta:mixed,spam:int,active:string}
+     * @throws InvalidException with the form's errors
      */
-    private function insert(array $data, Actor $actor, bool $import, bool $tooSoon, array &$notices): SavedListing
+    private function checkAdd(array $data, Actor $actor, bool $import, bool $tooSoon, array &$notices): array
     {
         $aItem   = osc_apply_filter('item_add_prepare_data', $data);
         $is_spam = 0;
-        $hold    = false;
-        $code    = osc_genRandomPassword();
 
         // Check status
         $active = $aItem['active'];
@@ -865,8 +881,28 @@ final class ListingService
         osc_run_hook('pre_item_add', $aItem, $text);
         $errors = self::pluginErrors($errors, $text, (string) osc_apply_filter('pre_item_add_error', $text, $aItem));
 
+        if ($errors !== array()) {
+            throw self::refuse($errors);
+        }
+
+        return array('item' => $aItem, 'meta' => $meta, 'spam' => $is_spam, 'active' => $active);
+    }
+
+    /**
+     * Write a new listing checkAdd() passed, and fire its e-mail hooks and `posted_item`.
+     *
+     * @param array{item:array<string,mixed>,meta:mixed,spam:int,active:string} $checked
+     */
+    private function insert(array $checked, Actor $actor, bool $import): SavedListing
+    {
+        ['item' => $aItem, 'meta' => $meta, 'spam' => $is_spam, 'active' => $active] = $checked;
+        $enabled = 1;
+        $code    = osc_genRandomPassword();
+        $hold    = false;
+
         // The one choke point for the listing quota: guests and admin posts are not metered.
         // Over the limit the listing is held until paid for, or refused (see postingRule()).
+        // It runs here, inside the transaction, so the seller lock holds until the insert commits.
         if ((!$actor->isAdmin() || $import) && osc_billing_enabled() && !empty($aItem['userId'])) {
             // Locked, so two posts or a post and a publish cannot both take the last free slot.
             \mindstellar\billing\EntitlementStore::lockSeller((int) $aItem['userId']);
@@ -874,12 +910,8 @@ final class ListingService
             if ($rule === \mindstellar\billing\ListingCheckout::POST_HOLD) {
                 $hold = true;
             } elseif ($rule === \mindstellar\billing\ListingCheckout::POST_REFUSE) {
-                $errors[] = ListingValidator::entry('', 'listing_limit', osc_listing_limit_message((int) $aItem['userId'], $aItem));
+                throw self::refuse(array(ListingValidator::entry('', 'listing_limit', osc_listing_limit_message((int) $aItem['userId'], $aItem))));
             }
-        }
-
-        if ($errors !== array()) {
-            throw self::refuse($errors);
         }
 
         if (empty($aItem['price'])) {
@@ -1011,10 +1043,16 @@ final class ListingService
     }
 
     /**
+     * Filter and check an edit: `item_edit_prepare_data`, the validation, `pre_item_edit` and
+     * `pre_item_edit_error`. Reads only, so it runs before the transaction opens.
+     *
      * @param array<string,mixed> $data
      * @param string[]            $notices
+     *
+     * @return array{item:array<string,mixed>,meta:mixed}
+     * @throws InvalidException with the form's errors
      */
-    private function change(array $data, Actor $actor, bool $import, bool $matchSecret, array &$notices): SavedListing
+    private function checkEdit(array $data, Actor $actor, array &$notices): array
     {
         $aItem           = osc_apply_filter('item_edit_prepare_data', $data);
         $aItem['idItem'] = (int) $aItem['idItem'];
@@ -1023,16 +1061,9 @@ final class ListingService
         $aItem['cityArea'] = self::place($aItem['cityArea']);
         $aItem['address']  = self::place($aItem['address']);
 
-        // The whole row, read before anything is written; edited_item gets it back with the edit on it.
-        // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
-        $old_item = ListingStore::find($aItem['idItem'], array('*'), true);
-        $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
-        // A listing waiting for payment keeps its hold and its deadline through an edit.
-        $unpaid = $old_item !== array() && ListingStatus::isHeld($old_item);
-
         // Validate
         $errors = array_merge(
-            self::ownerErrors($aItem, $actor, (int) ($old_item['fk_i_user_id'] ?? 0)),
+            self::ownerErrors($aItem, $actor, $aItem['idItem']),
             $this->validator->common($aItem, $notices)
         );
         // Only an admin editing a listing with no owner writes the contact name and e-mail.
@@ -1051,6 +1082,25 @@ final class ListingService
         if ($errors !== array()) {
             throw self::refuse($errors);
         }
+
+        return array('item' => $aItem, 'meta' => $meta);
+    }
+
+    /**
+     * Write an edit checkEdit() passed, and fire `edited_item`.
+     *
+     * @param array{item:array<string,mixed>,meta:mixed} $checked
+     */
+    private function change(array $checked, Actor $actor, bool $import, bool $matchSecret): SavedListing
+    {
+        ['item' => $aItem, 'meta' => $meta] = $checked;
+
+        // The whole row, read before anything is written; edited_item gets it back with the edit on it.
+        // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
+        $old_item = ListingStore::find($aItem['idItem'], array('*'), true);
+        $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
+        // A listing waiting for payment keeps its hold and its deadline through an edit.
+        $unpaid = $old_item !== array() && ListingStatus::isHeld($old_item);
 
         // Text first: when it is refused, nothing else about the listing has changed yet.
         $texts = $this->storedLocales($aItem['idItem']);
@@ -1219,17 +1269,22 @@ final class ListingService
     }
 
     /**
-     * Refuse an owner an admin named that is not an account. The current owner is not
-     * checked again.
+     * Refuse an owner an admin named that is not an account. The current owner of the
+     * listing being edited is not checked again.
      *
      * @param array<string,mixed> $aItem
+     * @param int|null            $listingId the listing being edited; null for a new one
      *
      * @return array<int,array{pointer:string,code:string,message:string}>
      */
-    private static function ownerErrors(array $aItem, Actor $actor, int $current = 0): array
+    private static function ownerErrors(array $aItem, Actor $actor, ?int $listingId = null): array
     {
         $asked = (int) ($aItem['ownerId'] ?? $aItem['userId'] ?? 0);
-        if (!$actor->isAdmin() || $asked <= 0 || $asked === $current || (new UserQuery())->exists($asked)) {
+        if (!$actor->isAdmin() || $asked <= 0) {
+            return array();
+        }
+        $current = $listingId === null ? 0 : (int) (ListingStore::find($listingId, array('fk_i_user_id'))['fk_i_user_id'] ?? 0);
+        if ($asked === $current || (new UserQuery())->exists($asked)) {
             return array();
         }
 

@@ -13,6 +13,7 @@
 
 use mindstellar\boot\Boot;
 use mindstellar\logger\ErrorHandler;
+use mindstellar\security\AdminIpAllowlist;
 use mindstellar\security\Csrf;
 
 // Stage 1, config: paths and the settings from config.php or the environment.
@@ -73,6 +74,10 @@ osc_cache_init();
 // Stage 4, request: the request values, then the visitor's session.
 define('__OSC_LOADED__', true);
 Params::init();
+// Before the session, so a refused admin request gets no cookie.
+if (defined('OC_ADMIN') && OC_ADMIN && PHP_SAPI !== 'cli') {
+    AdminIpAllowlist::guard();
+}
 Boot::session();
 
 if (osc_timezone()) {

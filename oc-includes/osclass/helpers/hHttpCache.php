@@ -42,7 +42,7 @@ function osc_mark_response_cacheable($cacheable = true)
 
 /**
  * The cookie names that mean "this response is personalized" — core's PHP session, the chosen
- * front-end locale, and the fixed-name cache-bypass flag Cookie::set() writes whenever the
+ * front-end locale, a theme preview, and the fixed-name cache-bypass flag Cookie::set() writes whenever the
  * visitor carries identity state (front-end user, admin).
  *
  * These are REAL wire cookie names, so a reverse proxy / CDN can match them by name. (Front-end
@@ -68,6 +68,7 @@ function osc_cache_relevant_cookies()
         'osclass',
         'oc_cache_bypass',
         'oc_userLocale',
+        'oc_theme',
     ))));
 }
 

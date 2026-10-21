@@ -42,6 +42,9 @@ services:
       # set it. Uncomment on a new deployment — on an existing one, try it on a copy
       # first if third-party plugins write to the database.
       # OSC_DB_STRICT_MODE: "1"
+      # Answer the admin panel only from these addresses and CIDR ranges; any other
+      # address gets a 404. Behind a proxy, set OSC_REAL_IP_HEADER as well.
+      # OSC_ADMIN_IP_ALLOW: "203.0.113.7, 2001:db8::/32"
       # Valkey holds the object cache and wakes the job worker the moment a job is
       # queued. To run without it, remove these two lines, the valkey service and
       # the valkey entry under depends_on.

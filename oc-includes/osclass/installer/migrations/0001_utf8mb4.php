@@ -72,7 +72,9 @@ use mindstellar\migration\MigrationInterface;
  * Only tables owned by this install are touched — enumerated via
  * SHOW TABLES LIKE '<DB_TABLE_PREFIX>%' (with LIKE metacharacters in the prefix
  * escaped so `_` and `%` match literally) — so third-party tables sharing the same
- * database are never rewritten.
+ * database are never rewritten. Of those, a table already on utf8mb4 with no utf8
+ * column left is skipped: converting it again would reset columns a later release
+ * declared ascii or utf8mb4_bin on purpose.
  *
  * Ancient-server caveat: on InnoDB before MySQL 5.7 / MariaDB 10.2 the 767-byte
  * index-prefix limit can reject the wider utf8mb4 columns. Such servers need
@@ -88,8 +90,9 @@ return new class () implements MigrationInterface {
     private const BACKUP_NAME    = 'utf8mb4_fk_backup';
 
     /**
-     * Convert every table on this install to utf8mb4/utf8mb4_general_ci, dropping the
-     * char/varchar foreign keys that block the convert and recreating them afterwards.
+     * Convert every table on this install that is not yet utf8mb4 to
+     * utf8mb4/utf8mb4_general_ci, dropping the char/varchar foreign keys that block the
+     * convert and recreating them afterwards.
      *
      * @param Connection $conn
      *
@@ -100,11 +103,8 @@ return new class () implements MigrationInterface {
     {
         $conn->execute('SET FOREIGN_KEY_CHECKS = 0');
 
-        $tables = $this->installTables($conn);
-        if ($tables === array()) {
-            $conn->execute('SET FOREIGN_KEY_CHECKS = 1');
-            return;
-        }
+        $allTables = $this->installTables($conn);
+        $tables    = $this->tablesToConvert($conn, $allTables);
 
         // Durable snapshot for re-entrancy. On a fresh run compute the char/varchar
         // FK set and the original TEXT column types from the live (still-utf8) schema
@@ -113,7 +113,11 @@ return new class () implements MigrationInterface {
         // recoverable from the live schema, so recomputing would lose them.
         $backup = $this->loadBackup($conn);
         if ($backup === null) {
-            $charForeignKeys = $this->computeCharForeignKeys($conn, $tables);
+            if ($tables === array()) {
+                $conn->execute('SET FOREIGN_KEY_CHECKS = 1');
+                return;
+            }
+            $charForeignKeys = $this->computeCharForeignKeys($conn, $allTables, $tables);
             $textColumns     = $this->textColumns($conn, $tables);
             $backup = array('fks' => $charForeignKeys, 'texts' => $textColumns);
             $this->saveBackup($conn, $backup);
@@ -124,7 +128,7 @@ return new class () implements MigrationInterface {
         // Reconstruct the pre-drop index picture: start from the live indexes, then
         // fold in each FK's original support-index name from the snapshot so a retry
         // (whose live schema has already lost those indexes) can still restore them.
-        $indexesBefore = $this->secondaryIndexes($conn, $tables);
+        $indexesBefore = $this->secondaryIndexes($conn, $allTables);
         foreach ($charForeignKeys as $fk) {
             $signature = implode(',', $fk['columns']);
             if (($fk['index_name'] ?? null) !== null
@@ -136,7 +140,7 @@ return new class () implements MigrationInterface {
 
         // 1. Drop the char/varchar foreign keys so their columns become convertible.
         //    Guarded: only drop a key that still exists (a retry may have dropped it).
-        $liveForeignKeys = $this->liveForeignKeyNames($conn, $tables);
+        $liveForeignKeys = $this->liveForeignKeyNames($conn, $allTables);
         foreach ($charForeignKeys as $fk) {
             if (!isset($liveForeignKeys[$fk['table'] . '.' . $fk['name']])) {
                 continue;
@@ -149,8 +153,8 @@ return new class () implements MigrationInterface {
             );
         }
 
-        // 2. Convert every table's charset/collation. Idempotent: converting a table
-        //    already at utf8mb4/utf8mb4_general_ci is a harmless no-op.
+        // 2. Convert each table that still needs it. A retry finds the tables an
+        //    earlier run converted already gone from this list.
         foreach ($tables as $table) {
             $this->run(
                 $conn,
@@ -178,7 +182,7 @@ return new class () implements MigrationInterface {
         //    a retry restores keys an earlier interrupted run had already dropped. Any
         //    non-default ON DELETE/ON UPDATE action is re-emitted so referential
         //    behaviour survives; RESTRICT/NO ACTION are the defaults and stay implicit.
-        $liveForeignKeys = $this->liveForeignKeyNames($conn, $tables);
+        $liveForeignKeys = $this->liveForeignKeyNames($conn, $allTables);
         foreach ($charForeignKeys as $fk) {
             if (isset($liveForeignKeys[$fk['table'] . '.' . $fk['name']])) {
                 continue;
@@ -196,7 +200,7 @@ return new class () implements MigrationInterface {
         }
 
         // 5. Rename any FK support index back to the name it had before recreation.
-        $indexesAfter = $this->secondaryIndexes($conn, $tables);
+        $indexesAfter = $this->secondaryIndexes($conn, $allTables);
         foreach ($indexesAfter as $table => $signatures) {
             foreach ($signatures as $signature => $currentName) {
                 $originalName = $indexesBefore[$table][$signature] ?? null;
@@ -230,25 +234,31 @@ return new class () implements MigrationInterface {
     }
 
     /**
-     * The char/varchar foreign keys on this install, each annotated with the name of
-     * its supporting index so the index name can be restored after recreation.
+     * The char/varchar foreign keys on either side of a table about to be converted,
+     * each annotated with the name of its supporting index so the index name can be
+     * restored after recreation.
      *
      * @param Connection $conn
-     * @param string[]   $tables
+     * @param string[]   $tables    every table of this install
+     * @param string[]   $toConvert the tables the convert step will rewrite
      *
      * @return array<int, array{name:string,table:string,columns:string[],ref_table:string,ref_columns:string[],delete_rule:string,update_rule:string,index_name:?string}>
      * @throws \mindstellar\database\DbException
      */
-    private function computeCharForeignKeys(Connection $conn, array $tables): array
+    private function computeCharForeignKeys(Connection $conn, array $tables, array $toConvert): array
     {
         $charColumns = $this->charColumns($conn);
         $foreignKeys = $this->foreignKeys($conn, $tables);
+        $convertSet  = array_flip($toConvert);
 
         // Only foreign keys whose columns carry a charset (char/varchar) block the
         // convert; integer keys are left untouched so their indexes never move.
         $charForeignKeys = array_values(array_filter(
             $foreignKeys,
-            static function ($fk) use ($charColumns) {
+            static function ($fk) use ($charColumns, $convertSet) {
+                if (!isset($convertSet[$fk['table']]) && !isset($convertSet[$fk['ref_table']])) {
+                    return false;
+                }
                 foreach ($fk['columns'] as $col) {
                     if (isset($charColumns[$fk['table'] . '.' . $col])) {
                         return true;
@@ -371,6 +381,41 @@ return new class () implements MigrationInterface {
         }
 
         return $set;
+    }
+
+    /**
+     * The tables among $tables that still need converting: a table whose default
+     * charset is not utf8mb4, or one that still holds a legacy utf8 (utf8mb3) column.
+     * A table already on utf8mb4 is left alone, so a re-run keeps any column that was
+     * deliberately declared ascii or utf8mb4_bin.
+     *
+     * @param Connection $conn
+     * @param string[]   $tables
+     *
+     * @return string[]
+     * @throws \mindstellar\database\DbException
+     */
+    private function tablesToConvert(Connection $conn, array $tables): array
+    {
+        $rows = $conn->select(
+            'SELECT TABLE_NAME FROM information_schema.TABLES'
+            . ' WHERE TABLE_SCHEMA = DATABASE()'
+            . " AND TABLE_NAME LIKE '" . $this->prefixLikePattern() . "'"
+            . " AND TABLE_COLLATION NOT LIKE 'utf8mb4\\_%'"
+            . ' UNION SELECT TABLE_NAME FROM information_schema.COLUMNS'
+            . ' WHERE TABLE_SCHEMA = DATABASE()'
+            . " AND TABLE_NAME LIKE '" . $this->prefixLikePattern() . "'"
+            . " AND CHARACTER_SET_NAME IN ('utf8', 'utf8mb3')"
+        );
+
+        $pending = array();
+        foreach ($rows as $row) {
+            $pending[$row['TABLE_NAME']] = true;
+        }
+
+        return array_values(array_filter($tables, static function ($table) use ($pending) {
+            return isset($pending[$table]);
+        }));
     }
 
     /**

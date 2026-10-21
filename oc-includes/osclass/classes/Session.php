@@ -19,6 +19,9 @@ class Session
 {
     use \mindstellar\base\SharedInstance;
 
+    /** Bytes of cookie value the flash messages may take; the name and attributes need the rest of 4096. */
+    public const FLASH_BUDGET = 3800;
+
     //attributes
     private $session = array();
     private $ephemeral = array();
@@ -455,7 +458,115 @@ class Session
         if (empty($this->messages)) {
             return;
         }
-        \Cookie::write('oc_flash', $this->encodeSignedStore('oc_flash', $this->messages, 300), time() + 300);
+        $messages = self::fitFlashMessages($this->messages);
+        \Cookie::write('oc_flash', $this->encodeSignedStore('oc_flash', $messages, 300), time() + 300);
+    }
+
+    /**
+     * The flash messages cut down so their signed cookie value stays within $budget bytes, since
+     * a browser drops a cookie over 4096 bytes. The first messages are kept in bucket order and
+     * one "…and N more" line, of the first dropped message's type, ends the bucket it was in.
+     *
+     * @param array<string,mixed> $messages bucket => list of ['msg' => string, 'type' => string]
+     * @param int                 $budget   bytes of packed cookie value
+     *
+     * @return array<string,mixed>
+     */
+    public static function fitFlashMessages(array $messages, int $budget = self::FLASH_BUDGET): array
+    {
+        if (self::packedLength($messages) <= $budget) {
+            return $messages;
+        }
+        $queue = array();
+        foreach ($messages as $bucket => $list) {
+            foreach (is_array($list) ? $list : array() as $message) {
+                $queue[] = array((string)$bucket, $message);
+            }
+        }
+        $total = count($queue);
+        $kept  = array();
+        $done  = 0;
+        foreach ($queue as $i => [$bucket, $message]) {
+            $try            = $kept;
+            $try[$bucket][] = $message;
+            if (self::packedLength(self::withMore($try, $queue, $i + 1)) > $budget) {
+                break;
+            }
+            $kept = $try;
+            $done = $i + 1;
+        }
+        if ($done > 0) {
+            return self::withMore($kept, $queue, $done);
+        }
+        if ($total === 0) {
+            return array();
+        }
+
+        // Even the first message alone is too long: cut it, as plain text, until it fits.
+        [$bucket, $message] = $queue[0];
+        $html = is_array($message) ? (string)($message['msg'] ?? '') : '';
+        $text = html_entity_decode(strip_tags(str_replace('<br />', ' ', $html)), ENT_QUOTES, 'UTF-8');
+        $low  = 0;
+        $high = mb_strlen($text);
+        $best = array();
+        while ($low <= $high) {
+            $mid        = intdiv($low + $high, 2);
+            $cut        = is_array($message) ? $message : array();
+            $cut['msg'] = self::cutText($text, $mid);
+            $try        = self::withMore(array($bucket => array($cut)), $queue, 1);
+            if (self::packedLength($try) <= $budget) {
+                $best = $try;
+                $low  = $mid + 1;
+            } else {
+                $high = $mid - 1;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * $kept plus, when the messages from $next on are left out, the "…and N more" line in the
+     * bucket and type of the first one left out.
+     *
+     * @param array<string,mixed>              $kept
+     * @param array<int,array{0:string,1:mixed}> $queue
+     *
+     * @return array<string,mixed>
+     */
+    private static function withMore(array $kept, array $queue, int $next): array
+    {
+        $left = count($queue) - $next;
+        if ($left <= 0) {
+            return $kept;
+        }
+        [$bucket, $message] = $queue[$next];
+        $line = function_exists('__') ? __('…and %d more') : '…and %d more';
+        $kept[$bucket][] = array(
+            'msg'  => sprintf($line, $left),
+            'type' => is_array($message) ? ($message['type'] ?? '') : '',
+        );
+
+        return $kept;
+    }
+
+    /** Plain $text cut to $width characters plus "…", escaped for HTML. */
+    private static function cutText(string $text, int $width): string
+    {
+        return htmlspecialchars(mb_substr($text, 0, $width), ENT_QUOTES, 'UTF-8') . '…';
+    }
+
+    /**
+     * The length of the value SignedPayload::pack() makes of $data: base64url JSON with the
+     * expiry added, a dot and a 43-character signature.
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function packedLength(array $data): int
+    {
+        $data['x'] = time() + 300;
+
+        return (int)ceil(strlen((string)json_encode($data)) * 4 / 3) + 1 + 43;
     }
 
     /**
