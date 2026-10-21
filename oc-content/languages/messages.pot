@@ -1800,6 +1800,10 @@ msgstr ""
 msgid "Option name %1$s is longer than %2$d characters."
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Option names %1$s and %2$s are the same."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Order #%d"
