@@ -188,7 +188,7 @@ $watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mys
 $waiting = 0;
 for ($try = 0; $try < 400 && $waiting < 2; $try++) {
     usleep(50000);
-    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE 'UPDATE {$p}t_item_variant%'")->fetch_row()[0];
+    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE '%{$p}t_item_variant%'")->fetch_row()[0];
 }
 $watch->close();
 $admin->commit();
@@ -269,16 +269,24 @@ pin('it finds the order paid and keeps it, without an error', "kept\n", $out[0])
 pin('the order stays paid and keeps its stock', [true, '4'], [OrderStore::find($held->getId())->isPaid(), $stock($a)]);
 Billing::refund(OrderStore::find($held->getId()));
 
+harness_section('a cash on delivery order placed while a payment takes the same variant');
+[$waiting, $out] = race($admin, "UPDATE {$p}t_item_variant SET i_stock = i_stock - 1 WHERE pk_i_id = $a", $dbName, [[$child, [$a, 'place', $tom, 'cod']]], "%{$p}t_item_variant%");
+pin('the placing waited on the variant', 1, $waiting);
+pin('it is placed without an error', "placed\n", $out[0]);
+pin('and both units are gone', '3', $stock($a));
+OrderStore::cancel((int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_billing_order")->fetch_row()[0]);
+$setStock($a, 5);
+
 harness_section('two orders taking the same two variants in opposite order');
 $setStock($r, 5);
 $ar = $place([['variant' => $a, 'qty' => 1], ['variant' => $r, 'qty' => 1]], 'card');
 $ra = $place([['variant' => $r, 'qty' => 1], ['variant' => $a, 'qty' => 1]], 'card');
 $lockBoth = "SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id IN ($a, $r) FOR UPDATE";
-[$waiting, $printed] = $race([[$ar->getId(), 'pay'], [$ra->getId(), 'pay']], $lockBoth, "UPDATE {$p}t_item_variant%");
+[$waiting, $printed] = $race([[$ar->getId(), 'pay'], [$ra->getId(), 'pay']], $lockBoth, "%{$p}t_item_variant%");
 pin('both waited on a variant', 2, $waiting);
 pin('both take their stock, neither deadlocks', [2, 0], [substr_count($printed, 'taken'), substr_count($printed, 'threw')]);
 pin('each variant lost two', ['3', '3'], [$stock($a), $stock($r)]);
-[$waiting, $printed] = $race([[$ar->getId(), 'release'], [$ra->getId(), 'release']], $lockBoth, "UPDATE {$p}t_item_variant%");
+[$waiting, $printed] = $race([[$ar->getId(), 'release'], [$ra->getId(), 'release']], $lockBoth, "%{$p}t_item_variant%");
 pin('giving both back does not deadlock either', [2, 2, 0], [$waiting, substr_count($printed, 'released'), substr_count($printed, 'threw')]);
 pin('and the stock is whole', ['5', '5'], [$stock($a), $stock($r)]);
 $setStock($r, 1);

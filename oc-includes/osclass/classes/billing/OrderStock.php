@@ -55,7 +55,7 @@ final class OrderStock
                 return $meta;
             }
             $taken = array();
-            foreach (self::tracked(OrderLineStore::itemLines($orderId)) as $line) {
+            foreach (self::tracked(OrderLineStore::itemLines($orderId, true)) as $line) {
                 if (VariantStore::adjustStock($line['variant_id'], -$line['qty'])) {
                     $taken[$line['id']] = $line['qty'];
                 } else {
@@ -89,7 +89,7 @@ final class OrderStock
             $taken = self::quantities($meta[self::TAKEN]);
             if ($taken !== array()) {
                 $variants = array();
-                foreach (OrderLineStore::itemLines($orderId) as $line) {
+                foreach (OrderLineStore::itemLines($orderId, true) as $line) {
                     if (isset($taken[$line['id']]) && $line['variant_id'] !== null) {
                         $variants[$line['id']] = $line['variant_id'];
                     }
@@ -120,7 +120,7 @@ final class OrderStock
     private static function tracked(array $lines): array
     {
         $lines    = array_values(array_filter($lines, static fn (array $line): bool => $line['variant_id'] !== null));
-        $variants = VariantStore::byIds(array_column($lines, 'variant_id'));
+        $variants = VariantStore::byIds(array_column($lines, 'variant_id'), true);
         $out      = array();
         foreach ($lines as $line) {
             $variant = $variants[$line['variant_id']] ?? null;

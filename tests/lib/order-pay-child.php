@@ -11,9 +11,11 @@
 /**
  * One side of a race on orders, for tests/billing-stock.php. "pay" prints "taken" when the order
  * got its stock, "short" when it was marked oversold; "cancel" prints "cancelled" or "kept";
- * "release" prints "released" or "none". Any error prints "threw".
+ * "release" prints "released" or "none". "place" orders one unit of a variant (the id in place of
+ * the order id) for a buyer through a gateway and prints "placed". Any error prints "threw".
  *
  * Usage:  php tests/lib/order-pay-child.php <database> <order id> [pay|cancel|release]
+ *         php tests/lib/order-pay-child.php <database> <variant id> place <user id> <gateway>
  */
 
 require_once __DIR__ . '/scratchdb.php';
@@ -26,10 +28,31 @@ $admin->select_db($database);
 api_admin_env();
 
 use mindstellar\billing\Billing;
+use mindstellar\billing\GoodsCheckout;
 use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
 
 try {
+    if ($action === 'place') {
+        // The same in-memory settings tests/billing-stock.php runs with.
+        foreach ([
+            'billing_enabled'          => '1',
+            'billing_currency'         => 'USD',
+            'currency'                 => 'USD',
+            'billing_receipt_email'    => '0',
+            'billing_cod_enabled'      => '1',
+            'billing_cod_fee'          => '2000000',
+            'billing_open_hold_orders' => '0',
+        ] as $k => $v) {
+            Preference::getInstance()->set($k, $v);
+        }
+        scratchdb_forget_cache();
+        osc_reset_preferences();
+        $address = ['name' => 'Tom', 'phone' => '5550100', 'line1' => '1 Main St', 'line2' => '', 'city' => 'Austin', 'state' => 'TX', 'postcode' => '73301', 'country' => 'US'];
+        (new GoodsCheckout())->place((int) $argv[4], [['variant' => (int) $id, 'qty' => 1]], $address, 'standard', (string) $argv[5]);
+        echo "placed\n";
+        exit(0);
+    }
     if ($action === 'cancel') {
         echo OrderStore::cancel((int) $id) ? "cancelled\n" : "kept\n";
         exit(0);
