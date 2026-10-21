@@ -44,6 +44,51 @@ final class ListingStore extends Model
     }
 
     /**
+     * Lock a listing for a write: its t_item row, then its t_item_stats row, then its
+     * t_item_variant rows by id. Take this before any plain SELECT in the transaction.
+     *
+     * @return array<string,mixed>|null the t_item row, or null when there is no such listing
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockForWrite(int $id): ?array
+    {
+        $row = self::find($id, array('*'), true);
+        if ($row === null) {
+            return null;
+        }
+        ListingCounters::lockByItems(array($id));
+        VariantStore::lockByItems(array($id));
+
+        return $row;
+    }
+
+    /**
+     * Lock a user's listings in primary key order.
+     *
+     * @return int[] the listing ids
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockByUser(int $userId): array
+    {
+        $rows = Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', array($userId));
+
+        return array_map('intval', array_column($rows, 'pk_i_id'));
+    }
+
+    /**
+     * Lock the guest listings posted with this e-mail in primary key order.
+     *
+     * @return int[] the listing ids
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockGuest(string $email): array
+    {
+        $rows = Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item WHERE s_contact_email = ? AND fk_i_user_id IS NULL ORDER BY pk_i_id FOR UPDATE', array($email));
+
+        return array_map('intval', array_column($rows, 'pk_i_id'));
+    }
+
+    /**
      * The listing's owner, 0 for a guest listing or no listing.
      *
      * @throws \mindstellar\database\DbException
@@ -54,16 +99,17 @@ final class ListingStore extends Model
     }
 
     /**
-     * The columns a premium change decides on, or null.
+     * The columns a premium change decides on, or null. $lock holds the row (FOR UPDATE) until the
+     * transaction ends.
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    public static function premiumState(int $id): ?array
+    public static function premiumState(int $id, bool $lock = false): ?array
     {
         return Db::selectOne(
             'SELECT b_premium, dt_premium_expiration, b_enabled, b_active, b_spam, dt_expiration FROM '
-            . self::tableName() . ' WHERE pk_i_id = ?',
+            . self::tableName() . ' WHERE pk_i_id = ?' . ($lock ? ' FOR UPDATE' : ''),
             array($id)
         );
     }

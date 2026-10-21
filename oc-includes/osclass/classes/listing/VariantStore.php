@@ -84,6 +84,21 @@ final class VariantStore extends Model
     }
 
     /**
+     * Lock the variant rows of these listings in primary key order.
+     *
+     * @param int[] $itemIds
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockByItems(array $itemIds): void
+    {
+        foreach (array_chunk($itemIds, 500) as $chunk) {
+            $in = implode(',', array_fill(0, count($chunk), '?'));
+            Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item_variant WHERE fk_i_item_id IN (' . $in . ') ORDER BY pk_i_id FOR UPDATE', $chunk);
+        }
+    }
+
+    /**
      * The variants of these listings, by listing id. A listing with none has no entry.
      *
      * @param int[] $itemIds
@@ -111,21 +126,26 @@ final class VariantStore extends Model
     }
 
     /**
-     * These variants, by id. Unknown ids have no entry.
+     * These variants, by id. Unknown ids have no entry. $lock reads them FOR UPDATE in id order,
+     * so two writers lock the same rows in the same order and neither opens its snapshot.
      *
      * @param int[] $ids
      *
      * @return array<int,array<string,mixed>>
      * @throws \mindstellar\database\DbException
      */
-    public static function byIds(array $ids): array
+    public static function byIds(array $ids, bool $lock = false): array
     {
         $ids = array_values(array_unique(array_map('intval', $ids)));
         if ($ids === array()) {
             return array();
         }
+        $sql = 'SELECT * FROM ' . self::tableName() . ' WHERE pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')';
+        if ($lock) {
+            $sql .= ' ORDER BY pk_i_id FOR UPDATE';
+        }
         $out = array();
-        foreach (Db::select('SELECT * FROM ' . self::tableName() . ' WHERE pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')', $ids) as $row) {
+        foreach (Db::select($sql, $ids) as $row) {
             $out[(int) $row['pk_i_id']] = $row;
         }
 
@@ -346,6 +366,7 @@ final class VariantStore extends Model
     {
         if ($delta !== 0) {
             // The read after the write sees this change alone: the row stays locked until commit.
+            // It locks too, so it opens no snapshot for the caller's later writes.
             $after = Db::transaction(static function () use ($variantId, $delta): ?array {
                 $changed = Db::execute(
                     'UPDATE ' . self::tableName() . ' SET i_stock = i_stock + ? WHERE pk_i_id = ? AND i_stock IS NOT NULL'
@@ -355,7 +376,7 @@ final class VariantStore extends Model
                 if ($changed !== 1) {
                     return null;
                 }
-                $row = Db::selectOne('SELECT fk_i_item_id, i_stock FROM ' . self::tableName() . ' WHERE pk_i_id = ?', array($variantId));
+                $row = Db::selectOne('SELECT fk_i_item_id, i_stock FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', array($variantId));
                 if ($row !== null) {
                     $to = (int) $row['i_stock'];
                     self::announce((int) $row['fk_i_item_id'], array(array($variantId, array('i_stock' => $to - $delta), array('i_stock' => $to))));
@@ -368,7 +389,11 @@ final class VariantStore extends Model
             }
         }
         // Nothing changed: fine for a zero change or an untracked stock, a refusal otherwise.
-        $row = self::table()->where('pk_i_id', $variantId)->first();
+        // In a transaction the read locks, so it does not open the caller's snapshot.
+        $row = Db::selectOne(
+            'SELECT i_stock FROM ' . self::tableName() . ' WHERE pk_i_id = ?' . (Db::inTransaction() ? ' FOR UPDATE' : ''),
+            array($variantId)
+        );
         if ($row === null) {
             return false;
         }

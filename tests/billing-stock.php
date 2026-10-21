@@ -19,6 +19,7 @@
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
+require_once __DIR__ . '/lib/race.php';
 
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
@@ -31,7 +32,10 @@ use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
+use mindstellar\listing\event\VariantStockChanged;
+use mindstellar\listing\ProductAlerts;
 use mindstellar\listing\VariantStore;
 
 $admin = api_admin_boot('osc_billing_stock');
@@ -175,27 +179,9 @@ harness_section('two callbacks for the last unit');
 $first  = $place([['variant' => $r, 'qty' => 1]], 'card');
 $second = $place([['variant' => $r, 'qty' => 1]], 'card');
 $dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
-$admin->begin_transaction();
-$admin->query("SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id = $r FOR UPDATE");
-$payers = [];
-$outs   = [];
-foreach ([$first, $second] as $i => $o) {
-    $payers[] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/order-pay-child.php', $dbName, (string) $o->getId()], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-    $outs[$i] = $pipes;
-}
-$watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
-$waiting = 0;
-for ($try = 0; $try < 400 && $waiting < 2; $try++) {
-    usleep(50000);
-    $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE 'UPDATE {$p}t_item_variant%'")->fetch_row()[0];
-}
-$watch->close();
-$admin->commit();
-$printed = '';
-foreach ($payers as $i => $proc) {
-    $printed .= stream_get_contents($outs[$i][1]) . stream_get_contents($outs[$i][2]);
-    proc_close($proc);
-}
+$child  = __DIR__ . '/lib/order-pay-child.php';
+[$waiting, $out] = race($admin, "SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id = $r FOR UPDATE", $dbName, [[$child, [$first->getId()]], [$child, [$second->getId()]]], "%{$p}t_item_variant%");
+$printed = implode('', $out);
 pin('both callbacks waited on the row', 2, $waiting);
 pin('one order gets the unit, the other is marked short, neither throws', [1, 1, 0], [substr_count($printed, 'taken'), substr_count($printed, 'short'), substr_count($printed, 'threw')]);
 pin('the stock ends at 0', '0', $stock($r));
@@ -210,36 +196,12 @@ pin('OrderStock::short reads it back, and nothing for an order that was not shor
 pin('refunding the short order gives back nothing', [true, '0'], [Billing::refund($shortOne), $stock($r)]);
 $setStock($r, 1);
 
-$race = static function (array $runs, string $lock, string $waitLike) use ($admin, $p, $dbName): array {
-    $admin->begin_transaction();
-    $admin->query($lock);
-    $procs = [];
-    $pipes = [];
-    foreach ($runs as $i => [$orderId, $action]) {
-        $procs[$i] = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', __DIR__ . '/lib/order-pay-child.php', $dbName, (string) $orderId, $action], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp);
-        $pipes[$i] = $pp;
-    }
-    $watch   = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $dbName, (int) ini_get('mysqli.default_port'));
-    $waiting = 0;
-    for ($try = 0; $try < 200 && $waiting < count($runs); $try++) {
-        usleep(50000);
-        $waiting = (int) $watch->query("SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '{$dbName}' AND COMMAND = 'Query' AND INFO LIKE '{$waitLike}'")->fetch_row()[0];
-    }
-    $watch->close();
-    $admin->commit();
-    $printed = '';
-    foreach ($procs as $i => $proc) {
-        $printed .= stream_get_contents($pipes[$i][1]) . stream_get_contents($pipes[$i][2]);
-        proc_close($proc);
-    }
-
-    return [$waiting, $printed];
-};
 $lockOrder = static fn (Order $o): string => "SELECT s_meta FROM {$p}t_billing_order WHERE pk_i_id = {$o->getId()} FOR UPDATE";
 
 harness_section('two releases of one order');
 $held = $place([['variant' => $a, 'qty' => 2]], 'offline');
-[$waiting, $printed] = $race([[$held->getId(), 'release'], [$held->getId(), 'release']], $lockOrder($held), "SELECT s_meta FROM %t_billing_order%");
+[$waiting, $out] = race($admin, $lockOrder($held), $dbName, [[$child, [$held->getId(), 'release']], [$child, [$held->getId(), 'release']]], "SELECT s_meta FROM %t_billing_order%");
+$printed = implode('', $out);
 pin('both waited on the order row', 2, $waiting);
 pin('one gives the stock back, the other finds nothing', [1, 1, 0], [substr_count($printed, 'released'), substr_count($printed, 'none'), substr_count($printed, 'threw')]);
 pin('the stock is back once', '5', $stock($a));
@@ -248,7 +210,8 @@ OrderStore::cancel($held->getId());
 harness_section('a payment and a cancel on one order');
 foreach (['offline', 'card'] as $via) {
     $one = $place([['variant' => $a, 'qty' => 1]], $via);
-    [$waiting, $printed] = $race([[$one->getId(), 'pay'], [$one->getId(), 'cancel']], $lockOrder($one), "UPDATE %t_billing_order%");
+    [$waiting, $out] = race($admin, $lockOrder($one), $dbName, [[$child, [$one->getId(), 'pay']], [$child, [$one->getId(), 'cancel']]], "%t_billing_order%");
+$printed = implode('', $out);
     $now = OrderStore::find($one->getId());
     pin("$via: both waited on the order row", 2, $waiting);
     pin("$via: exactly one wins, neither throws", [1, 0], [substr_count($printed, 'taken') + substr_count($printed, 'cancelled'), substr_count($printed, 'threw')]);
@@ -259,19 +222,57 @@ foreach (['offline', 'card'] as $via) {
     pin("$via: and is whole again after", '5', $stock($a));
 }
 
+harness_section('a cancel while a payment of the same order commits');
+$held  = $place([['variant' => $a, 'qty' => 1]], 'offline');
+[$waiting, $out] = race($admin, "UPDATE {$p}t_billing_order SET s_status = 'paid', dt_paid_date = NOW() WHERE pk_i_id = {$held->getId()}", $dbName, [[$child, [$held->getId(), 'cancel']]], "%{$p}t_billing_order%");
+pin('the cancel waited on the order row', 1, $waiting);
+pin('it finds the order paid and keeps it, without an error', "kept\n", $out[0]);
+pin('the order stays paid and keeps its stock', [true, '4'], [OrderStore::find($held->getId())->isPaid(), $stock($a)]);
+Billing::refund(OrderStore::find($held->getId()));
+
+harness_section('a cash on delivery order placed while a payment takes the same variant');
+[$waiting, $out] = race($admin, "UPDATE {$p}t_item_variant SET i_stock = i_stock - 1 WHERE pk_i_id = $a", $dbName, [[$child, [$a, 'place', $tom, 'cod']]], "%{$p}t_item_variant%");
+pin('the placing waited on the variant', 1, $waiting);
+pin('it is placed without an error', "placed\n", $out[0]);
+pin('and both units are gone', '3', $stock($a));
+OrderStore::cancel((int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_billing_order")->fetch_row()[0]);
+$setStock($a, 5);
+
 harness_section('two orders taking the same two variants in opposite order');
 $setStock($r, 5);
 $ar = $place([['variant' => $a, 'qty' => 1], ['variant' => $r, 'qty' => 1]], 'card');
 $ra = $place([['variant' => $r, 'qty' => 1], ['variant' => $a, 'qty' => 1]], 'card');
 $lockBoth = "SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id IN ($a, $r) FOR UPDATE";
-[$waiting, $printed] = $race([[$ar->getId(), 'pay'], [$ra->getId(), 'pay']], $lockBoth, "UPDATE {$p}t_item_variant%");
+[$waiting, $out] = race($admin, $lockBoth, $dbName, [[$child, [$ar->getId(), 'pay']], [$child, [$ra->getId(), 'pay']]], "%{$p}t_item_variant%");
+$printed = implode('', $out);
 pin('both waited on a variant', 2, $waiting);
 pin('both take their stock, neither deadlocks', [2, 0], [substr_count($printed, 'taken'), substr_count($printed, 'threw')]);
 pin('each variant lost two', ['3', '3'], [$stock($a), $stock($r)]);
-[$waiting, $printed] = $race([[$ar->getId(), 'release'], [$ra->getId(), 'release']], $lockBoth, "UPDATE {$p}t_item_variant%");
+[$waiting, $out] = race($admin, $lockBoth, $dbName, [[$child, [$ar->getId(), 'release']], [$child, [$ra->getId(), 'release']]], "%{$p}t_item_variant%");
+$printed = implode('', $out);
 pin('giving both back does not deadlock either', [2, 2, 0], [$waiting, substr_count($printed, 'released'), substr_count($printed, 'threw')]);
 pin('and the stock is whole', ['5', '5'], [$stock($a), $stock($r)]);
 $setStock($r, 1);
+
+harness_section('a back-in-stock alert is queued once the change commits');
+$alertJobs = static fn (): int => (int) Db::scalar("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = ?", [ProductAlerts::JOB]);
+$before    = $alertJobs();
+$inside    = null;
+try {
+    Db::transaction(static function () use ($a, $tee, $alertJobs, &$inside): void {
+        ProductAlerts::stockChanged(new VariantStockChanged($a, $tee, 0, 2));
+        $inside = $alertJobs();
+
+        throw new RuntimeException('roll back');
+    });
+} catch (RuntimeException $e) {
+}
+pin('nothing is queued inside the transaction, nor after a rollback', [$before, $before], [$inside, $alertJobs()]);
+Db::transaction(static function () use ($a, $tee, $alertJobs, &$inside): void {
+    ProductAlerts::stockChanged(new VariantStockChanged($a, $tee, 0, 2));
+    $inside = $alertJobs();
+});
+pin('and one job after a commit', [$before, $before + 1], [$inside, $alertJobs()]);
 
 harness_section('a declined card payment');
 $declined = $place([['variant' => $a, 'qty' => 1]], 'card');

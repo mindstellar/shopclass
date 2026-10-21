@@ -203,6 +203,10 @@ command line too. Its one argument is the list of reasons, such as `array('theme
 Clear your cache there. Do not print, send headers or read the session. To ask for one yourself,
 call `osc_purge_page_cache('my_reason')`. See [the caching contract](/docs/developers/caching/).
 
+`item_increase_stat` and `item_decrease_stat` fire after the transaction commits, when the
+caller is in one. They come after `posted_item` and `edited_item`, not before, and a post or edit
+that is rolled back never fires them. Do not rely on their order against those hooks.
+
 ## Reference
 
 Every name core fires, with where it is fired and what it passes.

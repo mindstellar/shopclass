@@ -203,7 +203,7 @@ Pick the read by what you need:
 
 | You need | Use |
 |---|---|
-| Some columns of one listing, maybe locked for a write | `ListingStore::find($id, $columns, $lock)` |
+| Some columns of one listing, maybe locked for a write (lock before any plain read in a write transaction) | `ListingStore::find($id, $columns, $lock)` |
 | A listing's status flags | `ListingQuery::statusRow($id)` |
 | A listing as the edit form reads it | `ListingQuery::editRows($id, $withTexts)` |
 | A listing with its texts, category name and place, for a theme or a hook | `Item::getInstance()->findByPrimaryKey($id)` |

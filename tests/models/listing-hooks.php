@@ -369,7 +369,7 @@ $apiPost = $record(static function () use ($call, $listing, $sueToken, &$apiMade
 });
 check('the API made a listing', $apiMade > 0);
 pin('the web post fires these, in order', array(
-    'item_prepare_data', 'item_add_prepare_data', 'pre_item_add', 'pre_item_add_error', 'item_increase_stat', 'posted_item',
+    'item_prepare_data', 'item_add_prepare_data', 'pre_item_add', 'pre_item_add_error', 'posted_item', 'item_increase_stat',
 ), $webPost);
 pin('the API post fires the same, in the same order', $webPost, $apiPost);
 
@@ -390,7 +390,7 @@ $asUser(null);
 $staged       = (string) ($call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg))->body()['data']['token'] ?? '');
 $apiPhotoPost = $record(static fn () => $call('POST', 'listings', $listing(array('photo_tokens' => array($staged))), $sueToken));
 pin('the web post with a photo resizes it before the save and stores it before the stats', array(
-    'item_prepare_data', 'upload_image_extension', 'upload_image_mime', 'item_add_prepare_data', 'pre_item_add', 'pre_item_add_error', 'uploaded_file', 'invalidate_item_cache', 'item_increase_stat', 'posted_item',
+    'item_prepare_data', 'upload_image_extension', 'upload_image_mime', 'item_add_prepare_data', 'pre_item_add', 'pre_item_add_error', 'uploaded_file', 'invalidate_item_cache', 'posted_item', 'item_increase_stat',
 ), $webPhotoPost);
 pin('the API post with a photo fires the same, in the same order', $webPhotoPost, $apiPhotoPost);
 

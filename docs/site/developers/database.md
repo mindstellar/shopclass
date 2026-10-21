@@ -110,6 +110,24 @@ Each `osc_db_*` helper calls the same method on `mindstellar\database\Db`, such 
 `Db::table()` and `Db::select()`, which core uses. The class needs Shopclass 7.0; the
 helpers also work on 6.x.
 
+## Write transactions
+
+In a transaction, lock the rows you will change before the first plain `SELECT`. Lock them
+with `SELECT ... FOR UPDATE`, or by running the `UPDATE` itself.
+
+Any plain `SELECT` opens a snapshot. That includes a DAO read and a read made by a hook. On
+MariaDB 11.6 and later, a later write to a row another request changed since then fails with
+error 1020 ("Record has changed since last read"). MySQL does not raise it.
+
+Lock in this order, and never the other way round: user, wallet, listing, listing stats,
+listing variants (by id), order, order lines. `ListingStore::lockForWrite($id)` takes the
+listing, its stats and its variants in that order. Do side work that needs no lock, such as
+counters, jobs and mail, after the commit with `Db::afterCommit()`.
+
+A plugin feature's `apply()` method must lock its listing first, with
+`ListingStore::lockForWrite($id)`. Use `ListingStore::find($id, $columns, true)` only when you
+touch the `t_item` row alone.
+
 ## Adding your own tables
 
 Create them on plugin install, drop them on uninstall, and prefix them with both

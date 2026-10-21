@@ -212,6 +212,10 @@ final class ListingService
         osc_run_hook('before_delete_item', $itemId);
 
         return DeferredMail::transaction(function () use ($itemId, $secret, $actor, $item) {
+            // Locked before the delete reads anything, so a concurrent edit or views flush waits here.
+            if (ListingStore::lockForWrite($itemId) === null) {
+                return false;
+            }
             if (is_array($item) && hash_equals((string) ($item['s_secret'] ?? ''), $secret)) {
                 \Log::getInstance()
                     ->insertLog(
@@ -281,6 +285,10 @@ final class ListingService
         if ($secret !== null) {
             $where['s_secret'] = $secret;
         }
+        // Locked first: in a transaction the read below must not open the snapshot before the update.
+        if (Db::inTransaction()) {
+            ListingStore::find($id, array('pk_i_id'), true);
+        }
         $item = $this->items->findByPrimaryKey($id);
         if (!is_array($item) || !isset($item['b_active']) || (int) $item['b_active'] !== 0
             || ($secret !== null && !hash_equals((string) $item['s_secret'], $secret))
@@ -324,7 +332,7 @@ final class ListingService
      */
     public function enable(int $id): bool
     {
-        $row = ListingStore::find($id, array('b_enabled', 'b_active', 'dt_first_pub_date'));
+        $row = ListingStore::find($id, array('b_enabled', 'b_active', 'dt_first_pub_date'), Db::inTransaction());
         if ($row !== null && ListingHoldJobs::holds($id, Db::stringifyRow($row))) {
             return false;
         }
@@ -405,7 +413,7 @@ final class ListingService
 
         // Just the columns needed here, not findByPrimaryKey(): that hydrates locales and
         // resources this decision has no use for.
-        $current = ListingStore::premiumState((int) $id);
+        $current = ListingStore::premiumState((int) $id, Db::inTransaction());
 
         if ($on && $days !== null) {
             if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {
@@ -463,6 +471,9 @@ final class ListingService
      */
     public function spam(int $id, bool $on = true): bool
     {
+        if (Db::inTransaction()) {
+            ListingStore::find($id, array('pk_i_id'), true);
+        }
         $item = $this->items->findByPrimaryKey($id);
         if ($on) {
             $result = $this->items->update(
@@ -712,10 +723,12 @@ final class ListingService
     public function publish(int $id, Actor $actor): bool
     {
         return (bool) DeferredMail::transaction(function () use ($id, $actor): bool {
-            $row = ListingStore::find($id, array('*'), true);
+            $row = ListingStore::lockForWrite($id);
             if ($row === null || !ListingStatus::isHeld(Db::stringifyRow($row))) {
                 return false;
             }
+            // Before any read: the worker may be claiming these jobs right now.
+            ListingHoldJobs::cancel($id);
             $ownerId = (int) $row['fk_i_user_id'];
             $active  = ListingPolicy::newListingStatus($ownerId > 0 ? Actor::user($ownerId) : Actor::guest());
             $now     = date('Y-m-d H:i:s');
@@ -728,8 +741,6 @@ final class ListingService
             if (!$updated) {
                 return false;
             }
-
-            ListingHoldJobs::cancel($id);
 
             $days = ListingInput::expirationDays((int) $row['fk_i_category_id'], $ownerId > 0 ? $ownerId : null);
             // No run time is the column's "never" value.
@@ -968,7 +979,10 @@ final class ListingService
 
         if (!$actor->isAdmin()) {
             // Counts toward the posting wait in ListingPolicy::postingTooSoon().
-            ActionThrottle::record('item_post', (int) osc_items_wait_time_for_user($actor->userId()));
+            $wait = (int) osc_items_wait_time_for_user($actor->userId());
+            Db::afterCommit(static function () use ($wait): void {
+                ActionThrottle::record('item_post', $wait);
+            });
         }
 
         \Log::getInstance()->insertLog(
@@ -1097,7 +1111,7 @@ final class ListingService
 
         // The whole row, read before anything is written; edited_item gets it back with the edit on it.
         // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
-        $old_item = ListingStore::find($aItem['idItem'], array('*'), true);
+        $old_item = ListingStore::lockForWrite((int) $aItem['idItem']);
         $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
         // A listing waiting for payment keeps its hold and its deadline through an edit.
         $unpaid = $old_item !== array() && ListingStatus::isHeld($old_item);

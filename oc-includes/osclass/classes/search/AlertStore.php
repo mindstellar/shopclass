@@ -27,6 +27,26 @@ final class AlertStore extends Model
     /** Rows converted per batch. */
     public const BATCH = 500;
 
+    /**
+     * Lock a user's alerts in primary key order.
+     *
+     * @throws DbException
+     */
+    public static function lockByUser(int $userId): void
+    {
+        Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_alerts WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', array($userId));
+    }
+
+    /**
+     * Lock the guest alerts left under this e-mail in primary key order.
+     *
+     * @throws DbException
+     */
+    public static function lockGuest(string $email): void
+    {
+        Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_alerts WHERE s_email = ? AND (fk_i_user_id IS NULL OR fk_i_user_id = 0) ORDER BY pk_i_id FOR UPDATE', array($email));
+    }
+
     /** s_search of a held row starts with this. */
     private const HELD_LIKE = '{"v":2,"held":%';
 

@@ -44,6 +44,8 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
 
 ### Changed
+- Core works with MariaDB 11.6+ snapshot isolation (`innodb_snapshot_isolation=ON`): rows are locked first, and plugin writes should follow the [Write transactions](https://shopclass.org/docs/developers/database/) rule, locking the listing with `ListingStore::lockForWrite()` in `apply()`.
+- `item_increase_stat` and `item_decrease_stat` fire after the commit, so they now come after `posted_item` and `edited_item`.
 - Settings is grouped by area (General, Content, Email, Security, System) with one tab row each, and Billing lists Shipping, Offers and coupons, Tax and Digital Goods beside its own Settings. A "Find a setting" box in the top bar searches every setting. Ban rules moved from Users to Settings > Security; the URLs are unchanged.
 - `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
 - A cash on delivery order ships before it is paid and is marked paid when marked delivered; neither the buyer nor the hold job cancels one once shipped.

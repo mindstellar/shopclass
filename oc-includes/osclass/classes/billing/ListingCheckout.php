@@ -78,8 +78,10 @@ final class ListingCheckout
         $userId = (int) $actor->userId();
 
         return Db::transaction(static function () use ($itemId, $actor, $userId): array {
-            // The seller first, then the listing: the price depends on the seller's other listings.
+            // The seller, the wallet, then the listing, all before the first plain read: the price
+            // depends on the seller's other listings, and the spend writes the wallet.
             EntitlementStore::lockSeller($userId);
+            Wallet::lock($userId);
             $row = ListingStore::find($itemId, array('*'), true);
             if ($row === null || $userId <= 0 || (int) $row['fk_i_user_id'] !== $userId) {
                 throw new ForbiddenException('', ForbiddenException::NOT_OWNER);

@@ -14,7 +14,11 @@ namespace mindstellar\user;
 
 use mindstellar\base\Model;
 use mindstellar\database\Db;
+use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\ListingStore;
+use mindstellar\listing\VariantStore;
+use mindstellar\search\AlertStore;
 
 /**
  * Writes on t_user and on the rows an account owns elsewhere, plus the small reads the
@@ -44,6 +48,68 @@ final class UserStore extends Model
     public static function lock(int $id): void
     {
         Db::select('SELECT pk_i_id FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', array($id));
+    }
+
+    /**
+     * Lock the user's row and everything the account owns that a profile save, a block or a
+     * delete touches: listings, their stats and variants, comments and alerts. Call it first in
+     * the transaction, before any plain SELECT, so a row another request changes meanwhile makes
+     * this one wait instead of failing with error 1020. Rows are taken in primary key order.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockOwned(int $userId): void
+    {
+        self::lock($userId);
+        $items = ListingStore::lockByUser($userId);
+        ListingCounters::lockByItems($items);
+        VariantStore::lockByItems($items);
+        \ItemComment::lockByUser($userId);
+        AlertStore::lockByUser($userId);
+    }
+
+    /**
+     * Lock what a profile save writes: the user's row, listings, comments and alerts. Not the
+     * stats or variants, which a profile save leaves alone. Same order as lockOwned().
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockProfile(int $userId): void
+    {
+        self::lock($userId);
+        ListingStore::lockByUser($userId);
+        \ItemComment::lockByUser($userId);
+        AlertStore::lockByUser($userId);
+    }
+
+    /**
+     * Lock the guest listings and alerts posted with this e-mail, which an account takes over
+     * once it is confirmed. Same rule as lockOwned(): before any plain SELECT.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockGuestListings(string $email): void
+    {
+        if ($email === '') {
+            return;
+        }
+        $items = ListingStore::lockGuest($email);
+        ListingCounters::lockByItems($items);
+        VariantStore::lockByItems($items);
+        AlertStore::lockGuest($email);
+    }
+
+    /**
+     * Count one more live comment on the user, in one statement so no other change is lost.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function addComment(int $id): void
+    {
+        Db::execute('UPDATE ' . self::tableName() . ' SET i_comments = i_comments + 1 WHERE pk_i_id = ?', array($id));
+        if (function_exists('osc_invalidate_user_cache')) {
+            osc_invalidate_user_cache($id);
+        }
     }
 
     /**

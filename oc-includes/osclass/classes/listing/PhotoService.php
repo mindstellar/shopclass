@@ -375,6 +375,7 @@ final class PhotoService
             $this->prepare($files, self::room($itemId, ListingStore::ownerId($itemId)));
 
             return DeferredMail::transaction(function () use ($itemId, $files, $actor): array {
+                ListingStore::lockForWrite($itemId);
                 $this->store($files, $itemId);
                 if ($this->storedIds === array()) {
                     return array();
