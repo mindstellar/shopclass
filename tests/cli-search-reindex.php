@@ -88,6 +88,24 @@ check('with a new table id', $tableId() !== $before);
 pin('the session lock wait is put back', 77, $session());
 pin('the rows are all there', [1, 1, 1, 1, 1], array_map($rowsOf, $ids));
 
+$failed = null;
+\mindstellar\database\Db::execute('SET SESSION lock_wait_timeout = 77');
+$admin->query("RENAME TABLE $facet TO {$facet}_away");
+try {
+    FacetIndex::pack();
+} catch (\mindstellar\database\DbException $e) {
+    $failed = $e;
+}
+$admin->query("RENAME TABLE {$facet}_away TO $facet");
+check('a failed rewrite throws', $failed !== null);
+pin('and still puts the session lock wait back', 77, $session());
+
+harness_section('packFits');
+pin('the command line packs any size', true, FacetIndex::packFits('cli', PHP_INT_MAX));
+pin('a web request packs a small table', true, FacetIndex::packFits('fpm-fcgi', 128 * 1024 * 1024));
+pin('but not a big one', false, FacetIndex::packFits('fpm-fcgi', 128 * 1024 * 1024 + 1));
+check('the table size is read', FacetIndex::tableBytes() > 0);
+
 harness_section('--from');
 $setFlag('0');
 $admin->query("DELETE FROM $facet");

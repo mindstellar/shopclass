@@ -10,7 +10,8 @@
 
 /**
  * The listing filter index backfill as jobs: a batch per run with the cursor kept in the job,
- * the ready flag set and the table rewritten only when the last batch is done, a failed run that resumes from its cursor,
+ * the ready flag set and a pack job queued only when the last batch is done, a failed pack retried,
+ * a failed run that resumes from its cursor,
  * a listing that fails partway rolled back on its own,
  * one pending build at a time, and a one-field rebuild that puts the flag back unless another rebuild is queued.
  *
@@ -121,11 +122,24 @@ pin('and the table is not rewritten before it', $before, $tableId());
 $before = $tableId();
 $pass();
 pin('after pass 3 no job remains', [], $jobs(FacetIndex::JOB_BUILD));
-check('the last batch rewrites the table', $tableId() !== $before);
+check('the last batch queues the pack job, which rewrites the table', $tableId() !== $before);
+pin('and the pack job is done', [], $jobs(FacetIndex::JOB_PACK));
 pin('the last batch prunes it', 0, $orphans());
 pin('every listing has both rows', 2 * $total, $count());
 pin('the flag is on', '1', $pref('facet_ready'));
 check('the build time is set', (int) $pref('facet_built_at') > 0);
+
+harness_section('a failed pack retries later');
+osc_job_ensure(FacetIndex::JOB_PACK);
+$admin->query("RENAME TABLE $facet TO {$facet}_away");
+$pass();
+$admin->query("RENAME TABLE {$facet}_away TO $facet");
+$job = $admin->query("SELECT i_attempts, s_last_error FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_PACK . "' AND s_status = 'pending'")->fetch_assoc();
+pin('the job waits with one attempt', 1, (int) ($job['i_attempts'] ?? 0));
+check('and says the compact is optional', str_starts_with((string) ($job['s_last_error'] ?? ''), 'Index table not compacted (optional'));
+$before = $tableId();
+$pass();
+pin('the next run packs', [[], true], [$jobs(FacetIndex::JOB_PACK), $tableId() !== $before]);
 
 harness_section('an interrupted build resumes from its cursor');
 $admin->query("DELETE FROM $facet");
@@ -211,6 +225,7 @@ JobWorker::resetRegistration();
 JobWorker::registerHandlers();
 pin('the build has a name', 'Listing filter index', JobRegistry::name(FacetIndex::JOB_BUILD));
 pin('the field job has a name', 'Filter index of one field', JobRegistry::name(FacetIndex::JOB_FIELD));
+pin('the pack job has a name', 'Compact the listing filter index', JobRegistry::name(FacetIndex::JOB_PACK));
 pin('the detail names the cursor', 'After listing #42', JobRegistry::detail(FacetIndex::JOB_BUILD, ['after' => 42]));
 
 exit(harness_result());

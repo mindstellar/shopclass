@@ -32,6 +32,7 @@ final class FacetIndex
     public const TERM_TABLE = 't_facet_term';
     public const JOB_BUILD  = 'search.facet_build';
     public const JOB_FIELD  = 'search.facet_field';
+    public const JOB_PACK   = 'search.facet_pack';
     public const BATCH      = 500;
     public const VALUE_LEN  = 191;
     public const PREF_READY = 'facet_ready';
@@ -43,6 +44,7 @@ final class FacetIndex
     private const PRUNE_RANGE = 2000;
     private const ER_NO_REFERENCED_ROW = 1452;
     private const PACK_LOCK_WAIT = 10;
+    private const PACK_WEB_MAX_BYTES = 128 * 1024 * 1024;
 
     private static bool $tablePresent = false;
 
@@ -377,36 +379,45 @@ final class FacetIndex
      * rebuild is online, so searches and saves go on; it waits at most PACK_LOCK_WAIT seconds
      * for a lock. Skipped inside a transaction, which the statement would commit.
      *
-     * @return bool true when the table was rewritten; a failure is logged
+     * @return bool true when the table was rewritten, false inside a transaction
+     * @throws DbException when the rewrite fails, e.g. on a lock wait, a full online log or a full disk
      */
     public static function pack(): bool
     {
         if (Db::inTransaction()) {
             return false;
         }
-        try {
-            $wait = (int) Db::scalar('SELECT @@SESSION.lock_wait_timeout');
-            Db::execute('SET SESSION lock_wait_timeout = ' . self::PACK_LOCK_WAIT);
-        } catch (DbException $e) {
-            error_log('Listing filter index table not rewritten: ' . $e->getMessage());
-
-            return false;
-        }
+        $wait = (int) Db::scalar('SELECT @@SESSION.lock_wait_timeout');
+        Db::execute('SET SESSION lock_wait_timeout = ' . self::PACK_LOCK_WAIT);
         try {
             Db::execute('ALTER TABLE ' . self::tableName() . ' FORCE, ALGORITHM=INPLACE, LOCK=NONE');
-
-            return true;
-        } catch (DbException $e) {
-            error_log('Listing filter index table not rewritten: ' . $e->getMessage());
-
-            return false;
         } finally {
-            try {
-                Db::execute('SET SESSION lock_wait_timeout = ' . $wait);
-            } catch (DbException $e) {
-                error_log('Listing filter index: lock wait not put back: ' . $e->getMessage());
-            }
+            Db::execute('SET SESSION lock_wait_timeout = ' . $wait);
         }
+
+        return true;
+    }
+
+    /**
+     * Whether a background pack may run: always from the command line, from a web request
+     * only while the table is small enough to rewrite well inside a request's time limit.
+     */
+    public static function packFits(string $sapi, int $bytes): bool
+    {
+        return $sapi === 'cli' || $bytes <= self::PACK_WEB_MAX_BYTES;
+    }
+
+    /**
+     * The table's data and index size in bytes, as the server last counted it.
+     *
+     * @throws DbException
+     */
+    public static function tableBytes(): int
+    {
+        return (int) Db::scalar(
+            'SELECT DATA_LENGTH + INDEX_LENGTH FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
+            [self::tableName()]
+        );
     }
 
     /**

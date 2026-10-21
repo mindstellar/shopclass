@@ -3212,6 +3212,10 @@ msgstr ""
 msgid "Community Activities"
 msgstr ""
 
+#: oc-includes/osclass/classes/search/FacetJobs.php
+msgid "Compact the listing filter index"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Company"
 msgstr ""

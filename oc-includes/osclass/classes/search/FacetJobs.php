@@ -16,11 +16,12 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\job\Job;
+use mindstellar\job\JobRetry;
 
 /**
- * Builds the listing filter index on the job queue, a batch of listings per run, and compacts
- * the table at the end. A rebuild replaces rows in place and never clears the ready flag, so
- * searches keep using the index.
+ * Builds the listing filter index on the job queue, a batch of listings per run, then queues a
+ * separate job that compacts the table. A rebuild replaces rows in place and never clears the
+ * ready flag, so searches keep using the index.
  */
 final class FacetJobs
 {
@@ -57,7 +58,11 @@ final class FacetJobs
         FacetIndex::pruneTerms();
         FacetIndex::markReady();
         $line(sprintf('Index built up to listing #%d', $after));
-        $line(FacetIndex::pack() ? 'Index table compacted' : 'Index table not compacted, see the error log');
+        try {
+            $line(FacetIndex::pack() ? 'Index table compacted' : 'Index table not compacted');
+        } catch (DbException $e) {
+            $line('Index table not compacted (optional, the index works): ' . $e->getMessage());
+        }
 
         return $after;
     }
@@ -86,11 +91,22 @@ final class FacetJobs
             if ($last === null) {
                 FacetIndex::pruneTerms();
                 FacetIndex::markReady();
-                FacetIndex::pack();
+                osc_job_ensure(FacetIndex::JOB_PACK);
 
                 return;
             }
             $job->repeat(array('after' => $last));
+        });
+        // A big table is left to search:reindex, so a web request never runs a long rewrite.
+        osc_job_register_handler(FacetIndex::JOB_PACK, static function (): void {
+            if (!FacetIndex::packFits(PHP_SAPI, FacetIndex::tableBytes())) {
+                return;
+            }
+            try {
+                FacetIndex::pack();
+            } catch (DbException $e) {
+                throw new JobRetry('Index table not compacted (optional, the index works): ' . $e->getMessage(), 600, 3);
+            }
         });
         /*
          * A type change queued while this runs is lost with the running row, so the last batch checks the
@@ -119,6 +135,7 @@ final class FacetJobs
             }
         });
         osc_job_describe(FacetIndex::JOB_BUILD, __('Listing filter index'), static fn (array $payload): string => sprintf(__('After listing #%d'), (int) ($payload['after'] ?? 0)));
+        osc_job_describe(FacetIndex::JOB_PACK, __('Compact the listing filter index'));
         osc_job_describe(FacetIndex::JOB_FIELD, __('Filter index of one field'), static fn (array $payload): string => sprintf(__('After listing #%d'), (int) ($payload['after'] ?? 0)));
     }
 }
