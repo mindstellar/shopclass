@@ -42,6 +42,8 @@ final class FacetIndex
     /** @var array<int,string> storage primitive by field id, for this request */
     private static array $storages = [];
 
+    private static float $storagesRequest = 0.0;
+
     public static function tableName(): string
     {
         return DB_TABLE_PREFIX . self::TABLE;
@@ -88,7 +90,7 @@ final class FacetIndex
     public static function fieldKind(int $fieldId, bool $fresh = false): string
     {
         if ($fresh) {
-            unset(self::$storages[$fieldId]);
+            self::forgetTypes();
         }
 
         return self::rowKind(self::storageOfField($fieldId));
@@ -101,10 +103,29 @@ final class FacetIndex
      */
     public static function rememberTypes(array $fieldRows): void
     {
+        self::sameRequest();
         foreach ($fieldRows as $row) {
             if (isset($row['pk_i_id'], $row['e_type'])) {
                 self::$storages[(int) $row['pk_i_id']] = self::storageOfType((string) $row['e_type']);
             }
+        }
+    }
+
+    /**
+     * Drop the remembered storages. A long-running worker keeps statics between requests, so
+     * the map is also dropped when the request time moves.
+     */
+    public static function forgetTypes(): void
+    {
+        self::$storages = [];
+    }
+
+    private static function sameRequest(): void
+    {
+        $now = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0.0);
+        if ($now !== self::$storagesRequest) {
+            self::$storagesRequest = $now;
+            self::$storages        = [];
         }
     }
 
@@ -204,6 +225,7 @@ final class FacetIndex
      */
     public static function buildStep(int $after, int $limit, ?int $fieldId = null): ?int
     {
+        self::forgetTypes();
         $ids = array_map('intval', array_column(Db::select(
             'SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id > ? ORDER BY pk_i_id LIMIT ' . max(1, $limit),
             [$after]
@@ -342,6 +364,7 @@ final class FacetIndex
 
     private static function storageOfField(int $fieldId): string
     {
+        self::sameRequest();
         if (!isset(self::$storages[$fieldId])) {
             $field = Field::getInstance()->findByPrimaryKey($fieldId);
             if (!isset($field['e_type'])) {
