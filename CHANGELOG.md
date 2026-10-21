@@ -4,6 +4,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 7.0.2
 
+This release lets a theme preview last for the whole visit, and lets any visitor preview themes on a demo site.
+
 ### Changed
 - A theme preview (`?theme=`) now lasts for the whole visit. `?theme=` with no name ends it.
 - On a demo site (`OSC_DEMO=1`), any visitor can preview an installed theme.
