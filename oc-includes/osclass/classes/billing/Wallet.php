@@ -287,6 +287,10 @@ final class Wallet extends Model
             &$applied,
             &$settled
         ): void {
+            // The wallet row is locked before anything is read, so a write another request
+            // commits meanwhile cannot make the balance update fail on MariaDB 11.6+.
+            self::ensureWallet($userId);
+
             // Fast path for the common replay. The unique index below is the real
             // guard -- this only avoids the write when the answer is already known.
             if ($idempotencyKey !== null && self::keyExists($idempotencyKey)) {
@@ -294,8 +298,6 @@ final class Wallet extends Model
 
                 return;
             }
-
-            self::ensureWallet($userId);
 
             $sql    = 'UPDATE ' . self::wallet() . ' SET i_balance = i_balance + ?, dt_mod_date = ?'
                 . ' WHERE fk_i_user_id = ?';
@@ -318,7 +320,7 @@ final class Wallet extends Model
                 array(
                     $userId,
                     $delta,
-                    self::balance($userId),
+                    self::lockedBalance($userId),
                     $reason,
                     $refType,
                     $refId,
@@ -372,6 +374,20 @@ final class Wallet extends Model
     }
 
     /**
+     * Lock the user's wallet row, or the place it would go, for the rest of the open transaction.
+     * Call it before the first plain read of a transaction that may spend, so a purchase landing
+     * meanwhile cannot fail the later balance update. Creates no row.
+     *
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function lock(int $userId): void
+    {
+        Db::selectOne('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ? FOR UPDATE', array($userId));
+    }
+
+    /**
      * Create the wallet row if the user has never transacted.
      *
      * UPDATE first, so this takes the row's X-lock directly when it already exists.
@@ -408,7 +424,7 @@ final class Wallet extends Model
 
         // The UPDATE above already X-locked this row if it exists, so nothing can remove
         // it between that statement and this one.
-        if (Db::selectOne('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ?', array($userId)) !== null) {
+        if (Db::selectOne('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ? FOR UPDATE', array($userId)) !== null) {
             return;
         }
 
@@ -425,6 +441,18 @@ final class Wallet extends Model
             // Another request created the row in the gap between our UPDATE and this
             // INSERT -- it exists now, which is all ensureWallet() promises.
         }
+    }
+
+    /**
+     * The balance of a wallet row this transaction holds, read without opening its snapshot.
+     *
+     * @param int $userId
+     *
+     * @return int
+     */
+    private static function lockedBalance(int $userId): int
+    {
+        return (int) Db::scalar('SELECT i_balance FROM ' . self::wallet() . ' WHERE fk_i_user_id = ? FOR UPDATE', array($userId));
     }
 
     /**
