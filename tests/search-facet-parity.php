@@ -63,7 +63,7 @@ $long192 = str_repeat('a', 191) . 'b';
 $day     = 1700000000 - (1700000000 % 86400) + 43200;
 $t0      = 1700000000;
 
-// title => [price, meta by field key, [colour, size, stock, was price] rows]
+// title => [price, meta by field key, [colour, size, stock, was price, has own price] rows]
 $spec = [
     'A' => [10, ['dd' => 'Red', 'rd' => 'Slim', 'cb1' => '1', 'cb2' => '1', 'cb3' => '1', 'num' => '12.5', 'date' => $day, 'di' => [100, 200]],
         [['Red', 'M', 1, 20000000], ['Blue', 'L', 1, null]]],
@@ -79,6 +79,9 @@ $spec = [
     'S' => [80, ['sp' => ' Red'], []],
     'N' => [90, ['num2' => 'abc'], []],
     'T' => [95, ['num2' => '3'], []],
+    'H' => [100, [], [['Red', 'XS', null, null]]],
+    'I' => [110, [], [['Red', 'XS', 1, 110000000]]],
+    'J' => [120, [], [['Red', 'XS', 1, 150000000, false]]],
 ];
 foreach ($spec as $title => [$price, $meta, $rows]) {
     $id = seed_item($admin, $cat, $sue, $title, (float) $price);
@@ -91,7 +94,7 @@ foreach ($spec as $title => [$price, $meta, $rows]) {
     if ($rows !== []) {
         VariantStore::saveSet($id, array_map(static fn (array $r): array => [
             'options' => ['Colour' => $r[0], 'Size' => $r[1]],
-            'fields'  => ['i_price' => $price * 1000000, 'i_stock' => $r[2], 'i_compare_price' => $r[3]],
+            'fields'  => ['i_price' => ($r[4] ?? true) ? $price * 1000000 : null, 'i_stock' => $r[2], 'i_compare_price' => $r[3]],
         ], $rows));
     }
     FacetIndex::rewriteItem($id);
@@ -154,18 +157,18 @@ $cf = static fn (string $k, mixed $v): array => ['custom_field' => [(string) $f[
 $opt = static fn (array $o): array => ['option' => $o];
 
 harness_section('options');
-$same('no filter lists all', [], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'N', 'S', 'T']);
-$same('one name', $opt(['Colour' => ['Red']]), ['A', 'B', 'D']);
-$same('one name, two values', $opt(['Colour' => ['Red', 'Blue']]), ['A', 'B', 'C', 'D']);
+$same('no filter lists all', [], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'N', 'S', 'T']);
+$same('one name', $opt(['Colour' => ['Red']]), ['A', 'B', 'D', 'H', 'I', 'J']);
+$same('one name, two values', $opt(['Colour' => ['Red', 'Blue']]), ['A', 'B', 'C', 'D', 'H', 'I', 'J']);
 $same('two names on one variant', $opt(['Colour' => ['Red'], 'Size' => ['M']]), ['A', 'D']);
 $same('Red and L are on two variants of one listing', $opt(['Colour' => ['Red'], 'Size' => ['L']]), []);
 $same('Blue and L are one variant', $opt(['Colour' => ['Blue'], 'Size' => ['L']]), ['A']);
-$same('a case variant folds', $opt(['Colour' => ['red']]), ['A', 'B', 'D']);
+$same('a case variant folds', $opt(['Colour' => ['red']]), ['A', 'B', 'D', 'H', 'I', 'J']);
 $same('with price', $opt(['Colour' => ['Red']]) + ['price_min' => 15, 'price_max' => 45], ['B', 'D']);
-$same('with in_stock', $opt(['Colour' => ['Red']]) + ['in_stock' => 'true'], ['A', 'B']);
-$same('with on_sale', $opt(['Colour' => ['Red']]) + ['on_sale' => 'true'], ['A', 'D']);
-$same('with in_stock and on_sale on one variant', $opt(['Colour' => ['Red']]) + ['in_stock' => 'true', 'on_sale' => 'true'], ['A']);
-$same('in_stock alone', ['in_stock' => 'true'], ['A', 'B']);
+$same('with in_stock', $opt(['Colour' => ['Red']]) + ['in_stock' => 'true'], ['A', 'B', 'H', 'I', 'J']);
+$same('with on_sale', $opt(['Colour' => ['Red']]) + ['on_sale' => 'true'], ['A', 'D', 'J']);
+$same('with in_stock and on_sale on one variant', $opt(['Colour' => ['Red']]) + ['in_stock' => 'true', 'on_sale' => 'true'], ['A', 'J']);
+$same('in_stock alone', ['in_stock' => 'true'], ['A', 'B', 'H', 'I', 'J']);
 $same('an unknown value', $opt(['Colour' => ['Mauve']]), []);
 
 harness_section('dropdown and radio');
