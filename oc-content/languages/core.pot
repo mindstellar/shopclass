@@ -1530,6 +1530,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingGeocode.php
 #: oc-includes/osclass/classes/listing/ListingPointJobs.php
+#: oc-includes/osclass/classes/search/FacetJobs.php
 msgid "After listing #%d"
 msgstr ""
 
@@ -5197,6 +5198,10 @@ msgstr ""
 msgid "Filter countries"
 msgstr ""
 
+#: oc-includes/osclass/classes/search/FacetJobs.php
+msgid "Filter index of one field"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Filter this field's options by the value of a parent field."
 msgstr ""
@@ -6643,6 +6648,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Listing edit"
+msgstr ""
+
+#: oc-includes/osclass/classes/search/FacetJobs.php
+msgid "Listing filter index"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
