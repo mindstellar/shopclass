@@ -12,6 +12,7 @@ namespace mindstellar\search;
 
 use mindstellar\fields\FieldQuery;
 use mindstellar\location\LocationQuery;
+use mindstellar\search\query\FacetFilter;
 
 /**
  * Applies a SearchCriteria to a core Search model.
@@ -202,6 +203,7 @@ class SearchBuilder
             static fn ($key): bool => (string) (int) $key === (string) $key && in_array((int) $key, $fields, true)
         )));
 
+        $facet = FacetIndex::ready();
         $table = DB_TABLE_PREFIX . 't_item_meta';
         $in    = DB_TABLE_PREFIX . 't_item.pk_i_id IN (';
         foreach ($custom_fields as $key => $aux) {
@@ -227,13 +229,15 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'eq', 'value' => $values[0]),
-                            $in . $by . $table . '.s_value = ' . self::metaLiteral($values[0]) . ')'
+                            $facet ? FacetFilter::fieldIn($id, $values) : $in . $by . $table . '.s_value = ' . self::metaLiteral($values[0]) . ')'
                         );
                     } elseif ($values !== array()) {
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'in', 'values' => $values),
-                            $in . $by . $table . '.s_value IN (' . implode(', ', array_map(array(self::class, 'metaLiteral'), $values)) . '))'
+                            $facet
+                                ? FacetFilter::fieldIn($id, $values)
+                                : $in . $by . $table . '.s_value IN (' . implode(', ', array_map(array(self::class, 'metaLiteral'), $values)) . '))'
                         );
                     }
                     break;
@@ -242,7 +246,7 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'checked'),
-                            $in . $by . $table . '.s_value = \'1\')'
+                            $facet ? FacetFilter::fieldFlag($id) : $in . $by . $table . '.s_value = \'1\')'
                         );
                     }
                     break;
@@ -257,7 +261,9 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $start, 'to' => $end),
-                            $in . $by . $table . '.s_value >= ' . $start . ' AND ' . $table . '.s_value <= ' . $end . ')'
+                            $facet
+                                ? FacetFilter::fieldRange($id, $start, $end)
+                                : $in . $by . $table . '.s_value >= ' . $start . ' AND ' . $table . '.s_value <= ' . $end . ')'
                         );
                     }
                     break;
@@ -273,7 +279,9 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'covers', 'from' => $from, 'to' => $to),
-                            $in . 'select a.fk_i_item_id from (' . $sql . ') a where a.fk_i_item_id IN (' . $sql1 . '))'
+                            $facet
+                                ? FacetFilter::fieldCovers($id, $from, $to)
+                                : $in . 'select a.fk_i_item_id from (' . $sql . ') a where a.fk_i_item_id IN (' . $sql1 . '))'
                         );
                     }
                     break;
@@ -287,7 +295,9 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $min, 'to' => $max),
-                            $in . $by . $table . '.s_value >= ' . $min . ' AND ' . $table . '.s_value <= ' . $max . ')'
+                            $facet
+                                ? FacetFilter::fieldRange($id, $min, $max)
+                                : $in . $by . $table . '.s_value >= ' . $min . ' AND ' . $table . '.s_value <= ' . $max . ')'
                         );
                     }
                     break;
