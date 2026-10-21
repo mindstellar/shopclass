@@ -285,6 +285,10 @@ final class ListingService
         if ($secret !== null) {
             $where['s_secret'] = $secret;
         }
+        // Locked first: in a transaction the read below must not open the snapshot before the update.
+        if (Db::inTransaction()) {
+            ListingStore::find($id, array('pk_i_id'), true);
+        }
         $item = $this->items->findByPrimaryKey($id);
         if (!is_array($item) || !isset($item['b_active']) || (int) $item['b_active'] !== 0
             || ($secret !== null && !hash_equals((string) $item['s_secret'], $secret))
@@ -328,7 +332,7 @@ final class ListingService
      */
     public function enable(int $id): bool
     {
-        $row = ListingStore::find($id, array('b_enabled', 'b_active', 'dt_first_pub_date'));
+        $row = ListingStore::find($id, array('b_enabled', 'b_active', 'dt_first_pub_date'), Db::inTransaction());
         if ($row !== null && ListingHoldJobs::holds($id, Db::stringifyRow($row))) {
             return false;
         }
@@ -409,7 +413,7 @@ final class ListingService
 
         // Just the columns needed here, not findByPrimaryKey(): that hydrates locales and
         // resources this decision has no use for.
-        $current = ListingStore::premiumState((int) $id);
+        $current = ListingStore::premiumState((int) $id, Db::inTransaction());
 
         if ($on && $days !== null) {
             if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {
@@ -467,6 +471,9 @@ final class ListingService
      */
     public function spam(int $id, bool $on = true): bool
     {
+        if (Db::inTransaction()) {
+            ListingStore::find($id, array('pk_i_id'), true);
+        }
         $item = $this->items->findByPrimaryKey($id);
         if ($on) {
             $result = $this->items->update(

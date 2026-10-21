@@ -73,16 +73,17 @@ final class ListingStore extends Model
     }
 
     /**
-     * The columns a premium change decides on, or null.
+     * The columns a premium change decides on, or null. $lock holds the row (FOR UPDATE) until the
+     * transaction ends.
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    public static function premiumState(int $id): ?array
+    public static function premiumState(int $id, bool $lock = false): ?array
     {
         return Db::selectOne(
             'SELECT b_premium, dt_premium_expiration, b_enabled, b_active, b_spam, dt_expiration FROM '
-            . self::tableName() . ' WHERE pk_i_id = ?',
+            . self::tableName() . ' WHERE pk_i_id = ?' . ($lock ? ' FOR UPDATE' : ''),
             array($id)
         );
     }
