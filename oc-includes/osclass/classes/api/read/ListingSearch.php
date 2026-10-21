@@ -22,6 +22,8 @@ use mindstellar\apikey\Credential;
 use mindstellar\listing\ListingQuery;
 use mindstellar\listing\VariantStore;
 use mindstellar\search\Distance;
+use mindstellar\search\FacetIndex;
+use mindstellar\search\query\FacetFilter;
 use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
 use mindstellar\search\SearchExtras;
@@ -180,6 +182,9 @@ final class ListingSearch
     {
         if (!$inStock && !$onSale && $options === []) {
             return null;
+        }
+        if ($options !== [] && FacetIndex::ready()) {
+            return FacetFilter::optionProbe($options, $inStock, $onSale);
         }
         $variants = VariantStore::tableName();
         $item     = ListingQuery::tableName();
