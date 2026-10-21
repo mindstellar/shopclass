@@ -110,6 +110,19 @@ final class UserStore extends Model
     }
 
     /**
+     * Count one more live comment on the user, in one statement so no other change is lost.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function addComment(int $id): void
+    {
+        Db::execute('UPDATE ' . self::tableName() . ' SET i_comments = i_comments + 1 WHERE pk_i_id = ?', array($id));
+        if (function_exists('osc_invalidate_user_cache')) {
+            osc_invalidate_user_cache($id);
+        }
+    }
+
+    /**
      * A user row with `b_family_live`: whether the API sign-in $family still has an unrevoked token.
      *
      * @return array<string,mixed>|null
