@@ -40,6 +40,7 @@ final class FacetIndex
     private const KEY_LEN = 48;
     private const ROWS_PER_INSERT = 500;
     private const TERMS_PER_SELECT = 200;
+    private const PRUNE_RANGE = 2000;
 
     private static bool $tablePresent = false;
 
@@ -339,7 +340,9 @@ final class FacetIndex
     }
 
     /**
-     * Delete the terms no row names, as a rebuild leaves them.
+     * Delete the terms no row names, as a rebuild leaves them. Only a rebuild calls this; a term
+     * stays after its last listing changes, and no list reads the terms, so it costs only space.
+     * It deletes in id ranges, so no statement holds locks for long.
      *
      * @return int the terms deleted
      * @throws DbException
@@ -347,10 +350,17 @@ final class FacetIndex
     public static function pruneTerms(): int
     {
         self::$terms = [];
+        $max         = (int) Db::scalar('SELECT MAX(pk_i_id) FROM ' . self::termTable());
+        $deleted     = 0;
+        for ($from = 0; $from < $max; $from += self::PRUNE_RANGE) {
+            $deleted += Db::execute(
+                'DELETE t FROM ' . self::termTable() . ' t LEFT JOIN ' . self::tableName() . ' f ON f.fk_i_term_id = t.pk_i_id'
+                . ' WHERE t.pk_i_id > ? AND t.pk_i_id <= ? AND f.fk_i_term_id IS NULL',
+                [$from, $from + self::PRUNE_RANGE]
+            );
+        }
 
-        return Db::execute(
-            'DELETE t FROM ' . self::termTable() . ' t LEFT JOIN ' . self::tableName() . ' f ON f.fk_i_term_id = t.pk_i_id WHERE f.fk_i_term_id IS NULL'
-        );
+        return $deleted;
     }
 
     /**
