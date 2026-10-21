@@ -120,4 +120,42 @@ foreach ($cases as $label => [$meta, $expect]) {
     pin("$label: index read only when ready", [false, $label !== 'text contains'], [$offFacet, $onFacet]);
 }
 
+harness_section('page and count text, unknown values, one term query');
+$ready(true);
+$texts = static function (array $meta) use ($cat): array {
+    $seen = [];
+    osc_add_filter('sql_search_conditions', static function (array $c) use (&$seen): array {
+        $seen[] = implode(' AND ', $c);
+
+        return $c;
+    }, 'meta_facet_probe');
+    $s = new Search();
+    SearchBuilder::apply(SearchCriteria::fromRequest(['sCategory' => [(string) $cat], 'meta' => $meta]), $s);
+    $rows  = (array) $s->doSearch();
+    $total = $s->countMatches();
+    osc_remove_filter('sql_search_conditions', 'meta_facet_probe');
+
+    return [$seen, count($rows), $total];
+};
+[$seen, $rows, $total] = $texts([$material => 'Cotton']);
+$page  = $seen[0] ?? '';
+$count = end($seen) ?: '';
+pin('dropdown: page probes per listing, count reads the range', [true, false, true, false], [
+    str_contains($page, 'IS NOT NULL'), str_contains($count, 'IS NOT NULL'), str_contains($count, 'IN (SELECT'), $page === $count,
+]);
+pin('dropdown: page rows and count agree', [1, 1], [$rows, $total]);
+
+[$seen, $rows, $total] = $texts([$material => 'Silk']);
+pin('an unknown value matches nothing and reads no listing', [0, 0, true], [$rows, $total, str_contains(implode(' ', $seen), '1 = 0')]);
+[$seen, $rows, $total] = $texts([$material => ['Silk', 'Wool']]);
+pin('a list keeps the known values', [1, 1], [$rows, $total]);
+
+$five = [$material => 'Cotton', $fit => 'Slim', $organic => '1', $weight => ['from' => '10', 'to' => '20'], $season => ['from' => $t0, 'to' => $t0 + $day]];
+$search($five);
+FacetIndex::forgetTypes();
+$one = harness_query_count(static fn () => $search([$material => 'Cotton']));
+FacetIndex::forgetTypes();
+$all = harness_query_count(static fn () => $search($five));
+pin('five index fields look their terms up with one query, as one field does', $one, $all);
+
 exit(harness_result());
