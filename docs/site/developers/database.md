@@ -120,11 +120,13 @@ MariaDB 11.6 and later, a later write to a row another request changed since the
 error 1020 ("Record has changed since last read"). MySQL does not raise it.
 
 Lock in this order, and never the other way round: user, wallet, listing, listing stats,
-listing variants (by id), order, order lines. Do side work that needs no lock, such as
+listing variants (by id), order, order lines. `ListingStore::lockForWrite($id)` takes the
+listing, its stats and its variants in that order. Do side work that needs no lock, such as
 counters, jobs and mail, after the commit with `Db::afterCommit()`.
 
-A plugin feature's `apply()` method must lock its listing row first, with
-`ListingStore::find($id, $columns, true)`.
+A plugin feature's `apply()` method must lock its listing first, with
+`ListingStore::lockForWrite($id)`. Use `ListingStore::find($id, $columns, true)` only when you
+touch the `t_item` row alone.
 
 ## Adding your own tables
 
