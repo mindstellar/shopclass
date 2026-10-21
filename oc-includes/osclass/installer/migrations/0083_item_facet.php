@@ -31,6 +31,11 @@ return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $existed = $conn->selectOne('SHOW TABLES LIKE ?', array(DB_TABLE_PREFIX . 't_item_facet')) !== null;
+        if ($existed && $conn->selectOne('SHOW COLUMNS FROM ' . DB_TABLE_PREFIX . "t_item_facet LIKE 'fk_i_term_id'") === null) {
+            // The first draft of this table kept the key and value in each row. The index only mirrors other tables.
+            $conn->execute('DROP TABLE ' . DB_TABLE_PREFIX . 't_item_facet');
+            $existed = false;
+        }
         $conn->execute(
             'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_facet_term ('
             . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
