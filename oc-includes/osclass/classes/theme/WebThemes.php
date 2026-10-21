@@ -91,7 +91,7 @@ class WebThemes extends Themes
     /**
      * Whether this request may preview a theme: a signed-in admin, or any visitor on a demo site.
      */
-    public static function previewAllowed(): bool
+    private static function previewAllowed(): bool
     {
         return \mindstellar\security\Demo::active() || Session::getInstance()->_get('adminId') != '';
     }
@@ -105,7 +105,7 @@ class WebThemes extends Themes
     private function previewTheme(): ?string
     {
         // Admin pages take their own ?theme= (activate, dark mode) and never change the preview.
-        if (defined('OC_ADMIN') || osc_is_api_request() || !self::previewAllowed()) {
+        if ((defined('OC_ADMIN') && OC_ADMIN) || osc_is_api_request() || !self::previewAllowed()) {
             return null;
         }
         // The name picks the directory functions.php is required from, so it must be an installed theme.

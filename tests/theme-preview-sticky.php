@@ -30,6 +30,8 @@ require_once ABS_PATH . 'oc-includes/osclass/classes/security/Demo.php';
 $root = sys_get_temp_dir() . '/osc-theme-sticky-' . getmypid() . '/';
 
 define('WEB_PATH', 'http://example.test/');
+// Public pages define OC_ADMIN as false; the admin-page run sets PREVIEW_ADMIN_PAGE.
+define('OC_ADMIN', getenv('PREVIEW_ADMIN_PAGE') === '1');
 define('CONTENT_PATH', $root);
 define('THEMES_PATH', $root . 'themes/');
 
@@ -108,44 +110,49 @@ $request = static function (array $query, ?string $cookie, string $admin = '') u
     return $pick();
 };
 
-harness_section('Outside demo mode only an admin previews');
+if (OC_ADMIN) {
+    harness_section('Admin pages leave the preview alone');
 
-pin('a visitor asking for a theme gets the active one', null, $request(array('theme' => 'glance'), null));
-pin('a visitor with the cookie gets the active one', null, $request(array(), 'glance'));
-pin('an admin gets the asked theme', 'glance', $request(array('theme' => 'glance'), null, '1'));
-pin('and the choice is kept in a browser-session cookie', array(array('oc_theme', 'glance', 0)), Cookie::$writes);
-pin('the next admin request, with no ?theme=, keeps it', 'glance', $request(array(), 'glance', '1'));
-pin('asking again for the kept theme', 'glance', $request(array('theme' => 'glance'), 'glance', '1'));
-check('does not write the cookie again', Cookie::$writes === array());
+    pin('an admin page never previews', null, $request(array('theme' => 'glance'), 'glance', '1'));
+    check('and does not touch the cookie', Cookie::$writes === array());
+} else {
+    harness_section('Outside demo mode only an admin previews');
 
-harness_section('Ending and refusing a preview');
+    pin('a visitor asking for a theme gets the active one', null, $request(array('theme' => 'glance'), null));
+    pin('a visitor with the cookie gets the active one', null, $request(array(), 'glance'));
+    pin('an admin gets the asked theme', 'glance', $request(array('theme' => 'glance'), null, '1'));
+    pin('and the choice is kept in a browser-session cookie', array(array('oc_theme', 'glance', 0)), Cookie::$writes);
+    pin('the next admin request, with no ?theme=, keeps it', 'glance', $request(array(), 'glance', '1'));
+    pin('asking again for the kept theme', 'glance', $request(array('theme' => 'glance'), 'glance', '1'));
+    check('does not write the cookie again', Cookie::$writes === array());
 
-pin('?theme= with nothing ends it', null, $request(array('theme' => ''), 'glance', '1'));
-check('and deletes the cookie', Cookie::$writes[0][0] === 'oc_theme' && Cookie::$writes[0][2] < time());
-pin('?theme= with the active theme ends it', null, $request(array('theme' => 'storefront'), 'glance', '1'));
-pin('a theme that is not installed is ignored', null, $request(array('theme' => '../outside'), null, '1'));
-check('and writes no cookie', Cookie::$writes === array());
-pin('a cookie naming no installed theme is ignored', null, $request(array(), '../outside', '1'));
+    harness_section('Ending and refusing a preview');
 
-$GLOBALS['osc_test_api'] = true;
-pin('the REST API never previews', null, $request(array('theme' => 'glance'), null, '1'));
-check('and writes no cookie on an API answer', Cookie::$writes === array());
-$GLOBALS['osc_test_api'] = false;
+    pin('?theme= with nothing ends it', null, $request(array('theme' => ''), 'glance', '1'));
+    check('and deletes the cookie', Cookie::$writes[0][0] === 'oc_theme' && Cookie::$writes[0][2] < time());
+    pin('?theme= with the active theme ends it', null, $request(array('theme' => 'storefront'), 'glance', '1'));
+    pin('a theme that is not installed is ignored', null, $request(array('theme' => '../outside'), null, '1'));
+    check('and writes no cookie', Cookie::$writes === array());
+    pin('a cookie naming no installed theme is ignored', null, $request(array(), '../outside', '1'));
 
-harness_section('On a demo site any visitor previews');
+    $GLOBALS['osc_test_api'] = true;
+    pin('the REST API never previews', null, $request(array('theme' => 'glance'), null, '1'));
+    check('and writes no cookie on an API answer', Cookie::$writes === array());
+    $GLOBALS['osc_test_api'] = false;
 
-// DEMO and OC_ADMIN cannot be undefined again, so these sections come last.
-define('DEMO', true);
-pin('a visitor asking for a theme gets it', 'glance', $request(array('theme' => 'glance'), null));
-pin('a visitor keeps it on the next request', 'glance', $request(array(), 'glance'));
-pin('and can end it', null, $request(array('theme' => ''), 'glance'));
-pin('a theme that is not installed is still ignored', null, $request(array('theme' => '../outside'), null));
+    harness_section('On a demo site any visitor previews');
 
-harness_section('Admin pages leave the preview alone');
+    // DEMO cannot be undefined again, so this section stays last.
+    define('DEMO', true);
+    pin('a visitor asking for a theme gets it', 'glance', $request(array('theme' => 'glance'), null));
+    pin('a visitor keeps it on the next request', 'glance', $request(array(), 'glance'));
+    pin('and can end it', null, $request(array('theme' => ''), 'glance'));
+    pin('a theme that is not installed is still ignored', null, $request(array('theme' => '../outside'), null));
 
-define('OC_ADMIN', true);
-pin('an admin page never previews', null, $request(array('theme' => 'glance'), 'glance', '1'));
-check('and does not touch the cookie', Cookie::$writes === array());
+    // Admin pages define OC_ADMIN as true, which this process cannot do any more.
+    exec('PREVIEW_ADMIN_PAGE=1 ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' 2>&1', $out, $code);
+    check('admin pages leave the preview alone (separate run)', $code === 0 && str_contains(implode("\n", $out), 'PASS  an admin page never previews'), implode("\n", $out));
+}
 
 $rm = static function (string $dir) use (&$rm) {
     foreach (array_diff(scandir($dir) ?: array(), array('.', '..')) as $entry) {
