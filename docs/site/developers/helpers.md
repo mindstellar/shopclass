@@ -489,7 +489,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_cache_relevant_cookies()` | The cookie names that mean "this response is personalized" — core's PHP session, the chosen front-end locale, and the fixed-name cache-bypass flag Cookie::set() writes whenever the visitor carries identity state (front-end user, admin). |
+| `osc_cache_relevant_cookies()` | The cookie names that mean "this response is personalized" — core's PHP session, the chosen front-end locale, a theme preview, and the fixed-name cache-bypass flag Cookie::set() writes whenever the visitor carries identity state (front-end user, admin). |
 | `osc_etag_matches(string $header, string $etag)` | Whether a conditional header names $etag: `*`, or any tag in the list, weak or strong. |
 | `osc_etag_tags(string $header)` | The tags in an If-Match or If-None-Match header, quoted, with any `W/` removed. A proxy that compresses the answer (nginx gzip, Cloudflare) weakens the tag it passes on. |
 | `osc_mark_response_cacheable($cacheable = true)` | Declare the current response a public, cacheable read page. |
