@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.3
+
+### Fixed
+- During a theme preview, the `theme-` body class names the previewed theme.
+
 ## Shopclass 7.0.2
 
 This release lets a theme preview last for the whole visit, and lets any visitor preview themes on a demo site.
