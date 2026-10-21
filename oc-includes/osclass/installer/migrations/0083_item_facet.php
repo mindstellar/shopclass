@@ -14,14 +14,17 @@ use mindstellar\search\FacetIndex;
 
 /**
  * Add t_item_facet, the filter index of custom field values and variant options, with
- * t_facet_term, the (key, value) terms its rows name, and fill it from the existing listings. Up to 5,000 listings are indexed here; more go to a background
- * job. Safe to re-run: the tables are made only when missing and a ready index is not rebuilt.
+ * t_facet_term, the (key, value) terms its rows name, and fill it from the existing listings. Up to 5,000 listings
+ * are indexed here, for at most 20 seconds; the rest goes to a background job. Safe to re-run: the tables are made only when missing and a ready index is not rebuilt.
  *
  * @title Listing filter index
  */
 return new class () implements MigrationInterface {
     /** Largest site indexed inside the upgrade request. */
     public const INLINE_LIMIT = 5000;
+
+    /** Seconds the upgrade request spends indexing before the background job takes over. */
+    public const INLINE_SECONDS = 20.0;
 
     /**
      * @param Connection $conn
@@ -75,10 +78,12 @@ return new class () implements MigrationInterface {
      *
      * @param Connection $conn
      * @param int        $inlineLimit
+     * @param float      $seconds     time to index here before the rest goes to the background job
+     * @param int        $batch       listings per step
      *
      * @throws \mindstellar\database\DbException
      */
-    public function build(Connection $conn, int $inlineLimit): void
+    public function build(Connection $conn, int $inlineLimit, float $seconds = self::INLINE_SECONDS, int $batch = FacetIndex::BATCH): void
     {
         $flag = $conn->selectOne(
             'SELECT s_value FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = ?",
@@ -102,8 +107,15 @@ return new class () implements MigrationInterface {
             @set_time_limit(0);
         }
         ignore_user_abort(true);
-        $after = 0;
-        while (($after = FacetIndex::buildStep($after, FacetIndex::BATCH)) !== null) {
+        $started = microtime(true);
+        $after   = 0;
+        while (($next = FacetIndex::buildStep($after, $batch)) !== null) {
+            $after = $next;
+            if (microtime(true) - $started >= $seconds) {
+                osc_job_ensure(FacetIndex::JOB_BUILD, array('after' => $after));
+
+                return;
+            }
         }
         $this->setPreference($conn, FacetIndex::PREF_READY, '1', 'BOOLEAN');
         $this->setPreference($conn, FacetIndex::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'STRING');

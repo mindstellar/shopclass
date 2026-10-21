@@ -130,24 +130,58 @@ FacetIndex::rewriteField($item, $looked, 'Green');
 pin('storage is looked up when not given', ["f$looked=Green|0|-"], $facet($item));
 FacetIndex::dropField($looked);
 
+harness_section('rollback and long names');
+FacetIndex::forgetTypes();
+$remembered = static function (): array {
+    $out = [];
+    foreach (['created', 'unseen'] as $name) {
+        $prop = new ReflectionProperty(FacetIndex::class, $name);
+        $prop->setAccessible(true);
+        $out[$name] = $prop->getValue();
+    }
+
+    return $out;
+};
+try {
+    Db::transaction(static function (): void {
+        FacetIndex::ensureTerms(['oRolled' => ['Back']]);
+
+        throw new RuntimeException('roll back');
+    });
+} catch (RuntimeException $e) {
+}
+check('a rolled back transaction leaves its term ids behind until the next read', $remembered()['created'] !== []);
+FacetIndex::termIds(['oRolled' => ['Back']]);
+pin('the next read outside a transaction drops them', ['created' => [], 'unseen' => []], $remembered());
+$long = str_repeat('a', 60);
+check('a name past 47 characters keeps the column length', mb_strlen(FacetIndex::optionKey($long)) === 48);
+check('two long names with one start get two keys', FacetIndex::optionKey($long . 'x') !== FacetIndex::optionKey($long . 'y'));
+pin('a long name differing only by case gets one key', strtolower(FacetIndex::optionKey($long)), strtolower(FacetIndex::optionKey(strtoupper($long))));
+pin('a name of 47 characters is kept whole', 'o' . str_repeat('b', 47), FacetIndex::optionKey(str_repeat('b', 47)));
+pin('a number-like name keeps its text', 'o12', FacetIndex::optionKey('12'));
+
 harness_section('variants');
+$rewrite = static function (int $itemId, array $rows): void {
+    FacetIndex::dropVariants($itemId);
+    FacetIndex::insertVariants($itemId, $rows);
+};
 $v1 = seed_exec($admin, "INSERT INTO {$p}t_item_variant (fk_i_item_id, s_options) VALUES (?, ?)", 'is', [$item, '{"Colour":"Red","Size":"M"}']);
 $v2 = seed_exec($admin, "INSERT INTO {$p}t_item_variant (fk_i_item_id, s_options) VALUES (?, ?)", 'is', [$item, '{"Colour":"Blue","Size":"L"}']);
 $variants = $admin->query("SELECT pk_i_id, s_options FROM {$p}t_item_variant WHERE fk_i_item_id = $item ORDER BY pk_i_id")->fetch_all(MYSQLI_ASSOC);
-FacetIndex::rewriteVariants($item, $variants);
+$rewrite($item, $variants);
 $expected = ["oColour=Blue|$v2|-", "oColour=Red|$v1|-", "oSize=L|$v2|-", "oSize=M|$v1|-"];
 pin('two rows make four option rows with their variant ids', $expected, $facet($item));
-FacetIndex::rewriteVariants($item, $variants);
+$rewrite($item, $variants);
 pin('rewriting variants twice keeps the same rows', $expected, $facet($item));
 FacetIndex::rewriteField($item, $drop, 'Red');
 FacetIndex::dropVariants($item);
 pin('dropVariants keeps the field rows', ["f$drop=Red|0|-"], $facet($item));
 FacetIndex::dropField($drop);
-FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => null]]);
+$rewrite($item, [['pk_i_id' => $v1, 's_options' => null]]);
 pin('a default row has no option rows', [], $facet($item));
-FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => '{"Size":"M","SIZE":"M"}']]);
+$rewrite($item, [['pk_i_id' => $v1, 's_options' => '{"Size":"M","SIZE":"M"}']]);
 pin('option names that differ only by case give one row', ["oSize=M|$v1|-"], $facet($item));
-FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => null]]);
+$rewrite($item, [['pk_i_id' => $v1, 's_options' => null]]);
 
 $solo = seed_item($admin, $cat);
 $s1   = seed_exec($admin, "INSERT INTO {$p}t_item_variant (fk_i_item_id, s_options) VALUES (?, ?)", 'is', [$solo, '{"Colour":"Red","Size":"M"}']);

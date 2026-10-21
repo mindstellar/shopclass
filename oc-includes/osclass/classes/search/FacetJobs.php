@@ -63,14 +63,14 @@ final class FacetJobs
     }
 
     /**
-     * After a schema repair: when it created the index table, clear the ready flag and queue a build.
+     * After a schema repair: when it created the index table or the term table, clear the ready flag and queue a build.
      *
      * @param array $ran the statements the repair ran
      */
     public static function afterRepair(array $ran): void
     {
         foreach ($ran as $statement) {
-            if (DatabaseTools::createdTable((string) $statement) === FacetIndex::tableName()) {
+            if (in_array(DatabaseTools::createdTable((string) $statement), [FacetIndex::tableName(), FacetIndex::termTable()], true)) {
                 FacetIndex::markStale();
                 self::queueBuild();
 

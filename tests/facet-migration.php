@@ -125,6 +125,18 @@ pin('the flag stays off', '0', $pref('facet_ready'));
 pin('one build job at the start', [['after' => 0]], array_map(static fn (array $r): array => json_decode($r[0], true), $jobs()));
 $migration->build($conn, 2);
 pin('a second call queues no second job', 1, count($jobs()));
+
+harness_section('past the time budget');
+$admin->query("DELETE FROM $facet");
+$admin->query("DELETE FROM {$p}t_job_queue");
+$admin->query("UPDATE {$p}t_preference SET s_value = '0' WHERE s_name = 'facet_ready'");
+osc_reset_preferences();
+$migration->build($conn, 100, 0.0, 2);
+pin('the batch in hand is indexed', array_values(array_filter($expected, static fn (array $r): bool => $r[2] !== $items[3])), $norm($rows()));
+pin('the flag stays off', '0', $pref('facet_ready'));
+pin('the job starts after the last listing done', [['after' => $items[2]]], array_map(static fn (array $r): array => json_decode($r[0], true), $jobs()));
+pin('the inline time is 20 seconds', 20.0, $migration::INLINE_SECONDS);
+
 pin('the inline limit is 5000', 5000, $migration::INLINE_LIMIT);
 
 exit(harness_result());

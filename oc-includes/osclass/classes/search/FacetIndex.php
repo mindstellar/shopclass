@@ -78,9 +78,18 @@ final class FacetIndex
         return 'f' . $fieldId . ($multi !== '' ? '.' . $multi : '');
     }
 
+    /**
+     * The term key of an option name. A name too long for the column keeps its start and ends
+     * in a hash of the whole name, so two long names with one start stay apart.
+     */
     public static function optionKey(string $name): string
     {
-        return 'o' . mb_substr($name, 0, self::KEY_LEN - 1);
+        $room = self::KEY_LEN - 1;
+        if (mb_strlen($name) <= $room) {
+            return 'o' . $name;
+        }
+
+        return 'o' . mb_substr($name, 0, $room - 13) . '~' . substr(md5(mb_strtolower($name)), 0, 12);
     }
 
     public static function cut(string $value): string
@@ -142,6 +151,17 @@ final class FacetIndex
         self::$terms    = [];
     }
 
+    /**
+     * Outside a transaction no term is waiting for a commit, so a rollback left these ids behind.
+     */
+    private static function settle(): void
+    {
+        if ((self::$created !== [] || self::$unseen !== []) && !Db::inTransaction()) {
+            self::$created = [];
+            self::$unseen  = [];
+        }
+    }
+
     private static function sameRequest(): void
     {
         $now = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0.0);
@@ -174,6 +194,7 @@ final class FacetIndex
     public static function termIds(array $pairs): array
     {
         self::sameRequest();
+        self::settle();
         $found  = [];
         $misses = [];
         foreach ($pairs as $key => $values) {
@@ -287,21 +308,6 @@ final class FacetIndex
             return;
         }
         self::guard(static fn () => self::deleteVariants($itemId, $variantIds));
-    }
-
-    /**
-     * Replace the option rows of a listing.
-     *
-     * @param array<int,array<string,mixed>> $rows t_item_variant rows: pk_i_id and s_options
-     *
-     * @throws DbException only when the caller's transaction was lost
-     */
-    public static function rewriteVariants(int $itemId, array $rows): void
-    {
-        self::guard(static function () use ($itemId, $rows): void {
-            self::deleteVariants($itemId, null);
-            self::insert($itemId, self::variantRows($rows));
-        });
     }
 
     /**
@@ -793,6 +799,7 @@ final class FacetIndex
      */
     private static function writeRows(int $itemId, array $rows): bool
     {
+        self::settle();
         $pairs = [];
         foreach ($rows as [$key, $value]) {
             $pairs[$key][$value] = $value;
