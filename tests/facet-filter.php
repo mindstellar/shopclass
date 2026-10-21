@@ -110,17 +110,25 @@ pin('dropdown, one term is =', [$probe('= 41'), $in('= 41')], FacetFilter::field
 pin('dropdown, several terms', [$probe('IN (41, 42)'), $in('IN (41, 42)')], FacetFilter::fieldIn([41, 42]));
 pin('dropdown, no term is NONE both ways', [FacetFilter::NONE, FacetFilter::NONE], FacetFilter::fieldIn([]));
 pin('checkbox', [$probe('= 3'), $in('= 3')], FacetFilter::fieldFlag(3));
-$range = "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE fk_i_term_id = 16 AND d_number >= 10 AND d_number <= 20)";
-pin('number range, IN both ways', [$range, $range], FacetFilter::fieldRange(16, 10.0, 20.0));
+$range = "fk_i_term_id = 16 AND d_number >= 10 AND d_number <= 20";
+pin(
+    'number range, probe for the page and IN for the count',
+    ["(SELECT 1 FROM $f WHERE $range AND fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL", "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE $range)"],
+    FacetFilter::fieldRange(16, 10.0, 20.0)
+);
 pin(
     'a decimal bound keeps its digits',
     "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE fk_i_term_id = 16 AND d_number >= 0.1 AND d_number <= 1234567890123.456)",
-    FacetFilter::fieldRange(16, 0.1, 1234567890123.456)[0]
+    FacetFilter::fieldRange(16, 0.1, 1234567890123.456)[1]
 );
-pin('a big bound reads back as the same double', 1.0E+25, (float) explode('d_number <= ', FacetFilter::fieldRange(16, 0, 1.0E+25)[0])[1]);
-$covers = "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $f b ON b.fk_i_term_id = 182 AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= 1700000000"
-    . ' WHERE a.fk_i_term_id = 181 AND a.d_number <= 1690000000)';
-pin('date interval covers, IN both ways', [$covers, $covers], FacetFilter::fieldCovers(181, 182, 1690000000, 1700000000));
+pin('a big bound reads back as the same double', 1.0E+25, (float) explode('d_number <= ', FacetFilter::fieldRange(16, 0, 1.0E+25)[1])[1]);
+$covers = "FROM $f a JOIN $f b ON b.fk_i_term_id = 182 AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= 1700000000"
+    . ' WHERE a.fk_i_term_id = 181 AND a.d_number <= 1690000000';
+pin(
+    'date interval covers, probe for the page and IN for the count',
+    ["(SELECT 1 $covers AND a.fk_i_item_id = $i.pk_i_id LIMIT 1) IS NOT NULL", "$i.pk_i_id IN (SELECT a.fk_i_item_id $covers)"],
+    FacetFilter::fieldCovers(181, 182, 1690000000, 1700000000)
+);
 foreach (['an infinite bound' => static fn () => FacetFilter::fieldRange(16, 0, INF), 'a NaN bound' => static fn () => FacetFilter::fieldRange(16, NAN, 1)] as $label => $call) {
     try {
         $call();
@@ -228,7 +236,7 @@ $shapes = [
     'number range'            => [FacetFilter::fieldRange($one('f9', ''), 10, 20.5), $picked(static fn (int $k): bool => $k % 50 >= 10 && $k % 50 <= 20)],
     'date interval covers'    => [FacetFilter::fieldCovers($one('f5.from', ''), $one('f5.to', ''), 1100, 2050), $picked(static fn (int $k): bool => $k >= 50 && $k <= 100)],
 ];
-$probes = ['1 option', '1 option, 2 values', '2 options, one variant', '2 options, two variants', '3 options', 'option + in_stock', 'option + on_sale', 'dropdown eq', 'dropdown in', 'checkbox'];
+$probes = ['1 option', '1 option, 2 values', '2 options, one variant', '2 options, two variants', '3 options', 'option + in_stock', 'option + on_sale', 'dropdown eq', 'dropdown in', 'checkbox', 'number range', 'date interval covers'];
 foreach ($shapes as $label => [$condition, $expected]) {
     $s = new Search();
     $s->addCondition($condition[0], $condition[2] ?? [], $condition[1]);
