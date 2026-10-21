@@ -54,4 +54,16 @@ pin('it is paid without an error', "taken\n", $out[0]);
 pin('the balance has both changes', 14, Wallet::balance($uid));
 pin('and the ledger row records it', '14', $admin->query("SELECT i_balance_after FROM {$p}t_billing_ledger WHERE s_idempotency_key = 'order:{$order->getId()}'")->fetch_row()[0] ?? null);
 
+harness_section('a held listing published while a credit purchase lands');
+$seller = seed_user($admin, 'seller', 'seller@example.test');
+seed_item($admin, $cat, $seller, 'Live');
+$held = seed_item($admin, $cat, $seller, 'Held');
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL, dt_expiration = DATE_ADD(NOW(), INTERVAL 7 DAY) WHERE pk_i_id = {$held}");
+Wallet::credit($seller, 5, Wallet::REASON_GRANT);
+[$waiting, $out] = race($admin, $hold($seller, 5), $dbName, [[__DIR__ . '/lib/listing-publish-child.php', [$held, $seller]]], "%{$p}t_billing_wallet%");
+pin('the publish waited on the wallet row', 1, $waiting);
+pin('it publishes without an error', "published\n", $out[0]);
+pin('the purchase and the spend are both in the balance', 7, Wallet::balance($seller));
+pin('the listing is live', '1', $admin->query("SELECT b_active FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0]);
+
 exit(harness_result());
