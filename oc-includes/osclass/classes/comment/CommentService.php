@@ -164,22 +164,19 @@ final class CommentService
         osc_run_hook('before_add_comment', $row);
 
         return DeferredMail::transaction(function () use ($row, $mail, $status, $actor): SavedComment {
-            if ($row['i_rating'] !== null) {
-                // Two ratings sent at once wait here, so the second sees the first.
-                UserStore::lock((int) $row['fk_i_user_id']);
-                if ($this->query->hasRated($row['fk_i_item_id'], (int) $row['fk_i_user_id'])) {
-                    throw new ConflictException(_m('You have already rated this item'), ConflictException::ALREADY_REVIEWED);
-                }
+            if ($actor->userId() !== null) {
+                // Two comments or ratings sent at once wait here, so the second sees the first.
+                UserStore::lock($actor->userId());
+            }
+            if ($row['i_rating'] !== null && $this->query->hasRated($row['fk_i_item_id'], (int) $row['fk_i_user_id'])) {
+                throw new ConflictException(_m('You have already rated this item'), ConflictException::ALREADY_REVIEWED);
             }
             $id = (int) $this->comments->insertGetId($row);
             if ($id <= 0) {
                 throw new \RuntimeException('The comment could not be saved.');
             }
             if ($status === SavedComment::LIVE && $actor->userId() !== null) {
-                $user = $this->users->findByPrimaryKey($actor->userId());
-                if ($user) {
-                    $this->users->update(['i_comments' => $user['i_comments'] + 1], ['pk_i_id' => $user['pk_i_id']]);
-                }
+                UserStore::addComment($actor->userId());
             }
             ViewScope::withItem($mail['item'], static function () use ($mail, $status, $actor): void {
                 if ($status === SavedComment::LIVE && $actor->userId() !== null && osc_notify_new_comment_user()) {
