@@ -162,10 +162,10 @@ $mk = static function (array $o) use ($admin, $p, $locale, &$label): int {
          (fk_i_user_id, fk_i_category_id, dt_pub_date, dt_mod_date, f_price, i_price, fk_c_currency_code,
           s_contact_name, s_contact_email, s_ip, b_premium, b_enabled, b_active, b_spam, s_secret, dt_expiration)
          VALUES (?, ?, DATE_SUB(NOW(), INTERVAL ? HOUR), DATE_SUB(NOW(), INTERVAL ? MINUTE), ?, ?, 'USD', 'Seller', ?, '127.0.0.1', ?, ?, 1, ?, ?,
-                 IF(?, DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 30 DAY)))",
-        'iiiidisiiisi',
+                 IF(?, DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 720 + ? HOUR)))",
+        'iiiidisiiisii',
         array($o['user'], $o['cat'], $o['hours'], 20 - $o['hours'], $o['price'], (int)round($o['price'] * 1000000), $o['email'],
-              $o['premium'], $o['enabled'], $o['spam'], 'sec' . $o['key'], $o['expired'] ? 1 : 0)
+              $o['premium'], $o['enabled'], $o['spam'], 'sec' . $o['key'], $o['expired'] ? 1 : 0, $o['hours'])
     );
     seed_exec(
         $admin,
