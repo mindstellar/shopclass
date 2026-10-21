@@ -204,6 +204,7 @@ class SearchBuilder
         )));
 
         $facet = FacetIndex::ready();
+        $terms = $facet ? FacetIndex::termIds(self::facetPairs($custom_fields, $types)) : array();
         $table = DB_TABLE_PREFIX . 't_item_meta';
         $in    = DB_TABLE_PREFIX . 't_item.pk_i_id IN (';
         foreach ($custom_fields as $key => $aux) {
@@ -225,7 +226,7 @@ class SearchBuilder
                 case 'DROPDOWN':
                 case 'RADIO':
                     $values = self::metaChoices($aux);
-                    $pair   = $facet && $values !== array() ? self::facetIn($id, $values) : null;
+                    $pair   = $facet && $values !== array() ? self::facetIn($terms, $id, $values) : null;
                     if (count($values) === 1) {
                         $search->addFieldFilter(
                             $id,
@@ -244,7 +245,7 @@ class SearchBuilder
                     break;
                 case 'CHECKBOX':
                     if ($aux != '') {
-                        $pair = $facet ? self::facetIn($id, array('1')) : null;
+                        $pair = $facet ? self::facetIn($terms, $id, array('1')) : null;
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'checked'),
@@ -265,7 +266,7 @@ class SearchBuilder
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $start, 'to' => $end),
                             ...($facet
-                                ? self::facetRange($id, $start, $end)
+                                ? self::facetRange($terms, $id, $start, $end)
                                 : [$in . $by . $table . '.s_value >= ' . $start . ' AND ' . $table . '.s_value <= ' . $end . ')'])
                         );
                     }
@@ -283,7 +284,7 @@ class SearchBuilder
                             $id,
                             array('type' => $type, 'op' => 'covers', 'from' => $from, 'to' => $to),
                             ...($facet
-                                ? self::facetCovers($id, $from, $to)
+                                ? self::facetCovers($terms, $id, $from, $to)
                                 : [$in . 'select a.fk_i_item_id from (' . $sql . ') a where a.fk_i_item_id IN (' . $sql1 . '))'])
                         );
                     }
@@ -299,7 +300,7 @@ class SearchBuilder
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $min, 'to' => $max),
                             ...($facet
-                                ? self::facetRange($id, $min, $max)
+                                ? self::facetRange($terms, $id, $min, $max)
                                 : [$in . $by . $table . '.s_value >= ' . $min . ' AND ' . $table . '.s_value <= ' . $max . ')'])
                         );
                     }
@@ -331,35 +332,73 @@ class SearchBuilder
     }
 
     /**
-     * The term id of one key and value, or null when no listing has it.
+     * The key and values of every filter that reads the filter index, so one query finds all
+     * their term ids.
+     *
+     * @param array<mixed>       $meta  field id => asked value
+     * @param array<int,?string> $types field id => type
+     *
+     * @return array<string,string[]>
      */
-    private static function facetTerm(string $key, string $value): ?int
+    private static function facetPairs(array $meta, array $types): array
     {
-        return FacetIndex::termIds([$key => [$value]])[$key][$value] ?? null;
+        $pairs = array();
+        foreach ($meta as $key => $aux) {
+            $id = (int) $key;
+            switch ($types[$id] ?? null) {
+                case 'DROPDOWN':
+                case 'RADIO':
+                    $pairs[FacetIndex::key($id)] = self::metaChoices($aux);
+                    break;
+                case 'CHECKBOX':
+                    $pairs[FacetIndex::key($id)] = array('1');
+                    break;
+                case 'NUMBER':
+                case 'DATE':
+                    $pairs[FacetIndex::key($id)] = array('');
+                    break;
+                case 'DATEINTERVAL':
+                    $pairs[FacetIndex::key($id, 'from')] = array('');
+                    $pairs[FacetIndex::key($id, 'to')]   = array('');
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return $pairs;
     }
 
     /**
      * A dropdown, radio or checkbox value on the filter index: page and count text.
      *
-     * @param string[] $values
+     * @param array<string,array<int|string,int>> $terms from facetPairs()
+     * @param string[]                            $values
      *
      * @return array{0:string,1:string}
      */
-    private static function facetIn(int $fieldId, array $values): array
+    private static function facetIn(array $terms, int $fieldId, array $values): array
     {
-        $key = FacetIndex::key($fieldId);
+        $found = array();
+        foreach ($values as $value) {
+            if (isset($terms[FacetIndex::key($fieldId)][$value])) {
+                $found[] = $terms[FacetIndex::key($fieldId)][$value];
+            }
+        }
 
-        return FacetFilter::fieldIn(array_values(FacetIndex::termIds([$key => $values])[$key] ?? array()));
+        return FacetFilter::fieldIn($found);
     }
 
     /**
      * A number or date range on the filter index: page and count text.
      *
+     * @param array<string,array<int|string,int>> $terms from facetPairs()
+     *
      * @return array{0:string,1:string}
      */
-    private static function facetRange(int $fieldId, float $min, float $max): array
+    private static function facetRange(array $terms, int $fieldId, float $min, float $max): array
     {
-        $term = self::facetTerm(FacetIndex::key($fieldId), '');
+        $term = $terms[FacetIndex::key($fieldId)][''] ?? null;
 
         return $term === null ? [FacetFilter::NONE, FacetFilter::NONE] : FacetFilter::fieldRange($term, $min, $max);
     }
@@ -367,12 +406,14 @@ class SearchBuilder
     /**
      * A date interval covering from and to on the filter index: page and count text.
      *
+     * @param array<string,array<int|string,int>> $terms from facetPairs()
+     *
      * @return array{0:string,1:string}
      */
-    private static function facetCovers(int $fieldId, int $from, int $to): array
+    private static function facetCovers(array $terms, int $fieldId, int $from, int $to): array
     {
-        $start = self::facetTerm(FacetIndex::key($fieldId, 'from'), '');
-        $end   = self::facetTerm(FacetIndex::key($fieldId, 'to'), '');
+        $start = $terms[FacetIndex::key($fieldId, 'from')][''] ?? null;
+        $end   = $terms[FacetIndex::key($fieldId, 'to')][''] ?? null;
 
         return $start === null || $end === null ? [FacetFilter::NONE, FacetFilter::NONE] : FacetFilter::fieldCovers($start, $end, $from, $to);
     }
