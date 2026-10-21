@@ -83,7 +83,13 @@ pin('page that is not a number is 422', 422, $list(['page' => 'x'])->status());
 
 harness_section('the cap ends paging');
 // 10 060 more rows, so rows remain past the deepest page offset paging reaches (offset 10 000).
-$admin->query('SET SESSION cte_max_recursion_depth = 20000');
+// MySQL and MariaDB name the recursion limit differently; each refuses the other's name.
+foreach (['cte_max_recursion_depth', 'max_recursive_iterations'] as $limit) {
+    try {
+        $admin->query("SET SESSION $limit = 20000");
+    } catch (\mysqli_sql_exception $e) {
+    }
+}
 $admin->query("INSERT INTO {$p}t_item (fk_i_user_id, fk_i_category_id, dt_pub_date, dt_first_pub_date, dt_mod_date, f_price, i_price,
     fk_c_currency_code, s_contact_name, s_contact_email, s_ip, b_premium, b_enabled, b_active, b_spam, s_secret, dt_expiration)
     WITH RECURSIVE n (i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 10060)
