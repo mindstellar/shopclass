@@ -716,10 +716,12 @@ final class ListingService
     public function publish(int $id, Actor $actor): bool
     {
         return (bool) DeferredMail::transaction(function () use ($id, $actor): bool {
-            $row = ListingStore::find($id, array('*'), true);
+            $row = ListingStore::lockForWrite($id);
             if ($row === null || !ListingStatus::isHeld(Db::stringifyRow($row))) {
                 return false;
             }
+            // Before any read: the worker may be claiming these jobs right now.
+            ListingHoldJobs::cancel($id);
             $ownerId = (int) $row['fk_i_user_id'];
             $active  = ListingPolicy::newListingStatus($ownerId > 0 ? Actor::user($ownerId) : Actor::guest());
             $now     = date('Y-m-d H:i:s');
@@ -732,8 +734,6 @@ final class ListingService
             if (!$updated) {
                 return false;
             }
-
-            ListingHoldJobs::cancel($id);
 
             $days = ListingInput::expirationDays((int) $row['fk_i_category_id'], $ownerId > 0 ? $ownerId : null);
             // No run time is the column's "never" value.
