@@ -2,6 +2,67 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.1.0
+
+Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only admins post and shoppers get a buyer account. Over the limit, a seller now saves the listing and pays on the last step.
+
+### New
+- The shop hooks are typed events. A callback whose first parameter is an event class gets the event; the hook names and old callbacks work as before. See [Hooks](https://shopclass.org/docs/developers/hooks/).
+- `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key, and work with the API switched off. See [REST API](https://shopclass.org/docs/developers/api/).
+- A theme or plugin can declare `modes` (`classifieds`, `shop`) and the plugins it needs, in `shopclass.json` or the `Modes:` and `Requires Plugins:` headers. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
+- **Settings → General → Site is a** sets classifieds or shop; in shop mode only admins post. `osc_site_mode()` reads it.
+- Activating a theme that needs plugins opens one screen that installs and activates them, and Appearance warns if one is later removed.
+- The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
+- Listings have a `product` member with variants (SKU, price, stock, weight, shipping class), set by an admin.
+- A listing can have option rows (Colour x Size and so on), each with its own SKU, price and stock, set in the admin item form or by an admin through the API. `GET /listings` takes `option[name][]=value` and `ids`.
+- **Goods orders**: a cart is priced on the server and placed as an order, paid by a card plugin, bank transfer or cash on delivery. Stock is taken once when the order is paid (bank transfer and cash on delivery hold it from placement) and given back on refund or cancel; a line paid after the last one sold is marked oversold.
+- **Billing → Orders** shows a goods order's items, address, buyer and oversold lines, and can mark it shipped (carrier, tracking number, https link), delivered or cancelled. **To ship** lists paid orders not yet sent.
+- **Settings → Billing → Shop** sets the delivery charge, free delivery from, cash on delivery and its fee, hold days, open unpaid orders per buyer and the order number prefix.
+- The shop API: `GET /cart/quote` prices a cart, `POST /account/orders` places an order, and `GET /account/orders`, `/account/orders/{id}`, `/cancel` and `/pay` read, cancel and pay it again. `GET` and `PUT /account/cart` keep a signed-in shopper's cart for 90 days.
+- The cart hooks (`cart_shipping_methods`, `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`, `cart_free_over`, `cart_problems`, `cart_needs_shipping`, `cart_item_add_after` and `cart_checkout_before`) are fired, so shipping, tax and promotion plugins price a cart. See [Hooks](https://shopclass.org/docs/developers/hooks/) and [Billing](https://shopclass.org/docs/developers/payment-gateways/).
+- Buyers get an e-mail when an order is placed, paid, shipped, delivered, cancelled or refunded; one that fails to send is tried again once from the job queue. The owner gets one when a new order comes in.
+- Comments can carry a 1 to 5 rating, shown and averaged by the API and in the admin Comments list.
+- A signed-in user keeps a wishlist and back-in-stock or price-drop alerts through `account/wishlist` and `account/alerts`.
+- **Appearance → Customise** edits a theme's sections and look beside a live preview, saved as a draft until Publish. See [Customiser](https://shopclass.org/docs/developers/customiser/).
+- The widgets screen has an eye button that hides and shows a widget without deleting it.
+- `osc_kv_list()` pages through a key-value group, and `osc_kv_increment()` adds to a counter in one statement.
+- `osc_billing_user_order_count()` counts a user's goods orders by status.
+- `osc_billing_order_return_url()` (filter `billing_order_return_url`) is where a gateway sends the buyer after paying; `OrderStore::pendingBefore()` lists one gateway's old pending orders.
+- `billing_order_failed` fires when a card payment fails, and the daily job closes card orders left unpaid past the hold days.
+- `billing_tracking_url` and `billing_receipt_details` let a plugin set an order's tracking link and add to its receipt, and the order mails take their text from the `email_order_<kind>_title` and `_description` filters.
+- `GET /listings` takes `page` for numbered pages with any sort, and answers `meta.page` and `meta.pages`.
+- A product variant can have a "was" price (`compare_at`, set by an admin); listings answer `compare_at` and `on_sale`.
+- Variants answer `low_stock`, the units left when 1 to 5 are, so a shop can say "Only 3 left".
+- `GET /listings` takes `in_stock=true` and `on_sale=true` to list only what a shop can sell now or has marked down.
+- `GET /categories?include=cover` adds each category's cover: the first photo of the newest live listing in it or below it.
+- `GET /categories?roots=true` lists only the top-level categories.
+- **Pay at the end of posting**: over the limit, the listing is saved and paid for on the last step. Switch it in `Settings → Billing → Pricing → Take payment at the end of posting`.
+- A saved listing shows as "Waiting for payment" on My listings and in the admin Listings filter; an admin can use "Publish without payment".
+- A seller gets a reminder e-mail a day before an unpaid listing is deleted; edit it in `Settings → Emails`.
+- `POST /listings/{id}/publish` and `POST /admin/listings/{id}/publish` publish a listing that is waiting for payment.
+- In shop mode a shopper's account menu shows buyer pages only, with Your orders and recent orders on the dashboard.
+- Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
+
+### Changed
+- Settings is grouped by area (General, Content, Email, Security, System) with one tab row each, and Billing lists Shipping, Offers and coupons, Tax and Digital Goods beside its own Settings. A "Find a setting" box in the top bar searches every setting. Ban rules moved from Users to Settings > Security; the URLs are unchanged.
+- `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
+- A cash on delivery order ships before it is paid and is marked paid when marked delivered; neither the buyer nor the hold job cancels one once shipped.
+- Mails, receipts, bank transfer references and the API show an order number with its prefix.
+- `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
+- A listing waiting for payment takes no slot.
+
+### Security
+- A plugin download link from the catalogue is shown only when it is an https address.
+
+### Performance
+- API calls a theme makes on one page share their work: the route table builds only the routes a call tries, the category tree is read once, and each listing's row, photos, stats and location are read once.
+- API listing searches cache the finished rows, without description text when the response asks for none, so the Aisle home page runs 10 statements instead of 21 and a product page 19 instead of 36.
+- `GET /menus` caches the linked pages and top category links, and `Currency::listAll()` reads the cached table.
+- One listing's rating summary and stars come from one query.
+
+### Fixed
+- The API main menu no longer links a top category to a subcategory that has the same slug.
+
 ## Shopclass 7.0.2
 
 This release lets a theme preview last for the whole visit, and lets any visitor preview themes on a demo site.

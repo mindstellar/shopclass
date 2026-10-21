@@ -34,7 +34,10 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="settings-page-<?php echo osc_esc_html($page['id']); ?>">
-    <?php osc_admin_page_head($page['title']); ?>
+    <?php osc_admin_page_head($page['title']);
+    if ($page['tabs'] !== null) {
+        osc_admin_tab_nav(is_callable($page['tabs']) ? ($page['tabs'])() : $page['tabs']);
+    } ?>
 
     <?php if ($page['intro'] !== '') { ?>
         <p class="form-intro"><?php echo osc_esc_html($page['intro']); ?></p>

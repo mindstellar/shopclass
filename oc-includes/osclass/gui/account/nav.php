@@ -84,6 +84,10 @@ if (osc_is_user_dashboard()) {
     $navCurrent = 'opt_account';
 } elseif (osc_is_current_page('billing', 'buy') || osc_is_current_page('billing', 'checkout')) {
     $navCurrent = 'opt_billing_buy';
+} elseif ((osc_is_current_page('billing', 'orders') || osc_is_current_page('billing', 'receipt'))
+          && in_array('opt_billing_orders', array_column($navItems, 'class'), true)
+) {
+    $navCurrent = 'opt_billing_orders';
 } elseif (osc_get_osclass_location() === 'billing') {
     // The wallet has no action of its own: CWebBilling shows it for anything else.
     // Orders hang off it too, since they have no nav entry.

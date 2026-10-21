@@ -472,6 +472,7 @@ class ItemActions
             'author_email' => Params::getParamString('authorEmail'),
             'title'        => Params::getParamString('title'),
             'body'         => Params::getParamString('body'),
+            'rating'       => Params::getParamString('rating'),
         );
         $actor = Actor::fromSession(false);
         try {

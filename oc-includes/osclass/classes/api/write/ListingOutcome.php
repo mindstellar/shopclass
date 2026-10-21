@@ -13,12 +13,12 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 /**
- * What a listing save did that the seller did not ask for: the listing is not live yet, or
- * some photos did not fit.
+ * What a listing save did that the seller did not ask for: the listing is not live yet or waits
+ * for payment, or some photos did not fit.
  */
 final class ListingOutcome
 {
-    public function __construct(private int $id, private bool $pending, private int $photosSkipped)
+    public function __construct(private int $id, private bool $pending, private int $photosSkipped, private bool $unpaid = false)
     {
     }
 
@@ -33,6 +33,14 @@ final class ListingOutcome
     public function pending(): bool
     {
         return $this->pending;
+    }
+
+    /**
+     * The listing is saved hidden and waits for payment.
+     */
+    public function unpaid(): bool
+    {
+        return $this->unpaid;
     }
 
     /**

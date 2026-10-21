@@ -67,7 +67,8 @@ final class ListingService
     /**
      * Post a listing. Fires `item_add_prepare_data`, `pre_item_add`, `pre_item_add_error`,
      * `uploaded_file` per photo, the new-listing e-mail hooks, `item_increase_stat` and
-     * `posted_item`.
+     * `posted_item`. Over the listing limit with pay at post on, a non-admin post is saved hidden
+     * and unpaid and fires none of the e-mail or `posted_item` hooks until publish().
      *
      * @param array<string,mixed> $data
      * @param bool                $import admin rights that still apply the listing limit and moderation
@@ -104,7 +105,11 @@ final class ListingService
         }
         $refusal = ListingPolicy::mayPost($actor, $email);
         if ($refusal !== ListingPolicy::ALLOWED) {
-            throw new ForbiddenException(self::refusalMessage($refusal), $refusal === ListingPolicy::REGISTERED_ONLY ? ForbiddenException::SIGN_IN : ForbiddenException::BANNED);
+            throw new ForbiddenException(self::refusalMessage($refusal), match ($refusal) {
+                ListingPolicy::REGISTERED_ONLY => ForbiddenException::SIGN_IN,
+                ListingPolicy::SHOP_MODE       => ForbiddenException::DISABLED,
+                default                        => ForbiddenException::BANNED,
+            });
         }
         $this->allowed = $key;
     }
@@ -262,12 +267,13 @@ final class ListingService
 
     /**
      * Mark a listing validated: the owner confirmed it. One the admin has not enabled yet is
-     * still marked validated and stays hidden until enabled. Fires `activate_item`.
+     * still marked validated and stays hidden until enabled. A listing waiting for payment
+     * is left alone. Fires `activate_item`.
      *
      * @param string|null $secret the listing's edit secret, when the caller must match it
      *
-     * @return bool|null null when there is no such listing, the secret is wrong or it was
-     *                   already validated
+     * @return bool|null null when there is no such listing, the secret is wrong, it was
+     *                   already validated or it is waiting for payment
      */
     public function activate(int $id, ?string $secret = null): ?bool
     {
@@ -278,6 +284,7 @@ final class ListingService
         $item = $this->items->findByPrimaryKey($id);
         if (!is_array($item) || !isset($item['b_active']) || (int) $item['b_active'] !== 0
             || ($secret !== null && !hash_equals((string) $item['s_secret'], $secret))
+            || ListingHoldJobs::holds($id, Db::stringifyRow($item))
         ) {
             return null;
         }
@@ -312,10 +319,15 @@ final class ListingService
     }
 
     /**
-     * Put a listing back on the site after moderation. Fires `enable_item`.
+     * Put a listing back on the site after moderation. A listing waiting for payment is left
+     * alone: only publish() puts it live. Fires `enable_item`.
      */
     public function enable(int $id): bool
     {
+        $row = ListingStore::find($id, array('b_enabled', 'b_active', 'dt_first_pub_date'));
+        if ($row !== null && ListingHoldJobs::holds($id, Db::stringifyRow($row))) {
+            return false;
+        }
         $result = $this->items->update(
             array('b_enabled' => 1),
             array('pk_i_id' => $id)
@@ -632,19 +644,113 @@ final class ListingService
      */
     public function notifyNew(array $item, string $active, Actor $actor): void
     {
-        ViewScope::withItem($item, static function () use ($item, $active, $actor): void {
+        // A mail that cannot be written is logged: it must not roll back the save, or a paid publish.
+        $guard = static function (callable $send) use ($item): void {
+            try {
+                $send();
+            } catch (\Throwable $e) {
+                error_log('Listing #' . $item['pk_i_id'] . ': a new-listing e-mail failed: ' . $e->getMessage());
+            }
+        };
+        ViewScope::withItem($item, static function () use ($item, $active, $actor, $guard): void {
             $registered = $actor->userId() !== null;
             if ($active === 'INACTIVE' && !$registered) {
-                osc_run_hook('hook_email_item_validation_non_register_user', $item);
+                $guard(static fn () => osc_run_hook('hook_email_item_validation_non_register_user', $item));
             } elseif ($active === 'INACTIVE') {
-                osc_run_hook('hook_email_item_validation', $item);
+                $guard(static fn () => osc_run_hook('hook_email_item_validation', $item));
             } elseif (!$registered) {
-                osc_run_hook('hook_email_new_item_non_register_user', $item);
+                $guard(static fn () => osc_run_hook('hook_email_new_item_non_register_user', $item));
             }
 
             if (osc_notify_new_item()) {
-                osc_run_hook('hook_email_admin_new_item', $item);
+                $guard(static fn () => osc_run_hook('hook_email_admin_new_item', $item));
             }
+        });
+    }
+
+    /**
+     * What follows a listing going live: the e-mails, the counters, the moderation hold and
+     * `posted_item`. A new listing runs it when it is saved, a held one when it is published.
+     *
+     * @param array<string,mixed>      $item     the listing row with its texts
+     * @param array<string,mixed>|null $location its location row, read when not given
+     */
+    private function announce(array $item, string $active, Actor $actor, bool $import, ?array $location = null): void
+    {
+        if (!$actor->isAdmin()) {
+            $this->notifyNew($item, $active, $actor);
+        }
+
+        // A spam-flagged listing is not counted.
+        if ($active !== 'INACTIVE' && (int) ($item['b_spam'] ?? 0) === 0) {
+            $location ??= ListingStore::location((int) $item['pk_i_id']) ?? array();
+            ListingStats::increase(array(
+                'fk_i_user_id'      => $item['fk_i_user_id'] === null ? null : (int) $item['fk_i_user_id'],
+                'fk_i_category_id'  => (int) $item['fk_i_category_id'],
+                'fk_c_country_code' => $location['fk_c_country_code'] ?? null,
+                'fk_i_region_id'    => $location['fk_i_region_id'] ?? null,
+                'fk_i_city_id'      => $location['fk_i_city_id'] ?? null,
+            ));
+        }
+
+        if ((!$actor->isAdmin() || $import) && osc_moderate_admin_post()) {
+            $this->disable($item['pk_i_id'], $item);
+        }
+
+        // Listeners may read the new listing through osc_item_*().
+        ViewScope::withItem($item, static fn () => osc_run_hook('posted_item', $item));
+    }
+
+    /**
+     * Put a held listing live: it starts its run now, takes its moderation status from its
+     * owner, and gets the e-mails and `posted_item` a new listing gets. A listing that is not
+     * held, or that another call published first, is left alone. It charges nothing: a seller
+     * pays through ListingCheckout::publish(), which calls it.
+     *
+     * @return bool whether this call published it
+     */
+    public function publish(int $id, Actor $actor): bool
+    {
+        return (bool) DeferredMail::transaction(function () use ($id, $actor): bool {
+            $row = ListingStore::find($id, array('*'), true);
+            if ($row === null || !ListingStatus::isHeld(Db::stringifyRow($row))) {
+                return false;
+            }
+            $ownerId = (int) $row['fk_i_user_id'];
+            $active  = ListingPolicy::newListingStatus($ownerId > 0 ? Actor::user($ownerId) : Actor::guest());
+            $now     = date('Y-m-d H:i:s');
+
+            $updated = Db::execute(
+                'UPDATE ' . $this->items->getTableName() . ' SET b_enabled = 1, b_active = ?, dt_pub_date = ?, dt_first_pub_date = ?, dt_mod_date = ?'
+                . ' WHERE pk_i_id = ? AND dt_first_pub_date IS NULL',
+                array($active === 'ACTIVE' ? 1 : 0, $now, $now, $now, $id)
+            );
+            if (!$updated) {
+                return false;
+            }
+
+            ListingHoldJobs::cancel($id);
+
+            $days = ListingInput::expirationDays((int) $row['fk_i_category_id'], $ownerId > 0 ? $ownerId : null);
+            // No run time is the column's "never" value.
+            if ($days === '' || $days === 0) {
+                Db::execute('UPDATE ' . $this->items->getTableName() . ' SET dt_expiration = ? WHERE pk_i_id = ?', array('9999-12-31 23:59:59', $id));
+            } else {
+                // announce() counts it; the expiry update must not count it as well.
+                $this->items->updateExpirationDate($id, (string) $days, false);
+            }
+
+            $texts = $this->storedLocales($id);
+            $fresh = ListingStore::find($id, array('*'));
+            if ($fresh === null) {
+                return false;
+            }
+            $item = $this->items->extendRows(array(Db::stringifyRow($fresh)), null, self::textRows($id, $texts))[0];
+
+            \Log::getInstance()->insertLog('item', 'publish', $id, (string) ($item['s_title'] ?? ''), $actor->logRole(), $actor->logId());
+            $this->announce($item, $active, $actor, !$actor->isAdmin());
+
+            return true;
         });
     }
 
@@ -662,6 +768,7 @@ final class ListingService
     public static function refusalMessage(string $refusal): string
     {
         return match ($refusal) {
+            ListingPolicy::SHOP_MODE       => _m('Only the shop owner can add products'),
             ListingPolicy::REGISTERED_ONLY => _m('Only registered users are allowed to post listings'),
             ListingPolicy::BANNED_EMAIL    => _m('Your current email is not allowed'),
             default                        => _m('Your current IP is not allowed'),
@@ -768,24 +875,11 @@ final class ListingService
         }
         [$meta, $metaErrors] = $this->customFields($aItem);
         $errors              = array_merge($errors, $metaErrors);
+        $errors              = array_merge($errors, $this->productErrors($aItem, $actor));
 
         $text = self::errorText($errors);
         osc_run_hook('pre_item_add', $aItem, $text);
         $errors = self::pluginErrors($errors, $text, (string) osc_apply_filter('pre_item_add_error', $text, $aItem));
-
-        // The one choke point for the listing quota. Guest posts (no user id) have no
-        // wallet to charge and admin posts are never metered, so both skip enforcement
-        // entirely. withinFreeQuota() is the same COUNT canPublish() would otherwise run
-        // again internally, so it is computed once here and handed to canPublish() rather
-        // than paying for it twice on every post. Nothing is ever consumed here: a
-        // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
-        // checked, so there is nothing left to spend once a post is allowed through.
-        if ((!$actor->isAdmin() || $import) && osc_billing_enabled() && !empty($aItem['userId'])) {
-            $withinFreeQuota = \mindstellar\billing\EntitlementStore::withinFreeQuota($aItem['userId']);
-            if (!\mindstellar\billing\EntitlementStore::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                $errors[] = ListingValidator::entry('', 'listing_limit', osc_listing_limit_message((int) $aItem['userId'], $aItem));
-            }
-        }
 
         if ($errors !== array()) {
             throw self::refuse($errors);
@@ -804,6 +898,21 @@ final class ListingService
         ['item' => $aItem, 'meta' => $meta, 'spam' => $is_spam, 'active' => $active] = $checked;
         $enabled = 1;
         $code    = osc_genRandomPassword();
+        $hold    = false;
+
+        // The one choke point for the listing quota: guests and admin posts are not metered.
+        // Over the limit the listing is held until paid for, or refused (see postingRule()).
+        // It runs here, inside the transaction, so the seller lock holds until the insert commits.
+        if ((!$actor->isAdmin() || $import) && osc_billing_enabled() && !empty($aItem['userId'])) {
+            // Locked, so two posts or a post and a publish cannot both take the last free slot.
+            \mindstellar\billing\EntitlementStore::lockSeller((int) $aItem['userId']);
+            $rule = \mindstellar\billing\ListingCheckout::postingRule((int) $aItem['userId'], array('item' => $aItem), true, !$actor->isAdmin());
+            if ($rule === \mindstellar\billing\ListingCheckout::POST_HOLD) {
+                $hold = true;
+            } elseif ($rule === \mindstellar\billing\ListingCheckout::POST_REFUSE) {
+                throw self::refuse(array(ListingValidator::entry('', 'listing_limit', osc_listing_limit_message((int) $aItem['userId'], $aItem))));
+            }
+        }
 
         if (empty($aItem['price'])) {
             $aItem['currency'] = null;
@@ -820,7 +929,7 @@ final class ListingService
         $itemId = $this->items->insertGetId(array(
             'fk_i_user_id'       => $aItem['userId'],
             'dt_pub_date'        => $publishedAt,
-            'dt_first_pub_date'  => $publishedAt,
+            'dt_first_pub_date'  => $hold ? null : $publishedAt,
             'fk_i_category_id'   => $aItem['catId'],
             'i_price'            => $aItem['price'],
             'fk_c_currency_code' => $aItem['currency'],
@@ -828,8 +937,8 @@ final class ListingService
             's_contact_email'    => $aItem['contactEmail'],
             's_contact_phone'    => $aItem['contactPhone'],
             's_secret'           => $code,
-            'b_active'           => $active === 'ACTIVE' ? 1 : 0,
-            'b_enabled'          => $enabled,
+            'b_active'           => !$hold && $active === 'ACTIVE' ? 1 : 0,
+            'b_enabled'          => $hold ? 0 : 1,
             'b_show_email'       => $aItem['showEmail'],
             'b_spam'             => $is_spam,
             's_ip'               => $aItem['s_ip']
@@ -890,14 +999,34 @@ final class ListingService
 
         $this->photos->store($aItem['photos'], $itemId);
 
-        // update dt_expiration at t_item
-        \Item::getInstance()->updateExpirationDate($itemId, $aItem['dt_expiration']);
+        // A held listing's deadline is the hold; its run starts when it goes live.
+        if ($hold) {
+            \Item::getInstance()->updateExpirationDate($itemId, (string) osc_billing_hold_days(), false);
+        } else {
+            // A day count must reach it as text: it tells days from a date by ctype_digit().
+            $expiry = $aItem['dt_expiration'];
+            \Item::getInstance()->updateExpirationDate($itemId, is_int($expiry) ? (string) $expiry : $expiry);
+        }
 
         $this->writeMeta($meta, $itemId);
+        $this->writeProduct((int) $itemId, $aItem, $actor);
 
         // We need at least one record in t_item_stats
         $mStats = new \ItemStats();
         $mStats->emptyRow($itemId);
+
+        if ($hold) {
+            // In this transaction: a held row with no delete job must not be saved.
+            try {
+                ListingHoldJobs::queue((int) $itemId, osc_billing_hold_days());
+            } catch (\RuntimeException $e) {
+                error_log($e->getMessage());
+
+                throw self::notSaved();
+            }
+
+            return new SavedListing((int) $itemId, false, null, true);
+        }
 
         $row = ListingStore::find((int) $itemId, array('*'));
         if ($row === null) {
@@ -908,30 +1037,7 @@ final class ListingService
         $item          = $this->items->extendRows(array(Db::stringifyRow($row)), null, self::textRows((int) $itemId, $texts))[0];
         $aItem['item'] = $item;
 
-        if (!$actor->isAdmin()) {
-            $this->notifyNew($item, $active, $actor);
-        }
-
-        if ($active !== 'INACTIVE') {
-            $aAux = array(
-                'fk_i_user_id'      => $aItem['userId'],
-                'fk_i_category_id'  => $aItem['catId'],
-                'fk_c_country_code' => $location['fk_c_country_code'],
-                'fk_i_region_id'    => $location['fk_i_region_id'],
-                'fk_i_city_id'      => $location['fk_i_city_id']
-            );
-            // if is_spam not increase stats
-            if ($is_spam == 0) {
-                ListingStats::increase($aAux);
-            }
-        }
-
-        if ((!$actor->isAdmin() || $import) && osc_moderate_admin_post()) {
-            $this->disable($item['pk_i_id'], $item);
-        }
-
-        // Listeners may read the new listing through osc_item_*().
-        ViewScope::withItem($item, static fn () => osc_run_hook('posted_item', $item));
+        $this->announce($item, $active, $actor, $import, $location);
 
         return new SavedListing((int) $itemId, $active === 'INACTIVE');
     }
@@ -967,6 +1073,7 @@ final class ListingService
 
         [$meta, $metaErrors] = $this->customFields($aItem);
         $errors              = array_merge($errors, $metaErrors);
+        $errors              = array_merge($errors, $this->productErrors($aItem, $actor));
 
         $text = self::errorText($errors);
         osc_run_hook('pre_item_edit', $aItem, $text);
@@ -992,6 +1099,8 @@ final class ListingService
         // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
         $old_item = ListingStore::find($aItem['idItem'], array('*'), true);
         $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
+        // A listing waiting for payment keeps its hold and its deadline through an edit.
+        $unpaid = $old_item !== array() && ListingStatus::isHeld($old_item);
 
         // Text first: when it is refused, nothing else about the listing has changed yet.
         $texts = $this->storedLocales($aItem['idItem']);
@@ -1057,7 +1166,11 @@ final class ListingService
         if ($matchSecret) {
             $where['s_secret'] = $aItem['secret'];
         }
-        $result = $this->items->update($aUpdate, $where);
+        // Variants with no price of their own sell at the listing's, so its change is theirs.
+        $oldPrice   = is_numeric($old_item['i_price'] ?? null) ? (int) $old_item['i_price'] : null;
+        $newPrice   = is_numeric($aUpdate['i_price']) ? (int) round((float) $aUpdate['i_price']) : null;
+        $inheriting = $oldPrice !== $newPrice ? VariantStore::inheriting((int) $aItem['idItem']) : array();
+        $result     = $this->items->update($aUpdate, $where);
         // A wrong secret changes no row, so it must not attach photos either.
         if (!$matchSecret || hash_equals((string) ($old_item['s_secret'] ?? ''), (string) $aItem['secret'])) {
             $this->photos->store($aItem['photos'], $aItem['idItem']);
@@ -1073,10 +1186,14 @@ final class ListingService
         );
 
         $this->writeMeta($meta, $aItem['idItem'], $meta ? FieldQuery::lockedListingValues($aItem['idItem']) : array());
+        $this->writeProduct($aItem['idItem'], $aItem, $actor);
+        if ($result) {
+            VariantStore::listingPriceChanged((int) $aItem['idItem'], $inheriting, $oldPrice, $newPrice);
+        }
 
         // Premium keeps an expired listing counted, as the recount does.
         $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
-        $dt_expiration = self::sameExpiry($aItem['dt_expiration'], $old_item)
+        $dt_expiration = $unpaid || self::sameExpiry($aItem['dt_expiration'], $old_item)
             ? false
             : \Item::getInstance()->updateExpirationDate($aItem['idItem'], $aItem['dt_expiration'], false);
         if ($dt_expiration === false) {
@@ -1100,7 +1217,7 @@ final class ListingService
             ? \Item::getInstance()->extendRows(array(self::editedRow($old_item, $aUpdate, $dt_expiration)), null, self::textRows($aItem['idItem'], $texts))[0]
             : \Item::getInstance()->findByPrimaryKey($aItem['idItem']);
 
-        $held = (!$actor->isAdmin() || $import) && osc_moderate_admin_edit();
+        $held = !$unpaid && (!$actor->isAdmin() || $import) && osc_moderate_admin_edit();
         if ($held && $this->disable($aItem['idItem'], $edited ?: null) && $edited) {
             $edited['b_enabled'] = '0';
         }
@@ -1110,7 +1227,7 @@ final class ListingService
         // Pending as on a new listing: it still waits for activation, or the edit waits for the admin.
         $pending = $held || ($old_item !== array() && ListingStatus::of($old_item) === ListingStatus::PENDING);
 
-        return new SavedListing((int) $aItem['idItem'], $pending, $result === false ? false : (int) $result);
+        return new SavedListing((int) $aItem['idItem'], $pending, $result === false ? false : (int) $result, $unpaid);
     }
 
     /**
@@ -1192,6 +1309,51 @@ final class ListingService
         $aItem['contactPhone'] = $this->sanitize->phone($aItem['contactPhone']);
 
         return $aItem;
+    }
+
+    /**
+     * Errors for the `product` member, which only an admin's save carries. A variant photo
+     * must be one the listing already has, so a new listing's rows take none.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    private function productErrors(array $aItem, Actor $actor): array
+    {
+        if (!$actor->isAdmin() || !is_array($aItem['product'] ?? null)) {
+            return array();
+        }
+        $itemId = (int) ($aItem['idItem'] ?? 0);
+        $photos = $itemId > 0 && is_array($aItem['product']['variants'] ?? null)
+            ? array_map(static fn (array $photo): int => (int) $photo['pk_i_id'], PhotoStore::ofItems(array($itemId)))
+            : array();
+
+        return $this->validator->product($aItem['product'], $photos);
+    }
+
+    /**
+     * Save the listing's default row or its option rows from the `product` member, or remove
+     * every row when it is not for sale. Ignored unless an admin saves, whatever the data holds.
+     *
+     * @param array<string,mixed> $aItem
+     */
+    private function writeProduct(int $itemId, array $aItem, Actor $actor): void
+    {
+        if (!$actor->isAdmin() || !is_array($aItem['product'] ?? null)) {
+            return;
+        }
+        if (empty($aItem['product']['sell'])) {
+            VariantStore::deleteForItem($itemId);
+
+            return;
+        }
+        if (is_array($aItem['product']['variants'] ?? null)) {
+            VariantStore::saveSet($itemId, $aItem['product']['variants']);
+
+            return;
+        }
+        VariantStore::saveDefault($itemId, (array) ($aItem['product']['fields'] ?? array()));
     }
 
     private static function place(mixed $value): string

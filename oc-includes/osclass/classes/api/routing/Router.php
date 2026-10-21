@@ -30,8 +30,21 @@ final class Router
     /** @api The core components a plugin schema may `$ref`; its own are named `Ext...`. */
     public const SHARED_COMPONENTS = ['Problem', 'Listing', 'ListingPage', 'Photo', 'PageMeta', 'PageLinks'];
 
-    /** @var array<string,array<string,array<string,RouteSpec>>> version => method => 'METHOD path' => route */
+    /** @var array<string,array<string,array<string,int>>> version => method => 'METHOD path' => index in $routes */
     private array $byVersion = [];
+
+    /**
+     * Each route, built on first use; a core route waits as its constructor arguments, so a
+     * request builds only the routes it tries.
+     *
+     * @var array<int,RouteSpec|array{0:string,1:string,2:array<string,mixed>}>
+     */
+    private array $routes = [];
+
+    /** @var array<int,string> index => the literal first path segment, '' when it is a placeholder */
+    private array $heads = [];
+
+    private ?\Closure $handlers;
 
     /** @var array<string,true> keys of core routes */
     private array $core = [];
@@ -65,7 +78,7 @@ final class Router
      * @param Scopes|null                       $scopes     the declared scopes admin plugin routes are checked against;
      *                                                      Scopes::fromHooks() when null
      *
-     * @throws \InvalidArgumentException when a core route cannot be served
+     * @throws \InvalidArgumentException when a core route cannot be served, once that route is first used
      */
     public function __construct(
         private Validator $validator,
@@ -76,24 +89,22 @@ final class Router
         ?array $versions = null,
         ?Scopes $scopes = null
     ) {
-        $this->log    = \Closure::fromCallable($log ?? 'error_log');
-        $this->live   = $versions ?? array_keys(ApiSettings::VERSIONS);
-        $this->scopes = $scopes;
-        $named        = [];
+        $this->log      = \Closure::fromCallable($log ?? 'error_log');
+        $this->live     = $versions ?? array_keys(ApiSettings::VERSIONS);
+        $this->scopes   = $scopes;
+        $this->handlers = $handlers;
+        $named          = [];
         foreach ($coreRoutes as $key => $spec) {
-            [$method, $path, $spec] = self::split((string) $key, $spec);
-            $route = new RouteSpec($method, $path, $spec, $handlers, $kit, $this->live);
-            if (isset($spec['versions'])) {
+            $route = self::split((string) $key, $spec);
+            if (isset($route[2]['versions'])) {
                 $named[] = $route;
                 continue;
             }
-            $this->add($route);
-            $this->core[$route->key()] = true;
+            $this->addCore($route);
         }
         // A route that names its versions replaces, in those versions, one that serves them all.
         foreach ($named as $route) {
-            $this->add($route);
-            $this->core[$route->key()] = true;
+            $this->addCore($route);
         }
     }
 
@@ -196,8 +207,13 @@ final class Router
     public function match(string $method, string $path, string $version = ApiSettings::VERSION): ?RouteMatch
     {
         $method = strtoupper($method);
-        foreach ($this->byVersion[$version][$method === 'HEAD' ? 'GET' : $method] ?? [] as $route) {
-            $args = $route->match($path);
+        $head   = explode('/', $path, 2)[0];
+        foreach ($this->byVersion[$version][$method === 'HEAD' ? 'GET' : $method] ?? [] as $index) {
+            if ($this->heads[$index] !== '' && $this->heads[$index] !== $head) {
+                continue;
+            }
+            $route = $this->route($index);
+            $args  = $route->match($path);
             if ($args !== null) {
                 return new RouteMatch($route, $args);
             }
@@ -215,8 +231,8 @@ final class Router
     {
         $methods = [];
         foreach ($this->byVersion[$version] ?? [] as $method => $routes) {
-            foreach ($routes as $route) {
-                if ($route->match($path) !== null) {
+            foreach ($routes as $index) {
+                if ($this->route($index)->match($path) !== null) {
                     $methods[] = $method;
                     break;
                 }
@@ -234,7 +250,14 @@ final class Router
      */
     public function all(string $version = ApiSettings::VERSION): array
     {
-        return array_merge([], ...array_values($this->byVersion[$version] ?? []));
+        $out = [];
+        foreach ($this->byVersion[$version] ?? [] as $routes) {
+            foreach ($routes as $key => $index) {
+                $out[$key] = $this->route($index);
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -247,9 +270,53 @@ final class Router
 
     private function add(RouteSpec $route): void
     {
+        $index                = count($this->routes);
+        $this->routes[$index] = $route;
+        $this->heads[$index]  = self::head($route->path());
         foreach ($route->versions() as $version) {
-            $this->byVersion[$version][$route->method()][$route->key()] = $route;
+            $this->byVersion[$version][$route->method()][$route->key()] = $index;
         }
+    }
+
+    /**
+     * Index a core route without building it. Its method, path and versions are read as
+     * RouteSpec reads them.
+     *
+     * @param array{0:string,1:string,2:array<string,mixed>} $route
+     */
+    private function addCore(array $route): void
+    {
+        [$method, $path, $spec] = $route;
+        $method               = strtoupper($method);
+        $path                 = trim($path, '/');
+        $key                  = $method . ' ' . $path;
+        $index                = count($this->routes);
+        $this->routes[$index] = [$method, $path, $spec];
+        $this->heads[$index]  = self::head($path);
+        foreach (array_unique(array_map('strval', (array) ($spec['versions'] ?? $this->live))) as $version) {
+            $this->byVersion[$version][$method][$key] = $index;
+        }
+        $this->core[$key] = true;
+    }
+
+    private function route(int $index): RouteSpec
+    {
+        $route = $this->routes[$index];
+        if (is_array($route)) {
+            $route = $this->routes[$index] = new RouteSpec($route[0], $route[1], $route[2], $this->handlers, $this->kit, $this->live);
+        }
+
+        return $route;
+    }
+
+    /**
+     * A path's first segment when it is literal, '' when it holds a placeholder.
+     */
+    private static function head(string $path): string
+    {
+        $head = explode('/', $path, 2)[0];
+
+        return str_contains($head, '{') ? '' : $head;
     }
 
     /**
@@ -258,8 +325,8 @@ final class Router
     private function pluginOverlap(RouteSpec $route): ?RouteSpec
     {
         foreach ($route->versions() as $version) {
-            foreach ($this->byVersion[$version][$route->method()] ?? [] as $key => $other) {
-                if (!isset($this->core[$key]) && $route->overlaps($other)) {
+            foreach ($this->byVersion[$version][$route->method()] ?? [] as $key => $index) {
+                if (!isset($this->core[$key]) && $route->overlaps($other = $this->route($index))) {
                     return $other;
                 }
             }
@@ -277,13 +344,17 @@ final class Router
      */
     private static function split(string $key, array $spec): array
     {
-        $parts = explode(' ', $key, 3);
-        if (preg_match('/^v[0-9]+$/D', $parts[0]) === 1 && count($parts) > 1) {
-            $spec['versions'] = [$parts[0]];
-            array_shift($parts);
-        } else {
-            $parts = explode(' ', $key, 2);
+        // Methods are upper case, so only a key starting with a lower-case v can name a version.
+        if (($key[0] ?? '') === 'v') {
+            $parts = explode(' ', $key, 3);
+            if (preg_match('/^v[0-9]+$/D', $parts[0]) === 1 && count($parts) > 1) {
+                $spec['versions'] = [$parts[0]];
+                array_shift($parts);
+
+                return [$parts[0], $parts[1] ?? '', $spec];
+            }
         }
+        $parts = explode(' ', $key, 2);
 
         return [$parts[0], $parts[1] ?? '', $spec];
     }

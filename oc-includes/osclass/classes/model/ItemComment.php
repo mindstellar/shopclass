@@ -43,7 +43,8 @@ class ItemComment extends DAO
             'b_enabled',
             'b_active',
             'b_spam',
-            'fk_i_user_id'
+            'fk_i_user_id',
+            'i_rating'
         );
         $this->setFields($array_fields);
     }

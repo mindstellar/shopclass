@@ -28,10 +28,11 @@ if ($slotOffer === null || $slotLimit === -1) {
     return;
 }
 // Purchases needed before the seller can post one more listing.
-$slotsNeeded = (int) ceil((osc_user_listings_used($slotUserId) - $slotLimit + 1) / osc_billing_slot_quantity());
+$slotQuote   = osc_billing_next_listing_quote($slotUserId);
+$slotsNeeded = $slotQuote['slots'];
 
 $slotPrice   = (int) $slotOffer['credits'];
-$slotCredits = osc_user_credits($slotUserId);
+$slotCredits = $slotQuote['balance'];
 $slotCanPay  = $slotCredits >= $slotPrice;
 if (!$slotCanPay && !osc_billing_can_buy()) {
     return;

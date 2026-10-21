@@ -19,6 +19,8 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\apikey\ApiSettings;
+use mindstellar\billing\CartPricer;
+use mindstellar\site\SiteMode;
 
 /**
  * `GET /`: what the site is, what the API allows on it and where its collections are.
@@ -43,7 +45,7 @@ final class SiteController
             $locales[] = ['code' => $code, 'name' => $locale['name'], 'direction' => $locale['direction']];
         }
         $links = [];
-        foreach (['listings' => 'listings', 'categories' => 'categories', 'countries' => 'countries', 'currencies' => 'currencies', 'custom_fields' => 'custom-fields', 'openapi' => 'openapi.json'] as $name => $path) {
+        foreach (['listings' => 'listings', 'categories' => 'categories', 'countries' => 'countries', 'currencies' => 'currencies', 'pages' => 'pages', 'menus' => 'menus', 'custom_fields' => 'custom-fields', 'openapi' => 'openapi.json'] as $name => $path) {
             $links[$name] = $this->api->links()->api($path, $call->request()->version());
         }
         $settings = $this->settings;
@@ -51,6 +53,7 @@ final class SiteController
             'name'           => (string) osc_page_title(),
             'description'    => Format::text(osc_page_description()),
             'url'            => (string) osc_base_url(),
+            'mode'           => osc_site_mode(),
             'api_version'    => $call->request()->version(),
             'default_locale' => $facts->defaultLocale(),
             'locales'        => $locales,
@@ -61,11 +64,16 @@ final class SiteController
                 'users'        => $facts->usersEnabled(),
                 'registration' => (bool) osc_user_registration_enabled(),
                 'comments'     => $facts->commentsEnabled(),
+                'shop'         => osc_site_mode() === SiteMode::SHOP,
             ],
             'api'            => [
                 'registration'  => $settings->registration() && $facts->usersEnabled() && (bool) osc_user_registration_enabled(),
                 'personal_keys' => $settings->userKeys(),
                 'photo_urls'    => $settings->photoUrls(),
+            ],
+            'cart'           => [
+                'max_lines' => CartPricer::MAX_LINES,
+                'max_qty'   => CartPricer::MAX_QTY,
             ],
             'links'          => $links,
         ];

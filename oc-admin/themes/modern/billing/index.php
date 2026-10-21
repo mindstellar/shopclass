@@ -11,6 +11,7 @@
  */
 
 use mindstellar\billing\Order;
+use mindstellar\billing\OrderStore;
 
 osc_admin_page(array(
     'section' => __('Billing'),
@@ -27,6 +28,7 @@ $filters  = __get('filters');
 $total    = (int)__get('total');
 $pageNum  = (int)__get('pageNum');
 $perPage  = (int)__get('perPage');
+$toShip   = (bool)__get('toShip');
 
 $base = osc_admin_base_url(true) . '?page=billing';
 
@@ -34,17 +36,25 @@ $base = osc_admin_base_url(true) . '?page=billing';
 $statusWords = array(
     Order::STATUS_PENDING   => __('Pending'),
     Order::STATUS_PAID      => __('Paid'),
+    Order::STATUS_SHIPPED   => __('Shipped'),
+    Order::STATUS_DELIVERED => __('Delivered'),
     Order::STATUS_FAILED    => __('Failed'),
     Order::STATUS_REFUNDED  => __('Refunded'),
     Order::STATUS_CANCELLED => __('Cancelled'),
 );
 
-$isFiltered = ($filters['status'] ?? '') !== ''
+$isFiltered = $toShip
+              || ($filters['status'] ?? '') !== ''
               || ($filters['gateway'] ?? '') !== ''
               || (int)($filters['user_id'] ?? 0) > 0;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Orders')); ?>
+    <?php osc_admin_page_head(__('Orders'), array(array(
+        'label' => $toShip ? __('All orders') : __('To ship'),
+        'url'   => $toShip ? $base : $base . '&toShip=1',
+        'icon'  => $toShip ? 'bi-list' : 'bi-box-seam',
+    ))); ?>
+
 
     <?php osc_admin_toolbar_open(); ?>
         <?php osc_admin_list_filter(array(
@@ -127,6 +137,14 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                             <a class="billing-order-link" href="<?php echo osc_esc_html($orderUrl); ?>">
                                 <?php echo osc_esc_html('#' . $order->getId()); ?>
                             </a>
+                            <?php if ($order->isGoods()) { ?>
+                                <br><span class="text-muted"><?php echo osc_esc_html($order->getLabel()); ?></span>
+                            <?php } elseif ($order->isListing()) { ?>
+                                <br><span class="text-muted"><?php echo osc_esc_html($order->getLabel()); ?></span>
+                                <?php if ($order->meta(OrderStore::PUBLISH_FAILED) !== null && OrderStore::listingState((int) $order->listingId()) === 'held') { ?>
+                                    <span class="text-muted">· <?php _e('listing not published'); ?></span>
+                                <?php } ?>
+                            <?php } ?>
                         </td>
                         <td>
                             <?php if ($user !== null) { ?>
@@ -141,7 +159,7 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                         <td class="col-numeric">
                             <?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?>
                         </td>
-                        <td class="col-numeric"><?php echo number_format($order->getCredits()); ?></td>
+                        <td class="col-numeric"><?php echo $order->isGoods() ? '–' : number_format($order->getCredits()); ?></td>
                         <td><?php echo osc_admin_date($order->getDate(), true); ?></td>
                     </tr>
                 <?php } ?>
@@ -159,6 +177,7 @@ $isFiltered = ($filters['status'] ?? '') !== ''
             'status'  => $filters['status'] ?? '',
             'gateway' => $filters['gateway'] ?? '',
             'userId'  => $filters['user_id'] ?? 0,
+            'toShip'  => $toShip ? 1 : 0,
         )),
     )); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -12,10 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\listing;
 
+use mindstellar\cache\CacheGroup;
 use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
+use mindstellar\utility\Utils;
 
 /**
  * Listing reads in any status: one listing's status columns, and listings newest first by
@@ -25,14 +27,24 @@ use mindstellar\utility\SystemClock;
 final class ListingQuery
 {
     /** The columns ListingStatus and ListingPolicy read. */
-    private const STATUS_COLUMNS = ['pk_i_id', 'fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'];
+    private const STATUS_COLUMNS = ['pk_i_id', 'fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration', 'dt_first_pub_date'];
 
     /** What a listing write reads: the t_item columns with the location's. */
     private const EDIT_COLUMNS = 'i.pk_i_id, i.fk_i_user_id, i.fk_i_category_id, i.i_price, i.fk_c_currency_code, i.s_contact_phone,'
-        . ' i.b_show_email, i.s_secret, i.b_enabled, i.b_active, i.b_spam, i.b_premium, i.dt_expiration,'
+        . ' i.b_show_email, i.s_secret, i.b_enabled, i.b_active, i.b_spam, i.b_premium, i.dt_expiration, i.dt_first_pub_date,'
         . ' i.s_contact_name, i.s_contact_email,'
         . ' l.fk_c_country_code, l.s_country, l.fk_i_region_id, l.s_region, l.fk_i_city_id, l.s_city, l.s_city_area,'
         . ' l.s_address, l.s_zip, l.d_coord_lat, l.d_coord_long';
+
+    /**
+     * statsAndLocations() rows of this web request by listing id, null for none, with the
+     * search cache generation they were read at. Dropped when the listing's cache is cleared.
+     *
+     * @var array<int,array{0:int,1:array<string,mixed>|null}>
+     */
+    private static array $places = [];
+
+    private static bool $placesHooked = false;
 
     /** How many of the newest candidates related() scores. */
     public const RELATED_POOL = 500;
@@ -270,6 +282,33 @@ final class ListingQuery
     }
 
     /**
+     * The live ones of these listings for a cart, in one query: price, currency, category, city
+     * and the title, one row per language (a listing with no text has one row, title null).
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> pk_i_id, fk_i_category_id, i_price, fk_c_currency_code, s_city, fk_c_locale_code, s_title
+     * @throws \mindstellar\database\DbException
+     */
+    public function liveWithTitles(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $p = DB_TABLE_PREFIX;
+
+        return Db::select(
+            'SELECT i.pk_i_id, i.fk_i_category_id, i.i_price, i.fk_c_currency_code, l.s_city, d.fk_c_locale_code, d.s_title'
+            . ' FROM ' . self::tableName() . ' i'
+            . ' LEFT JOIN ' . $p . 't_item_location l ON l.fk_i_item_id = i.pk_i_id'
+            . ' LEFT JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = i.pk_i_id'
+            . ' WHERE i.pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ') AND '
+            . implode(' AND ', ListingStatus::liveConditions('i.', $this->clock->now())),
+            array_values($ids)
+        );
+    }
+
+    /**
      * Title and description rows of some listings, in one query.
      *
      * @param int[]       $ids
@@ -307,15 +346,57 @@ final class ListingQuery
         if ($ids === []) {
             return [];
         }
-        $p = DB_TABLE_PREFIX;
-
-        return Db::stringifyRows(Db::select(
+        // A web request reads each listing's row once, as the item page and its API calls all ask.
+        $memo = Utils::isWebRequest();
+        $gen  = $memo ? CacheGroup::generation('search') : 0;
+        $out  = [];
+        $rest = [];
+        foreach ($ids as $id) {
+            $held = $memo ? (self::$places[(int) $id] ?? null) : null;
+            if ($held !== null && $held[0] === $gen) {
+                if ($held[1] !== null) {
+                    $out[] = $held[1];
+                }
+            } else {
+                $rest[] = $id;
+            }
+        }
+        if ($rest === []) {
+            return $out;
+        }
+        $p    = DB_TABLE_PREFIX;
+        $rows = Db::stringifyRows(Db::select(
             'SELECT s.i_num_views, s.i_num_spam, s.i_num_bad_classified, s.i_num_repeated, s.i_num_offensive,'
             . ' s.i_num_expired, s.i_num_premium_views, l.*'
             . ' FROM ' . $p . 't_item_stats s INNER JOIN ' . $p . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
-            . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')',
-            array_values($ids)
+            . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($rest), '?')) . ')',
+            $rest
         ));
+        if ($memo) {
+            self::holdPlaces($rest, $rows, $gen);
+        }
+
+        return array_merge($out, $rows);
+    }
+
+    /**
+     * @param array<int,int|string>          $ids
+     * @param array<int,array<string,mixed>> $rows
+     */
+    private static function holdPlaces(array $ids, array $rows, int $gen): void
+    {
+        if (!self::$placesHooked) {
+            self::$placesHooked = true;
+            osc_add_hook('invalidate_item_cache', static function ($itemId): void {
+                unset(self::$places[(int) $itemId]);
+            });
+        }
+        foreach ($ids as $id) {
+            self::$places[(int) $id] = [$gen, null];
+        }
+        foreach ($rows as $row) {
+            self::$places[(int) $row['fk_i_item_id']] = [$gen, $row];
+        }
     }
 
     /**

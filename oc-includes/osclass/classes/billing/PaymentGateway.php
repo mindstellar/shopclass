@@ -29,6 +29,10 @@ namespace mindstellar\billing;
  *         $registry->register(new MyGateway());
  *     });
  *
+ * A gateway may also have a `settingsUrl(): ?string` method returning the admin URL of its
+ * settings page. Settings > Billing then shows a "Set up" link to it. It is not part of
+ * this interface, so a gateway written before it keeps working with no link.
+ *
  * @package mindstellar\billing
  */
 interface PaymentGateway

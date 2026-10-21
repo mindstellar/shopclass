@@ -138,35 +138,9 @@ class CAdminPlugins extends AdminSecBaseModel
         // set header just in case it's triggered some fatal error
         header('Location: ' . osc_admin_base_url(true) . '?page=plugins&error=' . $pn, true, 302);
 
-        $installed = Plugins::install($pn);
-        if (is_array($installed)) {
-            switch ($installed['error_code']) {
-                case ('error_output'):
-                    osc_add_flash_error_message(sprintf(
-                        _m('The plugin generated %d characters of <strong>unexpected output</strong> during the installation. Output: "%s"'),
-                        strlen($installed['output']),
-                        $installed['output']
-                    ), 'admin');
-                    break;
-                case ('error_installed'):
-                    osc_add_flash_error_message(_m('Plugin is already installed'), 'admin');
-                    break;
-                case ('error_file'):
-                    osc_add_flash_error_message(
-                        _m("Plugin couldn't be installed because their files are missing"),
-                        'admin'
-                    );
-                    break;
-                case ('custom_error'):
-                    osc_add_flash_error_message(sprintf(
-                        _m("Plugin couldn't be installed because of: %s"),
-                        $installed['msg']
-                    ), 'admin');
-                    break;
-                default:
-                    osc_add_flash_error_message(_m("Plugin couldn't be installed"), 'admin');
-                    break;
-            }
+        $error = Plugins::installError(Plugins::install($pn));
+        if ($error !== null) {
+            osc_add_flash_error_message(osc_esc_html($error), 'admin');
         } else {
             osc_add_flash_ok_message(_m('Plugin installed'), 'admin');
         }
@@ -543,6 +517,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 'enabled'     => (bool) $enabled,
                 'update'      => $sUpdate !== '',
                 'configurable' => isset($active_plugins[$plugin . '_configure']),
+                'modes'       => (array) ($pInfo['modes'] ?? array()),
             );
             $row[]   =
                 '<input type="hidden" name="installed" value="' . $installed . '" enabled="' . $enabled . '" />'

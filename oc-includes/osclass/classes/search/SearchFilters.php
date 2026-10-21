@@ -68,7 +68,7 @@ final class SearchFilters
     /**
      * Custom-field filters by field id. `type` is the field's storage type; `op` says the rule:
      * - TEXT, TEXTAREA, URL: `contains` with `value` (core uses LIKE, so `%` and `_` in it are wildcards)
-     * - DROPDOWN, RADIO: `eq` with `value`
+     * - DROPDOWN, RADIO: `eq` with `value`; with several values, `in` with `values` (at most 20)
      * - CHECKBOX: `checked`
      * - DATE: `between` with `from` and `to`, the start and end of that day as unix times
      * - DATEINTERVAL: `covers` with `from` and `to`: the stored range starts on or before `from`

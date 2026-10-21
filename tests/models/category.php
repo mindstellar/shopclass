@@ -281,6 +281,7 @@ pin(
         'findSubcategoriesEnabled',
         'formatValue',
         'getInstance',
+        'heldEnabled',
         'hierarchy',
         'insert',
         'insertDescription',
@@ -936,6 +937,13 @@ $shared = $freshCategory();
 $oldRead = $shared->listWhere("b.s_name != '' AND a.b_enabled = 1");
 pin('listEnabled() matches the old listWhere() read, row for row and in order', [array_column($oldRead, 'pk_i_id'), $oldRead], [array_column($shared->listEnabled(), 'pk_i_id'), $shared->listEnabled()]);
 pin('...and costs no query once the enabled tree has read them', 0, harness_query_count(static fn () => (new \mindstellar\category\CategoryQuery())->enabledTree($locale)));
+
+harness_section('heldEnabled gives the API catalog the rows the model read');
+$held = $freshCategory();
+pin('the held rows rebuild enabledTree() exactly', (new \mindstellar\category\CategoryQuery())->enabledTree($locale), \mindstellar\category\CategoryQuery::treeFromMerged((array) Category::heldEnabled($locale), $locale));
+pin('another language holds nothing', null, Category::heldEnabled('xx_XX'));
+\mindstellar\cache\CacheGroup::invalidate('category');
+pin('nothing once the category cache moved on', null, Category::heldEnabled($locale));
 
 /* ----------------------------------------------------------------------------
  * formatValue — pure helper, no query.

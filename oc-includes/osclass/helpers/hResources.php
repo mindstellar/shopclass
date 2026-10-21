@@ -133,7 +133,7 @@ function osc_sweep_orphan_resources(): void
         $ownerId   = (int) ($row['i_owner_id'] ?? 0);
 
         // Only core-known owner types are resolvable here.
-        if (!in_array($ownerType, array(Resource::OWNER_ITEM, Resource::OWNER_USER, Resource::OWNER_PAGE), true)) {
+        if (!in_array($ownerType, array(Resource::OWNER_ITEM, Resource::OWNER_USER, Resource::OWNER_PAGE, Resource::OWNER_SETTING), true)) {
             continue;
         }
 
@@ -143,7 +143,10 @@ function osc_sweep_orphan_resources(): void
             continue;
         }
 
-        if (osc_resource_owner_exists($ownerType, $ownerId)) {
+        $inUse = $ownerType === Resource::OWNER_SETTING
+            ? osc_setting_resource_in_use($row)
+            : osc_resource_owner_exists($ownerType, $ownerId);
+        if ($inUse) {
             continue;
         }
 
@@ -161,6 +164,32 @@ function osc_sweep_orphan_resources(): void
             0
         );
     }
+}
+
+/**
+ * Whether a settings image is still wanted: a preference holds its id (or the id it was
+ * renumbered from), or a customiser draft, which lives seven days, names it. When unsure it
+ * says yes, so nothing in use is swept.
+ *
+ * @param array<string,mixed> $row a t_resource row
+ *
+ * @return bool
+ */
+function osc_setting_resource_in_use(array $row): bool
+{
+    $ids = array_unique(array_filter(
+        array((string) (int) ($row['pk_i_id'] ?? 0), (string) ($row['s_base_name'] ?? '')),
+        'ctype_digit'
+    ));
+    foreach ($ids as $id) {
+        $found = \Preference::getInstance()->hasValue($id)
+            || (new \mindstellar\model\KeyValue())->groupMentions('customiser', array(':' . $id . ',', ':' . $id . '}', '"' . $id . '"'));
+        if ($found) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**

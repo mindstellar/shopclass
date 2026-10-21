@@ -29,8 +29,9 @@ final class Page
      * @param string|null      $next  the next page's cursor
      * @param bool             $truncated more rows exist past the deepest page offset paging reaches
      * @param array<string,mixed> $meta    more members for `meta`
+     * @param int|null         $nextPage the next page's number, for a list asked by page number
      */
-    public function __construct(private array $items, private ?int $total, private int $limit, private ?string $next, private bool $truncated = false, private array $meta = [])
+    public function __construct(private array $items, private ?int $total, private int $limit, private ?string $next, private bool $truncated = false, private array $meta = [], private ?int $nextPage = null)
     {
     }
 
@@ -42,13 +43,14 @@ final class Page
     {
         $rest = $query;
         unset($rest['cursor']);
+        $next = $this->nextPage !== null ? $links->api(self::url($path, array_merge($rest, ['page' => $this->nextPage])), $version) : null;
 
         return Response::collection(
             $this->items,
             ['total' => $this->total, 'limit' => $this->limit] + ($this->truncated ? ['truncated' => true] : []) + $this->meta,
             [
                 'self' => $links->api(self::url($path, $query), $version),
-                'next' => $this->next === null ? null : $links->api(self::url($path, $rest + ['cursor' => $this->next]), $version),
+                'next' => $next ?? ($this->next === null ? null : $links->api(self::url($path, $rest + ['cursor' => $this->next]), $version)),
             ]
         );
     }

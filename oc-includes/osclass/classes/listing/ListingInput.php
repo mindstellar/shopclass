@@ -88,6 +88,79 @@ final class ListingInput
     }
 
     /**
+     * The values of the admin "Sell this item" section: what a refused save posted, or the
+     * listing's variants. Prices are in the site's locale format. `options` and `variants`
+     * fill the option editor, `photos` its photo choice (id => label), and `errors` holds a
+     * refused save's messages by row index, or under 'options' for the option names.
+     *
+     * @param int $itemId 0 for a new listing
+     *
+     * @return array{sell:bool,sku:string,price:string,compareAt:string,stock:string,weight:string,shippingClass:string,hasOptions:bool,options:array<int,array{name:string,values:array<int,string>}>,variants:array<int,array<string,mixed>>,photos:array<int,string>,errors:array<int|string,array<int,string>>}
+     */
+    public static function productForm(int $itemId): array
+    {
+        $photoIds = $itemId > 0 ? array_map(static fn (array $photo): int => (int) $photo['pk_i_id'], PhotoStore::ofItems(array($itemId))) : array();
+        $kept     = Session::getInstance()->_getForm('product');
+        $errors   = array();
+        if (is_array($kept)) {
+            $row  = (array) ($kept['fields'] ?? array());
+            $sell = !empty($kept['sell']);
+            $rows = is_array($kept['variants'] ?? null) ? array_values($kept['variants']) : null;
+            foreach ((new ListingValidator())->product($kept, $photoIds) as $error) {
+                $at            = preg_match('#^/product/variants/(\d+)/#', $error['pointer'], $m) === 1 ? (int) $m[1] : 'options';
+                $errors[$at][] = $error['message'];
+            }
+        } else {
+            $stored = $itemId > 0 ? VariantStore::ofItem($itemId) : array();
+            $sell   = $stored !== array();
+            $row    = array();
+            $rows   = null;
+            foreach ($stored as $one) {
+                if ($one['s_options'] === null) {
+                    $row = $one;
+                } else {
+                    $options = json_decode((string) $one['s_options'], true);
+                    $rows[]  = array('options' => is_array($options) ? $options : array(), 'fields' => $one);
+                }
+            }
+        }
+        $text  = static fn ($value): string => $value === null ? '' : (string) $value;
+        $price = static fn ($value): string => is_numeric($value) ? (string) osc_prepare_price($value) : $text($value);
+        $shown = static fn (array $row): array => array(
+            'sku'           => $text($row['s_sku'] ?? null),
+            'price'         => $price($row['i_price'] ?? null),
+            'compareAt'     => $price($row['i_compare_price'] ?? null),
+            'stock'         => $text($row['i_stock'] ?? null),
+            'weight'        => $text($row['i_weight'] ?? null),
+            'shippingClass' => $text($row['s_shipping_class'] ?? null),
+        );
+
+        $options  = VariantStore::optionsOf($rows ?? array());
+        $names    = array_column($options, 'name');
+        $variants = array();
+        foreach ($rows ?? array() as $one) {
+            $values = array();
+            foreach ($names as $name) {
+                $values[] = (string) ($one['options'][$name] ?? '');
+            }
+            $fields     = (array) ($one['fields'] ?? array());
+            $variants[] = array('values' => $values, 'photoId' => $text($fields['fk_i_resource_id'] ?? null)) + $shown($fields);
+        }
+        $photos = array();
+        foreach ($photoIds as $n => $id) {
+            $photos[$id] = sprintf(__('Photo %d'), $n + 1);
+        }
+
+        return array('sell' => $sell) + $shown($row) + array(
+            'hasOptions' => $rows !== null,
+            'options'    => $options,
+            'variants'   => $variants,
+            'photos'     => $photos,
+            'errors'     => $errors,
+        );
+    }
+
+    /**
      * Stop keeping the custom field values keep() kept.
      *
      * @param mixed $meta the posted custom field values, by field id
@@ -137,6 +210,25 @@ final class ListingInput
     }
 
     /**
+     * Days a new listing runs: the category's days plus the owner's listing.runtime extra.
+     * '' means unlimited; a category of 0 days never expires and is never raised.
+     */
+    public static function expirationDays(int $categoryId, ?int $userId): int|string
+    {
+        $category     = Category::getInstance()->findByPrimaryKey($categoryId);
+        $categoryDays = (int) ($category['i_expiration_days'] ?? 0);
+        if ($categoryDays <= 0) {
+            return $categoryDays;
+        }
+        $extra = osc_item_extra_runtime_days($userId);
+        if ($extra === 0) {
+            return $categoryDays;
+        }
+
+        return $extra === -1 ? '' : $categoryDays + $extra;
+    }
+
+    /**
      * read() from plain values, for $actor or else the signed-in user or admin of this request.
      *
      * @param array<string,mixed> $input
@@ -146,6 +238,105 @@ final class ListingInput
     public static function fromValues(array $input, bool $admin, bool $isAdd, ?Actor $actor = null): array
     {
         return self::fromArray($input, $actor ?? self::sessionActor($admin), $isAdd);
+    }
+
+    /**
+     * The "Sell this item" members of a form: `sell` (a checkbox) and the columns the form
+     * sent, each as the validator reads them. A number that is not one stays text, so
+     * ListingValidator::product() can refuse it. With `hasOptions` set it also carries
+     * `variants`, the option rows: each row's `options` is a map of name => value, or a list
+     * matched to `optionNames` as the admin form posts it. Null when the form has no such members.
+     *
+     * @return array{sell:bool,fields:array<string,int|string|null>,variants?:array<int,array{options:array<string,string>,fields:array<string,int|string|null>}>}|null
+     */
+    private static function product(mixed $raw): ?array
+    {
+        if (!is_array($raw)) {
+            return null;
+        }
+        $product = array('sell' => !empty($raw['sell']), 'fields' => self::variantFields($raw));
+        if (empty($raw['hasOptions'])) {
+            return $product;
+        }
+        $names = null;
+        if (is_array($raw['optionNames'] ?? null)) {
+            $names = array_map(static fn ($name): string => self::optionText($name), array_values(array_slice($raw['optionNames'], 0, VariantStore::MAX_OPTIONS + 1)));
+        }
+        $rows = array();
+        // One past the cap, so the validator can still say there are too many.
+        foreach (array_slice(is_array($raw['variants'] ?? null) ? $raw['variants'] : array(), 0, VariantStore::MAX_ROWS + 1) as $row) {
+            $row     = is_array($row) ? $row : array();
+            $given   = is_array($row['options'] ?? null) ? $row['options'] : array();
+            $options = array();
+            if ($names !== null) {
+                $given = array_values($given);
+                foreach ($names as $k => $name) {
+                    $options[$name] = self::optionText($given[$k] ?? '');
+                }
+            } else {
+                foreach (array_slice($given, 0, VariantStore::MAX_OPTIONS + 1, true) as $name => $value) {
+                    $options[self::optionText($name)] = self::optionText($value);
+                }
+            }
+            $fields = self::variantFields($row);
+            if (array_key_exists('photoId', $row)) {
+                $photo                      = is_scalar($row['photoId']) ? trim((string) $row['photoId']) : '';
+                $fields['fk_i_resource_id'] = $photo === '' ? null : (preg_match('/^\d{1,10}$/', $photo) === 1 ? (int) $photo : $photo);
+            }
+            $rows[] = array('options' => $options, 'fields' => $fields);
+        }
+        $product['variants'] = $rows;
+
+        return $product;
+    }
+
+    /**
+     * One row's columns, each as the validator reads them.
+     *
+     * @param array<string,mixed> $raw
+     *
+     * @return array<string,int|string|null>
+     */
+    private static function variantFields(array $raw): array
+    {
+        $text = static function (string $key) use ($raw): ?string {
+            $value = isset($raw[$key]) && is_scalar($raw[$key]) ? trim((string) Params::purifyText($raw[$key])) : '';
+
+            return $value === '' ? null : $value;
+        };
+        $whole = static fn (?string $value): int|string|null => $value === null ? null
+            : (preg_match('/^-?\d{1,15}$/', $value) === 1 ? (int) $value : $value);
+
+        $fields = array();
+        foreach (array('sku' => 's_sku', 'shippingClass' => 's_shipping_class') as $key => $column) {
+            if (array_key_exists($key, $raw)) {
+                $fields[$column] = $text($key);
+            }
+        }
+        foreach (array('price' => 'i_price', 'compareAt' => 'i_compare_price') as $key => $column) {
+            if (array_key_exists($key, $raw)) {
+                $price           = $text($key);
+                $fields[$column] = $price === null ? null : (Money::parse($price) ?? $price);
+            }
+        }
+        foreach (array('stock' => 'i_stock', 'weight' => 'i_weight') as $key => $column) {
+            if (array_key_exists($key, $raw)) {
+                $fields[$column] = $whole($text($key));
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * An option name or value as stored: tags stripped, spaces trimmed and collapsed. Not
+     * entity-encoded, so "Black & White" matches as typed; every output escapes it.
+     */
+    private static function optionText(mixed $value): string
+    {
+        $value = is_scalar($value) ? strip_tags(mb_scrub((string) $value, 'UTF-8')) : '';
+
+        return trim((string) preg_replace('/\s+/u', ' ', $value));
     }
 
     private static function sessionActor(bool $admin): Actor
@@ -267,12 +458,6 @@ final class ListingInput
         }
 
         if ($isAdd || $admin) {
-            // The ceiling is the category's own i_expiration_days unless the poster
-            // holds a listing.runtime entitlement, which raises it by their extra
-            // days -- -1 means unlimited extra runtime, so the clamp below is skipped
-            // entirely for that user, the same as it already is for an admin.
-            $extraRuntimeDays = osc_item_extra_runtime_days($aItem['userId'] ?? null);
-
             $dt_expiration = $get('dt_expiration');
             if ($dt_expiration == -1) {
                 $aItem['dt_expiration'] = '';
@@ -289,15 +474,9 @@ final class ListingInput
                 )
             ) {
                 $aItem['dt_expiration'] = $dt_expiration;
-                $_category              = Category::getInstance()->findByPrimaryKey($aItem['catId']);
-                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
-                // A category of 0 days never expires, so it is already the most generous
-                // ceiling there is -- raising it by an entitlement's days would start
-                // expiring listings that never did.
-                $expirationCeiling = $categoryDays;
-                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
-                    $expirationCeiling = $extraRuntimeDays === -1 ? null : $categoryDays + $extraRuntimeDays;
-                }
+                // Unlimited runtime ('') leaves no ceiling.
+                $expirationCeiling      = self::expirationDays((int) $aItem['catId'], $aItem['userId'] ?? null);
+                $expirationCeiling      = $expirationCeiling === '' ? null : (int) $expirationCeiling;
                 if (ctype_digit($dt_expiration)) {
                     if (!$admin && $expirationCeiling !== null && $dt_expiration > $expirationCeiling) {
                         $aItem['dt_expiration'] = $expirationCeiling;
@@ -317,13 +496,7 @@ final class ListingInput
             } else {
                 // No expiration asked for, which is every public posting form -- the
                 // runtime a seller paid for has to land here or it never applies at all.
-                $_category              = Category::getInstance()->findByPrimaryKey($aItem['catId']);
-                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
-                $aItem['dt_expiration'] = $_category['i_expiration_days'] ?? null;
-
-                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
-                    $aItem['dt_expiration'] = $extraRuntimeDays === -1 ? '' : $categoryDays + $extraRuntimeDays;
-                }
+                $aItem['dt_expiration'] = self::expirationDays((int) $aItem['catId'], $aItem['userId'] ?? null);
             }
             unset($dt_expiration);
         } else {
@@ -359,6 +532,12 @@ final class ListingInput
 
         if ($aItem['catId'] == '') {
             $aItem['catId'] = 0;
+        }
+
+        // Only an admin sells a listing; for anyone else the member is ignored.
+        $product = $admin ? self::product($form['product'] ?? null) : null;
+        if ($product !== null) {
+            $aItem['product'] = $product;
         }
 
         if ($aItem['currency'] == '') {

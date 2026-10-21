@@ -108,6 +108,44 @@ final class KeyValue extends Model
     }
 
     /**
+     * One page of a group's live rows in key order, for walking a group in batches.
+     *
+     * @param int         $limit         at most this many rows
+     * @param string|null $updatedBefore UTC 'Y-m-d H:i:s'; keeps rows last written before it
+     * @param string|null $afterKey      the last key of the previous page
+     *
+     * @return list<array{key:string, value:?string, updated_at:?int, expires_at:?int}>
+     * @throws \InvalidArgumentException on a malformed group or key
+     * @throws \mindstellar\database\DbException
+     */
+    public function page(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null, ?int $now = null): array
+    {
+        self::check($group, $afterKey ?? 'any');
+        $query = $this->table()->where('s_group', $group)
+            ->whereGroup(static fn ($q) => $q->whereNull('dt_expires')->orWhere('dt_expires', '>', self::datetime($now ?? time())));
+        if ($afterKey !== null) {
+            $query = $query->where('s_key', '>', $afterKey);
+        }
+        if ($updatedBefore !== null) {
+            if (UtcDatetime::parse($updatedBefore) === null) {
+                throw new \InvalidArgumentException('updatedBefore is a UTC datetime, Y-m-d H:i:s.');
+            }
+            $query = $query->whereRaw('COALESCE(dt_updated, dt_created) < ?', [$updatedBefore]);
+        }
+        $out = [];
+        foreach ($query->orderBy('s_key')->limit(max(1, min(1000, $limit)))->get() as $row) {
+            $out[] = [
+                'key'        => (string) $row['s_key'],
+                'value'      => $row['s_value'] === null ? null : (string) $row['s_value'],
+                'updated_at' => self::time($row['dt_updated'] ?? $row['dt_created']),
+                'expires_at' => self::time($row['dt_expires']),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * Write a key, replacing whatever was there (its value, state and expiry).
      *
      * @param int|null $expiresAt Unix time the key expires; null keeps it until deleted
@@ -129,20 +167,30 @@ final class KeyValue extends Model
     }
 
     /**
-     * Add to a whole-number value in one statement, starting from 0 when the key is absent.
-     * Safe under concurrent callers.
+     * Add to a whole-number value in one statement and return the new value. An absent or
+     * expired key starts from 0, and the value never goes below 0. Safe under concurrent callers.
      *
+     * @param int|null $expiresAt Unix time the key expires; null keeps a live key's expiry
+     *
+     * @return int the value after the change
      * @throws \InvalidArgumentException on a malformed group or key
      * @throws \mindstellar\database\DbException
      */
-    public function increment(string $group, string $key, int $by = 1, ?int $now = null): void
+    public function increment(string $group, string $key, int $by = 1, ?int $now = null, ?int $expiresAt = null): int
     {
         self::check($group, $key);
-        $now = self::datetime($now ?? time());
-        Db::execute(
-            'INSERT INTO ' . DB_TABLE_PREFIX . self::TABLE . ' (s_group, s_key, s_value, dt_created) VALUES (?, ?, ?, ?)'
-            . ' ON DUPLICATE KEY UPDATE s_value = CAST(s_value AS SIGNED) + ?, dt_updated = ?',
-            [$group, $key, (string) $by, $now, $by, $now]
+        $now     = self::datetime($now ?? time());
+        $expires = $expiresAt === null ? null : self::datetime($expiresAt);
+        $expired = '(dt_expires IS NOT NULL AND dt_expires <= ?)';
+
+        // LAST_INSERT_ID(expr) hands the new value back with the write; s_value is set before
+        // dt_expires, so both read the old expiry.
+        return Db::insertGetId(
+            'INSERT INTO ' . DB_TABLE_PREFIX . self::TABLE . ' (s_group, s_key, s_value, dt_created, dt_expires)'
+            . ' VALUES (?, ?, LAST_INSERT_ID(GREATEST(0, ?)), ?, ?)'
+            . ' ON DUPLICATE KEY UPDATE s_value = LAST_INSERT_ID(GREATEST(0, IF(' . $expired . ', 0, CAST(s_value AS SIGNED)) + ?)),'
+            . ' dt_updated = ?, dt_expires = COALESCE(?, IF(' . $expired . ', NULL, dt_expires))',
+            [$group, $key, $by, $now, $expires, $now, $by, $now, $expires, $now]
         );
     }
 
@@ -230,6 +278,32 @@ final class KeyValue extends Model
         self::check($group, 'any');
 
         return $this->table()->where('s_group', $group)->delete();
+    }
+
+    /**
+     * Whether any live value of a group contains one of the given texts. Meant for small groups.
+     *
+     * @param string[] $needles
+     *
+     * @throws \InvalidArgumentException on a malformed group
+     * @throws \mindstellar\database\DbException
+     */
+    public function groupMentions(string $group, array $needles, ?int $now = null): bool
+    {
+        self::check($group, 'any');
+        $now = self::datetime($now ?? time());
+
+        return $this->table()->where('s_group', $group)
+            ->whereGroup(static fn ($q) => $q->whereNull('dt_expires')->orWhere('dt_expires', '>', $now))
+            ->whereGroup(static function ($q) use ($needles) {
+                foreach (array_values($needles) as $i => $needle) {
+                    $like = ['%' . addcslashes($needle, '%_\\') . '%'];
+                    $q    = $i === 0 ? $q->whereRaw('s_value LIKE ?', $like) : $q->orWhereRaw('s_value LIKE ?', $like);
+                }
+
+                return $q;
+            })
+            ->first() !== null;
     }
 
     /**

@@ -1,0 +1,107 @@
+---
+title: Running a shop
+description: "Turn on shop mode, add products with variants and stock, handle orders from paid to delivered, and see which plugins add shipping, tax, coupons, e-mail and analytics."
+sidebar:
+  order: 16
+---
+
+Shop mode turns ShopClass into a store. You add the products, shoppers fill a cart and
+check out, and you ship the orders. It needs a theme made for shops, such as Aisle.
+
+## 1. Turn it on
+
+1. **Settings → General → Site is a**: pick **Shop**. In shop mode only admins add products.
+   A shop also sells digital goods and credit packages. A classifieds site keeps the cart,
+   orders and payment plugins too.
+2. **Settings → Billing**: switch **Enable billing** on and set your currency.
+3. **Settings → Billing → Shop**: set the delivery charge, the amount that makes delivery free,
+   cash on delivery and its fee, how long unpaid orders wait before they are cancelled, and the
+   order number prefix.
+4. **Appearance**: activate the shop theme. If it asks for plugins, one screen installs and turns
+   them on for you.
+5. Install a payment method (see below), or use the built-in bank transfer and cash on delivery.
+
+## 2. Add a product
+
+Add a listing as an admin, then use **Sell this item** on its edit screen. Tick **Buyers can add
+this item to a cart** and set the SKU, price, stock and weight.
+
+For a product that comes in sizes or colours, add **option rows**: one row per combination, such
+as Black / M, each with its own SKU, price, stock and an optional "was" price. The shopper picks
+the options on the product page.
+
+- **Stock** is counted per row. At 0 the row is out of stock. Leave it blank to not count.
+- **Weight** and **Shipping class** are for the Shipping plugin.
+- A card payment takes the stock when it comes in. Bank transfer and cash on delivery hold it from
+  the moment the order is placed.
+
+## 3. Orders
+
+**Billing → Orders** lists every order. Open one to see its items, address and buyer.
+
+| Status | Meaning |
+|---|---|
+| **Pending** | Placed, not paid. Bank transfer and cash on delivery orders wait here. |
+| **Paid** | Money received. It shows in **To ship** until you send it. |
+| **Shipped** | You marked it shipped with a carrier and tracking number. Cash on delivery is shipped before it is paid. |
+| **Delivered** | You marked it delivered. A cash on delivery order is marked paid now. |
+| **Cancelled** | Closed before payment. The stock goes back on sale. |
+| **Refunded** | The money went back. The stock goes back on sale. |
+| **Failed** | A card payment failed or never came. The order is closed. |
+
+If two shoppers pay for the last unit at the same moment, the second order is still paid and is
+marked **Oversold** so you can sort it out.
+
+Unpaid bank transfer and cash on delivery orders are cancelled after **Cancel unpaid orders after (days)**. A
+shopper may hold at most the number of open unpaid orders you allow.
+
+## 4. The order mails
+
+The buyer is e-mailed when an order is:
+
+1. **placed** (bank transfer and cash on delivery, before payment),
+2. **paid**, with the receipt,
+3. **shipped**, with the carrier and tracking link,
+4. **delivered**,
+5. **cancelled**,
+6. **refunded**.
+
+You get a "New order" mail for each order. A mail that cannot be sent waits on the job queue and
+is tried again, once per order and kind. Developers change the wording with the `MailComposing`
+event; see [Order mails](/docs/developers/hooks/#order-mails).
+
+## 5. Plugins that add to the shop
+
+Each one is free, works on plain shared hosting and does nothing until you set it up.
+
+| Plugin | What it adds |
+|---|---|
+| **Shipping** | Delivery zones by country, state or PIN code, Standard and Express, weight prices, free delivery, delivery dates and tracking links. |
+| **Tax** | Tax lines from a default, country and category rates, prices with or without tax, and a tax invoice. |
+| **Tax GST** | India GST on top of Tax: CGST and SGST in your state, IGST elsewhere, GSTIN and HSN on the invoice. |
+| **Promotions** | Coupon codes, automatic discounts, a first-order offer and use limits. |
+| **Shop emails** | A newsletter sign-up list with double opt-in and CSV export, and one reminder for a signed-in shopper's left cart. |
+| **Analytics** | Google Analytics 4 and Meta Pixel shop events, with a consent bar. Nothing loads before the visitor accepts. |
+| **Digital Goods** | Downloadable files for a product, with links in the receipt. |
+| **Stripe**, **PayPal**, **Razorpay** | Card and wallet payments. Buyers pay on the provider's page. |
+
+## What shoppers see in their account
+
+A signed-in shopper gets a buyer account: the dashboard with their recent orders, Your
+orders, profile, password and delete account. The seller pages (listings, public profile,
+alerts, credits and API access) are hidden, and a link to one leads to the dashboard. With
+Digital Goods on, a Downloads entry lists what they bought. An admin signed in sees everything.
+
+## 6. Customise
+
+If your theme supports it, **Appearance → Customise** edits the home page sections and the look
+beside a live preview. Nothing shows to visitors until you press **Publish**. See
+[Customise your theme](/docs/use/themes-and-widgets/#customise-your-theme).
+
+## Before you open
+
+- Place a test order with bank transfer, then ship and deliver it, and read each mail.
+- Check that [cron](/docs/configure/cron/) or the auto-cron runs: hold days, retries and reminders
+  depend on it.
+- Write your delivery and refund terms into your [Terms page](/docs/use/pages/).
+- For the money side, see [currencies and paid listings](/docs/use/currencies-and-paid-listings/).

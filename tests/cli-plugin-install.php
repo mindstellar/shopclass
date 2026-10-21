@@ -102,7 +102,7 @@ pin('says it is installed', true, str_contains($out, 'already installed'));
 
 [$code, $out] = cli(array('plugin:install', '--plugin=missing'));
 pin('a missing folder: exit code 1', 1, $code);
-pin('says it was not found', true, str_contains($out, 'was not found'));
+pin('says its files are missing', true, str_contains($out, 'files are missing'));
 
 [$code, $out] = cli(array('plugin:install', '--plugin=throws'));
 pin('a throwing install hook: exit code 1', 1, $code);

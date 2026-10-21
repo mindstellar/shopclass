@@ -579,7 +579,8 @@ function osc_market_render_updates($rows, $meta, $type)
 function osc_market_render_detail_dialog($type)
 {
     ?>
-    <dialog id="marketDetailDialog" class="osc-dialog osc-dialog-wide market-detail-dialog">
+    <dialog id="marketDetailDialog"
+            class="osc-dialog osc-dialog-wide market-detail-dialog<?php echo $type === 'theme' ? '' : ' market-detail-dialog--plugin'; ?>">
         <div class="osc-dialog-body market-detail-body">
             <button type="button" class="btn-close market-detail-close" data-osc-dialog-close
                     aria-label="<?php echo osc_esc_html(__('Close')); ?>"></button>

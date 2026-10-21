@@ -22,6 +22,7 @@ use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\listing\ListingPolicy;
+use mindstellar\user\UserStore;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\ViewScope;
 
@@ -35,12 +36,14 @@ final class CommentService
     private \ItemComment $comments;
     private \Item $items;
     private \User $users;
+    private CommentQuery $query;
 
     /**
      * Each collaborator defaults to the one the site uses; tests pass their own.
      */
-    public function __construct(?\ItemComment $comments = null, ?\Item $items = null, ?\User $users = null)
+    public function __construct(?\ItemComment $comments = null, ?\Item $items = null, ?\User $users = null, ?CommentQuery $query = null)
     {
+        $this->query    = $query ?? new CommentQuery();
         $this->comments = $comments ?? \ItemComment::getInstance();
         $this->items    = $items ?? \Item::getInstance();
         $this->users    = $users ?? \User::getInstance();
@@ -75,13 +78,15 @@ final class CommentService
     /**
      * Post a comment. Fires `pre_item_add_comment_post`, then on success `before_add_comment`,
      * the new-comment e-mail hooks and `add_comment`. A signed-in author comments under their
-     * account's name and e-mail; a guest under the ones sent.
+     * account's name and e-mail; a guest under the ones sent. A comment may carry a `rating` from
+     * 1 to 5 and then needs no text; a rating needs a signed-in author, one rated comment per listing.
      *
-     * @param array{title?:string,body?:string,author_name?:string,author_email?:string} $input
+     * @param array{title?:string,body?:string,rating?:mixed,author_name?:string,author_email?:string} $input
      *
      * @throws ForbiddenException when comments are off, the author is banned, or only users may comment
      * @throws NotFoundException  for a listing the actor cannot see
-     * @throws InvalidException   for a bad e-mail or an empty body
+     * @throws InvalidException   for a bad e-mail, a rating out of range, or no text and no rating
+     * @throws ConflictException  when the author already rated this listing
      * @throws BlockedException   past the hourly comment limit
      * @throws \RuntimeException when the row is not written
      */
@@ -102,6 +107,7 @@ final class CommentService
         $authorEmail = trim(strip_tags((string) ($user['s_email'] ?? $input['author_email'] ?? '')));
         $title       = trim(strip_tags((string) ($input['title'] ?? '')));
         $body        = trim(strip_tags((string) ($input['body'] ?? '')));
+        $rating      = self::rating($input['rating'] ?? null);
 
         match (CommentPolicy::mayPost($actor, $authorEmail)) {
             CommentPolicy::DISABLED        => throw new ForbiddenException(_m('Sorry, comments are disabled'), ForbiddenException::DISABLED),
@@ -115,14 +121,22 @@ final class CommentService
         if (!osc_validate_email($authorEmail)) {
             throw new InvalidException('/author_email', 'format', _m('Please fill the required field (email)'));
         }
-        if ($body === '') {
+        if ($body === '' && $rating === null) {
             throw new InvalidException('/body', 'minLength', _m('Please type a comment'));
+        }
+        if ($rating !== null) {
+            if ($actor->userId() === null) {
+                throw new ForbiddenException(_m('You need to be logged to rate'), ForbiddenException::SIGN_IN);
+            }
+            if ($this->query->hasRated((int) $item['pk_i_id'], $actor->userId())) {
+                throw new ConflictException(_m('You have already rated this item'), ConflictException::ALREADY_REVIEWED);
+            }
         }
         if (CommentPolicy::tooMany($actor)) {
             throw BlockedException::rateLimit(_m('Too many comments in an hour. Try again later.'), CommentPolicy::retryAfter());
         }
 
-        $status = $this->status($user, $authorName, $authorEmail, $body, $item);
+        $status = $this->status($user, $authorName, $authorEmail, trim($title . "\n" . $body), $item);
         $row    = [
             'dt_pub_date'    => date('Y-m-d H:i:s'),
             'fk_i_item_id'   => (int) $item['pk_i_id'],
@@ -133,6 +147,7 @@ final class CommentService
             'b_active'       => $status === SavedComment::LIVE ? 1 : 0,
             'b_enabled'      => 1,
             'fk_i_user_id'   => $actor->userId(),
+            'i_rating'       => $rating,
         ];
         // The shape the new-comment e-mails have always been handed.
         $mail = [
@@ -149,6 +164,13 @@ final class CommentService
         osc_run_hook('before_add_comment', $row);
 
         return DeferredMail::transaction(function () use ($row, $mail, $status, $actor): SavedComment {
+            if ($row['i_rating'] !== null) {
+                // Two ratings sent at once wait here, so the second sees the first.
+                UserStore::lock((int) $row['fk_i_user_id']);
+                if ($this->query->hasRated($row['fk_i_item_id'], (int) $row['fk_i_user_id'])) {
+                    throw new ConflictException(_m('You have already rated this item'), ConflictException::ALREADY_REVIEWED);
+                }
+            }
             $id = (int) $this->comments->insertGetId($row);
             if ($id <= 0) {
                 throw new \RuntimeException('The comment could not be saved.');
@@ -212,23 +234,53 @@ final class CommentService
     }
 
     /**
-     * LIVE or PENDING by the site's moderation setting, SPAM when Akismet says so. The
-     * Akismet call runs before the write, so no transaction waits on it.
+     * A rating as 1 to 5, or null when none was sent.
+     *
+     * @throws InvalidException for anything else
+     */
+    private static function rating(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $whole = match (true) {
+            is_int($value)    => $value,
+            is_float($value)  => floor($value) === $value ? (int) $value : null,
+            is_string($value) => preg_match('/^-?[0-9]{1,6}$/', trim($value)) === 1 ? (int) $value : null,
+            default           => null,
+        };
+        if ($whole === null) {
+            throw new InvalidException('/rating', 'type', _m('The rating must be a whole number from 1 to 5'));
+        }
+        $stars = $whole;
+        if ($stars < 1) {
+            throw new InvalidException('/rating', 'minimum', _m('The rating must be from 1 to 5'));
+        }
+        if ($stars > 5) {
+            throw new InvalidException('/rating', 'maximum', _m('The rating must be from 1 to 5'));
+        }
+
+        return $stars;
+    }
+
+    /**
+     * LIVE or PENDING by the site's moderation setting, SPAM when Akismet says so of the
+     * title and body. The Akismet call runs before the write, so no transaction waits on it.
      *
      * @param array<string,mixed>|null $user
      * @param array<string,mixed>      $item
      */
-    private function status(?array $user, string $name, string $email, string $body, array $item): int
+    private function status(?array $user, string $name, string $email, string $text, array $item): int
     {
         $threshold = (int) osc_moderate_comments();
         $approved  = (int) ($user['i_comments'] ?? 0);
         $status    = $threshold === -1 || ($threshold !== 0 && $approved >= $threshold) ? SavedComment::LIVE : SavedComment::PENDING;
 
-        if (osc_akismet_key()) {
+        if (osc_akismet_key() && $text !== '') {
             $akismet = new \Akismet(osc_base_url(), osc_akismet_key());
             $akismet->setCommentAuthor($name);
             $akismet->setCommentAuthorEmail($email);
-            $akismet->setCommentContent($body);
+            $akismet->setCommentContent($text);
             $akismet->setPermalink(osc_item_url_from_item($item));
             if ($akismet->isCommentSpam()) {
                 $status = SavedComment::SPAM;

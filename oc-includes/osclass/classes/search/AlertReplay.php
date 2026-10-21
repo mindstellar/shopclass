@@ -15,7 +15,7 @@ namespace mindstellar\search;
  *
  * A v2 row is rebuilt from its params through the same SearchBuilder the search page
  * uses, so `search_conditions` fires for it with context 'alert'. Any other row -- the
- * old SQL-fragment format, a held row, an invalid envelope -- is skipped.
+ * old SQL-fragment format, a held row, an invalid envelope, a product alert -- is skipped.
  */
 class AlertReplay
 {
@@ -46,6 +46,10 @@ class AlertReplay
         if ($params === null) {
             self::logSkip($alertRow);
 
+            return null;
+        }
+        // A product alert waits for a stock or price change, not for new listings.
+        if (isset($params['product'])) {
             return null;
         }
         $search = new \Search();

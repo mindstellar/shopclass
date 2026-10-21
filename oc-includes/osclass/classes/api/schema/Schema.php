@@ -16,8 +16,10 @@ use mindstellar\api\Problem;
 use mindstellar\api\serializer\CustomFieldSerializer;
 use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\api\Warning;
+use mindstellar\billing\CartPricer;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\WishlistService;
 use mindstellar\location\CountryCode;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserStatus;
@@ -36,12 +38,13 @@ final class Schema
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
-        'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
-        'AlertFilters', 'Alert', 'AlertInput', 'SearchSuggestions', 'CategorySuggestions',
+        'ListingInput', 'ListingPatch', 'SavedListing', 'ListingPayment', 'ListingPublishInput', 'ListingPublished', 'PhotoToken', 'CommentInput', 'SavedComment',
+        'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'CartLine', 'Cart', 'CartInput', 'CartDocument', 'SearchSuggestions', 'CategorySuggestions',
+        'PageSummary', 'Page', 'Menu', 'Seo',
     ];
 
     /** `<name>List`: every item at once. */
-    private const LISTS = ['Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert'];
+    private const LISTS = ['PageSummary', 'Menu', 'Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert'];
 
     /** `<name>List` that is paged: the location lists keep their List names. */
     private const PAGED_LISTS = ['Country', 'Region', 'City', 'CityArea'];
@@ -50,7 +53,7 @@ final class Schema
     private const PAGES = ['Listing', 'Comment'];
 
     /** `<name>Document`: one resource. */
-    private const DOCUMENTS = ['Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions'];
+    private const DOCUMENTS = ['Page', 'Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions', 'Seo'];
 
     private function __construct()
     {
@@ -89,6 +92,7 @@ final class Schema
             ...$suffixed(self::PAGES, 'Page'),
             ...$suffixed(self::DOCUMENTS, 'Document'),
             ...AdminSchema::NAMES,
+            ...OrderSchema::NAMES,
         ];
     }
 
@@ -112,6 +116,8 @@ final class Schema
             'PageMeta'     => self::object([
                 'total' => self::nullable('integer', 'Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list. A list that is not paged always has it, equal to its size.'),
                 'limit' => ['type' => 'integer'],
+                'page'  => ['type' => 'integer', 'description' => 'The page number, when the request sent `page`.'],
+                'pages' => ['type' => 'integer', 'description' => 'How many pages the matches fill, when the request sent `page` and `count=true`.'],
                 'truncated' => ['type' => 'boolean', 'description' => 'Present and true when more matches exist but paging stops here: links.next is null. Narrow the filters, or sort by created or id.'],
                 'facets'     => self::object([
                     'category' => ['type' => 'object', 'additionalProperties' => ['type' => 'integer'], 'description' => 'Category id => listings found in it, as the search engine counted them.'],
@@ -195,11 +201,12 @@ final class Schema
                 'title'        => self::nullable('string'),
                 'body'         => ['type' => 'string'],
                 'author'       => self::object(['name' => self::nullable('string'), 'user_id' => self::nullable('integer')], ['name', 'user_id']),
+                'rating'       => self::nullable('integer', 'Stars from 1 to 5; null for a comment with no rating.'),
                 'published_at' => self::time(),
-            ], ['id', 'listing_id', 'title', 'body', 'author', 'published_at']),
+            ], ['id', 'listing_id', 'title', 'body', 'author', 'rating', 'published_at']),
             'Site'         => self::site(),
             'OpenApiDocument' => ['type' => 'object', 'description' => 'An OpenAPI 3.1 document.'],
-        ] + self::account() + self::writes() + self::suggestions();
+        ] + self::account() + self::writes() + self::suggestions() + self::pages();
 
         $page = static fn (string $name): array => self::wholeList($name);
         foreach (self::LISTS as $name) {
@@ -215,7 +222,7 @@ final class Schema
             $schemas[$name . 'Document'] = self::object(['data' => self::ref($name)], ['data']);
         }
 
-        return $schemas + AdminSchema::components();
+        return $schemas + AdminSchema::components() + OrderSchema::components();
     }
 
     /**
@@ -332,6 +339,47 @@ final class Schema
                 'description'          => 'With `include=translations`: locale => {title, description}.',
                 'additionalProperties' => self::object(['title' => ['type' => 'string'], 'description' => ['type' => 'string']]),
             ],
+            'product'      => self::object([
+                'buyable'  => ['type' => 'boolean'],
+                'variants' => ['type' => 'array', 'items' => self::object([
+                    'id'             => ['type' => 'integer'],
+                    'sku'            => self::nullable('string'),
+                    'options'        => ['type' => ['object', 'null'], 'additionalProperties' => ['type' => 'string'], 'description' => 'Option name => value; null for the default variant.'],
+                    'price'          => self::nullable('string', 'A decimal such as "12.50"; null uses the listing price.'),
+                    'compare_at'     => self::nullable('string', 'The "was" price, a decimal such as "20.00"; null when none is set.'),
+                    'on_sale'        => ['type' => 'boolean', 'description' => 'true when compare_at is above the price the variant sells at.'],
+                    'in_stock'       => ['type' => 'boolean', 'description' => 'true when stock is not tracked.'],
+                    'low_stock'      => self::nullable('integer', 'The units left when 1 to 5 are, for everyone; null otherwise or when stock is not tracked.'),
+                    'stock'          => self::nullable('integer', 'Owner and admin view. Null when stock is not tracked.'),
+                    'weight'         => self::nullable('integer', 'Grams.'),
+                    'shipping_class' => self::nullable('string'),
+                    'photo_id'       => self::nullable('integer'),
+                    // C1: the variant's photo.
+                    'photo'          => [
+                        'type'        => ['object', 'null'],
+                        'description' => 'The variant\'s photo, one of the listing\'s `photos`; null when it has none.',
+                        'properties'  => [
+                            'id'        => ['type' => 'integer'],
+                            'thumbnail' => ['type' => 'string'],
+                            'preview'   => ['type' => 'string'],
+                            'normal'    => ['type' => 'string'],
+                            'original'  => ['type' => ['string', 'null']],
+                        ],
+                        'required'    => ['id', 'thumbnail', 'preview', 'normal', 'original'],
+                    ],
+                    'position'       => ['type' => 'integer'],
+                ], ['id', 'sku', 'options', 'price', 'compare_at', 'on_sale', 'in_stock', 'low_stock', 'weight', 'shipping_class', 'photo_id', 'photo', 'position'])],
+                // C1: option names and values.
+                'options'  => ['type' => 'array', 'description' => 'The option names and their values, in first-seen order; empty for a plain product.', 'items' => self::object([
+                    'name'   => ['type' => 'string'],
+                    'values' => ['type' => 'array', 'items' => ['type' => 'string']],
+                ], ['name', 'values'])],
+            ], ['buyable', 'options', 'variants']) + ['description' => 'Left out when the listing is not for sale.'],
+            'rating'       => self::object([
+                'average'      => self::nullable('number', 'The average of the approved ratings to one decimal; null when there is none.'),
+                'count'        => ['type' => 'integer'],
+                'distribution' => ['type' => 'object', 'description' => 'One listing only: star ("5" to "1") => how many gave it.', 'additionalProperties' => ['type' => 'integer']],
+            ], ['average', 'count']) + ['description' => 'With `include=rating`.'],
             'premium'      => ['type' => 'boolean'],
             'views'        => ['type' => 'integer'],
             'published_at' => self::time(),
@@ -405,6 +453,13 @@ final class Schema
             'price_enabled'  => ['type' => 'boolean'],
             'children'       => ['type' => 'array', 'items' => self::ref('Category'), 'description' => 'With `tree=1`.'],
             'custom_fields'  => ['type' => 'array', 'items' => self::ref('CustomField'), 'description' => 'On a single category.'],
+            'cover'          => array_merge(self::object([
+                'id'        => ['type' => 'integer'],
+                'thumbnail' => ['type' => 'string'],
+                'preview'   => ['type' => 'string'],
+                'normal'    => ['type' => 'string'],
+                'original'  => self::nullable('string', 'Only when the site keeps original images.'),
+            ], ['id', 'thumbnail', 'preview', 'normal', 'original']), ['type' => ['object', 'null'], 'description' => 'With `include=cover`: a photo, shaped as a listing\'s, of the newest live listing in the category or below it; null when none has one.']),
             'ext'            => $ext->schemaFor('category'),
         ], ['id', 'parent_id', 'slug', 'name']);
     }
@@ -450,6 +505,7 @@ final class Schema
             'name'           => ['type' => 'string'],
             'description'    => self::nullable('string'),
             'url'            => ['type' => 'string', 'format' => 'uri'],
+            'mode'           => ['type' => 'string', 'enum' => ['classifieds', 'shop'], 'description' => 'What the site is for.'],
             'api_version'    => ['type' => 'string'],
             'default_locale' => ['type' => 'string'],
             'locales'        => ['type' => 'array', 'items' => self::object([
@@ -464,14 +520,69 @@ final class Schema
                 'users'        => ['type' => 'boolean', 'description' => 'Whether the site has user accounts.'],
                 'registration' => ['type' => 'boolean', 'description' => 'Whether the site\'s own sign-up form is open.'],
                 'comments'     => ['type' => 'boolean', 'description' => 'Whether listings take comments.'],
-            ], ['users', 'registration', 'comments']) + ['description' => 'What the site itself offers.'],
+                'shop'         => ['type' => 'boolean', 'description' => 'Whether the site sells products: its mode is shop.'],
+            ], ['users', 'registration', 'comments', 'shop']) + ['description' => 'What the site itself offers.'],
             'api'            => self::object([
                 'registration'  => ['type' => 'boolean', 'description' => 'Whether POST /users signs up new accounts.'],
                 'personal_keys' => ['type' => 'boolean', 'description' => 'Whether users may make their own keys at /account/keys.'],
                 'photo_urls'    => ['type' => 'boolean', 'description' => 'Whether a listing may name photos by URL in photo_urls.'],
             ], ['registration', 'personal_keys', 'photo_urls']) + ['description' => 'What the API allows on this site.'],
+            'cart'           => self::object([
+                'max_lines' => ['type' => 'integer', 'description' => 'The most lines a cart takes.'],
+                'max_qty'   => ['type' => 'integer', 'description' => 'The most of one variant a cart line takes.'],
+            ], ['max_lines', 'max_qty']) + ['description' => 'The limits a cart is held to.'],
             'links'          => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
-        ], ['name', 'url', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
+        ], ['name', 'url', 'mode', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
+    }
+
+    /**
+     * Static pages and menus.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private static function pages(): array
+    {
+        $summary = [
+            'id'       => ['type' => 'integer'],
+            'slug'     => self::nullable('string', 'The page\'s internal name.'),
+            'title'    => ['type' => 'string'],
+            'url'      => ['type' => 'string'],
+            'locale'   => ['type' => 'string', 'description' => 'The language shown: the asked one, else the site\'s default, else the first the page has.'],
+            'position' => ['type' => 'integer'],
+        ];
+        $link = self::object(['label' => ['type' => 'string'], 'url' => ['type' => 'string']], ['label', 'url']);
+
+        return [
+            'PageSummary' => self::object($summary, array_keys($summary)),
+            'Page'        => self::object($summary + [
+                'text'       => ['type' => 'string', 'description' => 'HTML, after the static_page_text filter.'],
+                'meta'       => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
+                'updated_at' => self::nullable('string', 'RFC 3339.'),
+            ], [...array_keys($summary), 'text', 'meta', 'updated_at']),
+            'Menu'        => self::object([
+                'id'    => ['type' => 'string', 'description' => '`main`, `footer` or a plugin\'s menu.'],
+                'items' => ['type' => 'array', 'items' => $link],
+            ], ['id', 'items']),
+            'Seo'         => self::object([
+                'for'         => ['type' => 'string', 'enum' => ['home', 'listing', 'category', 'page', 'search']],
+                'locale'      => ['type' => 'string', 'description' => 'The language of the title and description.'],
+                'canonical'   => ['type' => 'string'],
+                'title'       => ['type' => 'string', 'description' => 'Plain text, ending with the site title except on the home page.'],
+                'description' => ['type' => 'string', 'description' => 'Plain text, at most 160 characters.'],
+                'robots'      => ['type' => 'string', 'description' => 'A robots meta value such as `index, follow`.'],
+                'breadcrumbs' => ['type' => 'array', 'items' => $link, 'description' => 'Home first, the current page last.'],
+                'hreflang'    => ['type' => 'array', 'items' => self::object(['locale' => ['type' => 'string'], 'url' => ['type' => 'string']], ['locale', 'url']), 'description' => 'Listings and pages with text in more than one language only; ends with `x-default`.'],
+                'og'          => self::object([
+                    'type'        => ['type' => 'string'],
+                    'title'       => ['type' => 'string'],
+                    'description' => ['type' => 'string'],
+                    'url'         => ['type' => 'string'],
+                    'site_name'   => ['type' => 'string'],
+                    'locale'      => ['type' => 'string'],
+                    'image'       => self::nullable('string', 'The first photo of a listing.'),
+                ], ['type', 'title', 'description', 'url', 'site_name', 'locale', 'image']),
+            ], ['for', 'locale', 'canonical', 'title', 'description', 'robots', 'breadcrumbs', 'hreflang', 'og']),
+        ];
     }
 
     /**
@@ -569,10 +680,10 @@ final class Schema
     {
         $text    = static fn (int $max, int $min = 0): array => ['type' => 'string', 'minLength' => $min, 'maxLength' => $max];
         $input   = static fn (array $properties, array $required = []): array => self::object($properties, $required) + ['additionalProperties' => false];
-        $saved   = static fn (string $name): array => self::object([
+        $saved   = static fn (string $name, array $more = []): array => self::object([
             'data'     => self::ref($name),
             'warnings' => ['type' => 'array', 'items' => self::ref('Warning')],
-        ], ['data']);
+        ] + $more, ['data']);
         $locale  = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$'];
         $list    = ['type' => ['string', 'integer', 'array'], 'items' => ['type' => ['string', 'integer']], 'description' => 'One value, a comma list, or a list.'];
         $listing = self::listingMembers();
@@ -580,12 +691,28 @@ final class Schema
         return [
             'ListingInput' => $input($listing, ['category_id', 'title', 'description']),
             'ListingPatch' => $input($listing),
-            'SavedListing' => $saved('Listing'),
+            'SavedListing' => $saved('Listing', ['payment' => self::ref('ListingPayment')]),
+            'ListingPayment' => self::object([
+                'credits'     => ['type' => 'integer', 'description' => 'What the listing costs to publish, in credits.'],
+                'balance'     => ['type' => 'integer', 'description' => 'The user\'s credits.'],
+                'shortfall'   => ['type' => 'integer', 'description' => 'Credits missing; 0 when the balance covers it.'],
+                'publish_url' => ['type' => 'string', 'format' => 'uri', 'description' => 'The web page to pay on. The seller must be signed in on the web.'],
+            ], ['credits', 'balance', 'shortfall', 'publish_url'])
+                + ['description' => 'What the listing costs to publish, the user\'s credits, what is missing, and the web page to pay on.'],
+            'ListingPublishInput' => $input([
+                'package' => ['type' => 'integer', 'minimum' => 1, 'description' => 'The credit package to buy. Send it with `gateway`.'],
+                'gateway' => $text(50) + ['description' => 'The payment method. Send it with `package`.'],
+            ]) + ['description' => 'Empty to pay with your credits; `package` and `gateway` to start an order for the credits missing.'],
+            'ListingPublished' => $saved('Listing', [
+                'payment' => self::ref('ListingPayment'),
+                'order'   => self::ref('Order'),
+                'next'    => self::ref('OrderNext'),
+            ]),
             'PhotoToken'   => self::object([
                 'token'      => ['type' => 'string', 'description' => 'Send it in photo_tokens when making the listing.'],
                 'expires_at' => self::time(),
             ], ['token', 'expires_at']),
-            'CommentInput' => $input(['title' => $text(200), 'body' => $text(5000, 1)], ['body']),
+            'CommentInput' => $input(['title' => $text(200), 'body' => $text(5000) + ['description' => 'Needed unless `rating` is sent.'], 'rating' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5, 'description' => 'Stars. Needs a signed-in user, one rated comment per listing (409 `already_reviewed`).']]),
             'SavedComment' => $saved('Comment'),
             'AlertFilters' => $input([
                 'q'           => $text(200),
@@ -605,11 +732,49 @@ final class Schema
             'Alert'        => self::object([
                 'id'         => ['type' => 'integer'],
                 'filters'    => self::ref('AlertFilters'),
-                'type'       => ['type' => 'string', 'description' => 'How often it mails: daily or weekly.'],
+                'type'       => ['type' => 'string', 'description' => 'How often it mails: daily or weekly; custom for a product alert, which mails once.'],
                 'active'     => ['type' => 'boolean'],
                 'created_at' => self::time(),
-            ], ['id', 'filters', 'type', 'active']),
-            'AlertInput'   => $input(['filters' => self::ref('AlertFilters')], ['filters']),
+                // C4: a product alert.
+                'product'    => [
+                    'type'        => ['object', 'null'],
+                    'description' => 'What a back-in-stock or price-drop alert waits for; null for a saved search, whose filters are empty here.',
+                    'properties'  => [
+                        'listing' => ['type' => 'integer'],
+                        'variant' => self::nullable('integer', 'null: any variant of the listing.'),
+                        'kind'    => ['type' => 'string', 'enum' => ['stock', 'price']],
+                        'below'   => self::nullable('string', 'A price alert mails when the price goes under this decimal, the price when it was set; null for a stock alert.'),
+                    ],
+                    'required'    => ['listing', 'variant', 'kind', 'below'],
+                ],
+            ], ['id', 'filters', 'type', 'active', 'product']),
+            'AlertInput'   => $input(['filters' => self::ref('AlertFilters'), 'product' => self::ref('AlertProductInput')]) + ['description' => 'Send filters for a saved search, or product for a product alert.'],
+            // C4: product alerts and the wishlist.
+            'AlertProductInput' => $input([
+                'listing' => ['type' => 'integer', 'minimum' => 1, 'description' => 'A live listing that is for sale.'],
+                'variant' => ['type' => ['integer', 'null'], 'minimum' => 1, 'description' => 'One of the listing\'s variants; leave out for any.'],
+                'kind'    => ['type' => 'string', 'enum' => ['stock', 'price'], 'description' => 'stock: mail once when it is back in stock. price: mail once when it sells below today\'s price.'],
+            ], ['listing', 'kind']),
+            'Wishlist'          => self::object([
+                'ids'   => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Listing ids, newest first.'],
+                'count' => ['type' => 'integer'],
+            ], ['ids', 'count']),
+            'WishlistInput'     => $input([
+                'ids' => ['type' => 'array', 'maxItems' => WishlistService::MAX, 'items' => ['type' => 'integer', 'minimum' => 1], 'description' => 'Newest first. Listings that are not live are dropped.'],
+            ], ['ids']),
+            'WishlistDocument'  => self::object(['data' => self::ref('Wishlist')], ['data']),
+            'CartLine'          => self::object([
+                'variant' => ['type' => 'integer', 'minimum' => 1],
+                'qty'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => CartPricer::MAX_QTY],
+            ], ['variant', 'qty']) + ['additionalProperties' => false],
+            'Cart'              => self::object([
+                'lines'      => ['type' => 'array', 'items' => self::ref('CartLine')],
+                'updated_at' => self::nullable('string', 'When the cart was last saved; null when it is empty.'),
+            ], ['lines', 'updated_at']),
+            'CartInput'         => $input([
+                'lines' => ['type' => 'array', 'maxItems' => CartPricer::MAX_LINES, 'items' => self::ref('CartLine'), 'description' => 'Variant ids and quantities. A variant that cannot be bought is dropped.'],
+            ], ['lines']),
+            'CartDocument'      => self::object(['data' => self::ref('Cart')], ['data']),
         ];
     }
 

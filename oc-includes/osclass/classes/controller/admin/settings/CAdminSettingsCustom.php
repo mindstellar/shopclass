@@ -99,7 +99,11 @@ class CAdminSettingsCustom extends AdminSecBaseModel
                         : _m('Nothing to update'),
                     'admin'
                 );
-                $this->redirectTo(osc_settings_page_url($page['id']));
+                $back = $page['return_url'] ?? null;
+                if (is_callable($back)) {
+                    $back = $back();
+                }
+                $this->redirectTo(is_string($back) && $back !== '' ? $back : osc_settings_page_url($page['id']));
                 break;
             default:
                 $this->render($page, osc_settings_values($page['id']));

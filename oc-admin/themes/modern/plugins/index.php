@@ -149,6 +149,7 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
                     ? osc_esc_html(__('An update is ready for this plugin. Open the Updates tab to apply it.'))
                     : '',
                 'note_variant' => 'update',
+                'modes'        => $pkg['modes'],
                 'actions'      => array('primary' => $primary, 'links' => $links, 'danger' => $danger),
                 'detail'       => array(
                     'name'              => $pkg['name'],

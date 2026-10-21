@@ -1,0 +1,404 @@
+// Appearance > Customise: a 300px side panel beside the framed live preview.
+.osc-customise-page {
+  #content-page {
+    min-height: 0;
+  }
+
+  #content-head:not(:has(h1)) {
+    display: none;
+  }
+}
+
+.cz {
+  background-color: var(--osc-bench-sunk);
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: calc(100dvh - 3.25rem);
+  margin-inline: -.75rem;
+  min-height: 32rem;
+}
+
+.cz-side {
+  background-color: var(--osc-bench);
+  border-inline-end: 1px solid var(--osc-rule);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  > *,
+  .cz-section,
+  .cz-look,
+  .cz-field,
+  .widget-type-fieldset,
+  .widget-type-fieldset > .mb-3 {
+    min-width: 0;
+  }
+}
+
+.cz-top {
+  border-block-end: 1px solid var(--osc-rule);
+  display: grid;
+  gap: .625rem;
+  padding: 1rem;
+}
+
+.cz-title {
+  color: var(--osc-ink);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cz-list {
+  display: grid;
+  gap: .25rem;
+  padding: .625rem;
+}
+
+.cz-h {
+  color: var(--osc-ink-muted);
+  font-size: .75rem;
+  font-weight: 600;
+  margin: 0;
+  padding: .625rem .5rem .25rem;
+}
+
+.cz-rows {
+  display: grid;
+  gap: .25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cz-row {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--bs-border-radius-sm);
+  display: grid;
+  font-size: .875rem;
+  gap: .25rem;
+  grid-template-columns: 1.75rem minmax(0, 1fr) repeat(4, 1.75rem);
+  padding: .25rem;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease), border-color var(--osc-duration-fast) var(--osc-ease);
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+  }
+
+  &.is-selected {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+  }
+
+  &.is-off .cz-name {
+    opacity: .45;
+    text-decoration: line-through;
+  }
+}
+
+.cz-name {
+  background: none;
+  border: 0;
+  color: var(--osc-ink);
+  font-weight: 500;
+  overflow: hidden;
+  padding: .25rem 0;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cz-grip,
+.cz-mini {
+  align-items: center;
+  background: none;
+  block-size: 1.75rem;
+  border: 0;
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-ink-muted);
+  display: grid;
+  inline-size: 1.75rem;
+  justify-content: center;
+  padding: 0;
+
+  &:hover:not(:disabled) {
+    background-color: var(--osc-bench);
+    color: var(--osc-ink);
+  }
+
+  &:disabled {
+    opacity: .35;
+  }
+}
+
+.cz-grip {
+  cursor: grab;
+}
+
+.cz-grip:focus-visible,
+.cz-mini:focus-visible,
+.cz-name:focus-visible,
+.cz-add:focus-visible,
+.cz-type:focus-visible,
+.cz-swatch:focus-visible,
+.cz-seg button:focus-visible {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 1px;
+}
+
+.cz-empty,
+.cz-hint,
+.cz-note {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: 0;
+  padding: .25rem .5rem;
+}
+
+.cz-add {
+  align-items: center;
+  background: none;
+  border: 1px dashed var(--osc-rule-strong);
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-ink-muted);
+  display: flex;
+  font-weight: 600;
+  gap: .375rem;
+  justify-content: center;
+  margin: .375rem .5rem;
+  padding: .5rem;
+
+  &:hover {
+    border-color: var(--osc-bronze);
+    color: var(--osc-bronze);
+  }
+}
+
+.cz-types {
+  border: 1px solid var(--osc-rule);
+  border-radius: var(--bs-border-radius-sm);
+  display: grid;
+  list-style: none;
+  margin: 0 .5rem;
+  padding: .25rem;
+
+  li[hidden] {
+    display: none;
+  }
+}
+
+.cz-type {
+  background: none;
+  border: 0;
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-ink);
+  display: grid;
+  gap: .125rem;
+  inline-size: 100%;
+  padding: .5rem;
+  text-align: start;
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+  }
+}
+
+.cz-type-name {
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.cz-type-desc {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+}
+
+.cz-panel {
+  border-block-start: 1px solid var(--osc-rule);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-block-start: auto;
+  padding: 1rem;
+}
+
+.cz-section,
+.cz-look {
+  display: grid;
+  gap: .875rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cz-panel-title {
+  color: var(--osc-ink);
+  font-size: .9375rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.cz-fields .widget-type-fieldset > .mb-3,
+.cz-field {
+  display: grid;
+  gap: .375rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+}
+
+.cz-fields .mb-3 {
+  margin-block-end: 0 !important;
+}
+
+.cz-fields .widget-type-fieldset {
+  display: grid;
+  gap: .875rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cz-side .form-sublabel {
+  color: var(--osc-ink);
+  white-space: normal;
+  font-size: .8125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+// The shared width tokens are !important, so filling the narrow panel has to be as well.
+.cz-side :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"], [type="number"]), select, textarea) {
+  inline-size: 100% !important;
+  max-inline-size: 100% !important;
+}
+
+.cz-side input[type="file"] {
+  max-inline-size: 100%;
+}
+
+.cz-swatches {
+  display: grid;
+  gap: .5rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.cz-swatch {
+  aspect-ratio: 1;
+  border: 3px solid var(--osc-bench);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--osc-rule-strong);
+  padding: 0;
+  transition: box-shadow var(--osc-duration-fast) var(--osc-ease);
+
+  &[aria-pressed="true"] {
+    box-shadow: 0 0 0 2px var(--osc-ink);
+  }
+}
+
+.cz-main {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.cz-bar {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  justify-content: space-between;
+  padding: .625rem 1rem;
+}
+
+.cz-seg {
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: 999px;
+  display: inline-flex;
+  overflow: hidden;
+
+  button {
+    background: none;
+    border: 0;
+    color: var(--osc-ink);
+    font-size: .8125rem;
+    padding: .375rem .875rem;
+
+    &[aria-pressed="true"] {
+      background-color: var(--osc-ink);
+      color: var(--osc-bench);
+    }
+  }
+}
+
+.cz-status {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin-inline-end: auto;
+
+  &.is-error {
+    color: var(--osc-danger);
+  }
+}
+
+.cz-actions {
+  display: flex;
+  gap: .5rem;
+}
+
+.cz-canvas {
+  align-items: start;
+  display: grid;
+  justify-items: center;
+  overflow: auto;
+  padding: 1.25rem;
+}
+
+.cz-frame {
+  background-color: var(--osc-bench);
+  block-size: 100%;
+  border-radius: 14px;
+  box-shadow: var(--osc-shadow-overlay);
+  inline-size: 100%;
+  max-inline-size: 1100px;
+  overflow: hidden;
+  transition: max-inline-size 350ms var(--osc-ease);
+
+  &.is-phone {
+    max-inline-size: 390px;
+  }
+
+  // The preview follows the device's scheme, not the admin's dark toggle.
+  iframe {
+    block-size: 100%;
+    border: 0;
+    color-scheme: normal;
+    display: block;
+    inline-size: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cz-frame,
+  .cz-row,
+  .cz-swatch {
+    transition: none;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .cz {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .cz-side {
+    border-block-end: 1px solid var(--osc-rule);
+    border-inline-end: 0;
+    overflow: visible;
+  }
+
+  .cz-frame {
+    block-size: 80dvh;
+  }
+}

@@ -205,4 +205,43 @@ pin(
 $GLOBALS['__plugin'] = null;
 pin('without the plugin, its key is unknown and refused', null, AlertEnvelope::validate($withPlugin));
 
+harness_section('product alerts');
+$stock = AlertEnvelope::product(12, null, 'stock');
+pin('a stock alert holds only the product, every member present', '{"v":2,"params":{"product":{"below":null,"kind":"stock","listing":12,"variant":null}}}', $stock);
+$price = AlertEnvelope::product(12, 7, 'price', 699000000);
+pin('a price alert keeps its variant and price', '{"v":2,"params":{"product":{"below":699000000,"kind":"price","listing":12,"variant":7}}}', $price);
+pin('the same alert gives the same bytes, so it dedupes', $stock, AlertEnvelope::product(12, null, 'stock'));
+pin('validate() accepts it', array('product' => array('below' => null, 'kind' => 'stock', 'listing' => 12, 'variant' => null)), AlertEnvelope::validate($stock));
+pin('productOf() reads it back', array('below' => 699000000, 'kind' => 'price', 'listing' => 12, 'variant' => 7), AlertEnvelope::productOf($price));
+pin('productPattern() is cut from the stored envelope', '%"kind":"price","listing":12,"variant":%', AlertEnvelope::productPattern(12, 'price'));
+pin('and matches that envelope', 1, preg_match('/^' . str_replace('%', '.*', preg_quote(AlertEnvelope::productPattern(12, 'price'), '/')) . '$/', $price));
+pin('productOf() is null for a saved search', null, AlertEnvelope::productOf('{"v":2,"params":{"sPattern":"bike"}}'));
+pin('the job finds a listing by a pattern that stops at its id', true, strpos($stock, '"kind":"stock","listing":12,"variant":') !== false && strpos($stock, '"listing":1,') === false);
+foreach (array(
+    'listing 0'               => array(0, null, 'stock', null),
+    'a negative variant'      => array(12, -1, 'stock', null),
+    'an unknown kind'         => array(12, null, 'restock', null),
+    'a price alert, no price' => array(12, null, 'price', null),
+    'a price of 0'            => array(12, null, 'price', 0),
+    'a stock alert with a price' => array(12, null, 'stock', 5),
+) as $label => $args) {
+    pin($label . ' is refused', '', AlertEnvelope::product(...$args));
+}
+foreach (array(
+    'a product with search params'   => '{"v":2,"params":{"product":{"below":null,"kind":"stock","listing":12,"variant":null},"sPattern":"x"}}',
+    'a product missing a member'     => '{"v":2,"params":{"product":{"kind":"stock","listing":12,"variant":null}}}',
+    'a product with an extra member' => '{"v":2,"params":{"product":{"below":null,"kind":"stock","listing":12,"variant":null,"x":1}}}',
+    'a listing id as a string'       => '{"v":2,"params":{"product":{"below":null,"kind":"stock","listing":"12","variant":null}}}',
+    'members out of order'           => '{"v":2,"params":{"product":{"listing":12,"kind":"stock","below":null,"variant":null}}}',
+) as $label => $json) {
+    pin('validate() refuses ' . $label, null, AlertEnvelope::validate($json));
+}
+$GLOBALS['__plugin'] = static function (array $params): array {
+    $params['product'] = array('below' => null, 'kind' => 'stock', 'listing' => 5, 'variant' => null);
+
+    return $params;
+};
+pin('a plugin cannot add a product to a search', '{"v":2,"params":{"sPattern":"kept"}}', $build(array('sPattern' => 'kept')));
+$GLOBALS['__plugin'] = null;
+
 exit(harness_result());

@@ -79,7 +79,7 @@ final class OfflineGateway implements PaymentGateway
     {
         $html  = '<div class="billing-offline-instructions">';
         $html .= '<p>' . nl2br(osc_esc_html(osc_billing_offline_instructions())) . '</p>';
-        $html .= '<p><strong>' . osc_esc_html(sprintf(_m('Reference: #%d'), $order->getId())) . '</strong></p>';
+        $html .= '<p><strong>' . osc_esc_html(sprintf(_m('Reference: %s'), osc_billing_order_number($order->getId()))) . '</strong></p>';
         $html .= '</div>';
 
         return CheckoutIntent::html($html);

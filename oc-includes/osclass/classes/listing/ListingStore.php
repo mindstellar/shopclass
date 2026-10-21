@@ -93,6 +93,26 @@ final class ListingStore extends Model
     }
 
     /**
+     * Listings held for payment whose deadline passed before $before and whose delete job is
+     * still queued, oldest id first.
+     *
+     * @return array<int,array<string,mixed>> pk_i_id and s_secret of each
+     * @throws \mindstellar\database\DbException
+     */
+    public static function heldPast(string $before, int $limit): array
+    {
+        // The id is cast to ascii_bin, as s_unique is, so the lookup uses the whole unique key.
+        return Db::select(
+            'SELECT i.pk_i_id, i.s_secret FROM ' . self::tableName() . ' i'
+            . ' WHERE ' . ListingStatus::heldSql('i.') . ' AND i.dt_expiration < ?'
+            . ' AND EXISTS (SELECT 1 FROM ' . DB_TABLE_PREFIX . 't_job_queue j'
+            . ' WHERE j.s_type = ? AND j.s_unique = CAST(i.pk_i_id AS CHAR CHARACTER SET ascii) COLLATE ascii_bin)'
+            . ' ORDER BY i.pk_i_id LIMIT ' . $limit,
+            array($before, ListingHoldJobs::EXPIRE)
+        );
+    }
+
+    /**
      * @param int[] $ids
      *
      * @throws \mindstellar\database\DbException

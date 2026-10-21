@@ -43,6 +43,12 @@ final class Scopes
         'comments:write'  => 'Post and delete own comments.',
         'alerts:read'     => 'Read own saved searches.',
         'alerts:write'    => 'Create and delete own saved searches.',
+        'wishlist:read'   => 'Read own wishlist.',
+        'wishlist:write'  => 'Add to and remove from own wishlist.',
+        'orders:read'     => 'Read own orders.',
+        'orders:write'    => 'Place and cancel own orders.',
+        'cart:read'       => 'Read own saved cart.',
+        'cart:write'      => 'Save own cart.',
         'account:read'    => 'Read own profile and sessions.',
         'account:write'   => 'Edit own profile, password and e-mail.',
         'admin:listings'  => 'Moderate and edit any listing.',
@@ -58,7 +64,8 @@ final class Scopes
 
     public const USER = [
         'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:read', 'alerts:write',
-        'account:read', 'account:write',
+        'account:read', 'account:write', 'wishlist:read', 'wishlist:write', 'orders:read', 'orders:write',
+        'cart:read', 'cart:write',
     ];
 
     public const ADMIN = [
@@ -82,6 +89,9 @@ final class Scopes
         'listings:write' => ['listings:read'],
         'account:write'  => ['account:read'],
         'alerts:write'   => ['alerts:read'],
+        'wishlist:write' => ['wishlist:read'],
+        'orders:write'   => ['orders:read'],
+        'cart:write'     => ['cart:read'],
     ];
 
     /** @var array<string,array{description:string,audience:string}> */

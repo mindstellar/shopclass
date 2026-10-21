@@ -87,6 +87,11 @@ function hooks_scan(): array
             if (isset($found[$name])) {
                 continue;
             }
+            // A call line marked "hooks-doc: skip" repeats a hook documented at its main call site.
+            $lineEnd = strpos($src, "\n", $m[0][$i][1]);
+            if (strpos(substr($src, $m[0][$i][1], ($lineEnd === false ? strlen($src) : $lineEnd) - $m[0][$i][1]), 'hooks-doc: skip') !== false) {
+                continue;
+            }
             $fn    = $m[1][$i][0];
             $start = $m[0][$i][1];
             $open  = strpos($src, '(', $start);
@@ -102,6 +107,19 @@ function hooks_scan(): array
                 'kind'  => (stripos($fn, 'filter') !== false) ? 'filter' : 'action',
                 'args'  => $args,
                 'where' => $path,
+            );
+        }
+    }
+
+    // Names a typed event owns are fired by dispatch(), so they are listed from the event class.
+    require_once ROOT . 'oc-includes/vendor/autoload.php';
+    foreach (\mindstellar\boot\CoreServices::events() as $event) {
+        $class = new ReflectionClass($event);
+        foreach ($event::legacyNames() as $name) {
+            $found[$name] = array(
+                'kind'  => 'event',
+                'args'  => $class->getShortName(),
+                'where' => str_replace(realpath(ROOT) . '/', '', (string) $class->getFileName()),
             );
         }
     }

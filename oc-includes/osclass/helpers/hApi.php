@@ -243,6 +243,51 @@ if (!function_exists('osc_api_admin_session_meta')) {
     }
 }
 
+if (!function_exists('osc_api_get')) {
+    /**
+     * Read an API route from PHP, in this process: no HTTP request, no rate limit, and it works
+     * while the API is switched off. It acts as the signed-in web user, as the admin on an admin
+     * page, or else as a visitor reading public data. An admin route called from a public page
+     * answers 403.
+     *
+     * @api
+     *
+     *     $page = osc_api_get('listings', ['limit' => 12]);
+     *     if ($page['status'] === 200) { foreach ($page['body']['data'] as $listing) { ... } }
+     *
+     * @param string              $path  below the version, e.g. 'listings/12'
+     * @param array<string,mixed> $query the query parameters
+     *
+     * @return array{status:int,body:array<mixed>,headers:array<string,string>}
+     */
+    function osc_api_get(string $path, array $query = []): array
+    {
+        return osc_api_call('GET', $path, $query);
+    }
+}
+
+if (!function_exists('osc_api_call')) {
+    /**
+     * Call an API route from PHP, in this process, with any method. It acts as osc_api_get() does;
+     * a signed-in user or admin may only read, and a problem comes back as its status and body.
+     *
+     * @api
+     *
+     *     $seo = osc_api_call('GET', 'seo', ['for' => 'listing', 'id' => 12]);
+     *
+     * @param string              $method GET, POST, PUT, PATCH or DELETE
+     * @param string              $path   below the version, e.g. 'listings/12'
+     * @param array<string,mixed> $query  the query parameters
+     * @param array<mixed>        $body   the JSON body; none when empty
+     *
+     * @return array{status:int,body:array<mixed>,headers:array<string,string>}
+     */
+    function osc_api_call(string $method, string $path, array $query = [], array $body = []): array
+    {
+        return \mindstellar\apikey\ApiAccess::call($method, $path, $query, $body);
+    }
+}
+
 if (!function_exists('osc_webhook_emit')) {
     /**
      * Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's

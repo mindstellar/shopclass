@@ -23,6 +23,8 @@ use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\api\write\OwnedListings;
 use mindstellar\apikey\Credential;
+use mindstellar\billing\ListingCheckout;
+use mindstellar\exception\ConflictException;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\moderation\StatusFlags;
 use mindstellar\search\query\CategoryFilter;
@@ -107,6 +109,21 @@ final class AdminListingsController
     public function bump(ApiCall $call): Response
     {
         $this->moderation->apply('bump', $call->intArg(), (int) $call->credential()->adminId(), self::note($call->credential()));
+
+        return $this->show($call);
+    }
+
+    /**
+     * Put a listing that waits for payment live without charging the seller.
+     *
+     * @throws ProblemException 404, or 409 when the listing is not waiting for payment
+     */
+    public function publish(ApiCall $call): Response
+    {
+        $listing = $this->owned->load($call->intArg());
+        if (!ListingCheckout::publishFree($listing->id(), $call->actor('admin:listings'))) {
+            throw new ConflictException(_m('The listing is not waiting for payment.'));
+        }
 
         return $this->show($call);
     }

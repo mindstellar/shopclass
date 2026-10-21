@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace mindstellar\admin\ajax;
 
+use mindstellar\admin\SettingsSearch;
 use mindstellar\utility\AjaxResponse;
 use Page;
 use Params;
@@ -82,6 +83,29 @@ final class SystemAjax extends AjaxHandler
         }
         header('Cache-Control: no-store');
         AjaxResponse::json(\mindstellar\backup\BackupService::poll());
+    }
+
+    /**
+     * The list the top bar's "Find a setting" box searches. Administrators only, no side
+     * effects. The URL carries a version key, so the browser keeps the answer until that key
+     * changes; the ETag lets it recheck for free.
+     */
+    public function settingsIndex(): void
+    {
+        $json = (string)json_encode(array('rows' => SettingsSearch::build()), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $etag = '"' . md5($json) . '"';
+        header('Content-Type: application/json; charset=UTF-8');
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, max-age=86400');
+        header_remove('Pragma');
+        header_remove('Expires');
+        header('ETag: ' . $etag);
+        if (Params::getServerParam('HTTP_IF_NONE_MATCH', false, false) === $etag) {
+            http_response_code(304);
+
+            return;
+        }
+        echo $json;
     }
 
     /** Swaps a page with its neighbour above or below. Answers nothing. */

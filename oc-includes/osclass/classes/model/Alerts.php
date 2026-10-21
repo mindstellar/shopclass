@@ -24,6 +24,9 @@ class Alerts extends DAO
     /** How often alerts go out. Hourly ones were made daily in 7.0. */
     public const TYPES = array('DAILY', 'WEEKLY');
 
+    /** A product alert (back in stock, price drop): sent by a job, never by the digest cron. */
+    public const PRODUCT = 'CUSTOM';
+
     /**
      * Alerts constructor.
      */
@@ -342,14 +345,14 @@ class Alerts extends DAO
      * @param string $email
      * @param string $alert  Serialised search conditions
      * @param string $secret
-     * @param string $type
+     * @param string $type   DAILY, WEEKLY or PRODUCT; anything else is DAILY
      *
      * @return int|false The new alert id, or false when the same alert already exists
      * @throws \mindstellar\database\DbException on a query failure
      */
     public function createAlert($userid, $email, $alert, $secret, $type = 'DAILY')
     {
-        $type = in_array($type, self::TYPES, true) ? $type : 'DAILY';
+        $type = in_array($type, self::TYPES, true) || $type === self::PRODUCT ? $type : 'DAILY';
         $query = Db::table($this->getTableName())
             ->where('s_search', $alert)
             ->whereRaw('dt_unsub_date IS NULL');

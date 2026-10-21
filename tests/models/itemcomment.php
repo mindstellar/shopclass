@@ -102,7 +102,7 @@ pin(
     'field allowlist is unchanged',
     array(
         'pk_i_id', 'fk_i_item_id', 'dt_pub_date', 's_title', 's_author_name',
-        's_author_email', 's_body', 'b_enabled', 'b_active', 'b_spam', 'fk_i_user_id',
+        's_author_email', 's_body', 'b_enabled', 'b_active', 'b_spam', 'fk_i_user_id', 'i_rating',
     ),
     $model->getFields()
 );

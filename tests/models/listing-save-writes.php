@@ -25,9 +25,11 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 use mindstellar\auth\Actor;
+use mindstellar\billing\Billing;
 use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingGeocode;
+use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\model\Resource;
@@ -45,7 +47,10 @@ $en  = seed_locale($admin);
 $es  = seed_locale($admin, 'es_ES', 'Spanish');
 seed_currency($admin);
 seed_country($admin, 'US', 'United States');
-$cat = seed_category($admin, 'Cars', seed_category($admin, 'Vehicles', null, $en), $en);
+$vehicles = seed_category($admin, 'Vehicles', null, $en);
+$cat = seed_category($admin, 'Cars', $vehicles, $en);
+$bikes     = seed_category($admin, 'Bikes', $vehicles, $en, 1, 30);
+$evergreen = seed_category($admin, 'Evergreen', $vehicles, $en, 1, 0);
 $sue = seed_user($admin, 'sue', 'sue@example.test');
 foreach (['moderate_items' => '-1', 'items_wait_time' => '0', 'language' => 'en_US', 'map_type' => 'google', 'geocode_provider' => 'savetest',
     'title_character_length' => '100', 'description_character_length' => '5000'] as $k => $v) {
@@ -310,5 +315,165 @@ $conflict();
 $refused = [$photo(), $job()];
 Db::rollBack();
 pin('after the conflict both are refused', [false, 0], $refused);
+
+harness_section('over the limit a post is held, not refused');
+$ann       = seed_user($admin, 'ann', 'ann@example.test');
+scratchdb_forget_cache();
+foreach ([Billing::PREF_ENABLED => 'BOOLEAN', 'billing_slot_enabled' => 'BOOLEAN'] as $k => $t) {
+    osc_set_preference($k, '1', $k === Billing::PREF_ENABLED ? Billing::PREF_GROUP : 'osclass', $t);
+}
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_delete_preference('billing_pay_at_post', 'osclass');
+osc_set_preference('notify_new_item', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+$fired = [];
+foreach (['posted_item', 'hook_email_admin_new_item', 'hook_email_new_item_non_register_user', 'hook_email_item_validation', 'item_increase_stat'] as $name) {
+    $fired[$name] = 0;
+    osc_add_hook($name, static function () use (&$fired, $name): void {
+        $fired[$name]++;
+    });
+}
+$row      = static fn (int $id): array => (array) $admin->query("SELECT b_enabled, b_active, dt_first_pub_date, dt_pub_date, dt_expiration FROM {$p}t_item WHERE pk_i_id = $id")->fetch_assoc();
+$state    = static fn (int $id): array => [(int) $row($id)['b_enabled'], (int) $row($id)['b_active'], $row($id)['dt_first_pub_date']];
+$days     = static fn (int $id, string $col): float => round((strtotime((string) $row($id)[$col]) - time()) / 86400, 1);
+$catCount = static fn (int $c): int => (int) ($admin->query("SELECT i_num_items FROM {$p}t_category WHERE pk_i_id = $c")->fetch_assoc()['i_num_items'] ?? 0);
+$jobKeys  = static fn (string $type): array => array_column($admin->query("SELECT s_unique FROM {$p}t_job_queue WHERE s_type = '$type'")->fetch_all(MYSQLI_ASSOC), 's_unique');
+$sellerOf = static fn (int $id): Actor => Actor::user($id, '192.0.2.71');
+$post     = static fn (Actor $a, array $extra = [], bool $import = false): \mindstellar\listing\SavedListing
+    => $service->create(ListingInput::fromArray($form($extra), $a, true), $a, $import);
+
+$ann1 = $post($sellerOf($ann), ['catId' => (string) $bikes]);
+pin('the first post is under the limit and goes live', [1, 1], array_slice($state($ann1->id()), 0, 2));
+check('an in-limit post is not unpaid', !$ann1->unpaid());
+$counts = $fired;
+$catBefore = $catCount($bikes);
+$held = $post($sellerOf($ann), ['catId' => (string) $bikes]);
+$hid  = $held->id();
+check('the second post is unpaid', $held->unpaid());
+pin('the held row is hidden and never went live', [0, 0, null], $state($hid));
+check('the held row has a publish date', $row($hid)['dt_pub_date'] !== null);
+pin('its deadline is the hold: 7 days', 7.0, $days($hid, 'dt_expiration'));
+pin('no posted_item, no e-mail hook, no stat increase', $counts, $fired);
+pin('the category count did not change', $catBefore, $catCount($bikes));
+pin('the stats row exists', 1, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_item_stats WHERE fk_i_item_id = $hid")->fetch_assoc()['c']);
+pin('the texts are stored', 2, (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_item_description WHERE fk_i_item_id = $hid")->fetch_assoc()['c']);
+pin('the expire and remind jobs are queued under the id', [[(string) $hid], [(string) $hid]], [array_values(array_intersect($jobKeys(ListingHoldJobs::EXPIRE), [(string) $hid])), array_values(array_intersect($jobKeys(ListingHoldJobs::REMIND), [(string) $hid]))]);
+
+$admin->query("CREATE TRIGGER {$p}no_expire_job BEFORE INSERT ON {$p}t_job_queue FOR EACH ROW BEGIN IF NEW.s_type = '" . ListingHoldJobs::EXPIRE . "' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'no queue'; END IF; END");
+$itemsBefore = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_item")->fetch_row()[0];
+$refused     = null;
+try {
+    $post($sellerOf($ann), ['catId' => (string) $bikes]);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+$admin->query("DROP TRIGGER {$p}no_expire_job");
+pin('a hold whose delete job cannot be queued is refused', 'rejected', $refused);
+pin('and leaves no held row', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id > {$itemsBefore}")->fetch_row()[0]);
+
+osc_set_preference('billing_pay_at_post', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+$refused = null;
+try {
+    $post($sellerOf($ann), ['catId' => (string) $bikes]);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+pin('with the switch off the post is refused with listing_limit', 'listing_limit', $refused);
+osc_set_preference('billing_pay_at_post', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
+$refused = null;
+try {
+    $post($actor, ['ownerId' => (string) $ann, 'catId' => (string) $bikes], true);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+pin('an admin import over the limit is still refused', 'listing_limit', $refused);
+$bea  = seed_user($admin, 'bea', 'bea@example.test');
+$veto = static fn (): bool => false;
+osc_add_filter('billing_can_publish', $veto);
+$refused = null;
+try {
+    $post($sellerOf($bea), ['catId' => (string) $bikes]);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+osc_remove_filter('billing_can_publish', $veto);
+pin('a plugin refusal within the free limit is refused, not held', 'listing_limit', $refused);
+osc_add_filter('billing_can_publish', $veto);
+$refused = null;
+try {
+    $post($sellerOf($ann), ['catId' => (string) $bikes]);
+} catch (InvalidException $e) {
+    $refused = $e->errors()[0]['code'] ?? null;
+}
+osc_remove_filter('billing_can_publish', $veto);
+pin('a plugin refusal over the limit is refused too, as the post form does', 'listing_limit', $refused);
+$adminPost = $post($actor, ['ownerId' => (string) $ann, 'catId' => (string) $bikes]);
+pin('an admin post over the limit goes live', [1, 1], array_slice($state($adminPost->id()), 0, 2));
+$guestPost = $post(Actor::guest('192.0.2.71'), ['catId' => (string) $bikes]);
+pin('a guest post is not metered', [1, 1], array_slice($state($guestPost->id()), 0, 2));
+
+harness_section('a held listing goes live once');
+$fired = array_map(static fn (): int => 0, $fired);
+$catBefore = $catCount($bikes);
+check('publish() takes the held listing live', $service->publish($hid, $sellerOf($ann)));
+pin('it is live', [1, 1], array_slice($state($hid), 0, 2));
+check('dt_first_pub_date is now', abs(strtotime((string) $row($hid)['dt_first_pub_date']) - time()) < 5);
+pin('dt_pub_date equals dt_first_pub_date', $row($hid)['dt_first_pub_date'], $row($hid)['dt_pub_date']);
+pin('its run is the category days: 30', 30.0, $days($hid, 'dt_expiration'));
+pin('posted_item fired once', 1, $fired['posted_item']);
+pin('the stats went up once', 1, $fired['item_increase_stat']);
+pin('the admin mail hook fired once', 1, $fired['hook_email_admin_new_item']);
+pin('the category count went up by one', $catBefore + 1, $catCount($bikes));
+check('a second publish() returns false', $service->publish($hid, $sellerOf($ann)) === false);
+pin('nothing fired again', 1, $fired['posted_item']);
+check('publish() of a live listing is false', $service->publish($ann1->id(), $sellerOf($ann)) === false);
+
+harness_section('publish() follows the owner moderation rule');
+$held2 = $post($sellerOf($ann), ['catId' => (string) $bikes])->id();
+osc_set_preference('moderate_items', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+$fired = array_map(static fn (): int => 0, $fired);
+$service->publish($held2, $sellerOf($ann));
+osc_set_preference('moderate_items', '-1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+pin('a post that would wait for validation is enabled but not active', [1, 0], array_slice($state($held2), 0, 2));
+pin('the validation mail hook fired, not the live one', [1, 0], [$fired['hook_email_item_validation'], $fired['posted_item'] - 1]);
+
+harness_section('publish() applies admin moderation');
+$held3 = $post($sellerOf($ann), ['catId' => (string) $bikes])->id();
+osc_set_preference('moderate_admin_post', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+$service->publish($held3, $sellerOf($ann));
+osc_set_preference('moderate_admin_post', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+pin('the listing is disabled after announce, as a fresh post', 0, (int) $row($held3)['b_enabled']);
+
+harness_section('a category with no run time leaves no deadline');
+$held4 = $post($sellerOf($ann), ['catId' => (string) $evergreen])->id();
+check('the held row has the hold deadline', $row($held4)['dt_expiration'] !== null);
+$service->publish($held4, $sellerOf($ann));
+pin('after publish the deadline is gone', '9999-12-31 23:59:59', $row($held4)['dt_expiration']);
+
+harness_section('a held listing past its deadline counts once when published');
+$late = $post($sellerOf($ann), ['catId' => (string) $bikes])->id();
+$admin->query("UPDATE {$p}t_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 1 HOUR) WHERE pk_i_id = $late");
+$catBefore = $catCount($bikes);
+$service->publish($late, $sellerOf($ann));
+pin('the category count went up by one', $catBefore + 1, $catCount($bikes));
+
+harness_section('an edit keeps a held listing held');
+$held5   = $post($sellerOf($ann), ['catId' => (string) $bikes]);
+$h5      = $held5->id();
+$before  = $row($h5);
+// An admin edit that asks for 5 days, which would move the deadline on a live listing.
+$edit    = ListingInput::fromArray($form(['catId' => (string) $bikes, 'id' => (string) $h5, 'ownerId' => (string) $ann, 'dt_expiration' => '5', 'title' => ['en_US' => 'Edited bike', 'es_ES' => 'Bici editada']]), $actor, false);
+$saved   = $service->update($edit, $actor, false, false);
+check('the edit says unpaid', $saved->unpaid());
+pin('the new title is stored', 'Edited bike', $admin->query("SELECT s_title FROM {$p}t_item_description WHERE fk_i_item_id = $h5 AND fk_c_locale_code = 'en_US'")->fetch_assoc()['s_title']);
+pin('the row is still hidden and unpublished', [0, 0, null], $state($h5));
+pin('the deadline is unchanged', $before['dt_expiration'], $row($h5)['dt_expiration']);
 
 exit(harness_result());

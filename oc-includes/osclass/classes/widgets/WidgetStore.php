@@ -162,6 +162,100 @@ final class WidgetStore extends Model
     }
 
     /**
+     * Make one location hold exactly $rows, in that order, in one transaction. A row whose id
+     * already lives there is updated in place; any other row is inserted; rows left out are
+     * deleted. Other locations are never touched.
+     *
+     * @param array<int,array{id?:int|null,type:string,config:array<string,mixed>,description:string}> $rows
+     *
+     * @throws \Throwable when the write fails; nothing is changed
+     */
+    public static function replaceLocation(string $location, array $rows): void
+    {
+        try {
+            Db::transaction(static function () use ($location, $rows): void {
+                $existing = array_flip(self::idsAt($location));
+                $kept     = array();
+                foreach (array_values($rows) as $position => $row) {
+                    $values = array(
+                        's_description' => (string) $row['description'],
+                        's_content'     => '',
+                        's_type'        => (string) $row['type'],
+                        's_config'      => json_encode($row['config'], JSON_THROW_ON_ERROR),
+                        'i_order'       => $position,
+                    );
+                    $id = (int) ($row['id'] ?? 0);
+                    if ($id > 0 && isset($existing[$id]) && !isset($kept[$id])) {
+                        self::table()->where('pk_i_id', $id)->update($values);
+                        $kept[$id] = true;
+                        continue;
+                    }
+                    self::table()->insert($values + array('s_location' => $location, 'e_kind' => 'html'));
+                }
+                $dropped = array_keys(array_diff_key($existing, $kept));
+                if ($dropped !== array()) {
+                    self::table()->whereIn('pk_i_id', $dropped)->delete();
+                }
+            });
+        } finally {
+            CacheGroup::invalidate('widget');
+        }
+    }
+
+    /**
+     * A fingerprint of one location's rows, so a draft can tell when the live rows changed under it.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function locationHash(string $location): string
+    {
+        $rows = self::table()->select('pk_i_id', 's_type', 's_description', 's_config', 'i_order')
+            ->where('s_location', $location)->orderBy('pk_i_id')->get();
+
+        return md5((string) json_encode(array_map(array(Db::class, 'stringifyRow'), $rows)));
+    }
+
+    /**
+     * Flip a row's hide switch (WidgetConfig::ENABLED) and store it.
+     *
+     * @return bool the row's new state: true when shown
+     * @throws \mindstellar\database\DbException
+     */
+    public static function toggleEnabled(int $id): bool
+    {
+        $row     = self::find($id);
+        $config  = $row === null ? array() : json_decode((string) $row['s_config'], true);
+        $config  = is_array($config) ? $config : array();
+        $enabled = !WidgetConfig::enabled($config);
+        $config[WidgetConfig::ENABLED] = $enabled;
+        self::update($id, array('s_config' => json_encode($config)));
+
+        return $enabled;
+    }
+
+    /**
+     * $config with the stored row's hide switch carried over, so editing a hidden row keeps it hidden.
+     *
+     * @param array<string,mixed> $config
+     *
+     * @return array<string,mixed>
+     */
+    public static function keepEnabled(int $id, array $config): array
+    {
+        try {
+            $row = self::find($id);
+        } catch (\Throwable $e) {
+            $row = null;
+        }
+        $stored = $row !== null ? json_decode((string) $row['s_config'], true) : null;
+        if (is_array($stored) && array_key_exists(WidgetConfig::ENABLED, $stored)) {
+            $config[WidgetConfig::ENABLED] = $stored[WidgetConfig::ENABLED] !== false;
+        }
+
+        return $config;
+    }
+
+    /**
      * MAX(i_order) + 1 for a location, or 0 when it holds no widgets.
      *
      * @throws \mindstellar\database\DbException

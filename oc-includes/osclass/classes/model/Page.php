@@ -750,16 +750,21 @@ class Page extends DAO
             return false;
         }
 
-        // A translation can still carry a template for a page this version no longer has.
-        $pages = array_map('strval', array_column(Db::table($this->getTableName())->select('pk_i_id')->get(), 'pk_i_id'));
+        // A template names its page; the id is only a fallback, since a page added by a migration
+        // can sit at another id on an upgraded site. A page this version no longer has is skipped.
+        $rows   = Db::table($this->getTableName())->select('pk_i_id', 's_internal_name')->get();
+        $byName = array_column($rows, 'pk_i_id', 's_internal_name');
+        $ids    = array_map('strval', array_column($rows, 'pk_i_id'));
         foreach ($templates as $template) {
-            if (!in_array((string) $template['fk_i_page_id'], $pages, true)) {
+            if (!empty($template['s_internal_name'])) {
+                $id = $byName[$template['s_internal_name']] ?? null;
+            } else {
+                $id = in_array((string) $template['fk_i_page_id'], $ids, true) ? $template['fk_i_page_id'] : null;
+            }
+            if ($id === null) {
                 continue;
             }
-            $result = $this->updateDescription($template['fk_i_page_id'], $language, $template['s_title'], $template['s_description']);
-            if (!$result) {
-                $errorPageIds [] = $template['fk_i_page_id'];
-            }
+            $this->updateDescription((int) $id, $language, $template['s_title'], $template['s_description']);
         }
         return true;
     }

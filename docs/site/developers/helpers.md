@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1215 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -87,7 +87,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_add_admin_menu_page($menu_title, $url, $menu_id, $capability = 'administrator', $icon_url = null, $position = null)` | Add menu entry |
 | `osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability = null)` | Add submenu divider under menu id $menu_id |
-| `osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator')` | Add submenu under menu id $menu_id |
+| `osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator', $group = null, $match = array(), $weight = 0)` | Add submenu under menu id $menu_id |
 | `osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the appearance menu page |
 | `osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the categories menu page |
 | `osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)` | Add a submenu entry under the listings menu page |
@@ -104,7 +104,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (44)
+### hAdminUi (45)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -128,7 +128,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_field_choices($id, $name, $value, array $spec)` | The option list of a radio group. Each option is its own label wrapping its own control, so the whole line is a hit target and no id can drift from its label. |
 | `osc_admin_field_class($type, array $spec)` | The width class a field gets. Width follows the field's meaning, not the page it happens to sit on; 'width' overrides it when a screen genuinely needs something else. |
 | `osc_admin_field_control($type, $id, array $spec)` | The control alone, without its row, label or hint. Split out so every field type shares one escaping path and one width decision. |
-| `osc_admin_field_help(array $spec)` | The hint under a field, in the same help-box the admin already uses. |
+| `osc_admin_field_help(array $spec)` | The hint under a field, in the same help-box the admin already uses. Set 'help_tone' to 'warning' for a caution. |
 | `osc_admin_field_id(array $spec)` | A field's DOM id: its own, or one derived from its name so the label is clickable without every caller having to invent one. |
 | `osc_admin_field_row($label, array $fields, array $opts = array())` | One labelled row holding several fields. |
 | `osc_admin_form_actions(array $actions = array(), array $opts = array())` | The submit row at the foot of a form. With no arguments this is a lone "Save changes" -- the case that covers most settings screens. |
@@ -146,6 +146,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_publish_panel(array $opts = array())` | The rail's status panel: what state the record is in, the facts about it, and the actions that change that state. |
 | `osc_admin_radio_group(array $opts)` | A choice list. Keys: the shared set, plus 'options', 'selected'. An option may be a string label or array('label' =&gt; …, 'custom_html' =&gt; …). |
 | `osc_admin_secret(array $opts)` | An API key or password. Keys: the shared set, plus 'reveal', 'masked'. |
+| `osc_admin_section_heading($text, $level = 'section', $id = null)` | A heading inside an admin screen, on the one heading scale: the screen's title is an h2, a section an h3 and a sub-section of a section an h4. Use this rather than writing a heading tag, so every screen gets the same size and the levels stay in order. |
 | `osc_admin_select(array $opts)` | A dropdown. Keys: the shared set, plus 'options', 'selected', 'placeholder'. |
 | `osc_admin_settings_form($page, array $opts = array())` | The whole form of a declared page (osc_register_settings_page()): the element, the hidden route, every declared field with the value it should show, and the submit row. |
 | `osc_admin_status($state, $word)` | A status pill: a tint, a shape, and the word. An unmapped state still renders, in the neutral tint, so a plugin's own word degrades instead of vanishing. |
@@ -155,14 +156,16 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_user_picker(array $opts = array())` | Who a record belongs to: the card when a registered user matches, and a search that fills the named fields when one is picked. |
 | `osc_admin_when($datetime)` | A date as "5 minutes ago" or "in 5 minutes", with the full date as a tooltip. |
 
-### hApi (11)
+### hApi (13)
 
 `oc-includes/osclass/helpers/hApi.php`
 
 | Helper | What it does |
 |---|---|
 | `osc_api_admin_session_meta()` | The `<meta name="shopclass-api">` tag for an admin panel page, with the signed-in admin's page token. Admin JavaScript sends it to call admin endpoints as that admin. |
+| `osc_api_call(string $method, string $path, array $query = [], array $body = [])` | Call an API route from PHP, in this process, with any method. It acts as osc_api_get() does; a signed-in user or admin may only read, and a problem comes back as its status and body. |
 | `osc_api_enabled()` | Whether the REST API answers at all. |
+| `osc_api_get(string $path, array $query = [])` | Read an API route from PHP, in this process: no HTTP request, no rate limit, and it works while the API is switched off. It acts as the signed-in web user, as the admin on an admin page, or else as a visitor reading public data. An admin route called from a public page answers 403. |
 | `osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ['public'])` | Declare a field a plugin adds to a listing, user or category, so the OpenAPI document shows it and `?fields=ext.<slug>.<name>` selects it. The plugin sends the value under `ext.<slug>.<name>` from the `api_listing`, `api_user` or `api_category` filter. A public field reaches everyone, an owner field the owner and admins, an admin field admins only. |
 | `osc_api_register_route(string $method, string $path, array $spec)` | Add an API endpoint, through the `api_routes` filter. The path is below /api/v1/ and must start with `ext/<plugin-slug>/`; other paths are refused when the table is built, except a route with both `deprecated` and `sunset`, which may keep a plugin's old path until its sunset day. A second route with the same method and path is refused and logged. |
 | `osc_api_register_schema(string $slug, string $name, array $schema)` | Add a component schema for a plugin's routes, through the `api_schemas` filter. It is named `Ext<Slug><Name>` (`acme-ratings`, `Rating`: `ExtAcmeRatingsRating`), so it never clashes with core's components, which are not part of the plugin contract. A second, different schema under the same name is refused and logged; the first one stays. |
@@ -173,7 +176,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (67)
+### hBilling (84)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -189,30 +192,43 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_bump_paused_reset()` | Forget the remembered free-bump answers, so the next check reads the database. |
 | `osc_billing_buy_url()` | Buy credits: packages plus the configured payment methods. |
 | `osc_billing_can_buy()` | Whether buying credits leads anywhere: a payment method is on and a package is for sale. Gateways are preference reads, so they gate the packages query. |
+| `osc_billing_cod_enabled()` | Whether cash on delivery is offered at checkout. |
+| `osc_billing_cod_fee()` | The fee added to a cash on delivery order, in micros. |
 | `osc_billing_currency()` | ISO 4217 code credits are priced in, always upper-case. |
 | `osc_billing_feature(string $id)` | A registered billing feature by id, or null when nothing is registered under it. |
 | `osc_billing_features()` | Every registered billing feature, keyed by id. |
 | `osc_billing_free_live_listings()` | Free listing slots: how many of a seller's listings may be live (published, not yet expired -- see EntitlementStore::liveListings()) at once before a listing.slot entitlement is needed. 0 = unlimited, which is also what an unset preference reads as -- an upgraded install stays unlimited. |
+| `osc_billing_free_over()` | Subtotal from which delivery is free, in micros. 0 = never. |
 | `osc_billing_gateway_name(string $gatewayId)` | The gateway's display name for an order list, falling back to the stored id when the plugin that took the payment is no longer installed. |
+| `osc_billing_gateway_setup_url($gateway)` | Where an admin sets a payment method up, or '' when the gateway does not say. A gateway names it with an optional settingsUrl(): ?string method; one without it has no link. |
 | `osc_billing_highlight_credits()` | Credit price of highlighting a listing. |
 | `osc_billing_highlight_days()` | Days a highlight runs for. |
 | `osc_billing_highlight_enabled()` | Whether highlighting is registered as a purchasable upgrade at all. |
+| `osc_billing_hold_days()` | Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled, and days a listing saved over the limit waits for payment before it is deleted. |
+| `osc_billing_next_listing_quote(?int $userId = null)` | What the next listing costs $userId when it goes live: the extra slots it needs, their credits, the balance and the shortfall. All zeros when billing is off or nobody is signed in. The post form, the slot box and the listing rows read it. |
 | `osc_billing_no_wait_credits()` | Credit price of waiving the flood wait. |
 | `osc_billing_no_wait_days()` | Days the waiver holds once bought. |
 | `osc_billing_no_wait_enabled()` | Whether waiving the flood wait is registered as a purchasable limit at all. |
 | `osc_billing_offline_enabled()` | Whether the bundled bank-transfer gateway is switched on. |
 | `osc_billing_offline_instructions()` | Admin-authored payment instructions shown on the offline checkout screen. |
+| `osc_billing_open_hold_orders()` | Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit. |
+| `osc_billing_order_number(int $orderId)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
+| `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
+| `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
 | `osc_billing_packages()` | The packages a buyer can choose from at checkout. |
+| `osc_billing_pay_at_post()` | Whether a listing over the free limit is held until its slot is paid, instead of refused. Needs billing and slot sales on; the billing_pay_at_post preference defaults to on. Set on the admin Billing &gt; Pricing screen. |
 | `osc_billing_photos_credits()` | Credit price of the raised photo cap. |
 | `osc_billing_photos_enabled()` | Whether raising a seller's photo cap is registered as a purchasable limit at all. |
 | `osc_billing_photos_quantity()` | Photo cap granted while the entitlement is held. |
 | `osc_billing_premium_credits()` | Credit price of featuring a listing. 0 with billing_premium_enabled on means free, not off. |
 | `osc_billing_premium_days()` | Days a featured listing runs for. (int) '' is 0, so an unset preference defaults to 30. |
 | `osc_billing_premium_enabled()` | Whether featuring a listing is registered as a purchasable feature at all. |
+| `osc_billing_publish_url(int $itemId)` | The pay step for a held listing: the page where the seller pays for it and it goes live. |
 | `osc_billing_runtime_credits()` | Credit price of the extra runtime. |
 | `osc_billing_runtime_days()` | Extra days over the category ceiling granted while the entitlement is held. |
 | `osc_billing_runtime_enabled()` | Whether extra listing runtime is registered as a purchasable limit at all. |
+| `osc_billing_shipping_flat()` | Core's flat delivery charge for goods orders, in micros. 0 = free. |
 | `osc_billing_slot_credits()` | Credit price of one listing.slot purchase. 0 with billing_slot_enabled on means free. |
 | `osc_billing_slot_enabled()` | Whether buying an extra listing slot is registered as a purchasable feature at all. |
 | `osc_billing_slot_quantity()` | Slots granted per listing.slot purchase. |
@@ -220,7 +236,9 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_urgent_credits()` | Credit price of marking a listing urgent. |
 | `osc_billing_urgent_days()` | Days an urgent mark runs for. |
 | `osc_billing_urgent_enabled()` | Whether marking a listing urgent is registered as a purchasable upgrade at all. |
+| `osc_billing_user_order_count(int $userId, array $statuses)` | How many goods orders the user has in these statuses, e.g. a promotion's first-order check with array('pending', 'paid', 'shipped', 'delivered'). Credits orders are not counted. |
 | `osc_billing_wallet_url()` | Balance and ledger history. Rewritten like every other account route when the site has rewriting on (rewrite_billing_wallet, 'user/credits' by default); the query-string form still resolves either way, so links already out there keep working. |
+| `osc_cart_saved(int $userId)` | A signed-in shopper's saved cart: `{variant, qty}` lines, no prices. Empty for a guest. |
 | `osc_item_can_be_featured(?array $item = null)` | Whether a listing is eligible to be featured for credits: billing switched on, featuring itself switched on, and the listing not already featured. A price of 0 with billing_premium_enabled on means every seller can feature for free -- it does not mean unavailable. |
 | `osc_item_can_bump(?array $item = null)` | Whether an item may be bumped right now: bump is switched on, the item belongs to the logged-in user, and there is no live cooldown row. Bump has no state of its own beyond that row -- the cooldown IS the row's expiry, not a second concept. |
 | `osc_item_extra_runtime_days(?int $userId = null)` | Extra days $userId may run a listing beyond its category's expiration ceiling, raised by a listing.runtime entitlement. 0 (not osc_items_wait_time_for_user()'s "no preference to fall back to") when billing is off, no user is known, or the user holds nothing -- there is no old global preference this one overrides, so 0 is simply "no extra". -1 means unlimited extra runtime; treat it that way, never compare it numerically. |
@@ -235,6 +253,8 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_items_wait_time_for_user(?int $userId = null)` | Seconds $userId must wait between posts -- 0 while a listing.no_wait entitlement is held, osc_items_wait_time() otherwise. Defaults to osc_logged_user_id(). Guests (no user id) always read the global wait: this is an anti-flood control and anonymous posting has no entitlements to check. |
 | `osc_listing_limit_message(?int $userId = null, array $item = array())` | The message a seller is shown at their listing limit, in the one wording the post form and the submit path both use. $item carries the listing being posted where there is one (the submit path), and is empty where there is not (opening the form). |
 | `osc_max_images_for_user(?int $userId = null)` | The photo cap in force for $userId, raised by a listing.photos entitlement. Defaults to osc_logged_user_id(). -1 means unlimited -- treat it that way, never compare it numerically. Falls back to osc_max_images_per_item() (where 0, not -1, is that helper's own "unlimited") whenever billing is off, no user is known, or the user holds nothing. |
+| `osc_order_bought(int $userId, int $itemId)` | Whether the user has a paid, shipped or delivered order with this listing on it. |
+| `osc_order_lines(int $orderId)` | The lines of one order: {id, order_id, kind, item_id, variant_id, title, options, sku, qty, unit, amount, meta}, amounts in micros. Empty for a credits order. |
 | `osc_prime_item_upgrades(array $items)` | Batch-load item-upgrade state for $items into the request cache ItemUpgradeStore::prime() fills, so osc_item_upgrades()/osc_item_is_highlighted()/ osc_item_is_urgent() called inside a listing loop cost one query for the whole page rather than one per card. Call this where a result set is built (core already does, for search/category/home); a theme working a custom loop can call it too. |
 | `osc_register_billing_feature(string $id, array $spec)` | Register a feature so credits can be spent on it. Thin wrapper over FeatureRegistry::register() -- see that method for the $spec shape. |
 | `osc_register_billing_item_upgrades()` | Register the three built-in item upgrades, each gated on its own *_enabled preference so a disabled upgrade is not merely unpriced but absent from the registry entirely. Called once below, and callable again by anything that changes those preferences without a fresh request (the admin settings save). |
@@ -245,7 +265,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_credits(?int $userId = null)` | A user's credit balance -- the logged-in buyer's own by default. Callers that pass $userId explicitly must own that decision themselves; the wallet page never does, so it can only ever read osc_logged_user_id()'s balance. |
 | `osc_user_listing_limit(?int $userId = null)` | How many listings $userId may hold live at once. -1 means unlimited -- treat it that way, never compare it numerically -- which is what billing being off, an unknown user, or a site that never set a cap all read back. Defaults to osc_logged_user_id(). |
 | `osc_user_listings_remaining(?int $userId = null)` | Listings $userId may still publish before hitting the ceiling. -1 means unlimited, the same sentinel osc_user_listing_limit() uses; otherwise never below 0, so a seller already over the line reads back 0 rather than a negative. |
-| `osc_user_listings_used(?int $userId = null)` | How many live listings $userId currently holds -- what osc_user_listing_limit() is spent against. Counts listings awaiting moderation and admin-disabled ones too (see EntitlementStore::liveListings()), so it matches the gate rather than what is publicly visible. 0 while billing is off or no user is known. |
+| `osc_user_listings_used(?int $userId = null)` | How many live listings $userId currently holds -- what osc_user_listing_limit() is spent against. Counts listings awaiting moderation and admin-disabled ones too (see EntitlementStore::liveListings()), so it matches the gate rather than what is publicly visible. Held (unpaid) listings are not counted. 0 while billing is off or no user is known. |
 
 ### hCache (17)
 
@@ -504,7 +524,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (118)
+### hItems (121)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -571,6 +591,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_is_inactive()` | Gets if current item is inactive |
 | `osc_item_is_premium()` | Gets true if current item is marked premium, else return false |
 | `osc_item_is_spam()` | Gets if item is marked as spam |
+| `osc_item_is_unpaid()` | Whether the current item is held, waiting for its owner to pay before it goes live. |
 | `osc_item_latitude()` | Gets latitude of current item |
 | `osc_item_link_bad_category()` | Retrun link for mark as bad category the current item. |
 | `osc_item_link_expired()` | Gets link for mark as expired the current item |
@@ -600,6 +621,8 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_list_items_per_page()` | Gets number of items per page for current pagination |
 | `osc_list_page()` | Current page of the search pagination. |
 | `osc_list_total_pages()` | Total number of pages in the search pagination. |
+| `osc_listing_row_unpaid_actions($actions, $item, $context = '')` | Gives a held listing a Publish link to the pay step and takes away its upgrade links. |
+| `osc_listing_row_unpaid_badge($badges, $item, $context = '')` | Marks a held listing in the seller's own list. |
 | `osc_priv_count_item_resources()` | **Deprecated since 2.4.** Gets number of item resources |
 | `osc_priv_count_items()` | **Deprecated since 2.4.** Gets number of items |
 | `osc_query_item($params = null)` | Perform a search based on custom filters and conditions export the results to a variable to be able to manage it from custom_items' helpers |
@@ -651,7 +674,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_job_stats(?string $type = null)` | Pending, running and failed counts, when the oldest pending job was created, and how many pending jobs are due now and since when. |
 | `osc_job_summary()` | Jobs per status as status =&gt; count, with every status present. |
 
-### hKv (5)
+### hKv (7)
 
 `oc-includes/osclass/helpers/hKv.php`
 
@@ -661,6 +684,8 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_kv_delete(string $group, string $key)` | Remove a key. |
 | `osc_kv_delete_group(string $group)` | Remove every key of a group, e.g. a plugin's own when it is uninstalled. |
 | `osc_kv_get(string $group, string $key, $default = null)` | Read a key. |
+| `osc_kv_increment(string $group, string $key, int $by = 1, ?int $ttl = null)` | Add to a counter in one statement and return its new value. An absent or expired key starts from 0; the value never goes below 0, so a negative $by takes back at most what is there. osc_kv_get() reads it as an int. |
+| `osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null)` | One page of a group's live keys, in key order. Pass the last key of a page as $afterKey for the next. A row never rewritten counts as updated when it was created. |
 | `osc_kv_set(string $group, string $key, $value, ?int $ttl = null)` | Write a key, replacing any value, state and expiry it had. |
 
 ### hLocale (20)
@@ -838,7 +863,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (134)
+### hPreference (135)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -952,6 +977,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_save_webp()` | Whether new photos are stored as WebP. Only when the server can write WebP. |
 | `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not |
 | `osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')` | generic function to insert/update preferences |
+| `osc_site_mode()` | What the site is for: 'classifieds' (the default) or 'shop'. |
 | `osc_subdomain_host()` | Return subdomain host |
 | `osc_subdomain_type()` | Return subdomain type |
 | `osc_theme()` | Gets current theme |
@@ -1033,7 +1059,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_priv_count_premiums()` | Gets number of premiums |
 | `osc_reset_premiums()` | Set the internal pointer of array premiums to its first element, and return it. |
 
-### hResources (7)
+### hResources (8)
 
 `oc-includes/osclass/helpers/hResources.php`
 
@@ -1045,6 +1071,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_media_owner_types()` | Distinct, well-formed owner types currently present in t_resource, listing photos left out. |
 | `osc_media_row_urls(array $row)` | The thumbnail and full URLs for a normalised media row (see osc_media_library_query). Uses the storage-aware osc_get_resource_url so offloaded files resolve correctly. |
 | `osc_resource_owner_exists(string $ownerType, int $ownerId)` | Whether the owner record a resource points at still exists. |
+| `osc_setting_resource_in_use(array $row)` | Whether a settings image is still wanted: a preference holds its id (or the id it was renumbered from), or a customiser draft, which lives seven days, names it. When unsure it says yes, so nothing in use is swept. |
 | `osc_sweep_orphan_resources()` | Walk t_resource and delete resources whose owner no longer exists. |
 
 ### hSanitize (11)
@@ -1284,7 +1311,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (62)
+### hUsers (65)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
@@ -1305,6 +1332,7 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_has_alerts()` | Gets next alert if there is, else return null |
 | `osc_has_user_avatar(?int $userId = null)` | Whether a user has an uploaded avatar. |
 | `osc_is_admin_user_logged_in()` | Gets true if admin user is logged in |
+| `osc_is_shopper()` | True for a shopper: a signed-in user, with no admin session, on a site in shop mode. |
 | `osc_is_web_user_logged_in()` | Gets true if user is logged in web |
 | `osc_logged_admin_email()` | Gets logged admin email |
 | `osc_logged_admin_id()` | Gets logged admin id |
@@ -1318,6 +1346,8 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_reset_users()` | Rewinds the user loop, so osc_prepare_user_info() can be read again. |
 | `osc_resolve_web_user()` | Resolve the current front-end user for this request, or null. |
 | `osc_run_web_user_identity()` | Resolve front-end identity early in the bootstrap so the historical Session::_get('userId') readers see a cookie-authenticated user even before any osc_is_web_user_logged_in() call. No-op — and no session, no DB query — for an anonymous, cookieless visitor, which keeps such requests cacheable. |
+| `osc_shopper_page_hidden(string $page, string $action)` | Whether a page is a seller page a shopper does not get. |
+| `osc_shopper_user_menu($options)` | The account menu for a shopper: seller entries dropped and "Your orders" added when no one else added it. Every other visitor gets the list untouched. |
 | `osc_total_users($condition = '')` | Gets number of users |
 | `osc_user()` | Gets user array from view |
 | `osc_user_access_date()` | Gets last access date |
@@ -1442,12 +1472,20 @@ Core defines 1177 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_render_item_view_beacon()` | Emit the beacon &lt;script&gt; at the end of the listing detail page. CWebItem sets $GLOBALS['osc_view_beacon_item_id'] only while rendering a public listing detail with the beacon enabled, so this fires there and nowhere else. It is baked into the cached HTML, so it runs for every visitor of the cached page and reports one view per real browser load. sendBeacon is fire-and-forget and survives page unload; fetch(keepalive) is the fallback. |
 | `osc_view_beacon_suppress_render_count($countsAsView, $item = null)` | Suppress the render-time view increment when the beacon owns counting, so a cached page and the beacon never both count (and a no-JS bot is not counted at render while a human is counted by the beacon). Filters `count_view_on_render`, whose value is otherwise osc_request_counts_as_view(). |
 
-### hWidgets (4)
+### hWidgets (12)
 
 `oc-includes/osclass/helpers/hWidgets.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_customiser_draft_value(string $page, string $name)` | The drafted value of one look setting while previewing, or null outside a preview or when that setting is not drafted. |
+| `osc_customiser_preview()` | Whether this request renders the signed-in admin's customiser draft. |
+| `osc_customiser_preview_draft()` | The draft this request previews, or null. A public page previews only with ?osc_preview=1 and a signed-in admin, never in the admin or the API. With no draft saved for the theme being shown it previews an empty draft, so the published page still answers the customiser. Read once per request. |
+| `osc_customiser_preview_headers()` | Headers a preview response carries, or none outside a preview. |
+| `osc_customiser_preview_rows(string $location)` | The drafted rows of one location as t_widget rows, or null when it is not drafted or this is not a preview. An unsaved row has pk_i_id 0; s_key is the id, or the draft key of an unsaved row, for the theme's data-sec attribute. |
+| `osc_customiser_preview_start()` | On a preview request: keep the page out of every cache and out of search results. |
+| `osc_customiser_preview_url(string $location = 'home')` | The preview address of a customisable location, with osc_preview=1, or '' when the theme does not let that location be customised. |
+| `osc_customiser_spec()` | What the active theme lets the owner customise, checked; null when it declares nothing usable. |
 | `osc_register_widget($id, $spec)` | Register a widget type so it can be placed from the admin appearance screen and rendered on the front end. Thin wrapper over WidgetRegistry::register(). |
 | `osc_render_widget($widgetRow)` | Render a single widget row. |
 | `osc_widget_locations()` | The widget sections the active theme offers, in the order it offers them: slug =&gt; array('label' =&gt; string, 'description' =&gt; string). |

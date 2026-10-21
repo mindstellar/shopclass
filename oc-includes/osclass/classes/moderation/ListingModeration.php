@@ -17,6 +17,7 @@ use mindstellar\database\Db;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
+use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStore;
 use mindstellar\listing\SavedListing;
@@ -78,7 +79,7 @@ final class ListingModeration
         if (!isset(self::ACTIONS[$action])) {
             throw new \LogicException('Unknown listing action ' . $action . '.');
         }
-        $row = ListingStore::find($id, ['pk_i_id', 'b_active', 'b_enabled', 'b_spam', 'b_premium']);
+        $row = ListingStore::find($id, ['pk_i_id', 'b_active', 'b_enabled', 'b_spam', 'b_premium', 'dt_first_pub_date']);
         if ($row === null) {
             throw new NotFoundException(_m('No such listing.'));
         }
@@ -118,7 +119,7 @@ final class ListingModeration
      */
     public function applyFlags(int $id, array $flags, int $adminId, string $note): array
     {
-        $row = ListingStore::find($id, ['pk_i_id', 'b_active', 'b_enabled', 'b_spam', 'b_premium']);
+        $row = ListingStore::find($id, ['pk_i_id', 'b_active', 'b_enabled', 'b_spam', 'b_premium', 'dt_first_pub_date']);
         if ($row === null) {
             throw new NotFoundException(_m('No such listing.'));
         }
@@ -174,10 +175,13 @@ final class ListingModeration
      * @param array<string,string> $row the listing's status columns
      *
      * @return bool|null null when there is nothing to do, false when the write failed
-     * @throws ConflictException when activating a blocked listing
+     * @throws ConflictException when activating a blocked listing, or changing a held one
      */
     private static function change(string $action, int $id, array $row, ListingService $listings, string $at): ?bool
     {
+        if (in_array($action, ['activate', 'enable', 'bump'], true) && ListingHoldJobs::holds($id, $row)) {
+            throw new ConflictException(_m('The listing is waiting for payment. Publish it instead.'));
+        }
         $is = static fn (string $column, int $value): bool => (int) $row[$column] === $value;
 
         return match ($action) {

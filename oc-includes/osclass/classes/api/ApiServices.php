@@ -44,6 +44,7 @@ use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\api\serializer\Extensions;
 use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ListingSerializer;
+use mindstellar\api\serializer\PageSerializer;
 use mindstellar\api\serializer\SiteLinks;
 use mindstellar\api\serializer\SparseFieldset;
 use mindstellar\api\serializer\UserSerializer;
@@ -71,6 +72,7 @@ use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoRoom;
 use mindstellar\location\LocationQuery;
 use mindstellar\moderation\ListingModeration;
+use mindstellar\pages\PageQuery;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\Clock;
@@ -527,6 +529,32 @@ final class ApiServices
     public function locationQuery(): LocationQuery
     {
         return $this->once(__FUNCTION__, static fn (): LocationQuery => new LocationQuery());
+    }
+
+    public function pageQuery(): PageQuery
+    {
+        return $this->once(__FUNCTION__, static fn (): PageQuery => new PageQuery());
+    }
+
+    public function pageSerializer(): PageSerializer
+    {
+        return $this->once(__FUNCTION__, fn (): PageSerializer => new PageSerializer($this->facts()->defaultLocale(), \Closure::fromCallable([PageSerializer::class, 'siteUrl'])));
+    }
+
+    /**
+     * A live page as the API shows it, with its texts per language.
+     *
+     * @return array{0:array<string,mixed>,1:array<string,array<string,mixed>>} the serialised page and its texts
+     *
+     * @throws ProblemException 404 when the page does not exist or is not public
+     */
+    public function page(string $id, string $locale): array
+    {
+        $query = $this->pageQuery();
+        $row   = ProblemException::found($query->find($id), 'page');
+        $texts = $query->texts([(int) $row['pk_i_id']])[(int) $row['pk_i_id']] ?? [];
+
+        return [ProblemException::found($this->pageSerializer()->one($row, $texts, $locale), 'page'), $texts];
     }
 
     public function currencies(): CurrencyService

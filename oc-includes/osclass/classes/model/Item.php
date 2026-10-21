@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\listing\ListingStatus;
 
 /**
  * Model database for Item table
@@ -67,6 +68,45 @@ class Item extends DAO
     public static function newInstance()
     {
         return self::getInstance();
+    }
+
+    /**
+     * A row inserted without dt_first_pub_date gets its publish date there, so it never reads
+     * as a listing waiting for payment. Only ListingService writes that column as NULL.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return bool
+     */
+    public function insert($values)
+    {
+        return parent::insert(self::withFirstPubDate($values));
+    }
+
+    /**
+     * As insert(), returning the new id.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return int the new row's id, or 0 when the insert wrote no row
+     */
+    public function insertGetId($values)
+    {
+        return parent::insertGetId(self::withFirstPubDate($values));
+    }
+
+    /**
+     * @param array<string,mixed> $values
+     *
+     * @return array<string,mixed>
+     */
+    private static function withFirstPubDate(array $values): array
+    {
+        if (!array_key_exists('dt_first_pub_date', $values)) {
+            $values['dt_first_pub_date'] = $values['dt_pub_date'] ?? date('Y-m-d H:i:s');
+        }
+
+        return $values;
     }
 
     /**
@@ -726,6 +766,11 @@ class Item extends DAO
         switch ($itemType) {
             case 'blocked':
                 $this->addWhereByOptions(['DISABLED'], $conditions, $params);
+                $this->pushWhere($conditions, $params, 'NOT ' . ListingStatus::heldSql('i.'));
+
+                return;
+            case 'unpaid':
+                $this->pushWhere($conditions, $params, ListingStatus::heldSql('i.'));
 
                 return;
             case 'active':
@@ -745,6 +790,7 @@ class Item extends DAO
             case 'pending':
             case 'pending_validate':
                 $this->addWhereByOptions(['INACTIVE'], $conditions, $params);
+                $this->pushWhere($conditions, $params, 'NOT ' . ListingStatus::heldSql('i.'));
 
                 return;
             case 'premium':
@@ -1255,7 +1301,7 @@ class Item extends DAO
         // stranding it with none.
         $resources = ItemResource::getInstance()->getAllResourcesFromItem($id);
 
-        // t_item_moderation_log, t_item_report_log and the photos in t_resource carry no
+        // t_item_moderation_log, t_item_report_log, t_item_variant and the photos in t_resource carry no
         // foreign key to the item, so only this removes them. t_item_comment is RESTRICT
         // and must go first; the rest cascade, and stay listed for installs whose foreign
         // keys were never created.
@@ -1267,6 +1313,7 @@ class Item extends DAO
             't_item_meta',
             't_item_moderation_log',
             't_item_report_log',
+            't_item_variant',
         );
 
         try {
@@ -1275,6 +1322,7 @@ class Item extends DAO
                     Db::table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
                 }
                 Db::table(DB_TABLE_PREFIX . 't_resource')->where('s_owner_type', ItemResource::OWNER)->where('i_owner_id', $id)->delete();
+                \mindstellar\listing\ListingHoldJobs::cancel((int) $id);
 
                 // Not parent::deleteByPrimaryKey(): the inherited DAO reports a failed
                 // delete by returning false rather than raising, and a plain return

@@ -32,6 +32,16 @@
   display: block;
 }
 
+// A hint that is a caution (osc_admin_field_help with 'help_tone' => 'warning').
+.help-box--warning {
+  color: var(--osc-warning-deep);
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}
+
 // The words either side of a field. Labels, not spans: they name the control they sit
 // against, and the row's own label column is often a category rather than a name.
 .field-prefix,
@@ -39,6 +49,12 @@
   color: var(--osc-ink-muted);
   cursor: pointer;
   white-space: nowrap;
+
+  // A long sentence around a field must wrap on a phone, not push the page sideways.
+  @media (max-width: 575.98px) {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
 }
 
 // Three widths, tied to meaning: a number, prose, a long opaque token.
@@ -167,6 +183,16 @@ select.field-select {
   max-block-size: 6rem;
   max-inline-size: 100%;
   padding: .25rem;
+}
+
+// An image made for one scheme, such as a logo for dark headers, is shown on that scheme's
+// background whatever the admin's own scheme is. The field sets data-surface in its attrs.
+.field-image:has(> input[data-surface="light"]) .field-image-preview {
+  background: var(--bs-white);
+}
+
+.field-image:has(> input[data-surface="dark"]) .field-image-preview {
+  background: var(--bs-dark);
 }
 
 // The free-text half of a "Custom: [____]" choice, sized to sit on the option's own line.

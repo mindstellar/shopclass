@@ -1,5 +1,7 @@
 function osc_api_admin_session_meta(): string
+function osc_api_call(string $method, string $path, array $query = [], array $body = []): array
 function osc_api_enabled(): bool
+function osc_api_get(string $path, array $query = []): array
 function osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ["public"]): void
 function osc_api_register_route(string $method, string $path, array $spec): void
 function osc_api_register_schema(string $slug, string $name, array $schema): array
@@ -24,6 +26,7 @@ mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
 mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array
 mindstellar\api\ApiKit::public listingContext(mindstellar\api\ApiCall $call): mindstellar\api\serializer\ViewContext
 mindstellar\api\ApiKit::public listingsById(mindstellar\api\ApiCall $call, array $ids, mindstellar\api\serializer\ViewContext $context): array
+mindstellar\api\Problem code already_reviewed = 409
 mindstellar\api\Problem code api_disabled = 403
 mindstellar\api\Problem code banned = 403
 mindstellar\api\Problem code conflict = 409
@@ -32,6 +35,7 @@ mindstellar\api\Problem code feature_disabled = 403
 mindstellar\api\Problem code forbidden = 403
 mindstellar\api\Problem code idempotency_in_flight = 409
 mindstellar\api\Problem code idempotency_key_reused = 422
+mindstellar\api\Problem code insufficient_credits = 422
 mindstellar\api\Problem code insufficient_scope = 403
 mindstellar\api\Problem code invalid_cursor = 400
 mindstellar\api\Problem code invalid_grant = 400
@@ -45,6 +49,7 @@ mindstellar\api\Problem code maintenance = 503
 mindstellar\api\Problem code method_not_allowed = 405
 mindstellar\api\Problem code not_found = 404
 mindstellar\api\Problem code not_owner = 403
+mindstellar\api\Problem code page_too_deep = 422
 mindstellar\api\Problem code precondition_failed = 412
 mindstellar\api\Problem code rate_limited = 429
 mindstellar\api\Problem code server_error = 500
@@ -57,7 +62,7 @@ mindstellar\api\Problem code unsupported_grant_type = 400
 mindstellar\api\Problem code unsupported_media_type = 415
 mindstellar\api\Problem code validation_failed = 422
 mindstellar\api\Problem code wrong_credential = 403
-mindstellar\api\Problem::FIELD_CODES = ["type","enum","minimum","maximum","minLength","maxLength","pattern","format","minItems","maxItems","minProperties","required","additionalProperties","invalid","unknown","taken","mismatch","limit","rejected"]
+mindstellar\api\Problem::FIELD_CODES = ["type","enum","minimum","maximum","minLength","maxLength","pattern","format","minItems","maxItems","minProperties","required","additionalProperties","invalid","unknown","taken","mismatch","limit","rejected","out_of_stock","not_buyable","unavailable","too_many_open"]
 mindstellar\api\Problem::PLUGIN_CODE = "/^ext_[a-z0-9]+(?:_[a-z0-9]+)+$/D"
 mindstellar\api\Problem::TYPE_BASE = "https://mindstellar.com/docs/developers/api/errors/#"
 mindstellar\api\Problem::public static make(string $code, string $detail = '', array $extra = []): mindstellar\api\Response
@@ -103,10 +108,11 @@ mindstellar\api\RouteSpec::public method(): string
 mindstellar\api\RouteSpec::public path(): string
 mindstellar\api\RouteSpec::public plugin(): ?string
 mindstellar\api\RouteSpec::public scope(): ?string
-mindstellar\api\Warning::CODES = ["listing_pending","photo_skipped","comment_pending","email_confirmation_sent"]
+mindstellar\api\Warning::CODES = ["listing_pending","photo_skipped","comment_pending","email_confirmation_sent","listing_unpaid"]
 mindstellar\api\Warning::COMMENT_PENDING = "comment_pending"
 mindstellar\api\Warning::EMAIL_CONFIRMATION_SENT = "email_confirmation_sent"
 mindstellar\api\Warning::LISTING_PENDING = "listing_pending"
+mindstellar\api\Warning::LISTING_UNPAID = "listing_unpaid"
 mindstellar\api\Warning::PHOTO_SKIPPED = "photo_skipped"
 mindstellar\api\Warning::public static member(array $warnings): array
 mindstellar\api\read\Page::public static whole(array $items, mindstellar\api\serializer\Links $links, mindstellar\api\ApiCall $call): mindstellar\api\Response

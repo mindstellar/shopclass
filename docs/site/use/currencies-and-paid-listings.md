@@ -48,6 +48,30 @@ payment instructions and settle each order by hand once the money arrives, with
 no card processor or API keys involved. Right for a local site with a handful of
 paying sellers.
 
+**Cash on delivery** is built in too. Switch it on under **Settings → Billing → Shop**,
+with an optional fee added to the order. The buyer pays the courier: ship the order
+unpaid, and marking it delivered marks it paid. An unshipped order left unpaid is
+cancelled after **Cancel unpaid orders after (days)** (Settings → Billing → Shop).
+
+### Selling goods
+
+The **Shop** tab holds the settings a goods checkout needs:
+
+- **Delivery charge** and **Free delivery from**: one "Standard delivery" method at a
+  flat charge, free once the order reaches the amount (0 means never).
+- **Cash on delivery** and its fee.
+- **Cancel unpaid orders after (days)**: bank transfer and cash on delivery orders keep
+  their stock from the moment they are placed. Left unpaid this long (7 days by default),
+  they are cancelled once a day and the stock goes back on sale.
+- **Open unpaid orders per buyer**: the most bank transfer and cash on delivery orders one
+  buyer may hold unpaid at once (3 by default, 0 for no limit). Past it, checkout asks them to
+  pay for or cancel an open order first.
+- **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`.
+
+A card payment takes the stock when the payment comes in. If two buyers pay for the last
+one at the same moment, the second order is still paid and is marked oversold for you to
+sort out.
+
 **Test Payments** is a bundled plugin for trying the flow out. Its checkout page
 lets you choose **Pay**, **Decline**, **Leave pending** or **Fail**, and each one
 drives the real billing callback, so you can see an order succeed, hang or fail
@@ -112,6 +136,21 @@ invoice.
 If the e-mail cannot be sent, it waits on the background queue and is tried again.
 A buyer gets one receipt per order.
 
+### Selling goods: order mails and fulfilment
+
+A paid goods order sends the buyer one confirmation with every item, the delivery
+address and the delivery method, and sends you a "New order" mail. A bank transfer or
+cash on delivery order sends both at once, before payment, and the confirmation when you
+mark it paid. If a mail cannot be sent, it waits on the background queue and is tried
+again.
+
+Open an order in **Billing → Orders** to see its items, address and buyer. If stock ran
+out after the order was paid, an **Oversold** note lists the short items. Use **Mark
+shipped** (carrier, tracking number and an optional https tracking link) and **Mark
+delivered** to move it along; the buyer is e-mailed when it ships. **Cancel order** closes
+an order that is not paid yet. **To ship** at the top of the list shows paid orders that
+have not shipped.
+
 ### Seller limits
 
 **Free listings per seller** and the **photo cap** set what sellers get for
@@ -119,6 +158,14 @@ nothing. These are what make the upgrades worth buying: with unlimited free
 listings and no photo cap, nobody needs extra slots or extra photos.
 
 Set the free allowance to what a casual seller needs and a dealer does not.
+
+**Take payment at the end of posting** (Settings → Billing → Pricing, on by default
+when extra slots are for sale). A seller over the limit fills in the whole form, the
+listing is saved hidden as **Waiting for payment**, and they pay on the last step with
+credits or a package. It is deleted after **Cancel unpaid orders after (days)** (Settings → Billing → Shop) if they never pay, and they
+get a reminder e-mail a day before (edit it in Settings → Emails). Turn the switch off
+and an over-limit seller is stopped at the form. In **Listings**, filter by Waiting for
+payment, and use **Publish without payment** to put one live free.
 
 ### Before charging anyone
 

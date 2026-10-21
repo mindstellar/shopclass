@@ -45,4 +45,62 @@ final class PageQuery
             Db::table(DB_TABLE_PREFIX . 't_pages')->select('s_internal_name')->like('s_internal_name', $prefix, 'after')->get()
         );
     }
+
+    /**
+     * The public pages shown as links, in display order. System pages such as e-mail
+     * templates are never read.
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function linked(): array
+    {
+        return Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_pages')
+                ->where('b_indelible', 0)
+                ->where('b_link', 1)
+                ->orderBy('i_order', 'ASC')
+                ->orderBy('pk_i_id', 'ASC')
+                ->get()
+        );
+    }
+
+    /**
+     * One public page by id (all digits) or by internal name, linked or not.
+     *
+     * @return array<string,mixed>|null
+     * @throws \mindstellar\database\DbException
+     */
+    public function find(string $idOrSlug): ?array
+    {
+        if ($idOrSlug === '') {
+            return null;
+        }
+        $query = Db::table(DB_TABLE_PREFIX . 't_pages')->where('b_indelible', 0);
+        $query = ctype_digit($idOrSlug) ? $query->where('pk_i_id', (int) $idOrSlug) : $query->where('s_internal_name', $idOrSlug);
+        $row   = $query->first();
+
+        return $row === null ? null : Db::stringifyRow($row);
+    }
+
+    /**
+     * The texts of pages, by page id and then locale code.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,array<string,mixed>>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function texts(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $out = [];
+        foreach (Db::stringifyRows(Db::table(DB_TABLE_PREFIX . 't_pages_description')->whereIn('fk_i_pages_id', $ids)->get()) as $row) {
+            $out[(int) $row['fk_i_pages_id']][(string) $row['fk_c_locale_code']] = $row;
+        }
+
+        return $out;
+    }
 }

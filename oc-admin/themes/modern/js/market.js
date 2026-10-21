@@ -532,15 +532,14 @@
             dScreensNext.hidden = !multi;
         }
 
-        // A package with no real screenshots still shows a single "slide" \u2014 the same
-        // placeholder/icon tile already cloned into .market-detail-thumb \u2014 rather than an
-        // empty strip, so the dialog never implies artwork exists when it does not.
+        // A theme with no real screenshots still shows its placeholder as one slide. A plugin
+        // does not: its icon is already the header tile, so no stage is drawn.
         function setScreenshots(list, placeholderNode) {
             if (list && list.length) {
                 screenState.items = list.map(function (shot) {
                     return { src: shot.src, caption: shot.caption || '' };
                 });
-            } else if (placeholderNode) {
+            } else if (placeholderNode && !dialog.classList.contains('market-detail-dialog--plugin')) {
                 screenState.items = [{ node: placeholderNode, caption: '' }];
             } else {
                 screenState.items = [];

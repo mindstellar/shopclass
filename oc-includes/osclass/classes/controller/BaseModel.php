@@ -108,6 +108,16 @@ abstract class BaseModel
     }
 
     /**
+     * Send a shopper away from a seller page to the dashboard; see osc_shopper_page_hidden().
+     */
+    protected function redirectShopperHome(): void
+    {
+        if (osc_is_shopper() && osc_shopper_page_hidden((string) $this->page, (string) $this->action)) {
+            $this->redirectTo(osc_user_dashboard_url());
+        }
+    }
+
+    /**
      * Maps the request's subdomain onto a search/user parameter, or 404s when it resolves to nothing.
      *
      * @param string $host request host, without the port

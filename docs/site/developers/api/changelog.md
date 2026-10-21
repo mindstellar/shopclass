@@ -75,6 +75,36 @@ None.
 
 ## Changes
 
+### v1: pay at the end of posting
+
+Added to v1 on 2026-10-19.
+
+- A listing can be `unpaid`, in `Listing.status` and in the `status` filter of `GET /account/listings` and `GET /admin/listings`. `POST /listings` may answer `201` with that status, the `listing_unpaid` warning and a `payment` member.
+- `POST /listings/{id}/publish` publishes it with credits, or with `{package, gateway}` starts an order and answers `order` and `next`. `POST /admin/listings/{id}/publish` publishes without payment.
+- New error `insufficient_credits` (`422`, with `payment`) and new warning `listing_unpaid`.
+- `listing.created` is sent when a listing that waited for payment goes live.
+- The site document's `mode` is `classifieds` or `shop`; `both` is gone.
+
+### v1: cart quote and orders
+
+Added to v1.
+
+- `GET /cart/quote?lines=variant:qty,…`: a cart priced on the server with delivery, fees, totals and the payment methods on offer. Needs no sign-in.
+- `POST /account/orders`, `GET /account/orders`, `GET /account/orders/{id}`, `POST /account/orders/{id}/pay` and `POST /account/orders/{id}/cancel`, with the scopes `orders:read` and `orders:write`.
+- `GET /account/cart` and `PUT /account/cart`: the signed-in shopper's saved cart, with the scopes `cart:read` and `cart:write`.
+- New field error codes `out_of_stock`, `not_buyable`, `unavailable` and `too_many_open`.
+
+### v1: pages, menus, SEO and products
+
+Added to v1.
+
+- `GET /pages`, `GET /pages/{id|name}` and `GET /menus`: linked pages, one page with its text, and the site menus (`main`, `footer`). A plugin adds or edits menus with the `api_menus` filter. All take `locale`.
+- `GET /seo?for=home|listing|category|page|search`: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph. A hidden or unknown target is a 404.
+- The site document carries `mode` and `features.shop`. In shop mode `POST /listings` answers `403 feature_disabled`.
+- A listing has a `product` member with its `variants` (SKU, price, stock, weight, shipping class) when it is for sale. Only an admin writes them.
+- `product.options` lists the option names and values (Colour, Size); `variants[].photo` is the variant's photo. An admin sends option rows as `product.variants`.
+- Reviews: a comment carries `rating` (1 to 5 or `null`), and `POST /listings/{id}/comments` takes `rating` (a comment may have text, a rating or both; a second rated comment is `409 already_reviewed`). `GET /listings/{id}/comments` takes `sort=newest`. `include=rating` adds `rating: {average, count}` to a listing, with `distribution` on one listing.
+
 ### v1: search extras
 
 Added to v1.

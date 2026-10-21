@@ -13,6 +13,9 @@ namespace mindstellar\billing;
 
 use DomainException;
 use Log;
+use mindstellar\billing\event\OrderFailed;
+use mindstellar\billing\event\OrderPaid;
+use mindstellar\boot\CoreServices;
 use mindstellar\database\Db;
 use Throwable;
 
@@ -33,6 +36,15 @@ final class Billing
 
     /** Master switch. Off on every existing install, so an upgrade changes nothing. */
     public const PREF_ENABLED = 'billing_enabled';
+
+    /** Gateways paid outside the site: their goods orders hold stock from placement. */
+    public const HOLDS_STOCK = array('offline', 'cod');
+
+    /** Daily job that cancels goods orders left unpaid past billing_hold_days. */
+    public const JOB_RELEASE = 'billing.release_stock';
+
+    /** Held orders the release job cancels per run. */
+    private const RELEASE_BATCH = 100;
 
     /**
      * Stack of hook batches queued by deferHook(), one per spend() call currently on
@@ -138,8 +150,8 @@ final class Billing
 
             case CallbackResult::OUTCOME_FAILED:
                 $order = self::resolve($gatewayId, $result);
-                if ($order !== null) {
-                    OrderStore::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef());
+                if ($order !== null && OrderStore::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef())) {
+                    CoreServices::dispatcher()->dispatch(new OrderFailed($order->getId(), $order->getUserId()));
                 }
 
                 return $result;
@@ -188,6 +200,11 @@ final class Billing
                 return false;
             }
 
+            // settle() holds the order row, so a replayed callback stops above and takes nothing.
+            if ($order->isGoods() && OrderStock::take($order->getId()) !== array()) {
+                self::log('oversold', $order, $externalRef);
+            }
+
             if ($order->getCredits() > 0) {
                 Wallet::credit(
                     $order->getUserId(),
@@ -206,13 +223,39 @@ final class Billing
             self::log('paid', $order, $externalRef);
             // The hook runs before the e-mail, so a slow mail server cannot keep plugins from hearing about the payment.
             try {
-                osc_run_hook('billing_order_paid', $order->getId(), $order->getUserId(), $order->getCredits());
+                CoreServices::dispatcher()->dispatch(new OrderPaid($order->getId(), $order->getUserId(), $order->getCredits()));
             } finally {
                 Receipts::afterPaid($order);
             }
         }
 
         return $settled;
+    }
+
+    /**
+     * Mark a shipped goods order delivered. A cash on delivery order is paid now: the
+     * `billing_order_paid` hook and the receipt follow, as for markPaid().
+     *
+     * @param Order $order
+     *
+     * @return bool false when the order is not shipped
+     */
+    public static function deliver(Order $order): bool
+    {
+        $collected = false;
+        if (!OrderStore::deliver($order->getId(), $collected)) {
+            return false;
+        }
+        if ($collected) {
+            self::log('paid', $order, $order->getExternalRef());
+            try {
+                CoreServices::dispatcher()->dispatch(new OrderPaid($order->getId(), $order->getUserId(), $order->getCredits()));
+            } finally {
+                Receipts::afterPaid($order);
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -231,6 +274,9 @@ final class Billing
         $reversed = Db::transaction(static function () use ($order): bool {
             if (!OrderStore::refund($order->getId())) {
                 return false;
+            }
+            if ($order->isGoods()) {
+                OrderStock::release($order->getId());
             }
 
             if ($order->getCredits() > 0) {
@@ -555,6 +601,52 @@ final class Billing
     }
 
     /**
+     * Register the held-stock release job; called from `register_jobs`.
+     */
+    public static function registerJobs(): void
+    {
+        osc_job_register_handler(self::JOB_RELEASE, static function (\mindstellar\job\Job $job): void {
+            if (self::releaseHeld() === self::RELEASE_BATCH) {
+                $job->repeat(array());
+            }
+        });
+        osc_job_describe(self::JOB_RELEASE, __('Cancel unpaid shop orders'));
+    }
+
+    /**
+     * Queue the release job once a day while billing is on; called from `cron_daily`.
+     */
+    public static function queueRelease(): void
+    {
+        if (osc_billing_enabled()) {
+            osc_job_ensure(self::JOB_RELEASE);
+        }
+    }
+
+    /**
+     * Cancel one batch of pending goods orders placed more than billing_hold_days ago: those
+     * of the HOLDS_STOCK gateways give their stock back, and card orders the buyer left are
+     * closed too. Each fires `billing_order_cancelled`.
+     *
+     * @return int how many were cancelled; a full batch means there may be more
+     * @throws \mindstellar\database\DbException
+     */
+    public static function releaseHeld(): int
+    {
+        $before = date('Y-m-d H:i:s', time() - osc_billing_hold_days() * 86400);
+        $ids    = OrderStore::heldBefore(self::HOLDS_STOCK, $before, self::RELEASE_BATCH);
+        if (count($ids) < self::RELEASE_BATCH) {
+            $ids = array_merge($ids, OrderStore::heldBefore(self::HOLDS_STOCK, $before, self::RELEASE_BATCH - count($ids), true));
+        }
+        $cancelled = 0;
+        foreach ($ids as $id) {
+            $cancelled += OrderStore::cancel($id) ? 1 : 0;
+        }
+
+        return $cancelled;
+    }
+
+    /**
      * Verify a paid callback against the stored order, then fulfil it.
      *
      * @param string         $gatewayId
@@ -588,12 +680,15 @@ final class Billing
         }
 
         if (!self::markPaid($order, $result->getExternalRef())) {
-            // The provider took the money for an order already closed as failed, and a callback
-            // may not reopen it. The entry shows in Tools → Activity log, one per provider retry;
-            // the admin marks the order paid (CAdminBilling order_paid) or refunds it.
+            // The provider took the money for an order already closed as failed or cancelled, and a
+            // callback may not reopen it. The entry shows in Tools → Activity log, one per provider
+            // retry; the admin refunds it, or marks a failed one paid (CAdminBilling order_paid).
             $now = OrderStore::find($order->getId());
-            if ($now !== null && $now->getStatus() === Order::STATUS_FAILED) {
+            if ($now !== null && in_array($now->getStatus(), array(Order::STATUS_FAILED, Order::STATUS_CANCELLED), true)) {
                 self::log('paid after close', $now, $result->getExternalRef());
+            } elseif ($now !== null && $now->isPaid() && $result->getExternalRef() !== null && $result->getExternalRef() !== $now->getExternalRef()) {
+                // A second payment page of the same order (Pay again) was paid too.
+                self::log('paid twice', $now, $result->getExternalRef());
             }
         }
 

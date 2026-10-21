@@ -32,12 +32,15 @@ final class Warning
     /** @api */
     public const EMAIL_CONFIRMATION_SENT = 'email_confirmation_sent';
 
+    /** @api */
+    public const LISTING_UNPAID = 'listing_unpaid';
+
     /**
      * Every code, in the order the docs list them.
      *
      * @api
      */
-    public const CODES = [self::LISTING_PENDING, self::PHOTO_SKIPPED, self::COMMENT_PENDING, self::EMAIL_CONFIRMATION_SENT];
+    public const CODES = [self::LISTING_PENDING, self::PHOTO_SKIPPED, self::COMMENT_PENDING, self::EMAIL_CONFIRMATION_SENT, self::LISTING_UNPAID];
 
     private function __construct()
     {

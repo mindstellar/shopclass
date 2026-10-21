@@ -82,6 +82,43 @@ class Form
     }
 
     /**
+     * The id of a section heading, from its title: "Server rules (nginx)" is "s-server-rules-nginx".
+     * The settings search links to it.
+     *
+     * @param string $title
+     *
+     * @return string
+     */
+    public static function anchor($title)
+    {
+        $slug = trim((string)preg_replace('/[^\p{L}\p{N}]+/u', '-', mb_strtolower((string)$title)), '-');
+
+        return 's-' . $slug;
+    }
+
+    /**
+     * A heading inside a screen, drawn the one way every screen draws it: a section is an h3
+     * and a sub-section an h4, both with the shared heading class, so the size comes from one
+     * scale and the levels stay in order under the page title (h2). Body of
+     * osc_admin_section_heading().
+     *
+     * @param string      $text
+     * @param string      $level  'section' or 'subsection'
+     * @param string|null $id     the id to link to; null makes one from the text, '' leaves it off
+     * @param bool        $spaced air above it, as after a block of fields
+     *
+     * @return void
+     */
+    public static function heading($text, $level = 'section', $id = null, $spaced = false)
+    {
+        $tag   = $level === 'subsection' ? 'h4' : 'h3';
+        $id    = $id ?? self::anchor($text);
+        $class = 'render-title' . ($spaced ? ' separate-top' : '');
+        echo '<' . $tag . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '') . ' class="' . $class . '">'
+            . osc_esc_html($text) . '</' . $tag . '>';
+    }
+
+    /**
      * A section heading with an optional intro paragraph. Body of osc_admin_form_section().
      *
      * @param string              $title
@@ -94,8 +131,10 @@ class Form
         $level = (int)($opts['level'] ?? 3) === 2 ? 2 : 3;
         $class = 'render-title' . (!empty($opts['spaced']) ? ' separate-top' : '');
 
-        if ($title !== '') {
-            echo '<h' . $level . ' class="' . $class . '">' . osc_esc_html($title) . '</h' . $level . '>';
+        if ($title !== '' && $level === 3) {
+            self::heading($title, 'section', null, !empty($opts['spaced']));
+        } elseif ($title !== '') {
+            echo '<h2 id="' . self::anchor($title) . '" class="' . $class . '">' . osc_esc_html($title) . '</h2>';
         }
         if (!empty($opts['intro_html'])) {
             echo '<p class="form-intro">' . $opts['intro_html'] . '</p>';

@@ -11,7 +11,10 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\billing\event\ReceiptComposing;
+use mindstellar\boot\CoreServices;
 use mindstellar\currency\Money;
+use mindstellar\mail\CoreEmails;
 use RuntimeException;
 use Throwable;
 use User;
@@ -30,6 +33,19 @@ final class Receipts
 {
     /** Job type that retries a receipt that could not be sent at once. */
     public const JOB = 'billing.receipt';
+
+    /** Job type that retries a placed, shipped, delivered, cancelled, refunded or admin order mail that could not be sent at once. */
+    public const MAIL_JOB = 'billing.order_mail';
+
+    public const MAIL_PLACED  = 'placed';
+    public const MAIL_SHIPPED = 'shipped';
+    public const MAIL_ADMIN   = 'admin';
+    public const MAIL_DELIVERED = 'delivered';
+    public const MAIL_CANCELLED = 'cancelled';
+    public const MAIL_REFUNDED  = 'refunded';
+
+    /** Gateways that leave an order unpaid until the shop hears the money came in. */
+    private const HELD_GATEWAYS = array('offline', 'cod');
 
     /** Preference: e-mail a receipt when an order is paid. On unless switched off. */
     public const PREF_EMAIL = 'billing_receipt_email';
@@ -86,10 +102,23 @@ final class Receipts
      */
     public static function afterPaid(Order $order): void
     {
-        if (!self::emailEnabled()) {
-            return;
+        if (self::emailEnabled()) {
+            self::sendOrQueueReceipt($order);
         }
+        if ($order->isGoods()) {
+            self::notify(self::MAIL_ADMIN, $order->getId());
+        }
+    }
 
+    /**
+     * Send the receipt now, or queue it when that fails.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    private static function sendOrQueueReceipt(Order $order): void
+    {
         try {
             if (self::send($order->getId())) {
                 return;
@@ -110,6 +139,149 @@ final class Receipts
     }
 
     /**
+     * `billing_order_placed`: a goods order that waits for its money (bank transfer, cash on
+     * delivery) tells the buyer it was received and the admin that it came in.
+     *
+     * @param int $orderId
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function afterPlaced($orderId, $userId = 0): void
+    {
+        $order = OrderStore::find((int) $orderId);
+        if ($order === null || !$order->isGoods() || !in_array($order->getGateway(), self::HELD_GATEWAYS, true)) {
+            return;
+        }
+        self::notify(self::MAIL_PLACED, $order->getId());
+        self::notify(self::MAIL_ADMIN, $order->getId());
+    }
+
+    /**
+     * `billing_order_shipped`: tell the buyer the parcel is on its way.
+     *
+     * @param int $orderId
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function afterShipped($orderId, $userId = 0): void
+    {
+        self::notify(self::MAIL_SHIPPED, (int) $orderId);
+    }
+
+    /**
+     * `billing_order_delivered`: tell the buyer the order arrived.
+     *
+     * @param int $orderId
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function afterDelivered($orderId, $userId = 0): void
+    {
+        self::notify(self::MAIL_DELIVERED, (int) $orderId);
+    }
+
+    /**
+     * `billing_order_cancelled`: tell the buyer the order was cancelled.
+     *
+     * @param int $orderId
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function afterCancelled($orderId, $userId = 0): void
+    {
+        self::notify(self::MAIL_CANCELLED, (int) $orderId);
+    }
+
+    /**
+     * `billing_order_refunded`: tell the buyer the money is on its way back.
+     *
+     * @param int $orderId
+     * @param int $userId
+     * @param int $credits
+     *
+     * @return void
+     */
+    public static function afterRefunded($orderId, $userId = 0, $credits = 0): void
+    {
+        self::notify(self::MAIL_REFUNDED, (int) $orderId);
+    }
+
+    /**
+     * Send one order mail, or queue it when that fails. Never throws.
+     *
+     * @param string $kind One of the MAIL_* constants
+     * @param int    $orderId
+     *
+     * @return void
+     */
+    public static function notify(string $kind, int $orderId): void
+    {
+        try {
+            if (self::sendNotice($kind, $orderId)) {
+                return;
+            }
+        } catch (Throwable $e) {
+            self::logFailure($orderId, $e);
+        }
+
+        try {
+            osc_job_enqueue(
+                self::MAIL_JOB,
+                array('order_id' => $orderId, 'kind' => $kind),
+                array('unique_key' => 'order:' . $orderId . ':' . $kind, 'delay' => 60)
+            );
+        } catch (Throwable $e) {
+            self::logFailure($orderId, $e);
+        }
+    }
+
+    /**
+     * Send one kind of order mail, once per order and kind. A failed send is flagged on CoreEmails::orderMailFailed().
+     *
+     * @param string $kind
+     * @param int    $orderId
+     *
+     * @return bool true when the mail went, or there is nothing to send; false to try again
+     */
+    public static function sendNotice(string $kind, int $orderId): bool
+    {
+        $order = OrderStore::find($orderId);
+        $mark  = '_mail_' . $kind;
+        if (!in_array($kind, array(self::MAIL_PLACED, self::MAIL_SHIPPED, self::MAIL_ADMIN, self::MAIL_DELIVERED, self::MAIL_CANCELLED, self::MAIL_REFUNDED), true) || $order === null || !$order->isGoods() || $order->meta($mark) !== null) {
+            return true;
+        }
+        if (($kind === self::MAIL_SHIPPED && $order->getStatus() !== Order::STATUS_SHIPPED && $order->getStatus() !== Order::STATUS_DELIVERED)
+            || ($kind === self::MAIL_PLACED && !$order->isPending() && !$order->isPaid())
+            || ($kind === self::MAIL_DELIVERED && $order->getStatus() !== Order::STATUS_DELIVERED)
+            || ($kind === self::MAIL_CANCELLED && $order->getStatus() !== Order::STATUS_CANCELLED)
+            || ($kind === self::MAIL_REFUNDED && $order->getStatus() !== Order::STATUS_REFUNDED)
+        ) {
+            return true;
+        }
+
+        CoreEmails::resetOrderMailFailure();
+        $send = array(
+            self::MAIL_PLACED    => 'orderPlaced',
+            self::MAIL_SHIPPED   => 'orderShipped',
+            self::MAIL_DELIVERED => 'orderDelivered',
+            self::MAIL_CANCELLED => 'orderCancelled',
+            self::MAIL_REFUNDED  => 'orderRefunded',
+            self::MAIL_ADMIN     => 'adminNewOrder',
+        );
+        CoreEmails::{$send[$kind]}($order);
+        if (CoreEmails::orderMailFailed()) {
+            return false;
+        }
+        OrderStore::markMailSent($orderId, $kind);
+
+        return true;
+    }
+
+    /**
      * Send the receipt for an order, unless it went already.
      *
      * @param int $orderId
@@ -120,9 +292,7 @@ final class Receipts
     public static function send(int $orderId): bool
     {
         $order = OrderStore::find($orderId);
-        if ($order === null || $order->getStatus() !== Order::STATUS_PAID
-            || $order->meta(OrderStore::RECEIPT_SENT) !== null
-        ) {
+        if ($order === null || !$order->isPaid() || $order->meta(OrderStore::RECEIPT_SENT) !== null) {
             return true;
         }
 
@@ -136,7 +306,9 @@ final class Receipts
             'from_name' => osc_page_title(),
             'to'        => $vars['email'],
             'to_name'   => $vars['name'],
-            'subject'   => sprintf(__('Your receipt from %1$s, order #%2$d'), $vars['site'], $order->getId()),
+            'subject'   => $order->isGoods()
+                ? sprintf(__('Your order %1$s from %2$s'), self::number($order), $vars['site'])
+                : sprintf(__('Your receipt from %1$s, order #%2$d'), $vars['site'], $order->getId()),
             'body'      => self::emailBody($vars),
         );
 
@@ -161,6 +333,12 @@ final class Receipts
             }
         });
         osc_job_describe(self::JOB, __('Payment receipt e-mail'));
+        osc_job_register_handler(self::MAIL_JOB, static function ($job) {
+            if (!self::sendNotice((string) $job->get('kind'), (int) $job->get('order_id'))) {
+                throw new RuntimeException('order e-mail not sent');
+            }
+        });
+        osc_job_describe(self::MAIL_JOB, __('Order e-mail'));
     }
 
     /**
@@ -236,8 +414,10 @@ final class Receipts
         return array(
             'site'     => osc_page_title(),
             'number'   => $order->getId(),
+            'label'    => self::number($order),
             'date'     => osc_format_date($paid),
-            'credits'  => sprintf(__('%s credits'), number_format($order->getCredits())),
+            'credits'  => $order->isGoods() ? $order->getLabel() : sprintf(__('%s credits'), number_format($order->getCredits())),
+            'for'      => $order->isListing() ? $order->getLabel() : '',
             'amount'   => Money::format($order->getAmount(), $order->getCurrency()),
             'method'   => osc_billing_gateway_name($order->getGateway()),
             'ref'      => (string) $order->getExternalRef(),
@@ -247,7 +427,163 @@ final class Receipts
             'wallet'   => osc_billing_wallet_url(),
             'business' => self::businessDetails(),
             'refunded' => $order->getStatus() === Order::STATUS_REFUNDED,
+            'details'  => $order->isGoods() ? self::details($order) : null,
         );
+    }
+
+    /**
+     * The order's number as the shop shows it.
+     *
+     * @param Order $order
+     *
+     * @return string
+     */
+    public static function number(Order $order): string
+    {
+        return osc_billing_order_number($order->getId());
+    }
+
+    /**
+     * What a goods order holds, as plain text: every line, the address, how it goes and the
+     * tracking once shipped, then the title, extra rows under the business details, summary rows
+     * under the lines and footer that `ReceiptComposing` listeners (or old `billing_receipt_details`
+     * callbacks) set. They change those four only. Escaping is the caller's.
+     *
+     * @param Order $order
+     *
+     * @return array{lines:array<int,array<string,mixed>>,address:string[],shipping:string,carrier:string,tracking:string,tracking_url:string,total:string,note:string,title:string,extra:array<int,array{label:string,value:string}>,summary:array<int,array{label:string,value:string}>,footer:string}
+     */
+    public static function details(Order $order): array
+    {
+        $currency = $order->getCurrency();
+        $lines    = array();
+        foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+            $options = array();
+            foreach ((array) ($line['options'] ?? array()) as $name => $value) {
+                $options[] = $name . ': ' . $value;
+            }
+            $lines[] = array(
+                'kind'    => (string) $line['kind'],
+                'title'   => (string) $line['title'],
+                'options' => implode(', ', $options),
+                'sku'     => (string) ($line['sku'] ?? ''),
+                'qty'     => (string) $line['qty'],
+                'unit'     => Money::format($line['unit'], $currency),
+                'amount'   => Money::format($line['amount'], $currency),
+                'included' => $line['kind'] === OrderLineStore::KIND_TAX && ($line['meta']['included'] ?? false) === true,
+            );
+        }
+        $fulfilment = $order->fulfilment() ?? array();
+        $address    = array();
+        foreach ((array) ($fulfilment['address'] ?? array()) as $part) {
+            if (is_string($part) && trim($part) !== '') {
+                $address[] = trim($part);
+            }
+        }
+        $note    = $order->meta('_note');
+        $details = array(
+            'lines'        => $lines,
+            'address'      => $address,
+            'shipping'     => (string) ($fulfilment['label'] ?? ''),
+            'carrier'      => (string) ($fulfilment['carrier'] ?? ''),
+            'tracking'     => (string) ($fulfilment['tracking'] ?? ''),
+            'tracking_url' => self::httpsUrl((string) ($fulfilment['tracking_url'] ?? '')),
+            'total'        => Money::format($order->getAmount(), $currency),
+            'note'         => is_string($note) ? $note : '',
+            'title'        => __('Receipt'),
+            'extra'        => array(),
+            'summary'      => array(),
+            'footer'       => '',
+        );
+        $event = new ReceiptComposing($order, $details);
+        CoreServices::dispatcher()->dispatch($event);
+
+        return array(
+            'title'   => $event->title(),
+            'extra'   => $event->extraRows(),
+            'summary' => $event->summaryRows(),
+            'footer'  => $event->footer(),
+        ) + $details;
+    }
+
+    /**
+     * A string trimmed to $max characters with control characters made spaces (line breaks
+     * kept when $lines), or '' for anything that is not a string.
+     *
+     * @param mixed $value
+     */
+    public static function plain($value, int $max, bool $lines = false): string
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+        $value = preg_replace($lines ? '/[\x00-\x09\x0B-\x1F\x7F]+/' : '/[\x00-\x1F\x7F]+/', ' ', str_replace("\r\n", "\n", $value)) ?? '';
+
+        return mb_substr(trim($value), 0, $max, 'UTF-8');
+    }
+
+    /**
+     * A web address a mail or page may link: https only, no spaces, no markup.
+     *
+     * @param string $url
+     *
+     * @return string the address, or '' when it is not one
+     */
+    public static function httpsUrl(string $url): string
+    {
+        $url = trim($url);
+
+        return preg_match('~^https://[^\s<>"\']+$~i', $url) === 1 && filter_var($url, FILTER_VALIDATE_URL) !== false ? $url : '';
+    }
+
+    /**
+     * The lines of a goods order as an HTML table. Every value is escaped here.
+     *
+     * @param array<string,mixed> $details From details()
+     *
+     * @return string
+     */
+    public static function linesHtml(array $details): string
+    {
+        $html = '<table cellpadding="6" cellspacing="0" border="0" style="width:100%">'
+                . '<tr><th align="left">' . osc_esc_html(__('Item')) . '</th>'
+                . '<th align="right">' . osc_esc_html(__('Qty')) . '</th>'
+                . '<th align="right">' . osc_esc_html(__('Amount')) . '</th></tr>';
+        foreach ($details['lines'] as $line) {
+            $amount = !empty($line['included']) ? sprintf(__('%s (included)'), $line['unit']) : $line['amount'];
+            $name   = $line['kind'] === OrderLineStore::KIND_ITEM
+                ? '<strong>' . osc_esc_html($line['title']) . '</strong>'
+                  . ($line['options'] !== '' ? '<br><span style="color:#666">' . osc_esc_html($line['options']) . '</span>' : '')
+                  . ($line['sku'] !== '' ? '<br><span style="color:#666">' . osc_esc_html(sprintf(__('SKU %s'), $line['sku'])) . '</span>' : '')
+                : osc_esc_html($line['title']);
+            $html .= '<tr><td>' . $name . '</td>'
+                     . '<td align="right">' . ($line['kind'] === OrderLineStore::KIND_ITEM ? osc_esc_html($line['qty']) : '') . '</td>'
+                     . '<td align="right">' . osc_esc_html($amount) . '</td></tr>';
+        }
+
+        return $html . '<tr><td colspan="2"><strong>' . osc_esc_html(__('Total')) . '</strong></td>'
+               . '<td align="right"><strong>' . osc_esc_html($details['total']) . '</strong></td></tr></table>';
+    }
+
+    /**
+     * The delivery address as HTML, one line per part. Every value is escaped here.
+     *
+     * @param array<string,mixed> $details From details()
+     *
+     * @return string
+     */
+    public static function addressHtml(array $details): string
+    {
+        if ($details['address'] === array()) {
+            return '';
+        }
+        $html = '<p><strong>' . osc_esc_html(__('Delivery address')) . '</strong><br>'
+                . implode('<br>', array_map('osc_esc_html', $details['address'])) . '</p>';
+        if ($details['shipping'] !== '') {
+            $html .= '<p>' . osc_esc_html(sprintf(__('Delivery: %s'), $details['shipping'])) . '</p>';
+        }
+
+        return $html;
     }
 
     /**
@@ -259,13 +595,19 @@ final class Receipts
      */
     public static function emailBody(array $vars): string
     {
+        if (!empty($vars['details'])) {
+            return self::goodsEmailBody($vars);
+        }
         $rows = array(
-            __('Receipt number')  => '#' . $vars['number'],
+            __('Receipt number')  => $vars['label'],
             __('Date paid')       => $vars['date'],
             __('What you bought') => $vars['credits'],
             __('Amount paid')     => $vars['amount'],
             __('Payment method')  => $vars['method'],
         );
+        if (($vars['for'] ?? '') !== '') {
+            $rows[__('For')] = $vars['for'];
+        }
         if ($vars['ref'] !== '') {
             $rows[__('Payment reference')] = $vars['ref'];
         }
@@ -284,6 +626,33 @@ final class Receipts
             $html .= '<p><a href="' . osc_esc_html($vars['wallet']) . '">'
                      . osc_esc_html(__('Use your credits')) . '</a></p>';
         }
+        if ($vars['business'] !== '') {
+            $html .= '<p style="color:#666">' . nl2br(osc_esc_html($vars['business']), false) . '</p>';
+        }
+
+        return $html;
+    }
+
+    /**
+     * The order confirmation a buyer gets when a goods order is paid. Every value is escaped here.
+     *
+     * @param array<string,mixed> $vars From vars()
+     *
+     * @return string
+     */
+    private static function goodsEmailBody(array $vars): string
+    {
+        $details = $vars['details'];
+        $html    = '<p>' . osc_esc_html(sprintf(__('Thank you for your order from %s.'), $vars['site'])) . '</p>'
+                   . '<p>' . osc_esc_html(sprintf(__('Order %1$s, paid on %2$s by %3$s.'), $vars['label'], $vars['date'], $vars['method'])) . '</p>'
+                   . self::linesHtml($details)
+                   . self::addressHtml($details);
+        if ($details['note'] !== '') {
+            $html .= '<p>' . nl2br(osc_esc_html($details['note']), false) . '</p>';
+        }
+        $html .= '<p>' . osc_esc_html(__('We will send you another e-mail when your order ships.')) . '</p>'
+                 . '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['url']) . '">'
+                 . osc_esc_html(__('View or print your receipt')) . '</a></p>';
         if ($vars['business'] !== '') {
             $html .= '<p style="color:#666">' . nl2br(osc_esc_html($vars['business']), false) . '</p>';
         }

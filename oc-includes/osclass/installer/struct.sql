@@ -11,7 +11,7 @@ SET NAMES 'utf8mb4';
 -- it must go through the model that performs them. There, RESTRICT is the safety
 -- net: it turns a forgotten cascade into a loud failure instead of orphaned files.
 --
--- t_billing_ledger and t_billing_order deliberately carry no foreign key at all, for
+-- t_billing_ledger, t_billing_order and t_billing_order_line deliberately carry no foreign key at all, for
 -- the reason given in the note above each of them. t_resource has none either: its owner
 -- can be a listing, a user, a page or a plugin's record, so the owner's model removes it.
 
@@ -391,6 +391,26 @@ CREATE TABLE /*TABLE_PREFIX*/t_resource (
         INDEX idx_storage (s_storage)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_item_variant (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_sku VARCHAR(64) NULL,
+    s_options TEXT NULL,
+    i_price BIGINT(20) NULL,
+    i_compare_price BIGINT(20) NULL,
+    i_stock INT NULL,
+    i_weight INT UNSIGNED NULL,
+    s_shipping_class VARCHAR(40) NULL,
+    fk_i_resource_id INT UNSIGNED NULL,
+    i_position SMALLINT NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_item (fk_i_item_id),
+        INDEX idx_sku (s_sku),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_resource_id) REFERENCES /*TABLE_PREFIX*/t_resource (pk_i_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_item_id INT UNSIGNED NOT NULL,
@@ -403,6 +423,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     b_active TINYINT(1) NOT NULL DEFAULT 0,
     b_spam TINYINT(1) NOT NULL DEFAULT 0,
     fk_i_user_id INT UNSIGNED NULL,
+    i_rating TINYINT UNSIGNED NULL,
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_item_id (fk_i_item_id),
@@ -765,6 +786,28 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_order (
         INDEX idx_user_status (fk_i_user_id, s_status),
         INDEX idx_date (dt_date),
         INDEX idx_status_date (s_status, dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- What a goods order holds: item lines, then its shipping, tax, discount and fee lines.
+-- Amounts in micros, like the order. No foreign keys: a sale outlives the listing and the
+-- account, as t_billing_order does.
+CREATE TABLE /*TABLE_PREFIX*/t_billing_order_line (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_order_id INT UNSIGNED NOT NULL,
+    s_kind VARCHAR(16) NOT NULL DEFAULT 'item',
+    fk_i_item_id INT UNSIGNED NULL,
+    fk_i_variant_id INT UNSIGNED NULL,
+    s_title VARCHAR(200) NOT NULL,
+    s_options TEXT NULL,
+    s_sku VARCHAR(64) NULL,
+    i_qty INT UNSIGNED NOT NULL DEFAULT 1,
+    i_unit BIGINT NOT NULL DEFAULT 0,
+    i_amount BIGINT NOT NULL DEFAULT 0,
+    s_meta TEXT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_order (fk_i_order_id),
+        INDEX idx_item (fk_i_item_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 -- What a user is entitled to: a quantity, a duration, or both, per feature. Cascades

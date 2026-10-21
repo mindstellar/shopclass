@@ -21,6 +21,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 
 use mindstellar\auth\Actor;
+use mindstellar\database\QueryBuilder;
 use mindstellar\listing\ListingStatus;
 
 $now  = strtotime('2026-06-01 12:00:00');
@@ -37,6 +38,32 @@ pin('spam before blocked before pending before expired', array('spam', 'disabled
     ListingStatus::of(array('b_active' => '0', 'dt_expiration' => null) + $live, $now),
 ));
 check('isLive() is of() === active', ListingStatus::isLive($live, $now) && !ListingStatus::isLive(array('b_active' => 0) + $live, $now));
+
+harness_section('held for payment');
+$held = array('b_enabled' => '0', 'b_active' => '0', 'b_spam' => '0', 'dt_first_pub_date' => null) + $live;
+pin('a held row reads unpaid', ListingStatus::UNPAID, ListingStatus::of($held, $now));
+pin('an empty string is held too', ListingStatus::UNPAID, ListingStatus::of(array('dt_first_pub_date' => '') + $held, $now));
+pin('the same row once published reads disabled', ListingStatus::DISABLED, ListingStatus::of(array('dt_first_pub_date' => '2026-05-01 00:00:00') + $held, $now));
+pin('held wins over spam', ListingStatus::UNPAID, ListingStatus::of(array('b_spam' => '1') + $held, $now));
+pin('a row with no dt_first_pub_date key is not held', ListingStatus::DISABLED, ListingStatus::of(array('b_enabled' => '0', 'b_active' => '0') + $live, $now));
+pin('an enabled row with a NULL first date is not held', ListingStatus::PENDING, ListingStatus::of(array('b_enabled' => '1') + $held, $now));
+pin('isHeld(): held', true, ListingStatus::isHeld($held));
+pin('isHeld(): an empty first date is held, as of() reads it', true, ListingStatus::isHeld(array('dt_first_pub_date' => '') + $held));
+pin('isHeld(): a row that once went live is not', false, ListingStatus::isHeld(array('dt_first_pub_date' => '2026-01-01 00:00:00') + $held));
+pin('isHeld(): one flag off is not', false, ListingStatus::isHeld(array('b_enabled' => '1') + $held));
+pin('isHeld(): a row without the column is not', false, ListingStatus::isHeld(array('b_enabled' => 0, 'b_active' => 0)));
+pin('the jobs class keeps no copy of the rule', false, method_exists(\mindstellar\listing\ListingHoldJobs::class, 'isHeld'));
+check('ALL lists unpaid', in_array('unpaid', ListingStatus::ALL, true));
+$where = static fn (string $status): string => ListingStatus::condition(new QueryBuilder('t_item'), array($status), $now)->toSql();
+pin('the held rule as SQL', '(i.b_enabled = 0 AND i.b_active = 0 AND i.dt_first_pub_date IS NULL)', ListingStatus::heldSql('i.'));
+check('unpaid SQL is that rule', strpos($where(ListingStatus::UNPAID), ListingStatus::heldSql()) !== false);
+check('disabled SQL excludes held rows', strpos($where(ListingStatus::DISABLED), 'b_spam = 0 AND b_enabled = 0 AND NOT ' . ListingStatus::heldSql()) !== false);
+check('pending SQL keeps an enabled row with no first date, as of() does', strpos($where(ListingStatus::PENDING), 'dt_first_pub_date') === false);
+$src = '';
+foreach (array('model/Item.php', 'listing/ListingStore.php', 'billing/EntitlementStore.php') as $file) {
+    $src .= (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/' . $file);
+}
+pin('no other class spells the held rule out', 0, preg_match_all('/dt_first_pub_date IS (NOT )?NULL/', $src));
 
 harness_section('the SQL');
 $sql = ListingStatus::liveConditions('i.', $now);

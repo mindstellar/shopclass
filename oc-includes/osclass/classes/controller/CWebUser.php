@@ -14,6 +14,7 @@
 
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
+use mindstellar\billing\OrderStore;
 use mindstellar\exception\BlockedException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
@@ -79,6 +80,7 @@ class CWebUser extends WebSecBaseModel
         if ($method === null) {
             return;
         }
+        $this->redirectShopperHome();
 
         $this->$method();
     }
@@ -88,6 +90,14 @@ class CWebUser extends WebSecBaseModel
      */
     private function dashboard(): void
     {
+        if (osc_is_shopper()) {
+            $orders = osc_billing_enabled() ? OrderStore::forUser((int) osc_logged_user_id(), 5) : array();
+            $this->_exportVariableToView('orders', $orders);
+            $this->_exportVariableToView('items', array());
+            $this->doView(osc_locate_template(array('user-dashboard.php'), 'user-dashboard'));
+
+            return;
+        }
         $max_items =
             (Params::getParam('max_items') != '') ? Params::getParam('max_items') : 5;
         $aItems    =

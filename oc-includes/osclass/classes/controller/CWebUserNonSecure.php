@@ -146,6 +146,11 @@ class CWebUserNonSecure extends BaseModel
      */
     private function publicProfile(): void
     {
+        // Shop mode has no seller profiles: a shopper goes to the dashboard, a guest home.
+        $this->redirectShopperHome();
+        if (osc_site_mode() === \mindstellar\site\SiteMode::SHOP && !osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
+            $this->redirectTo(osc_base_url());
+        }
         if (Params::getParam('username') != '') {
             $user = User::getInstance()->findByUsername(Params::getParam('username'));
         } else {

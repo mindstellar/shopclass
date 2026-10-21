@@ -83,7 +83,11 @@ A `422 validation_failed` lists every problem at once in `errors`:
 | `taken` | Another resource already uses the value. |
 | `mismatch` | The value does not match, such as a wrong current password, or a region outside the country or a city outside the region. |
 | `limit` | A limit is reached, such as the photos a listing may hold. |
-| `rejected` | The web form refused the input; `message` is its text. |
+| `rejected` | The web form refused the input, or a plugin refused the cart on `POST account/orders`; `message` is its text. |
+| `out_of_stock` | An order line asks for more than is in stock. |
+| `not_buyable` | An order line names a product that is gone, hidden, unpriced or in another currency. |
+| `unavailable` | The payment method is not on offer for this order. |
+| `too_many_open` | The buyer already holds the most unpaid bank transfer and cash on delivery orders the shop allows. |
 
 Plugin endpoints may add `ext_<slug>_<name>` codes. Treat an unknown code as `invalid`.
 
@@ -97,19 +101,22 @@ Each code's `type` link points at its anchor here.
 | <a id="invalid_cursor"></a>`invalid_cursor` | 400 | The `cursor` is forged, over a week old, or made for other filters, sort or order. Start again and follow `links.next`. |
 | <a id="invalid_header"></a>`invalid_header` | 400 | A malformed header: an `Idempotency-Key` that is empty, over 255 characters, or not plain visible ASCII. |
 | <a id="banned"></a>`banned` | 403 | A ban rule matches the account, its e-mail or the address. Covers every call with a user's token, key or session, sign-up, and posting. |
-| <a id="feature_disabled"></a>`feature_disabled` | 403 | The site has user accounts, API sign-up, personal keys or comments switched off. |
+| <a id="feature_disabled"></a>`feature_disabled` | 403 | The site has user accounts, API sign-up, personal keys or comments switched off, or is a shop, where only an admin adds listings. |
 | <a id="forbidden"></a>`forbidden` | 403 | Any other refusal: making or rotating a key with a known scope the admin key lacks, rotating another admin's key, or an account that cannot save alerts. |
 | <a id="insufficient_scope"></a>`insufficient_scope` | 403 | The key lacks the endpoint's scope. `WWW-Authenticate` names it: `Bearer error="insufficient_scope", scope="admin:users"`. |
 | <a id="not_owner"></a>`not_owner` | 403 | The resource is real and live but belongs to someone else, such as another user's listing or comment. |
 | <a id="cross_origin"></a>`cross_origin` | 403 | A page-token call that did not come from the site's own pages: another `Origin`, a `Sec-Fetch-Site` other than `same-origin`, or neither. |
 | <a id="api_disabled"></a>`api_disabled` | 403 | The site owner switched the API off. |
-| <a id="not_found"></a>`not_found` | 404 | No such endpoint, API version or record. Also a pending, disabled or spam listing, a disabled user, an unapproved comment that is not the caller's, and a photo, key or saved search that is not the caller's. |
+| <a id="not_found"></a>`not_found` | 404 | No such endpoint, API version or record. Also a pending, disabled, spam or unpaid listing, a disabled user, an unapproved comment that is not the caller's, and a photo, key or saved search that is not the caller's. |
 | <a id="method_not_allowed"></a>`method_not_allowed` | 405 | The path exists but not for this method. `Allow` lists the methods that work. |
+| <a id="already_reviewed"></a>`already_reviewed` | 409 | The signed-in user already has a rated comment on this listing. A comment with no rating is still accepted. |
 | <a id="idempotency_in_flight"></a>`idempotency_in_flight` | 409 | A request with the same `Idempotency-Key` is still running. `Retry-After: 1`. |
 | <a id="too_large"></a>`too_large` | 413 | The body is over 1 MB, or a photo is over the site's largest photo size or 16 MB. |
 | <a id="unsupported_media_type"></a>`unsupported_media_type` | 415 | The body is not `application/json` (or `application/merge-patch+json` on `PATCH`). A photo is `multipart/form-data` in a field named `photo`, or the image itself. |
 | <a id="idempotency_key_reused"></a>`idempotency_key_reused` | 422 | The same `Idempotency-Key` was sent with a different request. |
 | <a id="listing_limit"></a>`listing_limit` | 422 | The user has reached the site's listing limit. `detail` says what it is. |
+| <a id="insufficient_credits"></a>`insufficient_credits` | 422 | Not enough credits to publish the listing. `payment` says the price, the balance and the shortfall. |
+| <a id="page_too_deep"></a>`page_too_deep` | 422 | `page` is past the deepest page a list reaches (10,000 listings). Narrow the filters. |
 | <a id="login_blocked"></a>`login_blocked` | 429 | Too many wrong passwords for this account or address, at `POST /auth/token`, `POST /account/password` or `POST /account/keys`. See `Retry-After`. |
 | <a id="too_many_failures"></a>`too_many_failures` | 429 | Too many wrong keys from this address in 15 minutes. `Retry-After: 900`. See [lockout](/docs/developers/api/authentication/#lockout-after-failed-keys). |
 | <a id="server_error"></a>`server_error` | 500 | The site hit an error; the cause is in the server's error log. Retry later. |
@@ -157,8 +164,13 @@ also answers this.
 
 - a stored `Idempotency-Key` answer that cannot be read
 - an [admin action](/docs/developers/api/admin/) the state refuses: activating a blocked
-  listing, deleting a currency a listing uses or the site defaults to, revoking a key that is
-  already revoked
+  listing, approving, unblocking or bumping a listing that waits for payment (publish it
+  instead), publishing one that does not, deleting a currency a listing uses or the site
+  defaults to, revoking a key that is already revoked
+
+### `insufficient_credits`
+
+422. `POST /listings/{id}/publish` was asked to spend credits the user does not have. The answer carries `payment`: `credits` (the price), `balance`, `shortfall` and `publish_url` (the site's pay page, which needs a web sign-in). Buy the missing credits, then publish again.
 
 ### `precondition_failed`
 

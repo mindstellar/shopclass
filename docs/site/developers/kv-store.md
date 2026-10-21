@@ -1,6 +1,6 @@
 ---
 title: Key-value store
-description: "Keep small values by group and key without a table of your own: osc_kv_get(), osc_kv_set(), osc_kv_delete(), osc_kv_claim() and osc_kv_delete_group(), with expiry, JSON values and the key rules."
+description: "Keep small values by group and key without a table of your own: osc_kv_get(), osc_kv_set(), osc_kv_delete(), osc_kv_claim(), osc_kv_list() and osc_kv_delete_group(), with expiry, JSON values and the key rules."
 sidebar:
   order: 29
 ---
@@ -39,6 +39,7 @@ a bad group or key, and `mindstellar\database\DbException` when the query fails.
 | `osc_kv_set(string $group, string $key, $value, ?int $ttl = null): void` | Nothing. Replaces any value and expiry the key had. `$ttl` is seconds; `null` keeps it until deleted. |
 | `osc_kv_delete(string $group, string $key): bool` | `false` when there was nothing to remove. |
 | `osc_kv_claim(string $group, string $key, int $ttl, string $state = 'locked'): bool` | `true` for exactly one caller while the key is absent or expired. |
+| `osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null): array` | One page (at most 1000) of live keys in key order, as `{key, value, updated_at, expires_at}`. Pass the last key as `$afterKey` for the next page. `$updatedBefore` is a UTC `Y-m-d H:i:s`; a key never rewritten counts from its creation. |
 | `osc_kv_delete_group(string $group): int` | How many keys were removed. |
 
 ## Values

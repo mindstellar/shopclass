@@ -13,6 +13,7 @@
  */
 
 use mindstellar\auth\Actor;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\comment\CommentService;
 use mindstellar\comment\SavedComment;
 use mindstellar\exception\ConflictException;
@@ -28,6 +29,7 @@ use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
 use mindstellar\security\Captcha;
+use mindstellar\site\SiteMode;
 use mindstellar\utility\Validate;
 
 /**
@@ -102,6 +104,12 @@ class CWebItem extends BaseModel
      */
     private function itemAdd(): void
     {
+        // The public form posts as a visitor, never as an admin, so in shop mode nobody here may post.
+        if (osc_site_mode() === SiteMode::SHOP) {
+            osc_add_flash_warning_message(ListingService::refusalMessage(ListingPolicy::SHOP_MODE));
+            $this->redirectTo(osc_base_url(true));
+        }
+
         if (ListingPolicy::requiresSignIn(Actor::visitor())) {
             osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
             // Remember to bring them back to the post form after login — in a signed
@@ -113,13 +121,28 @@ class CWebItem extends BaseModel
         // Turn them back at the door rather than after they have written the whole
         // listing: the submit path refuses on the same answer, so reaching the form
         // at all would only waste the writing. Admins are never metered, and guests
-        // have no quota to be outside of.
-        if (!osc_is_admin_user_logged_in()
-            && osc_is_web_user_logged_in()
-            && !osc_user_can_publish()
-        ) {
+        // have no quota to be outside of. With pay-at-post a seller over the slot limit
+        // writes the listing first and pays on the last step.
+        $rule = !osc_is_admin_user_logged_in() && osc_is_web_user_logged_in()
+            ? ListingCheckout::postingRule((int) osc_logged_user_id())
+            : ListingCheckout::POST_PUBLISH;
+        if ($rule === ListingCheckout::POST_REFUSE) {
             osc_add_flash_error_message(osc_listing_limit_message());
             $this->redirectTo(osc_user_list_items_url());
+        }
+        if ($rule === ListingCheckout::POST_HOLD) {
+            $quote = osc_billing_next_listing_quote();
+            $this->_exportVariableToView('listingPostQuote', $quote);
+            if ($quote['credits'] > 0) {
+                osc_add_flash_info_message(sprintf(
+                    _mn(
+                        'This listing will cost %d credit. You pay on the last step.',
+                        'This listing will cost %d credits. You pay on the last step.',
+                        $quote['credits']
+                    ),
+                    $quote['credits']
+                ));
+            }
         }
 
         $countries = Country::getInstance()->listAll();
@@ -225,6 +248,14 @@ class CWebItem extends BaseModel
         // Uploads were consumed by the successful post; drop the session
         // mapping so it can't bleed into the next listing.
         UploadTmpStore::removeOwner(UploadTmpStore::formOwner());
+        if ($saved->unpaid()) {
+            // Held until paid: it goes live from the pay step, so item_post_redirect_url,
+            // which only sees listings that went live, is not applied.
+            osc_add_flash_info_message(_m('Your listing is saved. Pay for it on the next page to publish it.'));
+            $this->redirectTo(osc_billing_publish_url($saved->id()));
+
+            return null;
+        }
         if ($saved->needsValidation()) {
             osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
         } elseif (osc_moderate_admin_post()) {
@@ -743,6 +774,7 @@ class CWebItem extends BaseModel
             'author_email' => Params::getParamString('authorEmail'),
             'title'        => Params::getParamString('title'),
             'body'         => Params::getParamString('body'),
+            'rating'       => Params::getParamString('rating'),
         );
         try {
             $saved = (new CommentService())->post($itemId, $input, Actor::visitor());

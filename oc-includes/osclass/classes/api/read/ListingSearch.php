@@ -20,6 +20,7 @@ use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\apikey\Credential;
 use mindstellar\listing\ListingQuery;
+use mindstellar\listing\VariantStore;
 use mindstellar\search\Distance;
 use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
@@ -34,6 +35,13 @@ final class ListingSearch
 {
     /** The largest radius, in km: the route's `radius` maximum and the reach of a nearest-first sort. */
     private const MAX_KM = 1000.0;
+
+    /** Most listing ids `ids` takes. */
+    private const MAX_IDS = 50;
+
+    /** Most option names, and values per name, `option` takes. */
+    private const MAX_OPTION_NAMES  = 3;
+    private const MAX_OPTION_VALUES = 10;
 
     /** API filter => search page parameter. */
     private const LISTS = ['category' => 'sCategory', 'country' => 'sCountry', 'region' => 'sRegion', 'city' => 'sCity', 'city_area' => 'sCityArea'];
@@ -86,7 +94,7 @@ final class ListingSearch
         if ($userId !== null) {
             $filters['user'] = (string) $userId;
         }
-        $pager = Pager::fromRequest($request, $this->cursor, $sort->spec($this->facts->defaultLimit(), $this->facts->maxLimit()), $path, $filters);
+        $pager = Pager::fromRequest($request, $this->cursor, $sort->spec($this->facts->defaultLimit(), $this->facts->maxLimit()), $path, $filters, true);
 
         $params = self::params($request, $this->reader->categories(), $context->locale(), $userId) + [
             'sOrder'     => $sort->searchOrder(),
@@ -97,10 +105,11 @@ final class ListingSearch
             SearchCriteria::fromRequest($params, ['pageSize' => $pager->limit(), 'maxPageSize' => $pager->limit()]),
             new \Search(),
             'api',
-            fn (\Search $search) => $this->shape($sort, $pager, $search, $near),
+            fn (\Search $search) => $this->shape($sort, $pager, $search, $near, $request->queryBool('in_stock'), $request->queryBool('on_sale'), self::optionFilter($request), self::idFilter($request)),
             $pager->counts(),
             $params,
-            fn (array $rows): array => $this->reader->extend($rows, $context)
+            fn (array $rows): array => $this->reader->extend($rows, $context),
+            $this->reader->extendKey($context)
         );
 
         return $pager->respond(
@@ -130,8 +139,15 @@ final class ListingSearch
      * Finish the search after SearchRunner set its sort and page: a total order (the id
      * breaks ties), the keyset condition, and one row more than the page.
      */
-    private function shape(ListingSort $sort, Pager $pager, \Search $search, ?array $near): void
+    private function shape(ListingSort $sort, Pager $pager, \Search $search, ?array $near, bool $inStock = false, bool $onSale = false, array $options = [], ?array $ids = null): void
     {
+        $variant = self::variantCondition($inStock, $onSale, $options);
+        if ($variant !== null) {
+            $search->addCondition($variant[0], $variant[1]);
+        }
+        if ($ids !== null) {
+            $search->addCondition($ids === [] ? '1 = 0' : ListingQuery::tableName() . '.pk_i_id IN (' . implode(', ', $ids) . ')');
+        }
         if ($near !== null) {
             $search->near(...$near);
             if ($sort->name() === 'distance') {
@@ -147,6 +163,90 @@ final class ListingSearch
             $search->addCondition(...$sort->after(ListingQuery::tableName(), $after));
         }
         $search->limit($pager->offset(), $pager->limit() + 1);
+    }
+
+    /**
+     * The condition for `in_stock`, `on_sale` and `option`: the listing has one variant that is in
+     * stock (stock not tracked, or above 0), on sale (a was price above the price it sells at)
+     * and/or has these options. With several, one variant must meet all. A per-row probe, not
+     * EXISTS: the planner would turn EXISTS into a scan of every variant before the sort (0.2 s
+     * against 0.4 ms on 232k listings).
+     *
+     * @param array<string,string[]> $options name => values, from optionFilter()
+     *
+     * @return array{0:string,1:string[]}|null the SQL with `?` marks, and the values for them
+     */
+    private static function variantCondition(bool $inStock, bool $onSale, array $options = []): ?array
+    {
+        if (!$inStock && !$onSale && $options === []) {
+            return null;
+        }
+        $variants = VariantStore::tableName();
+        $item     = ListingQuery::tableName();
+        $where    = array($variants . '.fk_i_item_id = ' . $item . '.pk_i_id');
+        if ($inStock) {
+            $where[] = '(' . $variants . '.i_stock IS NULL OR ' . $variants . '.i_stock > 0)';
+        }
+        if ($onSale) {
+            $where[] = $variants . '.i_compare_price > COALESCE(' . $variants . '.i_price, ' . $item . '.i_price)';
+        }
+        $params = [];
+        foreach ($options as $name => $values) {
+            $any = [];
+            foreach ($values as $value) {
+                $pair     = json_encode((string) $name, VariantStore::JSON_FLAGS) . ':' . json_encode($value, VariantStore::JSON_FLAGS);
+                $any[]    = $variants . '.s_options LIKE ?';
+                $params[] = '%' . addcslashes($pair, '%_\\') . '%';
+            }
+            $where[] = '(' . implode(' OR ', $any) . ')';
+        }
+
+        return ['(SELECT 1 FROM ' . $variants . ' WHERE ' . implode(' AND ', $where) . ' LIMIT 1) IS NOT NULL', $params];
+    }
+
+    /**
+     * `option[<name>][]=<value>` as name => values: or within a name, and across names. Over the
+     * caps (3 names, 10 values each, VariantStore's length limits) is dropped, not refused.
+     *
+     * @return array<string,string[]>
+     */
+    private static function optionFilter(Request $request): array
+    {
+        $given = $request->query()['option'] ?? null;
+        $out   = [];
+        foreach (is_array($given) ? $given : [] as $name => $raw) {
+            $name = trim((string) $name);
+            if ($name === '' || mb_strlen($name) > VariantStore::MAX_NAME || count($out) >= self::MAX_OPTION_NAMES) {
+                continue;
+            }
+            $values = [];
+            foreach (is_array($raw) ? $raw : [$raw] as $value) {
+                $value = is_scalar($value) ? trim((string) $value) : '';
+                if ($value !== '' && mb_strlen($value) <= VariantStore::MAX_VALUE && !in_array($value, $values, true) && count($values) < self::MAX_OPTION_VALUES) {
+                    $values[] = $value;
+                }
+            }
+            if ($values !== []) {
+                $out[$name] = $values;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * `ids=1,2,3` as listing ids (the first 50), or null when the filter is not asked for. Asked
+     * for with no valid id, it matches nothing.
+     *
+     * @return int[]|null
+     */
+    private static function idFilter(Request $request): ?array
+    {
+        if ($request->queryList('ids') === []) {
+            return null;
+        }
+
+        return array_slice(array_values(array_unique($request->queryIds('ids'))), 0, self::MAX_IDS);
     }
 
     /**

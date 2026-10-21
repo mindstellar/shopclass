@@ -63,6 +63,7 @@ final class Problem
         'not_found'              => [404, 'Not found.'],
         'method_not_allowed'     => [405, 'This method is not allowed here.'],
         'conflict'               => [409, 'The request conflicts with the current state.'],
+        'already_reviewed'       => [409, 'The user has already rated this listing.'],
         'idempotency_in_flight'  => [409, 'A request with this Idempotency-Key is still running.'],
         'precondition_failed'    => [412, 'The resource has changed.'],
         'too_large'              => [413, 'The request body is too large.'],
@@ -70,6 +71,8 @@ final class Problem
         'validation_failed'      => [422, 'The request is not valid.'],
         'idempotency_key_reused' => [422, 'This Idempotency-Key was used for a different request.'],
         'listing_limit'          => [422, 'The listing limit is reached.'],
+        'insufficient_credits'   => [422, 'Not enough credits to publish the listing.'],
+        'page_too_deep'          => [422, 'The page is past the deepest page a list reaches.'],
         'rate_limited'           => [429, 'Too many requests.'],
         'login_blocked'          => [429, 'Too many failed sign-ins.'],
         'too_many_failures'      => [429, 'Too many failed attempts from this address.'],
@@ -85,6 +88,7 @@ final class Problem
         'type', 'enum', 'minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'format',
         'minItems', 'maxItems', 'minProperties', 'required', 'additionalProperties',
         'invalid', 'unknown', 'taken', 'mismatch', 'limit', 'rejected',
+        'out_of_stock', 'not_buyable', 'unavailable', 'too_many_open',
     ];
 
     /** Core service reasons that answer as another field code. */
@@ -95,6 +99,11 @@ final class Problem
         'too_fast'      => 'rejected',
         'refused'       => 'rejected',
         'listing_limit' => 'limit',
+        'empty'         => 'minItems',
+        'qty'           => 'maximum',
+        'unknown_user'  => 'rejected',
+        'too_small'     => 'minimum',
+        'nothing_to_pay' => 'rejected',
     ];
 
     private function __construct()
@@ -215,7 +224,7 @@ final class Problem
     {
         return match (true) {
             $e instanceof NotFoundException  => self::make('not_found', $e->getMessage()),
-            $e instanceof ConflictException  => self::make('conflict', $e->getMessage()),
+            $e instanceof ConflictException  => self::make($e->reason() === ConflictException::ALREADY_REVIEWED ? 'already_reviewed' : 'conflict', $e->getMessage()),
             $e instanceof ForbiddenException => self::make(self::REFUSALS[$e->reason()] ?? 'forbidden', $e->getMessage()),
             $e instanceof BlockedException   => self::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
             $e instanceof InvalidException   => self::validation($e->errors()),

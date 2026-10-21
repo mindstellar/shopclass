@@ -50,6 +50,7 @@ curl -H "Authorization: Bearer $KEY" $API/
     "friendly_urls": true,
     "features": { "users": true, "registration": true, "comments": true },
     "api": { "registration": false, "personal_keys": true, "photo_urls": false },
+    "cart": { "max_lines": 50, "max_qty": 20 },
     "links": {
       "listings": "https://example.com/api/v1/listings",
       "categories": "https://example.com/api/v1/categories",
@@ -145,7 +146,7 @@ curl -H "Authorization: Bearer $KEY" "$API/listings/159?include=custom_fields,tr
 Related: `GET /listings/{id}/photos`, `GET /listings/{id}/photos/{photo}`,
 `GET /listings/{id}/comments` (approved comments, oldest first, when comments are on),
 `GET /comments/{id}` and `GET /users/{id}/listings`.
-A pending, disabled or spam listing is a `404` except to its owner and keys with the admin view.
+A pending, disabled, spam or unpaid listing is a `404` except to its owner and keys with the admin view.
 An expired listing answers with `status: "expired"`, as its page shows it; search leaves it out.
 
 ### Paging
@@ -166,6 +167,9 @@ done
 
 - A cursor is signed and only works with the filters, sort and order it was made for. Any
   other use is a `400` `invalid_cursor`.
+- `GET /listings` also takes `page` (1 or more) for numbered pages, with any sort and not with `cursor`.
+  `meta.page` is the page and, with `count=true`, `meta.pages` is how many there are. Past the
+  deepest page (10,000 listings) it is a `422` `page_too_deep`.
 - `meta.total` is `null` unless you send `count=true`, which counts all matches on the first
   page (it costs a query). Later pages of a `created`, `id` or `price` sort leave it `null`.
 - A cursor is good for a week and its expiry is rounded up to the hour, so a page's
@@ -246,7 +250,7 @@ Location: https://example.com/api/v1/listings/412
 ```
 
 The body is `{"data": {…the listing…}}`. If the site checks new listings first, `data.status` is
-`pending` and a `warnings` list says `listing_pending`.
+`pending` and a `warnings` list says `listing_pending`. A site that sells listing slots may answer `unpaid`, with a `warnings` code `listing_unpaid` and a `payment` member: see [Publish a listing](/docs/developers/api/writes/#publish-a-listing).
 
 ### 4. Edit it
 
@@ -272,6 +276,25 @@ see [Writes](/docs/developers/api/writes/#retrying-safely-with-idempotency-key).
 
 More: comments, saved searches, photo uploads, limits and warnings are in
 [Writes](/docs/developers/api/writes/).
+
+## From PHP, inside the site
+
+A theme or plugin can call any route without HTTP with `osc_api_get()` and `osc_api_call()`.
+They work with the API switched off, need no key, and act as the signed-in visitor (or the
+admin on an admin page). Admin routes from a public page answer 403. A signed-in visitor or admin
+only reads this way: a write answers 403 `wrong_credential`, so it must come from the browser
+with its page token.
+
+```php
+$page = osc_api_get('listings', ['limit' => 12]);
+if ($page['status'] === 200) {
+    foreach ($page['body']['data'] as $listing) { /* ... */ }
+}
+$seo = osc_api_call('GET', 'seo', ['for' => 'listing', 'id' => 12]);
+```
+
+Both return `['status' => int, 'body' => array, 'headers' => array]`. A problem comes back as its
+status and body, never as an exception. The `api_request_before` hook still fires.
 
 ## Response shape
 

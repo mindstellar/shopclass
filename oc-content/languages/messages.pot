@@ -19,15 +19,32 @@ msgid_plural "%1$s (%2$d credits)"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "%1$s and %2$d more"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "%1$s is longer than %2$d characters."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "%1$s × %2$d"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/slot-prompt.php
 msgid "%1$s: %2$s. You have %3$s."
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
 #: oc-includes/osclass/gui/billing/slot-prompt.php
 msgid "%d credit"
 msgid_plural "%d credits"
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/classes/billing/Order.php
+msgid "%d credits"
+msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "%d credits added"
@@ -101,7 +118,7 @@ msgstr ""
 msgid "%s could not be read from the catalog"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/buy-content.php
+#: oc-includes/osclass/gui/billing/parts/package-picker.php
 msgid "%s credits"
 msgstr ""
 
@@ -131,6 +148,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "%s has been updated"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "%s has no value."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -301,6 +322,10 @@ msgstr ""
 msgid "Activity log settings saved"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Add at least one option row, or turn options off."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Added by admin"
 msgstr ""
@@ -347,13 +372,21 @@ msgstr ""
 msgid "Already have an account?"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Amount"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "An error has occurred"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "An item has at most %d option rows."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "An item has at most %d options."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
@@ -384,6 +417,10 @@ msgstr ""
 msgid "Awaiting validation"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Back in stock"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-recover-content.php
 msgid "Back to sign in"
 msgstr ""
@@ -407,7 +444,7 @@ msgstr ""
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid ""
 "Ban %s from this site for good? They will not be able to sign in, post or "
-"send messages. You can undo this under Users → Ban rules."
+"send messages. You can undo this under Settings → Security → Ban rules."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/gateway/OfflineGateway.php
@@ -416,6 +453,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
 msgid "Bank transfer settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Below"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php
@@ -462,6 +503,7 @@ msgid "Business"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 #: oc-includes/osclass/gui/billing/slot-prompt.php
 #: oc-includes/osclass/gui/billing/tabs.php
 #: oc-includes/osclass/helpers/hBilling.php
@@ -487,8 +529,16 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Cancelled"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Cash on delivery"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Cash on delivery fee"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
@@ -525,19 +575,29 @@ msgid ""
 "e-mailed."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Check your inbox to validate your listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Choose 1 to %d of each item."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Choose a country and save; the regions for it load on the next screen."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Choose a delivery method."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Choose a new password"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/buy-content.php
+#: oc-includes/osclass/gui/billing/parts/package-picker.php
 msgid "Choose a package"
 msgstr ""
 
@@ -636,8 +696,16 @@ msgstr ""
 msgid "Contact the seller"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Contact the site owner."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 msgid "Continue"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Continue to payment"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
@@ -685,7 +753,7 @@ msgid "Create one"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/billing/tabs.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Credits"
@@ -749,7 +817,7 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Date"
 msgstr ""
@@ -760,11 +828,16 @@ msgid "Delete"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Delete \"%s\"? This cannot be undone."
 msgstr ""
 
 #: oc-includes/osclass/gui/user-delete_account-content.php
 msgid "Delete my account"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Delete this listing"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -903,6 +976,10 @@ msgstr ""
 msgid "Enter a valid email address."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Enter an amount, e.g. 49 or 49.50."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Enter how many credits to add or remove"
 msgstr ""
@@ -935,6 +1012,10 @@ msgstr ""
 msgid "Error, the passwords don't match"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Every option needs a name."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Existing email"
 msgstr ""
@@ -956,7 +1037,7 @@ msgstr ""
 msgid "Extra photos"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Failed"
 msgstr ""
 
@@ -1142,6 +1223,10 @@ msgstr ""
 msgid "Keep me signed in"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Keep this under %d characters."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "Key"
 msgstr ""
@@ -1226,8 +1311,18 @@ msgstr ""
 msgid "Links are not allowed in messages."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/CartPricer.php
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Listing #%d"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Listing counts are recalculated"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "Listing: %s"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
@@ -1339,6 +1434,10 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Name at least one option, such as Colour or Size."
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingService.php
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Name too long."
@@ -1422,6 +1521,10 @@ msgid "No keywords have been deleted"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-items-content.php
+msgid "No listing is waiting for payment."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
 msgid "No listings with this status."
 msgstr ""
 
@@ -1431,7 +1534,14 @@ msgid ""
 "try again later."
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "No package covers %d credit."
+msgid_plural "No package covers %d credits."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 msgid "No payment method is set up yet."
 msgstr ""
 
@@ -1520,6 +1630,10 @@ msgstr ""
 msgid "Not enough credits for this upgrade. <a href=\"%s\">Buy more credits</a>"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Not enough left in stock."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Nothing has moved yet."
 msgstr ""
@@ -1601,6 +1715,14 @@ msgstr ""
 msgid "Only a paid order can be refunded"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only a paid order, or an unpaid cash on delivery one, can be marked shipped"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only a shipped order can be marked delivered"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "Only a site admin can ban a sender for good."
 msgstr ""
@@ -1609,6 +1731,14 @@ msgstr ""
 msgid ""
 "Only a site admin can ban a sender for good. Sign in to the admin in this "
 "browser, then open the link again."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "Only an administrator can customise the theme."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only an order that is not paid yet can be cancelled"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebAjax.php
@@ -1623,6 +1753,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Only registered users can share listings"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingService.php
+msgid "Only the shop owner can add products"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
@@ -1646,12 +1780,45 @@ msgstr ""
 msgid "Oops! you can not do that"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Open the listing you want to publish from your listings."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Option"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Option %1$s has more than %2$d values."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Option name %1$s is longer than %2$d characters."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Order #%d"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is cancelled"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is marked delivered"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is marked paid"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Order #%d is marked paid and the credits have been added"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is marked shipped"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -1666,6 +1833,10 @@ msgstr ""
 msgid ""
 "Order #%d was marked failed and is now marked paid; the credits have been "
 "added"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Order %s"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/tabs.php
@@ -1696,7 +1867,7 @@ msgstr ""
 msgid "Pages"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Paid"
 msgstr ""
 
@@ -1725,12 +1896,28 @@ msgstr ""
 msgid "Paused"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/buy-content.php
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
+msgid "Pay %s when it arrives."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Pay again"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Pay for or cancel your open orders first, or choose another way to pay."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Pay later"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+#: oc-includes/osclass/gui/billing/parts/package-picker.php
 msgid "Payment method"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Pending"
 msgstr ""
 
@@ -1805,18 +1992,6 @@ msgid "Please type a comment"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin couldn't be installed"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin couldn't be installed because of: %s"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin couldn't be installed because their files are missing"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Plugin couldn't be uninstalled"
 msgstr ""
 
@@ -1841,10 +2016,6 @@ msgid "Plugin is already enabled"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugin is already installed"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Plugin uninstalled"
 msgstr ""
 
@@ -1864,8 +2035,16 @@ msgstr ""
 msgid "Price"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Price drop"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Price must be a number."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Price must be a positive number."
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
@@ -1900,9 +2079,24 @@ msgstr ""
 msgid "Public profile"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hItems.php
+msgid "Publish (%d credit)"
+msgid_plural "Publish (%d credits)"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "Publish a listing"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+#: oc-includes/osclass/helpers/hItems.php
+msgid "Publish for free"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "Publish your listing"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
@@ -1934,7 +2128,7 @@ msgid ""
 "were."
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Receipt"
 msgstr ""
 
@@ -1951,14 +2145,18 @@ msgid "Recount category stats has been successful"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/gateway/OfflineGateway.php
-msgid "Reference: #%d"
+msgid "Reference: %s"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Refresh"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Refund"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Refunded"
 msgstr ""
 
@@ -2044,6 +2242,10 @@ msgstr ""
 msgid "Rule updated correctly"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "SKU too long."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "Save"
 msgstr ""
@@ -2066,6 +2268,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 msgid "See all of your listings"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+msgid "See all of your orders"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -2131,6 +2337,14 @@ msgstr ""
 msgid "Sharing listings by email has been disabled by the administrator"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Shipping class too long."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
+msgid "Shop settings have been updated"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
 msgid "Shopclass has been updated to %s"
 msgstr ""
@@ -2148,6 +2362,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Sign in to message"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Sign in to place an order."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
@@ -2255,8 +2473,16 @@ msgstr ""
 msgid "Spent"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
+#: oc-includes/osclass/classes/billing/CartPricer.php
+msgid "Standard delivery"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Status"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Stock must be a whole number, 0 or more."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
@@ -2393,6 +2619,11 @@ msgstr ""
 msgid "That package could not be saved"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "That package does not cover the credits this listing needs."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That package is no longer available"
 msgstr ""
@@ -2405,10 +2636,12 @@ msgstr ""
 msgid "That password is not right. Nothing was started."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That payment method is not available"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That payment method is not available right now. Try again or choose another."
 msgstr ""
@@ -2557,6 +2790,10 @@ msgstr ""
 msgid "The description is too long. Use %d characters or fewer."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The draft could not be saved."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminEmails.php
 msgid "The email couldn't be updated, at least one title should not be empty"
 msgstr ""
@@ -2596,6 +2833,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "The keyword must be at least %d characters long"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "The kind is stock or price."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -2688,6 +2929,27 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The listing is marked as spam. Unmark it in order to make it public"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The listing is not waiting for payment"
+msgstr ""
+
+#: oc-includes/osclass/classes/api/controller/admin/AdminListingsController.php
+msgid "The listing is not waiting for payment."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The listing is published; the seller was not charged"
+msgstr ""
+
+#: oc-includes/osclass/classes/moderation/ListingModeration.php
+msgid "The listing is waiting for payment. Publish it instead."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+#: oc-includes/osclass/classes/listing/WishlistService.php
+msgid "The listing was not found."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
@@ -2784,13 +3046,19 @@ msgid "The plugin folder is not writable"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid ""
-"The plugin generated %d characters of <strong>unexpected output</strong> "
-"during the installation. Output: \"%s\""
+msgid "The plugin has been uploaded correctly"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "The plugin has been uploaded correctly"
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The plugins this theme needs are active."
+msgstr ""
+
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "The rating must be a whole number from 1 to 5"
+msgstr ""
+
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "The rating must be from 1 to 5"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -2803,6 +3071,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/exception/InvalidException.php
 msgid "The request was refused."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The sections could not be published."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebAjax.php
@@ -2869,6 +3141,10 @@ msgstr ""
 msgid "The theme has been installed correctly"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "The tracking link has to be a full https:// address"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "The translation folder is not writable"
 msgstr ""
@@ -2927,6 +3203,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "The username was updated"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "The variant is not one of this listing's."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -3057,8 +3337,16 @@ msgstr ""
 msgid "This alert could not be kept after an update. Save the search again."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This field is needed."
+msgstr ""
+
 #: oc-includes/osclass/classes/currency/CurrencyService.php
 msgid "This is the site's default currency."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This item is no longer for sale."
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -3083,10 +3371,44 @@ msgid ""
 "extend"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "This listing costs %1$s. You have %2$s."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "This listing could not be published. Try again later."
+msgstr ""
+
 #: oc-includes/osclass/classes/comment/CommentService.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "This listing doesn't exist"
 msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "This listing has no price to drop."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "This listing is already published"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "This listing is free to publish now."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ProductAlerts.php
+msgid "This listing is not for sale."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "This listing is not waiting for payment."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "This listing will cost %d credit. You pay on the last step."
+msgid_plural "This listing will cost %d credits. You pay on the last step."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 #: oc-includes/osclass/classes/location/LocationService.php
@@ -3105,6 +3427,14 @@ msgstr ""
 msgid "This message was already sent, or its link has expired."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This payment method is not available right now. Try another."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "This payment method is not available."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "This report link is not valid or has expired."
 msgstr ""
@@ -3117,10 +3447,20 @@ msgstr ""
 msgid "This search could not be saved. Search again and try once more."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid ""
+"This site does not allow this listing to be published. Contact the site "
+"owner."
+msgstr ""
+
 #: oc-includes/osclass/classes/api/Kernel.php
 #: oc-includes/osclass/classes/api/controller/AccountKeysController.php
 #: oc-includes/osclass/classes/apikey/PersonalKeys.php
 msgid "This site does not let users make API keys."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "This theme has nothing to customise."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
@@ -3246,6 +3586,12 @@ msgid_plural "Use %d credits and post"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Use %d credit and publish"
+msgid_plural "Use %d credits and publish"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "User id isn't in the correct format"
 msgstr ""
@@ -3298,6 +3644,27 @@ msgstr ""
 msgid "Validation email re-sent"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Variant %d:"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "View your listing"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
+#: oc-includes/osclass/helpers/hItems.php
+msgid "Waiting for payment"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Waiting for the payment to be confirmed."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Was price must be a positive number."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid ""
 "We have just sent you an email to validate your account, you will have to "
@@ -3345,6 +3712,10 @@ msgstr ""
 #: oc-includes/osclass/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Website"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Weight must be a whole number of grams, 0 or more."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -3449,6 +3820,10 @@ msgstr ""
 msgid "You currently sign in as %s."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "You do not have enough credits to publish this listing."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -3462,12 +3837,25 @@ msgstr ""
 msgid "You have %1$d live listings, which is over your limit of %2$d."
 msgstr ""
 
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "You have already rated this item"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "You have enough credits to publish this listing."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "You have no alerts yet."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "You have not bought any credits yet."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+#: oc-includes/osclass/gui/billing/orders-content.php
+msgid "You have not ordered anything yet."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
@@ -3491,8 +3879,18 @@ msgstr ""
 msgid "You must be logged in to delete a comment"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "You need %d more credit. Credits left over stay in your wallet."
+msgid_plural "You need %d more credits. Credits left over stay in your wallet."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "You need to be logged to comment"
+msgstr ""
+
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "You need to be logged to rate"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
@@ -3544,6 +3942,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Your account is not deleted yet. Enter your password and click Delete my "
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "Your cart is empty."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
@@ -3637,11 +4039,22 @@ msgstr ""
 msgid "Your listing has been deleted"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Your listing has been published"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Your listing is published."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Your listing is saved. Pay for it on the next page to publish it."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+#: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Your listing will be published after an admin approves it."
 msgstr ""
 
@@ -3651,6 +4064,7 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
+#: oc-includes/osclass/gui/billing/publish-content.php
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Your listings"
 msgstr ""
@@ -3688,11 +4102,16 @@ msgid "Your new key"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "Your orders"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "Your password"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Your payment arrived, but the listing is not published yet: %s."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
@@ -3716,6 +4135,10 @@ msgstr ""
 msgid "Your reCAPTCHA key has been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+msgid "Your recent orders"
+msgstr ""
+
 #: oc-includes/osclass/classes/security/Csrf.php
 msgid "Your session has expired, please reload the page and try again."
 msgstr ""
@@ -3728,6 +4151,10 @@ msgstr ""
 msgid "Zip code too long."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "an error stopped it"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "credits available"
 msgstr ""
@@ -3738,6 +4165,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/slot-prompt.php
 msgid "free"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "give a value for each option: %s."
 msgstr ""
 
 #: oc-includes/osclass/classes/category/CategoryService.php
@@ -3806,12 +4237,28 @@ msgstr ""
 msgid "robots.txt is not writable. Fix the file or folder permissions and try again"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "the photo must be one of this listing's photos."
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "the price went up before the payment arrived"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "the same options as variant %d."
+msgstr ""
+
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid "the seller of \"%s\""
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid "the site owner"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/ListingCheckout.php
+msgid "this site does not allow it to be published"
 msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php

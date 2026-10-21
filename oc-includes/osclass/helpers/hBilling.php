@@ -10,11 +10,15 @@
  */
 
 use mindstellar\billing\Billing;
+use mindstellar\billing\CartPricer;
 use mindstellar\billing\EntitlementStore;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
+use mindstellar\billing\gateway\CashOnDeliveryGateway;
 use mindstellar\billing\gateway\OfflineGateway;
 use mindstellar\billing\ItemUpgradeStore;
+use mindstellar\billing\OrderLineStore;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
@@ -75,6 +79,23 @@ function osc_billing_free_live_listings(): int
 function osc_billing_slot_enabled(): bool
 {
     return osc_get_bool_preference('billing_slot_enabled', 'osclass');
+}
+
+/**
+ * Whether a listing over the free limit is held until its slot is paid, instead of refused.
+ * Needs billing and slot sales on; the billing_pay_at_post preference defaults to on.
+ * Set on the admin Billing > Pricing screen.
+ *
+ * @return bool
+ */
+function osc_billing_pay_at_post(): bool
+{
+    if (!osc_billing_enabled() || !osc_billing_slot_enabled()) {
+        return false;
+    }
+    $v = osc_get_preference('billing_pay_at_post', 'osclass');
+
+    return $v === '' || $v === null ? true : (bool) (int) $v;
 }
 
 /**
@@ -159,6 +180,89 @@ function osc_billing_offline_instructions(): string
     $v = osc_get_preference('billing_offline_instructions', 'osclass');
 
     return $v === null ? '' : (string) $v;
+}
+
+/**
+ * Core's flat delivery charge for goods orders, in micros. 0 = free.
+ *
+ * @return int
+ */
+function osc_billing_shipping_flat(): int
+{
+    return osc_get_int_preference('billing_shipping_flat', 0, 0);
+}
+
+/**
+ * Subtotal from which delivery is free, in micros. 0 = never.
+ *
+ * @return int
+ */
+function osc_billing_free_over(): int
+{
+    return osc_get_int_preference('billing_free_over', 0, 0);
+}
+
+/**
+ * Whether cash on delivery is offered at checkout.
+ *
+ * @return bool
+ */
+function osc_billing_cod_enabled(): bool
+{
+    return osc_get_bool_preference('billing_cod_enabled', 'osclass');
+}
+
+/**
+ * The fee added to a cash on delivery order, in micros.
+ *
+ * @return int
+ */
+function osc_billing_cod_fee(): int
+{
+    return osc_get_int_preference('billing_cod_fee', 0, 0);
+}
+
+/**
+ * Days an unpaid bank transfer or cash on delivery order holds its stock before it is cancelled,
+ * and days a listing saved over the limit waits for payment before it is deleted.
+ *
+ * @return int
+ */
+function osc_billing_hold_days(): int
+{
+    return osc_get_int_preference('billing_hold_days', 7, 1);
+}
+
+/**
+ * Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit.
+ *
+ * @return int
+ */
+function osc_billing_open_hold_orders(): int
+{
+    return osc_get_int_preference('billing_open_hold_orders', 3, 0);
+}
+
+/**
+ * Text printed before an order's id in its number, e.g. "KC-". Empty by default.
+ *
+ * @return string
+ */
+function osc_billing_order_prefix(): string
+{
+    return (string) preg_replace('/[^A-Za-z0-9-]/', '', (string) osc_get_preference('billing_order_prefix', 'osclass'));
+}
+
+/**
+ * An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix.
+ *
+ * @param int $orderId
+ *
+ * @return string
+ */
+function osc_billing_order_number(int $orderId): string
+{
+    return '#' . osc_billing_order_prefix() . $orderId;
 }
 
 /**
@@ -446,7 +550,7 @@ function osc_user_listing_limit(?int $userId = null): int
  * How many live listings $userId currently holds -- what osc_user_listing_limit() is
  * spent against. Counts listings awaiting moderation and admin-disabled ones too (see
  * EntitlementStore::liveListings()), so it matches the gate rather than what is publicly
- * visible. 0 while billing is off or no user is known.
+ * visible. Held (unpaid) listings are not counted. 0 while billing is off or no user is known.
  *
  * @param int|null $userId
  *
@@ -464,6 +568,25 @@ function osc_user_listings_used(?int $userId = null): int
     }
 
     return EntitlementStore::liveListings((int) $userId);
+}
+
+/**
+ * What the next listing costs $userId when it goes live: the extra slots it needs, their
+ * credits, the balance and the shortfall. All zeros when billing is off or nobody is signed in.
+ * The post form, the slot box and the listing rows read it.
+ *
+ * @param int|null $userId
+ *
+ * @return array{slots: int, credits: int, balance: int, shortfall: int}
+ */
+function osc_billing_next_listing_quote(?int $userId = null): array
+{
+    $userId = $userId ?? osc_logged_user_id();
+    if (!osc_billing_enabled() || empty($userId)) {
+        return array('slots' => 0, 'credits' => 0, 'balance' => 0, 'shortfall' => 0);
+    }
+
+    return \mindstellar\billing\ListingCheckout::nextListing((int) $userId);
 }
 
 /**
@@ -511,6 +634,7 @@ function osc_user_can_publish(?int $userId = null): bool
  * (the submit path), and is empty where there is not (opening the form).
  *
  * When extra slots are on sale the default names that remedy too. Filterable.
+ * Shown only when the post is refused (pay at post off, or a billing_can_publish veto).
  *
  * @param int|null            $userId
  * @param array<string,mixed> $item
@@ -649,6 +773,62 @@ function osc_billing_orders_url(): string
 }
 
 /**
+ * Where a payment gateway sends the buyer back after paying for an order. The orders list by
+ * default; a theme with its own order page returns that page through the filter.
+ *
+ * @param int $orderId
+ *
+ * @return string
+ */
+function osc_billing_order_return_url(int $orderId): string
+{
+    $event = new \mindstellar\billing\event\OrderReturnUrlResolving($orderId, osc_billing_orders_url());
+    \mindstellar\boot\CoreServices::dispatcher()->dispatch($event);
+
+    return $event->url();
+}
+
+/**
+ * Whether the user has a paid, shipped or delivered order with this listing on it.
+ *
+ * @param int $userId
+ * @param int $itemId
+ *
+ * @return bool
+ */
+function osc_order_bought(int $userId, int $itemId): bool
+{
+    return OrderLineStore::bought($userId, $itemId);
+}
+
+/**
+ * How many goods orders the user has in these statuses, e.g. a promotion's first-order check
+ * with array('pending', 'paid', 'shipped', 'delivered'). Credits orders are not counted.
+ *
+ * @param int      $userId
+ * @param string[] $statuses Order::STATUS_* values
+ *
+ * @return int
+ */
+function osc_billing_user_order_count(int $userId, array $statuses): int
+{
+    return OrderStore::countForUser($userId, $statuses);
+}
+
+/**
+ * The lines of one order: {id, order_id, kind, item_id, variant_id, title, options, sku, qty,
+ * unit, amount, meta}, amounts in micros. Empty for a credits order.
+ *
+ * @param int $orderId
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function osc_order_lines(int $orderId): array
+{
+    return OrderLineStore::ofOrder($orderId);
+}
+
+/**
  * The POST target for featuring one of the user's own listings. The item id travels in
  * the URL so a theme's "feature this listing" form needs no hidden field beyond the
  * CSRF token the shutdown injector already adds.
@@ -660,6 +840,18 @@ function osc_billing_orders_url(): string
 function osc_billing_upgrade_url(int $itemId): string
 {
     return osc_core_url('billing_upgrade', array('itemId' => $itemId));
+}
+
+/**
+ * The pay step for a held listing: the page where the seller pays for it and it goes live.
+ *
+ * @param int $itemId
+ *
+ * @return string
+ */
+function osc_billing_publish_url(int $itemId): string
+{
+    return osc_core_url('billing_publish', array('itemId' => $itemId));
 }
 
 /**
@@ -1303,15 +1495,32 @@ function osc_register_billing_seller_limits(): void
 osc_register_billing_seller_limits();
 
 /*
- * Core's reference gateway -- bank transfer settled by hand from the admin order
- * screen. Registered only once billing is switched on: an unconditional registration
+ * Core's own gateways -- bank transfer and cash on delivery, settled by hand from the admin
+ * order screen. Registered only once billing is switched on: an unconditional registration
  * would offer a payment method at checkout that a site never asked for.
  */
 osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
         $registry->register(new OfflineGateway());
+        $registry->register(new CashOnDeliveryGateway());
     }
 });
+osc_add_filter('cart_totals', array(CashOnDeliveryGateway::class, 'feeLine'), 5);
+
+/*
+ * Bank transfer and cash on delivery orders hold stock; a daily job cancels those left unpaid.
+ */
+// The My listings rows of a held listing (listeners live in hItems.php, which loads first).
+osc_add_filter('listing_row_badges', 'osc_listing_row_unpaid_badge');
+osc_add_filter('listing_row_actions', 'osc_listing_row_unpaid_actions');
+osc_add_hook('delete_item', array(\mindstellar\billing\ListingCheckout::class, 'onListingDeleted'));
+osc_add_hook('register_jobs', array(Billing::class, 'registerJobs'));
+osc_add_hook('cron_daily', array(Billing::class, 'queueRelease'));
+
+/*
+ * Core's own delivery method, "Standard delivery" at the flat amount from the billing settings.
+ */
+osc_add_filter('cart_shipping_methods', array(CartPricer::class, 'standardMethod'), 5);
 
 /*
  * The content of the wallet/buy/orders pages, registered as render targets so a
@@ -1321,6 +1530,38 @@ osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegist
 osc_register_render_target('billing/wallet', ABS_PATH . 'oc-includes/osclass/gui/billing/wallet-content.php');
 osc_register_render_target('billing/buy', ABS_PATH . 'oc-includes/osclass/gui/billing/buy-content.php');
 osc_register_render_target('billing/orders', ABS_PATH . 'oc-includes/osclass/gui/billing/orders-content.php');
+osc_register_render_target('billing/publish', ABS_PATH . 'oc-includes/osclass/gui/billing/publish-content.php');
+
+/**
+ * A signed-in shopper's saved cart: `{variant, qty}` lines, no prices. Empty for a guest.
+ *
+ * @return array<int,array{variant:int,qty:int}>
+ */
+function osc_cart_saved(int $userId): array
+{
+    return \mindstellar\billing\CartStore::read($userId)['lines'];
+}
+
+if (!function_exists('osc_billing_gateway_setup_url')) {
+    /**
+     * Where an admin sets a payment method up, or '' when the gateway does not say. A gateway
+     * names it with an optional settingsUrl(): ?string method; one without it has no link.
+     *
+     * @param \mindstellar\billing\PaymentGateway $gateway
+     *
+     * @return string
+     * @since 7.1.0
+     */
+    function osc_billing_gateway_setup_url($gateway): string
+    {
+        if (!is_object($gateway) || !method_exists($gateway, 'settingsUrl')) {
+            return '';
+        }
+        $url = $gateway->settingsUrl();
+
+        return is_string($url) ? $url : '';
+    }
+}
 
 /*
  * Wallet/buy links on the account menu. This runs through the same 'user_menu_filter'

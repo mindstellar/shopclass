@@ -341,6 +341,7 @@ harness_section('Orders: lifecycle');
 
 $order = OrderStore::create($userId, 'fake', 9_990_000, 'USD', 100, array('sku' => 'credits-100'));
 pin('new orders start pending', Order::STATUS_PENDING, $order->getStatus());
+pin('the money is in for paid, shipped and delivered', array('paid', 'shipped', 'delivered'), Order::SETTLED);
 pin('amount is stored in micros', 9990000, $order->getAmount());
 pin('metadata round-trips', 'credits-100', OrderStore::find($order->getId())->meta('sku'));
 pin('search filters by status and gateway', true, in_array($order->getId(), array_map(static fn ($o) => $o->getId(), OrderStore::search(array('status' => Order::STATUS_PENDING, 'gateway' => 'fake'), 50)), true));
@@ -420,6 +421,16 @@ pin('and the log says it was paid after close', 1, $logged($closed->getId()));
 Billing::handleCallback('fake', array());
 pin('a provider retry of the late payment logs once more', 2, $logged($closed->getId()));
 pin('and still mints nothing', $balance + 200, Wallet::balance($userId));
+$dropped = OrderStore::create($userId, 'fake', 5_000_000, 'USD', 200);
+OrderStore::settle($dropped->getId(), Order::STATUS_CANCELLED);
+$gateway->verdict = CallbackResult::paid($dropped->getId(), 'ext_dropped', 5_000_000, 'USD');
+Billing::handleCallback('fake', array());
+$twice = static fn (int $id): int => (int) $admin->query("SELECT COUNT(*) FROM " . DB_TABLE_PREFIX . "t_log WHERE s_section = 'billing' AND s_action = 'paid twice' AND fk_i_id = $id")->fetch_row()[0];
+pin('a replay on a paid order is not paid twice', 0, $twice($order->getId()));
+$gateway->verdict = CallbackResult::paid($order->getId(), 'ext_other_page', 5_000_000, 'USD');
+Billing::handleCallback('fake', array());
+pin('a second payment of a paid order is logged', 1, $twice($order->getId()));
+pin('a paid callback on a cancelled order is logged too', [Order::STATUS_CANCELLED, 1], [OrderStore::find($dropped->getId())->getStatus(), $logged($dropped->getId())]);
 
 /* A gateway must not be able to settle an order that belongs to another. */
 $rival = new FakeGateway('rival');
@@ -1647,6 +1658,54 @@ pin('an admin-disabled listing still occupies a slot', 1, EntitlementStore::live
 Item::getInstance()->deleteByPrimaryKey($disabledItemId);
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
+ * A held listing (never published, so no dt_first_pub_date) takes no slot, and
+ * osc_billing_pay_at_post() is the switch for holding instead of refusing.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: a held listing takes no slot');
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+
+$heldUserId = seed_user($admin, 'heldslot', 'heldslot@example.test');
+$heldLiveId = seed_item($admin, $categoryId, $heldUserId, 'Live, takes the slot');
+$heldRowId  = seed_item($admin, $categoryId, $heldUserId, 'Held, unpaid');
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL'
+    . ' WHERE pk_i_id = ' . $heldRowId
+);
+pin('a held row is not counted next to a live one', 1, EntitlementStore::liveListings($heldUserId));
+check('the slot is taken by the live listing alone', EntitlementStore::withinFreeQuota($heldUserId) === false);
+Item::getInstance()->deleteByPrimaryKey($heldLiveId);
+pin('with the live one gone, the held row still counts for nothing', 0, EntitlementStore::liveListings($heldUserId));
+check('the free slot is open again', EntitlementStore::withinFreeQuota($heldUserId));
+Item::getInstance()->deleteByPrimaryKey($heldRowId);
+$rawId = seed_item($admin, $categoryId, $heldUserId, 'Raw insert, no first date');
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_first_pub_date = NULL WHERE pk_i_id = ' . $rawId);
+pin('a live row a plugin wrote without a first date still counts', 1, EntitlementStore::liveListings($heldUserId));
+Item::getInstance()->deleteByPrimaryKey($rawId);
+
+$slotSwitchBefore = osc_get_preference('billing_slot_enabled', 'osclass');
+osc_set_preference('billing_slot_enabled', '1', 'osclass', 'BOOLEAN');
+osc_delete_preference('billing_pay_at_post', 'osclass');
+osc_reset_preferences();
+check('pay at post is on by default', osc_billing_pay_at_post());
+osc_set_preference('billing_pay_at_post', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+check('pay at post is off when the preference is 0', osc_billing_pay_at_post() === false);
+osc_set_preference('billing_pay_at_post', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_slot_enabled', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+check('pay at post is off when slot sales are off', osc_billing_pay_at_post() === false);
+osc_set_preference('billing_slot_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+check('pay at post is off when billing is off', osc_billing_pay_at_post() === false);
+osc_delete_preference('billing_pay_at_post', 'osclass');
+osc_set_preference('billing_slot_enabled', (string) $slotSwitchBefore, 'osclass', 'BOOLEAN');
 osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------

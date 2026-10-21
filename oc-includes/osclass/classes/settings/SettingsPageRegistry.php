@@ -96,6 +96,7 @@ final class SettingsPageRegistry extends Registry
         'users',
         'pages',
         'stats',
+        'billing',
     );
 
     /** @var array<string,int> ids a second registration tried to claim */
@@ -129,6 +130,15 @@ final class SettingsPageRegistry extends Registry
      *                             (reached from a link the plugin puts somewhere else).
      *                             Defaults to 'plugins'.
      *   'menu_title' => string    Menu label; defaults to 'title'.
+     *   'group'      => string    A heading inside the Settings menu to sit under: 'general',
+     *                             'content', 'email', 'security' or 'system'. Settings only. A page for the shop
+     *                             uses 'menu' => 'billing' with no group.
+     *   'tabs'       => array|callable  Tab links (label, url, active) drawn above the form,
+     *                             or a callable returning them. For a page that is one tab
+     *                             of a larger screen.
+     *   'return_url' => string|callable  Where to go after a successful save (a callable
+     *                             returns the URL); defaults to the page's own URL. For a
+     *                             page whose form is shown inside another screen.
      *   'section'    => string    Preference section the values are stored in.
      *                             Defaults to the page id, which is what keeps one
      *                             plugin's keys out of core's 'osclass' section.
@@ -288,6 +298,11 @@ final class SettingsPageRegistry extends Registry
             'id'         => $id,
             'title'      => $spec['title'],
             'menu'       => $menu,
+            'group'      => isset($spec['group']) && is_string($spec['group']) && preg_match(self::IDENTIFIER, $spec['group'])
+                ? $spec['group']
+                : '',
+            'tabs'       => isset($spec['tabs']) && (is_array($spec['tabs']) || is_callable($spec['tabs'])) ? $spec['tabs'] : null,
+            'return_url' => isset($spec['return_url']) && (is_string($spec['return_url']) || is_callable($spec['return_url'])) ? $spec['return_url'] : null,
             'menu_title' => isset($spec['menu_title']) && is_string($spec['menu_title'])
                 ? $spec['menu_title']
                 : $spec['title'],

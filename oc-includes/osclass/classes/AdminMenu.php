@@ -32,12 +32,26 @@ class AdminMenu
      * it is kept running (settings, tools). Sections added later — by plugins — append to
      * the last band, which is where a plugin's own screens belong anyway.
      */
+    /** The entry that closes each section that has settings of its own. */
+    private const SETTINGS_ENTRY = array(
+        'items'   => 'items_settings',
+        'users'   => 'users_settings',
+        'media'   => 'media_settings',
+        'billing' => 'billing_settings',
+    );
+
     private const BAND_STARTS = array('items', 'appearance', 'settings');
 
     private $aMenu;
 
     /** Submenu keys per section as core left them, before anyone else registered. */
     private $aCoreSubmenus = array();
+
+    /** @var array<string,array<string,int>> weight a plugin gave each entry it added, per section */
+    private $aWeight = array();
+
+    /** Submenu keys a plugin placed inside a group heading, per section. */
+    private $aPlaced = array();
 
     /**
      * Start with an empty menu tree.
@@ -117,13 +131,6 @@ class AdminMenu
             __('Manage users'),
             osc_admin_base_url(true) . '?page=users',
             'users_manage',
-            'administrator'
-        );
-        $this->add_submenu(
-            'users',
-            __('Ban rules'),
-            osc_admin_base_url(true) . '?page=users&action=ban',
-            'users_ban',
             'administrator'
         );
         $this->add_submenu(
@@ -224,6 +231,7 @@ class AdminMenu
                 'billing_credits',
                 'administrator'
             );
+            // Plugin pages that belong to selling (Shipping, Tax, ...) land before this entry.
             $this->add_submenu(
                 'billing',
                 __('Settings'),
@@ -290,6 +298,18 @@ class AdminMenu
             'appearance_widgets',
             'administrator'
         );
+        // Shown only for a theme that declares a customiser, which it does on init.
+        osc_add_hook('init_admin', static function () {
+            if (osc_customiser_spec() !== null) {
+                AdminMenu::getInstance()->add_submenu(
+                    'appearance',
+                    __('Customise'),
+                    osc_admin_base_url(true) . '?page=appearance&action=customise',
+                    'appearance_customise',
+                    'administrator'
+                );
+            }
+        });
 
         // "Manage plugins" points at the same page as the section row, which looks like
         // duplication until a plugin registers a screen of its own here — then it is the
@@ -305,116 +325,49 @@ class AdminMenu
             'administrator'
         );
 
-        // Thirteen entries is too many to scan as one list, so they are grouped by what
-        // the setting governs. Every group heading is a plain subhead, not a link.
-        $this->add_menu(__('Settings'), osc_admin_base_url(true) . '?page=settings', 'settings', 'administrator', 'bi bi-gear');
-        $this->add_submenu_divider('settings', __('Site'), 'settings_group_site', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('General'),
-            osc_admin_base_url(true) . '?page=settings',
-            'settings_general',
-            'administrator'
+        // Settings holds what no section owns, under one heading per area. A section's own
+        // settings (Listings, Users, Media, Billing) stay in that section. The headings are
+        // plain subheads; the sidebar lists them and each screen draws its group's tabs.
+        $b = osc_admin_base_url(true);
+        $this->add_menu(__('Settings'), $b . '?page=settings', 'settings', 'administrator', 'bi bi-gear');
+        $rows = array(
+            'general'  => array(__('General'), array(
+                array(__('General'), '?page=settings', 'settings_general'),
+                array(__('Permalinks'), '?page=settings&action=permalinks', 'settings_permalinks'),
+                array(__('Languages'), '?page=languages', 'settings_language'),
+                array(__('Sitemap'), '?page=settings&action=sitemap', 'settings_sitemap'),
+            )),
+            'content'  => array(__('Content'), array(
+                array(__('Comments'), '?page=settings&action=comments', 'settings_comments'),
+                array(__('Latest searches'), '?page=settings&action=latestsearches', 'settings_searches'),
+            )),
+            'email'    => array(__('Email'), array(
+                array(__('Email templates'), '?page=emails', 'settings_emails_manage'),
+                array(__('Mail server'), '?page=settings&action=mailserver', 'settings_mailserver'),
+            )),
+            'security' => array(__('Security'), array(
+                array(__('Spam and bots'), '?page=settings&action=spamNbots', 'settings_spambots'),
+                array(__('Keyword blocklist'), '?page=settings&action=keyword_block', 'settings_keyword_block'),
+                array(__('Ban rules'), '?page=users&action=ban', 'users_ban'),
+            )),
+            'system'   => array(__('System'), array(
+                array(__('Storage'), '?page=settings&action=storage', 'settings_storage'),
+                // Only while billing is off: it is the switch that turns it on. Once on, the
+                // Billing section carries its own Settings entry.
+                array(__('Billing'), '?page=settings&action=billing', 'settings_billing'),
+                array(__('API'), '?page=settings&action=api', 'settings_api'),
+                array(__('Advanced'), '?page=settings&action=advanced', 'settings_advanced'),
+            )),
         );
-        $this->add_submenu(
-            'settings',
-            __('Permalinks'),
-            osc_admin_base_url(true) . '?page=settings&action=permalinks',
-            'settings_permalinks',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Languages'),
-            osc_admin_base_url(true) . '?page=languages',
-            'settings_language',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Sitemap'),
-            osc_admin_base_url(true) . '?page=settings&action=sitemap',
-            'settings_sitemap',
-            'administrator'
-        );
-        $this->add_submenu_divider('settings', __('Content'), 'settings_group_content', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('Comments'),
-            osc_admin_base_url(true) . '?page=settings&action=comments',
-            'settings_comments',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Spam and bots'),
-            osc_admin_base_url(true) . '?page=settings&action=spamNbots',
-            'settings_spambots',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Keyword blocklist'),
-            osc_admin_base_url(true) . '?page=settings&action=keyword_block',
-            'settings_keyword_block',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Latest searches'),
-            osc_admin_base_url(true) . '?page=settings&action=latestsearches',
-            'settings_searches',
-            'administrator'
-        );
-        $this->add_submenu_divider('settings', __('Email'), 'settings_group_email', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('Email templates'),
-            osc_admin_base_url(true) . '?page=emails',
-            'settings_emails_manage',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Mail server'),
-            osc_admin_base_url(true) . '?page=settings&action=mailserver',
-            'settings_mailserver',
-            'administrator'
-        );
-        $this->add_submenu_divider('settings', __('System'), 'settings_group_system', 'administrator');
-        $this->add_submenu(
-            'settings',
-            __('Storage'),
-            osc_admin_base_url(true) . '?page=settings&action=storage',
-            'settings_storage',
-            'administrator'
-        );
-        // Only while billing is off — this is the switch that turns it on, so it has to be
-        // reachable. Once it is on, the Billing section carries its own Settings entry and
-        // listing the same page twice would leave two menu rows fighting to look current.
-        if (!osc_billing_enabled()) {
-            $this->add_submenu(
-                'settings',
-                __('Billing'),
-                osc_admin_base_url(true) . '?page=settings&action=billing',
-                'settings_billing',
-                'administrator'
-            );
+        foreach ($rows as $group => list($title, $entries)) {
+            $this->add_submenu_divider('settings', $title, 'settings_group_' . $group, 'administrator');
+            foreach ($entries as list($label, $path, $id)) {
+                if ($id === 'settings_billing' && osc_billing_enabled()) {
+                    continue;
+                }
+                $this->add_submenu('settings', $label, $b . $path, $id, 'administrator');
+            }
         }
-        $this->add_submenu(
-            'settings',
-            __('API'),
-            osc_admin_base_url(true) . '?page=settings&action=api',
-            'settings_api',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Advanced'),
-            osc_admin_base_url(true) . '?page=settings&action=advanced',
-            'settings_advanced',
-            'administrator'
-        );
 
         $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=system-info', 'tools', 'administrator', 'bi bi-tools');
         $this->add_submenu(
@@ -503,12 +456,28 @@ class AdminMenu
      * @param string      $submenu_id
      * @param string|null $capability 'moderator' to keep it visible to moderators
      * @param string|null $icon_url
+     * @param string|null $group     a group heading in this section: its short name such as
+     *                               'content', or its full id 'settings_group_content'. The entry goes at the end of that
+     *                               group. Unknown or null: it is appended to the section.
+     * @param string[]    $match     further admin urls that mark this entry as the current one,
+     *                               such as the other tabs of a screen
+     * @param int         $weight    in Listings, Users, Media and Billing: where a plugin's list screen goes
+     *                               among the plugin entries, lowest first
      *
      * @return void
      */
-    public function add_submenu($menu_id, $submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
-    {
-        $array                                     = array(
+    public function add_submenu(
+        $menu_id,
+        $submenu_title,
+        $url,
+        $submenu_id,
+        $capability = null,
+        $icon_url = null,
+        $group = null,
+        $match = array(),
+        $weight = 0
+    ) {
+        $array = array(
             $submenu_title,
             $url,
             $submenu_id,
@@ -516,7 +485,98 @@ class AdminMenu
             $capability,
             $icon_url
         );
-        $this->aMenu[$menu_id]['sub'][$submenu_id] = $array;
+        if ($match) {
+            $array[6] = array_values((array)$match);
+        }
+
+        // Billing is only a menu while billing is on; a page placed there otherwise goes to Settings.
+        if ($menu_id === 'billing' && !isset($this->aMenu['billing'])) {
+            $menu_id  = 'settings';
+            $group    = null;
+            $array[3] = $menu_id;
+        }
+
+        $sub = $this->aMenu[$menu_id]['sub'] ?? array();
+        unset($sub[$submenu_id]);
+        $at = null;
+        if ($group !== null) {
+            // The short name ('content') and the full heading id ('settings_group_content') mean the same group.
+            $at = self::groupEnd($sub, 'divider_' . $group)
+                ?? self::groupEnd($sub, 'divider_' . $menu_id . '_group_' . $group);
+        }
+        if ($at === null) {
+            $sub[$submenu_id] = $array;
+        } else {
+            $sub = array_slice($sub, 0, $at, true) + array($submenu_id => $array) + array_slice($sub, $at, null, true);
+            $this->aPlaced[$menu_id][] = $submenu_id;
+        }
+        $this->aMenu[$menu_id]['sub'] = $sub;
+        $this->aWeight[$menu_id][$submenu_id] = (int)$weight;
+        $this->arrange($menu_id);
+    }
+
+    /**
+     * Order a section that closes with its own Settings entry: what core registered keeps its
+     * place, then plugin list screens by weight (lowest first, then the order they were
+     * added), then plugin settings pages, then the Settings entry. Load order alone decides
+     * nothing a plugin can set.
+     */
+    private function arrange(string $menuId): void
+    {
+        $last = self::SETTINGS_ENTRY[$menuId] ?? null;
+        $core = $this->aCoreSubmenus[$menuId] ?? null;
+        if ($last === null || $core === null) {
+            return;
+        }
+        $sub    = $this->aMenu[$menuId]['sub'];
+        $kept   = array();
+        $added  = array();
+        $seq    = 0;
+        foreach ($sub as $key => $entry) {
+            if ($key === $last) {
+                continue;
+            }
+            if (in_array($key, $core, true)) {
+                $kept[$key] = $entry;
+                continue;
+            }
+            $added[$key] = array(strpos($key, 'settings-page-') === 0 ? 1 : 0, $this->aWeight[$menuId][$key] ?? 0, $seq++);
+        }
+        uasort($added, static fn ($a, $b) => $a <=> $b);
+        $out = $kept;
+        foreach (array_keys($added) as $key) {
+            $out[$key] = $sub[$key];
+        }
+        if (isset($sub[$last])) {
+            $out[$last] = $sub[$last];
+        }
+        $this->aMenu[$menuId]['sub'] = $out;
+    }
+
+    /**
+     * Position just after the last entry of the group headed by $dividerKey, or null when
+     * there is no such heading.
+     *
+     * @param array<string,array<mixed>> $sub
+     * @param string                     $dividerKey
+     *
+     * @return int|null
+     */
+    private static function groupEnd(array $sub, string $dividerKey): ?int
+    {
+        $at = null;
+        $i  = 0;
+        foreach ($sub as $key => $entry) {
+            if ($at !== null && strpos($entry[1], 'divider_') === 0) {
+                return $at;
+            }
+            $i++;
+            if ($at !== null || $key === $dividerKey) {
+                $at = $i;
+            }
+        }
+
+        return $at;
     }
 
     /**
@@ -526,21 +586,8 @@ class AdminMenu
      */
     public function renderAdminMenu()
     {
-        // actual url
-        $actual_url  = urldecode(Params::getServerParam('QUERY_STRING', false, false));
-        $actual_page = Params::getParam('page');
-        // A refused save redraws its form from a POST, which has no query string.
-        if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
-            $actual_url = 'page=' . $actual_page;
-        }
-
-        $adminMenu = self::getInstance();
-        $aMenu     = $adminMenu->get_array_menu();
-
-        $is_moderator = osc_is_moderator();
-        [$current_menu, $current_submenu] = self::current($aMenu, $actual_url, $actual_page, $is_moderator, array(osc_admin_base_url(true) . '?', osc_admin_base_url()));
-
-        $currentMenuId = $current_menu;
+        $aMenu = $this->get_array_menu();
+        [$current_menu, $current_submenu] = $this->currentIds();
 
         $sMenu = '<!-- menu -->' . PHP_EOL;
 
@@ -555,6 +602,155 @@ class AdminMenu
 
         $sMenu .= '</ul></div>' . PHP_EOL;
         echo $sMenu;
+    }
+
+    /**
+     * The section and entry ids that the request being served lights up, as [menu, submenu].
+     *
+     * @return array{0:string,1:string}
+     */
+    public function currentIds(): array
+    {
+        $actual_url  = urldecode(Params::getServerParam('QUERY_STRING', false, false));
+        $actual_page = Params::getParam('page');
+        // A refused save redraws its form from a POST, which has no query string.
+        if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
+            $actual_url = 'page=' . $actual_page;
+        }
+
+        return self::current(
+            $this->get_array_menu(),
+            $actual_url,
+            $actual_page,
+            osc_is_moderator(),
+            array(osc_admin_base_url(true) . '?', osc_admin_base_url())
+        );
+    }
+
+    /**
+     * The Settings entries gathered by the heading they sit under, in menu order. Entries
+     * a plugin added with no group of its own are gathered under "Other". A group with
+     * nothing visible in it is left out.
+     *
+     * @param bool $isModerator hide entries a moderator may not see
+     *
+     * @return array<int,array{id:string,title:string,entries:array<int,array{title:string,url:string,id:string}>}>
+     */
+    public function settingsGroups(bool $isModerator = false): array
+    {
+        $core   = array_merge($this->aCoreSubmenus['settings'] ?? array(), $this->aPlaced['settings'] ?? array());
+        $groups = array();
+        $other  = array();
+        $cur    = null;
+        $curOwn = false;
+        foreach ($this->aMenu['settings']['sub'] ?? array() as $key => $entry) {
+            if (strpos($entry[1], 'divider_') === 0) {
+                $cur            = substr($entry[1], 8);
+                $curOwn         = !in_array($key, $core, true);
+                $groups[$cur]   = array('id' => $cur, 'title' => $entry[0], 'entries' => array());
+                continue;
+            }
+            if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
+                continue;
+            }
+            $row = array('title' => $entry[0], 'url' => $entry[1], 'id' => $entry[2]);
+            if ($cur !== null && (in_array($key, $core, true) || $curOwn)) {
+                $groups[$cur]['entries'][] = $row;
+            } else {
+                $other[] = $row;
+            }
+        }
+        $groups = array_values(array_filter($groups, static fn ($group) => $group['entries'] !== array()));
+        if ($other !== array()) {
+            $groups[] = array('id' => 'settings_group_other', 'title' => __('Other'), 'entries' => $other);
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Every screen the settings search can send an admin to, by entry id: the Settings
+     * entries with their group, each section's own Settings entry, and the pages plugins add
+     * to Billing or to a section as a declared settings page.
+     *
+     * @return array<string,array{path:string[],url:string}> path is the menu titles to click
+     */
+    public function settingsLocations(bool $isModerator = false): array
+    {
+        $out = array();
+        foreach ($this->settingsGroups($isModerator) as $group) {
+            foreach ($group['entries'] as $entry) {
+                $out[$entry['id']] = array('path' => array($this->aMenu['settings'][0] ?? 'Settings', $group['title'], $entry['title']), 'url' => $entry['url']);
+            }
+        }
+        $own = array('items_settings', 'users_settings', 'media_settings', 'billing_settings');
+        foreach ($this->aMenu as $menuId => $menu) {
+            if ($menuId === 'settings' || !self::isSection($menu)) {
+                continue;
+            }
+            $core = $this->aCoreSubmenus[$menuId] ?? array();
+            foreach ($menu['sub'] ?? array() as $key => $entry) {
+                $isOwn   = in_array($key, $own, true);
+                $isAdded = $menuId === 'billing' && !in_array($key, $core, true);
+                if (!$isOwn && !$isAdded && strpos($key, 'settings-page-') !== 0) {
+                    continue;
+                }
+                if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
+                    continue;
+                }
+                $out[$key] = array('path' => array($menu[0], $entry[0]), 'url' => $entry[1]);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The tab links for the Settings group that holds the entry $currentId: label, url,
+     * active. Empty when the entry is in no group, or its group has one screen only.
+     *
+     * @return array<int,array{label:string,url:string,active:bool}>
+     */
+    public function settingsGroupTabs(string $currentId, bool $isModerator = false): array
+    {
+        foreach ($this->settingsGroups($isModerator) as $group) {
+            foreach ($group['entries'] as $entry) {
+                if ($entry['id'] !== $currentId) {
+                    continue;
+                }
+                if (count($group['entries']) < 2) {
+                    return array();
+                }
+
+                return array_map(static fn ($e) => array(
+                    'label'  => $e['title'],
+                    'url'    => $e['url'],
+                    'active' => $e['id'] === $currentId,
+                ), $group['entries']);
+            }
+        }
+
+        return array();
+    }
+
+    /**
+     * The sidebar list for Settings: one entry per group, linking to the group's first screen.
+     *
+     * @return string
+     */
+    private function renderGroupList($parentMenuId, $activeMenu, $activeSubmenu)
+    {
+        $str = '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
+               . '-submenu" data-osc-parent="#dashboard-menu">';
+        foreach ($this->settingsGroups(osc_is_moderator()) as $group) {
+            $isCurrent = in_array($activeSubmenu, array_column($group['entries'], 'id'), true);
+            $str       .= '<li><a class="nav-link py-1 ' . ($isCurrent ? 'sub-active' : '')
+                          . '" id="' . $group['id'] . '" href="' . $group['entries'][0]['url'] . '"'
+                          . ($isCurrent ? ' aria-current="page"' : '') . '>'
+                          . $group['title'] . '</a></li>' . PHP_EOL;
+        }
+
+        return $str . '</ul>';
     }
 
     /**
@@ -585,8 +781,17 @@ class AdminMenu
                     $credential_sub = $aSub[4] ?? $aSub[3];
 
                     if (!$is_moderator || ($credential_sub === 'moderator')) { // show
-                        $url_submenu = $aSub[1];
-                        $url_submenu = str_replace($bases, '', $url_submenu);
+                        $url_submenu = str_replace($bases, '', $aSub[1]);
+                        // A screen with tabs claims the urls of its other tabs; the longest one that matches counts.
+                        if (strpos($actual_url, $url_submenu) !== 0) {
+                            foreach ($aSub[6] ?? array() as $extra) {
+                                $extra = str_replace($bases, '', $extra);
+                                if ($extra !== '' && strpos($actual_url, $extra) === 0) {
+                                    $url_submenu = $extra;
+                                    break;
+                                }
+                            }
+                        }
 
                         if ($url_submenu && strpos($actual_url, $url_submenu) === 0) {
                             // Two entries can share a link, such as a plugin's shortcut to a core screen; the one in the page's own section wins.
@@ -673,6 +878,7 @@ class AdminMenu
         if ($core === null) {
             return null;
         }
+        $core = array_merge($core, $this->aPlaced[$menuId] ?? array());
 
         $grouped = false;
         foreach ($visible as $entry) {
@@ -784,6 +990,9 @@ class AdminMenu
      */
     private function renderSubMenu($parentMenuId, $subMenu, $is_moderator, $activeMenu, $activeSubmenu)
     {
+        if ($parentMenuId === 'settings') {
+            return $this->renderGroupList($parentMenuId, $activeMenu, $activeSubmenu);
+        }
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
             . '-submenu" data-osc-parent="#dashboard-menu">';

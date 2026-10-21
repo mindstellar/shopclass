@@ -18,6 +18,17 @@ namespace mindstellar\mail;
 
 use Admin;
 use Item;
+use mindstellar\billing\ListingCheckout;
+use mindstellar\billing\Order;
+use mindstellar\billing\OrderLineStore;
+use mindstellar\billing\Receipts;
+use mindstellar\boot\CoreServices;
+use mindstellar\container\Container;
+use mindstellar\currency\Money;
+use mindstellar\event\DispatcherInterface;
+use mindstellar\listing\ListingStatus;
+use mindstellar\mail\event\MailComposing;
+use mindstellar\mail\event\MailSent;
 use OSCLocale;
 use Page;
 use Params;
@@ -26,11 +37,46 @@ use User;
 use View;
 
 /**
- * The e-mails core sends. Each one runs on its hook; emails.php adds the hooks and keeps the old
- * fn_email_* names, so a plugin can still remove or call them.
+ * The e-mails core sends. The older ones run on their hooks (emails.php keeps the fn_email_* names).
+ * The shop mails (orders, product alerts) are sent by an instance that fires MailComposing and MailSent.
  */
 final class CoreEmails
 {
+    private DispatcherInterface $events;
+
+    /** Set by the order mails when a send fails, so the caller can try again later. */
+    private static bool $orderMailFailed = false;
+
+    public function __construct(?DispatcherInterface $events = null)
+    {
+        $this->events = $events ?? CoreServices::dispatcher();
+    }
+
+    private static function instance(): self
+    {
+        return Container::root()->get(self::class);
+    }
+
+    /**
+     * Forget an earlier failed order mail, before firing a new one.
+     *
+     * @return void
+     */
+    public static function resetOrderMailFailure(): void
+    {
+        self::$orderMailFailed = false;
+    }
+
+    /**
+     * Whether an order mail sent since resetOrderMailFailure() failed.
+     *
+     * @return bool
+     */
+    public static function orderMailFailed(): bool
+    {
+        return self::$orderMailFailed;
+    }
+
     /**
      * Email the confirmation link for a newly created search alert.
      *
@@ -1873,6 +1919,338 @@ final class CoreEmails
             'body'     => $body_email,
         );
         osc_sendMail($emailParams);
+    }
+
+    /**
+     * Remind the owner of a listing waiting for payment to pay before it is deleted.
+     *
+     * @param array<string,mixed> $item the held listing row; only its id is read
+     *
+     * @return void
+     */
+    public static function listingUnpaidReminder($item)
+    {
+        self::instance()->mailListingUnpaidReminder($item);
+    }
+
+    /**
+     * Tell a product alert's owner the listing is back in stock, or its price went down.
+     *
+     * @param array<string,mixed> $alert t_alerts row; fk_i_user_id and s_email are read
+     * @param array<string,mixed> $item  the listing row, with its title
+     * @param string              $kind  stock or price
+     * @param int|null            $price for a price alert, the new price in micros
+     *
+     * @return void
+     */
+    public static function productAlert($alert, $item, $kind, $price = null)
+    {
+        self::instance()->mailProductAlert($alert, $item, (string) $kind, $price);
+    }
+
+    /**
+     * Tell the buyer a goods order that waits for payment (bank transfer, cash on delivery) was received.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderPlaced($order)
+    {
+        self::instance()->mailOrder('order_placed', $order);
+    }
+
+    /**
+     * Tell the buyer their order is on its way, with the tracking link when there is a safe one.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderShipped($order)
+    {
+        self::instance()->mailOrder('order_shipped', $order);
+    }
+
+    /**
+     * Tell the buyer their order arrived, with a link to rate each product.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderDelivered($order)
+    {
+        self::instance()->mailOrder('order_delivered', $order);
+    }
+
+    /**
+     * Tell the buyer their order was cancelled and what happens to a payment.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderCancelled($order)
+    {
+        self::instance()->mailOrder('order_cancelled', $order);
+    }
+
+    /**
+     * Tell the buyer their order was refunded: how much, and how.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function orderRefunded($order)
+    {
+        self::instance()->mailOrder('order_refunded', $order);
+    }
+
+    /**
+     * Tell the shop owner a goods order came in that is paid or will be paid on delivery.
+     *
+     * @param Order $order
+     *
+     * @return void
+     */
+    public static function adminNewOrder($order)
+    {
+        self::instance()->mailOrder('admin_new_order', $order);
+    }
+
+    /**
+     * @param array<string,mixed> $alert
+     * @param array<string,mixed> $item
+     */
+    public function mailProductAlert(array $alert, array $item, string $kind, ?int $price = null): void
+    {
+        $user = !empty($alert['fk_i_user_id']) ? User::getInstance()->findByPrimaryKey((int) $alert['fk_i_user_id']) : false;
+        $to   = is_array($user) && !empty($user['s_email']) ? (string) $user['s_email'] : (string) ($alert['s_email'] ?? '');
+        $name = is_array($user) && !empty($user['s_name']) ? (string) $user['s_name'] : $to;
+        if ($to === '') {
+            return;
+        }
+
+        View::getInstance()->_exportVariableToView('item', $item);
+        $url = osc_item_url();
+        if ($kind === 'price') {
+            $title = __('Price drop: {ITEM_TITLE}');
+            $body  = __('<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} now sells for {ITEM_PRICE}.</p><p>{ITEM_LINK}</p>');
+        } else {
+            $title = __('Back in stock: {ITEM_TITLE}');
+            $body  = __('<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} is back in stock.</p><p>{ITEM_LINK}</p>');
+        }
+        $body .= __('<p>You asked {WEB_TITLE} to tell you once; this alert is now off.</p>');
+
+        [$words, $htmlWords] = self::words(
+            array(
+                '{USER_NAME}'  => $name,
+                '{ITEM_TITLE}' => (string) ($item['s_title'] ?? ''),
+                '{ITEM_PRICE}' => $price === null ? '' : osc_format_price($price),
+                '{ITEM_URL}'   => $url,
+                '{ITEM_LINK}'  => '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($url) . '</a>',
+            ),
+            array('{USER_NAME}', '{ITEM_TITLE}', '{ITEM_PRICE}')
+        );
+        $this->deliver(new MailComposing('product_alert', $to, $name, $title, $body, $words, $htmlWords, null, $alert, $item, array($alert, $item, $kind)));
+    }
+
+    /**
+     * @param array<string,mixed> $item
+     */
+    public function mailListingUnpaidReminder(array $item): void
+    {
+        $itemId = (int) ($item['pk_i_id'] ?? 0);
+        // Read fresh: a listing paid or deleted since the caller read it gets no reminder.
+        $item = $itemId > 0 ? Item::getInstance()->findByPrimaryKey($itemId) : null;
+        if (!is_array($item) || !ListingStatus::isHeld($item)) {
+            return;
+        }
+        $ownerId = (int) ($item['fk_i_user_id'] ?? 0);
+        $user    = $ownerId > 0 ? User::getInstance()->findByPrimaryKey($ownerId) : false;
+        if (!is_array($user) || empty($user['s_email'])) {
+            return;
+        }
+        $to   = (string) $user['s_email'];
+        $name = (string) ($user['s_name'] ?? '');
+
+        $page    = (new Page())->findByInternalName('email_listing_unpaid_reminder');
+        $locale  = osc_current_user_locale();
+        $content = null;
+        if (is_array($page) && !empty($page['locale'])) {
+            $content = isset($page['locale'][$locale]['s_title']) ? $page['locale'][$locale] : current($page['locale']);
+        }
+        $title = is_array($content) ? (string) $content['s_title'] : __('{WEB_TITLE} - Pay to publish your listing');
+        $body  = is_array($content)
+            ? (string) $content['s_text']
+            : __('<p>Hi {USER_NAME},</p><p>Your listing <a href="{PAY_URL}">{ITEM_TITLE}</a> is saved but not published. It costs {CREDITS} credits to publish.</p><p>Pay for it by {DEADLINE} or it is deleted: {PAY_LINK}</p><p>Regards,</p><p>{WEB_LINK}</p>');
+
+        $payUrl = osc_billing_publish_url($itemId);
+        $quote  = ListingCheckout::quote($itemId, $ownerId);
+
+        [$words, $htmlWords] = self::words(
+            array(
+                '{USER_NAME}'  => $name !== '' ? $name : $to,
+                '{ITEM_TITLE}' => (string) ($item['s_title'] ?? ''),
+                '{ITEM_ID}'    => (string) $itemId,
+                '{CREDITS}'    => (string) $quote['credits'],
+                '{DEADLINE}'   => osc_esc_html((string) osc_format_date((string) ($item['dt_expiration'] ?? ''))),
+                '{PAY_URL}'    => osc_esc_html($payUrl),
+                '{PAY_LINK}'   => '<a href="' . osc_esc_html($payUrl) . '">' . osc_esc_html($payUrl) . '</a>',
+            ),
+            array('{USER_NAME}', '{ITEM_TITLE}')
+        );
+        $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item)));
+    }
+
+    public function mailOrder(string $kind, Order $order): void
+    {
+        $extra = array();
+        if ($kind === 'order_delivered') {
+            $rate = '';
+            $seen = array();
+            foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+                $itemId = (int) ($line['item_id'] ?? 0);
+                if ($line['kind'] !== OrderLineStore::KIND_ITEM || $itemId < 1 || isset($seen[$itemId])) {
+                    continue;
+                }
+                $seen[$itemId] = true;
+                $rate .= '<li>' . osc_esc_html((string) $line['title']) . ' - <a href="' . osc_esc_html(osc_item_url_ns($itemId)) . '">'
+                    . osc_esc_html(__('Rate it')) . '</a></li>';
+            }
+            $extra = array('{ORDER_PRODUCTS}' => $rate === '' ? '' : '<ul>' . $rate . '</ul>');
+        } elseif ($kind === 'order_refunded') {
+            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())));
+        }
+        $mail = self::orderMail($order, $kind === 'admin_new_order', $extra);
+        if ($mail === null) {
+            return;
+        }
+        [$title, $body] = self::orderTemplates($kind);
+        $this->deliver(new MailComposing($kind, $mail['to'], $mail['toName'], $title, $body, $mail['words'], $mail['htmlWords'], $order, null, null, array($order)));
+    }
+
+    /**
+     * The subject and body templates of an order mail.
+     *
+     * @return array{0:string,1:string}
+     */
+    private static function orderTemplates(string $kind): array
+    {
+        switch ($kind) {
+            case 'order_placed':
+                return array(
+                    __('We received your order {ORDER_NUMBER}'),
+                    __('<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_shipped':
+                return array(
+                    __('Your order {ORDER_NUMBER} has shipped'),
+                    __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_delivered':
+                return array(
+                    __('Your order {ORDER_NUMBER} was delivered'),
+                    __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_cancelled':
+                return array(
+                    __('Your order {ORDER_NUMBER} was cancelled'),
+                    __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_refunded':
+                return array(
+                    __('Your order {ORDER_NUMBER} was refunded'),
+                    __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),
+                );
+            default:
+                return array(
+                    __('New order {ORDER_NUMBER} on {WEB_TITLE}'),
+                    __('<p>Order {ORDER_NUMBER} came in from {USER_NAME} ({USER_EMAIL}). Payment: {PAYMENT_METHOD}.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'),
+                );
+        }
+    }
+
+    /**
+     * Let listeners shape the mail, send it unless one suppressed it, and announce the result. A
+     * failed order mail is flagged for the caller.
+     */
+    private function deliver(MailComposing $composing): void
+    {
+        $composing = $this->events->dispatch($composing);
+        if ($composing->isSuppressed()) {
+            return;
+        }
+        $mail = $composing->render();
+        $sent = (bool) osc_sendMail(array(
+            'from'    => self::fromAddress(),
+            'to'      => $composing->recipient(),
+            'to_name' => $composing->recipientName(),
+            'subject' => $mail['subject'],
+            'body'    => $mail['body'],
+        ));
+        if (!$sent && $composing->order() !== null) {
+            self::$orderMailFailed = true;
+        }
+        $this->events->dispatch(new MailSent($composing->kind(), $composing->order(), $composing->recipient(), $mail['subject'], $mail['body'], $sent));
+    }
+
+    /**
+     * The recipient and the placeholder words of an order mail. Every value that came from a
+     * visitor or a seller is escaped.
+     *
+     * @param Order $order
+     * @param bool  $toAdmin Send to the shop's contact address instead of the buyer
+     * @param array<string,string> $extra More placeholders, already escaped HTML
+     *
+     * @return array<string,mixed>|null null when there is nobody to send to
+     */
+    private static function orderMail(Order $order, bool $toAdmin, array $extra = array()): ?array
+    {
+        $user  = User::getInstance()->findByPrimaryKey($order->getUserId());
+        $buyer = $order->meta('_buyer');
+        $buyer = is_array($buyer) ? $buyer : array();
+        $email = (string) ($buyer['email'] ?? (is_array($user) ? ($user['s_email'] ?? '') : ''));
+        $uname = (string) ($buyer['name'] ?? (is_array($user) ? ($user['s_name'] ?? '') : ''));
+        $to    = $toAdmin ? (string) osc_contact_email() : $email;
+        if ($to === '') {
+            return null;
+        }
+
+        $details  = Receipts::details($order);
+        $url      = $toAdmin
+            ? osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()
+            : osc_billing_orders_url();
+        $tracking = '';
+        if ($details['carrier'] !== '' || $details['tracking'] !== '' || $details['tracking_url'] !== '') {
+            $tracking = '<p>'
+                . ($details['carrier'] !== '' ? osc_esc_html(sprintf(__('Carrier: %s'), $details['carrier'])) . '<br>' : '')
+                . ($details['tracking'] !== '' ? osc_esc_html(sprintf(__('Tracking number: %s'), $details['tracking'])) . '<br>' : '')
+                . ($details['tracking_url'] !== ''
+                    ? '<a href="' . osc_esc_html($details['tracking_url']) . '">' . osc_esc_html(__('Track your parcel')) . '</a>'
+                    : '')
+                . '</p>';
+        }
+
+        [$words, $htmlWords] = self::words(
+            $extra + array(
+                '{ORDER_NUMBER}'   => Receipts::number($order),
+                '{USER_NAME}'      => $uname !== '' ? $uname : $email,
+                '{USER_EMAIL}'     => $email,
+                '{PAYMENT_METHOD}' => osc_billing_gateway_name($order->getGateway()),
+                '{ORDER_TOTAL}'    => $details['total'],
+                '{ORDER_LINES}'    => Receipts::linesHtml($details),
+                '{ORDER_ADDRESS}'  => Receipts::addressHtml($details),
+                '{ORDER_TRACKING}' => $tracking,
+                '{ORDER_URL}'      => $url,
+                '{ORDER_LINK}'     => '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($url) . '</a>',
+            ),
+            array('{USER_NAME}', '{USER_EMAIL}', '{PAYMENT_METHOD}')
+        );
+
+        return array('to' => $to, 'toName' => $toAdmin ? '' : $uname, 'words' => $words, 'htmlWords' => $htmlWords);
     }
 
     /**

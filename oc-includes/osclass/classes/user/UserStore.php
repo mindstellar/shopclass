@@ -36,6 +36,17 @@ final class UserStore extends Model
     }
 
     /**
+     * Hold the user's row until the transaction ends, so two writes to that user's own rows
+     * run one after the other.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lock(int $id): void
+    {
+        Db::select('SELECT pk_i_id FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', array($id));
+    }
+
+    /**
      * A user row with `b_family_live`: whether the API sign-in $family still has an unrevoked token.
      *
      * @return array<string,mixed>|null

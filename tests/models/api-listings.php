@@ -200,6 +200,8 @@ $pending  = seed_item($admin, $cars, $seller, 'Pending car', 5.0, 0, 1, $locale,
 $disabled = seed_item($admin, $cars, $seller, 'Disabled car', 5.0, 1, 0, $locale, $country);
 $spam     = seed_item($admin, $cars, $seller, 'Spam car', 5.0, 1, 1, $locale, $country);
 $expired  = seed_item($admin, $cars, $seller, 'Expired car', 5.0, 1, 1, $locale, $country);
+$held     = seed_item($admin, $cars, $seller, 'Held car', 5.0, 1, 1, $locale, $country);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL WHERE pk_i_id = $held");
 $admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = $spam");
 $admin->query("UPDATE {$p}t_item SET dt_expiration = '2020-01-01 00:00:00' WHERE pk_i_id = $expired");
 $admin->query("UPDATE {$p}t_item SET s_contact_phone = '555-0100', b_show_email = 0 WHERE pk_i_id = {$live[0]}");
@@ -291,7 +293,8 @@ check('a user-keyed answer is never cached publicly', str_starts_with((string) $
 
 harness_section('site');
 $r = $get('', array(), $publicKey);
-pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 'registration' => false, 'comments' => true)), array($r->status(), $r->body()['data']['name'], $r->body()['data']['default_locale'], $r->body()['data']['features']));
+pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 'registration' => false, 'comments' => true, 'shop' => false)), array($r->status(), $r->body()['data']['name'], $r->body()['data']['default_locale'], $r->body()['data']['features']));
+pin('the cart limits', array('max_lines' => 50, 'max_qty' => 20), $r->body()['data']['cart'] ?? null);
 check('the software version is not shown to callers', !(array_key_exists('version', $r->body()['data'])));
 pin('what the API allows here, as this test site sets it', array('registration' => false, 'personal_keys' => true, 'photo_urls' => false), $r->body()['data']['api'] ?? null);
 $api = static fn (ApiSettings $settings): ?array => $get('', array(), $publicKey, $makeKernel($settings))->body()['data']['api'] ?? null;
@@ -518,7 +521,7 @@ pin('an expired listing answers as its page does: shown, as expired', array(arra
     (static fn ($r): array => array($r->status(), $r->body()['data']['status'] ?? null))($get('listings/' . $expired, array(), $publicKey)),
     $get('listings/' . $expired, array(), $otherKey)->status(),
 ));
-foreach (array('pending' => $pending, 'disabled' => $disabled, 'spam' => $spam) as $state => $id) {
+foreach (array('pending' => $pending, 'disabled' => $disabled, 'spam' => $spam, 'unpaid' => $held) as $state => $id) {
     pin("a $state listing is 404 to the public", 404, $get('listings/' . $id, array(), $publicKey)->status());
     pin("and to another user", 404, $get('listings/' . $id, array(), $otherKey)->status());
     pin("the owner sees it, as $state", array(200, $state), (static function () use ($get, $id, $sellerKey): array {
@@ -527,7 +530,15 @@ foreach (array('pending' => $pending, 'disabled' => $disabled, 'spam' => $spam) 
         return array($r->status(), $r->body()['data']['status'] ?? null);
     })());
     pin("an admin sees it", 200, $get('listings/' . $id, array(), $adminKey)->status());
+    pin("a narrow admin key does not", 404, $get('listings/' . $id, array(), $narrowKey)->status());
+    pin("its photos and comments are 404 to the public", array(404, 404), array($get('listings/' . $id . '/photos', array(), $publicKey)->status(), $get('listings/' . $id . '/comments', array(), $publicKey)->status()));
 }
+pin('search, ids=, the seller\'s page and a title search never list the held listing', array(false, false, false, false), array(
+    in_array($held, $ids($get('listings', array('limit' => '50'), $publicKey)), true),
+    in_array($held, $ids($get('listings', array('ids' => (string) $held), $publicKey)), true),
+    in_array($held, $ids($get('users/' . $seller . '/listings', array('limit' => '50'), $publicKey)), true),
+    in_array($held, $ids($get('listings', array('q' => 'Held car'), $publicKey)), true),
+));
 pin('the owner sees the contact e-mail', 'contact@example.test', $get('listings/' . $live[0], array(), $sellerKey)->body()['data']['contact']['email']);
 $admin->query("UPDATE {$p}t_item SET s_contact_phone = '555-0100', b_show_email = 1 WHERE pk_i_id = $expired");
 pin('an expired listing shows no contact e-mail or phone', array(null, null), array_values(array_intersect_key(
@@ -601,10 +612,16 @@ $sellerAccount = $keys->create(CredentialKind::KEY, 'seller account', array('acc
 $otherAccount  = $keys->create(CredentialKind::KEY, 'other account', array('account:read'), KeyOwner::user($other))->token();
 $r = $get('account/listings', array('status' => 'pending,disabled,spam,expired'), $sellerAccount);
 pin('every status the listings page shows, newest first', array(200, array($expired, $spam, $disabled, $pending)), array($r->status(), $ids($r)));
+pin('status=unpaid: the held one only; disabled and pending leave it out', array(array($held), false, false), array(
+    $ids($get('account/listings', array('status' => 'unpaid'), $sellerAccount)),
+    in_array($held, $ids($get('account/listings', array('status' => 'disabled'), $sellerAccount)), true),
+    in_array($held, $ids($get('account/listings', array('status' => 'pending'), $sellerAccount)), true),
+));
+pin('another user\'s unpaid list is empty', array(), $ids($get('account/listings', array('status' => 'unpaid'), $otherAccount)));
 pin('each with its status', array('expired', 'spam', 'disabled', 'pending'), array_column($r->body()['data'] ?? array(), 'status'));
 pin('matches the schema', array(), $schemaErrors('ListingPage', $r));
 $r = $get('account/listings', array('count' => 'true', 'limit' => '2'), $sellerAccount);
-pin('no status: all of them, counted, paged by id', array(array($expired, $spam), 29, true), array($ids($r), $r->body()['meta']['total'] ?? null, is_string($r->body()['links']['next'] ?? null)));
+pin('no status: all of them, counted, paged by id', array(array($held, $expired), 30, true), array($ids($r), $r->body()['meta']['total'] ?? null, is_string($r->body()['links']['next'] ?? null)));
 pin('status=active: the live ones only', array(25, $live[24]), (static fn (array $ids): array => array(count($ids), $ids[0] ?? null))($ids($get('account/listings', array('status' => 'active', 'limit' => '50'), $sellerAccount))));
 pin('another user sees only their own', array($bike), $ids($get('account/listings', array(), $otherAccount)));
 pin('a key without account:read is refused', 403, $get('account/listings', array(), $sellerKey)->status());
@@ -624,15 +641,15 @@ $five   = $count(array('category' => 'cars', 'limit' => 5));
 $twenty = $count(array('category' => 'cars', 'limit' => 20));
 echo "  a 20-listing page, warm: $twenty queries\n";
 pin('a 20-listing page costs the same queries as a 5-listing page', $five, $twenty);
-pin('a warm 20-listing page costs 6 queries: key, search, texts in the asked language, stats and locations, photos, sellers', 6, $twenty);
+pin('a warm 20-listing page costs 7 queries: key, search, texts in the asked language, stats and locations, photos, variants, sellers', 7, $twenty);
 $get('listings/' . $live[0], array(), $publicKey);
-pin('GET /listings/{id} with a public key: 6 queries (key, t_item, texts, stats and location, photos, seller)', 6, harness_query_count(static fn () => $get('listings/' . $live[0], array(), $publicKey)));
+pin('GET /listings/{id} with a public key: 7 queries (key, t_item, texts, stats and location, photos, variants, seller)', 7, harness_query_count(static fn () => $get('listings/' . $live[0], array(), $publicKey)));
 pin('a listing it may not see: 2 queries (key, t_item), its texts are not read', 2, harness_query_count(static fn () => $get('listings/' . $spam, array(), $publicKey)));
 pin('count=true adds the count query', $twenty + 1, $count(array('category' => 'cars', 'limit' => 20, 'count' => 'true')));
 pin('include=custom_fields adds one query, whatever the page size', array($twenty + 1, $twenty + 1), array(
     $count(array('category' => 'cars', 'limit' => 5, 'include' => 'custom_fields')), $count(array('category' => 'cars', 'limit' => 20, 'include' => 'custom_fields')),
 ));
-pin('fields=id,title skips photos and sellers', $twenty - 2, $count(array('category' => 'cars', 'limit' => 20, 'fields' => 'id,title')));
+pin('fields=id,title skips photos, variants and sellers', $twenty - 3, $count(array('category' => 'cars', 'limit' => 20, 'fields' => 'id,title')));
 $r = $get('listings', array('category' => 'cars', 'limit' => 20), $publicKey);
 parse_str((string) parse_url((string) $r->body()['links']['next'], PHP_URL_QUERY), $nextQuery);
 pin('a keyset page after the first skips the count, even when asked', $twenty, $count($nextQuery + array('count' => 'true')));
@@ -659,7 +676,7 @@ $cold = static function () use ($admin, $makeKernel, $publicKey): int {
 };
 $coldCount = $cold();
 echo "  a 20-listing page, cold: $coldCount queries\n";
-pin('a cold 20-listing page adds the category rows (one read for the catalog and search) and the currencies: 8 queries', 8, $coldCount);
+pin('a cold 20-listing page adds the category rows (one read for the catalog and search) and the currencies: 9 queries', 9, $coldCount);
 
 harness_section('text language');
 // A title only in French and a description only in English: both come from French, the language with the title.
@@ -696,6 +713,8 @@ $tTwo    = seed_item($admin, $trucks, $seller, 'Red sports pickup', 10.0, 1, 1, 
 $tOne    = seed_item($admin, $trucks, $seller, 'Blue truck', 10.0, 1, 1, $locale, $country);
 $tNone   = seed_item($admin, $trucks, $seller, 'Tractor', 10.0, 1, 1, $locale, $country);
 $tSpam   = seed_item($admin, $trucks, $seller, 'Red sports truck spam', 10.0, 1, 1, $locale, $country);
+$tHeld   = seed_item($admin, $trucks, $seller, 'Red sports truck held', 10.0, 1, 1, $locale, $country);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL WHERE pk_i_id = $tHeld");
 $admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = $tSpam");
 $admin->query("UPDATE {$p}t_item SET dt_pub_date = '2026-01-01 00:00:00' WHERE pk_i_id IN ($tTwo, $tOne)");
 $admin->query("UPDATE {$p}t_item SET dt_pub_date = '2026-02-01 00:00:00', b_premium = 1 WHERE pk_i_id = $tNone");
@@ -729,6 +748,7 @@ $r = $get('listings/' . $tSource . '/related', array(), $publicKey);
 pin('GET /listings/{id}/related answers the same list', array(200, array($tTwo, $tOne, $tNone)), array($r->status(), $ids($r)));
 pin('GET /listings/{id}/related takes a filter', array($tNone), $ids($get('listings/' . $tSource . '/related', array('premium_only' => 'true'), $publicKey)));
 pin('GET /listings/{id}/related is 404 for a hidden listing', 404, $get('listings/' . $tSpam . '/related', array(), $publicKey)->status());
+pin('and for a held one', 404, $get('listings/' . $tHeld . '/related', array(), $publicKey)->status());
 
 $view->_exportVariableToView('item', array('pk_i_id' => $tSource));
 $helperRows = osc_related_listings(null, 2);
@@ -753,7 +773,7 @@ $admin->query("UPDATE {$p}t_item SET b_spam = 1 WHERE pk_i_id = $spamBike");
 scratchdb_forget_cache();
 pin('a title that starts with the input comes before a newer one that only contains it', array($tOne, $bigBlue), $sugIds(SearchSuggestions::forQuery('blue', 5)));
 $truckIds = $sugIds(SearchSuggestions::forQuery('truck', 10));
-check('a keyword finds live listings and never a hidden one', in_array($tSource, $truckIds, true) && in_array($tOne, $truckIds, true) && !in_array($tSpam, $truckIds, true), describe($truckIds));
+check('a keyword finds live listings and never a hidden or held one', in_array($tSource, $truckIds, true) && in_array($tOne, $truckIds, true) && !in_array($tSpam, $truckIds, true) && !in_array($tHeld, $truckIds, true), describe($truckIds));
 pin('input with no word of three letters suggests nothing', array('listings' => array(), 'searches' => array()), SearchSuggestions::forQuery('bl ue', 5));
 pin('one character suggests nothing', array('listings' => array(), 'searches' => array()), SearchSuggestions::forQuery('t', 5));
 pin('core never suggests searches', array(), SearchSuggestions::forQuery('truck', 5)['searches']);

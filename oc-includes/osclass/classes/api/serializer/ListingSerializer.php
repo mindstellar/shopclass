@@ -15,6 +15,7 @@ namespace mindstellar\api\serializer;
 use mindstellar\api\read\ListingRelations;
 use mindstellar\api\read\ListingText;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\VariantStore;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
 
@@ -25,9 +26,12 @@ use mindstellar\utility\SystemClock;
  */
 final class ListingSerializer
 {
+    /** The most units left that a variant still reports as `low_stock`. */
+    private const LOW_STOCK = 5;
+
     public const PUBLIC_MEMBERS = [
         'id', 'url', 'status', 'title', 'description', 'snippet', 'locale', 'category', 'price', 'location', 'contact', 'seller',
-        'photos', 'custom_fields', 'translations', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
+        'photos', 'custom_fields', 'translations', 'product', 'rating', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
     ];
 
     /** Sent to the owner and admins. */
@@ -39,7 +43,7 @@ final class ListingSerializer
     public const MEMBERS = [...self::PUBLIC_MEMBERS, ...self::OWNER_MEMBERS, ...self::ADMIN_MEMBERS, 'ext'];
 
     /** The members `?include=` switches on. */
-    public const INCLUDES = ['custom_fields', 'translations'];
+    public const INCLUDES = ['custom_fields', 'translations', 'rating'];
 
     public function __construct(
         private Links $links,
@@ -103,6 +107,8 @@ final class ListingSerializer
             'photos'       => fn () => $this->photos($relations->photos($id)),
             'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
+            'product'      => fn () => $this->product($relations->variants($id), $relations->photos($id), $view !== ViewContext::PUBLIC, $item['i_price'] ?? null),
+            'rating'       => $context->includes('rating') ? fn () => self::rating($relations, $id) : null,
             'premium'      => static fn () => Format::bool($item['b_premium'] ?? 0),
             'views'        => static fn () => Format::int($item['i_num_views'] ?? 0),
             'published_at' => static fn () => Format::time($item['dt_pub_date'] ?? null),
@@ -118,7 +124,11 @@ final class ListingSerializer
         $data = ['id' => $id];
         foreach ($build as $member => $make) {
             if ($make !== null && $context->wants($member)) {
-                $data[$member] = $make();
+                $value = $make();
+                // A listing nobody can buy has no `product`.
+                if ($member !== 'product' || $value !== null) {
+                    $data[$member] = $value;
+                }
             }
         }
         $filtered = osc_apply_filter('api_listing', $data, $context);
@@ -127,17 +137,88 @@ final class ListingSerializer
     }
 
     /**
-     * The members a page needs looked up: sellers, photos, custom field values.
+     * The members a page needs looked up: sellers, photos, custom field values, variants.
+     * Variant photos come from the listing's photos, so `product` loads those too.
      *
-     * @return array{seller:bool,photos:bool,fields:bool}
+     * @return array{seller:bool,photos:bool,fields:bool,product:bool,rating:bool}
      */
     public static function lookups(ViewContext $context): array
     {
         return [
             'seller' => $context->wants('seller'),
-            'photos' => $context->wants('photos'),
+            'photos' => $context->wants('photos') || $context->wants('product'),
             'fields' => $context->includes('custom_fields') && $context->wants('custom_fields'),
+            'product' => $context->wants('product'),
+            'rating' => $context->includes('rating') && $context->wants('rating'),
         ];
+    }
+
+    /**
+     * The listing's approved ratings: how many, their average to one decimal, and on a single
+     * listing how many gave each star.
+     *
+     * @return array<string,mixed>
+     */
+    private static function rating(ListingRelations $relations, int $id): array
+    {
+        $rating = $relations->rating($id);
+        $stars  = $relations->stars($id);
+        $out    = ['average' => $rating['average'], 'count' => $rating['count']];
+        if ($stars !== null) {
+            $out['distribution'] = array_combine(array_map('strval', array_keys($stars)), array_values($stars));
+        }
+
+        return $out;
+    }
+
+    /**
+     * What makes the listing buyable, or null when it has no variant. The stock count is for the
+     * owner and admins; everyone sees whether a variant is in stock and, from 1 to 5 left, the count as `low_stock`.
+     *
+     * @param array<int,array<string,mixed>> $rows         t_item_variant rows
+     * @param array<int,array<string,mixed>> $photos       the listing's photo rows, which a variant's photo is one of
+     * @param mixed                          $listingPrice the listing's own price, which a variant with none sells at
+     *
+     * @return array{buyable:bool,options:array<int,array{name:string,values:array<int,string>}>,variants:array<int,array<string,mixed>>}|null
+     */
+    private function product(array $rows, array $photos, bool $withStock, mixed $listingPrice = null): ?array
+    {
+        if ($rows === []) {
+            return null;
+        }
+        $photoById = [];
+        foreach ($photos as $photo) {
+            $photoById[Format::int($photo['pk_i_id'] ?? 0)] = $photo;
+        }
+        $variants = [];
+        foreach ($rows as $row) {
+            $options  = is_string($row['s_options'] ?? null) ? json_decode($row['s_options'], true) : null;
+            $stock    = is_numeric($row['i_stock'] ?? null) ? (int) $row['i_stock'] : null;
+            $sells    = $row['i_price'] ?? $listingPrice;
+            $was      = $row['i_compare_price'] ?? null;
+            $photoId  = is_numeric($row['fk_i_resource_id'] ?? null) ? (int) $row['fk_i_resource_id'] : null;
+            $variant  = [
+                'id'             => Format::int($row['pk_i_id'] ?? 0),
+                'sku'            => Format::text($row['s_sku'] ?? null),
+                'options'        => is_array($options) && $options !== [] ? $options : null,
+                'price'          => Format::amount($row['i_price'] ?? null),
+                'compare_at'     => Format::amount($was),
+                'on_sale'        => is_numeric($was) && is_numeric($sells) && (int) $was > (int) $sells,
+                'in_stock'       => $stock === null || $stock > 0,
+                'low_stock'      => $stock !== null && $stock >= 1 && $stock <= self::LOW_STOCK ? $stock : null,
+                'weight'         => is_numeric($row['i_weight'] ?? null) ? (int) $row['i_weight'] : null,
+                'shipping_class' => Format::text($row['s_shipping_class'] ?? null),
+                'photo_id'       => $photoId,
+                'photo'          => $photoId !== null && isset($photoById[$photoId]) ? $this->photos([$photoById[$photoId]])[0] : null,
+                'position'       => Format::int($row['i_position'] ?? 0),
+            ];
+            if ($withStock) {
+                $variant['stock'] = $stock;
+            }
+            $variants[] = $variant;
+        }
+
+        return ['buyable' => true, 'options' => VariantStore::optionsOf($rows), 'variants' => $variants];
     }
 
     /**

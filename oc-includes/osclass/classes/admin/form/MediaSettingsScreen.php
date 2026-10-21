@@ -389,7 +389,7 @@ final class MediaSettingsScreen extends SettingsScreen
                      . ' data-osc-depends="' . self::TYPE . '"'
                      . ' data-osc-depends-value="' . osc_esc_html($values) . '"'
                      . (($spec['values'][self::TYPE] ?? '') === $type ? '' : ' hidden') . '>';
-                osc_admin_page_head($title);
+                osc_admin_section_heading($title, 'subsection');
             })
             ->set('row', false);
     }

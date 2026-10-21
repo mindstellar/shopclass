@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mindstellar\admin\ajax;
 
 use Exception;
+use mindstellar\market\Catalog;
 use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
@@ -91,7 +92,7 @@ final class UpdateAjax extends AjaxHandler
         if (self::answeredWhileDatabaseBehind()) {
             return;
         }
-        MarketAjax::refreshCatalogIfDue('theme');
+        Catalog::forThemes()->refreshIfDue();
         $total = _osc_check_themes_update();
         AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
     }
@@ -101,7 +102,7 @@ final class UpdateAjax extends AjaxHandler
         if (self::answeredWhileDatabaseBehind()) {
             return;
         }
-        MarketAjax::refreshCatalogIfDue('plugin');
+        Catalog::forPlugins()->refreshIfDue();
         $total = _osc_check_plugins_update();
         AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
     }

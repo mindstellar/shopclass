@@ -63,12 +63,18 @@ final class PhotoStore extends Model
 
     /**
      * SQL that is true when the listing in $itemColumn has an image. An IN list is read once
-     * as a semi-join; a lookup per listing is about four times slower on a large site.
+     * as a semi-join; a lookup per listing is about four times slower on a large site. A query
+     * that stops after a few rows (ORDER BY ... LIMIT) wants the lookup: pass $perRow.
      *
      * @param string $itemColumn a trusted column name, such as 'i.pk_i_id'
      */
-    public static function hasImageSql(string $itemColumn): string
+    public static function hasImageSql(string $itemColumn, bool $perRow = false): string
     {
+        if ($perRow) {
+            return '(SELECT 1 FROM ' . self::tableName() . " r WHERE r.s_owner_type = '" . \ItemResource::OWNER
+                . "' AND r.i_owner_id = " . $itemColumn . " AND r.s_content_type LIKE 'image/%' LIMIT 1) IS NOT NULL";
+        }
+
         return $itemColumn . ' IN (SELECT i_owner_id FROM ' . self::tableName() . " WHERE s_owner_type = '" . \ItemResource::OWNER
             . "' AND s_content_type LIKE 'image/%')";
     }

@@ -14,7 +14,12 @@ namespace mindstellar\api\read;
 
 use mindstellar\api\ProblemException;
 use mindstellar\api\RowId;
+use mindstellar\cache\CacheGroup;
 use mindstellar\category\CategoryQuery;
+use mindstellar\database\Db;
+use mindstellar\listing\ListingQuery;
+use mindstellar\listing\ListingStatus;
+use mindstellar\listing\PhotoStore;
 
 /**
  * Every enabled category, with its translations, read once and looked up by id or slug.
@@ -23,6 +28,9 @@ use mindstellar\category\CategoryQuery;
  */
 final class CategoryCatalog
 {
+    /** Characters of a publish time in a cover stamp, before the listing id. */
+    private const STAMP = 14;
+
     /** @var array<int,array<string,mixed>> id => row, in display order */
     private array $byId = [];
 
@@ -72,10 +80,20 @@ final class CategoryCatalog
 
     /**
      * The site's enabled categories, read on first use from the cache the category group keeps.
+     * One catalog per locale serves the whole request until a category changes; it is built
+     * from the rows the Category model holds when the page loaded them already.
      */
     public static function fromSite(): self
     {
-        return new self(static fn (): array => (new CategoryQuery())->enabledTree(OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale()));
+        static $site = [];
+        $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+        $key    = $locale . '|' . CacheGroup::generation('category');
+
+        return $site[$key] ??= new self(static function () use ($locale): array {
+            $held = \Category::heldEnabled($locale);
+
+            return $held !== null ? CategoryQuery::treeFromMerged($held, $locale) : (new CategoryQuery())->enabledTree($locale);
+        });
     }
 
     /**
@@ -188,6 +206,90 @@ final class CategoryCatalog
             }
         };
         $walk(0);
+
+        return $out;
+    }
+
+    /**
+     * Each category's cover: the first photo of the newest live listing with a photo in the
+     * category or any category below it. A category with none has no entry. Two queries for
+     * the whole list, cached with the tree's shape until a listing changes.
+     *
+     * @return array<int,array<string,mixed>> category id => photo row
+     * @throws \mindstellar\database\DbException
+     */
+    public function covers(): array
+    {
+        $this->load();
+
+        return CacheGroup::remember('search', 'category-cover-rows|' . md5(json_encode($this->children)), fn (): array => $this->findCovers()) ?? [];
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    private function findCovers(): array
+    {
+        $newest = self::newestByCategory(array_keys($this->byId));
+        $best   = [];
+        $find   = function (int $id) use (&$find, &$best, $newest): string {
+            if (!isset($best[$id])) {
+                $best[$id] = $newest[$id] ?? '';
+                foreach ($this->childIds($id) as $child) {
+                    $best[$id] = max($best[$id], $find($child));
+                }
+            }
+
+            return $best[$id];
+        };
+        $items = [];
+        foreach (array_keys($this->byId) as $id) {
+            if ($find($id) !== '') {
+                $items[$id] = (int) substr($best[$id], self::STAMP);
+            }
+        }
+        $photos = [];
+        foreach (PhotoStore::ofItems(array_values(array_unique($items))) as $photo) {
+            if (str_starts_with((string) ($photo['s_content_type'] ?? ''), 'image/')) {
+                $photos[(int) $photo['fk_i_item_id']] ??= Db::stringifyRows([$photo])[0];
+            }
+        }
+        $covers = [];
+        foreach ($items as $category => $item) {
+            if (isset($photos[$item])) {
+                $covers[$category] = $photos[$item];
+            }
+        }
+
+        return $covers;
+    }
+
+    /**
+     * category id => the newest live listing with a photo in it, as a sortable string: the
+     * publish time as 14 digits, then the id padded to 10. One LIMIT 1 per category on the
+     * category index, joined with UNION ALL, so no query scans every listing.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,string>
+     * @throws \mindstellar\database\DbException
+     */
+    private static function newestByCategory(array $ids): array
+    {
+        $live = implode(' AND ', ListingStatus::liveConditions('i.')) . ' AND ' . PhotoStore::hasImageSql('i.pk_i_id', true);
+        $out  = [];
+        foreach (array_chunk(array_map('intval', $ids), 200) as $chunk) {
+            $parts = array_map(
+                static fn (int $id): string => '(SELECT ' . $id . ' AS category, CONCAT(DATE_FORMAT(i.dt_pub_date, \'%Y%m%d%H%i%s\'), LPAD(i.pk_i_id, 10, \'0\')) AS stamp'
+                    . ' FROM ' . ListingQuery::tableName() . ' i WHERE i.fk_i_category_id = ' . $id . ' AND ' . $live
+                    . ' ORDER BY i.dt_pub_date DESC, i.pk_i_id DESC LIMIT 1)',
+                $chunk
+            );
+            foreach (Db::select(implode(' UNION ALL ', $parts)) as $row) {
+                $out[(int) $row['category']] = (string) $row['stamp'];
+            }
+        }
 
         return $out;
     }

@@ -49,6 +49,16 @@ php oc-cli.php market:install storefront --type=theme
 `theme:activate` is the way back when a theme breaks the site badly enough that
 you cannot reach the admin panel.
 
+## Plugins a theme needs
+
+A theme can ask for plugins, such as a payment plugin for a shop theme. When you activate it and
+one is missing, **Plugins for this theme** lists them with what each does. **Install and activate
+all** installs them one at a time, and the theme goes live once every required plugin is on.
+Recommended plugins can be skipped.
+
+If you later turn off or remove a required plugin, **Appearance** shows a notice with a **Fix it**
+link back to the same screen. Nothing installs until you click.
+
 ## Before you switch
 
 Themes are not interchangeable. Check three things:
@@ -83,6 +93,11 @@ section; the order is the order visitors see.
 
 Plugins register further types, which appear in the same picker.
 
+Each typed widget has an eye button. It hides the widget from the site without
+deleting it, and a second click shows it again. A hidden widget keeps its place
+and settings, and its name is struck through in the list. Moderators can hide
+any widget except a Custom Code one.
+
 Only full admins can add a Custom Code widget; moderators cannot.
 
 :::danger[Custom Code runs on your visitors' browsers]
@@ -91,6 +106,29 @@ only code you understand, from a source you trust. A "free analytics snippet"
 from a forum post is the classic way a classifieds site starts serving malware
 to its own users.
 :::
+
+## Customise your theme
+
+If your theme supports it, **Appearance → Customise** edits the home page with a
+live preview beside the controls. A theme that does not support it has no
+Customise entry; use **Manage widgets** instead.
+
+- **Sections.** The home page is a list of sections. Reorder them, hide one with
+  the eye, remove it, or add another from the types the theme allows. Click a
+  section to edit its text and images.
+- **Look.** The theme's brand colour, fonts, logo and light or dark default are
+  set in the same screen. Colour and font changes show at once; the rest reload
+  the preview.
+- **Draft and publish.** Every change is saved as your private draft, kept for
+  seven days. Visitors see nothing until you press **Publish**. **Discard**
+  throws the draft away and returns to the published page. If the sections
+  change elsewhere after your draft began, for example on the Widgets screen,
+  Publish asks before it replaces those changes.
+- **Hidden sections.** A hidden section stays in the list, struck through, and
+  can be shown again. It is the same hide switch as on **Manage widgets**.
+- **The preview is for you only.** It works only for a signed-in administrator,
+  is never cached and is hidden from search engines. Moderators cannot
+  customise; they keep **Manage widgets**.
 
 ## Page builder
 

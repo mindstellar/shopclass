@@ -83,6 +83,7 @@ final class AdminRoutes
             'PATCH admin/listings/{id}'     => $write([$c, 'update'], 'Edit any listing, its owner, expiry and status included; members not sent keep their values', body: 'AdminListingPatch', response: 'ListingDocument', errors: [404, 409]),
             'DELETE admin/listings/{id}'    => $write([$c, 'delete'], 'Delete a listing', status: 204, errors: [404]),
             'POST admin/listings/{id}/bump' => $write([$c, 'bump'], ListingModeration::ACTIONS['bump'], response: 'ListingDocument', errors: [404]),
+            'POST admin/listings/{id}/publish' => $write([$c, 'publish'], 'Publish a listing that waits for payment, without charging the seller', response: 'ListingDocument', errors: [404, 409]),
         ];
     }
 

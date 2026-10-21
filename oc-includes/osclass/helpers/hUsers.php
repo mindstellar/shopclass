@@ -366,6 +366,21 @@ function osc_is_admin_user_logged_in()
 }
 
 /**
+ * True for a shopper: a signed-in user, with no admin session, on a site in shop mode.
+ *
+ * A shopper buys and never sells, so the account hides the seller pages: listings, public
+ * profile, alerts, credits and API access. Admins see everything; classifieds mode is untouched.
+ *
+ * @return bool
+ */
+function osc_is_shopper(): bool
+{
+    return osc_site_mode() === \mindstellar\site\SiteMode::SHOP
+        && osc_is_web_user_logged_in()
+        && !osc_is_admin_user_logged_in();
+}
+
+/**
  * Gets logged admin id
  *
  * @return int
@@ -741,7 +756,14 @@ function osc_has_alerts()
 {
     $result = View::getInstance()->_next('alerts');
     $alert  = osc_alert();
-    View::getInstance()->_exportVariableToView('items', isset($alert['items']) ? $alert['items'] : array());
+    $items  = isset($alert['items']) ? $alert['items'] : array();
+    // A product alert shows its own listing while that is live.
+    $product = is_array($alert) ? \mindstellar\search\AlertEnvelope::productOf((string) ($alert['s_search'] ?? '')) : null;
+    if ($items === array() && $product !== null) {
+        $item  = Item::getInstance()->findByPrimaryKey($product['listing']);
+        $items = is_array($item) && $item !== array() && \mindstellar\listing\ListingStatus::isLive($item) ? array($item) : array();
+    }
+    View::getInstance()->_exportVariableToView('items', $items);
 
     return $result;
 }
@@ -869,6 +891,10 @@ function osc_alert_is_active()
 function osc_alert_criteria(?array $alert = null): array
 {
     $search = $alert !== null ? ($alert['s_search'] ?? '') : osc_alert_field('s_search');
+    $product = \mindstellar\search\AlertEnvelope::productOf((string) $search);
+    if ($product !== null) {
+        return _osc_product_alert_criteria($product);
+    }
     $raw    = osc_get_raw_search((array) json_decode((string) $search, true));
     if (isset($raw['held'])) {
         return array('held' => array(
@@ -909,6 +935,39 @@ function osc_alert_criteria(?array $alert = null): array
 }
 
 /**
+ * The labelled parts of a product alert: the listing, the variant when one is named, and the
+ * price to go under for a price alert.
+ *
+ * @param array{below:?int,kind:string,listing:int,variant:?int} $product
+ *
+ * @return array<string,array{label:string,value:string}>
+ * @internal
+ */
+function _osc_product_alert_criteria(array $product): array
+{
+    $item  = Item::getInstance()->findByPrimaryKey($product['listing']);
+    $title = is_array($item) && isset($item['s_title']) && $item['s_title'] !== '' ? (string) $item['s_title'] : sprintf(_m('Listing #%d'), $product['listing']);
+    $parts = array('product' => array(
+        'label' => $product['kind'] === 'price' ? _m('Price drop') : _m('Back in stock'),
+        'value' => $title,
+    ));
+    if ($product['variant'] !== null) {
+        foreach (\mindstellar\listing\VariantStore::ofItem($product['listing']) as $row) {
+            $options = (int) $row['pk_i_id'] === $product['variant'] && is_string($row['s_options']) ? json_decode($row['s_options'], true) : null;
+            if (is_array($options) && $options !== array()) {
+                $parts['variant'] = array('label' => _m('Option'), 'value' => implode(' / ', array_map('strval', $options)));
+            }
+        }
+    }
+    if ($product['below'] !== null) {
+        $currency       = is_array($item) ? Currency::getInstance()->findByPrimaryKey($item['fk_c_currency_code'] ?? '') : false;
+        $parts['below'] = array('label' => _m('Below'), 'value' => osc_format_price($product['below'], is_array($currency) ? (string) $currency['s_description'] : ''));
+    }
+
+    return $parts;
+}
+
+/**
  * One line naming what the current alert searches for, e.g. "bike · Cycling · Leeds".
  *
  * @return string
@@ -918,6 +977,9 @@ function osc_alert_summary(): string
     $parts = osc_alert_criteria();
     if (isset($parts['held'])) {
         return $parts['held']['value'];
+    }
+    if (isset($parts['product'])) {
+        return $parts['product']['label'] . ': ' . $parts['product']['value'];
     }
     unset($parts['picture'], $parts['premium']);
     $values = array_map(static fn ($p) => $p['value'], $parts);
@@ -1013,3 +1075,71 @@ function osc_reset_users()
 {
     return View::getInstance()->_reset('users');
 }
+
+/**
+ * Seller pages a shopper is sent to the dashboard from, by page: the actions hidden, or the only
+ * actions kept. A new seller page goes here and in OSC_SHOPPER_HIDDEN_MENU below.
+ */
+const OSC_SHOPPER_PAGES = array(
+    'user'    => array('hide' => array('items', 'alerts', 'api_access', 'api_access_post', 'pub_profile')),
+    'billing' => array('keep' => array('orders', 'receipt')),
+);
+
+/**
+ * Whether a page is a seller page a shopper does not get.
+ *
+ * @param string $page   the request's page, such as 'user'
+ * @param string $action the request's action
+ *
+ * @return bool
+ */
+function osc_shopper_page_hidden(string $page, string $action): bool
+{
+    $rule = OSC_SHOPPER_PAGES[$page] ?? null;
+    if ($rule === null) {
+        return false;
+    }
+    if (isset($rule['keep'])) {
+        return !in_array($action, $rule['keep'], true);
+    }
+
+    return in_array($action, $rule['hide'], true);
+}
+
+/** Account menu entries a shopper does not get, by class. */
+const OSC_SHOPPER_HIDDEN_MENU = array(
+    'opt_items',
+    'opt_publicprofile',
+    'opt_alerts',
+    'opt_billing_wallet',
+    'opt_billing_buy',
+    'opt_api_access',
+);
+
+/**
+ * The account menu for a shopper: seller entries dropped and "Your orders" added when no one
+ * else added it. Every other visitor gets the list untouched.
+ *
+ * @param mixed $options the user_menu_filter list
+ *
+ * @return mixed
+ */
+function osc_shopper_user_menu($options)
+{
+    if (!is_array($options) || !osc_is_shopper()) {
+        return $options;
+    }
+
+    $options = array_values(array_filter($options, static function ($entry): bool {
+        return !in_array(is_array($entry) ? (string) ($entry['class'] ?? '') : '', OSC_SHOPPER_HIDDEN_MENU, true);
+    }));
+    if (osc_billing_enabled() && !in_array('opt_billing_orders', array_column($options, 'class'), true)) {
+        $options[] = array('name' => _m('Your orders'), 'url' => osc_billing_orders_url(), 'class' => 'opt_billing_orders');
+    }
+
+    return $options;
+}
+
+// Priority 20, so core's billing and API entries are already in the list; entries added after it
+// are not filtered. Plugins::addHook() because this file loads before hPlugins.php.
+Plugins::addHook('user_menu_filter', 'osc_shopper_user_menu', 20);

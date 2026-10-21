@@ -67,6 +67,16 @@ function api_admin_boot(string $scratch): mysqli
 {
     require_once __DIR__ . '/scratchdb.php';
     $admin = scratchdb_session($scratch);
+    api_admin_env();
+
+    return $admin;
+}
+
+/**
+ * The constants, helpers and stand-ins the API needs, for a process already on its database.
+ */
+function api_admin_env(): void
+{
     foreach ([
         'OSC_CACHE_TTL'   => 60,
         'WEB_PATH'        => 'http://localhost/',
@@ -129,8 +139,7 @@ function api_admin_boot(string $scratch): mysqli
     require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
     require_once __DIR__ . '/api-doubles.php';
-
-    return $admin;
+    \mindstellar\boot\Boot::services();
 }
 
 /**
@@ -164,8 +173,9 @@ function api_admin_key(int $adminId, bool $moderator = false, ?array $scopes = n
  * one request has one.
  *
  * @param Closure|null $settings fn(): ApiSettings, read for each call; the defaults when null
+ * @param Closure|null $limiter  fn(): RateLimiter, read for each call; one that never refuses when null
  */
-function api_admin_caller(?Closure $settings = null): Closure
+function api_admin_caller(?Closure $settings = null, ?Closure $limiter = null): Closure
 {
     $facts     = new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr']]);
     $settings ??= static fn (): ApiSettings => new ApiSettings(true, userKeys: true);
@@ -201,9 +211,11 @@ function api_admin_caller(?Closure $settings = null): Closure
         }
     };
 
-    return static function (string $method, string $path, ?array $body = null, ?string $token = null, array $headers = [], array $query = []) use ($facts, $settings, $links): Response {
+    $limiter ??= static fn (): \mindstellar\api\ratelimit\RateLimiter => api_test_limiter();
+
+    return static function (string $method, string $path, ?array $body = null, ?string $token = null, array $headers = [], array $query = []) use ($facts, $settings, $limiter, $links): Response {
         $users    = new UserRows();
-        $services = new ApiServices($settings(), new Scopes(), new ApiCredential(), $users, new SystemClock(), api_test_limiter(), $facts, $links);
+        $services = new ApiServices($settings(), new Scopes(), new ApiCredential(), $users, new SystemClock(), $limiter(), $facts, $links);
         $kernel   = $services->kernel();
         if ($token !== null) {
             $headers['Authorization'] = 'Bearer ' . $token;

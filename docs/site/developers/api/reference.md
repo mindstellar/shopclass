@@ -19,7 +19,7 @@ endpoints, at `/api/v1/openapi.json`.
 | GET | `/account` | user | `account:read` | The signed-in user's own profile |
 | PATCH | `/account` | user | `account:write` | Edit the profile; a new e-mail address is confirmed by a link first |
 | GET | `/account/alerts` | user | `alerts:read` | Your saved searches |
-| POST | `/account/alerts` | user | `alerts:write` | Save a search, with the filters GET /listings takes; an existing one is answered as it is |
+| POST | `/account/alerts` | user | `alerts:write` | Save a search, with the filters GET /listings takes, or a back-in-stock or price-drop alert on a product; an existing one is answered as it is |
 | GET | `/account/alerts/{id}` | user | `alerts:read` | One of your saved searches |
 | DELETE | `/account/alerts/{id}` | user | `alerts:write` | Stop a saved search |
 | GET | `/account/keys` | user | `account:write` | Personal API keys, when the site allows them |
@@ -31,6 +31,10 @@ endpoints, at `/api/v1/openapi.json`.
 | GET | `/account/sessions` | user | `account:read` | Your live sign-ins; personal keys are at /account/keys |
 | DELETE | `/account/sessions/{session}` | user | `account:write` | End one sign-in |
 | POST | `/account/sign-out-everywhere` | user | `account:write` | Sign out of every device: web sign-ins, every API sign-in including this one, and personal keys |
+| GET | `/account/wishlist` | user | `wishlist:read` | Your wishlist: listing ids, newest first |
+| PUT | `/account/wishlist` | user | `wishlist:write` | Replace your wishlist; listings that are not live are dropped |
+| POST | `/account/wishlist/{listing}` | user | `wishlist:write` | Put a live listing at the top of your wishlist |
+| DELETE | `/account/wishlist/{listing}` | user | `wishlist:write` | Take a listing off your wishlist |
 
 ### GET `/account`
 
@@ -69,15 +73,15 @@ Answers: 200 OK (`AlertList`); 304 Not modified; 401 No valid credential; 403 No
 
 ### POST `/account/alerts`
 
-Save a search, with the filters GET /listings takes; an existing one is answered as it is
+Save a search, with the filters GET /listings takes, or a back-in-stock or price-drop alert on a product; an existing one is answered as it is
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
-Body: `AlertInput` as JSON.
+Body: `AlertInput` as JSON, optional.
 
-Answers: 200 OK (`AlertDocument`); 201 Created (`AlertDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`AlertDocument`); 201 Created (`AlertDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/account/alerts/{id}`
 
@@ -153,7 +157,7 @@ Your own listings in any status, newest first
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -195,6 +199,51 @@ Sign out of every device: web sign-ins, every API sign-in including this one, an
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/account/wishlist`
+
+Your wishlist: listing ids, newest first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`WishlistDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### PUT `/account/wishlist`
+
+Replace your wishlist; listings that are not live are dropped
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `WishlistInput` as JSON.
+
+Answers: 204 No content; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 412 Precondition failed; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/wishlist/{listing}`
+
+Put a live listing at the top of your wishlist
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `listing` | path | string | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### DELETE `/account/wishlist/{listing}`
+
+Take a listing off your wishlist
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `listing` | path | string | yes |  |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -270,6 +319,7 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 | PATCH | `/admin/listings/{id}` | admin | `admin:listings` | Edit any listing, its owner, expiry and status included; members not sent keep their values |
 | DELETE | `/admin/listings/{id}` | admin | `admin:listings` | Delete a listing |
 | POST | `/admin/listings/{id}/bump` | admin | `admin:listings` | Move a listing to the top of "newest first" |
+| POST | `/admin/listings/{id}/publish` | admin | `admin:listings` | Publish a listing that waits for payment, without charging the seller |
 
 ### GET `/admin/listings`
 
@@ -334,6 +384,17 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 ### POST `/admin/listings/{id}/bump`
 
 Move a listing to the top of "newest first"
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/admin/listings/{id}/publish`
+
+Publish a listing that waits for payment, without charging the seller
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -1042,6 +1103,8 @@ Every category, flat or as a tree
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
 | `tree` | query | boolean | no |  |
+| `roots` | query | boolean | no | Only the top-level categories, flat; ignored with tree. |
+| `include` | query | string | no | Comma list: cover, the first photo of the newest live listing in the category or below it; null when there is none. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`CategoryList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1082,12 +1145,13 @@ Answers: 200 OK (`CustomFieldList`); 304 Not modified; 401 No valid credential; 
 | GET | `/listings/{id}` | public | `listings:read` | One listing |
 | PATCH | `/listings/{id}` | user | `listings:write` | Edit your listing; members not sent keep their values |
 | DELETE | `/listings/{id}` | user | `listings:delete` | Delete your listing |
-| GET | `/listings/{id}/comments` | public | `listings:read` | A listing's approved comments, oldest first |
+| GET | `/listings/{id}/comments` | public | `listings:read` | A listing's approved comments, oldest first or newest first |
 | POST | `/listings/{id}/comments` | user | `comments:write` | Comment on a listing; it may wait for approval |
 | GET | `/listings/{id}/photos` | public | `listings:read` | A listing's photos |
 | POST | `/listings/{id}/photos` | user | `listings:write` | Add a photo to your listing |
 | GET | `/listings/{id}/photos/{photo}` | public | `listings:read` | One photo of a listing |
 | DELETE | `/listings/{id}/photos/{photo}` | user | `listings:write` | Remove a photo from your listing |
+| POST | `/listings/{id}/publish` | user | `listings:write` | Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of. Needs orders:write too |
 | GET | `/listings/{id}/related` | public | `listings:read` | Live listings like this one, best first: same category and shared title words, or what a search plugin picks |
 | POST | `/photos` | user | `listings:write` | Upload a photo for a listing you are about to post; its token lasts two hours. 200, not 201: the token names no resource to read |
 
@@ -1132,17 +1196,22 @@ Search listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `in_stock` | query | boolean | no | true: only listings with a variant in stock (stock not tracked, or above 0). |
+| `on_sale` | query | boolean | no | true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both. |
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
-| `custom_field` | query | object | no | custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422. |
+| `custom_field` | query | object | no | custom_field[<id>]=<value>, or custom_field[<id>][]=A&custom_field[<id>][]=B for a dropdown or radio field: any of up to 20 values. Needs a category filter; each id must be a searchable field of that category, else 422. |
+| `option` | query | object | no | option[<name>][]=<value>: only listings with one variant that has, for every name given, one of its values (OR within a name, AND across names). At most 3 names and 10 values each, names up to 30 and values up to 40 characters; anything over is ignored. With in_stock or on_sale, the same variant must meet them too. |
+| `ids` | query | string or array | no | One value, a comma list, or repeated. |
 | `sort` | query | string: `created`, `id`, `price`, `relevance`, `distance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
+| `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingPage`); 304 Not modified; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1168,7 +1237,7 @@ One listing
 | `id` | path | integer | yes |  |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1201,7 +1270,7 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 
 ### GET `/listings/{id}/comments`
 
-A listing's approved comments, oldest first
+A listing's approved comments, oldest first or newest first
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -1209,6 +1278,7 @@ A listing's approved comments, oldest first
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
+| `sort` | query | string: `oldest`, `newest` | no | Default oldest. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`CommentPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1222,7 +1292,7 @@ Comment on a listing; it may wait for approval
 | `id` | path | integer | yes |  |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
-Body: `CommentInput` as JSON.
+Body: `CommentInput` as JSON, optional.
 
 Answers: 201 Created (`SavedComment`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
@@ -1275,6 +1345,19 @@ Remove a photo from your listing
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
 
+### POST `/listings/{id}/publish`
+
+Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of. Needs orders:write too
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `ListingPublishInput` as JSON, optional.
+
+Answers: 200 OK (`ListingPublished`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
 ### GET `/listings/{id}/related`
 
 Live listings like this one, best first: same category and shared title words, or what a search plugin picks
@@ -1284,7 +1367,7 @@ Live listings like this one, best first: same category and shared title words, o
 | `id` | path | integer | yes |  |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `limit` | query | integer | no |  |
 | `same_category` | query | boolean | no |  |
 | `same_country` | query | boolean | no |  |
@@ -1386,6 +1469,174 @@ This API described in OpenAPI 3.1, with the site's plugin endpoints
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+## Orders
+
+| Method | Path | Auth | Scope | Summary |
+|---|---|---|---|---|
+| GET | `/account/cart` | user | `cart:read` | Your saved cart: variant ids and quantities, never prices |
+| PUT | `/account/cart` | user | `cart:write` | Replace your saved cart; variants that cannot be bought are dropped |
+| GET | `/account/orders` | user | `orders:read` | Your orders, newest first |
+| POST | `/account/orders` | user | `orders:write` | Place an order for a cart; the server prices it again and answers how to pay |
+| GET | `/account/orders/{id}` | user | `orders:read` | One of your orders |
+| POST | `/account/orders/{id}/cancel` | user | `orders:write` | Cancel one of your pending bank transfer or cash on delivery orders |
+| POST | `/account/orders/{id}/pay` | user | `orders:write` | Start paying one of your pending card orders again |
+| GET | `/cart/quote` | public | `listings:read` | Price a cart: lines, shipping, fees and totals, worked out from the database |
+
+### GET `/account/cart`
+
+Your saved cart: variant ids and quantities, never prices
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`CartDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### PUT `/account/cart`
+
+Replace your saved cart; variants that cannot be bought are dropped
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `CartInput` as JSON.
+
+Answers: 204 No content; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 412 Precondition failed; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/account/orders`
+
+Your orders, newest first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`OrderPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/orders`
+
+Place an order for a cart; the server prices it again and answers how to pay
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `OrderInput` as JSON.
+
+Answers: 201 Created (`OrderPlaced`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/account/orders/{id}`
+
+One of your orders
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`OrderDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/orders/{id}/cancel`
+
+Cancel one of your pending bank transfer or cash on delivery orders
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`OrderDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/orders/{id}/pay`
+
+Start paying one of your pending card orders again
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`OrderPlaced`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/cart/quote`
+
+Price a cart: lines, shipping, fees and totals, worked out from the database
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `lines` | query | string | no | variant:qty pairs, comma separated, at most 50. A quantity over 20 is capped with a problem. |
+| `shipping` | query | string | no | A shipping method id from shipping_methods; the first one when left out. |
+| `gateway` | query | string | no | A payment method id; its fee is added to the totals. |
+| `country` | query | string | no | The delivery country's two-letter code, for delivery and tax plugins; anything else is ignored. |
+| `state` | query | string | no | The delivery state, up to 100 characters; a longer one is ignored. |
+| `postcode` | query | string | no | The delivery postcode, up to 20 characters; a longer one is ignored. |
+| `coupon` | query | string | no | A coupon code: trimmed and upper-cased, 1-40 of A-Z, 0-9 and -. Anything else is ignored, not refused. |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`QuoteDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+## Pages
+
+| Method | Path | Auth | Scope | Summary |
+|---|---|---|---|---|
+| GET | `/menus` | public | `listings:read` | The site's menus: main (top categories) and footer (linked pages); a plugin may add more |
+| GET | `/pages` | public | `listings:read` | The pages shown as links, in order, in the asked language |
+| GET | `/pages/{page}` | public | `listings:read` | One page by id or internal name, linked or not, with its text and meta |
+| GET | `/seo` | public | `listings:read` | The head data of a public page: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph |
+
+### GET `/menus`
+
+The site's menus: main (top categories) and footer (linked pages); a plugin may add more
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`MenuList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/pages`
+
+The pages shown as links, in order, in the asked language
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`PageSummaryList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/pages/{page}`
+
+One page by id or internal name, linked or not, with its text and meta
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `page` | path | string | yes |  |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`PageDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/seo`
+
+The head data of a public page: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `for` | query | string: `home`, `listing`, `category`, `page`, `search` | no | The kind of page. |
+| `id` | query | string | no | A listing id, a category id or slug, or a page id or internal name. Not used for home and search. |
+| `q` | query | string | no | Search only: the search words. |
+| `locale` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`SeoDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ## Search
 
@@ -1493,17 +1744,22 @@ A user's live listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
+| `in_stock` | query | boolean | no | true: only listings with a variant in stock (stock not tracked, or above 0). |
+| `on_sale` | query | boolean | no | true: only listings with a variant whose compare_at is above its price. With in_stock, one variant must be both. |
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
-| `custom_field` | query | object | no | custom_field[<id>]=<value>. Needs a category filter; each id must be a searchable field of that category, else 422. |
+| `custom_field` | query | object | no | custom_field[<id>]=<value>, or custom_field[<id>][]=A&custom_field[<id>][]=B for a dropdown or radio field: any of up to 20 values. Needs a category filter; each id must be a searchable field of that category, else 422. |
+| `option` | query | object | no | option[<name>][]=<value>: only listings with one variant that has, for every name given, one of its values (OR within a name, AND across names). At most 3 names and 10 values each, names up to 30 and values up to 40 characters; anything over is ignored. With in_stock or on_sale, the same variant must meet them too. |
+| `ids` | query | string or array | no | One value, a comma list, or repeated. |
 | `sort` | query | string: `created`, `id`, `price`, `relevance`, `distance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
+| `page` | query | integer | no | Page number, for numbered pages. Any sort; not with cursor. Past the deepest page: 422 page_too_deep. With count=true, meta.page and meta.pages say where you are. |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: custom_fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.

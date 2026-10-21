@@ -126,6 +126,12 @@
             "s_internal_name": "email_warn_expiration",
             "s_title": "{WEB_TITLE} - Your ad is about to expire",
             "s_description": "<p>Hi {USER_NAME},<\/p><p>Your listing <a href=\"{ITEM_URL}\">{ITEM_TITLE}<\/a> is about to expire at {WEB_LINK}.<\/p>"
+        },
+        {
+            "fk_i_page_id": 23,
+            "s_internal_name": "email_listing_unpaid_reminder",
+            "s_title": "{WEB_TITLE} - Pay to publish your listing",
+            "s_description": "<p>Hi {USER_NAME},<\/p><p>Your listing <a href=\"{PAY_URL}\">{ITEM_TITLE}<\/a> is saved but not published. It costs {CREDITS} credits to publish.<\/p><p>Pay for it by {DEADLINE} or it is deleted: {PAY_LINK}<\/p><p>Regards,<\/p><p>{WEB_LINK}<\/p>"
         }
     ]
 }

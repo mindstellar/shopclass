@@ -56,6 +56,16 @@ function osc_user_credits($id = null)
     global $S;
     return $S['credits'];
 }
+function osc_billing_next_listing_quote($id = null)
+{
+    global $S;
+    return array(
+        'slots'     => (int) max(0, ceil(($S['used'] - $S['limit'] + 1) / $S['qty'])),
+        'credits'   => 0,
+        'balance'   => $S['credits'],
+        'shortfall' => 0,
+    );
+}
 function osc_billing_slot_quantity()
 {
     global $S;

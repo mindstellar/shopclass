@@ -38,8 +38,9 @@ final class CommentsController
     {
         $input = $call->input();
         $saved = $this->comments->post($call->intArg(), [
-            'title' => (string) ($input['title'] ?? ''),
-            'body'  => (string) ($input['body'] ?? ''),
+            'title'  => (string) ($input['title'] ?? ''),
+            'body'   => (string) ($input['body'] ?? ''),
+            'rating' => $input['rating'] ?? null,
         ], $call->listingActor());
 
         $row      = $this->comments->find($saved->id());

@@ -35,6 +35,7 @@ final class CommentSerializer
                 'name'    => Format::text($row['s_author_name'] ?? null),
                 'user_id' => Format::id($row['fk_i_user_id'] ?? null),
             ],
+            'rating'       => isset($row['i_rating']) ? Format::int($row['i_rating']) : null,
             'published_at' => Format::time($row['dt_pub_date'] ?? null),
         ];
     }
@@ -63,6 +64,7 @@ final class CommentSerializer
                 'email'   => Format::text($row['s_author_email'] ?? null),
                 'user_id' => $out['author']['user_id'],
             ],
+            'rating'       => $out['rating'],
             'published_at' => $out['published_at'],
         ];
     }

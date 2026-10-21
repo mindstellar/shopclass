@@ -100,6 +100,13 @@ class PersonalData
                     . 'record the business has its own obligation to hold, so it outlives the '
                     . 'account by design — which is also why the table carries no foreign key.',
             ),
+            't_billing_order_line' => array(
+                'user_key' => null,
+                'export'   => false,
+                'erase'    => self::ERASE_RETAINED,
+                'why'      => 'What their orders held. Exported with each order under t_billing_order, as its '
+                    . 'lines, and kept for the same reason as the orders.',
+            ),
             't_billing_ledger' => array(
                 'user_key' => 'fk_i_user_id',
                 'export'   => true,
@@ -137,7 +144,8 @@ class PersonalData
                 'why'      => 'Shared key-value rows, keyed by group and key rather than by account. Core keeps '
                     . 'stored answers to repeated API writes here; an answer can hold the profile it returned, '
                     . 'and each is deleted within a day. A pending email change is also kept here; it is '
-                    . 'exported as pending_email_change and deleted with the account.',
+                    . 'exported as pending_email_change and deleted with the account. The wishlist is kept here too; '
+                    . 'it is exported as wishlist and deleted with the account. So is the saved cart, as saved_cart.',
             ),
             't_item_report_log' => array(
                 'user_key' => null,
@@ -229,6 +237,10 @@ class PersonalData
         // bytes would turn this back into a file to build, store and clean up.
         $out['data']['t_item']['urls'] = self::itemUrls($userId);
 
+        $orderIds = array_map(static fn (array $row): int => (int) $row['pk_i_id'], $out['data']['t_billing_order']['rows'] ?? array());
+        $out['data']['t_billing_order']['lines'] = self::orderLines($orderIds);
+        unset($out['not_included']['t_billing_order_line']);
+
         $pending = \UserEmailTmp::getInstance()->findByPrimaryKey($userId);
         $out['data']['pending_email_change'] = array(
             'retention' => self::ERASE_DELETED,
@@ -296,6 +308,18 @@ class PersonalData
         }
 
         return $rows;
+    }
+
+    /**
+     * The lines of these orders, in one query.
+     *
+     * @param int[] $orderIds
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function orderLines(array $orderIds): array
+    {
+        return array_merge(array(), ...array_values(\mindstellar\billing\OrderLineStore::ofOrders($orderIds)));
     }
 
     /**

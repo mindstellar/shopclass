@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use mindstellar\base\Model;
 use mindstellar\database\Db;
+use mindstellar\listing\ListingStatus;
 
 /**
  * What a user is entitled to: a quantity, a duration, or both, per feature.
@@ -346,18 +347,29 @@ final class EntitlementStore extends Model
      * Whether $userId is still inside the free listing quota: a slot model, measured
      * against listingCeiling().
      *
-     * @param int $userId
+     * @param int  $userId
+     * @param bool $current count the latest committed rows, as liveListings() does with it
      *
      * @return bool
      */
-    public static function withinFreeQuota(int $userId): bool
+    public static function withinFreeQuota(int $userId, bool $current = false): bool
     {
         $ceiling = self::listingCeiling($userId);
         if ($ceiling === -1) {
             return true;
         }
 
-        return self::liveListings($userId) < $ceiling;
+        return self::liveListings($userId, $current) < $ceiling;
+    }
+
+    /**
+     * Hold the seller's user row until the transaction ends, so two saves or publishes for
+     * one seller cannot both take the last free slot. Call it inside a transaction, then
+     * count with liveListings(..., true).
+     */
+    public static function lockSeller(int $userId): void
+    {
+        Db::scalar('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_user WHERE pk_i_id = ? FOR UPDATE', array($userId));
     }
 
     /**
@@ -398,19 +410,27 @@ final class EntitlementStore extends Model
      * which is the whole point of a slot model: deletion frees the slot by
      * construction, with no sweep and no bookkeeping.
      *
+     * A held listing (hidden, inactive and dt_first_pub_date NULL: not yet paid for) is not
+     * counted: it has not published, so it must not raise the price of the seller's next one.
+     * A live row a plugin wrote without dt_first_pub_date still counts.
+     *
      * Rides the plain fk_i_user_id index on t_item: the WHERE clause leads with
      * an equality match on it, narrowing to one seller's rows before the OR on
      * b_premium/dt_expiration is ever evaluated.
      *
-     * @param int $userId
+     * @param int  $userId
+     * @param bool $current read the latest committed rows (a locking read) rather than the
+     *                      transaction's snapshot; for a caller holding lockSeller()
      *
      * @return int
      */
-    public static function liveListings(int $userId): int
+    public static function liveListings(int $userId, bool $current = false): int
     {
         return (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
-            . ' WHERE fk_i_user_id = ? AND (b_premium = 1 OR dt_expiration >= ?)',
+            . ' WHERE fk_i_user_id = ? AND NOT ' . ListingStatus::heldSql()
+            . ' AND (b_premium = 1 OR dt_expiration >= ?)'
+            . ($current ? ' LOCK IN SHARE MODE' : ''),
             array($userId, date('Y-m-d H:i:s'))
         );
     }

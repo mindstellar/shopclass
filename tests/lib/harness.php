@@ -23,6 +23,11 @@
  * the aggregate runner.
  */
 
+// Tests that load classes by hand have no autoloader; registries now live in the container.
+foreach (array('ContainerInterface', 'NotFoundException', 'Container') as $containerFile) {
+    require_once dirname(__DIR__, 2) . '/oc-includes/osclass/classes/container/' . $containerFile . '.php';
+}
+
 if (!isset($GLOBALS['okCount'])) {
     $GLOBALS['okCount'] = 0;
 }
@@ -225,6 +230,20 @@ if (!function_exists('harness_section')) {
     function harness_section(string $title): void
     {
         echo "\n== $title ==\n";
+    }
+}
+
+if (!function_exists('harness_reset_container')) {
+    /**
+     * Make a fresh site-wide container with core's services in it, so a section starts with no
+     * listeners or fakes left by the one before. Returns the container it replaced.
+     */
+    function harness_reset_container(): \mindstellar\container\Container
+    {
+        $fresh = new \mindstellar\container\Container();
+        \mindstellar\boot\CoreServices::register($fresh);
+
+        return \mindstellar\container\Container::use($fresh);
     }
 }
 

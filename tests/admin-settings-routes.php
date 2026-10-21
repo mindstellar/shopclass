@@ -82,7 +82,9 @@ foreach (glob($formDir . '/*.php') as $form) {
     }
     // A screen with more than one form lists them, so the action is a bare literal rather
     // than an argument in the call. Any *_post spelled out in a declaration is one.
-    if (preg_match_all("/'([a-z_]+_post)'/", $src, $m)) {
+    // A control that happens to be named *_post (billing_pay_at_post) is no action.
+    $declared = preg_replace("/->(?:checkbox|number|text|select)\(\s*'[a-z_]+'/", '', $src);
+    if (preg_match_all("/'([a-z_]+_post)'/", (string) $declared, $m)) {
         foreach ($m[1] as $action) {
             $posted[$action] = basename($form);
         }
@@ -122,6 +124,7 @@ foreach (array(
     'billing_upgrades_post',
     'billing_limits_post',
     'billing_receipts_post',
+    'billing_shop_post',
 ) as $action) {
     check('routed: ' . $action, isset($routed[$action]));
 }

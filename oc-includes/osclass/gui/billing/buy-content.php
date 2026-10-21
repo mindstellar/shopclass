@@ -14,7 +14,6 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\billing\Order;
 use mindstellar\billing\PaymentGatewayRegistry;
-use mindstellar\currency\Money;
 
 /**
  * Package picker and payment methods -- markup only: no page chrome, no heading
@@ -79,52 +78,12 @@ $checkoutHtml = is_string($checkoutHtml) ? $checkoutHtml : '';
     <?php } else { ?>
         <div class="oe-panel oe-bill-card">
             <?php
-            // Posts to index.php, not osc_billing_buy_url(): the buy page has a permalink,
-            // and a matched rewrite rule writes its own params over the request (see
-            // Rewrite::applyParams()) -- so posting 'checkout' at the URL whose route says
-            // 'buy' arrives as 'buy' and silently re-renders this picker. The route lives in
-            // the hidden fields below, where nothing overwrites it.
+            $pickerPackages = $packages;
+            $pickerGateways = $gateways;
+            $pickerFields   = array('page' => 'billing', 'action' => 'checkout');
+            $pickerSubmit   = _m('Continue');
+            require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/package-picker.php';
             ?>
-            <form method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
-                <input type="hidden" name="page" value="billing"/>
-                <input type="hidden" name="action" value="checkout"/>
-
-                <fieldset>
-                    <legend><?php echo osc_esc_html(_m('Choose a package')); ?></legend>
-                    <?php foreach ($packages as $i => $package) { ?>
-                        <div class="oe-bill-pkg">
-                            <label>
-                                <input type="radio" name="packageId" value="<?php echo (int) $package['pk_i_id']; ?>"
-                                    <?php echo $i === 0 ? 'checked' : ''; ?> required/>
-                                <span class="oe-bill-pkg-name"><?php echo osc_esc_html($package['s_name']); ?></span>
-                                <span class="oe-bill-pkg-credits">
-                                    <?php echo osc_esc_html(sprintf(_m('%s credits'), number_format((int) $package['i_credits']))); ?>
-                                </span>
-                                <span class="oe-bill-pkg-price">
-                                    <?php echo osc_esc_html(Money::format((int) $package['i_amount'], (string) $package['s_currency'])); ?>
-                                </span>
-                            </label>
-                        </div>
-                    <?php } ?>
-                </fieldset>
-
-                <fieldset>
-                    <legend><?php echo osc_esc_html(_m('Payment method')); ?></legend>
-                    <?php $first = true;
-                    foreach ($gateways as $gatewayId => $gateway) { ?>
-                        <div class="oe-bill-gw">
-                            <label>
-                                <input type="radio" name="gateway" value="<?php echo osc_esc_html($gatewayId); ?>"
-                                    <?php echo $first ? 'checked' : ''; ?> required/>
-                                <?php echo osc_esc_html($gateway->getName()); ?>
-                            </label>
-                        </div>
-                        <?php $first = false;
-                    } ?>
-                </fieldset>
-
-                <button type="submit" class="oe-btn oe-bill-btn"><?php echo osc_esc_html(_m('Continue')); ?></button>
-            </form>
         </div>
     <?php } ?>
 <?php } ?>

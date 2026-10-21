@@ -28,6 +28,14 @@ TOKEN=sca_…        # an access token, or a personal key
 | `POST /account/alerts` | `alerts:write` | Save a search. |
 | `GET /account/alerts/{id}` | `alerts:read` | One saved search. The `Location` of a new one. |
 | `DELETE /account/alerts/{id}` | `alerts:write` | Stop a saved search. `204`. |
+| `GET /cart/quote` | `listings:read` | Price a cart. Needs no sign-in. |
+| `GET /account/orders` | `orders:read` | Your orders, newest first. |
+| `POST /account/orders` | `orders:write` | Place an order. `201`. |
+| `GET /account/orders/{id}` | `orders:read` | One of your orders. The `Location` of a new one. |
+| `POST /account/orders/{id}/pay` | `orders:write` | Start paying a pending card order again; `next` says where to go. |
+| `POST /account/orders/{id}/cancel` | `orders:write` | Cancel a pending bank transfer or cash on delivery order. |
+| `GET /account/cart` | `cart:read` | Your saved cart: variant ids and quantities, never prices. |
+| `PUT /account/cart` | `cart:write` | Replace your saved cart. A variant that cannot be bought is dropped. Up to 50 lines, 20 of each. `204`. |
 | `POST /users` | none | Sign up, when the site allows it. `201`. The password needs at least 5 characters. |
 
 A write that is not allowed gets `403`. A user who is not the owner of a live listing gets
@@ -55,6 +63,7 @@ Every `Location` can be read with `GET`.
 | `POST /listings/{id}/photos` | `/listings/{id}/photos/{photo}` |
 | `POST /listings/{id}/comments` | `/comments/{id}` |
 | `POST /account/alerts` | `/account/alerts/{id}` |
+| `POST /account/orders` | `/account/orders/{id}` |
 | `POST /account/keys` | `/account/keys/{id}` |
 
 `POST /users` has no `Location` either: see [Sign up](#sign-up).
@@ -98,6 +107,18 @@ Location: https://example.com/api/v1/listings/412
 }
 ```
 
+A site that sells listing slots may save the listing without making it live. Then `data.status` is `unpaid`, the `listing_unpaid` warning is set, and `payment` says what it costs. The listing is hidden from everyone but its owner until it is [published](#publish-a-listing). Its `published_at` is when it was saved and its `expires_at` is the payment deadline.
+
+```json
+{
+  "data": { "id": 412, "status": "unpaid", "title": "Vintage Hardcover Classics Collection", "…": "…" },
+  "warnings": [
+    { "code": "listing_unpaid", "message": "The listing is saved and waits for payment. Publish it with credits or at payment.publish_url." }
+  ],
+  "payment": { "credits": 2, "balance": 0, "shortfall": 2, "publish_url": "https://example.com/…" }
+}
+```
+
 Required: `category_id`, `title`, `description`.
 
 | Member | Type | Notes |
@@ -134,9 +155,10 @@ Plugins can change the body before it is saved with the `api_listing_input` filt
 | Answer | Why |
 |---|---|
 | `422 validation_failed` | A bad member, or the web form's own refusal: a missing field, or the posting wait. `errors` points at the member. |
-| `422 listing_limit` | The user has reached the site's listing limit. `detail` says which. |
+| `422 listing_limit` | The user has reached the site's listing limit and the site does not take payment at the end of posting. `detail` says which. Otherwise the listing is saved and `payment` says what it costs. |
 | `403 banned` | The account or address is banned from posting. |
 | `403 wrong_credential` | The site lets only signed-in users post, and the caller is not one. |
+| `403 feature_disabled` | The site is a shop: only an admin adds listings. |
 | `429 rate_limited` | Over the [hourly cap](#limits). |
 
 ## Edit a listing
@@ -198,6 +220,34 @@ curl -X DELETE $API/listings/412 -H "Authorization: Bearer $TOKEN"
 ```
 
 `204`, no body. The listing and its photos are removed as the web delete does it.
+
+## Publish a listing
+
+A listing with `status: "unpaid"` waits for payment. `POST /listings/{id}/publish` puts it live. Only its owner may call it, with a credential that holds both `listings:write` and `orders:write`: either path spends money.
+
+```bash
+curl -i -X POST $API/listings/412/publish \
+  -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(uuidgen)"
+```
+
+With an empty body the site takes the listing's credits from the user's balance. To buy the credits that are missing, send a package and a payment method. The site starts an order, as `POST /account/orders` does. Follow `next` to pay, then watch `GET /account/orders`.
+
+```json
+{ "package": 5, "gateway": "offline" }
+```
+
+| Answer | When |
+|---|---|
+| `200` | The listing is published. `data.status` is `active`, or `pending` if the site checks new listings. |
+| `200` | The listing was already published. Nothing is spent. |
+| `200` with `order` and `next` | A `package` and `gateway` were sent. The order is started and the listing stays `unpaid` until it is paid. `payment` is set. |
+| `422 insufficient_credits` | The balance is too low. `payment` says the price and the shortfall. |
+| `403 insufficient_scope` | The credential lacks `orders:write`. |
+| `404` | Not your listing, or it does not exist. |
+
+`payment.publish_url` is the site's pay page. It needs the seller signed in on the site, so an app should use the order path instead.
+
+A repeat with the same `Idempotency-Key` gets the first answer back. Starting orders is limited to 20 an hour per user: `429 rate_limited`. A refused request is not counted. `listing.created` is sent to webhooks when the listing goes live.
 
 ## Photos
 
@@ -311,7 +361,7 @@ curl -i -X POST $API/listings/412/comments \
 | `title` | Optional, up to 200. |
 | Author | Taken from the account. You cannot set a name or e-mail. |
 | Moderation | If the site approves comments first, or the spam check holds one, you get `comment_pending`. |
-| Refusals | `403` when comments are off, or the account is banned. `404` when the listing is pending, disabled or spam. |
+| Refusals | `403` when comments are off, or the account is banned. `404` when the listing is pending, disabled, spam or unpaid. |
 | Delete | `DELETE /comments/{id}` removes your own approved comment. Someone else's is `403`; one still waiting for approval is `409`. |
 
 ## Saved searches
@@ -344,6 +394,50 @@ curl -i -X POST $API/account/alerts \
 | `type` | How often it mails: `daily` or `weekly`. |
 | List and stop | `GET /account/alerts`, `DELETE /account/alerts/{id}` (`204`). |
 | Shown on the web | The same search appears on the account's alerts page. |
+
+## Cart and orders
+
+The request names variants and quantities. Prices, delivery, fees, totals and stock are worked out on the server; an amount in the body is ignored.
+
+```bash
+curl "$API/cart/quote?lines=12:2,15:1&gateway=offline"
+```
+
+`lines` is `variant:qty` pairs, at most 50, a quantity of 1 to 20. A variant that is gone, hidden or out of stock does not fail the call: it is listed in `problems` (`not_buyable`, `out_of_stock`, `qty`) with its position in `lines`, and an out-of-stock line stays out of the totals. `shipping` picks a delivery method from `shipping_methods`; `gateway` adds that payment method's fee. Every amount is `{amount, currency, formatted}`. A quote is never cached.
+
+Before checkout a shopper may add `country` (two letters), `state` (up to 100 characters), `postcode` (up to 20) and `coupon` (letters, digits and `-`, up to 40, read in upper case). Delivery, tax and discount plugins use them; a value that does not fit is left out, not refused.
+
+| Field | Detail |
+|---|---|
+| `needs_shipping` | `false` when every line is a download: no address, delivery or cash on delivery. |
+| `free_over` | `{amount, remaining}`: free delivery from this subtotal and what is left to reach it, or `null`. A delivery plugin may set its own. |
+| `taxes[].included` | `true` for tax already in the prices: shown, not added to `total`. |
+| `totals.tax` / `totals.tax_included` | Tax added on top of the prices, and tax already in them. |
+| `problems` | Each has `line`, `code`, `pointer` and `message`. A line problem has a `line` and a `null` pointer. A plugin's problem has `line` `null`, a `pointer` (`/coupon`, `/address/postcode`, `/address/state`, `/address/country` or `/shipping_method`) and a `message` to show the shopper. |
+
+```bash
+curl -i -X POST $API/account/orders \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "lines": [{ "variant": 12, "qty": 2 }], "shipping_method": "standard", "gateway": "offline",
+        "coupon": "WELCOME10",
+        "address": { "name": "Tom Lee", "phone": "5550100", "line1": "1 Main St", "city": "Austin", "state": "TX", "postcode": "73301", "country": "US" } }'
+```
+
+The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redirect", "payload": "<url>" }` to send the buyer to, or `{ "kind": "html", "payload": "<markup>" }`, the gateway's own page to print as it is.
+
+| Rule | Detail |
+|---|---|
+| Who | A signed-in user. A guest page token can price a cart but not place one. |
+| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`, `too_many_open`), `/address/<field>` (`required`, `maxLength`). A plugin's problem (a bad coupon, a postcode outside every delivery zone) is `rejected` at its pointer, with its message. Nothing is written. |
+| `coupon` | Optional, the same rule as on the quote. |
+| Included tax | A tax line already in the prices is stored with `amount` 0, `unit` the tax and `included` true, so the lines still add up to `total`. |
+| Retry | Send an `Idempotency-Key`: a repeat gets the first order back and does not ask the gateway again. |
+| Limit | 20 orders an hour per user: `429 rate_limited`. A refused request (`422`) is not counted. |
+| `status` | `pending`, `paid`, `shipped`, `delivered`, `failed`, `refunded`, `cancelled`. |
+| Lines | `kind` is `item`, `shipping`, `tax`, `discount` or `fee`; a discount's amount is negative. `listing` links the live listing and is `null` once it is gone. |
+| Cancel | `POST /account/orders/{id}/cancel`, only while `can_cancel` is true: a pending bank transfer or cash on delivery order. `200` with the order, else `409 conflict`. |
+| Pay again | A pending card order has `can_pay` true instead. `POST /account/orders/{id}/pay` asks the gateway again and answers `200` with the order and a new `next`; any other order is `409 conflict`. |
+| Other users | Another user's order is `404`. |
 
 ## Sign up
 
@@ -434,6 +528,7 @@ curl -X POST $API/listings -H "Authorization: Bearer $TOKEN" \
 | Saved searches | The site's hourly alert limit, counted with the web form | `429 rate_limited` |
 | Staged photos waiting | 50 per user | `422` on `/photo` |
 | `photo_tokens` / `photo_urls` in one body | 50 / 20 | `422 validation_failed` |
+| Payments started for a listing | 20 an hour per user, with the orders above | `429 rate_limited` |
 | Sign-ups | 5 an hour per address; 100 for the site by default (a setting), counting only those that passed their checks | `429 rate_limited` |
 
 Each `429` has `Retry-After`. The site owner sets the listing number: [Set up the REST API](/docs/configure/api/#rate-limits).
@@ -444,7 +539,7 @@ Each `429` has `Retry-After`. The site owner sets the listing number: [Set up th
 |---|---|---|
 | `GET /account` | `account:read` | Your profile, in the owner's view. |
 | `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email` (with `current_password`). A `website` that is not a web address is a `422`. |
-| `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
+| `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `unpaid`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
 | `POST /account/password` | `account:write` | Change the password. The new one needs at least 5 characters, as on the site's forms; shorter is a `422` on `/new_password`. |
 | `GET /account/sessions` | `account:read` | Your live sign-ins. Keys are at `/account/keys`. |
 | `DELETE /account/sessions/{id}` | `account:write` | End one sign-in. `204`. |
@@ -464,5 +559,6 @@ the answer carries the warning `email_confirmation_sent`. The e-mail changes whe
 | `photo_skipped` | `POST`, `PATCH /listings` | Some photos were not added: the listing holds as many as it may. |
 | `comment_pending` | `POST …/comments` | The comment shows once it is approved. |
 | `email_confirmation_sent` | `PATCH /account` | A link went to the new address. |
+| `listing_unpaid` | `POST`, `PATCH /listings` | The listing is saved but not live: it waits for payment. `payment` says what it costs and where to pay. |
 
 Errors are in [API errors](/docs/developers/api/errors/).

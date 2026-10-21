@@ -11,7 +11,7 @@
  */
 
 /**
- * The chrome around the six declared billing forms. Each form -- its heading, its intro,
+ * The chrome around the seven declared billing forms. Each form -- its heading, its intro,
  * its route, its fields, their values and the submit row -- is core's, drawn from the
  * declaration the controller saves through. The payment-method table below them is a list
  * of what is installed and belongs to the view.
@@ -34,6 +34,7 @@ $tabs = array(
     'upgrades' => __('Upgrades'),
     'limits'   => __('Seller limits'),
     'receipts' => __('Receipts'),
+    'shop'     => __('Shop'),
     'methods'  => __('Payment methods'),
 );
 $tab = (string) __get('billing_tab');
@@ -69,11 +70,13 @@ $tab = (string) __get('billing_tab');
                     <th scope="col"><?php _e('Payment method'); ?></th>
                     <th scope="col"><?php _e('Currencies'); ?></th>
                     <th scope="col"><?php _e('Status'); ?></th>
+                    <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                 </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($gateways as $gateway) {
-                    $ready = $gateway->isConfigured(); ?>
+                    $ready = $gateway->isConfigured();
+                    $setup = osc_billing_gateway_setup_url($gateway); ?>
                     <tr>
                         <td>
                             <strong><?php echo osc_esc_html($gateway->getName()); ?></strong>
@@ -87,6 +90,11 @@ $tab = (string) __get('billing_tab');
                                 $ready ? 'active' : 'inactive',
                                 $ready ? __('Ready') : __('Needs setting up')
                             ); ?>
+                        </td>
+                        <td class="text-end">
+                            <?php if ($setup !== '') { ?>
+                                <a href="<?php echo osc_esc_html($setup); ?>"><?php _e('Set up'); ?></a>
+                            <?php } ?>
                         </td>
                     </tr>
                 <?php } ?>

@@ -529,6 +529,27 @@ final class JobQueue
     }
 
     /**
+     * Drop the waiting jobs of $type that carry this unique_key. A claimed job has no key, so
+     * a running one is left alone.
+     *
+     * @return int how many were removed
+     */
+    public function cancelKey(string $type, string $key): int
+    {
+        try {
+            return (int) Db::execute(
+                'DELETE FROM ' . $this->table() . ' WHERE s_type = ? AND s_unique = ? AND s_status = ?',
+                array($type, $key, self::STATUS_PENDING)
+            );
+        } catch (DbException $e) {
+            // The job still runs and finds nothing to do, so this is only logged.
+            error_log('Jobs ' . $type . ' ' . $key . ' were not cancelled: ' . $e->getMessage());
+
+            return 0;
+        }
+    }
+
+    /**
      * The job is done. Remove it.
      *
      * @param int $id

@@ -37,7 +37,7 @@ if ($done === 'deleted') {
     $intro = _m('Only a site admin can ban a sender for good. Sign in to the admin in this browser, then open the link again.');
 } elseif ($permanent) {
     $intro = sprintf(
-        _m('Ban %s from this site for good? They will not be able to sign in, post or send messages. You can undo this under Users → Ban rules.'),
+        _m('Ban %s from this site for good? They will not be able to sign in, post or send messages. You can undo this under Settings → Security → Ban rules.'),
         $sender
     );
 } else {

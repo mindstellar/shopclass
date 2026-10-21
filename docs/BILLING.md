@@ -107,7 +107,7 @@ s_external_ref    VARCHAR(191)  NULL             -- gateway's own id
 i_amount          BIGINT        NOT NULL         -- micros
 s_currency        CHAR(3)       NOT NULL
 i_credits         INT UNSIGNED  NOT NULL         -- minted on payment
-s_status          VARCHAR(16)   NOT NULL         -- pending|paid|failed|refunded|cancelled
+s_status          VARCHAR(16)   NOT NULL         -- pending|paid|shipped|delivered|failed|refunded|cancelled
 s_meta            TEXT          NULL             -- JSON, plugin-owned
 dt_date           DATETIME      NOT NULL
 dt_paid_date      DATETIME      NULL
@@ -120,6 +120,32 @@ The `(s_status, dt_date)` index exists for the admin orders screen (§6): three 
 summary counts filter on `s_status` alone, and `search()`'s default listing orders by
 `dt_date DESC, pk_i_id DESC` — both table scans without it once an install has any real
 order volume.
+
+A goods order has `i_credits = 0` and `_kind = goods` in `s_meta`. Its address, buyer and
+shipping details live in `s_meta` too (`_address`, `_buyer`, `_shipping`). `shipped` and
+`delivered` follow `paid`; `Order::isPaid()` is true for all three.
+
+### `t_billing_order_line`
+
+What a goods order holds: item lines, then shipping, tax, discount and fee lines. No foreign
+keys, like the order. A discount's amount is negative.
+
+```
+pk_i_id           INT UNSIGNED  PK AUTO_INCREMENT
+fk_i_order_id     INT UNSIGNED  NOT NULL
+s_kind            VARCHAR(16)   NOT NULL         -- item|shipping|tax|discount|fee
+fk_i_item_id      INT UNSIGNED  NULL             -- item lines
+fk_i_variant_id   INT UNSIGNED  NULL             -- item lines
+s_title           VARCHAR(200)  NOT NULL
+s_options         TEXT          NULL             -- JSON, the variant's options
+s_sku             VARCHAR(64)   NULL
+i_qty             INT UNSIGNED  NOT NULL DEFAULT 1
+i_unit            BIGINT        NOT NULL         -- micros
+i_amount          BIGINT        NOT NULL         -- micros
+s_meta            TEXT          NULL             -- JSON
+INDEX idx_order (fk_i_order_id)
+INDEX idx_item (fk_i_item_id)
+```
 
 ### `t_user_entitlement`
 
@@ -247,6 +273,8 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `ItemUpgradeStore` | `grant()` / `active()` / `has()` / `expiresAt()` / `prime()` / `purge()` — what an item holds |
 | `PackageStore` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |
 | `gateway\OfflineGateway` | Core's reference `PaymentGateway`: bank transfer, settled by hand |
+| `gateway\CashOnDeliveryGateway` | Cash on delivery (`cod`), settled by hand; its fee is a `fee` line through `cart_totals` |
+| `OrderStock` | `take()` / `release()` — a goods order's stock, once each per order |
 
 `Wallet::reverse()` is the chargeback path and is deliberately not `debit()`: by the time a
 provider claws a payment back the user has usually spent what it bought, so a reversal that
@@ -511,6 +539,13 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_runtime_enabled` | `0` | Whether extra listing runtime is registered as a feature at all |
 | `billing_runtime_credits` | `0` | Price of the extra runtime |
 | `billing_runtime_days` | `30` | Extra days over the category ceiling granted while held |
+| `billing_shipping_flat` | `0` | "Standard delivery" charge for goods orders, micros |
+| `billing_free_over` | `0` | Subtotal from which delivery is free, micros; 0 = never |
+| `billing_cod_enabled` | `0` | Whether cash on delivery is offered at checkout |
+| `billing_cod_fee` | `0` | Fee added to a cash on delivery order, micros |
+| `billing_hold_days` | `7` | Days an unpaid bank transfer or cash on delivery order holds its stock |
+| `billing_open_hold_orders` | `3` | Most pending `offline` + `cod` orders one buyer may hold; 0 = no limit. Past it `place()` refuses `/gateway` `too_many_open` |
+| `billing_order_prefix` | *(empty)* | Printed before the id in an order number (`osc_billing_order_number()`) |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
 posting stays unlimited and free, premium stays admin-only. Nothing in this layer activates
@@ -524,7 +559,8 @@ until an admin turns it on.
   price, currency, and featured-listing enabled/price/duration), an Upgrades section (enabled/price/duration for
   bump, highlight and urgent), a Seller limits section (enabled/price/quantity-or-days for
   the raised photo cap, the flood-wait waiver, and extra listing runtime), and the bundled
-  bank-transfer gateway's own enable switch and instructions text
+  bank-transfer gateway's own enable switch and instructions text, and a Shop section
+  (delivery charge, free-over amount, cash on delivery and its fee, hold days, order prefix)
 - **Billing → Packages** — the price list a buyer chooses from at checkout: name, price,
   credits, position, enabled
 - **Billing → Orders** — list plus a per-order detail view with two hand-actions: mark an
@@ -553,6 +589,7 @@ wallet, `buy` and `orders` pages share one row of tabs (`gui/billing/tabs.php`).
 | `orders` | GET | logged in | The buyer's own past orders |
 | `upgrade` | POST, CSRF | logged in | Apply an item-scoped feature (`feature`, default `listing.premium`) to one of the buyer's own listings (`itemId`) |
 | `account_upgrade` | POST, CSRF | logged in | Buy an account upgrade (`feature`) that `osc_account_upgrade_offers()` lists, such as `listing.slot`; with `next=post` a bought slot opens the post form |
+| `publish` | GET, POST, CSRF | logged in, owner | The pay step for a listing waiting for payment (`itemId`); POST `do=credits` spends credits, `do=order` starts a package order (§14) |
 | `callback` | GET/POST | **none** — no session, no CSRF | A gateway's webhook or return-URL hit |
 
 Every logged-in action checks `osc_billing_enabled()` first and bounces to the site root
@@ -613,18 +650,100 @@ purge entitlement and item-upgrade rows whose own expiration has passed. All thr
 housekeeping with no fulfilment side effects, so they share the existing hourly slot rather
 than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/functions.php`).
 
+The daily tick queues `billing.release_stock` while billing is on. It cancels pending goods
+orders placed more than `billing_hold_days` ago, 100 per run; each fires
+`billing_order_cancelled`. Orders of `Billing::HOLDS_STOCK` (`offline`, `cod`) give their stock
+back. Card orders hold no stock; they are closed so whatever they reserved (a coupon use) is
+given back. A payment that arrives later is logged as "paid after close".
+
+`GoodsCheckout::place()` counts a buyer's pending `HOLDS_STOCK` orders (one count on
+`idx_user_status`, both gateways together) and refuses a new one at `billing_open_hold_orders`.
+`POST account/orders` checks the `api_checkout` bucket before `place()` and counts it after, so a
+refused placement does not spend the hour.
+
+### Goods stock
+
+A goods order takes its stock once and gives it back once, keyed on the `_stock_taken`
+meta flag under the order's row lock (`OrderStore::withMeta()`). `Billing::markPaid()`
+takes it inside its transaction; a replayed callback finds `settle()` false and takes
+nothing. Bank transfer and cash on delivery take it at placement instead, and placement is
+refused when a line is short. A paid line that cannot be taken is not an error: it is
+recorded under `_short` (line id => qty) for the admin. `Billing::refund()` and
+`OrderStore::cancel()` give the stock back. Variants that do not track stock are never
+touched.
+
 ## 9. Hooks
 
 | Hook | Kind | Fired |
 |---|---|---|
 | `billing_order_paid` | action | Order transitions to paid, after credits are minted |
 | `billing_order_refunded` | action | Reversal recorded |
+| `billing_order_placed` | action | `($orderId, $userId)` a goods order is placed and its gateway answered |
+| `billing_order_shipped` | action | `($orderId, $userId)` paid → shipped, after commit |
+| `billing_order_delivered` | action | `($orderId, $userId)` shipped → delivered, after commit |
+| `billing_order_cancelled` | action | `($orderId, $userId)` pending → cancelled, after commit |
+| `billing_order_failed` | action | `($orderId, $userId)` pending → failed on a gateway's failed callback |
 | `billing_credits_changed` | action | Any ledger write |
 | `billing_feature_applied` | action | `Billing::spend()` succeeds, after the feature's effect lands |
 | `item_bumped` | action | `item.bump`'s `apply` succeeds, after `dt_pub_date` moves. Receives the item id, the same way `item_premium_on` does |
 | `billing_can_publish` | filter | Veto or override the quota decision, on every call including billing-off |
 | `billing_feature_price` | filter | Override a feature's credit price. Receives `($price, $featureId, $userId)` — `$userId` is who the price is being resolved for, and is `null` when no user is in scope (e.g. listing a feature's price with nobody buying yet) |
 | `billing_feature_duration` | filter | Override a duration feature's granted days. Receives `($days, $featureId, $userId)`, same `$userId` convention as `billing_feature_price` |
+| `billing_tracking_url` | filter | `($url, $carrier, $tracking)` in `OrderStore::ship()` when the admin left the link empty; kept only when https |
+| `billing_receipt_details` | filter | `($details, $order)` sets the receipt's `title`, `extra` and `summary` rows (`{label, value}`) and `footer`, plain text; every other key stays core's |
+
+A listing waiting for payment fires `posted_item` (and the `listing.created` webhook) when it goes live, not when it is saved (§14).
+
+### Cart hooks
+
+`CartPricer::quote()` fires the filters in table order on every quote and placement.
+`$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal, coupon, needs_shipping}`; later
+filters also see `shipping_lines`, `tax_lines` and `discount_lines`. A line is
+`{id, label, amount (micros), currency, meta}`; one in another currency is dropped, and so is
+one below zero unless it is a discount. A filter
+adds lines; core sums them, so no filter sets an item's price. `cart_totals` adds fee lines
+under `fees`; its other values are ignored and the total never goes below zero. Core's
+"Standard delivery" is a `cart_shipping_methods` listener at priority 5.
+`GoodsCheckout::place()` fires `cart_checkout_before`. `cart_item_add_after` is fired by
+core's `PUT account/cart`, once for each variant new to the saved cart, with the quoted line
+`{id: item.<variant>, label: title, amount, currency, meta: {variant, qty, item_id}}`. A paid order reuses `billing_order_paid`.
+
+| Hook | Kind | Returns or receives |
+|---|---|---|
+| `cart_needs_shipping` | filter | `($needs, $cart)` false when nothing in the cart is sent: no address, delivery or cash on delivery |
+| `cart_shipping_methods` | filter | `($methods, $cart)` the shipping methods on offer |
+| `cart_shipping_lines` | filter | `($lines, $cart)` the shipping lines |
+| `cart_tax_lines` | filter | `($lines, $cart)` the tax lines |
+| `cart_discount_lines` | filter | `($lines, $cart)` the discount lines |
+| `cart_totals` | filter | `($totals, $cart)` the totals |
+| `cart_free_over` | filter | `($freeOver, $cart)` `{amount, remaining}` to replace the free-delivery meter, null for none; core works out `remaining` |
+| `cart_problems` | filter | `($problems, $cart)` entries `{code, pointer, message}` that stop the order |
+| `cart_item_add_after` | action | `($cart, $line)` after `PUT account/cart` adds a variant to the saved cart |
+| `cart_checkout_before` | action | `($cart)` before checkout starts |
+
+**Address and coupon.** `GET cart/quote` takes `country` (two letters), `state` (up to 100) and
+`postcode` (up to 20); they reach `$cart['address']` as those three keys only. On placement
+`address` is the full delivery address. `coupon` (query, or the `POST account/orders` body) is
+trimmed and upper-cased to `[A-Z0-9-]{1,40}`, else null. A malformed value is dropped, not refused.
+
+**Included tax.** A `cart_tax_lines` line with `meta.included === true` is tax already in the
+prices. The quote shows it with `included: true` and sums it into `totals.tax_included`;
+`totals.tax` and the total take only the other tax lines. The order stores it as a `tax` line with
+`i_amount 0`, `i_unit` the tax and meta `included`, so an order's lines still add up to its
+total. The API order line carries `included`; the receipt and order mails print it as
+"(included)".
+
+**Problems.** A `cart_problems` entry needs a code of `[a-z_]{1,32}`, a pointer from
+`CartPricer::PROBLEM_POINTERS` (`/coupon`, `/address/postcode`, `/address/state`,
+`/address/country`, `/shipping_method`) and a message of 1-200 characters; anything else is
+dropped. The quote returns them in `problems[]` with `line` null; core's line problems have
+`pointer` and `message` null. `place()` refuses on any, a 422 with field code `rejected` at the
+entry's pointer and its message.
+
+`osc_kv_increment($group, $key, $by, $ttl)` keeps a counter in `t_key_value` and returns its new
+value. `OrderStore::countForUser($userId, $statuses, $gateways)` and
+`osc_billing_user_order_count($userId, $statuses)` count a user's goods orders on
+`idx_user_status`.
 
 ---
 
@@ -688,3 +807,41 @@ themselves, by deletion or expiry.
 **What buys more:** `listing.slot` — a capacity entitlement that raises the ceiling
 while held and is never spent, because a slot is a ceiling, not a balance. Nothing is
 consumed on publish (§4); there is nothing there to consume.
+
+**A listing waiting for payment occupies no slot** (§14). Its price is what the seller's
+next listing would cost, worked out fresh each time; a slot is taken only when it goes live.
+
+## 14. Pay at the end of posting
+
+A seller over the free limit saves the listing and pays on the last step, instead of being
+stopped at the form. The switch is the `billing_pay_at_post` preference (Settings → Billing →
+Pricing → Take payment at the end of posting); `osc_billing_pay_at_post()` is true when it is
+on, billing is on and slot sales are on. With it off, the post form refuses as before.
+
+**The held state.** A held listing has `b_enabled = 0`, `b_active = 0` and a NULL
+`dt_first_pub_date`. The queued `listing.unpaid_expire` job is the marker core relies on:
+`ListingHoldJobs::holds()` needs the columns and the job, so a hidden row a plugin wrote
+without a first publish date is not treated as held. The order that will pay for it is linked
+in `t_key_value` (group set by `OrderStore::linkListing()`) until the hold ends.
+
+**Jobs.** `listing.unpaid_expire` deletes the listing at the deadline (`billing_hold_days`),
+`listing.unpaid_remind` mails the owner a day before (not queued when the hold is one day or
+less), and `listing.unpaid_sweep` runs daily from `cron_daily` and deletes held listings a day
+past their deadline whose delete job is still waiting.
+
+**Paying.** `ListingCheckout` prices the listing (`quote()`), spends credits and publishes
+(`publish()`), or creates a package order for the shortfall (`startOrder()`); a paid listing order
+publishes the listing from `onOrderPaid()`. `ListingService::publish()` is the go-live and
+fires `posted_item`. `ListingCheckout::publishFree()` publishes without charging. The web pay
+step and both API routes call the same methods.
+
+**API.** A held listing answers `status: "unpaid"`. `POST /listings/{id}/publish` pays and
+publishes it; `POST /admin/listings/{id}/publish` publishes it free. See the
+API writes page (`docs/site/developers/api/writes.md`).
+
+**Admin.** The Listings screen shows such a row as Waiting for payment, has a filter for it
+and a Publish without payment action. Activate, unblock and bump refuse it.
+
+**Refunds.** Credits are spent only at go-live, so deleting a held listing spends nothing and
+cancels its pending order. A paid order whose listing could not be published leaves the
+credits in the wallet and a note on the order.

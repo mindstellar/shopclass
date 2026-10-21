@@ -285,7 +285,7 @@ final class SpamSettingsScreen
             ->number(
                 'message_report_days',
                 __('A report blocks the sender for'),
-                __('The sender cannot send messages for this long. Sign-in and posting still work. You can lift it under Users → Ban rules.')
+                __('The sender cannot send messages for this long. Sign-in and posting still work. You can lift it under Settings → Security → Ban rules.')
             )
                 ->clampMin(1)
                 ->suffix(__('days'))

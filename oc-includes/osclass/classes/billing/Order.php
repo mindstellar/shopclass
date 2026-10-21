@@ -31,6 +31,8 @@ final class Order
     public const STATUS_FAILED    = 'failed';
     public const STATUS_REFUNDED  = 'refunded';
     public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_SHIPPED   = 'shipped';
+    public const STATUS_DELIVERED = 'delivered';
 
     public const STATUSES = array(
         self::STATUS_PENDING,
@@ -38,7 +40,18 @@ final class Order
         self::STATUS_FAILED,
         self::STATUS_REFUNDED,
         self::STATUS_CANCELLED,
+        self::STATUS_SHIPPED,
+        self::STATUS_DELIVERED,
     );
+
+    /** The statuses where the money is in: a goods order moves on to shipped and delivered. */
+    public const SETTLED = array(self::STATUS_PAID, self::STATUS_SHIPPED, self::STATUS_DELIVERED);
+
+    /** s_meta `_kind` of an order for goods, not credits. */
+    public const KIND_GOODS = 'goods';
+
+    /** s_meta `_kind` of an order that pays for a listing held at the end of posting. */
+    public const KIND_LISTING = 'listing';
 
     /** @var array<string,mixed> */
     private array $meta;
@@ -230,13 +243,134 @@ final class Order
     }
 
     /**
-     * Whether the money is in and the credits are minted.
+     * Whether the money is in: paid, or a goods order since shipped or delivered. A cash on
+     * delivery order on its way is not paid yet.
      *
      * @return bool
      */
     public function isPaid(): bool
     {
-        return $this->status === self::STATUS_PAID;
+        return in_array($this->status, self::SETTLED, true) && !$this->awaitsCash();
+    }
+
+    /**
+     * A cash on delivery order shipped before the courier collected: it is paid once delivered.
+     *
+     * @return bool
+     */
+    public function awaitsCash(): bool
+    {
+        return $this->status === self::STATUS_SHIPPED && $this->paidDate === null && $this->gateway === gateway\CashOnDeliveryGateway::ID;
+    }
+
+    /**
+     * Whether the admin may mark it shipped: a paid goods order, or a cash on delivery one not
+     * paid yet.
+     *
+     * @return bool
+     */
+    public function canShip(): bool
+    {
+        return $this->isGoods() && (
+            $this->status === self::STATUS_PAID
+            || ($this->status === self::STATUS_PENDING && $this->gateway === gateway\CashOnDeliveryGateway::ID)
+        );
+    }
+
+    /**
+     * Whether this order sells goods (lines in t_billing_order_line) rather than credits.
+     *
+     * @return bool
+     */
+    public function isGoods(): bool
+    {
+        return $this->meta('_kind') === self::KIND_GOODS;
+    }
+
+    /**
+     * Whether this order pays for a held listing.
+     *
+     * @return bool
+     */
+    public function isListing(): bool
+    {
+        return $this->meta('_kind') === self::KIND_LISTING;
+    }
+
+    /**
+     * The listing a listing order pays for, or null for any other order.
+     *
+     * @return int|null
+     */
+    public function listingId(): ?int
+    {
+        $id = $this->isListing() ? (int) $this->meta('_item', 0) : 0;
+
+        return $id > 0 ? $id : null;
+    }
+
+    /**
+     * What the order is for, in a line a gateway can show: "Tee × 2 and 1 more", or "100 credits".
+     *
+     * @return string
+     */
+    public function getLabel(): string
+    {
+        $label = $this->meta('_label');
+        if (is_string($label) && $label !== '') {
+            return $label;
+        }
+
+        return sprintf(_m('%d credits'), $this->credits);
+    }
+
+    /**
+     * Where a goods order goes and how far it got: method, address, carrier, tracking,
+     * tracking_url, shipped_at, delivered_at. Null for a credits order.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function fulfilment(): ?array
+    {
+        if (!$this->isGoods()) {
+            return null;
+        }
+        $shipping = $this->meta('_shipping');
+        $shipping = is_array($shipping) ? $shipping : array();
+        $address  = $this->meta('_address');
+
+        return array(
+            'method'       => isset($shipping['method']) ? (string) $shipping['method'] : null,
+            'label'        => isset($shipping['label']) ? (string) $shipping['label'] : null,
+            'address'      => is_array($address) ? $address : null,
+            'carrier'      => isset($shipping['carrier']) ? (string) $shipping['carrier'] : null,
+            'tracking'     => isset($shipping['tracking']) ? (string) $shipping['tracking'] : null,
+            'tracking_url' => isset($shipping['url']) ? (string) $shipping['url'] : null,
+            'shipped_at'   => isset($shipping['shipped_at']) ? (string) $shipping['shipped_at'] : null,
+            'delivered_at' => isset($shipping['delivered_at']) ? (string) $shipping['delivered_at'] : null,
+        );
+    }
+
+    /**
+     * Whether the buyer may cancel it: a pending goods order paid outside the site. A card
+     * order stays open, as its payment page may still take the money.
+     *
+     * @return bool
+     */
+    public function buyerMayCancel(): bool
+    {
+        return $this->isGoods() && $this->isPending() && in_array($this->gateway, Billing::HOLDS_STOCK, true);
+    }
+
+    /**
+     * Whether the buyer may start its payment again: a pending goods order of a card gateway,
+     * whose first payment page was left.
+     *
+     * @return bool
+     */
+    public function canPayAgain(): bool
+    {
+        return $this->isGoods() && $this->isPending() && !in_array($this->gateway, Billing::HOLDS_STOCK, true);
     }
 
     /**

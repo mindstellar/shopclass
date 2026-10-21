@@ -763,6 +763,24 @@ $sidebar-gutter: 2.35rem;
 @media (min-width: 1025px) {
   #content > .row.flex-nowrap {
     min-height: 100vh;
+    position: relative;
+
+    // The rail itself is only one screen tall (it sticks while the page scrolls), so on a
+    // long page this strip carries its colour the rest of the way down.
+    &::before {
+      background-color: var(--osc-sidebar-surface);
+      border-inline-end: 1px solid var(--osc-sidebar-edge);
+      content: "";
+      inset-block: 0;
+      inset-inline-start: 0;
+      position: absolute;
+      transition: width var(--osc-duration-base) var(--osc-ease);
+      width: 15rem;
+    }
+  }
+
+  [data-osc-sidebar="collapsed"] #content > .row.flex-nowrap::before {
+    width: 3.5rem;
   }
 
   // A fixed-height frame stuck to the top of a scrolling page. Inside it the

@@ -34,8 +34,14 @@ class AlertEnvelope
     /** Core search keys, as the search page reads them. */
     public const CORE_KEYS = array(
         'bPic', 'bPremium', 'iRadius', 'meta', 'sCategory', 'sCity', 'sCityArea', 'sCountry',
-        'sLat', 'sLng', 'sLocale', 'sPattern', 'sPriceMax', 'sPriceMin', 'sRegion', 'sUser',
+        'sLat', 'sLng', 'sLocale', 'sPattern', 'sPriceMax', 'sPriceMin', 'sRegion', 'sUser', 'product',
     );
+
+    /** What a product alert waits for. */
+    public const PRODUCT_KINDS = array('stock', 'price');
+
+    /** How every product alert envelope starts, as encode() writes it. */
+    private const PRODUCT_PREFIX = '{"v":2,"params":{"product":';
 
     /** Keys of the old SQL-fragment format; never valid in an envelope. */
     public const LEGACY_KEYS = array(
@@ -100,6 +106,59 @@ class AlertEnvelope
         );
 
         return self::encode(self::normalise($values, $request));
+    }
+
+    /**
+     * The envelope of a product alert: back in stock, or a price below $below. It holds only
+     * the product, never search params, so it never replays as a search. Every member is always
+     * present, so `"kind":"stock","listing":12,"variant":` finds this listing's alerts exactly.
+     *
+     * @param int|null $variant null for any variant of the listing
+     * @param int|null $below   the price to go under, in micros; only for kind price
+     *
+     * @return string '' when a value is out of shape
+     */
+    public static function product(int $listing, ?int $variant, string $kind, ?int $below = null): string
+    {
+        $product = self::productParam(array('listing' => $listing, 'variant' => $variant, 'kind' => $kind, 'below' => $below));
+
+        return $product === null ? '' : self::encode(array('product' => $product));
+    }
+
+    /**
+     * A LIKE pattern for s_search that finds the product alerts of one kind on a listing, cut
+     * from the envelope product() writes so both keep one key order. It ends at the listing id,
+     * so listing 12 never matches 123.
+     *
+     * @throws \LogicException when the envelope no longer has kind, listing and variant in that order
+     */
+    public static function productPattern(int $listing, string $kind): string
+    {
+        $json = self::product($listing, null, $kind, $kind === 'price' ? 1 : null);
+        $from = strpos($json, '"kind":');
+        $to   = strpos($json, '"variant":');
+        if ($json === '' || strncmp($json, self::PRODUCT_PREFIX, strlen(self::PRODUCT_PREFIX)) !== 0 || $from === false || $to === false || $to < $from) {
+            throw new \LogicException('A product alert envelope must start with its prefix and hold kind, listing and variant in that order.');
+        }
+
+        return '%' . addcslashes(substr($json, $from, $to + strlen('"variant":') - $from), '%_\\') . '%';
+    }
+
+    /**
+     * The product of a product alert's envelope, or null for any other row.
+     *
+     * @param string $json the t_alerts.s_search column
+     *
+     * @return array{below:?int,kind:string,listing:int,variant:?int}|null
+     */
+    public static function productOf(string $json): ?array
+    {
+        if (strncmp($json, self::PRODUCT_PREFIX, strlen(self::PRODUCT_PREFIX)) !== 0) {
+            return null;
+        }
+        $params = self::validate($json);
+
+        return $params === null ? null : $params['product'] ?? null;
     }
 
     /**
@@ -358,6 +417,11 @@ class AlertEnvelope
      */
     private static function normalise(array $values, array $request): array
     {
+        if (array_key_exists('product', $values)) {
+            $product = self::productParam($values['product']);
+
+            return $product === null ? array() : array('product' => $product);
+        }
         $params = array(
             'sCategory' => self::idList($values['sCategory'] ?? array()),
             'sCityArea' => self::valueList($values['sCityArea'] ?? array()),
@@ -390,6 +454,33 @@ class AlertEnvelope
         }
 
         return self::sortKeys($out);
+    }
+
+    /**
+     * A product alert's member held to its shape: a listing id, a variant id or null, a kind,
+     * and for a price alert the price to go under.
+     *
+     * @param mixed $value
+     *
+     * @return array{below:?int,kind:string,listing:int,variant:?int}|null
+     */
+    private static function productParam($value): ?array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), array('below', 'kind', 'listing', 'variant')) !== array()) {
+            return null;
+        }
+        $listing = $value['listing'] ?? null;
+        $variant = $value['variant'] ?? null;
+        $kind    = $value['kind'] ?? null;
+        $below   = $value['below'] ?? null;
+        if (!is_int($listing) || $listing <= 0 || ($variant !== null && (!is_int($variant) || $variant <= 0))
+            || !in_array($kind, self::PRODUCT_KINDS, true)
+            || ($kind === 'price' ? !is_int($below) || $below <= 0 : $below !== null)
+        ) {
+            return null;
+        }
+
+        return array('below' => $below, 'kind' => $kind, 'listing' => $listing, 'variant' => $variant);
     }
 
     /**

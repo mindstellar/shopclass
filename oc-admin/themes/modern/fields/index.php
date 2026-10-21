@@ -101,13 +101,17 @@ if (!function_exists('cfields_render_chip')) {
         if (!empty($looseCatNames)) {
             $count = count($looseCatNames);
             $tip   = sprintf(
-                __('Attached directly to %d categories, outside any form: %s. Drag it into a form to manage it here.'),
+                _n(
+                    'Attached directly to %d category, outside any form: %s. Drag it into a form to manage it here.',
+                    'Attached directly to %d categories, outside any form: %s. Drag it into a form to manage it here.',
+                    $count
+                ),
                 $count,
                 implode(', ', array_slice($looseCatNames, 0, 8)) . ($count > 8 ? '…' : '')
             );
             echo '<span class="chip-legacy" title="' . osc_esc_html($tip) . '">'
                 . '<i class="bi bi-exclamation-circle" aria-hidden="true"></i> '
-                . osc_esc_html(sprintf(__('%d cats · no form'), $count))
+                . osc_esc_html(sprintf(_n('%d category · not in a form', '%d categories · not in a form', $count), $count))
                 . '</span>';
         }
         echo '<span class="chip-type">' . osc_esc_html(cfields_type_label($type)) . '</span>';
@@ -721,7 +725,11 @@ if ($looseCount > 0) { ?>
             <i class="bi bi-clock-history" aria-hidden="true"></i>
             <div class="cf-legacy-text">
                 <strong><?php echo osc_esc_html(sprintf(
-                    __('%d fields from before Forms are attached straight to categories.'),
+                    _n(
+                        '%d field from before Forms is attached straight to categories.',
+                        '%d fields from before Forms are attached straight to categories.',
+                        $looseCount
+                    ),
                     $looseCount
                 )); ?></strong>
                 <span><?php _e('They still show on those listings, but you can only manage them once they are in a form. Move them in — grouped by the categories they share — without changing where any of them appears.'); ?></span>
@@ -796,7 +804,9 @@ if ($looseCount > 0) { ?>
                         <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('New field'); ?>
                     </button>
                 </div>
-                <p class="col-hint"><?php _e('Your reusable fields. Drag one into a form on the left, or use a form’s “Add field”. The same field can be placed in several forms.'); ?></p>
+                <p class="col-hint"><?php echo count($forms) === 0
+                    ? __('Your reusable fields. Create a form first, then drag a field into it. The same field can be placed in several forms.')
+                    : __('Your reusable fields. Drag one into a form on the left, or use a form’s “Add field”. The same field can be placed in several forms.'); ?></p>
                 <ul id="palette-list" class="palette-list">
                     <?php if (count($fields) === 0) { ?>
                         <li id="palette-empty" class="builder-empty"><?php _e('No fields yet. Create one to get started.'); ?></li>

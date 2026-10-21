@@ -19,8 +19,14 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminAppearance
  */
+use mindstellar\market\Catalog;
+use mindstellar\market\PluginDependencies;
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
+use mindstellar\widgets\Customiser;
+use mindstellar\widgets\CustomiserDraft;
+use mindstellar\widgets\CustomiserScreen;
+use mindstellar\widgets\WidgetConfig;
 use mindstellar\widgets\WidgetStore;
 
 class CAdminAppearance extends AdminSecBaseModel
@@ -41,7 +47,13 @@ class CAdminAppearance extends AdminSecBaseModel
         'widget_create_post'   => 'createWidgetPost',
         'widget_move_post'     => 'moveWidgetPost',
         'reorder_widgets_post' => 'reorderWidgetsPost',
+        'widget_toggle_post'   => 'toggleWidgetPost',
+        'customise'              => 'customiseScreen',
+        'customise_draft_post'   => 'customiseDraftPost',
+        'customise_publish_post' => 'customisePublishPost',
+        'customise_discard_post' => 'customiseDiscardPost',
         'activate'             => 'activateTheme',
+        'dependencies'         => 'dependencies',
         'render'               => 'render',
     );
 
@@ -238,11 +250,12 @@ class CAdminAppearance extends AdminSecBaseModel
         $type = $this->resolveWidgetType(Params::getParam('s_type'));
 
         if ($type !== null) {
+            $config = WidgetStore::keepEnabled(Params::getParamInt('id'), $this->buildWidgetConfig($type));
             $values = array(
                 's_description' => Params::getParam('description'),
                 's_content'     => '',
                 's_type'        => $type['id'],
-                's_config'      => json_encode($this->buildWidgetConfig($type))
+                's_config'      => json_encode($config)
             );
         } else {
             $values = array(
@@ -417,25 +430,222 @@ class CAdminAppearance extends AdminSecBaseModel
     }
 
     /**
-     * Make a theme the site's theme.
+     * Hide or show a typed widget, answered in JSON.
+     */
+    private function toggleWidgetPost(): void
+    {
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+
+        try {
+            $row = WidgetStore::find(Params::getParamInt('id'));
+        } catch (Throwable $e) {
+            $row = null;
+        }
+        // A legacy row has no type and so nothing to hide.
+        if ($row === null || (string) ($row['s_type'] ?? '') === '') {
+            AjaxResponse::json(array('error' => 1), 404);
+            return;
+        }
+        $type = \mindstellar\widgets\WidgetRegistry::getInstance()->get((string) $row['s_type']);
+        if ($type !== null && $type['capability'] === 'super_admin' && osc_is_moderator()) {
+            AjaxResponse::json(array('error' => 1), 403);
+            return;
+        }
+
+        $enabled = false;
+        try {
+            $enabled = WidgetStore::toggleEnabled((int) $row['pk_i_id']);
+            osc_purge_page_cache('widget');
+            $ok = true;
+        } catch (Throwable $e) {
+            $ok = false;
+        }
+
+        AjaxResponse::json(array('error' => $ok ? 0 : 1, 'enabled' => $enabled), $ok ? 200 : 500);
+    }
+
+    /**
+     * The customiser screen: the theme's sections and look fields beside a live preview.
+     */
+    private function customiseScreen(): void
+    {
+        if (osc_is_moderator()) {
+            http_response_code(403);
+            osc_add_flash_error_message(_m('Only an administrator can customise the theme.'), 'admin');
+            $this->_exportVariableToView('customiser', null);
+            $this->doView('appearance/customise.php');
+
+            return;
+        }
+        $spec = osc_customiser_spec();
+        if ($spec === null) {
+            osc_add_flash_info_message(_m('This theme has nothing to customise.'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+
+            return;
+        }
+        $store  = new CustomiserDraft(osc_theme(), osc_logged_admin_id());
+        $draft  = $store->read();
+        $screen = CustomiserScreen::build($spec, $draft);
+        $screen['stale'] = $draft !== null && (new Customiser($spec, $store))->staleLocations($draft) !== array();
+        $info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
+        $screen['theme_name'] = is_array($info) && $info['name'] !== '' ? ucfirst((string) $info['name']) : osc_theme();
+        $this->_exportVariableToView('customiser', $screen);
+        $this->doView('appearance/customise.php');
+    }
+
+    /**
+     * Save the customiser's draft, answered in JSON.
+     */
+    private function customiseDraftPost(): void
+    {
+        $customiser = $this->customiser();
+        if ($customiser === null) {
+            return;
+        }
+        try {
+            $result = $customiser->saveDraft(
+                Params::getParamArray('locations'),
+                Params::getParamArray('locations', false, false, false),
+                Params::getParamArray('settings', false, false, false)
+            );
+        } catch (Throwable $e) {
+            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('The draft could not be saved.'))), 500);
+
+            return;
+        }
+        if ($result['status'] !== 200) {
+            AjaxResponse::json(array('error' => 1, 'errors' => $result['errors']), $result['status']);
+
+            return;
+        }
+
+        AjaxResponse::json(array(
+            'error'       => 0,
+            'saved_at'    => $result['saved_at'],
+            'preview_url' => osc_customiser_preview_url(),
+        ));
+    }
+
+    /**
+     * Publish the customiser's draft, answered in JSON.
+     */
+    private function customisePublishPost(): void
+    {
+        $customiser = $this->customiser();
+        if ($customiser === null) {
+            return;
+        }
+        try {
+            $result = $customiser->publish(Params::getParamString('force') === '1');
+        } catch (Throwable $e) {
+            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('The sections could not be published.')), 'stale' => false), 500);
+
+            return;
+        }
+        if ($result['status'] === 200) {
+            osc_purge_page_cache('widget');
+        }
+
+        AjaxResponse::json(array('error' => $result['status'] === 200 ? 0 : 1, 'errors' => $result['errors'], 'stale' => !empty($result['stale'])), $result['status']);
+    }
+
+    /**
+     * Throw the customiser's draft away, answered in JSON.
+     */
+    private function customiseDiscardPost(): void
+    {
+        $customiser = $this->customiser();
+        if ($customiser === null) {
+            return;
+        }
+        try {
+            $customiser->discard();
+            $ok = true;
+        } catch (Throwable $e) {
+            $ok = false;
+        }
+
+        AjaxResponse::json(array('error' => $ok ? 0 : 1), $ok ? 200 : 500);
+    }
+
+    /**
+     * The customiser for this admin, after the checks every customiser action shares: a valid
+     * CSRF token, an administrator, and a theme that declares one. Null once refused.
+     */
+    private function customiser(): ?Customiser
+    {
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+        if (osc_is_moderator()) {
+            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('Only an administrator can customise the theme.'))), 403);
+
+            return null;
+        }
+        $customiser = Customiser::forCurrentAdmin();
+        if ($customiser === null) {
+            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('This theme has nothing to customise.'))), 404);
+        }
+
+        return $customiser;
+    }
+
+    /**
+     * Make a theme the site's theme. A theme whose plugins are not ready goes to the plugins screen first.
      */
     private function activateTheme(): void
     {
         osc_csrf_check();
-        // Only an installed theme, the same rule theme:activate applies on the CLI.
+        $back  = osc_admin_base_url(true) . '?page=appearance';
         $theme = Params::getParamString('theme');
-        if (!in_array($theme, WebThemes::getInstance()->getListThemes(), true)) {
+        // Only an installed theme, the same rule theme:activate applies on the CLI.
+        $requires = PluginDependencies::themeRequirements($theme);
+        if ($requires === null) {
+            osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
+            $this->redirectTo($back);
+            return;
+        }
+        $deps = PluginDependencies::forSite();
+        if ($theme === osc_theme()) {
+            if ($deps->missingRequired($requires) === array()) {
+                osc_add_flash_ok_message(_m('The plugins this theme needs are active.'), 'admin');
+            }
+            $this->redirectTo($back);
+            return;
+        }
+        if ($deps->activateTheme($theme, $requires, Params::getParamInt('plugins_seen') === 1) === 'held') {
+            $this->redirectTo($back . '&action=dependencies&theme=' . urlencode($theme));
+            return;
+        }
+        osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
+        $this->redirectTo($back);
+    }
+
+    /**
+     * The plugins a theme asks for, with one button that installs and turns them all on.
+     */
+    private function dependencies(): void
+    {
+        $theme    = Params::getParamString('theme');
+        $requires = PluginDependencies::themeRequirements($theme);
+        if ($requires === null) {
             osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
             return;
         }
-        osc_set_preference('theme', $theme);
-        // Clear opcache so the new theme's code runs at once even with
-        // opcache.validate_timestamps=Off (see Plugins::resetOpcache).
-        Plugins::resetOpcache();
-        osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
-        osc_run_hook('theme_activate', $theme);
-        $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+        Catalog::forPlugins()->refreshIfDue();
+
+        $info = WebThemes::getInstance()->loadThemeInfo($theme);
+        $this->_exportVariableToView('theme', $theme);
+        $this->_exportVariableToView('themeName', is_array($info) && $info['name'] !== '' ? ucfirst((string) $info['name']) : $theme);
+        $this->_exportVariableToView('isActiveTheme', $theme === osc_theme());
+        $this->_exportVariableToView('dependencies', PluginDependencies::forSite()->resolve($requires));
+        $this->doView('appearance/dependencies.php');
     }
 
     /**
@@ -663,9 +873,7 @@ class CAdminAppearance extends AdminSecBaseModel
     }
 
     /**
-     * Build the config array for a typed widget from the posted config[] values,
-     * keeping only the keys the type declares in 'fields' and sanitising each
-     * value per its declared field type. Unknown posted keys are dropped.
+     * The sanitised config for a typed widget from the posted config[] values.
      *
      * @param array<string,mixed> $type A registered widget-type spec.
      *
@@ -673,126 +881,10 @@ class CAdminAppearance extends AdminSecBaseModel
      */
     private function buildWidgetConfig($type)
     {
-        // Default purification (HTMLPurifier) already applied to each value.
-        $posted = Params::getParam('config');
-        if (!is_array($posted)) {
-            $posted = array();
-        }
-
-        // Unpurified copy of the same posted values, used only by 'code' fields
-        // on a super_admin-gated type so their raw HTML/JS survives. Fetched
-        // fully raw (no xss_check, no html_encode, no quotes_encode).
+        $posted    = Params::getParam('config');
         $postedRaw = Params::getParam('config', false, false, false);
-        if (!is_array($postedRaw)) {
-            $postedRaw = array();
-        }
 
-        // Whether this widget type may store raw code at all. A 'code' field on
-        // any non-super_admin type falls back to purified text (defence in
-        // depth: a moderator-reachable type must never persist raw markup).
-        $isSuperAdmin = ($type['capability'] ?? 'admin') === 'super_admin';
-
-        $config = array();
-        foreach ($type['fields'] as $field) {
-            if (empty($field['name'])) {
-                continue;
-            }
-            $name      = $field['name'];
-            $fieldType = $field['type'] ?? 'text';
-            $default   = $field['default'] ?? null;
-            $hasValue  = array_key_exists($name, $posted);
-            $raw       = $hasValue ? $posted[$name] : null;
-
-            switch ($fieldType) {
-                case 'number':
-                    $config[$name] = $hasValue ? (int) $raw : (int) $default;
-                    break;
-                case 'checkbox':
-                    $config[$name] = ($hasValue && $raw !== '' && $raw !== '0') ? 1 : 0;
-                    break;
-                case 'select':
-                    // Pass the spec through untouched: options may be a callable for a
-                    // dynamic list (core.form's picker is 'osc_form_widget_options').
-                    // Guarding with is_array() here stripped the callable before
-                    // selectAllowedValues() could resolve it, so nothing validated and
-                    // every posted value fell back to the default — the chosen form was
-                    // silently discarded on save.
-                    $allowed = $this->selectAllowedValues($field['options'] ?? array());
-                    $value   = $hasValue && is_scalar($raw) ? (string) $raw : (string) $default;
-                    $config[$name] = in_array($value, $allowed, true) ? $value : (string) $default;
-                    break;
-                case 'image':
-                    // A media URL from the picker. Read the unpurified value (so a
-                    // query string on an offloaded URL survives) but store only an
-                    // http(s) URL — anything else, incl. javascript: dressed up as a
-                    // URL, is dropped. The value only ever lands in an <img src>.
-                    $hasRaw   = array_key_exists($name, $postedRaw);
-                    $imageUrl = $hasRaw && is_string($postedRaw[$name]) ? trim($postedRaw[$name]) : (string) $default;
-                    $config[$name] = ($imageUrl !== '' && filter_var($imageUrl, FILTER_VALIDATE_URL)
-                        && preg_match('#^https?://#i', $imageUrl)) ? $imageUrl : '';
-                    break;
-                case 'code':
-                    // Raw HTML/JS, stored unfiltered — but ONLY for a
-                    // super_admin-gated type. For any other type a 'code' field
-                    // degrades to purified text so raw markup can never reach
-                    // storage from a moderator-reachable path (stored-XSS guard).
-                    if ($isSuperAdmin) {
-                        $hasRaw     = array_key_exists($name, $postedRaw);
-                        $rawValue   = $hasRaw ? $postedRaw[$name] : null;
-                        $config[$name] = $hasRaw && is_string($rawValue) ? $rawValue : (string) $default;
-                    } else {
-                        $config[$name] = $hasValue && is_string($raw) ? $raw : (string) $default;
-                    }
-                    break;
-                case 'textarea':
-                case 'text':
-                default:
-                    $config[$name] = $hasValue && is_string($raw) ? $raw : (string) $default;
-                    break;
-            }
-        }
-
-        return $config;
-    }
-
-    /**
-     * Whitelist of acceptable string values for a select field, tolerant of the
-     * common option shapes: an associative value=>label map (keys are the
-     * values), a flat list of scalar values, or a list of
-     * ['value'=>..,'label'=>..] entries.
-     *
-     * @param array|callable $options Declared field options, or a callable resolving to them.
-     *
-     * @return string[] Allowed values as strings.
-     */
-    private function selectAllowedValues($options)
-    {
-        // A widget type may supply select options as a callable (dynamic list, e.g.
-        // the core.form picker); resolve it before validating the posted value.
-        if (is_callable($options)) {
-            $options = call_user_func($options);
-        }
-        $allowed = array();
-        if (!is_array($options)) {
-            return $allowed;
-        }
-        foreach ($options as $key => $option) {
-            if (is_array($option)) {
-                if (array_key_exists('value', $option) && is_scalar($option['value'])) {
-                    $allowed[] = (string) $option['value'];
-                }
-                continue;
-            }
-            if (!is_int($key)) {
-                // Associative map: the key is the option value.
-                $allowed[] = (string) $key;
-            } elseif (is_scalar($option)) {
-                // Flat list: the entry itself is the option value.
-                $allowed[] = (string) $option;
-            }
-        }
-
-        return $allowed;
+        return WidgetConfig::fromPosted($type, is_array($posted) ? $posted : array(), is_array($postedRaw) ? $postedRaw : array());
     }
 
 }

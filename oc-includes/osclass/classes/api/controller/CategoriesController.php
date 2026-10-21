@@ -34,15 +34,30 @@ final class CategoriesController
         $this->serializer = new CategorySerializer($api->extensions(), new CustomFieldSerializer());
     }
 
+    /**
+     * GET /categories; `include=cover` adds each category's cover photo, `roots` keeps the flat
+     * list to the top level.
+     */
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
-        $context = $this->api->context($request, $call->credential(), 'category', CategorySerializer::MEMBERS);
+        $context = $this->api->context($request, $call->credential(), 'category', CategorySerializer::MEMBERS, CategorySerializer::INCLUDES);
         $catalog = CategoryCatalog::fromSite();
+        $tree    = $request->queryBool('tree');
+        $roots   = !$tree && $request->queryBool('roots');
+        $covers  = null;
+        if ($context->includes('cover') && $context->wants('cover')) {
+            $listings = $this->api->listingSerializer();
+            $photos   = $catalog->covers();
+            if ($roots) {
+                $photos = array_intersect_key($photos, array_flip($catalog->childIds(0)));
+            }
+            $covers = array_map(static fn (array $photo): array => $listings->photos([$photo])[0], $photos);
+        }
 
-        return Page::whole($request->queryBool('tree')
-            ? $this->serializer->tree($catalog, $context)
-            : $this->serializer->flat($catalog, $context), $this->api->links(), $call);
+        return Page::whole($tree
+            ? $this->serializer->tree($catalog, $context, 0, $covers)
+            : $this->serializer->flat($catalog, $context, $covers, $roots), $this->api->links(), $call);
     }
 
     public function show(ApiCall $call): Response

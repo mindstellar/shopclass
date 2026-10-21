@@ -459,11 +459,11 @@ $section = render(static function () {
     osc_admin_form_section('Notifications', array('intro' => 'Who hears about what.'));
 });
 // A section is inside the page head, not a second one: h3, not h2.
-emits('a section is an h3', $section, '<h3 class="render-title">Notifications</h3>');
+emits('a section is an h3', $section, '<h3 id="s-notifications" class="render-title">Notifications</h3>');
 emits('with its intro under it', $section, '<p class="form-intro">Who hears about what.</p>');
 emits('and can be spaced from the block above', render(static function () {
     osc_admin_form_section('Later', array('spaced' => true));
-}), '<h3 class="render-title separate-top">Later</h3>');
+}), '<h3 id="s-later" class="render-title separate-top">Later</h3>');
 
 harness_section('custom');
 $html = render(static function () {

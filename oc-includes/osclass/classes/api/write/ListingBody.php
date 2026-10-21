@@ -14,6 +14,7 @@ namespace mindstellar\api\write;
 
 use mindstellar\api\RowId;
 use mindstellar\api\serializer\Format;
+use mindstellar\listing\VariantStore;
 
 /**
  * A listing body as the listing form posts it, for ListingInput::fromArray(). An edit needs the
@@ -160,6 +161,9 @@ final class ListingBody
             }
         }
         $form = PlaceBody::apply($form, $body);
+        if (array_key_exists('product', $body)) {
+            $form['product'] = $this->product($body['product']);
+        }
         if (array_key_exists('show_email', $body)) {
             $form['showEmail'] = $body['show_email'] === true ? '1' : '0';
         }
@@ -171,6 +175,56 @@ final class ListingBody
                 unset($form['meta'][(int) $field]);
             } else {
                 $form['meta'][(int) $field] = is_bool($value) ? ($value ? '1' : '0') : (is_array($value) ? $value : (string) $value);
+            }
+        }
+
+        return $form;
+    }
+
+    /**
+     * The "Sell this item" members of an admin's edit: null stops selling, an object sets the
+     * default variant with the members sent, and `variants` replaces the option rows instead.
+     * ListingInput drops it for anyone but an admin.
+     *
+     * @return array<string,mixed>
+     */
+    private function product(mixed $product): array
+    {
+        if (!is_array($product)) {
+            return ['sell' => '0'];
+        }
+        if (is_array($product['variants'] ?? null)) {
+            $rows = [];
+            foreach (array_slice(array_values($product['variants']), 0, VariantStore::MAX_ROWS + 1) as $row) {
+                $row    = is_array($row) ? $row : [];
+                $fields = $this->variantFields($row + array_fill_keys(['sku', 'price', 'compare_at', 'stock', 'weight', 'shipping_class', 'photo_id'], null));
+                $rows[] = ['options' => is_array($row['options'] ?? null) ? $row['options'] : []] + $fields;
+            }
+
+            return ['sell' => '1', 'hasOptions' => '1', 'variants' => $rows];
+        }
+
+        return ['sell' => '1'] + $this->variantFields($product);
+    }
+
+    /**
+     * One variant's members as the listing form names them.
+     *
+     * @param array<string,mixed> $product
+     *
+     * @return array<string,string>
+     */
+    private function variantFields(array $product): array
+    {
+        $form = [];
+        foreach (['sku' => 'sku', 'stock' => 'stock', 'weight' => 'weight', 'shipping_class' => 'shippingClass', 'photo_id' => 'photoId'] as $member => $field) {
+            if (array_key_exists($member, $product)) {
+                $form[$field] = is_scalar($product[$member]) ? (string) $product[$member] : '';
+            }
+        }
+        foreach (['price' => 'price', 'compare_at' => 'compareAt'] as $member => $field) {
+            if (array_key_exists($member, $product)) {
+                $form[$field] = $product[$member] === null ? '' : $this->price(self::decimal($product[$member]));
             }
         }
 

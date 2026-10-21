@@ -163,6 +163,26 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         );
         ?>
         <?php osc_admin_page_head(__('Current theme')); ?>
+        <?php
+        $themeNeeds     = \mindstellar\market\PluginDependencies::themeRequirements(osc_theme());
+        $missingPlugins = empty($themeNeeds['required']) ? array()
+            : \mindstellar\market\PluginDependencies::forSite()->missingRequired($themeNeeds);
+        if ($missingPlugins !== array()) : ?>
+            <div class="callout-warning callout-block">
+                <span>
+                    <?php echo osc_esc_html(sprintf(
+                        _n(
+                            'Your theme needs a plugin that is missing or off: %s.',
+                            'Your theme needs plugins that are missing or off: %s.',
+                            count($missingPlugins)
+                        ),
+                        implode(', ', array_column($missingPlugins, 'name'))
+                    )); ?>
+                    <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=appearance&action=dependencies&theme='
+                        . urlencode(osc_theme())); ?>"><?php _e('Fix it'); ?></a>
+                </span>
+            </div>
+        <?php endif; ?>
         <?php osc_package_list_open('osc-pkg-list--themes'); ?>
         <?php osc_package_row(array(
             'art'         => array('src' => osc_theme_screenshot_url(), 'has' => osc_theme_has_screenshot()),
@@ -188,8 +208,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     ? $clashNote($clashesOf(osc_theme()), $activeParent)
                     : ''),
             'note_variant' => 'warning',
+            'modes'       => (array) ($info['modes'] ?? array()),
             'actions'     => array(
+                'primary' => osc_customiser_spec() !== null ? array(
+                    'label' => __('Customise'),
+                    'url'   => osc_admin_base_url(true) . '?page=appearance&action=customise',
+                ) : null,
                 'links' => array(
+                    '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=appearance&action=widgets') . '">'
+                        . osc_esc_html(__('Widgets')) . '</a>',
                     '<a target="_blank" rel="noopener" href="' . osc_esc_html(osc_base_url(true)) . '">'
                         . osc_esc_html(__('View site')) . '</a>',
                 ),
@@ -240,6 +267,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                   . 'Open the Updates tab to apply it.'))
                                 : '')),
                     'note_variant' => ($clashes !== array() || $isParent) ? 'warning' : 'update',
+                    'modes'        => (array) ($tInfo['modes'] ?? array()),
                     'actions'     => array(
                         // A theme that clashes with its parent cannot run, so it offers no Activate.
                         'primary' => $clashes !== array() ? null : array(

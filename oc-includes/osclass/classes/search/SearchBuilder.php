@@ -24,6 +24,9 @@ use mindstellar\location\LocationQuery;
  */
 class SearchBuilder
 {
+    /** Most values one dropdown or radio filter takes; the rest are dropped. */
+    public const MAX_CHOICES = 20;
+
     /**
      * @param SearchCriteria $criteria
      * @param \Search        $search
@@ -219,11 +222,18 @@ class SearchBuilder
                     break;
                 case 'DROPDOWN':
                 case 'RADIO':
-                    if (is_scalar($aux) && $aux != '') {
+                    $values = self::metaChoices($aux);
+                    if (count($values) === 1) {
                         $search->addFieldFilter(
                             $id,
-                            array('type' => $type, 'op' => 'eq', 'value' => (string)$aux),
-                            $in . $by . $table . '.s_value = ' . self::metaLiteral($aux) . ')'
+                            array('type' => $type, 'op' => 'eq', 'value' => $values[0]),
+                            $in . $by . $table . '.s_value = ' . self::metaLiteral($values[0]) . ')'
+                        );
+                    } elseif ($values !== array()) {
+                        $search->addFieldFilter(
+                            $id,
+                            array('type' => $type, 'op' => 'in', 'values' => $values),
+                            $in . $by . $table . '.s_value IN (' . implode(', ', array_map(array(self::class, 'metaLiteral'), $values)) . '))'
                         );
                     }
                     break;
@@ -285,6 +295,26 @@ class SearchBuilder
                     break;
             }
         }
+    }
+
+    /**
+     * The values a dropdown or radio filter asks for: one text, or a list where any value
+     * matches. Empty values and repeats are dropped, and a list stops at MAX_CHOICES.
+     *
+     * @param mixed $aux
+     *
+     * @return string[]
+     */
+    private static function metaChoices($aux): array
+    {
+        $out = array();
+        foreach (is_array($aux) ? $aux : array($aux) as $value) {
+            if (is_scalar($value) && (string) $value !== '' && !in_array((string) $value, $out, true)) {
+                $out[] = (string) $value;
+            }
+        }
+
+        return array_slice($out, 0, self::MAX_CHOICES);
     }
 
     /**

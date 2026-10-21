@@ -60,17 +60,7 @@ class Currency extends DAO
             return self::$_currencies[$value];
         }
 
-        // The table holds a handful of rows, so it is cached whole.
-        $all = \mindstellar\cache\CacheGroup::remember('currency', 'all', function () {
-            try {
-                $rows = Db::table($this->getTableName())->select(...$this->getFields())->get();
-            } catch (\mindstellar\database\DbException $e) {
-                return null;
-            }
-
-            // Upper-cased keys: the old lookup went through a case-insensitive collation.
-            return array_change_key_case(array_column(Db::stringifyRows($rows), null, $this->getPrimaryKey()), CASE_UPPER);
-        }) ?? array();
+        $all = $this->all();
 
         // A miss is left out of the map, so a currency added later in the same request is found.
         $code = strtoupper((string)$value);
@@ -80,6 +70,35 @@ class Currency extends DAO
         self::$_currencies[$value] = $all[$code];
 
         return self::$_currencies[$value];
+    }
+
+    /**
+     * Every currency row, from the cached table.
+     *
+     * @return array<int,array<string,string|null>>
+     */
+    public function listAll()
+    {
+        return array_values($this->all());
+    }
+
+    /**
+     * The whole table by upper-cased code. It holds a handful of rows, so it is cached whole.
+     *
+     * @return array<string,array<string,string|null>>
+     */
+    private function all(): array
+    {
+        return \mindstellar\cache\CacheGroup::remember('currency', 'all', function () {
+            try {
+                $rows = Db::table($this->getTableName())->select(...$this->getFields())->get();
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
+
+            // Upper-cased keys: the old lookup went through a case-insensitive collation.
+            return array_change_key_case(array_column(Db::stringifyRows($rows), null, $this->getPrimaryKey()), CASE_UPPER);
+        }) ?? array();
     }
 }
 

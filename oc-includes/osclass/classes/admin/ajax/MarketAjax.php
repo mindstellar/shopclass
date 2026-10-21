@@ -22,6 +22,7 @@ use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
+use mindstellar\market\PluginDependencies;
 use mindstellar\security\Demo;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\FileSystem;
@@ -57,6 +58,25 @@ final class MarketAjax extends AjaxHandler
             Params::getParamString('slug'),
             Params::getParamString('version')
         ));
+    }
+
+    /**
+     * action=market_install_dependency -- installs and turns on one plugin the theme asks for.
+     * The slug must be in that theme's manifest.
+     */
+    public function installDependency(): void
+    {
+        $slug     = Params::getParamString('slug');
+        $requires = PluginDependencies::themeRequirements(Params::getParamString('theme'));
+        if ($requires === null) {
+            AjaxResponse::json(array(
+                'ok' => false, 'message' => __('That theme is not installed.'),
+                'slug' => $slug, 'status' => '', 'manual_url' => '',
+            ));
+
+            return;
+        }
+        AjaxResponse::json(PluginDependencies::forSite()->ensure($requires, $slug));
     }
 
     public function detail(): void
@@ -143,8 +163,7 @@ final class MarketAjax extends AjaxHandler
     }
 
     /**
-     * Fetch the catalog when its last check is over a day old. The daily update check in the
-     * admin footer calls this; without it the catalog only changed on "Check now".
+     * Fetch the catalog when its last check is over a day old. Use Catalog::refreshIfDue().
      *
      * @param string $type 'plugin' or 'theme'
      *
@@ -152,14 +171,7 @@ final class MarketAjax extends AjaxHandler
      */
     public static function refreshCatalogIfDue($type)
     {
-        if (osc_market_changes_blocked()) {
-            return;
-        }
-        $catalog = self::marketCatalog($type);
-        if (time() - $catalog->lastChecked() > 24 * 3600) {
-            $catalog->updates(true);
-            $catalog->index(true);
-        }
+        self::marketCatalog($type)->refreshIfDue();
     }
 
     /**
@@ -361,8 +373,7 @@ final class MarketAjax extends AjaxHandler
             $author = (string) ($info['author'] ?? '');
         }
         $version = (string) ($info['version'] ?? '');
-        $manifest = is_file($root . 'shopclass.json') ? json_decode((string) file_get_contents($root . 'shopclass.json'), true) : null;
-        $manifest = is_array($manifest) ? $manifest : array();
+        $manifest = \mindstellar\market\PackageManifest::json($root);
         $readme   = is_file($root . 'README.md') ? (string) file_get_contents($root . 'README.md') : '';
 
         // Only files that exist in the package's own assets folder; their URL is this site's.

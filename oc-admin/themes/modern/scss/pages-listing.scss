@@ -262,3 +262,107 @@
     width: fit-content;
   }
 }
+
+// The listing form's option editor: names with value chips, then a row per combination.
+.osc-variant-switch {
+  margin-block: .75rem;
+}
+
+.osc-variants {
+  display: grid;
+  gap: .75rem;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.osc-variant-option {
+  align-items: start;
+  display: grid;
+  gap: .5rem;
+  grid-template-columns: minmax(8rem, 14rem) 1fr auto;
+
+  @media (max-width: 575.98px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.osc-variant-chips {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: $border-radius;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  min-height: calc(1.5em + .75rem + 2px);
+  padding: .25rem .5rem;
+
+  &:focus-within {
+    border-color: var(--osc-bronze);
+  }
+}
+
+.osc-variant-chip {
+  align-items: center;
+  background-color: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  color: var(--osc-ink);
+  display: inline-flex;
+  gap: .25rem;
+  padding-block: .125rem;
+  padding-inline: .5rem .25rem;
+}
+
+.osc-variant-chip-x {
+  background: none;
+  border: 0;
+  color: var(--osc-ink-muted);
+  line-height: 1;
+  padding: 0 .25rem;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-danger);
+  }
+}
+
+.osc-variant-chip-input {
+  background: transparent;
+  border: 0;
+  color: var(--osc-ink);
+  flex: 1 1 10rem;
+  min-width: 6rem;
+  outline: 0;
+}
+
+.osc-variant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.osc-variant-table {
+  margin-bottom: 0;
+
+  td {
+    vertical-align: middle;
+  }
+
+  input.form-control-sm {
+    min-width: 5.5rem;
+  }
+
+  select.form-select-sm {
+    min-width: 8rem;
+  }
+}
+
+.osc-variant-errors,
+.osc-variant-error ul {
+  color: var(--osc-danger);
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}

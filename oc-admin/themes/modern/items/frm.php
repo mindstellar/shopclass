@@ -15,6 +15,7 @@
 
 osc_enqueue_script('tiny_mce');
 osc_enqueue_script('admin-editor');
+osc_enqueue_script('admin-variants');
 
 // The photo grid stages its uploads against this token, and the token is a cookie. Ask for
 // it before the page prints: two photos chosen at once upload at the same time, and with no
@@ -327,6 +328,152 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     }
 
     echo '</div>';
+
+    // Sell this item: one default row for a plain product, or option rows (Colour x Size ...).
+    $sellValues = (is_array(__get('itemProduct')) ? __get('itemProduct') : array()) + array_fill_keys(array('sku', 'price', 'compareAt', 'stock', 'weight', 'shippingClass'), '')
+        + array('sell' => false, 'hasOptions' => false, 'options' => array(), 'variants' => array(), 'photos' => array(), 'errors' => array());
+    echo '<fieldset class="osc-field osc-sell-fields">';
+    echo '<legend class="form-label">' . osc_esc_html(__('Sell this item')) . '</legend>';
+    echo '<input type="hidden" name="product[sell]" value="0">';
+    osc_admin_field(array(
+        'type'    => 'checkbox',
+        'id'      => 'product-sell',
+        'name'    => 'product[sell]',
+        'value'   => '1',
+        'label'   => __('Buyers can add this item to a cart'),
+        'checked' => $sellValues['sell'],
+        'error'   => $itemErrors['product'] ?? '',
+    ));
+    echo '<input type="hidden" name="product[hasOptions]" value="0">';
+    echo '<div class="form-check form-switch osc-variant-switch">';
+    echo '<input class="form-check-input" type="checkbox" role="switch" id="product-has-options" name="product[hasOptions]" value="1" data-variant-switch'
+        . ($sellValues['hasOptions'] ? ' checked' : '') . '>';
+    echo '<label class="form-check-label" for="product-has-options">' . osc_esc_html(__('This item comes in options')) . '</label>';
+    echo '</div>';
+
+    echo '<div data-variant-default' . ($sellValues['hasOptions'] ? ' hidden' : '') . '>';
+    foreach (
+        array(
+            'sku'           => array(__('SKU'), 'text', 64, ''),
+            'price'         => array(__('Price (blank uses the listing price)'), 'text', 0, 'decimal'),
+            'compareAt'     => array(__('Was price (blank for none)'), 'text', 0, 'decimal'),
+            'stock'         => array(__('Stock (blank does not track)'), 'text', 0, 'numeric'),
+            'weight'        => array(__('Weight in grams'), 'text', 0, 'numeric'),
+            'shippingClass' => array(__('Shipping class'), 'text', 40, ''),
+        ) as $sellKey => $sellSpec
+    ) {
+        $sellAttrs = array('autocomplete' => 'off');
+        if ($sellSpec[3] !== '') {
+            $sellAttrs['inputmode'] = $sellSpec[3];
+        }
+        if ($sellSpec[2] > 0) {
+            $sellAttrs['maxlength'] = (string) $sellSpec[2];
+        }
+        osc_admin_field(array(
+            'type'  => $sellSpec[1],
+            'id'    => 'product-' . $sellKey,
+            'name'  => 'product[' . $sellKey . ']',
+            'label' => $sellSpec[0],
+            'width' => $sellSpec[3] === '' ? 'text' : 'num',
+            'value' => $sellValues[$sellKey],
+            'attrs' => $sellAttrs,
+        ));
+    }
+    echo '</div>';
+
+    $variantI18n = array(
+        'optionName'  => __('Option name, such as Colour'),
+        'valueInput'  => __('Add a value, then press Enter'),
+        'removeValue' => __('Remove %s'),
+        'remove'      => __('Remove'),
+        'removeOpt'   => __('Remove option'),
+        'none'        => __('None'),
+        'tooMany'     => sprintf(__('That makes %%d rows; an item has at most %d.'), \mindstellar\listing\VariantStore::MAX_ROWS),
+        'noValues'    => __('Give each option a name and at least one value first.'),
+    );
+    echo '<div class="osc-variants" data-variant-editor' . ($sellValues['hasOptions'] ? '' : ' hidden')
+        . ' data-max-options="' . \mindstellar\listing\VariantStore::MAX_OPTIONS . '"'
+        . ' data-max-values="' . \mindstellar\listing\VariantStore::MAX_VALUES . '"'
+        . ' data-max-rows="' . \mindstellar\listing\VariantStore::MAX_ROWS . '"'
+        . ' data-max-name="' . \mindstellar\listing\VariantStore::MAX_NAME . '"'
+        . ' data-max-value="' . \mindstellar\listing\VariantStore::MAX_VALUE . '"'
+        . ' data-photos="' . osc_esc_html((string) json_encode((object) $sellValues['photos'])) . '"'
+        . ' data-i18n="' . osc_esc_html((string) json_encode($variantI18n)) . '">';
+    if (!empty($sellValues['errors']['options'])) {
+        echo '<ul class="osc-variant-errors" role="alert">';
+        foreach ($sellValues['errors']['options'] as $variantError) {
+            echo '<li>' . osc_esc_html($variantError) . '</li>';
+        }
+        echo '</ul>';
+    }
+    echo '<div class="osc-variant-options" data-variant-options>';
+    foreach ($sellValues['options'] as $k => $variantOption) {
+        echo '<div class="osc-variant-option" data-option>';
+        echo '<input type="text" class="form-control" name="product[optionNames][' . (int) $k . ']" value="' . osc_esc_html($variantOption['name']) . '"'
+            . ' maxlength="' . \mindstellar\listing\VariantStore::MAX_NAME . '" aria-label="' . osc_esc_html($variantI18n['optionName']) . '"'
+            . ' placeholder="' . osc_esc_html($variantI18n['optionName']) . '" data-option-name>';
+        echo '<div class="osc-variant-chips" data-chips>';
+        foreach ($variantOption['values'] as $variantValue) {
+            echo '<span class="osc-variant-chip" data-chip="' . osc_esc_html($variantValue) . '">' . osc_esc_html($variantValue)
+                . '<button type="button" class="osc-variant-chip-x" aria-label="' . osc_esc_html(sprintf($variantI18n['removeValue'], $variantValue)) . '" data-chip-remove>&times;</button></span>';
+        }
+        echo '<input type="text" class="osc-variant-chip-input" maxlength="' . \mindstellar\listing\VariantStore::MAX_VALUE . '"'
+            . ' aria-label="' . osc_esc_html($variantI18n['valueInput']) . '" placeholder="' . osc_esc_html($variantI18n['valueInput']) . '" data-chip-input>';
+        echo '</div>';
+        echo '<button type="button" class="btn btn-dim btn-sm" data-option-remove>' . osc_esc_html($variantI18n['removeOpt']) . '</button>';
+        echo '</div>';
+    }
+    echo '</div>';
+    echo '<div class="osc-variant-actions">';
+    echo '<button type="button" class="btn btn-dim btn-sm" data-option-add>' . osc_esc_html(__('Add option')) . '</button>';
+    echo '<button type="button" class="btn btn-dim btn-sm" data-generate>' . osc_esc_html(__('Generate combinations')) . '</button>';
+    echo '</div>';
+    echo '<p class="form-text" data-variant-note>' . osc_esc_html(__('One row per combination. Generating again keeps the rows you filled in.'))
+        . ($sellValues['photos'] === array() ? ' ' . osc_esc_html(__('Save the listing with photos to pick a photo per row.')) : '') . '</p>';
+
+    echo '<div class="table-responsive"><table class="table osc-variant-table">';
+    echo '<thead><tr data-variant-head>';
+    foreach ($sellValues['options'] as $variantOption) {
+        echo '<th scope="col" data-option-head>' . osc_esc_html($variantOption['name']) . '</th>';
+    }
+    foreach (array(__('SKU'), __('Price'), __('Was price'), __('Stock'), __('Weight (g)'), __('Photo')) as $variantHead) {
+        echo '<th scope="col">' . osc_esc_html($variantHead) . '</th>';
+    }
+    echo '<th scope="col"><span class="visually-hidden">' . osc_esc_html($variantI18n['remove']) . '</span></th>';
+    echo '</tr></thead><tbody data-variant-rows>';
+    foreach ($sellValues['variants'] as $n => $variantRow) {
+        $variantBase = 'product[variants][' . (int) $n . ']';
+        echo '<tr data-row>';
+        foreach ($variantRow['values'] as $k => $variantValue) {
+            echo '<td data-option-cell><input type="hidden" name="' . $variantBase . '[options][' . (int) $k . ']" value="' . osc_esc_html($variantValue) . '" data-field="options">'
+                . '<span data-option-text>' . osc_esc_html($variantValue) . '</span></td>';
+        }
+        foreach (array('sku' => array('text', 64, ''), 'price' => array('text', 0, 'decimal'), 'compareAt' => array('text', 0, 'decimal'), 'stock' => array('text', 0, 'numeric'), 'weight' => array('text', 0, 'numeric')) as $variantKey => $variantSpec) {
+            echo '<td><input type="text" class="form-control form-control-sm" name="' . $variantBase . '[' . $variantKey . ']" value="' . osc_esc_html($variantRow[$variantKey]) . '"'
+                . ' data-field="' . $variantKey . '" autocomplete="off"'
+                . ($variantSpec[1] > 0 ? ' maxlength="' . $variantSpec[1] . '"' : '')
+                . ($variantSpec[2] !== '' ? ' inputmode="' . $variantSpec[2] . '"' : '') . '></td>';
+        }
+        echo '<td><input type="hidden" name="' . $variantBase . '[shippingClass]" value="' . osc_esc_html($variantRow['shippingClass']) . '" data-field="shippingClass">';
+        echo '<select class="form-select form-select-sm" name="' . $variantBase . '[photoId]" data-field="photoId">';
+        echo '<option value="">' . osc_esc_html($variantI18n['none']) . '</option>';
+        foreach ($sellValues['photos'] as $photoId => $photoLabel) {
+            echo '<option value="' . (int) $photoId . '"' . ((string) $photoId === $variantRow['photoId'] ? ' selected' : '') . '>' . osc_esc_html($photoLabel) . '</option>';
+        }
+        echo '</select></td>';
+        echo '<td><button type="button" class="btn btn-dim btn-sm" data-row-remove>' . osc_esc_html($variantI18n['remove']) . '</button></td>';
+        echo '</tr>';
+        if (!empty($sellValues['errors'][$n])) {
+            echo '<tr class="osc-variant-error" data-row-error><td colspan="' . (count($variantRow['values']) + 7) . '"><ul role="alert">';
+            foreach ($sellValues['errors'][$n] as $variantError) {
+                echo '<li>' . osc_esc_html($variantError) . '</li>';
+            }
+            echo '</ul></td></tr>';
+        }
+    }
+    echo '</tbody></table></div>';
+    echo '</div>';
+    echo '</fieldset>';
 
     // Neither preset: a listing description wants tables and a colour picker but no
     // embedded image or media, so the pair is passed here rather than earning a preset of

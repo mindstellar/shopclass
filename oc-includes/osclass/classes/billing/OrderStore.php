@@ -13,10 +13,18 @@ namespace mindstellar\billing;
 
 use InvalidArgumentException;
 use mindstellar\base\Model;
+use mindstellar\billing\event\OrderCancelled;
+use mindstellar\billing\event\OrderDelivered;
+use mindstellar\billing\event\OrderShipped;
+use mindstellar\billing\event\TrackingUrlResolving;
+use mindstellar\boot\CoreServices;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
+use mindstellar\listing\ListingStatus;
+use mindstellar\listing\ListingStore;
+use mindstellar\model\KeyValue;
 
 /**
  * Persistence for t_billing_order.
@@ -36,6 +44,12 @@ final class OrderStore extends Model
 
     /** s_meta key core sets once the order's receipt e-mail went out. */
     public const RECEIPT_SENT = '_receipt_sent';
+
+    /** s_meta key core sets when an order was paid but its listing could not be published. */
+    public const PUBLISH_FAILED = '_publish_failed';
+
+    /** Key-value group linking an unpaid listing to its open order. */
+    private const LISTING_GROUP = 'listing_unpaid';
 
     /**
      * Record a new pending order.
@@ -93,6 +107,43 @@ final class OrderStore extends Model
         $row = self::table()->where('pk_i_id', $id)->first();
 
         return $row === null ? null : Order::fromRow($row);
+    }
+
+    /**
+     * Remember the open order that will publish a held listing, until the hold ends.
+     *
+     * @param int $itemId
+     * @param int $orderId
+     * @param int $expiresAt Unix time the link lapses
+     */
+    public static function linkListing(int $itemId, int $orderId, int $expiresAt): void
+    {
+        (new KeyValue())->set(self::LISTING_GROUP, (string) $itemId, json_encode(array('order' => $orderId)), $expiresAt);
+    }
+
+    /**
+     * The open order linked to a held listing, or null when the link lapsed or the order is gone.
+     *
+     * @param int $itemId
+     *
+     * @return Order|null
+     */
+    public static function listingOrder(int $itemId): ?Order
+    {
+        $row  = (new KeyValue())->get(self::LISTING_GROUP, (string) $itemId);
+        $data = $row === null || $row['value'] === null ? null : json_decode($row['value'], true);
+
+        return is_array($data) && isset($data['order']) ? self::find((int) $data['order']) : null;
+    }
+
+    /**
+     * Drop the link once the listing is published or gone.
+     *
+     * @param int $itemId
+     */
+    public static function unlinkListing(int $itemId): void
+    {
+        (new KeyValue())->delete(self::LISTING_GROUP, (string) $itemId);
     }
 
     /**
@@ -215,7 +266,7 @@ final class OrderStore extends Model
             }
 
             return $meta;
-        }, Order::STATUS_PAID);
+        }, Order::SETTLED);
     }
 
     /**
@@ -229,6 +280,62 @@ final class OrderStore extends Model
     {
         return self::changeMeta($orderId, static function (array $meta): array {
             $meta[self::RECEIPT_SENT] = date('Y-m-d H:i:s');
+
+            return $meta;
+        });
+    }
+
+    /**
+     * Record that an order was paid but its listing could not be published.
+     *
+     * @param int    $orderId
+     * @param string $reason  Short plain text
+     *
+     * @return bool whether the order exists
+     */
+    public static function notePublishFailed(int $orderId, string $reason): bool
+    {
+        return self::withMeta($orderId, static function (array $meta) use ($reason): array {
+            $meta[self::PUBLISH_FAILED] = array('reason' => $reason, 'at' => date('Y-m-d H:i:s'));
+
+            return $meta;
+        });
+    }
+
+    /**
+     * Where a listing order's listing stands: "held" (waiting for payment), "live" (it went
+     * live at some point) or "gone" (deleted).
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    public static function listingState(int $itemId): string
+    {
+        $row = ListingStore::find($itemId, array('b_enabled', 'b_active', 'b_spam', 'dt_first_pub_date'));
+        if ($row === null) {
+            return 'gone';
+        }
+
+        return ListingStatus::of($row) === ListingStatus::UNPAID ? 'held' : 'live';
+    }
+
+    /**
+     * Record that one of an order's notice e-mails (placed, shipped, admin) was sent.
+     *
+     * @param int    $orderId
+     * @param string $kind    Letters only, e.g. "shipped"
+     *
+     * @return bool whether the mark is stored
+     */
+    public static function markMailSent(int $orderId, string $kind): bool
+    {
+        if (!preg_match('/^[a-z]{1,20}$/', $kind)) {
+            return false;
+        }
+
+        return self::changeMeta($orderId, static function (array $meta) use ($kind): array {
+            $meta['_mail_' . $kind] = date('Y-m-d H:i:s');
 
             return $meta;
         });
@@ -277,16 +384,20 @@ final class OrderStore extends Model
      *
      * @param int                   $orderId
      * @param callable(array):array $change
-     * @param string|null           $status  Only an order in this status is changed
+     * @param string[]|null         $statuses Only an order in one of these statuses is changed
+     * @param string|null           $to       Also move the order to this status, in the same write
+     * @param-out array<string,mixed>|null $row
+     * @param array<string,mixed>|null $row   Set to the order's user id and status as read
+     * @param array<string,mixed>   $set      More columns to write with the move
      *
      * @return bool whether the change is stored
      */
-    private static function changeMeta(int $orderId, callable $change, ?string $status = null): bool
+    private static function changeMeta(int $orderId, callable $change, ?array $statuses = null, ?string $to = null, ?array &$row = null, array $set = array()): bool
     {
         for ($try = 0; $try < 2; $try++) {
-            $read = self::table()->select('s_meta')->where('pk_i_id', $orderId);
-            if ($status !== null) {
-                $read = $read->where('s_status', $status);
+            $read = self::table()->select('s_meta', 'fk_i_user_id', 's_status')->where('pk_i_id', $orderId);
+            if ($statuses !== null) {
+                $read = $read->whereIn('s_status', $statuses);
             }
             $row = $read->first();
             if ($row === null) {
@@ -300,16 +411,17 @@ final class OrderStore extends Model
             }
             $new = $change($meta);
             $new = $new === array() ? null : json_encode($new);
-            if ($new === $old) {
+            if ($new === $old && $to === null) {
                 return true;
             }
 
-            $write = self::table()->where('pk_i_id', $orderId);
-            if ($status !== null) {
-                $write = $write->where('s_status', $status);
-            }
+            $write = self::table()->where('pk_i_id', $orderId)->where('s_status', $row['s_status']);
             $write = $old === null ? $write->whereNull('s_meta') : $write->where('s_meta', $old);
-            if ($write->update(array('s_meta' => $new)) === 1) {
+            $data  = array('s_meta' => $new);
+            if ($to !== null) {
+                $data = $set + $data + array('s_status' => $to);
+            }
+            if ($write->update($data) === 1) {
                 return true;
             }
         }
@@ -318,8 +430,37 @@ final class OrderStore extends Model
     }
 
     /**
-     * A refund arrives after settlement, so it is the one transition that starts
-     * from paid rather than pending.
+     * Change an order's meta while its row is locked, for core work that must happen once per
+     * order (taking and giving back stock). $change runs inside the transaction and may write
+     * elsewhere; what it returns is stored when it differs from what it was given.
+     *
+     * @param int                   $orderId
+     * @param callable(array):array $change
+     *
+     * @return bool false when no order has that id
+     * @throws DbException
+     */
+    public static function withMeta(int $orderId, callable $change): bool
+    {
+        return Db::transaction(static function () use ($orderId, $change): bool {
+            $row = Db::selectOne('SELECT s_meta FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', array($orderId));
+            if ($row === null) {
+                return false;
+            }
+            $meta = $row['s_meta'] !== null && $row['s_meta'] !== '' ? json_decode((string) $row['s_meta'], true) : array();
+            $meta = is_array($meta) ? $meta : array();
+            $new  = $change($meta);
+            if ($new !== $meta) {
+                self::table()->where('pk_i_id', $orderId)->update(array('s_meta' => $new === array() ? null : json_encode($new)));
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * A refund arrives after settlement, so it starts from a settled status (paid,
+     * shipped or delivered) rather than pending.
      *
      * @param int $id
      *
@@ -329,29 +470,241 @@ final class OrderStore extends Model
     {
         $changed = self::table()
             ->where('pk_i_id', $id)
-            ->where('s_status', Order::STATUS_PAID)
+            ->whereIn('s_status', Order::SETTLED)
             ->update(array('s_status' => Order::STATUS_REFUNDED));
 
         return $changed === 1;
     }
 
     /**
-     * One user's order history.
+     * A paid goods order was sent, or a cash on delivery one before it is paid. With no URL
+     * given, a `TrackingUrlResolving` listener may supply one, kept only when it
+     * is https. Fires `OrderShipped` once the write commits.
      *
-     * @param int $userId
-     * @param int $limit
-     * @param int $offset
+     * @param int    $id
+     * @param string $carrier  Up to 100 characters
+     * @param string $tracking Up to 100 characters
+     * @param string $url      The parcel's tracking page; the caller checks it is https
+     *
+     * @return bool false when the order cannot ship (Order::canShip())
+     */
+    public static function ship(int $id, string $carrier, string $tracking, string $url): bool
+    {
+        $order = self::find($id);
+        if ($order === null || !$order->canShip()) {
+            return false;
+        }
+        $carrier  = mb_substr(trim($carrier), 0, 100, 'UTF-8');
+        $tracking = mb_substr(trim($tracking), 0, 100, 'UTF-8');
+        $url      = trim($url);
+        if ($url === '') {
+            $found = new TrackingUrlResolving($carrier, $tracking);
+            CoreServices::dispatcher()->dispatch($found);
+            $url = $found->url();
+        }
+        $at     = date('Y-m-d H:i:s');
+        $userId = self::move($id, $order->getStatus(), Order::STATUS_SHIPPED, static function (array $meta) use ($carrier, $tracking, $url, $at): array {
+            $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
+            $meta['_shipping'] = array(
+                'carrier'    => $carrier,
+                'tracking'   => $tracking,
+                'url'        => mb_substr($url, 0, 500, 'UTF-8'),
+                'shipped_at' => $at,
+            ) + $shipping;
+
+            return $meta;
+        });
+        if ($userId === null) {
+            return false;
+        }
+        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderShipped($id, $userId)));
+
+        return true;
+    }
+
+    /**
+     * A shipped order arrived. A cash on delivery order not paid yet is paid now, as the
+     * courier collected. Fires `OrderDelivered` once the write commits.
+     *
+     * @param int       $id
+     * @param bool|null $collected Set to whether this delivery also marked the order paid
+     * @param-out bool  $collected
+     *
+     * @return bool false when the order is not shipped
+     */
+    public static function deliver(int $id, ?bool &$collected = null): bool
+    {
+        $collected = false;
+        $order     = self::find($id);
+        if ($order === null) {
+            return false;
+        }
+        $at     = date('Y-m-d H:i:s');
+        $cash   = $order->awaitsCash();
+        $userId = self::move($id, Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, static function (array $meta) use ($at): array {
+            $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
+            $meta['_shipping'] = array('delivered_at' => $at) + $shipping;
+
+            return $meta;
+        }, $cash ? array('dt_paid_date' => $at) : array());
+        $collected = $userId !== null && $cash;
+        if ($userId === null) {
+            return false;
+        }
+        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderDelivered($id, $userId)));
+
+        return true;
+    }
+
+    /**
+     * Close a pending order unpaid, or a cash on delivery parcel the buyer refused, giving back
+     * any stock it holds. Fires `OrderCancelled` once the write commits.
+     *
+     * @param int $id
+     *
+     * @return bool false when the order is neither
+     */
+    public static function cancel(int $id): bool
+    {
+        $order = self::find($id);
+        $from  = $order !== null && $order->awaitsCash() ? Order::STATUS_SHIPPED : Order::STATUS_PENDING;
+        $userId = Db::transaction(static function () use ($id, $from): ?int {
+            $userId = self::move($id, $from, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
+            if ($userId !== null) {
+                OrderStock::release($id);
+            }
+
+            return $userId;
+        });
+        if ($userId === null) {
+            return false;
+        }
+        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderCancelled($id, $userId)));
+
+        return true;
+    }
+
+    /**
+     * Move an order from one status to the next with its meta changed in the same write.
+     *
+     * @param string|string[]       $from
+     * @param callable(array):array $change
+     * @param array<string,mixed>   $set    More columns to write with the move
+     *
+     * @return int|null the order's user id, or null when the order was not in $from
+     */
+    private static function move(int $id, $from, string $to, callable $change, array $set = array()): ?int
+    {
+        $row = null;
+
+        return self::changeMeta($id, $change, (array) $from, $to, $row, $set) && $row !== null ? (int) $row['fk_i_user_id'] : null;
+    }
+
+    /**
+     * One user's order history, newest first. Pass the last id of a page as $before for the
+     * next one.
+     *
+     * @param int      $userId
+     * @param int      $limit
+     * @param int      $offset
+     * @param int|null $before Only orders with a lower id
      *
      * @return Order[] newest first
      */
-    public static function forUser(int $userId, int $limit = 25, int $offset = 0): array
+    public static function forUser(int $userId, int $limit = 25, int $offset = 0, ?int $before = null): array
     {
-        $rows = self::table()
-            ->where('fk_i_user_id', $userId)
-            ->orderBy('dt_date', 'DESC')
-            ->limit($limit)
-            ->offset($offset)
-            ->get();
+        // Read through idx_user_status: walking the primary key backwards reads the whole table
+        // for a buyer whose orders are old.
+        $params = array($userId);
+        $sql    = 'SELECT * FROM ' . self::tableName() . ' IGNORE INDEX FOR ORDER BY (PRIMARY) WHERE fk_i_user_id = ?';
+        if ($before !== null) {
+            $sql     .= ' AND pk_i_id < ?';
+            $params[] = $before;
+        }
+        $rows = Db::select($sql . ' ORDER BY pk_i_id DESC LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset), $params);
+
+        return array_map(static fn (array $row): Order => Order::fromRow($row), $rows);
+    }
+
+    /**
+     * How many goods orders one user has in these statuses, optionally through these gateways
+     * only. Credits orders are not counted. Reads idx_user_status.
+     *
+     * @param string[]      $statuses Order::STATUS_* values; none counts nothing
+     * @param string[]|null $gateways gateway ids; null counts every gateway
+     *
+     * @throws DbException
+     */
+    public static function countForUser(int $userId, array $statuses, ?array $gateways = null): int
+    {
+        $statuses = array_values(array_unique(array_map('strval', $statuses)));
+        if ($userId <= 0 || $statuses === array() || $gateways === array()) {
+            return 0;
+        }
+        $in     = static fn (array $values): string => '(' . implode(', ', array_fill(0, count($values), '?')) . ')';
+        $sql    = 'SELECT COUNT(*) FROM ' . self::tableName()
+            . ' WHERE fk_i_user_id = ? AND s_status IN ' . $in($statuses) . ' AND i_credits = 0';
+        $params = array_merge(array($userId), $statuses);
+        if ($gateways !== null) {
+            $gateways = array_values(array_unique(array_map('strval', $gateways)));
+            $sql     .= ' AND s_gateway IN ' . $in($gateways);
+            $params   = array_merge($params, $gateways);
+        }
+
+        return (int) Db::scalar($sql, $params);
+    }
+
+    /**
+     * Pending goods orders of these gateways (or, with $others, of every other gateway) placed
+     * before $before, oldest first. Reads a range of idx_status_date.
+     *
+     * @param string[] $gateways
+     * @param string   $before   Y-m-d H:i:s
+     * @param int      $limit
+     * @param bool     $others
+     *
+     * @return int[] order ids
+     * @throws DbException
+     */
+    public static function heldBefore(array $gateways, string $before, int $limit, bool $others = false): array
+    {
+        if ($gateways === array()) {
+            return array();
+        }
+        $rows = Db::select(
+            'SELECT pk_i_id FROM ' . self::tableName() . ' WHERE s_status = ? AND dt_date < ? AND i_credits = 0'
+            . ' AND s_gateway ' . ($others ? 'NOT IN (' : 'IN (') . implode(', ', array_fill(0, count($gateways), '?')) . ')'
+            . ' ORDER BY dt_date LIMIT ' . max(1, $limit),
+            array_merge(array(Order::STATUS_PENDING, $before), array_values($gateways))
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['pk_i_id'], $rows);
+    }
+
+    /**
+     * One gateway's pending orders placed before $before that carry its reference, oldest first:
+     * the orders a gateway asks its provider about when no webhook came. Goods and credit orders
+     * alike. Reads a range of idx_status_date.
+     *
+     * @param string $gateway
+     * @param string $before    Y-m-d H:i:s
+     * @param int    $limit
+     * @param string $refPrefix Only references that start with this, such as "cs_"
+     *
+     * @return Order[]
+     * @throws DbException
+     */
+    public static function pendingBefore(string $gateway, string $before, int $limit, string $refPrefix = ''): array
+    {
+        $query = self::table()
+            ->where('s_status', Order::STATUS_PENDING)
+            ->where('dt_date', '<', $before)
+            ->where('s_gateway', $gateway)
+            ->whereNotNull('s_external_ref');
+        if ($refPrefix !== '') {
+            $query = $query->where('s_external_ref', 'LIKE', addcslashes($refPrefix, '\\%_') . '%');
+        }
+        $rows = $query->orderBy('dt_date', 'ASC')->orderBy('pk_i_id', 'ASC')->limit(max(1, $limit))->get();
 
         return array_map(static fn (array $row): Order => Order::fromRow($row), $rows);
     }
@@ -395,7 +748,8 @@ final class OrderStore extends Model
     /**
      * The admin orders list: filter by status, gateway and user, newest first.
      *
-     * @param array $filters 'status', 'gateway', 'user_id' — any may be omitted
+     * @param array $filters 'status', 'gateway', 'user_id', 'goods' (true: goods orders only),
+     *                       'to_ship' (true: paid goods orders and unpaid cash on delivery ones) — any may be omitted
      * @param int   $limit
      * @param int   $offset
      *
@@ -403,6 +757,9 @@ final class OrderStore extends Model
      */
     public static function search(array $filters, int $limit = 25, int $offset = 0): array
     {
+        if (!empty($filters['to_ship']) && empty($filters['status'])) {
+            return self::toShip($filters, $limit, $offset);
+        }
         $rows = self::filtered($filters)
             ->orderBy('dt_date', 'DESC')
             ->orderBy('pk_i_id', 'DESC')
@@ -422,7 +779,35 @@ final class OrderStore extends Model
      */
     public static function searchCount(array $filters): int
     {
+        if (!empty($filters['to_ship']) && empty($filters['status'])) {
+            return self::filtered(array('status' => Order::STATUS_PAID) + $filters)->count()
+                + self::filtered(array('status' => Order::STATUS_PENDING) + $filters)->count();
+        }
+
         return self::filtered($filters)->count();
+    }
+
+    /**
+     * The "To ship" page: each status read newest first along idx_status_date, then merged.
+     *
+     * @param array $filters Same keys as search()
+     *
+     * @return Order[]
+     */
+    private static function toShip(array $filters, int $limit, int $offset): array
+    {
+        $take  = max(1, $limit) + max(0, $offset);
+        $parts = array();
+        foreach (array(Order::STATUS_PAID, Order::STATUS_PENDING) as $status) {
+            $parts = array_merge($parts, self::filtered(array('status' => $status) + $filters)
+                ->orderBy('dt_date', 'DESC')
+                ->orderBy('pk_i_id', 'DESC')
+                ->limit($take)
+                ->get());
+        }
+        usort($parts, static fn (array $a, array $b): int => array($b['dt_date'], (int) $b['pk_i_id']) <=> array($a['dt_date'], (int) $a['pk_i_id']));
+
+        return array_map(static fn (array $row): Order => Order::fromRow($row), array_slice($parts, max(0, $offset), max(1, $limit)));
     }
 
     /**
@@ -477,6 +862,14 @@ final class OrderStore extends Model
         }
         if (!empty($filters['user_id'])) {
             $q = $q->where('fk_i_user_id', (int) $filters['user_id']);
+        }
+        if (!empty($filters['goods'])) {
+            $q = $q->where('i_credits', 0);
+        }
+        if (!empty($filters['to_ship']) && ($filters['status'] ?? null) === Order::STATUS_PENDING) {
+            $q = $q->where('s_gateway', gateway\CashOnDeliveryGateway::ID);
+        } elseif (!empty($filters['to_ship']) && ($filters['status'] ?? null) !== Order::STATUS_PAID) {
+            $q = $q->whereRaw('1 = 0');
         }
 
         return $q;

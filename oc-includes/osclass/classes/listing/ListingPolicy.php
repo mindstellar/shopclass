@@ -14,6 +14,7 @@ namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
 use mindstellar\security\ActionThrottle;
+use mindstellar\site\SiteMode;
 
 /**
  * Who may see, change and post listings, for the web pages and the API alike.
@@ -25,6 +26,9 @@ final class ListingPolicy
 
     /** mayPost(): the site takes listings from signed-in users only. */
     public const REGISTERED_ONLY = 'registered_only';
+
+    /** mayPost(): the site is a shop and only admins post. */
+    public const SHOP_MODE = 'shop_mode';
 
     /** mayPost(): a ban rule matches the contact e-mail. */
     public const BANNED_EMAIL = 'banned_email';
@@ -124,12 +128,15 @@ final class ListingPolicy
     /**
      * Whether this actor may post a listing with this contact e-mail. Admins always may.
      *
-     * @return string ALLOWED, REGISTERED_ONLY, BANNED_EMAIL or BANNED_IP
+     * @return string ALLOWED, SHOP_MODE, REGISTERED_ONLY, BANNED_EMAIL or BANNED_IP
      */
     public static function mayPost(Actor $actor, string $email): string
     {
         if ($actor->isAdmin()) {
             return self::ALLOWED;
+        }
+        if (osc_site_mode() === SiteMode::SHOP) {
+            return self::SHOP_MODE;
         }
         if (self::requiresSignIn($actor)) {
             return self::REGISTERED_ONLY;

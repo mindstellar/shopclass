@@ -109,6 +109,20 @@ if (!function_exists('osc_add_admin_submenu_page')) {
     }
 }
 
+// The shop form reads money the way an English admin types it.
+if (!function_exists('osc_locale_dec_point')) {
+    function osc_locale_dec_point()
+    {
+        return '.';
+    }
+}
+if (!function_exists('osc_locale_thousands_sep')) {
+    function osc_locale_thousands_sep()
+    {
+        return ',';
+    }
+}
+
 // Recorded rather than enforced: whether the check runs at all, and on which actions, is one
 // of the things this file asserts.
 $GLOBALS['csrfChecks'] = array();
@@ -226,6 +240,12 @@ foreach (array('premium', 'slot', 'item_upgrades', 'seller_limits') as $product)
     }
 }
 
+if (!function_exists('osc_themes_path')) {
+    function osc_themes_path()
+    {
+        return sys_get_temp_dir() . '/osc-no-themes/';
+    }
+}
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 if (!function_exists('osc_current_admin_theme_path')) {
     function osc_current_admin_theme_path($file = '')
@@ -490,6 +510,7 @@ pin(
         'pageTitle'                    => 'osclass/pageTitle',
         'pageDesc'                     => 'osclass/pageDesc',
         'contactEmail'                 => 'osclass/contactEmail',
+        'site_mode'                    => 'osclass/site_mode',
         'language'                     => 'osclass/language',
         'currency'                     => 'osclass/currency',
         'weekStart'                    => 'osclass/weekStart',
@@ -1176,6 +1197,63 @@ $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' =>
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
 pin('and reports itself', array('ok:Billing settings have been updated'), flashed($run));
 
+$shop = array(
+    'billing_shipping_flat' => '49.50',
+    'billing_free_over'     => '999',
+    'billing_cod_enabled'   => '1',
+    'billing_cod_fee'       => '-5',
+    'billing_hold_days'     => '0',
+    'billing_open_hold_orders' => '-2',
+    'billing_order_prefix'  => 'KC 1!',
+);
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', $shop);
+pin('the shop form checks the CSRF token', array('billing_shop_post'), $run['csrf']);
+pin('and reports itself', array('ok:Shop settings have been updated'), flashed($run));
+check('and returns to its tab', str_ends_with((string) end($run['redirects']), '&tab=shop'), (string) end($run['redirects']));
+pin('amounts are stored as micros', array(array('49500000', 'STRING'), array('999000000', 'STRING')), array(pref($admin, 'billing_shipping_flat'), pref($admin, 'billing_free_over')));
+pin('a negative fee is floored', array('0', 'STRING'), pref($admin, 'billing_cod_fee'));
+pin('the hold is at least a day', array('1', 'INTEGER'), pref($admin, 'billing_hold_days'));
+pin('the open order limit is never negative', array('0', 'INTEGER'), pref($admin, 'billing_open_hold_orders'));
+pin('cash on delivery is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_cod_enabled'));
+pin('the prefix keeps letters, digits and dashes', array('KC1', 'STRING'), pref($admin, 'billing_order_prefix'));
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shipping_flat' => 'lots') + $shop);
+pin('an amount that is not a number is refused', array('warning:Enter an amount, e.g. 49 or 49.50.'), flashed($run));
+pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
+pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
+
+harness_section('billing pricing: pay at post');
+
+$payFields = SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_PRICING);
+$keys      = array_keys($payFields);
+check(
+    'the switch sits on Pricing under the slot fields',
+    array_search('billing_pay_at_post', $keys, true) === array_search('billing_slot_quantity', $keys, true) + 1,
+    implode(',', $keys)
+);
+pin('it follows slot sales', 'billing_slot_enabled', $payFields['billing_pay_at_post']['depends'] ?? null);
+check(
+    'the hold-days help names listings',
+    stripos((string) (SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP)['billing_hold_days']['help'] ?? ''), 'listing') !== false
+);
+
+// hBilling.php cannot be loaded whole here (the harness stubs its registrars), so the two
+// readers under test are taken from it by name.
+$billingSrc = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php');
+foreach (array('osc_billing_slot_enabled', 'osc_billing_pay_at_post') as $reader) {
+    if (!function_exists($reader) && preg_match('/^function ' . $reader . '\(\).*?^}$/ms', $billingSrc, $fn)) {
+        eval($fn[0]);
+    }
+}
+seed_pref($admin, 'billing_enabled', '1', 'BOOLEAN');
+seed_pref($admin, 'billing_slot_enabled', '1', 'BOOLEAN');
+osc_reset_preferences();
+$run = drive('CAdminSettingsBilling', 'billing_pricing_post', array('billing_pay_at_post' => '1') + $pricing);
+pin('ticked stores one', array('1', 'BOOLEAN'), pref($admin, 'billing_pay_at_post'));
+pin('and the helper is on', true, osc_billing_pay_at_post());
+$run = drive('CAdminSettingsBilling', 'billing_pricing_post', $pricing);
+pin('unticked stores a zero, not a missing row', array('0', 'BOOLEAN'), pref($admin, 'billing_pay_at_post'));
+pin('and the helper is off', false, osc_billing_pay_at_post());
+
 harness_section('permalinks, and the two effects that follow a save');
 
 // The structure as the screen posts it, with the shapes the hand-written controller
@@ -1777,7 +1855,7 @@ check('nor is a typed one on a refused redraw', strpos((string)ob_get_clean(), '
 $pricing = \mindstellar\admin\form\BillingSettingsScreen::formVars()['pricing'];
 ob_start();
 osc_admin_settings_form($pricing['id'], $pricing);
-check('a settings form prints its group heading', strpos((string)ob_get_clean(), '>Pricing</h2>') !== false);
+check('a settings form prints its group heading', preg_match('~<h[23][^>]*>Pricing</h[23]>~', (string)ob_get_clean()) === 1);
 ob_start();
 osc_admin_settings_form($pricing['id'], array('titles' => false) + $pricing);
 check('and leaves it out on a tab that names it', strpos((string)ob_get_clean(), '>Pricing</h2>') === false);
@@ -2296,6 +2374,83 @@ foreach (array_column($screens, 0) as $controller) {
         ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/' . $controller
     );
     check($controller . ' reports one through the shared helper', strpos($src, 'CoreSettings::attempt(') !== false);
+}
+
+// ---- The heading scale ------------------------------------------------------------------
+// A screen's title is the one h2; a section inside it is an h3 and a sub-section an h4, each
+// with the shared heading class that sizes it, and a level is never skipped. One scale in one
+// place is what stops a screen drawing its sections as page-sized h2s again.
+harness_section('Heading scale');
+
+/** @return string[] what is wrong with the headings in a screen's markup */
+function heading_scale_problems(string $html): array
+{
+    preg_match_all('~<h([1-6])\b([^>]*)>(.*?)</h\1>~is', $html, $found, PREG_SET_ORDER);
+    $problems = array();
+    $last     = 1;
+    $titles   = 0;
+    foreach ($found as $h) {
+        $level = (int)$h[1];
+        $text  = trim(strip_tags($h[3]));
+        if ($level < 2 || $level > 4) {
+            continue;
+        }
+        if ($level === 2 && ++$titles > 1) {
+            $problems[] = "second h2 \"$text\": a section is an h3";
+        }
+        if ($level > $last + 1) {
+            $problems[] = "h$level \"$text\" skips a level";
+        }
+        if (!preg_match('~class="[^"]*\brender-title\b~', $h[2])) {
+            $problems[] = "h$level \"$text\" lacks the shared heading class";
+        }
+        $last = $level;
+    }
+
+    return $problems;
+}
+
+$oldTax = '<h2 class="render-title osc-page-title">Tax</h2><h2 class="render-title">Prices</h2><h2 class="render-title">Rates</h2>'
+    . '<strong class="d-block">Rates by buyer country</strong><h4>Rates by category</h4>';
+check('the check refuses the old Tax markup (sections as h2, a bare h4)', count(heading_scale_problems($oldTax)) >= 3);
+check('the check refuses an h4 straight under the title', count(heading_scale_problems('<h2 class="render-title">T</h2><h4 class="render-title">x</h4>')) === 1);
+
+\mindstellar\admin\SettingsSearch::registerCore();
+$rendered = 0;
+foreach (osc_settings_pages() as $pageId => $page) {
+    if ($page['menu'] !== '' && strpos($pageId, 'core.') !== 0) {
+        continue;
+    }
+    ob_start();
+    try {
+        osc_admin_page_head($page['title']);
+        osc_admin_settings_form($pageId, array('titles' => true));
+        $html = (string)ob_get_clean();
+    } catch (Throwable $e) {
+        ob_end_clean();
+        continue;
+    }
+    $rendered++;
+    check("$pageId draws its headings on the scale", heading_scale_problems($html) === array(), implode('; ', heading_scale_problems($html)));
+}
+check('the core settings forms were rendered', $rendered >= 20, (string)$rendered);
+
+$screens = array_merge(
+    glob(ABS_PATH . 'oc-admin/themes/modern/settings/*.php') ?: array(),
+    glob(ABS_PATH . 'oc-includes/osclass/classes/admin/form/*.php') ?: array(),
+    array(ABS_PATH . 'oc-admin/themes/modern/items/settings.php', ABS_PATH . 'oc-admin/themes/modern/users/settings.php',
+        ABS_PATH . 'oc-admin/themes/modern/users/ban.php', ABS_PATH . 'oc-admin/themes/modern/emails/index.php')
+);
+foreach ($screens as $file) {
+    $raw = array();
+    if (preg_match_all('~<h[2-4]\b[^>]*>~', (string)file_get_contents($file), $tags)) {
+        foreach ($tags[0] as $tag) {
+            if (strpos($tag, 'render-title') === false) {
+                $raw[] = $tag;
+            }
+        }
+    }
+    check(basename($file) . ' writes no heading tag of its own: it uses osc_admin_section_heading()', $raw === array(), implode(' ', $raw));
 }
 
 exit(harness_result());

@@ -78,6 +78,28 @@ if (!function_exists('osc_kv_set')) {
     }
 }
 
+if (!function_exists('osc_kv_list')) {
+    /**
+     * One page of a group's live keys, in key order. Pass the last key of a page as
+     * $afterKey for the next. A row never rewritten counts as updated when it was created.
+     *
+     * @param string|null $updatedBefore UTC 'Y-m-d H:i:s'; only keys last written before it
+     *
+     * @return list<array{key:string, value:mixed, updated_at:?int, expires_at:?int}> value decoded as osc_kv_get() does
+     * @throws InvalidArgumentException on a malformed group, key or date
+     * @throws \mindstellar\database\DbException
+     */
+    function osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null): array
+    {
+        $rows = (new KeyValue())->page($group, $limit, $updatedBefore, $afterKey);
+        foreach ($rows as &$row) {
+            $row['value'] = $row['value'] === null ? null : json_decode($row['value'], true);
+        }
+
+        return $rows;
+    }
+}
+
 if (!function_exists('osc_kv_delete')) {
     /**
      * Remove a key.
@@ -103,6 +125,28 @@ if (!function_exists('osc_kv_delete_group')) {
     function osc_kv_delete_group(string $group): int
     {
         return (new KeyValue())->deleteGroup($group);
+    }
+}
+
+if (!function_exists('osc_kv_increment')) {
+    /**
+     * Add to a counter in one statement and return its new value. An absent or expired key
+     * starts from 0; the value never goes below 0, so a negative $by takes back at most what
+     * is there. osc_kv_get() reads it as an int.
+     *
+     * @param int|null $ttl seconds it lives from now; null keeps the expiry it has (none for a new key)
+     *
+     * @throws InvalidArgumentException on a malformed group or key, or a ttl below 1
+     * @throws \mindstellar\database\DbException
+     */
+    function osc_kv_increment(string $group, string $key, int $by = 1, ?int $ttl = null): int
+    {
+        if ($ttl !== null && $ttl < 1) {
+            throw new InvalidArgumentException('A key-value ttl is at least one second.');
+        }
+        $now = time();
+
+        return (new KeyValue())->increment($group, $key, $by, $now, $ttl === null ? null : $now + $ttl);
     }
 }
 

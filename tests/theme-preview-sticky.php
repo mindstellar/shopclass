@@ -91,6 +91,8 @@ function osc_is_api_request()
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hDefines.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/Themes.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/WebThemes.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/market/Installer.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/market/PackageManifest.php';
 
 foreach (array('storefront', 'glance') as $slug) {
     mkdir($root . 'themes/' . $slug, 0777, true);

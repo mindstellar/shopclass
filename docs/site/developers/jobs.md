@@ -65,6 +65,9 @@ Use your plugin's own prefix: `acme.send_digest`, `acme.mail.retry`. Core uses
 `storage.*`, `category.*`, `alerts.*`, `cleanup.*`, `message.*`, `listing.*`, `billing.*`,
 `user.*`, `backup.*`, `location.*` and `api.*`.
 
+Core's `listing.unpaid_expire`, `listing.unpaid_remind` and `listing.unpaid_sweep` are
+examples of one job per thing: each holds a listing id and does one small job.
+
 An invalid type throws at the call site, not hours later in a cron run.
 
 ## One job per thing, not one per change

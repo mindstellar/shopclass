@@ -41,6 +41,7 @@ const OSC_RENAMED_CLASSES = array(
     'mindstellar\\forms\\FormService' => 'mindstellar\\form\\builder\\FormService',
     'mindstellar\\forms\\FieldValidator' => 'mindstellar\\form\\builder\\FieldValidator',
     'mindstellar\\forms\\FormContextRegistry' => 'mindstellar\\form\\builder\\FormContextRegistry',
+    'mindstellar\\market\\SiteMode' => 'mindstellar\\site\\SiteMode',
     'mindstellar\\admin\\form\\AdvancedSettingsForm' => 'mindstellar\\admin\\form\\AdvancedSettingsScreen',
     'mindstellar\\admin\\form\\BillingSettingsForm' => 'mindstellar\\admin\\form\\BillingSettingsScreen',
     'mindstellar\\admin\\form\\CommentSettingsForm' => 'mindstellar\\admin\\form\\CommentSettingsScreen',

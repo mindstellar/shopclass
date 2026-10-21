@@ -15,10 +15,12 @@ namespace mindstellar\api\read;
 use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\comment\CommentQuery;
 use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
 use mindstellar\fields\FieldQuery;
 use mindstellar\listing\ListingQuery;
+use mindstellar\listing\VariantStore;
 use mindstellar\user\UserQuery;
 use mindstellar\user\UserStore;
 
@@ -32,6 +34,8 @@ final class ListingReader
 
     private ListingRows $rows;
 
+    private CommentQuery $comments;
+
     private ?CurrencyService $currencies = null;
 
     /**
@@ -41,6 +45,7 @@ final class ListingReader
     {
         $this->listings = new ListingQuery();
         $this->rows     = new ListingRows($this->listings);
+        $this->comments = new CommentQuery();
     }
 
     /**
@@ -70,7 +75,8 @@ final class ListingReader
 
     /**
      * Listing rows made ready for many(). Only the context's language is read, unless the
-     * response carries `translations`.
+     * response carries `translations`. A response with no description, snippet or
+     * translations keeps no description text, so its cached page stays small.
      *
      * @param array<int,array<string,mixed>> $items t_item rows
      *
@@ -78,7 +84,36 @@ final class ListingReader
      */
     public function extend(array $items, ViewContext $context): array
     {
-        return $this->rows->extend($items, $context->locale(), $context->includes('translations') && $context->wants('translations'));
+        $rows = $this->rows->extend($items, $context->locale(), self::translations($context));
+        if (self::descriptions($context)) {
+            return $rows;
+        }
+        foreach ($rows as $i => $row) {
+            unset($rows[$i]['s_description']);
+            foreach (array_keys((array) ($row['locale'] ?? [])) as $code) {
+                unset($rows[$i]['locale'][$code]['s_description']);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * What extend() makes in this context, as a cache key part.
+     */
+    public function extendKey(ViewContext $context): string
+    {
+        return 'api|' . $context->locale() . '|' . (int) self::translations($context) . (int) self::descriptions($context);
+    }
+
+    private static function translations(ViewContext $context): bool
+    {
+        return $context->includes('translations') && $context->wants('translations');
+    }
+
+    private static function descriptions(ViewContext $context): bool
+    {
+        return $context->wants('description') || $context->wants('snippet') || self::translations($context);
     }
 
     /**
@@ -88,7 +123,7 @@ final class ListingReader
      */
     public function view(array $item, ViewContext $context): array
     {
-        return $this->serializer->one($item, $this->load([$item], ListingSerializer::lookups($context)), $context);
+        return $this->serializer->one($item, $this->load([$item], ListingSerializer::lookups($context), true), $context);
     }
 
     /**
@@ -124,9 +159,10 @@ final class ListingReader
 
     /**
      * @param array<int,array<string,mixed>> $items   extended listing rows
-     * @param array<string,bool>             $lookups which of seller, photos, fields to load
+     * @param array<string,bool>             $lookups which of seller, photos, fields, product, rating to load
+     * @param bool                           $single  one listing: its rating also comes with the count of each star
      */
-    private function load(array $items, array $lookups): ListingRelations
+    private function load(array $items, array $lookups, bool $single = false): ListingRelations
     {
         $ids     = [];
         $userIds = [];
@@ -149,12 +185,27 @@ final class ListingReader
             $currencies         = $this->currencies->findMany(array_keys($codes));
         }
 
+        $rating  = $lookups['rating'] ?? false;
+        $ratings = [];
+        $stars   = [];
+        if ($rating && $single) {
+            // One listing: its summary comes from the same counts as its stars.
+            $counts  = $this->comments->ratingCounts($ids[0]);
+            $ratings = [$ids[0] => CommentQuery::summaryOf($counts)];
+            $stars   = [$ids[0] => $this->comments->distribution($ids[0], $counts)];
+        } elseif ($rating) {
+            $ratings = $this->comments->summary($ids);
+        }
+
         return new ListingRelations(
             $this->categories,
             ($lookups['photos'] ?? false) ? $this->photoRows($ids) : [],
             ($lookups['seller'] ?? false) ? $this->users(array_values(array_unique($userIds))) : [],
             ($lookups['fields'] ?? false) ? $this->fieldValues($ids) : [],
-            $currencies
+            $currencies,
+            ($lookups['product'] ?? false) ? VariantStore::ofItems($ids) : [],
+            $ratings,
+            $stars
         );
     }
 
@@ -167,7 +218,7 @@ final class ListingReader
      */
     private function photoRows(array $ids): array
     {
-        return self::byItem($this->listings->photos($ids));
+        return $this->rows->photos($ids);
     }
 
     /**

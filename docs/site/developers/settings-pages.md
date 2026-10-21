@@ -325,10 +325,25 @@ one.
 | `osc_admin_text()` · `osc_admin_number()` · `osc_admin_select()` · `osc_admin_textarea()` · `osc_admin_checkbox()` · `osc_admin_radio_group()` · `osc_admin_secret()` | One field of that type. |
 | `osc_admin_tree_picker()` | The category checkbox tree: a card per main category, subcategories folded below. |
 | `osc_admin_form_open()` · `osc_admin_form_close()` | The form element, the hidden route, the CSRF token, and the submit row. |
-| `osc_admin_form_section($title)` | A titled group of fields. |
+| `osc_admin_form_section($title)` | A titled group of fields (an h3). |
+| `osc_admin_section_heading($text, $level)` | A section (`'section'`, h3) or sub-section (`'subsection'`, h4) heading. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
 | `osc_admin_page_head($title, $actions)` | The screen title with its action buttons. |
 | `osc_admin_action_section()` | An intro, a status block, and buttons, no form. |
+
+### Headings
+
+Every admin screen uses one heading scale. Draw headings with
+`osc_admin_section_heading()` and never write a heading tag yourself; a test fails on a
+screen that does.
+
+| Level | Tag | Size | Use |
+|---|---|---|---|
+| Screen title | h2 | 1.3125rem (18.4px) | `osc_admin_page_head($title)`, once per screen. The name above it is the h1. |
+| Section | h3 | 1.125rem (15.75px) | `osc_admin_section_heading($text)` or `osc_admin_form_section($text)` |
+| Sub-section | h4 | 0.9375rem (13.1px) | `osc_admin_section_heading($text, 'subsection')`, only under a section |
+
+Do not skip a level. A declared page gets this for free: its group titles are sections.
 
 `osc_admin_field()` takes `type`, `name`, `label`, `value`, `help`,
 `options`, `prefix`, `suffix`, `width`, `required`, `disabled`, `id` and

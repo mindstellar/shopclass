@@ -37,6 +37,12 @@ final class ListingValidator
         's_contact_phone' => 40,
     );
 
+    /** Widths of the t_item_variant columns the "Sell this item" section fills, from struct.sql. */
+    public const VARIANT_WIDTHS = array(
+        's_sku'            => 64,
+        's_shipping_class' => 40,
+    );
+
     /** Widths of the t_item contact columns a listing form fills. */
     public const CONTACT_WIDTHS = array(
         's_contact_name'  => 100,
@@ -155,6 +161,158 @@ final class ListingValidator
         // plus, so this is the format of what would be stored, not of what was typed.
         if (!osc_validate_phone((string)($aItem['contactPhone'] ?? ''), 4)) {
             $errors[] = self::entry('/contact_phone', 'invalid', _m('Phone invalid.'));
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Errors for the "Sell this item" members of an admin's edit. A listing that is not sold
+     * has nothing to check. The default row's fields are checked under /product; option rows
+     * under /product/variants/<n>, with the option rules: at most MAX_OPTIONS names and
+     * MAX_ROWS rows, every row has every name, no combination twice, and a photo must be one
+     * of the listing's.
+     *
+     * @param array<string,mixed> $product  the `product` member ListingInput::read() built
+     * @param int[]               $photoIds the listing's photos; none for a new listing
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    public function product(array $product, array $photoIds = array()): array
+    {
+        if (empty($product['sell'])) {
+            return array();
+        }
+        if (!array_key_exists('variants', $product) || !is_array($product['variants'])) {
+            return $this->variantFields((array) ($product['fields'] ?? array()), '/product', '');
+        }
+
+        return $this->variantRows(array_values($product['variants']), array_map('intval', $photoIds));
+    }
+
+    /**
+     * @param array<int,mixed> $rows
+     * @param int[]            $photoIds
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    private function variantRows(array $rows, array $photoIds): array
+    {
+        if ($rows === array()) {
+            return array(self::entry('/product/variants', 'required', _m('Add at least one option row, or turn options off.')));
+        }
+        if (count($rows) > VariantStore::MAX_ROWS) {
+            return array(self::entry('/product/variants', 'maxItems', sprintf(_m('An item has at most %d option rows.'), VariantStore::MAX_ROWS)));
+        }
+        $rows  = array_map(static fn ($row): array => is_array($row) ? array('options' => VariantStore::trimOptions($row['options'] ?? null)) + $row : array(), array_values($rows));
+        $first = array_map('strval', array_keys($rows[0]['options']));
+        $names = array();
+        foreach ($first as $name) {
+            $names[$name] = true;
+        }
+        $errors = array();
+        if ($names === array()) {
+            $errors[] = self::entry('/product/options', 'required', _m('Name at least one option, such as Colour or Size.'));
+        }
+        if (count($names) > VariantStore::MAX_OPTIONS) {
+            $errors[] = self::entry('/product/options', 'maxItems', sprintf(_m('An item has at most %d options.'), VariantStore::MAX_OPTIONS));
+        }
+        foreach (array_keys($names) as $name) {
+            if (trim((string) $name) === '') {
+                $errors[] = self::entry('/product/options', 'required', _m('Every option needs a name.'));
+            } elseif (mb_strlen((string) $name) > VariantStore::MAX_NAME) {
+                $errors[] = self::entry('/product/options', 'too_long', sprintf(_m('Option name %1$s is longer than %2$d characters.'), $name, VariantStore::MAX_NAME));
+            }
+        }
+        if ($errors !== array()) {
+            return $errors;
+        }
+
+        $seen   = array();
+        $values = array();
+        foreach ($rows as $n => $row) {
+            $base    = '/product/variants/' . $n;
+            $label   = sprintf(_m('Variant %d:'), $n + 1) . ' ';
+            $options = $row['options'];
+            if (array_diff_key($names, $options) !== array() || array_diff_key($options, $names) !== array()) {
+                $errors[] = self::entry($base . '/options', 'mismatch', $label . sprintf(_m('give a value for each option: %s.'), implode(', ', array_keys($names))));
+                continue;
+            }
+            $bad = false;
+            foreach ($options as $name => $value) {
+                $value = is_scalar($value) ? (string) $value : '';
+                if (trim($value) === '') {
+                    $errors[] = self::entry($base . '/options', 'required', $label . sprintf(_m('%s has no value.'), $name));
+                    $bad      = true;
+                } elseif (mb_strlen($value) > VariantStore::MAX_VALUE) {
+                    $errors[] = self::entry($base . '/options', 'too_long', $label . sprintf(_m('%1$s is longer than %2$d characters.'), $name, VariantStore::MAX_VALUE));
+                    $bad      = true;
+                } else {
+                    $values[(string) $name][$value] = true;
+                }
+            }
+            if (!$bad) {
+                $key = array();
+                foreach (array_keys($names) as $name) {
+                    $key[] = (string) $options[$name];
+                }
+                $key = (string) json_encode($key);
+                if (isset($seen[$key])) {
+                    $errors[] = self::entry($base . '/options', 'taken', $label . sprintf(_m('the same options as variant %d.'), $seen[$key] + 1));
+                } else {
+                    $seen[$key] = $n;
+                }
+            }
+            $fields = is_array($row['fields'] ?? null) ? $row['fields'] : array();
+            $errors = array_merge($errors, $this->variantFields($fields, $base, $label));
+            $photo  = $fields['fk_i_resource_id'] ?? null;
+            if ($photo !== null && (!is_int($photo) || !in_array($photo, $photoIds, true))) {
+                $errors[] = self::entry($base . '/photo_id', 'invalid', $label . _m('the photo must be one of this listing\'s photos.'));
+            }
+        }
+        foreach ($values as $name => $list) {
+            if (count($list) > VariantStore::MAX_VALUES) {
+                $errors[] = self::entry('/product/options', 'maxItems', sprintf(_m('Option %1$s has more than %2$d values.'), $name, VariantStore::MAX_VALUES));
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * SKU and shipping class widths, and a price, stock and weight that are whole, in range numbers.
+     *
+     * @param array<string,mixed> $fields
+     * @param string              $base   the pointer the members sit under
+     * @param string              $label  what each message starts with
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    private function variantFields(array $fields, string $base, string $label): array
+    {
+        $errors = array();
+        $capped = array(
+            's_sku'            => array('/sku', _m('SKU too long.')),
+            's_shipping_class' => array('/shipping_class', _m('Shipping class too long.')),
+        );
+        foreach (self::VARIANT_WIDTHS as $column => $width) {
+            if (!osc_validate_max((string) ($fields[$column] ?? ''), $width)) {
+                $errors[] = self::entry($base . $capped[$column][0], 'too_long', $label . $capped[$column][1]);
+            }
+        }
+        foreach (array('i_price' => array('/price', _m('Price must be a positive number.')), 'i_compare_price' => array('/compare_at', _m('Was price must be a positive number.'))) as $column => $failure) {
+            $price = $fields[$column] ?? null;
+            if (is_string($price) || (is_int($price) && ($price < 0 || $price > 999999999999999999))) {
+                $errors[] = self::entry($base . $failure[0], 'invalid', $label . $failure[1]);
+            }
+        }
+        $stock = $fields['i_stock'] ?? null;
+        if ($stock !== null && (!is_int($stock) || $stock < 0 || $stock > VariantStore::MAX_STOCK)) {
+            $errors[] = self::entry($base . '/stock', 'invalid', $label . _m('Stock must be a whole number, 0 or more.'));
+        }
+        $weight = $fields['i_weight'] ?? null;
+        if ($weight !== null && (!is_int($weight) || $weight < 0 || $weight > VariantStore::MAX_WEIGHT)) {
+            $errors[] = self::entry($base . '/weight', 'invalid', $label . _m('Weight must be a whole number of grams, 0 or more.'));
         }
 
         return $errors;
