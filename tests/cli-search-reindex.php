@@ -11,8 +11,8 @@
 /**
  * The search:reindex command and the db:repair hook: the foreground rebuild fills the rows and
  * sets the ready flag, --from leaves earlier listings alone, a repair that creates the index
- * table clears the flag and queues a build (an unrelated table does neither), and the command
- * is listed with a summary.
+ * table clears the flag and queues a build (an unrelated table does neither), the rebuild ends
+ * by rewriting the table (never inside a transaction), and the command is listed with a summary.
  *
  * Usage: php tests/cli-search-reindex.php
  */
@@ -50,20 +50,43 @@ $setFlag = static function (string $value) use ($admin, $p): void {
     $admin->query("INSERT INTO {$p}t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'facet_ready', '$value', 'BOOLEAN')");
     osc_reset_preferences();
 };
+// InnoDB gives a table a new id when it rewrites it.
+$tableId = static function () use ($admin, $facet): int {
+    $view = $admin->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'information_schema' AND TABLE_NAME IN ('INNODB_TABLES', 'INNODB_SYS_TABLES')")->fetch_row()[0];
+
+    return (int) $admin->query("SELECT TABLE_ID FROM information_schema.$view WHERE NAME = CONCAT(DATABASE(), '/$facet')")->fetch_row()[0];
+};
 $rowsOf = static fn (int $id): int => (int) $admin->query("SELECT COUNT(*) FROM $facet WHERE fk_i_item_id = $id")->fetch_row()[0];
 $jobs   = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_BUILD . "' AND s_status IN ('pending', 'running')")->fetch_row()[0];
 
 harness_section('Foreground rebuild');
 $setFlag('0');
 $admin->query("DELETE FROM $facet");
-$lines = [];
-$last  = FacetJobs::reindex(0, static function (string $text) use (&$lines): void {
+$lines  = [];
+$before = $tableId();
+$last   = FacetJobs::reindex(0, static function (string $text) use (&$lines): void {
     $lines[] = $text;
 });
 pin('returns the last listing id', max($ids), $last);
 pin('every listing has its row', [1, 1, 1, 1, 1], array_map($rowsOf, $ids));
 pin('the ready flag is set', '1', $flag());
 check('a progress line was printed', $lines !== []);
+check('the table was rewritten at the end', $tableId() !== $before);
+pin('the last line says so', 'Index table compacted', end($lines));
+
+harness_section('pack');
+$before = $tableId();
+\mindstellar\database\Db::beginTransaction();
+pin('inside a transaction it does nothing', false, FacetIndex::pack());
+check('and the transaction is still open', \mindstellar\database\Db::inTransaction());
+\mindstellar\database\Db::rollBack();
+pin('the table was not rewritten', $before, $tableId());
+$session = static fn (): int => (int) \mindstellar\database\Db::scalar('SELECT @@SESSION.lock_wait_timeout');
+\mindstellar\database\Db::execute('SET SESSION lock_wait_timeout = 77');
+pin('outside one it rewrites the table', true, FacetIndex::pack());
+check('with a new table id', $tableId() !== $before);
+pin('the session lock wait is put back', 77, $session());
+pin('the rows are all there', [1, 1, 1, 1, 1], array_map($rowsOf, $ids));
 
 harness_section('--from');
 $setFlag('0');

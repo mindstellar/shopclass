@@ -18,8 +18,9 @@ use mindstellar\database\DbException;
 use mindstellar\job\Job;
 
 /**
- * Builds the listing filter index on the job queue, a batch of listings per run. A rebuild
- * replaces rows in place and never clears the ready flag, so searches keep using the index.
+ * Builds the listing filter index on the job queue, a batch of listings per run, and compacts
+ * the table at the end. A rebuild replaces rows in place and never clears the ready flag, so
+ * searches keep using the index.
  */
 final class FacetJobs
 {
@@ -29,7 +30,7 @@ final class FacetJobs
     }
 
     /**
-     * Rebuilds the index in the foreground from listing $from on, then sets the ready flag.
+     * Rebuilds the index in the foreground from listing $from on, sets the ready flag and compacts the table.
      * $line gets one progress line per batch. A DbException is rethrown after its line.
      *
      * @return int the last listing id done
@@ -56,6 +57,7 @@ final class FacetJobs
         FacetIndex::pruneTerms();
         FacetIndex::markReady();
         $line(sprintf('Index built up to listing #%d', $after));
+        $line(FacetIndex::pack() ? 'Index table compacted' : 'Index table not compacted, see the error log');
 
         return $after;
     }
@@ -84,6 +86,7 @@ final class FacetJobs
             if ($last === null) {
                 FacetIndex::pruneTerms();
                 FacetIndex::markReady();
+                FacetIndex::pack();
 
                 return;
             }
