@@ -32,7 +32,10 @@ use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
+use mindstellar\listing\event\VariantStockChanged;
+use mindstellar\listing\ProductAlerts;
 use mindstellar\listing\VariantStore;
 
 $admin = api_admin_boot('osc_billing_stock');
@@ -290,6 +293,26 @@ pin('each variant lost two', ['3', '3'], [$stock($a), $stock($r)]);
 pin('giving both back does not deadlock either', [2, 2, 0], [$waiting, substr_count($printed, 'released'), substr_count($printed, 'threw')]);
 pin('and the stock is whole', ['5', '5'], [$stock($a), $stock($r)]);
 $setStock($r, 1);
+
+harness_section('a back-in-stock alert is queued once the change commits');
+$alertJobs = static fn (): int => (int) Db::scalar("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = ?", [ProductAlerts::JOB]);
+$before    = $alertJobs();
+$inside    = null;
+try {
+    Db::transaction(static function () use ($a, $tee, $alertJobs, &$inside): void {
+        ProductAlerts::stockChanged(new VariantStockChanged($a, $tee, 0, 2));
+        $inside = $alertJobs();
+
+        throw new RuntimeException('roll back');
+    });
+} catch (RuntimeException $e) {
+}
+pin('nothing is queued inside the transaction, nor after a rollback', [$before, $before], [$inside, $alertJobs()]);
+Db::transaction(static function () use ($a, $tee, $alertJobs, &$inside): void {
+    ProductAlerts::stockChanged(new VariantStockChanged($a, $tee, 0, 2));
+    $inside = $alertJobs();
+});
+pin('and one job after a commit', [$before, $before + 1], [$inside, $alertJobs()]);
 
 harness_section('a declined card payment');
 $declined = $place([['variant' => $a, 'qty' => 1]], 'card');
