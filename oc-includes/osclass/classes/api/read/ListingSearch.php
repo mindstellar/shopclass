@@ -242,8 +242,16 @@ final class ListingSearch
                     $values[] = $value;
                 }
             }
-            if ($values !== []) {
+            if ($values === []) {
+                continue;
+            }
+            // Names that differ only by case are one name, as the table compares them.
+            $same = array_search(mb_strtolower($name), array_map('mb_strtolower', array_map('strval', array_keys($out))), true);
+            if ($same === false) {
                 $out[$name] = $values;
+            } else {
+                $first       = (string) array_keys($out)[$same];
+                $out[$first] = array_slice(array_values(array_unique(array_merge($out[$first], $values))), 0, self::MAX_OPTION_VALUES);
             }
         }
 
