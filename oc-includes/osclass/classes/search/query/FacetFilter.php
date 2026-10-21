@@ -18,9 +18,9 @@ use mindstellar\listing\VariantStore;
 use mindstellar\search\FacetIndex;
 
 /**
- * Search conditions on t_item_facet. Builds SQL and runs nothing; callers check
- * FacetIndex::ready() first. Keys and values are cut as FacetIndex writes them, so a filter
- * compares the text the index holds.
+ * Search conditions on t_item_facet, matching keys and values through t_facet_term. Builds SQL
+ * and runs nothing; callers check FacetIndex::ready() first. Keys and values are cut as
+ * FacetIndex writes them, so a filter compares the text the index holds.
  */
 final class FacetFilter
 {
@@ -45,6 +45,7 @@ final class FacetFilter
             throw new InvalidArgumentException('FacetFilter::optionProbe(): 1 to ' . self::MAX_NAMES . ' option names.');
         }
         $facet = FacetIndex::tableName();
+        $term  = FacetIndex::termTable();
         $item  = ListingQuery::tableName();
         $joins = [];
         $where = [];
@@ -57,14 +58,16 @@ final class FacetFilter
                 throw new InvalidArgumentException('FacetFilter::optionProbe(): option ' . $name . ' has no value.');
             }
             $alias = self::ALIASES[$i++];
-            $match = $alias . '.s_key = ? AND ' . $alias . '.s_value ' . self::oneOrIn(count($values));
+            $match = 't' . $alias . '.s_key = ? AND t' . $alias . '.s_value ' . self::oneOrIn(count($values));
+            $named = 'JOIN ' . $term . ' t' . $alias . ' ON t' . $alias . '.pk_i_id = ' . $alias . '.fk_i_term_id';
             $bound = array_merge([FacetIndex::optionKey((string) $name)], array_map(static fn ($v): string => FacetIndex::cut((string) $v), $values));
             if ($alias === 'a') {
+                array_unshift($joins, $named);
                 $where[] = $match . ' AND a.fk_i_item_id = ' . $item . '.pk_i_id';
                 $first   = $bound;
             } else {
-                $joins[] = 'JOIN ' . $facet . ' ' . $alias . ' ON ' . $match
-                    . ' AND ' . $alias . '.fk_i_item_id = a.fk_i_item_id AND ' . $alias . '.fk_i_variant_id = a.fk_i_variant_id';
+                $joins[] = 'JOIN ' . $facet . ' ' . $alias . ' ON ' . $alias . '.fk_i_item_id = a.fk_i_item_id AND ' . $alias . '.fk_i_variant_id = a.fk_i_variant_id';
+                $joins[] = $named . ' AND ' . $match;
                 $later   = array_merge($later, $bound);
             }
         }
@@ -77,7 +80,7 @@ final class FacetFilter
         if ($onSale) {
             $where[] = 'v.i_compare_price > COALESCE(v.i_price, ' . $item . '.i_price)';
         }
-        $sql = '(SELECT 1 FROM ' . $facet . ' a ' . ($joins !== [] ? implode(' ', $joins) . ' ' : '')
+        $sql = '(SELECT 1 FROM ' . $facet . ' a ' . implode(' ', $joins) . ' '
             . 'WHERE ' . implode(' AND ', $where) . ' LIMIT 1) IS NOT NULL';
 
         return [$sql, array_merge($later, $first)];
@@ -98,7 +101,7 @@ final class FacetFilter
         $quoted = array_map(static fn ($v): string => self::quote(FacetIndex::cut((string) $v)), array_values($values));
         $match  = count($quoted) === 1 ? '= ' . $quoted[0] : 'IN (' . implode(', ', $quoted) . ')';
 
-        return self::byKey(FacetIndex::key($fieldId), 's_value ' . $match);
+        return self::byKey(FacetIndex::key($fieldId), 't.s_value ' . $match);
     }
 
     /**
@@ -106,7 +109,7 @@ final class FacetFilter
      */
     public static function fieldFlag(int $fieldId): string
     {
-        return self::byKey(FacetIndex::key($fieldId), "s_value = '1'");
+        return self::byKey(FacetIndex::key($fieldId), "t.s_value = '1'");
     }
 
     /**
@@ -116,7 +119,7 @@ final class FacetFilter
      */
     public static function fieldRange(int $fieldId, float $min, float $max): string
     {
-        return self::byKey(FacetIndex::key($fieldId), 'd_number >= ' . self::number($min) . ' AND d_number <= ' . self::number($max));
+        return self::byKey(FacetIndex::key($fieldId), "t.s_value = '' AND f.d_number >= " . self::number($min) . ' AND f.d_number <= ' . self::number($max));
     }
 
     /**
@@ -126,16 +129,18 @@ final class FacetFilter
     public static function fieldCovers(int $fieldId, int $from, int $to): string
     {
         $facet = FacetIndex::tableName();
+        $term  = FacetIndex::termTable();
 
-        return ListingQuery::tableName() . '.pk_i_id IN (SELECT a.fk_i_item_id FROM ' . $facet . ' a JOIN ' . $facet . ' b'
-            . ' ON b.s_key = ' . self::quote(FacetIndex::key($fieldId, 'to')) . ' AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= ' . $to
-            . ' WHERE a.s_key = ' . self::quote(FacetIndex::key($fieldId, 'from')) . ' AND a.d_number <= ' . $from . ')';
+        return ListingQuery::tableName() . '.pk_i_id IN (SELECT a.fk_i_item_id FROM ' . $facet . ' a JOIN ' . $term . ' ta ON ta.pk_i_id = a.fk_i_term_id'
+            . ' JOIN ' . $facet . ' b ON b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= ' . $to
+            . ' JOIN ' . $term . ' tb ON tb.pk_i_id = b.fk_i_term_id AND tb.s_key = ' . self::quote(FacetIndex::key($fieldId, 'to')) . " AND tb.s_value = ''"
+            . ' WHERE ta.s_key = ' . self::quote(FacetIndex::key($fieldId, 'from')) . " AND ta.s_value = '' AND a.d_number <= " . $from . ')';
     }
 
     private static function byKey(string $key, string $match): string
     {
-        return ListingQuery::tableName() . '.pk_i_id IN (SELECT fk_i_item_id FROM ' . FacetIndex::tableName()
-            . ' WHERE s_key = ' . self::quote($key) . ' AND ' . $match . ')';
+        return ListingQuery::tableName() . '.pk_i_id IN (SELECT f.fk_i_item_id FROM ' . FacetIndex::tableName() . ' f JOIN ' . FacetIndex::termTable()
+            . ' t ON t.pk_i_id = f.fk_i_term_id WHERE t.s_key = ' . self::quote($key) . ' AND ' . $match . ')';
     }
 
     private static function oneOrIn(int $count): string

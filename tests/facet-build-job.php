@@ -19,6 +19,7 @@
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
+require_once __DIR__ . '/lib/facet-rows.php';
 
 use mindstellar\job\Job;
 use mindstellar\job\JobRegistry;
@@ -64,7 +65,8 @@ $setFlag = static function (string $value) use ($admin, $p): void {
     osc_reset_preferences();
 };
 $jobs = static fn (string $type): array => $admin->query("SELECT pk_i_id, s_payload, i_attempts FROM {$p}t_job_queue WHERE s_type = '$type' AND s_status IN ('pending', 'running')")->fetch_all(MYSQLI_ASSOC);
-$count = static fn (string $where = '1'): int => (int) $admin->query("SELECT COUNT(*) FROM $facet WHERE $where")->fetch_row()[0];
+$count = static fn (string $where = '1'): int => (int) $admin->query('SELECT COUNT(*) FROM ' . facet_rows_sql() . " x WHERE $where")->fetch_row()[0];
+$valueOf = static fn (string $key, int $item) => $admin->query('SELECT s_value FROM ' . facet_rows_sql() . " x WHERE s_key = '$key' AND fk_i_item_id = $item")->fetch_row()[0] ?? null;
 $due   = static function () use ($admin, $p): void {
     $admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2000-01-01 00:00:00'");
 };
@@ -92,6 +94,8 @@ $cursorOf = static fn (array $job): int => (int) (json_decode($job['s_payload'],
 harness_section('the full build, a batch per run');
 $admin->query("DELETE FROM $facet");
 $admin->query("DELETE FROM {$p}t_job_queue");
+$admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('f$colour', 'Orphan')");
+$orphans = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_facet_term WHERE s_value = 'Orphan'")->fetch_row()[0];
 $setFlag('0');
 check('a build is queued', FacetJobs::queueBuild());
 pin('a second call while one is pending reports it queued', true, FacetJobs::queueBuild());
@@ -107,9 +111,11 @@ $pass();
 $job = $jobs(FacetIndex::JOB_BUILD);
 pin('after pass 2 the cursor moved on', $ids[2 * FacetIndex::BATCH - 1], $cursorOf($job[0]));
 pin('the flag is still off', '0', $pref('facet_ready'));
+pin('a term no row names stays until the last batch', 1, $orphans());
 
 $pass();
 pin('after pass 3 no job remains', [], $jobs(FacetIndex::JOB_BUILD));
+pin('the last batch prunes it', 0, $orphans());
 pin('every listing has both rows', 2 * $total, $count());
 pin('the flag is on', '1', $pref('facet_ready'));
 check('the build time is set', (int) $pref('facet_built_at') > 0);
@@ -121,7 +127,7 @@ FacetJobs::queueBuild();
 $pass();
 $cursor = $cursorOf($jobs(FacetIndex::JOB_BUILD)[0]);
 // A sentinel on the done listings: a redo would overwrite it.
-$admin->query("UPDATE $facet SET s_value = 'Done' WHERE s_key = 'f$colour' AND fk_i_item_id <= $cursor");
+facet_retag($admin, "f$colour", 'Done', "f.fk_i_item_id <= $cursor");
 $pass(static function (Job $job): void {
     throw new RuntimeException('Database went away');
 });
@@ -138,9 +144,9 @@ pin('with every row', 2 * $total, $count());
 pin('and the flag on', '1', $pref('facet_ready'));
 
 harness_section('a listing that fails partway rolls back alone');
-$admin->query("UPDATE $facet SET s_value = 'Stale' WHERE s_key = 'f$colour'");
+facet_retag($admin, "f$colour", 'Stale');
 $bad = $ids[10];
-$admin->query("CREATE TRIGGER {$p}facet_block BEFORE INSERT ON $facet FOR EACH ROW BEGIN IF NEW.fk_i_item_id = $bad AND NEW.s_key = 'f$gift' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'blocked'; END IF; END");
+$admin->query("CREATE TRIGGER {$p}facet_block BEFORE INSERT ON $facet FOR EACH ROW BEGIN IF NEW.fk_i_item_id = $bad AND NEW.fk_i_term_id IN (SELECT pk_i_id FROM {$p}t_facet_term WHERE s_key = 'f$gift') THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'blocked'; END IF; END");
 $setFlag('0');
 FacetJobs::queueBuild();
 $pass();
@@ -148,7 +154,7 @@ $job = $jobs(FacetIndex::JOB_BUILD);
 pin('the job is still there, at its start', [1, 0], [count($job), $job ? $cursorOf($job[0]) : -1]);
 pin('the listings before it are done', 10, $count("s_key = 'f$colour' AND s_value = 'Red' AND fk_i_item_id < $bad"));
 pin('the failed listing keeps its old rows', ['Stale', 2], [
-    $admin->query("SELECT s_value FROM $facet WHERE s_key = 'f$colour' AND fk_i_item_id = $bad")->fetch_row()[0] ?? null,
+    $valueOf("f$colour", $bad),
     $count("fk_i_item_id = $bad"),
 ]);
 pin('the listings after it are not touched', 0, $count("s_key = 'f$colour' AND s_value = 'Red' AND fk_i_item_id > $bad"));
@@ -160,19 +166,19 @@ for ($i = 0; $i < 3; $i++) {
 pin('without the fault it finishes', [[], 0, '1'], [$jobs(FacetIndex::JOB_BUILD), $count("s_value = 'Stale'"), $pref('facet_ready')]);
 
 harness_section('a rebuild keeps the flag on');
-$admin->query("UPDATE $facet SET s_value = 'Stale' WHERE s_key = 'f$colour'");
+facet_retag($admin, "f$colour", 'Stale');
 FacetJobs::queueBuild();
 $pass();
 pin('mid-rebuild the flag is still on', '1', $pref('facet_ready'));
-pin('the first batch is fresh', 'Red', $admin->query("SELECT s_value FROM $facet WHERE s_key = 'f$colour' AND fk_i_item_id = {$ids[0]}")->fetch_row()[0]);
-pin('a later listing is stale until its batch', 'Stale', $admin->query("SELECT s_value FROM $facet WHERE s_key = 'f$colour' AND fk_i_item_id = " . end($ids))->fetch_row()[0]);
+pin('the first batch is fresh', 'Red', $valueOf("f$colour", $ids[0]));
+pin('a later listing is stale until its batch', 'Stale', $valueOf("f$colour", (int) end($ids)));
 $pass();
 $pass();
 pin('the rebuild finished', [], $jobs(FacetIndex::JOB_BUILD));
 
 harness_section('one field');
-$admin->query("UPDATE $facet SET s_value = 'Stale' WHERE s_key = 'f$colour'");
-$admin->query("UPDATE $facet SET s_value = 'Stale' WHERE s_key = 'f$gift'");
+facet_retag($admin, "f$colour", 'Stale');
+facet_retag($admin, "f$gift", 'Stale');
 $setFlag('0');
 osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
 for ($i = 0; $i < 3; $i++) {

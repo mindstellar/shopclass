@@ -17,6 +17,7 @@
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
+require_once __DIR__ . '/lib/facet-rows.php';
 require_once __DIR__ . '/lib/race.php';
 
 use mindstellar\auth\Actor;
@@ -45,7 +46,7 @@ Params::init();
 
 $facets = static function (int $item) use ($admin, $p): array {
     $out = [];
-    foreach ($admin->query("SELECT s_key, s_value, fk_i_variant_id FROM {$p}t_item_facet WHERE fk_i_item_id = $item ORDER BY fk_i_variant_id, s_key") as $r) {
+    foreach ($admin->query('SELECT s_key, s_value, fk_i_variant_id FROM ' . facet_rows_sql() . " x WHERE fk_i_item_id = $item ORDER BY fk_i_variant_id, s_key") as $r) {
         $out[] = [$r['s_key'], $r['s_value'], (int) $r['fk_i_variant_id']];
     }
 
@@ -84,7 +85,7 @@ pin('Red/M keeps its id', [$redM], $kept);
 pin('only Blue/L\'s rows are gone', $expect([[$redM, 'Red', 'M']]), $facets($item));
 
 harness_section('a custom field row is not an option row');
-$admin->query("INSERT INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) VALUES ('f1', '1', $item, 0)");
+facet_put($admin, 'f1', '1', $item);
 $green = VariantStore::saveSet($item, [$row('Green', 'S')]);
 pin('a save leaves the field row alone', array_merge([['f1', '1', 0]], $expect([[$green[0], 'Green', 'S']])), $facets($item));
 
@@ -102,7 +103,7 @@ $admin->query("DELETE FROM {$p}t_job_queue");
 
 harness_section('saveDefault, removeDefault and deleteForItem');
 // A stale option row seeded by hand, so each writer is seen dropping rows on its own.
-$stale = static fn () => $admin->query("INSERT IGNORE INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) VALUES ('oColour', 'Stale', $item, 4000000001)");
+$stale = static fn () => facet_put($admin, 'oColour', 'Stale', $item, 4000000001);
 $stale();
 VariantStore::saveDefault($item, ['i_stock' => 2]);
 pin('saveDefault leaves no option rows', [['f1', '1', 0]], $facets($item));
@@ -189,7 +190,7 @@ pin('the facet rows match the save', $expect([[$redM, 'Red', 'M'], [$ids['{"Colo
 harness_section('a save waits for a held facet row');
 $item = $listing();
 [$redM] = VariantStore::saveSet($item, [$row('Red', 'M'), $row('Blue', 'L')]);
-[$waiting, $out] = race($admin, "INSERT INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) VALUES ('oColour', 'Pink', $item, 4000000000)", $db,
+[$waiting, $out] = race($admin, "INSERT INTO {$p}t_item_facet (fk_i_term_id, fk_i_item_id, fk_i_variant_id) SELECT pk_i_id, $item, 4000000000 FROM {$p}t_facet_term WHERE s_key = 'oColour' AND s_value = 'Red'", $db,
     [[__DIR__ . '/lib/facet-variant-child.php', ['save', $item]]], '%DELETE FROM%t_item_facet%');
 preg_match('/^(ok|threw.*)$/m', $out[0], $m);
 pin('the save waited on the held row', 1, $waiting);

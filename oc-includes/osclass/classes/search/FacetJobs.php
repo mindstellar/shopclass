@@ -53,6 +53,7 @@ final class FacetJobs
             }
         } while ($last !== null);
         $after = max($after, (int) Db::scalar('SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_item'));
+        FacetIndex::pruneTerms();
         FacetIndex::markReady();
         $line(sprintf('Index built up to listing #%d', $after));
 
@@ -81,6 +82,7 @@ final class FacetJobs
         osc_job_register_handler(FacetIndex::JOB_BUILD, static function (Job $job): void {
             $last = FacetIndex::buildStep((int) $job->get('after', 0), FacetIndex::BATCH);
             if ($last === null) {
+                FacetIndex::pruneTerms();
                 FacetIndex::markReady();
 
                 return;

@@ -9,15 +9,16 @@
  */
 
 /**
- * Migration 0083 (the listing filter index): the table comes back after a drop, existing
- * listings are indexed and the ready flag is set, a second run changes nothing and never
- * lowers the flag, and a site past the inline limit queues the background build instead.
+ * Migration 0083 (the listing filter index): both tables (terms and rows) come back after a
+ * drop, existing listings are indexed and the ready flag is set, a second run changes nothing
+ * and never lowers the flag, and a site past the inline limit queues the background build instead.
  *
  * Usage: php tests/facet-migration.php
  */
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
+require_once __DIR__ . '/lib/facet-rows.php';
 
 use mindstellar\database\Connection;
 use mindstellar\search\FacetIndex;
@@ -48,15 +49,21 @@ $variant2 = seed_exec($admin, "INSERT INTO {$p}t_item_variant (fk_i_item_id, s_o
 $migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0083_item_facet.php';
 $conn      = Connection::getInstance();
 $facet     = FacetIndex::tableName();
-$rows      = static fn (): array => $admin->query("SELECT s_key, s_value, fk_i_item_id, fk_i_variant_id FROM $facet ORDER BY s_key, s_value, fk_i_item_id, fk_i_variant_id")->fetch_all(MYSQLI_NUM);
+$terms     = FacetIndex::termTable();
+$rows      = static fn (): array => $admin->query('SELECT s_key, s_value, fk_i_item_id, fk_i_variant_id FROM ' . facet_rows_sql() . ' x ORDER BY s_key, s_value, fk_i_item_id, fk_i_variant_id')->fetch_all(MYSQLI_NUM);
+$tables    = static fn (): array => array_merge(...$admin->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('$facet', '$terms') ORDER BY TABLE_NAME")->fetch_all(MYSQLI_NUM));
+$schema    = static function () use ($admin, $facet, $terms): array {
+    return [$admin->query("SHOW CREATE TABLE $terms")->fetch_row()[1], $admin->query("SHOW CREATE TABLE $facet")->fetch_row()[1]];
+};
 $pref      = static function (string $name) use ($admin, $p): ?string {
     $r = $admin->query("SELECT s_value FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = '$name'")->fetch_row();
 
     return $r ? $r[0] : null;
 };
 $jobs      = static fn (): array => $admin->query("SELECT s_payload FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_BUILD . "' AND s_status = 'pending'")->fetch_all(MYSQLI_NUM);
-$reset     = static function () use ($admin, $p, $facet): void {
+$reset     = static function () use ($admin, $p, $facet, $terms): void {
     $admin->query("DROP TABLE IF EXISTS $facet");
+    $admin->query("DROP TABLE IF EXISTS $terms");
     $admin->query("DELETE FROM {$p}t_preference WHERE s_name IN ('facet_ready', 'facet_built_at')");
     $admin->query("DELETE FROM {$p}t_job_queue");
     osc_reset_preferences();
@@ -70,9 +77,14 @@ $expected = [
     ['oSize', 'M', $items[2], $variant],
 ];
 
-harness_section('first run on a table that is gone');
+harness_section('first run on tables that are gone');
 $reset();
+pin('no table before', [], $tables());
 $migration->up($conn);
+pin('both tables made', [$terms, $facet], $tables());
+check('rows name their term by id', str_contains($schema()[1], 'REFERENCES `' . $terms . '` (`pk_i_id`) ON DELETE CASCADE'));
+pin('one term per (key, value)', 5, (int) $admin->query("SELECT COUNT(*) FROM $terms")->fetch_row()[0]);
+$before = $schema();
 $norm = static fn (array $r): array => array_map(static fn (array $x): array => [$x[0], $x[1], (int) $x[2], (int) $x[3]], $r);
 pin('the listings are indexed', $expected, $norm($rows()));
 pin('the flag is on', '1', $pref('facet_ready'));
@@ -82,12 +94,14 @@ pin('no background job', [], $jobs());
 harness_section('second run');
 $migration->up($conn);
 pin('same rows', $expected, $norm($rows()));
+pin('same tables', $before, $schema());
+pin('same terms', 5, (int) $admin->query("SELECT COUNT(*) FROM $terms")->fetch_row()[0]);
 pin('the flag stays on', '1', $pref('facet_ready'));
 
-$admin->query("UPDATE $facet SET s_value = 'Kept' WHERE s_key = 'oSize' AND s_value = 'L'");
+$admin->query("UPDATE $terms SET s_value = 'Kept' WHERE s_key = 'oSize' AND s_value = 'L'");
 $migration->up($conn);
 pin('a ready flag over a filled table skips the build', 1, count(array_filter($rows(), static fn (array $r): bool => $r[1] === 'Kept')));
-$admin->query("UPDATE $facet SET s_value = 'L' WHERE s_value = 'Kept'");
+$admin->query("UPDATE $terms SET s_value = 'L' WHERE s_value = 'Kept'");
 
 $admin->query("DELETE FROM $facet");
 $migration->up($conn);
