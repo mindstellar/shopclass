@@ -374,9 +374,10 @@ final class Wallet extends Model
     }
 
     /**
-     * Lock the user's wallet row, or the place it would go, for the rest of the open transaction.
-     * Call it before the first plain read of a transaction that may spend, so a purchase landing
-     * meanwhile cannot fail the later balance update. Creates no row.
+     * Lock the user's wallet row for the rest of the open transaction, creating it first when the
+     * user has never had one. Call it before the first plain read of a transaction that may spend,
+     * so a purchase landing meanwhile cannot fail the later balance update. A missing row is made
+     * rather than locked as a gap, which two first-time writers could deadlock on.
      *
      * @param int $userId
      *
@@ -384,7 +385,7 @@ final class Wallet extends Model
      */
     public static function lock(int $userId): void
     {
-        Db::selectOne('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ? FOR UPDATE', array($userId));
+        self::ensureWallet($userId);
     }
 
     /**
