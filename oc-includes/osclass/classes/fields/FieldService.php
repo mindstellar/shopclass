@@ -17,6 +17,7 @@ use mindstellar\admin\AdminText;
 use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
+use mindstellar\search\FacetIndex;
 
 /**
  * Custom field writes for the field screen and the API: add, edit and delete a field, with
@@ -148,8 +149,19 @@ final class FieldService
             'b_searchable' => $has('searchable') ? ($changes['searchable'] ? 1 : 0) : (int) $field['b_searchable'],
             's_options'    => $has('options') ? AdminText::options((array) $changes['options']) : (string) $field['s_options'],
         ];
-        $fields = $this->fields;
-        Db::transaction(function () use ($fields, $id, $row, $categories): void {
+        $fields   = $this->fields;
+        $registry = FieldTypeRegistry::getInstance();
+        // Text-like storages keep no filter rows, so switching between them needs no rebuild.
+        $rows     = static fn (string $type): string => in_array($registry->storageOf($type), ['TEXT', 'TEXTAREA', 'URL'], true) ? '' : $registry->storageOf($type);
+        $retype   = $rows((string) $field['e_type']) !== $rows($row['e_type']);
+        Db::transaction(function () use ($fields, $id, $row, $categories, $retype): void {
+            if ($retype) {
+                Db::afterCommit(static fn () => osc_job_enqueue(
+                    FacetIndex::JOB_FIELD,
+                    ['field' => $id, 'after' => 0],
+                    ['unique_key' => (string) $id]
+                ));
+            }
             if ($fields->update($row, ['pk_i_id' => $id]) === false) {
                 throw new \RuntimeException('The custom field could not be saved.');
             }
