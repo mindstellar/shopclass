@@ -77,10 +77,7 @@ final class ItemUpgradeStore extends Model
         $now = date('Y-m-d H:i:s');
 
         $granted = (bool) Db::transaction(static function () use ($itemId, $upgrade, $days, $hours, $now): bool {
-            $row = self::table()
-                ->where('fk_i_item_id', $itemId)
-                ->where('s_upgrade', $upgrade)
-                ->first();
+            $row = self::lockedRow($itemId, $upgrade);
 
             if ($row === null) {
                 try {
@@ -96,10 +93,7 @@ final class ItemUpgradeStore extends Model
                     // uq_item_upgrade: a concurrent grant landed first between the read
                     // above and this insert. Re-read and extend it below rather than
                     // losing this grant.
-                    $row = self::table()
-                        ->where('fk_i_item_id', $itemId)
-                        ->where('s_upgrade', $upgrade)
-                        ->first();
+                    $row = self::lockedRow($itemId, $upgrade);
                     if ($row === null) {
                         throw $e;
                     }
@@ -123,6 +117,20 @@ final class ItemUpgradeStore extends Model
         }
 
         return $granted;
+    }
+
+    /**
+     * The (item, upgrade) row, read with a lock so a grant that waits on a concurrent one
+     * sees its result instead of failing on a stale read view.
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function lockedRow(int $itemId, string $upgrade): ?array
+    {
+        return Db::selectOne(
+            'SELECT * FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_upgrade = ? FOR UPDATE',
+            array($itemId, $upgrade)
+        );
     }
 
     /**
