@@ -11,7 +11,7 @@
 /**
  * FacetIndex (t_item_facet and its terms): the rows each field storage type writes, the
  * 191-character cut, option rows with their variant ids, a rewrite that can run twice, terms
- * shared under the collation, made once and dropped with their field, a term another
+ * shared under the collation, made once, pruned and dropped with their field, a term another
  * writer made after the snapshot, the batched rebuild and its cursor, and the readiness check.
  *
  * Usage: php tests/facet-index.php
@@ -249,6 +249,15 @@ pin("NUMBER '0' is the (key, '') term with d_number 0", [["f$size", '', '0']], $
 )->fetch_all(MYSQLI_NUM));
 FacetIndex::rewriteField($two, $size, '12');
 pin('two numbers share the one term', 1, $termsOf("f$size"));
+
+FacetIndex::rewriteField($one, $shade, 'Blue');
+FacetIndex::rewriteField($two, $shade, 'Blue');
+pin('a value nobody holds keeps its term until a prune', 2, $termsOf("f$shade"));
+$pruned = FacetIndex::pruneTerms();
+check('pruneTerms deletes terms no row names', $pruned >= 1);
+pin('the unreferenced Red is gone', [], $term("f$shade", 'Red'));
+pin('the referenced Blue stays', 1, count($term("f$shade", 'Blue')));
+pin('rows are untouched', ["f$shade=Blue|0|-"], array_values(array_filter($facet($one), static fn (string $r): bool => str_starts_with($r, "f$shade="))));
 
 $gone = $field('DATEINTERVAL');
 FacetIndex::rewriteField($one, $gone, ['from' => '1700000000', 'to' => '1700086400']);

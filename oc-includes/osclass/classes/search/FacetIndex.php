@@ -317,6 +317,21 @@ final class FacetIndex
     }
 
     /**
+     * Delete the terms no row names, as a rebuild leaves them.
+     *
+     * @return int the terms deleted
+     * @throws DbException
+     */
+    public static function pruneTerms(): int
+    {
+        self::$terms = [];
+
+        return Db::execute(
+            'DELETE t FROM ' . self::termTable() . ' t LEFT JOIN ' . self::tableName() . ' f ON f.fk_i_term_id = t.pk_i_id WHERE f.fk_i_term_id IS NULL'
+        );
+    }
+
+    /**
      * Rebuild one listing from t_item_meta and t_item_variant.
      *
      * @throws DbException

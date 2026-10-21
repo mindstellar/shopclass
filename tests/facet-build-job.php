@@ -94,6 +94,8 @@ $cursorOf = static fn (array $job): int => (int) (json_decode($job['s_payload'],
 harness_section('the full build, a batch per run');
 $admin->query("DELETE FROM $facet");
 $admin->query("DELETE FROM {$p}t_job_queue");
+$admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('f$colour', 'Orphan')");
+$orphans = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_facet_term WHERE s_value = 'Orphan'")->fetch_row()[0];
 $setFlag('0');
 check('a build is queued', FacetJobs::queueBuild());
 pin('a second call while one is pending reports it queued', true, FacetJobs::queueBuild());
@@ -109,9 +111,11 @@ $pass();
 $job = $jobs(FacetIndex::JOB_BUILD);
 pin('after pass 2 the cursor moved on', $ids[2 * FacetIndex::BATCH - 1], $cursorOf($job[0]));
 pin('the flag is still off', '0', $pref('facet_ready'));
+pin('a term no row names stays until the last batch', 1, $orphans());
 
 $pass();
 pin('after pass 3 no job remains', [], $jobs(FacetIndex::JOB_BUILD));
+pin('the last batch prunes it', 0, $orphans());
 pin('every listing has both rows', 2 * $total, $count());
 pin('the flag is on', '1', $pref('facet_ready'));
 check('the build time is set', (int) $pref('facet_built_at') > 0);
