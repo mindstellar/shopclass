@@ -257,7 +257,9 @@ final class PluginClauses
 
     /**
      * The plugin conditions, filtered and AND-joined. With $count each condition gives its count
-     * text where it has one.
+     * text where it has one. The filter runs once for the page query and once for the count query.
+     * A facet filter reads differently in the two (a per-row probe for the page, an IN form for the count),
+     * so a plugin that edits a core condition by its text must handle both forms.
      *
      * @param bool $count
      *
