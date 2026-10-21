@@ -160,6 +160,12 @@ $admin->query("DELETE FROM {$p}t_job_queue");
 $svc->update($bare, ['type' => 'TEXTAREA']);
 $svc->update($bare, ['type' => 'TEXT']);
 pin('TEXT to TEXTAREA to TEXT: no job (neither keeps rows)', 0, count($jobs()));
+$svc->update($bare, ['type' => 'DROPDOWN']);
+$admin->query("DELETE FROM {$p}t_job_queue");
+$svc->update($bare, ['type' => 'RADIO']);
+pin('DROPDOWN to RADIO: no job (the same rows)', 0, count($jobs()));
+$svc->update($bare, ['type' => 'TEXT']);
+$admin->query("DELETE FROM {$p}t_job_queue");
 $svc->update($bare, ['name' => 'Renamed']);
 pin('a change that leaves the type alone: no job', 0, count($jobs()));
 

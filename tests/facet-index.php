@@ -52,6 +52,11 @@ pin('number refuses text', null, FacetIndex::number('abc'));
 pin('number refuses an overflow', null, FacetIndex::number('1e400'));
 pin('number refuses an empty string', null, FacetIndex::number(''));
 
+pin('row kinds', ['text', 'text', 'flag', 'number', 'number', 'interval', '', '', ''], array_map(
+    [FacetIndex::class, 'rowKind'],
+    ['DROPDOWN', 'RADIO', 'CHECKBOX', 'NUMBER', 'DATE', 'DATEINTERVAL', 'TEXT', 'TEXTAREA', 'URL']
+));
+
 harness_section('storage types');
 $drop = $field('DROPDOWN');
 FacetIndex::rewriteField($item, $drop, 'Red');

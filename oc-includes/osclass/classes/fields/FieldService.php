@@ -151,9 +151,7 @@ final class FieldService
         ];
         $fields   = $this->fields;
         $registry = FieldTypeRegistry::getInstance();
-        // Text-like storages keep no filter rows, so switching between them needs no rebuild.
-        $rows     = static fn (string $type): string => in_array($registry->storageOf($type), ['TEXT', 'TEXTAREA', 'URL'], true) ? '' : $registry->storageOf($type);
-        $retype   = $rows((string) $field['e_type']) !== $rows($row['e_type']);
+        $retype   = FacetIndex::rowKind($registry->storageOf((string) $field['e_type'])) !== FacetIndex::rowKind($registry->storageOf($row['e_type']));
         Db::transaction(function () use ($fields, $id, $row, $categories, $retype): void {
             if ($retype) {
                 Db::afterCommit(static fn () => osc_job_enqueue(

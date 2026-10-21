@@ -62,6 +62,22 @@ final class FacetIndex
         return mb_substr(trim($value), 0, self::VALUE_LEN);
     }
 
+    /**
+     * How a field of this storage is indexed: '' (not at all), 'text', 'flag', 'number' or
+     * 'interval'. Two storages of the same kind give the same rows.
+     */
+    public static function rowKind(string $storage): string
+    {
+        return [
+            'DROPDOWN'     => 'text',
+            'RADIO'        => 'text',
+            'CHECKBOX'     => 'flag',
+            'NUMBER'       => 'number',
+            'DATE'         => 'number',
+            'DATEINTERVAL' => 'interval',
+        ][$storage] ?? '';
+    }
+
     public static function number(string $value): ?float
     {
         $value = trim($value);
@@ -108,7 +124,7 @@ final class FacetIndex
     {
         self::guard(static function () use ($itemId, $fieldId, $value, $storage): void {
             $storage ??= self::storageOfField($fieldId);
-            if ($storage === 'DATEINTERVAL' && is_array($value)) {
+            if (self::rowKind($storage) === 'interval' && is_array($value)) {
                 // REPLACE leaves an end that was not passed in t_item_meta, so its row stays too.
                 $ends = array_values(array_intersect(['from', 'to'], array_map('strval', array_keys($value))));
                 if ($ends !== []) {
@@ -310,7 +326,8 @@ final class FacetIndex
      */
     private static function fieldRows(int $itemId, int $fieldId, string $storage, $value): array
     {
-        if ($storage === 'DATEINTERVAL') {
+        $kind = self::rowKind($storage);
+        if ($kind === 'interval') {
             $rows = [];
             foreach (['from', 'to'] as $end) {
                 $row = is_array($value) ? self::numberRow($itemId, self::key($fieldId, $end), (string) ($value[$end] ?? '')) : null;
@@ -326,14 +343,12 @@ final class FacetIndex
         }
         $text = trim((string) $value);
         $key  = self::key($fieldId);
-        switch ($storage) {
-            case 'DROPDOWN':
-            case 'RADIO':
+        switch ($kind) {
+            case 'text':
                 return $text === '' ? [] : [[$key, self::cut($text), $itemId, 0, null]];
-            case 'CHECKBOX':
+            case 'flag':
                 return $text === '1' ? [[$key, '1', $itemId, 0, null]] : [];
-            case 'NUMBER':
-            case 'DATE':
+            case 'number':
                 $row = self::numberRow($itemId, $key, $text);
 
                 return $row === null ? [] : [$row];
