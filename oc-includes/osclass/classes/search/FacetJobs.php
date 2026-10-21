@@ -104,6 +104,13 @@ final class FacetJobs
             $now = FacetIndex::fieldKind($field, true);
             if ($kind !== null && $now !== (string) $kind) {
                 $job->repeat(array('field' => $field, 'after' => 0, 'kind' => $now));
+
+                return;
+            }
+            // Searches use the old queries while a retyped field is rebuilt; the last job lets them back.
+            if (osc_job_count('pending', FacetIndex::JOB_BUILD) === 0 && osc_job_count('running', FacetIndex::JOB_BUILD) === 0
+                && osc_job_count('pending', FacetIndex::JOB_FIELD) === 0 && osc_job_count('running', FacetIndex::JOB_FIELD) <= 1) {
+                FacetIndex::markReady();
             }
         });
         osc_job_describe(FacetIndex::JOB_BUILD, __('Listing filter index'), static fn (array $payload): string => sprintf(__('After listing #%d'), (int) ($payload['after'] ?? 0)));

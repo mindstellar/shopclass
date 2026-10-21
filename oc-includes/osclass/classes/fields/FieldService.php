@@ -156,6 +156,7 @@ final class FieldService
         Db::transaction(function () use ($fields, $id, $row, $categories, $retype, $kind): void {
             Db::afterCommit(static fn () => FacetIndex::rememberTypes([['pk_i_id' => $id, 'e_type' => $row['e_type']]]));
             if ($retype) {
+                FacetIndex::markStale();
                 Db::afterCommit(static fn () => osc_job_enqueue(
                     FacetIndex::JOB_FIELD,
                     ['field' => $id, 'after' => 0, 'kind' => $kind],
