@@ -96,6 +96,10 @@ FacetIndex::rewriteField($item, $span, ['from' => '1700000000', 'to' => '1700086
 pin('date interval: two rows', ["f$span.from=1700000000|0|1700000000", "f$span.to=1700086400|0|1700086400"], $facet($item));
 FacetIndex::rewriteField($item, $span, ['from' => '1700000000', 'to' => '']);
 pin('date interval: an empty end has no row', ["f$span.from=1700000000|0|1700000000"], $facet($item));
+FacetIndex::rewriteField($item, $span, ['to' => '1700172800']);
+pin('date interval: a write of one end keeps the other', ["f$span.from=1700000000|0|1700000000", "f$span.to=1700172800|0|1700172800"], $facet($item));
+FacetIndex::rewriteField($item, $span, ['from' => '']);
+pin('date interval: emptying one end drops only its row', ["f$span.to=1700172800|0|1700172800"], $facet($item));
 FacetIndex::dropField($span);
 pin('dropField removes both interval keys', [], $facet($item));
 

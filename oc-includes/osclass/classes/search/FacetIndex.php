@@ -108,6 +108,19 @@ final class FacetIndex
     {
         self::guard(static function () use ($itemId, $fieldId, $value, $storage): void {
             $storage ??= self::storageOfField($fieldId);
+            if ($storage === 'DATEINTERVAL' && is_array($value)) {
+                // REPLACE leaves an end that was not passed in t_item_meta, so its row stays too.
+                $ends = array_values(array_intersect(['from', 'to'], array_map('strval', array_keys($value))));
+                if ($ends !== []) {
+                    Db::execute(
+                        'DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_key IN (' . implode(', ', array_fill(0, count($ends), '?')) . ')',
+                        array_merge([$itemId], array_map(static fn (string $end): string => self::key($fieldId, $end), $ends))
+                    );
+                }
+                self::insert(self::fieldRows($itemId, $fieldId, $storage, $value));
+
+                return;
+            }
             self::deleteField($itemId, $fieldId);
             self::insert(self::fieldRows($itemId, $fieldId, $storage, $value));
         });
