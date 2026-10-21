@@ -27,6 +27,8 @@ final class PluginClauses
 {
     /** @var array<int,string> */
     private array $conditions = array();
+    /** @var array<int,string|null> the count text of each condition, by position; null = the same text */
+    private array $countConditions = array();
     /** @var array<int,string> */
     private array $itemConditions = array();
     /** @var array<int,string> */
@@ -41,13 +43,24 @@ final class PluginClauses
     private $having = '';
 
     /**
-     * @param mixed $conditions a fragment or a list
+     * A condition already set keeps the count text it was added with.
+     *
+     * @param mixed                       $conditions      a fragment or a list
+     * @param array<int,string|null>|null $countConditions the text the count uses instead, by position; null = the same
      *
      * @return void
      */
-    public function addConditions($conditions): void
+    public function addConditions($conditions, ?array $countConditions = null): void
     {
-        self::addUnique($this->conditions, $conditions);
+        $countConditions = $countConditions === null ? array() : array_values($countConditions);
+        foreach (array_values(is_array($conditions) ? $conditions : array($conditions)) as $i => $value) {
+            $value = trim((string)$value);
+            if ($value && !in_array($value, $this->conditions)) {
+                $this->conditions[]      = $value;
+                $count                   = isset($countConditions[$i]) ? trim((string)$countConditions[$i]) : '';
+                $this->countConditions[] = $count !== '' && $count !== $value ? $count : null;
+            }
+        }
     }
 
     /**
@@ -140,9 +153,10 @@ final class PluginClauses
      */
     public function clearAlertParts(): void
     {
-        $this->conditions = array();
-        $this->tables     = array();
-        $this->joins      = array();
+        $this->conditions      = array();
+        $this->countConditions = array();
+        $this->tables          = array();
+        $this->joins           = array();
     }
 
     /**
@@ -194,6 +208,23 @@ final class PluginClauses
     }
 
     /**
+     * The count text of each condition that has its own, by the condition's page text.
+     *
+     * @return array<string,string>
+     */
+    public function countConditions(): array
+    {
+        $out = array();
+        foreach ($this->countConditions as $i => $count) {
+            if ($count !== null) {
+                $out[$this->conditions[$i]] = $count;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * @return array<int,string>
      */
     public function tables(): array
@@ -225,14 +256,23 @@ final class PluginClauses
     }
 
     /**
-     * The plugin conditions, filtered and AND-joined.
+     * The plugin conditions, filtered and AND-joined. With $count each condition gives its count
+     * text where it has one.
+     *
+     * @param bool $count
      *
      * @return string
      * @phpstan-impure it fires a filter
      */
-    public function conditionsSql(): string
+    public function conditionsSql(bool $count = false): string
     {
-        $sql = implode(' AND ', osc_apply_filter('sql_search_conditions', $this->conditions));
+        $list = $this->conditions;
+        if ($count) {
+            foreach ($this->countConditions as $i => $text) {
+                $list[$i] = $text ?? $list[$i];
+            }
+        }
+        $sql = implode(' AND ', osc_apply_filter('sql_search_conditions', $list));
 
         return $sql !== '' ? ' ' . $sql : '';
     }

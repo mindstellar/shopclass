@@ -50,7 +50,13 @@ final class SearchRecord
      */
     public static function encodeMatching(SearchParts $parts): string
     {
-        return (string)json_encode(self::matching($parts));
+        $data = self::matching($parts);
+        // The count may run other text than the page, so the cached total keys on it too.
+        if ($parts->plugin->countConditions() !== array()) {
+            $data['count_conditions'] = $parts->plugin->countConditions();
+        }
+
+        return (string)json_encode($data);
     }
 
     /**

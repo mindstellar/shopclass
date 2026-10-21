@@ -235,18 +235,21 @@ class Search extends DAO
      * $condition does. One filter per field: a second call replaces the typed rule but both
      * conditions apply, so filters() then reports raw SQL and a backend leaves the search to MySQL.
      *
+     * $countCondition is the text the count runs instead, matching the same listings; null = the same.
+     *
      * @param int                 $fieldId
-     * @param array<string,mixed> $filter    type, op and its values; see SearchFilters::$meta
+     * @param array<string,mixed> $filter         type, op and its values; see SearchFilters::$meta
      * @param string              $condition
+     * @param string|null         $countCondition
      *
      * @return void
      * @since 7.0.0
      */
-    public function addFieldFilter(int $fieldId, array $filter, string $condition): void
+    public function addFieldFilter(int $fieldId, array $filter, string $condition, ?string $countCondition = null): void
     {
         $condition                   = trim($condition);
         $this->parts->meta[$fieldId] = array('filter' => $filter, 'sql' => $condition);
-        $this->addConditions($condition);
+        $this->addPair($condition, $countCondition);
     }
 
     /**
@@ -268,20 +271,56 @@ class Search extends DAO
      * toJson() show them), so each value is type-checked and inlined: ints and finite
      * floats as they are, booleans as 1/0, null as NULL, strings escaped and quoted.
      * The fragment itself may hold no quotes, so every `?` in it is a placeholder.
+     * $countSql is the text the count runs instead, matching the same listings; its `?` are filled
+     * from the same $params, so it has as many as $sql, or none; null = the same text.
      *
-     * @param string                              $sql    e.g. 't_item.pk_i_id < ?'
+     * @param string                              $sql      e.g. 't_item.pk_i_id < ?'
      * @param array<int,int|float|string|bool|null> $params
+     * @param string|null                         $countSql
      *
      * @return void
-     * @throws InvalidArgumentException for a quote in $sql, a count that does not match, or a value of another type
+     * @throws InvalidArgumentException for a quote in $sql or $countSql, a count that does not match, or a value of another type
      */
-    public function addCondition(string $sql, array $params = array())
+    public function addCondition(string $sql, array $params = array(), ?string $countSql = null)
+    {
+        $params = array_values($params);
+        $page   = self::inline($sql, $params);
+        if ($countSql !== null && !str_contains($countSql, '?')) {
+            $count = self::inline($countSql, array());
+        } else {
+            $count = $countSql === null ? null : self::inline($countSql, $params);
+        }
+        $this->addPair($page, $count);
+    }
+
+    /**
+     * @param string      $page
+     * @param string|null $count
+     *
+     * @return void
+     */
+    private function addPair(string $page, ?string $count): void
+    {
+        if ($count === null) {
+            $this->addConditions($page);
+        } else {
+            $this->parts->plugin->addConditions($page, array($count));
+        }
+    }
+
+    /**
+     * @param string                                $sql
+     * @param array<int,int|float|string|bool|null> $params
+     *
+     * @return string
+     * @throws InvalidArgumentException
+     */
+    private static function inline(string $sql, array $params): string
     {
         if (strpbrk($sql, "'\"\\`#") !== false || str_contains($sql, '--') || str_contains($sql, '/*')) {
             throw new InvalidArgumentException('Search::addCondition(): pass values in $params, not quoted in the SQL.');
         }
-        $parts  = explode('?', $sql);
-        $params = array_values($params);
+        $parts = explode('?', $sql);
         if (count($parts) - 1 !== count($params)) {
             throw new InvalidArgumentException('Search::addCondition(): ' . (count($parts) - 1) . ' placeholders, ' . count($params) . ' values.');
         }
@@ -297,7 +336,8 @@ class Search extends DAO
             };
             $out .= $parts[$i + 1];
         }
-        $this->addConditions($out);
+
+        return $out;
     }
 
     /**
