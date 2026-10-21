@@ -1089,7 +1089,47 @@ class CAdminTools extends AdminSecBaseModel
             $env['db_size'] = DatabaseTools::size();
         }
 
+        if (Params::getParam('facet_rebuild') !== '') {
+            if ($this->refuseOnDemo($self)) {
+                return false;
+            }
+            osc_csrf_check();
+            if (\mindstellar\search\FacetJobs::queueBuild()) {
+                osc_add_flash_ok_message(_m('Rebuild queued.'), 'admin');
+            } else {
+                osc_add_flash_info_message(_m('Already building.'), 'admin');
+            }
+            $this->redirectTo($self);
+
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * What the Database tab shows about the listing filter index.
+     *
+     * @return array<string,mixed>
+     */
+    private static function facetEnvironment(): array
+    {
+        $after = null;
+        $queue = \mindstellar\job\JobQueue::getInstance();
+        foreach (array(\mindstellar\job\JobQueue::STATUS_RUNNING, \mindstellar\job\JobQueue::STATUS_PENDING) as $status) {
+            $rows = $queue->page($status, \mindstellar\search\FacetIndex::JOB_BUILD, 1);
+            if ($rows !== array()) {
+                $payload = json_decode((string) $rows[0]['s_payload'], true);
+                $after   = is_array($payload) ? (int) ($payload['after'] ?? 0) : 0;
+                break;
+            }
+        }
+        return array(
+            'facet_ready'     => \mindstellar\search\FacetIndex::ready(),
+            'facet_built_at'  => (string) osc_get_preference(\mindstellar\search\FacetIndex::PREF_BUILT, 'osclass'),
+            'facet_job_after' => $after,
+            'facet_listings'  => DatabaseTools::listingCount(),
+        );
     }
 
     /**
@@ -1229,6 +1269,7 @@ class CAdminTools extends AdminSecBaseModel
             $env['pending'] = DatabaseTools::pending();
             list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
             $env['db_size'] = DatabaseTools::size();
+            $env += self::facetEnvironment();
         }
 
         return $env;

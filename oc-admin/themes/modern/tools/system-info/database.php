@@ -205,6 +205,33 @@ $groups = array(
         <?php } ?>
     </div>
 
+    <?php if (isset($env['facet_ready'])) { ?>
+        <?php $facet = DatabaseTools::facetStatus($env); ?>
+        <div id="db-facet">
+            <?php osc_admin_form_section(__('Listing filter index'), array('spaced' => true)); ?>
+            <p class="text-muted"><?php echo osc_esc_html($facet['text']); ?></p>
+            <?php osc_admin_action_section(array(
+                'actions' => array(array(
+                    'label'   => __('Rebuild filter index'),
+                    'icon'    => 'bi-arrow-repeat',
+                    'variant' => 'primary',
+                    'confirm' => '#db-facet-dialog',
+                    'help'    => __('Searches keep working while it rebuilds.'),
+                )),
+            )); ?>
+        </div>
+        <?php osc_admin_confirm_dialog(array(
+            'id'      => 'db-facet-dialog',
+            'tone'    => 'plain',
+            'method'  => 'post',
+            'url'     => $self,
+            'fields'  => array('facet_rebuild' => '1'),
+            'title'   => __('Rebuild the filter index?'),
+            'text'    => __('It rebuilds in the background, a batch of listings at a time. On a large site it can take a while.'),
+            'confirm' => __('Rebuild'),
+        )); ?>
+    <?php } ?>
+
     <?php if ($canRepair) { ?>
         <?php osc_admin_confirm_dialog(array(
             'id'      => 'db-repair-dialog',
