@@ -169,6 +169,36 @@ $admin->query("DELETE FROM {$p}t_job_queue");
 $svc->update($bare, ['name' => 'Renamed']);
 pin('a change that leaves the type alone: no job', 0, count($jobs()));
 
+harness_section('the rebuild job writes the rows of the new type');
+$run = static function () use ($admin, $p): void {
+    $admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2000-01-01 00:00:00'");
+    \mindstellar\job\JobWorker::resetRegistration();
+    \mindstellar\job\JobWorker::registerHandlers();
+    \mindstellar\job\JobWorker::run(10);
+};
+$kind  = $field('DROPDOWN');
+$typed = seed_item($admin, $cat, $sue);
+$dao->replace($typed, $kind, '12');
+pin('as a dropdown: a text row', ["f$kind=12|-"], $facet($typed));
+$svc->update($kind, ['type' => 'NUMBER']);
+$run();
+pin('DROPDOWN to NUMBER: the job leaves a number row', [[], ["f$kind=12|12"]], [$jobs(), $facet($typed)]);
+$svc->update($kind, ['type' => 'TEXT']);
+$run();
+pin('NUMBER to TEXT: the job removes it', [[], []], [$jobs(), $facet($typed)]);
+
+harness_section('a type change that rolls back queues no job');
+$admin->query("CREATE TRIGGER {$p}field_block BEFORE UPDATE ON {$p}t_meta_fields FOR EACH ROW BEGIN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'blocked'; END");
+$threw = false;
+try {
+    $svc->update($kind, ['type' => 'DROPDOWN']);
+} catch (Throwable $e) {
+    $threw = true;
+}
+$admin->query("DROP TRIGGER {$p}field_block");
+pin('the update failed', [true, 'TEXT'], [$threw, $value("SELECT e_type FROM {$p}t_meta_fields WHERE pk_i_id = $kind")]);
+pin('and left no job', [], $jobs());
+
 harness_section('a listing save waits for a held meta row');
 $child  = __DIR__ . '/lib/facet-field-child.php';
 $raceOne = static function (string $mode, int $itemId, int $fieldId, string $val) use ($admin, $db, $child, $sue, $p): array {
