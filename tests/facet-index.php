@@ -274,6 +274,13 @@ pin('the unreferenced Red is gone', [], $term("f$shade", 'Red'));
 pin('the referenced Blue stays', 1, count($term("f$shade", 'Blue')));
 pin('rows are untouched', ["f$shade=Blue|0|-"], array_values(array_filter($facet($one), static fn (string $r): bool => str_starts_with($r, "f$shade="))));
 
+FacetIndex::termIds(["f$shade" => ['Blue']]);
+$admin->query("DELETE FROM {$p}t_item_facet WHERE fk_i_item_id = $one");
+$admin->query("DELETE FROM {$p}t_facet_term WHERE s_key = 'f$shade' AND s_value = 'Blue'");
+FacetIndex::rewriteField($one, $shade, 'Blue');
+pin('a term deleted behind a warm cache is made again and the row is written', ["f$shade=Blue|0|-"], array_values(array_filter($facet($one), static fn (string $r): bool => str_starts_with($r, "f$shade="))));
+pin('and the index is not marked stale', '1', (string) osc_get_preference(FacetIndex::PREF_READY, 'osclass'));
+
 $gone = $field('DATEINTERVAL');
 FacetIndex::rewriteField($one, $gone, ['from' => '1700000000', 'to' => '1700086400']);
 FacetIndex::dropField($gone);

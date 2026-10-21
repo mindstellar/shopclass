@@ -41,6 +41,7 @@ final class FacetIndex
     private const ROWS_PER_INSERT = 500;
     private const TERMS_PER_SELECT = 200;
     private const PRUNE_RANGE = 2000;
+    private const ER_NO_REFERENCED_ROW = 1452;
 
     private static bool $tablePresent = false;
 
@@ -727,6 +728,9 @@ final class FacetIndex
         try {
             $later = self::writeRows($itemId, $rows);
         } catch (DbException $e) {
+            if ($e->getCode() !== self::ER_NO_REFERENCED_ROW) {
+                throw $e;
+            }
             Db::assertIntact();
             self::forgetTypes();
             $later = self::writeRows($itemId, $rows);
