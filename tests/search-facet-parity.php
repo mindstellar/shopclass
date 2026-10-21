@@ -225,6 +225,8 @@ $same('three boxes', ['custom_field' => [(string) $f['cb1'] => '1', (string) $f[
 
 harness_section('number, date and interval');
 $page('a number range keeps the ends and a decimal', [(string) $f['num'] => ['from' => '10', 'to' => '20']], ['A', 'C', 'D']);
+$page('a number range keeps a value equal to its upper end', [(string) $f['num'] => ['from' => '9', 'to' => '9']], ['B']);
+$page('a number range drops a value just above its upper end', [(string) $f['num'] => ['from' => '10', 'to' => '19.99']], ['A', 'C']);
 $page('a range with no row in it', [(string) $f['num'] => ['from' => '100', 'to' => '200']], []);
 $page('a negative lower bound', [(string) $f['num'] => ['from' => '-5', 'to' => '9']], ['B']);
 $same('a date matches its whole day', $cf('date', (string) $day), ['A', 'C']);
@@ -232,6 +234,9 @@ $same('another day', $cf('date', (string) ($day + 86400 * 3)), ['B']);
 $page('an interval is covered', [(string) $f['di'] => ['from' => (string) ($t0 + 130), 'to' => (string) ($t0 + 170)]], ['A', 'C', 'E']);
 $page('a stored interval that ends before the asked end does not cover it', [(string) $f['di'] => ['from' => (string) ($t0 + 130), 'to' => (string) ($t0 + 260)]], ['E']);
 $page('a stored interval that starts after the asked start does not cover it', [(string) $f['di'] => ['from' => (string) ($t0 + 110), 'to' => (string) ($t0 + 170)]], ['A', 'E']);
+$page('an interval may start exactly where a stored one starts', [(string) $f['di'] => ['from' => (string) ($t0 + 100), 'to' => (string) ($t0 + 150)]], ['A', 'E']);
+$page('an interval may end exactly where a stored one ends', [(string) $f['di'] => ['from' => (string) ($t0 + 200), 'to' => (string) ($t0 + 250)]], ['B', 'E']);
+$page('an interval equal to a stored one is covered', [(string) $f['di'] => ['from' => (string) ($t0 + 150), 'to' => (string) ($t0 + 250)]], ['B', 'E']);
 $page('an interval inside the stored one only', [(string) $f['di'] => ['from' => (string) ($t0 + 90), 'to' => (string) ($t0 + 170)]], []);
 
 harness_section('the three accepted differences');
