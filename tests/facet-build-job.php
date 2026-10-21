@@ -11,6 +11,7 @@
 /**
  * The listing filter index backfill as jobs: a batch per run with the cursor kept in the job,
  * the ready flag set only when the last batch is done, a failed run that resumes from its cursor,
+ * a listing that fails partway rolled back on its own,
  * one pending build at a time, and a one-field rebuild that leaves the flag alone.
  *
  * Usage: php tests/facet-build-job.php
@@ -119,6 +120,8 @@ $setFlag('0');
 FacetJobs::queueBuild();
 $pass();
 $cursor = $cursorOf($jobs(FacetIndex::JOB_BUILD)[0]);
+// A sentinel on the done listings: a redo would overwrite it.
+$admin->query("UPDATE $facet SET s_value = 'Done' WHERE s_key = 'f$colour' AND fk_i_item_id <= $cursor");
 $pass(static function (Job $job): void {
     throw new RuntimeException('Database went away');
 });
@@ -126,14 +129,35 @@ $job = $jobs(FacetIndex::JOB_BUILD);
 pin('the job is still there', 1, count($job));
 pin('with its cursor', $cursor, $cursorOf($job[0]));
 pin('the flag is still off', '0', $pref('facet_ready'));
-$rowsBefore = $count();
 $pass();
 pin('the clean pass carries on from the cursor', $ids[2 * FacetIndex::BATCH - 1], $cursorOf($jobs(FacetIndex::JOB_BUILD)[0]));
-pin('the first listings were not redone', 2 * FacetIndex::BATCH, $rowsBefore);
+pin('the first listings were not redone', FacetIndex::BATCH, $count("s_key = 'f$colour' AND s_value = 'Done'"));
 $pass();
 pin('and finishes', [], $jobs(FacetIndex::JOB_BUILD));
 pin('with every row', 2 * $total, $count());
 pin('and the flag on', '1', $pref('facet_ready'));
+
+harness_section('a listing that fails partway rolls back alone');
+$admin->query("UPDATE $facet SET s_value = 'Stale' WHERE s_key = 'f$colour'");
+$bad = $ids[10];
+$admin->query("CREATE TRIGGER {$p}facet_block BEFORE INSERT ON $facet FOR EACH ROW BEGIN IF NEW.fk_i_item_id = $bad AND NEW.s_key = 'f$gift' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'blocked'; END IF; END");
+$setFlag('0');
+FacetJobs::queueBuild();
+$pass();
+$job = $jobs(FacetIndex::JOB_BUILD);
+pin('the job is still there, at its start', [1, 0], [count($job), $job ? $cursorOf($job[0]) : -1]);
+pin('the listings before it are done', 10, $count("s_key = 'f$colour' AND s_value = 'Red' AND fk_i_item_id < $bad"));
+pin('the failed listing keeps its old rows', ['Stale', 2], [
+    $admin->query("SELECT s_value FROM $facet WHERE s_key = 'f$colour' AND fk_i_item_id = $bad")->fetch_row()[0] ?? null,
+    $count("fk_i_item_id = $bad"),
+]);
+pin('the listings after it are not touched', 0, $count("s_key = 'f$colour' AND s_value = 'Red' AND fk_i_item_id > $bad"));
+pin('the flag is still off', '0', $pref('facet_ready'));
+$admin->query("DROP TRIGGER {$p}facet_block");
+for ($i = 0; $i < 3; $i++) {
+    $pass();
+}
+pin('without the fault it finishes', [[], 0, '1'], [$jobs(FacetIndex::JOB_BUILD), $count("s_value = 'Stale'"), $pref('facet_ready')]);
 
 harness_section('a rebuild keeps the flag on');
 $admin->query("UPDATE $facet SET s_value = 'Stale' WHERE s_key = 'f$colour'");
