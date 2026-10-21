@@ -43,6 +43,20 @@ pin('and succeeded', "ok\n", $out[0]);
 $days = (int) $admin->query("SELECT TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) FROM {$p}t_item_upgrade WHERE fk_i_item_id = $item")->fetch_row()[0];
 pin('and extended the row the other grant had written (20 + 5 days)', 25, (int) round($days / 24));
 
+harness_section('two first grants for one listing wait in line');
+$item2 = seed_item($admin, $cat);
+[$waiting, $out] = race(
+    $admin,
+    "SELECT pk_i_id FROM {$p}t_item WHERE pk_i_id = $item2 FOR UPDATE",
+    $dbName,
+    [[$child, ['grant', $item2]], [$child, ['grant', $item2]]],
+    "%FROM {$p}t_item WHERE pk_i_id %FOR UPDATE%"
+);
+pin('both grants waited on the listing row', 2, $waiting);
+pin('and both succeeded', ["ok\n", "ok\n"], array_values($out));
+$days = (int) $admin->query("SELECT TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) FROM {$p}t_item_upgrade WHERE fk_i_item_id = $item2")->fetch_row()[0];
+pin('one row, extended by both (5 + 5 days)', 10, (int) round($days / 24));
+
 harness_section('two premium purchases ending in the same second');
 $end  = date('Y-m-d H:i:s', strtotime('+3 days'));
 $time = strtotime($end);

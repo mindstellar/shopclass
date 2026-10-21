@@ -14,6 +14,7 @@ namespace mindstellar\billing;
 use mindstellar\base\Model;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
+use mindstellar\listing\ListingStore;
 
 /**
  * Persistence and read path for t_item_upgrade -- one row per (item, upgrade), covering
@@ -77,6 +78,9 @@ final class ItemUpgradeStore extends Model
         $now = date('Y-m-d H:i:s');
 
         $granted = (bool) Db::transaction(static function () use ($itemId, $upgrade, $days, $hours, $now): bool {
+            // Grants for one listing queue on its row, so two first grants never meet in the gap
+            // lock of a missing upgrade row (a deadlock).
+            ListingStore::find($itemId, array('pk_i_id'), true);
             $row = self::lockedRow($itemId, $upgrade);
 
             if ($row === null) {
