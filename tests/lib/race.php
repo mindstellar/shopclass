@@ -127,6 +127,27 @@ if (!function_exists('race_hold')) {
     }
 
     /**
+     * Whether another connection could lock the index rows of a listing now, within a second.
+     * False while a writer holds them; a test checks the writer's lock order with it.
+     */
+    function race_facet_free(string $db, int $itemId): bool
+    {
+        $probe = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $db, (int) ini_get('mysqli.default_port'));
+        $probe->query('SET SESSION innodb_lock_wait_timeout = 1');
+        $probe->begin_transaction();
+        try {
+            $probe->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_item_facet WHERE fk_i_item_id = ' . $itemId);
+            $free = true;
+        } catch (mysqli_sql_exception $e) {
+            $free = false;
+        }
+        $probe->rollback();
+        $probe->close();
+
+        return $free;
+    }
+
+    /**
      * Whether the server fails a stale locking read with error 1020 (MariaDB 11.6+, setting ON).
      */
     function race_snapshot_isolation(mysqli $conn): bool

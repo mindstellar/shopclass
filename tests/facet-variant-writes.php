@@ -171,6 +171,21 @@ $ids = $variantIds($item);
 pin('Red/M kept its id', $redM, $ids['{"Colour":"Red","Size":"M"}'] ?? null);
 pin('the facet rows are the edit\'s', $expect([[$redM, 'Red', 'M'], [$ids['{"Colour":"Green","Size":"S"}'] ?? 0, 'Green', 'S']]), $facets($item));
 
+harness_section('a direct save waits on its locking read of the variants');
+$item = $listing();
+[$redM] = VariantStore::saveSet($item, [$row('Red', 'M', 5), $row('Blue', 'L', 5)]);
+race_hold($admin, "UPDATE {$p}t_item_variant SET i_stock = i_stock - 1 WHERE pk_i_id = $redM");
+$run     = race_run(__DIR__ . '/lib/facet-variant-child.php', $db, ['save', $item]);
+$waiting = race_wait_for($db, 'SELECT *%t_item_variant%FOR UPDATE%');
+$free    = race_facet_free($db, $item);
+$out     = race_release($admin, [$run]);
+preg_match('/^(ok|threw.*)$/m', $out[0], $m);
+pin('the save waited on SELECT ... FOR UPDATE', 1, $waiting);
+pin('holding no index row yet', true, $free);
+pin('and then succeeded', 'ok', $m[1] ?? trim($out[0]));
+$ids = $variantIds($item);
+pin('the facet rows match the save', $expect([[$redM, 'Red', 'M'], [$ids['{"Colour":"Green","Size":"S"}'] ?? 0, 'Green', 'S']]), $facets($item));
+
 harness_section('a save waits for a held facet row');
 $item = $listing();
 [$redM] = VariantStore::saveSet($item, [$row('Red', 'M'), $row('Blue', 'L')]);

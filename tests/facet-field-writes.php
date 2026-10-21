@@ -205,30 +205,26 @@ $child  = __DIR__ . '/lib/facet-field-child.php';
 $raceOne = static function (string $mode, int $itemId, int $fieldId, string $val) use ($admin, $db, $child, $sue, $p): array {
     race_hold($admin, "SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $itemId AND fk_i_field_id = $fieldId FOR UPDATE");
     $run     = race_run($child, $db, [$mode, $itemId, $sue, $fieldId, $val]);
-    $waiting = 0;
-    for ($try = 0; $try < 200 && $waiting < 1; $try++) {
-        usleep(50000);
-        $waiting = (int) $admin->query(
-            "SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND DB = '$db' AND COMMAND = 'Query' AND TIME >= 1"
-        )->fetch_row()[0];
-    }
-    $out = race_release($admin, [$run]);
+    $waiting = race_wait_for($db, '%t_item_meta%');
+    // Meta comes first: the waiting writer must not hold the listing's index rows yet.
+    $free = race_facet_free($db, $itemId);
+    $out  = race_release($admin, [$run]);
     preg_match('/^(ok|false|threw.*)$/m', $out[0], $m);
 
-    return [$waiting, $m[1] ?? trim($out[0])];
+    return [$waiting && $free ? 1 : 0, $m[1] ?? trim($out[0])];
 };
 $raced = $field('DROPDOWN');
 $admin->query("UPDATE {$p}t_meta_fields SET s_options = 'Old,New,Plugin' WHERE pk_i_id = $raced");
 $one   = seed_item($admin, $cat, $sue);
 $dao->replace($one, $raced, 'Old');
 [$waiting, $out] = $raceOne('edit', $one, $raced, 'New');
-pin('the save waited on the held meta row', 1, $waiting);
+pin('the save waited on the meta row, holding no index row', 1, $waiting);
 pin('and then succeeded', 'ok', $out);
 pin('meta and facet row both hold the new value', ['New', ["f$raced=New|-"]], [$value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $one AND fk_i_field_id = $raced"), $facet($one)]);
 
 harness_section('a plugin calling replace() on its own waits too');
 [$waiting, $out] = $raceOne('replace', $one, $raced, 'Plugin');
-pin('replace waited on the held meta row', 1, $waiting);
+pin('replace waited on the meta row, holding no index row', 1, $waiting);
 pin('and then succeeded', 'ok', $out);
 pin('the facet row matches the meta row', ['Plugin', ["f$raced=Plugin|-"]], [$value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $one AND fk_i_field_id = $raced"), $facet($one)]);
 
