@@ -19,6 +19,7 @@ use mindstellar\database\SchemaReconciler;
 use mindstellar\database\SqlStream;
 use mindstellar\database\TablePrefix;
 use mindstellar\migration\MigrationRunner;
+use mindstellar\search\FacetJobs;
 use mindstellar\upgrade\Osclass;
 use Throwable;
 
@@ -424,12 +425,60 @@ final class DatabaseTools
             return null;
         }
         try {
-            return (new SchemaReconciler($conn))->repair();
+            $result = (new SchemaReconciler($conn))->repair();
+            FacetJobs::afterRepair($result['ran']);
+
+            return $result;
         } catch (Throwable $e) {
             return array('ran' => array(), 'failed' => array($e->getMessage()));
         } finally {
             $release();
         }
+    }
+
+    /**
+     * How many listings exist, 0 when the count cannot be read.
+     */
+    public static function listingCount(): int
+    {
+        try {
+            $row = Connection::getInstance()->selectOne('SELECT COUNT(*) AS n FROM ' . \Item::newInstance()->getTableName());
+        } catch (Throwable $e) {
+            return 0;
+        }
+
+        return (int) ($row['n'] ?? 0);
+    }
+
+    /**
+     * The one-line state of the listing filter index for the Database tab.
+     *
+     * @param array<string,mixed> $env facet_ready, facet_built_at, facet_job_after (null when no
+     *                                 build is queued), facet_listings
+     *
+     * @return array{state:string,text:string}
+     */
+    public static function facetStatus(array $env): array
+    {
+        $after = $env['facet_job_after'] ?? null;
+        if ($after !== null) {
+            $total = (int) ($env['facet_listings'] ?? 0);
+
+            return array(
+                'state' => 'building',
+                'text'  => sprintf(__('Building: %1$d of %2$d listings done'), min((int) $after, $total), $total),
+            );
+        }
+        if (!empty($env['facet_ready'])) {
+            $built = (string) ($env['facet_built_at'] ?? '');
+
+            return array(
+                'state' => 'ready',
+                'text'  => $built === '' ? __('Ready') : sprintf(__('Ready, built %s'), $built),
+            );
+        }
+
+        return array('state' => 'missing', 'text' => __('Not built'));
     }
 
     /**

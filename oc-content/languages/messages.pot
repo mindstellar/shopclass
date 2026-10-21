@@ -368,6 +368,10 @@ msgstr ""
 msgid "All listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Already building."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-register-content.php
 msgid "Already have an account?"
 msgstr ""
@@ -2126,6 +2130,10 @@ msgstr ""
 msgid ""
 "Re-generation complete. %d photos could not be opened and were left as they "
 "were."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Rebuild queued."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php

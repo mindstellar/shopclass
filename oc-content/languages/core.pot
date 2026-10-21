@@ -2466,6 +2466,10 @@ msgid ""
 "a form on the left. "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "Building: %1$d of %2$d listings done"
+msgstr ""
+
 #: oc-admin/themes/modern/items/reported.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/ui.php
@@ -6135,6 +6139,12 @@ msgstr ""
 msgid "It no longer sends email. Ask the user to save the search again."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/system-info/database.php
+msgid ""
+"It rebuilds in the background, a batch of listings at a time. On a large "
+"site it can take a while."
+msgstr ""
+
 #: oc-includes/osclass/classes/search/AlertStore.php
 msgid "It searched tables added by a plugin or theme."
 msgstr ""
@@ -6650,6 +6660,7 @@ msgstr ""
 msgid "Listing edit"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/system-info/database.php
 #: oc-includes/osclass/classes/search/FacetJobs.php
 msgid "Listing filter index"
 msgstr ""
@@ -8212,6 +8223,10 @@ msgstr ""
 msgid "Not available on the demo site."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "Not built"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Not cascading"
 msgstr ""
@@ -9586,7 +9601,12 @@ msgid "Reading the location catalog…"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
 msgid "Ready"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "Ready, built %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -9601,8 +9621,20 @@ msgstr ""
 msgid "Reason"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/system-info/database.php
+msgid "Rebuild"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/system-info/database.php
+msgid "Rebuild filter index"
+msgstr ""
+
 #: oc-includes/osclass/classes/storage/StorageJobs.php
 msgid "Rebuild photo sizes"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/system-info/database.php
+msgid "Rebuild the filter index?"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -10603,6 +10635,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "Searches"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/system-info/database.php
+msgid "Searches keep working while it rebuilds."
 msgstr ""
 
 #: oc-includes/osclass/classes/form/UserForm.php
