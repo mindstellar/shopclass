@@ -76,7 +76,7 @@ $migration->up($conn);
 $norm = static fn (array $r): array => array_map(static fn (array $x): array => [$x[0], $x[1], (int) $x[2], (int) $x[3]], $r);
 pin('the listings are indexed', $expected, $norm($rows()));
 pin('the flag is on', '1', $pref('facet_ready'));
-check('the build time is set', (int) $pref('facet_built_at') > 0);
+check('the build time is a date, as markReady() writes it', (bool) preg_match('/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/', (string) $pref('facet_built_at')));
 pin('no background job', [], $jobs());
 
 harness_section('second run');

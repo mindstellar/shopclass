@@ -89,7 +89,7 @@ return new class () implements MigrationInterface {
         while (($after = FacetIndex::buildStep($after, FacetIndex::BATCH)) !== null) {
         }
         $this->setPreference($conn, FacetIndex::PREF_READY, '1', 'BOOLEAN');
-        $this->setPreference($conn, FacetIndex::PREF_BUILT, (string) time(), 'STRING');
+        $this->setPreference($conn, FacetIndex::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'STRING');
         if (function_exists('osc_reset_preferences')) {
             osc_reset_preferences();
         }
