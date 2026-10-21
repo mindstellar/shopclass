@@ -95,6 +95,13 @@ return new class () implements MigrationInterface {
         ) {
             return;
         }
+        // Searches leave a half-built index alone until the build sets the flag again.
+        if ($flag !== null && $flag['s_value'] === '1') {
+            $this->setPreference($conn, FacetIndex::PREF_READY, '0', 'BOOLEAN');
+            if (function_exists('osc_reset_preferences')) {
+                osc_reset_preferences();
+            }
+        }
 
         $count = (int) $conn->scalar('SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item');
         if ($count > $inlineLimit) {
