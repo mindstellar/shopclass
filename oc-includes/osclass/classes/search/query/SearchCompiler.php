@@ -36,7 +36,7 @@ final class SearchCompiler
     public static function results(SearchParts $parts, ?\DBCommandClass $dao, bool $count = false): array
     {
         $p             = DB_TABLE_PREFIX;
-        $conditionsSql = $parts->plugin->conditionsSql();
+        $conditionsSql = $parts->plugin->conditionsSql($count);
         $extraFields   = $parts->plugin->fieldList();
         $withLocations = $parts->locations->used() || $parts->radius->used();
         $s             = $parts->newStatement();
