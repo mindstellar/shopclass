@@ -57,7 +57,8 @@ return new class () implements MigrationInterface {
 
     /**
      * Index every listing here when the site has at most $inlineLimit of them, else queue the
-     * background build. Does nothing once the index is marked ready.
+     * background build. Does nothing once the index is marked ready, unless the table is empty
+     * while listings exist: a flag restored from a backup says nothing about this table.
      *
      * @param Connection $conn
      * @param int        $inlineLimit
@@ -70,7 +71,10 @@ return new class () implements MigrationInterface {
             'SELECT s_value FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = ?",
             array(FacetIndex::PREF_READY)
         );
-        if ($flag !== null && $flag['s_value'] === '1') {
+        if ($flag !== null && $flag['s_value'] === '1'
+            && ($conn->selectOne('SELECT 1 FROM ' . DB_TABLE_PREFIX . 't_item_facet LIMIT 1') !== null
+                || $conn->selectOne('SELECT 1 FROM ' . DB_TABLE_PREFIX . 't_item LIMIT 1') === null)
+        ) {
             return;
         }
 

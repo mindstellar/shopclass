@@ -84,9 +84,14 @@ $migration->up($conn);
 pin('same rows', $expected, $norm($rows()));
 pin('the flag stays on', '1', $pref('facet_ready'));
 
+$admin->query("UPDATE $facet SET s_value = 'Kept' WHERE s_key = 'oSize' AND s_value = 'L'");
+$migration->up($conn);
+pin('a ready flag over a filled table skips the build', 1, count(array_filter($rows(), static fn (array $r): bool => $r[1] === 'Kept')));
+$admin->query("UPDATE $facet SET s_value = 'L' WHERE s_value = 'Kept'");
+
 $admin->query("DELETE FROM $facet");
 $migration->up($conn);
-pin('a ready flag skips the build', [], $rows());
+pin('a ready flag over an empty table, with listings, is rebuilt', $expected, $norm($rows()));
 pin('and is not lowered', '1', $pref('facet_ready'));
 
 $admin->query("DROP TABLE $facet");
