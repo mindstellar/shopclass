@@ -44,6 +44,7 @@ final class Wallet extends Model
 
     /** MySQL's duplicate-entry error number. */
     private const ERR_DUPLICATE = 1062;
+    private const ERR_NO_PARENT = 1452;
 
     public const REASON_PURCHASE = 'purchase';
     public const REASON_SPEND    = 'spend';
@@ -385,7 +386,19 @@ final class Wallet extends Model
      */
     public static function lock(int $userId): void
     {
-        self::ensureWallet($userId);
+        if ($userId <= 0) {
+            return;
+        }
+
+        try {
+            self::ensureWallet($userId);
+        } catch (DbException $e) {
+            if ((int) $e->getCode() !== self::ERR_NO_PARENT) {
+                throw $e;
+            }
+
+            // No such user, so there is no wallet to lock.
+        }
     }
 
     /**
