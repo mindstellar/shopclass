@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\listing;
 
+use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\job\Job;
@@ -158,11 +159,14 @@ final class ProductAlerts
         if ($variantId <= 0 || $itemId <= 0) {
             return;
         }
-        osc_job_enqueue(
-            self::JOB,
-            array('variant' => $variantId, 'item' => $itemId, 'kind' => $kind, 'price' => $price),
-            array('unique_key' => $kind . ':' . $variantId . ':' . ($price ?? ''))
-        );
+        // After commit: the keyed job row is one the worker changes, and a rolled-back change sends nothing.
+        Db::afterCommit(static function () use ($kind, $variantId, $itemId, $price): void {
+            osc_job_enqueue(
+                self::JOB,
+                array('variant' => $variantId, 'item' => $itemId, 'kind' => $kind, 'price' => $price),
+                array('unique_key' => $kind . ':' . $variantId . ':' . ($price ?? ''))
+            );
+        });
     }
 
     private static function whole(mixed $value): ?int

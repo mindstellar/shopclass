@@ -124,14 +124,25 @@ final class OrderLineStore extends Model
     }
 
     /**
-     * One order's item lines: the goods, without shipping, tax, discount or fee.
+     * One order's item lines: the goods, without shipping, tax, discount or fee. $lock reads them
+     * FOR UPDATE, so a write transaction can read them without opening its snapshot.
      *
      * @return array<int,array<string,mixed>>
      * @throws \mindstellar\database\DbException
      */
-    public static function itemLines(int $orderId): array
+    public static function itemLines(int $orderId, bool $lock = false): array
     {
-        return array_values(array_filter(self::ofOrder($orderId), static fn (array $line): bool => $line['kind'] === self::KIND_ITEM));
+        if ($lock) {
+            $rows = Db::select(
+                'SELECT * FROM ' . self::tableName() . ' WHERE fk_i_order_id = ? ORDER BY pk_i_id FOR UPDATE',
+                array($orderId)
+            );
+            $lines = array_map(static fn (array $row): array => self::fromRow($row), $rows);
+        } else {
+            $lines = self::ofOrder($orderId);
+        }
+
+        return array_values(array_filter($lines, static fn (array $line): bool => $line['kind'] === self::KIND_ITEM));
     }
 
     /**

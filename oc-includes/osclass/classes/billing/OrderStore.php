@@ -395,11 +395,24 @@ final class OrderStore extends Model
     private static function changeMeta(int $orderId, callable $change, ?array $statuses = null, ?string $to = null, ?array &$row = null, array $set = array()): bool
     {
         for ($try = 0; $try < 2; $try++) {
-            $read = self::table()->select('s_meta', 'fk_i_user_id', 's_status')->where('pk_i_id', $orderId);
-            if ($statuses !== null) {
-                $read = $read->whereIn('s_status', $statuses);
+            if (Db::inTransaction()) {
+                // A locking read: a plain one would open the caller's snapshot before the write.
+                $sql    = 'SELECT s_meta, fk_i_user_id, s_status FROM ' . self::tableName() . ' WHERE pk_i_id = ?';
+                $params = array($orderId);
+                if ($statuses === array()) {
+                    $sql .= ' AND 1 = 0';
+                } elseif ($statuses !== null) {
+                    $sql   .= ' AND s_status IN (' . implode(', ', array_fill(0, count($statuses), '?')) . ')';
+                    $params = array_merge($params, array_values($statuses));
+                }
+                $row = Db::selectOne($sql . ' FOR UPDATE', $params);
+            } else {
+                $read = self::table()->select('s_meta', 'fk_i_user_id', 's_status')->where('pk_i_id', $orderId);
+                if ($statuses !== null) {
+                    $read = $read->whereIn('s_status', $statuses);
+                }
+                $row = $read->first();
             }
-            $row = $read->first();
             if ($row === null) {
                 return false;
             }
