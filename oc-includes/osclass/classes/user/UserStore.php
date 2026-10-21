@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\user;
 
 use mindstellar\base\Model;
-use mindstellar\comment\CommentQuery;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingStatus;
@@ -65,7 +64,7 @@ final class UserStore extends Model
         $items = ListingStore::lockByUser($userId);
         ListingCounters::lockByItems($items);
         VariantStore::lockByItems($items);
-        CommentQuery::lockByUser($userId);
+        \ItemComment::lockByUser($userId);
         AlertStore::lockByUser($userId);
     }
 
@@ -79,7 +78,7 @@ final class UserStore extends Model
     {
         self::lock($userId);
         ListingStore::lockByUser($userId);
-        CommentQuery::lockByUser($userId);
+        \ItemComment::lockByUser($userId);
         AlertStore::lockByUser($userId);
     }
 

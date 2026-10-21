@@ -22,16 +22,6 @@ use mindstellar\database\QueryBuilder;
 final class CommentQuery
 {
     /**
-     * Lock a user's comments in primary key order.
-     *
-     * @throws \mindstellar\database\DbException
-     */
-    public static function lockByUser(int $userId): void
-    {
-        Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_item_comment WHERE fk_i_user_id = ? ORDER BY pk_i_id FOR UPDATE', array($userId));
-    }
-
-    /**
      * @return array<string,mixed>|null the t_item_comment row
      */
     public function find(int $id): ?array
