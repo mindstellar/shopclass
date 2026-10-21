@@ -195,7 +195,8 @@ pin('values past the 10th are dropped', [], $inTees(['option' => ['Colour' => ar
 pin('Cherry as the 10th value still counts', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => array_merge(array_map(static fn (int $i): string => 'v' . $i, range(1, 9)), ['Cherry'])]]));
 pin('an empty value is dropped, the filter is then off', ['Percent', 'Polo', 'Quote', 'Tee'], $inTees(['option' => ['Colour' => ['']]]));
 pin('an empty value beside a real one is dropped', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['', 'Cherry']]]));
-pin('two names that differ by case are one name, their values OR', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['Cherry'], 'COLOUR' => ['Navy']]]));
+pin('two names that differ by case are one name, their values OR', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['Navy'], 'COLOUR' => ['Sunflower']]]));
+pin('the 10-value cap holds after the merge', [], $inTees(['option' => ['Colour' => array_map(static fn (int $i): string => 'v' . $i, range(1, 9)), 'COLOUR' => ['v10', 'Cherry']]]));
 $legs = seed_category($admin, 'Legwear', null, $locale);
 VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Jeans', 10.0), [['options' => ['Waist Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
 VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Shorts', 10.0), [['options' => ['Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
