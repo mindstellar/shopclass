@@ -339,7 +339,7 @@ pin('the users screen fires these, in order', ['pre_user_post', 'user_edit_flash
 pin('the API fires the same, in the same order', $webAdminEdit, $apiAdminEdit);
 $webBlock = $record(static fn () => $web['adminAct']($bossId, 'disable', $sue));
 $apiBlock = $record(static fn () => $call('PATCH', 'admin/users/' . $tom, ['blocked' => true], $boss));
-pin('blocking a user fires these, in order', ['disable_item', 'item_decrease_stat', 'disable_user'], $webBlock);
+pin('blocking a user fires these, in order', ['disable_item', 'disable_user', 'item_decrease_stat'], $webBlock);
 pin('the API fires the same, in the same order', $webBlock, $apiBlock);
 $web['adminAct']($bossId, 'enable', $sue);
 $call('PATCH', 'admin/users/' . $tom, ['blocked' => false], $boss);

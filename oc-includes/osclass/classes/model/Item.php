@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\listing\ListingStats;
 use mindstellar\listing\ListingStatus;
 
 /**
@@ -1100,21 +1101,9 @@ class Item extends DAO
                 $counted = osc_item_is_counted(array('dt_expiration' => $_item['dt_expiration']) + $item);
                 if ($counted !== $counted_old) {
                     if (!$counted) {
-                        if ($_item['fk_i_user_id'] != null) {
-                            User::getInstance()->decreaseNumItems($_item['fk_i_user_id']);
-                        }
-                        CategoryStats::getInstance()->decreaseNumItems($_item['fk_i_category_id']);
-                        CountryStats::getInstance()->decreaseNumItems($_item['fk_c_country_code']);
-                        RegionStats::getInstance()->decreaseNumItems($_item['fk_i_region_id']);
-                        CityStats::getInstance()->decreaseNumItems($_item['fk_i_city_id']);
+                        ListingStats::decrease($_item, false);
                     } else {
-                        if ($_item['fk_i_user_id'] != null) {
-                            User::getInstance()->increaseNumItems($_item['fk_i_user_id']);
-                        }
-                        CategoryStats::getInstance()->increaseNumItems($_item['fk_i_category_id']);
-                        CountryStats::getInstance()->increaseNumItems($_item['fk_c_country_code']);
-                        RegionStats::getInstance()->increaseNumItems($_item['fk_i_region_id']);
-                        CityStats::getInstance()->increaseNumItems($_item['fk_i_city_id']);
+                        ListingStats::increase($_item, false);
                     }
                 }
 
@@ -1344,13 +1333,7 @@ class Item extends DAO
         // meant a delete that failed still took the listing out of every total, and
         // the numbers stayed wrong until the next stats rebuild.
         if (osc_item_is_counted($item)) {
-            if ($item['fk_i_user_id'] != null) {
-                User::getInstance()->decreaseNumItems($item['fk_i_user_id']);
-            }
-            CategoryStats::getInstance()->decreaseNumItems($item['fk_i_category_id']);
-            CountryStats::getInstance()->decreaseNumItems($item['fk_c_country_code']);
-            RegionStats::getInstance()->decreaseNumItems($item['fk_i_region_id']);
-            CityStats::getInstance()->decreaseNumItems($item['fk_i_city_id']);
+            ListingStats::decrease($item, false);
         }
 
         Plugins::runHook('delete_item', $id);
