@@ -53,6 +53,7 @@ full setup):
 | `db:upgrade` | Run pending migrations. Also in the admin under **Tools → System info → Database**. |
 | `db:doctor [--strict]` | Report where this database differs from what ShopClass expects, then whether the site is ready for strict SQL mode. `--strict` prints only the readiness part. Changes nothing. Exits `1` when it finds a problem; an extra column or index is listed but does not fail it. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. Exits `1` when a statement fails. `--dry-run` prints the `db:doctor` report and changes nothing. Also in the admin under **Tools → System info → Database**. |
+| `search:reindex [--from=<id>]` | Rebuild the listing filter index in the foreground, a batch at a time. `--from` resumes after that listing id. Exits `1` if the database stops it. |
 | `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content`. Outside a container image, it does nothing. |
 | `version` | Print the installed version. |
 
