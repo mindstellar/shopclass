@@ -392,6 +392,9 @@ $explain = static function (array $args, int $index) use ($q, $listQuery): array
 };
 $describe = static fn (array $plan): string => implode('; ', array_map(static fn ($r) => ($r['table'] ?? '') . ' ' . ($r['type'] ?? '') . ' ' . ($r['key'] ?? 'NULL') . ' / ' . ($r['Extra'] ?? ''), $plan));
 
+// MariaDB before 10.3 reads the rows of an index range in a derived table, not the index alone.
+$version   = (string) (osc_db_select('SELECT VERSION() AS v')[0]['v'] ?? '');
+$indexOnly = !(stripos($version, 'mariadb') !== false && version_compare($version, '10.3', '<'));
 foreach (array(
     'cities, no search, deep page' => array(array('city', $bigRegion, '', 400, 50), 'idx_region_name'),
     'cities, prefix search'        => array(array('city', $bigRegion, 'Town 1', 3, 50), 'idx_region_name'),
@@ -403,7 +406,7 @@ foreach (array(
     $ids    = array_values(array_filter($page, static fn ($r) => strcasecmp((string) ($r['select_type'] ?? ''), 'DERIVED') === 0))[0] ?? array();
     $joined = array_values(array_filter($page, static fn ($r) => ($r['table'] ?? '') === 't'))[0] ?? array();
     check("$label: page ids come from $index", ($ids['key'] ?? '') === $index, $describe($page));
-    check("$label: page ids read the index only", preg_match('/Using index(?! condition)/', (string) ($ids['Extra'] ?? '')) === 1, $describe($page));
+    check("$label: page ids read the index only", !$indexOnly || preg_match('/Using index(?! condition)/', (string) ($ids['Extra'] ?? '')) === 1, $describe($page));
     check("$label: page ids do not sort", stripos((string) ($ids['Extra'] ?? ''), 'filesort') === false, $describe($page));
     check("$label: page rows are fetched by primary key", ($joined['type'] ?? '') === 'eq_ref' && ($joined['key'] ?? '') === 'PRIMARY', $describe($page));
     // The optimizer may count through the single-column parent index instead; either is bounded by the parent.
