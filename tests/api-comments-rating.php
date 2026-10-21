@@ -56,7 +56,7 @@ $rated = static fn (\mindstellar\api\Response $r): ?int => ($v = $row($r)['i_rat
 
 harness_section('the column');
 $col = $admin->query("SELECT COLUMN_TYPE, IS_NULLABLE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '{$p}t_item_comment' AND column_name = 'i_rating'")->fetch_assoc();
-pin('i_rating is a nullable unsigned tiny integer', ['tinyint unsigned', 'YES'], [strtolower((string) ($col['COLUMN_TYPE'] ?? '')), $col['IS_NULLABLE'] ?? '']);
+pin('i_rating is a nullable unsigned tiny integer', ['tinyint unsigned', 'YES'], [preg_replace('/\(\d+\)/', '', strtolower((string) ($col['COLUMN_TYPE'] ?? ''))), $col['IS_NULLABLE'] ?? '']);
 $def = static fn (): array => array_values($admin->query("SELECT COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '{$p}t_item_comment' AND column_name = 'i_rating'")->fetch_assoc() ?: []);
 $fresh = $def();
 $admin->query("ALTER TABLE {$p}t_item_comment DROP COLUMN i_rating");
