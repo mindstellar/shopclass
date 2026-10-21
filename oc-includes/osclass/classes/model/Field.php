@@ -13,6 +13,8 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\database\DbException;
+use mindstellar\search\FacetIndex;
 
 /**
  * Model database for Field table
@@ -138,6 +140,9 @@ class Field extends DAO
             $deleted = Db::transaction(function () use ($id, $dependents) {
                 foreach ($dependents as $table) {
                     Db::table(DB_TABLE_PREFIX . $table)->where('fk_i_field_id', $id)->delete();
+                    if ($table === 't_item_meta') {
+                        FacetIndex::dropField((int) $id);
+                    }
                 }
 
                 return Db::table($this->getTableName())->where('pk_i_id', $id)->delete();
@@ -702,36 +707,34 @@ class Field extends DAO
     public function replace($itemId, $field, $value)
     {
         $table = sprintf('%st_item_meta', DB_TABLE_PREFIX);
-        if (is_array($value)) {
-            foreach ($value as $key => $v) {
-                // Each per-key write has always had its return discarded, so a
-                // failing one has never stopped the rest; the catch stays inside
-                // the loop and the method still falls through to null.
-                try {
-                    Db::execute(
-                        'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_multi, s_value) VALUES (?, ?, ?, ?)',
-                        array($itemId, $field, $key, $v)
-                    );
-                } catch (\mindstellar\database\DbException $e) {
-                    // discarded, as before
-                }
-            }
-        } else {
-            // The legacy write returned bool true on success (a REPLACE is a write
-            // query), not the affected-row count, so the boolean is preserved.
-            try {
-                Db::execute(
-                    'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_value) VALUES (?, ?, ?)',
-                    array($itemId, $field, $value)
-                );
-
-                return true;
-            } catch (\mindstellar\database\DbException $e) {
-                return false;
-            }
+        try {
+            // The meta write and its filter rows commit together or not at all. Inside a
+            // listing save this joins that transaction; on its own it retries a deadlock once.
+            Db::retryOnce(static function () use ($table, $itemId, $field, $value): void {
+                $write = static function () use ($table, $itemId, $field, $value): void {
+                    if (is_array($value)) {
+                        foreach ($value as $key => $v) {
+                            Db::execute(
+                                'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_multi, s_value) VALUES (?, ?, ?, ?)',
+                                array($itemId, $field, $key, $v)
+                            );
+                        }
+                    } else {
+                        Db::execute(
+                            'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_value) VALUES (?, ?, ?)',
+                            array($itemId, $field, $value)
+                        );
+                    }
+                    FacetIndex::rewriteField((int) $itemId, (int) $field, $value);
+                };
+                Db::transaction($write);
+            });
+        } catch (DbException $e) {
+            // Errors have always been discarded here; a scalar write reports false.
+            return is_array($value) ? null : false;
         }
 
-        return null;
+        return is_array($value) ? null : true;
     }
 
     /**
