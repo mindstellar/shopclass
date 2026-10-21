@@ -23,6 +23,7 @@ require_once __DIR__ . '/lib/race.php';
 use mindstellar\billing\Billing;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\Wallet;
+use mindstellar\database\Db;
 
 $admin  = api_admin_boot('osc_billing_wallet_race');
 $p      = DB_TABLE_PREFIX;
@@ -65,5 +66,37 @@ pin('the publish waited on the wallet row', 1, $waiting);
 pin('it publishes without an error', "published\n", $out[0]);
 pin('the purchase and the spend are both in the balance', 7, Wallet::balance($seller));
 pin('the listing is live', '1', $admin->query("SELECT b_active FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0]);
+
+harness_section('a first credit while another request creates the wallet');
+$fresh = seed_user($admin, 'fresh', 'fresh@example.test');
+pin('the user has no wallet row yet', '0', $admin->query("SELECT COUNT(*) FROM {$p}t_billing_wallet WHERE fk_i_user_id = $fresh")->fetch_row()[0]);
+[$waiting, $out] = race($admin, "INSERT INTO {$p}t_billing_wallet (fk_i_user_id, i_balance, dt_mod_date) VALUES ($fresh, 4, NOW())", $dbName, [[__DIR__ . '/lib/wallet-credit-child.php', [$fresh, 3]]], "%{$p}t_billing_wallet%");
+pin('the credit waited on the new row', 1, $waiting);
+pin('it credits without an error', "credited\n", $out[0]);
+pin('the balance has both', 7, Wallet::balance($fresh));
+
+harness_section('locking the wallet of a user who has none');
+$none = seed_user($admin, 'none', 'none@example.test');
+Db::transaction(static function () use ($none): void {
+    Wallet::lock($none);
+});
+pin('the row exists with a zero balance', 0, Wallet::balance($none));
+pin('and is a single row', '1', $admin->query("SELECT COUNT(*) FROM {$p}t_billing_wallet WHERE fk_i_user_id = $none")->fetch_row()[0]);
+
+harness_section('a ledger row written inside a transaction leaves no snapshot open');
+$spender = seed_user($admin, 'spender', 'spender@example.test');
+Wallet::credit($spender, 5, Wallet::REASON_GRANT);
+$row = seed_item($admin, $cat, $spender, 'Other');
+$ok  = true;
+try {
+    Db::transaction(static function () use ($admin, $p, $spender, $row): void {
+        Wallet::debit($spender, 2, Wallet::REASON_SPEND);
+        $admin->query("UPDATE {$p}t_item SET s_contact_name = 'changed meanwhile' WHERE pk_i_id = $row");
+        Db::execute("UPDATE {$p}t_item SET s_contact_name = 'ours' WHERE pk_i_id = $row");
+    });
+} catch (\Throwable $e) {
+    $ok = false;
+}
+pin('a write to a row another request changed meanwhile still succeeds', true, $ok);
 
 exit(harness_result());
