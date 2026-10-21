@@ -48,8 +48,8 @@ At this point it already works as a theme. It looks exactly like storefront.
 
 **4. Try it before you switch.** Appearance lists the child with a **Preview** link:
 `index.php?theme=storefront-blue`. This renders the whole site in the child, but only for
-you, a signed-in admin. Visitors keep seeing the live theme. Activate the child once it
-looks right.
+you, a signed-in admin. Visitors keep seeing the live theme. The preview stays on as you
+click around; `index.php?theme=` ends it. Activate the child once it looks right.
 
 **5. Add a screenshot** so the Appearance card is not a placeholder. Add `screenshot.png`,
 `.jpg` or `.webp` to the child's own folder: screenshots are not inherited.
@@ -294,7 +294,8 @@ updates on its own schedule.
 own folder, or the Appearance card falls back to a generic placeholder.
 
 **Preview is admin-only, and only works for an installed theme.** `?theme=` is ignored for
-visitors, so it cannot be used to force a theme on anyone. A name that is not an installed
+visitors, so it cannot be used to force a theme on anyone. A demo site (`OSC_DEMO=1`) is the
+one exception: there any visitor can preview. A name that is not an installed
 theme is ignored rather than followed.
 
 ## See also

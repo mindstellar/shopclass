@@ -41,6 +41,7 @@ the cache (neither serve nor store) when a request carries any of them:
 | `osclass` | a PHP session starts (login, a form write) | session-bound output |
 | `oc_cache_bypass` | front-end or admin login / remember-me | logged-in user or admin |
 | `oc_userLocale` | a visitor switches language | changes the rendered language |
+| `oc_theme` | an admin previews a theme (any visitor on a demo site) | changes the rendered theme |
 
 Front-end and admin identity (`oc_userId`, `oc_userSecret`, `oc_adminId`) are keys
 *inside* a cookie named `md5(WEB_PATH)`, not cookie names, and not something a
