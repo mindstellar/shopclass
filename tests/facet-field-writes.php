@@ -256,4 +256,26 @@ pin('the save waited on the meta row the build read', 1, $waiting);
 pin('and then succeeded', 'ok', $m[1] ?? trim($out[0]));
 pin('meta and facet row both hold the save', ['Later', ["f$raced=Later|-"]], [$value("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $built AND fk_i_field_id = $raced"), $facet($built)]);
 
+harness_section('a field read once is not looked up again');
+$forget = static function (): void {
+    $map = new ReflectionProperty(FacetIndex::class, 'storages');
+    $map->setAccessible(true);
+    $map->setValue(null, []);
+};
+$looked = $field('DROPDOWN');
+$forget();
+$cold = harness_query_count(static fn () => $dao->replace($item, $looked, 'A'));
+$forget();
+FacetIndex::rememberTypes([['pk_i_id' => (string) $looked, 'e_type' => 'DROPDOWN']]);
+$warm = harness_query_count(static fn () => $dao->replace($item, $looked, 'B'));
+pin('after rememberTypes() a replace() runs one query less (no field lookup)', $cold - 1, $warm);
+$again = harness_query_count(static fn () => $dao->replace($item, $looked, 'C'));
+pin('a field looked up once is remembered for the request', $warm, $again);
+pin('the row is still written', 'C', $value("SELECT s_value FROM {$p}t_item_facet WHERE fk_i_item_id = $item AND s_key = 'f$looked'"));
+$svc->update($looked, ['type' => 'NUMBER']);
+pin('a type change updates what the request remembers', 'number', FacetIndex::fieldKind($looked));
+$admin->query("UPDATE {$p}t_meta_fields SET e_type = 'DATEINTERVAL' WHERE pk_i_id = $looked");
+pin('a fresh read sees a change made elsewhere', ['number', 'interval'], [FacetIndex::fieldKind($looked), FacetIndex::fieldKind($looked, true)]);
+$admin->query("DELETE FROM {$p}t_job_queue");
+
 exit(harness_result());

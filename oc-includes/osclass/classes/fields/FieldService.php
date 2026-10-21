@@ -153,6 +153,7 @@ final class FieldService
         $registry = FieldTypeRegistry::getInstance();
         $retype   = FacetIndex::rowKind($registry->storageOf((string) $field['e_type'])) !== FacetIndex::rowKind($registry->storageOf($row['e_type']));
         Db::transaction(function () use ($fields, $id, $row, $categories, $retype): void {
+            Db::afterCommit(static fn () => FacetIndex::rememberTypes([['pk_i_id' => $id, 'e_type' => $row['e_type']]]));
             if ($retype) {
                 Db::afterCommit(static fn () => osc_job_enqueue(
                     FacetIndex::JOB_FIELD,
