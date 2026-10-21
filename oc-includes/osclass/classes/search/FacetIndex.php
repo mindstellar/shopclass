@@ -20,13 +20,16 @@ use mindstellar\listing\ListingStore;
 
 /**
  * t_item_facet: one row per filterable value of a listing (custom field values and variant
- * options), kept in step with t_item_meta and t_item_variant by their writers. Every method
- * that writes expects the listing row to be locked by the caller. A writer's call that fails
- * marks the index stale and queues a rebuild instead of failing the listing write.
+ * options), kept in step with t_item_meta and t_item_variant by their writers. A row holds the
+ * id of its (key, value) term in t_facet_term; a number row uses the term (key, '') and keeps
+ * the number in d_number, a text row has d_number 0. Every method that writes expects the
+ * listing row to be locked by the caller. A writer's call that fails marks the index stale and
+ * queues a rebuild instead of failing the listing write.
  */
 final class FacetIndex
 {
     public const TABLE      = 't_item_facet';
+    public const TERM_TABLE = 't_facet_term';
     public const JOB_BUILD  = 'search.facet_build';
     public const JOB_FIELD  = 'search.facet_field';
     public const BATCH      = 500;
@@ -36,6 +39,7 @@ final class FacetIndex
 
     private const KEY_LEN = 48;
     private const ROWS_PER_INSERT = 500;
+    private const TERMS_PER_SELECT = 200;
 
     private static bool $tablePresent = false;
 
@@ -44,9 +48,23 @@ final class FacetIndex
 
     private static float $storagesRequest = 0.0;
 
+    /** @var array<string,array<int|string,int>> committed term ids by key and cut value, for this request */
+    private static array $terms = [];
+
+    /** @var array<int,true> term ids made by a transaction of this request that has not committed yet */
+    private static array $created = [];
+
+    /** @var array<int,true> term ids another transaction committed after the open one's snapshot */
+    private static array $unseen = [];
+
     public static function tableName(): string
     {
         return DB_TABLE_PREFIX . self::TABLE;
+    }
+
+    public static function termTable(): string
+    {
+        return DB_TABLE_PREFIX . self::TERM_TABLE;
     }
 
     /**
@@ -112,12 +130,13 @@ final class FacetIndex
     }
 
     /**
-     * Drop the remembered storages. A long-running worker keeps statics between requests, so
-     * the map is also dropped when the request time moves.
+     * Drop the remembered storages and term ids. A long-running worker keeps statics between
+     * requests, so both are also dropped when the request time moves.
      */
     public static function forgetTypes(): void
     {
         self::$storages = [];
+        self::$terms    = [];
     }
 
     private static function sameRequest(): void
@@ -125,7 +144,7 @@ final class FacetIndex
         $now = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0.0);
         if ($now !== self::$storagesRequest) {
             self::$storagesRequest = $now;
-            self::$storages        = [];
+            self::forgetTypes();
         }
     }
 
@@ -141,6 +160,111 @@ final class FacetIndex
     }
 
     /**
+     * The term ids of the pairs that have one. Values are cut as rows are written and compared
+     * under the table's collation, so 'red' finds the term of 'Red'. Reads only.
+     *
+     * @param array<string,array<int,int|string>> $pairs key => values (a number key asks for '')
+     *
+     * @return array<string,array<int|string,int>> key => value as asked => term id; unknown pairs left out
+     * @throws DbException
+     */
+    public static function termIds(array $pairs): array
+    {
+        self::sameRequest();
+        $found  = [];
+        $misses = [];
+        foreach ($pairs as $key => $values) {
+            foreach ($values as $value) {
+                $cut = self::cut((string) $value);
+                if (isset(self::$terms[$key][$cut])) {
+                    $found[$key][$value] = self::$terms[$key][$cut];
+                } else {
+                    $misses[$key . "\0" . $cut] = [(string) $key, $cut];
+                }
+            }
+        }
+        if ($misses === []) {
+            return $found;
+        }
+        $ids = self::lookup(array_values($misses), false);
+        foreach ($ids as [$key, $cut, $id]) {
+            if (!isset(self::$created[$id])) {
+                self::$terms[$key][$cut] = $id;
+            }
+        }
+
+        return self::fill($found, $pairs, $ids);
+    }
+
+    /**
+     * As termIds(), creating the terms that are missing. A term another transaction made after
+     * this one's snapshot is returned too; a row naming it is written after the commit instead.
+     *
+     * @param array<string,array<int,int|string>> $pairs key => values
+     *
+     * @return array<string,array<int|string,int>> key => value as asked => term id
+     * @throws DbException
+     */
+    public static function ensureTerms(array $pairs): array
+    {
+        $found   = self::termIds($pairs);
+        $missing = [];
+        foreach ($pairs as $key => $values) {
+            foreach ($values as $value) {
+                if (!isset($found[$key][$value])) {
+                    $cut = self::cut((string) $value);
+                    $missing[$key . "\0" . $cut] = [(string) $key, $cut];
+                }
+            }
+        }
+        if ($missing === []) {
+            return $found;
+        }
+        // Sorted, so two writers making the same terms lock them in one order.
+        ksort($missing, SORT_STRING);
+        $missing = array_values($missing);
+        foreach (array_chunk($missing, self::TERMS_PER_SELECT) as $chunk) {
+            Db::execute(
+                'INSERT IGNORE INTO ' . self::termTable() . ' (s_key, s_value) VALUES ' . implode(', ', array_fill(0, count($chunk), '(?, ?)')),
+                array_merge(...$chunk)
+            );
+        }
+        // A plain read in a snapshot opened earlier would not see a term another writer just made.
+        $ids = self::lookup($missing, true);
+        if ($ids === []) {
+            return $found;
+        }
+        // This transaction's own terms show in its snapshot; one made by another writer since does not.
+        $seen = array_flip(array_map('intval', array_column(Db::select(
+            'SELECT pk_i_id FROM ' . self::termTable() . ' WHERE pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')',
+            array_column($ids, 2)
+        ), 'pk_i_id')));
+        foreach ($ids as [, , $id]) {
+            if (isset($seen[$id])) {
+                self::$created[$id] = true;
+            } else {
+                self::$unseen[$id] = true;
+            }
+        }
+        Db::afterCommit(static function () use ($ids): void {
+            foreach ($ids as [$key, $cut, $id]) {
+                self::$terms[$key][$cut] = $id;
+                unset(self::$created[$id], self::$unseen[$id]);
+            }
+        });
+
+        return self::fill($found, $pairs, $ids);
+    }
+
+    /**
+     * @throws DbException only when the caller's transaction was lost
+     */
+    public static function dropVariants(int $itemId): void
+    {
+        self::guard(static fn () => self::deleteVariants($itemId, null));
+    }
+
+    /**
      * Replace the option rows of a listing.
      *
      * @param array<int,array<string,mixed>> $rows t_item_variant rows: pk_i_id and s_options
@@ -150,17 +274,9 @@ final class FacetIndex
     public static function rewriteVariants(int $itemId, array $rows): void
     {
         self::guard(static function () use ($itemId, $rows): void {
-            self::deleteVariants($itemId);
-            self::insert(self::variantRows($itemId, $rows));
+            self::deleteVariants($itemId, null);
+            self::insert($itemId, self::variantRows($rows));
         });
-    }
-
-    /**
-     * @throws DbException only when the caller's transaction was lost
-     */
-    public static function dropVariants(int $itemId): void
-    {
-        self::guard(static fn () => self::deleteVariants($itemId));
     }
 
     /**
@@ -175,35 +291,29 @@ final class FacetIndex
     {
         self::guard(static function () use ($itemId, $fieldId, $value, $storage): void {
             $storage ??= self::storageOfField($fieldId);
+            $keys = self::fieldKeys($fieldId);
             if (self::rowKind($storage) === 'interval' && is_array($value)) {
                 // REPLACE leaves an end that was not passed in t_item_meta, so its row stays too.
                 $ends = array_values(array_intersect(['from', 'to'], array_map('strval', array_keys($value))));
-                if ($ends !== []) {
-                    Db::execute(
-                        'DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_key IN (' . implode(', ', array_fill(0, count($ends), '?')) . ')',
-                        array_merge([$itemId], array_map(static fn (string $end): string => self::key($fieldId, $end), $ends))
-                    );
-                }
-                self::insert(self::fieldRows($itemId, $fieldId, $storage, $value));
-
-                return;
+                $keys = array_map(static fn (string $end): string => self::key($fieldId, $end), $ends);
             }
-            self::deleteField($itemId, $fieldId);
-            self::insert(self::fieldRows($itemId, $fieldId, $storage, $value));
+            self::deleteKeys($itemId, $keys);
+            self::insert($itemId, self::fieldRows($fieldId, $storage, $value));
         });
     }
 
     /**
-     * Remove a field's rows from every listing.
+     * Remove a field's rows from every listing, with its terms.
      *
      * @throws DbException only when the caller's transaction was lost
      */
     public static function dropField(int $fieldId): void
     {
-        self::guard(static fn () => Db::execute(
-            'DELETE FROM ' . self::tableName() . ' WHERE s_key IN (?, ?, ?)',
-            [self::key($fieldId), self::key($fieldId, 'from'), self::key($fieldId, 'to')]
-        ));
+        $keys = self::fieldKeys($fieldId);
+        self::guard(static fn () => Db::execute('DELETE FROM ' . self::termTable() . ' WHERE s_key IN (?, ?, ?)', $keys));
+        foreach ($keys as $key) {
+            unset(self::$terms[$key]);
+        }
     }
 
     /**
@@ -234,11 +344,7 @@ final class FacetIndex
             return null;
         }
         foreach ($ids as $id) {
-            Db::transaction(static function () use ($id, $fieldId): void {
-                if (ListingStore::find($id, ['pk_i_id'], true) !== null) {
-                    self::rewriteScoped($id, $fieldId);
-                }
-            });
+            self::rebuildLocked($id, $fieldId);
         }
 
         return count($ids) < $limit ? null : (int) end($ids);
@@ -276,6 +382,26 @@ final class FacetIndex
     }
 
     /**
+     * @return string[] the three keys a field's rows can have
+     */
+    private static function fieldKeys(int $fieldId): array
+    {
+        return [self::key($fieldId), self::key($fieldId, 'from'), self::key($fieldId, 'to')];
+    }
+
+    /**
+     * @throws DbException
+     */
+    private static function rebuildLocked(int $itemId, ?int $fieldId): void
+    {
+        Db::transaction(static function () use ($itemId, $fieldId): void {
+            if (ListingStore::find($itemId, ['pk_i_id'], true) !== null) {
+                self::rewriteScoped($itemId, $fieldId);
+            }
+        });
+    }
+
+    /**
      * Rewrite a listing's rows: all of them, or only one field's. Reads lock what they read and
      * come before the index write (variants, meta, then the index, as the writers do), so a
      * build waits for a save in progress and never holds an old snapshot or deadlocks with it.
@@ -290,7 +416,7 @@ final class FacetIndex
                 'SELECT pk_i_id, s_options FROM ' . DB_TABLE_PREFIX . 't_item_variant WHERE fk_i_item_id = ? ORDER BY pk_i_id FOR UPDATE',
                 [$itemId]
             );
-            $rows = self::variantRows($itemId, $variants);
+            $rows = self::variantRows($variants);
         }
 
         $sql    = 'SELECT m.fk_i_field_id, m.s_multi, m.s_value, f.e_type FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
@@ -311,14 +437,14 @@ final class FacetIndex
             }
         }
         foreach ($fields as $id => $field) {
-            $rows = array_merge($rows, self::fieldRows($itemId, $id, $field['storage'], $field['value']));
+            $rows = array_merge($rows, self::fieldRows($id, $field['storage'], $field['value']));
         }
         if ($fieldId === null) {
             Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ?', [$itemId]);
         } else {
-            self::deleteField($itemId, $fieldId);
+            self::deleteKeys($itemId, self::fieldKeys($fieldId));
         }
-        self::insert($rows);
+        self::insert($itemId, $rows);
     }
 
     /**
@@ -333,33 +459,115 @@ final class FacetIndex
             Db::transaction($write);
         } catch (DbException $e) {
             Db::assertIntact();
-            error_log('Listing filter index write failed, rebuild queued: ' . $e->getMessage());
-            try {
-                self::markStale();
-                osc_job_ensure(self::JOB_BUILD, ['after' => 0]);
-            } catch (\Throwable $ignored) {
-                // The flag stays as it was; db:repair or search:reindex sets it right.
-            }
+            self::queueRebuild($e);
+        }
+    }
+
+    private static function queueRebuild(DbException $e): void
+    {
+        error_log('Listing filter index write failed, rebuild queued: ' . $e->getMessage());
+        try {
+            self::markStale();
+            osc_job_ensure(self::JOB_BUILD, ['after' => 0]);
+        } catch (\Throwable $ignored) {
+            // The flag stays as it was; db:repair or search:reindex sets it right.
         }
     }
 
     /**
+     * @param int[]|null $variantIds null for every variant of the listing
+     *
      * @throws DbException
      */
-    private static function deleteVariants(int $itemId): void
+    private static function deleteVariants(int $itemId, ?array $variantIds): void
     {
-        Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_variant_id <> 0', [$itemId]);
+        if ($variantIds === null) {
+            Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_variant_id <> 0', [$itemId]);
+
+            return;
+        }
+        $variantIds = array_values(array_map('intval', $variantIds));
+        Db::execute(
+            'DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_variant_id IN (' . implode(', ', array_fill(0, count($variantIds), '?')) . ')',
+            array_merge([$itemId], $variantIds)
+        );
     }
 
     /**
+     * Delete a listing's rows whose term has one of these keys. The join starts from the
+     * listing's rows, so it reads only the terms they name.
+     *
+     * @param string[] $keys
+     *
      * @throws DbException
      */
-    private static function deleteField(int $itemId, int $fieldId): void
+    private static function deleteKeys(int $itemId, array $keys): void
     {
+        if ($keys === []) {
+            return;
+        }
         Db::execute(
-            'DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_key IN (?, ?, ?)',
-            [$itemId, self::key($fieldId), self::key($fieldId, 'from'), self::key($fieldId, 'to')]
+            'DELETE f FROM ' . self::tableName() . ' f STRAIGHT_JOIN ' . self::termTable() . ' t ON t.pk_i_id = f.fk_i_term_id'
+            . ' WHERE f.fk_i_item_id = ? AND t.s_key IN (' . implode(', ', array_fill(0, count($keys), '?')) . ')',
+            array_merge([$itemId], array_values($keys))
         );
+    }
+
+    /**
+     * Term ids of [key, cut value] pairs, compared under the term table's collation.
+     *
+     * @param array<int,array{0:string,1:string}> $pairs
+     *
+     * @return array<int,array{0:string,1:string,2:int}> the asked key and value with the id, for those found
+     * @throws DbException
+     */
+    private static function lookup(array $pairs, bool $lock): array
+    {
+        $found = [];
+        foreach (array_chunk($pairs, self::TERMS_PER_SELECT) as $chunk) {
+            $rows = [];
+            foreach (array_keys($chunk) as $n) {
+                $rows[] = $n === 0 ? 'SELECT 0 AS n, ? AS k, ? AS v' : 'SELECT ' . $n . ', ?, ?';
+            }
+            $result = Db::select(
+                'SELECT q.n, t.pk_i_id FROM (' . implode(' UNION ALL ', $rows) . ') q JOIN ' . self::termTable() . ' t'
+                . ' ON t.s_key = q.k AND t.s_value = q.v' . ($lock ? ' LOCK IN SHARE MODE' : ''),
+                array_merge(...$chunk)
+            );
+            foreach ($result as $row) {
+                $pair    = $chunk[(int) $row['n']];
+                $found[] = [$pair[0], $pair[1], (int) $row['pk_i_id']];
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Add the looked-up ids to $found, keyed by each value as it was asked.
+     *
+     * @param array<string,array<int|string,int>>  $found
+     * @param array<string,array<int,int|string>>  $pairs
+     * @param array<int,array{0:string,1:string,2:int}> $ids
+     *
+     * @return array<string,array<int|string,int>>
+     */
+    private static function fill(array $found, array $pairs, array $ids): array
+    {
+        $byPair = [];
+        foreach ($ids as [$key, $cut, $id]) {
+            $byPair[$key . "\0" . $cut] = $id;
+        }
+        foreach ($pairs as $key => $values) {
+            foreach ($values as $value) {
+                $id = $byPair[$key . "\0" . self::cut((string) $value)] ?? null;
+                if ($id !== null && !isset($found[$key][$value])) {
+                    $found[$key][$value] = $id;
+                }
+            }
+        }
+
+        return $found;
     }
 
     private static function storageOfField(int $fieldId): string
@@ -384,15 +592,15 @@ final class FacetIndex
     /**
      * @param string|array<string,mixed>|null $value
      *
-     * @return array<int,array{0:string,1:string,2:int,3:int,4:?float}>
+     * @return array<int,array{0:string,1:string,2:int,3:float}> key, term value, variant, number
      */
-    private static function fieldRows(int $itemId, int $fieldId, string $storage, $value): array
+    private static function fieldRows(int $fieldId, string $storage, $value): array
     {
         $kind = self::rowKind($storage);
         if ($kind === 'interval') {
             $rows = [];
             foreach (['from', 'to'] as $end) {
-                $row = is_array($value) ? self::numberRow($itemId, self::key($fieldId, $end), (string) ($value[$end] ?? '')) : null;
+                $row = is_array($value) ? self::numberRow(self::key($fieldId, $end), (string) ($value[$end] ?? '')) : null;
                 if ($row !== null) {
                     $rows[] = $row;
                 }
@@ -407,11 +615,11 @@ final class FacetIndex
         $key  = self::key($fieldId);
         switch ($kind) {
             case 'text':
-                return $text === '' ? [] : [[$key, self::cut($text), $itemId, 0, null]];
+                return $text === '' ? [] : [[$key, self::cut($text), 0, 0.0]];
             case 'flag':
-                return $text === '1' ? [[$key, '1', $itemId, 0, null]] : [];
+                return $text === '1' ? [[$key, '1', 0, 0.0]] : [];
             case 'number':
-                $row = self::numberRow($itemId, $key, $text);
+                $row = self::numberRow($key, $text);
 
                 return $row === null ? [] : [$row];
         }
@@ -420,21 +628,21 @@ final class FacetIndex
     }
 
     /**
-     * @return array{0:string,1:string,2:int,3:int,4:?float}|null
+     * @return array{0:string,1:string,2:int,3:float}|null
      */
-    private static function numberRow(int $itemId, string $key, string $text): ?array
+    private static function numberRow(string $key, string $text): ?array
     {
         $number = self::number($text);
 
-        return $number === null ? null : [$key, self::cut($text), $itemId, 0, $number];
+        return $number === null ? null : [$key, '', 0, $number];
     }
 
     /**
      * @param array<int,array<string,mixed>> $variants
      *
-     * @return array<int,array{0:string,1:string,2:int,3:int,4:?float}>
+     * @return array<int,array{0:string,1:string,2:int,3:float}>
      */
-    private static function variantRows(int $itemId, array $variants): array
+    private static function variantRows(array $variants): array
     {
         $rows = [];
         foreach ($variants as $variant) {
@@ -446,7 +654,7 @@ final class FacetIndex
                 if (!is_scalar($value) || self::cut((string) $value) === '') {
                     continue;
                 }
-                $rows[] = [self::optionKey((string) $name), self::cut((string) $value), $itemId, (int) $variant['pk_i_id'], null];
+                $rows[] = [self::optionKey((string) $name), self::cut((string) $value), (int) $variant['pk_i_id'], 0.0];
             }
         }
 
@@ -454,24 +662,50 @@ final class FacetIndex
     }
 
     /**
-     * Rows equal under the table's collation (option names Size and SIZE) are written once.
+     * Resolve the rows' terms and write them. Rows equal under the table's collation (option
+     * names Size and SIZE) are written once. A row whose term this transaction cannot see yet
+     * is left out, and the listing is rebuilt once the transaction commits.
      *
-     * @param array<int,array{0:string,1:string,2:int,3:int,4:?float}> $rows
+     * @param array<int,array{0:string,1:string,2:int,3:float}> $rows key, term value, variant, number
      *
      * @throws DbException
      */
-    private static function insert(array $rows): void
+    private static function insert(int $itemId, array $rows): void
     {
-        foreach (array_chunk($rows, self::ROWS_PER_INSERT) as $chunk) {
-            $params = [];
-            foreach ($chunk as $row) {
-                array_push($params, ...$row);
+        if ($rows === []) {
+            return;
+        }
+        $pairs = [];
+        foreach ($rows as [$key, $value]) {
+            $pairs[$key][$value] = $value;
+        }
+        $ids    = self::ensureTerms(array_map('array_values', $pairs));
+        $values = [];
+        $later  = false;
+        foreach ($rows as [$key, $value, $variant, $number]) {
+            $term = $ids[$key][$value] ?? null;
+            if ($term === null || isset(self::$unseen[$term])) {
+                $later = true;
+                continue;
             }
+            $values[] = [$term, $number, $itemId, $variant];
+        }
+        if ($later) {
+            Db::afterCommit(static function () use ($itemId): void {
+                try {
+                    self::rebuildLocked($itemId, null);
+                } catch (DbException $e) {
+                    self::queueRebuild($e);
+                }
+            });
+        }
+        // Not INSERT IGNORE: that would also hide a row naming a term that is gone.
+        foreach (array_chunk($values, self::ROWS_PER_INSERT) as $chunk) {
             Db::execute(
-                'INSERT INTO ' . self::tableName() . ' (s_key, s_value, fk_i_item_id, fk_i_variant_id, d_number) VALUES '
-                . implode(', ', array_fill(0, count($chunk), '(?, ?, ?, ?, ?)'))
-                . ' ON DUPLICATE KEY UPDATE d_number = VALUES(d_number)',
-                $params
+                'INSERT INTO ' . self::tableName() . ' (fk_i_term_id, d_number, fk_i_item_id, fk_i_variant_id) VALUES '
+                . implode(', ', array_fill(0, count($chunk), '(?, ?, ?, ?)'))
+                . ' ON DUPLICATE KEY UPDATE fk_i_item_id = fk_i_item_id',
+                array_merge(...$chunk)
             );
         }
     }

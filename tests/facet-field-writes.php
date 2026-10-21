@@ -21,6 +21,7 @@
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
+require_once __DIR__ . '/lib/facet-rows.php';
 require_once __DIR__ . '/lib/race.php';
 
 use mindstellar\fields\FieldService;
@@ -59,7 +60,7 @@ $field = static function (string $type) use ($admin, $p, $cat): int {
     return $id;
 };
 $facet = static function (int $item) use ($admin, $p): array {
-    $rows = $admin->query("SELECT s_key, s_value, d_number AS n FROM {$p}t_item_facet WHERE fk_i_item_id = $item ORDER BY s_key, s_value")->fetch_all(MYSQLI_ASSOC);
+    $rows = $admin->query('SELECT s_key, s_value, d_number AS n FROM ' . facet_rows_sql() . " x WHERE fk_i_item_id = $item ORDER BY s_key, s_value")->fetch_all(MYSQLI_ASSOC);
 
     return array_map(static fn (array $r): string => $r['s_key'] . '=' . $r['s_value'] . '|' . ($r['n'] === null ? '-' : (float) $r['n']), $rows);
 };
@@ -88,18 +89,18 @@ pin('checkbox unticked: no row', [], $facet($item));
 
 $num = $field('NUMBER');
 $dao->replace($item, $num, '12.5');
-pin('number: text and d_number 12.5', ["f$num=12.5|12.5"], $facet($item));
+pin('number: the (key, \'\') term and d_number 12.5', ["f$num=|12.5"], $facet($item));
 $dao->replace($item, $num, 'abc');
 pin('number text: no row', [], $facet($item));
 
 $date = $field('DATE');
 $dao->replace($item, $date, '1700000000');
-pin('date: timestamp and d_number', ["f$date=1700000000|1700000000"], $facet($item));
+pin('date: the timestamp in d_number', ["f$date=|1700000000"], $facet($item));
 $dao->replace($item, $date, '');
 
 $span = $field('DATEINTERVAL');
 pin('an interval write still returns null', null, $dao->replace($item, $span, ['from' => '1700000000', 'to' => '1700086400']));
-pin('date interval: .from and .to rows', ["f$span.from=1700000000|1700000000", "f$span.to=1700086400|1700086400"], $facet($item));
+pin('date interval: .from and .to rows', ["f$span.from=|1700000000", "f$span.to=|1700086400"], $facet($item));
 $dao->replace($item, $span, ['from' => '', 'to' => '']);
 pin('an emptied interval removes both rows', [], $facet($item));
 
@@ -117,9 +118,9 @@ pin('the meta row is written', 'Green', $value("SELECT s_value FROM {$p}t_item_m
 pin('the index is marked stale', '0', $value("SELECT s_value FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = 'facet_ready'"));
 pin('and a rebuild is queued', '1', (string) $value("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_BUILD . "'"));
 $admin->query("DELETE FROM {$p}t_job_queue");
-$admin->query('CREATE TABLE ' . $p . 't_item_facet (s_key VARCHAR(48) NOT NULL, s_value VARCHAR(191) NOT NULL, fk_i_item_id INT UNSIGNED NOT NULL, '
-    . 'fk_i_variant_id INT UNSIGNED NOT NULL DEFAULT 0, d_number DOUBLE NULL, PRIMARY KEY (s_key, s_value, fk_i_item_id, fk_i_variant_id), '
-    . 'INDEX idx_item (fk_i_item_id), INDEX idx_number (s_key, d_number), FOREIGN KEY (fk_i_item_id) REFERENCES ' . $p . 't_item (pk_i_id) ON DELETE CASCADE) '
+$admin->query('CREATE TABLE ' . $p . 't_item_facet (fk_i_term_id INT UNSIGNED NOT NULL, d_number DOUBLE NOT NULL DEFAULT 0, fk_i_item_id INT UNSIGNED NOT NULL, '
+    . 'fk_i_variant_id INT UNSIGNED NOT NULL DEFAULT 0, PRIMARY KEY (fk_i_term_id, d_number, fk_i_item_id, fk_i_variant_id), INDEX idx_item (fk_i_item_id, fk_i_term_id), '
+    . 'FOREIGN KEY (fk_i_term_id) REFERENCES ' . $p . 't_facet_term (pk_i_id) ON DELETE CASCADE, FOREIGN KEY (fk_i_item_id) REFERENCES ' . $p . 't_item (pk_i_id) ON DELETE CASCADE) '
     . "ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'");
 
 harness_section('a map write is best effort per key');
@@ -148,7 +149,8 @@ osc_add_hook('after_delete_field', static function ($id) use (&$fired): void {
     $fired[] = 'after ' . $id;
 });
 $dao->deleteByPrimaryKey($gone);
-pin('the field rows are gone from every listing', '0', (string) $value("SELECT COUNT(*) FROM {$p}t_item_facet WHERE s_key = 'f$gone'"));
+pin('the field rows are gone from every listing', '0', (string) $value('SELECT COUNT(*) FROM ' . facet_rows_sql() . " x WHERE s_key = 'f$gone'"));
+pin('and its terms', '0', (string) $value("SELECT COUNT(*) FROM {$p}t_facet_term WHERE s_key = 'f$gone'"));
 pin('other fields keep their rows', ["f$drop=Keep|-"], $facet($item));
 pin('both hooks fired', ["before $gone", "after $gone"], $fired);
 
@@ -190,7 +192,7 @@ $svc->update($kind, ['type' => 'NUMBER']);
 pin('a type change takes searches off the index until the job is done', false, FacetIndex::ready());
 $run();
 pin('and the finished job puts them back', true, FacetIndex::ready());
-pin('DROPDOWN to NUMBER: the job leaves a number row', [[], ["f$kind=12|12"]], [$jobs(), $facet($typed)]);
+pin('DROPDOWN to NUMBER: the job leaves a number row', [[], ["f$kind=|12"]], [$jobs(), $facet($typed)]);
 $svc->update($kind, ['type' => 'TEXT']);
 $run();
 pin('NUMBER to TEXT: the job removes it', [[], []], [$jobs(), $facet($typed)]);
@@ -243,8 +245,8 @@ race_hold($admin, "UPDATE {$p}t_item_meta SET s_value = 'New' WHERE fk_i_item_id
 $run     = race_run($child, $db, ['build', $built, $sue, $raced, '']);
 $waiting = race_wait_for($db, '%t_item_meta%LOCK IN SHARE MODE%');
 // Its second half, the index row: the waiting build must not hold it.
-$admin->query("DELETE FROM {$p}t_item_facet WHERE fk_i_item_id = $built AND s_key = 'f$raced'");
-$admin->query("INSERT INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) VALUES ('f$raced', 'New', $built, 0)");
+$admin->query("DELETE f FROM {$p}t_item_facet f JOIN {$p}t_facet_term t ON t.pk_i_id = f.fk_i_term_id WHERE f.fk_i_item_id = $built AND t.s_key = 'f$raced'");
+facet_put($admin, "f$raced", 'New', $built);
 $out = race_release($admin, [$run]);
 preg_match('/^(ok|false|threw.*)$/m', $out[0], $m);
 pin('the build waited on the meta read', 1, $waiting);
@@ -278,7 +280,7 @@ $warm = harness_query_count(static fn () => $dao->replace($item, $looked, 'B'));
 pin('after rememberTypes() a replace() runs one query less (no field lookup)', $cold - 1, $warm);
 $again = harness_query_count(static fn () => $dao->replace($item, $looked, 'C'));
 pin('a field looked up once is remembered for the request', $warm, $again);
-pin('the row is still written', 'C', $value("SELECT s_value FROM {$p}t_item_facet WHERE fk_i_item_id = $item AND s_key = 'f$looked'"));
+pin('the row is still written', 'C', $value('SELECT s_value FROM ' . facet_rows_sql() . " x WHERE fk_i_item_id = $item AND s_key = 'f$looked'"));
 $svc->update($looked, ['type' => 'NUMBER']);
 pin('a type change updates what the request remembers', 'number', FacetIndex::fieldKind($looked));
 $admin->query("UPDATE {$p}t_meta_fields SET e_type = 'DATEINTERVAL' WHERE pk_i_id = $looked");
@@ -297,8 +299,9 @@ while ($listings() < $total) {
 $ids   = array_map('intval', array_column($admin->query("SELECT pk_i_id FROM {$p}t_item ORDER BY pk_i_id")->fetch_all(MYSQLI_ASSOC), 'pk_i_id'));
 $moved = $field('DROPDOWN');
 $admin->query("INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) SELECT pk_i_id, $moved, '7', '' FROM {$p}t_item");
-$admin->query("INSERT INTO {$p}t_item_facet (s_key, s_value, fk_i_item_id, fk_i_variant_id) SELECT 'f$moved', '7', pk_i_id, 0 FROM {$p}t_item");
-$rowsOf = static fn (int $id): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_facet WHERE s_key = 'f$id'")->fetch_row()[0];
+$admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('f$moved', '7')");
+$admin->query("INSERT INTO {$p}t_item_facet (fk_i_term_id, fk_i_item_id, fk_i_variant_id) SELECT t.pk_i_id, i.pk_i_id, 0 FROM {$p}t_item i JOIN {$p}t_facet_term t ON t.s_key = 'f$moved' AND t.s_value = '7'");
+$rowsOf = static fn (int $id): int => (int) $admin->query('SELECT COUNT(*) FROM ' . facet_rows_sql() . " x WHERE s_key = 'f$id'")->fetch_row()[0];
 // One pass is one batch: the handler's repeat is held back an hour.
 $pass = static function () use ($admin, $p): int {
     JobWorker::resetRegistration();
@@ -332,7 +335,7 @@ $job = $jobs();
 pin('one pass leaves the job pending at the batch-th listing, kind kept', [1, $ids[FacetIndex::BATCH - 1], 'number'], [
     count($job), (int) (json_decode($job[0]['s_payload'], true)['after'] ?? -1), json_decode($job[0]['s_payload'], true)['kind'] ?? null,
 ]);
-pin('the first batch has number rows', FacetIndex::BATCH, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_facet WHERE s_key = 'f$moved' AND d_number = 7")->fetch_row()[0]);
+pin('the first batch has number rows', FacetIndex::BATCH, (int) $admin->query('SELECT COUNT(*) FROM ' . facet_rows_sql() . " x WHERE s_key = 'f$moved' AND d_number = 7")->fetch_row()[0]);
 $svc->update($moved, ['type' => 'TEXT']);
 // The second change folded into the running row and was deleted with it.
 $admin->query("DELETE FROM {$p}t_job_queue WHERE s_unique IS NOT NULL");

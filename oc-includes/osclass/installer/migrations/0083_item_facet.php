@@ -13,9 +13,9 @@ use mindstellar\migration\MigrationInterface;
 use mindstellar\search\FacetIndex;
 
 /**
- * Add t_item_facet, the filter index of custom field values and variant options, and fill it
- * from the existing listings. Up to 5,000 listings are indexed here; more go to a background
- * job. Safe to re-run: the table is made only when missing and a ready index is not rebuilt.
+ * Add t_item_facet, the filter index of custom field values and variant options, with
+ * t_facet_term, the (key, value) terms its rows name, and fill it from the existing listings. Up to 5,000 listings are indexed here; more go to a background
+ * job. Safe to re-run: the tables are made only when missing and a ready index is not rebuilt.
  *
  * @title Listing filter index
  */
@@ -32,15 +32,23 @@ return new class () implements MigrationInterface {
     {
         $existed = $conn->selectOne('SHOW TABLES LIKE ?', array(DB_TABLE_PREFIX . 't_item_facet')) !== null;
         $conn->execute(
-            'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_item_facet ('
+            'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_facet_term ('
+            . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
             . ' s_key VARCHAR(48) NOT NULL,'
             . ' s_value VARCHAR(191) NOT NULL,'
+            . ' PRIMARY KEY (pk_i_id),'
+            . ' UNIQUE KEY idx_term (s_key, s_value))'
+            . " ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
+        );
+        $conn->execute(
+            'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_item_facet ('
+            . ' fk_i_term_id INT UNSIGNED NOT NULL,'
+            . ' d_number DOUBLE NOT NULL DEFAULT 0,'
             . ' fk_i_item_id INT UNSIGNED NOT NULL,'
             . ' fk_i_variant_id INT UNSIGNED NOT NULL DEFAULT 0,'
-            . ' d_number DOUBLE NULL,'
-            . ' PRIMARY KEY (s_key, s_value, fk_i_item_id, fk_i_variant_id),'
-            . ' INDEX idx_item (fk_i_item_id),'
-            . ' INDEX idx_number (s_key, d_number),'
+            . ' PRIMARY KEY (fk_i_term_id, d_number, fk_i_item_id, fk_i_variant_id),'
+            . ' INDEX idx_item (fk_i_item_id, fk_i_term_id),'
+            . ' FOREIGN KEY (fk_i_term_id) REFERENCES ' . DB_TABLE_PREFIX . 't_facet_term (pk_i_id) ON DELETE CASCADE,'
             . ' FOREIGN KEY (fk_i_item_id) REFERENCES ' . DB_TABLE_PREFIX . 't_item (pk_i_id) ON DELETE CASCADE)'
             . " ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
         );
