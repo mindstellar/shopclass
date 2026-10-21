@@ -284,6 +284,9 @@ seed_exec($admin, "INSERT INTO {$p}t_meta_categories (fk_i_category_id, fk_i_fie
 foreach (['Tee' => 'Cotton', 'Polo' => 'Linen', 'Percent' => 'Wool'] as $title => $value) {
     seed_exec($admin, "INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) VALUES (?, ?, ?, '')", 'iis', [$shirt[$title], $field, $value]);
 }
+foreach ($shirt as $listingId) {
+    FacetIndex::rewriteItem($listingId);
+}
 $byField = static fn (mixed $value): array => $inTees(['custom_field' => [(string) $field => $value]]);
 pin('the scalar form still works', ['Tee'], $byField('Cotton'));
 pin('a list is OR', ['Polo', 'Tee'], $byField(['Cotton', 'Linen']));
