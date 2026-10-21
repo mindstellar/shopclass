@@ -59,7 +59,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - A plugin download link from the catalogue is shown only when it is an https address.
 
 ### Performance
-- Filter counts on 232,000 listings: `option[Colour]=Red` 446 to 290 ms (MariaDB), 519 to 388 ms (MySQL); NUMBER range 73 to 4 ms; date 73 to 1 ms.
+- Filter counts on 232,000 listings: `option[Colour]=Red` 439 to 53 ms (MariaDB), 528 to 289 ms (MySQL); NUMBER range 73 to 4 ms; date 73 to 1 ms. A save that changes no option rows writes none.
 - API calls a theme makes on one page share their work: the route table builds only the routes a call tries, the category tree is read once, and each listing's row, photos, stats and location are read once.
 - API listing searches cache the finished rows, without description text when the response asks for none, so the Aisle home page runs 10 statements instead of 21 and a product page 19 instead of 36.
 - `GET /menus` caches the linked pages and top category links, and `Currency::listAll()` reads the cached table.
