@@ -12,7 +12,7 @@
  * The listing filter index backfill as jobs: a batch per run with the cursor kept in the job,
  * the ready flag set only when the last batch is done, a failed run that resumes from its cursor,
  * a listing that fails partway rolled back on its own,
- * one pending build at a time, and a one-field rebuild that leaves the flag alone.
+ * one pending build at a time, and a one-field rebuild that puts the flag back unless another rebuild is queued.
  *
  * Usage: php tests/facet-build-job.php
  */
@@ -181,7 +181,17 @@ for ($i = 0; $i < 3; $i++) {
 pin('the job is done', [], $jobs(FacetIndex::JOB_FIELD));
 pin('that field is rewritten', 0, $count("s_key = 'f$colour' AND s_value = 'Stale'"));
 pin('the other field is untouched', $total, $count("s_key = 'f$gift' AND s_value = 'Stale'"));
-pin('the flag is as it was', '0', $pref('facet_ready'));
+pin('the last rebuild job lets searches back on the index', '1', $pref('facet_ready'));
+
+$setFlag('0');
+osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
+osc_job_enqueue(FacetIndex::JOB_BUILD, ['after' => 0]);
+$admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2000-01-01 00:00:00' WHERE s_type = '" . FacetIndex::JOB_FIELD . "'");
+$admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2999-01-01 00:00:00' WHERE s_type = '" . FacetIndex::JOB_BUILD . "'");
+JobWorker::resetRegistration();
+JobWorker::run(2);
+pin('a pending full build keeps the flag off', ['0', 0], [$pref('facet_ready'), count($jobs(FacetIndex::JOB_FIELD))]);
+$admin->query("DELETE FROM {$p}t_job_queue");
 
 harness_section('the Jobs tab text');
 JobWorker::resetRegistration();
