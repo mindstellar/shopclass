@@ -313,8 +313,13 @@ The **Database** tab of **Tools → System info** holds the database checks:
   nullability difference or an index with the wrong columns needs a person to
   look at it.
 
+- **Listing filter index**: whether the index behind the field and option
+  filters is ready. **Rebuild filter index** rebuilds it in the background, a
+  batch of listings at a time, and searches keep working meanwhile. Use it if a
+  plugin wrote custom field values with raw SQL.
+
 From a shell: `php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair`
-repairs.
+repairs, `php oc-cli.php search:reindex` rebuilds the filter index.
 
 ## A maintenance routine
 

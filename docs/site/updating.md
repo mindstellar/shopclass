@@ -203,7 +203,8 @@ an interrupted update. If the database is still missing a table, column or index
 afterwards, `php oc-cli.php db:repair` (or **Tools → System info → Database**) adds it.
 
 The update builds the listing filter index in the background on big sites. A plugin that writes
-`t_item_meta` with raw SQL leaves the index stale until you run `php oc-cli.php search:reindex`.
+`t_item_meta` with raw SQL leaves the index stale until you run `php oc-cli.php search:reindex` or use **Rebuild filter index** under
+**Tools → System info → Database**.
 
 ### 4. Check the site
 
