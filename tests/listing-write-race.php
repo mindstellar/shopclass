@@ -20,6 +20,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 require_once __DIR__ . '/lib/race.php';
 
+use mindstellar\listing\ListingHoldJobs;
 use mindstellar\listing\VariantStore;
 use mindstellar\security\ActionThrottle;
 use mindstellar\security\RateLimit;
@@ -120,6 +121,18 @@ pin('premium waited, then succeeded', [1, 'ok', '1'], [$waiting, $out, (string) 
 $id = $listing(1);
 [$waiting, $out] = $raceOne($touch($id), 'photo', $id);
 pin('a photo add waited, then succeeded', [1, 'ok', '1'], [$waiting, $out, (string) $value("SELECT COUNT(*) FROM {$p}t_resource WHERE s_owner_type = 'item' AND i_owner_id = $id")]);
+
+harness_section('publish waits for the unpaid-listing jobs');
+// A moderated site makes publish read the seller's counts to pick the new status.
+osc_set_preference('moderate_items', '5', 'osclass', 'STRING');
+$id = $listing(0);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0, dt_first_pub_date = NULL WHERE pk_i_id = $id");
+ListingHoldJobs::queue($id, 3);
+[$waiting, $out] = $raceOne("UPDATE {$p}t_job_queue SET i_attempts = i_attempts + 1 WHERE s_unique = '$id' AND s_type LIKE 'listing.unpaid%'", 'publish', $id);
+pin('publish waited on the held job rows', 1, $waiting);
+pin('and then succeeded', 'ok', $out);
+osc_set_preference('moderate_items', '-1', 'osclass', 'STRING');
+pin('the jobs are gone', '0', (string) $value("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_unique = '$id' AND s_type LIKE 'listing.unpaid%'"));
 
 harness_section('a post counts its rate limit after it commits');
 $posts = static fn (): string => (string) $value('SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item');

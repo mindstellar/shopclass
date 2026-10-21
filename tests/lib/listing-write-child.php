@@ -13,7 +13,7 @@
  * "threw <class>: <message>".
  *
  * Usage:  php tests/lib/listing-write-child.php <database> <mode> <listing id> <user id> <uploads dir>
- * Modes: delete, edit, activate, enable, spam, premium, photo, post
+ * Modes: delete, edit, activate, enable, spam, premium, photo, post, publish
  */
 
 [, $database, $mode, $itemId, $userId, $uploads] = $argv;
@@ -88,6 +88,9 @@ try {
             imagejpeg($img, $jpeg, 80);
             $files = ['name' => [basename($jpeg)], 'type' => ['image/*'], 'tmp_name' => [$jpeg], 'error' => [UPLOAD_ERR_OK], 'size' => [(int) filesize($jpeg)]];
             $done  = (new PhotoService())->add($itemId, $files, Actor::user($userId)) !== [];
+            break;
+        case 'publish':
+            $done = $service->publish($itemId, Actor::user($userId));
             break;
         case 'post':
             $done = $service->create(ListingInput::fromArray($form(['ownerId' => (string) $userId, 'catId' => (string) $itemId]), Actor::user($userId), true), Actor::user($userId))->id() > 0;
