@@ -168,11 +168,13 @@ DATEINTERVAL need both ends, and an end of `0` drops the filter. Every `value` i
 text: escape or bind it.
 
 A plugin adds its own custom-field filter with
-`$search->addFieldFilter(int $fieldId, array $filter, string $condition)`. `$condition` is SQL that
+`$search->addFieldFilter(int $fieldId, array $filter, string $condition, ?string $countCondition = null)`. `$condition` is SQL that
 MySQL runs, as with `addConditions()`: escape what goes into it. `$filter` uses the shape in the
 table above and must describe exactly what `$condition` does, because a backend trusts it. Use one
 call per field: a second call replaces the typed rule but keeps both conditions, so `rawSql` turns
-true and backends leave the search to MySQL. A custom-field condition added with plain
+true and backends leave the search to MySQL. `$countCondition` is optional: the SQL the result count
+runs instead of `$condition`, for a form that is faster as a subquery. `addCondition()` takes the same
+text as its third argument. A custom-field condition added with plain
 `addConditions()` counts as raw SQL.
 Saved alerts never reach this filter. The answer may also carry `'snippets'` (listing id => text
 with the searched words in `<mark>`), `'facets'` (`array('category' => array(id => count))`),
