@@ -105,66 +105,104 @@ $key  = (new \mindstellar\apikey\ApiKeys(new \mindstellar\model\ApiCredential(),
 $call = api_admin_caller();
 
 $facetSql = [];
-// Titles and total of one list call, with the filter index off and on. A string marks a run that failed.
-$ask = static function (array $query) use ($call, $key, $cat, &$facetSql): array {
+// Titles of the listings one stored condition text matches, read on its own against t_item.
+$matching = static function (string $where) use ($admin, $p): array {
+    $titles = [];
+    $res    = $admin->query("SELECT s_title FROM {$p}t_item_description d JOIN {$p}t_item ON pk_i_id = d.fk_i_item_id WHERE {$where}");
+    if ($res === false) {
+        return ['sql failed: ' . $admin->error];
+    }
+    foreach ($res->fetch_all(MYSQLI_NUM) as [$title]) {
+        $titles[(string) $title] = (string) $title;
+    }
+    sort($titles);
+
+    return array_values($titles);
+};
+// Runs a search with the filter index off and on. Besides the listings and the total of the search
+// itself, the conditions it ran are read back: the page text and the count text, each as a match list.
+$run = static function (callable $search) use ($matching, &$facetSql): array {
     $out = [];
     foreach ([false, true] as $ready) {
         $ready ? FacetIndex::markReady() : FacetIndex::markStale();
-        $seen = '';
+        scratchdb_forget_cache();
+        $seen = [];
         osc_add_filter('sql_search_conditions', static function (array $c) use (&$seen): array {
-            $seen = implode(' AND ', $c);
+            $seen[] = implode(' AND ', $c);
 
             return $c;
         }, 'parity_probe');
-        $r = $call('GET', 'listings', null, $key, [], $query + ['category' => (string) $cat, 'limit' => 48, 'count' => 'true']);
+        $result = $search();
         osc_remove_filter('sql_search_conditions', 'parity_probe');
-        $facetSql[$ready ? 'on' : 'off'] = $seen;
-        $titles = array_column($r->body()['data'] ?? [], 'title');
-        sort($titles);
-        $out[$ready ? 'on' : 'off'] = $r->status() === 200 ? [$titles, $r->body()['meta']['total'] ?? null] : 'status ' . $r->status();
+        $pageSql  = $seen[0] ?? '';
+        $countSql = $seen[count($seen) - 1] ?? '';
+        $facetSql[$ready ? 'on' : 'off'] = ['page' => $pageSql, 'count' => $countSql];
+        $name = $ready ? 'on' : 'off';
+        $out[$name]            = $result;
+        $out[$name . ' page']  = $pageSql === '' ? 'no condition' : $matching($pageSql);
+        $out[$name . ' count'] = $countSql === '' ? 'no condition' : $matching($countSql);
     }
     FacetIndex::markStale();
 
     return $out;
 };
-// Pins that both runs give the expected titles and a total equal to their count.
-$same = static function (string $name, array $query, array $titles) use ($ask): void {
-    $both = $ask($query);
-    pin($name, ['off' => [$titles, count($titles)], 'on' => [$titles, count($titles)]], $both);
+// What every run must give: the same listings and total from the search, and the same listings
+// from the page text and the count text on their own, with the index off and on. $conditions is
+// what the conditions match alone when the search has other parts (price, stock), or 'no condition'.
+$expect = static function (array $titles, array|string|null $conditions = null): array {
+    $match = $conditions ?? $titles;
+    $out   = [];
+    foreach (['off', 'on'] as $name) {
+        $out[$name]            = [$titles, count($titles)];
+        $out[$name . ' page']  = $match;
+        $out[$name . ' count'] = $match;
+    }
+
+    return $out;
+};
+// Titles and total of one list call.
+$ask = static function (array $query) use ($call, $key, $cat, $run): array {
+    return $run(static function () use ($call, $key, $cat, $query): array|string {
+        $r = $call('GET', 'listings', null, $key, [], $query + ['category' => (string) $cat, 'limit' => 48, 'count' => 'true']);
+        $titles = array_column($r->body()['data'] ?? [], 'title');
+        sort($titles);
+
+        return $r->status() === 200 ? [$titles, $r->body()['meta']['total'] ?? null] : 'status ' . $r->status();
+    });
+};
+// Pins that every run gives the expected titles and a total equal to their count.
+$same = static function (string $name, array $query, array $titles, array|string|null $conditions = null) use ($ask, $expect): void {
+    pin($name, $expect($titles, $conditions), $ask($query));
 };
 $onlyNew = static function (array $query) use ($ask): array {
     return $ask($query)['on'];
 };
 // The search page path, for the range filters the API does not take.
-$askPage = static function (array $meta) use ($cat): array {
-    $out = [];
-    foreach ([false, true] as $ready) {
-        $ready ? FacetIndex::markReady() : FacetIndex::markStale();
+$askPage = static function (array $meta) use ($cat, $run): array {
+    return $run(static function () use ($cat, $meta): array {
         $s = new Search();
         SearchBuilder::apply(SearchCriteria::fromRequest(['sCategory' => [(string) $cat], 'meta' => $meta]), $s);
         $titles = array_map(static fn (array $row): string => (string) $row['s_title'], (array) $s->doSearch());
         sort($titles);
-        $out[$ready ? 'on' : 'off'] = [$titles, $s->countMatches()];
-    }
-    FacetIndex::markStale();
 
-    return $out;
+        return [$titles, $s->countMatches()];
+    });
 };
-$page = static function (string $name, array $meta, array $titles) use ($askPage): void {
-    pin($name, ['off' => [$titles, count($titles)], 'on' => [$titles, count($titles)]], $askPage($meta));
+$page = static function (string $name, array $meta, array $titles) use ($askPage, $expect): void {
+    pin($name, $expect($titles), $askPage($meta));
 };
 $cf = static fn (string $k, mixed $v): array => ['custom_field' => [(string) $f[$k] => $v]];
 $opt = static fn (array $o): array => ['option' => $o];
 
 harness_section('options');
-$same('no filter lists all', [], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'N', 'S', 'T']);
+$same('no filter lists all', [], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'N', 'S', 'T'], 'no condition');
 $same('one name', $opt(['Colour' => ['Red']]), ['A', 'B', 'D', 'H', 'I', 'J']);
 $same('one name, two values', $opt(['Colour' => ['Red', 'Blue']]), ['A', 'B', 'C', 'D', 'H', 'I', 'J']);
 $same('two names on one variant', $opt(['Colour' => ['Red'], 'Size' => ['M']]), ['A', 'D']);
 $same('Red and L are on two variants of one listing', $opt(['Colour' => ['Red'], 'Size' => ['L']]), []);
 $same('Blue and L are one variant', $opt(['Colour' => ['Blue'], 'Size' => ['L']]), ['A']);
 $same('a case variant folds', $opt(['Colour' => ['red']]), ['A', 'B', 'D', 'H', 'I', 'J']);
-$same('with price', $opt(['Colour' => ['Red']]) + ['price_min' => 15, 'price_max' => 45], ['B', 'D']);
+$same('with price', $opt(['Colour' => ['Red']]) + ['price_min' => 15, 'price_max' => 45], ['B', 'D'], ['A', 'B', 'D', 'H', 'I', 'J']);
 $same('with in_stock', $opt(['Colour' => ['Red']]) + ['in_stock' => 'true'], ['A', 'B', 'H', 'I', 'J']);
 $same('with on_sale', $opt(['Colour' => ['Red']]) + ['on_sale' => 'true'], ['A', 'D', 'J']);
 $same('with in_stock and on_sale on one variant', $opt(['Colour' => ['Red']]) + ['in_stock' => 'true', 'on_sale' => 'true'], ['A', 'J']);
@@ -197,14 +235,37 @@ $page('a stored interval that starts after the asked start does not cover it', [
 $page('an interval inside the stored one only', [(string) $f['di'] => ['from' => (string) ($t0 + 90), 'to' => (string) ($t0 + 170)]], []);
 
 harness_section('the three accepted differences');
-pin('a value past 191 characters matches on its first 191', [['G'], 1], $onlyNew($cf('long', str_repeat('a', 191) . 'c')));
-pin('a NUMBER that is not a number matches no range', [['T'], 1], $askPage([(string) $f['num2'] => ['from' => '-1', 'to' => '5']])['on']);
-pin('a stored value with a leading space matches trimmed', [['S'], 1], $onlyNew($cf('sp', 'Red')));
+$newOnly = static fn (array $r): array => [$r['on'], $r['on page'], $r['on count']];
+pin('a value past 191 characters matches on its first 191', [[['G'], 1], ['G'], ['G']], $newOnly($ask($cf('long', str_repeat('a', 191) . 'c'))));
+pin('a NUMBER that is not a number matches no range', [[['T'], 1], ['T'], ['T']], $newOnly($askPage([(string) $f['num2'] => ['from' => '-1', 'to' => '5']])));
+pin('a stored value with a leading space matches trimmed', [[['S'], 1], ['S'], ['S']], $newOnly($ask($cf('sp', 'Red'))));
+
+harness_section('terms');
+$termCount = static fn (string $name): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_facet_term WHERE s_key = 'f{$f[$name]}'")->fetch_row()[0];
+pin('Red, red and Rèd are one term and Blue another', 2, $termCount('dd'));
+pin('a unknown value is no term', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_facet_term WHERE s_value = 'Mauve'")->fetch_row()[0]);
+
+harness_section('page and count text');
+$texts = static function (array $query) use ($ask, &$facetSql): array {
+    $ask($query);
+
+    return [$facetSql['off'], $facetSql['on']];
+};
+[$off, $on] = $texts($opt(['Colour' => ['Red']]));
+pin('an option page probes the listing, the count reads the facet range once', [true, true, true], [
+    str_contains($on['page'], 'LIMIT 1) IS NOT NULL'), str_contains($on['count'], 'pk_i_id IN (SELECT'), !str_contains($on['count'], 'LIMIT 1')]);
+pin('the old text is the same for page and count', true, $off['page'] === $off['count']);
+[$off, $on] = $texts($cf('cb1', '1'));
+pin('a checkbox page probes, the count reads the range', [true, true], [str_contains($on['page'], 'LIMIT 1) IS NOT NULL'), str_contains($on['count'], 'IN (SELECT')]);
+[$off, $on] = $texts($cf('dd', 'Mauve'));
+pin('an unknown value is no row in either text and reads no table', ['1 = 0', '1 = 0'], [trim($on['page']), trim($on['count'])]);
+$askPage([(string) $f['num'] => ['from' => '10', 'to' => '20']]);
+pin('a range is the same text for the page and the count', true, $facetSql['on']['page'] === $facetSql['on']['count'] && str_contains($facetSql['on']['page'], 'IN (SELECT'));
 
 harness_section('which table is read');
 $ask($opt(['Colour' => ['Red']]) + ['limit' => 47]);
-pin('an option filter names the index only when it is ready', [false, true], [str_contains($facetSql['off'], 'item_facet'), str_contains($facetSql['on'], 'item_facet')]);
+pin('an option filter names the index only when it is ready', [false, true], [str_contains($facetSql['off']['page'] . $facetSql['off']['count'], 'item_facet'), str_contains($facetSql['on']['page'], 'item_facet') && str_contains($facetSql['on']['count'], 'item_facet')]);
 $ask($cf('dd', 'Red') + ['limit' => 47]);
-pin('a field filter names the index only when it is ready', [false, true], [str_contains($facetSql['off'], 'item_facet'), str_contains($facetSql['on'], 'item_facet')]);
+pin('a field filter names the index only when it is ready', [false, true], [str_contains($facetSql['off']['page'] . $facetSql['off']['count'], 'item_facet'), str_contains($facetSql['on']['page'], 'item_facet') && str_contains($facetSql['on']['count'], 'item_facet')]);
 
 exit(harness_result());
