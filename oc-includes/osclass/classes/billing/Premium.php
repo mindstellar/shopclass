@@ -11,6 +11,7 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\database\Db;
 use mindstellar\listing\ListingStore;
 
 /**
@@ -40,7 +41,7 @@ final class Premium
     }
 
     /**
-     * Queue a job for the moment an upgrade ends. The hourly sweep still ends any it misses.
+     * Queue a job for the moment an upgrade ends, after the open transaction commits. The hourly sweep still ends any it misses.
      */
     public static function scheduleEnd(string $at): void
     {
@@ -48,11 +49,13 @@ final class Premium
         if ($time === false) {
             return;
         }
-        try {
-            osc_job_enqueue(self::JOB, array('at' => $at), array('delay' => max(0, $time - time()), 'unique_key' => (string) $time));
-        } catch (\Throwable $e) {
-            error_log('Premium end job was not queued: ' . $e->getMessage());
-        }
+        Db::afterCommit(static function () use ($at, $time): void {
+            try {
+                osc_job_enqueue(self::JOB, array('at' => $at), array('delay' => max(0, $time - time()), 'unique_key' => (string) $time));
+            } catch (\Throwable $e) {
+                error_log('Premium end job was not queued: ' . $e->getMessage());
+            }
+        });
     }
 
     /**
