@@ -132,6 +132,9 @@ pin('dropVariants keeps the field rows', ["f$drop=Red|0|-"], $facet($item));
 FacetIndex::dropField($drop);
 FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => null]]);
 pin('a default row has no option rows', [], $facet($item));
+FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => '{"Size":"M","SIZE":"M"}']]);
+pin('option names that differ only by case give one row', ["oSize=M|$v1|-"], $facet($item));
+FacetIndex::rewriteVariants($item, [['pk_i_id' => $v1, 's_options' => null]]);
 
 harness_section('rewriteItem');
 $admin->query("DELETE FROM {$p}t_item_meta");

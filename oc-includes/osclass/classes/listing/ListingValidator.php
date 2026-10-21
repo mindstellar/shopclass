@@ -217,7 +217,13 @@ final class ListingValidator
         if (count($names) > VariantStore::MAX_OPTIONS) {
             $errors[] = self::entry('/product/options', 'maxItems', sprintf(_m('An item has at most %d options.'), VariantStore::MAX_OPTIONS));
         }
+        $folded = array();
         foreach (array_keys($names) as $name) {
+            $fold = mb_strtolower((string) $name);
+            if (isset($folded[$fold])) {
+                $errors[] = self::entry('/product/options', 'taken', sprintf(_m('Option names %1$s and %2$s are the same.'), $folded[$fold], $name));
+            }
+            $folded[$fold] = (string) $name;
             if (trim((string) $name) === '') {
                 $errors[] = self::entry('/product/options', 'required', _m('Every option needs a name.'));
             } elseif (mb_strlen((string) $name) > VariantStore::MAX_NAME) {

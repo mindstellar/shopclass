@@ -328,6 +328,8 @@ final class FacetIndex
     }
 
     /**
+     * Rows equal under the table's collation (option names Size and SIZE) are written once.
+     *
      * @param array<int,array{0:string,1:string,2:int,3:int,4:?float}> $rows
      *
      * @throws \mindstellar\database\DbException
@@ -341,7 +343,8 @@ final class FacetIndex
             }
             Db::execute(
                 'INSERT INTO ' . self::tableName() . ' (s_key, s_value, fk_i_item_id, fk_i_variant_id, d_number) VALUES '
-                . implode(', ', array_fill(0, count($chunk), '(?, ?, ?, ?, ?)')),
+                . implode(', ', array_fill(0, count($chunk), '(?, ?, ?, ?, ?)'))
+                . ' ON DUPLICATE KEY UPDATE d_number = VALUES(d_number)',
                 $params
             );
         }
