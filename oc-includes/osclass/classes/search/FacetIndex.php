@@ -42,6 +42,7 @@ final class FacetIndex
     private const TERMS_PER_SELECT = 200;
     private const PRUNE_RANGE = 2000;
     private const ER_NO_REFERENCED_ROW = 1452;
+    private const PACK_LOCK_WAIT = 10;
 
     private static bool $tablePresent = false;
 
@@ -362,6 +363,44 @@ final class FacetIndex
         }
 
         return $deleted;
+    }
+
+    /**
+     * Rewrite the table with full pages, as a full build ends. The build writes listing by
+     * listing into a primary key that starts with the term, which leaves pages half full. The
+     * rebuild is online, so searches and saves go on; it waits at most PACK_LOCK_WAIT seconds
+     * for a lock. Skipped inside a transaction, which the statement would commit.
+     *
+     * @return bool true when the table was rewritten; a failure is logged
+     */
+    public static function pack(): bool
+    {
+        if (Db::inTransaction()) {
+            return false;
+        }
+        try {
+            $wait = (int) Db::scalar('SELECT @@SESSION.lock_wait_timeout');
+            Db::execute('SET SESSION lock_wait_timeout = ' . self::PACK_LOCK_WAIT);
+        } catch (DbException $e) {
+            error_log('Listing filter index table not rewritten: ' . $e->getMessage());
+
+            return false;
+        }
+        try {
+            Db::execute('ALTER TABLE ' . self::tableName() . ' FORCE, ALGORITHM=INPLACE, LOCK=NONE');
+
+            return true;
+        } catch (DbException $e) {
+            error_log('Listing filter index table not rewritten: ' . $e->getMessage());
+
+            return false;
+        } finally {
+            try {
+                Db::execute('SET SESSION lock_wait_timeout = ' . $wait);
+            } catch (DbException $e) {
+                error_log('Listing filter index: lock wait not put back: ' . $e->getMessage());
+            }
+        }
     }
 
     /**

@@ -10,7 +10,7 @@
 
 /**
  * The listing filter index backfill as jobs: a batch per run with the cursor kept in the job,
- * the ready flag set only when the last batch is done, a failed run that resumes from its cursor,
+ * the ready flag set and the table rewritten only when the last batch is done, a failed run that resumes from its cursor,
  * a listing that fails partway rolled back on its own,
  * one pending build at a time, and a one-field rebuild that puts the flag back unless another rebuild is queued.
  *
@@ -101,6 +101,10 @@ check('a build is queued', FacetJobs::queueBuild());
 pin('a second call while one is pending reports it queued', true, FacetJobs::queueBuild());
 pin('one build job', 1, count($jobs(FacetIndex::JOB_BUILD)));
 
+// InnoDB gives a table a new id when it rewrites it.
+$view    = $admin->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'information_schema' AND TABLE_NAME IN ('INNODB_TABLES', 'INNODB_SYS_TABLES')")->fetch_row()[0];
+$tableId = static fn (): int => (int) $admin->query("SELECT TABLE_ID FROM information_schema.$view WHERE NAME = CONCAT(DATABASE(), '/$facet')")->fetch_row()[0];
+$before  = $tableId();
 $pass();
 $job = $jobs(FacetIndex::JOB_BUILD);
 pin('after pass 1 the job waits at the batch-th listing', $ids[FacetIndex::BATCH - 1], $cursorOf($job[0]));
@@ -112,9 +116,12 @@ $job = $jobs(FacetIndex::JOB_BUILD);
 pin('after pass 2 the cursor moved on', $ids[2 * FacetIndex::BATCH - 1], $cursorOf($job[0]));
 pin('the flag is still off', '0', $pref('facet_ready'));
 pin('a term no row names stays until the last batch', 1, $orphans());
+pin('and the table is not rewritten before it', $before, $tableId());
 
+$before = $tableId();
 $pass();
 pin('after pass 3 no job remains', [], $jobs(FacetIndex::JOB_BUILD));
+check('the last batch rewrites the table', $tableId() !== $before);
 pin('the last batch prunes it', 0, $orphans());
 pin('every listing has both rows', 2 * $total, $count());
 pin('the flag is on', '1', $pref('facet_ready'));
