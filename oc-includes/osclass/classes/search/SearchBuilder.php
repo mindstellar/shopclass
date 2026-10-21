@@ -242,7 +242,7 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'checked'),
-                            $in . $by . $table . '.s_value = 1)'
+                            $in . $by . $table . '.s_value = \'1\')'
                         );
                     }
                     break;

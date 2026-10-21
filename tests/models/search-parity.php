@@ -1031,7 +1031,7 @@ $by = static fn (string $type): string => "{$p}t_item.pk_i_id IN (SELECT fk_i_it
 foreach (array(
     'TEXTAREA'     => array("it's", $by('TEXTAREA') . "$m.s_value LIKE '%it\\'s%')"),
     'DROPDOWN'     => array('red', $by('DROPDOWN') . "$m.s_value = 'red')"),
-    'CHECKBOX'     => array('1', $by('CHECKBOX') . "$m.s_value = 1)"),
+    'CHECKBOX'     => array('1', $by('CHECKBOX') . "$m.s_value = '1')"),
     'DATE'         => array((string)$day, $by('DATE') . "$m.s_value >= $dayStart AND $m.s_value <= " . ($dayStart + 86399) . ')'),
     'DATEINTERVAL' => array(array('from' => (string)$day, 'to' => (string)($day + 5)), "{$p}t_item.pk_i_id IN (select a.fk_i_item_id from ("
         . "SELECT fk_i_item_id FROM $m WHERE $m.fk_i_field_id = {$fields['DATEINTERVAL']} AND $day >= $m.s_value AND s_multi = 'from') a where a.fk_i_item_id IN ("
