@@ -60,6 +60,14 @@ class Db
     private static $afterCommit = array();
 
     /**
+     * Committed callbacks not yet run. A callback that ends the request (exit, a redirect) leaves
+     * the rest here, and the shutdown guard runs them.
+     *
+     * @var array<int,callable>
+     */
+    private static $pending = array();
+
+    /**
      * Resolve the singleton mysqli connection through the Connection wrapper, which
      * owns the sole sanctioned access to the raw handle. Keeps this class off the
      * deprecated DBConnectionClass::getOsclassDb() path.
@@ -342,7 +350,9 @@ class Db
      */
     private static function runCallbacks(array $callbacks): void
     {
-        foreach ($callbacks as $fn) {
+        self::$pending = array_merge($callbacks, self::$pending);
+        while (self::$pending !== array()) {
+            $fn = array_shift(self::$pending);
             try {
                 $fn();
             } catch (Throwable $e) {
@@ -422,6 +432,7 @@ class Db
 
         register_shutdown_function(static function (): void {
             self::unwind('request end');
+            self::runCallbacks(array());
         });
     }
 
