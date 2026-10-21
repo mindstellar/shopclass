@@ -70,6 +70,20 @@ final class UserStore extends Model
     }
 
     /**
+     * Lock what a profile save writes: the user's row, listings, comments and alerts. Not the
+     * stats or variants, which a profile save leaves alone. Same order as lockOwned().
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockProfile(int $userId): void
+    {
+        self::lock($userId);
+        ListingStore::lockByUser($userId);
+        CommentQuery::lockByUser($userId);
+        AlertStore::lockByUser($userId);
+    }
+
+    /**
      * Lock the guest listings and alerts posted with this e-mail, which an account takes over
      * once it is confirmed. Same rule as lockOwned(): before any plain SELECT.
      *

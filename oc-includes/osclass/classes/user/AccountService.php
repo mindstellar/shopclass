@@ -367,7 +367,7 @@ final class AccountService
         }
 
         return (int) DeferredMail::transaction(function () use ($userId, $form, $input, $admin, $actor, $newUsername, $newPassword): int {
-            UserStore::lockOwned($userId);
+            UserStore::lockProfile($userId);
             $claim = $newUsername !== null ? Usernames::claim($userId, $newUsername, $admin) : 'ok';
             if ($claim === 'taken') {
                 throw self::refusal(_m('The specified username is already in use'));
@@ -420,9 +420,10 @@ final class AccountService
     public function editOwn(int $userId, ?array $form, string $newEmail, Actor $actor): void
     {
         DeferredMail::transaction(function () use ($userId, $form, $newEmail, $actor): void {
-            UserStore::lockOwned($userId);
             if ($form !== null) {
                 $this->update($userId, $form, $actor);
+            } else {
+                UserStore::lockProfile($userId);
             }
             if ($newEmail !== '') {
                 $this->requestEmailChange($userId, $newEmail, $actor);
@@ -444,7 +445,6 @@ final class AccountService
     public function adminEdit(int $userId, ?array $form, array $flags, Actor $actor): void
     {
         DeferredMail::transaction(function () use ($userId, $form, $flags, $actor): void {
-            UserStore::lockOwned($userId);
             if ($form !== null) {
                 $this->update($userId, $form, $actor);
             }
