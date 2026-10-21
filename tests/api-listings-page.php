@@ -83,18 +83,15 @@ pin('page that is not a number is 422', 422, $list(['page' => 'x'])->status());
 
 harness_section('the cap ends paging');
 // 10 060 more rows, so rows remain past the deepest page offset paging reaches (offset 10 000).
-// MySQL and MariaDB name the recursion limit differently; each refuses the other's name.
-foreach (['cte_max_recursion_depth', 'max_recursive_iterations'] as $limit) {
-    try {
-        $admin->query("SET SESSION $limit = 20000");
-    } catch (\mysqli_sql_exception $e) {
-    }
-}
+// The numbers 1 to 10 060 come from crossed digit tables, since MySQL 5.7 has no recursive WITH.
+$digit = '(SELECT 0 d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4'
+    . ' UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9)';
+$numbers = "(SELECT a.d + b.d * 10 + c.d * 100 + e.d * 1000 + f.d * 10000 + 1 AS i
+    FROM $digit a, $digit b, $digit c, $digit e, $digit f) n WHERE i <= 10060";
 $admin->query("INSERT INTO {$p}t_item (fk_i_user_id, fk_i_category_id, dt_pub_date, dt_first_pub_date, dt_mod_date, f_price, i_price,
     fk_c_currency_code, s_contact_name, s_contact_email, s_ip, b_premium, b_enabled, b_active, b_spam, s_secret, dt_expiration)
-    WITH RECURSIVE n (i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 10060)
     SELECT $sue, $cat, DATE_SUB('2026-09-01 12:00:00', INTERVAL i MINUTE), NOW(), NOW(), 1, 1000000,
-        'USD', 'Contact', 'contact@example.test', '127.0.0.1', 0, 1, 1, 0, 'bulk', DATE_ADD(NOW(), INTERVAL 30 DAY) FROM n");
+        'USD', 'Contact', 'contact@example.test', '127.0.0.1', 0, 1, 1, 0, 'bulk', DATE_ADD(NOW(), INTERVAL 30 DAY) FROM $numbers");
 $admin->query("INSERT INTO {$p}t_item_description (fk_i_item_id, fk_c_locale_code, s_title, s_description)
     SELECT pk_i_id, 'en_US', 'Bulk', 'Bulk body' FROM {$p}t_item WHERE s_secret = 'bulk'");
 $admin->query("INSERT INTO {$p}t_item_location (fk_i_item_id, fk_c_country_code, s_country)
