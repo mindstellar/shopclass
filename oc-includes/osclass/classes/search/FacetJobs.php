@@ -17,6 +17,7 @@ use mindstellar\database\Connection;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\job\Job;
+use mindstellar\job\JobQueue;
 use mindstellar\job\JobRetry;
 
 /**
@@ -32,6 +33,40 @@ final class FacetJobs
     public static function queueBuild(): bool
     {
         return osc_job_ensure(FacetIndex::JOB_BUILD, array('after' => 0));
+    }
+
+    /**
+     * The filter index jobs on the queue that are pending, running or failed: running first, then newest
+     * first. Empty when the queue cannot be read.
+     *
+     * @return array<int,array{type:string,status:string,payload:array<string,mixed>,error:string,created:string}>
+     */
+    public static function status(): array
+    {
+        $statuses = [JobQueue::STATUS_RUNNING, JobQueue::STATUS_PENDING, JobQueue::STATUS_ERROR];
+        $types    = [FacetIndex::JOB_BUILD, FacetIndex::JOB_FIELD, FacetIndex::JOB_PACK];
+        try {
+            $rows = Db::select(
+                'SELECT s_type, s_status, s_payload, s_last_error, dt_created FROM ' . DB_TABLE_PREFIX . 't_job_queue'
+                . ' WHERE s_type IN (?, ?, ?) AND s_status IN (?, ?, ?) ORDER BY s_status = ? DESC, pk_i_id DESC LIMIT 50',
+                array_merge($types, $statuses, [JobQueue::STATUS_RUNNING])
+            );
+        } catch (DbException $e) {
+            return [];
+        }
+        $jobs = [];
+        foreach ($rows as $row) {
+            $payload = json_decode((string) $row['s_payload'], true);
+            $jobs[]  = [
+                'type'    => (string) $row['s_type'],
+                'status'  => (string) $row['s_status'],
+                'payload' => is_array($payload) ? $payload : [],
+                'error'   => (string) ($row['s_last_error'] ?? ''),
+                'created' => (string) $row['dt_created'],
+            ];
+        }
+
+        return $jobs;
     }
 
     /**

@@ -1115,12 +1115,9 @@ class CAdminTools extends AdminSecBaseModel
     private static function facetEnvironment(): array
     {
         $after = null;
-        $queue = \mindstellar\job\JobQueue::getInstance();
-        foreach (array(\mindstellar\job\JobQueue::STATUS_RUNNING, \mindstellar\job\JobQueue::STATUS_PENDING) as $status) {
-            $rows = $queue->page($status, \mindstellar\search\FacetIndex::JOB_BUILD, 1);
-            if ($rows !== array()) {
-                $payload = json_decode((string) $rows[0]['s_payload'], true);
-                $after   = is_array($payload) ? (int) ($payload['after'] ?? 0) : 0;
+        foreach (\mindstellar\search\FacetJobs::status() as $job) {
+            if ($job['type'] === \mindstellar\search\FacetIndex::JOB_BUILD && $job['status'] !== \mindstellar\job\JobQueue::STATUS_ERROR) {
+                $after = (int) ($job['payload']['after'] ?? 0);
                 break;
             }
         }

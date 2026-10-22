@@ -231,6 +231,23 @@ JobWorker::run(2);
 pin('a pending full build keeps the flag off', ['0', 0], [$pref('facet_ready'), count($jobs(FacetIndex::JOB_FIELD))]);
 $admin->query("DELETE FROM {$p}t_job_queue");
 
+harness_section('status');
+pin('no job: empty', [], FacetJobs::status());
+$put = static fn (string $type, string $status, string $payload, ?string $error, string $unique) => $admin->query(
+    "INSERT INTO {$p}t_job_queue (s_type, s_unique, s_payload, s_status, s_last_error, dt_next_run, dt_created) VALUES ('$type', '$unique', '$payload', '$status', "
+    . ($error === null ? 'NULL' : "'$error'") . ", '2000-01-01 00:00:00', '2026-10-20 10:00:00')"
+);
+$put(FacetIndex::JOB_PACK, 'error', '{}', 'lock wait', 'p');
+$put(FacetIndex::JOB_FIELD, 'pending', '{"field":7}', null, 'f');
+$put(FacetIndex::JOB_BUILD, 'running', '{"after":40}', null, 'b');
+$put('other.job', 'pending', '{}', null, 'o');
+pin('running first, then newest, other types left out', [
+    ['type' => FacetIndex::JOB_BUILD, 'status' => 'running', 'payload' => ['after' => 40], 'error' => '', 'created' => '2026-10-20 10:00:00'],
+    ['type' => FacetIndex::JOB_FIELD, 'status' => 'pending', 'payload' => ['field' => 7], 'error' => '', 'created' => '2026-10-20 10:00:00'],
+    ['type' => FacetIndex::JOB_PACK, 'status' => 'error', 'payload' => [], 'error' => 'lock wait', 'created' => '2026-10-20 10:00:00'],
+], FacetJobs::status());
+$admin->query("DELETE FROM {$p}t_job_queue");
+
 harness_section('the Jobs tab text');
 JobWorker::resetRegistration();
 JobWorker::registerHandlers();
