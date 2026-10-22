@@ -1066,6 +1066,12 @@ msgstr ""
 msgid "About this order"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"Above this number, search shows the limit with a + sign, which is faster on "
+"big sites. 0 counts every listing."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Accept bank transfer / cash payment"
 msgstr ""
@@ -10637,12 +10643,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Search page shows"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid ""
-"Search pages and the API count at most this many matches and show "
-"\"1,000+\" past it, which is faster on big sites. 0 counts every match."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php

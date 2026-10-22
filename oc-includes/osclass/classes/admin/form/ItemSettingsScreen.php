@@ -138,7 +138,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->number(
                 'search_count_cap',
                 __('Search count limit'),
-                __('Search pages and the API count at most this many matches and show "1,000+" past it, which is faster on big sites. 0 counts every match.')
+                __('Above this number, search shows the limit with a + sign, which is faster on big sites. 0 counts every listing.')
             )
                 ->suffix(__('matches'))
                 ->set('min', 0)
