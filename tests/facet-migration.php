@@ -137,6 +137,12 @@ pin('a ready flag over the empty table is lowered', ['0', false], [$pref('facet_
 pin('the job starts after the last listing done', [['after' => $items[2]]], array_map(static fn (array $r): array => json_decode($r[0], true), $jobs()));
 pin('the inline time is 20 seconds', 20.0, $migration::INLINE_SECONDS);
 
+$admin->query("DELETE FROM $facet");
+$admin->query("DELETE FROM {$p}t_job_queue");
+$migration->build($conn, 100, 5.0, 2, microtime(true) - 10);
+pin('time spent before the build counts too', [['after' => $items[2]]], array_map(static fn (array $r): array => json_decode($r[0], true), $jobs()));
+pin('the clock is read every 20 listings', 20, $migration::INLINE_BATCH);
+
 pin('the inline limit is 5000', 5000, $migration::INLINE_LIMIT);
 
 exit(harness_result());

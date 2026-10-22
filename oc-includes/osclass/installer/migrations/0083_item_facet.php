@@ -26,6 +26,9 @@ return new class () implements MigrationInterface {
     /** Seconds the upgrade request spends indexing before the background job takes over. */
     public const INLINE_SECONDS = 20.0;
 
+    /** Listings indexed between two looks at the clock. */
+    public const INLINE_BATCH = 20;
+
     /**
      * @param Connection $conn
      *
@@ -33,6 +36,7 @@ return new class () implements MigrationInterface {
      */
     public function up(Connection $conn): void
     {
+        $started = microtime(true);
         $existed = $conn->selectOne('SHOW TABLES LIKE ?', array(DB_TABLE_PREFIX . 't_item_facet')) !== null;
         if ($existed && $conn->selectOne('SHOW COLUMNS FROM ' . DB_TABLE_PREFIX . "t_item_facet LIKE 'fk_i_term_id'") === null) {
             // The first draft of this table kept the key and value in each row. The index only mirrors other tables.
@@ -68,7 +72,7 @@ return new class () implements MigrationInterface {
             // A ready flag restored from a backup says nothing about a table that was missing.
             $this->setPreference($conn, FacetIndex::PREF_READY, '0', 'BOOLEAN');
         }
-        $this->build($conn, self::INLINE_LIMIT);
+        $this->build($conn, self::INLINE_LIMIT, self::INLINE_SECONDS, self::INLINE_BATCH, $started);
     }
 
     /**
@@ -80,11 +84,13 @@ return new class () implements MigrationInterface {
      * @param int        $inlineLimit
      * @param float      $seconds     time to index here before the rest goes to the background job
      * @param int        $batch       listings per step
+     * @param float|null $started     when the time began to count, now when null
      *
      * @throws \mindstellar\database\DbException
      */
-    public function build(Connection $conn, int $inlineLimit, float $seconds = self::INLINE_SECONDS, int $batch = FacetIndex::BATCH): void
+    public function build(Connection $conn, int $inlineLimit, float $seconds = self::INLINE_SECONDS, int $batch = self::INLINE_BATCH, ?float $started = null): void
     {
+        $started ??= microtime(true);
         $flag = $conn->selectOne(
             'SELECT s_value FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = ?",
             array(FacetIndex::PREF_READY)
@@ -114,8 +120,7 @@ return new class () implements MigrationInterface {
             @set_time_limit(0);
         }
         ignore_user_abort(true);
-        $started = microtime(true);
-        $after   = 0;
+        $after = 0;
         while (($next = FacetIndex::buildStep($after, $batch)) !== null) {
             $after = $next;
             if (microtime(true) - $started >= $seconds) {
