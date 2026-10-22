@@ -4,7 +4,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 7.0.3
 
+This release fixes the theme preview on public pages.
+
 ### Fixed
+- A theme preview (`?theme=`) works on public pages again.
 - During a theme preview, the `theme-` body class names the previewed theme.
 
 ## Shopclass 7.0.2
