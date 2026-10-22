@@ -250,6 +250,20 @@ pin('that field is rewritten', 0, $count("s_key = 'f$colour' AND s_value = 'Stal
 pin('the other field is untouched', $total, $count("s_key = 'f$gift' AND s_value = 'Stale'"));
 pin('the last rebuild job lets searches back on the index', '1', $pref('facet_ready'));
 
+$setFlag('0', '2026-10-01 00:00:00');
+osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0, 'kind' => 'number'], ['unique_key' => (string) $colour]);
+for ($i = 0; $i < 3; $i++) {
+    $pass();
+}
+$job = $jobs(FacetIndex::JOB_FIELD);
+pin('a field whose kind moved since the job was queued starts over with the new kind', [1, ['field' => $colour, 'after' => 0, 'kind' => 'text'], '0'], [count($job), json_decode($job[0]['s_payload'] ?? 'null', true), $pref('facet_ready')]);
+$admin->query("DELETE FROM {$p}t_job_queue");
+osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
+for ($i = 0; $i < 3; $i++) {
+    $pass();
+}
+pin('a payload with no kind skips that check and finishes', [[], '1'], [$jobs(FacetIndex::JOB_FIELD), $pref('facet_ready')]);
+
 $setFlag('0');
 osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
 for ($i = 0; $i < 3; $i++) {
