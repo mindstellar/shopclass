@@ -25,6 +25,8 @@ final class ForbiddenException extends RefusedException
     public const SIGN_IN = 'sign_in';
     /** Only the owner or author may do this. */
     public const NOT_OWNER = 'not_owner';
+    /** A demo site, where every visitor knows the admin login, does not allow this. */
+    public const DEMO = 'demo';
 
     public function __construct(string $message = '', private string $reason = '')
     {

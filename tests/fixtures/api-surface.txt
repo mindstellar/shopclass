@@ -31,6 +31,7 @@ mindstellar\api\Problem code api_disabled = 403
 mindstellar\api\Problem code banned = 403
 mindstellar\api\Problem code conflict = 409
 mindstellar\api\Problem code cross_origin = 403
+mindstellar\api\Problem code demo_site = 403
 mindstellar\api\Problem code feature_disabled = 403
 mindstellar\api\Problem code forbidden = 403
 mindstellar\api\Problem code idempotency_in_flight = 409
