@@ -102,6 +102,7 @@ final class FacetJobs
     /**
      * The end of a full build: drop the terms no row names, set the ready flag and queue the pack,
      * unless the caller packs itself. While a one-field rebuild is queued the flag stays off, and that job's end sets it.
+     * Failed build and field jobs are dropped, as this build rewrote what they missed.
      *
      * @throws DbException
      */
@@ -113,6 +114,8 @@ final class FacetJobs
         } else {
             FacetIndex::markReady();
         }
+        JobQueue::getInstance()->forgetAll(FacetIndex::JOB_BUILD);
+        JobQueue::getInstance()->forgetAll(FacetIndex::JOB_FIELD);
         if ($queuePack) {
             osc_job_ensure(FacetIndex::JOB_PACK);
         }

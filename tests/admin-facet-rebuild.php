@@ -58,6 +58,18 @@ pin('a running build does not', '', $status(array(
 pin('with background jobs off it says what runs it', 'Background jobs are off, so it runs only when cron.php or the job worker runs.', $status(array(
     'facet_jobs' => array($build(0)), 'facet_auto_cron' => false,
 ))['note']);
+$failed = array('type' => FacetIndex::JOB_BUILD, 'status' => 'error', 'payload' => array('after' => 3), 'error' => 'Lock wait timeout', 'created' => '2026-10-21 08:00:00');
+pin('a build that failed for good says so, with its error', array(
+    'state' => 'error', 'text' => 'The last build failed: Lock wait timeout', 'note' => 'Searches use the slower queries until a rebuild finishes.',
+), $status(array('facet_jobs' => array($failed))));
+pin('a failed rebuild over a ready index is a note', array('ready', 'The last build failed: Lock wait timeout'), array_values(array_intersect_key($status(array(
+    'facet_ready' => true, 'facet_jobs' => array($failed),
+)), array('state' => 1, 'note' => 1))));
+pin('a queued build wins over an older failure', 'building', $status(array('facet_jobs' => array($build(0), $failed)))['state']);
+pin('a one-field rebuild counts as building', array('building', 'Rebuilding a changed field: 6 of 10 listings done'), array_values(array_intersect_key($status(array(
+    'facet_jobs' => array(array('type' => FacetIndex::JOB_FIELD, 'status' => 'pending', 'payload' => array('field' => 7, 'after' => 6), 'error' => '', 'created' => '2026-10-21 10:00:00')),
+)), array('state' => 1, 'text' => 1))));
+pin('a failed pack is not a failed build', 'missing', $status(array('facet_jobs' => array(array('type' => FacetIndex::JOB_PACK) + $failed)))['state']);
 check('the template prints the note through osc_esc_html()', str_contains((string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/system-info/database.php'), "osc_esc_html(\$facet['note'])"));
 
 harness_section('Fresh install');

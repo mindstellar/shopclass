@@ -453,7 +453,7 @@ final class DatabaseTools
     }
 
     /**
-     * The state of the listing filter index for the Database tab, with a note on a waiting build.
+     * The state of the listing filter index for the Database tab, with a note on a waiting or failed build.
      *
      * @param array<string,mixed> $env facet_ready, facet_built_at, facet_jobs (FacetJobs::status()),
      *                                 facet_listings, facet_auto_cron, facet_now (a timestamp)
@@ -462,13 +462,19 @@ final class DatabaseTools
      */
     public static function facetStatus(array $env): array
     {
-        $job = null;
+        $job    = null;
+        $failed = null;
         foreach ((array) ($env['facet_jobs'] ?? array()) as $row) {
-            if ($row['type'] === FacetIndex::JOB_BUILD && $row['status'] !== JobQueue::STATUS_ERROR) {
+            if (!in_array($row['type'], array(FacetIndex::JOB_BUILD, FacetIndex::JOB_FIELD), true)) {
+                continue;
+            }
+            if ($row['status'] !== JobQueue::STATUS_ERROR) {
                 $job = $row;
                 break;
             }
+            $failed ??= $row;
         }
+        $error = $failed === null ? '' : ($failed['error'] === '' ? __('The last build failed.') : sprintf(__('The last build failed: %s'), $failed['error']));
         if ($job !== null) {
             $total = (int) ($env['facet_listings'] ?? 0);
             $notes = array();
@@ -481,9 +487,13 @@ final class DatabaseTools
                 $notes[] = __('Background jobs are off, so it runs only when cron.php or the job worker runs.');
             }
 
+            $done = min((int) ($job['payload']['after'] ?? 0), $total);
+
             return array(
                 'state' => 'building',
-                'text'  => sprintf(__('Building: %1$d of %2$d listings done'), min((int) ($job['payload']['after'] ?? 0), $total), $total),
+                'text'  => $job['type'] === FacetIndex::JOB_FIELD
+                    ? sprintf(__('Rebuilding a changed field: %1$d of %2$d listings done'), $done, $total)
+                    : sprintf(__('Building: %1$d of %2$d listings done'), $done, $total),
                 'note'  => implode(' ', $notes),
             );
         }
@@ -493,8 +503,11 @@ final class DatabaseTools
             return array(
                 'state' => 'ready',
                 'text'  => $built === '' ? __('Ready') : sprintf(__('Ready, built %s'), $built),
-                'note'  => '',
+                'note'  => $error,
             );
+        }
+        if ($error !== '') {
+            return array('state' => 'error', 'text' => $error, 'note' => __('Searches use the slower queries until a rebuild finishes.'));
         }
 
         return array('state' => 'missing', 'text' => __('Not built'), 'note' => '');

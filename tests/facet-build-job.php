@@ -108,6 +108,9 @@ pin('one build job', 1, count($jobs(FacetIndex::JOB_BUILD)));
 $view    = $admin->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'information_schema' AND TABLE_NAME IN ('INNODB_TABLES', 'INNODB_SYS_TABLES')")->fetch_row()[0];
 $tableId = static fn (): int => (int) $admin->query("SELECT TABLE_ID FROM information_schema.$view WHERE NAME = CONCAT(DATABASE(), '/$facet')")->fetch_row()[0];
 $before  = $tableId();
+foreach ([FacetIndex::JOB_BUILD, FacetIndex::JOB_FIELD] as $n => $type) {
+    $admin->query("INSERT INTO {$p}t_job_queue (s_type, s_unique, s_payload, s_status, s_last_error, dt_next_run, dt_created) VALUES ('$type', 'old$n', '{}', 'error', 'old', NOW(), NOW())");
+}
 $pass();
 $job = $jobs(FacetIndex::JOB_BUILD);
 pin('after pass 1 the job waits at the batch-th listing', $ids[FacetIndex::BATCH - 1], $cursorOf($job[0]));
@@ -124,6 +127,7 @@ pin('and the table is not rewritten before it', $before, $tableId());
 $before = $tableId();
 $pass();
 pin('after pass 3 no job remains', [], $jobs(FacetIndex::JOB_BUILD));
+pin('and the failed build and field jobs are dropped', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_status = 'error'")->fetch_row()[0]);
 check('the last batch queues the pack job, which rewrites the table', $tableId() !== $before);
 pin('and the pack job is done', [], $jobs(FacetIndex::JOB_PACK));
 pin('the last batch prunes it', 0, $orphans());

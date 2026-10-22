@@ -9651,6 +9651,10 @@ msgstr ""
 msgid "Rebuild the filter index?"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "Rebuilding a changed field: %1$d of %2$d listings done"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Recalculate counts"
 msgstr ""
@@ -10653,6 +10657,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid "Searches keep working while it rebuilds."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "Searches use the slower queries until a rebuild finishes."
 msgstr ""
 
 #: oc-includes/osclass/classes/form/UserForm.php
@@ -12245,6 +12253,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "The largest <b>width</b> × <b>height</b> in pixels for each size."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "The last build failed."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "The last build failed: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
