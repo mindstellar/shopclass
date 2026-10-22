@@ -9,6 +9,7 @@
  */
 
 use mindstellar\database\Connection;
+use mindstellar\job\JobQueue;
 use mindstellar\migration\MigrationInterface;
 use mindstellar\search\FacetIndex;
 
@@ -116,7 +117,7 @@ return new class () implements MigrationInterface {
 
         $count = (int) $conn->scalar('SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item');
         if ($count > $inlineLimit) {
-            osc_job_ensure(FacetIndex::JOB_BUILD, array('after' => 0));
+            JobQueue::getInstance()->ensure(FacetIndex::JOB_BUILD, array('after' => 0));
 
             return;
         }
@@ -129,7 +130,7 @@ return new class () implements MigrationInterface {
         while (($next = FacetIndex::buildStep($after, $batch)) !== null) {
             $after = $next;
             if (microtime(true) - $started >= $seconds) {
-                osc_job_ensure(FacetIndex::JOB_BUILD, array('after' => $after));
+                JobQueue::getInstance()->ensure(FacetIndex::JOB_BUILD, array('after' => $after));
 
                 return;
             }
@@ -137,10 +138,8 @@ return new class () implements MigrationInterface {
         // FacetJobs::finish() needs the preference helpers, which a bare migration run lacks, so the flag is written here.
         $this->setPreference($conn, FacetIndex::PREF_READY, '1', 'BOOLEAN');
         $this->setPreference($conn, FacetIndex::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'STRING');
-        // Compact the table, as the build job and search:reindex do. Optional, so a run without the job API skips it.
-        if (function_exists('osc_job_ensure')) {
-            osc_job_ensure(FacetIndex::JOB_PACK);
-        }
+        // Compact the table, as the build job and search:reindex do. The queue class needs no helper file.
+        JobQueue::getInstance()->ensure(FacetIndex::JOB_PACK);
         if (function_exists('osc_reset_preferences')) {
             osc_reset_preferences();
         }

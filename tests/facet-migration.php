@@ -144,6 +144,8 @@ pin('time spent before the build counts too', [['after' => $items[2]]], array_ma
 pin('the clock is read every 20 listings', 20, $migration::INLINE_BATCH);
 
 pin('the inline limit is 5000', 5000, $migration::INLINE_LIMIT);
+$source = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/migrations/0083_item_facet.php');
+pin('every job is queued through the queue class, which a bare migration run has', [0, 3], [substr_count($source, 'osc_job_'), substr_count($source, 'JobQueue::getInstance()->ensure(')]);
 
 harness_section('the first draft table');
 $draft = static function () use ($admin, $facet, $reset): void {
