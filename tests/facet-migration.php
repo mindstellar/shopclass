@@ -78,11 +78,24 @@ $expected = [
 
 harness_section('first run on tables that are gone');
 $reset();
+osc_set_preference(FacetIndex::PREF_READY, '0', 'osclass', 'BOOLEAN');
 pin('no table before', [], $tables());
 $migration->up($conn);
+pin('the build reloads the preferences, so this request sees the flag on', true, FacetIndex::ready());
 pin('both tables made', [$terms, $facet], $tables());
 check('rows name their term by id', str_contains($schema()[1], 'REFERENCES `' . $terms . '` (`pk_i_id`) ON DELETE CASCADE'));
 pin('one term per (key, value)', 5, (int) $admin->query("SELECT COUNT(*) FROM $terms")->fetch_row()[0]);
+$refused = static function (string $sql) use ($admin): bool {
+    try {
+        return $admin->query($sql) === false;
+    } catch (mysqli_sql_exception $e) {
+        return $e->getCode() === 1062;
+    }
+};
+pin('a term is unique, compared as the column collates', [true, true], [
+    $refused("INSERT INTO $terms (s_key, s_value) VALUES ('oSize', 'M')"),
+    $refused("INSERT INTO $terms (s_key, s_value) VALUES ('osize', 'm')"),
+]);
 $before = $schema();
 $norm = static fn (array $r): array => array_map(static fn (array $x): array => [$x[0], $x[1], (int) $x[2], (int) $x[3]], $r);
 pin('the listings are indexed', $expected, $norm($rows()));
@@ -112,6 +125,21 @@ $admin->query("DROP TABLE $facet");
 $migration->up($conn);
 pin('a ready flag restored without its table is rebuilt', $expected, $norm($rows()));
 pin('and ends ready', '1', $pref('facet_ready'));
+
+$admin->query("DELETE FROM $facet");
+$admin->query("DELETE FROM {$p}t_job_queue");
+$builtBefore = $pref('facet_built_at');
+$conn->beginTransaction();
+$conn->execute("DELETE FROM {$p}t_item");
+$migration->build($conn, 100);
+$after = [
+    (string) $conn->scalar("SELECT s_value FROM {$p}t_preference WHERE s_name = 'facet_ready'"),
+    (string) $conn->scalar("SELECT s_value FROM {$p}t_preference WHERE s_name = 'facet_built_at'"),
+    (int) $conn->scalar("SELECT COUNT(*) FROM {$p}t_job_queue"),
+];
+$conn->rollBack();
+pin('a ready flag over an empty table with no listings is left alone, with no build', ['1', $builtBefore, 0], $after);
+$migration->up($conn);
 
 harness_section('past the inline limit');
 $migration->up($conn);
