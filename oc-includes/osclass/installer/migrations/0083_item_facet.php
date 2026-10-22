@@ -129,6 +129,7 @@ return new class () implements MigrationInterface {
                 return;
             }
         }
+        // FacetJobs::finish() needs the preference helpers, which a bare migration run lacks, so the flag is written here.
         $this->setPreference($conn, FacetIndex::PREF_READY, '1', 'BOOLEAN');
         $this->setPreference($conn, FacetIndex::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'STRING');
         // Compact the table, as the build job and search:reindex do. Optional, so a run without the job API skips it.

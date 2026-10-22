@@ -94,8 +94,7 @@ final class FacetJobs
             }
         } while ($last !== null);
         $after = max($after, (int) Db::scalar('SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_item'));
-        FacetTerms::prune();
-        FacetIndex::markReady();
+        self::finish(false);
         $line(sprintf('Index built up to listing #%d', $after));
         try {
             $line(self::pack() ? 'Index table compacted' : 'Index table not compacted: a transaction is open');
@@ -104,6 +103,21 @@ final class FacetJobs
         }
 
         return $after;
+    }
+
+    /**
+     * The end of a full build: drop the terms no row names, set the ready flag and queue the pack,
+     * unless the caller packs itself.
+     *
+     * @throws DbException
+     */
+    public static function finish(bool $queuePack = true): void
+    {
+        FacetTerms::prune();
+        FacetIndex::markReady();
+        if ($queuePack) {
+            osc_job_ensure(FacetIndex::JOB_PACK);
+        }
     }
 
     /**
@@ -178,9 +192,7 @@ final class FacetJobs
         osc_job_register_handler(FacetIndex::JOB_BUILD, static function (Job $job): void {
             $last = FacetIndex::buildStep((int) $job->get('after', 0), FacetIndex::BATCH);
             if ($last === null) {
-                FacetTerms::prune();
-                FacetIndex::markReady();
-                osc_job_ensure(FacetIndex::JOB_PACK);
+                self::finish();
 
                 return;
             }
