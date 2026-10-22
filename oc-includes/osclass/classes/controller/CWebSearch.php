@@ -96,7 +96,7 @@ class CWebSearch extends BaseModel
         }
         $this->recordLatestSearch($criteria);
 
-        $result = \mindstellar\search\SearchRunner::run($criteria, $this->mSearch, 'request');
+        $result = \mindstellar\search\SearchRunner::run($criteria, $this->mSearch, 'request', null, true, null, null, null, osc_search_count_cap());
         osc_run_hook('search', $this->mSearch);
 
         // A page past the last one, when there are results, is a 404 (page 1 still shows "no results").

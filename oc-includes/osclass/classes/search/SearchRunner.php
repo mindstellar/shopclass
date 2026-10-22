@@ -30,10 +30,12 @@ class SearchRunner
      *                                                 of Item::extendData(); the cache then keeps the bare rows
      * @param string|null                     $extendKey names what $extend makes (its locale and options); with
      *                                                 it the cache keeps the extended rows, as it does Item::extendData()'s
+     * @param int                             $countCap above 0 the total stops at this many and the result says it was
+     *                                                 capped; 0 counts every match
      *
      * @return SearchResult
      */
-    public static function run(SearchCriteria $criteria, \Search $search, string $context, ?callable $shape = null, bool $count = true, ?array $params = null, ?callable $extend = null, ?string $extendKey = null): SearchResult
+    public static function run(SearchCriteria $criteria, \Search $search, string $context, ?callable $shape = null, bool $count = true, ?array $params = null, ?callable $extend = null, ?string $extendKey = null, int $countCap = 0): SearchResult
     {
         SearchBuilder::apply($criteria, $search);
 
@@ -76,8 +78,7 @@ class SearchRunner
 
                 return $extended && $rows !== array() ? $extend($rows) : $rows;
             });
-            // Only visitor and API searches stop counting at the cap; every other count stays exact.
-            $total    = $count ? $search->countMatches(true, in_array($context, array('request', 'api'), true) ? osc_search_count_cap() : 0) : null;
+            $total    = $count ? $search->countMatches(true, $countCap) : null;
             $capped   = $count && $search->totalCapped();
         }
         if ($extend !== null && !$extended && $aItems !== array()) {

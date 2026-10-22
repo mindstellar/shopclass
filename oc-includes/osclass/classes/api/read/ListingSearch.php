@@ -116,7 +116,8 @@ final class ListingSearch
             $pager->counts(),
             $params,
             fn (array $rows): array => $this->reader->extend($rows, $context),
-            $this->reader->extendKey($context)
+            $this->reader->extendKey($context),
+            osc_search_count_cap()
         );
 
         return $pager->respond(

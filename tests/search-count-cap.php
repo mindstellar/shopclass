@@ -89,22 +89,24 @@ pin('cached, cap 11: 11, capped', [11, true], [$s->countMatches(true, 11), $s->t
 pin('cached, same search, no cap: the exact total, not the capped one', [12, false], [$s->countMatches(true), $s->totalCapped()]);
 
 harness_section('who is capped');
-$run = static function (string $context) use ($cat): \mindstellar\search\SearchResult {
-    return SearchRunner::run(SearchCriteria::fromRequest(['sCategory' => (string) $cat], ['pageSize' => 5]), new Search(), $context);
+$run = static function (string $context, ?int $cap = null) use ($cat): \mindstellar\search\SearchResult {
+    $criteria = SearchCriteria::fromRequest(['sCategory' => (string) $cat], ['pageSize' => 5]);
+
+    return $cap === null
+        ? SearchRunner::run($criteria, new Search(), $context)
+        : SearchRunner::run($criteria, new Search(), $context, null, true, null, null, null, $cap);
 };
 $setCap(0);
-$r = $run('request');
+$r = $run('request', osc_search_count_cap());
 pin('setting 0: the visitor search is exact', [12, false], [$r->total(), $r->totalCapped()]);
 $setCap(12);
-$r = $run('request');
+$r = $run('request', osc_search_count_cap());
 pin('setting 12, 12 matches: not capped', [12, false], [$r->total(), $r->totalCapped()]);
 $setCap(10);
+$r = $run('request', osc_search_count_cap());
+pin('setting 10: a run given the cap stops at 10', [10, true], [$r->total(), $r->totalCapped()]);
 $r = $run('request');
-pin('setting 10: the visitor search is capped at 10', [10, true], [$r->total(), $r->totalCapped()]);
-$r = $run('api');
-pin('setting 10: the API search is capped at 10', [10, true], [$r->total(), $r->totalCapped()]);
-$r = $run('admin');
-pin('setting 10: any other context is exact', [12, false], [$r->total(), $r->totalCapped()]);
+pin('setting 10: a run given no cap is exact', [12, false], [$r->total(), $r->totalCapped()]);
 $s = $fresh();
 $s->doSearch();
 pin('setting 10: doSearch() and count() stay exact (admin lists, alerts)', [12, false], [$s->count(), $s->totalCapped()]);
