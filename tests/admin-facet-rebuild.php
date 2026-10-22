@@ -43,6 +43,13 @@ pin('building never shows more done than there are listings', 'Building: 10 of 1
     'facet_ready' => false, 'facet_built_at' => '', 'facet_job_after' => 50, 'facet_listings' => 10,
 ))['text']);
 
+harness_section('Fresh install');
+
+$seed = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/basic_data.sql');
+preg_match("/\\('osclass', 'facet_built_at', ([^,]+), 'STRING'\\)/", $seed, $built);
+check('a fresh install seeds the build time with the ready flag', str_contains($seed, "('osclass', 'facet_ready', '1', 'BOOLEAN')") && isset($built[1]));
+check('as a date, as markReady() writes it', isset($built[1]) && (bool) preg_match('/^\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d$/', (string) $admin->query('SELECT ' . $built[1])->fetch_row()[0]));
+
 harness_section('Guards');
 
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
