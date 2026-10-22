@@ -303,6 +303,33 @@ function osc_search_total_items()
 }
 
 /**
+ * Whether the search stopped counting at the limit set in Listings → Settings, so there are
+ * more matches than osc_search_total_items() gives.
+ *
+ * @return bool
+ * @since 7.1.0
+ */
+function osc_search_total_capped(): bool
+{
+    return (bool) View::getInstance()->_get('search_total_capped');
+}
+
+/**
+ * The search total for display, in the locale's number format: "1,234", or "1,000+" when
+ * the count stopped at its cap. Escape it like any other text.
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_search_total_text(): string
+{
+    $sep  = function_exists('osc_locale_thousands_sep') ? (string) osc_locale_thousands_sep() : ',';
+    $text = number_format((int) osc_search_total_items(), 0, '.', $sep);
+
+    return osc_search_total_capped() ? sprintf(__('%s+'), $text) : $text;
+}
+
+/**
  * Gets current search "show as" variable (show the items as a list or as a gallery)
  *
  * @return string

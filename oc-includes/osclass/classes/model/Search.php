@@ -35,6 +35,7 @@ class Search extends DAO
 
     private SearchParts $parts;
     private $total_results;
+    private bool $total_capped = false;
     private $total_results_table;
     private $primeResources = true;
 
@@ -549,20 +550,33 @@ class Search extends DAO
 
     /**
      * Count the matches without reading the rows; count() then returns it too.
-     * With $cached the total is kept apart from the page and the sort.
+     * With $cached the total is kept apart from the page and the sort. With $cap above 0
+     * it stops at $cap and totalCapped() says whether there were more.
      *
      * @return int
      */
-    public function countMatches(bool $cached = false): int
+    public function countMatches(bool $cached = false, int $cap = 0): int
     {
         $dao   = $this->pluginDao();
-        $total = fn (): int => SearchExecutor::total(SearchCompiler::count(SearchCompiler::results($this->parts, $dao, true)));
+        $limit = $cap > 0 ? $cap + 1 : 0;
+        $total = fn (): int => SearchExecutor::total(SearchCompiler::count(SearchCompiler::results($this->parts, $dao, true), $limit));
         if (!$cached) {
-            return $this->total_results = $total();
+            $found = $total();
+        } else {
+            $key   = 'total|' . osc_current_user_locale() . '|' . ($limit > 0 ? 'cap' . $limit . '|' : '') . SearchRecord::encodeMatching($this->parts);
+            $found = (int) \mindstellar\cache\CacheGroup::remember('search', $key, $total);
         }
-        $key = 'total|' . osc_current_user_locale() . '|' . SearchRecord::encodeMatching($this->parts);
+        $this->total_capped = $cap > 0 && $found > $cap;
 
-        return $this->total_results = (int) \mindstellar\cache\CacheGroup::remember('search', $key, $total);
+        return $this->total_results = $this->total_capped ? $cap : $found;
+    }
+
+    /**
+     * Whether the last countMatches() stopped at its cap, so there are more matches than it gave.
+     */
+    public function totalCapped(): bool
+    {
+        return $this->total_capped;
     }
 
     /**

@@ -617,6 +617,10 @@ msgid_plural "%s listings placed there are deleted."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/functions.php
+msgid "%s listings"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/users.php
 msgid "%s listings per user"
 msgstr ""
@@ -661,6 +665,10 @@ msgstr[1] ""
 
 #: oc-includes/osclass/classes/Breadcrumb.php
 msgid "%s's profile"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hSearch.php
+msgid "%s+"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -10576,6 +10584,10 @@ msgstr ""
 msgid "Search comments"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Search count limit"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Search countries"
 msgstr ""
@@ -10628,6 +10640,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Search page shows"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"Search pages and the API count at most this many matches and show "
+"\"1,000+\" past it, which is faster on big sites. 0 counts every match."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -15090,6 +15108,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "made before a restore"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "matches"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php

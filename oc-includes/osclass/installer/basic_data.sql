@@ -141,6 +141,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'watermark_place', 'centre', 'STRING')
     ,('osclass', 'watermark_opacity', '100', 'INTEGER')
     ,('osclass', 'site_mode', 'classifieds', 'STRING')
+    ,('osclass', 'search_count_cap', '1000', 'INTEGER')
     ,('osclass', 'facet_ready', '1', 'BOOLEAN')
     ,('osclass', 'facet_built_at', CAST(UTC_TIMESTAMP() AS CHAR), 'STRING')
     ,('osclass', 'watermark_image', '', 'STRING')

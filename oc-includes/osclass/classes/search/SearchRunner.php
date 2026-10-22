@@ -56,6 +56,7 @@ class SearchRunner
         $extras   = null;
         $snippets = array();
         $extended = false;
+        $capped   = false;
         if ($backend !== null) {
             $aItems = $backend['items'];
             $total = (int)($backend['total'] ?? count($aItems));
@@ -75,7 +76,9 @@ class SearchRunner
 
                 return $extended && $rows !== array() ? $extend($rows) : $rows;
             });
-            $total    = $count ? $search->countMatches(true) : null;
+            // Only visitor and API searches stop counting at the cap; every other count stays exact.
+            $total    = $count ? $search->countMatches(true, in_array($context, array('request', 'api'), true) ? osc_search_count_cap() : 0) : null;
+            $capped   = $count && $search->totalCapped();
         }
         if ($extend !== null && !$extended && $aItems !== array()) {
             $aItems = $extend($aItems);
@@ -87,7 +90,7 @@ class SearchRunner
         // Highlight/urgent/bump state for the whole page in one query.
         osc_prime_item_upgrades($aItems);
 
-        return new SearchResult($aItems, $total, $model, $extras);
+        return new SearchResult($aItems, $total, $model, $extras, $capped);
     }
 
     /**

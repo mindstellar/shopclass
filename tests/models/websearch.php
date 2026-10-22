@@ -380,6 +380,7 @@ $basePrefs = array(
     'save_latest_searches'         => '0',
     'num_rss_items'                => '50',
     'pageTitle'                    => 'Test site',
+    'search_count_cap'             => '0',
 );
 
 /**
@@ -491,6 +492,16 @@ $scenarios = array(
     'braces in the keyword redirect'     => array('search/pattern,{bike}', array('page' => 'search', 'sParams' => 'pattern,{bike}'), array('rewriteEnabled' => '1')),
     'braces only redirect to search'     => array('search/pattern,{}', array('page' => 'search', 'sParams' => 'pattern,{}'), array('rewriteEnabled' => '1')),
     'braces, rewrite off'                => array('index.php?page=search&sPattern={bike}', array('page' => 'search', 'sPattern' => '{bike}')),
+    'count capped: total is the cap'     => array(
+        'index.php?page=search&sCategory=' . $catCars . '&iPagesize=1',
+        array('page' => 'search', 'sCategory' => (string)$catCars, 'iPagesize' => '1'),
+        array('search_count_cap' => '2'),
+    ),
+    'count capped: a page past the cap shows its rows' => array(
+        'index.php?page=search&sCategory=' . $catCars . '&iPage=3&iPagesize=1',
+        array('page' => 'search', 'sCategory' => (string)$catCars, 'iPage' => '3', 'iPagesize' => '1'),
+        array('search_count_cap' => '2'),
+    ),
     'theme param from a visitor redirects' => array('search/pattern,bike?theme=bender', array('page' => 'search', 'sParams' => 'pattern,bike', 'theme' => 'bender'), array('rewriteEnabled' => '1')),
 );
 

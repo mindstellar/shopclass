@@ -124,14 +124,18 @@ final class SearchCompiler
 
     /**
      * The count statement around results($count = true).
+     * With $limit above 0 it counts at most that many matches, which stops the scan early.
      *
      * @param array{0:string,1:array<int,mixed>} $matches
+     * @param int                                $limit
      *
      * @return array{0:string,1:array<int,mixed>}
      */
-    public static function count(array $matches): array
+    public static function count(array $matches, int $limit = 0): array
     {
-        return array('SELECT COUNT(*) AS total FROM (' . $matches[0] . ') AS search_count', $matches[1]);
+        $inner = $matches[0] . ($limit > 0 ? "\nLIMIT " . $limit : '');
+
+        return array('SELECT COUNT(*) AS total FROM (' . $inner . ') AS search_count', $matches[1]);
     }
 
     /**

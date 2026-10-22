@@ -32,7 +32,7 @@ function ctx(array $over = array()): void
     $GLOBALS['ctx'] = array_merge(array(
         'home' => false, 'static' => false, 'ad' => false, 'search' => false,
         'pattern' => '', 'category_name' => '', 'category_description' => '',
-        'city' => '', 'region' => '', 'country' => '', 'total' => 0,
+        'city' => '', 'region' => '', 'country' => '', 'total' => 0, 'capped' => false,
         'page_description' => 'A classifieds site.',
         'static_text' => '', 'item_description' => '',
         'item_category' => '', 'item_city' => '',
@@ -103,6 +103,14 @@ function osc_search_country()
 function osc_search_total_items()
 {
     return $GLOBALS['ctx']['total'];
+}
+function osc_search_total_capped()
+{
+    return $GLOBALS['ctx']['capped'];
+}
+function osc_search_total_text()
+{
+    return number_format($GLOBALS['ctx']['total']) . ($GLOBALS['ctx']['capped'] ? '+' : '');
 }
 function osc_page_description()
 {
@@ -175,6 +183,10 @@ pin('singular', 'Cars in Pune - 1 listing.', (function () {
 })());
 pin('plural', 'Cars in Pune - 24 listings.', (function () {
     ctx(array('search' => true, 'category_name' => 'Cars', 'city' => 'Pune', 'total' => 24));
+    return meta_description();
+})());
+pin('a capped count reads as more than the cap', 'Cars in Pune - 1,000+ listings.', (function () {
+    ctx(array('search' => true, 'category_name' => 'Cars', 'city' => 'Pune', 'total' => 1000, 'capped' => true));
     return meta_description();
 })());
 pin('an empty result set claims no count', 'Cars in Pune.', (function () {

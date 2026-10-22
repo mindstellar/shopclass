@@ -27,18 +27,23 @@ class SearchResult
     /** @var SearchExtras */
     private $extras;
 
+    /** @var bool */
+    private $capped;
+
     /**
      * @param array<int,array<string,mixed>> $items
      * @param int|null                       $total null when the search was not counted
      * @param \Search                        $model the core search, or the one a search_results backend returned
      * @param SearchExtras|null              $extras what a search_results backend added; none when core searched
+     * @param bool                           $capped the count stopped at its cap: $total is the cap and there are more
      */
-    public function __construct(array $items, $total, \Search $model, ?SearchExtras $extras = null)
+    public function __construct(array $items, $total, \Search $model, ?SearchExtras $extras = null, bool $capped = false)
     {
         $this->items  = $items;
         $this->total  = $total;
         $this->model  = $model;
         $this->extras = $extras ?? SearchExtras::none();
+        $this->capped = $capped && $total !== null;
     }
 
     /** @return array<int,array<string,mixed>> */
@@ -55,6 +60,14 @@ class SearchResult
     public function total()
     {
         return $this->total;
+    }
+
+    /**
+     * Whether the count stopped at the search count cap, so there are more matches than total().
+     */
+    public function totalCapped(): bool
+    {
+        return $this->capped;
     }
 
     public function model(): \Search

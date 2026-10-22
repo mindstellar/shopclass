@@ -567,6 +567,7 @@ pin(
         'notify_contact_item'         => 'osclass/notify_contact_item',
         'notify_contact_friends'      => 'osclass/notify_contact_friends',
         'warn_expiration'             => 'osclass/warn_expiration',
+        'search_count_cap'            => 'osclass/search_count_cap',
         'max_chars_per_title'         => 'osclass/title_character_length',
         'max_chars_per_description'   => 'osclass/description_character_length',
         'tinymce'                     => 'osclass/tinymce_frontend',
