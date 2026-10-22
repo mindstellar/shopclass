@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\search;
 
 use mindstellar\admin\DatabaseTools;
+use mindstellar\database\Connection;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\job\Job;
@@ -25,6 +26,9 @@ use mindstellar\job\JobRetry;
  */
 final class FacetJobs
 {
+    private const PACK_LOCK_WAIT = 2;
+    private const PACK_WEB_MAX_BYTES = 128 * 1024 * 1024;
+
     public static function queueBuild(): bool
     {
         return osc_job_ensure(FacetIndex::JOB_BUILD, array('after' => 0));
@@ -55,11 +59,11 @@ final class FacetJobs
             }
         } while ($last !== null);
         $after = max($after, (int) Db::scalar('SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_item'));
-        FacetIndex::pruneTerms();
+        FacetTerms::prune();
         FacetIndex::markReady();
         $line(sprintf('Index built up to listing #%d', $after));
         try {
-            $line(FacetIndex::pack() ? 'Index table compacted' : 'Index table not compacted: a transaction is open');
+            $line(self::pack() ? 'Index table compacted' : 'Index table not compacted: a transaction is open');
         } catch (DbException $e) {
             $line('Index table not compacted (optional, the index works): ' . $e->getMessage());
         }
@@ -75,7 +79,7 @@ final class FacetJobs
     public static function afterRepair(array $ran): void
     {
         foreach ($ran as $statement) {
-            if (in_array(DatabaseTools::createdTable((string) $statement), [FacetIndex::tableName(), FacetIndex::termTable()], true)) {
+            if (in_array(DatabaseTools::createdTable((string) $statement), [FacetIndex::tableName(), FacetTerms::tableName()], true)) {
                 FacetIndex::markStale();
                 self::queueBuild();
 
@@ -84,12 +88,62 @@ final class FacetJobs
         }
     }
 
+    /**
+     * Rewrite the table with full pages, as a full build ends. The build writes listing by
+     * listing into a primary key that starts with the term, which leaves pages half full. The
+     * rebuild is online, so searches and saves go on; it waits at most PACK_LOCK_WAIT seconds
+     * for a lock. Skipped inside a transaction, which the statement would commit.
+     *
+     * @return bool true when the table was rewritten, false inside a transaction
+     * @throws DbException with the server's reason when the rewrite fails, e.g. on a lock wait, a full online log or a full disk
+     */
+    public static function pack(): bool
+    {
+        if (Db::inTransaction()) {
+            return false;
+        }
+        $wait = (int) Db::scalar('SELECT @@SESSION.lock_wait_timeout');
+        Db::execute('SET SESSION lock_wait_timeout = ' . self::PACK_LOCK_WAIT);
+        try {
+            Db::execute('ALTER TABLE ' . FacetIndex::tableName() . ' FORCE, ALGORITHM=INPLACE, LOCK=NONE');
+        } catch (DbException $e) {
+            // The server's text gives the reason, e.g. a lock wait, a full online log or a rebuild that needs a lock.
+            throw new DbException(Connection::getInstance()->lastError() ?: $e->getMessage(), $e->getCode(), $e);
+        } finally {
+            Db::execute('SET SESSION lock_wait_timeout = ' . $wait);
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a background pack may run: always from the command line, from a web request
+     * only while the table is small enough to rewrite well inside a request's time limit.
+     */
+    public static function packFits(string $sapi, int $bytes): bool
+    {
+        return $sapi === 'cli' || $bytes <= self::PACK_WEB_MAX_BYTES;
+    }
+
+    /**
+     * The table's data and index size in bytes, as the server last counted it.
+     *
+     * @throws DbException
+     */
+    public static function tableBytes(): int
+    {
+        return (int) Db::scalar(
+            'SELECT DATA_LENGTH + INDEX_LENGTH FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
+            [FacetIndex::tableName()]
+        );
+    }
+
     public static function registerJobs(): void
     {
         osc_job_register_handler(FacetIndex::JOB_BUILD, static function (Job $job): void {
             $last = FacetIndex::buildStep((int) $job->get('after', 0), FacetIndex::BATCH);
             if ($last === null) {
-                FacetIndex::pruneTerms();
+                FacetTerms::prune();
                 FacetIndex::markReady();
                 osc_job_ensure(FacetIndex::JOB_PACK);
 
@@ -99,11 +153,11 @@ final class FacetJobs
         });
         // A big table is left to search:reindex, so a web request never runs a long rewrite.
         osc_job_register_handler(FacetIndex::JOB_PACK, static function (): void {
-            if (!FacetIndex::packFits(PHP_SAPI, FacetIndex::tableBytes())) {
+            if (!self::packFits(PHP_SAPI, self::tableBytes())) {
                 return;
             }
             try {
-                $packed = FacetIndex::pack();
+                $packed = self::pack();
             } catch (DbException $e) {
                 throw new JobRetry('Index table not compacted (optional, the index works): ' . $e->getMessage(), 600, 3);
             }

@@ -22,6 +22,7 @@ require_once __DIR__ . '/lib/facet-rows.php';
 
 use mindstellar\database\Connection;
 use mindstellar\search\FacetIndex;
+use mindstellar\search\FacetTerms;
 
 $admin = api_admin_boot('osc_facet_migration');
 $p     = DB_TABLE_PREFIX;
@@ -49,7 +50,7 @@ $variant2 = seed_exec($admin, "INSERT INTO {$p}t_item_variant (fk_i_item_id, s_o
 $migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0083_item_facet.php';
 $conn      = Connection::getInstance();
 $facet     = FacetIndex::tableName();
-$terms     = FacetIndex::termTable();
+$terms     = FacetTerms::tableName();
 $rows      = static fn (): array => $admin->query('SELECT s_key, s_value, fk_i_item_id, fk_i_variant_id FROM ' . facet_rows_sql() . ' x ORDER BY s_key, s_value, fk_i_item_id, fk_i_variant_id')->fetch_all(MYSQLI_NUM);
 $tables    = static fn (): array => array_merge(...$admin->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('$facet', '$terms') ORDER BY TABLE_NAME")->fetch_all(MYSQLI_NUM));
 $schema    = static function () use ($admin, $facet, $terms): array {

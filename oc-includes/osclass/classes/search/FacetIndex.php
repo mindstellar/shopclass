@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\search;
 
 use Field;
-use mindstellar\database\Connection;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\fields\FieldTypeRegistry;
@@ -22,7 +21,7 @@ use mindstellar\listing\ListingStore;
 /**
  * t_item_facet: one row per filterable value of a listing (custom field values and variant
  * options), kept in step with t_item_meta and t_item_variant by their writers. A row holds the
- * id of its (key, value) term in t_facet_term; a number row uses the term (key, '') and keeps
+ * id of its (key, value) term in t_facet_term (see FacetTerms); a number row uses the term (key, '') and keeps
  * the number in d_number, a text row has d_number 0. Every method that writes expects the
  * listing row to be locked by the caller. A writer's call that fails marks the index stale and
  * queues a rebuild instead of failing the listing write.
@@ -30,7 +29,6 @@ use mindstellar\listing\ListingStore;
 final class FacetIndex
 {
     public const TABLE      = 't_item_facet';
-    public const TERM_TABLE = 't_facet_term';
     public const JOB_BUILD  = 'search.facet_build';
     public const JOB_FIELD  = 'search.facet_field';
     public const JOB_PACK   = 'search.facet_pack';
@@ -41,30 +39,16 @@ final class FacetIndex
 
     private const KEY_LEN = 48;
     private const ROWS_PER_INSERT = 500;
-    private const TERMS_PER_SELECT = 200;
-    private const PRUNE_RANGE = 2000;
     private const ER_NO_REFERENCED_ROW = 1452;
-    private const PACK_LOCK_WAIT = 2;
-    private const PACK_WEB_MAX_BYTES = 128 * 1024 * 1024;
 
     private static bool $tablePresent = false;
 
     /** @var array<int,string> storage primitive by field id, for this request */
     private static array $storages = [];
 
-    private static float $storagesRequest = 0.0;
-
-    /** @var array<string,array<int|string,int>> committed term ids by key and cut value, for this request */
-    private static array $terms = [];
-
     public static function tableName(): string
     {
         return DB_TABLE_PREFIX . self::TABLE;
-    }
-
-    public static function termTable(): string
-    {
-        return DB_TABLE_PREFIX . self::TERM_TABLE;
     }
 
     /**
@@ -145,15 +129,13 @@ final class FacetIndex
     public static function forgetTypes(): void
     {
         self::$storages = [];
-        self::$terms    = [];
+        FacetTerms::forget();
     }
 
     private static function sameRequest(): void
     {
-        $now = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0.0);
-        if ($now !== self::$storagesRequest) {
-            self::$storagesRequest = $now;
-            self::forgetTypes();
+        if (FacetTerms::newRequest()) {
+            self::$storages = [];
         }
     }
 
@@ -166,121 +148,6 @@ final class FacetIndex
         $number = (float) $value;
 
         return is_finite($number) ? $number : null;
-    }
-
-    /**
-     * The term ids of the pairs that have one. Values are cut as rows are written and compared
-     * under the table's collation, so 'red' finds the term of 'Red'. Reads only.
-     *
-     * @param array<string,array<int,int|string>> $pairs key => values (a number key asks for '')
-     *
-     * @return array<string,array<int|string,int>> key => value as asked => term id; unknown pairs left out
-     * @throws DbException
-     */
-    public static function termIds(array $pairs): array
-    {
-        self::sameRequest();
-        $found  = [];
-        $misses = [];
-        foreach ($pairs as $key => $values) {
-            foreach ($values as $value) {
-                $cut = self::cut((string) $value);
-                if (isset(self::$terms[$key][$cut])) {
-                    $found[$key][$value] = self::$terms[$key][$cut];
-                } else {
-                    $misses[$key . "\0" . $cut] = [(string) $key, $cut];
-                }
-            }
-        }
-        if ($misses === []) {
-            return $found;
-        }
-        $ids = self::lookup(array_values($misses), false);
-        self::remember($ids);
-
-        return self::fill($found, $pairs, $ids);
-    }
-
-    /**
-     * As termIds(), creating the terms that are missing. A term another transaction made after
-     * this one's snapshot is returned too; a row naming it is written after the commit instead.
-     *
-     * @param array<string,array<int,int|string>> $pairs key => values
-     *
-     * @return array<string,array<int|string,int>> key => value as asked => term id
-     * @throws DbException
-     */
-    public static function ensureTerms(array $pairs): array
-    {
-        return self::resolveTerms($pairs)[0];
-    }
-
-    /**
-     * ensureTerms(), with the ids this transaction's snapshot cannot see.
-     *
-     * @param array<string,array<int,int|string>> $pairs
-     *
-     * @return array{0:array<string,array<int|string,int>>,1:array<int,true>}
-     * @throws DbException
-     */
-    private static function resolveTerms(array $pairs): array
-    {
-        $found   = self::termIds($pairs);
-        $missing = [];
-        foreach ($pairs as $key => $values) {
-            foreach ($values as $value) {
-                if (!isset($found[$key][$value])) {
-                    $cut = self::cut((string) $value);
-                    $missing[$key . "\0" . $cut] = [(string) $key, $cut];
-                }
-            }
-        }
-        if ($missing === []) {
-            return [$found, []];
-        }
-        // Sorted, so two writers making the same terms lock them in one order.
-        ksort($missing, SORT_STRING);
-        $missing = array_values($missing);
-        foreach (array_chunk($missing, self::TERMS_PER_SELECT) as $chunk) {
-            Db::execute(
-                'INSERT IGNORE INTO ' . self::termTable() . ' (s_key, s_value) VALUES ' . implode(', ', array_fill(0, count($chunk), '(?, ?)')),
-                array_merge(...$chunk)
-            );
-        }
-        $ids  = self::lookup($missing, false);
-        $seen = [];
-        foreach ($ids as [$key, $cut]) {
-            $seen[$key . "\0" . $cut] = true;
-        }
-        $left   = array_values(array_filter($missing, static fn (array $pair): bool => !isset($seen[$pair[0] . "\0" . $pair[1]])));
-        $unseen = [];
-        if ($left !== []) {
-            // A term another writer committed after this snapshot shows only to a locking read.
-            foreach (self::lookup($left, true) as $row) {
-                $ids[]           = $row;
-                $unseen[$row[2]] = true;
-            }
-        }
-        self::remember($ids);
-
-        return [self::fill($found, $pairs, $ids), $unseen];
-    }
-
-    /**
-     * Cache looked-up ids once the open transaction commits, so a rollback leaves none behind.
-     *
-     * @param array<int,array{0:string,1:string,2:int}> $ids
-     */
-    private static function remember(array $ids): void
-    {
-        if ($ids === []) {
-            return;
-        }
-        Db::afterCommit(static function () use ($ids): void {
-            foreach ($ids as [$key, $cut, $id]) {
-                self::$terms[$key][$cut] = $id;
-            }
-        });
     }
 
     /**
@@ -343,85 +210,7 @@ final class FacetIndex
      */
     public static function dropField(int $fieldId): void
     {
-        $keys = self::fieldKeys($fieldId);
-        self::guard(static fn () => Db::execute('DELETE FROM ' . self::termTable() . ' WHERE s_key IN (?, ?, ?)', $keys));
-        foreach ($keys as $key) {
-            unset(self::$terms[$key]);
-        }
-    }
-
-    /**
-     * Delete the terms no row names, as a rebuild leaves them. Only a rebuild calls this; a term
-     * stays after its last listing changes, and no list reads the terms, so it costs only space.
-     * It deletes in id ranges, so no statement holds locks for long.
-     *
-     * @return int the terms deleted
-     * @throws DbException
-     */
-    public static function pruneTerms(): int
-    {
-        self::$terms = [];
-        $max         = (int) Db::scalar('SELECT MAX(pk_i_id) FROM ' . self::termTable());
-        $deleted     = 0;
-        for ($from = 0; $from < $max; $from += self::PRUNE_RANGE) {
-            $deleted += Db::execute(
-                'DELETE t FROM ' . self::termTable() . ' t LEFT JOIN ' . self::tableName() . ' f ON f.fk_i_term_id = t.pk_i_id'
-                . ' WHERE t.pk_i_id > ? AND t.pk_i_id <= ? AND f.fk_i_term_id IS NULL',
-                [$from, $from + self::PRUNE_RANGE]
-            );
-        }
-
-        return $deleted;
-    }
-
-    /**
-     * Rewrite the table with full pages, as a full build ends. The build writes listing by
-     * listing into a primary key that starts with the term, which leaves pages half full. The
-     * rebuild is online, so searches and saves go on; it waits at most PACK_LOCK_WAIT seconds
-     * for a lock. Skipped inside a transaction, which the statement would commit.
-     *
-     * @return bool true when the table was rewritten, false inside a transaction
-     * @throws DbException with the server's reason when the rewrite fails, e.g. on a lock wait, a full online log or a full disk
-     */
-    public static function pack(): bool
-    {
-        if (Db::inTransaction()) {
-            return false;
-        }
-        $wait = (int) Db::scalar('SELECT @@SESSION.lock_wait_timeout');
-        Db::execute('SET SESSION lock_wait_timeout = ' . self::PACK_LOCK_WAIT);
-        try {
-            Db::execute('ALTER TABLE ' . self::tableName() . ' FORCE, ALGORITHM=INPLACE, LOCK=NONE');
-        } catch (DbException $e) {
-            // The server's text gives the reason, e.g. a lock wait, a full online log or a rebuild that needs a lock.
-            throw new DbException(Connection::getInstance()->lastError() ?: $e->getMessage(), $e->getCode(), $e);
-        } finally {
-            Db::execute('SET SESSION lock_wait_timeout = ' . $wait);
-        }
-
-        return true;
-    }
-
-    /**
-     * Whether a background pack may run: always from the command line, from a web request
-     * only while the table is small enough to rewrite well inside a request's time limit.
-     */
-    public static function packFits(string $sapi, int $bytes): bool
-    {
-        return $sapi === 'cli' || $bytes <= self::PACK_WEB_MAX_BYTES;
-    }
-
-    /**
-     * The table's data and index size in bytes, as the server last counted it.
-     *
-     * @throws DbException
-     */
-    public static function tableBytes(): int
-    {
-        return (int) Db::scalar(
-            'SELECT DATA_LENGTH + INDEX_LENGTH FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
-            [self::tableName()]
-        );
+        self::guard(static fn () => FacetTerms::drop(self::fieldKeys($fieldId)));
     }
 
     /**
@@ -615,67 +404,10 @@ final class FacetIndex
             return;
         }
         Db::execute(
-            'DELETE f FROM ' . self::tableName() . ' f STRAIGHT_JOIN ' . self::termTable() . ' t ON t.pk_i_id = f.fk_i_term_id'
+            'DELETE f FROM ' . self::tableName() . ' f STRAIGHT_JOIN ' . FacetTerms::tableName() . ' t ON t.pk_i_id = f.fk_i_term_id'
             . ' WHERE f.fk_i_item_id = ? AND t.s_key IN (' . implode(', ', array_fill(0, count($keys), '?')) . ')',
             array_merge([$itemId], array_values($keys))
         );
-    }
-
-    /**
-     * Term ids of [key, cut value] pairs, compared under the term table's collation.
-     *
-     * @param array<int,array{0:string,1:string}> $pairs
-     *
-     * @return array<int,array{0:string,1:string,2:int}> the asked key and value with the id, for those found
-     * @throws DbException
-     */
-    private static function lookup(array $pairs, bool $lock): array
-    {
-        $found = [];
-        foreach (array_chunk($pairs, self::TERMS_PER_SELECT) as $chunk) {
-            $rows = [];
-            foreach (array_keys($chunk) as $n) {
-                $rows[] = $n === 0 ? 'SELECT 0 AS n, ? AS k, ? AS v' : 'SELECT ' . $n . ', ?, ?';
-            }
-            $result = Db::select(
-                'SELECT q.n, t.pk_i_id FROM (' . implode(' UNION ALL ', $rows) . ') q JOIN ' . self::termTable() . ' t'
-                . ' ON t.s_key = q.k AND t.s_value = q.v' . ($lock ? ' LOCK IN SHARE MODE' : ''),
-                array_merge(...$chunk)
-            );
-            foreach ($result as $row) {
-                $pair    = $chunk[(int) $row['n']];
-                $found[] = [$pair[0], $pair[1], (int) $row['pk_i_id']];
-            }
-        }
-
-        return $found;
-    }
-
-    /**
-     * Add the looked-up ids to $found, keyed by each value as it was asked.
-     *
-     * @param array<string,array<int|string,int>>  $found
-     * @param array<string,array<int,int|string>>  $pairs
-     * @param array<int,array{0:string,1:string,2:int}> $ids
-     *
-     * @return array<string,array<int|string,int>>
-     */
-    private static function fill(array $found, array $pairs, array $ids): array
-    {
-        $byPair = [];
-        foreach ($ids as [$key, $cut, $id]) {
-            $byPair[$key . "\0" . $cut] = $id;
-        }
-        foreach ($pairs as $key => $values) {
-            foreach ($values as $value) {
-                $id = $byPair[$key . "\0" . self::cut((string) $value)] ?? null;
-                if ($id !== null && !isset($found[$key][$value])) {
-                    $found[$key][$value] = $id;
-                }
-            }
-        }
-
-        return $found;
     }
 
     private static function storageOfField(int $fieldId): string
@@ -818,7 +550,7 @@ final class FacetIndex
         foreach ($rows as [$key, $value]) {
             $pairs[$key][$value] = $value;
         }
-        [$ids, $unseen] = self::resolveTerms(array_map('array_values', $pairs));
+        [$ids, $unseen] = FacetTerms::resolve(array_map('array_values', $pairs));
         $values         = [];
         $later          = false;
         foreach ($rows as [$key, $value, $variant, $number]) {

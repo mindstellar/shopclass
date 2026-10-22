@@ -22,6 +22,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\search\FacetIndex;
+use mindstellar\search\FacetTerms;
 use mindstellar\search\query\FacetFilter;
 
 $admin = api_admin_boot('osc_facet_filter');
@@ -200,7 +201,7 @@ $admin->query("ANALYZE TABLE $f, $t, $i, $v");
 
 $picked = static fn (callable $keep): array => array_values(array_filter($ids, static fn (int $id, int $k): bool => $keep($k), ARRAY_FILTER_USE_BOTH));
 $terms  = static function (string $key, array $values): array {
-    return array_values(FacetIndex::termIds([$key => $values])[$key] ?? []);
+    return array_values(FacetTerms::termIds([$key => $values])[$key] ?? []);
 };
 $option = static function (array $options, bool $inStock, bool $onSale) use ($terms): array {
     $byKey = [];

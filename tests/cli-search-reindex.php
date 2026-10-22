@@ -77,13 +77,13 @@ pin('the last line says so', 'Index table compacted', end($lines));
 harness_section('pack');
 $before = $tableId();
 \mindstellar\database\Db::beginTransaction();
-pin('inside a transaction it does nothing', false, FacetIndex::pack());
+pin('inside a transaction it does nothing', false, FacetJobs::pack());
 check('and the transaction is still open', \mindstellar\database\Db::inTransaction());
 \mindstellar\database\Db::rollBack();
 pin('the table was not rewritten', $before, $tableId());
 $session = static fn (): int => (int) \mindstellar\database\Db::scalar('SELECT @@SESSION.lock_wait_timeout');
 \mindstellar\database\Db::execute('SET SESSION lock_wait_timeout = 77');
-pin('outside one it rewrites the table', true, FacetIndex::pack());
+pin('outside one it rewrites the table', true, FacetJobs::pack());
 check('with a new table id', $tableId() !== $before);
 pin('the session lock wait is put back', 77, $session());
 pin('the rows are all there', [1, 1, 1, 1, 1], array_map($rowsOf, $ids));
@@ -92,7 +92,7 @@ $failed = null;
 \mindstellar\database\Db::execute('SET SESSION lock_wait_timeout = 77');
 $admin->query("RENAME TABLE $facet TO {$facet}_away");
 try {
-    FacetIndex::pack();
+    FacetJobs::pack();
 } catch (\mindstellar\database\DbException $e) {
     $failed = $e;
 }
@@ -105,7 +105,7 @@ pin('and still puts the session lock wait back', 77, $session());
 $admin->query("ALTER TABLE $facet ADD COLUMN s_probe VARCHAR(10) NULL, ADD FULLTEXT INDEX idx_probe (s_probe)");
 $refused = '';
 try {
-    FacetIndex::pack();
+    FacetJobs::pack();
 } catch (\mindstellar\database\DbException $e) {
     $refused = $e->getMessage();
 }
@@ -113,10 +113,10 @@ $admin->query("ALTER TABLE $facet DROP INDEX idx_probe, DROP COLUMN s_probe");
 check('a rewrite that cannot run online fails rather than locking the table', str_contains($refused, 'is not supported'));
 
 harness_section('packFits');
-pin('the command line packs any size', true, FacetIndex::packFits('cli', PHP_INT_MAX));
-pin('a web request packs a small table', true, FacetIndex::packFits('fpm-fcgi', 128 * 1024 * 1024));
-pin('but not a big one', false, FacetIndex::packFits('fpm-fcgi', 128 * 1024 * 1024 + 1));
-check('the table size is read', FacetIndex::tableBytes() > 0);
+pin('the command line packs any size', true, FacetJobs::packFits('cli', PHP_INT_MAX));
+pin('a web request packs a small table', true, FacetJobs::packFits('fpm-fcgi', 128 * 1024 * 1024));
+pin('but not a big one', false, FacetJobs::packFits('fpm-fcgi', 128 * 1024 * 1024 + 1));
+check('the table size is read', FacetJobs::tableBytes() > 0);
 
 harness_section('--from');
 $setFlag('0');

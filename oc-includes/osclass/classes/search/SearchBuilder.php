@@ -204,7 +204,7 @@ class SearchBuilder
         )));
 
         $facet = FacetIndex::ready();
-        $terms = $facet ? FacetIndex::termIds(self::facetPairs($custom_fields, $types)) : array();
+        $terms = $facet ? FacetTerms::termIds(self::facetPairs($custom_fields, $types)) : array();
         $table = DB_TABLE_PREFIX . 't_item_meta';
         $in    = DB_TABLE_PREFIX . 't_item.pk_i_id IN (';
         foreach ($custom_fields as $key => $aux) {

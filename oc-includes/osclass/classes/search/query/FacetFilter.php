@@ -19,7 +19,7 @@ use mindstellar\search\FacetIndex;
 
 /**
  * Search conditions on t_item_facet by term id. Builds SQL and runs nothing; callers check
- * FacetIndex::ready() first and resolve keys and values with FacetIndex::termIds(), so the SQL
+ * FacetIndex::ready() first and resolve keys and values with FacetTerms::termIds(), so the SQL
  * holds integers only. Each shape has a page form and a count form: the page probes the
  * primary key per listing, so it stops after one page; the count reads the facet range once.
  * A text term always carries `d_number = 0`, which makes the probe a primary key lookup.

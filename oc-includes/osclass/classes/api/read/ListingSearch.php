@@ -24,6 +24,7 @@ use mindstellar\listing\ListingQuery;
 use mindstellar\listing\VariantStore;
 use mindstellar\search\Distance;
 use mindstellar\search\FacetIndex;
+use mindstellar\search\FacetTerms;
 use mindstellar\search\query\FacetFilter;
 use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
@@ -192,7 +193,7 @@ final class ListingSearch
             foreach ($options as $name => $values) {
                 $pairs[FacetIndex::optionKey((string) $name)] = $values;
             }
-            $found = FacetIndex::termIds($pairs);
+            $found = FacetTerms::termIds($pairs);
             $terms = [];
             foreach (array_keys($pairs) as $key) {
                 $terms[$key] = array_values($found[$key] ?? []);

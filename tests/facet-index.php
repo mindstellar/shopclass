@@ -25,6 +25,7 @@ use mindstellar\database\Db;
 use mindstellar\fields\FieldTypeRegistry;
 use mindstellar\listing\ListingStore;
 use mindstellar\search\FacetIndex;
+use mindstellar\search\FacetTerms;
 
 $admin  = api_admin_boot('osc_facet_index');
 $p      = DB_TABLE_PREFIX;
@@ -134,16 +135,16 @@ harness_section('rollback and long names');
 FacetIndex::forgetTypes();
 try {
     Db::transaction(static function () use ($admin, $p): void {
-        Db::select('SELECT COUNT(*) FROM ' . FacetIndex::termTable());
+        Db::select('SELECT COUNT(*) FROM ' . FacetTerms::tableName());
         $admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('oRolled', 'Elsewhere')");
-        FacetIndex::ensureTerms(['oRolled' => ['Back', 'Elsewhere']]);
+        FacetTerms::ensureTerms(['oRolled' => ['Back', 'Elsewhere']]);
 
         throw new RuntimeException('roll back');
     });
 } catch (RuntimeException $e) {
 }
-pin('a rolled back transaction leaves no term id of its own behind', [], FacetIndex::termIds(['oRolled' => ['Back']]));
-pin('and the term another writer made is found', [(int) $admin->query("SELECT pk_i_id FROM {$p}t_facet_term WHERE s_key = 'oRolled' AND s_value = 'Elsewhere'")->fetch_row()[0]], array_values(FacetIndex::termIds(['oRolled' => ['Elsewhere']])['oRolled'] ?? []));
+pin('a rolled back transaction leaves no term id of its own behind', [], FacetTerms::termIds(['oRolled' => ['Back']]));
+pin('and the term another writer made is found', [(int) $admin->query("SELECT pk_i_id FROM {$p}t_facet_term WHERE s_key = 'oRolled' AND s_value = 'Elsewhere'")->fetch_row()[0]], array_values(FacetTerms::termIds(['oRolled' => ['Elsewhere']])['oRolled'] ?? []));
 $long = str_repeat('a', 60);
 check('a name past 47 characters keeps the column length', mb_strlen(FacetIndex::optionKey($long)) === 48);
 check('two long names with one start get two keys', FacetIndex::optionKey($long . 'x') !== FacetIndex::optionKey($long . 'y'));
@@ -263,20 +264,20 @@ FacetIndex::rewriteField($two, $shade, 'red');
 pin("'Red' and 'red' on two listings share one term", 1, $termsOf("f$shade"));
 pin('both rows name it', $rowTerm($one, $shade), $rowTerm($two, $shade));
 FacetIndex::forgetTypes();
-pin("termIds finds 'Rèd' by the collation, keyed as asked", ["f$shade" => ['Rèd' => $rowTerm($one, $shade)[0]]], FacetIndex::termIds(["f$shade" => ['Rèd']]));
-pin('termIds leaves an unknown pair out', [], FacetIndex::termIds(["f$shade" => ['Purple'], 'f99999' => ['x']]));
+pin("termIds finds 'Rèd' by the collation, keyed as asked", ["f$shade" => ['Rèd' => $rowTerm($one, $shade)[0]]], FacetTerms::termIds(["f$shade" => ['Rèd']]));
+pin('termIds leaves an unknown pair out', [], FacetTerms::termIds(["f$shade" => ['Purple'], 'f99999' => ['x']]));
 pin('termIds makes no term', 0, count($term("f$shade", 'Purple')));
 
 FacetIndex::forgetTypes();
-$made = FacetIndex::ensureTerms(['oFinish' => ['Matte', 'Gloss']]);
+$made = FacetTerms::ensureTerms(['oFinish' => ['Matte', 'Gloss']]);
 pin('ensureTerms makes the missing terms', 2, $termsOf('oFinish'));
 pin('ensureTerms returns their ids', [$term('oFinish', 'Matte')[0], $term('oFinish', 'Gloss')[0]], [$made['oFinish']['Matte'], $made['oFinish']['Gloss']]);
-pin('ensureTerms twice runs no second statement', 0, harness_query_count(static fn () => FacetIndex::ensureTerms(['oFinish' => ['Matte', 'Gloss']])));
-pin('and returns the same ids', $made, FacetIndex::ensureTerms(['oFinish' => ['Matte', 'Gloss']]));
+pin('ensureTerms twice runs no second statement', 0, harness_query_count(static fn () => FacetTerms::ensureTerms(['oFinish' => ['Matte', 'Gloss']])));
+pin('and returns the same ids', $made, FacetTerms::ensureTerms(['oFinish' => ['Matte', 'Gloss']]));
 FacetIndex::forgetTypes();
 $inserts = 0;
 $count   = harness_query_count(static function () use (&$inserts): void {
-    FacetIndex::ensureTerms(['oFinish' => ['Matte', 'Satin']]);
+    FacetTerms::ensureTerms(['oFinish' => ['Matte', 'Satin']]);
 });
 pin('a new value next to a known one makes one term', 3, $termsOf('oFinish'));
 pin('in one INSERT: term SELECT, INSERT, read back', 3, $count);
@@ -292,13 +293,13 @@ pin('two numbers share the one term', 1, $termsOf("f$size"));
 FacetIndex::rewriteField($one, $shade, 'Blue');
 FacetIndex::rewriteField($two, $shade, 'Blue');
 pin('a value nobody holds keeps its term until a prune', 2, $termsOf("f$shade"));
-$pruned = FacetIndex::pruneTerms();
-check('pruneTerms deletes terms no row names', $pruned >= 1);
+$pruned = FacetTerms::prune();
+check('prune deletes terms no row names', $pruned >= 1);
 pin('the unreferenced Red is gone', [], $term("f$shade", 'Red'));
 pin('the referenced Blue stays', 1, count($term("f$shade", 'Blue')));
 pin('rows are untouched', ["f$shade=Blue|0|-"], array_values(array_filter($facet($one), static fn (string $r): bool => str_starts_with($r, "f$shade="))));
 
-FacetIndex::termIds(["f$shade" => ['Blue']]);
+FacetTerms::termIds(["f$shade" => ['Blue']]);
 $admin->query("DELETE FROM {$p}t_item_facet WHERE fk_i_item_id = $one");
 $admin->query("DELETE FROM {$p}t_facet_term WHERE s_key = 'f$shade' AND s_value = 'Blue'");
 FacetIndex::rewriteField($one, $shade, 'Blue');
@@ -314,27 +315,27 @@ pin('and no term', 0, $termsOf("f$gone.from") + $termsOf("f$gone.to"));
 FacetIndex::forgetTypes();
 try {
     Db::transaction(static function (): void {
-        FacetIndex::ensureTerms(['oBack' => ['Out']]);
+        FacetTerms::ensureTerms(['oBack' => ['Out']]);
 
         throw new RuntimeException('roll back');
     });
 } catch (RuntimeException $e) {
 }
 pin('a rolled-back term is gone', [], $term('oBack', 'Out'));
-$back = FacetIndex::ensureTerms(['oBack' => ['Out']]);
+$back = FacetTerms::ensureTerms(['oBack' => ['Out']]);
 pin('and is not remembered: ensureTerms makes it again', $term('oBack', 'Out'), [$back['oBack']['Out']]);
 
 harness_section('term locking, order and cache');
 FacetIndex::forgetTypes();
-$ordered = FacetIndex::ensureTerms(['oZeta' => ['b', 'a'], 'oAlpha' => ['c']]);
+$ordered = FacetTerms::ensureTerms(['oZeta' => ['b', 'a'], 'oAlpha' => ['c']]);
 pin('terms are made in key and value order, so two writers lock them alike', true, $ordered['oAlpha']['c'] < $ordered['oZeta']['a'] && $ordered['oZeta']['a'] < $ordered['oZeta']['b']);
 
 FacetIndex::forgetTypes();
 $seen = null;
 Db::transaction(static function () use ($admin, $p, &$seen): void {
-    Db::select('SELECT COUNT(*) FROM ' . FacetIndex::termTable());
+    Db::select('SELECT COUNT(*) FROM ' . FacetTerms::tableName());
     $admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('oLocked', 'Other')");
-    $seen = FacetIndex::ensureTerms(['oLocked' => ['Other']]);
+    $seen = FacetTerms::ensureTerms(['oLocked' => ['Other']]);
 });
 pin('ensureTerms reads with a lock, so it finds a term committed after its snapshot', [$term('oLocked', 'Other')[0]], [$seen['oLocked']['Other'] ?? null]);
 
@@ -342,26 +343,26 @@ FacetIndex::forgetTypes();
 $inside = null;
 try {
     Db::transaction(static function () use (&$inside): void {
-        FacetIndex::ensureTerms(['oTemp' => ['Gone']]);
-        $inside = FacetIndex::termIds(['oTemp' => ['Gone']]);
+        FacetTerms::ensureTerms(['oTemp' => ['Gone']]);
+        $inside = FacetTerms::termIds(['oTemp' => ['Gone']]);
 
         throw new RuntimeException('roll back');
     });
 } catch (RuntimeException $e) {
 }
 check('inside the transaction the term is found', isset($inside['oTemp']['Gone']));
-pin('a term made by an open transaction is not remembered, so a rollback leaves nothing stale', [], FacetIndex::termIds(['oTemp' => ['Gone']]));
+pin('a term made by an open transaction is not remembered, so a rollback leaves nothing stale', [], FacetTerms::termIds(['oTemp' => ['Gone']]));
 
 FacetIndex::forgetTypes();
 Db::transaction(static function (): void {
-    FacetIndex::ensureTerms(['oKept' => ['Yes']]);
+    FacetTerms::ensureTerms(['oKept' => ['Yes']]);
 });
-pin('a term made by a transaction that committed is remembered', 0, harness_query_count(static fn () => FacetIndex::termIds(['oKept' => ['Yes']])));
+pin('a term made by a transaction that committed is remembered', 0, harness_query_count(static fn () => FacetTerms::termIds(['oKept' => ['Yes']])));
 
-FacetIndex::ensureTerms(['oPruned' => ['Value']]);
-pin('the term is remembered', 0, harness_query_count(static fn () => FacetIndex::termIds(['oPruned' => ['Value']])));
-FacetIndex::pruneTerms();
-pin('pruneTerms drops the remembered ids, so a pruned term is not returned', [], FacetIndex::termIds(['oPruned' => ['Value']]));
+FacetTerms::ensureTerms(['oPruned' => ['Value']]);
+pin('the term is remembered', 0, harness_query_count(static fn () => FacetTerms::termIds(['oPruned' => ['Value']])));
+FacetTerms::prune();
+pin('prune drops the remembered ids, so a pruned term is not returned', [], FacetTerms::termIds(['oPruned' => ['Value']]));
 
 harness_section('a term another writer made after the snapshot');
 $teal = $field('DROPDOWN');
@@ -373,7 +374,7 @@ $threw  = null;
 try {
     Db::transaction(static function () use ($admin, $p, $late, $teal, $facet, &$inside): void {
         ListingStore::find($late, ['pk_i_id'], true);
-        Db::select('SELECT COUNT(*) FROM ' . FacetIndex::termTable());
+        Db::select('SELECT COUNT(*) FROM ' . FacetTerms::tableName());
         $admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('f$teal', 'Teal')");
         Db::execute('INSERT INTO ' . DB_TABLE_PREFIX . "t_item_meta (fk_i_item_id, fk_i_field_id, s_multi, s_value) VALUES (?, ?, '', 'Teal')", [$late, $teal]);
         FacetIndex::rewriteField($late, $teal, 'Teal');
