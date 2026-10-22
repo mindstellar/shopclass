@@ -1114,18 +1114,13 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function facetEnvironment(): array
     {
-        $after = null;
-        foreach (\mindstellar\search\FacetJobs::status() as $job) {
-            if ($job['type'] === \mindstellar\search\FacetIndex::JOB_BUILD && $job['status'] !== \mindstellar\job\JobQueue::STATUS_ERROR) {
-                $after = (int) ($job['payload']['after'] ?? 0);
-                break;
-            }
-        }
         return array(
             'facet_ready'     => \mindstellar\search\FacetIndex::ready(),
             'facet_built_at'  => (string) osc_get_preference(\mindstellar\search\FacetIndex::PREF_BUILT, 'osclass'),
-            'facet_job_after' => $after,
+            'facet_jobs'      => \mindstellar\search\FacetJobs::status(),
             'facet_listings'  => DatabaseTools::listingCount(),
+            'facet_auto_cron' => osc_auto_cron(),
+            'facet_now'       => time(),
         );
     }
 

@@ -27,21 +27,38 @@ $p     = DB_TABLE_PREFIX;
 
 harness_section('Status line');
 
-pin('not built', array('state' => 'missing', 'text' => 'Not built'), DatabaseTools::facetStatus(array(
-    'facet_ready' => false, 'facet_built_at' => '', 'facet_job_after' => null, 'facet_listings' => 10,
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
+$now   = strtotime('2026-10-21 10:00:00');
+$build = static fn (int $after, string $status = 'pending', string $created = '2026-10-21 10:00:00'): array => array(
+    'type' => FacetIndex::JOB_BUILD, 'status' => $status, 'payload' => array('after' => $after), 'error' => '', 'created' => $created,
+);
+$status = static fn (array $env): array => DatabaseTools::facetStatus($env + array(
+    'facet_ready' => false, 'facet_built_at' => '', 'facet_jobs' => array(), 'facet_listings' => 10, 'facet_auto_cron' => true, 'facet_now' => $now,
+));
+
+pin('not built', array('state' => 'missing', 'text' => 'Not built', 'note' => ''), $status(array()));
+pin('ready, with the date', array('state' => 'ready', 'text' => 'Ready, built 2026-10-21 08:00:00', 'note' => ''), $status(array(
+    'facet_ready' => true, 'facet_built_at' => '2026-10-21 08:00:00',
 )));
-pin('ready, with the date', array('state' => 'ready', 'text' => 'Ready, built 2026-10-21 08:00:00'), DatabaseTools::facetStatus(array(
-    'facet_ready' => true, 'facet_built_at' => '2026-10-21 08:00:00', 'facet_job_after' => null, 'facet_listings' => 10,
+pin('building: the job cursor over the listing count', array('state' => 'building', 'text' => 'Building: 4 of 10 listings done', 'note' => ''), $status(array(
+    'facet_jobs' => array($build(4)),
 )));
-pin('building: the job cursor over the listing count', array('state' => 'building', 'text' => 'Building: 4 of 10 listings done'), DatabaseTools::facetStatus(array(
-    'facet_ready' => false, 'facet_built_at' => '', 'facet_job_after' => 4, 'facet_listings' => 10,
-)));
-pin('building wins over ready on a rebuild', 'building', DatabaseTools::facetStatus(array(
-    'facet_ready' => true, 'facet_built_at' => '2026-10-21 08:00:00', 'facet_job_after' => 0, 'facet_listings' => 10,
+pin('building wins over ready on a rebuild', 'building', $status(array(
+    'facet_ready' => true, 'facet_built_at' => '2026-10-21 08:00:00', 'facet_jobs' => array($build(0)),
 ))['state']);
-pin('building never shows more done than there are listings', 'Building: 10 of 10 listings done', DatabaseTools::facetStatus(array(
-    'facet_ready' => false, 'facet_built_at' => '', 'facet_job_after' => 50, 'facet_listings' => 10,
+pin('building never shows more done than there are listings', 'Building: 10 of 10 listings done', $status(array(
+    'facet_jobs' => array($build(50)),
 ))['text']);
+pin('a build that waits says how long', 'Queued 2 hours ago.', $status(array(
+    'facet_jobs' => array($build(0, 'pending', '2026-10-21 08:00:00')),
+))['note']);
+pin('a running build does not', '', $status(array(
+    'facet_jobs' => array($build(0, 'running', '2026-10-21 08:00:00')),
+))['note']);
+pin('with background jobs off it says what runs it', 'Background jobs are off, so it runs only when cron.php or the job worker runs.', $status(array(
+    'facet_jobs' => array($build(0)), 'facet_auto_cron' => false,
+))['note']);
+check('the template prints the note through osc_esc_html()', str_contains((string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/system-info/database.php'), "osc_esc_html(\$facet['note'])"));
 
 harness_section('Fresh install');
 

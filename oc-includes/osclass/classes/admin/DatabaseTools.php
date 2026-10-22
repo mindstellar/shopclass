@@ -19,6 +19,8 @@ use mindstellar\database\SchemaReconciler;
 use mindstellar\database\SqlStream;
 use mindstellar\database\TablePrefix;
 use mindstellar\migration\MigrationRunner;
+use mindstellar\job\JobQueue;
+use mindstellar\search\FacetIndex;
 use mindstellar\search\FacetJobs;
 use mindstellar\upgrade\Osclass;
 use Throwable;
@@ -451,22 +453,38 @@ final class DatabaseTools
     }
 
     /**
-     * The one-line state of the listing filter index for the Database tab.
+     * The state of the listing filter index for the Database tab, with a note on a waiting build.
      *
-     * @param array<string,mixed> $env facet_ready, facet_built_at, facet_job_after (null when no
-     *                                 build is queued), facet_listings
+     * @param array<string,mixed> $env facet_ready, facet_built_at, facet_jobs (FacetJobs::status()),
+     *                                 facet_listings, facet_auto_cron, facet_now (a timestamp)
      *
-     * @return array{state:string,text:string}
+     * @return array{state:string,text:string,note:string}
      */
     public static function facetStatus(array $env): array
     {
-        $after = $env['facet_job_after'] ?? null;
-        if ($after !== null) {
+        $job = null;
+        foreach ((array) ($env['facet_jobs'] ?? array()) as $row) {
+            if ($row['type'] === FacetIndex::JOB_BUILD && $row['status'] !== JobQueue::STATUS_ERROR) {
+                $job = $row;
+                break;
+            }
+        }
+        if ($job !== null) {
             $total = (int) ($env['facet_listings'] ?? 0);
+            $notes = array();
+            $since = strtotime((string) $job['created']);
+            $wait  = $since === false ? 0 : (int) ($env['facet_now'] ?? time()) - $since;
+            if ($job['status'] === JobQueue::STATUS_PENDING && $wait >= 60) {
+                $notes[] = sprintf(__('Queued %s ago.'), osc_admin_duration($wait));
+            }
+            if (empty($env['facet_auto_cron'])) {
+                $notes[] = __('Background jobs are off, so it runs only when cron.php or the job worker runs.');
+            }
 
             return array(
                 'state' => 'building',
-                'text'  => sprintf(__('Building: %1$d of %2$d listings done'), min((int) $after, $total), $total),
+                'text'  => sprintf(__('Building: %1$d of %2$d listings done'), min((int) ($job['payload']['after'] ?? 0), $total), $total),
+                'note'  => implode(' ', $notes),
             );
         }
         if (!empty($env['facet_ready'])) {
@@ -475,10 +493,11 @@ final class DatabaseTools
             return array(
                 'state' => 'ready',
                 'text'  => $built === '' ? __('Ready') : sprintf(__('Ready, built %s'), $built),
+                'note'  => '',
             );
         }
 
-        return array('state' => 'missing', 'text' => __('Not built'));
+        return array('state' => 'missing', 'text' => __('Not built'), 'note' => '');
     }
 
     /**

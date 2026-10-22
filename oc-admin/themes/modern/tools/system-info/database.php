@@ -210,6 +210,9 @@ $groups = array(
         <div id="db-facet">
             <?php osc_admin_form_section(__('Listing filter index'), array('spaced' => true)); ?>
             <p class="text-muted"><?php echo osc_esc_html($facet['text']); ?></p>
+            <?php if ($facet['note'] !== '') { ?>
+                <p class="text-muted small"><?php echo osc_esc_html($facet['note']); ?></p>
+            <?php } ?>
             <?php osc_admin_action_section(array(
                 'actions' => array(array(
                     'label'   => __('Rebuild filter index'),

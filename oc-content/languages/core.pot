@@ -2192,6 +2192,12 @@ msgid ""
 "backend. "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid ""
+"Background jobs are off, so it runs only when cron.php or the job worker "
+"runs."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Background jobs are running normally."
 msgstr ""
@@ -9532,6 +9538,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
 msgid "Queue uploads"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "Queued %s ago."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
