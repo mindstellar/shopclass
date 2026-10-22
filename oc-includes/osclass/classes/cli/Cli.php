@@ -559,24 +559,11 @@ class Cli
             return 1;
         }
 
-        try {
-            $release = DatabaseTools::upgradeLock(Connection::getInstance());
-        } catch (\Throwable $e) {
-            $release = null;
-        }
-        if ($release === null) {
+        $result = DatabaseTools::repair();
+        if ($result === null) {
             $this->err("An upgrade is running. Try again when it has finished.\n");
 
             return 1;
-        }
-        try {
-            $result = (new \mindstellar\database\SchemaReconciler(Connection::getInstance()))->repair();
-        } catch (\Throwable $e) {
-            $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
-
-            return 1;
-        } finally {
-            $release();
         }
 
         if ($result['ran'] === [] && $result['failed'] === []) {
@@ -584,8 +571,6 @@ class Cli
 
             return 0;
         }
-
-        \mindstellar\search\FacetJobs::afterRepair($result['ran']);
 
         if ($result['ran'] !== []) {
             $this->out(sprintf("Ran %d statement(s):\n", count($result['ran'])));
