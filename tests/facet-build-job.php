@@ -158,6 +158,20 @@ try {
 \mindstellar\database\Db::rollBack();
 pin('a pack skipped inside a transaction retries and says why', 'Index table not compacted (optional, the index works): a transaction is open', $said);
 
+$said   = null;
+$before = $tableId();
+try {
+    FacetJobs::packJob('fpm-fcgi', 129 * 1024 * 1024);
+} catch (\mindstellar\job\JobRetry $e) {
+    $said = [$e->getMessage(), $e->delay()];
+}
+pin('a web request leaves a big table alone and says why', [
+    ['Index table not compacted (optional, the index works): at 129 MB it is compacted only from the command line, by the job worker or search:reindex', 86400],
+    $before,
+], [$said, $tableId()]);
+FacetJobs::packJob('fpm-fcgi', 128 * 1024 * 1024);
+check('but packs a small one', $tableId() !== $before);
+
 harness_section('an interrupted build resumes from its cursor');
 $admin->query("DELETE FROM $facet");
 $setFlag('0');

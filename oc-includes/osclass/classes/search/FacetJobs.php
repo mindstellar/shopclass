@@ -176,6 +176,30 @@ final class FacetJobs
     }
 
     /**
+     * The pack job: compact the table, or put it off with the reason, which the Jobs tab shows.
+     * A big table is left to the command line, so a web request never runs a long rewrite.
+     *
+     * @param string $sapi  the PHP SAPI running the job
+     * @param int    $bytes the table size, as tableBytes() gives it
+     *
+     * @throws JobRetry
+     */
+    public static function packJob(string $sapi, int $bytes): void
+    {
+        if (!self::packFits($sapi, $bytes)) {
+            throw new JobRetry(sprintf('Index table not compacted (optional, the index works): at %d MB it is compacted only from the command line, by the job worker or search:reindex', intdiv($bytes, 1024 * 1024)), 86400, 3);
+        }
+        try {
+            $packed = self::pack();
+        } catch (DbException $e) {
+            throw new JobRetry('Index table not compacted (optional, the index works): ' . $e->getMessage(), 600, 3);
+        }
+        if (!$packed) {
+            throw new JobRetry('Index table not compacted (optional, the index works): a transaction is open', 600, 3);
+        }
+    }
+
+    /**
      * The table's data and index size in bytes, as the server last counted it.
      *
      * @throws DbException
@@ -199,20 +223,7 @@ final class FacetJobs
             }
             $job->repeat(array('after' => $last));
         });
-        // A big table is left to search:reindex, so a web request never runs a long rewrite.
-        osc_job_register_handler(FacetIndex::JOB_PACK, static function (): void {
-            if (!self::packFits(PHP_SAPI, self::tableBytes())) {
-                return;
-            }
-            try {
-                $packed = self::pack();
-            } catch (DbException $e) {
-                throw new JobRetry('Index table not compacted (optional, the index works): ' . $e->getMessage(), 600, 3);
-            }
-            if (!$packed) {
-                throw new JobRetry('Index table not compacted (optional, the index works): a transaction is open', 600, 3);
-            }
-        });
+        osc_job_register_handler(FacetIndex::JOB_PACK, static fn () => self::packJob(PHP_SAPI, self::tableBytes()));
         /*
          * A type change queued while this runs is lost with the running row, so the last batch checks the
          * field's kind against the queued one and starts over when it moved. Two changes in one run that
