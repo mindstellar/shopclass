@@ -317,11 +317,13 @@ final class SpamSettingsScreen
             __('Contact a user'),
             __('Send to a friend'),
             __('Search alert sign-ups'),
+            __('Messages sent'),
+            __('New conversations'),
         ));
 
         $page = CoreSettings::page(self::PAGE_LIMITS, __('Limits'));
         foreach ($labels as $context => $label) {
-            $help = $context === \mindstellar\comment\CommentPolicy::LIMIT_CONTEXT
+            $help = in_array($context, array(\mindstellar\comment\CommentPolicy::LIMIT_CONTEXT, 'message_send', 'message_start'), true)
                 ? __('Per signed-in user, or per address for guests, per hour. 0 means no limit.')
                 : __('Per visitor address, per hour. 0 means no limit.');
             $page->number('throttle_' . $context, $label, $help)

@@ -50,6 +50,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'enabled_user_registration', '1', 'BOOLEAN')
     ,('osclass', 'enabled_users','1', 'BOOLEAN')
     ,('osclass', 'enabled_comments', '1', 'BOOLEAN')
+    ,('osclass', 'enabled_messaging', '0', 'BOOLEAN')
     ,('osclass', 'use_imagick', '0', 'BOOLEAN')
     ,('osclass', 'force_aspect_image', '1', 'BOOLEAN')
     ,('osclass', 'warn_expiration', '0', 'INTEGER')

@@ -40,6 +40,9 @@ final class UserSettingsScreen extends SettingsScreen
             ->checkbox('enabled_user_validation', __('Users need to validate their account'))
                 ->set('row', false)
                 ->set('id', 'enabled_user_validation')
+            ->checkbox('enabled_messaging', __('Users can message sellers on the site'))
+                ->set('row', false)
+                ->set('id', 'enabled_messaging')
             ->custom('settings_row_close', static function () {
                 osc_admin_form_row_close();
             })

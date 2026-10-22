@@ -20,6 +20,28 @@
  */
 
 /**
+ * Whether signed-in users can message sellers on the site.
+ *
+ * @return bool
+ */
+function osc_messaging_enabled(): bool
+{
+    return osc_users_enabled() && osc_get_bool_preference('enabled_messaging');
+}
+
+/**
+ * The link to a message thread.
+ *
+ * @param int $conversationId
+ *
+ * @return string
+ */
+function osc_messaging_thread_url(int $conversationId): string
+{
+    return osc_base_url(true) . '?page=messages&id=' . $conversationId;
+}
+
+/**
  * Gets a specific field from current user
  *
  * @param string $field

@@ -583,6 +583,7 @@ pin(
         'enabled_users'             => 'osclass/enabled_users',
         'enabled_user_registration' => 'osclass/enabled_user_registration',
         'enabled_user_validation'   => 'osclass/enabled_user_validation',
+        'enabled_messaging'         => 'osclass/enabled_messaging',
         'notify_new_user'           => 'osclass/notify_new_user',
         'username_blacklist'        => 'osclass/username_blacklist',
     ),
@@ -716,6 +717,8 @@ pin(
         'throttle_user_contact'    => 'osclass/throttle_user_contact',
         'throttle_send_friend'     => 'osclass/throttle_send_friend',
         'throttle_alert_subscribe' => 'osclass/throttle_alert_subscribe',
+        'throttle_message_send'    => 'osclass/throttle_message_send',
+        'throttle_message_start'   => 'osclass/throttle_message_start',
     ),
     keymap(SpamSettingsScreen::registerLimits())
 );
