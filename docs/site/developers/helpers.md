@@ -1167,7 +1167,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_search_suggest_attributes($limit = 5)` | The attributes that turn a search input into a suggestion box, with the group headings in the visitor's language. Use it inside the input tag: `<input name="sPattern" <?php echo osc_search_suggest_attributes(); ?>>`. |
 | `osc_search_suggestion()` | A corrected query from a search engine plugin ("Did you mean ..."). Plain text: escape it. |
 | `osc_search_total_capped()` | Whether the search stopped counting at the limit set in Listings → Settings, so there are more matches than osc_search_total_items() gives. |
-| `osc_search_total_items()` | Gets current search total items |
+| `osc_search_total_items()` | Gets current search total items. When the count stopped at the search count limit it is that limit; osc_search_total_capped() says so and osc_search_total_text() shows it as "1,000+". |
 | `osc_search_total_pages()` | Gets total pages of search |
 | `osc_search_total_text()` | The search total for display, in the locale's number format: "1,234", or "1,000+" when the count stopped at its cap. Escape it like any other text. |
 | `osc_search_url($params = null)` | Gets search url given params |

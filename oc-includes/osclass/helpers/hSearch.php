@@ -293,7 +293,8 @@ function osc_search_price_min()
 }
 
 /**
- * Gets current search total items
+ * Gets current search total items. When the count stopped at the search count limit it is that
+ * limit; osc_search_total_capped() says so and osc_search_total_text() shows it as "1,000+".
  *
  * @return int
  */
