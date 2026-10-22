@@ -101,14 +101,18 @@ final class FacetJobs
 
     /**
      * The end of a full build: drop the terms no row names, set the ready flag and queue the pack,
-     * unless the caller packs itself.
+     * unless the caller packs itself. While a one-field rebuild is queued the flag stays off, and that job's end sets it.
      *
      * @throws DbException
      */
     public static function finish(bool $queuePack = true): void
     {
         FacetTerms::prune();
-        FacetIndex::markReady();
+        if (osc_job_count('pending', FacetIndex::JOB_FIELD) > 0 || osc_job_count('running', FacetIndex::JOB_FIELD) > 0) {
+            FacetIndex::markBuilt();
+        } else {
+            FacetIndex::markReady();
+        }
         if ($queuePack) {
             osc_job_ensure(FacetIndex::JOB_PACK);
         }

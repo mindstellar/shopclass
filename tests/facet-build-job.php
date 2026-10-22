@@ -240,6 +240,20 @@ JobWorker::run(2);
 pin('a pending full build keeps the flag off', ['0', 0], [$pref('facet_ready'), count($jobs(FacetIndex::JOB_FIELD))]);
 $admin->query("DELETE FROM {$p}t_job_queue");
 
+$setFlag('0');
+osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
+$admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2999-01-01 00:00:00'");
+osc_job_enqueue(FacetIndex::JOB_BUILD, ['after' => $ids[2 * FacetIndex::BATCH - 1]]);
+$admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2000-01-01 00:00:00' WHERE s_type = '" . FacetIndex::JOB_BUILD . "'");
+JobWorker::resetRegistration();
+JobWorker::run(1);
+pin('a full build that ends before a pending field job leaves the flag to it', [[], '0', true], [$jobs(FacetIndex::JOB_BUILD), $pref('facet_ready'), (string) $pref('facet_built_at') !== '']);
+for ($i = 0; $i < 3; $i++) {
+    $pass();
+}
+pin('and the field job sets it', [[], '1'], [$jobs(FacetIndex::JOB_FIELD), $pref('facet_ready')]);
+$admin->query("DELETE FROM {$p}t_job_queue");
+
 harness_section('status');
 pin('no job: empty', [], FacetJobs::status());
 $put = static fn (string $type, string $status, string $payload, ?string $error, string $unique) => $admin->query(

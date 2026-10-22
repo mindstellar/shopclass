@@ -252,6 +252,14 @@ final class FacetIndex
     public static function markReady(): void
     {
         osc_set_preference(self::PREF_READY, '1', 'osclass', 'BOOLEAN');
+        self::markBuilt();
+    }
+
+    /**
+     * Record that a full build finished, without turning searches on.
+     */
+    public static function markBuilt(): void
+    {
         osc_set_preference(self::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'osclass', 'STRING');
     }
 
