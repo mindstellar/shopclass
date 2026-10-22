@@ -43,6 +43,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `POST /listings/{id}/publish` and `POST /admin/listings/{id}/publish` publish a listing that is waiting for payment.
 - In shop mode a shopper's account menu shows buyer pages only, with Your orders and recent orders on the dashboard.
 - Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
+- **Listings → Settings → Search count limit** stops search counts at a number and shows "1,000+" past it; themes use `osc_search_total_text()` and `osc_search_total_capped()`, and the API sends `meta.total_capped`. New sites start at 1000, updated sites at 0 (exact).
 
 ### Changed
 - Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.
