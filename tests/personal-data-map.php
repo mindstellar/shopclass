@@ -46,7 +46,7 @@ preg_match_all('#CREATE TABLE /\*TABLE_PREFIX\*/(\w+)\s*\((.*?)\n\)\s*ENGINE#s',
 // "retained, and why", a false negative costs a hole nobody sees.
 $personal = array();
 foreach ($tables as $t) {
-    if (preg_match('/fk_i_user_id|s_email|s_access_ip|\bs_ip\b/i', $t[2])) {
+    if (preg_match('/fk_i_(user|buyer|seller|sender|reporter)_id|s_email|s_access_ip|\bs_ip\b/i', $t[2])) {
         $personal[] = $t[1];
     }
 }
