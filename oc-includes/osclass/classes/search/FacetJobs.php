@@ -123,7 +123,7 @@ final class FacetJobs
     {
         foreach ($ran as $statement) {
             if (in_array(DatabaseTools::createdTable((string) $statement), [FacetIndex::tableName(), FacetTerms::tableName()], true)) {
-                FacetIndex::markStale();
+                FacetIndex::markStale(true);
                 self::queueBuild();
 
                 return;
@@ -226,8 +226,8 @@ final class FacetJobs
 
                 return;
             }
-            // Searches use the old queries while a retyped field is rebuilt; the last job lets them back.
-            if (osc_job_count('pending', FacetIndex::JOB_BUILD) === 0 && osc_job_count('running', FacetIndex::JOB_BUILD) === 0
+            // Searches use the old queries while a retyped field is rebuilt; the last job lets them back, over a fully built index only.
+            if (FacetIndex::built() && osc_job_count('pending', FacetIndex::JOB_BUILD) === 0 && osc_job_count('running', FacetIndex::JOB_BUILD) === 0
                 && osc_job_count('pending', FacetIndex::JOB_FIELD) === 0 && osc_job_count('running', FacetIndex::JOB_FIELD) <= 1) {
                 FacetIndex::markReady();
             }

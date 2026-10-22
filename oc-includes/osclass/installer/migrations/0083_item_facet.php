@@ -71,6 +71,7 @@ return new class () implements MigrationInterface {
         if (!$existed) {
             // A ready flag restored from a backup says nothing about a table that was missing.
             $this->setPreference($conn, FacetIndex::PREF_READY, '0', 'BOOLEAN');
+            $this->setPreference($conn, FacetIndex::PREF_BUILT, '', 'STRING');
         }
         $this->build($conn, self::INLINE_LIMIT, self::INLINE_SECONDS, self::INLINE_BATCH, $started);
     }
@@ -104,6 +105,7 @@ return new class () implements MigrationInterface {
         // Searches leave a half-built index alone until the build sets the flag again.
         if ($flag !== null && $flag['s_value'] === '1') {
             $this->setPreference($conn, FacetIndex::PREF_READY, '0', 'BOOLEAN');
+            $this->setPreference($conn, FacetIndex::PREF_BUILT, '', 'STRING');
             if (function_exists('osc_reset_preferences')) {
                 osc_reset_preferences();
             }

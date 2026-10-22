@@ -255,9 +255,23 @@ final class FacetIndex
         osc_set_preference(self::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'osclass', 'STRING');
     }
 
-    public static function markStale(): void
+    /**
+     * Turn searches off the index. $partial says rows may be missing too, so only a full build may turn them back on.
+     */
+    public static function markStale(bool $partial = false): void
     {
         osc_set_preference(self::PREF_READY, '0', 'osclass', 'BOOLEAN');
+        if ($partial) {
+            osc_set_preference(self::PREF_BUILT, '', 'osclass', 'STRING');
+        }
+    }
+
+    /**
+     * Whether a full build finished since the index last lost rows.
+     */
+    public static function built(): bool
+    {
+        return (string) osc_get_preference(self::PREF_BUILT, 'osclass') !== '';
     }
 
     private static function tableExists(): bool
@@ -354,7 +368,7 @@ final class FacetIndex
     {
         error_log('Listing filter index write failed, rebuild queued: ' . $e->getMessage());
         try {
-            self::markStale();
+            self::markStale(true);
             osc_job_ensure(self::JOB_BUILD, ['after' => 0]);
         } catch (\Throwable $ignored) {
             // The flag stays as it was; db:repair or search:reindex sets it right.

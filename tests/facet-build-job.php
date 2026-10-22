@@ -58,11 +58,13 @@ $pref  = static function (string $name) use ($admin, $p): ?string {
 
     return $r ? $r[0] : null;
 };
-$setFlag = static function (string $value) use ($admin, $p): void {
+$setFlag = static function (string $value, string $built = '') use ($admin, $p): void {
     $admin->query("DELETE FROM {$p}t_preference WHERE s_name IN ('facet_ready', 'facet_built_at')");
     if ($value !== '') {
         $admin->query("INSERT INTO {$p}t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'facet_ready', '$value', 'BOOLEAN')");
     }
+    // A row, even an empty one: osc_reset_preferences() keeps a deleted one in memory.
+    $admin->query("INSERT INTO {$p}t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'facet_built_at', '$built', 'STRING')");
     osc_reset_preferences();
 };
 $jobs = static fn (string $type): array => $admin->query("SELECT pk_i_id, s_payload, i_attempts FROM {$p}t_job_queue WHERE s_type = '$type' AND s_status IN ('pending', 'running')")->fetch_all(MYSQLI_ASSOC);
@@ -211,7 +213,7 @@ pin('the rebuild finished', [], $jobs(FacetIndex::JOB_BUILD));
 harness_section('one field');
 facet_retag($admin, "f$colour", 'Stale');
 facet_retag($admin, "f$gift", 'Stale');
-$setFlag('0');
+$setFlag('0', '2026-10-01 00:00:00');
 osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
 for ($i = 0; $i < 3; $i++) {
     $pass();
@@ -220,6 +222,13 @@ pin('the job is done', [], $jobs(FacetIndex::JOB_FIELD));
 pin('that field is rewritten', 0, $count("s_key = 'f$colour' AND s_value = 'Stale'"));
 pin('the other field is untouched', $total, $count("s_key = 'f$gift' AND s_value = 'Stale'"));
 pin('the last rebuild job lets searches back on the index', '1', $pref('facet_ready'));
+
+$setFlag('0');
+osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
+for ($i = 0; $i < 3; $i++) {
+    $pass();
+}
+pin('over an index never fully built it leaves the flag off', [[], '0'], [$jobs(FacetIndex::JOB_FIELD), $pref('facet_ready')]);
 
 $setFlag('0');
 osc_job_enqueue(FacetIndex::JOB_FIELD, ['field' => $colour, 'after' => 0], ['unique_key' => (string) $colour]);
