@@ -270,7 +270,7 @@ foreach (['a dropdown with one value' => $cf('dd', 'Red'), 'a dropdown with seve
 [$off, $on] = $texts($cf('dd', 'Mauve'));
 pin('an unknown value is no row in either text and reads no table', ['1 = 0', '1 = 0'], [trim($on['page']), trim($on['count'])]);
 $askPage([(string) $f['num'] => ['from' => '10', 'to' => '20']]);
-pin('a range probes on the page and reads the range for the count', [true, true], [str_contains($facetSql['on']['page'], 'LIMIT 1) IS NOT NULL'), str_contains($facetSql['on']['count'], 'IN (SELECT') && !str_contains($facetSql['on']['count'], 'LIMIT 1')]);
+pin('a range reads the range once on the page and for the count', [true, true], [str_contains($facetSql['on']['page'], 'IN (SELECT') && !str_contains($facetSql['on']['page'], 'LIMIT 1'), str_contains($facetSql['on']['count'], 'IN (SELECT') && !str_contains($facetSql['on']['count'], 'LIMIT 1')]);
 
 harness_section('which table is read');
 $ask($opt(['Colour' => ['Red']]) + ['limit' => 47]);

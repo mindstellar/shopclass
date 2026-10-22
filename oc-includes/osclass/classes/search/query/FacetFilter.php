@@ -20,9 +20,9 @@ use mindstellar\search\FacetIndex;
 /**
  * Search conditions on t_item_facet by term id. Builds SQL and runs nothing; callers check
  * FacetIndex::ready() first and resolve keys and values with FacetIndex::termIds(), so the SQL
- * holds integers only. Each shape has a page form and a count form: the page probes per
- * listing, so it stops after one page; the count reads the facet range once. A text term
- * always carries `d_number = 0`, which makes its probe a primary key lookup.
+ * holds integers only. Each shape has a page form and a count form: the page probes the
+ * primary key per listing, so it stops after one page; the count reads the facet range once.
+ * A text term always carries `d_number = 0`, which makes the probe a primary key lookup.
  */
 final class FacetFilter
 {
@@ -110,22 +110,18 @@ final class FacetFilter
     }
 
     /**
-     * A number or date field is within min and max, both included. The page probes the
-     * listing's own rows (index idx_item), the count reads the range once.
+     * A number or date field is within min and max, both included. The range reads the primary
+     * key, so page and count share it.
      *
      * @return array{0:string,1:string} page text, count text
      * @throws InvalidArgumentException for a bound that is not finite
      */
     public static function fieldRange(int $termId, float $min, float $max): array
     {
-        $item  = ListingQuery::tableName();
-        $facet = FacetIndex::tableName();
-        $match = 'fk_i_term_id = ' . $termId . ' AND d_number >= ' . self::number($min) . ' AND d_number <= ' . self::number($max);
+        $sql = ListingQuery::tableName() . '.pk_i_id IN (SELECT fk_i_item_id FROM ' . FacetIndex::tableName()
+            . ' WHERE fk_i_term_id = ' . $termId . ' AND d_number >= ' . self::number($min) . ' AND d_number <= ' . self::number($max) . ')';
 
-        return [
-            '(SELECT 1 FROM ' . $facet . ' WHERE ' . $match . ' AND fk_i_item_id = ' . $item . '.pk_i_id LIMIT 1) IS NOT NULL',
-            $item . '.pk_i_id IN (SELECT fk_i_item_id FROM ' . $facet . ' WHERE ' . $match . ')',
-        ];
+        return [$sql, $sql];
     }
 
     /**
@@ -136,15 +132,12 @@ final class FacetFilter
      */
     public static function fieldCovers(int $fromTermId, int $toTermId, int $from, int $to): array
     {
-        $item  = ListingQuery::tableName();
         $facet = FacetIndex::tableName();
-        $join  = ' FROM ' . $facet . ' a JOIN ' . $facet . ' b ON b.fk_i_term_id = ' . $toTermId . ' AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= ' . $to
-            . ' WHERE a.fk_i_term_id = ' . $fromTermId . ' AND a.d_number <= ' . $from;
+        $sql   = ListingQuery::tableName() . '.pk_i_id IN (SELECT a.fk_i_item_id FROM ' . $facet . ' a'
+            . ' JOIN ' . $facet . ' b ON b.fk_i_term_id = ' . $toTermId . ' AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= ' . $to
+            . ' WHERE a.fk_i_term_id = ' . $fromTermId . ' AND a.d_number <= ' . $from . ')';
 
-        return [
-            '(SELECT 1' . $join . ' AND a.fk_i_item_id = ' . $item . '.pk_i_id LIMIT 1) IS NOT NULL',
-            $item . '.pk_i_id IN (SELECT a.fk_i_item_id' . $join . ')',
-        ];
+        return [$sql, $sql];
     }
 
     /**
