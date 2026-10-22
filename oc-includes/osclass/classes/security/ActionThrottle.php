@@ -33,6 +33,8 @@ class ActionThrottle
         'user_contact'    => 15,
         'send_friend'     => 5,
         'alert_subscribe' => 10,
+        'message_send'    => 30,
+        'message_start'   => 10,
     );
 
     /**

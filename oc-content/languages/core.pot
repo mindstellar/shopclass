@@ -7370,6 +7370,10 @@ msgstr ""
 msgid "Messages only"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
+msgid "Messages sent"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Met"
 msgstr ""
@@ -7780,6 +7784,10 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "New comments"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
+msgid "New conversations"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -13999,6 +14007,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 msgid "Users"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
+msgid "Users can message sellers on the site"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
