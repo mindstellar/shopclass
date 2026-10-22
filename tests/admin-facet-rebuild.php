@@ -20,7 +20,6 @@ require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\admin\DatabaseTools;
 use mindstellar\search\FacetIndex;
-use mindstellar\search\FacetJobs;
 
 $admin = api_admin_boot('osc_admin_facet_rebuild');
 $p     = DB_TABLE_PREFIX;
