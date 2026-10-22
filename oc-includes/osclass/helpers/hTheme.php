@@ -669,7 +669,7 @@ function osc_body_class_list($class = ''): array
         $classes[] = 'rtl';
     }
     $classes[] = 'lang-' . str_replace('_', '-', (string) osc_current_user_locale());
-    $classes[] = 'theme-' . (string) osc_theme();
+    $classes[] = 'theme-' . (string) osc_current_web_theme();
 
     if (is_string($class)) {
         $class = preg_split('/\s+/', trim($class), -1, PREG_SPLIT_NO_EMPTY);

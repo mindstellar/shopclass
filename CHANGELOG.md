@@ -78,6 +78,14 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Two first upgrade grants for one listing no longer deadlock and lose one.
 - Checkbox filters use the `s_value` index.
 
+## Shopclass 7.0.3
+
+This release fixes the theme preview on public pages.
+
+### Fixed
+- A theme preview (`?theme=`) works on public pages again.
+- During a theme preview, the `theme-` body class names the previewed theme.
+
 ## Shopclass 7.0.2
 
 This release lets a theme preview last for the whole visit, and lets any visitor preview themes on a demo site.
