@@ -606,6 +606,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/search/SearchSuggestions.php
+#: oc-includes/osclass/functions.php
 msgid "%s listing"
 msgid_plural "%s listings"
 msgstr[0] ""
@@ -616,10 +617,6 @@ msgid "%s listing placed there is deleted."
 msgid_plural "%s listings placed there are deleted."
 msgstr[0] ""
 msgstr[1] ""
-
-#: oc-includes/osclass/functions.php
-msgid "%s listings"
-msgstr ""
 
 #: oc-admin/themes/modern/stats/users.php
 msgid "%s listings per user"

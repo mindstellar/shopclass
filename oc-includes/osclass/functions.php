@@ -322,7 +322,7 @@ function osc_search_meta_description()
     $total = (int)osc_search_total_items();
     if ($total > 0) {
         $text .= ' - ' . (osc_search_total_capped()
-            ? sprintf(__('%s listings'), osc_search_total_text())
+            ? sprintf(_n('%s listing', '%s listings', $total), osc_search_total_text())
             : sprintf(_n('%d listing', '%d listings', $total), $total));
     }
     $text .= '.';
