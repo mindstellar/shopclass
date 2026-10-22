@@ -40,13 +40,7 @@ $prefix = DB_TABLE_PREFIX;
 $catId  = seed_category($admin, 'Events');
 $itemId = seed_item($admin, $catId);
 
-$addField = static function (string $slug, string $type) use ($admin, $prefix, $catId): int {
-    seed_exec($admin, "INSERT INTO {$prefix}t_meta_fields (s_name, s_slug, e_type) VALUES (?, ?, ?)", 'sss', array(ucfirst($slug), $slug, $type));
-    $id = (int) $admin->insert_id;
-    seed_exec($admin, "INSERT INTO {$prefix}t_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)", 'ii', array($catId, $id));
-
-    return $id;
-};
+$addField = static fn (string $slug, string $type): int => seed_meta_field($admin, ucfirst($slug), $type, $catId, $slug);
 $dateField  = $addField('opens', 'DATE');
 $rangeField = $addField('runs', 'DATEINTERVAL');
 

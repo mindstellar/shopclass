@@ -36,8 +36,8 @@ seed_currency($admin);
 seed_country($admin, 'US', 'United States');
 $cat = seed_category($admin, 'Mugs', seed_category($admin, 'Goods', null, $locale), $locale);
 
-$colour = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type) VALUES ('colour', 'colour', 'DROPDOWN')", '', []);
-$gift   = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type) VALUES ('gift', 'gift', 'CHECKBOX')", '', []);
+$colour = seed_meta_field($admin, 'colour', 'DROPDOWN');
+$gift   = seed_meta_field($admin, 'gift', 'CHECKBOX');
 
 // 2 * BATCH + 1 listings: one real one, doubled by copying its row.
 seed_item($admin, $cat, null, 'Mug');

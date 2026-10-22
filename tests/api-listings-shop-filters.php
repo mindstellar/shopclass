@@ -284,8 +284,7 @@ pin('ids paging by cursor', ['Deal', 'Low'], (static function () use ($call, $ke
 })());
 
 harness_section('custom_field lists');
-$field = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type, b_required, b_searchable, i_position) VALUES ('Material', 'material', 'DROPDOWN', 0, 1, 0)", '', []);
-seed_exec($admin, "INSERT INTO {$p}t_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)", 'ii', [$tees, $field]);
+$field = seed_meta_field($admin, 'Material', 'DROPDOWN', $tees);
 foreach (['Tee' => 'Cotton', 'Polo' => 'Linen', 'Percent' => 'Wool'] as $title => $value) {
     seed_exec($admin, "INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) VALUES (?, ?, ?, '')", 'iis', [$shirt[$title], $field, $value]);
 }

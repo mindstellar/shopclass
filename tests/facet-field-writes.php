@@ -48,17 +48,7 @@ $_SERVER['REMOTE_ADDR'] = '192.0.2.82';
 Params::init();
 
 $dao   = Field::getInstance();
-$field = static function (string $type) use ($admin, $p, $cat): int {
-    $id = seed_exec(
-        $admin,
-        "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type, b_searchable) VALUES (?, ?, ?, 1)",
-        'sss',
-        ['F ' . $type . mt_rand(), strtolower($type) . mt_rand(), $type]
-    );
-    seed_exec($admin, "INSERT INTO {$p}t_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)", 'ii', [$cat, $id]);
-
-    return $id;
-};
+$field = static fn (string $type): int => seed_meta_field($admin, 'F ' . $type . mt_rand(), $type, $cat, strtolower($type) . mt_rand());
 $facet = static function (int $item) use ($admin, $p): array {
     $rows = $admin->query('SELECT s_key, s_value, d_number AS n FROM ' . facet_rows_sql() . " x WHERE fk_i_item_id = $item ORDER BY s_key, s_value")->fetch_all(MYSQLI_ASSOC);
 

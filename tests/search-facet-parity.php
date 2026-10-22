@@ -40,12 +40,7 @@ scratchdb_forget_cache();
 osc_reset_preferences();
 $_COOKIE['oc_userLocale'] = 'en_US';
 
-$field = static function (string $name, string $type) use ($admin, $p, $cat): int {
-    $id = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type, b_required, b_searchable, i_position) VALUES (?, ?, ?, 0, 1, 0)", 'sss', [$name, strtolower($name), $type]);
-    seed_exec($admin, "INSERT INTO {$p}t_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)", 'ii', [$cat, $id]);
-
-    return $id;
-};
+$field = static fn (string $name, string $type): int => seed_meta_field($admin, $name, $type, $cat);
 $f = [
     'dd'   => $field('Material', 'DROPDOWN'),
     'rd'   => $field('Fit', 'RADIO'),

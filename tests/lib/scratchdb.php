@@ -682,4 +682,26 @@ if (!function_exists('seed_cron')) {
     }
 }
 
+if (!function_exists('seed_meta_field')) {
+    /**
+     * A searchable custom field, linked to $category when given.
+     *
+     * @return int The field id
+     */
+    function seed_meta_field(mysqli $admin, string $name, string $type, ?int $category = null, ?string $slug = null): int
+    {
+        $id = seed_exec(
+            $admin,
+            'INSERT INTO ' . DB_TABLE_PREFIX . 't_meta_fields (s_name, s_slug, e_type, b_required, b_searchable, i_position) VALUES (?, ?, ?, 0, 1, 0)',
+            'sss',
+            array($name, $slug ?? strtolower($name), $type)
+        );
+        if ($category !== null) {
+            seed_exec($admin, 'INSERT INTO ' . DB_TABLE_PREFIX . 't_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)', 'ii', array($category, $id));
+        }
+
+        return $id;
+    }
+}
+
 /* file end: ./tests/lib/scratchdb.php */

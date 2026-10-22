@@ -32,11 +32,8 @@ seed_currency($admin);
 seed_country($admin, 'US', 'United States');
 $cat = seed_category($admin, 'Mugs', seed_category($admin, 'Goods', null, $locale), $locale);
 
-$field = static function (string $slug, string $type) use ($admin, $p): int {
-    return seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type) VALUES (?, ?, ?)", 'sss', [$slug, $slug, $type]);
-};
-$colour = $field('colour', 'DROPDOWN');
-$gift   = $field('gift', 'CHECKBOX');
+$colour = seed_meta_field($admin, 'colour', 'DROPDOWN');
+$gift   = seed_meta_field($admin, 'gift', 'CHECKBOX');
 
 $items = [];
 foreach ([1, 2, 3] as $n) {

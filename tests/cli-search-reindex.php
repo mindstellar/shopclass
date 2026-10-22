@@ -32,7 +32,7 @@ seed_currency($admin);
 seed_country($admin, 'US', 'United States');
 $cat = seed_category($admin, 'Mugs', seed_category($admin, 'Goods', null, $locale), $locale);
 
-$colour = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type) VALUES ('colour', 'colour', 'DROPDOWN')", '', []);
+$colour = seed_meta_field($admin, 'colour', 'DROPDOWN');
 $ids    = [];
 for ($i = 0; $i < 5; $i++) {
     $ids[] = seed_item($admin, $cat, null, 'Mug ' . $i);

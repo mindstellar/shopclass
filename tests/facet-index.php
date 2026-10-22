@@ -34,12 +34,7 @@ seed_currency($admin);
 seed_country($admin);
 $cat = seed_category($admin, 'Goods', null, $locale);
 
-$field = static fn (string $type): int => seed_exec(
-    $admin,
-    "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type, b_searchable) VALUES (?, ?, ?, 1)",
-    'sss',
-    ['F ' . $type . mt_rand(), strtolower($type) . mt_rand(), $type]
-);
+$field = static fn (string $type): int => seed_meta_field($admin, 'F ' . $type . mt_rand(), $type, null, strtolower($type) . mt_rand());
 $facet = static function (int $item) use ($admin, $p): array {
     $rows = $admin->query('SELECT s_key, s_value, fk_i_variant_id AS v, d_number AS n FROM ' . facet_rows_sql() . " x WHERE fk_i_item_id = $item ORDER BY s_key, s_value, fk_i_variant_id")->fetch_all(MYSQLI_ASSOC);
 
