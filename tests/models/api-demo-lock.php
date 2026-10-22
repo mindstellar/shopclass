@@ -28,6 +28,9 @@ use mindstellar\apikey\Scopes;
 use mindstellar\exception\ForbiddenException;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
+use mindstellar\webhook\Endpoint;
+use mindstellar\webhook\WebhookEndpointStore;
+use mindstellar\webhook\WebhookServices;
 
 $admin = api_admin_boot('osc_models_api_demo_lock');
 $p     = DB_TABLE_PREFIX;
@@ -37,6 +40,7 @@ $bossId = api_admin_seed_admin($admin, 'boss');
 $boss   = api_admin_key($bossId);
 $owner  = KeyOwner::admin($bossId);
 $target = (int) (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create(CredentialKind::KEY, 'target', ['admin:listings'], $owner)->id();
+$hook   = (new WebhookEndpointStore())->insert(new Endpoint(WebhookEndpointStore::newId(), 'https://93.184.216.34/hook', ['listing.created'], 'Kept', true, 'whsec_test', createdBy: $bossId, created: time(), updated: time()))->id();
 $call   = api_admin_caller();
 $count  = static fn (string $table): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}{$table}")->fetch_row()[0];
 $live   = static fn (int $id): bool => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_api_credential WHERE pk_i_id = $id AND dt_revoked IS NULL")->fetch_row()[0] === 1;
@@ -70,5 +74,24 @@ pin('the service the admin screen and the CLI use refuses too', [ForbiddenExcept
     demo_refusal(static fn () => ApiAccess::site()->keyService()->revoke($target)),
 ]);
 pin('still no key is made', $keys, $count('t_api_credential'));
+
+harness_section('webhooks');
+$hooks  = static fn (): array => $admin->query("SELECT s_key, s_value FROM {$p}t_key_value WHERE s_group = 'api_webhook' ORDER BY s_key")->fetch_all();
+$before = [$hooks(), $count('t_job_queue')];
+pin('adding an endpoint is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/webhooks', ['url' => 'https://93.184.216.34/other', 'events' => ['listing.created']], $boss)));
+pin('changing one is 403 demo_site', '403 demo_site', api_admin_code($call('PATCH', 'admin/webhooks/' . $hook, ['url' => 'https://93.184.216.35/hook'], $boss)));
+pin('a test ping is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/webhooks/' . $hook . '/test', null, $boss)));
+pin('a new secret is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/webhooks/' . $hook . '/rotate-secret', null, $boss)));
+pin('deleting one is 403 demo_site', '403 demo_site', api_admin_code($call('DELETE', 'admin/webhooks/' . $hook, null, $boss)));
+pin('no endpoint changes and no ping is queued', $before, [$hooks(), $count('t_job_queue')]);
+$service = WebhookServices::site()->service();
+pin('the service the admin screen uses refuses too', array_fill(0, 5, ForbiddenException::DEMO), [
+    demo_refusal(static fn () => $service->create('https://93.184.216.34/web', ['listing.created'])),
+    demo_refusal(static fn () => $service->update($hook, null, null, null, false)),
+    demo_refusal(static fn () => $service->rotate($hook)),
+    demo_refusal(static fn () => $service->test($hook)),
+    demo_refusal(static fn () => $service->delete($hook)),
+]);
+pin('still nothing changes', $before, [$hooks(), $count('t_job_queue')]);
 
 exit(harness_result());

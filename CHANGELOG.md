@@ -8,6 +8,7 @@ This release closes a gap that let demo site visitors make API keys and webhooks
 
 ### Security
 - On a demo site (`OSC_DEMO=1`), the REST API refuses to create, rotate or revoke API keys, as the admin screen does.
+- On a demo site, the REST API refuses to add, change, delete or test webhooks, as the admin screen does.
 
 ### Fixed
 - A theme preview (`?theme=`) works on public pages again.
