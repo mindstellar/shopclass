@@ -124,7 +124,7 @@ final class ListingSearch
             static fn (): ?int => $result->total(),
             fn (array $page): array => $this->reader->many($page, $context),
             $this->links,
-            self::extrasMeta($result->extras())
+            ($pager->counts() ? ['total_capped' => $result->totalCapped()] : []) + self::extrasMeta($result->extras())
         );
     }
 

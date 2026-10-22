@@ -10,8 +10,8 @@
 
 /**
  * The search count cap: the count statement takes LIMIT N+1, exactly N matches is not capped and
- * N+1 is, 0 counts exactly, only visitor and API searches are capped, and the theme helpers
- * report it. New installs start at 1000, upgrades at 0.
+ * N+1 is, 0 counts exactly, only visitor and API searches are capped, and the theme helpers and
+ * the API's meta.total_capped report it. New installs start at 1000, upgrades at 0.
  * Usage: php tests/search-count-cap.php
  */
 
@@ -116,6 +116,19 @@ pin('capped', [1000, true, '1,000+'], [osc_search_total_items(), osc_search_tota
 View::getInstance()->_exportVariableToView('search_total_items', 1234);
 View::getInstance()->_exportVariableToView('search_total_capped', false);
 pin('exact', [1234, false, '1,234'], [osc_search_total_items(), osc_search_total_capped(), osc_search_total_text()]);
+
+harness_section('API meta.total_capped');
+$key  = (new \mindstellar\apikey\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\apikey\Scopes(), new \mindstellar\utility\SystemClock()))
+    ->create('key', 'sue', ['listings:read'], \mindstellar\apikey\KeyOwner::user($sue))->token();
+$call = api_admin_caller();
+$list = static fn (array $query): array => $call('GET', 'listings', null, $key, [], $query)->body()['meta'] ?? [];
+$meta = $list(['limit' => 5, 'page' => 1, 'count' => 'true']);
+pin('capped: total is the cap, pages stop there', [10, 2, true], [$meta['total'] ?? null, $meta['pages'] ?? null, $meta['total_capped'] ?? null]);
+pin('a page past the cap still answers its rows', 2, count($call('GET', 'listings', null, $key, [], ['limit' => 5, 'page' => 3])->body()['data'] ?? []));
+$setCap(0);
+$meta = $list(['limit' => 5, 'count' => 'true']);
+pin('setting 0: exact and not capped', [12, false], [$meta['total'] ?? null, $meta['total_capped'] ?? null]);
+pin('without count there is no total_capped', false, array_key_exists('total_capped', $list(['limit' => 5])));
 
 harness_section('new installs and upgrades');
 check('a new install starts at 1000', str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/basic_data.sql'), "('osclass', 'search_count_cap', '1000', 'INTEGER')"));

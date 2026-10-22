@@ -172,6 +172,9 @@ done
   deepest page (10,000 listings) it is a `422` `page_too_deep`.
 - `meta.total` is `null` unless you send `count=true`, which counts all matches on the first
   page (it costs a query). Later pages of a `created`, `id` or `price` sort leave it `null`.
+- On a listing search, `count=true` also sends `meta.total_capped`. When it is true the count
+  stopped at the site's search count limit (Listings → Settings): `total` is that limit, and
+  more listings match.
 - A cursor is good for a week and its expiry is rounded up to the hour, so a page's
   `links.next` and `ETag` stay the same within the hour.
 - `limit` defaults to the site's results per page. Locations default to 500, max 1000,

@@ -75,6 +75,12 @@ None.
 
 ## Changes
 
+### v1: capped search count
+
+Added to v1 on 2026-10-22.
+
+- With `count=true`, a listing search's `meta` has `total_capped`. When true, counting stopped at the site's search count limit: `total` is that limit and more listings match.
+
 ### v1: pay at the end of posting
 
 Added to v1 on 2026-10-19.
