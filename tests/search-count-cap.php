@@ -88,6 +88,21 @@ $s = $fresh();
 pin('cached, cap 11: 11, capped', [11, true], [$s->countMatches(true, 11), $s->totalCapped()]);
 pin('cached, same search, no cap: the exact total, not the capped one', [12, false], [$s->countMatches(true), $s->totalCapped()]);
 
+harness_section('capped and exact counts are cached apart');
+osc_invalidate_search_cache();
+$s = $fresh();
+pin('exact, cached first', [12, false], [$s->countMatches(true), $s->totalCapped()]);
+// A raw write, so the search cache is not dropped: only a fresh count sees one listing fewer.
+$hidden = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_item WHERE fk_i_category_id = " . (int) $cat)->fetch_row()[0];
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0 WHERE pk_i_id = $hidden");
+pin('the exact count now comes from the cache', 12, $fresh()->countMatches(true));
+$s = $fresh();
+pin('a capped count is counted afresh, not cut from the cached exact one', [11, false], [$s->countMatches(true, 11), $s->totalCapped()]);
+$s = $fresh();
+pin('another cap has its own entry too', [11, false], [$s->countMatches(true, 20), $s->totalCapped()]);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1 WHERE pk_i_id = $hidden");
+osc_invalidate_search_cache();
+
 harness_section('the upper bound');
 pin('the most a cap can be', 100000, Search::COUNT_CAP_MAX);
 $setCap(5000000);
