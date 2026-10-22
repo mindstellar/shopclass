@@ -218,8 +218,10 @@ final class ListingValidator
             $errors[] = self::entry('/product/options', 'maxItems', sprintf(_m('An item has at most %d options.'), VariantStore::MAX_OPTIONS));
         }
         $folded = array();
+        $accent = new \mindstellar\utility\Formatting();
         foreach (array_keys($names) as $name) {
-            $fold = mb_strtolower((string) $name);
+            // Case and accents fold as utf8mb4_general_ci does, which the search compares names with.
+            $fold = mb_strtolower($accent->removeAccents((string) $name));
             if (isset($folded[$fold])) {
                 $errors[] = self::entry('/product/options', 'taken', sprintf(_m('Option names %1$s and %2$s are the same.'), $folded[$fold], $name));
             }
