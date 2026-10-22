@@ -115,6 +115,11 @@ function osc_theme()
     return 'fixture';
 }
 
+function osc_current_web_theme()
+{
+    return $GLOBALS['currentTheme'] ?? 'fixture';
+}
+
 function osc_is_web_user_logged_in()
 {
     return $GLOBALS['loggedIn'];
@@ -382,6 +387,9 @@ check('logged-in', in_array('logged-in', $classes, true));
 check('and not both', !in_array('logged-out', $classes, true));
 check('locale', in_array('lang-en-us', $classes, true));
 check('theme', in_array('theme-fixture', $classes, true));
+$GLOBALS['currentTheme'] = 'previewed';
+check('a theme preview names the previewed theme', in_array('theme-previewed', osc_body_class_list(), true));
+unset($GLOBALS['currentTheme']);
 check('no rtl on a left-to-right locale', !in_array('rtl', $classes, true));
 $GLOBALS['direction'] = 'rtl';
 check('rtl', in_array('rtl', osc_body_class_list(), true));

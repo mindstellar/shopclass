@@ -2,6 +2,19 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.3
+
+On a demo site, the REST API now refuses the key, webhook and location changes the admin screens refuse. This release also fixes the theme preview on public pages.
+
+### Security
+- On a demo site (`OSC_DEMO=1`), the REST API refuses to create, rotate or revoke API keys, as the admin screen does.
+- On a demo site, the REST API refuses to add, change, delete or test webhooks, as the admin screen does.
+- On a demo site, the REST API refuses to add, rename or delete regions, cities and city areas, as the admin screen does.
+
+### Fixed
+- A theme preview (`?theme=`) works on public pages again.
+- During a theme preview, the `theme-` body class names the previewed theme.
+
 ## Shopclass 7.0.2
 
 This release lets a theme preview last for the whole visit, and lets any visitor preview themes on a demo site.

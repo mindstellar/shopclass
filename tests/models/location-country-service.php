@@ -18,6 +18,12 @@
 
 require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
+require_once __DIR__ . '/../lib/api-admin-kit.php';
+
+// A process of its own, as earlier files in the suite define DEMO, which locks LocationService.
+if (api_admin_isolated(__FILE__)) {
+    return;
+}
 
 $admin = scratchdb_session('osc_models_location_country_service');
 

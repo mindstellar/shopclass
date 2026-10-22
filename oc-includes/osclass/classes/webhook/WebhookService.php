@@ -17,6 +17,7 @@ use mindstellar\exception\NotFoundException;
 use mindstellar\exception\RefusedException;
 use mindstellar\job\JobQueue;
 use mindstellar\security\AddressGuard;
+use mindstellar\security\Demo;
 use mindstellar\utility\Clock;
 use mindstellar\utility\Validate;
 
@@ -75,6 +76,7 @@ final class WebhookService
      */
     public function create(string $url, array $events, string $description = '', bool $enabled = true, ?int $adminId = null): array
     {
+        Demo::refuse();
         if ($this->endpoints->count() >= WebhookEndpointStore::MAX) {
             throw new RefusedException(sprintf(_m('A site can have %d webhook endpoints. Delete one first.'), WebhookEndpointStore::MAX));
         }
@@ -108,6 +110,7 @@ final class WebhookService
      */
     public function update(string $id, ?string $url = null, ?array $events = null, ?string $description = null, ?bool $enabled = null): Endpoint
     {
+        Demo::refuse();
         $this->existing($id);
         $url         = $url === null ? null : $this->url($url);
         $events      = $events === null ? null : $this->eventList($events);
@@ -136,6 +139,7 @@ final class WebhookService
      */
     public function rotate(string $id): array
     {
+        Demo::refuse();
         $this->existing($id);
         $secret  = Signer::newSecret();
         $now     = $this->clock->now();
@@ -154,6 +158,7 @@ final class WebhookService
      */
     public function delete(string $id): void
     {
+        Demo::refuse();
         $this->existing($id);
         $this->endpoints->delete($id);
         try {
@@ -171,6 +176,7 @@ final class WebhookService
      */
     public function test(string $id): string
     {
+        Demo::refuse();
         $this->existing($id);
         $msgId = $this->dispatcher->ping($id);
         if ($msgId === null) {
