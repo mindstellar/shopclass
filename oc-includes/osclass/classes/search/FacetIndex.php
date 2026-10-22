@@ -57,12 +57,6 @@ final class FacetIndex
     /** @var array<string,array<int|string,int>> committed term ids by key and cut value, for this request */
     private static array $terms = [];
 
-    /** @var array<int,true> term ids made by a transaction of this request that has not committed yet */
-    private static array $created = [];
-
-    /** @var array<int,true> term ids another transaction committed after the open one's snapshot */
-    private static array $unseen = [];
-
     public static function tableName(): string
     {
         return DB_TABLE_PREFIX . self::TABLE;
@@ -154,17 +148,6 @@ final class FacetIndex
         self::$terms    = [];
     }
 
-    /**
-     * Outside a transaction no term is waiting for a commit, so a rollback left these ids behind.
-     */
-    private static function settle(): void
-    {
-        if ((self::$created !== [] || self::$unseen !== []) && !Db::inTransaction()) {
-            self::$created = [];
-            self::$unseen  = [];
-        }
-    }
-
     private static function sameRequest(): void
     {
         $now = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0.0);
@@ -197,7 +180,6 @@ final class FacetIndex
     public static function termIds(array $pairs): array
     {
         self::sameRequest();
-        self::settle();
         $found  = [];
         $misses = [];
         foreach ($pairs as $key => $values) {
@@ -214,11 +196,7 @@ final class FacetIndex
             return $found;
         }
         $ids = self::lookup(array_values($misses), false);
-        foreach ($ids as [$key, $cut, $id]) {
-            if (!isset(self::$created[$id])) {
-                self::$terms[$key][$cut] = $id;
-            }
-        }
+        self::remember($ids);
 
         return self::fill($found, $pairs, $ids);
     }
@@ -234,6 +212,19 @@ final class FacetIndex
      */
     public static function ensureTerms(array $pairs): array
     {
+        return self::resolveTerms($pairs)[0];
+    }
+
+    /**
+     * ensureTerms(), with the ids this transaction's snapshot cannot see.
+     *
+     * @param array<string,array<int,int|string>> $pairs
+     *
+     * @return array{0:array<string,array<int|string,int>>,1:array<int,true>}
+     * @throws DbException
+     */
+    private static function resolveTerms(array $pairs): array
+    {
         $found   = self::termIds($pairs);
         $missing = [];
         foreach ($pairs as $key => $values) {
@@ -245,7 +236,7 @@ final class FacetIndex
             }
         }
         if ($missing === []) {
-            return $found;
+            return [$found, []];
         }
         // Sorted, so two writers making the same terms lock them in one order.
         ksort($missing, SORT_STRING);
@@ -256,31 +247,40 @@ final class FacetIndex
                 array_merge(...$chunk)
             );
         }
-        // A plain read in a snapshot opened earlier would not see a term another writer just made.
-        $ids = self::lookup($missing, true);
-        if ($ids === []) {
-            return $found;
+        $ids  = self::lookup($missing, false);
+        $seen = [];
+        foreach ($ids as [$key, $cut]) {
+            $seen[$key . "\0" . $cut] = true;
         }
-        // This transaction's own terms show in its snapshot; one made by another writer since does not.
-        $seen = array_flip(array_map('intval', array_column(Db::select(
-            'SELECT pk_i_id FROM ' . self::termTable() . ' WHERE pk_i_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')',
-            array_column($ids, 2)
-        ), 'pk_i_id')));
-        foreach ($ids as [, , $id]) {
-            if (isset($seen[$id])) {
-                self::$created[$id] = true;
-            } else {
-                self::$unseen[$id] = true;
+        $left   = array_values(array_filter($missing, static fn (array $pair): bool => !isset($seen[$pair[0] . "\0" . $pair[1]])));
+        $unseen = [];
+        if ($left !== []) {
+            // A term another writer committed after this snapshot shows only to a locking read.
+            foreach (self::lookup($left, true) as $row) {
+                $ids[]           = $row;
+                $unseen[$row[2]] = true;
             }
+        }
+        self::remember($ids);
+
+        return [self::fill($found, $pairs, $ids), $unseen];
+    }
+
+    /**
+     * Cache looked-up ids once the open transaction commits, so a rollback leaves none behind.
+     *
+     * @param array<int,array{0:string,1:string,2:int}> $ids
+     */
+    private static function remember(array $ids): void
+    {
+        if ($ids === []) {
+            return;
         }
         Db::afterCommit(static function () use ($ids): void {
             foreach ($ids as [$key, $cut, $id]) {
                 self::$terms[$key][$cut] = $id;
-                unset(self::$created[$id], self::$unseen[$id]);
             }
         });
-
-        return self::fill($found, $pairs, $ids);
     }
 
     /**
@@ -818,12 +818,12 @@ final class FacetIndex
         foreach ($rows as [$key, $value]) {
             $pairs[$key][$value] = $value;
         }
-        $ids    = self::ensureTerms(array_map('array_values', $pairs));
-        $values = [];
-        $later  = false;
+        [$ids, $unseen] = self::resolveTerms(array_map('array_values', $pairs));
+        $values         = [];
+        $later          = false;
         foreach ($rows as [$key, $value, $variant, $number]) {
             $term = $ids[$key][$value] ?? null;
-            if ($term === null || isset(self::$unseen[$term])) {
+            if ($term === null || isset($unseen[$term])) {
                 $later = true;
                 continue;
             }

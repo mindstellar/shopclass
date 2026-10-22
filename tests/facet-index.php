@@ -132,16 +132,6 @@ FacetIndex::dropField($looked);
 
 harness_section('rollback and long names');
 FacetIndex::forgetTypes();
-$remembered = static function (): array {
-    $out = [];
-    foreach (['created', 'unseen'] as $name) {
-        $prop = new ReflectionProperty(FacetIndex::class, $name);
-        $prop->setAccessible(true);
-        $out[$name] = $prop->getValue();
-    }
-
-    return $out;
-};
 try {
     Db::transaction(static function () use ($admin, $p): void {
         Db::select('SELECT COUNT(*) FROM ' . FacetIndex::termTable());
@@ -152,9 +142,8 @@ try {
     });
 } catch (RuntimeException $e) {
 }
-pin('a rolled back transaction leaves its own and unseen term ids behind until the next read', [1, 1], array_map('count', array_values($remembered())));
-FacetIndex::termIds(['oRolled' => ['Back']]);
-pin('the next read outside a transaction drops them', ['created' => [], 'unseen' => []], $remembered());
+pin('a rolled back transaction leaves no term id of its own behind', [], FacetIndex::termIds(['oRolled' => ['Back']]));
+pin('and the term another writer made is found', [(int) $admin->query("SELECT pk_i_id FROM {$p}t_facet_term WHERE s_key = 'oRolled' AND s_value = 'Elsewhere'")->fetch_row()[0]], array_values(FacetIndex::termIds(['oRolled' => ['Elsewhere']])['oRolled'] ?? []));
 $long = str_repeat('a', 60);
 check('a name past 47 characters keeps the column length', mb_strlen(FacetIndex::optionKey($long)) === 48);
 check('two long names with one start get two keys', FacetIndex::optionKey($long . 'x') !== FacetIndex::optionKey($long . 'y'));
@@ -290,7 +279,7 @@ $count   = harness_query_count(static function () use (&$inserts): void {
     FacetIndex::ensureTerms(['oFinish' => ['Matte', 'Satin']]);
 });
 pin('a new value next to a known one makes one term', 3, $termsOf('oFinish'));
-pin('in one INSERT: term SELECT, INSERT, locking read, snapshot read', 4, $count);
+pin('in one INSERT: term SELECT, INSERT, read back', 3, $count);
 
 $size = $field('NUMBER');
 FacetIndex::rewriteField($one, $size, '0');
@@ -348,12 +337,6 @@ Db::transaction(static function () use ($admin, $p, &$seen): void {
     $seen = FacetIndex::ensureTerms(['oLocked' => ['Other']]);
 });
 pin('ensureTerms reads with a lock, so it finds a term committed after its snapshot', [$term('oLocked', 'Other')[0]], [$seen['oLocked']['Other'] ?? null]);
-$settled = $remembered() === ['created' => [], 'unseen' => []];
-check('the commit clears the term ids it waited on', $settled);
-if (!$settled) {
-    // The after-commit rebuild below would wait on the term forever.
-    exit(harness_result());
-}
 
 FacetIndex::forgetTypes();
 $inside = null;
