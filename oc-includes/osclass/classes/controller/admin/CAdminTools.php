@@ -1094,10 +1094,13 @@ class CAdminTools extends AdminSecBaseModel
                 return false;
             }
             osc_csrf_check();
-            if (\mindstellar\search\FacetJobs::queueBuild()) {
+            $queued = DatabaseTools::facetRebuild();
+            if ($queued === 'queued') {
                 osc_add_flash_ok_message(_m('Rebuild queued.'), 'admin');
-            } else {
+            } elseif ($queued === 'building') {
                 osc_add_flash_info_message(_m('Already building.'), 'admin');
+            } else {
+                osc_add_flash_error_message(_m('The rebuild could not be queued.'), 'admin');
             }
             $this->redirectTo($self);
 

@@ -88,16 +88,20 @@ $post  = $m[0] ?? '';
 $at    = strpos($post, "Params::getParam('facet_rebuild')");
 $demo  = $at === false ? false : strpos($post, 'refuseOnDemo(', $at);
 $token = $at === false ? false : strpos($post, 'osc_csrf_check()', $at);
-$queue = $at === false ? false : strpos($post, 'FacetJobs::queueBuild()', $at);
+$queue = $at === false ? false : strpos($post, "DatabaseTools::facetRebuild()", $at);
 check('facet_rebuild refuses on the demo, checks the token, then queues', $demo !== false && $token !== false && $queue !== false && $demo < $token && $token < $queue);
 check('the template prints the status through osc_esc_html()', strpos($view, "osc_esc_html(\$facet['text'])") !== false);
 check('the button asks first, then posts facet_rebuild', strpos($view, "'confirm' => '#db-facet-dialog'") !== false && strpos($view, "'facet_rebuild' => '1'") !== false);
 
 harness_section('Queueing');
 
-FacetJobs::queueBuild();
-FacetJobs::queueBuild();
-$count = (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_BUILD . "' AND s_status = 'pending'")->fetch_row()[0];
-pin('two queued rebuilds leave one pending job', 1, $count);
+$admin->query("DELETE FROM {$p}t_job_queue");
+$count = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_BUILD . "' AND s_status = 'pending'")->fetch_row()[0];
+pin('the first rebuild is queued', 'queued', DatabaseTools::facetRebuild());
+pin('a second one says it is already building', 'building', DatabaseTools::facetRebuild());
+pin('and leaves one pending job', 1, $count());
+$admin->query("UPDATE {$p}t_job_queue SET s_status = 'running'");
+pin('a running build is building too', 'building', DatabaseTools::facetRebuild());
+$admin->query("DELETE FROM {$p}t_job_queue");
 
 harness_result();

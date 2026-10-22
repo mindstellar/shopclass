@@ -3073,6 +3073,10 @@ msgstr ""
 msgid "The rating must be from 1 to 5"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The rebuild could not be queued."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "The refund was not made: %s"
 msgstr ""

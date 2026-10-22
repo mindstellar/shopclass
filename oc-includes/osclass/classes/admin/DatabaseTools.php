@@ -514,6 +514,21 @@ final class DatabaseTools
     }
 
     /**
+     * Queue a filter index rebuild from the Database tab.
+     *
+     * @return string 'queued', or 'building' when a build is already queued or running
+     */
+    public static function facetRebuild(): string
+    {
+        $queue = JobQueue::getInstance();
+        if ($queue->count(JobQueue::STATUS_PENDING, FacetIndex::JOB_BUILD) > 0 || $queue->count(JobQueue::STATUS_RUNNING, FacetIndex::JOB_BUILD) > 0) {
+            return 'building';
+        }
+
+        return FacetJobs::queueBuild() ? 'queued' : 'failed';
+    }
+
+    /**
      * The SchemaDoctor findings, and the error that stopped them ('' when none).
      *
      * @return array{0:array<int,array<string,mixed>>,1:string}
