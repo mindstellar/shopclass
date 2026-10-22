@@ -47,6 +47,11 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 ### Changed
 - Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.
 - Core works with MariaDB 11.6+ snapshot isolation (`innodb_snapshot_isolation=ON`): rows are locked first, and plugin writes should follow the [Write transactions](https://shopclass.org/docs/developers/database/) rule, locking the listing with `ListingStore::lockForWrite()` in `apply()`.
+- Option names that differ only by case or accent count as one filter; the listing form refuses such duplicates.
+- A subclass of `Search` that overrides `addCondition()` or `addFieldFilter()` must accept the new optional last argument.
+- `sql_search_conditions` runs twice per search, once for the page list and once for the count list.
+- Raw SQL writes to `t_item_meta` need Rebuild filter index under System info → Database.
+- `GET /listings` reads at most 10 `option[name][]` names.
 - `item_increase_stat` and `item_decrease_stat` fire after the commit, so they now come after `posted_item` and `edited_item`.
 - Settings is grouped by area (General, Content, Email, Security, System) with one tab row each, and Billing lists Shipping, Offers and coupons, Tax and Digital Goods beside its own Settings. A "Find a setting" box in the top bar searches every setting. Ban rules moved from Users to Settings > Security; the URLs are unchanged.
 - `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
@@ -67,6 +72,9 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 
 ### Fixed
 - The API main menu no longer links a top category to a subcategory that has the same slug.
+- After-commit callbacks queued behind one that ends the request now run at shutdown.
+- Two first upgrade grants for one listing no longer deadlock and lose one.
+- Checkbox filters use the `s_value` index.
 
 ## Shopclass 7.0.2
 
