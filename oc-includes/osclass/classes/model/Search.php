@@ -304,7 +304,7 @@ class Search extends DAO
         if ($count === null) {
             $this->addConditions($page);
         } else {
-            $this->parts->plugin->addConditions($page, array($count));
+            $this->parts->plugin->addCondition($page, $count);
         }
     }
 

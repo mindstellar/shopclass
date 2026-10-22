@@ -25,10 +25,8 @@ namespace mindstellar\search\query;
  */
 final class PluginClauses
 {
-    /** @var array<int,string> */
+    /** @var array<int,array{0:string,1:string|null}> page text and count text of each condition; null = the same text */
     private array $conditions = array();
-    /** @var array<int,string|null> the count text of each condition, by position; null = the same text */
-    private array $countConditions = array();
     /** @var array<int,string> */
     private array $itemConditions = array();
     /** @var array<int,string> */
@@ -43,23 +41,32 @@ final class PluginClauses
     private $having = '';
 
     /**
-     * A condition already set keeps the count text it was added with.
-     *
-     * @param mixed                       $conditions      a fragment or a list
-     * @param array<int,string|null>|null $countConditions the text the count uses instead, by position; null = the same
+     * @param mixed $conditions a fragment or a list
      *
      * @return void
      */
-    public function addConditions($conditions, ?array $countConditions = null): void
+    public function addConditions($conditions): void
     {
-        $countConditions = $countConditions === null ? array() : array_values($countConditions);
-        foreach (array_values(is_array($conditions) ? $conditions : array($conditions)) as $i => $value) {
-            $value = trim((string)$value);
-            if ($value && !in_array($value, $this->conditions)) {
-                $this->conditions[]      = $value;
-                $count                   = isset($countConditions[$i]) ? trim((string)$countConditions[$i]) : '';
-                $this->countConditions[] = $count !== '' && $count !== $value ? $count : null;
-            }
+        foreach (is_array($conditions) ? $conditions : array($conditions) as $value) {
+            $this->addCondition((string)$value);
+        }
+    }
+
+    /**
+     * One condition, with the text the count uses instead; null = the same. A condition already
+     * set keeps the count text it was added with.
+     *
+     * @param string      $page
+     * @param string|null $count
+     *
+     * @return void
+     */
+    public function addCondition(string $page, ?string $count = null): void
+    {
+        $page = trim($page);
+        if ($page && !in_array($page, $this->conditions())) {
+            $count              = trim((string)$count);
+            $this->conditions[] = array($page, $count !== '' && $count !== $page ? $count : null);
         }
     }
 
@@ -153,10 +160,9 @@ final class PluginClauses
      */
     public function clearAlertParts(): void
     {
-        $this->conditions      = array();
-        $this->countConditions = array();
-        $this->tables          = array();
-        $this->joins           = array();
+        $this->conditions = array();
+        $this->tables     = array();
+        $this->joins      = array();
     }
 
     /**
@@ -170,7 +176,7 @@ final class PluginClauses
      */
     public function changesRows(array $known = array(), array $knownConditions = array()): bool
     {
-        return array_diff($this->conditions, $knownConditions) !== array()
+        return array_diff($this->conditions(), $knownConditions) !== array()
             || array_diff($this->itemConditions, $known) !== array()
             || $this->tables !== array() || $this->joins !== array() || $this->groupBy != '' || $this->having != '';
     }
@@ -184,7 +190,7 @@ final class PluginClauses
      */
     public function hasCondition(string $condition): bool
     {
-        return in_array($condition, $this->conditions, true);
+        return in_array($condition, $this->conditions(), true);
     }
 
     /**
@@ -204,7 +210,7 @@ final class PluginClauses
      */
     public function conditions(): array
     {
-        return $this->conditions;
+        return array_column($this->conditions, 0);
     }
 
     /**
@@ -215,9 +221,9 @@ final class PluginClauses
     public function countConditions(): array
     {
         $out = array();
-        foreach ($this->countConditions as $i => $count) {
+        foreach ($this->conditions as [$page, $count]) {
             if ($count !== null) {
-                $out[$this->conditions[$i]] = $count;
+                $out[$page] = $count;
             }
         }
 
@@ -268,11 +274,9 @@ final class PluginClauses
      */
     public function conditionsSql(bool $count = false): string
     {
-        $list = $this->conditions;
-        if ($count) {
-            foreach ($this->countConditions as $i => $text) {
-                $list[$i] = $text ?? $list[$i];
-            }
+        $list = array();
+        foreach ($this->conditions as [$page, $text]) {
+            $list[] = $count && $text !== null ? $text : $page;
         }
         $sql = implode(' AND ', osc_apply_filter('sql_search_conditions', $list));
 
