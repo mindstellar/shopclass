@@ -343,6 +343,10 @@ msgstr ""
 msgid "Address too short."
 msgstr ""
 
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Admins cannot write in a conversation"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsAdvanced.php
 msgid "Advanced settings have been updated"
 msgstr ""
@@ -607,6 +611,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/package-picker.php
 msgid "Choose a package"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Choose a reason for the report"
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -1414,6 +1422,10 @@ msgstr ""
 msgid "Message: this field is required"
 msgstr ""
 
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Messages are switched off on this site"
+msgstr ""
+
 #: oc-includes/osclass/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Mobile"
@@ -1583,6 +1595,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/moderation/CommentModeration.php
 msgid "No such comment."
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "No such conversation"
 msgstr ""
 
 #: oc-includes/osclass/classes/currency/CurrencyService.php
@@ -1761,6 +1777,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Only registered users can share listings"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Only the person who blocked this conversation can unblock it"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingService.php
@@ -2001,6 +2021,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "Please type a comment"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Please type a message"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -2398,6 +2422,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid "Sign in to the admin"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Sign in to use messages"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
@@ -2998,6 +3026,10 @@ msgstr ""
 msgid "The message has been deleted. Nothing was sent."
 msgstr ""
 
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "The message is too long."
+msgstr ""
+
 #: oc-includes/osclass/classes/user/AccountService.php
 msgid "The name cannot be empty"
 msgstr ""
@@ -3357,6 +3389,18 @@ msgstr ""
 msgid "This alert could not be kept after an update. Save the search again."
 msgstr ""
 
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "This conversation is blocked"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "This conversation is closed"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "This conversation is waiting for review"
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
 msgid "This field is needed."
 msgstr ""
@@ -3401,7 +3445,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "This listing doesn't exist"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "This listing has no account to message"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ProductAlerts.php
@@ -3414,6 +3463,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "This listing is free to publish now."
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "This listing is no longer available"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ProductAlerts.php
@@ -3529,6 +3582,14 @@ msgid "Too many failed attempts. Please try again in %d minute."
 msgid_plural "Too many failed attempts. Please try again in %d minutes."
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Too many messages in an hour. Try again later."
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Too many new conversations in an hour. Try again later."
+msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebAjax.php
 #: oc-includes/osclass/classes/controller/CWebContact.php
@@ -3830,6 +3891,14 @@ msgstr ""
 msgid "You can't repeat internal name"
 msgstr ""
 
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "You cannot message yourself about your own listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "You cannot send messages"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
 msgid ""
 "You cannot set a maximum file size higher than the one allowed in the PHP "
@@ -3938,6 +4007,10 @@ msgstr ""
 #: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Your account"
+msgstr ""
+
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "Your account cannot use messages"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php

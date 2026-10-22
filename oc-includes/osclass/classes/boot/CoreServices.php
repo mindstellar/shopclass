@@ -40,6 +40,19 @@ use mindstellar\event\DispatcherInterface;
 use mindstellar\event\HookBridge;
 use mindstellar\mail\CoreEmails;
 use mindstellar\mail\event\MailComposing;
+use mindstellar\messaging\ConversationStore;
+use mindstellar\messaging\event\ConversationBlocked;
+use mindstellar\messaging\event\ConversationReported;
+use mindstellar\messaging\event\ConversationStarted;
+use mindstellar\messaging\event\MessageHeld;
+use mindstellar\messaging\event\MessageRead;
+use mindstellar\messaging\event\MessageSending;
+use mindstellar\messaging\event\MessageSent;
+use mindstellar\messaging\MessageNotifier;
+use mindstellar\messaging\MessageStore;
+use mindstellar\messaging\MessagingService;
+use mindstellar\utility\Clock;
+use mindstellar\utility\SystemClock;
 
 /**
  * The services core puts in the site-wide container at start-up. Plugins may add their own on init.
@@ -63,6 +76,18 @@ final class CoreServices
         $c->set(CartPricer::class, static fn (Container $c): CartPricer => new CartPricer($c->get(DispatcherInterface::class)));
         $c->set(GoodsCheckout::class, static fn (Container $c): GoodsCheckout => new GoodsCheckout($c->get(CartPricer::class), $c->get(DispatcherInterface::class)));
         $c->set(CoreEmails::class, static fn (Container $c): CoreEmails => new CoreEmails($c->get(DispatcherInterface::class)));
+        $c->set(Clock::class, static fn (): Clock => new SystemClock());
+        $c->set(MessageStore::class, static fn (): MessageStore => new MessageStore());
+        $c->set(ConversationStore::class, static fn (Container $c): ConversationStore => new ConversationStore($c->get(MessageStore::class)));
+        $c->set(MessagingService::class, static fn (Container $c): MessagingService => new MessagingService(
+            $c->get(ConversationStore::class),
+            $c->get(MessageStore::class),
+            $c->get(DispatcherInterface::class),
+            $c->get(Clock::class)
+        ));
+        // MessageNotifier comes with the new-message e-mail; drop the two ignores when it lands.
+        $c->set(MessageNotifier::class, static fn (Container $c): MessageNotifier => new MessageNotifier($c->get(ConversationStore::class), $c->get(CoreEmails::class))); // @phpstan-ignore class.notFound, class.notFound, class.notFound
+        $events->listen(MessageSent::class, [MessageNotifier::class, 'onMessageSent']); // @phpstan-ignore class.notFound
         $events->listen(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
         $events->listen(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
         foreach (self::events() as $event) {
@@ -110,6 +135,13 @@ final class CoreServices
             ReceiptComposing::class,
             OrderReturnUrlResolving::class,
             MailComposing::class,
+            ConversationStarted::class,
+            MessageSending::class,
+            MessageSent::class,
+            MessageHeld::class,
+            ConversationBlocked::class,
+            ConversationReported::class,
+            MessageRead::class,
             \mindstellar\listing\event\VariantPriceChanged::class,
             \mindstellar\listing\event\VariantStockChanged::class,
             \mindstellar\widgets\event\CustomiserPublished::class,
