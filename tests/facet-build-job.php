@@ -277,7 +277,7 @@ osc_job_enqueue(FacetIndex::JOB_BUILD, ['after' => 0]);
 $admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2000-01-01 00:00:00' WHERE s_type = '" . FacetIndex::JOB_FIELD . "'");
 $admin->query("UPDATE {$p}t_job_queue SET dt_next_run = '2999-01-01 00:00:00' WHERE s_type = '" . FacetIndex::JOB_BUILD . "'");
 JobWorker::resetRegistration();
-JobWorker::run(2);
+JobWorker::run(60);
 pin('a pending full build keeps the flag off', ['0', 0], [$pref('facet_ready'), count($jobs(FacetIndex::JOB_FIELD))]);
 $admin->query("DELETE FROM {$p}t_job_queue");
 
