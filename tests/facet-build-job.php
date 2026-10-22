@@ -140,6 +140,17 @@ check('and says the compact is optional', str_starts_with((string) ($job['s_last
 $before = $tableId();
 $pass();
 pin('the next run packs', [[], true], [$jobs(FacetIndex::JOB_PACK), $tableId() !== $before]);
+JobWorker::resetRegistration();
+JobWorker::registerHandlers();
+$said = null;
+\mindstellar\database\Db::beginTransaction();
+try {
+    (JobRegistry::handler(FacetIndex::JOB_PACK))();
+} catch (\mindstellar\job\JobRetry $e) {
+    $said = $e->getMessage();
+}
+\mindstellar\database\Db::rollBack();
+pin('a pack skipped inside a transaction retries and says why', 'Index table not compacted (optional, the index works): a transaction is open', $said);
 
 harness_section('an interrupted build resumes from its cursor');
 $admin->query("DELETE FROM $facet");

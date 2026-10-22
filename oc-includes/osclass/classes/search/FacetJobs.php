@@ -59,7 +59,7 @@ final class FacetJobs
         FacetIndex::markReady();
         $line(sprintf('Index built up to listing #%d', $after));
         try {
-            $line(FacetIndex::pack() ? 'Index table compacted' : 'Index table not compacted');
+            $line(FacetIndex::pack() ? 'Index table compacted' : 'Index table not compacted: a transaction is open');
         } catch (DbException $e) {
             $line('Index table not compacted (optional, the index works): ' . $e->getMessage());
         }
@@ -103,9 +103,12 @@ final class FacetJobs
                 return;
             }
             try {
-                FacetIndex::pack();
+                $packed = FacetIndex::pack();
             } catch (DbException $e) {
                 throw new JobRetry('Index table not compacted (optional, the index works): ' . $e->getMessage(), 600, 3);
+            }
+            if (!$packed) {
+                throw new JobRetry('Index table not compacted (optional, the index works): a transaction is open', 600, 3);
             }
         });
         /*
