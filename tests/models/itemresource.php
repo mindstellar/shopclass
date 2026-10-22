@@ -643,8 +643,8 @@ pin(
 );
 pin(
     'r.fk_i_item_id ASC groups by item',
-    array((string)$rA1, (string)$rA2, (string)$rB1),
-    array_column($model->getResources(null, 0, 100, 'r.fk_i_item_id', 'ASC'), 'pk_i_id')
+    array((string)$itemA, (string)$itemA, (string)$itemB),
+    array_column($model->getResources(null, 0, 100, 'r.fk_i_item_id', 'ASC'), 'fk_i_item_id')
 );
 pin(
     'c.dt_pub_date DESC puts the newest item\'s resource first',
