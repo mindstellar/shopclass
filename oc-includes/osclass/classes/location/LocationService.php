@@ -21,6 +21,7 @@ use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\exception\RefusedException;
 use mindstellar\routing\ReservedSlugs;
+use mindstellar\security\Demo;
 use mindstellar\utility\DeferredMail;
 use Region;
 use RegionStats;
@@ -139,6 +140,7 @@ final class LocationService
      */
     public function addCountry(string $code, string $name): string
     {
+        Demo::refuse();
         return (string) DeferredMail::transaction(function () use ($code, $name): string {
             $this->checkName($name, _m('Country name cannot be blank'));
             $code = CountryCode::normalize($code);
@@ -165,6 +167,7 @@ final class LocationService
      */
     public function editCountry(string $code, string $name, string $slug = ''): void
     {
+        Demo::refuse();
         DeferredMail::transaction(function () use ($code, $name, $slug): void {
             $this->checkName($name, _m('Country name cannot be blank'));
             $country = $code === '' ? null : LocationStore::country($code);
@@ -182,6 +185,7 @@ final class LocationService
      */
     public function addRegion(string $countryCode, string $name): int
     {
+        Demo::refuse();
         return (int) DeferredMail::transaction(function () use ($countryCode, $name): int {
             $country = \Country::getInstance()->findByCode($countryCode);
             if (!isset($country['pk_c_code'])) {
@@ -208,6 +212,7 @@ final class LocationService
      */
     public function editRegion(int $id, string $name, string $slug = ''): void
     {
+        Demo::refuse();
         DeferredMail::transaction(function () use ($id, $name, $slug): void {
             $regions = new Region();
             $region  = $id > 0 ? $regions->findByPrimaryKey($id) : false;
@@ -230,6 +235,7 @@ final class LocationService
      */
     public function addCity(int $regionId, string $name): int
     {
+        Demo::refuse();
         return (int) DeferredMail::transaction(function () use ($regionId, $name): int {
             $region = $regionId > 0 ? Region::getInstance()->findByPrimaryKey($regionId) : false;
             if (!is_array($region)) {
@@ -261,6 +267,7 @@ final class LocationService
      */
     public function editCity(int $id, string $name, string $slug = ''): void
     {
+        Demo::refuse();
         DeferredMail::transaction(function () use ($id, $name, $slug): void {
             $cities = new City();
             $city   = $id > 0 ? $cities->findByPrimaryKey($id) : false;
@@ -283,6 +290,7 @@ final class LocationService
      */
     public function addArea(int $cityId, string $name): int
     {
+        Demo::refuse();
         return (int) DeferredMail::transaction(function () use ($cityId, $name): int {
             $city = $cityId > 0 ? City::getInstance()->findByPrimaryKey($cityId) : false;
             if (!is_array($city)) {
@@ -304,6 +312,7 @@ final class LocationService
      */
     public function editArea(int $id, string $name): void
     {
+        Demo::refuse();
         DeferredMail::transaction(function () use ($id, $name): void {
             $area = $id > 0 ? CityArea::getInstance()->findByPrimaryKey($id) : false;
             if (!is_array($area)) {
@@ -330,6 +339,7 @@ final class LocationService
      */
     public function delete(string $level, int|string $id): void
     {
+        Demo::refuse();
         if ($level === 'country') {
             $id = CountryCode::normalize((string) $id) ?? '';
         } else {

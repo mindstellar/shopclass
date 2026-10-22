@@ -26,6 +26,7 @@ use mindstellar\apikey\CredentialKind;
 use mindstellar\apikey\KeyOwner;
 use mindstellar\apikey\Scopes;
 use mindstellar\exception\ForbiddenException;
+use mindstellar\location\LocationService;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 use mindstellar\webhook\Endpoint;
@@ -41,6 +42,9 @@ $boss   = api_admin_key($bossId);
 $owner  = KeyOwner::admin($bossId);
 $target = (int) (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create(CredentialKind::KEY, 'target', ['admin:listings'], $owner)->id();
 $hook   = (new WebhookEndpointStore())->insert(new Endpoint(WebhookEndpointStore::newId(), 'https://93.184.216.34/hook', ['listing.created'], 'Kept', true, 'whsec_test', createdBy: $bossId, created: time(), updated: time()))->id();
+$country = seed_country($admin, 'US', 'United States');
+$region  = seed_region($admin, $country, 'Alpha');
+$city    = seed_city($admin, $region, 'Aville', $country);
 $call   = api_admin_caller();
 $count  = static fn (string $table): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}{$table}")->fetch_row()[0];
 $live   = static fn (int $id): bool => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_api_credential WHERE pk_i_id = $id AND dt_revoked IS NULL")->fetch_row()[0] === 1;
@@ -93,5 +97,23 @@ pin('the service the admin screen uses refuses too', array_fill(0, 5, ForbiddenE
     demo_refusal(static fn () => $service->delete($hook)),
 ]);
 pin('still nothing changes', $before, [$hooks(), $count('t_job_queue')]);
+
+harness_section('locations');
+$places = static fn (): array => [$admin->query("SELECT pk_i_id, s_name FROM {$p}t_region ORDER BY pk_i_id")->fetch_all(), $admin->query("SELECT pk_i_id, s_name FROM {$p}t_city ORDER BY pk_i_id")->fetch_all(), $count('t_city_area')];
+$before = $places();
+pin('adding a region is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/regions', ['country' => 'US', 'name' => 'Beta'], $boss)));
+pin('renaming a region is 403 demo_site', '403 demo_site', api_admin_code($call('PATCH', 'admin/regions/' . $region, ['name' => 'Renamed'], $boss)));
+pin('adding a city is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/cities', ['region_id' => $region, 'name' => 'Bville'], $boss)));
+pin('adding an area is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/areas', ['city_id' => $city, 'name' => 'Downtown'], $boss)));
+pin('deleting a city is 403 demo_site', '403 demo_site', api_admin_code($call('DELETE', 'admin/cities/' . $city, null, $boss)));
+pin('deleting a region is 403 demo_site', '403 demo_site', api_admin_code($call('DELETE', 'admin/regions/' . $region, null, $boss)));
+pin('no place changes', $before, $places());
+$editor = new LocationService();
+pin('the service the admin screen uses refuses too', array_fill(0, 3, ForbiddenException::DEMO), [
+    demo_refusal(static fn () => $editor->addCountry('DE', 'Germany')),
+    demo_refusal(static fn () => $editor->editCountry('US', 'Renamed')),
+    demo_refusal(static fn () => $editor->delete('country', 'US')),
+]);
+pin('still no place changes', [$before, 1], [$places(), $count('t_country')]);
 
 exit(harness_result());

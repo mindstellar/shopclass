@@ -103,7 +103,7 @@ Each code's `type` link points at its anchor here.
 | <a id="not_owner"></a>`not_owner` | 403 | The resource is real and live but belongs to someone else, such as another user's listing or comment. |
 | <a id="cross_origin"></a>`cross_origin` | 403 | A page-token call that did not come from the site's own pages: another `Origin`, a `Sec-Fetch-Site` other than `same-origin`, or neither. |
 | <a id="api_disabled"></a>`api_disabled` | 403 | The site owner switched the API off. |
-| <a id="demo_site"></a>`demo_site` | 403 | A demo site (`OSC_DEMO=1`) refuses what its admin screens refuse, such as changes to keys and webhooks. |
+| <a id="demo_site"></a>`demo_site` | 403 | A demo site (`OSC_DEMO=1`) refuses what its admin screens refuse, such as changes to keys, webhooks and locations. |
 | <a id="not_found"></a>`not_found` | 404 | No such endpoint, API version or record. Also a pending, disabled or spam listing, a disabled user, an unapproved comment that is not the caller's, and a photo, key or saved search that is not the caller's. |
 | <a id="method_not_allowed"></a>`method_not_allowed` | 405 | The path exists but not for this method. `Allow` lists the methods that work. |
 | <a id="idempotency_in_flight"></a>`idempotency_in_flight` | 409 | A request with the same `Idempotency-Key` is still running. `Retry-After: 1`. |
