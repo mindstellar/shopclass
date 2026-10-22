@@ -662,6 +662,44 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_report_log (
         PRIMARY KEY (fk_i_item_id, s_reporter)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_conversation (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    fk_i_buyer_id INT UNSIGNED NOT NULL,
+    fk_i_seller_id INT UNSIGNED NOT NULL,
+    s_state VARCHAR(10) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'open',
+    i_buyer_unread SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    i_seller_unread SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    b_buyer_blocked TINYINT(1) NOT NULL DEFAULT 0,
+    b_seller_blocked TINYINT(1) NOT NULL DEFAULT 0,
+    fk_i_reporter_id INT UNSIGNED NULL,
+    s_report_reason VARCHAR(20) NULL,
+    dt_created DATETIME NOT NULL,
+    dt_last_message DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY idx_item_buyer (fk_i_item_id, fk_i_buyer_id),
+        INDEX idx_buyer (fk_i_buyer_id, dt_last_message),
+        INDEX idx_seller (fk_i_seller_id, dt_last_message),
+        INDEX idx_state (s_state),
+        FOREIGN KEY (fk_i_buyer_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_seller_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_message (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_conversation_id INT UNSIGNED NOT NULL,
+    fk_i_sender_id INT UNSIGNED NOT NULL,
+    s_body TEXT NOT NULL,
+    s_state VARCHAR(10) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'sent',
+    dt_created DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_conversation (fk_i_conversation_id, pk_i_id),
+        INDEX idx_state (s_state),
+        FOREIGN KEY (fk_i_conversation_id) REFERENCES /*TABLE_PREFIX*/t_conversation (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item_moderation_log (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_item_id INT UNSIGNED NOT NULL,
