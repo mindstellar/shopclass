@@ -4,7 +4,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 7.0.3
 
-This release fixes the theme preview on public pages.
+This release closes a gap that let demo site visitors make API keys and webhooks through the REST API, and fixes the theme preview on public pages.
+
+### Security
+- On a demo site (`OSC_DEMO=1`), the REST API refuses to create, rotate or revoke API keys, as the admin screen does.
 
 ### Fixed
 - A theme preview (`?theme=`) works on public pages again.

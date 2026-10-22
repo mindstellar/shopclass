@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\security;
 
+use mindstellar\exception\ForbiddenException;
+
 /**
  * A demo install (the DEMO constant): admin actions that change the site are refused with one message.
  */
@@ -32,5 +34,17 @@ final class Demo
     public static function message(): string
     {
         return _m('This action cannot be done because it is a demo site');
+    }
+
+    /**
+     * Refuse on a demo install, so a core service is locked for every caller: web, API and CLI.
+     *
+     * @throws ForbiddenException
+     */
+    public static function refuse(): void
+    {
+        if (self::active()) {
+            throw new ForbiddenException(self::message(), ForbiddenException::DEMO);
+        }
     }
 }

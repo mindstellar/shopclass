@@ -38,6 +38,7 @@ final class Problem
         ForbiddenException::DISABLED  => 'feature_disabled',
         ForbiddenException::SIGN_IN   => 'wrong_credential',
         ForbiddenException::NOT_OWNER => 'not_owner',
+        ForbiddenException::DEMO      => 'demo_site',
     ];
 
     /** code => [status, title]. Only code => status is the contract; titles may change. */
@@ -59,6 +60,7 @@ final class Problem
         'insufficient_scope'     => [403, 'This credential lacks the scope this endpoint needs.'],
         'not_owner'              => [403, 'Only the owner may change this resource.'],
         'api_disabled'           => [403, 'The API is switched off on this site.'],
+        'demo_site'              => [403, 'This is a demo site, so this action is switched off.'],
         'cross_origin'           => [403, 'Session calls must come from the site\'s own pages.'],
         'not_found'              => [404, 'Not found.'],
         'method_not_allowed'     => [405, 'This method is not allowed here.'],

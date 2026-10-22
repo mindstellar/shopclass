@@ -18,6 +18,7 @@ use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\exception\RefusedException;
+use mindstellar\security\Demo;
 use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 use mindstellar\utility\DateInput;
@@ -84,6 +85,7 @@ final class ApiKeyService
      */
     public function create(KeyOwner $owner, string $name, string $kind, array $scopes, string $expires = '', ?int $notAfter = null): IssuedToken
     {
+        Demo::refuse();
         $name = trim($name);
         if ($name === '') {
             throw new RefusedException(_m('Give the key a name, so you know later what uses it.'));
@@ -133,6 +135,7 @@ final class ApiKeyService
      */
     public function rotate(int $id, int $actorAdminId, ?int $notAfter = null): IssuedToken
     {
+        Demo::refuse();
         $key = $this->manageable($id);
         if ($key->kind() !== CredentialKind::PUBLIC && $key->owner()?->adminId() !== $actorAdminId) {
             throw new RefusedException(_m('You can only rotate your own keys and public keys. Revoke this one and make a new key instead.'));
@@ -158,10 +161,11 @@ final class ApiKeyService
      * @param int|null $actorAdminId when set, another admin's own key is refused
      *
      * @throws NotFoundException|ConflictException when there is no such key or it is already revoked
-     * @throws ForbiddenException when the key is another admin's own key
+     * @throws ForbiddenException when the key is another admin's own key, or on a demo site
      */
     public function revoke(int $id, ?int $actorAdminId = null): void
     {
+        Demo::refuse();
         $key   = $this->manageable($id);
         $owner = $key->owner()?->adminId();
         if ($actorAdminId !== null && $key->kind() === CredentialKind::KEY && $owner !== null && $owner !== $actorAdminId) {
