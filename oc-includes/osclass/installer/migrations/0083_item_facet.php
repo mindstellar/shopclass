@@ -131,8 +131,10 @@ return new class () implements MigrationInterface {
         }
         $this->setPreference($conn, FacetIndex::PREF_READY, '1', 'BOOLEAN');
         $this->setPreference($conn, FacetIndex::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'STRING');
-        // Compact the table, as the build job and search:reindex do.
-        osc_job_ensure(FacetIndex::JOB_PACK);
+        // Compact the table, as the build job and search:reindex do. Optional, so a run without the job API skips it.
+        if (function_exists('osc_job_ensure')) {
+            osc_job_ensure(FacetIndex::JOB_PACK);
+        }
         if (function_exists('osc_reset_preferences')) {
             osc_reset_preferences();
         }
