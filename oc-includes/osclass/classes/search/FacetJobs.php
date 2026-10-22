@@ -43,17 +43,11 @@ final class FacetJobs
      */
     public static function status(): array
     {
-        $statuses = [JobQueue::STATUS_RUNNING, JobQueue::STATUS_PENDING, JobQueue::STATUS_ERROR];
-        $types    = [FacetIndex::JOB_BUILD, FacetIndex::JOB_FIELD, FacetIndex::JOB_PACK];
-        try {
-            $rows = Db::select(
-                'SELECT s_type, s_status, s_payload, s_last_error, dt_created FROM ' . DB_TABLE_PREFIX . 't_job_queue'
-                . ' WHERE s_type IN (?, ?, ?) AND s_status IN (?, ?, ?) ORDER BY s_status = ? DESC, pk_i_id DESC LIMIT 50',
-                array_merge($types, $statuses, [JobQueue::STATUS_RUNNING])
-            );
-        } catch (DbException $e) {
-            return [];
+        $rows = [];
+        foreach ([FacetIndex::JOB_BUILD, FacetIndex::JOB_FIELD, FacetIndex::JOB_PACK] as $type) {
+            $rows = array_merge($rows, JobQueue::getInstance()->page(null, $type, 50));
         }
+        usort($rows, static fn (array $a, array $b): int => [$b['s_status'] === JobQueue::STATUS_RUNNING, (int) $b['pk_i_id']] <=> [$a['s_status'] === JobQueue::STATUS_RUNNING, (int) $a['pk_i_id']]);
         $jobs = [];
         foreach ($rows as $row) {
             $payload = json_decode((string) $row['s_payload'], true);
