@@ -819,7 +819,7 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `search_pattern` | filter | `$rawPattern` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
 | `search_results` | filter | `null, $search, \Params::getParamsAsArray(), $context, $bare` | `oc-includes/osclass/classes/search/SearchRunner.php` |
 | `search_suggestions` | filter | `null, $q, $limit, $context` | `oc-includes/osclass/classes/search/SearchSuggestions.php` |
-| `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
+| `sql_search_conditions` | filter | `$list` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 | `sql_search_fields` | filter | `$this->fields` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
 ### Theme (9)
