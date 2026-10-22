@@ -31,6 +31,9 @@ final class FacetFilter
     /** No listing has an unknown term. */
     public const NONE = '1 = 0';
 
+    /** NONE as page text and count text. */
+    public const NO_MATCH = [self::NONE, self::NONE];
+
     private const ALIASES = ['a', 'b', 'c'];
 
     /**
@@ -58,7 +61,7 @@ final class FacetFilter
         foreach ($terms as $ids) {
             $ids = array_map('intval', array_values((array) $ids));
             if ($ids === []) {
-                return [self::NONE, self::NONE, []];
+                return [...self::NO_MATCH, []];
             }
             $alias = self::ALIASES[$i++];
             $match = $alias . '.fk_i_term_id ' . self::oneOrIn(count($ids)) . ' AND ' . $alias . '.d_number = 0';
@@ -97,7 +100,7 @@ final class FacetFilter
     public static function fieldIn(array $termIds): array
     {
         if ($termIds === []) {
-            return [self::NONE, self::NONE];
+            return self::NO_MATCH;
         }
         $match = 'fk_i_term_id ' . self::oneOrIn(count($termIds), array_map('intval', array_values($termIds))) . ' AND d_number = 0';
         $item  = ListingQuery::tableName();
@@ -119,7 +122,7 @@ final class FacetFilter
     public static function fieldRange(?int $termId, float $min, float $max): array
     {
         if ($termId === null) {
-            return [self::NONE, self::NONE];
+            return self::NO_MATCH;
         }
         $sql = ListingQuery::tableName() . '.pk_i_id IN (SELECT fk_i_item_id FROM ' . FacetIndex::tableName()
             . ' WHERE fk_i_term_id = ' . $termId . ' AND d_number >= ' . self::number($min) . ' AND d_number <= ' . self::number($max) . ')';
@@ -136,7 +139,7 @@ final class FacetFilter
     public static function fieldCovers(?int $fromTermId, ?int $toTermId, int $from, int $to): array
     {
         if ($fromTermId === null || $toTermId === null) {
-            return [self::NONE, self::NONE];
+            return self::NO_MATCH;
         }
         $facet = FacetIndex::tableName();
         $sql   = ListingQuery::tableName() . '.pk_i_id IN (SELECT a.fk_i_item_id FROM ' . $facet . ' a'

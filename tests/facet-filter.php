@@ -83,7 +83,7 @@ pin(
     ],
     FacetFilter::optionProbe(['oColour' => [101]], true, false)
 );
-pin('a name with no term is NONE both ways', [FacetFilter::NONE, FacetFilter::NONE, []], FacetFilter::optionProbe(['oColour' => [101], 'oSize' => []], true, false));
+pin('a name with no term is NONE both ways', [...FacetFilter::NO_MATCH, []], FacetFilter::optionProbe(['oColour' => [101], 'oSize' => []], true, false));
 [$sql, $count, $params] = FacetFilter::optionProbe(['oColour' => [1, 2], 'oSize' => [3], 'oMaterial' => [4, 5]], true, true);
 check('no quote character in the option SQL', strpbrk($sql . $count, "'\"\\`") === false, $sql);
 pin('as many marks as values, page and count', [5, 5], [substr_count($sql, '?'), substr_count($count, '?')]);
@@ -109,7 +109,7 @@ $probe = static fn (string $match): string => "(SELECT 1 FROM $f WHERE fk_i_term
 $in    = static fn (string $match): string => "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE fk_i_term_id $match AND d_number = 0)";
 pin('dropdown, one term is =', [$probe('= 41'), $in('= 41')], FacetFilter::fieldIn([41]));
 pin('dropdown, several terms', [$probe('IN (41, 42)'), $in('IN (41, 42)')], FacetFilter::fieldIn([41, 42]));
-pin('dropdown, no term is NONE both ways', [FacetFilter::NONE, FacetFilter::NONE], FacetFilter::fieldIn([]));
+pin('dropdown, no term is NONE both ways', FacetFilter::NO_MATCH, FacetFilter::fieldIn([]));
 $range = "$i.pk_i_id IN (SELECT fk_i_item_id FROM $f WHERE fk_i_term_id = 16 AND d_number >= 10 AND d_number <= 20)";
 pin('number range, IN both ways', [$range, $range], FacetFilter::fieldRange(16, 10.0, 20.0));
 pin(
@@ -121,7 +121,7 @@ pin('a big bound reads back as the same double', 1.0E+25, (float) explode('d_num
 $covers = "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $f b ON b.fk_i_term_id = 182 AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= 1700000000"
     . ' WHERE a.fk_i_term_id = 181 AND a.d_number <= 1690000000)';
 pin('date interval covers, IN both ways', [$covers, $covers], FacetFilter::fieldCovers(181, 182, 1690000000, 1700000000));
-pin('a range or interval with no term is NONE both ways', array_fill(0, 3, [FacetFilter::NONE, FacetFilter::NONE]), [FacetFilter::fieldRange(null, 0, 1), FacetFilter::fieldCovers(181, null, 1, 2), FacetFilter::fieldCovers(null, 182, 1, 2)]);
+pin('a range or interval with no term is NONE both ways', array_fill(0, 3, FacetFilter::NO_MATCH), [FacetFilter::fieldRange(null, 0, 1), FacetFilter::fieldCovers(181, null, 1, 2), FacetFilter::fieldCovers(null, 182, 1, 2)]);
 foreach (['an infinite bound' => static fn () => FacetFilter::fieldRange(16, 0, INF), 'a NaN bound' => static fn () => FacetFilter::fieldRange(16, NAN, 1)] as $label => $call) {
     try {
         $call();
