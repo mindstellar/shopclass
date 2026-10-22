@@ -38,7 +38,8 @@ return new class () implements MigrationInterface {
     {
         $started = microtime(true);
         $existed = $conn->selectOne('SHOW TABLES LIKE ?', array(DB_TABLE_PREFIX . 't_item_facet')) !== null;
-        if ($existed && $conn->selectOne('SHOW COLUMNS FROM ' . DB_TABLE_PREFIX . "t_item_facet LIKE 'fk_i_term_id'") === null) {
+        $column = static fn (string $name): bool => $conn->selectOne('SHOW COLUMNS FROM ' . DB_TABLE_PREFIX . 't_item_facet LIKE ?', array($name)) !== null;
+        if ($existed && !$column('fk_i_term_id') && $column('s_key')) {
             // The first draft of this table kept the key and value in each row. The index only mirrors other tables, and searches leave it first.
             $this->setPreference($conn, FacetIndex::PREF_READY, '0', 'BOOLEAN');
             $this->setPreference($conn, FacetIndex::PREF_BUILT, '', 'STRING');

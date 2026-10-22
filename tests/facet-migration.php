@@ -168,6 +168,15 @@ try {
 }
 $admin->query("DROP TABLE {$p}t_draft_ref");
 pin('searches leave the index before the drop', [true, '0', ''], [$threw, $pref('facet_ready'), $pref('facet_built_at')]);
+
+$reset();
+$admin->query("CREATE TABLE $facet (pk_i_id INT UNSIGNED NOT NULL PRIMARY KEY, s_note VARCHAR(10) NOT NULL) ENGINE=InnoDB");
+try {
+    $migration->up($conn);
+} catch (\mindstellar\database\DbException $e) {
+    // The build fails over the foreign table; what is left of it is the point.
+}
+check('a table of another shape is not the draft, and is kept', str_contains($schema()[1], '`s_note`'));
 $reset();
 $migration->up($conn);
 
