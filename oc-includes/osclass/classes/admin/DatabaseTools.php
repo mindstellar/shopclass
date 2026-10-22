@@ -516,10 +516,15 @@ final class DatabaseTools
     /**
      * Queue a filter index rebuild from the Database tab.
      *
-     * @return string 'queued', or 'building' when a build is already queued or running
+     * @param string[] $pending migrations not run yet, as pending() gives them
+     *
+     * @return string 'queued', 'building' when a build is already queued or running, or 'update' while a migration waits
      */
-    public static function facetRebuild(): string
+    public static function facetRebuild(array $pending): string
     {
+        if ($pending !== array()) {
+            return 'update';
+        }
         $queue = JobQueue::getInstance();
         if ($queue->count(JobQueue::STATUS_PENDING, FacetIndex::JOB_BUILD) > 0 || $queue->count(JobQueue::STATUS_RUNNING, FacetIndex::JOB_BUILD) > 0) {
             return 'building';

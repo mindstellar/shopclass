@@ -394,6 +394,10 @@ msgid "An item has at most %d options."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "An update is waiting. Run it first, then rebuild the filter index."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "An update is waiting. Run it first: it fixes most of these safely."
 msgstr ""
 

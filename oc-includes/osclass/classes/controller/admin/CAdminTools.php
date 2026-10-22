@@ -1094,11 +1094,13 @@ class CAdminTools extends AdminSecBaseModel
                 return false;
             }
             osc_csrf_check();
-            $queued = DatabaseTools::facetRebuild();
+            $queued = DatabaseTools::facetRebuild($env['pending']);
             if ($queued === 'queued') {
                 osc_add_flash_ok_message(_m('Rebuild queued.'), 'admin');
             } elseif ($queued === 'building') {
                 osc_add_flash_info_message(_m('Already building.'), 'admin');
+            } elseif ($queued === 'update') {
+                osc_add_flash_error_message(_m('An update is waiting. Run it first, then rebuild the filter index.'), 'admin');
             } else {
                 osc_add_flash_error_message(_m('The rebuild could not be queued.'), 'admin');
             }
