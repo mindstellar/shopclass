@@ -894,12 +894,16 @@ $admin->query("DELETE FROM {$p}t_rate_counter");
 
 harness_section('queries');
 $qMade = 0;
+// A new request has looked up no field yet.
+$qTypes = new ReflectionProperty(\mindstellar\search\FacetIndex::class, 'storages');
+$qTypes->setAccessible(true);
+$qTypes->setValue(null, array());
 $qPost = harness_query_count(static function () use ($call, $listing, $sueToken, &$qMade): void {
     $qMade = (int) ($call('POST', 'listings', $listing(array('title' => 'Counted car')), $sueToken)->body()['data']['id'] ?? 0);
 });
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
-pin('POST /listings, no photos: 25 queries (the variants read is one; one checks the sign-in is live, one checks the places and one reads them, one sets the search point; ban rules and the category custom fields come from the cache)', 25, $qPost);
+pin('POST /listings, no photos: 30 queries (the variants read is one; each custom field also costs two savepoint pairs (its write and its filter rows) and a delete and insert of its filter row; one checks the sign-in is live, one checks the places and one reads them, one sets the search point; ban rules and the category custom fields come from the cache)', 30, $qPost);
 pin('PATCH /listings/{id}, no photos: 21 queries (the listing is locked with its stats and variants first, the variants read is one, and a price change reads the variants with no price of their own; an unchanged location and custom field are not rewritten; edited_item reuses the locked row and the texts; the custom fields come from the cache)', 21, $qPatch);
 $qGet     = harness_query_count(static fn () => $call('GET', 'listings/' . $qMade, null, $sueToken));
 $qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header('ETag');

@@ -411,6 +411,27 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_variant (
         FOREIGN KEY (fk_i_resource_id) REFERENCES /*TABLE_PREFIX*/t_resource (pk_i_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_facet_term (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_key VARCHAR(48) NOT NULL,
+    s_value VARCHAR(191) NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY idx_term (s_key, s_value)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_facet (
+    fk_i_term_id INT UNSIGNED NOT NULL,
+    d_number DOUBLE NOT NULL DEFAULT 0,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    fk_i_variant_id INT UNSIGNED NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (fk_i_term_id, d_number, fk_i_item_id, fk_i_variant_id),
+        INDEX idx_item (fk_i_item_id, fk_i_term_id),
+        FOREIGN KEY (fk_i_term_id) REFERENCES /*TABLE_PREFIX*/t_facet_term (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_item_id INT UNSIGNED NOT NULL,

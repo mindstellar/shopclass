@@ -44,6 +44,10 @@ osc_add_filter('item_title', function ($title, $item) {
 
 The filtered value is always the first argument. Anything else is context.
 
+`sql_search_conditions` runs twice per search: once for the page list, then for the count list. The count list
+can carry different text for a core condition (an `IN` form where the page list has a per-row test), so match
+core conditions by text with care.
+
 ## Priority
 
 Lower runs first. The default is `5`.
@@ -168,11 +172,13 @@ DATEINTERVAL need both ends, and an end of `0` drops the filter. Every `value` i
 text: escape or bind it.
 
 A plugin adds its own custom-field filter with
-`$search->addFieldFilter(int $fieldId, array $filter, string $condition)`. `$condition` is SQL that
+`$search->addFieldFilter(int $fieldId, array $filter, string $condition, ?string $countCondition = null)`. `$condition` is SQL that
 MySQL runs, as with `addConditions()`: escape what goes into it. `$filter` uses the shape in the
 table above and must describe exactly what `$condition` does, because a backend trusts it. Use one
 call per field: a second call replaces the typed rule but keeps both conditions, so `rawSql` turns
-true and backends leave the search to MySQL. A custom-field condition added with plain
+true and backends leave the search to MySQL. `$countCondition` is optional: the SQL the result count
+runs instead of `$condition`, for a form that is faster as a subquery. `addCondition()` takes the same
+text as its third argument. A custom-field condition added with plain
 `addConditions()` counts as raw SQL.
 Saved alerts never reach this filter. The answer may also carry `'snippets'` (listing id => text
 with the searched words in `<mark>`), `'facets'` (`array('category' => array(id => count))`),
@@ -817,7 +823,7 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `search_pattern` | filter | `$rawPattern` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
 | `search_results` | filter | `null, $search, \Params::getParamsAsArray(), $context, $bare` | `oc-includes/osclass/classes/search/SearchRunner.php` |
 | `search_suggestions` | filter | `null, $q, $limit, $context` | `oc-includes/osclass/classes/search/SearchSuggestions.php` |
-| `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
+| `sql_search_conditions` | filter | `$list` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 | `sql_search_fields` | filter | `$this->fields` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
 ### Theme (9)

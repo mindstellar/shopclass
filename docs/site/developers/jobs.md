@@ -65,6 +65,11 @@ Use your plugin's own prefix: `acme.send_digest`, `acme.mail.retry`. Core uses
 `storage.*`, `category.*`, `alerts.*`, `cleanup.*`, `message.*`, `listing.*`, `billing.*`,
 `user.*`, `backup.*`, `location.*` and `api.*`.
 
+The filter index uses `search.facet_build` (the full build, a batch of listings per run),
+`search.facet_field` (rebuilds one field after its type changes) and `search.facet_pack`
+(compacts the table). From the web, the pack job runs only when the table is 128 MB or
+smaller; `search:reindex` packs it in the same run.
+
 Core's `listing.unpaid_expire`, `listing.unpaid_remind` and `listing.unpaid_sweep` are
 examples of one job per thing: each holds a listing id and does one small job.
 

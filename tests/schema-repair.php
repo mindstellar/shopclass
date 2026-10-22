@@ -216,6 +216,19 @@ $repaired = (new SchemaReconciler($conn))->repair();
 check('a plain index does not stand in for a declared unique key', $hasUnique('oc_t_preference', 'uk_preference_section_name'), $flat($repaired['ran']));
 $admin->query('ALTER TABLE oc_t_preference DROP INDEX idx_pref_section_name');
 
+harness_section('repair() rebuilds a filter index table it made');
+
+$admin->query('DROP TABLE oc_t_item_facet');
+$admin->query("REPLACE INTO oc_t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'facet_ready', '1', 'BOOLEAN'), ('osclass', 'facet_built_at', '2026-10-01 00:00:00', 'STRING')");
+$admin->query('DELETE FROM oc_t_job_queue');
+osc_reset_preferences();
+$repaired = \mindstellar\admin\DatabaseTools::repair();
+$prefOf   = static fn (string $name): ?string => $admin->query("SELECT s_value FROM oc_t_preference WHERE s_section = 'osclass' AND s_name = '$name'")->fetch_row()[0] ?? null;
+check('the table is made again', $admin->query("SHOW TABLES LIKE 'oc_t_item_facet'")->num_rows === 1, $flat($repaired['ran'] ?? array()));
+pin('with nothing failed', array(), $repaired['failed'] ?? null);
+pin('searches leave it and it counts as never built', array('0', ''), array($prefOf('facet_ready'), $prefOf('facet_built_at')));
+pin('and one build is queued', 1, (int) $admin->query("SELECT COUNT(*) FROM oc_t_job_queue WHERE s_type = 'search.facet_build' AND s_status = 'pending'")->fetch_row()[0]);
+
 exit(harness_result());
 
 /* file end: ./tests/schema-repair.php */

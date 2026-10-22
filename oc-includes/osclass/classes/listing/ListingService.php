@@ -1417,6 +1417,7 @@ final class ListingService
     {
         $_meta  = $this->fields((int) $aItem['catId']);
         $meta   = $aItem['meta'] ?? array();
+        \mindstellar\search\FacetIndex::rememberTypes($_meta);
         $errors = $this->validator->meta($_meta, $meta);
 
         return array($meta, $errors);

@@ -202,6 +202,12 @@ php oc-cli.php db:upgrade
 an interrupted update. If the database is still missing a table, column or index
 afterwards, `php oc-cli.php db:repair` (or **Tools → System info → Database**) adds it.
 
+The update builds the filter index inline for up to 5,000 listings (at most 20 seconds). The rest is built by
+a background job, which large sites wait on cron or the worker to run (automatic cron runs it every five minutes). Until the index is ready, custom-field and option filters give complete results but run
+slower. A plugin that writes
+`t_item_meta` with raw SQL leaves the index stale until you run `php oc-cli.php search:reindex` or use **Rebuild filter index** under
+**Tools → System info → Database**.
+
 ### 4. Check the site
 
 Load the front page and the admin panel. If you disabled friendly URLs before

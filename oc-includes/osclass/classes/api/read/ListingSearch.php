@@ -19,9 +19,13 @@ use mindstellar\api\RowId;
 use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\apikey\Credential;
+use mindstellar\database\Db;
 use mindstellar\listing\ListingQuery;
 use mindstellar\listing\VariantStore;
 use mindstellar\search\Distance;
+use mindstellar\search\FacetIndex;
+use mindstellar\search\FacetTerms;
+use mindstellar\search\query\FacetFilter;
 use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
 use mindstellar\search\SearchExtras;
@@ -42,6 +46,9 @@ final class ListingSearch
     /** Most option names, and values per name, `option` takes. */
     private const MAX_OPTION_NAMES  = 3;
     private const MAX_OPTION_VALUES = 10;
+
+    /** Most option names read from the query before names that are one are merged. */
+    private const MAX_OPTION_ASKED = 10;
 
     /** API filter => search page parameter. */
     private const LISTS = ['category' => 'sCategory', 'country' => 'sCountry', 'region' => 'sRegion', 'city' => 'sCity', 'city_area' => 'sCityArea'];
@@ -143,7 +150,7 @@ final class ListingSearch
     {
         $variant = self::variantCondition($inStock, $onSale, $options);
         if ($variant !== null) {
-            $search->addCondition($variant[0], $variant[1]);
+            $search->addCondition($variant[0], $variant[1], $variant[2] ?? null);
         }
         if ($ids !== null) {
             $search->addCondition($ids === [] ? '1 = 0' : ListingQuery::tableName() . '.pk_i_id IN (' . implode(', ', $ids) . ')');
@@ -174,12 +181,26 @@ final class ListingSearch
      *
      * @param array<string,string[]> $options name => values, from optionFilter()
      *
-     * @return array{0:string,1:string[]}|null the SQL with `?` marks, and the values for them
+     * @return array{0:string,1:array<int,int|string>,2?:string}|null the page SQL with `?` marks, the values for them, and the count SQL when it differs
      */
     private static function variantCondition(bool $inStock, bool $onSale, array $options = []): ?array
     {
         if (!$inStock && !$onSale && $options === []) {
             return null;
+        }
+        if ($options !== [] && FacetIndex::ready()) {
+            $pairs = [];
+            foreach ($options as $name => $values) {
+                $pairs[FacetIndex::optionKey((string) $name)] = $values;
+            }
+            $found = FacetTerms::termIds($pairs);
+            $terms = [];
+            foreach (array_keys($pairs) as $key) {
+                $terms[$key] = array_values($found[$key] ?? []);
+            }
+            [$page, $count, $params] = FacetFilter::optionProbe($terms, $inStock, $onSale);
+
+            return [$page, $params, $count];
         }
         $variants = VariantStore::tableName();
         $item     = ListingQuery::tableName();
@@ -213,10 +234,10 @@ final class ListingSearch
     private static function optionFilter(Request $request): array
     {
         $given = $request->query()['option'] ?? null;
-        $out   = [];
+        $asked = [];
         foreach (is_array($given) ? $given : [] as $name => $raw) {
             $name = trim((string) $name);
-            if ($name === '' || mb_strlen($name) > VariantStore::MAX_NAME || count($out) >= self::MAX_OPTION_NAMES) {
+            if ($name === '' || mb_strlen($name) > VariantStore::MAX_NAME) {
                 continue;
             }
             $values = [];
@@ -227,11 +248,45 @@ final class ListingSearch
                 }
             }
             if ($values !== []) {
-                $out[$name] = $values;
+                $asked[] = [$name, $values];
+            }
+            if (count($asked) >= self::MAX_OPTION_ASKED) {
+                break;
+            }
+        }
+        // Names the tables compare as one (case, accents) are one name.
+        $folds = count($asked) > 1 ? self::folded(array_column($asked, 0)) : [];
+        $out   = [];
+        $first = [];
+        foreach ($asked as $n => [$name, $values]) {
+            $fold = $folds[$n] ?? $name;
+            if (isset($first[$fold])) {
+                $out[$first[$fold]] = array_slice(array_values(array_unique(array_merge($out[$first[$fold]], $values))), 0, self::MAX_OPTION_VALUES);
+            } elseif (count($out) < self::MAX_OPTION_NAMES) {
+                $first[$fold] = $name;
+                $out[$name]   = $values;
             }
         }
 
         return $out;
+    }
+
+    /**
+     * One sort key per name under utf8mb4_general_ci, the collation of the variant and filter
+     * tables, so names they treat as equal get one key.
+     *
+     * @param string[] $names
+     *
+     * @return string[]
+     */
+    private static function folded(array $names): array
+    {
+        $columns = [];
+        foreach (array_keys($names) as $n) {
+            $columns[] = 'WEIGHT_STRING(CONVERT(? USING utf8mb4) COLLATE utf8mb4_general_ci) AS w' . $n;
+        }
+
+        return array_map('strval', array_values(Db::selectOne('SELECT ' . implode(', ', $columns), $names) ?? []));
     }
 
     /**

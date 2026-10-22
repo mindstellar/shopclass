@@ -17,11 +17,13 @@ use mindstellar\boot\CoreServices;
 use mindstellar\database\Db;
 use mindstellar\listing\event\VariantPriceChanged;
 use mindstellar\listing\event\VariantStockChanged;
+use mindstellar\search\FacetIndex;
 
 /**
  * Reads and writes of t_item_variant. A listing is buyable when it has at least one row. It has
  * either one default row (no options), for a plain product, or option rows (Colour x Size ...),
- * never both. Rows go with their listing (ON DELETE CASCADE).
+ * never both. Rows go with their listing (ON DELETE CASCADE). Each write rewrites the listing's
+ * option rows in t_item_facet in the same transaction.
  *
  * A kept row whose stock or selling price changes dispatches a VariantStockChanged or
  * VariantPriceChanged event once the write commits; a row with no price of its own dispatches
@@ -188,6 +190,7 @@ final class VariantStore extends Model
 
         return Db::transaction(static function () use ($itemId, $values): int {
             Db::execute('DELETE FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_options IS NOT NULL', array($itemId));
+            FacetIndex::dropVariants($itemId);
             $row = Db::selectOne(
                 'SELECT pk_i_id, i_price, i_stock FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND s_options IS NULL ORDER BY pk_i_id LIMIT 1 FOR UPDATE',
                 array($itemId)
@@ -257,7 +260,8 @@ final class VariantStore extends Model
                 }
             }
 
-            $ids     = array();
+            $ids      = array();
+            $inserted = array();
             $changes = array();
             foreach ($rows as $position => $row) {
                 $options = array();
@@ -275,7 +279,8 @@ final class VariantStore extends Model
                     self::table()->where('pk_i_id', $id)->update($values);
                     $changes[] = array($id, $old, $values);
                 } else {
-                    $id = self::table()->insert(array('fk_i_item_id' => $itemId) + $values);
+                    $id         = self::table()->insert(array('fk_i_item_id' => $itemId) + $values);
+                    $inserted[] = array('pk_i_id' => $id, 's_options' => $values['s_options']);
                 }
                 $ids[] = $id;
             }
@@ -288,6 +293,8 @@ final class VariantStore extends Model
                     $drop
                 );
             }
+            FacetIndex::dropVariants($itemId, $drop);
+            FacetIndex::insertVariants($itemId, $inserted);
             self::announce($itemId, $changes);
 
             return $ids;
@@ -340,7 +347,12 @@ final class VariantStore extends Model
      */
     public static function removeDefault(int $itemId): int
     {
-        return self::table()->where('fk_i_item_id', $itemId)->whereNull('s_options')->delete();
+        return Db::transaction(static function () use ($itemId): int {
+            $deleted = self::table()->where('fk_i_item_id', $itemId)->whereNull('s_options')->delete();
+            FacetIndex::dropVariants($itemId);
+
+            return $deleted;
+        });
     }
 
     /**
@@ -351,7 +363,12 @@ final class VariantStore extends Model
      */
     public static function deleteForItem(int $itemId): int
     {
-        return self::table()->where('fk_i_item_id', $itemId)->delete();
+        return Db::transaction(static function () use ($itemId): int {
+            $deleted = self::table()->where('fk_i_item_id', $itemId)->delete();
+            FacetIndex::dropVariants($itemId);
+
+            return $deleted;
+        });
     }
 
     /**

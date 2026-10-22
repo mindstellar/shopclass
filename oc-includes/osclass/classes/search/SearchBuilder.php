@@ -12,6 +12,7 @@ namespace mindstellar\search;
 
 use mindstellar\fields\FieldQuery;
 use mindstellar\location\LocationQuery;
+use mindstellar\search\query\FacetFilter;
 
 /**
  * Applies a SearchCriteria to a core Search model.
@@ -202,6 +203,9 @@ class SearchBuilder
             static fn ($key): bool => (string) (int) $key === (string) $key && in_array((int) $key, $fields, true)
         )));
 
+        // The t_item_meta SQL is the path while the index is not ready; it goes in 8.0.
+        $facet = FacetIndex::ready();
+        $terms = $facet ? FacetTerms::termIds(self::facetPairs($custom_fields, $types)) : array();
         $table = DB_TABLE_PREFIX . 't_item_meta';
         $in    = DB_TABLE_PREFIX . 't_item.pk_i_id IN (';
         foreach ($custom_fields as $key => $aux) {
@@ -223,26 +227,31 @@ class SearchBuilder
                 case 'DROPDOWN':
                 case 'RADIO':
                     $values = self::metaChoices($aux);
+                    $pair   = $facet && $values !== array() ? self::facetIn($terms, $id, $values) : null;
                     if (count($values) === 1) {
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'eq', 'value' => $values[0]),
-                            $in . $by . $table . '.s_value = ' . self::metaLiteral($values[0]) . ')'
+                            $pair[0] ?? $in . $by . $table . '.s_value = ' . self::metaLiteral($values[0]) . ')',
+                            $pair[1] ?? null
                         );
                     } elseif ($values !== array()) {
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'in', 'values' => $values),
-                            $in . $by . $table . '.s_value IN (' . implode(', ', array_map(array(self::class, 'metaLiteral'), $values)) . '))'
+                            $pair[0] ?? $in . $by . $table . '.s_value IN (' . implode(', ', array_map(array(self::class, 'metaLiteral'), $values)) . '))',
+                            $pair[1] ?? null
                         );
                     }
                     break;
                 case 'CHECKBOX':
                     if ($aux != '') {
+                        $pair = $facet ? self::facetIn($terms, $id, array('1')) : null;
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'checked'),
-                            $in . $by . $table . '.s_value = \'1\')'
+                            $pair[0] ?? $in . $by . $table . '.s_value = \'1\')',
+                            $pair[1] ?? null
                         );
                     }
                     break;
@@ -257,7 +266,9 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $start, 'to' => $end),
-                            $in . $by . $table . '.s_value >= ' . $start . ' AND ' . $table . '.s_value <= ' . $end . ')'
+                            ...($facet
+                                ? FacetFilter::fieldRange($terms[FacetIndex::key($id)][''] ?? null, $start, $end)
+                                : [$in . $by . $table . '.s_value >= ' . $start . ' AND ' . $table . '.s_value <= ' . $end . ')'])
                         );
                     }
                     break;
@@ -273,7 +284,9 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'covers', 'from' => $from, 'to' => $to),
-                            $in . 'select a.fk_i_item_id from (' . $sql . ') a where a.fk_i_item_id IN (' . $sql1 . '))'
+                            ...($facet
+                                ? FacetFilter::fieldCovers($terms[FacetIndex::key($id, 'from')][''] ?? null, $terms[FacetIndex::key($id, 'to')][''] ?? null, $from, $to)
+                                : [$in . 'select a.fk_i_item_id from (' . $sql . ') a where a.fk_i_item_id IN (' . $sql1 . '))'])
                         );
                     }
                     break;
@@ -287,7 +300,9 @@ class SearchBuilder
                         $search->addFieldFilter(
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $min, 'to' => $max),
-                            $in . $by . $table . '.s_value >= ' . $min . ' AND ' . $table . '.s_value <= ' . $max . ')'
+                            ...($facet
+                                ? FacetFilter::fieldRange($terms[FacetIndex::key($id)][''] ?? null, $min, $max)
+                                : [$in . $by . $table . '.s_value >= ' . $min . ' AND ' . $table . '.s_value <= ' . $max . ')'])
                         );
                     }
                     break;
@@ -315,6 +330,64 @@ class SearchBuilder
         }
 
         return array_slice($out, 0, self::MAX_CHOICES);
+    }
+
+    /**
+     * The key and values of every filter that reads the filter index, so one query finds all
+     * their term ids.
+     *
+     * @param array<mixed>       $meta  field id => asked value
+     * @param array<int,?string> $types field id => type
+     *
+     * @return array<string,string[]>
+     */
+    private static function facetPairs(array $meta, array $types): array
+    {
+        $pairs = array();
+        foreach ($meta as $key => $aux) {
+            $id = (int) $key;
+            switch ($types[$id] ?? null) {
+                case 'DROPDOWN':
+                case 'RADIO':
+                    $pairs[FacetIndex::key($id)] = self::metaChoices($aux);
+                    break;
+                case 'CHECKBOX':
+                    $pairs[FacetIndex::key($id)] = array('1');
+                    break;
+                case 'NUMBER':
+                case 'DATE':
+                    $pairs[FacetIndex::key($id)] = array('');
+                    break;
+                case 'DATEINTERVAL':
+                    $pairs[FacetIndex::key($id, 'from')] = array('');
+                    $pairs[FacetIndex::key($id, 'to')]   = array('');
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return $pairs;
+    }
+
+    /**
+     * A dropdown, radio or checkbox value on the filter index: page and count text.
+     *
+     * @param array<string,array<int|string,int>> $terms from facetPairs()
+     * @param string[]                            $values
+     *
+     * @return array{0:string,1:string}
+     */
+    private static function facetIn(array $terms, int $fieldId, array $values): array
+    {
+        $found = array();
+        foreach ($values as $value) {
+            if (isset($terms[FacetIndex::key($fieldId)][$value])) {
+                $found[] = $terms[FacetIndex::key($fieldId)][$value];
+            }
+        }
+
+        return FacetFilter::fieldIn($found);
     }
 
     /**

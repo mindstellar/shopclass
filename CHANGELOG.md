@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only admins post and shoppers get a buyer account. Over the limit, a seller now saves the listing and pays on the last step.
 
 ### New
+- Option filters and custom-field filters read a filter index (`t_item_facet`), built in the background after the update. `search:reindex` and System info → Database → Rebuild filter index rebuild it.
 - The shop hooks are typed events. A callback whose first parameter is an event class gets the event; the hook names and old callbacks work as before. See [Hooks](https://shopclass.org/docs/developers/hooks/).
 - `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key, and work with the API switched off. See [REST API](https://shopclass.org/docs/developers/api/).
 - A theme or plugin can declare `modes` (`classifieds`, `shop`) and the plugins it needs, in `shopclass.json` or the `Modes:` and `Requires Plugins:` headers. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
@@ -44,7 +45,13 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
 
 ### Changed
+- Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.
 - Core works with MariaDB 11.6+ snapshot isolation (`innodb_snapshot_isolation=ON`): rows are locked first, and plugin writes should follow the [Write transactions](https://shopclass.org/docs/developers/database/) rule, locking the listing with `ListingStore::lockForWrite()` in `apply()`.
+- Option names that differ only by case or accent count as one filter; the listing form refuses such duplicates.
+- A subclass of `Search` that overrides `addCondition()` or `addFieldFilter()` must accept the new optional last argument.
+- `sql_search_conditions` runs twice per search, once for the page list and once for the count list.
+- Raw SQL writes to `t_item_meta` need Rebuild filter index under System info → Database.
+- `GET /listings` reads at most 10 `option[name][]` names.
 - `item_increase_stat` and `item_decrease_stat` fire after the commit, so they now come after `posted_item` and `edited_item`.
 - Settings is grouped by area (General, Content, Email, Security, System) with one tab row each, and Billing lists Shipping, Offers and coupons, Tax and Digital Goods beside its own Settings. A "Find a setting" box in the top bar searches every setting. Ban rules moved from Users to Settings > Security; the URLs are unchanged.
 - `SiteMode` moved from `mindstellar\market` to `mindstellar\site`; the old name still works.
@@ -57,6 +64,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - A plugin download link from the catalogue is shown only when it is an https address.
 
 ### Performance
+- Filter counts on 232,000 listings: `option[Colour]=Red` 446 to 53 ms (MariaDB), 526 to 208 ms (MySQL); NUMBER range 76 to 4 ms; date 77 to 1 ms. A save that changes no option rows writes none.
 - API calls a theme makes on one page share their work: the route table builds only the routes a call tries, the category tree is read once, and each listing's row, photos, stats and location are read once.
 - API listing searches cache the finished rows, without description text when the response asks for none, so the Aisle home page runs 10 statements instead of 21 and a product page 19 instead of 36.
 - `GET /menus` caches the linked pages and top category links, and `Currency::listAll()` reads the cached table.
@@ -64,6 +72,9 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 
 ### Fixed
 - The API main menu no longer links a top category to a subcategory that has the same slug.
+- After-commit callbacks queued behind one that ends the request now run at shutdown.
+- Two first upgrade grants for one listing no longer deadlock and lose one.
+- Checkbox filters use the `s_value` index.
 
 ## Shopclass 7.0.2
 

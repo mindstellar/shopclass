@@ -368,6 +368,10 @@ msgstr ""
 msgid "All listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Already building."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-register-content.php
 msgid "Already have an account?"
 msgstr ""
@@ -387,6 +391,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "An item has at most %d options."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "An update is waiting. Run it first, then rebuild the filter index."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
@@ -1796,6 +1804,10 @@ msgstr ""
 msgid "Option name %1$s is longer than %2$d characters."
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Option names %1$s and %2$s are the same."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Order #%d"
@@ -2126,6 +2138,10 @@ msgstr ""
 msgid ""
 "Re-generation complete. %d photos could not be opened and were left as they "
 "were."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Rebuild queued."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -3059,6 +3075,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "The rating must be from 1 to 5"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The rebuild could not be queued."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php

@@ -301,6 +301,8 @@ pin('four option names', ['/product/options'], $codes($v->product($tee([$row(['A
 pin('three pass', [], $v->product($tee([$row(['A' => '1', 'B' => '1', 'C' => '1'])])));
 pin('a name over 30 characters', ['/product/options'], $codes($v->product($tee([$row([str_repeat('n', 31) => 'x'])]))));
 pin('a name of 30 passes', [], $v->product($tee([$row([str_repeat('n', 30) => 'x'])])));
+pin('names that differ only by case', [['/product/options', 'taken']], array_map(static fn (array $e): array => [$e['pointer'], $e['code']], $v->product($tee([$row(['Size' => 'M', 'SIZE' => 'M'])]))));
+pin('names that differ only by accents', [['/product/options', 'taken']], array_map(static fn (array $e): array => [$e['pointer'], $e['code']], $v->product($tee([$row(['Café' => 'M', 'CAFE' => 'M'])]))));
 pin('an empty name', ['/product/options'], $codes($v->product($tee([$row(['' => 'x'])]))));
 pin('a value over 40 characters', ['/product/variants/0/options'], $codes($v->product($tee([$row(['Size' => str_repeat('v', 41)])]))));
 pin('a value of 40 passes, counted in characters', [], $v->product($tee([$row(['Size' => str_repeat('é', 40)])])));

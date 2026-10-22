@@ -25,7 +25,7 @@ namespace mindstellar\search\query;
  */
 final class PluginClauses
 {
-    /** @var array<int,string> */
+    /** @var array<int,array{0:string,1:string|null}> page text and count text of each condition; null = the same text */
     private array $conditions = array();
     /** @var array<int,string> */
     private array $itemConditions = array();
@@ -47,7 +47,27 @@ final class PluginClauses
      */
     public function addConditions($conditions): void
     {
-        self::addUnique($this->conditions, $conditions);
+        foreach (is_array($conditions) ? $conditions : array($conditions) as $value) {
+            $this->addCondition((string)$value);
+        }
+    }
+
+    /**
+     * One condition, with the text the count uses instead; null = the same. A condition already
+     * set keeps the count text it was added with.
+     *
+     * @param string      $page
+     * @param string|null $count
+     *
+     * @return void
+     */
+    public function addCondition(string $page, ?string $count = null): void
+    {
+        $page = trim($page);
+        if ($page && !in_array($page, $this->conditions())) {
+            $count              = trim((string)$count);
+            $this->conditions[] = array($page, $count !== '' && $count !== $page ? $count : null);
+        }
     }
 
     /**
@@ -156,7 +176,7 @@ final class PluginClauses
      */
     public function changesRows(array $known = array(), array $knownConditions = array()): bool
     {
-        return array_diff($this->conditions, $knownConditions) !== array()
+        return array_diff($this->conditions(), $knownConditions) !== array()
             || array_diff($this->itemConditions, $known) !== array()
             || $this->tables !== array() || $this->joins !== array() || $this->groupBy != '' || $this->having != '';
     }
@@ -170,7 +190,7 @@ final class PluginClauses
      */
     public function hasCondition(string $condition): bool
     {
-        return in_array($condition, $this->conditions, true);
+        return in_array($condition, $this->conditions(), true);
     }
 
     /**
@@ -190,7 +210,24 @@ final class PluginClauses
      */
     public function conditions(): array
     {
-        return $this->conditions;
+        return array_column($this->conditions, 0);
+    }
+
+    /**
+     * The count text of each condition that has its own, by the condition's page text.
+     *
+     * @return array<string,string>
+     */
+    public function countConditions(): array
+    {
+        $out = array();
+        foreach ($this->conditions as [$page, $count]) {
+            if ($count !== null) {
+                $out[$page] = $count;
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -225,14 +262,23 @@ final class PluginClauses
     }
 
     /**
-     * The plugin conditions, filtered and AND-joined.
+     * The plugin conditions, filtered and AND-joined. With $count each condition gives its count
+     * text where it has one. The filter runs once for the page query and once for the count query.
+     * A facet filter reads differently in the two (a per-row probe for the page, an IN form for the count),
+     * so a plugin that edits a core condition by its text must handle both forms.
+     *
+     * @param bool $count
      *
      * @return string
      * @phpstan-impure it fires a filter
      */
-    public function conditionsSql(): string
+    public function conditionsSql(bool $count = false): string
     {
-        $sql = implode(' AND ', osc_apply_filter('sql_search_conditions', $this->conditions));
+        $list = array();
+        foreach ($this->conditions as [$page, $text]) {
+            $list[] = $count && $text !== null ? $text : $page;
+        }
+        $sql = implode(' AND ', osc_apply_filter('sql_search_conditions', $list));
 
         return $sql !== '' ? ' ' . $sql : '';
     }

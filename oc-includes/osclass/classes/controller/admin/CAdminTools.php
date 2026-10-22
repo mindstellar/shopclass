@@ -1089,7 +1089,52 @@ class CAdminTools extends AdminSecBaseModel
             $env['db_size'] = DatabaseTools::size();
         }
 
+        if (Params::getParam('facet_rebuild') !== '') {
+            if ($this->refuseOnDemo($self)) {
+                return false;
+            }
+            osc_csrf_check();
+            $queued = DatabaseTools::facetRebuild($env['pending']);
+            if ($queued === 'queued') {
+                osc_add_flash_ok_message(_m('Rebuild queued.'), 'admin');
+            } elseif ($queued === 'building') {
+                osc_add_flash_info_message(_m('Already building.'), 'admin');
+            } elseif ($queued === 'update') {
+                osc_add_flash_error_message(_m('An update is waiting. Run it first, then rebuild the filter index.'), 'admin');
+            } else {
+                osc_add_flash_error_message(_m('The rebuild could not be queued.'), 'admin');
+            }
+            $this->redirectTo($self);
+
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * What the Database tab shows about the listing filter index.
+     *
+     * @return array<string,mixed>
+     */
+    private static function facetEnvironment(): array
+    {
+        $ready = \mindstellar\search\FacetIndex::ready();
+        try {
+            $missing = $ready ? \mindstellar\search\FacetIndex::missingRows() : null;
+        } catch (\Throwable $e) {
+            $missing = null;
+        }
+
+        return array(
+            'facet_ready'     => $ready,
+            'facet_built_at'  => (string) osc_get_preference(\mindstellar\search\FacetIndex::PREF_BUILT, 'osclass'),
+            'facet_jobs'      => \mindstellar\search\FacetJobs::status(),
+            'facet_listings'  => DatabaseTools::listingCount(),
+            'facet_auto_cron' => osc_auto_cron(),
+            'facet_now'       => time(),
+            'facet_missing'   => $missing,
+        );
     }
 
     /**
@@ -1229,6 +1274,7 @@ class CAdminTools extends AdminSecBaseModel
             $env['pending'] = DatabaseTools::pending();
             list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
             $env['db_size'] = DatabaseTools::size();
+            $env += self::facetEnvironment();
         }
 
         return $env;

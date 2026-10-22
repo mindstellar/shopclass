@@ -18,7 +18,10 @@ use mindstellar\database\SchemaDoctor;
 use mindstellar\database\SchemaReconciler;
 use mindstellar\database\SqlStream;
 use mindstellar\database\TablePrefix;
+use mindstellar\job\JobQueue;
 use mindstellar\migration\MigrationRunner;
+use mindstellar\search\FacetIndex;
+use mindstellar\search\FacetJobs;
 use mindstellar\upgrade\Osclass;
 use Throwable;
 
@@ -319,7 +322,7 @@ final class DatabaseTools
     }
 
     /**
-     * The table a CREATE TABLE statement makes, when it is one of this site's; else null.
+     * The table a CREATE TABLE statement makes, when it is one of this site's; else null. The name may be quoted, as in a dump, or bare, as the reconciler writes it.
      *
      * @param string $statement
      *
@@ -327,7 +330,7 @@ final class DatabaseTools
      */
     public static function createdTable(string $statement): ?string
     {
-        if (!preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`([A-Za-z0-9_]+)`/i', $statement, $m)) {
+        if (!preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([A-Za-z0-9_]+)`?\s*\(/i', $statement, $m)) {
             return null;
         }
         $prefix = defined('DB_TABLE_PREFIX') ? (string) DB_TABLE_PREFIX : '';
@@ -424,12 +427,116 @@ final class DatabaseTools
             return null;
         }
         try {
-            return (new SchemaReconciler($conn))->repair();
+            $result = (new SchemaReconciler($conn))->repair();
+            FacetJobs::afterRepair($result['ran']);
+
+            return $result;
         } catch (Throwable $e) {
             return array('ran' => array(), 'failed' => array($e->getMessage()));
         } finally {
             $release();
         }
+    }
+
+    /**
+     * How many listings exist, 0 when the count cannot be read.
+     */
+    public static function listingCount(): int
+    {
+        try {
+            $row = Connection::getInstance()->selectOne('SELECT COUNT(*) AS n FROM ' . \Item::newInstance()->getTableName());
+        } catch (Throwable $e) {
+            return 0;
+        }
+
+        return (int) ($row['n'] ?? 0);
+    }
+
+    /**
+     * The state of the listing filter index for the Database tab, with a note on a waiting or failed build.
+     *
+     * @param array<string,mixed> $env facet_ready, facet_built_at, facet_jobs (FacetJobs::status()),
+     *                                 facet_listings, facet_auto_cron, facet_now (a timestamp),
+     *                                 facet_missing (FacetIndex::missingRows(), null when unread)
+     *
+     * @return array{state:string,text:string,note:string}
+     */
+    public static function facetStatus(array $env): array
+    {
+        $job    = null;
+        $failed = null;
+        foreach ((array) ($env['facet_jobs'] ?? array()) as $row) {
+            if (!in_array($row['type'], array(FacetIndex::JOB_BUILD, FacetIndex::JOB_FIELD), true)) {
+                continue;
+            }
+            if ($row['status'] !== JobQueue::STATUS_ERROR) {
+                $job = $row;
+                break;
+            }
+            $failed ??= $row;
+        }
+        $error = $failed === null ? '' : ($failed['error'] === '' ? __('The last build failed.') : sprintf(__('The last build failed: %s'), $failed['error']));
+        if ($job !== null) {
+            $total = (int) ($env['facet_listings'] ?? 0);
+            $notes = array();
+            $since = strtotime((string) $job['created']);
+            $wait  = $since === false ? 0 : (int) ($env['facet_now'] ?? time()) - $since;
+            if ($job['status'] === JobQueue::STATUS_PENDING && $wait >= 60) {
+                $notes[] = sprintf(__('Queued %s ago.'), osc_admin_duration($wait));
+            }
+            if (empty($env['facet_auto_cron'])) {
+                $notes[] = __('Background jobs are off, so it runs only when cron.php or the job worker runs.');
+            }
+
+            $done = min((int) ($job['payload']['after'] ?? 0), $total);
+
+            return array(
+                'state' => 'building',
+                'text'  => $job['type'] === FacetIndex::JOB_FIELD
+                    ? sprintf(__('Rebuilding a changed field: %1$d of %2$d listings done'), $done, $total)
+                    : sprintf(__('Building: %1$d of %2$d listings done'), $done, $total),
+                'note'  => implode(' ', $notes),
+            );
+        }
+        if (!empty($env['facet_ready'])) {
+            $built = (string) ($env['facet_built_at'] ?? '');
+
+            $missing = (int) ($env['facet_missing'] ?? 0);
+            if ($error === '' && $missing > 0) {
+                $error = sprintf(__('%d values of the newest listings are missing from it, likely written to the database directly. Rebuild it.'), $missing);
+            }
+
+            return array(
+                'state' => 'ready',
+                'text'  => $built === '' ? __('Ready') : sprintf(__('Ready, built %s'), $built),
+                'note'  => $error,
+            );
+        }
+        if ($error !== '') {
+            return array('state' => 'error', 'text' => $error, 'note' => __('Searches use the slower queries until a rebuild finishes.'));
+        }
+
+        return array('state' => 'missing', 'text' => __('Not built'), 'note' => '');
+    }
+
+    /**
+     * Queue a filter index rebuild from the Database tab.
+     *
+     * @param string[] $pending migrations not run yet, as pending() gives them
+     *
+     * @return string 'queued', 'building' when a build is already queued or running, or 'update' while a migration waits
+     */
+    public static function facetRebuild(array $pending): string
+    {
+        if ($pending !== array()) {
+            return 'update';
+        }
+        $queue = JobQueue::getInstance();
+        if ($queue->count(JobQueue::STATUS_PENDING, FacetIndex::JOB_BUILD) > 0 || $queue->count(JobQueue::STATUS_RUNNING, FacetIndex::JOB_BUILD) > 0) {
+            return 'building';
+        }
+
+        return FacetJobs::queueBuild() ? 'queued' : 'failed';
     }
 
     /**

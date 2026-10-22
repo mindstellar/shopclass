@@ -54,6 +54,7 @@ class Cli
         'core:update'         => ['cmdCoreUpdate', 'Update Shopclass to the newest release on this channel, then migrate the database (--reinstall)'],
         'db:doctor'           => ['cmdDbDoctor', 'Report schema differences and strict SQL mode readiness (--strict: readiness only); changes nothing'],
         'db:repair'           => ['cmdDbRepair', 'Bring the schema back in line with struct.sql; never drops anything (--dry-run)'],
+        'search:reindex'      => ['cmdSearchReindex', 'Rebuild the listing filter index in the foreground ([--from=<id>])'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
         'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=, --listen)'],
@@ -558,24 +559,11 @@ class Cli
             return 1;
         }
 
-        try {
-            $release = DatabaseTools::upgradeLock(Connection::getInstance());
-        } catch (\Throwable $e) {
-            $release = null;
-        }
-        if ($release === null) {
+        $result = DatabaseTools::repair();
+        if ($result === null) {
             $this->err("An upgrade is running. Try again when it has finished.\n");
 
             return 1;
-        }
-        try {
-            $result = (new \mindstellar\database\SchemaReconciler(Connection::getInstance()))->repair();
-        } catch (\Throwable $e) {
-            $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
-
-            return 1;
-        } finally {
-            $release();
         }
 
         if ($result['ran'] === [] && $result['failed'] === []) {
@@ -597,6 +585,25 @@ class Cli
                 $this->err('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
             }
 
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Rebuild the listing filter index in the foreground; --from=<id> resumes after that listing.
+     *
+     * @return int 0 when done, 1 when the database stopped it
+     */
+    private function cmdSearchReindex(array $args): int
+    {
+        $from = isset($args['from']) ? (int) $args['from'] : 0;
+        try {
+            \mindstellar\search\FacetJobs::reindex($from, function (string $text): void {
+                $this->out($text . "\n");
+            });
+        } catch (\mindstellar\database\DbException $e) {
             return 1;
         }
 
