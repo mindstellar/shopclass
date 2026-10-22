@@ -189,14 +189,14 @@ FacetIndex::dropVariants($solo);
 pin('dropVariants with null drops every option row', [], $facet($solo));
 $admin->query("DELETE FROM {$p}t_item WHERE pk_i_id = $solo");
 
-harness_section('rewriteItem');
+harness_section('rebuild one listing');
 $admin->query("DELETE FROM {$p}t_item_meta");
 foreach ([[$drop, '', 'Red'], [$check, '', '1'], [$num, '', '7'], [$span, 'from', '1700000000'], [$span, 'to', '1700086400']] as [$f, $multi, $val]) {
     seed_exec($admin, "INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_multi, s_value) VALUES (?, ?, ?, ?)", 'iiss', [$item, $f, $multi, $val]);
 }
-FacetIndex::rewriteItem($item);
+FacetIndex::buildStep($item - 1, 1);
 $first = $facet($item);
-pin('rewriteItem builds field and option rows', [
+pin('a one-listing build step writes field and option rows', [
     "f$drop=Red|0|-",
     "f$check=1|0|-",
     "f$num=|0|7",
@@ -204,8 +204,8 @@ pin('rewriteItem builds field and option rows', [
     "f$span.to=|0|1700086400",
     "oColour=Blue|$v2|-", "oColour=Red|$v1|-", "oSize=L|$v2|-", "oSize=M|$v1|-",
 ], $first);
-FacetIndex::rewriteItem($item);
-pin('rewriteItem is idempotent', $first, $facet($item));
+FacetIndex::buildStep($item - 1, 1);
+pin('and can run twice', $first, $facet($item));
 
 harness_section('buildStep');
 $admin->query("DELETE FROM {$p}t_item_facet");
@@ -232,7 +232,6 @@ check('a field step leaves other keys alone', in_array('f999=keep|0|-', $facet($
 pin('buildStep past the last id gives null', null, FacetIndex::buildStep((int) end($more), 2));
 
 harness_section('readiness');
-pin('the table check sees the table', true, FacetIndex::tableExists());
 osc_set_preference(FacetIndex::PREF_READY, '0', 'osclass', 'BOOLEAN');
 pin('flag 0: not ready', false, FacetIndex::ready());
 osc_set_preference(FacetIndex::PREF_READY, '1', 'osclass', 'BOOLEAN');

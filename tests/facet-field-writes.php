@@ -255,7 +255,7 @@ pin('the facet row matches the committed meta', ["f$raced=New|-"], $facet($built
 
 harness_section('a save waits for a build in progress');
 \mindstellar\database\Db::beginTransaction();
-FacetIndex::rewriteItem($built);
+FacetIndex::buildStep($built - 1, 1);
 $run     = race_run($child, $db, ['replace', $built, $sue, $raced, 'Later']);
 $waiting = race_wait_for($db, '%REPLACE INTO%t_item_meta%');
 \mindstellar\database\Db::commit();

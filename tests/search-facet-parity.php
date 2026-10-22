@@ -97,7 +97,7 @@ foreach ($spec as $title => [$price, $meta, $rows]) {
             'fields'  => ['i_price' => ($r[4] ?? true) ? $price * 1000000 : null, 'i_stock' => $r[2], 'i_compare_price' => $r[3]],
         ], $rows));
     }
-    FacetIndex::rewriteItem($id);
+    FacetIndex::buildStep($id - 1, 1);
 }
 
 $key  = (new \mindstellar\apikey\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\apikey\Scopes(), new \mindstellar\utility\SystemClock()))

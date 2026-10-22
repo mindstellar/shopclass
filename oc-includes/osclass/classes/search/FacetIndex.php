@@ -214,16 +214,6 @@ final class FacetIndex
     }
 
     /**
-     * Rebuild one listing from t_item_meta and t_item_variant.
-     *
-     * @throws DbException
-     */
-    public static function rewriteItem(int $itemId): void
-    {
-        self::rewriteScoped($itemId, null);
-    }
-
-    /**
      * Rebuild the next listings after $after, or only one field's rows of them. Each listing is
      * its own transaction, so a save waits for one listing at most, never the whole batch.
      *
@@ -270,7 +260,7 @@ final class FacetIndex
         osc_set_preference(self::PREF_READY, '0', 'osclass', 'BOOLEAN');
     }
 
-    public static function tableExists(): bool
+    private static function tableExists(): bool
     {
         return (int) Db::scalar(
             'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',

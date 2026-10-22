@@ -290,7 +290,7 @@ foreach (['Tee' => 'Cotton', 'Polo' => 'Linen', 'Percent' => 'Wool'] as $title =
     seed_exec($admin, "INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) VALUES (?, ?, ?, '')", 'iis', [$shirt[$title], $field, $value]);
 }
 foreach ($shirt as $listingId) {
-    FacetIndex::rewriteItem($listingId);
+    FacetIndex::buildStep($listingId - 1, 1);
 }
 $byField = static fn (mixed $value): array => $inTees(['custom_field' => [(string) $field => $value]]);
 pin('the scalar form still works', ['Tee'], $byField('Cotton'));
