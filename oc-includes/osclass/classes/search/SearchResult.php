@@ -70,6 +70,19 @@ class SearchResult
         return $this->capped;
     }
 
+    /**
+     * The position of the last listing on this page, counting from 1.
+     * With a capped or uncounted total it comes from the page's own rows.
+     */
+    public function endOffset(int $page, int $pageSize): int
+    {
+        if ($this->capped || $this->total === null) {
+            return $page * $pageSize + count($this->items);
+        }
+
+        return min(($page + 1) * $pageSize, (int)$this->total);
+    }
+
     public function model(): \Search
     {
         return $this->model;

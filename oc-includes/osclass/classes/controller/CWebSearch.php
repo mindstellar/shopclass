@@ -249,8 +249,7 @@ class CWebSearch extends BaseModel
         }
 
         $this->_exportVariableToView('search_start', $page * $pageSize);
-        // Past a capped total the page still shows its own rows.
-        $this->_exportVariableToView('search_end', $result->totalCapped() ? $page * $pageSize + count($result->items()) : min(($page + 1) * $pageSize, $iTotalItems));
+        $this->_exportVariableToView('search_end', $result->endOffset($page, $pageSize));
         $this->_exportVariableToView('search_category', $criteria->categories());
         $this->_exportVariableToView('search_order_type', $criteria->orderType());
         $this->_exportVariableToView('search_order', $criteria->order());

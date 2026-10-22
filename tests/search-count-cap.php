@@ -120,6 +120,15 @@ $s = $fresh();
 $s->doSearch();
 pin('setting 10: doSearch() and count() stay exact (admin lists, alerts)', [12, false], [$s->count(), $s->totalCapped()]);
 
+harness_section('the last item on a page');
+$rows = static fn (int $n): array => array_fill(0, $n, ['pk_i_id' => 1]);
+$end  = static fn (array $items, ?int $total, bool $capped, int $page): int => (new \mindstellar\search\SearchResult($items, $total, new Search(), null, $capped))->endOffset($page, 5);
+pin('a full first page ends at 5', 5, $end($rows(5), 12, false, 0));
+pin('the last page ends at the total', 12, $end($rows(2), 12, false, 2));
+pin('a capped page past the cap ends at its own rows', 12, $end($rows(2), 10, true, 2));
+pin('a capped page before the cap ends at its own rows too', 5, $end($rows(5), 10, true, 0));
+pin('an uncounted page ends at its own rows', 8, $end($rows(3), null, false, 1));
+
 harness_section('theme helpers');
 View::getInstance()->_exportVariableToView('search_total_items', 1000);
 View::getInstance()->_exportVariableToView('search_total_capped', true);
