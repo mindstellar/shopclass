@@ -197,6 +197,16 @@ pin('an empty value is dropped, the filter is then off', ['Percent', 'Polo', 'Qu
 pin('an empty value beside a real one is dropped', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['', 'Cherry']]]));
 pin('two names that differ by case are one name, their values OR', ['Polo', 'Tee'], $inTees(['option' => ['Colour' => ['Navy'], 'COLOUR' => ['Sunflower']]]));
 pin('the 10-value cap holds after the merge', [], $inTees(['option' => ['Colour' => array_map(static fn (int $i): string => 'v' . $i, range(1, 9)), 'COLOUR' => ['v10', 'Cherry']]]));
+pin('a value both names ask for is counted once toward the cap', ['Polo', 'Tee'], $inTees(['option' => [
+    'Colour' => array_map(static fn (int $i): string => 'v' . $i, range(1, 9)),
+    'COLOUR' => array_merge(array_map(static fn (int $i): string => 'v' . $i, range(1, 9)), ['Cherry']),
+]]));
+$spellings = [];
+for ($i = 0; count($spellings) < 10; $i++) {
+    $spellings[implode('', array_map(static fn (string $c, int $n): string => ($i >> $n) & 1 ? strtoupper($c) : $c, str_split('colour'), range(0, 5)))] = ['Cherry'];
+}
+pin('names past the 10th asked are dropped, even when the first ten fold into one', ['Polo', 'Tee'], $inTees(['option' => $spellings + ['Size' => ['None']]]));
+pin('the 10th asked still counts', [], $inTees(['option' => array_slice($spellings, 0, 9, true) + ['Size' => ['None']]]));
 pin('a name that differs by an accent is one name too, as the tables compare them', ['Polo', 'Tee'], $inTees(['option' => ['Cólour' => ['Navy'], 'COLOUR' => ['Sunflower']]]));
 $legs = seed_category($admin, 'Legwear', null, $locale);
 VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Jeans', 10.0), [['options' => ['Waist Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
