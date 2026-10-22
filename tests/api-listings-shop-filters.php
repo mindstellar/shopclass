@@ -202,6 +202,8 @@ $legs = seed_category($admin, 'Legwear', null, $locale);
 VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Jeans', 10.0), [['options' => ['Waist Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
 VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Shorts', 10.0), [['options' => ['Size' => 'M'], 'fields' => ['i_stock' => 1]]]);
 pin('a name matches whole, not the end of a longer name', ['Shorts'], $bothWays(static fn (): array => $names($list(['option' => ['Size' => ['M']], 'category' => (string) $legs]))));
+VariantStore::saveSet(seed_item($admin, $legs, $sue, 'Numbered', 10.0), [['options' => ['12' => 'M'], 'fields' => ['i_stock' => 1]]]);
+pin('a number-like name (an int key in PHP) matches', ['Numbered'], $bothWays(static fn (): array => $names($list(['option' => ['12' => ['M']], 'category' => (string) $legs]))));
 pin('a listing with no option rows never matches', [], $bothWays(static fn (): array => $names($list(['option' => ['Colour' => ['Red']], 'category' => (string) $cat]))));
 pin('the total follows the filter', 2, $bothWays(static fn (): mixed => $list(['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees, 'count' => 'true'])->body()['meta']['total'] ?? null));
 $pairs = seed_category($admin, 'Pairs', null, $locale);

@@ -158,7 +158,6 @@ check('a name past 47 characters keeps the column length', mb_strlen(FacetIndex:
 check('two long names with one start get two keys', FacetIndex::optionKey($long . 'x') !== FacetIndex::optionKey($long . 'y'));
 pin('a long name differing only by case gets one key', strtolower(FacetIndex::optionKey($long)), strtolower(FacetIndex::optionKey(strtoupper($long))));
 pin('a name of 47 characters is kept whole', 'o' . str_repeat('b', 47), FacetIndex::optionKey(str_repeat('b', 47)));
-pin('a number-like name keeps its text', 'o12', FacetIndex::optionKey('12'));
 
 harness_section('variants');
 $rewrite = static function (int $itemId, array $rows): void {
