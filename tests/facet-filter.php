@@ -121,6 +121,7 @@ pin('a big bound reads back as the same double', 1.0E+25, (float) explode('d_num
 $covers = "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $f b ON b.fk_i_term_id = 182 AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= 1700000000"
     . ' WHERE a.fk_i_term_id = 181 AND a.d_number <= 1690000000)';
 pin('date interval covers, IN both ways', [$covers, $covers], FacetFilter::fieldCovers(181, 182, 1690000000, 1700000000));
+pin('a range or interval with no term is NONE both ways', array_fill(0, 3, [FacetFilter::NONE, FacetFilter::NONE]), [FacetFilter::fieldRange(null, 0, 1), FacetFilter::fieldCovers(181, null, 1, 2), FacetFilter::fieldCovers(null, 182, 1, 2)]);
 foreach (['an infinite bound' => static fn () => FacetFilter::fieldRange(16, 0, INF), 'a NaN bound' => static fn () => FacetFilter::fieldRange(16, NAN, 1)] as $label => $call) {
     try {
         $call();

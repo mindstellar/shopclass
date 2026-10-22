@@ -203,6 +203,7 @@ class SearchBuilder
             static fn ($key): bool => (string) (int) $key === (string) $key && in_array((int) $key, $fields, true)
         )));
 
+        // The t_item_meta SQL is the path while the index is not ready; it goes in 8.0.
         $facet = FacetIndex::ready();
         $terms = $facet ? FacetTerms::termIds(self::facetPairs($custom_fields, $types)) : array();
         $table = DB_TABLE_PREFIX . 't_item_meta';
@@ -266,7 +267,7 @@ class SearchBuilder
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $start, 'to' => $end),
                             ...($facet
-                                ? self::facetRange($terms, $id, $start, $end)
+                                ? FacetFilter::fieldRange($terms[FacetIndex::key($id)][''] ?? null, $start, $end)
                                 : [$in . $by . $table . '.s_value >= ' . $start . ' AND ' . $table . '.s_value <= ' . $end . ')'])
                         );
                     }
@@ -284,7 +285,7 @@ class SearchBuilder
                             $id,
                             array('type' => $type, 'op' => 'covers', 'from' => $from, 'to' => $to),
                             ...($facet
-                                ? self::facetCovers($terms, $id, $from, $to)
+                                ? FacetFilter::fieldCovers($terms[FacetIndex::key($id, 'from')][''] ?? null, $terms[FacetIndex::key($id, 'to')][''] ?? null, $from, $to)
                                 : [$in . 'select a.fk_i_item_id from (' . $sql . ') a where a.fk_i_item_id IN (' . $sql1 . '))'])
                         );
                     }
@@ -300,7 +301,7 @@ class SearchBuilder
                             $id,
                             array('type' => $type, 'op' => 'between', 'from' => $min, 'to' => $max),
                             ...($facet
-                                ? self::facetRange($terms, $id, $min, $max)
+                                ? FacetFilter::fieldRange($terms[FacetIndex::key($id)][''] ?? null, $min, $max)
                                 : [$in . $by . $table . '.s_value >= ' . $min . ' AND ' . $table . '.s_value <= ' . $max . ')'])
                         );
                     }
@@ -387,35 +388,6 @@ class SearchBuilder
         }
 
         return FacetFilter::fieldIn($found);
-    }
-
-    /**
-     * A number or date range on the filter index: page and count text.
-     *
-     * @param array<string,array<int|string,int>> $terms from facetPairs()
-     *
-     * @return array{0:string,1:string}
-     */
-    private static function facetRange(array $terms, int $fieldId, float $min, float $max): array
-    {
-        $term = $terms[FacetIndex::key($fieldId)][''] ?? null;
-
-        return $term === null ? [FacetFilter::NONE, FacetFilter::NONE] : FacetFilter::fieldRange($term, $min, $max);
-    }
-
-    /**
-     * A date interval covering from and to on the filter index: page and count text.
-     *
-     * @param array<string,array<int|string,int>> $terms from facetPairs()
-     *
-     * @return array{0:string,1:string}
-     */
-    private static function facetCovers(array $terms, int $fieldId, int $from, int $to): array
-    {
-        $start = $terms[FacetIndex::key($fieldId, 'from')][''] ?? null;
-        $end   = $terms[FacetIndex::key($fieldId, 'to')][''] ?? null;
-
-        return $start === null || $end === null ? [FacetFilter::NONE, FacetFilter::NONE] : FacetFilter::fieldCovers($start, $end, $from, $to);
     }
 
     /**

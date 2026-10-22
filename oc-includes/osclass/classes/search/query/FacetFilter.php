@@ -113,11 +113,14 @@ final class FacetFilter
      * A number or date field is within min and max, both included. The range reads the primary
      * key, so page and count share it.
      *
-     * @return array{0:string,1:string} page text, count text
+     * @return array{0:string,1:string} page text, count text; NONE for no term
      * @throws InvalidArgumentException for a bound that is not finite
      */
-    public static function fieldRange(int $termId, float $min, float $max): array
+    public static function fieldRange(?int $termId, float $min, float $max): array
     {
+        if ($termId === null) {
+            return [self::NONE, self::NONE];
+        }
         $sql = ListingQuery::tableName() . '.pk_i_id IN (SELECT fk_i_item_id FROM ' . FacetIndex::tableName()
             . ' WHERE fk_i_term_id = ' . $termId . ' AND d_number >= ' . self::number($min) . ' AND d_number <= ' . self::number($max) . ')';
 
@@ -128,10 +131,13 @@ final class FacetFilter
      * A date interval field covers the asked interval: it starts on or before $from and ends
      * on or after $to.
      *
-     * @return array{0:string,1:string} page text, count text
+     * @return array{0:string,1:string} page text, count text; NONE when either term is missing
      */
-    public static function fieldCovers(int $fromTermId, int $toTermId, int $from, int $to): array
+    public static function fieldCovers(?int $fromTermId, ?int $toTermId, int $from, int $to): array
     {
+        if ($fromTermId === null || $toTermId === null) {
+            return [self::NONE, self::NONE];
+        }
         $facet = FacetIndex::tableName();
         $sql   = ListingQuery::tableName() . '.pk_i_id IN (SELECT a.fk_i_item_id FROM ' . $facet . ' a'
             . ' JOIN ' . $facet . ' b ON b.fk_i_term_id = ' . $toTermId . ' AND b.fk_i_item_id = a.fk_i_item_id AND b.d_number >= ' . $to
