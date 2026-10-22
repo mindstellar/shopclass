@@ -32,7 +32,7 @@ final class FacetJobs
 
     public static function queueBuild(): bool
     {
-        return osc_job_ensure(FacetIndex::JOB_BUILD, array('after' => 0));
+        return JobQueue::getInstance()->ensure(FacetIndex::JOB_BUILD, array('after' => 0));
     }
 
     /**

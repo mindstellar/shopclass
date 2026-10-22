@@ -322,7 +322,7 @@ final class DatabaseTools
     }
 
     /**
-     * The table a CREATE TABLE statement makes, when it is one of this site's; else null.
+     * The table a CREATE TABLE statement makes, when it is one of this site's; else null. The name may be quoted, as in a dump, or bare, as the reconciler writes it.
      *
      * @param string $statement
      *
@@ -330,7 +330,7 @@ final class DatabaseTools
      */
     public static function createdTable(string $statement): ?string
     {
-        if (!preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`([A-Za-z0-9_]+)`/i', $statement, $m)) {
+        if (!preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([A-Za-z0-9_]+)`?\s*\(/i', $statement, $m)) {
             return null;
         }
         $prefix = defined('DB_TABLE_PREFIX') ? (string) DB_TABLE_PREFIX : '';
