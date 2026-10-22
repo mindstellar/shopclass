@@ -90,6 +90,7 @@ pin('the listings are indexed', $expected, $norm($rows()));
 pin('the flag is on', '1', $pref('facet_ready'));
 check('the build time is a date, as markReady() writes it', (bool) preg_match('/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/', (string) $pref('facet_built_at')));
 pin('no background job', [], $jobs());
+pin('a pack job is queued, as a job build queues one', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . FacetIndex::JOB_PACK . "' AND s_status = 'pending'")->fetch_row()[0]);
 
 harness_section('second run');
 $migration->up($conn);
