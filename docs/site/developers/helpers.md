@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1215 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -863,7 +863,7 @@ Core defines 1215 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (135)
+### hPreference (136)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -975,6 +975,7 @@ Core defines 1215 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_rewrite_rules()` | Gets the rewrite rules (generated via generate_rules.php at root folder) |
 | `osc_save_latest_searches()` | Gets if save searches is enabled or not |
 | `osc_save_webp()` | Whether new photos are stored as WebP. Only when the server can write WebP. |
+| `osc_search_count_cap()` | The most matches a visitor or API search counts before it shows "1,000+" instead of the total. 0 counts every match; the most it can be is Search::COUNT_CAP_MAX. |
 | `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not |
 | `osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')` | generic function to insert/update preferences |
 | `osc_site_mode()` | What the site is for: 'classifieds' (the default) or 'shop'. |
@@ -1092,7 +1093,7 @@ Core defines 1215 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_sanitize_url($value)` | Sanitize a website URL. |
 | `osc_sanitize_username($value)` | Sanitize a username |
 
-### hSearch (73)
+### hSearch (75)
 
 `oc-includes/osclass/helpers/hSearch.php`
 
@@ -1165,8 +1166,10 @@ Core defines 1215 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_search_start()` | Gets current search start item record |
 | `osc_search_suggest_attributes($limit = 5)` | The attributes that turn a search input into a suggestion box, with the group headings in the visitor's language. Use it inside the input tag: `<input name="sPattern" <?php echo osc_search_suggest_attributes(); ?>>`. |
 | `osc_search_suggestion()` | A corrected query from a search engine plugin ("Did you mean ..."). Plain text: escape it. |
-| `osc_search_total_items()` | Gets current search total items |
+| `osc_search_total_capped()` | Whether the search stopped counting at the limit set in Listings → Settings, so there are more matches than osc_search_total_items() gives. |
+| `osc_search_total_items()` | Gets current search total items. When the count stopped at the search count limit it is that limit; osc_search_total_capped() says so and osc_search_total_text() shows it as "1,000+". |
 | `osc_search_total_pages()` | Gets total pages of search |
+| `osc_search_total_text()` | The search total for display, in the locale's number format: "1,234", or "1,000+" when the count stopped at its cap. Escape it like any other text. |
 | `osc_search_url($params = null)` | Gets search url given params |
 | `osc_search_user()` | Gets current search users |
 | `osc_subscribe_alert(string $token, string $email)` | Subscribe an email to a saved search. The owner is the signed-in user, never the caller: a guest gets a confirmation email, a signed-in active user is subscribed at once. |

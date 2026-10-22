@@ -208,6 +208,8 @@ slower. A plugin that writes
 `t_item_meta` with raw SQL leaves the index stale until you run `php oc-cli.php search:reindex` or use **Rebuild filter index** under
 **Tools → System info → Database**.
 
+Updated sites keep exact search counts until you change **Listings → Settings → Search count limit**.
+
 ### 4. Check the site
 
 Load the front page and the admin panel. If you disabled friendly URLs before

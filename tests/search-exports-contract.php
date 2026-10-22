@@ -192,7 +192,7 @@ pin('view exports', array(
     'search_uri', 'canonical', 'search_start', 'search_end', 'search_category', 'search_order_type',
     'search_order', 'search_radius', 'search_near', 'search_pattern', 'search_from_user', 'search_total_pages', 'search_page',
     'search_has_pic', 'search_only_premium', 'search_country', 'search_region', 'search_city',
-    'search_price_min', 'search_price_max', 'search_total_items', 'items', 'search_show_as', 'search', 'search_extras',
+    'search_price_min', 'search_price_max', 'search_total_items', 'search_total_capped', 'items', 'search_show_as', 'search', 'search_extras',
     'search_alert', 'search_alert_subscribed', 'meta_noindex', 'canonical',
 ), $exports);
 

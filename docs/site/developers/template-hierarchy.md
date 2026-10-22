@@ -25,6 +25,8 @@ search is filtered to exactly one category.
 Ship `item-12.php` and listings in category 12 render through it. Ship nothing
 and every page resolves exactly as before.
 
+In `search.php`, print `osc_search_total_text()` instead of `osc_search_total_items()`, so a capped count reads "1,000+"; wrap it in `function_exists()` if the theme also runs on 7.0.
+
 ## Locating a view yourself
 
 ```php

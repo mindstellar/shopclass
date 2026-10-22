@@ -140,6 +140,7 @@ optional `'model'` Search. Core then skips its own result cache. Arguments: `nul
 the search parameters, the context (`'request'` for the search page, `'api'` for the REST API,
 `'admin'` for the admin Listings screen) and
 `$bare`. When `$bare` is true, return plain `t_item` rows: the caller adds the details itself.
+When core counts a search page or API search past the search count limit, the total plugins and themes see is that limit.
 Read what to search for with `$search->filters()` (7.0+). It returns a `SearchFilters` copy with
 `categories`, `priceMin`, `priceMax`, `pattern`, `locales`, `withPicture`, `onlyPremium`,
 `locations` (`city_areas`, `cities`, `regions`, `countries`, each a list of

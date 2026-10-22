@@ -96,7 +96,7 @@ class CWebSearch extends BaseModel
         }
         $this->recordLatestSearch($criteria);
 
-        $result = \mindstellar\search\SearchRunner::run($criteria, $this->mSearch, 'request');
+        $result = \mindstellar\search\SearchRunner::run($criteria, $this->mSearch, 'request', null, true, null, null, null, osc_search_count_cap());
         osc_run_hook('search', $this->mSearch);
 
         // A page past the last one, when there are results, is a 404 (page 1 still shows "no results").
@@ -249,7 +249,7 @@ class CWebSearch extends BaseModel
         }
 
         $this->_exportVariableToView('search_start', $page * $pageSize);
-        $this->_exportVariableToView('search_end', min(($page + 1) * $pageSize, $iTotalItems));
+        $this->_exportVariableToView('search_end', $result->endOffset($page, $pageSize));
         $this->_exportVariableToView('search_category', $criteria->categories());
         $this->_exportVariableToView('search_order_type', $criteria->orderType());
         $this->_exportVariableToView('search_order', $criteria->order());
@@ -269,6 +269,7 @@ class CWebSearch extends BaseModel
         $this->_exportVariableToView('search_price_min', $criteria->priceMin());
         $this->_exportVariableToView('search_price_max', $criteria->priceMax());
         $this->_exportVariableToView('search_total_items', $iTotalItems);
+        $this->_exportVariableToView('search_total_capped', $result->totalCapped());
         $this->_exportVariableToView('items', $result->items());
         $this->_exportVariableToView('search_show_as', $criteria->showAs());
 

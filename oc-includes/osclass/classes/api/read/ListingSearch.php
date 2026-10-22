@@ -116,7 +116,8 @@ final class ListingSearch
             $pager->counts(),
             $params,
             fn (array $rows): array => $this->reader->extend($rows, $context),
-            $this->reader->extendKey($context)
+            $this->reader->extendKey($context),
+            osc_search_count_cap()
         );
 
         return $pager->respond(
@@ -124,7 +125,7 @@ final class ListingSearch
             static fn (): ?int => $result->total(),
             fn (array $page): array => $this->reader->many($page, $context),
             $this->links,
-            self::extrasMeta($result->extras())
+            ($pager->counts() ? ['total_capped' => $result->totalCapped()] : []) + self::extrasMeta($result->extras())
         );
     }
 

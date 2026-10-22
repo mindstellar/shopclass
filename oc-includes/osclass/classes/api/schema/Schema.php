@@ -118,6 +118,7 @@ final class Schema
                 'limit' => ['type' => 'integer'],
                 'page'  => ['type' => 'integer', 'description' => 'The page number, when the request sent `page`.'],
                 'pages' => ['type' => 'integer', 'description' => 'How many pages the matches fill, when the request sent `page` and `count=true`.'],
+                'total_capped' => ['type' => 'boolean', 'description' => 'Listing search only, with `count=true`: true when counting stopped at the site\'s search count limit, so `total` is that limit and more listings match.'],
                 'truncated' => ['type' => 'boolean', 'description' => 'Present and true when more matches exist but paging stops here: links.next is null. Narrow the filters, or sort by created or id.'],
                 'facets'     => self::object([
                     'category' => ['type' => 'object', 'additionalProperties' => ['type' => 'integer'], 'description' => 'Category id => listings found in it, as the search engine counted them.'],

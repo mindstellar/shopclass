@@ -30,10 +30,12 @@ class SearchRunner
      *                                                 of Item::extendData(); the cache then keeps the bare rows
      * @param string|null                     $extendKey names what $extend makes (its locale and options); with
      *                                                 it the cache keeps the extended rows, as it does Item::extendData()'s
+     * @param int                             $countCap above 0 the total stops at this many and the result says it was
+     *                                                 capped; 0 counts every match
      *
      * @return SearchResult
      */
-    public static function run(SearchCriteria $criteria, \Search $search, string $context, ?callable $shape = null, bool $count = true, ?array $params = null, ?callable $extend = null, ?string $extendKey = null): SearchResult
+    public static function run(SearchCriteria $criteria, \Search $search, string $context, ?callable $shape = null, bool $count = true, ?array $params = null, ?callable $extend = null, ?string $extendKey = null, int $countCap = 0): SearchResult
     {
         SearchBuilder::apply($criteria, $search);
 
@@ -56,6 +58,7 @@ class SearchRunner
         $extras   = null;
         $snippets = array();
         $extended = false;
+        $capped   = false;
         if ($backend !== null) {
             $aItems = $backend['items'];
             $total = (int)($backend['total'] ?? count($aItems));
@@ -75,7 +78,8 @@ class SearchRunner
 
                 return $extended && $rows !== array() ? $extend($rows) : $rows;
             });
-            $total    = $count ? $search->countMatches(true) : null;
+            $total    = $count ? $search->countMatches(true, $countCap) : null;
+            $capped   = $count && $search->totalCapped();
         }
         if ($extend !== null && !$extended && $aItems !== array()) {
             $aItems = $extend($aItems);
@@ -87,7 +91,7 @@ class SearchRunner
         // Highlight/urgent/bump state for the whole page in one query.
         osc_prime_item_upgrades($aItems);
 
-        return new SearchResult($aItems, $total, $model, $extras);
+        return new SearchResult($aItems, $total, $model, $extras, $capped);
     }
 
     /**

@@ -293,13 +293,40 @@ function osc_search_price_min()
 }
 
 /**
- * Gets current search total items
+ * Gets current search total items. When the count stopped at the search count limit it is that
+ * limit; osc_search_total_capped() says so and osc_search_total_text() shows it as "1,000+".
  *
  * @return int
  */
 function osc_search_total_items()
 {
     return View::getInstance()->_get('search_total_items');
+}
+
+/**
+ * Whether the search stopped counting at the limit set in Listings → Settings, so there are
+ * more matches than osc_search_total_items() gives.
+ *
+ * @return bool
+ * @since 7.1.0
+ */
+function osc_search_total_capped(): bool
+{
+    return (bool) View::getInstance()->_get('search_total_capped');
+}
+
+/**
+ * The search total for display, in the locale's number format: "1,234", or "1,000+" when
+ * the count stopped at its cap. Escape it like any other text.
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_search_total_text(): string
+{
+    $text = number_format((int) osc_search_total_items(), 0, '.', (string) osc_locale_thousands_sep());
+
+    return osc_search_total_capped() ? sprintf(__('%s+'), $text) : $text;
 }
 
 /**

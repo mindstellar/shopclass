@@ -24,6 +24,7 @@ export search_city
 export search_price_min
 export search_price_max
 export search_total_items
+export search_total_capped
 export items
 export search_show_as
 export search

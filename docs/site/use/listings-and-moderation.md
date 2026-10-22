@@ -21,6 +21,7 @@ Set them before you have users, not after.
 | **Users have to validate their listings** | A new listing stays inactive until the user validates it, with a threshold: **After *n* validated listings the user doesn't need to validate the listings any more**. So regulars post freely while newcomers are checked. |
 | **Logged in users don't need to validate their listings** | Skips that validation step for anyone who is logged in. |
 | **Warn about expiration** | Days of notice a seller gets before a listing expires. 0 sends no warning. |
+| **Search count limit** | The most matches a search page or the API counts. Past it the total shows as "1,000+", which keeps big sites fast. 0 counts every match. New sites start at 1000; updated sites start at 0. |
 | **Attach *n* images per listing** | The photo limit. 0 means no limit. |
 | **Title length** and **Description length** | The most characters a seller may type. The page refuses a length outside the allowed range and shows why. |
 | **Show reCAPTCHA in add/edit listing form** | A captcha on the posting form, once reCAPTCHA is set up. |

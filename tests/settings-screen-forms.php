@@ -567,6 +567,7 @@ pin(
         'notify_contact_item'         => 'osclass/notify_contact_item',
         'notify_contact_friends'      => 'osclass/notify_contact_friends',
         'warn_expiration'             => 'osclass/warn_expiration',
+        'search_count_cap'            => 'osclass/search_count_cap',
         'max_chars_per_title'         => 'osclass/title_character_length',
         'max_chars_per_description'   => 'osclass/description_character_length',
         'tinymce'                     => 'osclass/tinymce_frontend',
@@ -1021,6 +1022,11 @@ pin('a title length past the column is refused with its message', array('warning
 pin('and nothing was written', '0', pref($admin, 'items_wait_time')[0] ?? null);
 $run = drive('CAdminItems', 'settings_post', array('max_chars_per_title' => '0') + $items);
 pin('so is a zero title length', array('warning:Titles can be 1 to 100 characters.'), flashed($run));
+
+drive('CAdminItems', 'settings_post', array('search_count_cap' => '5000000') + $items);
+pin('a search count limit past the most is saved as the most', '100000', pref($admin, 'search_count_cap')[0] ?? null);
+drive('CAdminItems', 'settings_post', array('search_count_cap' => '-3') + $items);
+pin('a negative search count limit is saved as 0', '0', pref($admin, 'search_count_cap')[0] ?? null);
 
 harness_section('user settings');
 

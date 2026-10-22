@@ -606,6 +606,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/search/SearchSuggestions.php
+#: oc-includes/osclass/functions.php
 msgid "%s listing"
 msgid_plural "%s listings"
 msgstr[0] ""
@@ -661,6 +662,10 @@ msgstr[1] ""
 
 #: oc-includes/osclass/classes/Breadcrumb.php
 msgid "%s's profile"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hSearch.php
+msgid "%s+"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -1059,6 +1064,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "About this order"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"Above this number, search shows the limit with a + sign, which is faster on "
+"big sites. 0 counts every listing."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -10576,6 +10587,10 @@ msgstr ""
 msgid "Search comments"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Search count limit"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Search countries"
 msgstr ""
@@ -15090,6 +15105,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "made before a restore"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "matches"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
