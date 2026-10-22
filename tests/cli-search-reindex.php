@@ -98,6 +98,7 @@ try {
 }
 $admin->query("RENAME TABLE {$facet}_away TO $facet");
 check('a failed rewrite throws', $failed !== null);
+check('with the server\'s reason', $failed !== null && str_contains($failed->getMessage(), "doesn't exist"));
 pin('and still puts the session lock wait back', 77, $session());
 
 harness_section('packFits');

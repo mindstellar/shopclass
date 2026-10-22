@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\search;
 
 use Field;
+use mindstellar\database\Connection;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\fields\FieldTypeRegistry;
@@ -380,7 +381,7 @@ final class FacetIndex
      * for a lock. Skipped inside a transaction, which the statement would commit.
      *
      * @return bool true when the table was rewritten, false inside a transaction
-     * @throws DbException when the rewrite fails, e.g. on a lock wait, a full online log or a full disk
+     * @throws DbException with the server's reason when the rewrite fails, e.g. on a lock wait, a full online log or a full disk
      */
     public static function pack(): bool
     {
@@ -391,6 +392,9 @@ final class FacetIndex
         Db::execute('SET SESSION lock_wait_timeout = ' . self::PACK_LOCK_WAIT);
         try {
             Db::execute('ALTER TABLE ' . self::tableName() . ' FORCE, ALGORITHM=INPLACE, LOCK=NONE');
+        } catch (DbException $e) {
+            // The server's text gives the reason, e.g. a lock wait, a full online log or a rebuild that needs a lock.
+            throw new DbException(Connection::getInstance()->lastError() ?: $e->getMessage(), $e->getCode(), $e);
         } finally {
             Db::execute('SET SESSION lock_wait_timeout = ' . $wait);
         }
