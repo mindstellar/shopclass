@@ -1119,13 +1119,21 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function facetEnvironment(): array
     {
+        $ready = \mindstellar\search\FacetIndex::ready();
+        try {
+            $missing = $ready ? \mindstellar\search\FacetIndex::missingRows() : null;
+        } catch (\Throwable $e) {
+            $missing = null;
+        }
+
         return array(
-            'facet_ready'     => \mindstellar\search\FacetIndex::ready(),
+            'facet_ready'     => $ready,
             'facet_built_at'  => (string) osc_get_preference(\mindstellar\search\FacetIndex::PREF_BUILT, 'osclass'),
             'facet_jobs'      => \mindstellar\search\FacetJobs::status(),
             'facet_listings'  => DatabaseTools::listingCount(),
             'facet_auto_cron' => osc_auto_cron(),
             'facet_now'       => time(),
+            'facet_missing'   => $missing,
         );
     }
 

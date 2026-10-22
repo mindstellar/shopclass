@@ -439,6 +439,12 @@ msgstr[1] ""
 msgid "%d unsaved changes"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid ""
+"%d values of the newest listings are missing from it, likely written to the "
+"database directly. Rebuild it."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "%d widget"
 msgid_plural "%d widgets"

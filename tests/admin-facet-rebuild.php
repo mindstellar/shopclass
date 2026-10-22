@@ -69,6 +69,9 @@ pin('a queued build wins over an older failure', 'building', $status(array('face
 pin('a one-field rebuild counts as building', array('building', 'Rebuilding a changed field: 6 of 10 listings done'), array_values(array_intersect_key($status(array(
     'facet_jobs' => array(array('type' => FacetIndex::JOB_FIELD, 'status' => 'pending', 'payload' => array('field' => 7, 'after' => 6), 'error' => '', 'created' => '2026-10-21 10:00:00')),
 )), array('state' => 1, 'text' => 1))));
+pin('values missing from a ready index ask for a rebuild', array('ready', '3 values of the newest listings are missing from it, likely written to the database directly. Rebuild it.'), array_values(array_intersect_key($status(array(
+    'facet_ready' => true, 'facet_missing' => 3,
+)), array('state' => 1, 'note' => 1))));
 pin('a failed pack is not a failed build', 'missing', $status(array('facet_jobs' => array(array('type' => FacetIndex::JOB_PACK) + $failed)))['state']);
 check('the template prints the note through osc_esc_html()', str_contains((string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/system-info/database.php'), "osc_esc_html(\$facet['note'])"));
 

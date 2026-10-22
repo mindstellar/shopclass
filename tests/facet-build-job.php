@@ -132,6 +132,15 @@ check('the last batch queues the pack job, which rewrites the table', $tableId()
 pin('and the pack job is done', [], $jobs(FacetIndex::JOB_PACK));
 pin('the last batch prunes it', 0, $orphans());
 pin('every listing has both rows', 2 * $total, $count());
+pin('the drift check finds nothing missing', 0, FacetIndex::missingRows());
+$last = (int) end($ids);
+$admin->query("DELETE FROM $facet WHERE fk_i_item_id IN ($last, {$ids[0]})");
+pin('it finds the values of a newest listing with no rows, not of an old one', 2, FacetIndex::missingRows());
+$admin->query("UPDATE {$p}t_item_meta SET s_value = '0' WHERE fk_i_item_id = $last AND fk_i_field_id = $gift");
+pin('an unticked checkbox needs no row', 1, FacetIndex::missingRows());
+$admin->query("UPDATE {$p}t_item_meta SET s_value = '1' WHERE fk_i_item_id = $last AND fk_i_field_id = $gift");
+FacetIndex::buildStep($last - 1, 1);
+FacetIndex::buildStep($ids[0] - 1, 1);
 pin('the flag is on', '1', $pref('facet_ready'));
 check('the build time is set', (int) $pref('facet_built_at') > 0);
 

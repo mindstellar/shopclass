@@ -282,6 +282,24 @@ final class FacetIndex
         return (string) osc_get_preference(self::PREF_BUILT, 'osclass') !== '';
     }
 
+    /**
+     * Choice and checkbox values of the newest $listings listings that have no index row, in one
+     * bounded query. More than 0 means a write reached t_item_meta without passing the writers.
+     *
+     * @throws DbException
+     */
+    public static function missingRows(int $listings = 200): int
+    {
+        return (int) Db::scalar(
+            'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item_meta m JOIN ' . DB_TABLE_PREFIX . 't_meta_fields f ON f.pk_i_id = m.fk_i_field_id'
+            . ' WHERE m.fk_i_item_id > (SELECT COALESCE(MAX(pk_i_id), 0) - ? FROM ' . DB_TABLE_PREFIX . "t_item) AND m.s_multi = ''"
+            . " AND ((f.e_type IN ('DROPDOWN', 'RADIO') AND TRIM(m.s_value) <> '') OR (f.e_type = 'CHECKBOX' AND TRIM(m.s_value) = '1'))"
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . self::tableName() . ' x JOIN ' . FacetTerms::tableName() . ' t ON t.pk_i_id = x.fk_i_term_id'
+            . " WHERE x.fk_i_item_id = m.fk_i_item_id AND t.s_key = CONCAT('f', m.fk_i_field_id))",
+            [max(1, $listings)]
+        );
+    }
+
     private static function tableExists(): bool
     {
         return (int) Db::scalar(

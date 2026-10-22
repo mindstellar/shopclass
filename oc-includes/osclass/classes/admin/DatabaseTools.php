@@ -456,7 +456,8 @@ final class DatabaseTools
      * The state of the listing filter index for the Database tab, with a note on a waiting or failed build.
      *
      * @param array<string,mixed> $env facet_ready, facet_built_at, facet_jobs (FacetJobs::status()),
-     *                                 facet_listings, facet_auto_cron, facet_now (a timestamp)
+     *                                 facet_listings, facet_auto_cron, facet_now (a timestamp),
+     *                                 facet_missing (FacetIndex::missingRows(), null when unread)
      *
      * @return array{state:string,text:string,note:string}
      */
@@ -499,6 +500,11 @@ final class DatabaseTools
         }
         if (!empty($env['facet_ready'])) {
             $built = (string) ($env['facet_built_at'] ?? '');
+
+            $missing = (int) ($env['facet_missing'] ?? 0);
+            if ($error === '' && $missing > 0) {
+                $error = sprintf(__('%d values of the newest listings are missing from it, likely written to the database directly. Rebuild it.'), $missing);
+            }
 
             return array(
                 'state' => 'ready',
