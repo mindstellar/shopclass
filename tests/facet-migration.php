@@ -11,7 +11,8 @@
 /**
  * Migration 0083 (the listing filter index): both tables (terms and rows) come back after a
  * drop, existing listings are indexed and the ready flag is set, a second run changes nothing
- * and never lowers the flag, and a site past the inline limit queues the background build instead.
+ * and never lowers the flag, a site past the inline limit queues the background build instead, and the first
+ * draft table is dropped once searches have left it.
  *
  * Usage: php tests/facet-migration.php
  */
@@ -143,5 +144,31 @@ pin('time spent before the build counts too', [['after' => $items[2]]], array_ma
 pin('the clock is read every 20 listings', 20, $migration::INLINE_BATCH);
 
 pin('the inline limit is 5000', 5000, $migration::INLINE_LIMIT);
+
+harness_section('the first draft table');
+$draft = static function () use ($admin, $facet, $reset): void {
+    $reset();
+    $admin->query("CREATE TABLE $facet (pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, s_key VARCHAR(48) NOT NULL, s_value VARCHAR(191) NOT NULL, fk_i_item_id INT UNSIGNED NOT NULL) ENGINE=InnoDB");
+    $admin->query("INSERT INTO $facet (s_key, s_value, fk_i_item_id) VALUES ('old', 'row', 1)");
+};
+$draft();
+$migration->up($conn);
+pin('is dropped for the new one, and the listings indexed', [$expected, '1'], [$norm($rows()), $pref('facet_ready')]);
+check('with the term column', str_contains($schema()[1], '`fk_i_term_id`'));
+
+$draft();
+$admin->query("INSERT INTO {$p}t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'facet_ready', '1', 'BOOLEAN'), ('osclass', 'facet_built_at', '2026-10-01 00:00:00', 'STRING')");
+// A table pointing at the draft makes its drop fail, so the flag shows what ran before it.
+$admin->query("CREATE TABLE {$p}t_draft_ref (fk_i_id INT UNSIGNED NOT NULL, FOREIGN KEY (fk_i_id) REFERENCES $facet (pk_i_id)) ENGINE=InnoDB");
+$threw = false;
+try {
+    $migration->up($conn);
+} catch (\mindstellar\database\DbException $e) {
+    $threw = true;
+}
+$admin->query("DROP TABLE {$p}t_draft_ref");
+pin('searches leave the index before the drop', [true, '0', ''], [$threw, $pref('facet_ready'), $pref('facet_built_at')]);
+$reset();
+$migration->up($conn);
 
 exit(harness_result());

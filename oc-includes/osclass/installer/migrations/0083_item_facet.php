@@ -39,7 +39,9 @@ return new class () implements MigrationInterface {
         $started = microtime(true);
         $existed = $conn->selectOne('SHOW TABLES LIKE ?', array(DB_TABLE_PREFIX . 't_item_facet')) !== null;
         if ($existed && $conn->selectOne('SHOW COLUMNS FROM ' . DB_TABLE_PREFIX . "t_item_facet LIKE 'fk_i_term_id'") === null) {
-            // The first draft of this table kept the key and value in each row. The index only mirrors other tables.
+            // The first draft of this table kept the key and value in each row. The index only mirrors other tables, and searches leave it first.
+            $this->setPreference($conn, FacetIndex::PREF_READY, '0', 'BOOLEAN');
+            $this->setPreference($conn, FacetIndex::PREF_BUILT, '', 'STRING');
             $conn->execute('DROP TABLE ' . DB_TABLE_PREFIX . 't_item_facet');
             $existed = false;
         }
