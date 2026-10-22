@@ -84,10 +84,8 @@ return new class () implements MigrationInterface {
     }
 
     /**
-     * Index every listing here when the site has at most $inlineLimit of them, else queue the
-     * background build. Does nothing once the index is marked ready, unless the table is empty
-     * while listings exist: a flag restored from a backup says nothing about this table. Each listing
-     * is written whole and the writers keep done ones fresh, so a run killed partway resumes after the cursor.
+     * Index every listing here when the site has at most $inlineLimit of them, else queue the background
+     * build; a run killed partway resumes after CURSOR. Skipped once marked ready, unless the table is empty while listings exist.
      *
      * @param Connection $conn
      * @param int        $inlineLimit

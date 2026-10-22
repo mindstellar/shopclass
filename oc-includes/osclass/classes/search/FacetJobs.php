@@ -100,9 +100,8 @@ final class FacetJobs
     }
 
     /**
-     * The end of a full build: drop the terms no row names, set the ready flag and queue the pack,
-     * unless the caller packs itself. While a one-field rebuild is queued the flag stays off, and that job's end sets it.
-     * Failed build and field jobs are dropped, as this build rewrote what they missed.
+     * The end of a full build: drop unused terms and failed build jobs, and queue the pack unless the caller packs itself.
+     * The ready flag is set here, or by the last one-field rebuild when one is queued.
      *
      * @throws DbException
      */
