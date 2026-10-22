@@ -324,8 +324,7 @@ function osc_search_total_capped(): bool
  */
 function osc_search_total_text(): string
 {
-    $sep  = function_exists('osc_locale_thousands_sep') ? (string) osc_locale_thousands_sep() : ',';
-    $text = number_format((int) osc_search_total_items(), 0, '.', $sep);
+    $text = number_format((int) osc_search_total_items(), 0, '.', (string) osc_locale_thousands_sep());
 
     return osc_search_total_capped() ? sprintf(__('%s+'), $text) : $text;
 }
