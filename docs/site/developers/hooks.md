@@ -44,6 +44,10 @@ osc_add_filter('item_title', function ($title, $item) {
 
 The filtered value is always the first argument. Anything else is context.
 
+`sql_search_conditions` runs twice per search: once for the page list, then for the count list. The count list
+can carry different text for a core condition (an `IN` form where the page list has a per-row test), so match
+core conditions by text with care.
+
 ## Priority
 
 Lower runs first. The default is `5`.
