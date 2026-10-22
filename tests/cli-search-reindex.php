@@ -101,6 +101,17 @@ check('a failed rewrite throws', $failed !== null);
 check('with the server\'s reason', $failed !== null && str_contains($failed->getMessage(), "doesn't exist"));
 pin('and still puts the session lock wait back', 77, $session());
 
+// A FULLTEXT index cannot be rebuilt without a lock, so only the online options make the rewrite refuse.
+$admin->query("ALTER TABLE $facet ADD COLUMN s_probe VARCHAR(10) NULL, ADD FULLTEXT INDEX idx_probe (s_probe)");
+$refused = '';
+try {
+    FacetIndex::pack();
+} catch (\mindstellar\database\DbException $e) {
+    $refused = $e->getMessage();
+}
+$admin->query("ALTER TABLE $facet DROP INDEX idx_probe, DROP COLUMN s_probe");
+check('a rewrite that cannot run online fails rather than locking the table', str_contains($refused, 'is not supported'));
+
 harness_section('packFits');
 pin('the command line packs any size', true, FacetIndex::packFits('cli', PHP_INT_MAX));
 pin('a web request packs a small table', true, FacetIndex::packFits('fpm-fcgi', 128 * 1024 * 1024));
