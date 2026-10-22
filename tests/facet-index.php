@@ -348,6 +348,12 @@ Db::transaction(static function () use ($admin, $p, &$seen): void {
     $seen = FacetIndex::ensureTerms(['oLocked' => ['Other']]);
 });
 pin('ensureTerms reads with a lock, so it finds a term committed after its snapshot', [$term('oLocked', 'Other')[0]], [$seen['oLocked']['Other'] ?? null]);
+$settled = $remembered() === ['created' => [], 'unseen' => []];
+check('the commit clears the term ids it waited on', $settled);
+if (!$settled) {
+    // The after-commit rebuild below would wait on the term forever.
+    exit(harness_result());
+}
 
 FacetIndex::forgetTypes();
 $inside = null;
