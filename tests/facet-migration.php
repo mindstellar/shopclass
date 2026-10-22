@@ -144,6 +144,37 @@ pin('time spent before the build counts too', [['after' => $items[2]]], array_ma
 pin('the clock is read every 20 listings', 20, $migration::INLINE_BATCH);
 
 pin('the inline limit is 5000', 5000, $migration::INLINE_LIMIT);
+
+harness_section('a killed inline build resumes');
+$cursor = static fn (): ?string => $pref($migration::CURSOR);
+$admin->query("DELETE FROM $facet");
+$admin->query("DELETE FROM {$p}t_job_queue");
+$admin->query("UPDATE {$p}t_preference SET s_value = '0' WHERE s_name = 'facet_ready'");
+$admin->query("CREATE TRIGGER {$p}facet_block BEFORE INSERT ON $facet FOR EACH ROW BEGIN IF NEW.fk_i_item_id = {$items[3]} THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'killed'; END IF; END");
+$threw = false;
+try {
+    $migration->build($conn, 100, 20.0, 2);
+} catch (\mindstellar\database\DbException $e) {
+    $threw = true;
+}
+$admin->query("DROP TRIGGER {$p}facet_block");
+pin('each batch keeps its last listing', [true, (string) $items[2]], [$threw, $cursor()]);
+facet_retag($admin, 'f' . $colour, 'Done');
+$migration->build($conn, 100, 20.0, 2);
+pin('the next run carries on after it', [['f' . $colour, 'Blue', $items[3], 0], ['f' . $colour, 'Done', $items[1], 0], ['f' . $colour, 'Done', $items[2], 0]], array_values(array_filter($norm($rows()), static fn (array $r): bool => $r[0] === 'f' . $colour)));
+pin('and drops the cursor when done', [null, '1'], [$cursor(), $pref('facet_ready')]);
+
+$admin->query("DELETE FROM $facet");
+$admin->query("UPDATE {$p}t_preference SET s_value = '0' WHERE s_name = 'facet_ready'");
+$admin->query("INSERT INTO {$p}t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', '" . $migration::CURSOR . "', '{$items[2]}', 'INTEGER')");
+$migration->build($conn, 100, 20.0, 2);
+pin('a cursor over an empty table starts from the first listing', [$expected, null], [$norm($rows()), $cursor()]);
+
+$admin->query("DELETE FROM $facet");
+$admin->query("DELETE FROM {$p}t_job_queue");
+$admin->query("UPDATE {$p}t_preference SET s_value = '0' WHERE s_name = 'facet_ready'");
+$migration->build($conn, 100, 0.0, 2);
+pin('a run handed to the job leaves no cursor', [null, 1], [$cursor(), count($jobs())]);
 $source = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/migrations/0083_item_facet.php');
 pin('every job is queued through the queue class, which a bare migration run has', [0, 3], [substr_count($source, 'osc_job_'), substr_count($source, 'JobQueue::getInstance()->ensure(')]);
 

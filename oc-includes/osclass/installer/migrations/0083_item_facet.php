@@ -30,6 +30,9 @@ return new class () implements MigrationInterface {
     /** Listings indexed between two looks at the clock. */
     public const INLINE_BATCH = 20;
 
+    /** The last listing the inline build finished, kept so a request killed partway resumes there. */
+    public const CURSOR = 'facet_build_after';
+
     /**
      * @param Connection $conn
      *
@@ -83,7 +86,8 @@ return new class () implements MigrationInterface {
     /**
      * Index every listing here when the site has at most $inlineLimit of them, else queue the
      * background build. Does nothing once the index is marked ready, unless the table is empty
-     * while listings exist: a flag restored from a backup says nothing about this table.
+     * while listings exist: a flag restored from a backup says nothing about this table. Each listing
+     * is written whole and the writers keep done ones fresh, so a run killed partway resumes after the cursor.
      *
      * @param Connection $conn
      * @param int        $inlineLimit
@@ -126,15 +130,22 @@ return new class () implements MigrationInterface {
             @set_time_limit(0);
         }
         ignore_user_abort(true);
-        $after = 0;
+        $cursor = $conn->selectOne(
+            'SELECT s_value FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = ?",
+            array(self::CURSOR)
+        );
+        $after  = $cursor !== null && $conn->selectOne('SELECT 1 FROM ' . DB_TABLE_PREFIX . 't_item_facet LIMIT 1') !== null ? (int) $cursor['s_value'] : 0;
         while (($next = FacetIndex::buildStep($after, $batch)) !== null) {
             $after = $next;
+            $this->setPreference($conn, self::CURSOR, (string) $after, 'INTEGER');
             if (microtime(true) - $started >= $seconds) {
                 JobQueue::getInstance()->ensure(FacetIndex::JOB_BUILD, array('after' => $after));
+                $this->dropCursor($conn);
 
                 return;
             }
         }
+        $this->dropCursor($conn);
         // FacetJobs::finish() needs the preference helpers, which a bare migration run lacks, so the flag is written here.
         $this->setPreference($conn, FacetIndex::PREF_READY, '1', 'BOOLEAN');
         $this->setPreference($conn, FacetIndex::PREF_BUILT, gmdate('Y-m-d H:i:s'), 'STRING');
@@ -143,6 +154,11 @@ return new class () implements MigrationInterface {
         if (function_exists('osc_reset_preferences')) {
             osc_reset_preferences();
         }
+    }
+
+    private function dropCursor(Connection $conn): void
+    {
+        $conn->execute('DELETE FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = ?", array(self::CURSOR));
     }
 
     private function setPreference(Connection $conn, string $name, string $value, string $type): void
