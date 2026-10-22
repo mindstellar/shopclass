@@ -975,7 +975,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_rewrite_rules()` | Gets the rewrite rules (generated via generate_rules.php at root folder) |
 | `osc_save_latest_searches()` | Gets if save searches is enabled or not |
 | `osc_save_webp()` | Whether new photos are stored as WebP. Only when the server can write WebP. |
-| `osc_search_count_cap()` | The most matches a visitor or API search counts before it shows "1,000+" instead of the total. 0 counts every match. |
+| `osc_search_count_cap()` | The most matches a visitor or API search counts before it shows "1,000+" instead of the total. 0 counts every match; the most it can be is Search::COUNT_CAP_MAX. |
 | `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not |
 | `osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')` | generic function to insert/update preferences |
 | `osc_site_mode()` | What the site is for: 'classifieds' (the default) or 'shop'. |

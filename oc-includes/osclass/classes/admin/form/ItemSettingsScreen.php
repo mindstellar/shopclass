@@ -141,7 +141,9 @@ final class ItemSettingsScreen extends SettingsScreen
                 __('Search pages and the API count at most this many matches and show "1,000+" past it, which is faster on big sites. 0 counts every match.')
             )
                 ->suffix(__('matches'))
-                ->clampMin(0)
+                ->set('min', 0)
+                ->set('max', \Search::COUNT_CAP_MAX)
+                ->sanitize(static fn ($value): int => max(0, min(\Search::COUNT_CAP_MAX, (int)$value)))
                 ->default(0)
             // The browser gets the range; the page rule above reports it in its own words.
             ->number('max_chars_per_title', __('Title length'), sprintf(__('Titles can be 1 to %d characters.'), \Item::TITLE_WIDTH))

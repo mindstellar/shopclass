@@ -1022,14 +1022,14 @@ function osc_default_results_per_page_at_search()
 
 /**
  * The most matches a visitor or API search counts before it shows "1,000+" instead of the total.
- * 0 counts every match.
+ * 0 counts every match; the most it can be is Search::COUNT_CAP_MAX.
  *
  * @return int
  * @since 7.1.0
  */
 function osc_search_count_cap(): int
 {
-    return max(0, (int)getPreference('search_count_cap'));
+    return max(0, min(\Search::COUNT_CAP_MAX, (int)getPreference('search_count_cap')));
 }
 
 /**

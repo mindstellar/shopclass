@@ -88,6 +88,15 @@ $s = $fresh();
 pin('cached, cap 11: 11, capped', [11, true], [$s->countMatches(true, 11), $s->totalCapped()]);
 pin('cached, same search, no cap: the exact total, not the capped one', [12, false], [$s->countMatches(true), $s->totalCapped()]);
 
+harness_section('the upper bound');
+pin('the most a cap can be', 100000, Search::COUNT_CAP_MAX);
+$setCap(5000000);
+pin('a stored cap past the most reads as the most', 100000, osc_search_count_cap());
+$setCap(-4);
+pin('a negative stored cap reads as 0', 0, osc_search_count_cap());
+$s = $fresh();
+pin('PHP_INT_MAX as a cap is lowered, and the count is exact', [12, false], [$s->countMatches(false, PHP_INT_MAX), $s->totalCapped()]);
+
 harness_section('who is capped');
 $run = static function (string $context, ?int $cap = null) use ($cat): \mindstellar\search\SearchResult {
     $criteria = SearchCriteria::fromRequest(['sCategory' => (string) $cat], ['pageSize' => 5]);
