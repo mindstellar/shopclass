@@ -143,14 +143,16 @@ $remembered = static function (): array {
     return $out;
 };
 try {
-    Db::transaction(static function (): void {
-        FacetIndex::ensureTerms(['oRolled' => ['Back']]);
+    Db::transaction(static function () use ($admin, $p): void {
+        Db::select('SELECT COUNT(*) FROM ' . FacetIndex::termTable());
+        $admin->query("INSERT INTO {$p}t_facet_term (s_key, s_value) VALUES ('oRolled', 'Elsewhere')");
+        FacetIndex::ensureTerms(['oRolled' => ['Back', 'Elsewhere']]);
 
         throw new RuntimeException('roll back');
     });
 } catch (RuntimeException $e) {
 }
-check('a rolled back transaction leaves its term ids behind until the next read', $remembered()['created'] !== []);
+pin('a rolled back transaction leaves its own and unseen term ids behind until the next read', [1, 1], array_map('count', array_values($remembered())));
 FacetIndex::termIds(['oRolled' => ['Back']]);
 pin('the next read outside a transaction drops them', ['created' => [], 'unseen' => []], $remembered());
 $long = str_repeat('a', 60);

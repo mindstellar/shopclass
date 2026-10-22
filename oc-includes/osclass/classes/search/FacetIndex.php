@@ -814,7 +814,6 @@ final class FacetIndex
      */
     private static function writeRows(int $itemId, array $rows): bool
     {
-        self::settle();
         $pairs = [];
         foreach ($rows as [$key, $value]) {
             $pairs[$key][$value] = $value;
