@@ -314,9 +314,14 @@ The **Database** tab of **Tools → System info** holds the database checks:
   look at it.
 
 - **Listing filter index**: whether the index behind the field and option
-  filters is ready. **Rebuild filter index** rebuilds it in the background, a
-  batch of listings at a time, and searches keep working meanwhile. Use it if a
-  plugin wrote custom field values with raw SQL.
+  filters is ready, when it was built, and how long a queued build has waited.
+  **Rebuild filter index** rebuilds it in the background, a batch of listings at
+  a time. Until it is ready, searches give complete results but run slower. Use
+  it if a plugin wrote custom field or option values with raw SQL. It says
+  **Already building** if a build is queued or running, and is refused while an
+  update waits. A build that failed for good shows its error. The rest of a big
+  build runs from cron or the worker, so the tab warns when automatic cron is off
+  and no cron job or worker is set up.
 
 From a shell: `php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair`
 repairs, `php oc-cli.php search:reindex` rebuilds the filter index.
