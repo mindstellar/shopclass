@@ -220,7 +220,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 618 names. Generated from the source; do not edit by hand.
+Core fires 625 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -547,7 +547,7 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (242)
+### Other (249)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -655,6 +655,9 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `contact_form_top` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_page_aside` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_params` | filter | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
+| `conversation_blocked` | event | `ConversationBlocked` | `oc-includes/osclass/classes/messaging/event/ConversationBlocked.php` |
+| `conversation_reported` | event | `ConversationReported` | `oc-includes/osclass/classes/messaging/event/ConversationReported.php` |
+| `conversation_started` | event | `ConversationStarted` | `oc-includes/osclass/classes/messaging/event/ConversationStarted.php` |
 | `correct_login_url_redirect` | filter | `$url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `count_view_on_beacon` | filter | `osc_request_counts_as_view(), $id` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `count_view_on_render` | filter | `osc_request_counts_as_view(), $item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
@@ -730,6 +733,10 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `market_catalog_mirror_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `market_catalog_primary_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `media_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/MediaDataTable.php` |
+| `message_body` | event | `MessageSending` | `oc-includes/osclass/classes/messaging/event/MessageSending.php` |
+| `message_held` | event | `MessageHeld` | `oc-includes/osclass/classes/messaging/event/MessageHeld.php` |
+| `message_read` | event | `MessageRead` | `oc-includes/osclass/classes/messaging/event/MessageRead.php` |
+| `message_sent` | event | `MessageSent` | `oc-includes/osclass/classes/messaging/event/MessageSent.php` |
 | `meta_description_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_keywords_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_title_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |

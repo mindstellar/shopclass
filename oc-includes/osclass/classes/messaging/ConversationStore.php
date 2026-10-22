@@ -60,6 +60,17 @@ final class ConversationStore
     }
 
     /**
+     * As findByItemAndBuyer(), as a locking read: it sees the newest committed row and holds it.
+     *
+     * @return array<string,mixed>|null
+     * @throws \mindstellar\database\DbException
+     */
+    public function lockByItemAndBuyer(int $itemId, int $buyerId): ?array
+    {
+        return Db::selectOne('SELECT * FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_buyer_id = ? FOR UPDATE', array($itemId, $buyerId));
+    }
+
+    /**
      * Insert a row and return its id. A second thread for the same listing and buyer throws a
      * DbException with code 1062.
      *
