@@ -10,8 +10,10 @@
     'use strict';
 
     var list = document.querySelector('[data-osc-messages]');
+    var inbox = document.querySelector('[data-osc-inbox]');
     var form = document.querySelector('form.oe-compose');
-    if (!list) {
+    var root = list || inbox;
+    if (!root) {
         return;
     }
 
@@ -93,7 +95,144 @@
         item.scrollIntoView({block: 'nearest'});
     };
 
-    window.oscMessages = {appendMessage: appendMessage};
+    if (list) {
+        window.oscMessages = {appendMessage: appendMessage};
+    }
+
+    // New messages: a check every 15 s while the tab is visible, or one EventSource when the
+    // page has a live URL. Either way a change runs the same refresh.
+    var startLive = function () {
+        var checkUrl = root.dataset.checkUrl;
+        if (!checkUrl) {
+            return;
+        }
+        var liveUrl = root.dataset.liveUrl || '';
+        var baseDelay = 15000;
+        var delay = baseDelay;
+        var etag = null;
+        var inFlight = false;
+        var timer = null;
+        var stream = null;
+        var errors = [];
+
+        var visible = function () {
+            return document.visibilityState === 'visible';
+        };
+
+        var refreshThread = function () {
+            var url = list.dataset.sinceUrl + '&id=' + encodeURIComponent(list.dataset.conversation)
+                + '&after=' + encodeURIComponent(list.dataset.lastId);
+            return fetch(url, {credentials: 'same-origin', headers: {'Accept': 'application/json'}}).then(function (response) {
+                if (!response.ok) {
+                    throw new Error('since ' + response.status);
+                }
+                return response.json();
+            }).then(function (data) {
+                (data.messages || []).forEach(function (row) {
+                    appendMessage(row, false);
+                });
+            });
+        };
+
+        var refreshInbox = function () {
+            return fetch(location.href, {credentials: 'same-origin'}).then(function (response) {
+                if (!response.ok) {
+                    throw new Error('inbox ' + response.status);
+                }
+                return response.text();
+            }).then(function (html) {
+                var fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-osc-inbox]');
+                if (fresh) {
+                    root.replaceChildren.apply(root, Array.from(fresh.childNodes).map(function (node) {
+                        return document.importNode(node, true);
+                    }));
+                }
+            });
+        };
+
+        var check = function () {
+            var headers = {};
+            if (etag) {
+                headers['If-None-Match'] = etag;
+            }
+            return fetch(checkUrl, {headers: headers, credentials: 'same-origin'}).then(function (response) {
+                if (response.status === 304) {
+                    return null;
+                }
+                if (!response.ok) {
+                    throw new Error('check ' + response.status);
+                }
+                etag = response.headers.get('ETag') || etag;
+                return list ? refreshThread() : refreshInbox();
+            });
+        };
+
+        var run = function () {
+            if (inFlight) {
+                return Promise.resolve();
+            }
+            inFlight = true;
+            return check().then(function () {
+                delay = baseDelay;
+            }, function () {
+                delay = Math.min(delay * 2, 120000);
+            }).then(function () {
+                inFlight = false;
+            });
+        };
+
+        var stopTimer = function () {
+            if (timer !== null) {
+                clearTimeout(timer);
+                timer = null;
+            }
+        };
+
+        var schedule = function () {
+            stopTimer();
+            if (stream || !visible()) {
+                return;
+            }
+            timer = setTimeout(function () {
+                timer = null;
+                run().then(schedule);
+            }, delay);
+        };
+
+        document.addEventListener('visibilitychange', function () {
+            stopTimer();
+            if (visible()) {
+                run().then(schedule);
+            }
+        });
+
+        if (liveUrl !== '' && typeof window.EventSource === 'function') {
+            stream = new EventSource(liveUrl);
+            var onLive = function () {
+                if (visible()) {
+                    run();
+                }
+            };
+            stream.addEventListener('open', onLive);
+            stream.addEventListener('message', onLive);
+            stream.addEventListener('error', function () {
+                var now = Date.now();
+                errors.push(now);
+                errors = errors.filter(function (at) {
+                    return now - at <= 60000;
+                });
+                if (errors.length >= 3) {
+                    stream.close();
+                    stream = null;
+                    schedule();
+                }
+            });
+            return;
+        }
+        schedule();
+    };
+
+    startLive();
 
     if (!form) {
         return;

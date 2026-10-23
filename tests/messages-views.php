@@ -55,6 +55,15 @@ check('the thread script is loaded with defer', (bool) preg_match('/<script src=
 check('a message body is escaped and keeps its line breaks in CSS', strpos($thread, "osc_esc_html((string) \$convoMsg['s_body'])") !== false
     && strpos($style, '.oe-message-body{overflow-wrap:anywhere;white-space:pre-wrap;}') !== false);
 
+harness_section('live delivery');
+foreach (array('thread' => 'data-osc-messages', 'inbox' => 'data-osc-inbox') as $name => $marker) {
+    check("the {$name} partial prints the live URL", strpos($src[$name], 'data-live-url="<?php echo osc_esc_html(osc_messaging_live_url()); ?>"') !== false);
+    check("the {$name} partial prints the check URL", strpos($src[$name], 'data-check-url="') !== false);
+    check("the {$name} partial has the {$marker} hook", strpos($src[$name], $marker) !== false);
+}
+check('the inbox loads messages.js with defer', (bool) preg_match('/<script src="[^"]*"\s+defer><\/script>/', $src['inbox'])
+    && strpos($src['inbox'], 'osclass/messages.js') !== false);
+
 harness_section('the stylesheet');
 foreach (array(
     'oe-threads', 'oe-thread', 'oe-thread-title', 'oe-thread-last', 'oe-unread', 'oe-messages', 'oe-message',
