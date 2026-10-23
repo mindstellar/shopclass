@@ -2263,6 +2263,7 @@ msgid "Removed by admin"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebMessages.php
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
 msgid "Removed listing"
 msgstr ""
 
@@ -2856,6 +2857,10 @@ msgstr ""
 msgid "The comment was not added by you, you cannot delete it"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
+msgid "The conversation has been closed"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 #: oc-includes/osclass/classes/location/LocationService.php
 msgid "The country code must be two letters, like IN or DE"
@@ -3071,6 +3076,14 @@ msgstr ""
 msgid "The message has been deleted. Nothing was sent."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
+msgid "The message has been released"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
+msgid "The message has been removed"
+msgstr ""
+
 #: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "The message is too long."
 msgstr ""
@@ -3164,6 +3177,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "The report could not be saved. Please try again later."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
+msgid "The report has been cleared"
 msgstr ""
 
 #: oc-includes/osclass/classes/exception/InvalidException.php
