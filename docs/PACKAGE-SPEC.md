@@ -243,7 +243,7 @@ looking at the pull request:
 | `Requires Shopclass` > `Tested up to` | Error | The declared range is empty — the package claims a floor higher than anything it was verified against. |
 | `Tested up to` names a core version newer than the newest known release | Error | You cannot have tested against a release that does not exist yet. |
 | `Requires Shopclass` names a version that never shipped | Error | Almost always a typo for a real version. |
-| `Requires PHP` below core's own 8.0 floor | Warning | Meaningless rather than wrong — every install already clears core's floor, so the field gates nobody. |
+| `Requires PHP` below core's own floor (8.0 on 7.0, 8.2 from 7.1) | Warning | Meaningless rather than wrong — every install already clears core's floor, so the field gates nobody. |
 | `Requires PHP` above the newest PHP core tests against | Warning | Not necessarily wrong, but suspicious enough to double-check. |
 
 The two version-existence checks need to know which core versions actually exist; they run

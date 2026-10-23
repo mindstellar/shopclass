@@ -57,7 +57,11 @@ changes anything.
 
 7.1.0 needs **PHP 8.2 or newer**. PHP 8.0 and 8.1 no longer get security fixes.
 Check **Tools → System info → Server** before you update, and ask your host to move
-the site to PHP 8.2 or newer first. The 7.0 updater does not check this for you.
+the site to PHP 8.2 or newer first.
+
+From 7.0.4 the updater checks this for you. On PHP 8.0 or 8.1 it refuses the update
+before it changes any file, and the site keeps running on 7.0.x. Older 7.0 updaters
+do not check, so update to 7.0.4 first.
 
 ## Upgrading to 6.4.0 specifically
 
