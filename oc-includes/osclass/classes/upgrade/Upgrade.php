@@ -133,7 +133,7 @@ class Upgrade
      *
      * @return string|null the version needed, or null when $php is new enough
      */
-    public static function phpTooOld(string $root, string $php): ?string
+    public static function phpNeeded(string $root, string $php): ?string
     {
         $file = $root . '/oc-includes/vendor/composer/platform_check.php';
         $code = is_file($file) ? (string) file_get_contents($file) : '';
@@ -281,7 +281,7 @@ class Upgrade
                 );
             }
 
-            $needs = self::phpTooOld($originDir, PHP_VERSION);
+            $needs = self::phpNeeded($originDir, PHP_VERSION);
             if ($needs !== null) {
                 throw new RuntimeException(sprintf(
                     __('Nothing was changed. This update needs PHP %1$s or newer, and this server runs PHP %2$s. Ask your host to upgrade PHP, then update again.'),

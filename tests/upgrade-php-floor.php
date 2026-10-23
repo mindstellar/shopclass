@@ -43,20 +43,20 @@ $root = sys_get_temp_dir() . '/osc-php-floor-' . bin2hex(random_bytes(4));
 mkdir($root . '/oc-includes/vendor/composer', 0755, true);
 $check = $root . '/oc-includes/vendor/composer/platform_check.php';
 
-pin('a package with no platform check needs nothing', null, Upgrade::phpTooOld($root, '8.0.30'));
+pin('a package with no platform check needs nothing', null, Upgrade::phpNeeded($root, '8.0.30'));
 
 file_put_contents($check, "<?php\n\$issues = array();\n\nif (!(PHP_VERSION_ID >= 80200)) {\n    \$issues[] = 'x';\n}\n");
-pin('PHP 8.0 is refused a release needing 8.2', '8.2.0', Upgrade::phpTooOld($root, '8.0.30'));
-pin('PHP 8.1 is refused a release needing 8.2', '8.2.0', Upgrade::phpTooOld($root, '8.1.33'));
-pin('PHP 8.2 may install it', null, Upgrade::phpTooOld($root, '8.2.0'));
-pin('PHP 8.5 may install it', null, Upgrade::phpTooOld($root, '8.5.1'));
+pin('PHP 8.0 is refused a release needing 8.2', '8.2.0', Upgrade::phpNeeded($root, '8.0.30'));
+pin('PHP 8.1 is refused a release needing 8.2', '8.2.0', Upgrade::phpNeeded($root, '8.1.33'));
+pin('PHP 8.2 may install it', null, Upgrade::phpNeeded($root, '8.2.0'));
+pin('PHP 8.5 may install it', null, Upgrade::phpNeeded($root, '8.5.1'));
 
 file_put_contents($check, "<?php\nif (!(PHP_VERSION_ID >= 80235)) {\n}\n");
-pin('a patch-level floor is read too', '8.2.35', Upgrade::phpTooOld($root, '8.2.10'));
+pin('a patch-level floor is read too', '8.2.35', Upgrade::phpNeeded($root, '8.2.10'));
 
 $own = dirname(__DIR__) . '/oc-includes/vendor/composer/platform_check.php';
 if (is_file($own)) {
-    pin('this build states the 8.2 floor', '8.2.0', Upgrade::phpTooOld(dirname(__DIR__), '8.1.33'));
+    pin('this build states the 8.2 floor', '8.2.0', Upgrade::phpNeeded(dirname(__DIR__), '8.1.33'));
 }
 
 harness_section('a full update on too old a PHP changes nothing');
