@@ -13,7 +13,7 @@ There is no build step and no command line needed on the server.
 
 | Requirement | Minimum |
 |---|---|
-| PHP | **8.0 or newer** |
+| PHP | **8.2 or newer** |
 | PHP extensions | `mysqli`, `gd`, `curl`, `mbstring`, `openssl`, `zip`, `json`, `ctype`, `fileinfo`, `posix` |
 | Database | MySQL 5.7.5+ or MariaDB 10.2+ |
 | Web server | Apache or nginx |

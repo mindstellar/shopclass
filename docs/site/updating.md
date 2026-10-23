@@ -37,6 +37,9 @@ the one that owns the files (often `nobody`). **Tools → System info → Server
 php oc-cli.php core:update
 ```
 
+The updater also refuses a release that needs a newer PHP than your server runs, before it
+changes anything.
+
 ## Update channel and automatic security updates
 
 **Settings → General → Software updates** has two choices:
@@ -49,6 +52,12 @@ php oc-cli.php core:update
   it is a day old, and e-mails the contact address whether it worked. A failed
   attempt is not repeated; update from the admin instead. If your cron runs from the
   command line, restart PHP-FPM after the e-mail arrives.
+
+## Upgrading to 7.1.0 specifically
+
+7.1.0 needs **PHP 8.2 or newer**. PHP 8.0 and 8.1 no longer get security fixes.
+Check **Tools → System info → Server** before you update, and ask your host to move
+the site to PHP 8.2 or newer first. The 7.0 updater does not check this for you.
 
 ## Upgrading to 6.4.0 specifically
 

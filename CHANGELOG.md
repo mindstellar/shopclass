@@ -47,6 +47,9 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - On-site messaging between buyers and sellers: inbox and conversation pages in the account, the contact-seller form starts the conversation for signed-in users, admin review under Listings → Messages. Switch: Users → Settings → Users can message sellers on the site, off by default.
 - The REST API gains `/account/conversations` and `/admin/conversations`, `/admin/messages`, and the webhooks `message.created` and `conversation.reported`; scopes `conversations:read`, `conversations:write`, `admin:conversations`.
 
+### Breaking
+- Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
+
 ### Changed
 - Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.
 - Core works with MariaDB 11.6+ snapshot isolation (`innodb_snapshot_isolation=ON`): rows are locked first, and plugin writes should follow the [Write transactions](https://shopclass.org/docs/developers/database/) rule, locking the listing with `ListingStore::lockForWrite()` in `apply()`.

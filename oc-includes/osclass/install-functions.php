@@ -105,11 +105,11 @@ function get_relative_url()
 function get_requirements()
 {
     $array = array(
-        'PHP version >= 8.0.0' => array(
-            'requirement' => __('PHP version >= 8.0.0'),
-            'fn'          => version_compare(PHP_VERSION, '8.0.0', '>='),
+        'PHP version >= 8.2.0' => array(
+            'requirement' => __('PHP version >= 8.2.0'),
+            'fn'          => install_php_version_supported(PHP_VERSION),
             'solution'    => sprintf(__('At least PHP %s (PHP %s or higher recommended) is required to run Shopclass. '
-                . 'You may talk with your hosting to upgrade your PHP version.'), '8.0', '8.2')
+                . 'You may talk with your hosting to upgrade your PHP version.'), '8.2', '8.4')
         ),
 
         'MySQLi extension for PHP' => array(
@@ -290,6 +290,19 @@ function install_db_version_supported(string $serverInfo): bool
     $floor = stripos($info, 'mariadb') !== false ? '10.2.0' : '5.7.5';
 
     return version_compare($m[1], $floor, '>=');
+}
+
+/**
+ * Whether a PHP version meets the floor, 8.2.0. Older lines get no security fixes.
+ *
+ * @param string $version e.g. PHP_VERSION
+ *
+ * @return bool
+ * @since 7.1.0
+ */
+function install_php_version_supported(string $version): bool
+{
+    return version_compare($version, '8.2.0', '>=');
 }
 
 /**

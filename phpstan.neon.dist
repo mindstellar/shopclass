@@ -1,6 +1,6 @@
 parameters:
     level: 5
-    phpVersion: 80000
+    phpVersion: 80200
     paths:
         - oc-includes/osclass
         - oc-admin
