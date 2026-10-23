@@ -14,10 +14,9 @@ namespace mindstellar\messaging;
 
 use mindstellar\auth\Actor;
 use mindstellar\security\ActionThrottle;
-use mindstellar\security\RateLimit;
 
 /**
- * Who may see and write in a conversation, and the hourly message limits.
+ * Who may see and write in a conversation, and the names of the hourly message limits.
  */
 final class MessagePolicy
 {
@@ -96,40 +95,5 @@ final class MessagePolicy
         }
 
         return (string) $conversation['s_state'] === 'closed' ? self::CLOSED : self::ALLOWED;
-    }
-
-    /**
-     * Count one message for the context and say whether it is over the hourly limit, per user.
-     * A guest is never counted here: only signed-in users send. Fails open, as RateLimit does.
-     */
-    public static function tooMany(Actor $actor, string $context): bool
-    {
-        if ($actor->userId() === null) {
-            return false;
-        }
-        [$max, $window] = self::limit($context);
-        if ($max <= 0) {
-            return false;
-        }
-
-        return !RateLimit::hit($context, 'user:' . $actor->userId(), $max, $window);
-    }
-
-    /**
-     * Seconds until the context's window starts again.
-     */
-    public static function retryAfter(string $context): int
-    {
-        $window = max(1, self::limit($context)[1]);
-
-        return $window - (time() % $window);
-    }
-
-    /**
-     * @return array{0:int,1:int} max and window in seconds
-     */
-    private static function limit(string $context): array
-    {
-        return ActionThrottle::limitFor($context, $context === self::START_CONTEXT ? self::PER_HOUR_START : self::PER_HOUR_SEND, 3600);
     }
 }

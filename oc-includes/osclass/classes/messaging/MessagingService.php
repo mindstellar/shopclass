@@ -31,7 +31,9 @@ use mindstellar\messaging\event\MessageHeld;
 use mindstellar\messaging\event\MessageRead;
 use mindstellar\messaging\event\MessageSending;
 use mindstellar\messaging\event\MessageSent;
+use mindstellar\security\ActionThrottle;
 use mindstellar\security\MessageGuard;
+use mindstellar\security\RateLimit;
 use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 
@@ -370,11 +372,11 @@ final class MessagingService
             throw new ForbiddenException(_m('This conversation is blocked'), self::BLOCKED);
         }
         $body = $this->checkBody($body);
-        if (MessagePolicy::tooMany($actor, MessagePolicy::SEND_CONTEXT)) {
-            throw BlockedException::rateLimit(_m('Too many messages in an hour. Try again later.'), MessagePolicy::retryAfter(MessagePolicy::SEND_CONTEXT));
+        if ($this->tooMany($actor, MessagePolicy::SEND_CONTEXT)) {
+            throw BlockedException::rateLimit(_m('Too many messages in an hour. Try again later.'), $this->retryAfter(MessagePolicy::SEND_CONTEXT));
         }
-        if ($conversation === null && MessagePolicy::tooMany($actor, MessagePolicy::START_CONTEXT)) {
-            throw BlockedException::rateLimit(_m('Too many new conversations in an hour. Try again later.'), MessagePolicy::retryAfter(MessagePolicy::START_CONTEXT));
+        if ($conversation === null && $this->tooMany($actor, MessagePolicy::START_CONTEXT)) {
+            throw BlockedException::rateLimit(_m('Too many new conversations in an hour. Try again later.'), $this->retryAfter(MessagePolicy::START_CONTEXT));
         }
 
         $sending = new MessageSending($body, $itemId, $senderId, $recipientId, $conversation !== null ? (int) $conversation['pk_i_id'] : null);
@@ -521,5 +523,39 @@ final class MessagingService
         }
 
         return (bool) $akismet->isCommentSpam();
+    }
+
+    /**
+     * Count one message for the context and say whether it is over the hourly limit, per user.
+     * Fails open, as RateLimit does.
+     */
+    private function tooMany(Actor $actor, string $context): bool
+    {
+        [$max, $window] = self::limit($context);
+        if ($actor->userId() === null || $max <= 0) {
+            return false;
+        }
+
+        return !RateLimit::hit($context, 'user:' . $actor->userId(), $max, $window, true, $this->clock->now());
+    }
+
+    /**
+     * Seconds until the context's window starts again.
+     */
+    private function retryAfter(string $context): int
+    {
+        $window = max(1, self::limit($context)[1]);
+
+        return $window - ($this->clock->now() % $window);
+    }
+
+    /**
+     * @return array{0:int,1:int} max and window in seconds
+     */
+    private static function limit(string $context): array
+    {
+        $default = $context === MessagePolicy::START_CONTEXT ? MessagePolicy::PER_HOUR_START : MessagePolicy::PER_HOUR_SEND;
+
+        return ActionThrottle::limitFor($context, $default, 3600);
     }
 }
