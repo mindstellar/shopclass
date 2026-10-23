@@ -93,6 +93,7 @@ pin('a note fetches since once', 1, $r['liveNoteSince'] ?? null);
 pin('two errors keep the stream', false, $r['liveClosedAfter2'] ?? null);
 pin('the third error closes it', true, $r['liveClosedAfter3'] ?? null);
 pin('and the timer resumes', 1, $r['liveResumed'] ?? null);
+pin('a stream closed by an HTTP error resumes polling after one error', 2, $r['liveHttpErrorResumed'] ?? null);
 pin('no live URL, no EventSource', 0, $r['noLiveSources'] ?? null);
 
 harness_section('the inbox');

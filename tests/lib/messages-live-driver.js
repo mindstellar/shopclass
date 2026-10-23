@@ -49,12 +49,14 @@
             var self = this;
             this.url = url;
             this.closed = false;
+            this.readyState = 0;
             this.handlers = {};
             this.addEventListener = function (type, fn) {
                 (self.handlers[type] = self.handlers[type] || []).push(fn);
             };
             this.close = function () {
                 self.closed = true;
+                self.readyState = 2;
             };
             this.emit = function (type) {
                 (self.handlers[type] || []).forEach(function (fn) {
@@ -63,6 +65,7 @@
             };
             e.sources.push(this);
         };
+        window.EventSource.CLOSED = 2;
         e.advance = async function (ms) {
             var target = e.now + ms;
             for (;;) {
@@ -196,6 +199,17 @@
         var before = e.fetches.length;
         await e.advance(15000);
         out.liveResumed = e.fetches.length - before;
+        e.stop();
+
+        // An HTTP error closes the stream for good after one error: polling resumes.
+        e = env({route: threadRoute});
+        e.tag = 'a';
+        await e.start(thread('/live/sub/user-1'));
+        e.sources[0].readyState = 2;
+        e.sources[0].emit('error');
+        before = e.fetches.length;
+        await e.advance(15000);
+        out.liveHttpErrorResumed = e.fetches.length - before;
         e.stop();
 
         // No live URL: no EventSource at all.

@@ -216,6 +216,12 @@
             stream.addEventListener('open', onLive);
             stream.addEventListener('message', onLive);
             stream.addEventListener('error', function () {
+                // An HTTP error (401, 404, 502) closes the stream for good, so fall back to polling now.
+                if (stream.readyState === EventSource.CLOSED) {
+                    stream = null;
+                    schedule();
+                    return;
+                }
                 var now = Date.now();
                 errors.push(now);
                 errors = errors.filter(function (at) {
