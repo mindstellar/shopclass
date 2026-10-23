@@ -34,6 +34,7 @@ check('its three catch blocks are still there', substr_count($body, 'catch (Conf
     && substr_count($body, 'catch (InvalidException') === 1 && substr_count($body, 'catch (RefusedException') === 1);
 check('CSRF is checked first', strpos($body, 'osc_csrf_check()') < $captcha);
 check('no untyped read of the message', strpos($body . $conv, "getParam('message'") === false);
+check('the thread gets the message raw, as the inbox reply reads it', strpos($body, "Params::getParamString('message', false, false, false)") !== false);
 
 harness_section('startConversation');
 check('the method was parsed', $conv !== '');

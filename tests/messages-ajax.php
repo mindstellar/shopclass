@@ -37,7 +37,7 @@ check('it checks CSRF', $csrf !== false);
 check('CSRF comes before the service call', $csrf !== false && $call !== false && $csrf < $call);
 check('the method check comes first', $post !== false && $csrf !== false && $post < $csrf);
 check('the visitor is checked before CSRF', strpos($send, 'messagingActor()') !== false && strpos($send, 'messagingActor()') < $csrf);
-check('the body is read as a string', strpos($send, "Params::getParamString('body')") !== false);
+check('the body is read raw, as the inbox reply reads it', strpos($send, "Params::getParamString('body', false, false, false)") !== false);
 check('the id is read as an int', strpos($send, "Params::getParamInt('id')") !== false);
 check('it answers the stored row', strpos($send, 'MessageStore::class') !== false && strpos($send, '->find(') !== false);
 check('it answers ok and held', strpos($send, "'ok' => true") !== false && strpos($send, "'held' =>") !== false);

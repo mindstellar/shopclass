@@ -496,7 +496,7 @@ class CWebAjax extends BaseModel
         osc_csrf_check();
         $container = Container::root();
         try {
-            $sent = $container->get(MessagingService::class)->reply(Params::getParamInt('id'), Params::getParamString('body'), $actor);
+            $sent = $container->get(MessagingService::class)->reply(Params::getParamInt('id'), Params::getParamString('body', false, false, false), $actor);
         } catch (RefusedException $e) {
             $this->messagingRefusal($e);
 

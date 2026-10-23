@@ -723,7 +723,8 @@ class CWebItem extends BaseModel
         }
 
         if (osc_item_uses_messaging()) {
-            return $this->startConversation((int) $item['pk_i_id'], $contactValues['message_body'], $fail);
+            // Read raw like the inbox reply: a message is plain text, escaped where it is shown.
+            return $this->startConversation((int) $item['pk_i_id'], Params::getParamString('message', false, false, false), $fail);
         }
 
         try {
