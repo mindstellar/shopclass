@@ -396,6 +396,24 @@ of `spam`, `scam`, `offensive` or `other`. All carry the CSRF token. Core's scri
 `.oe-messages` list; a theme that wants the same loads it and keeps the `data-osc-messages`
 attributes. It exposes `window.oscMessages.appendMessage(row)`.
 
+Both messages pages print the partial `oc-includes/osclass/gui/account/parts/push-optin.php`: a
+`<form class="oe-push" data-osc-push hidden>` that prints nothing while `osc_push_enabled()` is
+false. Core's `oc-includes/assets/osclass/push.js` reads its attributes, reveals it when the
+browser supports push, and toggles the subscription. A theme that restyles it copies the partial
+and keeps these:
+
+| Attribute | Holds |
+|---|---|
+| `data-key` | The public key, from `osc_push_public_key()` |
+| `data-worker-url` | The service worker script (`push_worker`) |
+| `data-subscribe-url`, `data-unsubscribe-url`, `data-status-url` | The `push_subscribe`, `push_unsubscribe` and `push_status` AJAX actions |
+| `data-inbox-url` | Where a click on the notification goes |
+| `data-on-label`, `data-off-label`, `data-on-note`, `data-blocked-note`, `data-error-note` | The texts, already translated |
+
+The form holds one `<button type="submit">` and a `[data-osc-push-note]` line, and carries the CSRF
+token. The worker is `oc-includes/assets/osclass/push-worker.js`, served by PHP so it can be
+switched off.
+
 The pages reuse `.oe-panel`, `.oe-badge`, `.oe-field`, `.oe-check`, `.oe-actions` and `.oe-link-btn`.
 The two page hooks fire as on the other account pages.
 

@@ -126,6 +126,10 @@ The image carries [nchan](https://nchan.io), an nginx module, and streams new on
 
 If nchan is off or its stream fails, nothing breaks: pages check for new messages every 15 seconds while the tab is open, the same as on shared hosting. While the stream is open, pages still check once a minute, so a lost note delays a message by a minute at most. System info → Server shows the mode and the last publish.
 
+## Web push
+
+Nothing to configure. The worker loop sends browser notifications for new messages within seconds. Switch them on in Users → Settings; the site must be on HTTPS (`OSC_TLS_DOMAIN` does that).
+
 ## Core and packages update differently
 
 This is the part that surprises people.

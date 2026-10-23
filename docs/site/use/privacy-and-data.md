@@ -44,6 +44,8 @@ nobody knows to look for.
 
 That map is the honest answer when somebody asks what you hold about them.
 
+Browsers a user turned notifications on for are exported as `push_subscriptions` (the browser type and when it was last seen, not the push address) and deleted with the account.
+
 ## What this does and does not give you
 
 It gives you the mechanics: export and erasure, working, without a plugin.
