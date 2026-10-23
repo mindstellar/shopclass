@@ -41,6 +41,8 @@ final class SystemChecks
 
     public const DOCS_PROXY = 'https://mindstellar.com/docs/deploy/security/#login-throttling-and-the-real-client-ip';
 
+    public const DOCS_LIVE = 'https://mindstellar.com/docs/deploy/docker/#live-messages';
+
     public const DOCS_BACKUPS = 'https://mindstellar.com/docs/deploy/security/#the-backups-folder';
 
     /** How long a due job may wait while cron runs before the queue counts as stuck. */
@@ -418,6 +420,14 @@ final class SystemChecks
                 __('/api/ belongs to the site\'s API, so these static pages or categories cannot be reached. Give them another slug: %s'),
                 implode(', ', $reserved)
             ));
+        }
+        if (self::liveFailed($env)) {
+            $issues[] = self::issue(
+                'live_publish_failed',
+                'warning',
+                __('Live messages could not be published, so open pages fall back to checking every 15 seconds.'),
+                array('label' => __('Live messages'), 'url' => self::DOCS_LIVE)
+            );
         }
         $maintenance = (string) ($env['maintenance'] ?? '');
         if ($maintenance !== '') {
@@ -881,6 +891,7 @@ final class SystemChecks
             array('label' => __('Timezone'), 'value' => (string) ($env['timezone'] ?? '') ?: __('not set')),
             array('label' => __('OPcache'), 'value' => !empty($env['opcache']) ? $on : $off),
             self::imageRow($env),
+            array('label' => __('Live messages'), 'value' => self::liveWords($env)),
             array('label' => __('Extensions'), 'value' => $missing === array()
                 ? sprintf(__('all %d required are installed'), count(self::EXTENSIONS))
                 : sprintf(__('missing: %s'), implode(', ', $missing))),
@@ -1247,6 +1258,40 @@ final class SystemChecks
         }
 
         return $bytes > 0 ? Formatting::bytes($bytes) : '—';
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     */
+    private static function liveFailed(array $env): bool
+    {
+        $live = (array) ($env['live'] ?? array());
+
+        return ($live['mode'] ?? 'off') === 'nchan' && is_array($live['last'] ?? null) && empty($live['last']['ok']);
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     */
+    private static function liveWords(array $env): string
+    {
+        $live = (array) ($env['live'] ?? array());
+        if (($live['mode'] ?? 'off') !== 'nchan') {
+            return __('off');
+        }
+        $last = $live['last'] ?? null;
+        if (!is_array($last)) {
+            return __('nchan — nothing published yet');
+        }
+        $ago = osc_admin_duration(max(0, self::now($env) - (int) ($last['at'] ?? 0)));
+        if (!empty($last['ok'])) {
+            return sprintf(__('nchan — last publish ok, %s ago'), $ago);
+        }
+        $error = (string) ($last['error'] ?? '');
+
+        return $error === ''
+            ? sprintf(__('nchan — last publish failed %s ago'), $ago)
+            : sprintf(__('nchan — last publish failed %1$s ago: %2$s'), $ago, $error);
     }
 
     /**
