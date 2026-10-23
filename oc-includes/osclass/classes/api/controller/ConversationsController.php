@@ -172,19 +172,9 @@ final class ConversationsController
      */
     private function sent(ApiCall $call, SentMessage $sent): Response
     {
-        $userId   = $call->userId();
-        $message  = $sent->message();
-        $row      = [
-            'pk_i_id'              => $sent->messageId(),
-            'fk_i_conversation_id' => $sent->conversationId(),
-            'fk_i_sender_id'       => $userId,
-            's_body'               => $message['body'],
-            's_state'              => $sent->held() ? 'held' : 'sent',
-            'dt_created'           => $message['at'],
-        ];
         $warnings = Warning::member($sent->held() ? [Warning::MESSAGE_HELD => 'The message shows to the other person once it is reviewed.'] : []);
 
-        return $this->api->created($call, (array) $this->serializer->message($row, $userId), 'account/conversations/' . $sent->conversationId(), $warnings);
+        return $this->api->created($call, $this->serializer->sent($sent), 'account/conversations/' . $sent->conversationId(), $warnings);
     }
 
     /**

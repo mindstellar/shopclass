@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\serializer;
 
 use mindstellar\messaging\ConversationStore;
+use mindstellar\messaging\SentMessage;
 
 /**
  * A conversation and its messages as one of its two people sees them. A held message shows to
@@ -75,6 +76,25 @@ final class ConversationSerializer
             'body'            => (string) ($row['s_body'] ?? ''),
             'held'            => $state === 'held',
             'created_at'      => Format::time($row['dt_created'] ?? null),
+        ];
+    }
+
+    /**
+     * A message its sender has just written, held or sent.
+     *
+     * @return array<string,mixed>
+     */
+    public function sent(SentMessage $sent): array
+    {
+        $message = $sent->message();
+
+        return [
+            'id'              => $message['id'],
+            'conversation_id' => $message['conversation'],
+            'sender_id'       => $message['sender'],
+            'body'            => $message['body'],
+            'held'            => $sent->held(),
+            'created_at'      => Format::time($message['at']),
         ];
     }
 
