@@ -124,11 +124,12 @@ final class AddressGuard
 
     /**
      * The CURLOPT_RESOLVE entry that pins $url's host to the checked $ip. A host that is an
-     * IP itself needs no pin, and its `host:port:addr` line would not parse for IPv6.
+     * IP itself needs no pin, and its `host:port:addr` line would not parse for IPv6. Also the
+     * 'resolve' option of HttpClient::send().
      *
      * @return array<int,string>
      */
-    private static function curlResolve(string $url, string $ip): array
+    public static function curlResolve(string $url, string $ip): array
     {
         $parts = parse_url($url);
         $host  = trim((string)($parts['host'] ?? ''), '[]');

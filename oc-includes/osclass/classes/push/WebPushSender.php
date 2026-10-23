@@ -51,10 +51,9 @@ final class WebPushSender
                 return $this->failed('Address refused: ' . rtrim((string) ($check['error'] ?? 'not allowed'), '.'));
             }
             $options = ['connect_timeout' => 2, 'timeout' => 5, 'max_bytes' => 4096];
-            $host    = (string) ($check['host'] ?? '');
-            $ip      = (string) ($check['ip'] ?? '');
-            if ($host !== '' && filter_var($host, FILTER_VALIDATE_IP) === false) {
-                $options['resolve'] = [$host . ':' . (int) ($check['port'] ?? 443) . ':' . (str_contains($ip, ':') ? '[' . $ip . ']' : $ip)];
+            $resolve = AddressGuard::curlResolve($endpoint, (string) ($check['ip'] ?? ''));
+            if ($resolve !== []) {
+                $options['resolve'] = $resolve;
             }
             $headers = [
                 'Content-Length' => '0',
