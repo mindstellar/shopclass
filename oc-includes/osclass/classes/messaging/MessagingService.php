@@ -34,6 +34,7 @@ use mindstellar\messaging\event\MessageSent;
 use mindstellar\security\ActionThrottle;
 use mindstellar\security\MessageGuard;
 use mindstellar\security\RateLimit;
+use mindstellar\security\SpamCheck;
 use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 
@@ -386,7 +387,7 @@ final class MessagingService
         }
         $body       = $this->checkBody($sending->body());
         $holdReason = $sending->isHeld() ? (string) $sending->holdReason() : null;
-        if ($holdReason === null && $this->isSpam($user, $body, $itemId, $item)) {
+        if ($holdReason === null && $this->isSpam($user, $body, $itemId, $actor->ip(), $item)) {
             $holdReason = self::HELD_AKISMET;
         }
 
@@ -507,22 +508,14 @@ final class MessagingService
      * @param array<string,mixed>      $user
      * @param array<string,mixed>|null $item
      */
-    private function isSpam(array $user, string $body, int $itemId, ?array $item): bool
+    private function isSpam(array $user, string $body, int $itemId, ?string $ip, ?array $item): bool
     {
         if (!osc_akismet_key()) {
             return false;
         }
         $item ??= ListingStore::find($itemId, array('*'));
-        $akismet = new \Akismet(osc_base_url(), osc_akismet_key());
-        $akismet->setCommentType('message');
-        $akismet->setCommentAuthor((string) $user['s_name']);
-        $akismet->setCommentAuthorEmail((string) $user['s_email']);
-        $akismet->setCommentContent($body);
-        if ($item !== null) {
-            $akismet->setPermalink(osc_item_url_from_item($item));
-        }
 
-        return (bool) $akismet->isCommentSpam();
+        return SpamCheck::akismet((string) $user['s_name'], (string) $user['s_email'], $body, $ip, $item !== null ? osc_item_url_from_item($item) : null, 'message');
     }
 
     /**

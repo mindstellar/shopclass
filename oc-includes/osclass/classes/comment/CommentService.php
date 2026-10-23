@@ -22,6 +22,7 @@ use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\listing\ListingPolicy;
+use mindstellar\security\SpamCheck;
 use mindstellar\user\UserStore;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\ViewScope;
@@ -136,7 +137,7 @@ final class CommentService
             throw BlockedException::rateLimit(_m('Too many comments in an hour. Try again later.'), CommentPolicy::retryAfter());
         }
 
-        $status = $this->status($user, $authorName, $authorEmail, trim($title . "\n" . $body), $item);
+        $status = $this->status($user, $authorName, $authorEmail, trim($title . "\n" . $body), $item, $actor->ip());
         $row    = [
             'dt_pub_date'    => date('Y-m-d H:i:s'),
             'fk_i_item_id'   => (int) $item['pk_i_id'],
@@ -267,21 +268,14 @@ final class CommentService
      * @param array<string,mixed>|null $user
      * @param array<string,mixed>      $item
      */
-    private function status(?array $user, string $name, string $email, string $text, array $item): int
+    private function status(?array $user, string $name, string $email, string $text, array $item, ?string $ip): int
     {
         $threshold = (int) osc_moderate_comments();
         $approved  = (int) ($user['i_comments'] ?? 0);
         $status    = $threshold === -1 || ($threshold !== 0 && $approved >= $threshold) ? SavedComment::LIVE : SavedComment::PENDING;
 
-        if (osc_akismet_key() && $text !== '') {
-            $akismet = new \Akismet(osc_base_url(), osc_akismet_key());
-            $akismet->setCommentAuthor($name);
-            $akismet->setCommentAuthorEmail($email);
-            $akismet->setCommentContent($text);
-            $akismet->setPermalink(osc_item_url_from_item($item));
-            if ($akismet->isCommentSpam()) {
-                $status = SavedComment::SPAM;
-            }
+        if ($text !== '' && osc_akismet_key() && SpamCheck::akismet($name, $email, $text, $ip, osc_item_url_from_item($item))) {
+            $status = SavedComment::SPAM;
         }
 
         return $status;
