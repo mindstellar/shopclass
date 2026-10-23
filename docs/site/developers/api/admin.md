@@ -26,6 +26,7 @@ Each endpoint needs one scope. A key holds only the scopes it was made with.
 |---|---|
 | `admin:listings` | `/admin/listings` |
 | `admin:comments` | `/admin/comments` |
+| `admin:conversations` | `/admin/conversations`, `/admin/messages` |
 | `admin:users` | `/admin/users` |
 | `admin:taxonomy` | `/admin/categories`, `/admin/currencies`, `/admin/custom-fields`, `/admin/regions`, `/admin/cities`, `/admin/areas` |
 | `admin:settings` | `/admin/settings`, `/admin/jobs` |
@@ -37,8 +38,8 @@ public data.
 
 ### Moderator keys
 
-A key made for a moderator account can hold only `admin:listings` and `admin:comments`, and
-only while moderators may open those pages in the admin. Make one with
+A key made for a moderator account can hold only `admin:listings`, `admin:comments` and
+`admin:conversations`, and only while moderators may open those pages in the admin. Make one with
 `php oc-cli.php api:key:create --admin=<moderator> --scopes=admin:listings,admin:comments`.
 The settings screen is for full admins.
 
@@ -139,6 +140,24 @@ A kept row whose stock or selling price changes fires `variant_stock_changed` or
 | `DELETE /admin/comments/{id}` | Delete. |
 
 As for listings, a flag already as asked changes nothing, and an unblock runs before an approval.
+
+## Conversations
+
+`admin:conversations`. The same review as **Listings → Messages**, and it works while the site
+switch for messaging is off. Moderators need the Messages page.
+
+| Endpoint | Does |
+|---|---|
+| `GET /admin/conversations` | List, newest first. Filters: `status` (`open`, `held`, `closed`, `reported`), `user` (buyer or seller) and `listing` (ids), each a comma list or repeated, `limit`, `cursor`. |
+| `GET /admin/conversations/{id}` | One conversation with every message, held ones included. |
+| `POST /admin/conversations/{id}/close` | Close a reported conversation. `409` when it is not reported. |
+| `POST /admin/conversations/{id}/clear-report` | Drop the report and open it again. `409` when it is not reported. |
+| `GET /admin/messages` | Messages waiting for review, newest first. `status` takes `held`. |
+| `GET /admin/messages/{id}` | One message, with its sender and `state` (`sent`, `held`, `removed`). |
+| `POST /admin/messages/{id}/release` | Deliver a held message. `409` when it is not held. |
+| `POST /admin/messages/{id}/remove` | Drop a held message. `409` when it is not held. |
+
+There is no admin reply or edit. On a demo site the writes answer `403 demo_site`.
 
 ## Users
 
