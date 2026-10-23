@@ -44,6 +44,7 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 $admin = api_admin_boot('osc_models_messaging_live');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hMessages.php';
 $p = DB_TABLE_PREFIX;
 
 /** Records every publish and whether a transaction was open. */
@@ -186,6 +187,18 @@ harness_reset_container();
 pin('override', '/stream/user-' . $buyer, osc_messaging_live_url());
 putenv('OSC_LIVE_SUBSCRIBE_URL');
 putenv('OSC_LIVE');
+harness_reset_container();
+pin('live off, signed in: the real NullPublisher', NullPublisher::class, get_class(Container::root()->get(LivePublisher::class)));
+pin('live off, signed in: empty', '', osc_messaging_live_url());
+View::getInstance()->_exportVariableToView('conversations', []);
+ob_start();
+try {
+    require ABS_PATH . 'oc-includes/osclass/gui/account/user-messages-content.php';
+} catch (\Error) {
+    // The asset tags further down need helpers this boot does not load; the attribute comes first.
+}
+$inboxHtml = (string) ob_get_clean();
+pin('live off, signed in: the inbox renders an empty data-live-url', true, str_contains($inboxHtml, 'data-live-url=""'));
 Session::getInstance()->_dropEphemeral('userId');
 
 harness_section('a stalled nchan cannot hold up a send');
