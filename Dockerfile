@@ -9,6 +9,30 @@
 # Build before `docker build`: composer install --no-dev && npm ci && npm run build.
 # The storefront default theme lives in its own repo and is bundled below
 # (STOREFRONT_VERSION defaults to its latest release).
+
+# nchan, the module behind live messages, is not packaged by Alpine. It is built here
+# against the source of the exact nginx that apk installs, and the final stage refuses
+# to build if the two versions differ. Bump NCHAN_VERSION and NCHAN_SHA256 together.
+FROM php:8.5-fpm-alpine AS nchan-build
+ARG NCHAN_VERSION=1.3.8
+ARG NCHAN_SHA256=86e40f97bf380cb81d62c279aa0f992c2d8c93ebcfe242cf0be95e5b6ade9a98
+RUN set -eu; \
+    apk add --no-cache nginx curl build-base pcre2-dev zlib-dev openssl-dev linux-headers; \
+    V=$(nginx -v 2>&1 | sed 's#.*/##'); \
+    mkdir -p /src /out; \
+    cd /src; \
+    curl -fsSL -o nginx.tar.gz "https://nginx.org/download/nginx-$V.tar.gz"; \
+    curl -fsSL -o nchan.tar.gz "https://github.com/slact/nchan/archive/refs/tags/v${NCHAN_VERSION}.tar.gz"; \
+    echo "${NCHAN_SHA256}  nchan.tar.gz" | sha256sum -c -; \
+    tar xzf nginx.tar.gz; \
+    tar xzf nchan.tar.gz; \
+    mv "nchan-${NCHAN_VERSION}" nchan; \
+    cd "nginx-$V"; \
+    ./configure --with-compat --add-dynamic-module=/src/nchan >/dev/null; \
+    make modules >/dev/null; \
+    cp objs/ngx_nchan_module.so /out/; \
+    printf '%s\n' "$V" > /out/nchan-built-for
+
 FROM php:8.5-fpm-alpine
 
 LABEL org.opencontainers.image.title="Shopclass" \
@@ -115,6 +139,8 @@ RUN set -eu; \
 
 COPY .docker/prod/nginx.conf      /etc/nginx/nginx.conf
 COPY .docker/prod/supervisord.conf /etc/supervisord.conf
+COPY --from=nchan-build /out/ngx_nchan_module.so /usr/lib/nginx/modules/ngx_nchan_module.so
+COPY --from=nchan-build /out/nchan-built-for /etc/nginx/nchan-built-for
 # Empty defaults so nginx's includes are no-ops until the entrypoint (re)generates
 # them: real_ip.conf from OSC_REAL_IP_HEADER, and the two micro-cache/rate-limit
 # halves from OSC_MICROCACHE / OSC_RATE_LIMIT. nginx will not start if an included
@@ -125,8 +151,26 @@ RUN : > /etc/nginx/real_ip.conf \
     && /application/.docker/prod/tls.sh conf \
     && : > /etc/nginx/microcache_http.conf \
     && : > /etc/nginx/microcache_php.conf \
+    && : > /etc/nginx/microcache_server.conf \
+    && : > /etc/nginx/live_http.conf \
+    && : > /etc/nginx/live_server.conf \
     && mkdir -p /var/cache/nginx/microcache \
     && chown -R nginx:nginx /var/cache/nginx
+
+# Load nchan, but only into the nginx it was built for. Then check the config twice:
+# with live messages on, so every nchan directive the entrypoint writes is valid, and
+# with them off, which is how the image starts until the entrypoint runs.
+RUN set -eu; \
+    built=$(cat /etc/nginx/nchan-built-for); \
+    have=$(nginx -v 2>&1 | sed 's#.*/##'); \
+    [ "$have" = "$built" ] || { echo "nchan was built for nginx $built, the image has $have" >&2; exit 1; }; \
+    printf 'load_module /usr/lib/nginx/modules/ngx_nchan_module.so;\n' > /etc/nginx/modules/nchan.conf; \
+    eval "$(sed -n '/^write_live_conf() {/,/^write_live_conf$/p' /application/.docker/prod/entrypoint.sh | sed '$d')"; \
+    OSC_LIVE=nchan OSC_CACHE=redis OSC_CACHE_HOST=localhost OSC_CACHE_USERNAME=u OSC_CACHE_PASSWORD=p write_live_conf; \
+    grep -q nchan_redis_pass /etc/nginx/live_server.conf; \
+    nginx -t -q; \
+    OSC_LIVE=off write_live_conf; \
+    nginx -t -q
 
 # Configure entirely from the environment by default: ignore any config.php and
 # read DB settings from DB_* / WEB_PATH. Override per-deploy as needed.
@@ -140,10 +184,12 @@ RUN : > /etc/nginx/real_ip.conf \
 # bundled ones current without touching what a site owner installed themselves.
 # OSC_BUNDLED_CONTENT_PATH points package:reconcile at the pristine copy staged
 # above.
+# OSC_LIVE=nchan streams new messages to open pages; OSC_LIVE=off leaves them polling.
 ENV OSC_IGNORE_CONFIG_FILE=1 \
     OSC_DISABLE_SELF_UPDATE=1 \
     OSC_CACHE_LOCAL=1 \
-    OSC_BUNDLED_CONTENT_PATH=/usr/src/shopclass/oc-content
+    OSC_BUNDLED_CONTENT_PATH=/usr/src/shopclass/oc-content \
+    OSC_LIVE=nchan
 
 EXPOSE 80 443
 

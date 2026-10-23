@@ -51,6 +51,7 @@ services:
       OSC_CACHE: redis
       OSC_CACHE_HOST: valkey
       OSC_CACHE_PASSWORD: shopclass
+      # nchan shares live-message notes through Valkey when it is on; `OSC_LIVE: off` turns live delivery off.
     volumes:
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads
