@@ -17,4 +17,8 @@ namespace mindstellar\exception;
  */
 final class NotFoundException extends RefusedException
 {
+    public function httpStatus(): int
+    {
+        return 404;
+    }
 }

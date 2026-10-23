@@ -29,4 +29,9 @@ final class ConflictException extends RefusedException
     {
         return $this->reason;
     }
+
+    public function httpStatus(): int
+    {
+        return 409;
+    }
 }

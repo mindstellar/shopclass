@@ -432,32 +432,27 @@ class CWebAjax extends BaseModel
     }
 
     /**
-     * Send the reply a refused messages call gets: the status and error code from the exception.
+     * Send the reply a refused messages call gets: the exception's own status, and its reason as
+     * the error code.
      */
     private function messagingRefusal(RefusedException $e): void
     {
-        $body   = array('error' => 'refused', 'msg' => $e->getMessage());
-        $status = 400;
+        $body = array('error' => 'refused', 'msg' => $e->getMessage());
         if ($e instanceof ForbiddenException) {
-            $reason = $e->reason() !== '' ? $e->reason() : 'forbidden';
-            $status = $reason === ForbiddenException::SIGN_IN ? 401 : 403;
-            $body['error'] = $reason;
+            $body['error'] = $e->reason() !== '' ? $e->reason() : 'forbidden';
         } elseif ($e instanceof NotFoundException) {
-            $status        = 404;
             $body['error'] = 'not_found';
         } elseif ($e instanceof ConflictException) {
-            $status        = 409;
             $body['error'] = $e->reason() !== '' ? $e->reason() : 'conflict';
         } elseif ($e instanceof InvalidException) {
-            $status        = 422;
-            $body['error'] = ltrim($e->pointer(), '/') !== '' ? ltrim($e->pointer(), '/') : 'invalid';
+            $body['error']  = ltrim($e->pointer(), '/') !== '' ? ltrim($e->pointer(), '/') : 'invalid';
+            $body['errors'] = $e->errors();
         } elseif ($e instanceof BlockedException) {
-            $status              = 429;
-            $body['error']       = 'rate_limited';
+            $body['error']       = $e->isRateLimit() ? 'rate_limited' : 'login_blocked';
             $body['retry_after'] = $e->retryAfter();
             header('Retry-After: ' . $e->retryAfter());
         }
-        AjaxResponse::json($body, $status);
+        AjaxResponse::json($body, $e->httpStatus());
     }
 
     /**

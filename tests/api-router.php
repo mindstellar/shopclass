@@ -661,6 +661,18 @@ pin('a core refusal reason maps to its API code', ['feature_disabled', 'wrong_cr
     \mindstellar\api\Problem::fromRefusal(new \mindstellar\exception\ForbiddenException('No.', 'something_else'))->body()['code'],
 ]);
 
+foreach ([
+    new \mindstellar\exception\RefusedException('No.'),
+    new \mindstellar\exception\ForbiddenException('No.', \mindstellar\exception\ForbiddenException::SIGN_IN),
+    new \mindstellar\exception\NotFoundException('No.'),
+    new \mindstellar\exception\ConflictException('No.', \mindstellar\exception\ConflictException::ALREADY_REVIEWED),
+    new \mindstellar\exception\InvalidException('/body', 'minLength', 'No.'),
+    \mindstellar\exception\BlockedException::rateLimit('No.', 5),
+    new \mindstellar\exception\BlockedException('No.', 5),
+] as $refused) {
+    pin(get_class($refused) . ' answers the status the web pages use', $refused->httpStatus(), \mindstellar\api\Problem::fromRefusal($refused)->status());
+}
+
 harness_section('If-Match');
 $coreGets  = [];
 $unchecked = [];

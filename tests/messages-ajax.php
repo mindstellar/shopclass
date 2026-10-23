@@ -63,9 +63,25 @@ $actor = $method('messagingActor');
 check('a guest is 401 sign_in', strpos($actor, 'SIGN_IN') !== false && strpos($actor, '401') !== false);
 check('messaging off is 403 disabled', strpos($actor, 'osc_messaging_enabled()') !== false && strpos($actor, '403') !== false);
 $refusal = $method('messagingRefusal');
-foreach (array('ForbiddenException' => '403', 'NotFoundException' => '404', 'ConflictException' => '409', 'InvalidException' => '422', 'BlockedException' => '429') as $class => $status) {
-    check("$class maps to $status", (bool) preg_match("/instanceof $class\\).*?\\\$status\\s*=\\s*[^;]*$status/s", $refusal));
+check('the status is the exception\'s own', strpos($refusal, 'AjaxResponse::json($body, $e->httpStatus())') !== false);
+check('a field error carries its errors', strpos($refusal, "\$body['errors'] = \$e->errors()") !== false);
+check('a sign-in block is not called a rate limit', strpos($refusal, "isRateLimit() ? 'rate_limited' : 'login_blocked'") !== false);
+
+harness_section('each refusal\'s status');
+foreach (array('Refused', 'Forbidden', 'NotFound', 'Conflict', 'Invalid', 'Blocked') as $name) {
+    require_once __DIR__ . "/../oc-includes/osclass/classes/exception/{$name}Exception.php";
 }
+$statuses = array(
+    422 => new \mindstellar\exception\RefusedException('x'),
+    403 => new \mindstellar\exception\ForbiddenException('x', 'sign_in'),
+    404 => new \mindstellar\exception\NotFoundException('x'),
+    409 => new \mindstellar\exception\ConflictException('x', 'closed'),
+    429 => \mindstellar\exception\BlockedException::rateLimit('x', 5),
+);
+foreach ($statuses as $status => $e) {
+    pin(get_class($e) . " is $status", $status, $e->httpStatus());
+}
+pin('InvalidException is 422', 422, (new \mindstellar\exception\InvalidException('/body', 'minLength', 'x'))->httpStatus());
 check('a rate limit carries retry_after', strpos($refusal, "'retry_after'") !== false && strpos($refusal, '->retryAfter()') !== false);
 
 harness_section('no untyped reads');
