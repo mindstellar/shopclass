@@ -229,6 +229,18 @@ foreach (array($guiDir . 'contact-content.php', $guiDir . 'item-contact-content.
     check(basename($file) . ' uses the shared contact form', strpos($src, "parts/contact-form.php'") !== false
         && strpos($src, 'name="yourName"') === false);
 }
+// One message-only form, in the partial (tests/messaging-theme-parts.php renders it).
+check('the partial reads the messaging option', strpos($contactPart, "\$cf['messaging']") !== false);
+$itemContact = (string) file_get_contents($guiDir . 'item-contact-content.php');
+check('item-contact-content.php passes messaging and has no form of its own', strpos($itemContact, "'messaging'  => osc_item_uses_messaging()") !== false
+    && strpos($itemContact, '<textarea') === false && strpos($itemContact, '<form') === false);
+$writingAs = 0;
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/osclass/gui', FilesystemIterator::SKIP_DOTS)) as $f) {
+    if (substr($f->getFilename(), -4) === '.php' && strpos((string) file_get_contents($f->getPathname()), 'You are writing as %s') !== false) {
+        $writingAs++;
+    }
+}
+check('the "You are writing as" line lives in one file', $writingAs === 1);
 $contactCase = array(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php', 'contactPost'));
 check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
 check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceededFor('user_contact'") !== false);
