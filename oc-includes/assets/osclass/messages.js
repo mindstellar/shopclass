@@ -100,7 +100,7 @@
     }
 
     // New messages: a check every 15 s while the tab is visible, or one EventSource when the
-    // page has a live URL. Either way a change runs the same refresh.
+    // page has a live URL, with a check each minute in case a note was lost.
     var startLive = function () {
         var checkUrl = root.dataset.checkUrl;
         if (!checkUrl) {
@@ -193,13 +193,13 @@
 
         var schedule = function () {
             stopTimer();
-            if (stream || !visible()) {
+            if (!visible()) {
                 return;
             }
             timer = setTimeout(function () {
                 timer = null;
                 run().then(schedule);
-            }, delay);
+            }, stream ? Math.max(delay, 60000) : delay);
         };
 
         document.addEventListener('visibilitychange', function () {
@@ -236,7 +236,6 @@
                     schedule();
                 }
             });
-            return;
         }
         schedule();
     };

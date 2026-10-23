@@ -206,11 +206,15 @@
         out.liveSources = e.sources.map(function (s) {
             return s.url;
         });
-        await e.advance(60000);
+        await e.advance(59999);
         out.liveFetches = e.fetches.length;
+        await e.advance(1);
+        out.liveSlowCheck = count(e, 'messages_check');
+        var sinceBefore = count(e, 'messages_since');
+        e.tag = 'b';
         e.sources[0].emit('message');
         await flush();
-        out.liveNoteSince = count(e, 'messages_since');
+        out.liveNoteSince = count(e, 'messages_since') - sinceBefore;
         e.sources[0].emit('error');
         e.sources[0].emit('error');
         out.liveClosedAfter2 = e.sources[0].closed;

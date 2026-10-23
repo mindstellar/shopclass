@@ -425,7 +425,7 @@ final class SystemChecks
             $issues[] = self::issue(
                 'live_publish_failed',
                 'warning',
-                __('Live messages could not be published, so open pages fall back to checking every 15 seconds.'),
+                __('Live messages could not be published, so open pages see new messages on their next check, within a minute.'),
                 array('label' => __('Live messages'), 'url' => self::DOCS_LIVE)
             );
         }

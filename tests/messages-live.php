@@ -90,7 +90,8 @@ pin('returning to visible checks at once', 1, $r['visibleFetches'] ?? null);
 
 harness_section('the live stream');
 pin('EventSource opens with the live URL', array('/live/sub/user-1'), $r['liveSources'] ?? null);
-pin('no timed check while the stream is open', 0, $r['liveFetches'] ?? null);
+pin('no 15 s check while the stream is open', 0, $r['liveFetches'] ?? null);
+pin('but one check a minute, in case a note was lost', 1, $r['liveSlowCheck'] ?? null);
 pin('a note fetches since once', 1, $r['liveNoteSince'] ?? null);
 pin('two errors keep the stream', false, $r['liveClosedAfter2'] ?? null);
 pin('the third error closes it', true, $r['liveClosedAfter3'] ?? null);
