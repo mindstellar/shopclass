@@ -208,6 +208,15 @@ $controllers = array(
         'delete'            => 'deleteComment',
         'status'            => 'setStatus',
     ), 'comments'),
+    'CAdminMessages' => array('admin/CAdminMessages.php', array(
+        ''             => 'held',
+        'clear_post'   => 'clearPost',
+        'close_post'   => 'closePost',
+        'release_post' => 'releasePost',
+        'remove_post'  => 'removePost',
+        'reported'     => 'reported',
+        'thread'       => 'thread',
+    ), 'held'),
     'CAdminAdmins' => array('admin/CAdminAdmins.php', array(
         '2fa_codes'    => 'twoFactorPost',
         '2fa_enable'   => 'twoFactorPost',

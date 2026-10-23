@@ -669,10 +669,12 @@ class CAdminUsers extends AdminSecBaseModel
      */
     private function createBanRule(): void
     {
-        $this->_exportVariableToView(
-            'ban_rule_form',
-            BanRuleForm::formVars(null, osc_settings_values(BanRuleForm::register()))
-        );
+        $values = osc_settings_values(BanRuleForm::register());
+        $email  = Params::getParamString('email');
+        if ($email !== '') {
+            $values['s_email'] = $email;
+        }
+        $this->_exportVariableToView('ban_rule_form', BanRuleForm::formVars(null, $values));
         $this->doView('users/ban_frm.php');
     }
 
