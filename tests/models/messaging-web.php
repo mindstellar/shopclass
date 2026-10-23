@@ -281,6 +281,34 @@ pin('a party sees the thread', array(null, $open), array($r['redirect'], (int) (
 check('in the conversation template', strpos((string) $r['view'], 'user-conversation') !== false, (string) $r['view']);
 pin('and it is marked read for them', '0', explode('/', $unread($open))[1]);
 
+harness_section('contact form');
+$mails = 0;
+osc_add_hook('pre_item_contact_post', static function () use (&$mails): void {
+    $mails++;
+    throw new WebRedirect('mail');
+});
+$contact = static function (int $itemId): array {
+    web_request('POST', array('page' => 'item', 'action' => 'contact_post'), array(
+        'id' => $itemId, 'yourName' => 'Bea', 'yourEmail' => 'bea@example.test', 'message' => 'Still there & ready?',
+    ) + web_csrf());
+
+    return web_page(static fn () => new CWebItem());
+};
+$threads = static fn (int $itemId): int => (int) $col("SELECT COUNT(*) FROM {$p}t_conversation WHERE fk_i_item_id = $itemId");
+web_sign_in(null);
+$r = $contact($desk);
+pin('a guest sends the seller e-mail', array('mail', 1, 0), array($r['redirect'], $mails, $threads($desk)));
+web_sign_in($buyer);
+$set('enabled_messaging', '0');
+$r = $contact($desk);
+pin('a user with the switch off sends the e-mail', array('mail', 2, 0), array($r['redirect'], $mails, $threads($desk)));
+$set('enabled_messaging', '1');
+web_sign_in($buyer);
+$r = $contact($desk);
+pin('a user with the switch on starts a conversation and sends no e-mail', array(2, 1), array($mails, $threads($desk)));
+pin('and lands on the thread', osc_messaging_thread_url((int) $col("SELECT pk_i_id FROM {$p}t_conversation WHERE fk_i_item_id = $desk")), $r['redirect']);
+pin('the message is stored as typed', 'Still there & ready?', $col("SELECT m.s_body FROM {$p}t_message m JOIN {$p}t_conversation t ON t.pk_i_id = m.fk_i_conversation_id WHERE t.fk_i_item_id = $desk"));
+
 $result = harness_result();
 ob_end_flush();
 exit($result);
