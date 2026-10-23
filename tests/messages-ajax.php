@@ -99,7 +99,7 @@ check('a guest is 401', strpos($auth, '=== null') !== false && strpos($auth, 'ht
 check('messaging off is 403', strpos($auth, '!osc_messaging_enabled()') !== false && strpos($auth, 'http_response_code(403)') !== false);
 check('the channel comes from nchan\'s X-Channel-Id header', strpos($auth, "Params::getServerParam('HTTP_X_CHANNEL_ID'") !== false);
 check('the channel is not read from the request', !preg_match('/Params::getParam\w*\(/', $auth));
-check('the channel compare is strict, against the visitor\'s own channel', strpos($auth, "\$channel !== 'user-' . \$userId") !== false && strpos($auth, '!=') === strpos($auth, '!=='));
+check('the channel compare is strict, against the visitor\'s own channel', strpos($auth, 'LiveChannel::userId($channel) !== $userId') !== false && strpos($auth, '!=') === strpos($auth, '!=='));
 check('no-store is sent first', strpos($auth, "header('Cache-Control: no-store')") !== false && strpos($auth, "header('Cache-Control: no-store')") < (int) $off);
 check('no body is sent', strpos($auth, 'echo') === false && strpos($auth, 'AjaxResponse::') === false);
 check('no CSRF check (GET, no state)', strpos($auth, 'osc_csrf_check') === false);
