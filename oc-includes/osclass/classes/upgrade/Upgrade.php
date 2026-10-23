@@ -126,7 +126,8 @@ class Upgrade
 
     /**
      * The PHP version a package needs, when this server runs an older one. A release states it in
-     * the Composer platform check it ships; a package without one needs nothing.
+     * the Composer platform check it ships; a package without one needs nothing. Only the first
+     * PHP_VERSION_ID floor is read, which is the one Composer writes for `require.php`.
      *
      * @param string $root package root, see packageRoot()
      * @param string $php  the server's PHP version
