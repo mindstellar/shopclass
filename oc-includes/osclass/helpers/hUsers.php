@@ -86,6 +86,44 @@ function osc_messaging_live_url(): string
         ->get(\mindstellar\live\LivePublisher::class)->subscribeUrl(\mindstellar\live\LiveChannel::forUser($userId)) ?? '';
 }
 
+/**
+ * Whether browser notifications for new messages are on: the switch, messaging, and a site
+ * address browsers accept for push (https://, or localhost while testing).
+ *
+ * @return bool
+ */
+function osc_push_enabled(): bool
+{
+    if (!osc_get_bool_preference('enabled_push') || !osc_messaging_enabled()) {
+        return false;
+    }
+    $url  = (string) osc_base_url();
+    $host = strtolower(trim((string) parse_url($url, PHP_URL_HOST), '[]'));
+
+    return match (strtolower((string) parse_url($url, PHP_URL_SCHEME))) {
+        'https' => true,
+        'http'  => $host === 'localhost' || str_ends_with($host, '.localhost') || $host === '127.0.0.1' || $host === '::1',
+        default => false,
+    };
+}
+
+/**
+ * The site's push key (base64url) for the browser to subscribe with; '' while push is off.
+ *
+ * @return string
+ */
+function osc_push_public_key(): string
+{
+    if (!osc_push_enabled()) {
+        return '';
+    }
+    try {
+        return \mindstellar\container\Container::root()->get(\mindstellar\push\Vapid::class)->publicKey();
+    } catch (\Throwable $e) {
+        return '';
+    }
+}
+
 /*
  * "Messages" on the account menu, with the unread count while there is one; a shopper's menu drops
  * it (OSC_SHOPPER_HIDDEN_MENU). Plugins::addHook() because this file loads before hPlugins.php.
