@@ -168,6 +168,26 @@
         out.pollIds2 = ids();
         e.stop();
 
+        // A failed refresh keeps the old ETag, so the next check fetches since again.
+        e = env({route: function (url, en) {
+            if (url.indexOf('messages_since') !== -1 && !en.sinceFailed) {
+                en.sinceFailed = true;
+                return {status: 500};
+            }
+            return threadRoute(url, en);
+        }});
+        e.tag = 'a';
+        await e.start(thread(''));
+        await e.advance(15000);
+        await e.advance(30000);
+        out.retryInm = e.fetches.filter(function (f) {
+            return f.url.indexOf('messages_check') !== -1;
+        }).map(function (f) {
+            return f.inm;
+        });
+        out.retryIds = ids();
+        e.stop();
+
         // Hidden tab: no check in 60 s; back to visible: one at once.
         e = env({route: threadRoute});
         e.tag = 'a';

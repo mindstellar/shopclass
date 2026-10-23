@@ -81,6 +81,8 @@ pin('the next check sends the ETag', '"a"', $r['pollSecond'] ?? null);
 pin('a 304 fetches nothing more', 3, $r['pollAfter304'] ?? null);
 pin('a changed ETag fetches since again', 2, $r['pollSinceCount'] ?? null);
 pin('and the next message appears', array('1', '2', '3'), $r['pollIds2'] ?? null);
+pin('a failed refresh keeps the old ETag', array(null, null), $r['retryInm'] ?? null);
+pin('so the next check loads the message', array('1', '2'), $r['retryIds'] ?? null);
 
 harness_section('a hidden tab');
 pin('no request in 60 s while hidden', 0, $r['hiddenFetches'] ?? null);

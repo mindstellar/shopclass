@@ -162,8 +162,11 @@
                 if (!response.ok) {
                     throw new Error('check ' + response.status);
                 }
-                etag = response.headers.get('ETag') || etag;
-                return list ? refreshThread() : refreshInbox();
+                // Keep the old tag until the refresh lands, so a failed refresh is retried.
+                var fresh = response.headers.get('ETag') || etag;
+                return (list ? refreshThread() : refreshInbox()).then(function () {
+                    etag = fresh;
+                });
             });
         };
 
