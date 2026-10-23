@@ -49,6 +49,8 @@ final class Scopes
         'orders:write'    => 'Place and cancel own orders.',
         'cart:read'       => 'Read own saved cart.',
         'cart:write'      => 'Save own cart.',
+        'conversations:read'  => 'Read own conversations and messages.',
+        'conversations:write' => 'Send messages, mark read, block and report.',
         'account:read'    => 'Read own profile and sessions.',
         'account:write'   => 'Edit own profile, password and e-mail.',
         'admin:listings'  => 'Moderate and edit any listing.',
@@ -58,6 +60,7 @@ final class Scopes
         'admin:settings'  => 'Read and change the settings the API exposes.',
         'admin:keys'      => 'Manage API keys.',
         'admin:webhooks'  => 'Manage webhook endpoints.',
+        'admin:conversations' => 'Review held messages and reported conversations.',
     ];
 
     public const PUBLIC = [self::PUBLIC_READ];
@@ -65,18 +68,18 @@ final class Scopes
     public const USER = [
         'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:read', 'alerts:write',
         'account:read', 'account:write', 'wishlist:read', 'wishlist:write', 'orders:read', 'orders:write',
-        'cart:read', 'cart:write',
+        'cart:read', 'cart:write', 'conversations:read', 'conversations:write',
     ];
 
     public const ADMIN = [
         'admin:listings', 'admin:comments', 'admin:users', 'admin:taxonomy', 'admin:settings',
-        'admin:keys', 'admin:webhooks',
+        'admin:keys', 'admin:webhooks', 'admin:conversations',
     ];
 
-    public const MODERATOR = ['admin:listings', 'admin:comments'];
+    public const MODERATOR = ['admin:listings', 'admin:comments', 'admin:conversations'];
 
     /** The admin page behind each moderator scope: a moderator holds the scope while moderators may open the page. */
-    public const MODERATOR_PAGES = ['admin:listings' => 'items', 'admin:comments' => 'comments'];
+    public const MODERATOR_PAGES = ['admin:listings' => 'items', 'admin:comments' => 'comments', 'admin:conversations' => 'messages'];
 
     /** Scopes only a signed-in user's access token may hold, never a key or a session. */
     public const TOKEN_ONLY = ['account:write'];
@@ -92,6 +95,7 @@ final class Scopes
         'wishlist:write' => ['wishlist:read'],
         'orders:write'   => ['orders:read'],
         'cart:write'     => ['cart:read'],
+        'conversations:write' => ['conversations:read'],
     ];
 
     /** @var array<string,array{description:string,audience:string}> */
