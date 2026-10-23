@@ -7382,6 +7382,10 @@ msgstr ""
 msgid "Messages"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebAjax.php
+msgid "Messages are switched off on this site"
+msgstr ""
+
 #: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
 msgid "Messages only"
 msgstr ""
@@ -11399,6 +11403,10 @@ msgstr ""
 msgid "Sign in"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebAjax.php
+msgid "Sign in to use messages"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/header.php
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "Sign out"
@@ -13817,6 +13825,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
 msgid "Use POP before SMTP"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebAjax.php
+msgid "Use POST"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hSearch.php
