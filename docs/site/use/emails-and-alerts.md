@@ -93,6 +93,8 @@ A shop sends the buyer six mails. Each goes once per order, and a failed send is
 
 When on-site messaging is on, a user gets one mail a minute at most per conversation, saying they have a new message about a listing. It holds a link to the conversation page and none of the message text.
 
+A user with the conversation open sees new messages live, or within 15 seconds.
+
 ## Alerts and cron
 
 Saved-search alerts are **not** sent when a listing is published. They are sent

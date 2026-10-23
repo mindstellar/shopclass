@@ -321,6 +321,10 @@ Classes that moved keep their old name for a release, marked `@deprecated`:
 | `mindstellar\security\ItemAccess` | `mindstellar\listing\ListingPolicy` |
 | `Item::liveConditions()` | `mindstellar\listing\ListingStatus::liveConditions()` |
 
+## Live delivery
+
+`mindstellar\live\LivePublisher` is the swap point for pushing a note to a browser. `NullPublisher` does nothing and `NchanPublisher` posts to nginx. To use Mercure or Centrifugo, write a class that implements `LivePublisher`, register it in the container, and add the server config; a publish must never throw or block a send.
+
 ## One rule, one place
 
 A listing is live when it is enabled, active, not spam, and premium or not yet expired.

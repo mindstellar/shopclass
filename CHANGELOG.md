@@ -46,6 +46,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - **Listings → Settings → Search count limit** stops search counts at a number and shows "1,000+" past it; themes use `osc_search_total_text()` and `osc_search_total_capped()`, and the API sends `meta.total_capped`. New sites start at 1000, updated sites at 0 (exact).
 - On-site messaging between buyers and sellers: inbox and conversation pages in the account, the contact-seller form starts the conversation for signed-in users, admin review under Listings → Messages. Switch: Users → Settings → Users can message sellers on the site, off by default.
 - The REST API gains `/account/conversations` and `/admin/conversations`, `/admin/messages`, and the webhooks `message.created` and `conversation.reported`; scopes `conversations:read`, `conversations:write`, `admin:conversations`.
+- New messages show up without a reload: every site checks every 15 s while the tab is open; the Docker image streams them through nchan (`OSC_LIVE`), sharing through Valkey when the cache is on.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
