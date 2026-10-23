@@ -120,6 +120,10 @@ $delay = $count("SELECT TIMESTAMPDIFF(SECOND, NOW(), dt_next_run) FROM {$p}t_job
 pin('due about 60 seconds out', true, $delay >= 55 && $delay <= 61);
 $svc->start($bike, 'Hello again', $asBuyer);
 pin('a second message in the delay keeps one job', 1, $count(sprintf($job, 'COUNT(*)')));
+$admin->query("UPDATE {$p}t_job_queue SET dt_next_run = DATE_ADD(NOW(), INTERVAL 30 SECOND) WHERE s_type = 'message.notify'");
+$before = (string) $col(sprintf($job, 'CONCAT(pk_i_id, \'@\', dt_next_run)'));
+$svc->start($bike, 'And again', $asBuyer);
+pin('a later message does not push the mail back', $before, (string) $col(sprintf($job, 'CONCAT(pk_i_id, \'@\', dt_next_run)')));
 pin('payload names the thread and the recipient', array('conversation' => $conv, 'recipient' => $seller), json_decode((string) $col(sprintf($job, 's_payload')), true));
 
 harness_section('the mail');
@@ -128,7 +132,7 @@ pin('one mail for the burst', 1, count($mails));
 pin('it goes to the seller', 'sam@example.test', $mails[0]['to'] ?? null);
 pin('the subject holds the listing title', true, str_contains((string) ($mails[0]['subject'] ?? ''), 'Bike'));
 pin('the body holds the thread link', true, str_contains((string) ($mails[0]['body'] ?? ''), osc_esc_html(osc_messaging_thread_url($conv))));
-pin('the body holds no message text', false, str_contains((string) ($mails[0]['body'] ?? '') . ($mails[0]['subject'] ?? ''), 'SECRET-TEXT') || str_contains((string) ($mails[0]['body'] ?? ''), 'Hello again'));
+pin('the body holds no message text', false, str_contains((string) ($mails[0]['body'] ?? '') . ($mails[0]['subject'] ?? ''), 'SECRET-TEXT') || str_contains((string) ($mails[0]['body'] ?? ''), 'Hello again') || str_contains((string) ($mails[0]['body'] ?? ''), 'And again'));
 pin('the job is done', 0, $count(sprintf($job, 'COUNT(*)') . " AND s_status = 'pending'"));
 
 harness_section('old and typed listeners');
@@ -156,6 +160,7 @@ $cord = seed_item($admin, $cat, $seller, 'Cord');
 $b = $svc->start($cord, 'Cord?', $asBuyer);
 $svc->block($b->conversationId(), $asBuyer);
 pin('blocked before the job runs: no mail', 0, count($runJobs()));
+$svc->unblock($b->conversationId(), $asBuyer);
 $twine = seed_item($admin, $cat, $seller, 'Twine');
 $c = $svc->start($twine, 'Twine?', $asBuyer);
 $admin->query("UPDATE {$p}t_conversation SET s_state = 'closed' WHERE pk_i_id = " . $c->conversationId());
