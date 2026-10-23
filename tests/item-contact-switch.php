@@ -42,6 +42,10 @@ check('it starts the thread through MessagingService', strpos($conv, 'MessagingS
 check('it acts as the visitor', strpos($conv, 'Actor::visitor()') !== false);
 check('it lands on the thread', strpos($conv, 'osc_messaging_thread_url(') !== false);
 check('a rate limit uses the shared wording', strpos($conv, 'osc_message_throttle_message($e->retryAfter())') !== false);
+$pre  = strpos($conv, "osc_run_hook('pre_item_contact_post', \$item)");
+$post = strpos($conv, "osc_run_hook('post_item_contact_post', \$item)");
+check('a plugin\'s contact check runs before the thread starts', $pre !== false && $pre < strpos($conv, '->start('));
+check('post_item_contact_post fires however the start ends', $post !== false && strpos($conv, 'finally') !== false && strpos($conv, 'finally') < $post);
 check('a rate limit and a bad body go back to the form', strpos($conv, 'catch (BlockedException') !== false && strpos($conv, 'catch (InvalidException') !== false);
 
 exit(harness_result());

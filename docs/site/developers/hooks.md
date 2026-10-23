@@ -531,13 +531,13 @@ Core fires 630 names. Generated from the source; do not edit by hand.
 | `osc_item_meta_value_filter` | filter | `$value, $meta` | `oc-includes/osclass/helpers/hItems.php` |
 | `osc_item_meta_value_pre_filter` | filter | `$value, $meta` | `oc-includes/osclass/helpers/hItems.php` |
 | `post_item` | action | none | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `post_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/listing/ListingMailService.php` |
+| `post_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `post_item_send_friend_post` | action | `$item` | `oc-includes/osclass/classes/listing/ListingMailService.php` |
 | `posted_item` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `pre_item_add` | action | `$aItem, $text` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `pre_item_add_comment_post` | action | `$item` | `oc-includes/osclass/classes/comment/CommentService.php` |
 | `pre_item_add_error` | filter | `$text, $aItem` | `oc-includes/osclass/classes/listing/ListingService.php` |
-| `pre_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/listing/ListingMailService.php` |
+| `pre_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `pre_item_delete_comment_post` | action | `$item, $commentId` | `oc-includes/osclass/classes/comment/CommentService.php` |
 | `pre_item_edit` | action | `$aItem, $text` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `pre_item_edit_error` | filter | `$text, $aItem` | `oc-includes/osclass/classes/listing/ListingService.php` |
