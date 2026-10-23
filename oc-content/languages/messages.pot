@@ -3401,6 +3401,10 @@ msgstr ""
 msgid "This conversation is waiting for review"
 msgstr ""
 
+#: oc-includes/osclass/classes/messaging/MessagingService.php
+msgid "This conversation was already reported"
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
 msgid "This field is needed."
 msgstr ""
