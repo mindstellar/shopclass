@@ -18,6 +18,7 @@ use mindstellar\messaging\event\MessageSent;
 use mindstellar\push\PushSubscriptions;
 use mindstellar\push\WebPushSender;
 use mindstellar\user\UserStore;
+use mindstellar\utility\Clock;
 
 /**
  * Wakes the recipient's browsers when new messages arrive. A sent message queues one short
@@ -29,11 +30,14 @@ final class PushNotifier
     public const JOB        = 'message.push';
     public const DELAY      = 15;
     public const MAX_ROUNDS = 4;
+    /** Seconds one run may spend sending; the browsers left wait for the next run. */
+    public const BUDGET = 15;
 
     public function __construct(
         private PushSubscriptions $subscriptions,
         private WebPushSender $sender,
-        private ConversationStore $conversations
+        private ConversationStore $conversations,
+        private Clock $clock
     ) {
     }
 
@@ -69,10 +73,17 @@ final class PushNotifier
             return;
         }
 
-        $only = $job->get('only');
+        $only  = $job->get('only');
+        $round = (int) $job->get('round', 1);
         $retry = array();
+        $left  = array();
+        $stop  = $this->clock->now() + self::BUDGET;
         foreach ($this->subscriptions->forUser($recipientId) as $key => $browser) {
             if (is_array($only) && !in_array($key, $only, true)) {
+                continue;
+            }
+            if ($this->clock->now() >= $stop) {
+                $left[] = $key;
                 continue;
             }
             $result = $this->sender->send($browser['endpoint']);
@@ -83,8 +94,9 @@ final class PushNotifier
             }
         }
 
-        $round = (int) $job->get('round', 1);
-        if ($retry !== array() && $round < self::MAX_ROUNDS) {
+        if ($left !== array()) {
+            $job->repeat(array('recipient' => $recipientId, 'only' => array_merge($left, $retry), 'round' => $round));
+        } elseif ($retry !== array() && $round < self::MAX_ROUNDS) {
             $job->repeat(array('recipient' => $recipientId, 'only' => $retry, 'round' => $round + 1), 60 * $round);
         }
     }

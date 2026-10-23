@@ -30,13 +30,18 @@ use mindstellar\database\Db;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\http\HttpClient;
 use mindstellar\http\HttpException;
+use mindstellar\job\Job;
 use mindstellar\job\JobWorker;
 use mindstellar\messaging\event\MessageSending;
 use mindstellar\messaging\event\MessageSent;
+use mindstellar\messaging\ConversationStore;
 use mindstellar\messaging\MessagingService;
+use mindstellar\messaging\PushNotifier;
 use mindstellar\moderation\MessageModeration;
 use mindstellar\push\PushSubscriptions;
+use mindstellar\push\WebPushSender;
 use mindstellar\security\AddressGuard;
+use mindstellar\utility\Clock;
 
 $GLOBALS['mpBase'] = 'http://localhost/';
 if (!function_exists('osc_base_url')) {
@@ -248,6 +253,27 @@ pin('failed browsers are tried once', array($epA, $epB), $runJobs());
 pin('a failed send completes the job: no retry storm', 0, $count(sprintf($job, 'COUNT(*)')));
 pin('failed browsers keep their rows', 2, count($subs->forUser($seller)));
 $http->status = array();
+
+harness_section('a run stops sending after its time budget');
+$push();
+$cleanup();
+$http->calls = array();
+$stepClock = new class () implements Clock {
+    public int $t = 1000000;
+
+    public function now(): int
+    {
+        return ($this->t += 10) - 10;
+    }
+};
+$c        = Container::root();
+$notifier = new PushNotifier($c->get(PushSubscriptions::class), $c->get(WebPushSender::class), $c->get(ConversationStore::class), $stepClock);
+$slow     = new Job(array(), array('recipient' => $seller));
+$notifier->run($slow);
+pin('one browser sent before the budget ran out', 1, count($http->calls));
+$again = $slow->repeatRequest();
+pin('the rest is queued again at once', 0, $again['delay'] ?? null);
+pin('with only the browser not tried, same round', array('recipient' => $seller, 'only' => array_values(array_diff(array_keys($subs->forUser($seller)), array_map(static fn (string $u): string => $seller . ':' . PushSubscriptions::browserId($u), $http->calls))), 'round' => 1), $again['payload'] ?? null);
 
 harness_section('the recipient');
 $push();

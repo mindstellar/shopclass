@@ -50,7 +50,7 @@ final class WebPushSender
             if (!$check['ok']) {
                 return $this->failed('Address refused: ' . rtrim((string) ($check['error'] ?? 'not allowed'), '.'));
             }
-            $options = ['connect_timeout' => 3, 'timeout' => 5, 'max_bytes' => 4096];
+            $options = ['connect_timeout' => 2, 'timeout' => 5, 'max_bytes' => 4096];
             $host    = (string) ($check['host'] ?? '');
             $ip      = (string) ($check['ip'] ?? '');
             if ($host !== '' && filter_var($host, FILTER_VALIDATE_IP) === false) {
