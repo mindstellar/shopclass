@@ -140,9 +140,10 @@ R=$(ajax "$JAR" push_subscribe -d "endpoint=$ENDPOINT")
 grep -q '"ok":true' <<< "$R"
 check $? "push_subscribe takes a push address"
 
-CODE=$(curl -s -o /dev/null -w '%{http_code}' -b "$JAR" -d "endpoint=$ENDPOINT" "$BASE/index.php?page=ajax&action=push_subscribe")
-[ "$CODE" != 200 ]
-check $? "push_subscribe without the CSRF token is refused ($CODE)"
+# Core answers an AJAX CSRF failure with HTTP 200 and an error body.
+R=$(curl -s -b "$JAR" -d "endpoint=$ENDPOINT" "$BASE/index.php?page=ajax&action=push_subscribe")
+grep -q '"error":1' <<< "$R"
+check $? "push_subscribe without the CSRF token is refused"
 
 CODE=$(ajax "$JAR" push_subscribe -o /dev/null -w '%{http_code}' -d 'endpoint=https://127.0.0.1/x')
 [ "$CODE" = 422 ]
