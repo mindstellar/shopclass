@@ -125,6 +125,28 @@ class Upgrade
     }
 
     /**
+     * The PHP version a package needs, when this server runs an older one. A release states it in
+     * the Composer platform check it ships; a package without one needs nothing.
+     *
+     * @param string $root package root, see packageRoot()
+     * @param string $php  the server's PHP version
+     *
+     * @return string|null the version needed, or null when $php is new enough
+     */
+    public static function phpTooOld(string $root, string $php): ?string
+    {
+        $file = $root . '/oc-includes/vendor/composer/platform_check.php';
+        $code = is_file($file) ? (string) file_get_contents($file) : '';
+        if (!preg_match('/PHP_VERSION_ID\s*>=\s*(\d{5,6})\b/', $code, $m)) {
+            return null;
+        }
+        $id    = (int) $m[1];
+        $floor = intdiv($id, 10000) . '.' . intdiv($id % 10000, 100) . '.' . ($id % 100);
+
+        return version_compare($php, $floor, '<') ? $floor : null;
+    }
+
+    /**
      * Target paths the package would write but this PHP user cannot. A new file counts as
      * writable when its nearest existing parent folder is.
      *
@@ -257,6 +279,15 @@ class Upgrade
                 throw new RuntimeException(
                     __("Invalid Zip package, it's not in valid format.")
                 );
+            }
+
+            $needs = self::phpTooOld($originDir, PHP_VERSION);
+            if ($needs !== null) {
+                throw new RuntimeException(sprintf(
+                    __('Nothing was changed. This update needs PHP %1$s or newer, and this server runs PHP %2$s. Ask your host to upgrade PHP, then update again.'),
+                    $needs,
+                    PHP_VERSION
+                ));
             }
 
             $blocked = self::unwritable(
