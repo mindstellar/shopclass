@@ -72,6 +72,10 @@ map $http_cookie $mc_private {
     default 0;
     "~(^|;\s*)(oc_cache_bypass|oc_userLocale|oc_theme|osclass|PHPSESSID)=" 1;
 }
+map "$mc_private:$arg_page" $mc_inm {
+    default "";
+    "1:ajax" $http_if_none_match;
+}
 CONF
             cat >> "$php_conf" <<'CONF'
 fastcgi_cache            MICROCACHE;
@@ -81,6 +85,7 @@ fastcgi_no_cache         $mc_private;
 fastcgi_cache_lock       on;
 fastcgi_cache_use_stale  updating error timeout http_500 http_503;
 fastcgi_cache_background_update on;
+fastcgi_param            HTTP_IF_NONE_MATCH $mc_inm if_not_empty;
 add_header X-Cache $upstream_cache_status always;
 CONF
             # A PURGE here clears the whole cache; core sends one after a site-wide
