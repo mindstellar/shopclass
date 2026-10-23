@@ -18,7 +18,8 @@ use mindstellar\security\AddressGuard;
 
 /**
  * Sends one wake-up to one browser: an empty POST to its push service. No text, name or id
- * goes with it; the browser asks the site what is new.
+ * goes with it; the browser asks the site what is new. Only problems on the site's side (signing,
+ * the connection, a refused VAPID key, a failing push service) mark the push status failed.
  */
 final class WebPushSender
 {
@@ -43,12 +44,13 @@ final class WebPushSender
     public function send(string $endpoint): string
     {
         try {
+            // A refused address is that browser's problem, not the site's.
             if (strlen($endpoint) > PushSubscriptions::MAX_ENDPOINT || strtolower((string) parse_url($endpoint, PHP_URL_SCHEME)) !== 'https') {
-                return $this->failed('Address refused: not an https:// push address');
+                return self::FAILED;
             }
             $check = $this->guard->check($endpoint);
             if (!$check['ok']) {
-                return $this->failed('Address refused: ' . rtrim((string) ($check['error'] ?? 'not allowed'), '.'));
+                return self::FAILED;
             }
             $options = ['connect_timeout' => 2, 'timeout' => 5, 'max_bytes' => 4096];
             $resolve = AddressGuard::curlResolve($endpoint, (string) ($check['ip'] ?? ''));
@@ -75,11 +77,20 @@ final class WebPushSender
         if ($status === 404 || $status === 410) {
             return self::GONE;
         }
-        if ($status === 429 || $status >= 500) {
+        if ($status === 401 || $status === 403) {
+            return $this->failed('HTTP ' . $status . ': the push service refused the site\'s VAPID key');
+        }
+        if ($status === 429) {
+            return self::RETRY;
+        }
+        if ($status >= 500) {
+            $this->status->failed('HTTP ' . $status);
+
             return self::RETRY;
         }
 
-        return $this->failed('HTTP ' . $status);
+        // Any other answer is about this one browser.
+        return self::FAILED;
     }
 
     private function failed(string $error): string

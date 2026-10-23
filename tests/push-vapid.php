@@ -257,14 +257,24 @@ namespace {
     pin('410 -> gone', 'gone', $sender->send($ep));
     $http->answer = 429;
     pin('429 -> retry', 'retry', $sender->send($ep));
-    $http->answer = 503;
-    pin('503 -> retry', 'retry', $sender->send($ep));
-    pin('gone and retry leave the status alone', ['ok'], $status->calls);
-
+    pin('gone and 429 leave the status alone', ['ok'], $status->calls);
     $status->calls = [];
-    $http->answer  = 400;
-    pin('400 -> failed', 'failed', $sender->send($ep));
-    pin('failed recorded once, with the code', ['failed: HTTP 400'], $status->calls);
+    $http->answer  = 503;
+    pin('503 -> retry', 'retry', $sender->send($ep));
+    pin('a failing push service marks the status failed', ['failed: HTTP 503'], $status->calls);
+
+    foreach ([400, 413] as $code) {
+        $status->calls = [];
+        $http->answer  = $code;
+        pin("$code -> failed", 'failed', $sender->send($ep));
+        pin("$code is about one browser: the status is left alone", [], $status->calls);
+    }
+    foreach ([401, 403] as $code) {
+        $status->calls = [];
+        $http->answer  = $code;
+        pin("$code -> failed", 'failed', $sender->send($ep));
+        pin("$code points at the site's VAPID key: recorded", ["failed: HTTP $code: the push service refused the site's VAPID key"], $status->calls);
+    }
 
     $status->calls = [];
     $http->answer  = new HttpException('fcm.googleapis.com could not be reached');
@@ -273,12 +283,14 @@ namespace {
     $http->answer = new \RuntimeException('anything');
     pin('any throwable -> failed, never thrown', 'failed', $sender->send($ep));
 
+    $status->calls = [];
     $before = count($http->requests);
     pin('http:// refused', 'failed', $sender->send('http://fcm.googleapis.com/fcm/send/abc'));
     pin('https://127.0.0.1/x refused', 'failed', $sender->send('https://127.0.0.1/x'));
     pin('an odd port refused', 'failed', $sender->send('https://fcm.googleapis.com:8443/x'));
     pin('over 1024 bytes refused', 'failed', $sender->send('https://fcm.googleapis.com/' . str_repeat('a', 1024)));
     pin('no request for a refused address', $before, count($http->requests));
+    pin('a refused address is that browser\'s problem: the status is left alone', [], $status->calls);
 
     harness_section('browser id and family');
     $id = PushSubscriptions::browserId($ep);
