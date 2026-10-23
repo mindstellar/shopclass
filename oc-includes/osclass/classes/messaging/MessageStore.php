@@ -20,6 +20,24 @@ use mindstellar\database\Db;
 final class MessageStore
 {
     /**
+     * A stored message in the shape the site's scripts get it.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array{id:int,conversation:int,sender:int,body:string,at:string}
+     */
+    public static function shape(array $row): array
+    {
+        return array(
+            'id'           => (int) $row['pk_i_id'],
+            'conversation' => (int) $row['fk_i_conversation_id'],
+            'sender'       => (int) $row['fk_i_sender_id'],
+            'body'         => (string) $row['s_body'],
+            'at'           => (string) $row['dt_created'],
+        );
+    }
+
+    /**
      * Insert a row and return its id.
      *
      * @param array<string,mixed> $row

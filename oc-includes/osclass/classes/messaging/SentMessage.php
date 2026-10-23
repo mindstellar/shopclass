@@ -18,8 +18,21 @@ namespace mindstellar\messaging;
  */
 final class SentMessage
 {
-    public function __construct(private int $conversationId, private int $messageId, private bool $held, private bool $started)
+    /**
+     * @param array{id:int,conversation:int,sender:int,body:string,at:string} $message
+     */
+    public function __construct(private int $conversationId, private int $messageId, private bool $held, private bool $started, private array $message)
     {
+    }
+
+    /**
+     * The stored message, as MessageStore::shape() gives it.
+     *
+     * @return array{id:int,conversation:int,sender:int,body:string,at:string}
+     */
+    public function message(): array
+    {
+        return $this->message;
     }
 
     public function conversationId(): int

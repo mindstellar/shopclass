@@ -466,7 +466,13 @@ final class MessagingService
                     : new MessageSent($messageId, $conversationId, $senderId, $recipientId));
             });
 
-            return new SentMessage($conversationId, $messageId, $held, $started);
+            return new SentMessage($conversationId, $messageId, $held, $started, MessageStore::shape(array(
+                'pk_i_id'              => $messageId,
+                'fk_i_conversation_id' => $conversationId,
+                'fk_i_sender_id'       => $senderId,
+                's_body'               => $body,
+                'dt_created'           => $now,
+            )));
         });
     }
 

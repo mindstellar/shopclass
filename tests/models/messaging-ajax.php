@@ -113,6 +113,12 @@ pin('a held thread with a later time does not move the seller', true, $svc->acti
 pin('the buyer does see it', '2099-01-01 00:00:00', $svc->activity($buyer)['latest']);
 $admin->query("UPDATE {$p}t_conversation SET dt_last_message = '$lampLatest' WHERE pk_i_id = " . $held->conversationId());
 
+harness_section('the sent message');
+$reply = $svc->reply($conv, 'Still here?', $asBuyer);
+pin('message() is the stored row in the scripts\' shape', \mindstellar\messaging\MessageStore::shape((array) $c->get(\mindstellar\messaging\MessageStore::class)->find($reply->messageId())), $reply->message());
+$admin->query("DELETE FROM {$p}t_message WHERE pk_i_id = " . $reply->messageId());
+$svc->markRead($conv, $asSeller);
+
 harness_section('since');
 $rows = $svc->since($conv, 0, $asBuyer);
 pin('after 0 gives the whole short thread, oldest first', array('Is it for sale?', 'Hello?', 'Yes.'), array_column($rows['messages'], 's_body'));

@@ -461,24 +461,6 @@ class CWebAjax extends BaseModel
     }
 
     /**
-     * One stored message in the shape the messages calls answer with.
-     *
-     * @param array<string,mixed> $row
-     *
-     * @return array{id:int,conversation:int,sender:int,body:string,at:string}
-     */
-    private function messagingRow(array $row): array
-    {
-        return array(
-            'id'           => (int) $row['pk_i_id'],
-            'conversation' => (int) $row['fk_i_conversation_id'],
-            'sender'       => (int) $row['fk_i_sender_id'],
-            'body'         => (string) $row['s_body'],
-            'at'           => (string) $row['dt_created'],
-        );
-    }
-
-    /**
      * Send a reply in a thread the visitor is in.
      */
     private function messagesSend(): void
@@ -494,16 +476,14 @@ class CWebAjax extends BaseModel
             return;
         }
         osc_csrf_check();
-        $container = Container::root();
         try {
-            $sent = $container->get(MessagingService::class)->reply(Params::getParamInt('id'), Params::getParamString('body', false, false, false), $actor);
+            $sent = Container::root()->get(MessagingService::class)->reply(Params::getParamInt('id'), Params::getParamString('body', false, false, false), $actor);
         } catch (RefusedException $e) {
             $this->messagingRefusal($e);
 
             return;
         }
-        $row = $container->get(MessageStore::class)->find($sent->messageId());
-        AjaxResponse::json(array('ok' => true, 'message' => $this->messagingRow((array) $row), 'held' => $sent->held()));
+        AjaxResponse::json(array('ok' => true, 'message' => $sent->message(), 'held' => $sent->held()));
     }
 
     /**
@@ -545,7 +525,7 @@ class CWebAjax extends BaseModel
         }
         $thread = $result['conversation'];
         AjaxResponse::json(array(
-            'messages' => array_map(fn (array $row): array => $this->messagingRow($row), $result['messages']),
+            'messages' => array_map(static fn (array $row): array => MessageStore::shape($row), $result['messages']),
             'state'    => (string) $thread['s_state'],
             'blocked'  => (int) $thread['b_buyer_blocked'] === 1 || (int) $thread['b_seller_blocked'] === 1,
         ));
