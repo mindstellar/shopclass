@@ -6934,8 +6934,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"Live messages could not be published, so open pages fall back to checking "
-"every 15 seconds."
+"Live messages could not be published, so open pages see new messages on "
+"their next check, within a minute."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
