@@ -101,8 +101,25 @@
         });
     };
 
+    // Safari grants permission only from inside the click, so ask before anything is awaited.
+    var askPermission = function () {
+        return new Promise(function (resolve) {
+            var answer = Notification.requestPermission(resolve);
+            if (answer && typeof answer.then === 'function') {
+                answer.then(resolve, function () {
+                    resolve(Notification.permission);
+                });
+            }
+        });
+    };
+
     var turnOn = function () {
-        return navigator.serviceWorker.register(workerUrl).then(activated).then(function (reg) {
+        return askPermission().then(function (permission) {
+            if (permission !== 'granted') {
+                throw new Error('permission ' + permission);
+            }
+            return navigator.serviceWorker.register(workerUrl);
+        }).then(activated).then(function (reg) {
             return reg.pushManager.getSubscription().then(function (sub) {
                 return sub || reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: keyBytes(data.key)});
             });

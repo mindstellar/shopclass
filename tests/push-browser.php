@@ -91,6 +91,8 @@ pin('an unsupported browser keeps the form hidden and asks nothing', array('hidd
 pin('the form is hidden until support is known', true, $r['fresh']['hiddenAtStart'] ?? null);
 pin('no subscription: shown, off, no request', array(false, $off, 0),
     array($r['fresh']['state']['hidden'] ?? null, $r['fresh']['state']['label'] ?? null, $r['fresh']['fetches'] ?? null));
+pin('a click asks for permission first, inside the click itself', array('in-click'), $r['freshClick']['asks'] ?? null);
+pin('before registering the worker', array('permission', 'register'), array_slice($r['freshClick']['log'] ?? array(), 0, 2));
 pin('a click registers the worker by its URL, with no scope', array(array('url' => $workerUrl, 'args' => 1)), $r['freshClick']['registers'] ?? null);
 pin('then subscribes, user-visible, with the public key bytes', array(array('userVisibleOnly' => true, 'key' => push_test_key_bytes())),
     $r['freshClick']['subscribes'] ?? null);
@@ -102,6 +104,15 @@ pin('then posts the endpoint with the CSRF fields, once', array(array(
 )), $r['freshClick']['fetches'] ?? null);
 pin('and shows it as on', $on, $r['freshClick']['state']['label'] ?? null);
 
+pin('a dismissed prompt registers, subscribes and posts nothing', array(0, 0, 0),
+    array($r['dismissed']['registers'] ?? null, $r['dismissed']['subscribes'] ?? null, $r['dismissed']['fetches'] ?? null));
+pin('and stays off with the button usable', array($off, false), array($r['dismissed']['state']['label'] ?? null, $r['dismissed']['state']['disabled'] ?? null));
+pin('a refused prompt registers nothing and shows blocked', array(0, 0, true, 'Notifications are blocked in this browser. Allow them in its site settings first.'), array(
+    $r['refusedPermission']['registers'] ?? null,
+    $r['refusedPermission']['fetches'] ?? null,
+    $r['refusedPermission']['state']['disabled'] ?? null,
+    $r['refusedPermission']['state']['note'] ?? null,
+));
 pin('an existing subscription asks push_status once, for its endpoint', array(array(
     'url'         => 'https://example.test/sub/index.php?page=ajax&action=push_status&endpoint=' . rawurlencode('https://push.example/send/old'),
     'method'      => 'GET',
@@ -115,6 +126,7 @@ pin('a click posts unsubscribe, then drops the browser subscription', array(
     'unsubscribe',
 ), $r['existingClick']['log'] ?? null);
 pin('and shows it as off', array($off, true), array($r['existingClick']['state']['label'] ?? null, $r['existingClick']['dropped'] ?? null));
+pin('turning off asks no permission', 0, $r['existingClick']['asks'] ?? null);
 pin('a subscription the server does not have shows as off', $off, $r['inactive']['label'] ?? null);
 pin('and the browser drops it, so another user\'s browser stops being woken', true, $r['inactiveDropped'] ?? null);
 pin('a refused subscribe drops the browser subscription', 'unsubscribe', end($r['refused']['log']) ?: null);

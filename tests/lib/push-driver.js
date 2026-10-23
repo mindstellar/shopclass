@@ -36,7 +36,7 @@
     }
 
     function pageEnv(opts) {
-        var e = {registers: [], subscribes: [], fetches: [], log: [], reg: null, sub: null};
+        var e = {registers: [], subscribes: [], fetches: [], log: [], reg: null, sub: null, asks: [], clicking: false};
         var makeSub = function (endpoint) {
             return {
                 endpoint: endpoint,
@@ -89,7 +89,12 @@
             delete Navigator.prototype.serviceWorker;
             delete window.PushManager;
         }
-        window.Notification = {permission: opts.permission || 'default'};
+        window.Notification = {permission: opts.permission || 'default', requestPermission: function () {
+            e.asks.push(e.clicking ? 'in-click' : 'after-click');
+            e.log.push('permission');
+            window.Notification.permission = opts.answer || 'granted';
+            return Promise.resolve(window.Notification.permission);
+        }};
         window.fetch = function (url, init) {
             init = init || {};
             var f = {url: String(url), method: init.method || 'GET', credentials: init.credentials || null, fields: fields(init.body)};
@@ -107,7 +112,9 @@
             await settle();
         };
         e.click = async function () {
+            e.clicking = true;
             e.button.click();
+            e.clicking = false;
             await settle();
         };
         e.state = function () {
@@ -194,7 +201,21 @@
         await e.start();
         out.fresh = {hiddenAtStart: e.hiddenAtStart, state: e.state(), fetches: e.fetches.length};
         await e.click();
-        out.freshClick = {registers: e.registers, subscribes: e.subscribes, fetches: e.fetches, state: e.state()};
+        out.freshClick = {registers: e.registers, subscribes: e.subscribes, fetches: e.fetches, state: e.state(), asks: e.asks, log: e.log};
+
+        // The permission prompt is dismissed or refused: nothing is registered or posted.
+        e = pageEnv({supported: true, answer: 'default', route: function () {
+            return json(200, {ok: true});
+        }});
+        await e.start();
+        await e.click();
+        out.dismissed = {registers: e.registers.length, subscribes: e.subscribes.length, fetches: e.fetches.length, state: e.state()};
+        e = pageEnv({supported: true, answer: 'denied', route: function () {
+            return json(200, {ok: true});
+        }});
+        await e.start();
+        await e.click();
+        out.refusedPermission = {registers: e.registers.length, subscribes: e.subscribes.length, fetches: e.fetches.length, state: e.state()};
 
         // An existing subscription the server knows: one status GET, shown as on; a click turns it off.
         var dataset = document.createElement('div');
@@ -210,7 +231,7 @@
         out.existing = {fetches: e.fetches.slice(), registers: e.registers.length, state: e.state()};
         e.log = [];
         await e.click();
-        out.existingClick = {log: e.log, state: e.state(), dropped: e.sub === null};
+        out.existingClick = {log: e.log, state: e.state(), dropped: e.sub === null, asks: e.asks.length};
 
         // The server no longer has it: shown as off.
         e = pageEnv({supported: true, existing: workerUrl, route: function () {
