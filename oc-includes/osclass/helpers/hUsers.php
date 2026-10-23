@@ -69,6 +69,23 @@ function osc_messaging_unread_count(): int
         ->get(\mindstellar\messaging\MessagingService::class)->unreadCount($userId);
 }
 
+/**
+ * The URL a signed-in user's page subscribes to for live message notes, or '' when live delivery
+ * is off, messaging is off or nobody is signed in.
+ *
+ * @return string
+ */
+function osc_messaging_live_url(): string
+{
+    $userId = (int) osc_logged_user_id();
+    if ($userId <= 0 || !osc_messaging_enabled()) {
+        return '';
+    }
+
+    return \mindstellar\container\Container::root()
+        ->get(\mindstellar\live\LivePublisher::class)->subscribeUrl('user-' . $userId) ?? '';
+}
+
 /*
  * "Messages" on the account menu, with the unread count while there is one; a shopper's menu drops
  * it (OSC_SHOPPER_HIDDEN_MENU). Plugins::addHook() because this file loads before hPlugins.php.
