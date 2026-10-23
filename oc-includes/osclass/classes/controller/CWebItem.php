@@ -16,7 +16,10 @@ use mindstellar\auth\Actor;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\comment\CommentService;
 use mindstellar\comment\SavedComment;
+use mindstellar\container\Container;
+use mindstellar\exception\BlockedException;
 use mindstellar\exception\ConflictException;
+use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingCounters;
@@ -28,6 +31,7 @@ use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
+use mindstellar\messaging\MessagingService;
 use mindstellar\security\Captcha;
 use mindstellar\site\SiteMode;
 use mindstellar\utility\Validate;
@@ -718,6 +722,10 @@ class CWebItem extends BaseModel
             return false;
         }
 
+        if (osc_item_uses_messaging()) {
+            return $this->startConversation((int) $item['pk_i_id'], $contactValues['message_body'], $fail);
+        }
+
         try {
             $sent = (new ListingMailService())->contactSeller($item, array(
                 'yourName'    => $contactValues['yourName'],
@@ -744,6 +752,37 @@ class CWebItem extends BaseModel
         }
 
         $this->redirectTo(osc_item_url());
+
+        return null;
+    }
+
+    /**
+     * Sends the contact form's message as an on-site conversation and lands on the thread.
+     *
+     * @param callable(string): mixed $fail sends the visitor back to the form with an error
+     *
+     * @return false|null false when the request was sent back to the form
+     */
+    private function startConversation(int $itemId, string $body, callable $fail): ?bool
+    {
+        try {
+            $sent = Container::root()->get(MessagingService::class)->start($itemId, $body, Actor::visitor());
+        } catch (InvalidException $e) {
+            $fail($e->getMessage());
+
+            return false;
+        } catch (BlockedException $e) {
+            $fail(sprintf(_m('Too many messages. Try again in %d minutes.'), (int) ceil($e->retryAfter() / 60)));
+
+            return false;
+        } catch (ConflictException | ForbiddenException $e) {
+            osc_add_flash_error_message($e->getMessage());
+            $this->redirectTo(osc_item_url());
+
+            return false;
+        }
+        osc_add_flash_ok_message($sent->held() ? _m('Your message is waiting for review') : _m('Message sent'));
+        $this->redirectTo(osc_messaging_thread_url($sent->conversationId()));
 
         return null;
     }

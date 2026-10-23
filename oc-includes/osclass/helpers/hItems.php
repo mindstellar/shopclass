@@ -140,6 +140,21 @@ function osc_item_user_id()
 }
 
 /**
+ * Whether the contact form on the current item starts an on-site conversation instead of an e-mail.
+ *
+ * @return bool
+ */
+function osc_item_uses_messaging(): bool
+{
+    if (!osc_messaging_enabled() || !osc_is_web_user_logged_in()) {
+        return false;
+    }
+    $sellerId = osc_item_user_id();
+
+    return $sellerId > 0 && $sellerId !== osc_logged_user_id();
+}
+
+/**
  * Gets description from current item, if $locale is unspecified $locale is current user locale
  *
  * @param string $locale
