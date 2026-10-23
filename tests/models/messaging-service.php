@@ -73,6 +73,8 @@ $outcome = static function (callable $fn): string {
         return 'invalid:' . $e->pointer() . ':' . $e->reason();
     } catch (BlockedException $e) {
         return 'rate_limited';
+    } catch (\Throwable $e) {
+        return 'error:' . get_class($e);
     }
 };
 $log = array();
@@ -226,7 +228,14 @@ pin('conversation_reported, then conversation_blocked', array('conversation_repo
 pin('the reported side cannot report it back', 'conflict:reported', $outcome(fn () => $svc->report($conv, 'harassment', $asSeller)));
 pin('the first report stands', array((string) $buyer, 'spam', '0'), array_values($admin->query("SELECT fk_i_reporter_id, s_report_reason, b_seller_blocked FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_row()));
 pin('a held thread cannot be reported', 'conflict:held', $outcome(fn () => $svc->report($hc, 'spam', $asBuyer)));
+$row = static fn (): array => $admin->query("SELECT i_buyer_unread, i_seller_unread, b_buyer_blocked, b_seller_blocked, s_state, fk_i_reporter_id, s_report_reason FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_assoc();
+$before = $row();
+$log    = array();
 pin('a third user cannot block', 'not_found', $outcome(fn () => $svc->block($conv, $asThird)));
+pin('nor mark it read', 'not_found', $outcome(fn () => $svc->markRead($conv, $asThird)));
+pin('nor unblock it', 'not_found', $outcome(fn () => $svc->unblock($conv, $asThird)));
+pin('nor report it', 'not_found', $outcome(fn () => $svc->report($conv, 'spam', $asThird)));
+pin('the thread is unchanged and no hook fired', array($before, array()), array($row(), $log));
 
 harness_section('events on a first message');
 $svc = $fresh();
