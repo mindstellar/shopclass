@@ -310,6 +310,113 @@ Delete a comment
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
 
+## Admin conversations
+
+| Method | Path | Auth | Scope | Summary |
+|---|---|---|---|---|
+| GET | `/admin/conversations` | admin | `admin:conversations` | Every conversation, newest first |
+| GET | `/admin/conversations/{id}` | admin | `admin:conversations` | One conversation with every message, held ones included |
+| POST | `/admin/conversations/{id}/clear-report` | admin | `admin:conversations` | Drop the report on a conversation and open it again |
+| POST | `/admin/conversations/{id}/close` | admin | `admin:conversations` | Close a reported conversation: nobody writes in it any more |
+| GET | `/admin/messages` | admin | `admin:conversations` | Messages waiting for review, newest first |
+| GET | `/admin/messages/{id}` | admin | `admin:conversations` | One message |
+| POST | `/admin/messages/{id}/release` | admin | `admin:conversations` | Deliver a held message |
+| POST | `/admin/messages/{id}/remove` | admin | `admin:conversations` | Drop a held message |
+
+### GET `/admin/conversations`
+
+Every conversation, newest first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `status` | query | string: `open`, `held`, `closed`, `reported` | no |  |
+| `user` | query | string or array | no | User ids, as buyer or seller: one, a comma list, or repeated. |
+| `listing` | query | string or array | no | Listing ids: one, a comma list, or repeated. |
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`AdminConversationPage`); 304 Not modified; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/admin/conversations/{id}`
+
+One conversation with every message, held ones included
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`AdminConversationDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/admin/conversations/{id}/clear-report`
+
+Drop the report on a conversation and open it again
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`AdminConversationDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/admin/conversations/{id}/close`
+
+Close a reported conversation: nobody writes in it any more
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`AdminConversationDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/admin/messages`
+
+Messages waiting for review, newest first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `status` | query | string: `held` | no |  |
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`AdminMessagePage`); 304 Not modified; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/admin/messages/{id}`
+
+One message
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`AdminMessageDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/admin/messages/{id}/release`
+
+Deliver a held message
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`AdminMessageDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/admin/messages/{id}/remove`
+
+Drop a held message
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `id` | path | integer | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`AdminMessageDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
 ## Admin listings
 
 | Method | Path | Auth | Scope | Summary |
