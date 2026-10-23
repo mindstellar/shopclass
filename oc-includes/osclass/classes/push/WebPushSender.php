@@ -89,7 +89,11 @@ final class WebPushSender
             return self::RETRY;
         }
 
-        // Any other answer is about this one browser.
+        // Any other 4xx is about this one browser and will not change on a later try.
+        if ($status >= 400 && $status < 500) {
+            return self::GONE;
+        }
+
         return self::FAILED;
     }
 

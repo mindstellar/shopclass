@@ -266,7 +266,8 @@ $http->status = array($epA => 400, $epB => 0);
 $push();
 pin('failed browsers are tried once', array($epA, $epB), $runJobs());
 pin('a failed send completes the job: no retry storm', 0, $count(sprintf($job, 'COUNT(*)')));
-pin('failed browsers keep their rows', 2, count($subs->forUser($seller)));
+pin('a browser refused with a 4xx is dropped, one that could not be reached is kept', array($epB), array_column($subs->forUser($seller), 'endpoint'));
+$subs->add($seller, $epA, 'Chrome/130.0');
 $http->status = array();
 
 harness_section('a run stops sending after its time budget');

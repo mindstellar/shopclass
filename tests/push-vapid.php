@@ -266,7 +266,7 @@ namespace {
     foreach ([400, 413] as $code) {
         $status->calls = [];
         $http->answer  = $code;
-        pin("$code -> failed", 'failed', $sender->send($ep));
+        pin("$code -> gone: the browser is dropped", 'gone', $sender->send($ep));
         pin("$code is about one browser: the status is left alone", [], $status->calls);
     }
     foreach ([401, 403] as $code) {
