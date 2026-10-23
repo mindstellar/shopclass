@@ -172,6 +172,7 @@ $controllers = array(
         'location_countries'          => 'locationCountries',
         'location_regions'            => 'locationRegions',
         'messages_check'              => 'messagesCheck',
+        'messages_live_auth'          => 'messagesLiveAuth',
         'messages_send'               => 'messagesSend',
         'messages_since'              => 'messagesSince',
         'regions'                     => 'regions',
