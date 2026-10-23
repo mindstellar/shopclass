@@ -1,6 +1,6 @@
 ---
 title: API writes
-description: "Post, edit and delete listings through the ShopClass REST API, upload photos, comment, save searches, sign users up, retry safely with Idempotency-Key, and know the limits and warnings."
+description: "Post, edit and delete listings through the ShopClass REST API, upload photos, comment, save searches, message sellers, sign users up, retry safely with Idempotency-Key, and know the limits and warnings."
 sidebar:
   order: 3
 ---
@@ -28,6 +28,15 @@ TOKEN=sca_…        # an access token, or a personal key
 | `POST /account/alerts` | `alerts:write` | Save a search. |
 | `GET /account/alerts/{id}` | `alerts:read` | One saved search. The `Location` of a new one. |
 | `DELETE /account/alerts/{id}` | `alerts:write` | Stop a saved search. `204`. |
+| `GET /account/conversations` | `conversations:read` | Your conversations, newest activity first. `meta` has your unread total. |
+| `POST /account/conversations` | `conversations:write` | Write to a listing's seller. `201`. |
+| `GET /account/conversations/{id}` | `conversations:read` | One of your conversations. The `Location` of a new one. |
+| `GET /account/conversations/{id}/messages` | `conversations:read` | Its messages, newest first, or the newer ones with `after`. Marks nothing read. |
+| `POST /account/conversations/{id}/messages` | `conversations:write` | Reply. `201`. |
+| `POST /account/conversations/{id}/read` | `conversations:write` | Mark it read. |
+| `POST /account/conversations/{id}/block` | `conversations:write` | Block it: nobody writes in it until you unblock. |
+| `DELETE /account/conversations/{id}/block` | `conversations:write` | Lift your own block. |
+| `POST /account/conversations/{id}/report` | `conversations:write` | Report it to the admins. |
 | `GET /cart/quote` | `listings:read` | Price a cart. Needs no sign-in. |
 | `GET /account/orders` | `orders:read` | Your orders, newest first. |
 | `POST /account/orders` | `orders:write` | Place an order. `201`. |
@@ -395,6 +404,74 @@ curl -i -X POST $API/account/alerts \
 | List and stop | `GET /account/alerts`, `DELETE /account/alerts/{id}` (`204`). |
 | Shown on the web | The same search appears on the account's alerts page. |
 
+## Conversations
+
+Messages between a buyer and a listing's seller. Every call acts as the signed-in user, so a conversation you are not part of is a `404`.
+
+```bash
+curl -i -X POST $API/account/conversations \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "listing": 412, "body": "Is the bike still for sale?" }'
+```
+
+`201` with the message and `Location: …/account/conversations/31`. A second message about the same listing goes into the conversation already there: still `201` with the new message, and the `Location` of that conversation.
+
+```json
+{
+  "data": {
+    "id": 88, "conversation_id": 31, "sender_id": 23,
+    "body": "Is the bike still for sale?", "held": false, "created_at": "2026-10-23T09:30:00Z"
+  }
+}
+```
+
+Reply in a conversation:
+
+```bash
+curl -i -X POST $API/account/conversations/31/messages \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "body": "Yes, it is." }'
+```
+
+List and poll. `GET /account/conversations` carries `meta.unread` and `meta.latest_at`, so `limit=1` is a cheap check for news. Messages come newest first and page with `cursor`. To poll, pass `after` with the last message id you hold: you get the newer ones, oldest first, and no cursor.
+
+```bash
+curl "$API/account/conversations/31/messages?after=88" -H "Authorization: Bearer $TOKEN"
+```
+
+Reading never marks anything read, so an app syncing in the background does not clear the badge. Call `POST …/read` when the person has seen the thread.
+
+```bash
+curl -X POST $API/account/conversations/31/read -H "Authorization: Bearer $TOKEN"
+curl -X POST $API/account/conversations/31/block -H "Authorization: Bearer $TOKEN"
+curl -X DELETE $API/account/conversations/31/block -H "Authorization: Bearer $TOKEN"
+curl -X POST $API/account/conversations/31/report \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{ "reason": "spam" }'
+```
+
+`read`, `block`, `DELETE block` and `report` answer `200` with the conversation as it is now.
+
+| Rule | Detail |
+|---|---|
+| `listing` | Required, a live listing. |
+| `body` | Required, up to the site's **Longest message** setting (5000 characters by default). |
+| `reason` | One of `spam`, `scam`, `offensive`, `other`. Reporting also blocks the conversation for you. |
+| State | A conversation is `open`, `held`, `closed` or `reported`. `blocked_by_me` and `blocked_by_them` say who blocked. |
+| Moderation | If the site holds the message for review, you get `201` with `held: true` and the warning `message_held`. The other person sees it once an admin releases it. |
+| Webhooks | `message.created` and `conversation.reported` carry ids only, never the text. See [Webhooks](/docs/developers/api/webhooks/). |
+
+What a refusal means:
+
+| Status | Meaning |
+|---|---|
+| `403 feature_disabled` | Messages are switched off on this site. |
+| `403 forbidden` | The other person blocked the conversation, or you are not signed in as a user. |
+| `403 banned` | The account may not use messages. |
+| `404 not_found` | No such live listing, or a conversation you are not part of. A seller gets `404` for a thread still held for review. |
+| `409 conflict` | Your own listing, a listing with no seller, a closed, held or reported conversation, or a report on one already reported. `detail` says which. |
+| `422 validation_failed` | Empty or too long `body`, or an unknown `reason`. |
+| `429 rate_limited` | Over the hourly limit. See [Limits](#limits). |
+
 ## Cart and orders
 
 The request names variants and quantities. Prices, delivery, fees, totals and stock are worked out on the server; an amount in the body is ignored.
@@ -529,6 +606,7 @@ curl -X POST $API/listings -H "Authorization: Bearer $TOKEN" \
 | Staged photos waiting | 50 per user | `422` on `/photo` |
 | `photo_tokens` / `photo_urls` in one body | 50 / 20 | `422 validation_failed` |
 | Payments started for a listing | 20 an hour per user, with the orders above | `429 rate_limited` |
+| Messages | 30 an hour per user for replies (`throttle_message_send`), 10 an hour for new conversations (`throttle_message_start`). Both are in **Spam and bots** and count with the site's own message forms. | `429 rate_limited` |
 | Sign-ups | 5 an hour per address; 100 for the site by default (a setting), counting only those that passed their checks | `429 rate_limited` |
 
 Each `429` has `Retry-After`. The site owner sets the listing number: [Set up the REST API](/docs/configure/api/#rate-limits).

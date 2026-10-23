@@ -61,6 +61,7 @@ if (!Curl::available()) {
         ['osclass', 'rewriteEnabled', '1'],
         ['api', 'api_enabled', '1'],
         ['api', 'api_cors_origins', 'https://app.example'],
+        ['api', 'api_user_keys', '1'],
     ] as [$section, $name, $value]) {
         $db->query("UPDATE {$p}t_preference SET s_value = '$value' WHERE s_section = '$section' AND s_name = '$name'");
         if ($db->affected_rows === 0) {
@@ -199,6 +200,29 @@ require ' . var_export($root . '/index.php', true) . ';
     $nowStored = $db->query("SELECT s_value FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = 'version'")->fetch_row()[0];
     check('...and the stored version caught up with the files', $nowStored !== '6.4.6', $nowStored);
     $db->query("UPDATE {$p}t_preference SET s_value = '" . $db->real_escape_string($stored) . "' WHERE s_section = 'osclass' AND s_name = 'version'");
+
+    harness_section('a user key on the conversations list');
+    $sue     = seed_user($db, 'sue', 'sue@example.test');
+    $userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))
+        ->create('key', 'smoke user', ['conversations:read'], KeyOwner::user($sue))->token();
+    $mine    = ['Authorization: Bearer ' . $userKey];
+    $setPref = static function (string $name, string $value) use ($db, $p): void {
+        $db->query("UPDATE {$p}t_preference SET s_value = '$value' WHERE s_section = 'osclass' AND s_name = '$name'");
+        if ($db->affected_rows === 0 && (int) $db->query("SELECT COUNT(*) FROM {$p}t_preference WHERE s_section = 'osclass' AND s_name = '$name'")->fetch_row()[0] === 0) {
+            seed_exec($db, "INSERT INTO {$p}t_preference VALUES ('osclass', ?, ?, 'BOOLEAN')", 'ss', [$name, $value]);
+        }
+    };
+    $setPref('enabled_users', '1');
+    $setPref('enabled_messaging', '1');
+    [$code, $head, $body] = $call('GET', '/api/v1/account/conversations', $mine);
+    $json = json_decode($body, true);
+    pin('messages on: 200 with an empty list and no unread', [200, [], 0], [$code, $json['data'] ?? null, $json['meta']['unread'] ?? null]);
+    check('...as clean JSON', $clean($body), substr($body, 0, 300));
+    $setPref('enabled_messaging', '0');
+    [$code, $head, $body] = $call('GET', '/api/v1/account/conversations', $mine);
+    $json = json_decode($body, true);
+    pin('messages off: 403 problem JSON feature_disabled', [403, 'application/problem+json', 'feature_disabled', true], [$code, explode(';', $head['content-type'] ?? '')[0], $json['code'] ?? null, str_contains((string) ($json['detail'] ?? ''), 'Messages')]);
+    check('...with a clean body', $clean($body), substr($body, 0, 300));
 
     $log = (string) @file_get_contents($dir . 'server.log');
     check('the server logged no PHP error', preg_match('/PHP (Warning|Notice|Deprecated|Fatal|Parse)/', $log) !== 1, $log);
