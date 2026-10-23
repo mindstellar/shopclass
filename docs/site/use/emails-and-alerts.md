@@ -104,7 +104,7 @@ A user can get a notification on their phone or computer when a new message come
 - **No text leaves your site.** The push service (Google, Apple or Mozilla) gets an empty wake-up. The browser then asks your site how many messages are unread and shows "3 new messages". Clicking it opens the inbox.
 - **Timing.** Wake-ups wait 15 seconds so a burst of messages gives one notification. On the Docker image the worker sends it within seconds. On shared hosting it goes out with the next cron run, or the next site visit that runs the queue, so it can take minutes.
 
-A browser that was not used for 90 days is forgotten. System info → Server shows a "Web push" row and warns if the site is not on HTTPS or the push service cannot be reached.
+A browser is forgotten 90 days after the user last opened their messages page in it. System info → Server shows a "Web push" row and warns if the site is not on HTTPS or the push service cannot be reached.
 
 ## Alerts and cron
 

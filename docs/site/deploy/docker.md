@@ -128,7 +128,7 @@ If nchan is off or its stream fails, nothing breaks: pages check for new message
 
 ## Web push
 
-Nothing to configure. The worker loop sends browser notifications for new messages within seconds. Switch them on in Users → Settings; the site must be on HTTPS (`OSC_TLS_DOMAIN` does that).
+Nothing to configure. The worker loop sends browser notifications for new messages in about 15 seconds. Switch them on in Users → Settings; the site must be on HTTPS (`OSC_TLS_DOMAIN` does that).
 
 ## Core and packages update differently
 
