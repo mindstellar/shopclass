@@ -19,6 +19,7 @@ require_once __DIR__ . '/../oc-includes/osclass/classes/admin/SystemChecks.php';
 require_once __DIR__ . '/../oc-includes/osclass/install-functions.php';
 require_once __DIR__ . '/lib/harness.php';
 
+
 $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
@@ -87,5 +88,15 @@ check('every value reads back unchanged, and nothing runs', json_decode((string)
     === array_merge($want, array('/', 'http://127.0.0.1:8101/')), (string) $read);
 array_map('unlink', glob($dir . '*'));
 rmdir($dir);
+
+harness_section('get_requirements');
+
+// get_requirements() needs a booted install, so this reads its source.
+$src = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/install-functions.php');
+check('the installer PHP row uses the floor check', (bool) preg_match(
+    "/'PHP version' => array\\(\\s*'requirement' => sprintf\\(__\\('PHP version >= %s'\\), SystemChecks::PHP_FLOOR\\),"
+    . "\\s*'fn'\\s*=> install_php_version_supported\\(PHP_VERSION\\),/",
+    $src
+));
 
 exit(harness_result());
