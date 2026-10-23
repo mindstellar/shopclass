@@ -1598,6 +1598,7 @@ msgid "No such comment."
 msgstr ""
 
 #: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/osclass/classes/moderation/MessageModeration.php
 msgid "No such conversation"
 msgstr ""
 
@@ -1611,6 +1612,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/moderation/ListingModeration.php
 msgid "No such listing."
+msgstr ""
+
+#: oc-includes/osclass/classes/moderation/MessageModeration.php
+msgid "No such message"
 msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
@@ -1755,6 +1760,10 @@ msgstr ""
 msgid ""
 "Only a site admin can ban a sender for good. Sign in to the admin in this "
 "browser, then open the link again."
+msgstr ""
+
+#: oc-includes/osclass/classes/moderation/MessageModeration.php
+msgid "Only an admin can review messages"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
@@ -3397,6 +3406,10 @@ msgstr ""
 msgid "This conversation is closed"
 msgstr ""
 
+#: oc-includes/osclass/classes/moderation/MessageModeration.php
+msgid "This conversation is not reported"
+msgstr ""
+
 #: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "This conversation is waiting for review"
 msgstr ""
@@ -3494,6 +3507,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "This message has already been reported."
+msgstr ""
+
+#: oc-includes/osclass/classes/moderation/MessageModeration.php
+msgid "This message is not waiting for review"
 msgstr ""
 
 #: oc-includes/osclass/gui/contact-message-content.php

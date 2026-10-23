@@ -16,14 +16,13 @@ use mindstellar\auth\Actor;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\security\ActionThrottle;
 use mindstellar\security\AddressBucket;
-use mindstellar\security\RateLimit;
 
 /**
  * Who may post, see and delete comments, for the comment form and the API alike.
  */
 final class CommentPolicy
 {
-    /** Comments one user, or one address for a guest, may post in an hour; see limit(). */
+    /** Comments one user, or one address for a guest, may post in an hour, unless changed for 'comment_post'. */
     public const LIMIT_CONTEXT = 'comment_post';
     public const PER_HOUR      = ActionThrottle::DEFAULT_LIMITS[self::LIMIT_CONTEXT];
 
@@ -70,12 +69,8 @@ final class CommentPolicy
     public static function tooMany(Actor $actor): bool
     {
         $key = $actor->userId() !== null ? 'user:' . $actor->userId() : 'ip:' . AddressBucket::of($actor->ip());
-        [$max, $window] = self::limit();
-        if ($max <= 0) {
-            return false;
-        }
 
-        return !RateLimit::hit(self::LIMIT_CONTEXT, $key, $max, $window);
+        return ActionThrottle::over(self::LIMIT_CONTEXT, $key, self::PER_HOUR);
     }
 
     /**
@@ -83,19 +78,7 @@ final class CommentPolicy
      */
     public static function retryAfter(): int
     {
-        $window = self::limit()[1];
-
-        return $window - (time() % $window);
-    }
-
-    /**
-     * PER_HOUR in an hour, unless the action_throttle_limit filter changes it for 'comment_post'.
-     *
-     * @return array{0:int,1:int} max and window in seconds
-     */
-    private static function limit(): array
-    {
-        return ActionThrottle::limitFor(self::LIMIT_CONTEXT, self::PER_HOUR, 3600);
+        return ActionThrottle::retryAfter(self::LIMIT_CONTEXT, self::PER_HOUR);
     }
 
     /**

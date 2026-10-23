@@ -78,8 +78,8 @@ $sam = seed_user($admin, 'sam', 'sam@example.test');
 $cat = seed_category($admin);
 $bike = seed_item($admin, $cat, $sam, 'Bike');
 $lamp = seed_item($admin, $cat, $sue, 'Lamp');
-$store = new \mindstellar\messaging\ConversationStore();
 $msgs  = new \mindstellar\messaging\MessageStore();
+$store = new \mindstellar\messaging\ConversationStore($msgs);
 $now   = '2026-01-01 10:00:00';
 $mk = static function (int $item, int $buyer, int $seller) use ($store, $now): int {
     return $store->create(array(

@@ -77,12 +77,13 @@ $outcome = static function (callable $fn): string {
         return 'error:' . get_class($e);
     }
 };
-$log = array();
+$log      = array();
+$notifier = null;
 /** A fresh container with the service, recording each messaging hook and whether a transaction was open. */
-$fresh = static function () use (&$log): MessagingService {
+$fresh = static function () use (&$log, &$notifier): MessagingService {
     harness_reset_container();
-    $c = Container::root();
-    $c->get(DispatcherInterface::class)->remove(MessageSent::class, [MessageNotifier::class, 'onMessageSent']);
+    $c        = Container::root();
+    $notifier = $c->get(DispatcherInterface::class)->remove(MessageSent::class, [MessageNotifier::class, 'onMessageSent']);
     foreach (array('conversation_started', 'message_sent', 'message_held', 'conversation_blocked', 'conversation_unblocked', 'conversation_reported', 'message_read') as $name) {
         osc_add_hook($name, static function () use (&$log, $name): void {
             $log[] = $name . (Db::inTransaction() ? ' (in transaction)' : '');
@@ -112,6 +113,7 @@ $set('throttle_message_send', '0');
 $set('throttle_message_start', '0');
 
 $svc = $fresh();
+pin('the dispatcher held the notifier listener that $fresh() removed', true, $notifier);
 
 harness_section('who may write');
 $set('enabled_messaging', '0');
@@ -208,24 +210,29 @@ pin('a typed listener refuses it', 'invalid:/body:refused', $outcome(fn () => $s
 
 harness_section('block, unblock, report');
 $svc = $fresh();
+$unreadNow      = static fn (): array => $admin->query("SELECT i_buyer_unread, i_seller_unread FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_row();
+$messagesBefore = $count("SELECT COUNT(*) FROM {$p}t_message");
+$unreadBefore   = $unreadNow();
 $svc->block($conv, $asSeller);
 pin('blocking fires conversation_blocked after commit', array('conversation_blocked'), $log);
 pin('the buyer cannot write', 'forbidden:blocked', $outcome(fn () => $svc->reply($conv, 'Hello?', $asBuyer)));
 pin('nor can the seller', 'forbidden:blocked', $outcome(fn () => $svc->reply($conv, 'Bye', $asSeller)));
 pin('nor through start()', 'forbidden:blocked', $outcome(fn () => $svc->start($bike, 'Hello?', $asBuyer)));
 pin('nor a new thread on another of the seller\'s listings', 'forbidden:blocked', $outcome(fn () => $svc->start($lamp, 'And the lamp?', $asBuyer)));
+pin('a blocked reply writes no message and no unread', array($messagesBefore, $unreadBefore), array($count("SELECT COUNT(*) FROM {$p}t_message"), $unreadNow()));
 pin('no thread was made', 0, $count("SELECT COUNT(*) FROM {$p}t_conversation WHERE fk_i_item_id = $lamp AND fk_i_buyer_id = $buyer"));
 pin('the buyer cannot lift the seller\'s block', 'forbidden:not_owner', $outcome(fn () => $svc->unblock($conv, $asBuyer)));
 $log = array();
 $svc->unblock($conv, $asSeller);
 pin('unblocking fires conversation_unblocked', array('conversation_unblocked'), $log);
 pin('the seller can', 'ok', $outcome(fn () => $svc->reply($conv, 'Sorry, go on', $asSeller)));
-pin('a report needs a reason code', 'invalid:/reason:pattern', $outcome(fn () => $svc->report($conv, 'Bad person!', $asBuyer)));
+pin('a report needs a reason code', 'invalid:/reason:enum', $outcome(fn () => $svc->report($conv, 'Bad person!', $asBuyer)));
+pin('a code outside the report reasons', 'invalid:/reason:enum', $outcome(fn () => $svc->report($conv, 'harassment', $asBuyer)));
 $log = array();
 $svc->report($conv, 'spam', $asBuyer);
 pin('report stores state, reporter and reason, and blocks for the reporter', array('reported', (string) $buyer, 'spam', '1', '0'), array_values($admin->query("SELECT s_state, fk_i_reporter_id, s_report_reason, b_buyer_blocked, b_seller_blocked FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_row()));
 pin('conversation_reported, then conversation_blocked', array('conversation_reported', 'conversation_blocked'), $log);
-pin('the reported side cannot report it back', 'conflict:reported', $outcome(fn () => $svc->report($conv, 'harassment', $asSeller)));
+pin('the reported side cannot report it back', 'conflict:reported', $outcome(fn () => $svc->report($conv, 'scam', $asSeller)));
 pin('the first report stands', array((string) $buyer, 'spam', '0'), array_values($admin->query("SELECT fk_i_reporter_id, s_report_reason, b_seller_blocked FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_row()));
 pin('a held thread cannot be reported', 'conflict:held', $outcome(fn () => $svc->report($hc, 'spam', $asBuyer)));
 $row = static fn (): array => $admin->query("SELECT i_buyer_unread, i_seller_unread, b_buyer_blocked, b_seller_blocked, s_state, fk_i_reporter_id, s_report_reason FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_assoc();

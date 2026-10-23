@@ -76,6 +76,39 @@ class ActionThrottle
     }
 
     /**
+     * Count one event for $key and say whether it is over the limit for $context, read as
+     * limitFor() does. Fails open, as RateLimit does.
+     *
+     * @param string   $context e.g. 'comment_post'
+     * @param string   $key     who is limited, e.g. 'user:12'
+     * @param int      $default the limit when no preference is stored
+     * @param int      $window  seconds
+     * @param int|null $now     the current time; time() when null
+     */
+    public static function over(string $context, string $key, int $default, int $window = 3600, ?int $now = null): bool
+    {
+        [$max, $window] = self::limitFor($context, $default, $window);
+        if ($max <= 0) {
+            return false;
+        }
+
+        return !RateLimit::hit($context, $key, $max, $window, true, $now);
+    }
+
+    /**
+     * Seconds until the window over() counts in starts again.
+     *
+     * @param int|null $now the current time; time() when null
+     */
+    public static function retryAfter(string $context, int $default, int $window = 3600, ?int $now = null): int
+    {
+        $window = self::limitFor($context, $default, $window)[1];
+        $now  ??= time();
+
+        return $window - ($now % $window);
+    }
+
+    /**
      * Has this source already used its allowance of $max events for $context in
      * the trailing $windowSeconds? Checked before the action runs.
      *

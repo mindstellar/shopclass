@@ -255,6 +255,20 @@ ActionThrottle::record('send_friend', 60);
 check('a short window still keeps the row for a day', $expiry() >= time() + 86400 && $expiry() < time() + 2 * 86400);
 $truncate();
 
+harness_section('ActionThrottle::over and retryAfter on a given clock');
+
+$truncate();
+$t0 = 1700000000 - (1700000000 % 3600);
+check('over(): the first event in the window', ActionThrottle::over('over_test', 'user:1', 2, 3600, $t0) === false);
+check('over(): the second still in', ActionThrottle::over('over_test', 'user:1', 2, 3600, $t0 + 10) === false);
+check('over(): the third is over', ActionThrottle::over('over_test', 'user:1', 2, 3600, $t0 + 20) === true);
+check('over(): another key counts apart', ActionThrottle::over('over_test', 'user:2', 2, 3600, $t0 + 20) === false);
+check('over(): the next window on the given clock starts again', ActionThrottle::over('over_test', 'user:1', 2, 3600, $t0 + 3600) === false);
+check('over(): a 0 limit never counts', ActionThrottle::over('over_test0', 'user:1', 0, 3600, $t0) === false && $events() === 5);
+pin('retryAfter(): seconds left on the given clock', 3000, ActionThrottle::retryAfter('over_test', 2, 3600, $t0 + 600));
+pin('retryAfter(): the window start is a full window', 3600, ActionThrottle::retryAfter('over_test', 2, 3600, $t0));
+$truncate();
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
