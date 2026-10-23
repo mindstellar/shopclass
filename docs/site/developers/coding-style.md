@@ -1,6 +1,6 @@
 ---
 title: Coding style
-description: "The PHP coding standard for ShopClass core: PSR-12, the pinned php-cs-fixer, the PHP 8.0 floor, and the legacy naming conventions you will meet in older files."
+description: "The PHP coding standard for ShopClass core: PSR-12, the pinned php-cs-fixer, the PHP 8.2 floor, and the legacy naming conventions you will meet in older files."
 sidebar:
   order: 15
 ---
@@ -24,7 +24,7 @@ to reformat.
 
 ## Checking the PHP floor
 
-The supported floor is **PHP 8.0**, and CI fails a pull request that uses syntax
+The supported floor is **PHP 8.2**, and CI fails a pull request that uses syntax
 or functions newer than that, even if your local PHP is happy with it:
 
 ```bash
@@ -33,7 +33,7 @@ composer compat
 composer lint            # cs:check + compat + analyse together
 ```
 
-Composer's `config.platform` is pinned to 8.0.0, so a dependency requiring more
+Composer's `config.platform` is pinned to 8.2.0, so a dependency requiring more
 is refused at resolution rather than at runtime on somebody's shared host.
 
 ## Static analysis

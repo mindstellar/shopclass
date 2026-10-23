@@ -1810,13 +1810,11 @@ class Cli
             $this->out($line . "\n");
         };
 
-        // PHP version — 8.0 is the floor; 7.x runs but is unsupported.
-        if (version_compare(PHP_VERSION, '8.0', '>=')) {
+        // PHP version — 8.2 is the floor.
+        if (version_compare(PHP_VERSION, '8.2', '>=')) {
             $check('ok', 'PHP version', PHP_VERSION);
-        } elseif (version_compare(PHP_VERSION, '7.4', '>=')) {
-            $check('warn', 'PHP version', PHP_VERSION . ' — past end of life; target is PHP 8.0+');
         } else {
-            $check('fail', 'PHP version', PHP_VERSION . ' — too old, PHP 8.0+ required');
+            $check('fail', 'PHP version', PHP_VERSION . ' — too old, PHP 8.2+ required');
         }
 
         // Required extensions.

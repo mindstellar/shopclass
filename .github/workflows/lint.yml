@@ -28,7 +28,7 @@ on:
 
 jobs:
   lint:
-    name: PHP format + 8.0 floor
+    name: PHP format + 8.2 floor
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -40,7 +40,7 @@ jobs:
           php-version: '8.3'
           coverage: none
 
-      # The PHP 8.0 floor is enforced because config.platform is 8.0.0: a real install
+      # The PHP 8.2 floor is enforced because config.platform is 8.2.0: a real install
       # fails on any locked package that needs more. `check-platform-reqs` is not used,
       # as it compares against the runner's own PHP and would pass a lock needing 8.3.
       - name: Dependencies still resolve against the PHP floor
@@ -63,7 +63,7 @@ jobs:
       - name: Install compatibility linter
         run: composer lint:install
 
-      - name: Check PHP 8.0 floor
+      - name: Check PHP 8.2 floor
         run: composer compat
 
       # Old findings sit in phpstan-baseline.neon; new code must be clean.

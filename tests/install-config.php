@@ -10,7 +10,8 @@
 
 /**
  * Pins what the installer writes into config.php: the site address the CLI install
- * was given, values that cannot break out of their PHP string, and the --web-url check.
+ * was given, values that cannot break out of their PHP string, the --web-url check, and the PHP
+ * and database version floors.
  * Usage:  php tests/install-config.php
  */
 
@@ -49,6 +50,15 @@ foreach (array('5.7.5', '5.7.44-log', '8.0.36', '5.5.5-10.2.0-MariaDB', '5.5.5-1
 }
 foreach (array('5.7.4', '5.6.51', '10.1.48-MariaDB', '5.5.5-10.1.48-MariaDB', 'garbage', '') as $v) {
     check('refuses ' . json_encode($v), !install_db_version_supported($v));
+}
+
+harness_section('install_php_version_supported');
+
+foreach (array('8.2.0', '8.2.35', '8.3.0', '8.5.1') as $v) {
+    check('accepts PHP ' . $v, install_php_version_supported($v));
+}
+foreach (array('8.0.30', '8.1.33', '8.2.0-dev', '7.4.33') as $v) {
+    check('refuses PHP ' . $v, !install_php_version_supported($v));
 }
 
 harness_section('install_urls under the CLI');

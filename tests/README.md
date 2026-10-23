@@ -123,7 +123,7 @@ Run these before you push. Each one fails CI when it is out of date.
 
 | Command | When |
 |---|---|
-| `composer cs:install` once, then `composer lint` | any PHP change (format, PHP 8.0 floor, PHPStan) |
+| `composer cs:install` once, then `composer lint` | any PHP change (format, PHP 8.2 floor, PHPStan) |
 | `composer lint:install` once | before the first `composer lint` |
 | `npm run i18n` | a new or changed translatable string |
 | `php tools/gen-hooks-doc.php` | a new or changed hook |

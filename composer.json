@@ -31,11 +31,11 @@
         "vendor-dir": "oc-includes/vendor",
         "optimize-autoloader": true,
         "platform": {
-            "php": "8.0.0"
+            "php": "8.2.0"
         }
     },
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.2",
         "ext-ctype": "*",
         "ext-json": "*",
         "ext-openssl": "*",

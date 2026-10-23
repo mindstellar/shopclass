@@ -13,7 +13,7 @@
   <a href="https://github.com/mindstellar/shopclass/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
   <a href="https://github.com/mindstellar/shopclass/actions/workflows/test.yml"><img src="https://github.com/mindstellar/shopclass/actions/workflows/test.yml/badge.svg?branch=develop" alt="Tests"></a>
   <a href="https://github.com/mindstellar/shopclass/releases/latest"><img src="https://img.shields.io/github/v/release/mindstellar/shopclass?include_prereleases&label=release" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/PHP-8.0%2B-777bb4" alt="PHP 8.0+">
+  <img src="https://img.shields.io/badge/PHP-8.2%2B-777bb4" alt="PHP 8.2+">
   <a href="https://github.com/mindstellar/shopclass/stargazers"><img src="https://img.shields.io/github/stars/mindstellar/shopclass" alt="Stars"></a>
 </p>
 
@@ -73,7 +73,7 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 ## Requirements
 
-- PHP **8.0+** with `mysqli`, `gd`, `curl`, `mbstring`, `openssl`, `zip`, `json`,
+- PHP **8.2+** with `mysqli`, `gd`, `curl`, `mbstring`, `openssl`, `zip`, `json`,
   `ctype`, `fileinfo`, and `posix`
 - MySQL 5.7.5+ / MariaDB 10.2+
 - Any web server (Apache or nginx)
@@ -173,7 +173,7 @@ With Docker, `npm run setup` does the same in one step (Composer runs inside the
 These generated files are not in git. Do not commit them.
 
 Dependencies must also resolve on the PHP floor. `config.platform` pins composer
-to 8.0.0, so a package requiring more is refused at resolution even when your own
+to 8.2.0, so a package requiring more is refused at resolution even when your own
 PHP is newer.
 
 ### Run it with Docker

@@ -8379,6 +8379,12 @@ msgid ""
 "of the files."
 msgstr ""
 
+#: oc-includes/osclass/classes/upgrade/Upgrade.php
+msgid ""
+"Nothing was changed. This update needs PHP %1$s or newer, and this server "
+"runs PHP %2$s. Ask your host to upgrade PHP, then update again."
+msgstr ""
+
 #: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Nothing was saved."
 msgstr ""
@@ -8848,7 +8854,7 @@ msgid "PHP version"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "PHP version >= 8.0.0"
+msgid "PHP version >= 8.2.0"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
