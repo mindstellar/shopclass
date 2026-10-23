@@ -211,6 +211,45 @@ final class MessagingService
     }
 
     /**
+     * What a poll needs to know: the user's unread total and the time of the newest message in
+     * their threads. A held thread does not count for the seller. Both are empty while messaging is off.
+     *
+     * @return array{unread: int, latest: ?string}
+     */
+    public function activity(int $userId): array
+    {
+        if ($userId <= 0 || !osc_messaging_enabled()) {
+            return array('unread' => 0, 'latest' => null);
+        }
+
+        return array('unread' => $this->conversations->unread($userId), 'latest' => $this->conversations->latest($userId));
+    }
+
+    /**
+     * The messages the actor has not got yet: those after $afterId, oldest first, or the last
+     * $limit when $afterId is 0. Clears the actor's unread count on the thread.
+     *
+     * @return array{conversation: array<string,mixed>, messages: array<int,array<string,mixed>>}
+     * @throws ForbiddenException messaging off, a guest, an account that is not live
+     * @throws NotFoundException  a thread the actor is not part of
+     */
+    public function since(int $conversationId, int $afterId, Actor $actor, int $limit = 50): array
+    {
+        $this->sender($actor);
+        $conversation = $this->conversations->find($conversationId);
+        if ($conversation === null || !MessagePolicy::isParty($conversation, $actor) || !MessagePolicy::canView($conversation, $actor)) {
+            throw new NotFoundException(_m('No such conversation'));
+        }
+        $userId   = (int) $actor->userId();
+        $messages = $afterId > 0
+            ? $this->messages->since($conversationId, $userId, $afterId, $limit)
+            : array_reverse($this->messages->ofConversation($conversationId, $userId, $limit));
+        $this->markRead($conversationId, $actor);
+
+        return array('conversation' => $conversation, 'messages' => $messages);
+    }
+
+    /**
      * The actor blocks the thread: neither side can write until they unblock it. Fires
      * `conversation_blocked` when the flag changes.
      *

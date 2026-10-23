@@ -18,9 +18,18 @@ define('IS_AJAX', true);
  * Class CWebAjax
  */
 use mindstellar\auth\Actor;
+use mindstellar\container\Container;
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
+use mindstellar\messaging\MessageStore;
+use mindstellar\messaging\MessagingService;
 use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
@@ -43,6 +52,9 @@ class CWebAjax extends BaseModel
         'custom'                      => 'custom',
         'check_username_availability' => 'checkUsername',
         'ajax_upload'                 => 'ajaxUpload',
+        'messages_send'               => 'messagesSend',
+        'messages_check'              => 'messagesCheck',
+        'messages_since'              => 'messagesSince',
     );
 
     /**
@@ -397,6 +409,146 @@ class CWebAjax extends BaseModel
             \mindstellar\security\ActionThrottle::record('ajax_upload');
         }
         echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
+    }
+
+    /**
+     * The signed-in visitor for a messages call; answers 401 or 403 and returns null otherwise.
+     */
+    private function messagingActor(): ?Actor
+    {
+        $actor = Actor::visitor();
+        if ($actor->userId() === null) {
+            AjaxResponse::json(array('error' => ForbiddenException::SIGN_IN, 'msg' => __('Sign in to use messages')), 401);
+
+            return null;
+        }
+        if (!osc_messaging_enabled()) {
+            AjaxResponse::json(array('error' => ForbiddenException::DISABLED, 'msg' => __('Messages are switched off on this site')), 403);
+
+            return null;
+        }
+
+        return $actor;
+    }
+
+    /**
+     * Send the reply a refused messages call gets: the status and error code from the exception.
+     */
+    private function messagingRefusal(RefusedException $e): void
+    {
+        $body   = array('error' => 'refused', 'msg' => $e->getMessage());
+        $status = 400;
+        if ($e instanceof ForbiddenException) {
+            $reason = $e->reason() !== '' ? $e->reason() : 'forbidden';
+            $status = $reason === ForbiddenException::SIGN_IN ? 401 : 403;
+            $body['error'] = $reason;
+        } elseif ($e instanceof NotFoundException) {
+            $status        = 404;
+            $body['error'] = 'not_found';
+        } elseif ($e instanceof ConflictException) {
+            $status        = 409;
+            $body['error'] = $e->reason() !== '' ? $e->reason() : 'conflict';
+        } elseif ($e instanceof InvalidException) {
+            $status        = 422;
+            $body['error'] = ltrim($e->pointer(), '/') !== '' ? ltrim($e->pointer(), '/') : 'invalid';
+        } elseif ($e instanceof BlockedException) {
+            $status              = 429;
+            $body['error']       = 'rate_limited';
+            $body['retry_after'] = $e->retryAfter();
+            header('Retry-After: ' . $e->retryAfter());
+        }
+        AjaxResponse::json($body, $status);
+    }
+
+    /**
+     * One stored message in the shape the messages calls answer with.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array{id:int,conversation:int,sender:int,body:string,at:string}
+     */
+    private function messagingRow(array $row): array
+    {
+        return array(
+            'id'           => (int) $row['pk_i_id'],
+            'conversation' => (int) $row['fk_i_conversation_id'],
+            'sender'       => (int) $row['fk_i_sender_id'],
+            'body'         => (string) $row['s_body'],
+            'at'           => (string) $row['dt_created'],
+        );
+    }
+
+    /**
+     * Send a reply in a thread the visitor is in.
+     */
+    private function messagesSend(): void
+    {
+        if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
+            header('Allow: POST');
+            AjaxResponse::json(array('error' => 'method_not_allowed', 'msg' => __('Use POST')), 405);
+
+            return;
+        }
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return;
+        }
+        osc_csrf_check();
+        $container = Container::root();
+        try {
+            $sent = $container->get(MessagingService::class)->reply(Params::getParamInt('id'), Params::getParamString('body'), $actor);
+        } catch (RefusedException $e) {
+            $this->messagingRefusal($e);
+
+            return;
+        }
+        $row = $container->get(MessageStore::class)->find($sent->messageId());
+        AjaxResponse::json(array('ok' => true, 'message' => $this->messagingRow((array) $row), 'held' => $sent->held()));
+    }
+
+    /**
+     * The visitor's unread total and newest message time; 304 when the poll's tag is still current.
+     */
+    private function messagesCheck(): void
+    {
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return;
+        }
+        $activity = Container::root()->get(MessagingService::class)->activity((int) $actor->userId());
+        $etag     = '"' . $activity['unread'] . '.' . md5((string) $activity['latest']) . '"';
+        header('Cache-Control: private, no-store');
+        header('ETag: ' . $etag);
+        if (osc_etag_matches((string) Params::getServerParam('HTTP_IF_NONE_MATCH', false, false), $etag)) {
+            http_response_code(304);
+
+            return;
+        }
+        AjaxResponse::json($activity);
+    }
+
+    /**
+     * The messages after the one the page already has; reading them marks the thread read.
+     */
+    private function messagesSince(): void
+    {
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return;
+        }
+        try {
+            $result = Container::root()->get(MessagingService::class)->since(Params::getParamInt('id'), Params::getParamInt('after'), $actor);
+        } catch (RefusedException $e) {
+            $this->messagingRefusal($e);
+
+            return;
+        }
+        $thread = $result['conversation'];
+        AjaxResponse::json(array(
+            'messages' => array_map(fn (array $row): array => $this->messagingRow($row), $result['messages']),
+            'state'    => (string) $thread['s_state'],
+            'blocked'  => (int) $thread['b_buyer_blocked'] === 1 || (int) $thread['b_seller_blocked'] === 1,
+        ));
     }
 
     /**
