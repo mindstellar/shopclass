@@ -8854,7 +8854,7 @@ msgid "PHP version"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "PHP version >= 8.2.0"
+msgid "PHP version >= %s"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
