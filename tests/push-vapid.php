@@ -245,7 +245,7 @@ namespace {
     pin('Topic', 'shopclass-messages', $req['headers']['Topic'] ?? null);
     pin('Authorization: vapid', 1, preg_match('/^vapid t=.+, k=' . preg_quote($public, '/') . '$/', $req['headers']['Authorization'] ?? ''));
     pin('no other headers', ['Content-Length', 'TTL', 'Urgency', 'Topic', 'Authorization'], array_keys($req['headers']));
-    pin('timeouts, cap and the checked IP pinned', ['connect_timeout' => 3, 'timeout' => 5, 'max_bytes' => 4096, 'resolve' => ['fcm.googleapis.com:443:142.250.1.1']], $req['options']);
+    pin('timeouts, cap and the checked IP pinned', ['connect_timeout' => 2, 'timeout' => 5, 'max_bytes' => 4096, 'resolve' => ['fcm.googleapis.com:443:142.250.1.1']], $req['options']);
     pin('ok recorded', ['ok'], $status->calls);
 
     $status->calls = [];
