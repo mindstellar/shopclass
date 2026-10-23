@@ -156,6 +156,33 @@ function osc_item_uses_messaging(): bool
 }
 
 /**
+ * Prints core's contact form for the current item: the e-mail form, or only the message field when
+ * the item uses on-site messaging. Fires item_contact_form with the item id before the button.
+ *
+ * @param array<string, mixed> $args options of gui/parts/contact-form.php to change, such as
+ *                                   prefix (the field id prefix) or hint
+ *
+ * @return void
+ */
+function osc_item_contact_form(array $args = array()): void
+{
+    $contactForm = array_merge(array(
+        'hidden'     => array('page' => 'item', 'action' => 'contact_post', 'id' => (int) osc_item_id()),
+        'prefix'     => 'oe-your',
+        'hint'       => _m('The seller replies to this address.'),
+        'phone'      => true,
+        'attachment' => (bool) osc_item_attachment(),
+        'captcha'    => 'contact_seller',
+        'hooks'      => static function () {
+            osc_run_hook('item_contact_form', osc_item_id());
+        },
+        'messaging'  => osc_item_uses_messaging(),
+    ), $args);
+    require_once dirname(__DIR__) . '/gui/page-fn.php';
+    require dirname(__DIR__) . '/gui/parts/contact-form.php';
+}
+
+/**
  * Gets description from current item, if $locale is unspecified $locale is current user locale
  *
  * @param string $locale

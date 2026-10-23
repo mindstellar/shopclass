@@ -28,20 +28,5 @@ if (!defined('ABS_PATH')) {
         osc_esc_html(osc_item_title())
     ); ?></p>
 
-    <?php
-    $contactHooks = static function () {
-        osc_run_hook('item_contact_form');
-    };
-    $contactForm = array(
-        'hidden'     => array('page' => 'item', 'action' => 'contact_post', 'id' => (int) osc_item_id()),
-        'prefix'     => 'oe-your',
-        'hint'       => _m('The seller replies to this address.'),
-        'phone'      => true,
-        'attachment' => (bool) osc_item_attachment(),
-        'captcha'    => 'contact_seller',
-        'hooks'      => $contactHooks,
-        'messaging'  => osc_item_uses_messaging(),
-    );
-    require __DIR__ . '/parts/contact-form.php';
-    ?>
+    <?php osc_item_contact_form(); ?>
 </div>

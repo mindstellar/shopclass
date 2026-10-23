@@ -492,7 +492,7 @@ Core fires 630 names. Generated from the source; do not edit by hand.
 | `item_bumped` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_comments_after` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
 | `item_comments_before` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
-| `item_contact_form` | action | none | `oc-includes/osclass/gui/item-contact-content.php` |
+| `item_contact_form` | action | `osc_item_id()` | `oc-includes/osclass/helpers/hItems.php` |
 | `item_content_updated` | action | `(int) $itemId, $locale` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_decrease_stat` | action | `$item` | `oc-includes/osclass/classes/listing/ListingStats.php` |
 | `item_description` | filter | `$v['s_description']` | `oc-includes/osclass/classes/controller/CWebItem.php` |

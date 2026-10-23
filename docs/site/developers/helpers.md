@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1230 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -526,7 +526,7 @@ Core defines 1230 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (122)
+### hItems (123)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -571,6 +571,7 @@ Core defines 1230 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_city_id()` | Gets city of current item |
 | `osc_item_comments_page()` | Gets page of comments in current pagination |
 | `osc_item_contact_email()` | Gets contact email of current item |
+| `osc_item_contact_form(array $args = array())` | Prints core's contact form for the current item: the e-mail form, or only the message field when the item uses on-site messaging. Fires item_contact_form with the item id before the button. |
 | `osc_item_contact_name()` | Gets contact name of current item |
 | `osc_item_contact_phone()` | Gets contact phone of current item |
 | `osc_item_content_locale()` | The locale the current item's title and description actually resolve to. |

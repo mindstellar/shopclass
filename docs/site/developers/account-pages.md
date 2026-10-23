@@ -522,7 +522,10 @@ was typed. A plugin handling its own contact-style form can do the same with
 
 The contact page and the share form fire `contact_form` and then
 `admin_contact_form` inside the form. The seller contact form fires
-`item_contact_form`. The contact page also fires `contact_form_top` before the
+`item_contact_form` with the item id. A theme that puts the seller form in its own
+layout, such as a dialog on the item page, calls `osc_item_contact_form()`: it prints
+the e-mail form, or only the message field when the listing uses messaging. Pass
+`prefix` for the field ids or `hint` for the text under the e-mail field. The contact page also fires `contact_form_top` before the
 Subject field and `contact_form_after` below the form.
 
 The contact page is `<div class="oe-contact">`, holding `.oe-contact-main` with the
