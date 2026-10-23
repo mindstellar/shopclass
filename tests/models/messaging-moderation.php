@@ -147,17 +147,17 @@ $mod->remove($a->messageId(), $asAdmin);
 pin('a held thread with another held message stays held', 'held', $state('conversation', $a->conversationId()));
 
 harness_section('held() and reported() lists');
-$rows = $mod->held();
+$rows = $mod->held($asAdmin);
 pin('held() lists the waiting message', array($b->messageId()), $ids($rows));
 pin('with its thread and both names', array($a->conversationId(), 'ola', 'ola@example.test', $seller, 'sam'), array((int) $rows[0]['conversation']['pk_i_id'], $rows[0]['sender_name'], $rows[0]['sender_email'], $rows[0]['recipient_id'], $rows[0]['recipient_name']));
 $c2 = $held($lamp, 'Again', $asThird);
-pin('held() pages by before', array($b->messageId()), $ids($mod->held(1, $c2->messageId())));
-pin('held() limit', array($c2->messageId()), $ids($mod->held(1)));
+pin('held() pages by before', array($b->messageId()), $ids($mod->held($asAdmin, 1, $c2->messageId())));
+pin('held() limit', array($c2->messageId()), $ids($mod->held($asAdmin, 1)));
 $svc->report($conv, 'spam', $asBuyer);
-$rows = $mod->reported();
+$rows = $mod->reported($asAdmin);
 pin('reported() lists the thread', array($conv), $ids($rows));
 pin('with buyer, seller and reporter names', array('bea', 'sam', 'bea'), array($rows[0]['buyer_name'], $rows[0]['seller_name'], $rows[0]['reporter_name']));
-pin('reported() pages by before', array(), $mod->reported(5, $conv));
+pin('reported() pages by before', array(), $mod->reported($asAdmin, 5, $conv));
 pin('counts()', array('held' => 2, 'reported' => 1), $mod->counts());
 
 harness_section('conversations() and message()');
@@ -174,10 +174,11 @@ pin('before skips the newer ones', array(), $ids($mod->conversations(array('stat
 pin('a user cannot list threads', 'forbidden:not_owner', $outcome(fn () => $mod->conversations(array(), 20, null, $asBuyer)));
 
 harness_section('thread()');
-$view = $mod->thread($a->conversationId());
+$view = $mod->thread($a->conversationId(), $asAdmin);
 pin('the admin view shows held messages, oldest first, not removed ones', array($b->messageId()), $ids($view['messages']));
 pin('and the parties by id, buyer first', array($third => 'ola', $seller => 'sam'), $view['names']);
-pin('thread() of nothing', 'not_found', $outcome(fn () => $mod->thread(999999)));
+pin('thread() of nothing', 'not_found', $outcome(fn () => $mod->thread(999999, $asAdmin)));
+pin('a user cannot read the admin lists or a thread', array_fill(0, 3, 'forbidden:not_owner'), array($outcome(fn () => $mod->held($asBuyer)), $outcome(fn () => $mod->reported($asBuyer)), $outcome(fn () => $mod->thread($a->conversationId(), $asBuyer))));
 
 harness_section('close');
 pin('a thread that is not reported', 'conflict:not_reported', $outcome(fn () => $mod->close($a->conversationId(), $asAdmin)));

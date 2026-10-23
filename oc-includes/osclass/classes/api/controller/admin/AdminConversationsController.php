@@ -65,7 +65,7 @@ final class AdminConversationsController
 
     public function show(ApiCall $call): Response
     {
-        $thread   = $this->moderation->thread($call->intArg(), self::THREAD_LIMIT);
+        $thread   = $this->moderation->thread($call->intArg(), $this->actor($call), self::THREAD_LIMIT);
         $row      = $thread['conversation'];
         $listing  = (int) $row['fk_i_item_id'];
         $document = $this->serializer->admin($row, $thread['names'], ListingStore::titles([$listing]));
@@ -96,7 +96,7 @@ final class AdminConversationsController
         $pager = Pager::fromRequest($call->request(), $this->api->cursor(), ListSpec::byId(), 'admin/messages');
 
         return $pager->respond(
-            fn (): array => $this->moderation->held($pager->limit() + 1, $pager->afterId()),
+            fn (): array => $this->moderation->held($this->actor($call), $pager->limit() + 1, $pager->afterId()),
             null,
             fn (array $rows): array => array_map(fn (array $row): array => $this->messageView($row), $rows),
             $this->api->links()

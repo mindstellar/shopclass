@@ -139,10 +139,13 @@ final class MessageModeration
      * `sender_email`, `recipient_id` and `recipient_name`. Page on with the last row's id.
      *
      * @return array<int,array<string,mixed>>
+     * @throws ForbiddenException an actor who is not an admin
      * @throws \mindstellar\database\DbException
      */
-    public function held(int $limit = 20, ?int $before = null): array
+    public function held(Actor $admin, int $limit = 20, ?int $before = null): array
     {
+        $this->requireAdmin($admin);
+
         return $this->withNames($this->messages->held($limit, $before));
     }
 
@@ -166,10 +169,13 @@ final class MessageModeration
      * Page on with the last row's id.
      *
      * @return array<int,array<string,mixed>>
+     * @throws ForbiddenException an actor who is not an admin
      * @throws \mindstellar\database\DbException
      */
-    public function reported(int $limit = 20, ?int $before = null): array
+    public function reported(Actor $admin, int $limit = 20, ?int $before = null): array
     {
+        $this->requireAdmin($admin);
+
         return $this->namedThreads($this->conversations->reported($limit, $before));
     }
 
@@ -196,10 +202,12 @@ final class MessageModeration
      * two parties' names by user id.
      *
      * @return array{conversation: array<string,mixed>, messages: array<int,array<string,mixed>>, names: array<int,string>}
-     * @throws NotFoundException no such conversation
+     * @throws ForbiddenException an actor who is not an admin
+     * @throws NotFoundException  no such conversation
      */
-    public function thread(int $conversationId, int $limit = 100, ?int $beforeId = null): array
+    public function thread(int $conversationId, Actor $admin, int $limit = 100, ?int $beforeId = null): array
     {
+        $this->requireAdmin($admin);
         $conversation = $this->conversations->find($conversationId);
         if ($conversation === null) {
             throw new NotFoundException(_m('No such conversation'));

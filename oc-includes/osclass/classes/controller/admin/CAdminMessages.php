@@ -64,7 +64,7 @@ class CAdminMessages extends AdminSecBaseModel
     private function held(): void
     {
         $before = Params::getParamInt('before');
-        $rows   = $this->moderation()->held(self::PER_PAGE + 1, $before > 0 ? $before : null);
+        $rows   = $this->moderation()->held(Actor::fromSession(true), self::PER_PAGE + 1, $before > 0 ? $before : null);
         $older  = $this->trim($rows, 'held');
 
         $titles = ListingStore::titles(array_map(
@@ -87,7 +87,7 @@ class CAdminMessages extends AdminSecBaseModel
     private function reported(): void
     {
         $before = Params::getParamInt('before');
-        $rows   = $this->moderation()->reported(self::PER_PAGE + 1, $before > 0 ? $before : null);
+        $rows   = $this->moderation()->reported(Actor::fromSession(true), self::PER_PAGE + 1, $before > 0 ? $before : null);
         $older  = $this->trim($rows, 'reported');
 
         $titles = ListingStore::titles(array_map('intval', array_column($rows, 'fk_i_item_id')));
@@ -107,7 +107,7 @@ class CAdminMessages extends AdminSecBaseModel
     {
         $id = Params::getParamInt('id');
         try {
-            $thread = $this->moderation()->thread($id);
+            $thread = $this->moderation()->thread($id, Actor::fromSession(true));
         } catch (NotFoundException $e) {
             osc_add_flash_error_message($e->getMessage(), 'admin');
             $this->redirectTo($this->url());
