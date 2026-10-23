@@ -22,7 +22,7 @@ use mindstellar\utility\Clock;
 
 /**
  * The browsers each user asked to wake for new messages, one t_key_value row per browser under
- * "<user id>:<browser id>". A row keeps the endpoint, the browser family and when it was added;
+ * "<user id>:<browser id>". A row keeps the endpoint, the browser family and when it was last seen;
  * no push keys, since a push carries no payload. Rows expire 90 days after the last renewal.
  */
 final class PushSubscriptions
@@ -74,7 +74,7 @@ final class PushSubscriptions
     }
 
     /**
-     * Push the row's expiry to 90 days from now.
+     * Mark the browser seen now and push the row's expiry to 90 days from now.
      *
      * @return bool false when the user has no row for $endpoint
      * @throws \mindstellar\database\DbException
@@ -86,12 +86,16 @@ final class PushSubscriptions
         }
         $key = $userId . ':' . self::browserId($endpoint);
         $now = $this->clock->now();
-        if ($this->kv->touch(self::GROUP, $key, $now + self::TTL, $now) > 0) {
-            return true;
+        $row = $this->kv->get(self::GROUP, $key, $now);
+        if ($row === null) {
+            return false;
         }
+        $data = json_decode((string) $row['value'], true);
+        $data = (is_array($data) ? $data : ['endpoint' => $endpoint, 'ua' => '']);
+        $data['seen'] = $now;
+        $this->kv->set(self::GROUP, $key, json_encode($data, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), $now + self::TTL, null, $now);
 
-        // A second renewal in the same second changes no row, so it counts nothing.
-        return $this->kv->get(self::GROUP, $key, $now) !== null;
+        return true;
     }
 
     /**

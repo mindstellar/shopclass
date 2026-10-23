@@ -145,6 +145,7 @@ harness_section('renew');
 $clock->t += 10 * 86400;
 pin('renew an active browser', true, $subs->renew(12, $ep('a')));
 pin('expiry moved to 90 days from the renewal', $clock->t + 90 * 86400, $kv->get('push', '12:' . $id1, $clock->t)['expires']);
+pin('and seen is the renewal time', $clock->t, json_decode((string) $kv->get('push', '12:' . $id1, $clock->t)['value'], true)['seen'] ?? null);
 pin('a second renewal in the same second still says active', true, $subs->renew(12, $ep('a')));
 pin('another user with that endpoint: not theirs', false, $subs->renew(123, $ep('a')));
 pin('an unknown endpoint: false', false, $subs->renew(12, $ep('zzz')));
