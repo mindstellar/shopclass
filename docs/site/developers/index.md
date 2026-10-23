@@ -18,7 +18,7 @@ If you wrote for Osclass, you already know most of this.
 
 Worth knowing before you port something:
 
-- **PHP 8 throughout.** The floor is 8.0. Code that relied on PHP 7 leniency
+- **PHP 8 throughout.** The floor is 8.2. Code that relied on PHP 7 leniency
   (implicit type juggling, dynamic properties, `create_function`) will fatal.
 - **jQuery is not loaded for you.** The admin panel is Bootstrap 5 and registers
   `bootstrap5`, `popper` and `sortablejs`; the front end loads nothing by
