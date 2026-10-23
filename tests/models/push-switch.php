@@ -59,4 +59,6 @@ $fields = SettingsPageRegistry::getInstance()->fields(UserSettingsScreen::regist
 check('the users page has the checkbox id enabled_push', isset($fields['enabled_push']) && ($fields['enabled_push']['id'] ?? '') === 'enabled_push');
 check('with the HTTPS hint', str_contains((string) ($fields['enabled_push']['help'] ?? ''), 'Needs HTTPS'));
 
-exit(harness_result());
+if (!defined('MODELS_RUNNER')) {
+    exit(harness_result());
+}

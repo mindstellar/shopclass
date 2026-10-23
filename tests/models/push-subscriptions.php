@@ -38,9 +38,11 @@ use mindstellar\utility\Clock;
 $GLOBALS['psBase'] = 'http://localhost/';
 
 /** The site address, changed per section. */
-function osc_base_url($with_index = false)
-{
-    return $GLOBALS['psBase'] . ($with_index ? 'index.php' : '');
+if (!function_exists('osc_base_url')) {
+    function osc_base_url($with_index = false)
+    {
+        return $GLOBALS['psBase'] . ($with_index ? 'index.php' : '');
+    }
 }
 
 $admin = api_admin_boot('osc_models_push_subscriptions');
@@ -222,4 +224,6 @@ pin('a base64url point', 87, strlen($key));
 $set('enabled_messaging', '0');
 pin('messaging off: off', false, osc_push_enabled());
 
-exit(harness_result());
+if (!defined('MODELS_RUNNER')) {
+    exit(harness_result());
+}
