@@ -61,6 +61,7 @@ final class PageRoutes
             'custom'   => 'CWebCustom',
             'route'    => 'CWebRoute',
             'api'      => 'CWebApi',
+            'messages' => 'CWebMessages',
             'sitemap'  => array('handler' => FrontController::class . '::sitemap'),
         );
     }
@@ -73,6 +74,7 @@ final class PageRoutes
         return array(
             'items'      => 'CAdminItems',
             'comments'   => 'CAdminItemComments',
+            'messages'   => 'CAdminMessages',
             'media'      => 'CAdminMedia',
             'login'      => 'CAdminLogin',
             'categories' => 'CAdminCategories',

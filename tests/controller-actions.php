@@ -151,6 +151,13 @@ $controllers = array(
         'sign_out_all_post'    => 'signOutAllPost',
         'unsub_alert'          => 'unsubscribeAlert',
     ), null),
+    'CWebMessages' => array('CWebMessages.php', array(
+        ''             => 'index',
+        'block_post'   => 'blockPost',
+        'report_post'  => 'reportPost',
+        'send_post'    => 'sendPost',
+        'unblock_post' => 'unblockPost',
+    ), 'index'),
     'CWebAjax' => array('CWebAjax.php', array(
         'ajax_upload'                 => 'ajaxUpload',
         'alerts'                      => 'alerts',

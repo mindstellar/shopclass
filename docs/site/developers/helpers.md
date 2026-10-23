@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1224 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -41,7 +41,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_sanitizeString($string)` | Turn a string into a URL-safe slug: tags, accents, entities and punctuation removed, whitespace collapsed to single hyphens. |
 
-### functions (31)
+### functions (32)
 
 `oc-includes/osclass/functions.php`
 
@@ -66,6 +66,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_force_jpeg_mime($content)` | Force the upload_image_mime filter to image/jpeg. |
 | `osc_item_tinymce_footer()` | Print the TinyMCE init script for the listing description fields, in the footer. |
 | `osc_item_tinymce_header()` | Enqueue TinyMCE on the public publish and edit pages only. |
+| `osc_messaging_personal_data($out, $userId = 0)` |  |
 | `osc_meta_edit($catId = null, $item_id = null)` | Print the custom-field inputs for the edit form, pre-filled from the listing. |
 | `osc_meta_generator()` | Print the generator meta tag. |
 | `osc_meta_noindex()` | Emit &lt;meta name="robots" content="noindex, follow"&gt; when a controller has marked the current response as thin/empty (e.g. a valid but empty category or location browse page). Keeps the URL crawlable and 200, without indexing an empty page. |
@@ -354,7 +355,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_db_password()` | **Deprecated since 4.0.0.** Gets database password |
 | `osc_db_user()` | **Deprecated since 4.0.0.** Gets database user |
 
-### hDefines (104)
+### hDefines (105)
 
 `oc-includes/osclass/helpers/hDefines.php`
 
@@ -412,6 +413,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_is_list_items()` | Get if the user is on user's items page |
 | `osc_is_login_form()` | **Deprecated since 3.5.7.** Get if user is on login form |
 | `osc_is_login_page()` | Get if user is on login page |
+| `osc_is_messages_page()` | Whether the visitor is on the messages inbox or a conversation. |
 | `osc_is_moderator()` | Check is an admin is a super admin or only a moderator |
 | `osc_is_public_profile()` | Get if the user is on public profile page |
 | `osc_is_publish_page()` | Get if user is on publish page |
@@ -1314,7 +1316,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (65)
+### hUsers (69)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
@@ -1345,6 +1347,10 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_logged_user_id()` | Gets logged user id |
 | `osc_logged_user_name()` | Gets logged user name |
 | `osc_logged_user_phone()` | Gets logged user phone |
+| `osc_messaging_enabled()` | Whether signed-in users can message sellers on the site. |
+| `osc_messaging_inbox_url()` | The link to the signed-in user's inbox. |
+| `osc_messaging_thread_url(int $conversationId)` | The link to a message thread. |
+| `osc_messaging_unread_count()` | Unread messages across the signed-in user's threads; 0 for a guest or while messaging is off. Read once per request and user. |
 | `osc_prepare_user_info()` | Gets next user in users array |
 | `osc_reset_users()` | Rewinds the user loop, so osc_prepare_user_info() can be read again. |
 | `osc_resolve_web_user()` | Resolve the current front-end user for this request, or null. |

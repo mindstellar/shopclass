@@ -100,6 +100,8 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'rewrite_user_profile', 'user/profile', 'STRING')
     ,('osclass', 'rewrite_user_items', 'user/items', 'STRING')
     ,('osclass', 'rewrite_user_alerts', 'user/alerts', 'STRING')
+    ,('osclass', 'rewrite_messages', 'user/messages', 'STRING')
+    ,('osclass', 'rewrite_messages_thread', 'user/messages', 'STRING')
     ,('osclass', 'rewrite_billing_wallet', 'user/credits', 'STRING')
     ,('osclass', 'rewrite_billing_buy', 'user/credits/buy', 'STRING')
     ,('osclass', 'rewrite_billing_orders', 'user/orders', 'STRING')

@@ -57,6 +57,7 @@ class Breadcrumb
         $this->title['user_account']           = __('Account');
         $this->title['user_items']             = __('My listings');
         $this->title['user_alerts']            = __('My alerts');
+        $this->title['messages']               = __('Messages');
         $this->title['user_profile']           = __('Update my profile');
         $this->title['user_change_email']      = __('Change my email');
         $this->title['user_change_username']   = __('Change my username');
@@ -88,7 +89,7 @@ class Breadcrumb
         $l = array();
         if (in_array(
             $this->getLocation(),
-            array('item', 'page', 'search', 'login', 'register', 'user', 'contact', 'custom')
+            array('item', 'page', 'search', 'login', 'register', 'user', 'contact', 'custom', 'messages')
         )
         ) {
             $l = array(
@@ -350,6 +351,20 @@ class Breadcrumb
                         $this->addLevel($l);
                         break;
                 }
+                break;
+            case ('messages'):
+                $l = array('url' => osc_user_dashboard_url(), 'title' => $this->title['user_account']);
+                $this->addLevel($l);
+                $threadTitle = (string) View::getInstance()->_get('title');
+                if ($threadTitle === '') {
+                    $l = array('title' => $this->title['messages']);
+                    $this->addLevel($l);
+                    break;
+                }
+                $l = array('url' => osc_messaging_inbox_url(), 'title' => $this->title['messages']);
+                $this->addLevel($l);
+                $l = array('title' => $threadTitle);
+                $this->addLevel($l);
                 break;
             case ('login'):
                 switch ($this->getSection()) {

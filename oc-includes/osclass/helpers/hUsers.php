@@ -38,8 +38,55 @@ function osc_messaging_enabled(): bool
  */
 function osc_messaging_thread_url(int $conversationId): string
 {
-    return osc_base_url(true) . '?page=messages&id=' . $conversationId;
+    return osc_core_url('messages_thread', array('id' => $conversationId));
 }
+
+/**
+ * The link to the signed-in user's inbox.
+ *
+ * @return string
+ */
+function osc_messaging_inbox_url(): string
+{
+    return osc_core_url('messages');
+}
+
+/**
+ * Unread messages across the signed-in user's threads; 0 for a guest or while messaging is off.
+ * Read once per request and user.
+ *
+ * @return int
+ */
+function osc_messaging_unread_count(): int
+{
+    static $counts = array();
+    $userId = (int) osc_logged_user_id();
+    if ($userId <= 0 || !osc_messaging_enabled()) {
+        return 0;
+    }
+
+    return $counts[$userId] ??= \mindstellar\container\Container::root()
+        ->get(\mindstellar\messaging\MessagingService::class)->unreadCount($userId);
+}
+
+/*
+ * "Messages" on the account menu, with the unread count while there is one; a shopper's menu drops
+ * it (OSC_SHOPPER_HIDDEN_MENU). Plugins::addHook() because this file loads before hPlugins.php.
+ */
+Plugins::addHook('user_menu_filter', static function ($options) {
+    $options = is_array($options) ? $options : array();
+    if (!osc_messaging_enabled() || osc_logged_user_id() <= 0) {
+        return $options;
+    }
+    $unread    = osc_messaging_unread_count();
+    $options[] = array(
+        'name'  => $unread > 0 ? sprintf(_m('Messages (%d)'), $unread) : _m('Messages'),
+        'url'   => osc_messaging_inbox_url(),
+        'class' => 'opt_messages',
+    );
+
+    return $options;
+});
 
 /**
  * Gets a specific field from current user
@@ -1105,6 +1152,7 @@ function osc_reset_users()
 const OSC_SHOPPER_PAGES = array(
     'user'    => array('hide' => array('items', 'alerts', 'api_access', 'api_access_post', 'pub_profile')),
     'billing' => array('keep' => array('orders', 'receipt')),
+    'messages' => array('keep' => array()),
 );
 
 /**
@@ -1136,6 +1184,7 @@ const OSC_SHOPPER_HIDDEN_MENU = array(
     'opt_billing_wallet',
     'opt_billing_buy',
     'opt_api_access',
+    'opt_messages',
 );
 
 /**

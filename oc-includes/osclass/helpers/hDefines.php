@@ -1359,6 +1359,16 @@ function osc_is_list_alerts()
 }
 
 /**
+ * Whether the visitor is on the messages inbox or a conversation.
+ *
+ * @return boolean
+ */
+function osc_is_messages_page()
+{
+    return osc_get_osclass_location() === 'messages';
+}
+
+/**
  * Get if user is on change email page
  *
  * @return boolean

@@ -99,6 +99,45 @@ final class ListingStore extends Model
     }
 
     /**
+     * Listing titles by id in one read: the locale's own title, else the first locale that has one.
+     * An id with no title is left out.
+     *
+     * @param int[]       $ids
+     * @param string|null $locale defaults to the visitor's locale
+     *
+     * @return array<int,string>
+     * @throws \mindstellar\database\DbException
+     */
+    public static function titles(array $ids, ?string $locale = null): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return [];
+        }
+        $locale ??= (string) osc_current_user_locale();
+        $rows     = Db::table(DB_TABLE_PREFIX . 't_item_description')
+            ->select('fk_i_item_id', 'fk_c_locale_code', 's_title')
+            ->whereIn('fk_i_item_id', $ids)
+            ->get();
+        $titles = [];
+        $own    = [];
+        foreach ($rows as $row) {
+            $title = (string) $row['s_title'];
+            $id    = (int) $row['fk_i_item_id'];
+            if ($title === '') {
+                continue;
+            }
+            if ((string) $row['fk_c_locale_code'] === $locale) {
+                $own[$id] = $title;
+            } elseif (!isset($titles[$id])) {
+                $titles[$id] = $title;
+            }
+        }
+
+        return $own + $titles;
+    }
+
+    /**
      * The columns a premium change decides on, or null. $lock holds the row (FOR UPDATE) until the
      * transaction ends.
      *

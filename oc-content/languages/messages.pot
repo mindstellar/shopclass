@@ -724,6 +724,14 @@ msgstr ""
 msgid "Continue to payment"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Conversation blocked"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Conversation unblocked"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "Copy it now and keep it secret. It is not shown again."
 msgstr ""
@@ -1096,6 +1104,10 @@ msgstr[1] ""
 msgid "Forgotten your password?"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Former user"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Free bumps are paused: you have %1$d live listings and your limit is %2$d."
 msgstr ""
@@ -1414,6 +1426,10 @@ msgstr ""
 msgid "Message %s"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Message sent"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Message settings have been updated"
 msgstr ""
@@ -1422,6 +1438,15 @@ msgstr ""
 msgid "Message: this field is required"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Messages"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Messages (%d)"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebMessages.php
 #: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "Messages are switched off on this site"
 msgstr ""
@@ -2235,6 +2260,10 @@ msgstr ""
 msgid "Removed by admin"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Removed listing"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-register-content.php
 msgid "Repeat password"
 msgstr ""
@@ -2588,6 +2617,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Thanks! That's very helpful"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Thanks, the conversation was reported to the admins"
 msgstr ""
 
 #: oc-includes/osclass/classes/webhook/WebhookService.php
@@ -3880,6 +3913,10 @@ msgid ""
 "to post again."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "You are sending too fast. Try again in %d minutes."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebUser.php
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "You are signed out on every device, this one too. Sign in again."
@@ -4195,6 +4232,10 @@ msgstr ""
 msgid ""
 "Your message has been sent. Messages you send from this browser in the next "
 "30 days go straight out."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Your message is waiting for review"
 msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php
