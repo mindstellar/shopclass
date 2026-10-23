@@ -220,7 +220,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 629 names. Generated from the source; do not edit by hand.
+Core fires 630 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -551,7 +551,7 @@ Core fires 629 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (249)
+### Other (250)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -662,6 +662,7 @@ Core fires 629 names. Generated from the source; do not edit by hand.
 | `conversation_blocked` | event | `ConversationBlocked` | `oc-includes/osclass/classes/messaging/event/ConversationBlocked.php` |
 | `conversation_reported` | event | `ConversationReported` | `oc-includes/osclass/classes/messaging/event/ConversationReported.php` |
 | `conversation_started` | event | `ConversationStarted` | `oc-includes/osclass/classes/messaging/event/ConversationStarted.php` |
+| `conversation_unblocked` | event | `ConversationUnblocked` | `oc-includes/osclass/classes/messaging/event/ConversationUnblocked.php` |
 | `correct_login_url_redirect` | filter | `$url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `count_view_on_beacon` | filter | `osc_request_counts_as_view(), $id` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `count_view_on_render` | filter | `osc_request_counts_as_view(), $item` | `oc-includes/osclass/classes/controller/CWebItem.php` |

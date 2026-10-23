@@ -81,7 +81,7 @@ $fresh = static function () use (&$log): MessagingService {
     harness_reset_container();
     $c = Container::root();
     $c->get(DispatcherInterface::class)->remove(MessageSent::class, [MessageNotifier::class, 'onMessageSent']);
-    foreach (array('conversation_started', 'message_sent', 'message_held', 'conversation_blocked', 'conversation_reported', 'message_read') as $name) {
+    foreach (array('conversation_started', 'message_sent', 'message_held', 'conversation_blocked', 'conversation_unblocked', 'conversation_reported', 'message_read') as $name) {
         osc_add_hook($name, static function () use (&$log, $name): void {
             $log[] = $name . (Db::inTransaction() ? ' (in transaction)' : '');
         });
@@ -214,7 +214,9 @@ pin('nor through start()', 'forbidden:blocked', $outcome(fn () => $svc->start($b
 pin('nor a new thread on another of the seller\'s listings', 'forbidden:blocked', $outcome(fn () => $svc->start($lamp, 'And the lamp?', $asBuyer)));
 pin('no thread was made', 0, $count("SELECT COUNT(*) FROM {$p}t_conversation WHERE fk_i_item_id = $lamp AND fk_i_buyer_id = $buyer"));
 pin('the buyer cannot lift the seller\'s block', 'forbidden:not_owner', $outcome(fn () => $svc->unblock($conv, $asBuyer)));
+$log = array();
 $svc->unblock($conv, $asSeller);
+pin('unblocking fires conversation_unblocked', array('conversation_unblocked'), $log);
 pin('the seller can', 'ok', $outcome(fn () => $svc->reply($conv, 'Sorry, go on', $asSeller)));
 pin('a report needs a reason code', 'invalid:/reason:pattern', $outcome(fn () => $svc->report($conv, 'Bad person!', $asBuyer)));
 $log = array();

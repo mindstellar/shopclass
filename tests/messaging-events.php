@@ -26,6 +26,7 @@ require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\event\Bridged;
 use mindstellar\messaging\event\ConversationBlocked;
+use mindstellar\messaging\event\ConversationUnblocked;
 use mindstellar\messaging\event\ConversationReported;
 use mindstellar\messaging\event\ConversationStarted;
 use mindstellar\messaging\event\MessageHeld;
@@ -50,7 +51,8 @@ $cases = [
     [new ConversationStarted(1, 2, 3, 4), ['conversation_started'], [1, 2, 3, 4]],
     [new MessageSent(5, 1, 3, 4), ['message_sent'], [5, 1, 3, 4]],
     [new MessageHeld(5, 1, 3, 4, 'akismet'), ['message_held'], [5, 1, 3, 4, 'akismet']],
-    [new ConversationBlocked(1, 4, true), ['conversation_blocked'], [1, 4, true]],
+    [new ConversationBlocked(1, 4), ['conversation_blocked'], [1, 4]],
+    [new ConversationUnblocked(1, 4), ['conversation_unblocked'], [1, 4]],
     [new ConversationReported(1, 3, 'spam'), ['conversation_reported'], [1, 3, 'spam']],
     [new MessageRead(1, 4, 2), ['message_read'], [1, 4, 2]],
     [new MessageSending('hi', 2, 3, 4, 1), ['message_body'], ['hi', 2, 3, 4, 1]],
@@ -62,7 +64,6 @@ foreach ($cases as [$event, $names, $args]) {
     pin($class . ' old arguments', $args, me_args($event));
 }
 pin('message_body gets null for a new thread', null, me_args(new MessageSending('hi', 2, 3, 4, null))[4]);
-pin('unblock passes false', false, me_args(new ConversationBlocked(1, 4, false))[2]);
 
 harness_section('getters');
 

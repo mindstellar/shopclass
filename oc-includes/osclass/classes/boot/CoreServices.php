@@ -42,6 +42,7 @@ use mindstellar\mail\CoreEmails;
 use mindstellar\mail\event\MailComposing;
 use mindstellar\messaging\ConversationStore;
 use mindstellar\messaging\event\ConversationBlocked;
+use mindstellar\messaging\event\ConversationUnblocked;
 use mindstellar\messaging\event\ConversationReported;
 use mindstellar\messaging\event\ConversationStarted;
 use mindstellar\messaging\event\MessageHeld;
@@ -139,6 +140,7 @@ final class CoreServices
             MessageSent::class,
             MessageHeld::class,
             ConversationBlocked::class,
+            ConversationUnblocked::class,
             ConversationReported::class,
             MessageRead::class,
             \mindstellar\listing\event\VariantPriceChanged::class,

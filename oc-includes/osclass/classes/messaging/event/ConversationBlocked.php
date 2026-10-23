@@ -16,11 +16,11 @@ use mindstellar\event\Bridged;
 use mindstellar\event\Event;
 
 /**
- * A party blocked a thread, or lifted the block (`blocked` is false). Old action: `conversation_blocked`.
+ * A party blocked a thread. Old action: `conversation_blocked`, with the thread id and the user id.
  */
 final class ConversationBlocked extends Event implements Bridged
 {
-    public function __construct(private int $conversationId, private int $byUserId, private bool $blocked)
+    public function __construct(private int $conversationId, private int $byUserId)
     {
     }
 
@@ -39,13 +39,8 @@ final class ConversationBlocked extends Event implements Bridged
         return $this->byUserId;
     }
 
-    public function blocked(): bool
-    {
-        return $this->blocked;
-    }
-
     public function applyLegacy(string $name, callable $fn): void
     {
-        $fn($this->conversationId, $this->byUserId, $this->blocked);
+        $fn($this->conversationId, $this->byUserId);
     }
 }

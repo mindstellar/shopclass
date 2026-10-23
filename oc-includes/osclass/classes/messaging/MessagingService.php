@@ -27,6 +27,7 @@ use mindstellar\listing\ListingStore;
 use mindstellar\messaging\event\ConversationBlocked;
 use mindstellar\messaging\event\ConversationReported;
 use mindstellar\messaging\event\ConversationStarted;
+use mindstellar\messaging\event\ConversationUnblocked;
 use mindstellar\messaging\event\MessageHeld;
 use mindstellar\messaging\event\MessageRead;
 use mindstellar\messaging\event\MessageSending;
@@ -227,7 +228,8 @@ final class MessagingService
     }
 
     /**
-     * Lift the actor's own block. A block set by the other side stays.
+     * Lift the actor's own block. A block set by the other side stays. Fires
+     * `conversation_unblocked` when the flag changes.
      *
      * @throws ForbiddenException messaging off, a guest, an account that is not live, or the other side's block
      * @throws NotFoundException  a thread the actor is not part of
@@ -348,7 +350,7 @@ final class MessagingService
         $id     = (int) $conversation['pk_i_id'];
         $userId = (int) $actor->userId();
         $this->conversations->setBlocked($id, $side, $blocked);
-        Db::afterCommit(fn () => $this->events->dispatch(new ConversationBlocked($id, $userId, $blocked)));
+        Db::afterCommit(fn () => $this->events->dispatch($blocked ? new ConversationBlocked($id, $userId) : new ConversationUnblocked($id, $userId)));
     }
 
     /**
