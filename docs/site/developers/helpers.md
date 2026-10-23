@@ -1352,7 +1352,7 @@ Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_logged_user_phone()` | Gets logged user phone |
 | `osc_messaging_enabled()` | Whether signed-in users can message sellers on the site. |
 | `osc_messaging_inbox_url()` | The link to the signed-in user's inbox. |
-| `osc_messaging_link(array $args = array())` | The signed-in user's link to their messages, with the unread count, for a theme's header. '' while messaging is off, for a guest and for a shopper. Core's scripts keep the count current. |
+| `osc_messaging_link(array $args = array())` | The signed-in user's link to their messages, with the unread count, for a theme's header. '' while messaging is off, for a guest and for a shopper. The first link on a page loads messages.js, which keeps the count current on every page. |
 | `osc_messaging_live_url()` | The URL a signed-in user's page subscribes to for live message notes, or '' when live delivery is off, messaging is off or nobody is signed in. |
 | `osc_messaging_thread_url(int $conversationId)` | The link to a message thread. |
 | `osc_messaging_unread_count()` | Unread messages across the signed-in user's threads; 0 for a guest or while messaging is off. Read once per request and user. |
