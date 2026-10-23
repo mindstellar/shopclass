@@ -15,8 +15,9 @@ namespace mindstellar\messaging;
 use mindstellar\database\Db;
 
 /**
- * Rows of t_conversation: one thread per listing and buyer. The stores keep no rules and do not
- * read the clock; MessagingService passes the times as 'Y-m-d H:i:s' strings.
+ * Rows of t_conversation: one thread per listing, buyer and seller, so a listing moved to a new
+ * owner starts a new thread. The stores keep no rules and do not read the clock; MessagingService
+ * passes the times as 'Y-m-d H:i:s' strings.
  */
 final class ConversationStore
 {
@@ -54,20 +55,20 @@ final class ConversationStore
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    public function findByItemAndBuyer(int $itemId, int $buyerId): ?array
+    public function findForListing(int $itemId, int $buyerId, int $sellerId): ?array
     {
-        return $this->table()->where('fk_i_item_id', $itemId)->where('fk_i_buyer_id', $buyerId)->first();
+        return $this->table()->where('fk_i_item_id', $itemId)->where('fk_i_buyer_id', $buyerId)->where('fk_i_seller_id', $sellerId)->first();
     }
 
     /**
-     * As findByItemAndBuyer(), as a locking read: it sees the newest committed row and holds it.
+     * As findForListing(), as a locking read: it sees the newest committed row and holds it.
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    public function lockByItemAndBuyer(int $itemId, int $buyerId): ?array
+    public function lockForListing(int $itemId, int $buyerId, int $sellerId): ?array
     {
-        return Db::selectOne('SELECT * FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_buyer_id = ? FOR UPDATE', array($itemId, $buyerId));
+        return Db::selectOne('SELECT * FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_buyer_id = ? AND fk_i_seller_id = ? FOR UPDATE', array($itemId, $buyerId, $sellerId));
     }
 
     /**

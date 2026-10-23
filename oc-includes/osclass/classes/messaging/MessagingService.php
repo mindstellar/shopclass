@@ -97,7 +97,7 @@ final class MessagingService
         if ($sellerId === $buyerId) {
             throw new ConflictException(_m('You cannot message yourself about your own listing'), self::OWN_LISTING);
         }
-        $conversation = $this->conversations->findByItemAndBuyer($itemId, $buyerId);
+        $conversation = $this->conversations->findForListing($itemId, $buyerId, $sellerId);
         if ($conversation === null && !ListingStatus::isLive($item, $this->clock->now())) {
             throw new ConflictException(_m('This listing is no longer available'), self::LISTING_NOT_LIVE);
         }
@@ -400,7 +400,7 @@ final class MessagingService
             // read below locks, so each sees the newest committed row.
             UserStore::lock($buyerId);
             $started      = false;
-            $conversation = $this->conversations->lockByItemAndBuyer($itemId, $buyerId)
+            $conversation = $this->conversations->lockForListing($itemId, $buyerId, $sellerId)
                 ?? $this->createConversation($itemId, $buyerId, $sellerId, $holdReason !== null, $now, $started);
             $conversationId = (int) $conversation['pk_i_id'];
             $this->assertCanSend($conversation, $senderId);
@@ -455,7 +455,7 @@ final class MessagingService
 
             return (array) $this->conversations->lock($id);
         } catch (DbException $e) {
-            $row = (int) $e->getCode() === self::DUPLICATE_KEY ? $this->conversations->lockByItemAndBuyer($itemId, $buyerId) : null;
+            $row = (int) $e->getCode() === self::DUPLICATE_KEY ? $this->conversations->lockForListing($itemId, $buyerId, $sellerId) : null;
             if ($row === null) {
                 throw $e;
             }

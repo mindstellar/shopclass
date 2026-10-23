@@ -246,6 +246,22 @@ $log = array();
 $svc->start($fresh2, 'Hello?', $asThird);
 pin('a later message fires message_sent only', array('message_sent'), $log);
 
+harness_section('a listing moved to a new owner');
+$kim   = seed_user($admin, 'kim', 'kim@example.test');
+$asKim = Actor::user($kim, '10.0.0.5');
+$desk  = seed_item($admin, $cat, $seller, 'Desk');
+$was   = $svc->start($desk, 'Is the desk free?', $asKim)->conversationId();
+$admin->query("UPDATE {$p}t_item SET fk_i_user_id = $seller2 WHERE pk_i_id = $desk");
+$samUnread = $svc->unreadCount($seller);
+$sidUnread = $svc->unreadCount($seller2);
+$log  = array();
+$moved = $svc->start($desk, 'Still free?', $asKim);
+pin('the next message starts a new thread', array(true, false), array($moved->started(), $moved->conversationId() === $was));
+pin('the new thread is with the new owner', $seller2, (int) $col("SELECT fk_i_seller_id FROM {$p}t_conversation WHERE pk_i_id = " . $moved->conversationId()));
+pin('the new owner has it unread, the old owner nothing more', array($sidUnread + 1, $samUnread), array($svc->unreadCount($seller2), $svc->unreadCount($seller)));
+pin('the old thread stays with the old owner', $seller, (int) $col("SELECT fk_i_seller_id FROM {$p}t_conversation WHERE pk_i_id = $was"));
+pin('conversation_started, then message_sent', array('conversation_started', 'message_sent'), $log);
+
 harness_section('two first messages at once');
 $racer = seed_user($admin, 'rae', 'rae@example.test');
 $tent  = seed_item($admin, $cat, $seller, 'Tent');

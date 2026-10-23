@@ -52,9 +52,9 @@ $row = static function (int $item, int $buyer, int $seller, string $when, string
 };
 
 harness_section('one thread per listing and buyer');
-pin('no thread yet', null, $conversations->findByItemAndBuyer($item, $buyer));
+pin('no thread yet', null, $conversations->findForListing($item, $buyer, $seller));
 $c1 = $conversations->create($row($item, $buyer, $seller, '2026-01-01 10:00:00'));
-pin('found by listing and buyer', $c1, (int) $conversations->findByItemAndBuyer($item, $buyer)['pk_i_id']);
+pin('found by listing and buyer', $c1, (int) $conversations->findForListing($item, $buyer, $seller)['pk_i_id']);
 pin('found by id', $item, (int) $conversations->find($c1)['fk_i_item_id']);
 pin('lock returns the row', $c1, (int) $conversations->lock($c1)['pk_i_id']);
 $dup = null;

@@ -64,7 +64,7 @@ $switch = static function () use ($admin, $p): ?string {
 $conversationIndexes = array(
     'PRIMARY'       => 'pk_i_id',
     'idx_buyer'     => 'fk_i_buyer_id,dt_last_message',
-    'idx_item_buyer' => 'fk_i_item_id,fk_i_buyer_id',
+    'idx_item_buyer' => 'fk_i_item_id,fk_i_buyer_id,fk_i_seller_id',
     'idx_seller'    => 'fk_i_seller_id,dt_last_message',
     'idx_state'     => 's_state',
 );
