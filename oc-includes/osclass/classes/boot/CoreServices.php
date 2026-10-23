@@ -38,6 +38,10 @@ use mindstellar\event\Bridged;
 use mindstellar\event\Dispatcher;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\event\HookBridge;
+use mindstellar\live\LivePublisher;
+use mindstellar\live\LiveStatus;
+use mindstellar\live\NchanPublisher;
+use mindstellar\live\NullPublisher;
 use mindstellar\mail\CoreEmails;
 use mindstellar\mail\event\MailComposing;
 use mindstellar\messaging\ConversationStore;
@@ -49,9 +53,11 @@ use mindstellar\messaging\event\MessageHeld;
 use mindstellar\messaging\event\MessageRead;
 use mindstellar\messaging\event\MessageSending;
 use mindstellar\messaging\event\MessageSent;
+use mindstellar\messaging\LiveNotifier;
 use mindstellar\messaging\MessageNotifier;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
+use mindstellar\model\KeyValue;
 use mindstellar\moderation\MessageModeration;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
@@ -95,6 +101,17 @@ final class CoreServices
         ));
         $c->set(MessageNotifier::class, static fn (Container $c): MessageNotifier => new MessageNotifier($c->get(ConversationStore::class), $c->get(CoreEmails::class)));
         $events->listen(MessageSent::class, [MessageNotifier::class, 'onMessageSent']);
+        $c->set(LiveStatus::class, static fn (Container $c): LiveStatus => new LiveStatus(new KeyValue(), $c->get(Clock::class)));
+        $c->set(LivePublisher::class, static fn (Container $c): LivePublisher => getenv('OSC_LIVE') === 'nchan'
+            ? new NchanPublisher(
+                getenv('OSC_LIVE_PUBLISH_URL') ?: 'http://127.0.0.1:8090/live/pub/',
+                getenv('OSC_LIVE_SUBSCRIBE_URL') ?: '/live/sub/',
+                $c->get(LiveStatus::class)
+            )
+            : new NullPublisher());
+        $c->set(LiveNotifier::class, static fn (Container $c): LiveNotifier => new LiveNotifier($c->get(LivePublisher::class)));
+        $events->listen(MessageSent::class, [LiveNotifier::class, 'onMessageSent']);
+        $events->listen(MessageRead::class, [LiveNotifier::class, 'onMessageRead']);
         $events->listen(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
         $events->listen(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
         foreach (self::events() as $event) {
