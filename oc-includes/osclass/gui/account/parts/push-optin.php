@@ -13,13 +13,14 @@ if (!defined('ABS_PATH')) {
  */
 /**
  * The per-browser switch for new-message notifications, driven by assets/push.js. Prints
- * nothing while web push is off; hidden until the script knows the browser supports it.
+ * nothing while web push is off or the site has no push key; hidden until the script knows
+ * the browser supports it.
  */
 
-if (osc_push_enabled()) {
+$pushKey = osc_push_public_key();
+if ($pushKey !== '') {
     $pushAjax   = osc_base_url(true) . '?page=ajax&action=';
     $pushInbox  = osc_messaging_inbox_url();
-    $pushKey    = osc_push_public_key();
     // The worker has no translations: its texts ride on its own URL.
     $pushWorker = $pushAjax . 'push_worker&' . http_build_query(array(
         'title'    => osc_page_title(),

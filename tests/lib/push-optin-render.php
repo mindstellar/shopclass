@@ -16,6 +16,7 @@
 const PUSH_TEST_KEY_BYTES = 65;
 
 $GLOBALS['pushTestEnabled'] = true;
+$GLOBALS['pushTestHasKey']  = true;
 
 function push_test_key_bytes(): array
 {
@@ -39,7 +40,7 @@ function osc_push_enabled(): bool
 
 function osc_push_public_key(): string
 {
-    return osc_push_enabled() ? push_test_key() : '';
+    return osc_push_enabled() && $GLOBALS['pushTestHasKey'] ? push_test_key() : '';
 }
 
 if (!function_exists('osc_esc_html')) {
@@ -84,9 +85,10 @@ function osc_csrf_token_form()
     return "<input type='hidden' name='CSRFName' value='test-name' />\n<input type='hidden' name='CSRFToken' value='test-token' />";
 }
 
-function push_optin_render(bool $enabled): string
+function push_optin_render(bool $enabled, bool $hasKey = true): string
 {
     $GLOBALS['pushTestEnabled'] = $enabled;
+    $GLOBALS['pushTestHasKey']  = $hasKey;
     ob_start();
     require ABS_PATH . 'oc-includes/osclass/gui/account/parts/push-optin.php';
 

@@ -90,6 +90,7 @@ foreach (array('push_worker', 'push_subscribe', 'push_unsubscribe', 'push_status
 check('the push form names the inbox', strpos($optin, 'data-inbox-url="https://example.test/sub/user/messages"') !== false);
 check('the site name is escaped into the worker URL', strpos($optin, 'title=Shop%20%26%20Co') !== false);
 pin('the push partial prints nothing while push is off', '', trim(push_optin_render(false)));
+pin('nor when the site has no push key (OpenSSL without EC)', '', trim(push_optin_render(true, false)));
 
 harness_section('the stylesheet');
 foreach (array(
