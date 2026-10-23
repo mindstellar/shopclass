@@ -40,7 +40,7 @@ public data.
 
 A key made for a moderator account can hold only `admin:listings`, `admin:comments` and
 `admin:conversations`, and only while moderators may open those pages in the admin. Make one with
-`php oc-cli.php api:key:create --admin=<moderator> --scopes=admin:listings,admin:comments`.
+`php oc-cli.php api:key:create --admin=<moderator> --scopes=admin:listings,admin:comments,admin:conversations`.
 The settings screen is for full admins.
 
 ### Who is acting
