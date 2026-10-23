@@ -73,6 +73,18 @@ pin('and gets messaging back outside shop mode', true, osc_item_uses_messaging()
 $show($guest);
 pin('a listing with no seller account', false, osc_item_uses_messaging());
 
+harness_section('the send-limit wording');
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
+if (!function_exists('_mn')) {
+    function _mn($single, $plural, $n)
+    {
+        return $n == 1 ? $single : $plural;
+    }
+}
+pin('under a minute reads 1 minute', 'You are sending messages too fast. Try again in 1 minute.', osc_message_throttle_message(30));
+pin('0 seconds still reads 1 minute', 'You are sending messages too fast. Try again in 1 minute.', osc_message_throttle_message(0));
+pin('61 seconds reads 2 minutes', 'You are sending messages too fast. Try again in 2 minutes.', osc_message_throttle_message(61));
+
 harness_section('what the controller calls');
 harness_reset_container();
 $svc = Container::root()->get(MessagingService::class);

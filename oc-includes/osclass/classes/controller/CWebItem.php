@@ -773,7 +773,7 @@ class CWebItem extends BaseModel
 
             return false;
         } catch (BlockedException $e) {
-            $fail(sprintf(_m('Too many messages. Try again in %d minutes.'), (int) ceil($e->retryAfter() / 60)));
+            $fail(osc_message_throttle_message($e->retryAfter()));
 
             return false;
         } catch (ConflictException | ForbiddenException $e) {

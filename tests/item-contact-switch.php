@@ -41,6 +41,7 @@ check('the method was parsed', $conv !== '');
 check('it starts the thread through MessagingService', strpos($conv, 'MessagingService::class') !== false && strpos($conv, '->start(') !== false);
 check('it acts as the visitor', strpos($conv, 'Actor::visitor()') !== false);
 check('it lands on the thread', strpos($conv, 'osc_messaging_thread_url(') !== false);
+check('a rate limit uses the shared wording', strpos($conv, 'osc_message_throttle_message($e->retryAfter())') !== false);
 check('a rate limit and a bad body go back to the form', strpos($conv, 'catch (BlockedException') !== false && strpos($conv, 'catch (InvalidException') !== false);
 
 exit(harness_result());

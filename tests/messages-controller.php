@@ -44,6 +44,7 @@ check('a shopper is sent home', strpos($route, 'redirectShopperHome()') !== fals
 
 harness_section('request reads');
 check('no untyped Params::getParam(', strpos($source, 'Params::getParam(') === false);
+check('a rate limit uses the shared wording', strpos(harness_method_source($file, 'sendPost'), 'osc_message_throttle_message($e->retryAfter())') !== false);
 check('the message body is read raw, not purified', strpos($source, "Params::getParamString('body', false, false, false)") !== false);
 check('no getInstance() of a service', strpos($source, 'MessagingService::getInstance') === false);
 

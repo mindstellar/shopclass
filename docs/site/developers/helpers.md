@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1225 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1226 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1178,7 +1178,7 @@ Core defines 1225 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_subscribe_alert(string $token, string $email)` | Subscribe an email to a saved search. The owner is the signed-in user, never the caller: a guest gets a confirmation email, a signed-in active user is subscribed at once. |
 | `osc_update_search_url($params = array(), $forced = false)` | Update the search url with new options |
 
-### hSecurity (21)
+### hSecurity (22)
 
 `oc-includes/osclass/helpers/hSecurity.php`
 
@@ -1201,6 +1201,7 @@ Core defines 1225 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_is_ip_banned($ip, $rules = null)` | Check if IP is banned |
 | `osc_is_username_blacklisted($username)` | Check if username is blacklisted |
 | `osc_login_throttle_message($seconds)` | Wording for a sign-in refused by \mindstellar\security\LoginThrottle. |
+| `osc_message_throttle_message(int $seconds)` | Wording for an on-site message refused by the send limit. |
 | `osc_proxy_ip_mismatch()` | Whether the current request's REMOTE_ADDR looks like a proxy's address instead of the visitor's — a forwarding header disagrees with it. Detection only; core still reads the visitor IP from REMOTE_ADDR alone, see osc_is_banned() and osc_validate_spam_delay(). |
 | `osc_random_string($length)` | A random string of $length characters from A-Z, a-z, 0-9, "." and "/". |
 | `osc_set_alert_private_key()` | Mint the install's persistent alert private key if it has none yet. |

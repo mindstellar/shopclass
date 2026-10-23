@@ -194,10 +194,7 @@ class CWebMessages extends WebSecBaseModel
             $sent = $this->service()->reply($id, $body, Actor::visitor());
             osc_add_flash_ok_message($sent->held() ? _m('Your message is waiting for review') : _m('Message sent'));
         } catch (BlockedException $e) {
-            osc_add_flash_error_message(sprintf(
-                _m('You are sending too fast. Try again in %d minutes.'),
-                max(1, (int) ceil($e->retryAfter() / 60))
-            ));
+            osc_add_flash_error_message(osc_message_throttle_message($e->retryAfter()));
         } catch (InvalidException $e) {
             osc_keep_form(array('body' => $body), $e->getMessage());
         } catch (RefusedException $e) {
