@@ -464,9 +464,10 @@ What a refusal means:
 
 | Status | Meaning |
 |---|---|
-| `403 feature_disabled` | Messages are switched off on this site. |
-| `403 forbidden` | The other person blocked the conversation, or you are not signed in as a user. |
-| `403 banned` | The account may not use messages. |
+| `403 feature_disabled` | Messages are switched off on this site, or the account is not live. |
+| `403 wrong_credential` | The call needs a signed-in user. |
+| `403 forbidden` | The other person blocked the conversation. |
+| `403 banned` | The e-mail address or IP address is banned. |
 | `404 not_found` | No such live listing, or a conversation you are not part of. A seller gets `404` for a thread still held for review. |
 | `409 conflict` | Your own listing, a listing with no seller, a closed, held or reported conversation, or a report on one already reported. `detail` says which. |
 | `422 validation_failed` | Empty or too long `body`, or an unknown `reason`. |
