@@ -10,7 +10,8 @@
 
 /**
  * Pins the messages AJAX actions in CWebAjax: the three entries, CSRF before the service,
- * the POST-only send, the ETag and 304 on the poll check, the status map, and typed reads.
+ * the POST-only send, the ETag and 304 on the poll check, the status map, typed reads, and the
+ * live authorize check nchan calls before it opens a stream.
  *
  * DB-free and source-level.  Usage: php tests/messages-ajax.php
  */
@@ -84,8 +85,28 @@ foreach ($statuses as $status => $e) {
 pin('InvalidException is 422', 422, (new \mindstellar\exception\InvalidException('/body', 'minLength', 'x'))->httpStatus());
 check('a rate limit carries retry_after', strpos($refusal, "'retry_after'") !== false && strpos($refusal, '->retryAfter()') !== false);
 
+harness_section('live auth');
+check('messages_live_auth is in the map', (bool) preg_match("/'messages_live_auth'\\s*=>\\s*'messagesLiveAuth'/", $source));
+$auth  = $method('messagesLiveAuth');
+$off   = strpos($auth, "->mode() === 'off'");
+$who   = strpos($auth, 'Actor::visitor()');
+$e404  = strpos($auth, 'http_response_code(404)');
+check('it exists', $auth !== '');
+check('live off answers 404', $off !== false && $e404 !== false && $off < $e404);
+check('the 404 check comes before the visitor is read', $off !== false && $who !== false && $off < $who && $e404 < $who);
+check('the publisher comes from the container, not the environment', strpos($auth, 'Container::root()->get(LivePublisher::class)') !== false && strpos($auth, 'getenv(') === false);
+check('a guest is 401', strpos($auth, '=== null') !== false && strpos($auth, 'http_response_code(401)') !== false);
+check('messaging off is 403', strpos($auth, '!osc_messaging_enabled()') !== false && strpos($auth, 'http_response_code(403)') !== false);
+check('the channel comes from nchan\'s X-Channel-Id header', strpos($auth, "Params::getServerParam('HTTP_X_CHANNEL_ID'") !== false);
+check('the channel is not read from the request', !preg_match('/Params::getParam\w*\(/', $auth));
+check('the channel compare is strict, against the visitor\'s own channel', strpos($auth, "\$channel !== 'user-' . \$userId") !== false && strpos($auth, '!=') === strpos($auth, '!=='));
+check('no-store is sent first', strpos($auth, "header('Cache-Control: no-store')") !== false && strpos($auth, "header('Cache-Control: no-store')") < (int) $off);
+check('no body is sent', strpos($auth, 'echo') === false && strpos($auth, 'AjaxResponse::') === false);
+check('no CSRF check (GET, no state)', strpos($auth, 'osc_csrf_check') === false);
+check('no flash, no redirect, no session, no log', !preg_match('/flash|redirect|Session::|error_log|_set\(/i', $auth));
+
 harness_section('no untyped reads');
-$all = $send . $check . $since . $actor . $refusal;
+$all = $send . $check . $since . $actor . $refusal . $auth;
 check('none of the messages actions calls getParam(', strpos($all, 'getParam(') === false);
 
 exit(harness_result());

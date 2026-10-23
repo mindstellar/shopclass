@@ -28,6 +28,7 @@ use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
+use mindstellar\live\LivePublisher;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
 use mindstellar\utility\AjaxResponse;
@@ -55,6 +56,7 @@ class CWebAjax extends BaseModel
         'messages_send'               => 'messagesSend',
         'messages_check'              => 'messagesCheck',
         'messages_since'              => 'messagesSince',
+        'messages_live_auth'          => 'messagesLiveAuth',
     );
 
     /**
@@ -524,6 +526,33 @@ class CWebAjax extends BaseModel
             'state'    => (string) $thread['s_state'],
             'blocked'  => (int) $thread['b_buyer_blocked'] === 1 || (int) $thread['b_seller_blocked'] === 1,
         ));
+    }
+
+    /**
+     * Whether the signed-in visitor may follow a live channel; nchan asks before it opens one.
+     * Only their own `user-<id>` channel, named in nchan's X-Channel-Id header, is allowed.
+     */
+    private function messagesLiveAuth(): void
+    {
+        header('Cache-Control: no-store');
+        if (Container::root()->get(LivePublisher::class)->mode() === 'off') {
+            http_response_code(404);
+
+            return;
+        }
+        $userId = Actor::visitor()->userId();
+        if ($userId === null) {
+            http_response_code(401);
+
+            return;
+        }
+        $channel = (string) Params::getServerParam('HTTP_X_CHANNEL_ID', false, false, false);
+        if (!osc_messaging_enabled() || $channel !== 'user-' . $userId) {
+            http_response_code(403);
+
+            return;
+        }
+        http_response_code(200);
     }
 
     /**
