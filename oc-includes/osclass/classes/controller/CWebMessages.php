@@ -52,6 +52,20 @@ class CWebMessages extends WebSecBaseModel
     }
 
     /**
+     * Sends a signed-out visitor to the login, remembering the inbox or thread they asked for,
+     * so a link from a new-message mail lands on the thread after sign-in.
+     *
+     * @return void
+     */
+    public function showAuthFailPage()
+    {
+        if (Params::getServerParam('REQUEST_METHOD') === 'GET') {
+            osc_set_login_redirect(osc_base_url() . Params::getRequestURI(false, false, false));
+        }
+        parent::showAuthFailPage();
+    }
+
+    /**
      * Dispatches the page's actions.
      *
      * @return void

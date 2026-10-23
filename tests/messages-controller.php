@@ -35,6 +35,10 @@ check('thread() reads it first, so a stranger is refused before anything is clea
 $constructor = harness_method_source($file, '__construct');
 check('the constructor checks the switch', strpos($constructor, '!osc_messaging_enabled()') !== false);
 check('and sends the visitor to the dashboard', strpos($constructor, 'osc_user_dashboard_url()') !== false);
+$authFail = harness_method_source($file, 'showAuthFailPage');
+check('a signed-out GET remembers the page for after login', strpos($authFail, "Params::getServerParam('REQUEST_METHOD') === 'GET'") !== false
+    && strpos($authFail, 'osc_set_login_redirect(osc_base_url() . Params::getRequestURI(false, false, false))') !== false
+    && strpos($authFail, 'osc_set_login_redirect(') < strpos($authFail, 'parent::showAuthFailPage()'));
 $route = harness_method_source($file, 'doModel');
 check('a shopper is sent home', strpos($route, 'redirectShopperHome()') !== false);
 
