@@ -155,6 +155,25 @@ final class PushSubscriptions
     }
 
     /**
+     * Whether the user keeps at least one live browser.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public function has(int $userId): bool
+    {
+        if ($userId <= 0) {
+            return false;
+        }
+        $now = UtcDatetime::format($this->clock->now());
+
+        return Db::table(DB_TABLE_PREFIX . KeyValue::TABLE)
+            ->where('s_group', self::GROUP)
+            ->whereRaw('s_key LIKE ?', [$userId . ':%'])
+            ->whereGroup(static fn ($q) => $q->whereNull('dt_expires')->orWhere('dt_expires', '>', $now))
+            ->value('s_key') !== null;
+    }
+
+    /**
      * @return int rows removed
      * @throws \mindstellar\database\DbException
      */

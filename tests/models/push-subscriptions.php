@@ -167,6 +167,10 @@ pin('live browser rows only: the lock does not count', 22, $subs->count());
 $kv->delete('push', Vapid::LOCK_KEY);
 $kv->set('push', '99:' . PushSubscriptions::browserId($ep('old')), '{}', $clock->t - 5, null, $clock->t - 100);
 pin('an expired row does not count', 22, $subs->count());
+pin('has: a user with a live browser', true, $subs->has(123));
+pin('has: none for user 13', false, $subs->has(13));
+pin('has: an expired row is none', false, $subs->has(99));
+pin('has: user 1 is not user 12 or 123', false, $subs->has(1));
 
 harness_section('VAPID keys: one pair however many instances');
 $forgetKeys();

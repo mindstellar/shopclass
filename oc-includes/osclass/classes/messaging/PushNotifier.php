@@ -43,10 +43,10 @@ final class PushNotifier
 
     public function onMessageSent(MessageSent $event): void
     {
-        if (!osc_push_enabled()) {
+        $recipientId = $event->recipientId();
+        if (!osc_push_enabled() || !$this->subscriptions->has($recipientId)) {
             return;
         }
-        $recipientId = $event->recipientId();
         Db::afterCommit(static function () use ($recipientId): void {
             osc_job_enqueue(
                 self::JOB,
@@ -57,15 +57,16 @@ final class PushNotifier
     }
 
     /**
-     * Wake the recipient's browsers unless push was turned off, the messages were read or the
-     * user is gone. Browsers whose push service asked for a later try are woken again, and only those.
+     * Wake the recipient's browsers unless push was turned off, they have none left, the messages
+     * were read or the user is gone. Browsers whose push service asked for a later try are woken again, and only those.
      *
      * @throws \mindstellar\database\DbException
      */
     public function run(Job $job): void
     {
         $recipientId = (int) $job->get('recipient', 0);
-        if ($recipientId <= 0 || !osc_push_enabled() || $this->conversations->unread($recipientId) === 0) {
+        if ($recipientId <= 0 || !osc_push_enabled() || !$this->subscriptions->has($recipientId)
+            || $this->conversations->unread($recipientId) === 0) {
             return;
         }
         $user = UserStore::find($recipientId);

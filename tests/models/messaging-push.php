@@ -161,6 +161,21 @@ Db::transaction(static function () use ($sent, $seller, $buyer, $p, &$inside): v
 });
 pin('a message_sent heard inside a transaction queues nothing until it commits', array(0, 1), array($inside, $count(sprintf($job, 'COUNT(*)'))));
 
+harness_section('a recipient with no browsers');
+$cleanup0 = static fn () => $admin->query("DELETE FROM {$p}t_job_queue WHERE s_type = 'message.push'");
+$cleanup0();
+$svc->reply($sent->conversationId(), 'For the buyer', $asSeller);
+pin('a reply to a user with no browsers queues no job', 0, $count(sprintf($job, 'COUNT(*)')));
+pin('the job checks for browsers before counting unread', true, (static function (): bool {
+    $src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/messaging/PushNotifier.php');
+    $run = substr($src, (int) strpos($src, 'public function run('));
+    $has = strpos($run, '->has(');
+
+    return $has !== false && $has < (int) strpos($run, '->unread(') && $has < (int) strpos($run, 'UserStore::find(');
+})());
+$svc->markRead($sent->conversationId(), $asBuyer);
+$svc->reply($sent->conversationId(), 'Back to the seller', $asBuyer);
+
 harness_section('the wake-up');
 $calls = $runJobs();
 pin('both browsers are woken once', array($epA, $epB), $calls);
