@@ -584,6 +584,7 @@ pin(
         'enabled_user_registration' => 'osclass/enabled_user_registration',
         'enabled_user_validation'   => 'osclass/enabled_user_validation',
         'enabled_messaging'         => 'osclass/enabled_messaging',
+        'enabled_push'              => 'osclass/enabled_push',
         'notify_new_user'           => 'osclass/notify_new_user',
         'username_blacklist'        => 'osclass/username_blacklist',
     ),

@@ -7794,6 +7794,10 @@ msgstr ""
 msgid "Needs %s or newer"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
+msgid "Needs HTTPS. Users turn it on per browser from their messages page."
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Compatibility.php
 msgid "Needs PHP %s"
 msgstr ""
@@ -11097,6 +11101,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Send admin a copy to \"share listing\" email"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
+msgid "Send browser notifications for new messages"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
