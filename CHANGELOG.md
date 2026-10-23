@@ -81,6 +81,13 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Two first upgrade grants for one listing no longer deadlock and lose one.
 - Checkbox filters use the `s_value` index.
 
+## Shopclass 7.0.4
+
+The updater now checks the PHP version a new release needs before it changes any file. Shopclass 7.1 will need PHP 8.2, so a site on older PHP is told to upgrade PHP first instead of being broken by the update.
+
+### Changed
+- A core update that needs a newer PHP than the server runs is refused before any file changes, with a message naming the version needed.
+
 ## Shopclass 7.0.3
 
 On a demo site, the REST API now refuses the key, webhook and location changes the admin screens refuse. This release also fixes the theme preview on public pages.
