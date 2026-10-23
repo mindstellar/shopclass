@@ -2495,6 +2495,10 @@ msgstr ""
 msgid "Browse plugins"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hJobs.php
+msgid "Browser notification"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebAjax.php
 msgid "Browser notifications are switched off on this site"
 msgstr ""
@@ -14064,6 +14068,7 @@ msgid "User"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/SignUpMail.php
+#: oc-includes/osclass/helpers/hJobs.php
 msgid "User #%d"
 msgstr ""
 
