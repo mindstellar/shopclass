@@ -59,6 +59,7 @@ use mindstellar\messaging\LiveNotifier;
 use mindstellar\messaging\MessageNotifier;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
+use mindstellar\messaging\PushNotifier;
 use mindstellar\model\KeyValue;
 use mindstellar\moderation\MessageModeration;
 use mindstellar\push\PushSubscriptions;
@@ -138,6 +139,12 @@ final class CoreServices
             $c->get(Vapid::class),
             $c->get(WebPushSender::STATUS)
         ));
+        $c->set(PushNotifier::class, static fn (Container $c): PushNotifier => new PushNotifier(
+            $c->get(PushSubscriptions::class),
+            $c->get(WebPushSender::class),
+            $c->get(ConversationStore::class)
+        ));
+        $events->listen(MessageSent::class, [PushNotifier::class, 'onMessageSent']);
         $events->listen(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
         $events->listen(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
         foreach (self::events() as $event) {
