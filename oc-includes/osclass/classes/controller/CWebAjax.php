@@ -498,6 +498,13 @@ class CWebAjax extends BaseModel
         if ($actor === null) {
             return;
         }
+        // A push worker asks for the user who turned it on; another user signed in on that browser gets no count.
+        $for = Params::getParamInt('for');
+        if ($for > 0 && $for !== (int) $actor->userId()) {
+            AjaxResponse::json(array('error' => 'other_user'), 409);
+
+            return;
+        }
         $activity = Container::root()->get(MessagingService::class)->activity((int) $actor->userId());
         $etag     = '"' . $activity['unread'] . '.' . md5((string) $activity['latest']) . '"';
         header('Cache-Control: private, no-store');

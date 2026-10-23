@@ -143,7 +143,15 @@
         }).then(function (response) {
             return response.ok ? response.json() : {};
         }).then(function (answer) {
-            return answer && answer.active === true;
+            if (answer && answer.active === false) {
+                // Another user's, or one the site forgot: this browser should not keep it.
+                return sub.unsubscribe().then(function () {
+                    return false;
+                }, function () {
+                    return false;
+                });
+            }
+            return Boolean(answer && answer.active === true);
         });
     };
 
@@ -174,16 +182,18 @@
     show(false);
     registration().then(function (reg) {
         if (!reg) {
-            return null;
+            return false;
         }
-        var worker = reg.active || reg.waiting || reg.installing;
-        if (worker.scriptURL !== workerUrl) {
-            // The worker's texts live in its URL: a new language or site name updates it.
-            navigator.serviceWorker.register(workerUrl).catch(function () {});
-        }
-        return reg.pushManager.getSubscription();
-    }).then(function (sub) {
-        return sub ? status(sub) : false;
+        return reg.pushManager.getSubscription().then(function (sub) {
+            return sub ? status(sub) : false;
+        }).then(function (on) {
+            var worker = reg.active || reg.waiting || reg.installing;
+            if (on && worker.scriptURL !== workerUrl) {
+                // The worker's texts and user live in its URL: a new language or site name updates it.
+                navigator.serviceWorker.register(workerUrl).catch(function () {});
+            }
+            return on;
+        });
     }).then(function (on) {
         show(on);
     }, function () {

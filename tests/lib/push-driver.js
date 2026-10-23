@@ -218,6 +218,7 @@
         }});
         await e.start();
         out.inactive = e.state();
+        out.inactiveDropped = e.sub === null;
 
         // The subscribe POST is refused: the browser drops the subscription and says so.
         e = pageEnv({supported: true, route: function () {

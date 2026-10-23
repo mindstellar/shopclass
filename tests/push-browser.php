@@ -116,6 +116,7 @@ pin('a click posts unsubscribe, then drops the browser subscription', array(
 ), $r['existingClick']['log'] ?? null);
 pin('and shows it as off', array($off, true), array($r['existingClick']['state']['label'] ?? null, $r['existingClick']['dropped'] ?? null));
 pin('a subscription the server does not have shows as off', $off, $r['inactive']['label'] ?? null);
+pin('and the browser drops it, so another user\'s browser stops being woken', true, $r['inactiveDropped'] ?? null);
 pin('a refused subscribe drops the browser subscription', 'unsubscribe', end($r['refused']['log']) ?: null);
 pin('and says so in the note, still off', array($off, 'Notifications could not be changed. Try again.', false),
     array($r['refused']['state']['label'] ?? null, $r['refused']['state']['note'] ?? null, $r['refused']['state']['disabled'] ?? null));
@@ -133,7 +134,7 @@ pin('blocked: the note says so and the button is disabled', array(
 
 harness_section('the worker');
 pin('a push fetches messages_check under the scope, with the cookies', array(array(
-    'url'         => $scope . 'index.php?page=ajax&action=messages_check',
+    'url'         => $scope . 'index.php?page=ajax&action=messages_check&for=7',
     'method'      => 'GET',
     'credentials' => 'include',
     'fields'      => null,

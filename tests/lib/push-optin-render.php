@@ -59,6 +59,11 @@ function osc_messaging_inbox_url(): string
     return 'https://example.test/sub/user/messages';
 }
 
+function osc_logged_user_id()
+{
+    return 7;
+}
+
 function osc_page_title()
 {
     return 'Shop & Co';

@@ -49,7 +49,7 @@ check('the tag has the unread count and the md5 of the latest time', strpos($che
 check('it compares If-None-Match', strpos($check, 'osc_etag_matches(') !== false && strpos($check, 'HTTP_IF_NONE_MATCH') !== false);
 check('a match answers 304', strpos($check, 'http_response_code(304)') !== false);
 $match = strpos($check, 'osc_etag_matches(');
-$json  = strpos($check, 'AjaxResponse::json(');
+$json  = strpos($check, 'AjaxResponse::json($activity)');
 check('the 304 branch returns before any body', $match !== false && $json !== false && strpos(substr($check, $match, $json - $match), 'return;') !== false);
 check('no body is sent in the 304 branch', substr_count(substr($check, $match, $json - $match), 'echo') === 0);
 check('it sends the ETag and no-store', strpos($check, "header('ETag: '") !== false && strpos($check, 'private, no-store') !== false);

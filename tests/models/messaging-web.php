@@ -226,6 +226,12 @@ pin('a stale tag gets 200 and the activity', array(200, $activity), array($r['st
 web_request('GET', array('page' => 'ajax', 'action' => 'messages_check'), array(), array('HTTP_IF_NONE_MATCH' => $etag));
 $r = web_ajax('messagesCheck');
 pin('the current tag gets 304 with an empty body', array(304, ''), array($r['status'], $r['raw']));
+web_request('GET', array('page' => 'ajax', 'action' => 'messages_check', 'for' => $buyer));
+$r = web_ajax('messagesCheck');
+pin('a push worker of another user gets 409 and no count', array(409, 'other_user', false), array($r['status'], $r['json']['error'] ?? null, isset($r['json']['unread'])));
+web_request('GET', array('page' => 'ajax', 'action' => 'messages_check', 'for' => $seller), array(), array('HTTP_IF_NONE_MATCH' => '"0.stale"'));
+$r = web_ajax('messagesCheck');
+pin('its own user gets the activity', array(200, $activity), array($r['status'], $r['json']));
 web_sign_in(null);
 web_request('GET', array('page' => 'ajax', 'action' => 'messages_check'));
 $r = web_ajax('messagesCheck');

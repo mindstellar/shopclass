@@ -72,7 +72,9 @@
 
     // Every push must end in a notification, or the browser shows its own and may revoke push.
     self.addEventListener('push', function (event) {
-        event.waitUntil(self.fetch(ajax('messages_check'), {
+        // Asked for the user who turned it on: another user signed in here gets no count of theirs.
+        var user = params.get('user');
+        event.waitUntil(self.fetch(ajax('messages_check') + (user ? '&for=' + encodeURIComponent(user) : ''), {
             credentials: 'include',
             cache: 'no-store',
             headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}

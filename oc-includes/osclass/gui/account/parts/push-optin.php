@@ -29,6 +29,7 @@ if (osc_push_enabled()) {
         'signin'   => _m('Sign in to read your messages'),
         'inbox'    => $pushInbox,
         'key'      => $pushKey,
+        'user'     => (int) osc_logged_user_id(),
     ), '', '&', PHP_QUERY_RFC3986);
     ?>
     <form class="oe-push nocsrf" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>" hidden
