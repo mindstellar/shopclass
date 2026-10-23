@@ -84,6 +84,12 @@ msgid_plural "%d more listings live at once"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/account/user-messages-content.php
+msgid "%d new message"
+msgid_plural "%d new messages"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
 msgid "%d view"
 msgid_plural "%d views"
@@ -372,6 +378,10 @@ msgstr ""
 msgid "All listings"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "All messages"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Already building."
 msgstr ""
@@ -422,6 +432,11 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Attachment"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/user-messages-content.php
+msgid "Awaiting review"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
@@ -493,7 +508,16 @@ msgstr ""
 msgid "Billing settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Block"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Block this conversation? Neither of you can write until it is unblocked."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/account/user-messages-content.php
 msgid "Blocked"
 msgstr ""
 
@@ -671,6 +695,10 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-messages-content.php
+msgid "Closed"
+msgstr ""
+
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "Comment"
 msgstr ""
@@ -722,6 +750,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Continue to payment"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Conversation"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebMessages.php
@@ -1105,6 +1137,7 @@ msgid "Forgotten your password?"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebMessages.php
+#: oc-includes/osclass/gui/account/user-conversation-content.php
 msgid "Former user"
 msgstr ""
 
@@ -1440,6 +1473,7 @@ msgstr ""
 msgid "Message: this field is required"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hTheme.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Messages"
 msgstr ""
@@ -1573,6 +1607,11 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "No listings with this status."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/user-messages-content.php
+msgid "No messages yet."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
@@ -1730,12 +1769,17 @@ msgstr ""
 msgid "Number of decimals must only contain numeric characters"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Offensive or abusive"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php
 msgid ""
 "Offload queued. Images move to remote storage in the background as the "
 "storage worker runs."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-messages-content.php
 #: oc-includes/osclass/gui/billing/orders-content.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Older"
@@ -2258,6 +2302,10 @@ msgstr ""
 msgid "Remove the current picture"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Removed"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Removed by admin"
 msgstr ""
@@ -2275,16 +2323,28 @@ msgstr ""
 msgid "Repeat the new password"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Report"
+msgstr ""
+
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid ""
 "Report %1$s? They will not be able to send messages on this site for %2$d "
 "days. The site admin can see and undo this."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Report conversation"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebContact.php
 #: oc-includes/osclass/classes/security/MessageGuard.php
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid "Report the sender"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-messages-content.php
+msgid "Reported"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -2342,6 +2402,10 @@ msgstr ""
 msgid "Save this search"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Scam or fraud"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Search alert settings have been updated"
 msgstr ""
@@ -2378,6 +2442,7 @@ msgstr ""
 msgid "Seller limit settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
 msgid "Send"
 msgstr ""
@@ -2522,6 +2587,10 @@ msgstr ""
 msgid "Someone, hopefully you, wrote a message on %s and gave this e-mail address."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Something else"
+msgstr ""
+
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "Sorry, comments are disabled"
 msgstr ""
@@ -2548,6 +2617,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebForm.php
 msgid "Sorry, your submission could not be saved. Please try again."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Spam"
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageGuard.php
@@ -3067,6 +3140,10 @@ msgid ""
 "available."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "The message could not be sent. Try again."
+msgstr ""
+
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid "The message has been deleted. Nothing was sent."
 msgstr ""
@@ -3087,6 +3164,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "The operation hasn't been completed. You're trying to remove yourself!"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "The other person blocked this conversation."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
@@ -3442,6 +3523,10 @@ msgstr ""
 msgid "This conversation is closed"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "This conversation is closed."
+msgstr ""
+
 #: oc-includes/osclass/classes/moderation/MessageModeration.php
 msgid "This conversation is not reported"
 msgstr ""
@@ -3452,6 +3537,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "This conversation was already reported"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "This conversation was reported and is waiting for review."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
@@ -3670,6 +3759,10 @@ msgstr ""
 msgid "Two-step sign-in is on."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Unblock"
+msgstr ""
+
 #: oc-includes/osclass/classes/webhook/WebhookService.php
 msgid "Unknown events: %s"
 msgstr ""
@@ -3864,6 +3957,10 @@ msgstr ""
 msgid "What happened"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Why are you reporting this conversation?"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "Widget added correctly"
 msgstr ""
@@ -3892,6 +3989,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Write to %s"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "You"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
@@ -3940,6 +4041,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/item-contact-content.php
 msgid "You are writing as %s. The seller answers in your messages."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "You blocked this conversation."
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -4233,6 +4338,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Your listings and messages are removed with it. This cannot be undone."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-conversation-content.php
+msgid "Your message"
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php

@@ -5,12 +5,12 @@ sidebar:
   order: 22
 ---
 
-Fourteen views make up the account section: the dashboard, the seller's
-listings, alerts, the profile form, the three settings pages, sign in, register,
+Sixteen views make up the account section: the dashboard, the seller's
+listings, alerts, the inbox, a conversation, the profile form, the three settings pages, sign in, register,
 the two password-reset steps, a member's public page, the slot a plugin's
 account page renders into, and API access.
 
-A theme that ships all fourteen never sees any of this. A theme that ships none
+A theme that ships all sixteen never sees any of this. A theme that ships none
 of them used to produce **blank pages**: core asked for a file, found nothing,
 and printed an empty document.
 
@@ -80,6 +80,17 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-thumb-empty` | the no-image placeholder | carries `.oe-thumb` too |
 | `.oe-price` | a listing's price | one already-formatted string, currency included |
 | `.oe-badge` | a status flag | always paired with a word, never colour alone; modifiers `paid` `pending` `failed` `cancelled` `refunded` |
+| `.oe-threads` | the inbox's list of conversations | a `<ul>`; no bullets, no padding |
+| `.oe-thread` | one conversation in the inbox | an `<li>` that also carries `.oe-panel`; holds `.oe-thread-title` and an `.oe-meta` line |
+| `.oe-thread-title` | a conversation's listing title | a heading; a link to the thread in the inbox |
+| `.oe-thread-last` | the date of a conversation's last message | a `<span>` in the `.oe-meta` line |
+| `.oe-unread` | the unread count on a conversation | also carries `.oe-badge`; always paired with a word |
+| `.oe-messages` | the messages of one conversation, oldest first | an `<ol>` carrying the `data-osc-messages` attributes the thread script reads |
+| `.oe-message` | one message | an `<li>`; `.is-mine` for the viewer's own (right), `.is-held` for one waiting for review |
+| `.oe-message-body` | a message's text | plain text, line breaks kept with `white-space: pre-wrap` |
+| `.oe-message-meta` | who wrote a message and when | a `<p>` holding the name, a `<time>` and, for a held message, a badge |
+| `.oe-compose` | the reply form under a conversation | a `<form>` with one `textarea name="body"` and a send button |
+| `.oe-thread-actions` | the Block, Unblock and Report links under a conversation | holds the shared row actions and a `<details>` for the report form |
 | `.oe-pager` | the paging strip | core's paginator markup inside |
 | `.oe-empty` | an empty state | replaces the list, never sits beside it |
 | `.oe-panel` | a bordered block grouping related content | also used by the credits pages |
@@ -213,7 +224,7 @@ opens redirects to the dashboard.
 
 Every account page fires two actions inside its content column. The argument is
 the page: `user-dashboard`, `user-items`, `user-alerts`, `user-profile`,
-`user-signin`, `user-custom`, `user-api_access`, `user-delete_account`, and on the credits pages
+`user-signin`, `user-custom`, `user-api_access`, `user-messages`, `user-conversation`, `user-delete_account`, and on the credits pages
 `billing-wallet`, `billing-buy`, `billing-orders` or `billing-publish`.
 
 ```php
@@ -346,6 +357,46 @@ or `create` (with `name`, `expires` as `YYYY-MM-DD`, `scopes[]` and `password`).
 
 The page reuses `.oe-panel`, `.oe-badge`, `.oe-group`, `.oe-field`, `.oe-check` and
 `.oe-link-btn`. The two page hooks fire as on the other account pages.
+
+## The messages pages
+
+`user-messages.php` is the inbox and `user-conversation.php` one conversation between a buyer and
+a seller. Both need the on-site messaging switch (Users > Settings); with it off, the pages
+redirect to the dashboard.
+
+| | |
+|---|---|
+| Fallback files | `oc-includes/osclass/gui/account/user-messages-content.php`, `user-conversation-content.php` |
+| URLs | `osc_messaging_inbox_url()`, `osc_messaging_thread_url($id)` |
+| Nav entry | "Messages", class `opt_messages`, with the unread count while there is one |
+
+`user-messages.php` gets these view variables:
+
+| Variable | Holds |
+|---|---|
+| `conversations` | Up to 20 conversations, newest first. Each is the stored row plus `title`, `other_name`, `side`, `unread` and `url`. |
+| `older` | The link to the next page, or `null`. |
+
+`user-conversation.php` gets:
+
+| Variable | Holds |
+|---|---|
+| `conversation` | The stored row. `s_state` is `open`, `held`, `reported` or `closed`. |
+| `messages` | Messages oldest first. Each has `pk_i_id`, `fk_i_sender_id`, `s_body` (plain text, escape it), `s_state` and `dt_created`. The viewer's own held messages are in the list; the other side's are not. |
+| `names` | User id to display name. |
+| `title`, `item_url` | The listing's title and link; `item_url` is `null` once the listing is gone. |
+| `can_send` | `''` when the viewer may write, else `blocked`, `closed` or `not_party`. |
+| `my_block`, `their_block` | Who blocked the conversation. |
+
+The reply form posts `page=messages`, `action=send_post`, `id` and `body`. Block and unblock post
+`block_post` and `unblock_post` with `id`; a report posts `report_post` with `id` and a `reason`
+of `spam`, `scam`, `offensive` or `other`. All carry the CSRF token. Core's script
+`oc-includes/assets/osclass/messages.js` sends the reply without a page load and adds it to the
+`.oe-messages` list; a theme that wants the same loads it and keeps the `data-osc-messages`
+attributes. It exposes `window.oscMessages.appendMessage(row)`.
+
+The pages reuse `.oe-panel`, `.oe-badge`, `.oe-field`, `.oe-check`, `.oe-actions` and `.oe-link-btn`.
+The two page hooks fire as on the other account pages.
 
 ## The pay step
 
