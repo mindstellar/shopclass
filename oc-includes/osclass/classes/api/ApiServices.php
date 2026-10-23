@@ -64,6 +64,7 @@ use mindstellar\apikey\SignInStore;
 use mindstellar\auth\AdminStore;
 use mindstellar\auth\AuthStamp;
 use mindstellar\comment\CommentQuery;
+use mindstellar\container\Container;
 use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
 use mindstellar\fields\FieldService;
@@ -71,6 +72,7 @@ use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoRoom;
 use mindstellar\location\LocationQuery;
+use mindstellar\messaging\ConversationStore;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\pages\PageQuery;
 use mindstellar\user\AccountService;
@@ -486,7 +488,8 @@ final class ApiServices
             $this->facts(),
             $this->userQuery(),
             $this->commentQuery(),
-            $this->clock
+            $this->clock,
+            Container::root()->get(ConversationStore::class)
         ));
     }
 

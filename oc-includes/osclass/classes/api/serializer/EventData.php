@@ -21,6 +21,7 @@ use mindstellar\comment\CommentQuery;
 use mindstellar\comment\CommentStatus;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingStatus;
+use mindstellar\messaging\ConversationStore;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\Clock;
 use mindstellar\webhook\WebhookServices;
@@ -39,7 +40,8 @@ final class EventData
         private SiteFacts $facts,
         private UserQuery $users,
         private CommentQuery $comments,
-        private Clock $clock
+        private Clock $clock,
+        private ConversationStore $conversations
     ) {
     }
 
@@ -83,6 +85,39 @@ final class EventData
         }
 
         return (new CommentSerializer())->one($row);
+    }
+
+    /**
+     * Ids only, never the text.
+     *
+     * @return array{id:int, conversation_id:int, listing_id:int, sender_id:int, recipient_id:int}|null null when the thread is gone
+     */
+    public function message(int $messageId, int $conversationId, int $senderId, int $recipientId): ?array
+    {
+        $row = $this->conversations->find($conversationId);
+
+        return $row === null ? null : [
+            'id'              => $messageId,
+            'conversation_id' => $conversationId,
+            'listing_id'      => (int) $row['fk_i_item_id'],
+            'sender_id'       => $senderId,
+            'recipient_id'    => $recipientId,
+        ];
+    }
+
+    /**
+     * @return array{id:int, listing_id:int, reporter_id:int, reason:string}|null null when the thread is gone
+     */
+    public function reported(int $conversationId, int $byUserId, string $reason): ?array
+    {
+        $row = $this->conversations->find($conversationId);
+
+        return $row === null ? null : [
+            'id'          => $conversationId,
+            'listing_id'  => (int) $row['fk_i_item_id'],
+            'reporter_id' => $byUserId,
+            'reason'      => $reason,
+        ];
     }
 
     /**
@@ -139,6 +174,12 @@ final class EventData
         });
         osc_add_hook('user_edit_completed', static function ($id) use ($data): void {
             self::bridge('user.updated', static fn (): ?array => $data()->user((int) $id));
+        });
+        osc_add_hook('message_sent', static function ($messageId, $conversationId, $senderId, $recipientId) use ($data): void {
+            self::bridge('message.created', static fn (): ?array => $data()->message((int) $messageId, (int) $conversationId, (int) $senderId, (int) $recipientId));
+        });
+        osc_add_hook('conversation_reported', static function ($conversationId, $byUserId, $reason) use ($data): void {
+            self::bridge('conversation.reported', static fn (): ?array => $data()->reported((int) $conversationId, (int) $byUserId, (string) $reason));
         });
         osc_add_hook('after_delete_user', static function ($id): void {
             self::bridge('user.deleted', static fn (): array => self::deleted((int) $id));
