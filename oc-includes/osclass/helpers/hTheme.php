@@ -523,6 +523,8 @@ function osc_gui_account_view(string $themeView): bool
         'user-dashboard.php'       => array('heading' => _m('Dashboard')),
         'user-items.php'           => array('heading' => _m('Your listings')),
         'user-alerts.php'          => array('heading' => _m('Alerts')),
+        'user-messages.php'        => array('heading' => _m('Messages')),
+        'user-conversation.php'    => array('heading' => _m('Conversation')),
         'user-profile.php'         => array('heading' => _m('Your profile')),
         // One page, three routes. Each is a single setting answering the same
         // question -- how do I sign in -- so they share a destination rather than

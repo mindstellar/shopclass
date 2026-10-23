@@ -57,7 +57,7 @@ foreach (array('osc_user_dashboard_url', 'osc_user_list_items_url', 'osc_user_al
         eval('function ' . $fn . '(...$a) { return WEB_PATH . "' . $fn . '"; }');
     }
 }
-foreach (array('osc_is_user_dashboard', 'osc_is_list_items', 'osc_is_list_alerts', 'osc_is_user_profile', 'osc_is_change_email_page', 'osc_is_change_password_page', 'osc_is_change_username_page', 'osc_is_current_page', 'osc_get_osclass_location') as $fn) {
+foreach (array('osc_is_user_dashboard', 'osc_is_list_items', 'osc_is_list_alerts', 'osc_is_user_profile', 'osc_is_messages_page', 'osc_is_change_email_page', 'osc_is_change_password_page', 'osc_is_change_username_page', 'osc_is_current_page', 'osc_get_osclass_location') as $fn) {
     if (!function_exists($fn)) {
         eval('function ' . $fn . '(...$a) { return false; }');
     }
