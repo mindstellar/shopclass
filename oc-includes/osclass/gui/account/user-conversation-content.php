@@ -97,6 +97,7 @@ $rowActions = $convoActions;
             data-send-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_send'); ?>"
             data-since-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_since'); ?>"
             data-check-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check'); ?>"
+            data-live-url="<?php echo osc_esc_html(osc_messaging_live_url()); ?>"
             data-held-label="<?php echo osc_esc_html(_m('Awaiting review')); ?>"
             data-other-label="<?php echo osc_esc_html($otherName); ?>"
             data-me-label="<?php echo osc_esc_html(_m('You')); ?>">

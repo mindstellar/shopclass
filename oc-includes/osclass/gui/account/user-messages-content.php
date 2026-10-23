@@ -26,6 +26,9 @@ $inboxOlder = View::getInstance()->_get('older');
         <?php osc_show_flash_message(); ?>
         <?php osc_run_hook('account_page_before', 'user-messages'); ?>
 
+        <div data-osc-inbox
+             data-check-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check'); ?>"
+             data-live-url="<?php echo osc_esc_html(osc_messaging_live_url()); ?>">
         <?php if ($inboxRows === array()) { ?>
             <p class="oe-empty"><?php echo osc_esc_html(_m('No messages yet.')); ?></p>
         <?php } else { ?>
@@ -72,6 +75,8 @@ $inboxOlder = View::getInstance()->_get('older');
                 </div>
             <?php }
         } ?>
+        </div>
+        <script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/messages.js'))); ?>" defer></script>
 
         <?php osc_run_hook('account_page_after', 'user-messages'); ?>
     </div>
