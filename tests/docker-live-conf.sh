@@ -151,8 +151,11 @@ ok $? "valkey: password, no username"
 [ "$(grep -c '^ *nchan_redis_pass shopclass_live;$' "$TMP/valkey/live_http.conf")" = 1 ] \
     && [ "$(grep -c '^ *nchan_redis_pass shopclass_live;$' "$TMP/valkey/live_server.conf")" = 1 ]
 ok $? "valkey: publisher and subscriber locations both use the upstream"
-has valkey/live_http.conf '^nchan_redis_namespace shopclass:live;$'
+has valkey/live_http.conf '^nchan_redis_namespace shopclass:live:[0-9a-f]{12};$'
 ok $? "valkey: own namespace"
+run valkey-b OSC_LIVE=nchan OSC_CACHE=redis OSC_CACHE_HOST=valkey WEB_PATH=https://b.example/
+[ "$(grep '^nchan_redis_namespace' "$TMP/valkey/live_http.conf")" != "$(grep '^nchan_redis_namespace' "$TMP/valkey-b/live_http.conf")" ]
+ok $? "valkey: another site gets another namespace"
 ! has valkey/live_http.conf 'nchan_use_redis|nchan_redis_url'
 ok $? "valkey: no deprecated nchan_use_redis / nchan_redis_url"
 [ "$(stat -c %a "$TMP/valkey/live_http.conf")" = 600 ]

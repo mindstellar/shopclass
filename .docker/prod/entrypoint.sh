@@ -186,7 +186,8 @@ write_live_conf() {
                 [ -z "$r_user" ] || printf '    nchan_redis_username "%s";\n' "$r_user"
                 [ -z "$r_pass" ] || printf '    nchan_redis_password "%s";\n' "$r_pass"
                 echo '}'
-                echo 'nchan_redis_namespace shopclass:live;'
+                # Sites sharing one Valkey must not share channels, and pub/sub ignores the db number.
+                printf 'nchan_redis_namespace shopclass:live:%s;\n' "$(printf '%s' "${WEB_PATH:-}" | md5sum | cut -c1-12)"
             } >> "$live_http"
             chmod 600 "$live_http"
             live_via=", Valkey"
