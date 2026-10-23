@@ -1451,7 +1451,6 @@ msgstr ""
 msgid "Member since %s"
 msgstr ""
 
-#: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Message"
@@ -1486,6 +1485,10 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/CWebMessages.php
 #: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "Messages are switched off on this site"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Messages, %d unread"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
@@ -2467,7 +2470,6 @@ msgstr ""
 msgid "Send"
 msgstr ""
 
-#: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Send message"
 msgstr ""
@@ -4081,7 +4083,7 @@ msgstr ""
 msgid "You are using %1$d of your %2$d listings."
 msgstr ""
 
-#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "You are writing as %s. The seller answers in your messages."
 msgstr ""
 

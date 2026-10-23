@@ -70,6 +70,37 @@ function osc_messaging_unread_count(): int
 }
 
 /**
+ * The signed-in user's link to their messages, with the unread count, for a theme's header.
+ * '' while messaging is off, for a guest and for a shopper. Core's scripts keep the count current.
+ *
+ * Markup: a.oe-msg-link[data-osc-messages-link] > (icon) span.oe-msg-label +
+ * span.oe-badge.oe-unread[data-osc-unread], the badge hidden at 0.
+ *
+ * @param array{class?: string, icon?: string} $args class: extra classes on the link;
+ *                                                   icon: the theme's icon HTML, printed as given
+ *
+ * @return string
+ */
+function osc_messaging_link(array $args = array()): string
+{
+    if (!osc_messaging_enabled() || !osc_is_web_user_logged_in() || osc_is_shopper()) {
+        return '';
+    }
+    $unread = osc_messaging_unread_count();
+    $label  = _m('Messages');
+    $some   = _m('Messages, %d unread');
+    $class  = trim('oe-msg-link ' . (string) ($args['class'] ?? ''));
+
+    return '<a class="' . osc_esc_html($class) . '" href="' . osc_esc_html(osc_messaging_inbox_url()) . '"'
+        . ' aria-label="' . osc_esc_html($unread > 0 ? sprintf($some, $unread) : $label) . '"'
+        . ' data-osc-messages-link data-label="' . osc_esc_html($label) . '" data-label-unread="' . osc_esc_html($some) . '">'
+        . (string) ($args['icon'] ?? '')
+        . '<span class="oe-msg-label">' . osc_esc_html($label) . '</span>'
+        . '<span class="oe-badge oe-unread" data-osc-unread' . ($unread > 0 ? '' : ' hidden') . '>' . $unread . '</span>'
+        . '</a>';
+}
+
+/**
  * The URL a signed-in user's page subscribes to for live message notes, or '' when live delivery
  * is off, messaging is off or nobody is signed in.
  *
