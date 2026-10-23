@@ -26,9 +26,9 @@ require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\event\Bridged;
 use mindstellar\messaging\event\ConversationBlocked;
-use mindstellar\messaging\event\ConversationUnblocked;
 use mindstellar\messaging\event\ConversationReported;
 use mindstellar\messaging\event\ConversationStarted;
+use mindstellar\messaging\event\ConversationUnblocked;
 use mindstellar\messaging\event\MessageHeld;
 use mindstellar\messaging\event\MessageRead;
 use mindstellar\messaging\event\MessageSending;
