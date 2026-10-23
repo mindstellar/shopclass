@@ -37,7 +37,8 @@ final class PushSubscriptions
     }
 
     /**
-     * Keep $endpoint for the user, or refresh it when it is already kept.
+     * Keep $endpoint for the user, or refresh it when it is already kept. A new browser past the
+     * 20 a user may keep pushes out the one seen longest ago.
      *
      * @return string the browser id
      * @throws \InvalidArgumentException for an endpoint that is not a public https:// URL of at most 1024 bytes
@@ -60,8 +61,14 @@ final class PushSubscriptions
         }
         $now     = $this->clock->now();
         $browser = self::browserId($endpoint);
+        $key     = $userId . ':' . $browser;
+        $mine    = $this->forUser($userId);
+        if (!isset($mine[$key]) && count($mine) >= self::MAX_PER_USER) {
+            uasort($mine, static fn (array $a, array $b): int => $a['seen'] <=> $b['seen']);
+            $this->kv->delete(self::GROUP, (string) array_key_first($mine));
+        }
         $value   = json_encode(['endpoint' => $endpoint, 'ua' => self::browserFamily($ua), 'seen' => $now], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-        $this->kv->set(self::GROUP, $userId . ':' . $browser, $value, $now + self::TTL, null, $now);
+        $this->kv->set(self::GROUP, $key, $value, $now + self::TTL, null, $now);
 
         return $browser;
     }

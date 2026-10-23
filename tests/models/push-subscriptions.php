@@ -127,10 +127,19 @@ pin('none of user 123 or 13', [$ep('a'), $ep('b')], (static function () use ($mi
 pin('user 123 sees its own only', [$ep('c')], array_column($subs->forUser(123), 'endpoint'));
 pin('user 13 sees its own only', [$ep('d')], array_column($subs->forUser(13), 'endpoint'));
 pin('no user: nothing', [], $subs->forUser(0));
+$start = $clock->t;
 for ($i = 0; $i < 25; $i++) {
     $subs->add(7, $ep('many' . $i), 'Chrome/130.0');
+    $clock->t++;
 }
-pin('at most 20 per user', 20, count($subs->forUser(7)));
+pin('at most 20 rows per user', 20, $count("SELECT COUNT(*) FROM {$p}t_key_value WHERE s_group = 'push' AND s_key LIKE '7:%'"));
+$kept = array_column($subs->forUser(7), 'endpoint');
+pin('the newest browser is kept', true, in_array($ep('many24'), $kept, true));
+pin('the oldest ones made room', false, in_array($ep('many4'), $kept, true));
+$subs->add(7, $ep('many5'), 'Chrome/130.0');
+pin('re-adding a kept browser evicts nothing', 20, count($subs->forUser(7)));
+pin('and keeps the next oldest', true, in_array($ep('many6'), array_column($subs->forUser(7), 'endpoint'), true));
+$clock->t = $start;
 
 harness_section('renew');
 $clock->t += 10 * 86400;
@@ -153,10 +162,10 @@ pin('and user 2', 1, count($subs->forUser(2)));
 
 harness_section('count');
 $kv->claim('push', Vapid::LOCK_KEY, $clock->t + 30, 'locked', null, $clock->t);
-pin('live browser rows only: the lock does not count', 27, $subs->count());
+pin('live browser rows only: the lock does not count', 22, $subs->count());
 $kv->delete('push', Vapid::LOCK_KEY);
 $kv->set('push', '99:' . PushSubscriptions::browserId($ep('old')), '{}', $clock->t - 5, null, $clock->t - 100);
-pin('an expired row does not count', 27, $subs->count());
+pin('an expired row does not count', 22, $subs->count());
 
 harness_section('VAPID keys: one pair however many instances');
 $forgetKeys();
