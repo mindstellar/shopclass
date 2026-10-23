@@ -47,6 +47,7 @@ final class MessagingService
     public const LISTING_NOT_LIVE = 'listing_not_live';
     public const CLOSED           = MessagePolicy::CLOSED;
     public const HELD             = 'held';
+    public const REPORTED         = 'reported';
 
     /** ForbiddenException reason when either side blocked the thread. */
     public const BLOCKED = MessagePolicy::BLOCKED;
@@ -251,7 +252,7 @@ final class MessagingService
      * @throws ForbiddenException messaging off, a guest, an account that is not live
      * @throws NotFoundException  a thread the actor is not part of
      * @throws InvalidException   a reason that is not a short code
-     * @throws ConflictException  a closed thread, or one waiting for review
+     * @throws ConflictException  a closed thread, one waiting for review, or one already reported
      */
     public function report(int $conversationId, string $reason, Actor $actor): void
     {
@@ -269,6 +270,10 @@ final class MessagingService
             if ((string) $conversation['s_state'] === 'held') {
                 // A report would show the seller a thread still waiting for review.
                 throw new ConflictException(_m('This conversation is waiting for review'), self::HELD);
+            }
+            if ((string) $conversation['s_state'] === 'reported') {
+                // The first report stands, so the reported side cannot replace it with their own.
+                throw new ConflictException(_m('This conversation was already reported'), self::REPORTED);
             }
             $this->conversations->setReport($conversationId, $userId, $reason);
             Db::afterCommit(fn () => $this->events->dispatch(new ConversationReported($conversationId, $userId, $reason)));

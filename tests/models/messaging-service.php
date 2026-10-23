@@ -219,6 +219,8 @@ $log = array();
 $svc->report($conv, 'spam', $asBuyer);
 pin('report stores state, reporter and reason, and blocks for the reporter', array('reported', (string) $buyer, 'spam', '1', '0'), array_values($admin->query("SELECT s_state, fk_i_reporter_id, s_report_reason, b_buyer_blocked, b_seller_blocked FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_row()));
 pin('conversation_reported, then conversation_blocked', array('conversation_reported', 'conversation_blocked'), $log);
+pin('the reported side cannot report it back', 'conflict:reported', $outcome(fn () => $svc->report($conv, 'harassment', $asSeller)));
+pin('the first report stands', array((string) $buyer, 'spam', '0'), array_values($admin->query("SELECT fk_i_reporter_id, s_report_reason, b_seller_blocked FROM {$p}t_conversation WHERE pk_i_id = $conv")->fetch_row()));
 pin('a held thread cannot be reported', 'conflict:held', $outcome(fn () => $svc->report($hc, 'spam', $asBuyer)));
 pin('a third user cannot block', 'not_found', $outcome(fn () => $svc->block($conv, $asThird)));
 
