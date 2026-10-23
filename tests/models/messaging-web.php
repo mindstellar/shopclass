@@ -282,10 +282,14 @@ check('in the conversation template', strpos((string) $r['view'], 'user-conversa
 pin('and it is marked read for them', '0', explode('/', $unread($open))[1]);
 
 harness_section('contact form');
-$mails = 0;
-osc_add_hook('pre_item_contact_post', static function () use (&$mails): void {
-    $mails++;
-    throw new WebRedirect('mail');
+// The hook fires on both paths; only the e-mail path is stopped here, before it sends.
+$mails = $hooks = 0;
+osc_add_hook('pre_item_contact_post', static function () use (&$mails, &$hooks): void {
+    $hooks++;
+    if (!osc_item_uses_messaging()) {
+        $mails++;
+        throw new WebRedirect('mail');
+    }
 });
 $contact = static function (int $itemId): array {
     web_request('POST', array('page' => 'item', 'action' => 'contact_post'), array(
@@ -306,6 +310,7 @@ $set('enabled_messaging', '1');
 web_sign_in($buyer);
 $r = $contact($desk);
 pin('a user with the switch on starts a conversation and sends no e-mail', array(2, 1), array($mails, $threads($desk)));
+pin('and the contact hook still fires for it', 3, $hooks);
 pin('and lands on the thread', osc_messaging_thread_url((int) $col("SELECT pk_i_id FROM {$p}t_conversation WHERE fk_i_item_id = $desk")), $r['redirect']);
 pin('the message is stored as typed', 'Still there & ready?', $col("SELECT m.s_body FROM {$p}t_message m JOIN {$p}t_conversation t ON t.pk_i_id = m.fk_i_conversation_id WHERE t.fk_i_item_id = $desk"));
 
