@@ -363,7 +363,7 @@ final class MessagingService
         $senderId    = (int) $actor->userId();
         $recipientId = $senderId === $buyerId ? $sellerId : $buyerId;
 
-        if ((int) osc_is_banned((string) $user['s_email'], $actor->ip(), MessageGuard::SCOPE) !== 0) {
+        if (MessageGuard::bannedFor((string) $user['s_email'], $actor->ip()) !== 0) {
             throw new ForbiddenException(_m('You cannot send messages'), ForbiddenException::BANNED);
         }
         if ($conversation !== null) {

@@ -186,12 +186,19 @@ final class MessageGuard
      */
     private static function banned(string $email): int
     {
-        $banned = osc_is_banned($email, null, self::SCOPE);
-        if ($banned === 0 && osc_is_web_user_logged_in()) {
-            $own = (string) osc_logged_user_email();
-            if ($own !== '' && strcasecmp($own, $email) !== 0) {
-                $banned = osc_is_banned($own, null, self::SCOPE);
-            }
+        return self::bannedFor($email, null, osc_is_web_user_logged_in() ? (string) osc_logged_user_email() : null);
+    }
+
+    /**
+     * As banned(), for an explicit address, IP (null for this request's) and account address.
+     *
+     * @return int 0 allowed, 1 address banned, 2 IP banned
+     */
+    public static function bannedFor(string $email, ?string $ip, ?string $accountEmail = null): int
+    {
+        $banned = osc_is_banned($email, $ip, self::SCOPE);
+        if ($banned === 0 && $accountEmail !== null && $accountEmail !== '' && strcasecmp($accountEmail, $email) !== 0) {
+            $banned = osc_is_banned($accountEmail, $ip, self::SCOPE);
         }
 
         return $banned;
