@@ -130,9 +130,14 @@
             button.disabled = true;
         }
 
+        // The form's own page and action would override the AJAX ones in the URL.
+        var fields = new FormData(form);
+        fields.delete('page');
+        fields.delete('action');
+
         fetch(list.dataset.sendUrl, {
             method: 'POST',
-            body: new FormData(form),
+            body: fields,
             credentials: 'same-origin',
             headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
         }).then(function (response) {

@@ -69,6 +69,8 @@ check('the script exists', $js !== '');
 check('the script uses no jQuery', strpos($js, 'jQuery') === false && strpos($js, '$(') === false);
 check('the script uses fetch', strpos($js, 'fetch(') !== false);
 check('the script sends the form with its CSRF field', strpos($js, 'new FormData(form)') !== false);
+check("the script drops the form's page and action so the AJAX action runs", strpos($js, "fields.delete('page')") !== false
+    && strpos($js, "fields.delete('action')") !== false && strpos($js, 'body: fields') !== false);
 check('the script sets message text with textContent', strpos($js, 'body.textContent = row.body') !== false
     && strpos($js, 'innerHTML') === false);
 check('the script keeps appendMessage exported', strpos($js, 'window.oscMessages = {appendMessage: appendMessage}') !== false);
