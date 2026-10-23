@@ -1405,6 +1405,7 @@ msgstr ""
 msgid "Member since %s"
 msgstr ""
 
+#: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Message"
@@ -1412,6 +1413,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Message %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Message sent"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
@@ -2342,6 +2347,7 @@ msgstr ""
 msgid "Send"
 msgstr ""
 
+#: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Send message"
 msgstr ""
@@ -3591,6 +3597,10 @@ msgstr[1] ""
 msgid "Too many messages in an hour. Try again later."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Too many messages. Try again in %d minutes."
+msgstr ""
+
 #: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "Too many new conversations in an hour. Try again later."
 msgstr ""
@@ -3875,6 +3885,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "You are using %1$d of your %2$d listings."
+msgstr ""
+
+#: oc-includes/osclass/gui/item-contact-content.php
+msgid "You are writing as %s. The seller answers in your messages."
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -4178,6 +4192,10 @@ msgstr ""
 msgid ""
 "Your message has been sent. Messages you send from this browser in the next "
 "30 days go straight out."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Your message is waiting for review"
 msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php
