@@ -365,6 +365,9 @@ final class MessagingService
         }
         if ($conversation !== null) {
             $this->assertCanSend($conversation, $senderId);
+        } elseif ($this->conversations->blockedBetween($buyerId, $sellerId)) {
+            // A block on one listing's thread also stops new threads on the seller's other listings.
+            throw new ForbiddenException(_m('This conversation is blocked'), self::BLOCKED);
         }
         $body = $this->checkBody($body);
         if (MessagePolicy::tooMany($actor, MessagePolicy::SEND_CONTEXT)) {

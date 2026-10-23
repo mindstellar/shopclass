@@ -211,6 +211,8 @@ pin('blocking fires conversation_blocked after commit', array('conversation_bloc
 pin('the buyer cannot write', 'forbidden:blocked', $outcome(fn () => $svc->reply($conv, 'Hello?', $asBuyer)));
 pin('nor can the seller', 'forbidden:blocked', $outcome(fn () => $svc->reply($conv, 'Bye', $asSeller)));
 pin('nor through start()', 'forbidden:blocked', $outcome(fn () => $svc->start($bike, 'Hello?', $asBuyer)));
+pin('nor a new thread on another of the seller\'s listings', 'forbidden:blocked', $outcome(fn () => $svc->start($lamp, 'And the lamp?', $asBuyer)));
+pin('no thread was made', 0, $count("SELECT COUNT(*) FROM {$p}t_conversation WHERE fk_i_item_id = $lamp AND fk_i_buyer_id = $buyer"));
 pin('the buyer cannot lift the seller\'s block', 'forbidden:not_owner', $outcome(fn () => $svc->unblock($conv, $asBuyer)));
 $svc->unblock($conv, $asSeller);
 pin('the seller can', 'ok', $outcome(fn () => $svc->reply($conv, 'Sorry, go on', $asSeller)));
@@ -227,10 +229,10 @@ pin('a third user cannot block', 'not_found', $outcome(fn () => $svc->block($con
 harness_section('events on a first message');
 $svc = $fresh();
 $fresh2 = seed_item($admin, $cat, $seller, 'Desk');
-$svc->start($fresh2, 'Is the desk free?', $asBuyer);
+$svc->start($fresh2, 'Is the desk free?', $asThird);
 pin('conversation_started, then message_sent, both after commit', array('conversation_started', 'message_sent'), $log);
 $log = array();
-$svc->start($fresh2, 'Hello?', $asBuyer);
+$svc->start($fresh2, 'Hello?', $asThird);
 pin('a later message fires message_sent only', array('message_sent'), $log);
 
 harness_section('two first messages at once');

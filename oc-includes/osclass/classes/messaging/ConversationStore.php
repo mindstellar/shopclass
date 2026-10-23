@@ -175,6 +175,19 @@ final class ConversationStore
     }
 
     /**
+     * Whether either side blocked any thread between this buyer and seller.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public function blockedBetween(int $buyerId, int $sellerId): bool
+    {
+        return Db::selectOne(
+            'SELECT 1 FROM ' . self::tableName() . ' WHERE fk_i_buyer_id = ? AND fk_i_seller_id = ? AND (b_buyer_blocked = 1 OR b_seller_blocked = 1) LIMIT 1',
+            array($buyerId, $sellerId)
+        ) !== null;
+    }
+
+    /**
      * @throws \mindstellar\database\DbException
      */
     public function setBlocked(int $id, string $side, bool $blocked): void
