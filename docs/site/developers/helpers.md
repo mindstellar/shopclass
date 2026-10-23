@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1227 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1229 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1318,7 +1318,7 @@ Core defines 1227 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (70)
+### hUsers (72)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
@@ -1355,6 +1355,8 @@ Core defines 1227 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_messaging_thread_url(int $conversationId)` | The link to a message thread. |
 | `osc_messaging_unread_count()` | Unread messages across the signed-in user's threads; 0 for a guest or while messaging is off. Read once per request and user. |
 | `osc_prepare_user_info()` | Gets next user in users array |
+| `osc_push_enabled()` | Whether browser notifications for new messages are on: the switch, messaging, and a site address browsers accept for push (https://, or localhost while testing). |
+| `osc_push_public_key()` | The site's push key (base64url) for the browser to subscribe with; '' while push is off. |
 | `osc_reset_users()` | Rewinds the user loop, so osc_prepare_user_info() can be read again. |
 | `osc_resolve_web_user()` | Resolve the current front-end user for this request, or null. |
 | `osc_run_web_user_identity()` | Resolve front-end identity early in the bootstrap so the historical Session::_get('userId') readers see a cookie-authenticated user even before any osc_is_web_user_logged_in() call. No-op — and no session, no DB query — for an anonymous, cookieless visitor, which keeps such requests cacheable. |
