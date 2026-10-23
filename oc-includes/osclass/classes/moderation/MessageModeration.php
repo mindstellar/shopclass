@@ -143,30 +143,22 @@ final class MessageModeration
      */
     public function held(int $limit = 20, ?int $before = null): array
     {
-        $rows          = $this->messages->held($limit, $before);
-        $conversations = $this->conversations->byIds(array_column($rows, 'fk_i_conversation_id'));
-        $userIds       = array();
-        foreach ($rows as $row) {
-            $conversation = $conversations[(int) $row['fk_i_conversation_id']] ?? null;
-            $userIds[]    = (int) $row['fk_i_sender_id'];
-            if ($conversation !== null) {
-                $userIds[] = ConversationStore::otherParty($conversation, (int) $row['fk_i_sender_id']);
-            }
-        }
-        $users = $this->users($userIds);
-        foreach ($rows as &$row) {
-            $conversation          = $conversations[(int) $row['fk_i_conversation_id']] ?? null;
-            $senderId              = (int) $row['fk_i_sender_id'];
-            $recipientId           = $conversation !== null ? ConversationStore::otherParty($conversation, $senderId) : 0;
-            $row['conversation']   = $conversation;
-            $row['sender_name']    = (string) ($users[$senderId]['s_name'] ?? '');
-            $row['sender_email']   = (string) ($users[$senderId]['s_email'] ?? '');
-            $row['recipient_id']   = $recipientId;
-            $row['recipient_name'] = (string) ($users[$recipientId]['s_name'] ?? '');
-        }
-        unset($row);
+        return $this->withNames($this->messages->held($limit, $before));
+    }
 
-        return $rows;
+    /**
+     * One message with its `conversation` row and the same names as held() gives.
+     *
+     * @return array<string,mixed>|null null when there is no such message
+     * @throws ForbiddenException an actor who is not an admin
+     * @throws \mindstellar\database\DbException
+     */
+    public function message(int $id, Actor $admin): ?array
+    {
+        $this->requireAdmin($admin);
+        $row = $this->messages->find($id);
+
+        return $row === null ? null : $this->withNames(array($row))[0];
     }
 
     /**
@@ -178,20 +170,25 @@ final class MessageModeration
      */
     public function reported(int $limit = 20, ?int $before = null): array
     {
-        $rows  = $this->conversations->reported($limit, $before);
-        $users = $this->users(array_merge(
-            array_column($rows, 'fk_i_buyer_id'),
-            array_column($rows, 'fk_i_seller_id'),
-            array_column($rows, 'fk_i_reporter_id')
-        ));
-        foreach ($rows as &$row) {
-            foreach (array('buyer', 'seller', 'reporter') as $who) {
-                $row[$who . '_name'] = (string) ($users[(int) $row['fk_i_' . $who . '_id']]['s_name'] ?? '');
-            }
-        }
-        unset($row);
+        return $this->namedThreads($this->conversations->reported($limit, $before));
+    }
 
-        return $rows;
+    /**
+     * Threads for the admin list, newest first, with the same names as reported() gives. Filters
+     * are `status`, `user` (ids, buyer or seller) and `listing` (item ids). Page on with the last
+     * row's id.
+     *
+     * @param array{status?:string,user?:int[],listing?:int[]} $filters
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws ForbiddenException an actor who is not an admin
+     * @throws \mindstellar\database\DbException
+     */
+    public function conversations(array $filters, int $limit, ?int $before, Actor $admin): array
+    {
+        $this->requireAdmin($admin);
+
+        return $this->namedThreads($this->conversations->listNewest($filters, $limit, $before));
     }
 
     /**
@@ -237,9 +234,75 @@ final class MessageModeration
     private function guard(Actor $admin): void
     {
         Demo::refuse();
+        $this->requireAdmin($admin);
+    }
+
+    /**
+     * @throws ForbiddenException
+     */
+    private function requireAdmin(Actor $admin): void
+    {
         if (!$admin->isAdmin()) {
             throw new ForbiddenException(_m('Only an admin can review messages'), ForbiddenException::NOT_OWNER);
         }
+    }
+
+    /**
+     * Held-message rows with their `conversation` and the sender and recipient names.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function withNames(array $rows): array
+    {
+        $conversations = $this->conversations->byIds(array_column($rows, 'fk_i_conversation_id'));
+        $userIds       = array();
+        foreach ($rows as $row) {
+            $conversation = $conversations[(int) $row['fk_i_conversation_id']] ?? null;
+            $userIds[]    = (int) $row['fk_i_sender_id'];
+            if ($conversation !== null) {
+                $userIds[] = ConversationStore::otherParty($conversation, (int) $row['fk_i_sender_id']);
+            }
+        }
+        $users = $this->users($userIds);
+        foreach ($rows as &$row) {
+            $conversation          = $conversations[(int) $row['fk_i_conversation_id']] ?? null;
+            $senderId              = (int) $row['fk_i_sender_id'];
+            $recipientId           = $conversation !== null ? ConversationStore::otherParty($conversation, $senderId) : 0;
+            $row['conversation']   = $conversation;
+            $row['sender_name']    = (string) ($users[$senderId]['s_name'] ?? '');
+            $row['sender_email']   = (string) ($users[$senderId]['s_email'] ?? '');
+            $row['recipient_id']   = $recipientId;
+            $row['recipient_name'] = (string) ($users[$recipientId]['s_name'] ?? '');
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    /**
+     * Thread rows with `buyer_name`, `seller_name` and `reporter_name`.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function namedThreads(array $rows): array
+    {
+        $users = $this->users(array_merge(
+            array_column($rows, 'fk_i_buyer_id'),
+            array_column($rows, 'fk_i_seller_id'),
+            array_column($rows, 'fk_i_reporter_id')
+        ));
+        foreach ($rows as &$row) {
+            foreach (array('buyer', 'seller', 'reporter') as $who) {
+                $row[$who . '_name'] = (string) ($users[(int) $row['fk_i_' . $who . '_id']]['s_name'] ?? '');
+            }
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**

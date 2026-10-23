@@ -279,6 +279,32 @@ final class ConversationStore
     }
 
     /**
+     * One page of threads for the admin API, newest id first. Filters: `status` (a state),
+     * `user` (ids; the buyer or the seller) and `listing` (item ids). Page on with the last row's id.
+     *
+     * @param array{status?:string,user?:int[],listing?:int[]} $filters
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function listNewest(array $filters, int $limit = 20, ?int $beforeId = null): array
+    {
+        $query = $this->table();
+        if (isset($filters['status'])) {
+            $query = $query->where('s_state', (string) $filters['status']);
+        }
+        if (isset($filters['listing'])) {
+            $query = $query->whereIn('fk_i_item_id', array_map('intval', $filters['listing']));
+        }
+        if (isset($filters['user'])) {
+            $users = array_map('intval', $filters['user']);
+            $query = $query->whereGroup(static fn ($q) => $q->whereIn('fk_i_buyer_id', $users)->orWhereGroup(static fn ($o) => $o->whereIn('fk_i_seller_id', $users)));
+        }
+
+        return $query->newestBefore($beforeId, max(1, $limit));
+    }
+
+    /**
      * What a person may take with them: the threads they took part in (each with a `side`) and
      * the text of their own messages. The other party's text is not theirs.
      *
