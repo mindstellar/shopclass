@@ -11,7 +11,7 @@
 /**
  * Pins the messages AJAX actions in CWebAjax: the three entries, CSRF before the service,
  * the POST-only send, the ETag and 304 on the poll check, the status map, typed reads, and the
- * live authorize check nchan calls before it opens a stream.
+ * live authorize check nchan calls before it opens a stream, and the four push actions.
  *
  * DB-free and source-level.  Usage: php tests/messages-ajax.php
  */
@@ -105,8 +105,47 @@ check('no body is sent', strpos($auth, 'echo') === false && strpos($auth, 'AjaxR
 check('no CSRF check (GET, no state)', strpos($auth, 'osc_csrf_check') === false);
 check('no flash, no redirect, no session, no log', !preg_match('/flash|redirect|Session::|error_log|_set\(/i', $auth));
 
+harness_section('push');
+foreach (array('push_worker' => 'pushWorker', 'push_subscribe' => 'pushSubscribe', 'push_unsubscribe' => 'pushUnsubscribe', 'push_status' => 'pushStatus') as $action => $name) {
+    check("$action is in the map", (bool) preg_match("/'$action'\\s*=>\\s*'$name'/", $source));
+    check("$name exists", $method($name) !== '');
+}
+$gate   = $method('pushActor');
+$gWho   = strpos($gate, '$this->messagingActor()');
+$gOff   = strpos($gate, '!osc_push_enabled()');
+$g404   = strpos($gate, '404)');
+$gPost  = strpos($gate, "!== 'POST'");
+$gCsrf  = strpos($gate, 'osc_csrf_check()');
+check('the gate reads the visitor first (401/403)', $gWho !== false && $gOff !== false && $gWho < $gOff);
+check('push off is 404, after the visitor check', $gOff !== false && $g404 !== false && $gWho < $g404 && $gOff < $g404);
+check('a POST call refuses other methods with 405 and Allow: POST', $gPost !== false && strpos($gate, "header('Allow: POST')") !== false && strpos($gate, '405') !== false);
+check('then CSRF, inside the POST branch', $gCsrf !== false && $gPost < $gCsrf && $g404 < $gCsrf && strpos($gate, 'if ($post)') < $gCsrf);
+foreach (array('pushSubscribe', 'pushUnsubscribe') as $name) {
+    $body = $method($name);
+    $gated = strpos($body, '$this->pushActor(true)');
+    $store = strpos($body, '->get(PushSubscriptions::class)');
+    check("$name goes through the POST gate (CSRF) before the store", $gated !== false && $store !== false && $gated < $store);
+    check("$name reads the endpoint raw and typed", strpos($body, "Params::getParamString('endpoint', false, false, false)") !== false);
+}
+$subscribe = $method('pushSubscribe');
+check('a refused endpoint is 422 invalid', strpos($subscribe, 'catch (\InvalidArgumentException $e)') !== false && strpos($subscribe, "'error' => 'invalid'") !== false && strpos($subscribe, '422') !== false);
+check('it answers ok and the browser id', strpos($subscribe, "'ok' => true, 'id' => \$id") !== false);
+$status = $method('pushStatus');
+check('status is a GET gate, no CSRF', strpos($status, '$this->pushActor(false)') !== false && strpos($status, 'osc_csrf_check') === false);
+check('status renews the row it finds', strpos($status, '->renew(') !== false && strpos($status, "'active' => \$active") !== false);
+$worker = $method('pushWorker');
+$wOff   = strpos($worker, '!osc_push_enabled()');
+$wRead  = strpos($worker, "readfile(ABS_PATH . 'oc-includes/assets/osclass/push-worker.js')");
+check('the worker is 404 while push is off', $wOff !== false && strpos($worker, 'http_response_code(404)') !== false);
+check('it reads the asset file as it is', $wRead !== false && $wOff < $wRead);
+check('as JavaScript, never sniffed', strpos($worker, "header('Content-Type: text/javascript; charset=utf-8')") !== false && strpos($worker, "header('X-Content-Type-Options: nosniff')") !== false);
+check('no-cache, so a changed worker is picked up', strpos($worker, "header('Cache-Control: no-cache')") !== false);
+check('no escaping, no template', !preg_match('/osc_esc_|osc_current_web_theme|\b(include|require)(_once)?\b/', $worker));
+$push = $gate . $subscribe . $method('pushUnsubscribe') . $status . $worker;
+check('no flash, no session, no log in the push actions', !preg_match('/flash|redirect|Session::|error_log|trigger_error|_set\(/i', $push));
+
 harness_section('no untyped reads');
-$all = $send . $check . $since . $actor . $refusal . $auth;
+$all = $send . $check . $since . $actor . $refusal . $auth . $push;
 check('none of the messages actions calls getParam(', strpos($all, 'getParam(') === false);
 
 exit(harness_result());

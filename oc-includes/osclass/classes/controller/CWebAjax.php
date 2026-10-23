@@ -32,6 +32,7 @@ use mindstellar\live\LiveChannel;
 use mindstellar\live\LivePublisher;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
+use mindstellar\push\PushSubscriptions;
 use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
@@ -58,6 +59,10 @@ class CWebAjax extends BaseModel
         'messages_check'              => 'messagesCheck',
         'messages_since'              => 'messagesSince',
         'messages_live_auth'          => 'messagesLiveAuth',
+        'push_worker'                 => 'pushWorker',
+        'push_subscribe'              => 'pushSubscribe',
+        'push_unsubscribe'            => 'pushUnsubscribe',
+        'push_status'                 => 'pushStatus',
     );
 
     /**
@@ -554,6 +559,100 @@ class CWebAjax extends BaseModel
             return;
         }
         http_response_code(200);
+    }
+
+    /**
+     * The service worker script for browser notifications; 404 while they are off. It holds no
+     * user data, so a signed-out browser can still update it.
+     */
+    private function pushWorker(): void
+    {
+        if (!osc_push_enabled()) {
+            http_response_code(404);
+
+            return;
+        }
+        header('Content-Type: text/javascript; charset=utf-8');
+        header('Cache-Control: no-cache');
+        header('X-Content-Type-Options: nosniff');
+        readfile(ABS_PATH . 'oc-includes/assets/osclass/push-worker.js');
+    }
+
+    /**
+     * The signed-in visitor for a push call, or null after answering 401, 403 or 404 (push off);
+     * a POST call must be POST and carry a valid CSRF token.
+     */
+    private function pushActor(bool $post): ?Actor
+    {
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return null;
+        }
+        if (!osc_push_enabled()) {
+            AjaxResponse::json(array('error' => 'not_found', 'msg' => __('Browser notifications are switched off on this site')), 404);
+
+            return null;
+        }
+        if ($post) {
+            if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
+                header('Allow: POST');
+                AjaxResponse::json(array('error' => 'method_not_allowed', 'msg' => __('Use POST')), 405);
+
+                return null;
+            }
+            osc_csrf_check();
+        }
+
+        return $actor;
+    }
+
+    /**
+     * Wake this browser for the visitor's new messages.
+     */
+    private function pushSubscribe(): void
+    {
+        $actor = $this->pushActor(true);
+        if ($actor === null) {
+            return;
+        }
+        try {
+            $id = Container::root()->get(PushSubscriptions::class)->add(
+                (int) $actor->userId(),
+                Params::getParamString('endpoint', false, false, false),
+                (string) Params::getServerParam('HTTP_USER_AGENT', false, false, false)
+            );
+        } catch (\InvalidArgumentException $e) {
+            AjaxResponse::json(array('error' => 'invalid', 'msg' => $e->getMessage()), 422);
+
+            return;
+        }
+        AjaxResponse::json(array('ok' => true, 'id' => $id));
+    }
+
+    /**
+     * Stop waking this browser.
+     */
+    private function pushUnsubscribe(): void
+    {
+        $actor = $this->pushActor(true);
+        if ($actor === null) {
+            return;
+        }
+        Container::root()->get(PushSubscriptions::class)->remove((int) $actor->userId(), Params::getParamString('endpoint', false, false, false));
+        AjaxResponse::json(array('ok' => true));
+    }
+
+    /**
+     * Whether the visitor's row for this browser is kept; finding it renews it for 90 days.
+     */
+    private function pushStatus(): void
+    {
+        $actor = $this->pushActor(false);
+        if ($actor === null) {
+            return;
+        }
+        $active = Container::root()->get(PushSubscriptions::class)->renew((int) $actor->userId(), Params::getParamString('endpoint', false, false, false));
+        AjaxResponse::json(array('active' => $active));
     }
 
     /**
