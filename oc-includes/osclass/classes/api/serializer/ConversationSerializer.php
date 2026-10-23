@@ -97,4 +97,63 @@ final class ConversationSerializer
 
         return $out;
     }
+
+    /**
+     * A thread as the admin sees it, both sides alike.
+     *
+     * @param array<string,mixed> $row    a t_conversation row
+     * @param array<int,string>   $names  user id => display name
+     * @param array<int,string>   $titles listing id => title
+     *
+     * @return array<string,mixed>
+     */
+    public function admin(array $row, array $names, array $titles): array
+    {
+        $buyerId  = Format::int($row['fk_i_buyer_id'] ?? 0);
+        $sellerId = Format::int($row['fk_i_seller_id'] ?? 0);
+        $itemId   = Format::int($row['fk_i_item_id'] ?? 0);
+        $reporter = Format::id($row['fk_i_reporter_id'] ?? null);
+
+        return [
+            'id'              => Format::int($row['pk_i_id'] ?? 0),
+            'listing_id'      => $itemId,
+            'listing_title'   => Format::text($titles[$itemId] ?? null),
+            'buyer'           => ['id' => $buyerId, 'name' => Format::text($names[$buyerId] ?? null)],
+            'seller'          => ['id' => $sellerId, 'name' => Format::text($names[$sellerId] ?? null)],
+            'state'           => (string) ($row['s_state'] ?? 'open'),
+            'buyer_unread'    => Format::int($row['i_buyer_unread'] ?? 0),
+            'seller_unread'   => Format::int($row['i_seller_unread'] ?? 0),
+            'buyer_blocked'   => Format::bool($row['b_buyer_blocked'] ?? 0),
+            'seller_blocked'  => Format::bool($row['b_seller_blocked'] ?? 0),
+            'report'          => $reporter === null ? null : ['user_id' => $reporter, 'reason' => (string) ($row['s_report_reason'] ?? '')],
+            'last_message_at' => Format::time($row['dt_last_message'] ?? null),
+            'created_at'      => Format::time($row['dt_created'] ?? null),
+        ];
+    }
+
+    /**
+     * A message as the admin sees it: held and removed ones too, with the sender's name.
+     *
+     * @param array<string,mixed> $row        a t_message row
+     * @param string|null         $senderName
+     *
+     * @return array<string,mixed>
+     */
+    public function adminMessage(array $row, int $listingId, ?string $senderName): array
+    {
+        $sender = Format::int($row['fk_i_sender_id'] ?? 0);
+        $state  = (string) ($row['s_state'] ?? 'sent');
+
+        return [
+            'id'              => Format::int($row['pk_i_id'] ?? 0),
+            'conversation_id' => Format::int($row['fk_i_conversation_id'] ?? 0),
+            'listing_id'      => $listingId,
+            'sender_id'       => $sender,
+            'sender'          => ['id' => $sender, 'name' => Format::text($senderName)],
+            'body'            => (string) ($row['s_body'] ?? ''),
+            'held'            => $state === 'held',
+            'state'           => $state,
+            'created_at'      => Format::time($row['dt_created'] ?? null),
+        ];
+    }
 }

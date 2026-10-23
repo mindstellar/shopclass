@@ -24,7 +24,12 @@ final class MessagingSchema
     public const NAMES = [
         'Conversation', 'ConversationInput', 'ConversationDocument', 'ConversationPage',
         'Message', 'MessageInput', 'MessageDocument', 'MessagePage', 'ReportInput',
+        'AdminConversation', 'AdminConversationDocument', 'AdminConversationPage',
+        'AdminMessage', 'AdminMessageDocument', 'AdminMessagePage',
     ];
+
+    /** The message states an admin sees. */
+    public const MESSAGE_STATES = ['sent', 'held', 'removed'];
 
     /** The thread states, as `state` names them. */
     public const STATES = ['open', 'held', 'closed', 'reported'];
@@ -43,6 +48,14 @@ final class MessagingSchema
      * @return array<string,array<string,mixed>>
      */
     public static function components(): array
+    {
+        return self::user() + self::admin();
+    }
+
+    /**
+     * @return array<string,array<string,mixed>>
+     */
+    private static function user(): array
     {
         $input  = static fn (array $properties, array $required): array => Schema::object($properties, $required) + ['additionalProperties' => false];
         $person = Schema::object(['id' => ['type' => 'integer'], 'name' => Schema::nullable('string', 'Null once the account is gone.')], ['id', 'name']);
@@ -97,6 +110,58 @@ final class MessagingSchema
             'ReportInput' => $input([
                 'reason' => ['type' => 'string', 'enum' => MessagePolicy::REPORT_REASONS],
             ], ['reason']),
+        ];
+    }
+
+    /**
+     * The admin views: both parties, the counters of each side and the report, and messages with
+     * their state.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private static function admin(): array
+    {
+        $doc    = static fn (string $name): array => Schema::object(['data' => Schema::ref($name)], ['data']);
+        $person = Schema::object(['id' => ['type' => 'integer'], 'name' => Schema::nullable('string', 'Null once the account is gone.')], ['id', 'name']);
+        $thread = [
+            'id'             => ['type' => 'integer'],
+            'listing_id'     => ['type' => 'integer'],
+            'listing_title'  => Schema::nullable('string', 'Null once the listing is gone.'),
+            'buyer'          => $person,
+            'seller'         => $person,
+            'state'          => ['type' => 'string', 'enum' => self::STATES],
+            'buyer_unread'   => ['type' => 'integer'],
+            'seller_unread'  => ['type' => 'integer'],
+            'buyer_blocked'  => ['type' => 'boolean'],
+            'seller_blocked' => ['type' => 'boolean'],
+            'report'         => Schema::nullable('object', 'Who reported the thread and why; null when it is not reported.') + [
+                'properties' => ['user_id' => ['type' => 'integer'], 'reason' => ['type' => 'string', 'enum' => MessagePolicy::REPORT_REASONS]],
+            ],
+            'last_message_at' => Schema::time(),
+            'created_at'      => Schema::time(),
+        ];
+        $required = array_keys($thread);
+        $message  = [
+            'id'              => ['type' => 'integer'],
+            'conversation_id' => ['type' => 'integer'],
+            'listing_id'      => ['type' => 'integer'],
+            'sender_id'       => ['type' => 'integer'],
+            'sender'          => $person,
+            'body'            => ['type' => 'string'],
+            'held'            => ['type' => 'boolean'],
+            'state'           => ['type' => 'string', 'enum' => self::MESSAGE_STATES],
+            'created_at'      => Schema::time(),
+        ];
+
+        return [
+            'AdminConversation'         => Schema::object($thread, $required),
+            'AdminConversationDocument' => Schema::object([
+                'data' => Schema::object($thread + ['messages' => ['type' => 'array', 'items' => Schema::ref('AdminMessage'), 'description' => 'Every message, held ones included, oldest first.']], [...$required, 'messages']),
+            ], ['data']),
+            'AdminConversationPage' => Schema::wholeList('AdminConversation'),
+            'AdminMessage'          => Schema::object($message, array_keys($message)),
+            'AdminMessageDocument'  => $doc('AdminMessage'),
+            'AdminMessagePage'      => Schema::wholeList('AdminMessage'),
         ];
     }
 }

@@ -14,6 +14,7 @@ namespace mindstellar\api\routing;
 
 use mindstellar\api\controller\admin\AdminCategoriesController;
 use mindstellar\api\controller\admin\AdminCommentsController;
+use mindstellar\api\controller\admin\AdminConversationsController;
 use mindstellar\api\controller\admin\AdminCurrenciesController;
 use mindstellar\api\controller\admin\AdminFieldsController;
 use mindstellar\api\controller\admin\AdminKeysController;
@@ -23,6 +24,7 @@ use mindstellar\api\controller\admin\AdminSettingsController;
 use mindstellar\api\controller\admin\AdminUsersController;
 use mindstellar\api\controller\admin\AdminWebhooksController;
 use mindstellar\api\RouteSpec;
+use mindstellar\api\schema\MessagingSchema;
 use mindstellar\api\schema\Schema;
 use mindstellar\comment\CommentStatus;
 use mindstellar\listing\ListingStatus;
@@ -30,7 +32,7 @@ use mindstellar\moderation\ListingModeration;
 
 /**
  * The admin routes of the v1 table. Every one needs an admin key and names its scope;
- * moderators' keys hold only `admin:listings` and `admin:comments`.
+ * moderators' keys hold only `admin:listings`, `admin:comments` and `admin:conversations`.
  */
 final class AdminRoutes
 {
@@ -60,7 +62,7 @@ final class AdminRoutes
      */
     public static function all(): array
     {
-        return self::listings() + self::comments() + self::users() + self::taxonomy() + self::locations() + self::settings() + self::webhooks();
+        return self::listings() + self::comments() + self::conversations() + self::users() + self::taxonomy() + self::locations() + self::settings() + self::webhooks();
     }
 
     /**
@@ -104,6 +106,32 @@ final class AdminRoutes
             'GET admin/comments/{id}'    => $read([$c, 'show'], 'One comment', 'AdminCommentDocument', errors: [404]),
             'PATCH admin/comments/{id}'  => $write([$c, 'update'], 'Edit a comment\'s text or author, or approve or block it', body: 'AdminCommentPatch', response: 'AdminCommentDocument', errors: [404]),
             'DELETE admin/comments/{id}' => $write([$c, 'delete'], 'Delete a comment', status: 204, errors: [404]),
+        ];
+    }
+
+    /**
+     * @return array<string,array<string,mixed>>
+     */
+    private static function conversations(): array
+    {
+        [$read, $write] = self::group('Admin conversations', 'admin:conversations');
+        $c              = AdminConversationsController::class;
+
+        return [
+            'GET admin/conversations' => $read([$c, 'index'], 'Every conversation, newest first', 'AdminConversationPage', query: [
+                'status'  => ['type' => 'string', 'enum' => MessagingSchema::STATES],
+                'user'    => self::IDS + ['description' => 'User ids, as buyer or seller: one, a comma list, or repeated.'],
+                'listing' => self::IDS + ['description' => 'Listing ids: one, a comma list, or repeated.'],
+            ] + self::PAGING, errors: [400, 422]),
+            'GET admin/conversations/{id}'                  => $read([$c, 'show'], 'One conversation with every message, held ones included', 'AdminConversationDocument', errors: [404]),
+            'POST admin/conversations/{id}/close'           => $write([$c, 'close'], 'Close a reported conversation: nobody writes in it any more', response: 'AdminConversationDocument', errors: [404, 409]),
+            'POST admin/conversations/{id}/clear-report'    => $write([$c, 'clearReport'], 'Drop the report on a conversation and open it again', response: 'AdminConversationDocument', errors: [404, 409]),
+            'GET admin/messages'                            => $read([$c, 'messages'], 'Messages waiting for review, newest first', 'AdminMessagePage', query: [
+                'status' => ['type' => 'string', 'enum' => ['held'], 'default' => 'held'],
+            ] + self::PAGING, errors: [400, 422]),
+            'GET admin/messages/{id}'                       => $read([$c, 'message'], 'One message', 'AdminMessageDocument', errors: [404]),
+            'POST admin/messages/{id}/release'              => $write([$c, 'release'], 'Deliver a held message', response: 'AdminMessageDocument', errors: [404, 409]),
+            'POST admin/messages/{id}/remove'               => $write([$c, 'remove'], 'Drop a held message', response: 'AdminMessageDocument', errors: [404, 409]),
         ];
     }
 
