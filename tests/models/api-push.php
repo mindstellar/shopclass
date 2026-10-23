@@ -112,3 +112,5 @@ pin('dropping it again is a 404', '404 not_found', api_admin_code($call('DELETE'
 
 harness_section('the surface');
 pin('the schema names are known', [], array_values(array_diff(['PushSubscriptionInput', 'PushSubscriptionDocument'], \mindstellar\api\schema\Schema::names())));
+
+exit(harness_result());
