@@ -262,6 +262,8 @@ location ~ ^/live/sub/(?<osc_live_channel>user-\d+)$ {
     nchan_channel_id $osc_live_channel;
     nchan_authorize_request /live/auth;
     nchan_subscriber_first_message newest;
+    # Same origin only: no cross-origin reads from a sibling subdomain.
+    nchan_access_control_allow_origin "http://$http_host https://$http_host";
     gzip off;
     set $osc_live_addr $remote_addr;
     set $osc_live_https $fcgi_https;
