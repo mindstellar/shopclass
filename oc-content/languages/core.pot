@@ -2489,6 +2489,10 @@ msgstr ""
 msgid "Browse plugins"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebAjax.php
+msgid "Browser notifications are switched off on this site"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Browser resize"
 msgstr ""
