@@ -12,6 +12,7 @@
  */
 
 use PHPMailer\PHPMailer\PHPMailer;
+use mindstellar\admin\SystemChecks;
 
 /**
  * Strip every tag from a raw server value, unless the caller opted out.
@@ -105,11 +106,11 @@ function get_relative_url()
 function get_requirements()
 {
     $array = array(
-        'PHP version >= 8.2.0' => array(
-            'requirement' => __('PHP version >= 8.2.0'),
+        'PHP version' => array(
+            'requirement' => sprintf(__('PHP version >= %s'), SystemChecks::PHP_FLOOR),
             'fn'          => install_php_version_supported(PHP_VERSION),
             'solution'    => sprintf(__('At least PHP %s (PHP %s or higher recommended) is required to run Shopclass. '
-                . 'You may talk with your hosting to upgrade your PHP version.'), '8.2', '8.4')
+                . 'You may talk with your hosting to upgrade your PHP version.'), SystemChecks::PHP_FLOOR, '8.4')
         ),
 
         'MySQLi extension for PHP' => array(
@@ -293,7 +294,7 @@ function install_db_version_supported(string $serverInfo): bool
 }
 
 /**
- * Whether a PHP version meets the floor, 8.2.0. Older lines get no security fixes.
+ * Whether a PHP version meets the floor (SystemChecks::PHP_FLOOR).
  *
  * @param string $version e.g. PHP_VERSION
  *
@@ -302,7 +303,7 @@ function install_db_version_supported(string $serverInfo): bool
  */
 function install_php_version_supported(string $version): bool
 {
-    return version_compare($version, '8.2.0', '>=');
+    return version_compare($version, SystemChecks::PHP_FLOOR, '>=');
 }
 
 /**

@@ -35,6 +35,9 @@ final class SystemChecks
     public const DISK_FLOOR = 512 * 1024 * 1024;
 
     /** The extensions Shopclass needs, in the order the page lists them. */
+    /** Lowest PHP this line runs on. Older lines get no security fixes. */
+    public const PHP_FLOOR = '8.2.0';
+
     public const EXTENSIONS = array('mysqli', 'curl', 'mbstring', 'fileinfo', 'zip', 'json', 'openssl', 'ctype');
 
     public const DOCS_CRON = 'https://mindstellar.com/docs/configure/cron/';

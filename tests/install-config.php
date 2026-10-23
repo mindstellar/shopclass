@@ -15,6 +15,7 @@
  * Usage:  php tests/install-config.php
  */
 
+require_once __DIR__ . '/../oc-includes/osclass/classes/admin/SystemChecks.php';
 require_once __DIR__ . '/../oc-includes/osclass/install-functions.php';
 require_once __DIR__ . '/lib/harness.php';
 

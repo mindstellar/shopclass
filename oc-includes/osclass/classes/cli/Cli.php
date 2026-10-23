@@ -1810,11 +1810,10 @@ class Cli
             $this->out($line . "\n");
         };
 
-        // PHP version — 8.2 is the floor.
-        if (version_compare(PHP_VERSION, '8.2', '>=')) {
+        if (version_compare(PHP_VERSION, SystemChecks::PHP_FLOOR, '>=')) {
             $check('ok', 'PHP version', PHP_VERSION);
         } else {
-            $check('fail', 'PHP version', PHP_VERSION . ' — too old, PHP 8.2+ required');
+            $check('fail', 'PHP version', PHP_VERSION . ' — too old, PHP ' . SystemChecks::PHP_FLOOR . '+ required');
         }
 
         // Required extensions.
