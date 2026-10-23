@@ -97,6 +97,20 @@ final class WebPushSender
         return self::FAILED;
     }
 
+    /**
+     * Whether browsers accept push on a site at $url: https://, or http:// on localhost while testing.
+     */
+    public static function secureSite(string $url): bool
+    {
+        $host = strtolower(trim((string) parse_url($url, PHP_URL_HOST), '[]'));
+
+        return match (strtolower((string) parse_url($url, PHP_URL_SCHEME))) {
+            'https' => true,
+            'http'  => $host === 'localhost' || str_ends_with($host, '.localhost') || $host === '127.0.0.1' || $host === '::1',
+            default => false,
+        };
+    }
+
     private function failed(string $error): string
     {
         $this->status->failed($error);

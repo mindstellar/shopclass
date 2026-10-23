@@ -1246,7 +1246,7 @@ class CAdminTools extends AdminSecBaseModel
             'push'             => array(
                 'enabled'       => osc_push_enabled(),
                 'switch'        => (bool) osc_get_bool_preference('enabled_push'),
-                'https'         => strtolower((string) parse_url((string) osc_base_url(), PHP_URL_SCHEME)) === 'https',
+                'https'         => \mindstellar\push\WebPushSender::secureSite((string) osc_base_url()),
                 'keys'          => (string) osc_get_preference(\mindstellar\push\Vapid::PUBLIC_PREF) !== '',
                 'subscriptions' => \mindstellar\container\Container::root()->get(\mindstellar\push\PushSubscriptions::class)->count(),
                 'last'          => \mindstellar\container\Container::root()->get(\mindstellar\push\WebPushSender::STATUS)->last(),

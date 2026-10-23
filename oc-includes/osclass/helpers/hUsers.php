@@ -97,14 +97,7 @@ function osc_push_enabled(): bool
     if (!osc_get_bool_preference('enabled_push') || !osc_messaging_enabled()) {
         return false;
     }
-    $url  = (string) osc_base_url();
-    $host = strtolower(trim((string) parse_url($url, PHP_URL_HOST), '[]'));
-
-    return match (strtolower((string) parse_url($url, PHP_URL_SCHEME))) {
-        'https' => true,
-        'http'  => $host === 'localhost' || str_ends_with($host, '.localhost') || $host === '127.0.0.1' || $host === '::1',
-        default => false,
-    };
+    return \mindstellar\push\WebPushSender::secureSite((string) osc_base_url());
 }
 
 /**

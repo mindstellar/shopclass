@@ -292,6 +292,16 @@ namespace {
     pin('no request for a refused address', $before, count($http->requests));
     pin('a refused address is that browser\'s problem: the status is left alone', [], $status->calls);
 
+    harness_section('a site browsers accept push on');
+    foreach (['https://shop.example/' => true, 'http://localhost/' => true, 'http://shop.localhost:8080/' => true, 'http://127.0.0.1:8000/' => true,
+        'http://[::1]/' => true, 'http://shop.example/' => false, 'http://localhost.example/' => false, 'ftp://shop.example/' => false] as $url => $ok) {
+        pin("secureSite($url)", $ok, WebPushSender::secureSite($url));
+    }
+    pin('System info checks HTTPS with the same rule as osc_push_enabled()', 1, preg_match(
+        "/'https'\\s*=>\\s*\\\\mindstellar\\\\push\\\\WebPushSender::secureSite\\(/",
+        (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php')
+    ));
+
     harness_section('browser id and family');
     $id = PushSubscriptions::browserId($ep);
     pin('22 base64url characters', 1, preg_match('/^[A-Za-z0-9_-]{22}$/', $id));
