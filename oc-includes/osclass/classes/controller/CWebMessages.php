@@ -123,7 +123,7 @@ class CWebMessages extends WebSecBaseModel
         }
 
         $titles = ListingStore::titles(array_map('intval', array_column($rows, 'fk_i_item_id')));
-        $names  = $this->names(array_map(
+        $names  = UserStore::displayNames(array_map(
             static fn (array $row): int => ConversationStore::otherParty($row, $userId),
             $rows
         ));
@@ -170,7 +170,7 @@ class CWebMessages extends WebSecBaseModel
 
         $this->_exportVariableToView('conversation', $conversation);
         $this->_exportVariableToView('messages', $data['messages']);
-        $this->_exportVariableToView('names', $this->names(array(
+        $this->_exportVariableToView('names', UserStore::displayNames(array(
             (int) $conversation['fk_i_buyer_id'],
             (int) $conversation['fk_i_seller_id'],
         )));
@@ -252,23 +252,6 @@ class CWebMessages extends WebSecBaseModel
             osc_add_flash_error_message($e->getMessage());
         }
         $this->redirectTo(osc_messaging_thread_url($id));
-    }
-
-    /**
-     * Display names by user id.
-     *
-     * @param int[] $ids
-     *
-     * @return array<int,string>
-     */
-    private function names(array $ids): array
-    {
-        $names = array();
-        foreach (UserStore::byIds($ids, array('pk_i_id', 's_name', 's_username')) as $user) {
-            $names[(int) $user['pk_i_id']] = (string) ($user['s_name'] !== '' ? $user['s_name'] : $user['s_username']);
-        }
-
-        return $names;
     }
 
     private function service(): MessagingService

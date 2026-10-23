@@ -199,6 +199,27 @@ final class UserStore extends Model
     }
 
     /**
+     * Names to show other people, by id: the user's name, or the username when the name is empty.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,string>
+     * @throws \mindstellar\database\DbException
+     */
+    public static function displayNames(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $names = [];
+        foreach (self::byIds(array_values(array_unique($ids)), ['pk_i_id', 's_name', 's_username']) as $user) {
+            $names[(int) $user['pk_i_id']] = (string) ($user['s_name'] !== '' ? $user['s_name'] : $user['s_username']);
+        }
+
+        return $names;
+    }
+
+    /**
      * Usernames by id.
      *
      * @param int[] $ids

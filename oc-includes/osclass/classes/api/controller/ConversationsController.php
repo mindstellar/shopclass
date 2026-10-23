@@ -202,12 +202,7 @@ final class ConversationsController
             $people[] = (int) $row['fk_i_buyer_id'];
             $people[] = (int) $row['fk_i_seller_id'];
         }
-        $names = [];
-        if ($people !== []) {
-            foreach (UserStore::byIds(array_values(array_unique($people)), ['pk_i_id', 's_name', 's_username']) as $user) {
-                $names[(int) $user['pk_i_id']] = (string) ($user['s_name'] !== '' ? $user['s_name'] : $user['s_username']);
-            }
-        }
+        $names  = UserStore::displayNames($people);
         $titles = ListingStore::titles(array_map('intval', array_column($rows, 'fk_i_item_id')));
 
         return array_map(fn (array $row): array => $this->serializer->one($row, $userId, $names, $titles), $rows);
