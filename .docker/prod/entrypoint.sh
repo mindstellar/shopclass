@@ -213,7 +213,7 @@ server {
         nchan_message_timeout 60s;
 CONF
         live_pass '    '
-        printf '    }\n}\n'
+        printf '    }\n    location / {\n        return 404;\n    }\n}\n'
         # Runs messages_live_auth for /live/auth below: nchan's authorise call crashes the
         # worker when it goes straight to fastcgi_pass. Params are listed by hand, as
         # "include fastcgi_params" plus an override sends a name twice.
@@ -245,6 +245,10 @@ server {
         fastcgi_param HTTP_X_OSC_REMOTE_ADDR "" if_not_empty;
         fastcgi_param HTTP_X_OSC_HTTPS "" if_not_empty;
         fastcgi_param HTTP_X_OSC_SERVER_PORT "" if_not_empty;
+    }
+    # Only the authorise call; no static files from the app tree.
+    location / {
+        return 404;
     }
 }
 CONF
