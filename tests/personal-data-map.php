@@ -88,4 +88,7 @@ foreach ($mapped as $table) {
     pin($table . ' has a why', true, $ok);
 }
 
+harness_section('the key-value entry names the push subscriptions');
+pin('t_key_value why mentions push_subscriptions', 1, preg_match("/'t_key_value' => array\(.*?push_subscriptions.*?'t_item_report_log'/s", $src));
+
 exit(harness_result());

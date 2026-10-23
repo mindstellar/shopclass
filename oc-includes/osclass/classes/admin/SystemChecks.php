@@ -42,6 +42,7 @@ final class SystemChecks
     public const DOCS_PROXY = 'https://mindstellar.com/docs/deploy/security/#login-throttling-and-the-real-client-ip';
 
     public const DOCS_LIVE = 'https://mindstellar.com/docs/deploy/docker/#live-messages';
+    public const DOCS_PUSH = 'https://mindstellar.com/docs/deploy/docker/#web-push';
 
     public const DOCS_BACKUPS = 'https://mindstellar.com/docs/deploy/security/#the-backups-folder';
 
@@ -427,6 +428,23 @@ final class SystemChecks
                 'warning',
                 __('Live messages could not be published, so open pages see new messages on their next check, within a minute.'),
                 array('label' => __('Live messages'), 'url' => self::DOCS_LIVE)
+            );
+        }
+        $push = (array) ($env['push'] ?? array());
+        if (!empty($push['switch']) && empty($push['https'])) {
+            $issues[] = self::issue(
+                'push_needs_https',
+                'warning',
+                __('Web push is on, but the site address starts with http://, so browsers will not subscribe. Serve the site over HTTPS.'),
+                array('label' => __('Web push'), 'url' => self::DOCS_PUSH)
+            );
+        }
+        if (self::pushFailed($env)) {
+            $issues[] = self::issue(
+                'push_send_failed',
+                'warning',
+                __('Web push could not reach the browsers\' push service, so closed tabs get no wake-up. Messages still arrive in the inbox.'),
+                array('label' => __('Web push'), 'url' => self::DOCS_PUSH)
             );
         }
         $maintenance = (string) ($env['maintenance'] ?? '');
@@ -892,6 +910,7 @@ final class SystemChecks
             array('label' => __('OPcache'), 'value' => !empty($env['opcache']) ? $on : $off),
             self::imageRow($env),
             array('label' => __('Live messages'), 'value' => self::liveWords($env)),
+            array('label' => __('Web push'), 'value' => self::pushWords($env)),
             array('label' => __('Extensions'), 'value' => $missing === array()
                 ? sprintf(__('all %d required are installed'), count(self::EXTENSIONS))
                 : sprintf(__('missing: %s'), implode(', ', $missing))),
@@ -1268,6 +1287,45 @@ final class SystemChecks
         $live = (array) ($env['live'] ?? array());
 
         return ($live['mode'] ?? 'off') === 'nchan' && is_array($live['last'] ?? null) && empty($live['last']['ok']);
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     */
+    private static function pushFailed(array $env): bool
+    {
+        $push = (array) ($env['push'] ?? array());
+
+        return !empty($push['switch']) && is_array($push['last'] ?? null) && empty($push['last']['ok']);
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     */
+    private static function pushWords(array $env): string
+    {
+        $push = (array) ($env['push'] ?? array());
+        if (empty($push['switch'])) {
+            return __('off');
+        }
+        $count = (int) ($push['subscriptions'] ?? 0);
+        if ($count === 0) {
+            return __('on — no browser subscribed yet');
+        }
+        $browsers = sprintf(_n('%d browser', '%d browsers', $count), $count);
+        $last     = $push['last'] ?? null;
+        if (!is_array($last)) {
+            return sprintf(__('on — %s, nothing pushed yet'), $browsers);
+        }
+        $ago = osc_admin_duration(max(0, self::now($env) - (int) ($last['at'] ?? 0)));
+        if (!empty($last['ok'])) {
+            return sprintf(__('on — %1$s, last push ok %2$s ago'), $browsers, $ago);
+        }
+        $error = (string) ($last['error'] ?? '');
+
+        return $error === ''
+            ? sprintf(__('on — %1$s, last push failed %2$s ago'), $browsers, $ago)
+            : sprintf(__('on — %1$s, last push failed %2$s ago: %3$s'), $browsers, $ago, $error);
     }
 
     /**

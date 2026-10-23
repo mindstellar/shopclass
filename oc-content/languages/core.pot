@@ -234,6 +234,12 @@ msgid_plural "%d background jobs stopped after failing again and again."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "%d browser"
+msgid_plural "%d browsers"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "%d category · not in a form"
 msgid_plural "%d categories · not in a form"
@@ -14488,6 +14494,22 @@ msgid "We'll be right back"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "Web push"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid ""
+"Web push could not reach the browsers' push service, so closed tabs get no "
+"wake-up. Messages still arrive in the inbox."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid ""
+"Web push is on, but the site address starts with http://, so browsers will "
+"not subscribe. Serve the site over HTTPS."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Web server"
 msgstr ""
 
@@ -15478,6 +15500,26 @@ msgstr ""
 #: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "on this server"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "on — %1$s, last push failed %2$s ago"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "on — %1$s, last push failed %2$s ago: %3$s"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "on — %1$s, last push ok %2$s ago"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "on — %s, nothing pushed yet"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "on — no browser subscribed yet"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php

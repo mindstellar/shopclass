@@ -1243,6 +1243,14 @@ class CAdminTools extends AdminSecBaseModel
                 'mode' => \mindstellar\container\Container::root()->get(\mindstellar\live\LivePublisher::class)->mode(),
                 'last' => \mindstellar\container\Container::root()->get(\mindstellar\live\LiveStatus::class)->last(),
             ),
+            'push'             => array(
+                'enabled'       => osc_push_enabled(),
+                'switch'        => (bool) osc_get_bool_preference('enabled_push'),
+                'https'         => strtolower((string) parse_url((string) osc_base_url(), PHP_URL_SCHEME)) === 'https',
+                'keys'          => (string) osc_get_preference(\mindstellar\push\Vapid::PUBLIC_PREF) !== '',
+                'subscriptions' => \mindstellar\container\Container::root()->get(\mindstellar\push\PushSubscriptions::class)->count(),
+                'last'          => \mindstellar\container\Container::root()->get(\mindstellar\push\WebPushSender::STATUS)->last(),
+            ),
             'me'               => (int) osc_logged_admin_id(),
             'admins'           => \mindstellar\security\AdminTwoFactor::admins(),
             'throttle'         => array(
