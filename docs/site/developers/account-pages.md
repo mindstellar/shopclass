@@ -90,6 +90,7 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-message-body` | a message's text | plain text, line breaks kept with `white-space: pre-wrap` |
 | `.oe-message-meta` | who wrote a message and when | a `<p>` holding the name, a `<time>` and, for a held message, a badge |
 | `.oe-compose` | the reply form under a conversation | a `<form>` with one `textarea name="body"` and a send button |
+| `.oe-push` | the "Notify me on this device" switch on the messages pages, shown only while web push is on | a `<form hidden>` that `push.js` reveals once the browser supports push; holds one button and a note line |
 | `.oe-thread-actions` | the Block, Unblock and Report links under a conversation | holds the shared row actions and a `<details>` for the report form |
 | `.oe-pager` | the paging strip | core's paginator markup inside |
 | `.oe-empty` | an empty state | replaces the list, never sits beside it |

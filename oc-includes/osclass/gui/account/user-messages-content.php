@@ -25,6 +25,7 @@ $inboxOlder = View::getInstance()->_get('older');
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
         <?php osc_run_hook('account_page_before', 'user-messages'); ?>
+        <?php require __DIR__ . '/parts/push-optin.php'; ?>
 
         <div data-osc-inbox
              data-check-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check'); ?>"
@@ -77,6 +78,9 @@ $inboxOlder = View::getInstance()->_get('older');
         } ?>
         </div>
         <script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/messages.js'))); ?>" defer></script>
+        <?php if (osc_push_enabled()) { ?>
+            <script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/push.js'))); ?>" defer></script>
+        <?php } ?>
 
         <?php osc_run_hook('account_page_after', 'user-messages'); ?>
     </div>

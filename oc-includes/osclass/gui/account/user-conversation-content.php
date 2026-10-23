@@ -143,6 +143,7 @@ $rowActions = $convoActions;
                     <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send')); ?></button>
                 </div>
             </form>
+            <?php require __DIR__ . '/parts/push-optin.php'; ?>
         <?php } ?>
 
         <div class="oe-thread-actions">
@@ -180,6 +181,9 @@ $rowActions = $convoActions;
 
         <?php if ($stopLine === '') { ?>
             <script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/messages.js'))); ?>" defer></script>
+            <?php if (osc_push_enabled()) { ?>
+                <script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/push.js'))); ?>" defer></script>
+            <?php } ?>
         <?php } ?>
 
         <?php osc_run_hook('account_page_after', 'user-conversation'); ?>
