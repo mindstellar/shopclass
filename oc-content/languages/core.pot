@@ -2489,6 +2489,10 @@ msgstr ""
 msgid "Browse plugins"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hJobs.php
+msgid "Browser notification"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Browser resize"
 msgstr ""
@@ -14054,6 +14058,7 @@ msgid "User"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/SignUpMail.php
+#: oc-includes/osclass/helpers/hJobs.php
 msgid "User #%d"
 msgstr ""
 
