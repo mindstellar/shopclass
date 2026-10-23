@@ -45,6 +45,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
 - **Listings → Settings → Search count limit** stops search counts at a number and shows "1,000+" past it; themes use `osc_search_total_text()` and `osc_search_total_capped()`, and the API sends `meta.total_capped`. New sites start at 1000, updated sites at 0 (exact).
 - On-site messaging between buyers and sellers: inbox and conversation pages in the account, the contact-seller form starts the conversation for signed-in users, admin review under Listings → Messages. Switch: Users → Settings → Users can message sellers on the site, off by default.
+- The REST API gains `/account/conversations` and `/admin/conversations`, `/admin/messages`, and the webhooks `message.created` and `conversation.reported`; scopes `conversations:read`, `conversations:write`, `admin:conversations`.
 
 ### Changed
 - Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.

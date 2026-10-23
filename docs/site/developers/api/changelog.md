@@ -75,6 +75,15 @@ None.
 
 ## Changes
 
+### v1: conversations
+
+Added to v1 on 2026-10-23.
+
+- `GET` and `POST /account/conversations`, `GET /account/conversations/{id}`, `GET` and `POST /account/conversations/{id}/messages`, and `POST /account/conversations/{id}/read`, `/block` (`DELETE` lifts it) and `/report`. Scopes `conversations:read` and `conversations:write`.
+- `GET /admin/conversations`, `GET /admin/conversations/{id}`, `POST /admin/conversations/{id}/close` and `/clear-report`, `GET /admin/messages`, `GET /admin/messages/{id}`, `POST /admin/messages/{id}/release` and `/remove`. Scope `admin:conversations`, also for moderator keys.
+- New warning `message_held`.
+- New webhook events `message.created` and `conversation.reported`; they carry ids only.
+
 ### v1: capped search count
 
 Added to v1 on 2026-10-22.
