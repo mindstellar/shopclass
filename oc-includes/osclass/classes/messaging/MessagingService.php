@@ -227,13 +227,13 @@ final class MessagingService
 
     /**
      * The messages the actor has not got yet: those after $afterId, oldest first, or the last
-     * $limit when $afterId is 0. Clears the actor's unread count on the thread.
+     * $limit when $afterId is 0. Clears the actor's unread count on the thread unless $markRead is false.
      *
      * @return array{conversation: array<string,mixed>, messages: array<int,array<string,mixed>>}
      * @throws ForbiddenException messaging off, a guest, an account that is not live
      * @throws NotFoundException  a thread the actor is not part of
      */
-    public function since(int $conversationId, int $afterId, Actor $actor, int $limit = 50): array
+    public function since(int $conversationId, int $afterId, Actor $actor, int $limit = 50, bool $markRead = true): array
     {
         $this->sender($actor);
         $conversation = $this->conversations->find($conversationId);
@@ -244,7 +244,9 @@ final class MessagingService
         $messages = $afterId > 0
             ? $this->messages->since($conversationId, $userId, $afterId, $limit)
             : array_reverse($this->messages->ofConversation($conversationId, $userId, $limit));
-        $this->markRead($conversationId, $actor);
+        if ($markRead) {
+            $this->markRead($conversationId, $actor);
+        }
 
         return array('conversation' => $conversation, 'messages' => $messages);
     }

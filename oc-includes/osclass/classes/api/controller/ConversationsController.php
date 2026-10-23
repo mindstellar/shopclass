@@ -24,7 +24,6 @@ use mindstellar\api\serializer\Format;
 use mindstellar\api\Warning;
 use mindstellar\container\Container;
 use mindstellar\listing\ListingStore;
-use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
 use mindstellar\messaging\SentMessage;
 use mindstellar\user\UserStore;
@@ -43,14 +42,11 @@ final class ConversationsController
 
     private MessagingService $service;
 
-    private MessageStore $messages;
-
     private ConversationSerializer $serializer;
 
     public function __construct(private ApiServices $api)
     {
         $this->service    = Container::root()->get(MessagingService::class);
-        $this->messages   = Container::root()->get(MessageStore::class);
         $this->serializer = new ConversationSerializer();
     }
 
@@ -117,8 +113,7 @@ final class ConversationsController
             if ($limit < 1 || $limit > $spec->maxLimit()) {
                 throw ProblemException::field('/limit', 'maximum', 'must be between 1 and ' . $spec->maxLimit(), 'query');
             }
-            ProblemException::found($this->service->find($id, $call->actor()), 'conversation');
-            $rows = $this->messages->since($id, $userId, $request->queryInt('after'), $limit);
+            $rows = $this->service->since($id, $request->queryInt('after'), $call->actor(), $limit, false)['messages'];
 
             return (new Page($this->serializer->messages($rows, $userId), null, $limit, null))->response($this->api->links(), $path, $request->query(), $request->version());
         }
