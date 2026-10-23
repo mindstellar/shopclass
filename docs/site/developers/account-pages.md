@@ -434,9 +434,9 @@ script.
   The badge has `hidden` at 0, so keep `[hidden]` hidden if you set `display` on it.
 - **The live count.** On the messages pages `messages.js` sets every `[data-osc-unread]` badge
   and the link's `aria-label` after each check. Do not add a script for it.
-- **The contact form.** Print `oc-includes/osclass/gui/parts/contact-form.php` with
-  `'messaging' => osc_item_uses_messaging()`. It then shows only the message, the captcha and
-  the button, with a "You are writing as" line above. With it off, the e-mail form is unchanged.
+- **The contact form.** Call `osc_item_contact_form()`. When the listing uses messaging it shows
+  only the message, the captcha and the button, with a "You are writing as" line above. Otherwise
+  it is the e-mail form.
 
 Messaging needs core 7.1. To keep a theme working on 7.0, check `function_exists()` once, in one
 helper in `functions.php`, and call that helper from your views:
