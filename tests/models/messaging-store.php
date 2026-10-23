@@ -178,6 +178,28 @@ $conversations->setState($c2, 'closed');
 pin('closed leaves the reported list', array(), $ids($conversations->reported()));
 $conversations->setState($c2, 'open');
 
+harness_section('listNewest');
+$conversations->setState($c1, 'reported');
+$conversations->setState($c4, 'closed');
+pin('no filter: every thread, newest id first', array($tie, $c4, $c3, $c2, $c1), $ids($conversations->listNewest(array(), 20)));
+pin('status held', array($c3), $ids($conversations->listNewest(array('status' => 'held'), 20)));
+pin('status reported', array($c1), $ids($conversations->listNewest(array('status' => 'reported'), 20)));
+pin('status closed', array($c4), $ids($conversations->listNewest(array('status' => 'closed'), 20)));
+pin('status open', array($tie, $c2), $ids($conversations->listNewest(array('status' => 'open'), 20)));
+pin('user matches the buyer and the seller side', array($c4, $c3), $ids($conversations->listNewest(array('user' => array($other)), 20)));
+pin('user as buyer on one thread and seller on another', array($tie, $c2, $c1), $ids($conversations->listNewest(array('user' => array($buyer)), 20)));
+pin('several users', array($tie, $c4, $c3, $c2, $c1), $ids($conversations->listNewest(array('user' => array($buyer, $other)), 20)));
+pin('listing', array($c4, $c1), $ids($conversations->listNewest(array('listing' => array($item)), 20)));
+pin('filters combine', array($c4), $ids($conversations->listNewest(array('user' => array($other), 'listing' => array($item)), 20)));
+pin('combined with status, nothing left', array(), $ids($conversations->listNewest(array('user' => array($other), 'status' => 'reported'), 20)));
+pin('an empty user list matches nothing', array(), $conversations->listNewest(array('user' => array()), 20));
+pin('limit', array($tie, $c4), $ids($conversations->listNewest(array(), 2)));
+pin('before is exclusive', array($c2, $c1), $ids($conversations->listNewest(array(), 20, $c3)));
+pin('before with a limit pages on', array($c3, $c2), $ids($conversations->listNewest(array(), 2, $c4)));
+pin('before applies inside a user filter', array($c3), $ids($conversations->listNewest(array('user' => array($other)), 20, $c4)));
+$conversations->setState($c1, 'open');
+$conversations->setState($c4, 'open');
+
 harness_section('export');
 $export = $conversations->export($buyer);
 $bySide = array();

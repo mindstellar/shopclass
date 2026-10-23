@@ -160,6 +160,19 @@ pin('with buyer, seller and reporter names', array('bea', 'sam', 'bea'), array($
 pin('reported() pages by before', array(), $mod->reported(5, $conv));
 pin('counts()', array('held' => 2, 'reported' => 1), $mod->counts());
 
+harness_section('conversations() and message()');
+$one = $mod->message($b->messageId(), $asAdmin);
+pin('message() has the row, its thread and the names', array($b->messageId(), $a->conversationId(), 'ola', 'sam', $seller), array((int) $one['pk_i_id'], (int) $one['conversation']['pk_i_id'], $one['sender_name'], $one['recipient_name'], $one['recipient_id']));
+pin('message() of nothing', null, $mod->message(999999, $asAdmin));
+pin('a user cannot read a message', 'forbidden:not_owner', $outcome(fn () => $mod->message($b->messageId(), $asBuyer)));
+$rows = $mod->conversations(array('status' => 'reported'), 20, null, $asAdmin);
+pin('conversations() filters by status', array($conv), $ids($rows));
+pin('and carries both names and the reporter', array('bea', 'sam', 'bea'), array($rows[0]['buyer_name'], $rows[0]['seller_name'], $rows[0]['reporter_name']));
+pin('filters by user, newest first', array($c2->conversationId(), $a->conversationId()), array_slice($ids($mod->conversations(array('user' => array($third)), 20, null, $asAdmin)), 0, 2));
+pin('and pages on', array($a->conversationId()), $ids($mod->conversations(array('user' => array($third), 'listing' => array($desk)), 20, $conv + 100, $asAdmin)));
+pin('before skips the newer ones', array(), $ids($mod->conversations(array('status' => 'reported'), 20, $conv, $asAdmin)));
+pin('a user cannot list threads', 'forbidden:not_owner', $outcome(fn () => $mod->conversations(array(), 20, null, $asBuyer)));
+
 harness_section('thread()');
 $view = $mod->thread($a->conversationId());
 pin('the admin view shows held messages, oldest first, not removed ones', array($b->messageId()), $ids($view['messages']));
