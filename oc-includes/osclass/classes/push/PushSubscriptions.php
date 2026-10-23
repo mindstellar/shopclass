@@ -164,13 +164,10 @@ final class PushSubscriptions
         if ($userId <= 0) {
             return false;
         }
-        $now = UtcDatetime::format($this->clock->now());
+        $prefix = $userId . ':';
+        $first  = $this->kv->page(self::GROUP, 1, null, $prefix, $this->clock->now())[0] ?? null;
 
-        return Db::table(DB_TABLE_PREFIX . KeyValue::TABLE)
-            ->where('s_group', self::GROUP)
-            ->whereRaw('s_key LIKE ?', [$userId . ':%'])
-            ->whereGroup(static fn ($q) => $q->whereNull('dt_expires')->orWhere('dt_expires', '>', $now))
-            ->value('s_key') !== null;
+        return $first !== null && str_starts_with($first['key'], $prefix);
     }
 
     /**
