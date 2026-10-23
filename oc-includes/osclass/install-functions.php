@@ -11,8 +11,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use PHPMailer\PHPMailer\PHPMailer;
 use mindstellar\admin\SystemChecks;
+use PHPMailer\PHPMailer\PHPMailer;
 
 /**
  * Strip every tag from a raw server value, unless the caller opted out.
