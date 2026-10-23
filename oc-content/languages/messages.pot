@@ -3750,10 +3750,6 @@ msgstr[1] ""
 msgid "Too many messages in an hour. Try again later."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebItem.php
-msgid "Too many messages. Try again in %d minutes."
-msgstr ""
-
 #: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "Too many new conversations in an hour. Try again later."
 msgstr ""
@@ -4038,9 +4034,11 @@ msgid ""
 "to post again."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebMessages.php
-msgid "You are sending too fast. Try again in %d minutes."
-msgstr ""
+#: oc-includes/osclass/helpers/hSecurity.php
+msgid "You are sending messages too fast. Try again in %d minute."
+msgid_plural "You are sending messages too fast. Try again in %d minutes."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
