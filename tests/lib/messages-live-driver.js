@@ -259,6 +259,52 @@
         };
         e.stop();
 
+        // Unread badges: a check's count, less the messages the thread just read, reaches every badge.
+        var link = '<a data-osc-messages-link aria-label="Messages" data-label="Messages" data-label-unread="Messages, %d unread">'
+            + '<span class="oe-badge oe-unread" data-osc-unread hidden>0</span></a>'
+            + '<span class="oe-badge oe-unread" data-osc-unread hidden>0</span>';
+        var badges = function () {
+            var link = document.querySelector('[data-osc-messages-link]');
+            return {
+                text: Array.from(document.querySelectorAll('[data-osc-unread]')).map(function (b) {
+                    return b.textContent + (b.hidden ? ' hidden' : '');
+                }),
+                label: link ? link.getAttribute('aria-label') : null
+            };
+        };
+        e = env({route: function (url, en) {
+            if (url.indexOf('messages_since') !== -1) {
+                return {status: 200, body: row(2), headers: {'Content-Type': 'application/json'}};
+            }
+            return {status: 200, body: JSON.stringify({unread: 3, latest: 'x'}), headers: {'ETag': '"u"'}};
+        }});
+        await e.start(link + thread(''));
+        await e.advance(15000);
+        out.badgeThread = badges();
+        e.stop();
+
+        e = env({route: function (url, en) {
+            if (url.indexOf('messages_check') !== -1) {
+                return {status: 200, body: JSON.stringify({unread: en.unread, latest: 'x'}), headers: {'ETag': '"' + en.unread + '"'}};
+            }
+            return {status: 200, body: '<html><body><div data-osc-inbox></div></body></html>'};
+        }});
+        e.unread = 4;
+        await e.start(link + '<div data-osc-inbox data-check-url="/x?page=ajax&action=messages_check" data-live-url=""></div>');
+        await e.advance(15000);
+        out.badgeInbox = badges();
+        e.unread = 0;
+        await e.advance(15000);
+        out.badgeInboxZero = badges();
+        e.stop();
+
+        e = env({route: threadRoute});
+        e.tag = 'a';
+        await e.start(link + thread(''));
+        await e.advance(15000);
+        out.badgeNoCount = badges();
+        e.stop();
+
         document.getElementById('osc-out').textContent = btoa(JSON.stringify(out));
     }
 

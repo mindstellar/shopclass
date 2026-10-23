@@ -91,6 +91,8 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-message-meta` | who wrote a message and when | a `<p>` holding the name, a `<time>` and, for a held message, a badge |
 | `.oe-compose` | the reply form under a conversation | a `<form>` with one `textarea name="body"` and a send button |
 | `.oe-push` | the "Notify me on this device" switch on the messages pages, shown only while web push is on | a `<form hidden>` that `push.js` reveals once the browser supports push; holds one button and a note line |
+| `.oe-msg-link` | the header link to the inbox from `osc_messaging_link()` | an `<a>` outside `.oe-page`, so core ships no style for it; holds the theme's icon, an `.oe-msg-label` and an `.oe-unread` badge |
+| `.oe-msg-label` | the word "Messages" in `.oe-msg-link` | hide it visually for an icon-only link; the link keeps its `aria-label` |
 | `.oe-thread-actions` | the Block, Unblock and Report links under a conversation | holds the shared row actions and a `<details>` for the report form |
 | `.oe-pager` | the paging strip | core's paginator markup inside |
 | `.oe-empty` | an empty state | replaces the list, never sits beside it |
@@ -399,8 +401,8 @@ attributes. It exposes `window.oscMessages.appendMessage(row)`.
 Both messages pages print the partial `oc-includes/osclass/gui/account/parts/push-optin.php`: a
 `<form class="oe-push" data-osc-push hidden>` that prints nothing while `osc_push_enabled()` is
 false. Core's `oc-includes/assets/osclass/push.js` reads its attributes, reveals it when the
-browser supports push, and toggles the subscription. A theme that restyles it copies the partial
-and keeps these:
+browser supports push, and toggles the subscription. A theme styles it and does not copy it.
+`push.js` reads these:
 
 | Attribute | Holds |
 |---|---|
@@ -416,6 +418,39 @@ switched off.
 
 The pages reuse `.oe-panel`, `.oe-badge`, `.oe-field`, `.oe-check`, `.oe-actions` and `.oe-link-btn`.
 The two page hooks fire as on the other account pages.
+
+### Messaging in a theme
+
+Core owns the messaging markup and scripts; a theme places them and styles the `.oe-*` classes,
+light and dark, phone and desktop. A theme never writes its own messaging form, link, badge or
+script.
+
+- **The pages.** Ship no `user-messages.php` or `user-conversation.php`. Core's partials render
+  inside your [chrome](/docs/developers/theme-chrome/).
+- **The header link.** `osc_messaging_link($args)` returns the link to the inbox, or `''` while
+  messaging is off, for a guest and for a shopper. `$args['icon']` is your icon's HTML, printed as
+  given; `$args['class']` adds classes. The markup is
+  `a.oe-msg-link[data-osc-messages-link] > span.oe-msg-label + span.oe-badge.oe-unread[data-osc-unread]`.
+  The badge has `hidden` at 0, so keep `[hidden]` hidden if you set `display` on it.
+- **The live count.** On the messages pages `messages.js` sets every `[data-osc-unread]` badge
+  and the link's `aria-label` after each check. Do not add a script for it.
+- **The contact form.** Print `oc-includes/osclass/gui/parts/contact-form.php` with
+  `'messaging' => osc_item_uses_messaging()`. It then shows only the message, the captcha and
+  the button, with a "You are writing as" line above. With it off, the e-mail form is unchanged.
+
+Messaging needs core 7.1. To keep a theme working on 7.0, check `function_exists()` once, in one
+helper in `functions.php`, and call that helper from your views:
+
+```php
+function mytheme_messaging_link(array $args = array()): string
+{
+    return function_exists('osc_messaging_link') ? osc_messaging_link($args) : '';
+}
+```
+
+Pass the contact form's option as
+`function_exists('osc_item_uses_messaging') && osc_item_uses_messaging()`. A 7.0 core ignores
+the key and prints the e-mail form.
 
 ## The pay step
 

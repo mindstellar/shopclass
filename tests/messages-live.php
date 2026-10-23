@@ -10,7 +10,8 @@
 
 /**
  * How messages.js learns of new messages: a 15 s check while the tab is visible, or one
- * EventSource when the page has a live URL, with a fall back to polling after three errors.
+ * EventSource when the page has a live URL, with a fall back to polling after three errors; and
+ * how each check's unread count reaches every [data-osc-unread] badge.
  * Driven in headless Chrome with a fake clock, fetch and EventSource.
  *
  * Usage: php tests/messages-live.php
@@ -101,5 +102,11 @@ pin('no live URL, no EventSource', 0, $r['noLiveSources'] ?? null);
 
 harness_section('the inbox');
 pin('a 200 swaps the inbox contents once', array('fresh' => 1, 'stale' => 0, 'wrappers' => 1), $r['inbox'] ?? null);
+
+harness_section('unread badges');
+pin('a thread check sets every badge to the count less the messages it just read', array('text' => array('2', '2'), 'label' => 'Messages, 2 unread'), $r['badgeThread'] ?? null);
+pin('an inbox check sets every badge to the count', array('text' => array('4', '4'), 'label' => 'Messages, 4 unread'), $r['badgeInbox'] ?? null);
+pin('a count of 0 hides the badges', array('text' => array('0 hidden', '0 hidden'), 'label' => 'Messages'), $r['badgeInboxZero'] ?? null);
+pin('a check with no count leaves the badges alone', array('text' => array('0 hidden', '0 hidden'), 'label' => 'Messages'), $r['badgeNoCount'] ?? null);
 
 exit(harness_result());

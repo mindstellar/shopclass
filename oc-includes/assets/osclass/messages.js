@@ -62,7 +62,7 @@
 
     var appendMessage = function (row, held) {
         if (list.querySelector('[data-id="' + Number(row.id) + '"]')) {
-            return;
+            return false;
         }
         var mine = Number(row.sender) === Number(list.dataset.me);
 
@@ -93,6 +93,22 @@
         list.append(item);
         list.dataset.lastId = String(Number(row.id));
         item.scrollIntoView({block: 'nearest'});
+        return true;
+    };
+
+    // Every unread badge on the page, such as the header's osc_messaging_link(), follows the poll.
+    var setUnread = function (count) {
+        count = Math.max(0, Math.floor(Number(count) || 0));
+        document.querySelectorAll('[data-osc-unread]').forEach(function (badge) {
+            badge.textContent = String(count);
+            badge.hidden = count === 0;
+            var link = badge.closest('[data-osc-messages-link]');
+            if (link && link.dataset.label) {
+                link.setAttribute('aria-label', count > 0
+                    ? (link.dataset.labelUnread || link.dataset.label).replace('%d', String(count))
+                    : link.dataset.label);
+            }
+        });
     };
 
     if (list) {
@@ -128,9 +144,13 @@
                 }
                 return response.json();
             }).then(function (data) {
+                var read = 0;
                 (data.messages || []).forEach(function (row) {
-                    appendMessage(row, false);
+                    if (appendMessage(row, false) && Number(row.sender) !== Number(list.dataset.me)) {
+                        read++;
+                    }
                 });
+                return read;
             });
         };
 
@@ -164,8 +184,15 @@
                 }
                 // Keep the old tag until the refresh lands, so a failed refresh is retried.
                 var fresh = response.headers.get('ETag') || etag;
-                return (list ? refreshThread() : refreshInbox()).then(function () {
+                var activity = response.json().catch(function () {
+                    return {};
+                });
+                return Promise.all([activity, list ? refreshThread() : refreshInbox()]).then(function (done) {
                     etag = fresh;
+                    // On a thread, fetching the new messages marked them read, so they leave the count.
+                    if (done[0] && typeof done[0].unread === 'number') {
+                        setUnread(done[0].unread - (Number(done[1]) || 0));
+                    }
                 });
             });
         };
