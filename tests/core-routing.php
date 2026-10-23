@@ -106,6 +106,8 @@ $GLOBALS['__prefs'] = array(
     'rewrite_user_profile'              => 'user/profile',
     'rewrite_user_items'                => 'user/items',
     'rewrite_user_alerts'               => 'user/alerts',
+    'rewrite_messages'                  => 'user/messages',
+    'rewrite_messages_thread'           => 'user/messages',
     'rewrite_billing_wallet'            => 'user/credits',
     'rewrite_billing_buy'               => 'user/credits/buy',
     'rewrite_billing_orders'            => 'user/orders',
@@ -276,6 +278,8 @@ $VIA_TABLE = array(
     'export my data'   => array('user_export', array('id' => 5, 'secret' => 'a/b')),
     'delete my account' => array('user_delete', array()),
     'delete a comment' => array('item_delete_comment', array('id' => 42, 'comment' => 9)),
+    'inbox'            => array('messages', array()),
+    'thread'           => array('messages_thread', array('id' => 7)),
     'static page, query form' => array('page', array('id' => 3)),
     'static page, query form in locale' => array('page', array('id' => 3, 'lang' => 'es_ES')),
 );
@@ -298,6 +302,8 @@ $VIA_OFF = array(
     'export my data'   => 'http://example.com/index.php?page=user&action=export&id=5&secret=a%2Fb',
     'delete my account' => 'http://example.com/index.php?page=user&action=delete',
     'delete a comment' => 'http://example.com/index.php?page=item&action=delete_comment&id=42&comment=9',
+    'inbox'            => 'http://example.com/index.php?page=messages',
+    'thread'           => 'http://example.com/index.php?page=messages&id=7',
     'static page, query form' => 'http://example.com/index.php?page=page&id=3',
     'static page, query form in locale' => 'http://example.com/index.php?page=page&id=3&lang=es_ES',
 );
@@ -319,6 +325,8 @@ $VIA_ON = array(
     'export my data'   => $VIA_OFF['export my data'],
     'delete my account' => $VIA_OFF['delete my account'],
     'delete a comment' => $VIA_OFF['delete a comment'],
+    'inbox'            => 'http://example.com/user/messages',
+    'thread'           => 'http://example.com/user/messages/7',
     'static page, query form' => $VIA_OFF['static page, query form'],
     'static page, query form in locale' => $VIA_OFF['static page, query form in locale'],
 );
@@ -627,6 +635,8 @@ $PARSE = array(
     ),
     'my listings'        => array('user/items', array('page' => 'user', 'action' => 'items')),
     'my alerts'          => array('user/alerts', array('page' => 'user', 'action' => 'alerts')),
+    'messages inbox'     => array('user/messages', array('page' => 'messages')),
+    'message thread'     => array('user/messages/7', array('page' => 'messages', 'id' => '7')),
     'recover password'   => array('user/recover', array('page' => 'login', 'action' => 'recover')),
     'forgot password'    => array(
         'user/forgot/5/CODE',

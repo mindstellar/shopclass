@@ -136,6 +136,8 @@ final class PermalinkSettingsScreen extends SettingsScreen
         self::path($form, 'rewrite_user_profile', __('User profile'));
         self::path($form, 'rewrite_user_items', __('User listings'));
         self::path($form, 'rewrite_user_alerts', __('User alerts'));
+        self::path($form, 'rewrite_messages', __('Messages'));
+        self::path($form, 'rewrite_messages_thread', __('Message thread'));
         self::path($form, 'rewrite_user_recover', __('User recover'));
         self::path($form, 'rewrite_user_forgot', __('User forgot'));
         self::path($form, 'rewrite_user_change_password', __('User change password'));

@@ -258,6 +258,15 @@ class CoreRoutes
                 'pref' => 'rewrite_user_alerts',
                 'to'   => array('page' => 'user', 'action' => 'alerts'),
             ),
+            'messages' => array(
+                'pref' => 'rewrite_messages',
+                'to'   => array('page' => 'messages'),
+            ),
+            'messages_thread' => array(
+                'pref'   => 'rewrite_messages_thread',
+                'to'     => array('page' => 'messages'),
+                'params' => array('id' => array('re' => '([0-9]+)')),
+            ),
             'user_recover' => array(
                 'pref' => 'rewrite_user_recover',
                 'to'   => array('page' => 'login', 'action' => 'recover'),
