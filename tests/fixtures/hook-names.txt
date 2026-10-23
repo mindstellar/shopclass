@@ -142,6 +142,10 @@ action email_listing_unpaid_reminder_description
 action email_listing_unpaid_reminder_description_after
 action email_listing_unpaid_reminder_title
 action email_listing_unpaid_reminder_title_after
+filter email_new_message_description
+filter email_new_message_description_after
+filter email_new_message_title
+filter email_new_message_title_after
 action enable_comment
 action enable_item
 action enable_user

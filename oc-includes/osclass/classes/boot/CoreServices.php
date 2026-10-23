@@ -85,9 +85,8 @@ final class CoreServices
             $c->get(DispatcherInterface::class),
             $c->get(Clock::class)
         ));
-        // MessageNotifier comes with the new-message e-mail; drop the two ignores when it lands.
-        $c->set(MessageNotifier::class, static fn (Container $c): MessageNotifier => new MessageNotifier($c->get(ConversationStore::class), $c->get(CoreEmails::class))); // @phpstan-ignore class.notFound, class.notFound, class.notFound
-        $events->listen(MessageSent::class, [MessageNotifier::class, 'onMessageSent']); // @phpstan-ignore class.notFound
+        $c->set(MessageNotifier::class, static fn (Container $c): MessageNotifier => new MessageNotifier($c->get(ConversationStore::class), $c->get(CoreEmails::class)));
+        $events->listen(MessageSent::class, [MessageNotifier::class, 'onMessageSent']);
         $events->listen(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
         $events->listen(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
         foreach (self::events() as $event) {

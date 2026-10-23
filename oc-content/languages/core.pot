@@ -807,6 +807,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
+"<p>Hi {USER_NAME},</p><p>You have a new message about "
+"{ITEM_TITLE}.</p><p>{MESSAGE_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
 "<p>Hi {USER_NAME},</p><p>Your listing <a "
 "href=\"{PAY_URL}\">{ITEM_TITLE}</a> is saved but not published. It costs "
 "{CREDITS} credits to publish.</p><p>Pay for it by {DEADLINE} or it is "
@@ -3388,6 +3394,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Continue counting"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hJobs.php
+msgid "Conversation #%d"
 msgstr ""
 
 #: oc-includes/osclass/classes/search/AlertJobs.php
@@ -7820,6 +7830,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
 msgid "New listings/users"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "New message about {ITEM_TITLE} on {WEB_TITLE}"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hJobs.php
+msgid "New message e-mail"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -14873,6 +14891,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/security/AdminTwoFactor.php
 msgid "[%s] Your admin password is known to someone else"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid "a removed listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php

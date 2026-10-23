@@ -220,7 +220,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 625 names. Generated from the source; do not edit by hand.
+Core fires 629 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -335,7 +335,7 @@ Core fires 625 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 
-### Email (125)
+### Email (129)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -401,6 +401,10 @@ Core fires 625 names. Generated from the source; do not edit by hand.
 | `email_new_item_non_register_user_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_message_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_new_message_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_new_message_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_new_message_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_order_cancelled_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_order_cancelled_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_order_cancelled_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
