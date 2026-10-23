@@ -1254,6 +1254,8 @@ Answers: 200 OK (`CustomFieldList`); 304 Not modified; 401 No valid credential; 
 | POST | `/account/conversations/{id}/messages` | user | `conversations:write` | Reply in one of your conversations |
 | POST | `/account/conversations/{id}/read` | user | `conversations:write` | Mark a conversation read |
 | POST | `/account/conversations/{id}/report` | user | `conversations:write` | Report a conversation to the admins; it is also blocked for you |
+| PUT | `/account/push-subscriptions` | user | `conversations:write` | Register a push endpoint to wake this device for new messages; the push carries no text |
+| DELETE | `/account/push-subscriptions/{browser}` | user | `conversations:write` | Stop waking a device; the browser id is the one PUT answered |
 
 ### GET `/account/conversations`
 
@@ -1362,6 +1364,29 @@ Report a conversation to the admins; it is also blocked for you
 Body: `ReportInput` as JSON.
 
 Answers: 200 OK (`ConversationDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### PUT `/account/push-subscriptions`
+
+Register a push endpoint to wake this device for new messages; the push carries no text
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `PushSubscriptionInput` as JSON.
+
+Answers: 200 OK (`PushSubscriptionDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### DELETE `/account/push-subscriptions/{browser}`
+
+Stop waking a device; the browser id is the one PUT answered
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `browser` | path | string | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ## Listings
 

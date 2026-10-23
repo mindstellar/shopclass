@@ -181,6 +181,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'DELETE account/alerts/{id}'        => 'user alerts:write',
     'DELETE account/conversations/{id}/block' => 'user conversations:write',
     'DELETE account/keys/{id}'          => 'user account:write',
+    'DELETE account/push-subscriptions/{browser}' => 'user conversations:write',
     'DELETE account/sessions/{session}' => 'user account:write',
     'DELETE account/wishlist/{listing}' => 'user wishlist:write',
     'DELETE comments/{id}'              => 'user comments:write',
@@ -251,6 +252,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST photos'                       => 'user listings:write',
     'POST users'                        => 'none -',
     'PUT account/cart'                  => 'user cart:write',
+    'PUT account/push-subscriptions'    => 'user conversations:write',
     'PUT account/wishlist'              => 'user wishlist:write',
 ], $routeTable);
 pin('every admin route needs an admin key and names an admin scope', [
