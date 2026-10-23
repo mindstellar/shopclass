@@ -134,6 +134,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `moderation` | What an admin does to a listing's or comment's status, and the keyword block list |
 | `pages` | Static pages and page templates |
 | `privacy` | Where a person's data lives, so a copy can be handed back |
+| `push` | Web push wake-ups: VAPID keys, browser subscriptions, the sender |
 | `routing` | URLs: routes, the front controller and reserved slugs |
 | `search` | Search and saved-search alerts; the SQL is built in `query/` |
 | `seo` | The head data of a public page: canonical URL, title, robots, breadcrumbs, hreflang |

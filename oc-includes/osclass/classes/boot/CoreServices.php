@@ -38,6 +38,8 @@ use mindstellar\event\Bridged;
 use mindstellar\event\Dispatcher;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\event\HookBridge;
+use mindstellar\http\CurlHttpClient;
+use mindstellar\http\HttpClient;
 use mindstellar\live\LivePublisher;
 use mindstellar\live\LiveStatus;
 use mindstellar\live\NchanPublisher;
@@ -59,6 +61,10 @@ use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
 use mindstellar\model\KeyValue;
 use mindstellar\moderation\MessageModeration;
+use mindstellar\push\PushSubscriptions;
+use mindstellar\push\Vapid;
+use mindstellar\push\WebPushSender;
+use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
 
@@ -112,6 +118,26 @@ final class CoreServices
         $c->set(LiveNotifier::class, static fn (Container $c): LiveNotifier => new LiveNotifier($c->get(LivePublisher::class)));
         $events->listen(MessageSent::class, [LiveNotifier::class, 'onMessageSent']);
         $events->listen(MessageRead::class, [LiveNotifier::class, 'onMessageRead']);
+        $c->set(HttpClient::class, static fn (): HttpClient => new CurlHttpClient());
+        $c->set(AddressGuard::class, static fn (): AddressGuard => new AddressGuard());
+        $c->set(Vapid::class, static fn (Container $c): Vapid => new Vapid(new KeyValue(), $c->get(Clock::class)));
+        $c->set(PushSubscriptions::class, static fn (Container $c): PushSubscriptions => new PushSubscriptions(
+            new KeyValue(),
+            $c->get(Clock::class),
+            $c->get(AddressGuard::class)
+        ));
+        $c->set(WebPushSender::STATUS, static fn (Container $c): LiveStatus => new LiveStatus(
+            new KeyValue(),
+            $c->get(Clock::class),
+            WebPushSender::STATUS_KEY,
+            'Web push'
+        ));
+        $c->set(WebPushSender::class, static fn (Container $c): WebPushSender => new WebPushSender(
+            $c->get(HttpClient::class),
+            $c->get(AddressGuard::class),
+            $c->get(Vapid::class),
+            $c->get(WebPushSender::STATUS)
+        ));
         $events->listen(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
         $events->listen(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
         foreach (self::events() as $event) {

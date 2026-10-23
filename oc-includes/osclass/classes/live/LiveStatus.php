@@ -16,16 +16,24 @@ use mindstellar\model\KeyValue;
 use mindstellar\utility\Clock;
 
 /**
- * The outcome of the last publish, for System info. Written only when it flips between ok and
- * failed, so a healthy site adds no writes and a broken one logs once.
+ * The outcome of the last publish (or push), for System info. Written only when it flips between
+ * ok and failed, so a healthy site adds no writes and a broken one logs once.
  */
 class LiveStatus
 {
     public const GROUP = 'live';
     public const KEY   = 'publish';
 
-    public function __construct(private KeyValue $kv, private Clock $clock)
-    {
+    /**
+     * @param string $key   the row under group live, one per channel
+     * @param string $label names the channel in the error log
+     */
+    public function __construct(
+        private KeyValue $kv,
+        private Clock $clock,
+        private string $key = self::KEY,
+        private string $label = 'Live messages'
+    ) {
     }
 
     public function ok(): void
@@ -37,7 +45,7 @@ class LiveStatus
     {
         $error = mb_substr($error, 0, 200);
         if ($this->flip(false, $error)) {
-            error_log('Live messages: publish failed: ' . $error);
+            error_log($this->label . ': failed: ' . $error);
         }
     }
 
@@ -47,7 +55,7 @@ class LiveStatus
     public function last(): ?array
     {
         try {
-            $row  = $this->kv->get(self::GROUP, self::KEY);
+            $row  = $this->kv->get(self::GROUP, $this->key);
             $data = $row === null ? null : json_decode((string) $row['value'], true);
         } catch (\Throwable) {
             return null;
@@ -71,7 +79,7 @@ class LiveStatus
             if ($last !== null && $last['ok'] === $ok) {
                 return false;
             }
-            $this->kv->set(self::GROUP, self::KEY, json_encode(['ok' => $ok, 'at' => $this->clock->now(), 'error' => $error]));
+            $this->kv->set(self::GROUP, $this->key, json_encode(['ok' => $ok, 'at' => $this->clock->now(), 'error' => $error]));
 
             return true;
         } catch (\Throwable) {
