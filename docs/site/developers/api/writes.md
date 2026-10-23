@@ -474,6 +474,23 @@ What a refusal means:
 | `422 validation_failed` | Empty or too long `body`, or an unknown `reason`. A `body` the site's spam, link or word rules refuse has the field code `rejected`. |
 | `429 rate_limited` | Over the hourly limit. See [Limits](#limits). |
 
+### Wake an app for new messages
+
+An app that gets its own push endpoint can register it. The push carries no text; the app asks `GET /account/conversations` what is new.
+
+```bash
+curl -X PUT $API/account/push-subscriptions \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "endpoint": "https://fcm.googleapis.com/fcm/send/abc" }'
+```
+
+`200` with `{ "data": { "browser": "…", "expires_at": "…" } }`. Register it again before `expires_at` (90 days) to keep it. Stop with `DELETE /account/push-subscriptions/{browser}` (`204`). There is no list. Needs the `conversations:write` scope.
+
+| Status | Meaning |
+|---|---|
+| `404 not_found` | Browser notifications are switched off on this site, or on `DELETE` the `browser` is not yours. |
+| `422 validation_failed` | `endpoint` is empty, longer than 1024 bytes, not `https://`, or not a public address. |
+
 ## Cart and orders
 
 The request names variants and quantities. Prices, delivery, fees, totals and stock are worked out on the server; an amount in the body is ignored.

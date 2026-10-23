@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\schema;
 
 use mindstellar\messaging\MessagePolicy;
+use mindstellar\push\PushSubscriptions;
 
 /**
  * The component schemas of the account's conversations and messages. Schema lists them with its
@@ -24,6 +25,7 @@ final class MessagingSchema
     public const NAMES = [
         'Conversation', 'ConversationInput', 'ConversationDocument', 'ConversationPage',
         'Message', 'MessageInput', 'MessageDocument', 'MessagePage', 'ReportInput',
+        'PushSubscriptionInput', 'PushSubscriptionDocument',
         'AdminConversation', 'AdminConversationDocument', 'AdminConversationPage',
         'AdminMessage', 'AdminMessageDocument', 'AdminMessagePage',
     ];
@@ -110,6 +112,13 @@ final class MessagingSchema
             'ReportInput' => $input([
                 'reason' => ['type' => 'string', 'enum' => MessagePolicy::REPORT_REASONS],
             ], ['reason']),
+            'PushSubscriptionInput' => $input([
+                'endpoint' => ['type' => 'string', 'minLength' => 1, 'maxLength' => PushSubscriptions::MAX_ENDPOINT, 'description' => 'The https:// address the browser or app push service gave. A public address only; the push sent to it carries no text.'],
+            ], ['endpoint']),
+            'PushSubscriptionDocument' => Schema::object(['data' => Schema::object([
+                'browser'    => ['type' => 'string', 'description' => 'Pass this to DELETE account/push-subscriptions/{browser}.'],
+                'expires_at' => Schema::time('The endpoint is dropped then unless it is registered again.'),
+            ], ['browser', 'expires_at'])], ['data']),
         ];
     }
 

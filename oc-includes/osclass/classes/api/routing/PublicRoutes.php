@@ -14,6 +14,7 @@ namespace mindstellar\api\routing;
 
 use mindstellar\api\controller\AccountController;
 use mindstellar\api\controller\AccountKeysController;
+use mindstellar\api\controller\AccountPushController;
 use mindstellar\api\controller\AlertsController;
 use mindstellar\api\controller\AuthController;
 use mindstellar\api\controller\CartController;
@@ -728,6 +729,25 @@ final class PublicRoutes
                 body: 'ReportInput',
                 response: 'ConversationDocument',
                 errors: [403, 404, 409]
+            ),
+            'PUT account/push-subscriptions' => RouteSpec::write(
+                handler: [AccountPushController::class, 'put'],
+                tag: 'Conversations',
+                summary: 'Register a push endpoint to wake this device for new messages; the push carries no text',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                body: 'PushSubscriptionInput',
+                response: 'PushSubscriptionDocument',
+                errors: [404]
+            ),
+            'DELETE account/push-subscriptions/{browser}' => RouteSpec::write(
+                handler: [AccountPushController::class, 'delete'],
+                tag: 'Conversations',
+                summary: 'Stop waking a device; the browser id is the one PUT answered',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                status: 204,
+                errors: [404]
             ),
             'POST users' => RouteSpec::write(
                 handler: [RegistrationController::class, 'register'],
