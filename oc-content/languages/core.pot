@@ -6928,6 +6928,16 @@ msgid ""
 "count; only expiry or deletion frees a slot."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "Live messages"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid ""
+"Live messages could not be published, so open pages fall back to checking "
+"every 15 seconds."
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "Loading details…"
 msgstr ""
@@ -15337,6 +15347,22 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "moderator"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "nchan — last publish failed %1$s ago: %2$s"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "nchan — last publish failed %s ago"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "nchan — last publish ok, %s ago"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "nchan — nothing published yet"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php

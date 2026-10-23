@@ -1239,6 +1239,10 @@ class CAdminTools extends AdminSecBaseModel
                 'due_since' => $stats['due_since'],
                 'orphans'   => array_values(array_diff($queue->queuedTypes(), \mindstellar\job\JobRegistry::types())),
             ) + $queue->health(),
+            'live'             => array(
+                'mode' => \mindstellar\container\Container::root()->get(\mindstellar\live\LivePublisher::class)->mode(),
+                'last' => \mindstellar\container\Container::root()->get(\mindstellar\live\LiveStatus::class)->last(),
+            ),
             'me'               => (int) osc_logged_admin_id(),
             'admins'           => \mindstellar\security\AdminTwoFactor::admins(),
             'throttle'         => array(

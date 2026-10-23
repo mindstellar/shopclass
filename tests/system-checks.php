@@ -150,6 +150,7 @@ $cases = array(
     'maintenance_on'       => array('server', array('maintenance' => 'locked'), 'warning', $base . '?page=tools&action=maintenance'),
     'htaccess_no_authorization' => array('server', array('htaccess_auth' => false), 'warning', null),
     'api_slug_taken'       => array('server', array('reserved_slugs' => array('pages' => array('api'), 'categories' => array())), 'warning', null),
+    'live_publish_failed'  => array('server', array('live' => array('mode' => 'nchan', 'last' => array('ok' => false, 'at' => $now - 60, 'error' => 'x'))), 'warning', SystemChecks::DOCS_LIVE),
     'backup_none'          => array('overview', array('backup_last' => null), 'warning', $base . '?page=tools&action=backup'),
     'cron_never'           => array('jobs', array('cron_last' => 0), 'warning', SystemChecks::DOCS_CRON),
     'cron_stale'           => array('jobs', array('cron_last' => $now - 3 * 86400), 'warning', SystemChecks::DOCS_CRON),
@@ -403,6 +404,21 @@ $owned = $issue('server', $env(array('read_only' => array('downloads'), 'php_use
 check('a read-only downloads folder blocks updates too', $owned !== null);
 check('...and names both users', $owned !== null && strpos($owned['text'], 'nobody') !== false && strpos($owned['text'], 'tony') !== false);
 pin('an image-managed install is not told to update in place', null, $issue('server', $env(array('read_only' => array('core'), 'self_update_off' => true)), 'core_read_only'));
+
+harness_section('Live messages');
+
+$liveRow = static function (array $live) use ($env): string {
+    return array_column(SystemChecks::report('server', $env(array('live' => $live)))['groups'][0]['rows'], 'value', 'label')['Live messages'];
+};
+pin('off', 'off', $liveRow(array('mode' => 'off', 'last' => null)));
+pin('no live key at all reads as off', 'off', array_column(SystemChecks::report('server', $env())['groups'][0]['rows'], 'value', 'label')['Live messages']);
+pin('nchan, never published', 'nchan — nothing published yet', $liveRow(array('mode' => 'nchan', 'last' => null)));
+pin('nchan, last ok', 'nchan — last publish ok, ' . osc_admin_duration(120) . ' ago', $liveRow(array('mode' => 'nchan', 'last' => array('ok' => true, 'at' => $now - 120, 'error' => ''))));
+pin('nchan, last failed', 'nchan — last publish failed ' . osc_admin_duration(120) . ' ago: connection refused', $liveRow(array('mode' => 'nchan', 'last' => array('ok' => false, 'at' => $now - 120, 'error' => 'connection refused'))));
+$fail = array('ok' => false, 'at' => $now - 120, 'error' => 'connection refused');
+check('nchan + ok: no issue', $issue('server', $env(array('live' => array('mode' => 'nchan', 'last' => array('ok' => true, 'at' => $now, 'error' => '')))), 'live_publish_failed') === null);
+check('nchan + never published: no issue', $issue('server', $env(array('live' => array('mode' => 'nchan', 'last' => null))), 'live_publish_failed') === null);
+check('off + a stale failure: no issue', $issue('server', $env(array('live' => array('mode' => 'off', 'last' => $fail))), 'live_publish_failed') === null);
 
 exit(harness_result());
 
