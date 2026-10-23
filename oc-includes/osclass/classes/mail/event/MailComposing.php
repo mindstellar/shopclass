@@ -21,7 +21,8 @@ use mindstellar\event\Event;
  * A shop mail is about to be sent. The subject and body are templates with {WORDS}; a listener may
  * edit either, change a word, or suppress the mail. Old callbacks on `email_<kind>_title`,
  * `_description`, `_title_after` and `_description_after` get the text and the mail's arguments:
- * (text, Order) for an order mail, (text, alert, item, kind) for a product alert.
+ * (text, Order) for an order mail, (text, alert, item, kind) for a product alert, and
+ * (text, conversation, recipient) for a new-message mail.
  */
 final class MailComposing extends Event implements Bridged
 {
@@ -34,6 +35,7 @@ final class MailComposing extends Event implements Bridged
         'admin_new_order',
         'product_alert',
         'listing_unpaid_reminder',
+        'new_message',
     ];
 
     private bool $suppressed = false;

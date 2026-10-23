@@ -277,6 +277,15 @@ osc_add_hook('register_jobs', static function () {
     \mindstellar\listing\ListingCounters::registerJobs();
     \mindstellar\listing\ProductAlerts::registerJobs();
     \mindstellar\webhook\Delivery::register();
+    osc_job_register_handler(
+        \mindstellar\messaging\MessageNotifier::JOB,
+        static fn (\mindstellar\job\Job $job) => \mindstellar\container\Container::root()->get(\mindstellar\messaging\MessageNotifier::class)->run($job)
+    );
+    osc_job_describe(
+        \mindstellar\messaging\MessageNotifier::JOB,
+        __('New message e-mail'),
+        static fn (array $payload): string => sprintf(__('Conversation #%d'), (int) ($payload['conversation'] ?? 0))
+    );
 });
 
 // A job queued by a web request would otherwise wait for the next cron tick. The worker

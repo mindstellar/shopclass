@@ -2058,6 +2058,36 @@ final class CoreEmails
     }
 
     /**
+     * Tell a user they have a new message. The mail holds no message text, only a link to the thread.
+     *
+     * @param array<string,mixed>      $conversation the t_conversation row
+     * @param array<string,mixed>      $recipient    the t_user row
+     * @param array<string,mixed>|null $item         the listing (pk_i_id, s_title), null when it was deleted
+     */
+    public function mailNewMessage(array $conversation, array $recipient, ?array $item): void
+    {
+        $to = (string) ($recipient['s_email'] ?? '');
+        if ($to === '') {
+            return;
+        }
+        $name  = (string) ($recipient['s_name'] ?? '') !== '' ? (string) $recipient['s_name'] : $to;
+        $url   = osc_messaging_thread_url((int) $conversation['pk_i_id']);
+        $title = __('New message about {ITEM_TITLE} on {WEB_TITLE}');
+        $body  = __('<p>Hi {USER_NAME},</p><p>You have a new message about {ITEM_TITLE}.</p><p>{MESSAGE_LINK}</p>');
+
+        [$words, $htmlWords] = self::words(
+            array(
+                '{USER_NAME}'    => $name,
+                '{ITEM_TITLE}'   => (string) ($item['s_title'] ?? '') !== '' ? (string) $item['s_title'] : __('a removed listing'),
+                '{MESSAGE_URL}'  => $url,
+                '{MESSAGE_LINK}' => '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($url) . '</a>',
+            ),
+            array('{USER_NAME}', '{ITEM_TITLE}')
+        );
+        $this->deliver(new MailComposing('new_message', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($conversation, $recipient)));
+    }
+
+    /**
      * @param array<string,mixed> $item
      */
     public function mailListingUnpaidReminder(array $item): void
