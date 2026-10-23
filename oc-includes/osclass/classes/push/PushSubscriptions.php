@@ -12,9 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\push;
 
+use mindstellar\container\Container;
 use mindstellar\database\Db;
 use mindstellar\database\UtcDatetime;
 use mindstellar\model\KeyValue;
+use mindstellar\privacy\PersonalData;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
 
@@ -171,6 +173,47 @@ final class PushSubscriptions
             ->whereRaw('s_key LIKE ?', ['%:%'])
             ->whereGroup(static fn ($q) => $q->whereNull('dt_expires')->orWhere('dt_expires', '>', $now))
             ->count();
+    }
+
+    /**
+     * `personal_data_export`: the user's browsers, with the push service's host but not the full address.
+     *
+     * @param mixed $out
+     * @param mixed $userId
+     *
+     * @return mixed
+     */
+    public static function export($out, $userId = 0)
+    {
+        if (!is_array($out)) {
+            return $out;
+        }
+        $rows = [];
+        foreach (Container::root()->get(self::class)->forUser((int) $userId) as $key => $browser) {
+            $rows[] = [
+                'browser'  => substr($key, (int) strpos($key, ':') + 1),
+                'endpoint' => (string) parse_url($browser['endpoint'], PHP_URL_HOST),
+                'ua'       => $browser['ua'],
+                'seen'     => $browser['seen'],
+            ];
+        }
+        $out['data']['push_subscriptions'] = [
+            'retention' => PersonalData::ERASE_DELETED,
+            'why'       => 'Browsers they asked to notify about new messages.',
+            'rows'      => $rows,
+        ];
+
+        return $out;
+    }
+
+    /**
+     * `delete_user`: the browsers go with the account.
+     *
+     * @param mixed $userId
+     */
+    public static function erase($userId): void
+    {
+        Container::root()->get(self::class)->removeUser((int) $userId);
     }
 
     /**

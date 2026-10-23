@@ -1021,6 +1021,9 @@ osc_add_hook('delete_user', array(\mindstellar\listing\WishlistService::class, '
 // The saved cart lives in t_key_value too.
 osc_add_filter('personal_data_export', array(\mindstellar\billing\CartStore::class, 'export'));
 osc_add_hook('delete_user', array(\mindstellar\billing\CartStore::class, 'erase'));
+// So are the browsers asked to wake for new messages.
+osc_add_filter('personal_data_export', array(\mindstellar\push\PushSubscriptions::class, 'export'));
+osc_add_hook('delete_user', array(\mindstellar\push\PushSubscriptions::class, 'erase'));
 // Threads name two accounts, so they are added to the export here; the account foreign keys erase them.
 function osc_messaging_personal_data($out, $userId = 0)
 {
