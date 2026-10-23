@@ -16,7 +16,8 @@ use mindstellar\auth\Actor;
 use mindstellar\security\ActionThrottle;
 
 /**
- * Who may see and write in a conversation, and the names of the hourly message limits.
+ * Who may see and write in a conversation, the report reasons and the names of the hourly
+ * message limits.
  */
 final class MessagePolicy
 {
@@ -27,6 +28,9 @@ final class MessagePolicy
     /** New conversations one user may start in an hour. */
     public const START_CONTEXT  = 'message_start';
     public const PER_HOUR_START = ActionThrottle::DEFAULT_LIMITS[self::START_CONTEXT];
+
+    /** The reasons a user may give for a report, stored as the code. */
+    public const REPORT_REASONS = ['spam', 'scam', 'offensive', 'other'];
 
     /** canSend(): allowed. */
     public const ALLOWED = '';
@@ -79,7 +83,7 @@ final class MessagePolicy
     }
 
     /**
-     * Whether the user may write in the conversation now.
+     * Whether the user may write in the conversation now. A closed thread says so before a block.
      *
      * @param array<string,mixed> $conversation
      *
@@ -90,10 +94,10 @@ final class MessagePolicy
         if (ConversationStore::sideOf($conversation, $userId) === null) {
             return self::NOT_PARTY;
         }
-        if ((int) $conversation['b_buyer_blocked'] === 1 || (int) $conversation['b_seller_blocked'] === 1) {
-            return self::BLOCKED;
+        if ((string) $conversation['s_state'] === 'closed') {
+            return self::CLOSED;
         }
 
-        return (string) $conversation['s_state'] === 'closed' ? self::CLOSED : self::ALLOWED;
+        return (int) $conversation['b_buyer_blocked'] === 1 || (int) $conversation['b_seller_blocked'] === 1 ? self::BLOCKED : self::ALLOWED;
     }
 }

@@ -52,6 +52,7 @@ use mindstellar\messaging\event\MessageSent;
 use mindstellar\messaging\MessageNotifier;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
+use mindstellar\moderation\MessageModeration;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
 
@@ -81,6 +82,12 @@ final class CoreServices
         $c->set(MessageStore::class, static fn (): MessageStore => new MessageStore());
         $c->set(ConversationStore::class, static fn (Container $c): ConversationStore => new ConversationStore($c->get(MessageStore::class)));
         $c->set(MessagingService::class, static fn (Container $c): MessagingService => new MessagingService(
+            $c->get(ConversationStore::class),
+            $c->get(MessageStore::class),
+            $c->get(DispatcherInterface::class),
+            $c->get(Clock::class)
+        ));
+        $c->set(MessageModeration::class, static fn (Container $c): MessageModeration => new MessageModeration(
             $c->get(ConversationStore::class),
             $c->get(MessageStore::class),
             $c->get(DispatcherInterface::class),

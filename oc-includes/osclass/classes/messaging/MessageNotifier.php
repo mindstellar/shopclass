@@ -60,7 +60,7 @@ final class MessageNotifier
         if ($side === null || (int) ($conversation['i_' . $side . '_unread'] ?? 0) === 0) {
             return;
         }
-        if ((int) $conversation['b_buyer_blocked'] === 1 || (int) $conversation['b_seller_blocked'] === 1 || $conversation['s_state'] === 'closed') {
+        if (MessagePolicy::canSend($conversation, $recipientId) !== MessagePolicy::ALLOWED) {
             return;
         }
         $recipient = UserStore::find($recipientId);

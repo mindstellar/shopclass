@@ -34,7 +34,6 @@ use mindstellar\messaging\event\MessageSending;
 use mindstellar\messaging\event\MessageSent;
 use mindstellar\security\ActionThrottle;
 use mindstellar\security\MessageGuard;
-use mindstellar\security\RateLimit;
 use mindstellar\security\SpamCheck;
 use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
@@ -60,9 +59,8 @@ final class MessagingService
     public const HELD_AKISMET = 'akismet';
     public const HELD_THREAD  = 'thread';
 
-    private const DUPLICATE_KEY = 1062;
+    private const DUPLICATE_KEY  = 1062;
     private const MAX_BODY_BYTES = 65535;
-    private const MAX_REASON     = 20;
 
     public function __construct(
         private ConversationStore $conversations,
@@ -252,19 +250,19 @@ final class MessagingService
      * Report the thread to the admins. It also blocks it for the reporter. Fires
      * `conversation_reported`, then `conversation_blocked` when the block is new.
      *
-     * @param string $reason a short code such as 'spam', lowercase letters and underscores
+     * @param string $reason one of MessagePolicy::REPORT_REASONS
      *
      * @throws ForbiddenException messaging off, a guest, an account that is not live
      * @throws NotFoundException  a thread the actor is not part of
-     * @throws InvalidException   a reason that is not a short code
+     * @throws InvalidException   a reason not in MessagePolicy::REPORT_REASONS
      * @throws ConflictException  a closed thread, one waiting for review, or one already reported
      */
     public function report(int $conversationId, string $reason, Actor $actor): void
     {
         $this->sender($actor);
         $reason = trim($reason);
-        if (preg_match('/^[a-z_]{1,' . self::MAX_REASON . '}$/', $reason) !== 1) {
-            throw new InvalidException('/reason', 'pattern', _m('Choose a reason for the report'));
+        if (!in_array($reason, MessagePolicy::REPORT_REASONS, true)) {
+            throw new InvalidException('/reason', 'enum', _m('Choose a reason for the report'));
         }
         $userId = (int) $actor->userId();
         Db::transaction(function () use ($conversationId, $reason, $actor, $userId): void {
@@ -522,35 +520,20 @@ final class MessagingService
 
     /**
      * Count one message for the context and say whether it is over the hourly limit, per user.
-     * Fails open, as RateLimit does.
      */
     private function tooMany(Actor $actor, string $context): bool
     {
-        [$max, $window] = self::limit($context);
-        if ($actor->userId() === null || $max <= 0) {
-            return false;
-        }
-
-        return !RateLimit::hit($context, 'user:' . $actor->userId(), $max, $window, true, $this->clock->now());
+        return $actor->userId() !== null
+            && ActionThrottle::over($context, 'user:' . $actor->userId(), self::defaultLimit($context), 3600, $this->clock->now());
     }
 
-    /**
-     * Seconds until the context's window starts again.
-     */
     private function retryAfter(string $context): int
     {
-        $window = max(1, self::limit($context)[1]);
-
-        return $window - ($this->clock->now() % $window);
+        return ActionThrottle::retryAfter($context, self::defaultLimit($context), 3600, $this->clock->now());
     }
 
-    /**
-     * @return array{0:int,1:int} max and window in seconds
-     */
-    private static function limit(string $context): array
+    private static function defaultLimit(string $context): int
     {
-        $default = $context === MessagePolicy::START_CONTEXT ? MessagePolicy::PER_HOUR_START : MessagePolicy::PER_HOUR_SEND;
-
-        return ActionThrottle::limitFor($context, $default, 3600);
+        return $context === MessagePolicy::START_CONTEXT ? MessagePolicy::PER_HOUR_START : MessagePolicy::PER_HOUR_SEND;
     }
 }

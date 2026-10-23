@@ -24,11 +24,8 @@ final class ConversationStore
     public const SIDE_BUYER  = 'buyer';
     public const SIDE_SELLER = 'seller';
 
-    private MessageStore $messages;
-
-    public function __construct(?MessageStore $messages = null)
+    public function __construct(private MessageStore $messages)
     {
-        $this->messages = $messages ?? new MessageStore();
     }
 
     /**
@@ -38,6 +35,28 @@ final class ConversationStore
     public function find(int $id): ?array
     {
         return $this->table()->where('pk_i_id', $id)->first();
+    }
+
+    /**
+     * Rows by id, keyed by id. Ids with no row are left out.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function byIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        if ($ids === array()) {
+            return array();
+        }
+        $rows = array();
+        foreach ($this->table()->whereIn('pk_i_id', $ids)->get() as $row) {
+            $rows[(int) $row['pk_i_id']] = $row;
+        }
+
+        return $rows;
     }
 
     /**
@@ -85,8 +104,8 @@ final class ConversationStore
     }
 
     /**
-     * One page of the user's threads, newest first, as buyer and as seller. A thread still held
-     * for review is not shown to its seller. Page on from the last row's dt_last_message and pk_i_id.
+     * One page of the user's threads, newest first, as buyer and as seller. The seller sees a
+     * thread once a message in it was delivered, so not one held for review or removed unseen. Page on from the last row's dt_last_message and pk_i_id.
      *
      * @return array<int,array<string,mixed>>
      * @throws \mindstellar\database\DbException
@@ -108,7 +127,10 @@ final class ConversationStore
             );
         };
         [$buyerSql, $buyerParams]   = $one('fk_i_buyer_id', '');
-        [$sellerSql, $sellerParams] = $one('fk_i_seller_id', " AND s_state <> 'held'");
+        [$sellerSql, $sellerParams] = $one(
+            'fk_i_seller_id',
+            " AND s_state <> 'held' AND EXISTS (SELECT 1 FROM " . DB_TABLE_PREFIX . "t_message m WHERE m.fk_i_conversation_id = " . self::tableName() . ".pk_i_id AND m.s_state = 'sent')"
+        );
 
         return Db::select(
             $buyerSql . ' UNION ALL ' . $sellerSql . ' ORDER BY dt_last_message DESC, pk_i_id DESC LIMIT ' . $limit,
@@ -160,7 +182,8 @@ final class ConversationStore
     }
 
     /**
-     * Time of the user's newest thread activity, or null when they have none.
+     * Time of the user's newest thread activity, or null when they have none. A thread still
+     * held for review does not count for its seller.
      *
      * @throws \mindstellar\database\DbException
      */
@@ -169,7 +192,7 @@ final class ConversationStore
         $table = self::tableName();
         $times = array_filter(array(
             Db::scalar('SELECT MAX(dt_last_message) FROM ' . $table . ' WHERE fk_i_buyer_id = ?', array($userId)),
-            Db::scalar('SELECT MAX(dt_last_message) FROM ' . $table . ' WHERE fk_i_seller_id = ?', array($userId)),
+            Db::scalar('SELECT MAX(dt_last_message) FROM ' . $table . ' WHERE fk_i_seller_id = ? AND s_state <> ' . "'held'", array($userId)),
         ));
 
         return $times === array() ? null : (string) max($times);
@@ -220,6 +243,28 @@ final class ConversationStore
             'fk_i_reporter_id' => $reporterId,
             's_report_reason'  => $reason,
         ));
+    }
+
+    /**
+     * Put a reported thread back to open and forget who reported it and why.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public function clearReport(int $id): void
+    {
+        $this->table()->where('pk_i_id', $id)->update(array(
+            's_state'          => 'open',
+            'fk_i_reporter_id' => null,
+            's_report_reason'  => null,
+        ));
+    }
+
+    /**
+     * @throws \mindstellar\database\DbException
+     */
+    public function countReported(): int
+    {
+        return $this->table()->where('s_state', 'reported')->count();
     }
 
     /**

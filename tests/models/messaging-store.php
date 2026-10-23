@@ -42,8 +42,8 @@ $ids = static function (array $rows): array {
     return array_map('intval', array_column($rows, 'pk_i_id'));
 };
 
-$conversations = new ConversationStore();
 $messages      = new MessageStore();
+$conversations = new ConversationStore($messages);
 $row = static function (int $item, int $buyer, int $seller, string $when, string $state = 'open'): array {
     return array(
         'fk_i_item_id' => $item, 'fk_i_buyer_id' => $buyer, 'fk_i_seller_id' => $seller,
@@ -106,14 +106,32 @@ harness_section('inbox');
 $c2 = $conversations->create($row($item2, $buyer, $seller, '2026-01-02 10:00:00'));
 $c3 = $conversations->create($row($item2, $other, $seller, '2026-01-03 10:00:00', 'held'));
 $c4 = $conversations->create($row($item, $seller, $other, '2026-01-04 10:00:00'));
+$delivered = static function (int $conversation) use ($messages): void {
+    $messages->create(array('fk_i_conversation_id' => $conversation, 'fk_i_sender_id' => 0, 's_body' => 'x', 's_state' => 'sent', 'dt_created' => '2026-01-01 00:00:00'));
+};
+foreach (array($c1, $c2, $c3, $c4) as $c) {
+    $delivered($c);
+}
 pin('buyer inbox, newest first', array($c2, $c1), $ids($conversations->inbox($buyer)));
 pin('seller inbox mixes both sides and hides the held thread', array($c4, $c2, $c1), $ids($conversations->inbox($seller)));
 pin('the held thread shows for its buyer', array($c4, $c3), $ids($conversations->inbox($other)));
+$admin->query("UPDATE {$p}t_conversation SET dt_last_message = '2026-01-05 10:00:00' WHERE pk_i_id = $c3");
+pin('latest() for the seller ignores a held thread, even the newest', '2026-01-04 10:00:00', $conversations->latest($seller));
+pin('latest() for its buyer counts it', '2026-01-05 10:00:00', $conversations->latest($other));
+$admin->query("UPDATE {$p}t_conversation SET dt_last_message = '2026-01-03 10:00:00' WHERE pk_i_id = $c3");
+pin('byIds keys rows by id and skips missing ids', array($c1, $c3), array_keys($conversations->byIds(array($c3, $c1, 999999, $c1))));
+pin('byIds of nothing', array(), $conversations->byIds(array()));
 pin('limit', array($c4, $c2), $ids($conversations->inbox($seller, 2)));
 pin('next page by date and id', array($c1), $ids($conversations->inbox($seller, 2, '2026-01-02 10:00:00', $c2)));
 $tie = $conversations->create($row($item2, $seller, $buyer, '2026-01-02 10:00:00'));
+$delivered($tie);
 pin('same-second threads page by id', array($tie, $c2), $ids($conversations->inbox($seller, 2, '2026-01-03 10:00:00', $c3 + 1)));
 pin('same-second paging does not repeat a row', array($c2, $c1), $ids($conversations->inbox($seller, 5, '2026-01-02 10:00:00', $tie)));
+$unseen = $conversations->create($row($item2, $buyer, $other, '2026-01-06 10:00:00', 'closed'));
+pin('the seller never sees a thread with nothing delivered in it', array($c4, $c3), $ids($conversations->inbox($other)));
+pin('its buyer does', $unseen, $ids($conversations->inbox($buyer))[0]);
+$admin->query("DELETE FROM {$p}t_conversation WHERE pk_i_id = $unseen");
+$admin->query("DELETE FROM {$p}t_message");
 
 harness_section('messages');
 $m1 = $messages->create(array('fk_i_conversation_id' => $c1, 'fk_i_sender_id' => $buyer, 's_body' => 'Still for sale?', 's_state' => 'sent', 'dt_created' => '2026-01-01 10:00:00'));
@@ -126,10 +144,19 @@ pin('the sender also sees their held message', array($m3, $m2, $m1), $ids($messa
 pin('paging by message id', array($m1), $ids($messages->ofConversation($c1, $seller, 50, $m2)));
 pin('limit', array($m3), $ids($messages->ofConversation($c1, $buyer, 1)));
 pin('another thread is kept apart', array($m4), $ids($messages->ofConversation($c2, $buyer)));
+pin('includeHeld shows every held message to the admin view', array($m3, $m2, $m1), $ids($messages->ofConversation($c1, 0, 50, null, true)));
+pin('since() is oldest first after the cursor', array($m2, $m3), $ids($messages->since($c1, $buyer, $m1, 50)));
+pin("since() hides the other side's held message", array($m2), $ids($messages->since($c1, $seller, $m1, 50)));
+pin('since() after the last id is empty', array(), $messages->since($c1, $buyer, $m3, 50));
+pin('since() keeps its limit', array($m1), $ids($messages->since($c1, $buyer, 0, 1)));
+pin('liveCount counts sent and held', 3, $messages->liveCount($c1));
+pin('countHeld', 1, $messages->countHeld());
 pin('held() lists held messages', array($m3), $ids($messages->held()));
 $messages->setState($m3, 'removed');
 pin('removed leaves the held list', array(), $ids($messages->held()));
 pin('removed is shown to nobody', array($m2, $m1), $ids($messages->ofConversation($c1, $buyer)));
+pin('nor to the admin view', array($m2, $m1), $ids($messages->ofConversation($c1, 0, 50, null, true)));
+pin('removed leaves liveCount', 2, $messages->liveCount($c1));
 
 harness_section('block, report and review lists');
 $conversations->setBlocked($c1, 'seller', true);
@@ -141,6 +168,12 @@ $conversations->setReport($c2, $buyer, 'spam');
 $r = $conversations->find($c2);
 pin('report state, reporter and reason', array('reported', $buyer, 'spam'), array($r['s_state'], (int) $r['fk_i_reporter_id'], $r['s_report_reason']));
 pin('reported() lists it', array($c2), $ids($conversations->reported()));
+pin('countReported', 1, $conversations->countReported());
+$conversations->clearReport($c2);
+$r = $conversations->find($c2);
+pin('clearReport opens it and drops reporter and reason', array('open', null, null), array($r['s_state'], $r['fk_i_reporter_id'], $r['s_report_reason']));
+pin('countReported after clearReport', 0, $conversations->countReported());
+$conversations->setReport($c2, $buyer, 'spam');
 $conversations->setState($c2, 'closed');
 pin('closed leaves the reported list', array(), $ids($conversations->reported()));
 $conversations->setState($c2, 'open');
