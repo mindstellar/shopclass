@@ -109,4 +109,9 @@ pin('an inbox check sets every badge to the count', array('text' => array('4', '
 pin('a count of 0 hides the badges', array('text' => array('0 hidden', '0 hidden'), 'label' => 'Messages'), $r['badgeInboxZero'] ?? null);
 pin('a check with no count leaves the badges alone', array('text' => array('0 hidden', '0 hidden'), 'label' => 'Messages'), $r['badgeNoCount'] ?? null);
 
+harness_section('the header link on other pages');
+pin('no check before a minute, though the script ran twice', 0, $r['linkEarly'] ?? null);
+pin('then one check, and nothing else is fetched', array('check'), $r['linkFetches'] ?? null);
+pin('the badge and label follow it', array('text' => array('5'), 'label' => 'Messages, 5 unread'), $r['linkBadges'] ?? null);
+
 exit(harness_result());

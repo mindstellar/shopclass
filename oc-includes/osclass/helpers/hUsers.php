@@ -71,7 +71,8 @@ function osc_messaging_unread_count(): int
 
 /**
  * The signed-in user's link to their messages, with the unread count, for a theme's header.
- * '' while messaging is off, for a guest and for a shopper. Core's scripts keep the count current.
+ * '' while messaging is off, for a guest and for a shopper. The first link on a page loads
+ * messages.js, which keeps the count current on every page.
  *
  * Markup: a.oe-msg-link[data-osc-messages-link] > (icon) span.oe-msg-label +
  * span.oe-badge.oe-unread[data-osc-unread], the badge hidden at 0.
@@ -86,18 +87,27 @@ function osc_messaging_link(array $args = array()): string
     if (!osc_messaging_enabled() || !osc_is_web_user_logged_in() || osc_is_shopper()) {
         return '';
     }
+    static $script = false;
     $unread = osc_messaging_unread_count();
     $label  = _m('Messages');
     $some   = _m('Messages, %d unread');
     $class  = trim('oe-msg-link ' . (string) ($args['class'] ?? ''));
 
+    $tail   = '';
+    if (!$script) {
+        $script = true;
+        $tail   = '<script src="' . osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/messages.js'))) . '" defer></script>';
+    }
+
     return '<a class="' . osc_esc_html($class) . '" href="' . osc_esc_html(osc_messaging_inbox_url()) . '"'
         . ' aria-label="' . osc_esc_html($unread > 0 ? sprintf($some, $unread) : $label) . '"'
-        . ' data-osc-messages-link data-label="' . osc_esc_html($label) . '" data-label-unread="' . osc_esc_html($some) . '">'
+        . ' data-osc-messages-link data-label="' . osc_esc_html($label) . '" data-label-unread="' . osc_esc_html($some) . '"'
+        . ' data-check-url="' . osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check') . '"'
+        . ' data-live-url="' . osc_esc_html(osc_messaging_live_url()) . '">'
         . (string) ($args['icon'] ?? '')
         . '<span class="oe-msg-label">' . osc_esc_html($label) . '</span>'
         . '<span class="oe-badge oe-unread" data-osc-unread' . ($unread > 0 ? '' : ' hidden') . '>' . $unread . '</span>'
-        . '</a>';
+        . '</a>' . $tail;
 }
 
 /**

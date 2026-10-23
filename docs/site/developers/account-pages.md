@@ -432,8 +432,9 @@ script.
   given; `$args['class']` adds classes. The markup is
   `a.oe-msg-link[data-osc-messages-link] > span.oe-msg-label + span.oe-badge.oe-unread[data-osc-unread]`.
   The badge has `hidden` at 0, so keep `[hidden]` hidden if you set `display` on it.
-- **The live count.** On the messages pages `messages.js` sets every `[data-osc-unread]` badge
-  and the link's `aria-label` after each check. Do not add a script for it.
+- **The live count.** The first `osc_messaging_link()` on a page loads `messages.js`, which sets
+  every `[data-osc-unread]` badge and the link's `aria-label` after each check, on every page.
+  Do not add a script for it.
 - **The contact form.** Call `osc_item_contact_form()`. When the listing uses messaging it shows
   only the message, the captcha and the button, with a "You are writing as" line above. Otherwise
   it is the e-mail form.

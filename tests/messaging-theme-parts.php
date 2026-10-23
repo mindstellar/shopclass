@@ -76,6 +76,21 @@ function osc_base_url($withIndex = false)
     return 'https://example.test/' . ($withIndex ? 'index.php' : '');
 }
 
+function osc_messaging_live_url(): string
+{
+    return '';
+}
+
+function osc_assets_url($path)
+{
+    return 'https://example.test/oc-includes/assets/' . $path;
+}
+
+function osc_asset_url_versioned($url)
+{
+    return $url . '?v=1';
+}
+
 function osc_gui_kept($key, $default = '')
 {
     return $key === 'message_body' ? 'kept text' : $default;
@@ -113,14 +128,17 @@ pin('a shopper: nothing', '', $link(array('shopper' => true)));
 pin(
     'no unread: the link with a hidden badge',
     '<a class="oe-msg-link" href="https://example.test/?page=messages&amp;a=1" aria-label="Messages"'
-    . ' data-osc-messages-link data-label="Messages" data-label-unread="Messages, %d unread">'
-    . '<span class="oe-msg-label">Messages</span><span class="oe-badge oe-unread" data-osc-unread hidden>0</span></a>',
+    . ' data-osc-messages-link data-label="Messages" data-label-unread="Messages, %d unread"'
+    . ' data-check-url="https://example.test/index.php?page=ajax&amp;action=messages_check" data-live-url="">'
+    . '<span class="oe-msg-label">Messages</span><span class="oe-badge oe-unread" data-osc-unread hidden>0</span></a>'
+    . '<script src="https://example.test/oc-includes/assets/osclass/messages.js?v=1" defer></script>',
     $link(array())
 );
 $three = $link(array('unread' => 3), array('class' => 'sf-icon-btn "x"', 'icon' => '<svg class="i"></svg>'));
 check('three unread: the badge shows 3', strpos($three, '<span class="oe-badge oe-unread" data-osc-unread>3</span>') !== false);
 check('...and the label says so', strpos($three, 'aria-label="Messages, 3 unread"') !== false);
 check('extra classes are added and escaped', strpos($three, 'class="oe-msg-link sf-icon-btn &quot;x&quot;"') !== false);
+check('the second link on the page does not load the script again', strpos($three, '<script') === false);
 check('the icon is printed as given, before the label', strpos($three, '><svg class="i"></svg><span class="oe-msg-label">') !== false);
 
 harness_section('the contact form');

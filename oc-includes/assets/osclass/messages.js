@@ -12,10 +12,13 @@
     var list = document.querySelector('[data-osc-messages]');
     var inbox = document.querySelector('[data-osc-inbox]');
     var form = document.querySelector('form.oe-compose');
-    var root = list || inbox;
-    if (!root) {
+    // Away from the messages pages the header link carries the check URL, and only the badges update.
+    var root = list || inbox || document.querySelector('[data-osc-messages-link][data-check-url]');
+    // The header link and the messages page may both load this file; the first run does the work.
+    if (!root || root.hasAttribute('data-osc-started')) {
         return;
     }
+    root.setAttribute('data-osc-started', '');
 
     var pad = function (n) {
         return String(n).padStart(2, '0');
@@ -123,7 +126,7 @@
             return;
         }
         var liveUrl = root.dataset.liveUrl || '';
-        var baseDelay = 15000;
+        var baseDelay = list || inbox ? 15000 : 60000;
         var delay = baseDelay;
         var etag = null;
         var inFlight = false;
@@ -187,7 +190,8 @@
                 var activity = response.json().catch(function () {
                     return {};
                 });
-                return Promise.all([activity, list ? refreshThread() : refreshInbox()]).then(function (done) {
+                var refresh = list ? refreshThread() : (inbox ? refreshInbox() : 0);
+                return Promise.all([activity, refresh]).then(function (done) {
                     etag = fresh;
                     // On a thread, fetching the new messages marked them read, so they leave the count.
                     if (done[0] && typeof done[0].unread === 'number') {

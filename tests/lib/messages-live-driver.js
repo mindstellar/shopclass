@@ -305,6 +305,23 @@
         out.badgeNoCount = badges();
         e.stop();
 
+        // Any other page: the header link carries the check URL; a check a minute updates the badges only.
+        e = env({route: function () {
+            return {status: 200, body: JSON.stringify({unread: 5, latest: 'x'}), headers: {'ETag': '"b"'}};
+        }});
+        await e.start('<a data-osc-messages-link aria-label="Messages" data-label="Messages" data-label-unread="Messages, %d unread"'
+            + ' data-check-url="/x?page=ajax&action=messages_check" data-live-url="">'
+            + '<span class="oe-badge oe-unread" data-osc-unread hidden>0</span></a>');
+        (0, eval)(source);
+        await e.advance(59000);
+        out.linkEarly = e.fetches.length;
+        await e.advance(60000);
+        out.linkFetches = e.fetches.map(function (f) {
+            return f.url.indexOf('messages_check') !== -1 ? 'check' : f.url;
+        });
+        out.linkBadges = badges();
+        e.stop();
+
         document.getElementById('osc-out').textContent = btoa(JSON.stringify(out));
     }
 
