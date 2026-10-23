@@ -169,6 +169,7 @@ pin('the sender gets 201, held, and the warning', [201, true, [['code' => 'messa
 pin('the held document matches the schema', [], api_admin_schema_errors('MessageDocument', $r));
 pin('the sender sees it in the thread', true, in_array($heldId, array_column($call('GET', 'account/conversations/' . $conv . '/messages', null, $buyerKey)->body()['data'] ?? [], 'id'), true));
 pin('the recipient does not', false, in_array($heldId, array_column($call('GET', 'account/conversations/' . $conv . '/messages', null, $sellerKey)->body()['data'] ?? [], 'id'), true));
+pin('held rows do not eat the recipient\'s page slots', 2, count($call('GET', 'account/conversations/' . $conv . '/messages', null, $sellerKey, [], ['limit' => '2'])->body()['data'] ?? []));
 pin('nor when polling', [], $call('GET', 'account/conversations/' . $conv . '/messages', null, $sellerKey, [], ['after' => (string) $m3])->body()['data'] ?? null);
 $heldConv = (int) ($heldStart->body()['data']['conversation_id'] ?? 0);
 pin('a held thread is 404 for the seller', '404 not_found', api_admin_code($call('GET', 'account/conversations/' . $heldConv, null, $sellerKey)));
