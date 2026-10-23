@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\messaging;
 
+use mindstellar\live\LiveChannel;
 use mindstellar\live\LivePublisher;
 use mindstellar\messaging\event\MessageRead;
 use mindstellar\messaging\event\MessageSent;
@@ -28,7 +29,7 @@ final class LiveNotifier
 
     public function onMessageSent(MessageSent $event): void
     {
-        $this->live->publish('user-' . $event->recipientId(), [
+        $this->live->publish(LiveChannel::forUser($event->recipientId()), [
             'kind'         => 'sent',
             'conversation' => $event->conversationId(),
             'message'      => $event->messageId(),
@@ -37,7 +38,7 @@ final class LiveNotifier
 
     public function onMessageRead(MessageRead $event): void
     {
-        $this->live->publish('user-' . $event->readerId(), [
+        $this->live->publish(LiveChannel::forUser($event->readerId()), [
             'kind'         => 'read',
             'conversation' => $event->conversationId(),
         ]);

@@ -28,6 +28,7 @@ use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
+use mindstellar\live\LiveChannel;
 use mindstellar\live\LivePublisher;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
@@ -547,7 +548,7 @@ class CWebAjax extends BaseModel
             return;
         }
         $channel = (string) Params::getServerParam('HTTP_X_CHANNEL_ID', false, false, false);
-        if (!osc_messaging_enabled() || $channel !== 'user-' . $userId) {
+        if (!osc_messaging_enabled() || LiveChannel::userId($channel) !== $userId) {
             http_response_code(403);
 
             return;

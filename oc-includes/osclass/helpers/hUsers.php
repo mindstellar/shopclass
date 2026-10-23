@@ -83,7 +83,7 @@ function osc_messaging_live_url(): string
     }
 
     return \mindstellar\container\Container::root()
-        ->get(\mindstellar\live\LivePublisher::class)->subscribeUrl('user-' . $userId) ?? '';
+        ->get(\mindstellar\live\LivePublisher::class)->subscribeUrl(\mindstellar\live\LiveChannel::forUser($userId)) ?? '';
 }
 
 /*

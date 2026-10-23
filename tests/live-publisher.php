@@ -25,6 +25,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
+use mindstellar\live\LiveChannel;
 use mindstellar\live\LiveStatus;
 use mindstellar\live\NchanPublisher;
 use mindstellar\live\NullPublisher;
@@ -50,6 +51,23 @@ final class LpStatus extends LiveStatus
     {
         $this->calls[] = 'failed';
     }
+}
+
+harness_section('LiveChannel');
+pin('forUser', 'user-7', LiveChannel::forUser(7));
+pin('userId round-trips', 7, LiveChannel::userId(LiveChannel::forUser(7)));
+foreach (['user-', 'user-0', 'user-07', 'user-7 ', "user-7\n", 'conv-7', '../user-7'] as $bad) {
+    pin('not a user channel: ' . json_encode($bad), null, LiveChannel::userId($bad));
+}
+$entry = (string) file_get_contents(ABS_PATH . '.docker/prod/entrypoint.sh');
+preg_match_all('#location ~ \^/live/(?:pub|sub)/\((?:\?<\w+>)?([^)]+)\)\$#', $entry, $m);
+pin('the nginx publisher and subscriber match one channel shape each', 2, count($m[1]));
+foreach ($m[1] as $i => $nginx) {
+    $same = true;
+    foreach (['user-7', 'user-123', 'conv-7', 'user-', 'user-x'] as $name) {
+        $same = $same && (preg_match('#^' . $nginx . '$#D', $name) === 1) === (LiveChannel::userId($name) !== null);
+    }
+    pin('nginx channel regex ' . ($i + 1) . ' agrees with LiveChannel', true, $same);
 }
 
 harness_section('NullPublisher');

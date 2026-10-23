@@ -21,8 +21,6 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final class NchanPublisher implements LivePublisher
 {
-    private const CHANNEL = '/^user-\d+$/D';
-
     private string $publishUrl;
     private string $subscribeUrl;
 
@@ -34,7 +32,7 @@ final class NchanPublisher implements LivePublisher
 
     public function publish(string $channel, array $note): bool
     {
-        if (preg_match(self::CHANNEL, $channel) !== 1) {
+        if (LiveChannel::userId($channel) === null) {
             return false;
         }
         try {
@@ -65,7 +63,7 @@ final class NchanPublisher implements LivePublisher
 
     public function subscribeUrl(string $channel): ?string
     {
-        return preg_match(self::CHANNEL, $channel) === 1 ? $this->subscribeUrl . $channel : null;
+        return LiveChannel::userId($channel) !== null ? $this->subscribeUrl . $channel : null;
     }
 
     public function mode(): string
