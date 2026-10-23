@@ -175,11 +175,11 @@ check('implies: write reads, any admin scope reads public data, nothing else', S
     && !Scopes::implies(['admin:listings'], 'admin:users'));
 
 harness_section('moderators follow moderator_access');
-pin('a moderator holds the moderator scopes by default', ['admin:listings', 'admin:comments'], array_values(array_intersect(Scopes::ADMIN, (new Scopes())->allowedFor(CredentialKind::KEY, $mod2))));
+pin('a moderator holds the moderator scopes by default', ['admin:listings', 'admin:comments', 'admin:conversations'], array_values(array_intersect(Scopes::ADMIN, (new Scopes())->allowedFor(CredentialKind::KEY, $mod2))));
 pin('a page closed to moderators takes its scope away', ['admin:comments'], array_values(array_intersect(Scopes::ADMIN, (new Scopes([], ['comments']))->allowedFor(CredentialKind::KEY, $mod2))));
 pin('a page opened to moderators does not add an admin scope', ['admin:listings', 'admin:comments'], array_values(array_intersect(Scopes::ADMIN, (new Scopes([], ['items', 'comments', 'users', 'settings']))->allowedFor(CredentialKind::KEY, $mod2))));
 pin('a full admin is not affected', Scopes::ADMIN, array_values(array_intersect(Scopes::ADMIN, (new Scopes([], []))->allowedFor(CredentialKind::KEY, $admin1))));
-pin('Scopes::fromHooks reads moderator_access', ['admin:listings'], api_with_filter(
+pin('Scopes::fromHooks reads moderator_access', ['admin:listings', 'admin:conversations'], api_with_filter(
     'moderator_access',
     static fn (array $pages): array => array_values(array_diff($pages, ['comments'])),
     static fn (): array => array_values(array_intersect(Scopes::ADMIN, Scopes::fromHooks()->allowedFor(CredentialKind::KEY, $mod2)))
