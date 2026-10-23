@@ -45,6 +45,9 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Digital Goods 2.4.0 adds a buyer Downloads page and account menu entry.
 - **Listings → Settings → Search count limit** stops search counts at a number and shows "1,000+" past it; themes use `osc_search_total_text()` and `osc_search_total_capped()`, and the API sends `meta.total_capped`. New sites start at 1000, updated sites at 0 (exact).
 
+### Breaking
+- Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
+
 ### Changed
 - Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.
 - Core works with MariaDB 11.6+ snapshot isolation (`innodb_snapshot_isolation=ON`): rows are locked first, and plugin writes should follow the [Write transactions](https://shopclass.org/docs/developers/database/) rule, locking the listing with `ListingStore::lockForWrite()` in `apply()`.
