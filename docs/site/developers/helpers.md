@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1224 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1225 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -526,7 +526,7 @@ Core defines 1224 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (121)
+### hItems (122)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -618,6 +618,7 @@ Core defines 1224 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_title($locale = '')` | Gets title from current item, if $locale is unspecified $locale is current user locale |
 | `osc_item_total_comments()` | Gets total number of comments of current item |
 | `osc_item_user_id()` | Gets user id from current item |
+| `osc_item_uses_messaging()` | Whether the contact form on the current item starts an on-site conversation instead of an e-mail. |
 | `osc_item_views($viewAll = false)` | return number of views of current item |
 | `osc_item_zip()` | Gets zip code of current item |
 | `osc_list_items_per_page()` | Gets number of items per page for current pagination |

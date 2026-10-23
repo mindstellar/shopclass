@@ -89,6 +89,10 @@ A shop sends the buyer six mails. Each goes once per order, and a failed send is
 - **Cancelled**: an unpaid order was cancelled.
 - **Refunded**: the amount and how long it takes to show up.
 
+## New-message e-mail
+
+When on-site messaging is on, a user gets one mail a minute at most per conversation, saying they have a new message about a listing. It holds a link to the conversation page and none of the message text.
+
 ## Alerts and cron
 
 Saved-search alerts are **not** sent when a listing is published. They are sent
