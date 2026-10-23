@@ -84,6 +84,7 @@ msgid_plural "%d more listings live at once"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/account/parts/push-optin.php
 #: oc-includes/osclass/gui/account/user-messages-content.php
 msgid "%d new message"
 msgid_plural "%d new messages"
@@ -1537,6 +1538,10 @@ msgstr ""
 msgid "New email address"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/push-optin.php
+msgid "New messages show as a notification on this device."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
 #: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "New password"
@@ -1763,6 +1768,20 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Nothing was waiting to run."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/push-optin.php
+msgid ""
+"Notifications are blocked in this browser. Allow them in its site settings "
+"first."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/push-optin.php
+msgid "Notifications could not be changed. Try again."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/push-optin.php
+msgid "Notify me on this device"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -2515,6 +2534,10 @@ msgstr ""
 msgid "Sign in to place an order."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/push-optin.php
+msgid "Sign in to read your messages"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid "Sign in to save a search."
 msgstr ""
@@ -2642,6 +2665,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Stock must be a whole number, 0 or more."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/push-optin.php
+msgid "Stop notifying this device"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
@@ -4121,6 +4148,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/ListingCheckout.php
 msgid "You have enough credits to publish this listing."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/push-optin.php
+msgid "You have new messages"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php

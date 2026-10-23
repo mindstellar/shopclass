@@ -285,6 +285,9 @@ if (!defined('ABS_PATH')) {
   }
   .oe-page .oe-compose{margin-block-end:12px;}
   .oe-page .oe-compose textarea{inline-size:100%;max-inline-size:34rem;min-block-size:5rem;}
+  .oe-page .oe-push{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-block:12px;}
+  .oe-page .oe-push[hidden]{display:none;}
+  .oe-page .oe-push .oe-muted{margin:0;}
   .oe-page .oe-thread-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px 20px;margin-block-start:12px;font-size:.875rem;}
   .oe-page .oe-thread-actions summary{cursor:pointer;color:var(--oe-teal);}
   .oe-page .oe-thread-actions details form{margin-block-start:12px;}

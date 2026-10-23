@@ -64,6 +64,33 @@ foreach (array('thread' => 'data-osc-messages', 'inbox' => 'data-osc-inbox') as 
 check('the inbox loads messages.js with defer', (bool) preg_match('/<script src="[^"]*"\s+defer><\/script>/', $src['inbox'])
     && strpos($src['inbox'], 'osclass/messages.js') !== false);
 
+harness_section('web push');
+require_once __DIR__ . '/lib/push-optin-render.php';
+foreach ($files as $name => $file) {
+    check("the {$name} page includes the push partial", strpos($src[$name], "require __DIR__ . '/parts/push-optin.php';") !== false);
+    check("the {$name} page loads push.js with defer only while push is on", (bool) preg_match(
+        '#<\?php if \(osc_push_enabled\(\)\) \{ \?>\s*<script src="[^"]*osclass/push\.js[^"]*"\s+defer></script>#',
+        $src[$name]
+    ));
+    check("the {$name} page loads push.js after messages.js", strpos($src[$name], 'osclass/messages.js') < strpos($src[$name], 'osclass/push.js'));
+}
+check('the compose box comes before the push partial in the thread', strpos($thread, 'class="oe-compose"') < strpos($thread, 'parts/push-optin.php'));
+check('the push partial sits outside the refreshed inbox list', strpos($src['inbox'], 'parts/push-optin.php') < strpos($src['inbox'], '<div data-osc-inbox'));
+$optinSrc = (string) file_get_contents($guiDir . 'account/parts/push-optin.php');
+check('the push partial has no HTML comment', strpos($optinSrc, '<!--') === false);
+$optin = push_optin_render(true);
+check('the push partial prints the public key into data-key', strpos($optin, 'data-key="' . push_test_key() . '"') !== false);
+check('the push form starts hidden', (bool) preg_match('/<form class="oe-push[^>]*\shidden\s/', $optin));
+check('the push form carries the CSRF fields', strpos($optin, "name='CSRFName' value='test-name'") !== false
+    && strpos($optin, "name='CSRFToken' value='test-token'") !== false);
+check('and is not stamped twice by the response filter', strpos($optin, 'class="oe-push nocsrf"') !== false);
+foreach (array('push_worker', 'push_subscribe', 'push_unsubscribe', 'push_status') as $pushAction) {
+    check("the push form names the {$pushAction} URL", strpos($optin, 'https://example.test/sub/index.php?page=ajax&amp;action=' . $pushAction) !== false);
+}
+check('the push form names the inbox', strpos($optin, 'data-inbox-url="https://example.test/sub/user/messages"') !== false);
+check('the site name is escaped into the worker URL', strpos($optin, 'title=Shop%20%26%20Co') !== false);
+pin('the push partial prints nothing while push is off', '', trim(push_optin_render(false)));
+
 harness_section('the stylesheet');
 foreach (array(
     'oe-threads', 'oe-thread', 'oe-thread-title', 'oe-thread-last', 'oe-unread', 'oe-messages', 'oe-message',
