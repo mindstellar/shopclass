@@ -560,5 +560,6 @@ the answer carries the warning `email_confirmation_sent`. The e-mail changes whe
 | `comment_pending` | `POST …/comments` | The comment shows once it is approved. |
 | `email_confirmation_sent` | `PATCH /account` | A link went to the new address. |
 | `listing_unpaid` | `POST`, `PATCH /listings` | The listing is saved but not live: it waits for payment. `payment` says what it costs and where to pay. |
+| `message_held` | `POST /account/conversations`, `POST …/messages` | The message waits for review before the other side sees it. |
 
 Errors are in [API errors](/docs/developers/api/errors/).
