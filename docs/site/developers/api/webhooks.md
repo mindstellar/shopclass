@@ -30,6 +30,8 @@ The site owner adds endpoints on **Settings → API → Webhooks**
 | `user.registered` | A user signs up. | The user |
 | `user.updated` | A user changes their profile. | The user |
 | `user.deleted` | A user is deleted. | `{"id": 23}` |
+| `message.created` | A message is sent, or a held one is released. Never while it is held. | `{"id": 9, "conversation_id": 4, "listing_id": 412, "sender_id": 23, "recipient_id": 31}` |
+| `conversation.reported` | A user reports a conversation. | `{"id": 4, "listing_id": 412, "reporter_id": 31, "reason": "scam"}`; the reason is `spam`, `scam`, `offensive` or `other` |
 | `ping` | Someone presses **Send test**. Never subscribed to. | `{"endpoint_id": "…", "message": "…"}` |
 
 Plugins can add their own events, named `ext.<slug>.<name>`.
@@ -69,6 +71,8 @@ An event is sent whichever way the change was made: the web, the admin or the AP
   API version ships. An e-mail address or phone number appears only
   where that public view shows one. For anything more, call the API with your own key.
 - **A deleted resource has its id only.**
+- **A message event never carries the text.** It holds ids only. Fetch the message with the
+  user's own credential.
 - **A big body is sent thin.** Over about 64 KB, `data` holds only `id` and `url`, and
   `thin` is `true`. Fetch the rest with `GET`.
 - **A resource the public cannot see is sent thin.** For a listing that is pending,

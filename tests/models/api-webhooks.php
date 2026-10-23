@@ -384,7 +384,8 @@ $eventData = static fn (ApiServices $kit): EventData => new EventData(
     $kit->facts(),
     $kit->userQuery(),
     $kit->commentQuery(),
-    new SystemClock()
+    new SystemClock(),
+    \mindstellar\container\Container::root()->get(\mindstellar\messaging\ConversationStore::class)
 );
 $data = $eventData($kit)->listing($item);
 pin('a listing event carries the public listing', [$item, 'Red bike', 'http://localhost/item/' . $item], [$data['id'] ?? null, $data['title'] ?? null, $data['url'] ?? null]);

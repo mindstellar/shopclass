@@ -36,6 +36,8 @@ final class Events
         'user.registered'     => ['A user signed up.', 'User'],
         'user.updated'        => ['A user changed their profile.', 'User'],
         'user.deleted'        => ['A user was deleted. The data holds their id only.', 'WebhookDeleted'],
+        'message.created'       => ['A message was sent, or a held one released. The data holds ids only, never the text.', 'WebhookMessageCreated'],
+        'conversation.reported' => ['A user reported a conversation. The data holds ids and the reason.', 'WebhookConversationReported'],
         self::PING            => ['A test event, sent by "Send test".', 'WebhookPing'],
     ];
 
