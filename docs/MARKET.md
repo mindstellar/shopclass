@@ -412,7 +412,7 @@ Ordered cheapest-first so an obvious mistake fails in seconds.
 | 3 | **Header** | ❌ fail | Parsed with the **same regexes core uses** (see §6.4); `Version:` is semver-ish, is **greater than** the version currently in the catalog, and matches the changelog's newest entry |
 | 4 | **Compatibility** | ❌ fail / ⚠️ warn | `Requires Shopclass` ≤ latest released core (fail if it names a version that does not exist); `Tested up to` must be a real released core version; **warn** if `Tested up to` is more than one minor behind current core |
 | 5 | **Parse** | ❌ fail | `php -l` across 8.0 – 8.5, mirroring `tests/php-lint.sh` |
-| 6 | **PHP floor** | ❌ fail | PHPCompatibility `--runtime-set testVersion 8.0-` |
+| 6 | **PHP floor** | ❌ fail | PHPCompatibility `--runtime-set testVersion 8.0-` (the 7.0 floor; a package that needs core 7.1+ may use 8.2) |
 | 7 | **Deprecated API** | ⚠️ **warn only** | §6.3 |
 | 8 | **Security scan** | ❌ fail / ⚠️ warn | Fail on `eval(`, `assert(` on a string, `system/exec/shell_exec/passthru/proc_open`, `base64_decode` of a >200-char literal, `create_function`. Warn on raw `$_GET/$_POST/$_REQUEST` (should use `Params`), state-changing POST handlers with no `osc_csrf_check()`, `echo` of un-escaped request data |
 | 9 | **Smoke install** | ❌ fail | §6.5 |
