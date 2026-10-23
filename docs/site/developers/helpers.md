@@ -618,7 +618,7 @@ Core defines 1225 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_title($locale = '')` | Gets title from current item, if $locale is unspecified $locale is current user locale |
 | `osc_item_total_comments()` | Gets total number of comments of current item |
 | `osc_item_user_id()` | Gets user id from current item |
-| `osc_item_uses_messaging()` | Whether the contact form on the current item starts an on-site conversation instead of an e-mail. |
+| `osc_item_uses_messaging()` | Whether the contact form on the current item starts an on-site conversation instead of an e-mail. A shop-mode buyer has no inbox, so they keep the e-mail form. |
 | `osc_item_views($viewAll = false)` | return number of views of current item |
 | `osc_item_zip()` | Gets zip code of current item |
 | `osc_list_items_per_page()` | Gets number of items per page for current pagination |

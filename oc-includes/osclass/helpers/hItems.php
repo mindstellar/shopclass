@@ -141,12 +141,13 @@ function osc_item_user_id()
 
 /**
  * Whether the contact form on the current item starts an on-site conversation instead of an e-mail.
+ * A shop-mode buyer has no inbox, so they keep the e-mail form.
  *
  * @return bool
  */
 function osc_item_uses_messaging(): bool
 {
-    if (!osc_messaging_enabled() || !osc_is_web_user_logged_in()) {
+    if (!osc_messaging_enabled() || !osc_is_web_user_logged_in() || osc_is_shopper()) {
         return false;
     }
     $sellerId = osc_item_user_id();

@@ -66,6 +66,10 @@ pin('a guest', false, osc_item_uses_messaging());
 $signIn($seller);
 pin('the seller\'s own listing', false, osc_item_uses_messaging());
 $signIn($buyer);
+$set('site_mode', 'shop');
+pin('a shop-mode buyer keeps the e-mail form', false, osc_item_uses_messaging());
+$set('site_mode', 'classifieds');
+pin('and gets messaging back outside shop mode', true, osc_item_uses_messaging());
 $show($guest);
 pin('a listing with no seller account', false, osc_item_uses_messaging());
 
