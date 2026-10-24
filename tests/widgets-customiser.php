@@ -479,6 +479,14 @@ pin('...and stays where it was', 'home', $admin->query("SELECT s_location FROM $
 $r = drive('widget_move_post', array('location' => 'footer', 'id' => $legacy, 'ids' => array($legacy)));
 pin('move: a legacy HTML widget is never limited', 0, $r['json']['error'] ?? null);
 
+$heroAt = WidgetStore::add(array('s_location' => 'footer', 'e_kind' => 'html', 's_description' => 'Hero', 's_content' => '', 's_type' => 'aisle.hero', 's_config' => '{}', 'i_order' => 9));
+$GLOBALS['flashes'] = array();
+$r = drive('edit_widget_post', array('id' => $heroAt, 's_type' => 'only.home', 'description' => 'Hero'));
+pin('edit: a type that does not fit the stored section is refused', 'aisle.hero', $admin->query("SELECT s_type FROM $table WHERE pk_i_id = $heroAt")->fetch_row()[0]);
+check('...and flashes an error', in_array('error:Home only cannot be placed in this section.', $GLOBALS['flashes'] ?? array(), true));
+$r = drive('edit_widget_post', array('id' => $heroAt, 's_type' => 'only.footer', 'description' => 'Hero'));
+pin('edit: a type that fits is saved', 'only.footer', $admin->query("SELECT s_type FROM $table WHERE pk_i_id = $heroAt")->fetch_row()[0]);
+
 $admin->query("DELETE FROM $table");
 customiser_kit_declare(array('locations' => array(
     'home'   => array('label' => 'Home page', 'types' => array('only.home', 'only.footer'), 'preview' => WEB_PATH),

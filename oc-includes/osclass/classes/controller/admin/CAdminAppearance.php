@@ -248,6 +248,19 @@ class CAdminAppearance extends AdminSecBaseModel
         }
 
         $type = $this->resolveWidgetType(Params::getParam('s_type'));
+        if ($type !== null) {
+            try {
+                $stored = WidgetStore::find(Params::getParamInt('id'));
+            } catch (Throwable $e) {
+                $stored = null;
+            }
+            if ($stored !== null && !$this->typeFits($type, (string) $stored['s_location'])) {
+                osc_add_flash_error_message($this->typeMisfitMessage($type), 'admin');
+                $this->redirectTo($this->widgetReturnUrl());
+
+                return;
+            }
+        }
 
         if ($type !== null) {
             $config = WidgetStore::keepEnabled(Params::getParamInt('id'), $this->buildWidgetConfig($type));
