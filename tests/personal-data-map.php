@@ -46,7 +46,7 @@ preg_match_all('#CREATE TABLE /\*TABLE_PREFIX\*/(\w+)\s*\((.*?)\n\)\s*ENGINE#s',
 // "retained, and why", a false negative costs a hole nobody sees.
 $personal = array();
 foreach ($tables as $t) {
-    if (preg_match('/fk_i_user_id|s_email|s_access_ip|\bs_ip\b/i', $t[2])) {
+    if (preg_match('/fk_i_(user|buyer|seller|sender|reporter)_id|s_email|s_access_ip|\bs_ip\b/i', $t[2])) {
         $personal[] = $t[1];
     }
 }
@@ -87,5 +87,8 @@ foreach ($mapped as $table) {
     $ok = (bool)preg_match("/'" . $table . "' => array\(.*?'why'      => '/s", $src);
     pin($table . ' has a why', true, $ok);
 }
+
+harness_section('the key-value entry names the push subscriptions');
+pin('t_key_value why mentions push_subscriptions', 1, preg_match("/'t_key_value' => array\(.*?push_subscriptions.*?'t_item_report_log'/s", $src));
 
 exit(harness_result());

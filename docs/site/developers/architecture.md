@@ -121,17 +121,20 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `form` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
 | `http` | Outgoing HTTPS requests for core and plugins: `HttpClient`, `CurlHttpClient` |
 | `job` | The background job queue |
+| `live` | Push to open browsers: publisher, status |
 | `language` | Installing and storing languages |
 | `listing` | Listings and their photos: posting, editing, rules, reads and mail |
 | `location` | Countries, regions, cities: reads, admin and import |
 | `logger` | The admin log and error logging |
 | `mail` | Sending e-mail (`Mailer`) and the e-mails core sends (`CoreEmails`) |
 | `market` | The plugin and theme market: catalogue, install, compatibility |
+| `messaging` | On-site messages between a buyer and a seller: threads, rules, mail |
 | `migration` | Running the database migrations |
 | `model` | Tables several modules use: the old `Item`, `User`… classes (kept for plugins; add no methods) and new `mindstellar\model` stores |
 | `moderation` | What an admin does to a listing's or comment's status, and the keyword block list |
 | `pages` | Static pages and page templates |
 | `privacy` | Where a person's data lives, so a copy can be handed back |
+| `push` | Web push wake-ups: VAPID keys, browser subscriptions, the sender |
 | `routing` | URLs: routes, the front controller and reserved slugs |
 | `search` | Search and saved-search alerts; the SQL is built in `query/` |
 | `seo` | The head data of a public page: canonical URL, title, robots, breadcrumbs, hreflang |
@@ -318,6 +321,10 @@ Classes that moved keep their old name for a release, marked `@deprecated`:
 | `mindstellar\security\UserReauth` | `mindstellar\auth\Reauth` |
 | `mindstellar\security\ItemAccess` | `mindstellar\listing\ListingPolicy` |
 | `Item::liveConditions()` | `mindstellar\listing\ListingStatus::liveConditions()` |
+
+## Live delivery
+
+`mindstellar\live\LivePublisher` is the swap point for pushing a note to a browser. `NullPublisher` does nothing and `NchanPublisher` posts to nginx. To use Mercure or Centrifugo, write a class that implements `LivePublisher`, register it in the container, and add the server config; a publish must never throw or block a send.
 
 ## One rule, one place
 

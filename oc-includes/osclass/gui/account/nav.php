@@ -70,6 +70,8 @@ if (osc_is_user_dashboard()) {
     $navCurrent = 'opt_items';
 } elseif (osc_is_list_alerts()) {
     $navCurrent = 'opt_alerts';
+} elseif (osc_is_messages_page()) {
+    $navCurrent = 'opt_messages';
 } elseif (osc_is_user_profile()) {
     $navCurrent = 'opt_account';
 } elseif (osc_is_change_email_page()

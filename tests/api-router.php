@@ -179,7 +179,9 @@ ksort($routeTable);
 ksort($adminTable);
 pin('the core table needs no database; every route names its auth and scope', [
     'DELETE account/alerts/{id}'        => 'user alerts:write',
+    'DELETE account/conversations/{id}/block' => 'user conversations:write',
     'DELETE account/keys/{id}'          => 'user account:write',
+    'DELETE account/push-subscriptions/{browser}' => 'user conversations:write',
     'DELETE account/sessions/{session}' => 'user account:write',
     'DELETE account/wishlist/{listing}' => 'user wishlist:write',
     'DELETE comments/{id}'              => 'user comments:write',
@@ -190,6 +192,9 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET account/alerts'                => 'user alerts:read',
     'GET account/alerts/{id}'           => 'user alerts:read',
     'GET account/cart'                  => 'user cart:read',
+    'GET account/conversations'         => 'user conversations:read',
+    'GET account/conversations/{id}'    => 'user conversations:read',
+    'GET account/conversations/{id}/messages' => 'user conversations:read',
     'GET account/keys'                  => 'user account:write',
     'GET account/keys/{id}'             => 'user account:write',
     'GET account/listings'              => 'user account:read',
@@ -226,6 +231,11 @@ pin('the core table needs no database; every route names its auth and scope', [
     'PATCH account'                     => 'user account:write',
     'PATCH listings/{id}'               => 'user listings:write',
     'POST account/alerts'               => 'user alerts:write',
+    'POST account/conversations'        => 'user conversations:write',
+    'POST account/conversations/{id}/block' => 'user conversations:write',
+    'POST account/conversations/{id}/messages' => 'user conversations:write',
+    'POST account/conversations/{id}/read' => 'user conversations:write',
+    'POST account/conversations/{id}/report' => 'user conversations:write',
     'POST account/keys'                 => 'user account:write',
     'POST account/orders'               => 'user orders:write',
     'POST account/orders/{id}/cancel'   => 'user orders:write',
@@ -242,6 +252,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST photos'                       => 'user listings:write',
     'POST users'                        => 'none -',
     'PUT account/cart'                  => 'user cart:write',
+    'PUT account/push-subscriptions'    => 'user conversations:write',
     'PUT account/wishlist'              => 'user wishlist:write',
 ], $routeTable);
 pin('every admin route needs an admin key and names an admin scope', [
@@ -263,6 +274,8 @@ pin('every admin route needs an admin key and names an admin scope', [
     'GET admin/cities/{id}'                       => 'admin admin:taxonomy',
     'GET admin/comments'                          => 'admin admin:comments',
     'GET admin/comments/{id}'                     => 'admin admin:comments',
+    'GET admin/conversations'                     => 'admin admin:conversations',
+    'GET admin/conversations/{id}'                => 'admin admin:conversations',
     'GET admin/currencies/{code}'                 => 'admin admin:taxonomy',
     'GET admin/custom-fields/{id}'                       => 'admin admin:taxonomy',
     'GET admin/jobs'                              => 'admin admin:settings',
@@ -270,6 +283,8 @@ pin('every admin route needs an admin key and names an admin scope', [
     'GET admin/keys/{id}'                         => 'admin admin:keys',
     'GET admin/listings'                          => 'admin admin:listings',
     'GET admin/listings/{id}'                     => 'admin admin:listings',
+    'GET admin/messages'                          => 'admin admin:conversations',
+    'GET admin/messages/{id}'                     => 'admin admin:conversations',
     'GET admin/regions/{id}'                      => 'admin admin:taxonomy',
     'GET admin/settings'                          => 'admin admin:settings',
     'GET admin/users'                             => 'admin admin:users',
@@ -293,12 +308,16 @@ pin('every admin route needs an admin key and names an admin scope', [
     'POST admin/areas'                            => 'admin admin:taxonomy',
     'POST admin/categories'                       => 'admin admin:taxonomy',
     'POST admin/cities'                           => 'admin admin:taxonomy',
+    'POST admin/conversations/{id}/clear-report'  => 'admin admin:conversations',
+    'POST admin/conversations/{id}/close'         => 'admin admin:conversations',
     'POST admin/currencies'                       => 'admin admin:taxonomy',
     'POST admin/custom-fields'                           => 'admin admin:taxonomy',
     'POST admin/keys'                             => 'admin admin:keys',
     'POST admin/keys/{id}/rotate'                 => 'admin admin:keys',
     'POST admin/listings/{id}/bump'               => 'admin admin:listings',
     'POST admin/listings/{id}/publish'            => 'admin admin:listings',
+    'POST admin/messages/{id}/release'            => 'admin admin:conversations',
+    'POST admin/messages/{id}/remove'             => 'admin admin:conversations',
     'POST admin/regions'                          => 'admin admin:taxonomy',
     'POST admin/users/{id}/sign-out-everywhere'   => 'admin admin:users',
     'POST admin/webhooks'                         => 'admin admin:webhooks',
@@ -660,6 +679,18 @@ pin('a core refusal reason maps to its API code', ['feature_disabled', 'wrong_cr
     \mindstellar\api\Problem::fromRefusal(new \mindstellar\exception\ForbiddenException('Sign in.', \mindstellar\exception\ForbiddenException::SIGN_IN))->body()['code'],
     \mindstellar\api\Problem::fromRefusal(new \mindstellar\exception\ForbiddenException('No.', 'something_else'))->body()['code'],
 ]);
+
+foreach ([
+    new \mindstellar\exception\RefusedException('No.'),
+    new \mindstellar\exception\ForbiddenException('No.', \mindstellar\exception\ForbiddenException::SIGN_IN),
+    new \mindstellar\exception\NotFoundException('No.'),
+    new \mindstellar\exception\ConflictException('No.', \mindstellar\exception\ConflictException::ALREADY_REVIEWED),
+    new \mindstellar\exception\InvalidException('/body', 'minLength', 'No.'),
+    \mindstellar\exception\BlockedException::rateLimit('No.', 5),
+    new \mindstellar\exception\BlockedException('No.', 5),
+] as $refused) {
+    pin(get_class($refused) . ' answers the status the web pages use', $refused->httpStatus(), \mindstellar\api\Problem::fromRefusal($refused)->status());
+}
 
 harness_section('If-Match');
 $coreGets  = [];

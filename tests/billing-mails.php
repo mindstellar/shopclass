@@ -300,7 +300,7 @@ foreach ([Receipts::MAIL_DELIVERED => Order::STATUS_DELIVERED, Receipts::MAIL_CA
 
 harness_section('the mail events');
 $bridge = \mindstellar\event\HookBridge::active();
-pin('MailComposing owns the 32 mail text names', [32, MailComposing::class], [count(MailComposing::legacyNames()), $bridge->eventFor('email_order_placed_title')]);
+pin('MailComposing owns the 36 mail text names', [36, MailComposing::class], [count(MailComposing::legacyNames()), $bridge->eventFor('email_order_placed_title')]);
 check('the seven hook_email_ trigger names are gone', !Plugins::hasHook('hook_email_order_placed') && !Plugins::hasHook('hook_email_product_alert'));
 
 $seen  = [];

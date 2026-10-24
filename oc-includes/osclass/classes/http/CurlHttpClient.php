@@ -173,6 +173,9 @@ final class CurlHttpClient implements HttpClient
                 }
             }
             $curl[CURLOPT_RESOLVE] = [$entry];
+            // A proxy from the environment would resolve the host itself and skip the pin.
+            $curl[CURLOPT_PROXY]   = '';
+            $curl[CURLOPT_NOPROXY] = '*';
         }
         if ($body !== null) {
             $curl[CURLOPT_POSTFIELDS] = $body;

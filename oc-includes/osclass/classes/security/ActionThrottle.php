@@ -33,6 +33,8 @@ class ActionThrottle
         'user_contact'    => 15,
         'send_friend'     => 5,
         'alert_subscribe' => 10,
+        'message_send'    => 30,
+        'message_start'   => 10,
     );
 
     /**
@@ -71,6 +73,39 @@ class ActionThrottle
         $limit = (array) osc_apply_filter('action_throttle_limit', array('max' => $max, 'window' => $window), $context);
 
         return array((int) ($limit['max'] ?? $max), max(1, (int) ($limit['window'] ?? $window)));
+    }
+
+    /**
+     * Count one event for $key and say whether it is over the limit for $context, read as
+     * limitFor() does. Fails open, as RateLimit does.
+     *
+     * @param string   $context e.g. 'comment_post'
+     * @param string   $key     who is limited, e.g. 'user:12'
+     * @param int      $default the limit when no preference is stored
+     * @param int      $window  seconds
+     * @param int|null $now     the current time; time() when null
+     */
+    public static function over(string $context, string $key, int $default, int $window = 3600, ?int $now = null): bool
+    {
+        [$max, $window] = self::limitFor($context, $default, $window);
+        if ($max <= 0) {
+            return false;
+        }
+
+        return !RateLimit::hit($context, $key, $max, $window, true, $now);
+    }
+
+    /**
+     * Seconds until the window over() counts in starts again.
+     *
+     * @param int|null $now the current time; time() when null
+     */
+    public static function retryAfter(string $context, int $default, int $window = 3600, ?int $now = null): int
+    {
+        $window = self::limitFor($context, $default, $window)[1];
+        $now  ??= time();
+
+        return $window - ($now % $window);
     }
 
     /**

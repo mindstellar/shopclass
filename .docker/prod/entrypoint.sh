@@ -72,6 +72,10 @@ map $http_cookie $mc_private {
     default 0;
     "~(^|;\s*)(oc_cache_bypass|oc_userLocale|oc_theme|osclass|PHPSESSID)=" 1;
 }
+map "$mc_private:$arg_page" $mc_inm {
+    default "";
+    "1:ajax" $http_if_none_match;
+}
 CONF
             cat >> "$php_conf" <<'CONF'
 fastcgi_cache            MICROCACHE;
@@ -81,6 +85,7 @@ fastcgi_no_cache         $mc_private;
 fastcgi_cache_lock       on;
 fastcgi_cache_use_stale  updating error timeout http_500 http_503;
 fastcgi_cache_background_update on;
+fastcgi_param            HTTP_IF_NONE_MATCH $mc_inm if_not_empty;
 add_header X-Cache $upstream_cache_status always;
 CONF
             # A PURGE here clears the whole cache; core sends one after a site-wide
@@ -146,6 +151,144 @@ CONF
     fi
 }
 write_microcache_conf
+
+# Live messages through nchan, on with OSC_LIVE=nchan (the image default); any other value
+# leaves both files empty and pages poll. $1 is the nginx directory (tests/docker-live-conf.sh).
+write_live_conf() {
+    live_dir="${1:-/etc/nginx}"
+    live_http="$live_dir/live_http.conf"
+    live_server="$live_dir/live_server.conf"
+    : > "$live_http"
+    : > "$live_server"
+    live_publish_url=
+    if [ "${OSC_LIVE:-}" != "nchan" ]; then
+        echo "entrypoint: live messages off."
+        return 0
+    fi
+
+    live_via=
+    echo 'nchan_shared_memory_size 32m;' >> "$live_http"
+    if [ "${OSC_CACHE:-}" = "redis" ] && [ -n "${OSC_CACHE_HOST:-}" ]; then
+        r_host="$OSC_CACHE_HOST"
+        r_port="${OSC_CACHE_PORT:-6379}"
+        r_db="${OSC_CACHE_DB:-0}"
+        r_user="${OSC_CACHE_USERNAME:-}"
+        r_pass="${OSC_CACHE_PASSWORD:-}"
+        # Values go into nginx inside double quotes, so a quote, backslash or line break is refused.
+        if printf '%s' "$r_host" | grep -Eq '^[A-Za-z0-9._-]+$' \
+            && printf '%s' "$r_port" | grep -Eq '^[0-9]+$' \
+            && printf '%s' "$r_db" | grep -Eq '^[0-9]+$' \
+            && ! printf '%s' "$r_user$r_pass" | grep -q '["\\]' \
+            && [ "$(printf '%s' "$r_user$r_pass" | wc -l)" -eq 0 ]; then
+            {
+                echo 'upstream shopclass_live {'
+                printf '    nchan_redis_server "redis://%s:%s/%s";\n' "$r_host" "$r_port" "$r_db"
+                [ -z "$r_user" ] || printf '    nchan_redis_username "%s";\n' "$r_user"
+                [ -z "$r_pass" ] || printf '    nchan_redis_password "%s";\n' "$r_pass"
+                echo '}'
+                # Sites sharing one Valkey must not share channels, and pub/sub ignores the db number.
+                printf 'nchan_redis_namespace shopclass:live:%s;\n' "$(printf '%s' "${WEB_PATH:-}" | md5sum | cut -c1-12)"
+            } >> "$live_http"
+            chmod 600 "$live_http"
+            live_via=", Valkey"
+        else
+            echo "entrypoint: warning: an OSC_CACHE_* value has a character nchan cannot take; live messages stay in this container only." >&2
+        fi
+    fi
+    # nchan_redis_pass is not inherited, so each location names the upstream itself.
+    live_pass() {
+        [ -z "$live_via" ] || printf '%s    nchan_redis_pass shopclass_live;\n' "$1"
+    }
+    {
+        cat <<'CONF'
+server {
+    listen 127.0.0.1:8090;
+    listen [::1]:8090;
+    set_real_ip_from 0.0.0.0/32;
+    access_log off;
+    location ~ ^/live/pub/(user-\d+)$ {
+        nchan_publisher http;
+        nchan_channel_id $1;
+        nchan_message_buffer_length 10;
+        nchan_message_timeout 60s;
+CONF
+        live_pass '    '
+        printf '    }\n    location / {\n        return 404;\n    }\n}\n'
+        # Runs messages_live_auth for /live/auth below: nchan's authorise call crashes the
+        # worker when it goes straight to fastcgi_pass. Params are listed by hand, as
+        # "include fastcgi_params" plus an override sends a name twice.
+        cat <<'CONF'
+server {
+    listen 127.0.0.1:8091;
+    set_real_ip_from 0.0.0.0/32;
+    access_log off;
+    root /application;
+    location = /live/auth {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_pass_request_body off;
+        fastcgi_param GATEWAY_INTERFACE CGI/1.1;
+        fastcgi_param SERVER_SOFTWARE nginx;
+        fastcgi_param SERVER_PROTOCOL $server_protocol;
+        fastcgi_param SERVER_NAME $host;
+        fastcgi_param SERVER_PORT $http_x_osc_server_port;
+        fastcgi_param DOCUMENT_ROOT $document_root;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param REQUEST_URI /index.php?page=ajax&action=messages_live_auth;
+        fastcgi_param QUERY_STRING page=ajax&action=messages_live_auth;
+        fastcgi_param REQUEST_METHOD GET;
+        fastcgi_param CONTENT_TYPE "";
+        fastcgi_param CONTENT_LENGTH "";
+        fastcgi_param REDIRECT_STATUS 200;
+        fastcgi_param REMOTE_ADDR $http_x_osc_remote_addr;
+        fastcgi_param HTTPS $http_x_osc_https;
+        fastcgi_param HTTP_X_OSC_REMOTE_ADDR "" if_not_empty;
+        fastcgi_param HTTP_X_OSC_HTTPS "" if_not_empty;
+        fastcgi_param HTTP_X_OSC_SERVER_PORT "" if_not_empty;
+    }
+    # Only the authorise call; no static files from the app tree.
+    location / {
+        return 404;
+    }
+}
+CONF
+    } >> "$live_http"
+    # The channel comes from the URL; proxy_set_header replaces any X-Channel-Id or X-Osc-*
+    # header the client sent. The authorise call has no client connection, hence the set lines.
+    {
+        cat <<'CONF'
+location ~ ^/live/sub/(?<osc_live_channel>user-\d+)$ {
+    nchan_subscriber eventsource;
+    nchan_channel_id $osc_live_channel;
+    nchan_authorize_request /live/auth;
+    nchan_subscriber_first_message newest;
+    # Same origin only: no cross-origin reads from a sibling subdomain.
+    nchan_access_control_allow_origin "http://$http_host https://$http_host";
+    gzip off;
+    set $osc_live_addr $remote_addr;
+    set $osc_live_https $fcgi_https;
+    set $osc_live_port $server_port;
+CONF
+        live_pass ''
+        echo '}'
+        cat <<'CONF'
+location = /live/auth {
+    internal;
+    proxy_pass http://127.0.0.1:8091;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Channel-Id $osc_live_channel;
+    proxy_set_header X-Osc-Remote-Addr $osc_live_addr;
+    proxy_set_header X-Osc-Https $osc_live_https;
+    proxy_set_header X-Osc-Server-Port $osc_live_port;
+}
+CONF
+    } >> "$live_server"
+    live_publish_url=http://127.0.0.1:8090/live/pub/
+    echo "entrypoint: live messages on (nchan$live_via)."
+}
+write_live_conf
 
 # PHP worker pool: php-fpm's own default of 5 workers leaves a multi-core host idle.
 # OSC_FPM_MAX_CHILDREN sets it; unset, it is three per CPU, at least 5, at most memory / 64 MB.
@@ -326,5 +469,8 @@ echo "entrypoint: startup checks complete; starting web stack."
 # Exported only now: nginx is not running during the CLI steps above.
 if [ -n "${page_cache_purge_url:-}" ]; then
     export OSC_PAGE_CACHE_PURGE_URL="$page_cache_purge_url"
+fi
+if [ -n "${live_publish_url:-}" ] && [ -z "${OSC_LIVE_PUBLISH_URL:-}" ]; then
+    export OSC_LIVE_PUBLISH_URL="$live_publish_url"
 fi
 exec "$@"

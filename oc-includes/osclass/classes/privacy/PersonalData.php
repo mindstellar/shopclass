@@ -137,6 +137,20 @@ class PersonalData
                 'erase'    => self::ERASE_CASCADE,
                 'why'      => 'Their API keys and signed-in app sessions: name, scopes, last use and address.',
             ),
+            't_conversation' => array(
+                'user_key' => null,
+                'export'   => false,
+                'erase'    => self::ERASE_CASCADE,
+                'why'      => 'Message threads they took part in as buyer or seller. Two account columns, so the '
+                    . 'messaging module adds them on personal_data_export; the account foreign keys remove them '
+                    . 'with the account.',
+            ),
+            't_message' => array(
+                'user_key' => null,
+                'export'   => false,
+                'erase'    => self::ERASE_CASCADE,
+                'why'      => 'Their messages, removed with the thread.',
+            ),
             't_key_value' => array(
                 'user_key' => null,
                 'export'   => false,
@@ -145,7 +159,9 @@ class PersonalData
                     . 'stored answers to repeated API writes here; an answer can hold the profile it returned, '
                     . 'and each is deleted within a day. A pending email change is also kept here; it is '
                     . 'exported as pending_email_change and deleted with the account. The wishlist is kept here too; '
-                    . 'it is exported as wishlist and deleted with the account. So is the saved cart, as saved_cart.',
+                    . 'it is exported as wishlist and deleted with the account. So is the saved cart, as saved_cart. '
+                    . 'Browsers asked to notify about new messages are exported as push_subscriptions and deleted '
+                    . 'with the account.',
             ),
             't_item_report_log' => array(
                 'user_key' => null,

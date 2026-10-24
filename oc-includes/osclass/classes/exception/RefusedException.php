@@ -41,4 +41,12 @@ class RefusedException extends \InvalidArgumentException
     {
         return $this->notices;
     }
+
+    /**
+     * The HTTP status every web and API caller answers this refusal with.
+     */
+    public function httpStatus(): int
+    {
+        return 422;
+    }
 }

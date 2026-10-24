@@ -5,12 +5,12 @@ sidebar:
   order: 22
 ---
 
-Fourteen views make up the account section: the dashboard, the seller's
-listings, alerts, the profile form, the three settings pages, sign in, register,
+Sixteen views make up the account section: the dashboard, the seller's
+listings, alerts, the inbox, a conversation, the profile form, the three settings pages, sign in, register,
 the two password-reset steps, a member's public page, the slot a plugin's
 account page renders into, and API access.
 
-A theme that ships all fourteen never sees any of this. A theme that ships none
+A theme that ships all sixteen never sees any of this. A theme that ships none
 of them used to produce **blank pages**: core asked for a file, found nothing,
 and printed an empty document.
 
@@ -80,6 +80,20 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-thumb-empty` | the no-image placeholder | carries `.oe-thumb` too |
 | `.oe-price` | a listing's price | one already-formatted string, currency included |
 | `.oe-badge` | a status flag | always paired with a word, never colour alone; modifiers `paid` `pending` `failed` `cancelled` `refunded` |
+| `.oe-threads` | the inbox's list of conversations | a `<ul>`; no bullets, no padding |
+| `.oe-thread` | one conversation in the inbox | an `<li>` that also carries `.oe-panel`; holds `.oe-thread-title` and an `.oe-meta` line |
+| `.oe-thread-title` | a conversation's listing title | a heading; a link to the thread in the inbox |
+| `.oe-thread-last` | the date of a conversation's last message | a `<span>` in the `.oe-meta` line |
+| `.oe-unread` | the unread count on a conversation | also carries `.oe-badge`; always paired with a word |
+| `.oe-messages` | the messages of one conversation, oldest first | an `<ol>` carrying the `data-osc-messages` attributes the thread script reads |
+| `.oe-message` | one message | an `<li>`; `.is-mine` for the viewer's own (right), `.is-held` for one waiting for review |
+| `.oe-message-body` | a message's text | plain text, line breaks kept with `white-space: pre-wrap` |
+| `.oe-message-meta` | who wrote a message and when | a `<p>` holding the name, a `<time>` and, for a held message, a badge |
+| `.oe-compose` | the reply form under a conversation | a `<form>` with one `textarea name="body"` and a send button |
+| `.oe-push` | the "Notify me on this device" switch on the messages pages, shown only while web push is on | a `<form hidden>` that `push.js` reveals once the browser supports push; holds one button and a note line |
+| `.oe-msg-link` | the header link to the inbox from `osc_messaging_link()` | an `<a>` outside `.oe-page`, so core ships no style for it; holds the theme's icon, an `.oe-msg-label` and an `.oe-unread` badge |
+| `.oe-msg-label` | the word "Messages" in `.oe-msg-link` | hide it visually for an icon-only link; the link keeps its `aria-label` |
+| `.oe-thread-actions` | the Block, Unblock and Report links under a conversation | holds the shared row actions and a `<details>` for the report form |
 | `.oe-pager` | the paging strip | core's paginator markup inside |
 | `.oe-empty` | an empty state | replaces the list, never sits beside it |
 | `.oe-panel` | a bordered block grouping related content | also used by the credits pages |
@@ -213,7 +227,7 @@ opens redirects to the dashboard.
 
 Every account page fires two actions inside its content column. The argument is
 the page: `user-dashboard`, `user-items`, `user-alerts`, `user-profile`,
-`user-signin`, `user-custom`, `user-api_access`, `user-delete_account`, and on the credits pages
+`user-signin`, `user-custom`, `user-api_access`, `user-messages`, `user-conversation`, `user-delete_account`, and on the credits pages
 `billing-wallet`, `billing-buy`, `billing-orders` or `billing-publish`.
 
 ```php
@@ -347,6 +361,98 @@ or `create` (with `name`, `expires` as `YYYY-MM-DD`, `scopes[]` and `password`).
 The page reuses `.oe-panel`, `.oe-badge`, `.oe-group`, `.oe-field`, `.oe-check` and
 `.oe-link-btn`. The two page hooks fire as on the other account pages.
 
+## The messages pages
+
+`user-messages.php` is the inbox and `user-conversation.php` one conversation between a buyer and
+a seller. Both need the on-site messaging switch (Users > Settings); with it off, the pages
+redirect to the dashboard.
+
+| | |
+|---|---|
+| Fallback files | `oc-includes/osclass/gui/account/user-messages-content.php`, `user-conversation-content.php` |
+| URLs | `osc_messaging_inbox_url()`, `osc_messaging_thread_url($id)` |
+| Nav entry | "Messages", class `opt_messages`, with the unread count while there is one |
+
+`user-messages.php` gets these view variables:
+
+| Variable | Holds |
+|---|---|
+| `conversations` | Up to 20 conversations, newest first. Each is the stored row plus `title`, `other_name`, `side`, `unread` and `url`. |
+| `older` | The link to the next page, or `null`. |
+
+`user-conversation.php` gets:
+
+| Variable | Holds |
+|---|---|
+| `conversation` | The stored row. `s_state` is `open`, `held`, `reported` or `closed`. |
+| `messages` | Messages oldest first. Each has `pk_i_id`, `fk_i_sender_id`, `s_body` (plain text, escape it), `s_state` and `dt_created`. The viewer's own held messages are in the list; the other side's are not. |
+| `names` | User id to display name. |
+| `title`, `item_url` | The listing's title and link; `item_url` is `null` once the listing is gone. |
+| `can_send` | `''` when the viewer may write, else `blocked`, `closed` or `not_party`. |
+| `my_block`, `their_block` | Who blocked the conversation. |
+
+The reply form posts `page=messages`, `action=send_post`, `id` and `body`. Block and unblock post
+`block_post` and `unblock_post` with `id`; a report posts `report_post` with `id` and a `reason`
+of `spam`, `scam`, `offensive` or `other`. All carry the CSRF token. Core's script
+`oc-includes/assets/osclass/messages.js` sends the reply without a page load and adds it to the
+`.oe-messages` list; a theme that wants the same loads it and keeps the `data-osc-messages`
+attributes. It exposes `window.oscMessages.appendMessage(row)`.
+
+Both messages pages print the partial `oc-includes/osclass/gui/account/parts/push-optin.php`: a
+`<form class="oe-push" data-osc-push hidden>` that prints nothing while `osc_push_enabled()` is
+false. Core's `oc-includes/assets/osclass/push.js` reads its attributes, reveals it when the
+browser supports push, and toggles the subscription. A theme styles it and does not copy it.
+`push.js` reads these:
+
+| Attribute | Holds |
+|---|---|
+| `data-key` | The public key, from `osc_push_public_key()` |
+| `data-worker-url` | The service worker script (`push_worker`) |
+| `data-subscribe-url`, `data-unsubscribe-url`, `data-status-url` | The `push_subscribe`, `push_unsubscribe` and `push_status` AJAX actions |
+| `data-inbox-url` | Where a click on the notification goes |
+| `data-on-label`, `data-off-label`, `data-on-note`, `data-blocked-note`, `data-error-note` | The texts, already translated |
+
+The form holds one `<button type="submit">` and a `[data-osc-push-note]` line, and carries the CSRF
+token. The worker is `oc-includes/assets/osclass/push-worker.js`, served by PHP so it can be
+switched off.
+
+The pages reuse `.oe-panel`, `.oe-badge`, `.oe-field`, `.oe-check`, `.oe-actions` and `.oe-link-btn`.
+The two page hooks fire as on the other account pages.
+
+### Messaging in a theme
+
+Core owns the messaging markup and scripts; a theme places them and styles the `.oe-*` classes,
+light and dark, phone and desktop. A theme never writes its own messaging form, link, badge or
+script.
+
+- **The pages.** Ship no `user-messages.php` or `user-conversation.php`. Core's partials render
+  inside your [chrome](/docs/developers/theme-chrome/).
+- **The header link.** `osc_messaging_link($args)` returns the link to the inbox, or `''` while
+  messaging is off, for a guest and for a shopper. `$args['icon']` is your icon's HTML, printed as
+  given; `$args['class']` adds classes. The markup is
+  `a.oe-msg-link[data-osc-messages-link] > span.oe-msg-label + span.oe-badge.oe-unread[data-osc-unread]`.
+  The badge has `hidden` at 0, so keep `[hidden]` hidden if you set `display` on it.
+- **The live count.** The first `osc_messaging_link()` on a page loads `messages.js`, which sets
+  every `[data-osc-unread]` badge and the link's `aria-label` after each check, on every page.
+  Do not add a script for it.
+- **The contact form.** Call `osc_item_contact_form()`. When the listing uses messaging it shows
+  only the message, the captcha and the button, with a "You are writing as" line above. Otherwise
+  it is the e-mail form.
+
+Messaging needs core 7.1. To keep a theme working on 7.0, check `function_exists()` once, in one
+helper in `functions.php`, and call that helper from your views:
+
+```php
+function mytheme_messaging_link(array $args = array()): string
+{
+    return function_exists('osc_messaging_link') ? osc_messaging_link($args) : '';
+}
+```
+
+Pass the contact form's option as
+`function_exists('osc_item_uses_messaging') && osc_item_uses_messaging()`. A 7.0 core ignores
+the key and prints the e-mail form.
+
 ## The pay step
 
 When a seller posts over the listing limit and the site takes payment at the end of posting,
@@ -417,7 +523,10 @@ was typed. A plugin handling its own contact-style form can do the same with
 
 The contact page and the share form fire `contact_form` and then
 `admin_contact_form` inside the form. The seller contact form fires
-`item_contact_form`. The contact page also fires `contact_form_top` before the
+`item_contact_form` with the item id. A theme that puts the seller form in its own
+layout, such as a dialog on the item page, calls `osc_item_contact_form()`: it prints
+the e-mail form, or only the message field when the listing uses messaging. Pass
+`prefix` for the field ids or `hint` for the text under the e-mail field. The contact page also fires `contact_form_top` before the
 Subject field and `contact_form_after` below the form.
 
 The contact page is `<div class="oe-contact">`, holding `.oe-contact-main` with the

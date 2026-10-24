@@ -89,6 +89,23 @@ A shop sends the buyer six mails. Each goes once per order, and a failed send is
 - **Cancelled**: an unpaid order was cancelled.
 - **Refunded**: the amount and how long it takes to show up.
 
+## New-message e-mail
+
+When on-site messaging is on, a user gets one mail a minute at most per conversation, saying they have a new message about a listing. It holds a link to the conversation page and none of the message text.
+
+A user with the conversation open sees new messages live, or within 15 seconds.
+
+## Browser notifications
+
+A user can get a notification on their phone or computer when a new message comes in, even with the site closed.
+
+- **Switch.** Users → Settings → Send browser notifications for new messages. Off by default, and it needs on-site messaging and an HTTPS site (`localhost` also works).
+- **Per browser.** Each user turns it on from their messages page with **Notify me on this device**, and off again with **Stop notifying this device**. The browser asks for permission first.
+- **No text leaves your site.** The push service (Google, Apple or Mozilla) gets an empty wake-up. The browser then asks your site how many messages are unread and shows "3 new messages". Clicking it opens the inbox.
+- **Timing.** Wake-ups wait 15 seconds so a burst of messages gives one notification. On the Docker image the worker sends it within seconds. On shared hosting it goes out with the next cron run, or the next site visit that runs the queue, so it can take minutes.
+
+A browser is forgotten 90 days after the user last opened their messages page in it. System info → Server shows a "Web push" row and warns if the site is not on HTTPS or the push service cannot be reached.
+
 ## Alerts and cron
 
 Saved-search alerts are **not** sent when a listing is published. They are sent

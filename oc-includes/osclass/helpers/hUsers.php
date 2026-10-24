@@ -20,6 +20,165 @@
  */
 
 /**
+ * Whether signed-in users can message sellers on the site.
+ *
+ * @return bool
+ */
+function osc_messaging_enabled(): bool
+{
+    return osc_users_enabled() && osc_get_bool_preference('enabled_messaging');
+}
+
+/**
+ * The link to a message thread.
+ *
+ * @param int $conversationId
+ *
+ * @return string
+ */
+function osc_messaging_thread_url(int $conversationId): string
+{
+    return osc_core_url('messages_thread', array('id' => $conversationId));
+}
+
+/**
+ * The link to the signed-in user's inbox.
+ *
+ * @return string
+ */
+function osc_messaging_inbox_url(): string
+{
+    return osc_core_url('messages');
+}
+
+/**
+ * Unread messages across the signed-in user's threads; 0 for a guest or while messaging is off.
+ * Read once per request and user.
+ *
+ * @return int
+ */
+function osc_messaging_unread_count(): int
+{
+    static $counts = array();
+    $userId = (int) osc_logged_user_id();
+    if ($userId <= 0 || !osc_messaging_enabled()) {
+        return 0;
+    }
+
+    return $counts[$userId] ??= \mindstellar\container\Container::root()
+        ->get(\mindstellar\messaging\MessagingService::class)->unreadCount($userId);
+}
+
+/**
+ * The signed-in user's link to their messages, with the unread count, for a theme's header.
+ * '' while messaging is off, for a guest and for a shopper. The first link on a page loads
+ * messages.js, which keeps the count current on every page.
+ *
+ * Markup: a.oe-msg-link[data-osc-messages-link] > (icon) span.oe-msg-label +
+ * span.oe-badge.oe-unread[data-osc-unread], the badge hidden at 0.
+ *
+ * @param array{class?: string, icon?: string} $args class: extra classes on the link;
+ *                                                   icon: the theme's icon HTML, printed as given
+ *
+ * @return string
+ */
+function osc_messaging_link(array $args = array()): string
+{
+    if (!osc_messaging_enabled() || !osc_is_web_user_logged_in() || osc_is_shopper()) {
+        return '';
+    }
+    static $script = false;
+    $unread = osc_messaging_unread_count();
+    $label  = _m('Messages');
+    $some   = _m('Messages, %d unread');
+    $class  = trim('oe-msg-link ' . (string) ($args['class'] ?? ''));
+
+    $tail   = '';
+    if (!$script) {
+        $script = true;
+        $tail   = '<script src="' . osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/messages.js'))) . '" defer></script>';
+    }
+
+    return '<a class="' . osc_esc_html($class) . '" href="' . osc_esc_html(osc_messaging_inbox_url()) . '"'
+        . ' aria-label="' . osc_esc_html($unread > 0 ? sprintf($some, $unread) : $label) . '"'
+        . ' data-osc-messages-link data-label="' . osc_esc_html($label) . '" data-label-unread="' . osc_esc_html($some) . '"'
+        . ' data-check-url="' . osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check') . '"'
+        . ' data-live-url="' . osc_esc_html(osc_messaging_live_url()) . '"'
+        . (osc_get_osclass_location() === 'messages' ? ' aria-current="page"' : '') . '>'
+        . (string) ($args['icon'] ?? '')
+        . '<span class="oe-msg-label">' . osc_esc_html($label) . '</span>'
+        . '<span class="oe-badge oe-unread" data-osc-unread' . ($unread > 0 ? '' : ' hidden') . '>' . $unread . '</span>'
+        . '</a>' . $tail;
+}
+
+/**
+ * The URL a signed-in user's page subscribes to for live message notes, or '' when live delivery
+ * is off, messaging is off or nobody is signed in.
+ *
+ * @return string
+ */
+function osc_messaging_live_url(): string
+{
+    $userId = (int) osc_logged_user_id();
+    if ($userId <= 0 || !osc_messaging_enabled()) {
+        return '';
+    }
+
+    return \mindstellar\container\Container::root()
+        ->get(\mindstellar\live\LivePublisher::class)->subscribeUrl(\mindstellar\live\LiveChannel::forUser($userId)) ?? '';
+}
+
+/**
+ * Whether browser notifications for new messages are on: the switch, messaging, and a site
+ * address browsers accept for push (https://, or localhost while testing).
+ *
+ * @return bool
+ */
+function osc_push_enabled(): bool
+{
+    if (!osc_get_bool_preference('enabled_push') || !osc_messaging_enabled()) {
+        return false;
+    }
+    return \mindstellar\push\WebPushSender::secureSite((string) osc_base_url());
+}
+
+/**
+ * The site's push key (base64url) for the browser to subscribe with; '' while push is off.
+ *
+ * @return string
+ */
+function osc_push_public_key(): string
+{
+    if (!osc_push_enabled()) {
+        return '';
+    }
+    try {
+        return \mindstellar\container\Container::root()->get(\mindstellar\push\Vapid::class)->publicKey();
+    } catch (\Throwable $e) {
+        return '';
+    }
+}
+
+/*
+ * "Messages" on the account menu, with the unread count while there is one; a shopper's menu drops
+ * it (OSC_SHOPPER_HIDDEN_MENU). Plugins::addHook() because this file loads before hPlugins.php.
+ */
+Plugins::addHook('user_menu_filter', static function ($options) {
+    $options = is_array($options) ? $options : array();
+    if (!osc_messaging_enabled() || osc_logged_user_id() <= 0) {
+        return $options;
+    }
+    $unread    = osc_messaging_unread_count();
+    $options[] = array(
+        'name'  => $unread > 0 ? sprintf(_m('Messages (%d)'), $unread) : _m('Messages'),
+        'url'   => osc_messaging_inbox_url(),
+        'class' => 'opt_messages',
+    );
+
+    return $options;
+});
+
+/**
  * Gets a specific field from current user
  *
  * @param string $field
@@ -1083,6 +1242,7 @@ function osc_reset_users()
 const OSC_SHOPPER_PAGES = array(
     'user'    => array('hide' => array('items', 'alerts', 'api_access', 'api_access_post', 'pub_profile')),
     'billing' => array('keep' => array('orders', 'receipt')),
+    'messages' => array('keep' => array()),
 );
 
 /**
@@ -1114,6 +1274,7 @@ const OSC_SHOPPER_HIDDEN_MENU = array(
     'opt_billing_wallet',
     'opt_billing_buy',
     'opt_api_access',
+    'opt_messages',
 );
 
 /**

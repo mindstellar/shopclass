@@ -42,6 +42,18 @@ $boss   = api_admin_key($bossId);
 $owner  = KeyOwner::admin($bossId);
 $target = (int) (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create(CredentialKind::KEY, 'target', ['admin:listings'], $owner)->id();
 $hook   = (new WebhookEndpointStore())->insert(new Endpoint(WebhookEndpointStore::newId(), 'https://93.184.216.34/hook', ['listing.created'], 'Kept', true, 'whsec_test', createdBy: $bossId, created: time(), updated: time()))->id();
+$cat      = seed_category($admin);
+$sellerId = seed_user($admin, 'sam', 'sam@example.test');
+$bike     = seed_item($admin, $cat, $sellerId, 'Bike');
+$thread   = static function (string $buyer, string $state, string $messageState) use ($admin, $p, $bike, $sellerId): array {
+    $buyerId = seed_user($admin, $buyer, $buyer . '@example.test');
+    $now     = date('Y-m-d H:i:s');
+    $conv    = seed_exec($admin, "INSERT INTO {$p}t_conversation (fk_i_item_id, fk_i_buyer_id, fk_i_seller_id, s_state, fk_i_reporter_id, s_report_reason, dt_created, dt_last_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 'iiisisss', [$bike, $buyerId, $sellerId, $state, $state === 'reported' ? $buyerId : null, $state === 'reported' ? 'spam' : null, $now, $now]);
+
+    return [$conv, seed_exec($admin, "INSERT INTO {$p}t_message (fk_i_conversation_id, fk_i_sender_id, s_body, s_state, dt_created) VALUES (?, ?, 'Hi', ?, ?)", 'iiss', [$conv, $buyerId, $messageState, $now])];
+};
+[$reportedThread] = $thread('bea', 'reported', 'sent');
+[$heldThread, $heldMessage] = $thread('ola', 'held', 'held');
 $country = seed_country($admin, 'US', 'United States');
 $region  = seed_region($admin, $country, 'Alpha');
 $city    = seed_city($admin, $region, 'Aville', $country);
@@ -115,5 +127,15 @@ pin('the service the admin screen uses refuses too', array_fill(0, 3, ForbiddenE
     demo_refusal(static fn () => $editor->delete('country', 'US')),
 ]);
 pin('still no place changes', [$before, 1], [$places(), $count('t_country')]);
+
+harness_section('messages');
+$state = static fn (): array => [$admin->query("SELECT s_state FROM {$p}t_conversation ORDER BY pk_i_id")->fetch_all(), $admin->query("SELECT s_state FROM {$p}t_message ORDER BY pk_i_id")->fetch_all()];
+$before = $state();
+pin('releasing a held message is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/messages/' . $heldMessage . '/release', null, $boss)));
+pin('removing a held message is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/messages/' . $heldMessage . '/remove', null, $boss)));
+pin('closing a reported thread is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/conversations/' . $reportedThread . '/close', null, $boss)));
+pin('clearing a report is 403 demo_site', '403 demo_site', api_admin_code($call('POST', 'admin/conversations/' . $reportedThread . '/clear-report', null, $boss)));
+pin('nothing changes', $before, $state());
+pin('reading still works', 200, $call('GET', 'admin/conversations/' . $heldThread, null, $boss)->status());
 
 exit(harness_result());

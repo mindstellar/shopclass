@@ -1021,6 +1021,26 @@ osc_add_hook('delete_user', array(\mindstellar\listing\WishlistService::class, '
 // The saved cart lives in t_key_value too.
 osc_add_filter('personal_data_export', array(\mindstellar\billing\CartStore::class, 'export'));
 osc_add_hook('delete_user', array(\mindstellar\billing\CartStore::class, 'erase'));
+// So are the browsers asked to wake for new messages.
+osc_add_filter('personal_data_export', array(\mindstellar\push\PushSubscriptions::class, 'export'));
+osc_add_hook('delete_user', array(\mindstellar\push\PushSubscriptions::class, 'erase'));
+// Threads name two accounts, so they are added to the export here; the account foreign keys erase them.
+function osc_messaging_personal_data($out, $userId = 0)
+{
+    if (!is_array($out)) {
+        return $out;
+    }
+    $rows = \mindstellar\container\Container::root()->get(\mindstellar\messaging\ConversationStore::class)->export((int) $userId);
+    $out['data']['messaging'] = array(
+        'retention' => \mindstellar\privacy\PersonalData::ERASE_CASCADE,
+        'why'       => 'Message threads you took part in, and the text of your own messages. The other person\'s text is theirs.',
+        'rows'      => $rows,
+    );
+    unset($out['not_included']['t_conversation'], $out['not_included']['t_message']);
+
+    return $out;
+}
+osc_add_filter('personal_data_export', 'osc_messaging_personal_data');
 
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.

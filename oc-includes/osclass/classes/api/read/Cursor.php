@@ -24,7 +24,7 @@ final class Cursor
     public const VERSION = 1;
 
     /** Sorts that page by keyset; every other sort pages by offset. */
-    private const KEYSET_SORTS = ['created', 'id', 'price'];
+    private const KEYSET_SORTS = ['created', 'id', 'price', 'activity'];
 
     /** Seconds a cursor stays good. */
     public const TTL = 604800;

@@ -108,6 +108,10 @@ action contact_form
 action contact_form_after
 action contact_form_top
 action contact_page_aside
+action conversation_blocked
+action conversation_reported
+action conversation_started
+action conversation_unblocked
 action cron
 action cron_daily
 action cron_hourly
@@ -245,6 +249,9 @@ action logout
 action logout_admin
 action manage_item_search_conditions
 action manage_user_search_conditions
+action message_held
+action message_read
+action message_sent
 action page_cache_purge
 action page_meta
 action post_item
@@ -441,6 +448,10 @@ filter email_new_item_non_register_user_description
 filter email_new_item_non_register_user_description_after
 filter email_new_item_non_register_user_title
 filter email_new_item_non_register_user_title_after
+filter email_new_message_description
+filter email_new_message_description_after
+filter email_new_message_title
+filter email_new_message_title_after
 filter email_order_cancelled_description
 filter email_order_cancelled_description_after
 filter email_order_cancelled_title
@@ -536,6 +547,7 @@ filter market_allowed_package_hosts
 filter market_catalog_mirror_base
 filter market_catalog_primary_base
 filter media_processing_row
+filter message_body
 filter meta_description_filter
 filter meta_keywords_filter
 filter meta_title_filter

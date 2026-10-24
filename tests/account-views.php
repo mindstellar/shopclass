@@ -51,6 +51,8 @@ $expected = array(
     'user-dashboard.php',
     'user-items.php',
     'user-alerts.php',
+    'user-messages.php',
+    'user-conversation.php',
     'user-profile.php',
     'user-change_email.php',
     'user-change_password.php',
@@ -179,6 +181,8 @@ $slotPages = array(
     'user-dashboard'      => $accountIn . 'user-dashboard-content.php',
     'user-items'          => $accountIn . 'user-items-content.php',
     'user-alerts'         => $accountIn . 'user-alerts-content.php',
+    'user-messages'       => $accountIn . 'user-messages-content.php',
+    'user-conversation'   => $accountIn . 'user-conversation-content.php',
     'user-profile'        => $accountIn . 'user-profile-content.php',
     'user-signin'         => $accountIn . 'user-signin-content.php',
     'user-custom'         => $accountIn . 'user-custom-content.php',
@@ -220,11 +224,27 @@ check('the public profile posts user contact_post', strpos($profile, "'hidden'  
 check('the public profile form fires user_contact_form', strpos($profile, "osc_run_hook('user_contact_form', ") !== false);
 $contactPart = (string) file_get_contents($guiDir . 'parts/contact-form.php');
 check('the shared contact form refills after a failed send', strpos($contactPart, "osc_gui_kept('message_body')") !== false);
-foreach (array($guiDir . 'contact-content.php', $guiDir . 'item-contact-content.php', $accountIn . 'user-public-profile-content.php') as $file) {
+$itemHelper = harness_method_source(ABS_PATH . 'oc-includes/osclass/helpers/hItems.php', 'osc_item_contact_form');
+foreach (array($guiDir . 'contact-content.php', $accountIn . 'user-public-profile-content.php') as $file) {
     $src = (string) file_get_contents($file);
     check(basename($file) . ' uses the shared contact form', strpos($src, "parts/contact-form.php'") !== false
         && strpos($src, 'name="yourName"') === false);
 }
+// One message-only form, in the partial (tests/messaging-theme-parts.php renders it).
+check('the partial reads the messaging option', strpos($contactPart, "\$cf['messaging']") !== false);
+$itemContact = (string) file_get_contents($guiDir . 'item-contact-content.php');
+check('item-contact-content.php prints osc_item_contact_form() and has no form of its own', strpos($itemContact, 'osc_item_contact_form()') !== false
+    && strpos($itemContact, '<textarea') === false && strpos($itemContact, '<form') === false);
+check('osc_item_contact_form() prints the shared form and passes messaging', strpos($itemHelper, "parts/contact-form.php'") !== false
+    && strpos($itemHelper, "'messaging'  => osc_item_uses_messaging()") !== false);
+check('osc_item_contact_form() fires item_contact_form with the item id', strpos($itemHelper, "osc_run_hook('item_contact_form', osc_item_id())") !== false);
+$writingAs = 0;
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/osclass/gui', FilesystemIterator::SKIP_DOTS)) as $f) {
+    if (substr($f->getFilename(), -4) === '.php' && strpos((string) file_get_contents($f->getPathname()), 'You are writing as %s') !== false) {
+        $writingAs++;
+    }
+}
+check('the "You are writing as" line lives in one file', $writingAs === 1);
 $contactCase = array(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php', 'contactPost'));
 check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
 check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceededFor('user_contact'") !== false);

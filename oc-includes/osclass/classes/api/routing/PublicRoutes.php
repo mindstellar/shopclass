@@ -14,11 +14,13 @@ namespace mindstellar\api\routing;
 
 use mindstellar\api\controller\AccountController;
 use mindstellar\api\controller\AccountKeysController;
+use mindstellar\api\controller\AccountPushController;
 use mindstellar\api\controller\AlertsController;
 use mindstellar\api\controller\AuthController;
 use mindstellar\api\controller\CartController;
 use mindstellar\api\controller\CategoriesController;
 use mindstellar\api\controller\CommentsController;
+use mindstellar\api\controller\ConversationsController;
 use mindstellar\api\controller\ListingsController;
 use mindstellar\api\controller\ListingWritesController;
 use mindstellar\api\controller\LocationsController;
@@ -32,6 +34,7 @@ use mindstellar\api\controller\SiteController;
 use mindstellar\api\controller\UsersController;
 use mindstellar\api\controller\WishlistController;
 use mindstellar\api\read\ListingSort;
+use mindstellar\api\read\ListSpec;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
@@ -638,6 +641,113 @@ final class PublicRoutes
                 scope: 'cart:write',
                 body: 'CartInput',
                 status: 204
+            ),
+            'GET account/conversations' => RouteSpec::read(
+                handler: [ConversationsController::class, 'index'],
+                tag: 'Conversations',
+                summary: 'Your conversations, newest activity first; meta carries your unread total',
+                response: 'ConversationPage',
+                query: $paging,
+                errors: [403],
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:read'
+            ),
+            'POST account/conversations' => RouteSpec::write(
+                handler: [ConversationsController::class, 'create'],
+                tag: 'Conversations',
+                summary: 'Write to a listing\'s seller; a second message about the same listing goes to the conversation already there',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                body: 'ConversationInput',
+                response: 'MessageDocument',
+                status: 201,
+                errors: [403, 404, 409, 429]
+            ),
+            'GET account/conversations/{id}' => RouteSpec::read(
+                handler: [ConversationsController::class, 'show'],
+                tag: 'Conversations',
+                summary: 'One of your conversations',
+                response: 'ConversationDocument',
+                errors: [403, 404],
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:read'
+            ),
+            'GET account/conversations/{id}/messages' => RouteSpec::read(
+                handler: [ConversationsController::class, 'messages'],
+                tag: 'Conversations',
+                summary: 'A conversation\'s messages, newest first; with after, the newer ones oldest first. Reading marks nothing read',
+                response: 'MessagePage',
+                query: ['limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => ListSpec::MAX_LIMIT, 'default' => ConversationsController::MESSAGES_LIMIT], 'cursor' => self::CURSOR, 'after' => ['type' => 'integer', 'minimum' => 1, 'description' => 'A message id: answer the messages after it, oldest first, with no next page. cursor is then ignored.']],
+                errors: [403, 404],
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:read'
+            ),
+            'POST account/conversations/{id}/messages' => RouteSpec::write(
+                handler: [ConversationsController::class, 'send'],
+                tag: 'Conversations',
+                summary: 'Reply in one of your conversations',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                body: 'MessageInput',
+                response: 'MessageDocument',
+                status: 201,
+                errors: [403, 404, 409, 429]
+            ),
+            'POST account/conversations/{id}/read' => RouteSpec::write(
+                handler: [ConversationsController::class, 'read'],
+                tag: 'Conversations',
+                summary: 'Mark a conversation read',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                response: 'ConversationDocument',
+                errors: [403, 404]
+            ),
+            'POST account/conversations/{id}/block' => RouteSpec::write(
+                handler: [ConversationsController::class, 'block'],
+                tag: 'Conversations',
+                summary: 'Block a conversation: nobody can write in it until you unblock it',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                response: 'ConversationDocument',
+                errors: [403, 404]
+            ),
+            'DELETE account/conversations/{id}/block' => RouteSpec::write(
+                handler: [ConversationsController::class, 'unblock'],
+                tag: 'Conversations',
+                summary: 'Lift your own block; a block the other person set stays',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                response: 'ConversationDocument',
+                errors: [403, 404]
+            ),
+            'POST account/conversations/{id}/report' => RouteSpec::write(
+                handler: [ConversationsController::class, 'report'],
+                tag: 'Conversations',
+                summary: 'Report a conversation to the admins; it is also blocked for you',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                body: 'ReportInput',
+                response: 'ConversationDocument',
+                errors: [403, 404, 409]
+            ),
+            'PUT account/push-subscriptions' => RouteSpec::write(
+                handler: [AccountPushController::class, 'put'],
+                tag: 'Conversations',
+                summary: 'Register a push endpoint to wake this device for new messages; the push carries no text',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                body: 'PushSubscriptionInput',
+                response: 'PushSubscriptionDocument',
+                errors: [404]
+            ),
+            'DELETE account/push-subscriptions/{browser}' => RouteSpec::write(
+                handler: [AccountPushController::class, 'delete'],
+                tag: 'Conversations',
+                summary: 'Stop waking a device; the browser id is the one PUT answered',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'conversations:write',
+                status: 204,
+                errors: [404]
             ),
             'POST users' => RouteSpec::write(
                 handler: [RegistrationController::class, 'register'],

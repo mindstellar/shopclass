@@ -181,6 +181,23 @@ sign-ups (10). 0 means no limit. Developers can still change them with the
 
 **Settings → Spam and bots → Search alerts** sets how many saved searches one user may keep (default 20, 0 means no limit).
 
+## On-site messages
+
+When **Users → Settings → Users can message sellers on the site** is on, held
+messages and reported conversations wait under **Listings → Messages**. Admins
+and moderators can open it. Each tab shows a count.
+
+- **Held.** The spam checks held the message back. *Release* delivers it and
+  sends the new-message e-mail. *Remove* drops it. A new conversation whose only
+  message you remove is closed. Admins also see *Ban sender*, which opens a
+  ban rule filled with the sender's address.
+- **Reported.** A member reported the conversation. *View* shows every message.
+  *Close* stops both people writing, but they can still read. *Clear* opens it
+  again and drops the report.
+
+Admins cannot edit or reply to a message here. On a demo site these buttons are
+refused.
+
 ## Rate limits and registration rules
 
 The settings that do the most, and are easiest to forget:

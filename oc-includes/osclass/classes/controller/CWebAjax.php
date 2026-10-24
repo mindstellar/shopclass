@@ -18,9 +18,21 @@ define('IS_AJAX', true);
  * Class CWebAjax
  */
 use mindstellar\auth\Actor;
+use mindstellar\container\Container;
+use mindstellar\exception\BlockedException;
+use mindstellar\exception\ConflictException;
+use mindstellar\exception\ForbiddenException;
+use mindstellar\exception\InvalidException;
+use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
+use mindstellar\live\LiveChannel;
+use mindstellar\live\LivePublisher;
+use mindstellar\messaging\MessageStore;
+use mindstellar\messaging\MessagingService;
+use mindstellar\push\PushSubscriptions;
 use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
@@ -43,6 +55,14 @@ class CWebAjax extends BaseModel
         'custom'                      => 'custom',
         'check_username_availability' => 'checkUsername',
         'ajax_upload'                 => 'ajaxUpload',
+        'messages_send'               => 'messagesSend',
+        'messages_check'              => 'messagesCheck',
+        'messages_since'              => 'messagesSince',
+        'messages_live_auth'          => 'messagesLiveAuth',
+        'push_worker'                 => 'pushWorker',
+        'push_subscribe'              => 'pushSubscribe',
+        'push_unsubscribe'            => 'pushUnsubscribe',
+        'push_status'                 => 'pushStatus',
     );
 
     /**
@@ -397,6 +417,249 @@ class CWebAjax extends BaseModel
             \mindstellar\security\ActionThrottle::record('ajax_upload');
         }
         echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
+    }
+
+    /**
+     * The signed-in visitor for a messages call; answers 401 or 403 and returns null otherwise.
+     */
+    private function messagingActor(): ?Actor
+    {
+        $actor = Actor::visitor();
+        if ($actor->userId() === null) {
+            AjaxResponse::json(array('error' => ForbiddenException::SIGN_IN, 'msg' => __('Sign in to use messages')), 401);
+
+            return null;
+        }
+        if (!osc_messaging_enabled()) {
+            AjaxResponse::json(array('error' => ForbiddenException::DISABLED, 'msg' => __('Messages are switched off on this site')), 403);
+
+            return null;
+        }
+
+        return $actor;
+    }
+
+    /**
+     * Send the reply a refused messages call gets: the exception's own status, and its reason as
+     * the error code.
+     */
+    private function messagingRefusal(RefusedException $e): void
+    {
+        $body = array('error' => 'refused', 'msg' => $e->getMessage());
+        if ($e instanceof ForbiddenException) {
+            $body['error'] = $e->reason() !== '' ? $e->reason() : 'forbidden';
+        } elseif ($e instanceof NotFoundException) {
+            $body['error'] = 'not_found';
+        } elseif ($e instanceof ConflictException) {
+            $body['error'] = $e->reason() !== '' ? $e->reason() : 'conflict';
+        } elseif ($e instanceof InvalidException) {
+            $body['error']  = ltrim($e->pointer(), '/') !== '' ? ltrim($e->pointer(), '/') : 'invalid';
+            $body['errors'] = $e->errors();
+        } elseif ($e instanceof BlockedException) {
+            $body['error']       = $e->isRateLimit() ? 'rate_limited' : 'login_blocked';
+            $body['retry_after'] = $e->retryAfter();
+            header('Retry-After: ' . $e->retryAfter());
+        }
+        AjaxResponse::json($body, $e->httpStatus());
+    }
+
+    /**
+     * Send a reply in a thread the visitor is in.
+     */
+    private function messagesSend(): void
+    {
+        if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
+            header('Allow: POST');
+            AjaxResponse::json(array('error' => 'method_not_allowed', 'msg' => __('Use POST')), 405);
+
+            return;
+        }
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return;
+        }
+        osc_csrf_check();
+        try {
+            $sent = Container::root()->get(MessagingService::class)->reply(Params::getParamInt('id'), Params::getParamString('body', false, false, false), $actor);
+        } catch (RefusedException $e) {
+            $this->messagingRefusal($e);
+
+            return;
+        }
+        AjaxResponse::json(array('ok' => true, 'message' => $sent->message(), 'held' => $sent->held()));
+    }
+
+    /**
+     * The visitor's unread total and newest message time; 304 when the poll's tag is still current.
+     */
+    private function messagesCheck(): void
+    {
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return;
+        }
+        // A push worker asks for the user who turned it on; another user signed in on that browser gets no count.
+        $for = Params::getParamInt('for');
+        if ($for > 0 && $for !== (int) $actor->userId()) {
+            AjaxResponse::json(array('error' => 'other_user'), 409);
+
+            return;
+        }
+        $activity = Container::root()->get(MessagingService::class)->activity((int) $actor->userId());
+        $etag     = '"' . $activity['unread'] . '.' . md5((string) $activity['latest']) . '"';
+        header('Cache-Control: private, no-store');
+        header('ETag: ' . $etag);
+        if (osc_etag_matches((string) Params::getServerParam('HTTP_IF_NONE_MATCH', false, false), $etag)) {
+            http_response_code(304);
+
+            return;
+        }
+        AjaxResponse::json($activity);
+    }
+
+    /**
+     * The messages after the one the page already has; reading them marks the thread read.
+     */
+    private function messagesSince(): void
+    {
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return;
+        }
+        try {
+            $result = Container::root()->get(MessagingService::class)->since(Params::getParamInt('id'), Params::getParamInt('after'), $actor);
+        } catch (RefusedException $e) {
+            $this->messagingRefusal($e);
+
+            return;
+        }
+        $thread = $result['conversation'];
+        AjaxResponse::json(array(
+            'messages' => array_map(static fn (array $row): array => MessageStore::shape($row), $result['messages']),
+            'state'    => (string) $thread['s_state'],
+            'blocked'  => (int) $thread['b_buyer_blocked'] === 1 || (int) $thread['b_seller_blocked'] === 1,
+        ));
+    }
+
+    /**
+     * Whether the signed-in visitor may follow a live channel; nchan asks before it opens one.
+     * Only their own `user-<id>` channel, named in nchan's X-Channel-Id header, is allowed.
+     */
+    private function messagesLiveAuth(): void
+    {
+        header('Cache-Control: no-store');
+        if (Container::root()->get(LivePublisher::class)->mode() === 'off') {
+            http_response_code(404);
+
+            return;
+        }
+        $userId = Actor::visitor()->userId();
+        if ($userId === null) {
+            http_response_code(401);
+
+            return;
+        }
+        $channel = (string) Params::getServerParam('HTTP_X_CHANNEL_ID', false, false, false);
+        if (!osc_messaging_enabled() || LiveChannel::userId($channel) !== $userId) {
+            http_response_code(403);
+
+            return;
+        }
+        http_response_code(200);
+    }
+
+    /**
+     * The service worker script for browser notifications; 404 while they are off. It holds no
+     * user data, so a signed-out browser can still update it.
+     */
+    private function pushWorker(): void
+    {
+        if (!osc_push_enabled()) {
+            http_response_code(404);
+
+            return;
+        }
+        header('Content-Type: text/javascript; charset=utf-8');
+        header('Cache-Control: no-cache');
+        header('X-Content-Type-Options: nosniff');
+        readfile(ABS_PATH . 'oc-includes/assets/osclass/push-worker.js');
+    }
+
+    /**
+     * The signed-in visitor for a push call, or null after answering 401, 403 or 404 (push off);
+     * a POST call must be POST and carry a valid CSRF token.
+     */
+    private function pushActor(bool $post): ?Actor
+    {
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return null;
+        }
+        if (!osc_push_enabled()) {
+            AjaxResponse::json(array('error' => 'not_found', 'msg' => __('Browser notifications are switched off on this site')), 404);
+
+            return null;
+        }
+        if ($post) {
+            if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
+                header('Allow: POST');
+                AjaxResponse::json(array('error' => 'method_not_allowed', 'msg' => __('Use POST')), 405);
+
+                return null;
+            }
+            osc_csrf_check();
+        }
+
+        return $actor;
+    }
+
+    /**
+     * Wake this browser for the visitor's new messages.
+     */
+    private function pushSubscribe(): void
+    {
+        $actor = $this->pushActor(true);
+        if ($actor === null) {
+            return;
+        }
+        try {
+            $id = Container::root()->get(PushSubscriptions::class)->add(
+                (int) $actor->userId(),
+                Params::getParamString('endpoint', false, false, false),
+                (string) Params::getServerParam('HTTP_USER_AGENT', false, false, false)
+            );
+        } catch (\InvalidArgumentException $e) {
+            AjaxResponse::json(array('error' => 'invalid', 'msg' => $e->getMessage()), 422);
+
+            return;
+        }
+        AjaxResponse::json(array('ok' => true, 'id' => $id));
+    }
+
+    /**
+     * Stop waking this browser.
+     */
+    private function pushUnsubscribe(): void
+    {
+        $actor = $this->pushActor(true);
+        if ($actor === null) {
+            return;
+        }
+        Container::root()->get(PushSubscriptions::class)->remove((int) $actor->userId(), Params::getParamString('endpoint', false, false, false));
+        AjaxResponse::json(array('ok' => true));
+    }
+
+    /**
+     * Whether the visitor's row for this browser is kept; finding it renews it for 90 days.
+     */
+    private function pushStatus(): void
+    {
+        $actor = $this->pushActor(false);
+        if ($actor === null) {
+            return;
+        }
+        $active = Container::root()->get(PushSubscriptions::class)->renew((int) $actor->userId(), Params::getParamString('endpoint', false, false, false));
+        AjaxResponse::json(array('active' => $active));
     }
 
     /**

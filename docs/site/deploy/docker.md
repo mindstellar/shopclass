@@ -83,6 +83,9 @@ Everything is set from environment variables:
 | `OSC_CACHE_LOCAL` | `1` by default in the image: each PHP worker keeps a [copy of the cached values](/docs/configure/cache/#a-copy-in-each-php-worker) for up to 15 seconds. Set to `0` to turn it off |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx: see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
 | `OSC_PAGE_CACHE_PURGE_URL` | Where core sends one `PURGE` to clear the whole cache after a theme, settings or plugin change. When `OSC_MICROCACHE` is on it defaults to `http://127.0.0.1:8089/` (a server that listens only inside the container), also for `docker exec`, cron and the job worker. Set it only to override that |
+| `OSC_LIVE` | `nchan` by default in the image: new messages are streamed to the browser (see [Live messages](#live-messages)). Set to `off` to turn it off. Unset outside the image |
+| `OSC_LIVE_PUBLISH_URL` | Where core posts a note. Defaults to `http://127.0.0.1:8090/live/pub/`, a server that listens only inside the container. Set it only to override that |
+| `OSC_LIVE_SUBSCRIBE_URL` | The address browsers open for the stream. Defaults to `/live/sub/`. Set it only to override that |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
 | `OSC_FPM_MAX_CHILDREN` | How many pages PHP builds at once. Unset is three per CPU, at least 5, and no more than the container's memory holds at about 64 MB each |
 | `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
@@ -116,6 +119,16 @@ the new volumes are seeded from the image, so packages from the old container
 are not carried across and cannot be recovered once it is gone. Reinstall them
 afterwards. Zip installs are unaffected.
 :::
+
+## Live messages
+
+The image carries [nchan](https://nchan.io), an nginx module, and streams new on-site messages to the browser. A note holds ids only, never message text. When the object cache is Valkey or Redis, nchan shares notes through it, so more than one instance works. Set `OSC_LIVE=off` to turn it off.
+
+If nchan is off or its stream fails, nothing breaks: pages check for new messages every 15 seconds while the tab is open, the same as on shared hosting. While the stream is open, pages still check once a minute, so a lost note delays a message by a minute at most. System info → Server shows the mode and the last publish.
+
+## Web push
+
+Nothing to configure. The worker loop sends browser notifications for new messages in about 15 seconds. Switch them on in Users → Settings; the site must be on HTTPS (`OSC_TLS_DOMAIN` does that).
 
 ## Core and packages update differently
 

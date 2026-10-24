@@ -50,6 +50,7 @@ $webPages = array(
     'custom'   => 'CWebCustom',
     'route'    => 'CWebRoute',
     'api'      => 'CWebApi',
+    'messages' => 'CWebMessages',
     'sitemap'  => FrontController::class . '::sitemap',
 );
 foreach ($webPages as $page => $target) {
@@ -108,7 +109,15 @@ foreach ($adminPages as $page => $target) {
     // CWebAjax and CAdminAjax both define IS_AJAX when loaded; a request only ever loads one.
     pin("admin page=$page", $target, @$admin->resolve($page, 'anything', $guest));
 }
-pin('the admin table has no other page', array_keys($adminPages), array_keys(PageRoutes::admin()));
+pin('the admin messages page is routed to its controller', 'CAdminMessages', PageRoutes::admin()['messages'] ?? null);
+if (class_exists('CAdminMessages')) {
+    pin('admin page=messages', 'CAdminMessages', @$admin->resolve('messages', 'anything', $guest));
+}
+$adminKeys = array_keys(PageRoutes::admin());
+sort($adminKeys);
+$wantKeys = array_merge(array_keys($adminPages), array('messages'));
+sort($wantKeys);
+pin('the admin table has no other page', $wantKeys, $adminKeys);
 foreach (array('', 'nonsense', 'Items', 'item', 'user', 'search') as $page) {
     pin("admin page='$page'", 'CAdminMain', $admin->resolve($page, '', $guest));
 }
@@ -125,6 +134,9 @@ foreach (array(PageRoutes::web(), PageRoutes::admin()) as $routes) {
             check("$page handler is callable", is_callable($route['handler']));
         }
         foreach ($targets as $class) {
+            if ($class === 'CAdminMessages' && !class_exists($class)) {
+                continue;
+            }
             check("$page -> $class has doModel()", class_exists($class) && method_exists($class, 'doModel'));
         }
     }

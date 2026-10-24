@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -41,7 +41,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_sanitizeString($string)` | Turn a string into a URL-safe slug: tags, accents, entities and punctuation removed, whitespace collapsed to single hyphens. |
 
-### functions (31)
+### functions (32)
 
 `oc-includes/osclass/functions.php`
 
@@ -66,6 +66,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_force_jpeg_mime($content)` | Force the upload_image_mime filter to image/jpeg. |
 | `osc_item_tinymce_footer()` | Print the TinyMCE init script for the listing description fields, in the footer. |
 | `osc_item_tinymce_header()` | Enqueue TinyMCE on the public publish and edit pages only. |
+| `osc_messaging_personal_data($out, $userId = 0)` |  |
 | `osc_meta_edit($catId = null, $item_id = null)` | Print the custom-field inputs for the edit form, pre-filled from the listing. |
 | `osc_meta_generator()` | Print the generator meta tag. |
 | `osc_meta_noindex()` | Emit &lt;meta name="robots" content="noindex, follow"&gt; when a controller has marked the current response as thin/empty (e.g. a valid but empty category or location browse page). Keeps the URL crawlable and 200, without indexing an empty page. |
@@ -354,7 +355,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_db_password()` | **Deprecated since 4.0.0.** Gets database password |
 | `osc_db_user()` | **Deprecated since 4.0.0.** Gets database user |
 
-### hDefines (104)
+### hDefines (105)
 
 `oc-includes/osclass/helpers/hDefines.php`
 
@@ -412,6 +413,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_is_list_items()` | Get if the user is on user's items page |
 | `osc_is_login_form()` | **Deprecated since 3.5.7.** Get if user is on login form |
 | `osc_is_login_page()` | Get if user is on login page |
+| `osc_is_messages_page()` | Whether the visitor is on the messages inbox or a conversation. |
 | `osc_is_moderator()` | Check is an admin is a super admin or only a moderator |
 | `osc_is_public_profile()` | Get if the user is on public profile page |
 | `osc_is_publish_page()` | Get if user is on publish page |
@@ -524,7 +526,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (121)
+### hItems (123)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -569,6 +571,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_city_id()` | Gets city of current item |
 | `osc_item_comments_page()` | Gets page of comments in current pagination |
 | `osc_item_contact_email()` | Gets contact email of current item |
+| `osc_item_contact_form(array $args = array())` | Prints core's contact form for the current item: the e-mail form, or only the message field when the item uses on-site messaging. Fires item_contact_form with the item id before the button. |
 | `osc_item_contact_name()` | Gets contact name of current item |
 | `osc_item_contact_phone()` | Gets contact phone of current item |
 | `osc_item_content_locale()` | The locale the current item's title and description actually resolve to. |
@@ -616,6 +619,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_title($locale = '')` | Gets title from current item, if $locale is unspecified $locale is current user locale |
 | `osc_item_total_comments()` | Gets total number of comments of current item |
 | `osc_item_user_id()` | Gets user id from current item |
+| `osc_item_uses_messaging()` | Whether the contact form on the current item starts an on-site conversation instead of an e-mail. A shop-mode buyer has no inbox, so they keep the e-mail form. |
 | `osc_item_views($viewAll = false)` | return number of views of current item |
 | `osc_item_zip()` | Gets zip code of current item |
 | `osc_list_items_per_page()` | Gets number of items per page for current pagination |
@@ -1175,7 +1179,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_subscribe_alert(string $token, string $email)` | Subscribe an email to a saved search. The owner is the signed-in user, never the caller: a guest gets a confirmation email, a signed-in active user is subscribed at once. |
 | `osc_update_search_url($params = array(), $forced = false)` | Update the search url with new options |
 
-### hSecurity (21)
+### hSecurity (22)
 
 `oc-includes/osclass/helpers/hSecurity.php`
 
@@ -1198,6 +1202,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_is_ip_banned($ip, $rules = null)` | Check if IP is banned |
 | `osc_is_username_blacklisted($username)` | Check if username is blacklisted |
 | `osc_login_throttle_message($seconds)` | Wording for a sign-in refused by \mindstellar\security\LoginThrottle. |
+| `osc_message_throttle_message(int $seconds)` | Wording for an on-site message refused by the send limit. |
 | `osc_proxy_ip_mismatch()` | Whether the current request's REMOTE_ADDR looks like a proxy's address instead of the visitor's — a forwarding header disagrees with it. Detection only; core still reads the visitor IP from REMOTE_ADDR alone, see osc_is_banned() and osc_validate_spam_delay(). |
 | `osc_random_string($length)` | A random string of $length characters from A-Z, a-z, 0-9, "." and "/". |
 | `osc_set_alert_private_key()` | Mint the install's persistent alert private key if it has none yet. |
@@ -1314,7 +1319,7 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (65)
+### hUsers (73)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
@@ -1345,7 +1350,15 @@ Core defines 1218 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_logged_user_id()` | Gets logged user id |
 | `osc_logged_user_name()` | Gets logged user name |
 | `osc_logged_user_phone()` | Gets logged user phone |
+| `osc_messaging_enabled()` | Whether signed-in users can message sellers on the site. |
+| `osc_messaging_inbox_url()` | The link to the signed-in user's inbox. |
+| `osc_messaging_link(array $args = array())` | The signed-in user's link to their messages, with the unread count, for a theme's header. '' while messaging is off, for a guest and for a shopper. The first link on a page loads messages.js, which keeps the count current on every page. |
+| `osc_messaging_live_url()` | The URL a signed-in user's page subscribes to for live message notes, or '' when live delivery is off, messaging is off or nobody is signed in. |
+| `osc_messaging_thread_url(int $conversationId)` | The link to a message thread. |
+| `osc_messaging_unread_count()` | Unread messages across the signed-in user's threads; 0 for a guest or while messaging is off. Read once per request and user. |
 | `osc_prepare_user_info()` | Gets next user in users array |
+| `osc_push_enabled()` | Whether browser notifications for new messages are on: the switch, messaging, and a site address browsers accept for push (https://, or localhost while testing). |
+| `osc_push_public_key()` | The site's push key (base64url) for the browser to subscribe with; '' while push is off. |
 | `osc_reset_users()` | Rewinds the user loop, so osc_prepare_user_info() can be read again. |
 | `osc_resolve_web_user()` | Resolve the current front-end user for this request, or null. |
 | `osc_run_web_user_identity()` | Resolve front-end identity early in the bootstrap so the historical Session::_get('userId') readers see a cookie-authenticated user even before any osc_is_web_user_logged_in() call. No-op — and no session, no DB query — for an anonymous, cookieless visitor, which keeps such requests cacheable. |

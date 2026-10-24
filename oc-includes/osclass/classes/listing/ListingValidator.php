@@ -14,6 +14,7 @@
 namespace mindstellar\listing;
 
 use mindstellar\form\builder\FieldValidator;
+use mindstellar\security\SpamCheck;
 
 /**
  * The listing form's own checks, for every way a listing is saved: lengths, places, price,
@@ -367,22 +368,7 @@ final class ListingValidator
                 $_description = $description[$k];
                 $content      = $_title . ' ' . $_description;
 
-                $akismet = new \Akismet(osc_base_url(), osc_akismet_key());
-
-                $akismet->setCommentContent($content);
-                $akismet->setCommentAuthor($author);
-                $akismet->setCommentAuthorEmail($email);
-                $akismet->setUserIP($ip);
-
-                $status = '';
-                try {
-                    if ($akismet->isCommentSpam()) {
-                        $status = 'SPAM';
-                    }
-                } catch (\Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_NOTICE);
-                }
-                if ($status === 'SPAM') {
+                if (SpamCheck::akismet((string) $author, (string) $email, (string) $content, $ip)) {
                     $spam = true;
                     break;
                 }

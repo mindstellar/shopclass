@@ -94,6 +94,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
+            __('Messages'),
+            osc_admin_base_url(true) . '?page=messages',
+            'items_messages',
+            'moderator'
+        );
+        $this->add_submenu(
+            'items',
             __('Categories'),
             osc_admin_base_url(true) . '?page=categories',
             'settings_categories',

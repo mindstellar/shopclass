@@ -35,12 +35,15 @@ final class Warning
     /** @api */
     public const LISTING_UNPAID = 'listing_unpaid';
 
+    /** @api */
+    public const MESSAGE_HELD = 'message_held';
+
     /**
      * Every code, in the order the docs list them.
      *
      * @api
      */
-    public const CODES = [self::LISTING_PENDING, self::PHOTO_SKIPPED, self::COMMENT_PENDING, self::EMAIL_CONFIRMATION_SENT, self::LISTING_UNPAID];
+    public const CODES = [self::LISTING_PENDING, self::PHOTO_SKIPPED, self::COMMENT_PENDING, self::EMAIL_CONFIRMATION_SENT, self::LISTING_UNPAID, self::MESSAGE_HELD];
 
     private function __construct()
     {

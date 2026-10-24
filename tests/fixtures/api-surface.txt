@@ -109,11 +109,12 @@ mindstellar\api\RouteSpec::public method(): string
 mindstellar\api\RouteSpec::public path(): string
 mindstellar\api\RouteSpec::public plugin(): ?string
 mindstellar\api\RouteSpec::public scope(): ?string
-mindstellar\api\Warning::CODES = ["listing_pending","photo_skipped","comment_pending","email_confirmation_sent","listing_unpaid"]
+mindstellar\api\Warning::CODES = ["listing_pending","photo_skipped","comment_pending","email_confirmation_sent","listing_unpaid","message_held"]
 mindstellar\api\Warning::COMMENT_PENDING = "comment_pending"
 mindstellar\api\Warning::EMAIL_CONFIRMATION_SENT = "email_confirmation_sent"
 mindstellar\api\Warning::LISTING_PENDING = "listing_pending"
 mindstellar\api\Warning::LISTING_UNPAID = "listing_unpaid"
+mindstellar\api\Warning::MESSAGE_HELD = "message_held"
 mindstellar\api\Warning::PHOTO_SKIPPED = "photo_skipped"
 mindstellar\api\Warning::public static member(array $warnings): array
 mindstellar\api\read\Page::public static whole(array $items, mindstellar\api\serializer\Links $links, mindstellar\api\ApiCall $call): mindstellar\api\Response

@@ -45,4 +45,9 @@ final class BlockedException extends RefusedException
     {
         return max(1, $this->retryAfter);
     }
+
+    public function httpStatus(): int
+    {
+        return 429;
+    }
 }

@@ -18,6 +18,7 @@ use mindstellar\apikey\ApiKeyService;
 use mindstellar\comment\CommentStatus;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\VariantStore;
+use mindstellar\messaging\MessagePolicy;
 use mindstellar\user\AccountService;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\Events;
@@ -43,7 +44,8 @@ final class AdminSchema
         'Job', 'Jobs', 'JobsDocument',
         'Webhook', 'WebhookInput', 'WebhookPatch', 'WebhookList', 'WebhookDocument', 'WebhookTest', 'WebhookTestDocument',
         'WebhookDelivery', 'WebhookDeliveries', 'WebhookDeliveriesDocument', 'WebhookEvent', 'WebhookEventList',
-        'WebhookMessage', 'WebhookDeleted', 'WebhookReport', 'WebhookPing',
+        'WebhookMessage', 'WebhookDeleted', 'WebhookReport',
+        'WebhookMessageCreated', 'WebhookConversationReported', 'WebhookPing',
     ];
 
     private function __construct()
@@ -349,6 +351,19 @@ final class AdminSchema
                 'id'     => ['type' => 'integer'],
                 'reason' => ['type' => 'string', 'enum' => ['spam', 'badcat', 'offensive', 'repeated', 'expired']],
             ], ['id', 'reason']),
+            'WebhookMessageCreated'     => Schema::object([
+                'id'              => ['type' => 'integer', 'description' => 'The message id.'],
+                'conversation_id' => ['type' => 'integer'],
+                'listing_id'      => ['type' => 'integer'],
+                'sender_id'       => ['type' => 'integer'],
+                'recipient_id'    => ['type' => 'integer'],
+            ], ['id', 'conversation_id', 'listing_id', 'sender_id', 'recipient_id']),
+            'WebhookConversationReported' => Schema::object([
+                'id'          => ['type' => 'integer', 'description' => 'The conversation id.'],
+                'listing_id'  => ['type' => 'integer'],
+                'reporter_id' => ['type' => 'integer'],
+                'reason'      => ['type' => 'string', 'enum' => MessagePolicy::REPORT_REASONS],
+            ], ['id', 'listing_id', 'reporter_id', 'reason']),
             'WebhookPing'               => Schema::object([
                 'endpoint_id' => ['type' => 'string'],
                 'message'     => ['type' => 'string'],

@@ -27,6 +27,8 @@ if (!defined('ABS_PATH')) {
  *  - hooks    (callable) runs before the button, optional
  *  - name     (string) the form's name attribute, optional
  *  - optional (bool)   name and subject may be left empty (the contact page)
+ *  - messaging (bool)  on-site message: only the message field, no name, email, phone,
+ *                      subject or attachment
  *
  * CSRF is injected on shutdown into any form not marked nocsrf.
  */
@@ -35,10 +37,16 @@ if (!defined('ABS_PATH')) {
 $cf       = $contactForm;
 $cfPrefix = osc_esc_html((string) $cf['prefix']);
 $cfMax    = \mindstellar\security\MessageGuard::maxLength();
-?>
+$cfMsg    = !empty($cf['messaging']);
+if ($cfMsg) { ?>
+<p class="oe-muted"><?php printf(
+    osc_esc_html(_m('You are writing as %s. The seller answers in your messages.')),
+    osc_esc_html(osc_logged_user_name())
+); ?></p>
+<?php } ?>
 <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post"<?php
     echo !empty($cf['name']) ? ' name="' . osc_esc_html((string) $cf['name']) . '"' : '';
-    echo !empty($cf['attachment']) ? ' enctype="multipart/form-data"' : ''; ?>>
+    echo !$cfMsg && !empty($cf['attachment']) ? ' enctype="multipart/form-data"' : ''; ?>>
     <?php $cfError = osc_gui_kept('contact_error');
     if ($cfError !== '') { ?>
         <p class="oe-form-error" role="alert"><?php echo osc_esc_html($cfError); ?></p>
@@ -48,6 +56,7 @@ $cfMax    = \mindstellar\security\MessageGuard::maxLength();
             echo osc_esc_html((string) $cfValue); ?>" />
     <?php } ?>
 
+    <?php if (!$cfMsg) { ?>
     <div class="oe-field">
         <label class="oe-label" for="<?php echo $cfPrefix; ?>-name"><?php
             echo osc_esc_html(empty($cf['optional']) ? _m('Your name') : _m('Your name (optional)')); ?></label>
@@ -83,12 +92,13 @@ $cfMax    = \mindstellar\security\MessageGuard::maxLength();
                    value="<?php echo osc_esc_html(osc_gui_kept('subject')); ?>" />
         </div>
     <?php } ?>
+    <?php } ?>
     <div class="oe-field">
         <label class="oe-label" for="<?php echo $cfPrefix; ?>-message"><?php echo osc_esc_html(_m('Message')); ?></label>
         <textarea class="oe-input" id="<?php echo $cfPrefix; ?>-message" name="message" rows="6" required
                   minlength="10"<?php echo $cfMax > 0 ? ' maxlength="' . $cfMax . '"' : ''; ?>><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
     </div>
-    <?php if (!empty($cf['attachment'])) { ?>
+    <?php if (!$cfMsg && !empty($cf['attachment'])) { ?>
         <div class="oe-field">
             <label class="oe-label" for="<?php echo $cfPrefix; ?>-attachment"><?php echo osc_esc_html(_m('Attachment')); ?></label>
             <input class="oe-input" id="<?php echo $cfPrefix; ?>-attachment" type="file" name="attachment"

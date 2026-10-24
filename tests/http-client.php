@@ -68,6 +68,8 @@ pin('https:// with no host is refused', 'refused', $refused(fn () => CurlHttpCli
 pin('an https: URL that parses with no host is refused', 'refused', $refused(fn () => CurlHttpClient::options('GET', 'https:example.com/x', [], null, [], $buffer)));
 pin('resolve pins the host to checked addresses', ['example.com:443:93.184.215.14,[2606:2800:21f:cb07:6820:80da:af6b:8b2c]'], CurlHttpClient::options('GET', 'https://example.com/', [], null, ['resolve' => ['example.com:443:93.184.215.14,[2606:2800:21f:cb07:6820:80da:af6b:8b2c]']], $buffer)[CURLOPT_RESOLVE] ?? null);
 pin('no resolve, no pinning', false, array_key_exists(CURLOPT_RESOLVE, $o));
+$pinned = CurlHttpClient::options('GET', 'https://example.com/', [], null, ['resolve' => ['example.com:443:93.184.215.14']], $buffer);
+pin('a pinned request skips any proxy', ['', '*'], [$pinned[CURLOPT_PROXY] ?? null, $pinned[CURLOPT_NOPROXY] ?? null]);
 foreach (array(
     'another host'           => array('https://example.com/', ['other.test:443:1.2.3.4']),
     'another port'           => array('https://example.com:8443/', ['example.com:443:1.2.3.4']),

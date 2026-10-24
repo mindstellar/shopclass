@@ -220,7 +220,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 618 names. Generated from the source; do not edit by hand.
+Core fires 630 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -335,7 +335,7 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 
-### Email (125)
+### Email (129)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -401,6 +401,10 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `email_new_item_non_register_user_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_new_item_non_register_user_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_new_message_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_new_message_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_new_message_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
+| `email_new_message_title_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_order_cancelled_description` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_order_cancelled_description_after` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
 | `email_order_cancelled_title` | event | `MailComposing` | `oc-includes/osclass/classes/mail/event/MailComposing.php` |
@@ -488,7 +492,7 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `item_bumped` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_comments_after` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
 | `item_comments_before` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
-| `item_contact_form` | action | none | `oc-includes/osclass/gui/item-contact-content.php` |
+| `item_contact_form` | action | `osc_item_id()` | `oc-includes/osclass/helpers/hItems.php` |
 | `item_content_updated` | action | `(int) $itemId, $locale` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_decrease_stat` | action | `$item` | `oc-includes/osclass/classes/listing/ListingStats.php` |
 | `item_description` | filter | `$v['s_description']` | `oc-includes/osclass/classes/controller/CWebItem.php` |
@@ -527,13 +531,13 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `osc_item_meta_value_filter` | filter | `$value, $meta` | `oc-includes/osclass/helpers/hItems.php` |
 | `osc_item_meta_value_pre_filter` | filter | `$value, $meta` | `oc-includes/osclass/helpers/hItems.php` |
 | `post_item` | action | none | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `post_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/listing/ListingMailService.php` |
+| `post_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `post_item_send_friend_post` | action | `$item` | `oc-includes/osclass/classes/listing/ListingMailService.php` |
 | `posted_item` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `pre_item_add` | action | `$aItem, $text` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `pre_item_add_comment_post` | action | `$item` | `oc-includes/osclass/classes/comment/CommentService.php` |
 | `pre_item_add_error` | filter | `$text, $aItem` | `oc-includes/osclass/classes/listing/ListingService.php` |
-| `pre_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/listing/ListingMailService.php` |
+| `pre_item_contact_post` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `pre_item_delete_comment_post` | action | `$item, $commentId` | `oc-includes/osclass/classes/comment/CommentService.php` |
 | `pre_item_edit` | action | `$aItem, $text` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `pre_item_edit_error` | filter | `$text, $aItem` | `oc-includes/osclass/classes/listing/ListingService.php` |
@@ -547,7 +551,7 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (242)
+### Other (250)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -655,6 +659,10 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `contact_form_top` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_page_aside` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_params` | filter | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
+| `conversation_blocked` | event | `ConversationBlocked` | `oc-includes/osclass/classes/messaging/event/ConversationBlocked.php` |
+| `conversation_reported` | event | `ConversationReported` | `oc-includes/osclass/classes/messaging/event/ConversationReported.php` |
+| `conversation_started` | event | `ConversationStarted` | `oc-includes/osclass/classes/messaging/event/ConversationStarted.php` |
+| `conversation_unblocked` | event | `ConversationUnblocked` | `oc-includes/osclass/classes/messaging/event/ConversationUnblocked.php` |
 | `correct_login_url_redirect` | filter | `$url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `count_view_on_beacon` | filter | `osc_request_counts_as_view(), $id` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `count_view_on_render` | filter | `osc_request_counts_as_view(), $item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
@@ -730,6 +738,10 @@ Core fires 618 names. Generated from the source; do not edit by hand.
 | `market_catalog_mirror_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `market_catalog_primary_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `media_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/MediaDataTable.php` |
+| `message_body` | event | `MessageSending` | `oc-includes/osclass/classes/messaging/event/MessageSending.php` |
+| `message_held` | event | `MessageHeld` | `oc-includes/osclass/classes/messaging/event/MessageHeld.php` |
+| `message_read` | event | `MessageRead` | `oc-includes/osclass/classes/messaging/event/MessageRead.php` |
+| `message_sent` | event | `MessageSent` | `oc-includes/osclass/classes/messaging/event/MessageSent.php` |
 | `meta_description_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_keywords_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_title_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |

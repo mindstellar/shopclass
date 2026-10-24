@@ -268,7 +268,7 @@ curl -X POST $API/account/keys \
 | Who calls | An access token with `account:write`. A key cannot make or list keys. The new key cannot hold a scope the token lacks: `403` with the scopes named. |
 | Password | `current_password` is checked again, and counts toward the sign-in limit. A wrong one is a `422` on `/current_password`. |
 | `name` | 1 to 100 characters. |
-| `scopes` | At least one of: `listings:read`, `listings:write`, `listings:delete`, `comments:write`, `alerts:read`, `alerts:write`, `account:read`, plus any plugin scope users may hold. Never `account:write`. |
+| `scopes` | At least one of: `listings:read`, `listings:write`, `listings:delete`, `comments:write`, `alerts:read`, `alerts:write`, `conversations:read`, `conversations:write`, `account:read`, plus any plugin scope users may hold. Never `account:write`. |
 | `expires_at` | Required. A day such as `2027-03-01` (it works to the end of that day), an RFC 3339 date-time, or a number of days such as `90d`. In the future and within a year (366 days). |
 | Ends on sign-out | The key is revoked when the user changes their password or signs out of all devices. Make a new one. |
 | Ends also | When revoked, expired, or the user is disabled or deleted. |
@@ -365,6 +365,7 @@ origin, so they can read each other's pages. Give each its own host.
 | Post, edit, delete own listings and photos | no | no | yes | with `listings:write` / `listings:delete` | yes |
 | Comment, delete own comment | no | no | yes | with `comments:write` | yes |
 | Saved searches (`/account/alerts`) | no | no | yes | with `alerts:read` / `alerts:write` | yes |
+| Conversations (`/account/conversations`) | no | no | yes | with `conversations:read` / `conversations:write` | yes |
 | Read the account, own listings in any status, and sessions | no | no | yes | with `account:read` | yes |
 | Edit the account, change password, manage keys | no | no | yes | no | no |
 | `POST /auth/token`, `POST /users` | no credential needed | | | | |
@@ -389,10 +390,13 @@ also grants `listings:read`, and `account:write` also grants `account:read`.
 | `comments:write` | Users | Post comments, delete own comments. |
 | `alerts:read` | Users | List own saved searches. `alerts:write` includes it. |
 | `alerts:write` | Users | Make and stop own saved searches. |
+| `conversations:read` | Users | Read own conversations and messages. `conversations:write` includes it. |
+| `conversations:write` | Users | Send messages, mark read, block and report. |
 | `account:read` | Users | Read the own account, the own listings in any status, and the list of sign-ins and keys. |
 | `account:write` | Access tokens only | Edit the account, change the password, manage personal keys (listing them too, so a key never sees other keys), end sessions. |
 | `admin:listings` | Admin keys, moderators' keys | The admin view of listings, reading listings that are not live, and `/admin/listings`. |
 | `admin:comments` | Admin keys, moderators' keys | Moderate comments: `/admin/comments`. |
+| `admin:conversations` | Admin keys, moderators' keys | Review held messages and reported conversations: `/admin/conversations` and `/admin/messages`. |
 | `admin:users` | Admin keys | The admin view of users, reading disabled users, and `/admin/users`. |
 | `admin:taxonomy` | Admin keys | The admin view of categories, and `/admin/categories`, `/admin/currencies`, `/admin/custom-fields` and the location endpoints. |
 | `admin:settings` | Admin keys | `/admin/settings` and `/admin/jobs`. |

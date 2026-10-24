@@ -321,6 +321,27 @@ function osc_login_throttle_message($seconds)
 }
 
 /**
+ * Wording for an on-site message refused by the send limit.
+ *
+ * @param int $seconds how long until the next message is taken
+ *
+ * @return string
+ */
+function osc_message_throttle_message(int $seconds): string
+{
+    $minutes = max(1, (int) ceil($seconds / 60));
+
+    return sprintf(
+        _mn(
+            'You are sending messages too fast. Try again in %d minute.',
+            'You are sending messages too fast. Try again in %d minutes.',
+            $minutes
+        ),
+        $minutes
+    );
+}
+
+/**
  * Spend the work of a password check against a hash that cannot match.
  *
  * A sign-in for an account that does not exist would otherwise return without
