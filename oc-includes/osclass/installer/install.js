@@ -379,7 +379,7 @@
             errorPanel.hidden = false;
         }
 
-        function submitStepFour(emailStatus, password) {
+        function submitStepFour(emailStatus, password, locationError) {
             var nextForm = document.createElement('form');
             nextForm.method = 'POST';
             nextForm.action = 'install.php';
@@ -387,6 +387,9 @@
             addHiddenField(nextForm, 'step', '4');
             addHiddenField(nextForm, 'result', emailStatus || '');
             addHiddenField(nextForm, 'password', password || '');
+            if (locationError) {
+                addHiddenField(nextForm, 'error_location', '1');
+            }
             var nonceField = form.elements.install_nonce;
             addHiddenField(nextForm, 'install_nonce', nonceField ? nonceField.value : '');
             document.body.appendChild(nextForm);
@@ -426,7 +429,7 @@
                 })
                 .then(function (data) {
                     if (data && data.status) {
-                        submitStepFour(data.email_status, data.password);
+                        submitStepFour(data.email_status, data.password, data.location_error);
                         return;
                     }
                     hideOverlay();

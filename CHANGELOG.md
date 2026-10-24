@@ -2,6 +2,17 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.5
+
+This release fixes the installer. On 7.0.4 and earlier the last setup step could fail, so a new site never finished installing.
+
+### Fixed
+- "Skip for now" on the installer's country list skips the location import instead of failing it.
+- The installer downloads country files from the current location catalog, not from a folder that does not exist.
+- A country import during install no longer fails at its last step.
+- A failed location import no longer stops the install; the finish page says to add locations later.
+- Clicking "Set up my site" a second time no longer fails with "The admin account could not be created".
+
 ## Shopclass 7.0.4
 
 The updater now checks the PHP version a new release needs before it changes any file. Shopclass 7.1 will need PHP 8.2, so a site on older PHP is told to upgrade PHP first instead of being broken by the update.

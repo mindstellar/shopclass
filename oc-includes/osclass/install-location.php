@@ -42,6 +42,7 @@ require_once LIB_PATH . 'osclass/install-functions.php';
 require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
+require_once LIB_PATH . 'osclass/helpers/hJobs.php';
 
 Params::init();
 Session::getInstance()->session_start();
@@ -97,9 +98,19 @@ try {
 $json_message['email_status'] = $result['email_status'];
 $json_message['password']     = $result['s_password'];
 
-if (Params::getParam('skip-location-input') !== 'skip' && Params::getParam('location-json')) {
-    $msg                    = osc_install_json_locations(Params::getParam('location-json'));
-    $json_message['status'] = $msg;
+// The admin account is saved by now, so a failed location download must not stop the
+// install. The finish step writes osclass_installed and tells the owner to add locations later.
+$location = Params::getParamString('location-json');
+if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $location !== 'skip') {
+    try {
+        $locationsSaved = osc_install_json_locations($location);
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: importing locations failed: ' . $e->getMessage());
+        $locationsSaved = false;
+    }
+    if (!$locationsSaved) {
+        $json_message['location_error'] = true;
+    }
 }
 
 echo json_encode($json_message);

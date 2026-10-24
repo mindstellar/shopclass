@@ -50,6 +50,9 @@ final class LocationCatalog
     /** @var array|null */
     private $manifest;
 
+    /** @var string|null the manifest URL this request resolved; the installer cannot read preferences yet */
+    private $resolvedManifestUrl;
+
     /**
      * The published manifest, from cache unless it is stale or $refresh is given.
      *
@@ -111,6 +114,7 @@ final class LocationCatalog
         }
 
         $data = self::normalizeManifest($data);
+        $this->resolvedManifestUrl = (string) $manifestUrl;
 
         $this->writeCache($data);
         // Country files are addressed relative to the manifest, not to the pointer, so
@@ -294,6 +298,9 @@ final class LocationCatalog
     private function manifestUrl(): string
     {
         $this->manifest(); // resolves and caches it if this is the first call
+        if ($this->resolvedManifestUrl !== null) {
+            return $this->resolvedManifestUrl;
+        }
         $resolved = (string) osc_get_preference(self::PREF_MANIFEST);
 
         return $resolved !== '' ? $resolved : osc_get_locations_json_url();
