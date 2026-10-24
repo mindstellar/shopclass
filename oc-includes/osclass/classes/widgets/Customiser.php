@@ -275,7 +275,9 @@ final class Customiser
                 continue;
             }
             $typeId = is_string($row['type'] ?? null) ? $row['type'] : '';
-            $type   = in_array($typeId, $types, true) ? WidgetRegistry::getInstance()->get($typeId) : null;
+            $type   = in_array($typeId, $types, true) && WidgetRegistry::getInstance()->fits($typeId, $slug)
+                ? WidgetRegistry::getInstance()->get($typeId)
+                : null;
             if ($type === null) {
                 $errors[] = sprintf(__('%s is not a section this page can hold.'), $typeId);
                 $failed   = true;

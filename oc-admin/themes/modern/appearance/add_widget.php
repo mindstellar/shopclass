@@ -36,7 +36,7 @@ if (Params::getParam('action') === 'edit_widget') {
 
 // Widget types available from this screen: registered types filtered by the
 // current admin's capability, plus (if editing) the widget's own type even
-// when a capability change would otherwise hide it from the picker, so an
+// when a capability change or its section would otherwise hide it from the picker, so an
 // existing typed widget always remains editable.
 $allWidgetTypes = osc_widget_types();
 $isModerator    = osc_is_moderator();
@@ -44,6 +44,9 @@ $isModerator    = osc_is_moderator();
 $widgetTypes = array();
 foreach ($allWidgetTypes as $typeId => $typeSpec) {
     if ($isModerator && isset($typeSpec['capability']) && $typeSpec['capability'] === 'super_admin') {
+        continue;
+    }
+    if (!\mindstellar\widgets\WidgetRegistry::getInstance()->fits($typeId, (string) Params::getParam('location'))) {
         continue;
     }
     $widgetTypes[$typeId] = $typeSpec;

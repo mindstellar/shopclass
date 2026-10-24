@@ -293,6 +293,12 @@ class CAdminAppearance extends AdminSecBaseModel
 
         $location = Params::getParam('location');
         $type     = $this->resolveWidgetType(Params::getParam('s_type'));
+        if ($type !== null && !$this->typeFits($type, (string) $location)) {
+            osc_add_flash_error_message($this->typeMisfitMessage($type), 'admin');
+            $this->redirectTo($this->widgetReturnUrl());
+
+            return;
+        }
 
         $row = array(
             's_location'    => $location,
@@ -333,6 +339,10 @@ class CAdminAppearance extends AdminSecBaseModel
         $location = Params::getParam('location');
         $type     = $this->resolveWidgetType(Params::getParam('s_type'));
         $label    = $type !== null ? $type['label'] : __('Custom HTML');
+        if ($type !== null && !$this->typeFits($type, (string) $location)) {
+            AjaxResponse::json(array('error' => 1, 'message' => $this->typeMisfitMessage($type)));
+            return;
+        }
 
         $row = array(
             's_location'    => $location,
@@ -364,7 +374,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 'location'    => $location
             )
             : array('error' => 1));
-        exit;
+        return;
     }
 
     /**
@@ -389,10 +399,16 @@ class CAdminAppearance extends AdminSecBaseModel
         // forged post cannot invent a location.
         $locations = osc_widget_locations();
         $ok        = false;
+        $message   = '';
 
         try {
             $widgetRow = $moved > 0 ? WidgetStore::find($moved) : null;
-            if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
+            $movedType = $widgetRow !== null && !empty($widgetRow['s_type'])
+                ? \mindstellar\widgets\WidgetRegistry::getInstance()->get((string) $widgetRow['s_type'])
+                : null;
+            if ($movedType !== null && is_string($location) && !$this->typeFits($movedType, $location)) {
+                $message = $this->typeMisfitMessage($movedType);
+            } elseif ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
                 WidgetStore::moveTo($moved, $location);
                 $ok = WidgetStore::reorderWithin($location, $ids);
                 osc_purge_page_cache('widget');
@@ -401,8 +417,8 @@ class CAdminAppearance extends AdminSecBaseModel
             $ok = false;
         }
 
-        AjaxResponse::json(array('error' => $ok ? 0 : 1));
-        exit;
+        AjaxResponse::json($ok ? array('error' => 0) : array('error' => 1, 'message' => $message));
+        return;
     }
 
     /**
@@ -870,6 +886,24 @@ class CAdminAppearance extends AdminSecBaseModel
         }
 
         return $type;
+    }
+
+    /**
+     * Whether a registered type may be placed in a section.
+     *
+     * @param array<string,mixed> $type
+     */
+    private function typeFits(array $type, string $location): bool
+    {
+        return \mindstellar\widgets\WidgetRegistry::getInstance()->fits((string) $type['id'], $location);
+    }
+
+    /**
+     * @param array<string,mixed> $type
+     */
+    private function typeMisfitMessage(array $type): string
+    {
+        return sprintf(__('%s cannot be placed in this section.'), $type['label']);
     }
 
     /**

@@ -47,6 +47,9 @@ final class WidgetRegistry extends Registry
      *                              a custom admin form, overriding 'fields'.
      *   'capability'  => string    'admin' (default) or 'super_admin'. A 'super_admin'
      *                              type may only be authored by a non-moderator admin.
+     *   'locations'   => string[]  Optional non-empty list of section slugs ([a-z0-9_-]{1,40})
+     *                              this type fits. Without it the type fits every section.
+     *                              Widgets already placed elsewhere keep rendering.
      *
      * @param string $id   Namespaced slug, [a-z0-9_.-]{1,60}.
      * @param array  $spec Type specification (see above).
@@ -81,6 +84,23 @@ final class WidgetRegistry extends Registry
             $fields = $spec['fields'];
         }
 
+        $locations = [];
+        if (isset($spec['locations'])) {
+            if (!is_array($spec['locations']) || $spec['locations'] === []) {
+                throw new InvalidArgumentException(
+                    'WidgetRegistry: widget type "' . $id . '" locations must be a non-empty list'
+                );
+            }
+            foreach ($spec['locations'] as $slug) {
+                if (!is_string($slug) || !preg_match('/^[a-z0-9_-]{1,40}$/', $slug)) {
+                    throw new InvalidArgumentException(
+                        'WidgetRegistry: widget type "' . $id . '" has an invalid location slug'
+                    );
+                }
+            }
+            $locations = array_values(array_unique($spec['locations']));
+        }
+
         $capability = $spec['capability'] ?? 'admin';
         if ($capability !== 'admin' && $capability !== 'super_admin') {
             $capability = 'admin';
@@ -104,6 +124,21 @@ final class WidgetRegistry extends Registry
             'fields'      => $fields,
             'form'        => $spec['form'] ?? null,
             'capability'  => $capability,
+            'locations'   => $locations,
         ];
+    }
+
+    /**
+     * Whether a registered type may be placed in a section. An unknown type
+     * fits nowhere; a type with no 'locations' fits every section.
+     */
+    public function fits(string $id, string $location): bool
+    {
+        $type = $this->get($id);
+        if ($type === null) {
+            return false;
+        }
+
+        return $type['locations'] === [] || in_array($location, $type['locations'], true);
     }
 }

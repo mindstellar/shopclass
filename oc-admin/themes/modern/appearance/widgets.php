@@ -139,7 +139,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                             $canHide = $type !== null && !(osc_is_moderator() && $type['capability'] === 'super_admin');
                             $rowCfg  = $type !== null ? json_decode((string)$w['s_config'], true) : null;
                             $hidden  = $canHide && is_array($rowCfg) && !\mindstellar\widgets\WidgetConfig::enabled($rowCfg); ?>
-                            <li class="field-chip widget-row<?php echo $hidden ? ' is-hidden' : ''; ?>" data-widget-id="<?php echo $wid; ?>">
+                            <li class="field-chip widget-row<?php echo $hidden ? ' is-hidden' : ''; ?>" data-widget-id="<?php echo $wid; ?>"<?php echo $type !== null && !empty($type['locations']) ? ' data-locations="' . osc_esc_html(implode(' ', $type['locations'])) . '"' : ''; ?>>
                                 <div class="field-chip-row">
                                     <button type="button" class="chip-grip widget-drag-handle" draggable="true" tabindex="0"
                                             title="<?php echo osc_esc_html(__('Drag to reorder or move, or focus and use the arrow keys')); ?>"
@@ -188,7 +188,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                     <h4 class="palette-group-title"><?php echo osc_esc_html(__($group)); ?></h4>
                     <ul class="palette-list js-widget-palette">
                         <?php foreach ($types as $typeId => $typeSpec) { ?>
-                            <li class="field-chip widget-type" data-type-id="<?php echo osc_esc_html($typeId); ?>">
+                            <li class="field-chip widget-type" data-type-id="<?php echo osc_esc_html($typeId); ?>"<?php echo !empty($typeSpec['locations']) ? ' data-locations="' . osc_esc_html(implode(' ', $typeSpec['locations'])) . '"' : ''; ?>>
                                 <div class="field-chip-row">
                                     <button type="button" class="chip-grip" draggable="true" tabindex="-1"
                                             title="<?php echo osc_esc_html(__('Drag into a section')); ?>" aria-hidden="true"><i class="bi bi-grip-vertical"></i></button>
@@ -288,8 +288,15 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         pick:    '<?php echo osc_esc_js(__('Add to which section?')); ?>',
         toggleFailed: '<?php echo osc_esc_js(__('Could not change the widget. Reload and try again.')); ?>',
         show:    '<?php echo osc_esc_js(__('Show widget')); ?>',
-        hide:    '<?php echo osc_esc_js(__('Hide widget')); ?>'
+        hide:    '<?php echo osc_esc_js(__('Hide widget')); ?>',
+        misfit:  '<?php echo osc_esc_js(__('This widget cannot be placed in that section.')); ?>'
     };
+
+    // data-locations is a space-separated list of sections a typed widget fits; absent means all.
+    function fits(el, location) {
+        var list = el.getAttribute('data-locations');
+        return !list || list.split(' ').indexOf(location) !== -1;
+    }
 
     function announce(msg) {
         var live = document.getElementById('widgets-live');
@@ -315,9 +322,9 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         } else { el.textContent = ''; }
     }
 
-    function showError(section) {
+    function showError(section, message) {
         var box = section.querySelector('.widget-reorder-error');
-        if (box) { box.textContent = TXT.failed; box.classList.remove('d-none'); }
+        if (box) { box.textContent = message || TXT.failed; box.classList.remove('d-none'); }
     }
     function clearError(section) {
         var box = section.querySelector('.widget-reorder-error');
@@ -354,7 +361,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: body
         }).then(function (r) { return r.json(); }).then(function (o) {
             if (o && o.error === 0) { clearError(section); setStatus(section, 'saved'); }
-            else { showError(section); setStatus(section, ''); }
+            else { showError(section, o && o.message); setStatus(section, ''); }
         }).catch(function () { showError(section); setStatus(section, ''); });
     }
 
@@ -406,7 +413,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
             method: 'POST', credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: body
         }).then(function (r) { return r.json(); }).then(function (o) {
-            if (!o || o.error !== 0) { showError(section); setStatus(section, ''); return null; }
+            if (!o || o.error !== 0) { showError(section, o && o.message); setStatus(section, ''); return null; }
             var list = listOf(section);
             var li = document.createElement('li');
             li.className = 'field-chip widget-row';
@@ -467,7 +474,15 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                 return;
             }
             new Sortable(list, {
-                group: 'widgets', handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost',
+                group: {
+                    name: 'widgets',
+                    put: function (to, from, dragEl) {
+                        var ok = fits(dragEl, section.getAttribute('data-location') || '');
+                        if (!ok) { showError(section, TXT.misfit); }
+                        return ok;
+                    }
+                },
+                handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost',
                 onStart: closeEditors,
                 onAdd: function (evt) {
                     var el = evt.item;
@@ -533,6 +548,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
             if (!menu.hidden) { menu.hidden = true; place.setAttribute('aria-expanded', 'false'); return; }
             menu.innerHTML = '';
             document.querySelectorAll('.widget-section:not([data-unavailable])').forEach(function (sec) {
+                if (!fits(chip, sec.getAttribute('data-location'))) { return; }
                 var item = document.createElement('button');
                 item.type = 'button';
                 item.className = 'cf-add-item';

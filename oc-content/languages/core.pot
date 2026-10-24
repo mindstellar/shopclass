@@ -504,6 +504,10 @@ msgstr ""
 msgid "%s cannot be left empty"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "%s cannot be placed in this section."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -13286,6 +13290,10 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "This user isn't allowed to create databases. Create the database in your "
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/widgets.php
+msgid "This widget cannot be placed in that section."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/frm.php

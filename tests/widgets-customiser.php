@@ -426,6 +426,74 @@ $sweep();
 pin('a settings image a preference points to is kept', 1, $resourceCount($kept));
 @unlink($png2);
 
+harness_section('a widget type that names the sections it fits');
+
+use mindstellar\widgets\WidgetRegistry;
+
+$registry = WidgetRegistry::getInstance();
+$render   = static function () {
+    echo '<x>';
+};
+$registry->register('only.home', array('label' => 'Home only', 'render' => $render, 'locations' => array('home')));
+$registry->register('only.footer', array('label' => 'Footer only', 'render' => $render, 'locations' => array('footer', 'footer')));
+pin('locations are stored, duplicates dropped', array('footer'), $registry->get('only.footer')['locations']);
+pin('no locations key means everywhere', array(), $registry->get('aisle.hero')['locations']);
+check('a listed section fits', $registry->fits('only.home', 'home'));
+check('another section does not fit', !$registry->fits('only.home', 'footer'));
+check('an unlimited type fits any section', $registry->fits('aisle.hero', 'footer'));
+check('an unknown type fits nowhere', !$registry->fits('no.such', 'home'));
+foreach (array(array(), 'home', array('Home'), array(''), array(5), array(str_repeat('a', 41)), array('home page')) as $bad) {
+    $threw = false;
+    try {
+        $registry->register('bad.type', array('label' => 'Bad', 'render' => $render, 'locations' => $bad));
+    } catch (InvalidArgumentException $e) {
+        $threw = true;
+    }
+    check('locations ' . json_encode($bad) . ' is refused', $threw);
+}
+check('a refused type is not registered', $registry->get('bad.type') === null);
+
+$admin->query("DELETE FROM $table");
+$post = array('location' => 'footer', 's_type' => 'only.home', 'description' => 'Hero');
+$r    = drive('add_widget_post', $post);
+pin('add: a type in a section it does not fit adds nothing', array(), $rowsAt('footer'));
+check('...and flashes an error', in_array('error:Home only cannot be placed in this section.', $GLOBALS['flashes'] ?? array(), true));
+$r = drive('add_widget_post', array('location' => 'home') + $post);
+pin('add: the right section still works', 1, count($rowsAt('home')));
+
+$r = drive('widget_create_post', $post);
+pin('create: a misfit is error 1', 1, $r['json']['error'] ?? null);
+pin('...with a message', 'Home only cannot be placed in this section.', $r['json']['message'] ?? null);
+pin('...and adds nothing', array(), $rowsAt('footer'));
+$r = drive('widget_create_post', array('location' => 'home') + $post);
+pin('create: the right section works', 0, $r['json']['error'] ?? null);
+$r = drive('widget_create_post', array('location' => 'footer', 's_type' => 'aisle.hero'));
+pin('create: an unlimited type works anywhere', 0, $r['json']['error'] ?? null);
+
+$typed  = $rowsAt('home')[0]['pk_i_id'];
+$legacy = WidgetStore::add(array('s_location' => 'home', 'e_kind' => 'html', 's_description' => 'Raw', 's_content' => '<p>x</p>', 'i_order' => 5));
+$r      = drive('widget_move_post', array('location' => 'footer', 'id' => $typed, 'ids' => array($typed)));
+pin('move: a typed widget cannot go to a section it does not fit', 1, $r['json']['error'] ?? null);
+pin('...with a message', 'Home only cannot be placed in this section.', $r['json']['message'] ?? null);
+pin('...and stays where it was', 'home', $admin->query("SELECT s_location FROM $table WHERE pk_i_id = $typed")->fetch_row()[0]);
+$r = drive('widget_move_post', array('location' => 'footer', 'id' => $legacy, 'ids' => array($legacy)));
+pin('move: a legacy HTML widget is never limited', 0, $r['json']['error'] ?? null);
+
+$admin->query("DELETE FROM $table");
+customiser_kit_declare(array('locations' => array(
+    'home'   => array('label' => 'Home page', 'types' => array('only.home', 'only.footer'), 'preview' => WEB_PATH),
+    'footer' => array('label' => 'Footer', 'types' => array('only.home', 'only.footer'), 'preview' => WEB_PATH),
+)));
+$r = drive('customise_draft_post', array('locations' => array('footer' => array(array('type' => 'only.home')))));
+pin('customiser: a type that does not fit the section is 422', 422, $r['status']);
+check('...with the existing refusal message', strpos(json_encode($r['json']), 'is not a section this page can hold') !== false);
+$r = drive('customise_draft_post', array('locations' => array('footer' => array(array('type' => 'only.footer')))));
+pin('customiser: a fitting type is saved', 200, $r['status']);
+$offered = \mindstellar\widgets\CustomiserScreen::build(osc_customiser_spec(), null);
+pin('the screen offers only the types that fit each section', array('home' => array('only.home'), 'footer' => array('only.footer')), array_map(static fn ($l) => $l['types'], $offered['locations']));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'customiser'");
+customiser_kit_declare();
+
 $code = harness_result();
 ob_end_flush();
 exit($code);

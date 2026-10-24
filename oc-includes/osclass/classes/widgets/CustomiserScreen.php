@@ -38,6 +38,10 @@ final class CustomiserScreen
         $types     = array();
         $locations = array();
         foreach ($spec['locations'] as $slug => $location) {
+            $location['types'] = array_values(array_filter(
+                $location['types'],
+                static fn ($typeId): bool => $registry->fits((string) $typeId, (string) $slug)
+            ));
             $drafted = is_array($draft['locations'][$slug] ?? null);
             $source  = $drafted ? $draft['locations'][$slug] : \Widget::getInstance()->findByLocation($slug);
             $rows    = array();

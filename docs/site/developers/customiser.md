@@ -43,6 +43,27 @@ invalid:
 If nothing usable is left, `osc_customiser_spec()` returns `null` and the
 screen does not appear.
 
+## Where a type fits
+
+A widget type can name the sections it fits with the `locations` key of its
+spec. Without it the type fits every section.
+
+| Key | Value |
+|---|---|
+| `locations` | A non-empty list of section slugs, each `[a-z0-9_-]{1,40}`. Anything else throws. |
+
+```php
+osc_register_widget('aisle.hero', array(
+    'label'     => 'Hero banner',
+    'render'    => $render,
+    'locations' => array('home'),
+));
+```
+
+The Widgets screen, the add and move actions and the customiser refuse the type
+in any other section and do not offer it there. Widgets already placed keep
+rendering. Legacy HTML widgets are never limited.
+
 ## Hidden sections
 
 A section can be hidden without being deleted. Core stores this as the reserved

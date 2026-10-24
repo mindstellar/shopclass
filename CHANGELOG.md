@@ -23,6 +23,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - The cart hooks (`cart_shipping_methods`, `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`, `cart_free_over`, `cart_problems`, `cart_needs_shipping`, `cart_item_add_after` and `cart_checkout_before`) are fired, so shipping, tax and promotion plugins price a cart. See [Hooks](https://shopclass.org/docs/developers/hooks/) and [Billing](https://shopclass.org/docs/developers/payment-gateways/).
 - Buyers get an e-mail when an order is placed, paid, shipped, delivered, cancelled or refunded; one that fails to send is tried again once from the job queue. The owner gets one when a new order comes in.
 - Comments can carry a 1 to 5 rating, shown and averaged by the API and in the admin Comments list. Switch: Settings → Comments, on for a shop and off for classifieds until saved.
+- A widget type can set `locations` in `osc_register_widget()` to the sections it fits; the Widgets screen and Customise offer and accept it only there. See [Customiser](https://shopclass.org/docs/developers/customiser/).
 - A signed-in user keeps a wishlist and back-in-stock or price-drop alerts through `account/wishlist` and `account/alerts`.
 - **Appearance → Customise** edits a theme's sections and look beside a live preview, saved as a draft until Publish. See [Customiser](https://shopclass.org/docs/developers/customiser/).
 - The widgets screen has an eye button that hides and shows a widget without deleting it.
