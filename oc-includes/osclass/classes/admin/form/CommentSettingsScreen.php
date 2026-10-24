@@ -59,7 +59,7 @@ final class CommentSettingsScreen extends SettingsScreen
                 ->set('row', false)
             ->checkbox('comment_ratings', __('Allow signed-in users to add a star rating (1 to 5) to a comment'))
                 ->set('row', false)
-                ->default(osc_site_mode() === \mindstellar\site\SiteMode::SHOP)
+                ->default(osc_comment_ratings_enabled())
             ->checkbox('moderate_comments', __('A comment is being held for moderation'))
                 ->set('row', false)
                 // The key is this switch's, and its value comes from the box below: off is
