@@ -1408,13 +1408,20 @@ function basic_info()
     // in one transaction through the parameterized API: either the site has an
     // owner and a title, or nothing is saved. Success is the returned insert id,
     // never affected-rows (which don't propagate on the shared handle).
+    // A retry after a failed finish finds the account this step already made; it is
+    // updated, not inserted again, because the username and e-mail are unique.
     \mindstellar\database\Db::transaction(static function () use ($adminUser, $adminEmail, $adminHash, $webTitle) {
-        \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->insert(array(
+        $adminRow = array(
             's_name'     => 'Administrator',
             's_username' => $adminUser,
             's_password' => $adminHash,
             's_email'    => $adminEmail,
-        ));
+        );
+        if (\mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first() !== null) {
+            \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->update($adminRow);
+        } else {
+            \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->insert($adminRow);
+        }
 
         $prefTable = DB_TABLE_PREFIX . 't_preference';
         $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
