@@ -84,6 +84,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - After-commit callbacks queued behind one that ends the request now run at shutdown.
 - Two first upgrade grants for one listing no longer deadlock and lose one.
 - Checkbox filters use the `s_value` index.
+- A title or description with "&", "<" or ">" is no longer refused as too long when it fits the form: lengths count the text as typed, not as stored.
 
 ## Shopclass 7.0.5
 
