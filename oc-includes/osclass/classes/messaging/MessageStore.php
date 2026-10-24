@@ -28,13 +28,13 @@ final class MessageStore
      */
     public static function shape(array $row): array
     {
-        return array(
+        return [
             'id'           => (int) $row['pk_i_id'],
             'conversation' => (int) $row['fk_i_conversation_id'],
             'sender'       => (int) $row['fk_i_sender_id'],
             'body'         => (string) $row['s_body'],
             'at'           => (string) $row['dt_created'],
-        );
+        ];
     }
 
     /**
@@ -63,7 +63,7 @@ final class MessageStore
      */
     public function setState(int $id, string $state): void
     {
-        $this->table()->where('pk_i_id', $id)->update(array('s_state' => $state));
+        $this->table()->where('pk_i_id', $id)->update(['s_state' => $state]);
     }
 
     /**
@@ -76,7 +76,7 @@ final class MessageStore
     public function ofConversation(int $conversationId, int $viewerId, int $limit = 50, ?int $beforeId = null, bool $includeHeld = false): array
     {
         $query = $this->table()->where('fk_i_conversation_id', $conversationId);
-        $query = $includeHeld ? $query->whereIn('s_state', array('sent', 'held')) : self::visibleTo($query, $viewerId);
+        $query = $includeHeld ? $query->whereIn('s_state', ['sent', 'held']) : self::visibleTo($query, $viewerId);
 
         return $query->newestBefore($beforeId, max(1, $limit));
     }
@@ -103,7 +103,7 @@ final class MessageStore
      */
     public function liveCount(int $conversationId): int
     {
-        return $this->table()->where('fk_i_conversation_id', $conversationId)->whereIn('s_state', array('sent', 'held'))->count();
+        return $this->table()->where('fk_i_conversation_id', $conversationId)->whereIn('s_state', ['sent', 'held'])->count();
     }
 
     /**
@@ -135,8 +135,8 @@ final class MessageStore
      */
     public function ownInConversations(int $userId, array $conversationIds): array
     {
-        if ($conversationIds === array()) {
-            return array();
+        if ($conversationIds === []) {
+            return [];
         }
 
         return $this->table()
@@ -151,7 +151,7 @@ final class MessageStore
      */
     private static function visibleTo(\mindstellar\database\QueryBuilder $query, int $viewerId): \mindstellar\database\QueryBuilder
     {
-        return $query->whereRaw("(s_state = 'sent' OR (s_state = 'held' AND fk_i_sender_id = ?))", array($viewerId));
+        return $query->whereRaw("(s_state = 'sent' OR (s_state = 'held' AND fk_i_sender_id = ?))", [$viewerId]);
     }
 
     private function table(): \mindstellar\database\QueryBuilder

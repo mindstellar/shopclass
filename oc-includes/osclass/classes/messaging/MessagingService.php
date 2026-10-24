@@ -83,7 +83,7 @@ final class MessagingService
     public function start(int $itemId, string $body, Actor $actor): SentMessage
     {
         $user = $this->sender($actor);
-        $item = ListingStore::find($itemId, array('*'));
+        $item = ListingStore::find($itemId, ['*']);
         if ($item === null || !ListingPolicy::canView($item, $actor)) {
             throw new NotFoundException(_m("This listing doesn't exist"));
         }
@@ -158,7 +158,7 @@ final class MessagingService
         }
         $messages = $this->messages->ofConversation($conversationId, (int) $actor->userId(), $limit, $beforeId);
 
-        return array('conversation' => $conversation, 'messages' => array_reverse($messages));
+        return ['conversation' => $conversation, 'messages' => array_reverse($messages)];
     }
 
     /**
@@ -219,10 +219,10 @@ final class MessagingService
     public function activity(int $userId): array
     {
         if ($userId <= 0 || !osc_messaging_enabled()) {
-            return array('unread' => 0, 'latest' => null);
+            return ['unread' => 0, 'latest' => null];
         }
 
-        return array('unread' => $this->conversations->unread($userId), 'latest' => $this->conversations->latest($userId));
+        return ['unread' => $this->conversations->unread($userId), 'latest' => $this->conversations->latest($userId)];
     }
 
     /**
@@ -248,7 +248,7 @@ final class MessagingService
             $this->markRead($conversationId, $actor);
         }
 
-        return array('conversation' => $conversation, 'messages' => $messages);
+        return ['conversation' => $conversation, 'messages' => $messages];
     }
 
     /**
@@ -448,13 +448,13 @@ final class MessagingService
                 $holdReason = self::HELD_THREAD;
             }
             $held      = $holdReason !== null;
-            $messageId = $this->messages->create(array(
+            $messageId = $this->messages->create([
                 'fk_i_conversation_id' => $conversationId,
                 'fk_i_sender_id'       => $senderId,
                 's_body'               => $body,
                 's_state'              => $held ? 'held' : 'sent',
                 'dt_created'           => $now,
-            ));
+            ]);
             if (!$held) {
                 $this->conversations->touch($conversationId, $recipientId === $sellerId ? ConversationStore::SIDE_SELLER : ConversationStore::SIDE_BUYER, $now);
             }
@@ -468,13 +468,13 @@ final class MessagingService
                     : new MessageSent($messageId, $conversationId, $senderId, $recipientId));
             });
 
-            return new SentMessage($conversationId, $messageId, $held, $started, MessageStore::shape(array(
+            return new SentMessage($conversationId, $messageId, $held, $started, MessageStore::shape([
                 'pk_i_id'              => $messageId,
                 'fk_i_conversation_id' => $conversationId,
                 'fk_i_sender_id'       => $senderId,
                 's_body'               => $body,
                 'dt_created'           => $now,
-            )));
+            ]));
         });
     }
 
@@ -488,14 +488,14 @@ final class MessagingService
     private function createConversation(int $itemId, int $buyerId, int $sellerId, bool $held, string $now, bool &$started): array
     {
         try {
-            $id = $this->conversations->create(array(
+            $id = $this->conversations->create([
                 'fk_i_item_id'    => $itemId,
                 'fk_i_buyer_id'   => $buyerId,
                 'fk_i_seller_id'  => $sellerId,
                 's_state'         => $held ? 'held' : 'open',
                 'dt_created'      => $now,
                 'dt_last_message' => $now,
-            ));
+            ]);
             $started = true;
 
             return (array) $this->conversations->lock($id);
@@ -560,7 +560,7 @@ final class MessagingService
         if (!osc_akismet_key()) {
             return false;
         }
-        $item ??= ListingStore::find($itemId, array('*'));
+        $item ??= ListingStore::find($itemId, ['*']);
 
         return SpamCheck::akismet((string) $user['s_name'], (string) $user['s_email'], $body, $ip, $item !== null ? osc_item_url_from_item($item) : null, 'message');
     }

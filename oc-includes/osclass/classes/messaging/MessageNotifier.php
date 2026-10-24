@@ -38,8 +38,8 @@ final class MessageNotifier
         Db::afterCommit(static function () use ($conversationId, $recipientId): void {
             osc_job_enqueue(
                 self::JOB,
-                array('conversation' => $conversationId, 'recipient' => $recipientId),
-                array('unique_key' => $conversationId . ':' . $recipientId, 'keep_existing' => true, 'delay' => self::DELAY)
+                ['conversation' => $conversationId, 'recipient' => $recipientId],
+                ['unique_key' => $conversationId . ':' . $recipientId, 'keep_existing' => true, 'delay' => self::DELAY]
             );
         });
     }
@@ -79,6 +79,6 @@ final class MessageNotifier
     {
         $item = \Item::getInstance()->findByPrimaryKey($itemId);
 
-        return is_array($item) && $item !== array() ? $item : null;
+        return is_array($item) && $item !== [] ? $item : null;
     }
 }

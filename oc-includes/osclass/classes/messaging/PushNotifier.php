@@ -50,8 +50,8 @@ final class PushNotifier
         Db::afterCommit(static function () use ($recipientId): void {
             osc_job_enqueue(
                 self::JOB,
-                array('recipient' => $recipientId),
-                array('unique_key' => 'push:' . $recipientId, 'keep_existing' => true, 'delay' => self::DELAY)
+                ['recipient' => $recipientId],
+                ['unique_key' => 'push:' . $recipientId, 'keep_existing' => true, 'delay' => self::DELAY]
             );
         });
     }
@@ -76,8 +76,8 @@ final class PushNotifier
 
         $only  = $job->get('only');
         $round = (int) $job->get('round', 1);
-        $retry = array();
-        $left  = array();
+        $retry = [];
+        $left  = [];
         $stop  = $this->clock->now() + self::BUDGET;
         foreach ($this->subscriptions->forUser($recipientId) as $key => $browser) {
             if (is_array($only) && !in_array($key, $only, true)) {
@@ -95,10 +95,10 @@ final class PushNotifier
             }
         }
 
-        if ($left !== array()) {
-            $job->repeat(array('recipient' => $recipientId, 'only' => array_merge($left, $retry), 'round' => $round));
-        } elseif ($retry !== array() && $round < self::MAX_ROUNDS) {
-            $job->repeat(array('recipient' => $recipientId, 'only' => $retry, 'round' => $round + 1), 60 * $round);
+        if ($left !== []) {
+            $job->repeat(['recipient' => $recipientId, 'only' => array_merge($left, $retry), 'round' => $round]);
+        } elseif ($retry !== [] && $round < self::MAX_ROUNDS) {
+            $job->repeat(['recipient' => $recipientId, 'only' => $retry, 'round' => $round + 1], 60 * $round);
         }
     }
 }

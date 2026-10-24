@@ -48,10 +48,10 @@ final class ConversationStore
     public function byIds(array $ids): array
     {
         $ids = array_values(array_unique(array_map('intval', $ids)));
-        if ($ids === array()) {
-            return array();
+        if ($ids === []) {
+            return [];
         }
-        $rows = array();
+        $rows = [];
         foreach ($this->table()->whereIn('pk_i_id', $ids)->get() as $row) {
             $rows[(int) $row['pk_i_id']] = $row;
         }
@@ -67,7 +67,7 @@ final class ConversationStore
      */
     public function lock(int $id): ?array
     {
-        return Db::selectOne('SELECT * FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', array($id));
+        return Db::selectOne('SELECT * FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', [$id]);
     }
 
     /**
@@ -87,7 +87,7 @@ final class ConversationStore
      */
     public function lockForListing(int $itemId, int $buyerId, int $sellerId): ?array
     {
-        return Db::selectOne('SELECT * FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_buyer_id = ? AND fk_i_seller_id = ? FOR UPDATE', array($itemId, $buyerId, $sellerId));
+        return Db::selectOne('SELECT * FROM ' . self::tableName() . ' WHERE fk_i_item_id = ? AND fk_i_buyer_id = ? AND fk_i_seller_id = ? FOR UPDATE', [$itemId, $buyerId, $sellerId]);
     }
 
     /**
@@ -114,17 +114,17 @@ final class ConversationStore
     {
         $limit = max(1, $limit);
         $page  = '';
-        $bound = array();
+        $bound = [];
         if ($beforeDate !== null) {
             $page  = ' AND (dt_last_message < ? OR (dt_last_message = ? AND pk_i_id < ?))';
-            $bound = array($beforeDate, $beforeDate, $beforeId ?? PHP_INT_MAX);
+            $bound = [$beforeDate, $beforeDate, $beforeId ?? PHP_INT_MAX];
         }
         $one = static function (string $column, string $extra) use ($userId, $page, $bound, $limit): array {
-            return array(
+            return [
                 '(SELECT * FROM ' . self::tableName() . ' WHERE ' . $column . ' = ?' . $extra . $page
                 . ' ORDER BY dt_last_message DESC, pk_i_id DESC LIMIT ' . $limit . ')',
-                array_merge(array($userId), $bound),
-            );
+                array_merge([$userId], $bound),
+            ];
         };
         [$buyerSql, $buyerParams]   = $one('fk_i_buyer_id', '');
         [$sellerSql, $sellerParams] = $one(
@@ -148,7 +148,7 @@ final class ConversationStore
         $column = self::unreadColumn($side);
         Db::execute(
             'UPDATE ' . self::tableName() . ' SET dt_last_message = ?, ' . $column . ' = LEAST(' . $column . ' + 1, 65535) WHERE pk_i_id = ?',
-            array($now, $id)
+            [$now, $id]
         );
     }
 
@@ -160,9 +160,9 @@ final class ConversationStore
     public function clearUnread(int $id, string $side): int
     {
         $column = self::unreadColumn($side);
-        $count  = (int) Db::scalar('SELECT ' . $column . ' FROM ' . self::tableName() . ' WHERE pk_i_id = ?', array($id));
+        $count  = (int) Db::scalar('SELECT ' . $column . ' FROM ' . self::tableName() . ' WHERE pk_i_id = ?', [$id]);
         if ($count > 0) {
-            Db::execute('UPDATE ' . self::tableName() . ' SET ' . $column . ' = 0 WHERE pk_i_id = ? AND ' . $column . ' > 0', array($id));
+            Db::execute('UPDATE ' . self::tableName() . ' SET ' . $column . ' = 0 WHERE pk_i_id = ? AND ' . $column . ' > 0', [$id]);
         }
 
         return $count;
@@ -177,8 +177,8 @@ final class ConversationStore
     {
         $table = self::tableName();
 
-        return (int) Db::scalar('SELECT COALESCE(SUM(i_buyer_unread), 0) FROM ' . $table . ' WHERE fk_i_buyer_id = ?', array($userId))
-            + (int) Db::scalar('SELECT COALESCE(SUM(i_seller_unread), 0) FROM ' . $table . ' WHERE fk_i_seller_id = ?', array($userId));
+        return (int) Db::scalar('SELECT COALESCE(SUM(i_buyer_unread), 0) FROM ' . $table . ' WHERE fk_i_buyer_id = ?', [$userId])
+            + (int) Db::scalar('SELECT COALESCE(SUM(i_seller_unread), 0) FROM ' . $table . ' WHERE fk_i_seller_id = ?', [$userId]);
     }
 
     /**
@@ -190,12 +190,12 @@ final class ConversationStore
     public function latest(int $userId): ?string
     {
         $table = self::tableName();
-        $times = array_filter(array(
-            Db::scalar('SELECT MAX(dt_last_message) FROM ' . $table . ' WHERE fk_i_buyer_id = ?', array($userId)),
-            Db::scalar('SELECT MAX(dt_last_message) FROM ' . $table . ' WHERE fk_i_seller_id = ? AND s_state <> ' . "'held'", array($userId)),
-        ));
+        $times = array_filter([
+            Db::scalar('SELECT MAX(dt_last_message) FROM ' . $table . ' WHERE fk_i_buyer_id = ?', [$userId]),
+            Db::scalar('SELECT MAX(dt_last_message) FROM ' . $table . ' WHERE fk_i_seller_id = ? AND s_state <> ' . "'held'", [$userId]),
+        ]);
 
-        return $times === array() ? null : (string) max($times);
+        return $times === [] ? null : (string) max($times);
     }
 
     /**
@@ -207,7 +207,7 @@ final class ConversationStore
     {
         return Db::selectOne(
             'SELECT 1 FROM ' . self::tableName() . ' WHERE fk_i_buyer_id = ? AND fk_i_seller_id = ? AND (b_buyer_blocked = 1 OR b_seller_blocked = 1) LIMIT 1',
-            array($buyerId, $sellerId)
+            [$buyerId, $sellerId]
         ) !== null;
     }
 
@@ -220,7 +220,7 @@ final class ConversationStore
         if ($column === null) {
             throw new \InvalidArgumentException('Unknown side');
         }
-        $this->table()->where('pk_i_id', $id)->update(array($column => $blocked ? 1 : 0));
+        $this->table()->where('pk_i_id', $id)->update([$column => $blocked ? 1 : 0]);
     }
 
     /**
@@ -228,7 +228,7 @@ final class ConversationStore
      */
     public function setState(int $id, string $state): void
     {
-        $this->table()->where('pk_i_id', $id)->update(array('s_state' => $state));
+        $this->table()->where('pk_i_id', $id)->update(['s_state' => $state]);
     }
 
     /**
@@ -238,11 +238,11 @@ final class ConversationStore
      */
     public function setReport(int $id, int $reporterId, string $reason): void
     {
-        $this->table()->where('pk_i_id', $id)->update(array(
+        $this->table()->where('pk_i_id', $id)->update([
             's_state'          => 'reported',
             'fk_i_reporter_id' => $reporterId,
             's_report_reason'  => $reason,
-        ));
+        ]);
     }
 
     /**
@@ -252,11 +252,11 @@ final class ConversationStore
      */
     public function clearReport(int $id): void
     {
-        $this->table()->where('pk_i_id', $id)->update(array(
+        $this->table()->where('pk_i_id', $id)->update([
             's_state'          => 'open',
             'fk_i_reporter_id' => null,
             's_report_reason'  => null,
-        ));
+        ]);
     }
 
     /**
@@ -317,14 +317,14 @@ final class ConversationStore
             $this->table()->where('fk_i_buyer_id', $userId)->get(),
             $this->table()->where('fk_i_seller_id', $userId)->get()
         );
-        $ids = array();
+        $ids = [];
         foreach ($rows as &$row) {
             $row['side'] = self::sideOf($row, $userId);
             $ids[]      = (int) $row['pk_i_id'];
         }
         unset($row);
 
-        return array('conversations' => $rows, 'messages' => $this->messages->ownInConversations($userId, $ids));
+        return ['conversations' => $rows, 'messages' => $this->messages->ownInConversations($userId, $ids)];
     }
 
     /**
