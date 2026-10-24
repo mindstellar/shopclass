@@ -100,7 +100,7 @@ $json_message['password']     = $result['s_password'];
 
 // The admin account is saved by now, so a failed location download must not stop the
 // install. The finish step writes osclass_installed and tells the owner to add locations later.
-$location = (string) Params::getParam('location-json');
+$location = Params::getParamString('location-json');
 if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $location !== 'skip') {
     try {
         $locationsSaved = osc_install_json_locations($location);
