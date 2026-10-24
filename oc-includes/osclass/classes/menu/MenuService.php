@@ -16,6 +16,7 @@ use mindstellar\cache\CacheGroup;
 use mindstellar\category\CategoryQuery;
 use mindstellar\category\CategoryStore;
 use mindstellar\pages\PageQuery;
+use mindstellar\theme\ThemeSupports;
 use mindstellar\widgets\WidgetConfig;
 use Preference;
 
@@ -84,6 +85,60 @@ final class MenuService
     public function menuIds(): array
     {
         return array_values(array_unique([...self::CORE, ...$this->ids()]));
+    }
+
+    /**
+     * The places the theme declared with osc_add_theme_support('menus', [id => ['label' => …, 'depth' => 1..3]]).
+     * An entry with a bad id, no label or a depth outside 1 to 3 is skipped.
+     *
+     * @return array<string,array{label:string,depth:int}>
+     */
+    public function themePlaces(): array
+    {
+        $raw = ThemeSupports::getInstance()->get('menus');
+        if (!is_array($raw)) {
+            return [];
+        }
+        $out = [];
+        foreach ($raw as $id => $place) {
+            $id    = (string) $id;
+            $label = is_array($place) && is_string($place['label'] ?? null) ? trim($place['label']) : '';
+            $depth = is_array($place) && array_key_exists('depth', $place) ? $place['depth'] : MenuItems::MAX_DEPTH;
+            if (preg_match(self::ID, $id) !== 1 || $label === '' || !is_int($depth) || $depth < 1 || $depth > MenuItems::MAX_DEPTH) {
+                continue;
+            }
+            $out[$id] = ['label' => $label, 'depth' => $depth];
+        }
+
+        return $out;
+    }
+
+    /**
+     * How many items sit at $depth levels or deeper in a stored menu (level 1 is the top).
+     *
+     * @param array<mixed> $items
+     */
+    public static function itemsBeyond(array $items, int $depth, int $level = 1): int
+    {
+        $count = 0;
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $count += ($level > $depth ? 1 : 0) + (is_array($item['children'] ?? null) ? self::itemsBeyond($item['children'], $depth, $level + 1) : 0);
+        }
+
+        return $count;
+    }
+
+    /**
+     * Every menu an owner can edit: the saved ones plus the places the theme declared.
+     *
+     * @return string[]
+     */
+    public function editableIds(): array
+    {
+        return array_values(array_unique([...$this->menuIds(), ...array_keys($this->themePlaces())]));
     }
 
     /**

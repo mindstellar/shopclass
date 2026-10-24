@@ -351,9 +351,19 @@ msgid_plural "%d are larger than their columns"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "%d items are deeper than your theme shows here and will not show."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "%d km"
 msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "%d level"
+msgid_plural "%d levels"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "%d listed address or range, and this server"
@@ -730,6 +740,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "1 is the smallest file, 100 the best quality. 82 is a good balance."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "1 item is deeper than your theme shows here and will not show."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Editor.php
@@ -15316,6 +15330,10 @@ msgstr[1] ""
 msgid ""
 "Your theme no longer has this section — these widgets are not shown on the "
 "site. Move them somewhere else, or delete them."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Your theme shows this menu in: %1$s (%2$s)."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Picker.php

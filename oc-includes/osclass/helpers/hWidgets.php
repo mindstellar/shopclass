@@ -455,11 +455,15 @@ function osc_menu(string $id): array
 function osc_menu_choices(): array
 {
     $service = \mindstellar\menu\MenuService::getInstance();
+    $places  = $service->themePlaces();
     $names   = array('main' => __('Main menu'), 'footer' => __('Footer menu'));
-    foreach ($service->menuIds() as $id) {
+    foreach ($service->editableIds() as $id) {
         if (!isset($names[$id])) {
             $saved      = $service->load($id);
-            $names[$id] = $saved !== null && $saved['label'] !== '' ? $saved['label'] : $id;
+            $names[$id] = $saved !== null && $saved['label'] !== '' ? $saved['label'] : (isset($places[$id]) ? $places[$id]['label'] : $id);
+        }
+        if (isset($places[$id]) && $names[$id] !== $places[$id]['label']) {
+            $names[$id] .= ' — ' . $places[$id]['label'];
         }
     }
 

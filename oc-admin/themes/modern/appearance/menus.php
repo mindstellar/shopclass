@@ -49,7 +49,10 @@ if ($menuEditor['saved']) {
     $meStatus = __('Not saved yet.');
 }
 
+$mePlace = is_array($menuEditor['place']) ? $menuEditor['place'] : null;
+
 $meState = array(
+    'place'      => $mePlace,
     'items'      => $menuEditor['items'],
     'categories' => $menuEditor['categories'],
     'pages'      => $menuEditor['pages'],
@@ -75,6 +78,8 @@ $meState = array(
         'full'       => __('A menu can hold at most %d items.'),
         'needLink'   => __('A link needs a label and an address.'),
         'leave'      => __('You have unsaved changes to this menu.'),
+        'hidden1'    => __('1 item is deeper than your theme shows here and will not show.'),
+        'hiddenN'    => __('%d items are deeper than your theme shows here and will not show.'),
     ),
 );
 $meJson = json_encode($meState, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -125,6 +130,11 @@ $meDepth = static function (array $cat) use ($meCats): int {
                             <span class="form-card-status" id="menu-status" role="status" aria-live="polite"></span>
                         </span>
                     </div>
+                    <?php if ($mePlace !== null) { ?>
+                        <p class="menu-help" id="menu-place"><?php echo osc_esc_html(sprintf(__('Your theme shows this menu in: %1$s (%2$s).'), $mePlace['label'], sprintf(_n('%d level', '%d levels', $mePlace['depth']), $mePlace['depth']))); ?></p>
+                        <?php $meBeyond = MenuService::itemsBeyond((array) $menuEditor['items'], $mePlace['depth']); ?>
+                        <p class="menu-warn" id="menu-place-warn" role="status"<?php echo $meBeyond === 0 ? ' hidden' : ''; ?>><?php echo $meBeyond === 0 ? '' : osc_esc_html(sprintf($meBeyond === 1 ? $meState['i18n']['hidden1'] : $meState['i18n']['hiddenN'], $meBeyond)); ?></p>
+                    <?php } ?>
                     <p class="visually-hidden" id="menu-grip-help"><?php _e('Up and down arrows move the item. Right arrow puts it under the item above, left arrow moves it out.'); ?></p>
                     <ol class="menu-items" id="menu-items" aria-label="<?php echo osc_esc_html(sprintf(__('Items in %s'), $meName)); ?>"></ol>
                     <p class="form-empty" id="menu-empty" hidden><?php _e('No items yet. Add some from the list on the right.'); ?></p>

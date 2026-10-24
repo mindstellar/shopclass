@@ -134,4 +134,34 @@ $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_pages WHERE pk_i_id = ' . $a
 \mindstellar\cache\CacheGroup::changed('page');
 pin('a deleted page is skipped', ['Cars'], array_column($menus->resolve('top', 'en_US')[0]['children'], 'label'));
 
+harness_section('theme places');
+$support = \mindstellar\theme\ThemeSupports::getInstance();
+$support->reset();
+pin('no declaration: no places', [], $menus->themePlaces());
+$support->add('menus', [
+    'main'    => ['label' => ' Top bar ', 'depth' => 1],
+    'footer'  => ['label' => 'Footer'],
+    'Bad Id'  => ['label' => 'Nope'],
+    'nolabel' => ['depth' => 2],
+    'blank'   => ['label' => '  '],
+    'zero'    => ['label' => 'Zero', 'depth' => 0],
+    'four'    => ['label' => 'Four', 'depth' => 4],
+    'text'    => ['label' => 'Text', 'depth' => '2'],
+    'junk'    => 'Junk',
+    'side'    => ['label' => 'Side', 'depth' => 2],
+]);
+pin('valid places are kept, bad ones skipped', ['main' => ['label' => 'Top bar', 'depth' => 1], 'footer' => ['label' => 'Footer', 'depth' => 3], 'side' => ['label' => 'Side', 'depth' => 2]], $menus->themePlaces());
+$support->add('menus', 'not an array');
+pin('a non-array declaration gives no places', [], $menus->themePlaces());
+$support->add('menus', ['side' => ['label' => 'Side']]);
+check('a declared unsaved menu is editable', in_array('side', $menus->editableIds(), true) && !in_array('side', $menus->menuIds(), true));
+
+$tree = [$link('a')];
+$tree[0]['children'] = [$link('b'), $link('c')];
+$tree[0]['children'][0]['children'] = [$link('d')];
+pin('items beyond level 1', 3, MenuService::itemsBeyond($tree, 1));
+pin('items beyond level 2', 1, MenuService::itemsBeyond($tree, 2));
+pin('items beyond level 3', 0, MenuService::itemsBeyond($tree, 3));
+$support->reset();
+
 exit(harness_result());

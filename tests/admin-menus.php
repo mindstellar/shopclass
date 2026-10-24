@@ -121,6 +121,11 @@ $r = drive('menus');
 pin('main is opened by default', 'main', $r['view']['menuEditor']['id']);
 pin('unsaved main starts from the automatic items', array(array('type' => 'category', 'ref' => $motors)), $r['view']['menuEditor']['items']);
 pin('the page list offers the page', array(array('id' => $about, 'name' => 'About us')), $r['view']['menuEditor']['pages']);
+pin('no theme place: none passed to the view', null, $r['view']['menuEditor']['place']);
+\mindstellar\theme\ThemeSupports::getInstance()->add('menus', array('main' => array('label' => 'Top bar', 'depth' => 1), 'strip' => array('label' => 'Strip')));
+pin('main shows its place', array('label' => 'Top bar', 'depth' => 1), drive('menus', array())['view']['menuEditor']['place']);
+pin('a declared unsaved menu opens', 'strip', drive('menus', array('menu' => 'strip'))['view']['menuEditor']['id']);
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
 pin('an unknown menu opens main', 'main', drive('menus', array('menu' => 'nope'))['view']['menuEditor']['id']);
 
 harness_section('csrf');

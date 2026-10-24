@@ -31,6 +31,7 @@
     var rowTemplate = document.getElementById('menu-row');
     var addError = document.getElementById('menu-add-error');
     var pick = document.getElementById('menu-pick');
+    var placeWarn = document.getElementById('menu-place-warn');
 
     var names = { category: {}, page: {} };
     state.categories.forEach(function (c) { names.category[c.id] = c.name; });
@@ -220,7 +221,17 @@
         }
     }
 
+    function showPlaceWarning() {
+        if (!placeWarn || !state.place) {
+            return;
+        }
+        var hidden = items.filter(function (item) { return item.depth >= state.place.depth; }).length;
+        placeWarn.hidden = hidden === 0;
+        placeWarn.textContent = hidden === 0 ? '' : fmt(hidden === 1 ? t.hidden1 : t.hiddenN, hidden);
+    }
+
     function render(focusIndex, focusAct) {
+        showPlaceWarning();
         list.textContent = '';
         empty.hidden = items.length > 0;
         items.forEach(function (item, i) {

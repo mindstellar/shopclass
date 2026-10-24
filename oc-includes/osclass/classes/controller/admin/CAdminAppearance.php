@@ -642,7 +642,7 @@ class CAdminAppearance extends AdminSecBaseModel
             return;
         }
         $service = MenuService::getInstance();
-        $ids     = $service->menuIds();
+        $ids     = $service->editableIds();
         $id      = Params::getParamString('menu');
         $id      = in_array($id, $ids, true) ? $id : 'main';
         $saved   = $service->load($id);
@@ -667,6 +667,7 @@ class CAdminAppearance extends AdminSecBaseModel
             'menus'      => osc_menu_choices(),
             'saved'      => $saved !== null,
             'core'       => in_array($id, MenuService::CORE, true),
+            'place'      => $service->themePlaces()[$id] ?? null,
             'items'      => $saved !== null ? $saved['items'] : $service->automaticItems($id),
             'categories' => $categories,
             'pages'      => $pages,

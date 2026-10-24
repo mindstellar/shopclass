@@ -131,7 +131,7 @@ Admins only; moderators cannot edit menus.
   such as `top-bar`. Show it with a **Menu** widget, or ask your theme's developer
   to use its id. **Delete menu** removes it.
 
-How much of a menu shows depends on the theme. A theme may show only the top level.
+How much of a menu shows depends on the theme. If your theme names where it shows a menu, the editor says so and warns when items are nested deeper than the theme shows.
 
 ## Customise your theme
 

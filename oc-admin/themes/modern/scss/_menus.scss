@@ -104,6 +104,12 @@
   margin: 0;
 }
 
+.menu-warn {
+  color: var(--osc-warning-deep);
+  font-size: $font-size-label;
+  margin: .25rem 0 0;
+}
+
 .menu-add-error {
   color: var(--osc-danger);
   font-size: $font-size-label;

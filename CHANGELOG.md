@@ -25,7 +25,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Comments can carry a 1 to 5 rating, shown and averaged by the API and in the admin Comments list. Switch: Settings → Comments, on for a shop and off for classifieds until saved.
 - A widget type can set `locations` in `osc_register_widget()` to the sections it fits; the Widgets screen and Customise offer and accept it only there. See [Customiser](https://shopclass.org/docs/developers/customiser/).
 - A signed-in user keeps a wishlist and back-in-stock or price-drop alerts through `account/wishlist` and `account/alerts`.
-- **Appearance → Menus** builds the main, footer and extra menus from categories, pages and links, nested up to three levels. Themes read them with `osc_menu()`, the API in `GET /menus`, and the new Menu widget shows one.
+- **Appearance → Menus** builds the main, footer and extra menus from categories, pages and links, nested up to three levels. Themes read them with `osc_menu()`, the API in `GET /menus`, and the new Menu widget shows one. A theme can name its menu places with `osc_add_theme_support('menus', …)`; the editor then labels them and warns about items nested deeper than the theme shows.
 - **Appearance → Customise** edits a theme's sections and look beside a live preview, saved as a draft until Publish. See [Customiser](https://shopclass.org/docs/developers/customiser/).
 - The widgets screen has an eye button that hides and shows a widget without deleting it.
 - `osc_kv_list()` pages through a key-value group, and `osc_kv_increment()` adds to a counter in one statement.

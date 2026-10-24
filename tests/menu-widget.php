@@ -63,6 +63,10 @@ pin('a saved menu resolves with children', ['Motors', 'Tom & "Jerry"'], array_co
 harness_section('core.menu');
 check('the type is registered', osc_widget_types()['core.menu']['label'] === 'Menu');
 pin('choices: main, footer, then saved menus by their label', ['main' => 'Main menu', 'footer' => 'Footer menu', 'side' => 'Side links'], osc_menu_choices());
+$support = \mindstellar\theme\ThemeSupports::getInstance();
+$support->add('menus', ['main' => ['label' => 'Top bar', 'depth' => 1], 'strip' => ['label' => 'Strip']]);
+pin('choices: a declared place is named, an unsaved one is listed', ['main' => 'Main menu — Top bar', 'footer' => 'Footer menu', 'side' => 'Side links', 'strip' => 'Strip'], osc_menu_choices());
+$support->reset();
 pin('the menu select offers the same ids', ['main', 'footer', 'side'], \mindstellar\widgets\WidgetConfig::selectAllowedValues(osc_widget_types()['core.menu']['fields'][0]['options']));
 
 pin('nested lists with a heading', '<nav class="osc-menu" aria-label="Browse"><h2 class="osc-menu-title">Browse</h2><ul>'
