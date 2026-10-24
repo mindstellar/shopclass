@@ -288,6 +288,7 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-push{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-block:12px;}
   .oe-page .oe-push[hidden]{display:none;}
   .oe-page .oe-push .oe-muted{margin:0;}
+  .oe-page .oe-push .oe-muted:empty{display:none;}
   .oe-page .oe-thread-actions{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;margin-block-start:12px;font-size:.875rem;}
   .oe-page .oe-thread-actions > .oe-row-actions{margin:0;font-size:inherit;}
   .oe-page .oe-thread-actions summary{display:inline;list-style:none;cursor:pointer;color:var(--oe-teal);text-decoration:underline;}
