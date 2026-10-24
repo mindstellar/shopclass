@@ -78,6 +78,9 @@ check('a comment shows its stars only while ratings are on', strpos($src, '$oeRa
 check('the rating field is printed only under that test', preg_match('/if \(\$oeCommentStars\) \{.*?name="rating"/s', $src) === 1);
 check('the comment text is optional only while the stars show', strpos($src, "\$oeCommentStars ? '' : ' required'") !== false);
 
+check('deleting a comment asks first', strpos($src, 'data-osc-confirm=') !== false && strpos($src, 'osc_gui_print_confirm_script()') !== false);
+check('the pager prints only when it links to another page', strpos($src, "strpos(\$oeCommentPager, '<a ') !== false") !== false);
+
 harness_section('the values a rejected post is restored from');
 foreach (array('commentAuthorName', 'commentAuthorEmail', 'commentTitle', 'commentBody', 'commentRating') as $key) {
     check("repopulates {$key}", strpos($src, $key) !== false);

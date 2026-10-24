@@ -31,6 +31,8 @@ $oeCommentGated = osc_reg_user_post_comments() && !osc_is_web_user_logged_in();
 // Ratings off hides the stars, old ones too. A rating needs an account, so a guest gets no star field.
 $oeRatingsOn    = osc_comment_ratings_enabled();
 $oeCommentStars = $oeRatingsOn && osc_is_web_user_logged_in();
+$oeCommentPager = (string)osc_comments_pagination();
+require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 $oeCommentOld   = static function ($key) {
     return osc_esc_html((string)Session::getInstance()->_getForm($key));
 };
@@ -71,14 +73,17 @@ $oeCommentOld   = static function ($key) {
                     <?php if ($oeCommentMine) { ?>
                         <div class="oe-comment-actions">
                             <a class="oe-comment-delete" rel="nofollow"
-                               href="<?php echo osc_esc_html(osc_delete_comment_url()); ?>"><?php
+                               href="<?php echo osc_esc_html(osc_delete_comment_url()); ?>"
+                               data-osc-confirm="<?php echo osc_esc_html(_m('Delete your comment? This cannot be undone.')); ?>"><?php
                                 echo osc_esc_html(_m('Delete')); ?></a>
                         </div>
                     <?php } ?>
                 </li>
             <?php } ?>
         </ol>
-        <?php echo osc_comments_pagination(); ?>
+        <?php if (strpos($oeCommentPager, '<a ') !== false) { ?>
+            <div class="oe-comments-pager"><?php echo $oeCommentPager; ?></div>
+        <?php } ?>
     <?php } else { ?>
         <p class="oe-comments-empty"><?php echo osc_esc_html(_m('No comments yet.')); ?></p>
     <?php } ?>
@@ -160,3 +165,4 @@ $oeCommentOld   = static function ($key) {
 
     <?php osc_run_hook('item_comments_after'); ?>
 </section>
+<?php osc_gui_print_confirm_script(); ?>

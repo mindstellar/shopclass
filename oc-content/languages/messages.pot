@@ -908,6 +908,10 @@ msgstr ""
 msgid "Delete your account"
 msgstr ""
 
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Delete your comment? This cannot be undone."
+msgstr ""
+
 #: oc-includes/osclass/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Description"

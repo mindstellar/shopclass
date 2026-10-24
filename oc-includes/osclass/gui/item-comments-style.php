@@ -34,6 +34,7 @@ if (!defined('ABS_PATH')) {
 :where(.oe-comment-body) { margin: .35rem 0 0; }
 :where(.oe-comment-actions) { margin-block-start: .35rem; font-size: .875em; }
 :where(.oe-comment-delete) { color: inherit; }
+:where(.oe-comments-pager) { margin-block-start: 1rem; }
 :where(.oe-comments-empty) { opacity: .75; }
 :where(.oe-comments-gate) { margin-block-start: 1.5rem; }
 :where(.oe-comment-form) { margin-block-start: 1.5rem; display: grid; gap: .75rem; max-inline-size: 40rem; }
