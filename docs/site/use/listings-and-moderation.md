@@ -122,6 +122,15 @@ account, enable or disable one, edit its details, or add a user yourself.
   account works.
 - **When a new user is registered**: notify the admin.
 - **Username blacklist**: words a username may not contain, separated by commas.
+- **Users can message sellers on the site**: off by default. When on, a
+  signed-in visitor's contact-seller form starts a conversation instead of an
+  e-mail. The seller gets an e-mail that says only "you have a new message",
+  with a link. Both read and reply under **Messages** in their account, and
+  either can block the other or report the conversation. Guests still get the
+  e-mail form, and so do shoppers on a shop. Held and reported messages are
+  covered in [spam and abuse](/docs/use/spam-and-abuse/).
+- **Send browser notifications for new messages**: each user then turns them
+  on per browser from their messages page. The site must use HTTPS.
 
 ### Ban rules
 

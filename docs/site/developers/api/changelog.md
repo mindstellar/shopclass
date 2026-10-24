@@ -118,7 +118,7 @@ Added to v1.
 - The site document carries `mode` and `features.shop`. In shop mode `POST /listings` answers `403 feature_disabled`.
 - A listing has a `product` member with its `variants` (SKU, price, stock, weight, shipping class) when it is for sale. Only an admin writes them.
 - `product.options` lists the option names and values (Colour, Size); `variants[].photo` is the variant's photo. An admin sends option rows as `product.variants`.
-- Reviews: a comment carries `rating` (1 to 5 or `null`), and `POST /listings/{id}/comments` takes `rating` (a comment may have text, a rating or both; a second rated comment is `409 already_reviewed`). `GET /listings/{id}/comments` takes `sort=newest`. `include=rating` adds `rating: {average, count}` to a listing, with `distribution` on one listing.
+- Reviews: a comment carries `rating` (1 to 5 or `null`), and `POST /listings/{id}/comments` takes `rating` (a comment may have text, a rating or both; a second rated comment is `409 already_reviewed`; while `features.ratings` is false a rating is `403 feature_disabled`). `GET /listings/{id}/comments` takes `sort=newest`. `include=rating` adds `rating: {average, count}` to a listing, with `distribution` on one listing.
 
 ### v1: search extras
 
