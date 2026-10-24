@@ -28,8 +28,9 @@ $oeCommentTotal = (int)osc_count_item_comments();
 // With registration required, a guest gets the invitation rather than a form
 // their post would be rejected from. The thread itself stays readable either way.
 $oeCommentGated = osc_reg_user_post_comments() && !osc_is_web_user_logged_in();
-// A rating needs an account, so a guest never sees the stars.
-$oeCommentStars = osc_comment_ratings_enabled() && osc_is_web_user_logged_in();
+// Ratings off hides the stars, old ones too. A rating needs an account, so a guest gets no star field.
+$oeRatingsOn    = osc_comment_ratings_enabled();
+$oeCommentStars = $oeRatingsOn && osc_is_web_user_logged_in();
 $oeCommentOld   = static function ($key) {
     return osc_esc_html((string)Session::getInstance()->_getForm($key));
 };
@@ -57,7 +58,7 @@ $oeCommentOld   = static function ($key) {
                         <time class="oe-comment-date" datetime="<?php echo osc_esc_html(osc_comment_pub_date()); ?>"><?php
                             echo osc_esc_html(osc_format_date(osc_comment_pub_date())); ?></time>
                     </div>
-                    <?php if (osc_comment_rating() !== null) { ?>
+                    <?php if ($oeRatingsOn && osc_comment_rating() !== null) { ?>
                         <p class="oe-comment-rating" aria-label="<?php echo osc_esc_html(sprintf(_m('Rated %d out of 5'), osc_comment_rating())); ?>"><?php
                             echo str_repeat('★', osc_comment_rating()) . str_repeat('☆', 5 - osc_comment_rating()); ?></p>
                     <?php } ?>

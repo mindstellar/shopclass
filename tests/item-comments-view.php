@@ -73,7 +73,8 @@ preg_match('/<form\b[^>]*>/s', $src, $formTag);
 check('the form is not marked nocsrf', !empty($formTag) && strpos($formTag[0], 'nocsrf') === false);
 
 // A rating needs an account and the switch, so the stars show only when both are true.
-check('the stars show only when ratings are on and the user is signed in', strpos($src, '$oeCommentStars = osc_comment_ratings_enabled() && osc_is_web_user_logged_in();') !== false);
+check('the stars show only when ratings are on and the user is signed in', strpos($src, '$oeRatingsOn    = osc_comment_ratings_enabled();') !== false && strpos($src, '$oeCommentStars = $oeRatingsOn && osc_is_web_user_logged_in();') !== false);
+check('a comment shows its stars only while ratings are on', strpos($src, '$oeRatingsOn && osc_comment_rating() !== null') !== false);
 check('the rating field is printed only under that test', preg_match('/if \(\$oeCommentStars\) \{.*?name="rating"/s', $src) === 1);
 check('the comment text is optional only while the stars show', strpos($src, "\$oeCommentStars ? '' : ' required'") !== false);
 
