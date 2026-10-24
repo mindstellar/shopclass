@@ -56,6 +56,11 @@ function osc_messaging_unread_count(): int
     return $GLOBALS['state']['unread'];
 }
 
+function osc_get_osclass_location()
+{
+    return $GLOBALS['state']['location'];
+}
+
 function osc_messaging_inbox_url(): string
 {
     return 'https://example.test/?page=messages&a=1';
@@ -116,7 +121,7 @@ check('osc_messaging_link is in hUsers.php', $source !== '');
 eval($source);
 
 $link = static function (array $state, array $args = array()): string {
-    $GLOBALS['state'] = $state + array('enabled' => true, 'user' => true, 'shopper' => false, 'unread' => 0);
+    $GLOBALS['state'] = $state + array('enabled' => true, 'user' => true, 'shopper' => false, 'unread' => 0, 'location' => 'item');
 
     return osc_messaging_link($args);
 };
@@ -139,6 +144,8 @@ check('three unread: the badge shows 3', strpos($three, '<span class="oe-badge o
 check('...and the label says so', strpos($three, 'aria-label="Messages, 3 unread"') !== false);
 check('extra classes are added and escaped', strpos($three, 'class="oe-msg-link sf-icon-btn &quot;x&quot;"') !== false);
 check('the second link on the page does not load the script again', strpos($three, '<script') === false);
+check('away from the messages pages the link is not marked current', strpos($three, 'aria-current') === false);
+check('on the messages pages the link is marked current', strpos($link(array('location' => 'messages')), ' aria-current="page">') !== false);
 check('the icon is printed as given, before the label', strpos($three, '><svg class="i"></svg><span class="oe-msg-label">') !== false);
 
 harness_section('the contact form');

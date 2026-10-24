@@ -103,7 +103,8 @@ function osc_messaging_link(array $args = array()): string
         . ' aria-label="' . osc_esc_html($unread > 0 ? sprintf($some, $unread) : $label) . '"'
         . ' data-osc-messages-link data-label="' . osc_esc_html($label) . '" data-label-unread="' . osc_esc_html($some) . '"'
         . ' data-check-url="' . osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check') . '"'
-        . ' data-live-url="' . osc_esc_html(osc_messaging_live_url()) . '">'
+        . ' data-live-url="' . osc_esc_html(osc_messaging_live_url()) . '"'
+        . (osc_get_osclass_location() === 'messages' ? ' aria-current="page"' : '') . '>'
         . (string) ($args['icon'] ?? '')
         . '<span class="oe-msg-label">' . osc_esc_html($label) . '</span>'
         . '<span class="oe-badge oe-unread" data-osc-unread' . ($unread > 0 ? '' : ' hidden') . '>' . $unread . '</span>'
