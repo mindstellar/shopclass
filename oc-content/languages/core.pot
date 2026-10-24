@@ -5395,6 +5395,10 @@ msgstr ""
 msgid "Folder <code>oc-content/uploads</code> exists"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hWidgets.php
+msgid "Footer menu"
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/Receipts.php
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "For"
@@ -7138,6 +7142,10 @@ msgstr ""
 msgid ""
 "Mail server did not respond in time. Check host, port and encryption, and "
 "that POP before SMTP is off."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hWidgets.php
+msgid "Main menu"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/maintenance.php

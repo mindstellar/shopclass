@@ -433,6 +433,58 @@ if (function_exists('osc_add_hook')) {
     osc_add_hook('init', 'osc_customiser_preview_start');
 }
 
+/**
+ * A menu as links in the visitor's language: `[['label' => …, 'url' => …, 'children' => […]], …]`.
+ * `main` and `footer` list the top categories and the linked pages until the owner builds them
+ * in Appearance > Menus. Labels are plain text: escape them when printing.
+ *
+ * @param string $id `main`, `footer` or the id of a menu the owner made
+ *
+ * @return array<int,array<string,mixed>> empty for an unknown menu
+ */
+function osc_menu(string $id): array
+{
+    return \mindstellar\menu\MenuService::getInstance()->resolve($id, (string) osc_current_user_locale());
+}
+
+/**
+ * The menus a theme or widget can show, id => name.
+ *
+ * @return array<string,string>
+ */
+function osc_menu_choices(): array
+{
+    $service = \mindstellar\menu\MenuService::getInstance();
+    $names   = array('main' => __('Main menu'), 'footer' => __('Footer menu'));
+    foreach ($service->menuIds() as $id) {
+        if (!isset($names[$id])) {
+            $saved      = $service->load($id);
+            $names[$id] = $saved !== null && $saved['label'] !== '' ? $saved['label'] : $id;
+        }
+    }
+
+    return $names;
+}
+
+/**
+ * Menu links as nested lists.
+ *
+ * @param array<int,array<string,mixed>> $items from osc_menu()
+ */
+function _osc_menu_list(array $items): string
+{
+    $html = '<ul>';
+    foreach ($items as $item) {
+        $html .= '<li><a href="' . osc_esc_html((string) $item['url']) . '">' . osc_esc_html((string) $item['label']) . '</a>';
+        if (!empty($item['children']) && is_array($item['children'])) {
+            $html .= _osc_menu_list($item['children']);
+        }
+        $html .= '</li>';
+    }
+
+    return $html . '</ul>';
+}
+
 /*
  * Core "Rich text" widget — the default, safe text block, registered first so it
  * is the picker's default choice. Registered unconditionally so the page builder
@@ -456,6 +508,31 @@ osc_register_widget('core.rich_text', array(
     ),
     'render'      => static function ($config) {
         echo osc_autop($config['text'] ?? '');
+    },
+));
+
+/*
+ * Core "Menu" widget: one of the site's menus as nested lists, with an optional heading.
+ * Core prints the markup only; the theme styles .osc-menu.
+ */
+osc_register_widget('core.menu', array(
+    'label'       => 'Menu',
+    'description' => 'One of your menus as a list of links.',
+    'fields'      => array(
+        array('name' => 'menu', 'label' => 'Menu', 'type' => 'select', 'default' => 'main', 'options' => 'osc_menu_choices'),
+        array('name' => 'heading', 'label' => 'Heading (optional)', 'type' => 'text'),
+    ),
+    'render'      => static function ($config) {
+        $id    = is_string($config['menu'] ?? null) ? $config['menu'] : 'main';
+        $items = osc_menu($id);
+        if ($items === array()) {
+            return;
+        }
+        $heading = trim(is_string($config['heading'] ?? null) ? $config['heading'] : '');
+        $name    = $heading !== '' ? $heading : (osc_menu_choices()[$id] ?? $id);
+        echo '<nav class="osc-menu" aria-label="' . osc_esc_html($name) . '">'
+            . ($heading !== '' ? '<h2 class="osc-menu-title">' . osc_esc_html($heading) . '</h2>' : '')
+            . _osc_menu_list($items) . '</nav>';
     },
 ));
 
