@@ -141,7 +141,7 @@
         var refreshThread = function () {
             var url = list.dataset.sinceUrl + '&id=' + encodeURIComponent(list.dataset.conversation)
                 + '&after=' + encodeURIComponent(list.dataset.lastId);
-            return fetch(url, {credentials: 'same-origin', headers: {'Accept': 'application/json'}}).then(function (response) {
+            return fetch(url, {credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}}).then(function (response) {
                 if (!response.ok) {
                     throw new Error('since ' + response.status);
                 }

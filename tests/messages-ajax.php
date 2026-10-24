@@ -57,6 +57,7 @@ check('it sends the ETag and no-store', strpos($check, "header('ETag: '") !== fa
 harness_section('since');
 $since = $method('messagesSince');
 check('it reads id and after as ints', strpos($since, "Params::getParamInt('id')") !== false && strpos($since, "Params::getParamInt('after')") !== false);
+check('only a script request marks the thread read', strpos($since, '$actor, 50, $this->isXhrRequest())') !== false);
 check('it answers messages, state and blocked', strpos($since, "'messages'") !== false && strpos($since, "'state'") !== false && strpos($since, "'blocked'") !== false);
 
 harness_section('the visitor and the refusals');
@@ -120,6 +121,8 @@ check('the gate reads the visitor first (401/403)', $gWho !== false && $gOff !==
 check('push off is 404, after the visitor check', $gOff !== false && $g404 !== false && $gWho < $g404 && $gOff < $g404);
 check('a POST call refuses other methods with 405 and Allow: POST', $gPost !== false && strpos($gate, "header('Allow: POST')") !== false && strpos($gate, '405') !== false);
 check('then CSRF, inside the POST branch', $gCsrf !== false && $gPost < $gCsrf && $g404 < $gCsrf && strpos($gate, 'if ($post)') < $gCsrf);
+$status = $method('pushStatus');
+check('push_status refuses a request that is not from a script, before it renews', strpos($status, '!$this->isXhrRequest()') !== false && strpos($status, '!$this->isXhrRequest()') < strpos($status, '->renew('));
 foreach (array('pushSubscribe', 'pushUnsubscribe') as $name) {
     $body = $method($name);
     $gated = strpos($body, '$this->pushActor(true)');

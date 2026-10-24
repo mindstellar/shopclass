@@ -518,7 +518,8 @@ class CWebAjax extends BaseModel
     }
 
     /**
-     * The messages after the one the page already has; reading them marks the thread read.
+     * The messages after the one the page already has. Only the site's own script marks the thread
+     * read: a link or image from another site cannot send X-Requested-With.
      */
     private function messagesSince(): void
     {
@@ -527,7 +528,7 @@ class CWebAjax extends BaseModel
             return;
         }
         try {
-            $result = Container::root()->get(MessagingService::class)->since(Params::getParamInt('id'), Params::getParamInt('after'), $actor);
+            $result = Container::root()->get(MessagingService::class)->since(Params::getParamInt('id'), Params::getParamInt('after'), $actor, 50, $this->isXhrRequest());
         } catch (RefusedException $e) {
             $this->messagingRefusal($e);
 
@@ -650,12 +651,18 @@ class CWebAjax extends BaseModel
     }
 
     /**
-     * Whether the visitor's row for this browser is kept; finding it renews it for 90 days.
+     * Whether the visitor's row for this browser is kept; finding it renews it for 90 days. Only
+     * the site's own script may ask, so another site cannot renew it.
      */
     private function pushStatus(): void
     {
         $actor = $this->pushActor(false);
         if ($actor === null) {
+            return;
+        }
+        if (!$this->isXhrRequest()) {
+            AjaxResponse::json(array('error' => 'bad_request'), 400);
+
             return;
         }
         $active = Container::root()->get(PushSubscriptions::class)->renew((int) $actor->userId(), Params::getParamString('endpoint', false, false, false));
