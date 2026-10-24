@@ -75,6 +75,13 @@ None.
 
 ## Changes
 
+### v1: menus the owner builds
+
+Added to v1 on 2026-10-24.
+
+- `GET /menus`: a `main` or `footer` menu the owner built in Appearance → Menus replaces the automatic one; other saved menus follow them.
+- A menu item may carry `children`, items of the same shape, up to three levels in all. The `api_menus` filter gets and returns them too.
+
 ### v1: conversations
 
 Added to v1 on 2026-10-23.

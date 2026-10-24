@@ -14,11 +14,11 @@ namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
-use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\PageSerializer;
 use mindstellar\cache\CacheGroup;
+use mindstellar\menu\MenuService;
 
 /**
  * `GET /pages`, `GET /pages/{page}` (id or internal name) and `GET /menus`.
@@ -47,24 +47,13 @@ final class PagesController
     public function menus(ApiCall $call): Response
     {
         $locale  = $this->api->locale($call->request());
-        $catalog = CategoryCatalog::fromSite();
-        $key     = 'menu-urls|' . $locale . '|' . CacheGroup::generation('preference');
-        $urls    = CacheGroup::remember('category', $key, static function () use ($catalog): array {
-            $urls = [];
-            foreach ($catalog->childIds(0) as $id) {
-                $urls[$id] = (string) osc_search_url(['sCategory' => $id]);
-            }
+        $service = MenuService::getInstance();
+        $menus   = [];
+        foreach ($service->menuIds() as $id) {
+            $menus[$id] = $service->resolve($id, $locale);
+        }
 
-            return $urls;
-        }) ?? [];
-        $menus = $this->serializer->menus(
-            $this->linked($locale),
-            $catalog,
-            $locale,
-            static fn (array $row): string => $urls[(int) $row['pk_i_id']] ?? (string) osc_search_url(['sCategory' => (int) $row['pk_i_id']])
-        );
-
-        return Page::whole($menus, $this->api->links(), $call);
+        return Page::whole($this->serializer->menus($menus, $locale), $this->api->links(), $call);
     }
 
     /**

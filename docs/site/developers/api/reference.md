@@ -1839,14 +1839,14 @@ Answers: 200 OK (`QuoteDocument`); 304 Not modified; 401 No valid credential; 40
 
 | Method | Path | Auth | Scope | Summary |
 |---|---|---|---|---|
-| GET | `/menus` | public | `listings:read` | The site's menus: main (top categories) and footer (linked pages); a plugin may add more |
+| GET | `/menus` | public | `listings:read` | The site's menus: main and footer (the top categories and linked pages until the owner builds them), menus the owner made, and any a plugin adds |
 | GET | `/pages` | public | `listings:read` | The pages shown as links, in order, in the asked language |
 | GET | `/pages/{page}` | public | `listings:read` | One page by id or internal name, linked or not, with its text and meta |
 | GET | `/seo` | public | `listings:read` | The head data of a public page: canonical URL, title, description, robots, breadcrumbs, hreflang and Open Graph |
 
 ### GET `/menus`
 
-The site's menus: main (top categories) and footer (linked pages); a plugin may add more
+The site's menus: main and footer (the top categories and linked pages until the owner builds them), menus the owner made, and any a plugin adds
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|

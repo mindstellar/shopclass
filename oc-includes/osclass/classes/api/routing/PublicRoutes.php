@@ -278,7 +278,7 @@ final class PublicRoutes
             'GET menus' => RouteSpec::read(
                 handler: [PagesController::class, 'menus'],
                 tag: 'Pages',
-                summary: 'The site\'s menus: main (top categories) and footer (linked pages); a plugin may add more',
+                summary: 'The site\'s menus: main and footer (the top categories and linked pages until the owner builds them), menus the owner made, and any a plugin adds',
                 response: 'MenuList',
                 query: ['locale' => self::LOCALE],
                 errors: [422]

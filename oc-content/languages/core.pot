@@ -949,6 +949,40 @@ msgid ""
 "have stopped partway."
 msgstr ""
 
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A link needs a label."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A link needs an address that starts with http://, https:// or /."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A menu can hold at most %d items."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A menu can nest items at most %d levels deep."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuService.php
+msgid ""
+"A menu id starts with a letter and has at most 32 lowercase letters, "
+"digits, - or _."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A menu item has an unknown type."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A menu item points to a category that does not exist."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A menu item points to a page that does not exist."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "A new comment is posted"
 msgstr ""
@@ -1034,6 +1068,10 @@ msgstr ""
 msgid ""
 "A seller over the limit writes the listing first and pays for the slot on "
 "the last step. Off, they are sent to buy a slot before they can post."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuService.php
+msgid "A site can keep at most %d menus besides the main and footer menus."
 msgstr ""
 
 #: oc-includes/osclass/classes/routing/ReservedSlugs.php
@@ -12545,6 +12583,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "The memory limit is %s. Resizing a large photo needs at least 128 MB."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "The menu could not be read."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuService.php
+msgid "The menu could not be saved."
 msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php

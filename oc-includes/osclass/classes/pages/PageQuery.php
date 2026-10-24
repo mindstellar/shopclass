@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\pages;
 
 use mindstellar\database\Db;
+use mindstellar\routing\CoreRoutes;
 
 /**
  * Static page reads for the page editor and the media library. The legacy Page model keeps
@@ -20,6 +21,20 @@ use mindstellar\database\Db;
  */
 final class PageQuery
 {
+    /**
+     * A page's URL on this site; $locale is '' for the default language.
+     */
+    public static function siteUrl(int $id, string $slug, string $title, string $locale): string
+    {
+        if (osc_rewrite_enabled()) {
+            $path = CoreRoutes::expand('page', ['PAGE_ID' => (string) $id, 'PAGE_SLUG' => $slug, 'PAGE_TITLE' => $title]);
+
+            return osc_base_url() . ($locale !== '' ? $locale . '/' : '') . $path;
+        }
+
+        return (string) osc_core_url('page', ['id' => $id, 'lang' => $locale]);
+    }
+
     /**
      * The highest i_order, or null for no pages.
      *

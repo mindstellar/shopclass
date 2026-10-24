@@ -40,7 +40,7 @@ final class Schema
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'ListingPayment', 'ListingPublishInput', 'ListingPublished', 'PhotoToken', 'CommentInput', 'SavedComment',
         'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'CartLine', 'Cart', 'CartInput', 'CartDocument', 'SearchSuggestions', 'CategorySuggestions',
-        'PageSummary', 'Page', 'Menu', 'Seo',
+        'PageSummary', 'Page', 'MenuItem', 'Menu', 'Seo',
     ];
 
     /** `<name>List`: every item at once. */
@@ -562,9 +562,14 @@ final class Schema
                 'meta'       => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
                 'updated_at' => self::nullable('string', 'RFC 3339.'),
             ], [...array_keys($summary), 'text', 'meta', 'updated_at']),
+            'MenuItem'    => self::object([
+                'label'    => ['type' => 'string'],
+                'url'      => ['type' => 'string'],
+                'children' => ['type' => 'array', 'items' => self::ref('MenuItem'), 'description' => 'Items below this one, at most three levels in all. Left out when there are none.'],
+            ], ['label', 'url']),
             'Menu'        => self::object([
-                'id'    => ['type' => 'string', 'description' => '`main`, `footer` or a plugin\'s menu.'],
-                'items' => ['type' => 'array', 'items' => $link],
+                'id'    => ['type' => 'string', 'description' => '`main`, `footer`, a menu the owner made, or a plugin\'s menu.'],
+                'items' => ['type' => 'array', 'items' => self::ref('MenuItem')],
             ], ['id', 'items']),
             'Seo'         => self::object([
                 'for'         => ['type' => 'string', 'enum' => ['home', 'listing', 'category', 'page', 'search']],

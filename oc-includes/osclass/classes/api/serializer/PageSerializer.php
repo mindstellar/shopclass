@@ -12,8 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
-use mindstellar\api\read\CategoryCatalog;
-use mindstellar\routing\CoreRoutes;
+use mindstellar\menu\MenuItems;
+use mindstellar\menu\MenuService;
+use mindstellar\pages\PageQuery;
 
 /**
  * Static pages and the site's menus. A page is shown in the asked language, else the site's
@@ -34,13 +35,7 @@ final class PageSerializer
      */
     public static function siteUrl(int $id, string $slug, string $title, string $locale): string
     {
-        if (osc_rewrite_enabled()) {
-            $path = CoreRoutes::expand('page', ['PAGE_ID' => (string) $id, 'PAGE_SLUG' => $slug, 'PAGE_TITLE' => $title]);
-
-            return osc_base_url() . ($locale !== '' ? $locale . '/' : '') . $path;
-        }
-
-        return (string) osc_core_url('page', ['id' => $id, 'lang' => $locale]);
+        return PageQuery::siteUrl($id, $slug, $title, $locale);
     }
 
     /**
@@ -119,39 +114,48 @@ final class PageSerializer
     }
 
     /**
-     * The menus: `main` lists the top categories and `footer` the linked pages. The
-     * `api_menus` filter may add a menu or change one; it gets and returns
-     * `id => [['label' => string, 'url' => string], ...]`.
+     * The menus from MenuService, `main` and `footer` first. The `api_menus` filter may add a
+     * menu or change one; it gets and returns `id => [['label' => string, 'url' => string,
+     * 'children' => [...]], ...]`, where `children` is optional and has the same shape.
      *
-     * @param array<int,array<string,mixed>> $pages        summaries from summary(), in order
-     * @param \Closure(array<string,mixed>):string $categoryUrl a category row's URL
+     * @param array<string,array<int,array<string,mixed>>> $menus id => resolved items
      *
-     * @return array<int,array{id:string,items:array<int,array{label:string,url:string}>}>
+     * @return array<int,array{id:string,items:array<int,array<string,mixed>>}>
      */
-    public function menus(array $pages, CategoryCatalog $catalog, string $locale, \Closure $categoryUrl): array
+    public function menus(array $menus, string $locale): array
     {
-        $main = [];
-        foreach ($catalog->childIds(0) as $id) {
-            $row    = (array) $catalog->find($id);
-            $main[] = ['label' => Format::plain(CategoryCatalog::text($row, 's_name', $locale)), 'url' => $categoryUrl($row)];
-        }
-        $footer = array_map(static fn (array $p): array => ['label' => (string) $p['title'], 'url' => (string) $p['url']], $pages);
-
-        $menus = osc_apply_filter('api_menus', ['main' => $main, 'footer' => $footer], $locale);
+        $menus = osc_apply_filter('api_menus', $menus, $locale);
         $out   = [];
         foreach (is_array($menus) ? $menus : [] as $id => $items) {
-            if (!is_array($items) || preg_match('/^[a-z][a-z0-9_-]{0,31}$/', (string) $id) !== 1) {
+            if (!is_array($items) || preg_match(MenuService::ID, (string) $id) !== 1) {
                 continue;
             }
-            $clean = [];
-            foreach ($items as $item) {
-                if (is_array($item) && isset($item['label'], $item['url']) && is_scalar($item['label']) && is_scalar($item['url'])) {
-                    $clean[] = ['label' => Format::plain($item['label']), 'url' => (string) $item['url']];
-                }
-            }
-            $out[] = ['id' => (string) $id, 'items' => $clean];
+            $out[] = ['id' => (string) $id, 'items' => $this->menuItems($items, 1)];
         }
 
         return $out;
+    }
+
+    /**
+     * @param array<mixed> $items
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function menuItems(array $items, int $depth): array
+    {
+        $clean = [];
+        foreach ($items as $item) {
+            if (!is_array($item) || !isset($item['label'], $item['url']) || !is_scalar($item['label']) || !is_scalar($item['url'])) {
+                continue;
+            }
+            $row      = ['label' => Format::plain($item['label']), 'url' => (string) $item['url']];
+            $children = $depth < MenuItems::MAX_DEPTH && is_array($item['children'] ?? null) ? $this->menuItems($item['children'], $depth + 1) : [];
+            if ($children !== []) {
+                $row['children'] = $children;
+            }
+            $clean[] = $row;
+        }
+
+        return $clean;
     }
 }

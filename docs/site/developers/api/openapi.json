@@ -46710,7 +46710,7 @@
         "/menus": {
             "get": {
                 "operationId": "getMenus",
-                "summary": "The site's menus: main (top categories) and footer (linked pages); a plugin may add more",
+                "summary": "The site's menus: main and footer (the top categories and linked pages until the owner builds them), menus the owner made, and any a plugin adds",
                 "tags": [
                     "Pages"
                 ],
@@ -55010,29 +55010,39 @@
                     "updated_at"
                 ]
             },
+            "MenuItem": {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "children": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MenuItem"
+                        },
+                        "description": "Items below this one, at most three levels in all. Left out when there are none."
+                    }
+                },
+                "required": [
+                    "label",
+                    "url"
+                ]
+            },
             "Menu": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "`main`, `footer` or a plugin's menu."
+                        "description": "`main`, `footer`, a menu the owner made, or a plugin's menu."
                     },
                     "items": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "properties": {
-                                "label": {
-                                    "type": "string"
-                                },
-                                "url": {
-                                    "type": "string"
-                                }
-                            },
-                            "required": [
-                                "label",
-                                "url"
-                            ]
+                            "$ref": "#/components/schemas/MenuItem"
                         }
                     }
                 },
