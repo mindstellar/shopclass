@@ -421,6 +421,10 @@
         if (name === null || i === -1) {
             return;
         }
+        // Only text fields act on each keystroke; the rest wait for "change", which marks the row for saving.
+        if (typing && !isText(el)) {
+            return;
+        }
         var row = current()[i];
         var value = el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.value;
         if (String(row.config[name]) === String(value)) {
