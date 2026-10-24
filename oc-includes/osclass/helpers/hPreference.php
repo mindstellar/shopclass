@@ -138,6 +138,19 @@ function osc_reg_user_post_comments()
 }
 
 /**
+ * Whether a comment may carry a star rating. Until an admin saves the choice, shops allow it
+ * and classifieds sites do not.
+ *
+ * @return bool
+ */
+function osc_comment_ratings_enabled(): bool
+{
+    $value = (string) getPreference('comment_ratings');
+
+    return $value === '' ? osc_site_mode() === \mindstellar\site\SiteMode::SHOP : (bool) $value;
+}
+
+/**
  * Gets if only users can contact to seller
  *
  * @return string '1' when only registered users may contact a seller

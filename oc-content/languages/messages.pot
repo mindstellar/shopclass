@@ -91,6 +91,12 @@ msgid_plural "%d new messages"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "%d star"
+msgid_plural "%d stars"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
 msgid "%d view"
 msgid_plural "%d views"
@@ -2256,6 +2262,10 @@ msgstr ""
 msgid "Queued again. It runs on the next cron tick."
 msgstr ""
 
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Rated %d out of 5"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
 msgid "Re-generation complete"
 msgstr ""
@@ -2659,6 +2669,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/CartPricer.php
 msgid "Standard delivery"
+msgstr ""
+
+#: oc-includes/osclass/classes/comment/CommentService.php
+msgid "Star ratings are turned off on this site"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -4449,6 +4463,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "Your profile has been updated successfully"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Your rating"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php

@@ -522,8 +522,9 @@ final class Schema
                 'users'        => ['type' => 'boolean', 'description' => 'Whether the site has user accounts.'],
                 'registration' => ['type' => 'boolean', 'description' => 'Whether the site\'s own sign-up form is open.'],
                 'comments'     => ['type' => 'boolean', 'description' => 'Whether listings take comments.'],
+                'ratings'      => ['type' => 'boolean', 'description' => 'Whether a comment may carry a star rating.'],
                 'shop'         => ['type' => 'boolean', 'description' => 'Whether the site sells products: its mode is shop.'],
-            ], ['users', 'registration', 'comments', 'shop']) + ['description' => 'What the site itself offers.'],
+            ], ['users', 'registration', 'comments', 'ratings', 'shop']) + ['description' => 'What the site itself offers.'],
             'api'            => self::object([
                 'registration'  => ['type' => 'boolean', 'description' => 'Whether POST /users signs up new accounts.'],
                 'personal_keys' => ['type' => 'boolean', 'description' => 'Whether users may make their own keys at /account/keys.'],
@@ -714,7 +715,7 @@ final class Schema
                 'token'      => ['type' => 'string', 'description' => 'Send it in photo_tokens when making the listing.'],
                 'expires_at' => self::time(),
             ], ['token', 'expires_at']),
-            'CommentInput' => $input(['title' => $text(200), 'body' => $text(5000) + ['description' => 'Needed unless `rating` is sent.'], 'rating' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5, 'description' => 'Stars. Needs a signed-in user, one rated comment per listing (409 `already_reviewed`).']]),
+            'CommentInput' => $input(['title' => $text(200), 'body' => $text(5000) + ['description' => 'Needed unless `rating` is sent.'], 'rating' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5, 'description' => 'Stars. Needs a signed-in user, one rated comment per listing (409 `already_reviewed`). Refused (403 `feature_disabled`) while `features.ratings` is false.']]),
             'SavedComment' => $saved('Comment'),
             'AlertFilters' => $input([
                 'q'           => $text(200),

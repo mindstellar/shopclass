@@ -41,7 +41,7 @@ final class CommentSettingsScreen extends SettingsScreen
 
         $form
             ->group(__('Comment Settings'))
-            // Four switches and a number under one label, as the screen has always drawn
+            // Five switches and a number under one label, as the screen has always drawn
             // them: the row is opened and closed around them rather than once per control.
             ->custom('default_row_open', static function () {
                 osc_admin_form_row_open(__('Default comment settings'));
@@ -57,6 +57,9 @@ final class CommentSettingsScreen extends SettingsScreen
                 __('Needs a CAPTCHA provider configured under Settings &raquo; reCAPTCHA/Turnstile; otherwise no challenge is shown.')
             )
                 ->set('row', false)
+            ->checkbox('comment_ratings', __('Allow signed-in users to add a star rating (1 to 5) to a comment'))
+                ->set('row', false)
+                ->default(osc_site_mode() === \mindstellar\site\SiteMode::SHOP)
             ->checkbox('moderate_comments', __('A comment is being held for moderation'))
                 ->set('row', false)
                 // The key is this switch's, and its value comes from the box below: off is

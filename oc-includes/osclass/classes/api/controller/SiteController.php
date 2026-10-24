@@ -64,6 +64,7 @@ final class SiteController
                 'users'        => $facts->usersEnabled(),
                 'registration' => (bool) osc_user_registration_enabled(),
                 'comments'     => $facts->commentsEnabled(),
+                'ratings'      => $facts->commentsEnabled() && osc_comment_ratings_enabled(),
                 'shop'         => osc_site_mode() === SiteMode::SHOP,
             ],
             'api'            => [

@@ -60,7 +60,7 @@ check('it prints the stylesheet', strpos($body, 'item-comments-style.php') !== f
 check('the stylesheet is printed once per request', strpos($body, 'static $styled') !== false);
 
 harness_section('the field contract CWebItem reads');
-foreach (array('authorName', 'authorEmail', 'title', 'body') as $field) {
+foreach (array('authorName', 'authorEmail', 'title', 'body', 'rating') as $field) {
     check("posts a field named {$field}", strpos($src, 'name="' . $field . '"') !== false);
 }
 foreach (array('page" value="item', 'action" value="add_comment') as $hidden) {
@@ -72,8 +72,13 @@ check('carries the listing id', strpos($src, 'name="id"') !== false);
 preg_match('/<form\b[^>]*>/s', $src, $formTag);
 check('the form is not marked nocsrf', !empty($formTag) && strpos($formTag[0], 'nocsrf') === false);
 
+// A rating needs an account and the switch, so the stars show only when both are true.
+check('the stars show only when ratings are on and the user is signed in', strpos($src, '$oeCommentStars = osc_comment_ratings_enabled() && osc_is_web_user_logged_in();') !== false);
+check('the rating field is printed only under that test', preg_match('/if \(\$oeCommentStars\) \{.*?name="rating"/s', $src) === 1);
+check('the comment text is optional only while the stars show', strpos($src, "\$oeCommentStars ? '' : ' required'") !== false);
+
 harness_section('the values a rejected post is restored from');
-foreach (array('commentAuthorName', 'commentAuthorEmail', 'commentTitle', 'commentBody') as $key) {
+foreach (array('commentAuthorName', 'commentAuthorEmail', 'commentTitle', 'commentBody', 'commentRating') as $key) {
     check("repopulates {$key}", strpos($src, $key) !== false);
 }
 

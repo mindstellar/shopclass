@@ -1701,6 +1701,10 @@ msgstr ""
 msgid "Allow sign-up through the API"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
+msgid "Allow signed-in users to add a star rating (1 to 5) to a comment"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid ""
 "Allow users to select a parent category as a category\n"

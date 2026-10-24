@@ -10,7 +10,7 @@
 
 /**
  * Ratings on comments: posting a rating, a comment or both, one rated comment per user and
- * listing, the rating summary and distribution, `sort=newest`, and the migration.
+ * listing, the ratings switch, the rating summary and distribution, `sort=newest`, and the migration.
  * Usage: php tests/api-comments-rating.php
  */
 
@@ -28,7 +28,7 @@ seed_country($admin, 'US', 'United States');
 $cat = seed_category($admin, 'Mugs', seed_category($admin, 'Goods', null, $locale), $locale);
 $sue = seed_user($admin, 'sue', 'sue@example.test');
 $tom = seed_user($admin, 'tom', 'tom@example.test');
-foreach (['enabled_users' => '1', 'enabled_comments' => '1', 'moderate_comments' => '-1', 'reg_user_post_comments' => '0', 'language' => 'en_US',
+foreach (['enabled_users' => '1', 'enabled_comments' => '1', 'comment_ratings' => '1', 'moderate_comments' => '-1', 'reg_user_post_comments' => '0', 'language' => 'en_US',
     'currency' => 'USD', 'rewriteEnabled' => '0'] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
@@ -108,6 +108,25 @@ try {
     $guest = $e->reason();
 }
 pin('a guest cannot rate', 'sign_in', $guest);
+
+harness_section('the ratings switch');
+// '' is what a site that never saved the setting reads.
+$ratings = static function (string $value, string $mode): void {
+    Preference::getInstance()->set('comment_ratings', $value);
+    Preference::getInstance()->set('site_mode', $mode);
+};
+$site = static fn (): ?bool => $call('GET', '', null, $tomKey)->body()['data']['features']['ratings'] ?? null;
+$ratings('0', 'shop');
+pin('switched off, a rating is refused even in a shop', '403 feature_disabled', api_admin_code($post($tomKey, $other, ['body' => 'x', 'rating' => 3])));
+pin('and the site says so', false, $site());
+pin('a comment with no rating still goes through', 201, $post($tomKey, $other, ['body' => 'Words only'])->status());
+$ratings('', 'classifieds');
+pin('never saved, a classifieds site refuses a rating', ['403 feature_disabled', false], [api_admin_code($post($tomKey, $other, ['rating' => 3])), $site()]);
+$ratings('', 'shop');
+pin('never saved, a shop takes one', [true, 201], [$site(), $post($tomKey, $other, ['rating' => 3])->status()]);
+$ratings('1', 'classifieds');
+pin('switched on, a classifieds site takes one', [true, 201], [$site(), $post($sueKey, $other, ['rating' => 4])->status()]);
+$admin->query("DELETE FROM {$p}t_item_comment WHERE fk_i_item_id = $other");
 
 harness_section('moderation and blocked rows');
 $admin->query("UPDATE {$p}t_item_comment SET b_enabled = 0 WHERE fk_i_item_id = $mug");

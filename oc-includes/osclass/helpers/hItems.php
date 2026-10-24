@@ -984,6 +984,18 @@ function osc_comment_body()
 }
 
 /**
+ * Gets the star rating of current comment, 1 to 5, or null when it has none
+ *
+ * @return int|null
+ */
+function osc_comment_rating(): ?int
+{
+    $rating = osc_comment_field('i_rating');
+
+    return is_numeric($rating) && (int) $rating >= 1 ? (int) $rating : null;
+}
+
+/**
  * Gets user id of current comment
  *
  * @return int

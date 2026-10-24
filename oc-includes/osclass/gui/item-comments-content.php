@@ -16,7 +16,7 @@ if (!defined('ABS_PATH')) {
  * Comments on a listing: the thread and the form to add to it.
  *
  * The field names are core's contract -- CWebItem reads authorName, authorEmail,
- * title and body from the add_comment action, and repopulates them from the
+ * title, body and rating from the add_comment action, and repopulates them from the
  * session after a rejected post -- so a theme shipping this was laying out a form
  * it did not own. Comments are enabled by default, which made omitting the block
  * a silently missing feature rather than a visible gap.
@@ -28,6 +28,8 @@ $oeCommentTotal = (int)osc_count_item_comments();
 // With registration required, a guest gets the invitation rather than a form
 // their post would be rejected from. The thread itself stays readable either way.
 $oeCommentGated = osc_reg_user_post_comments() && !osc_is_web_user_logged_in();
+// A rating needs an account, so a guest never sees the stars.
+$oeCommentStars = osc_comment_ratings_enabled() && osc_is_web_user_logged_in();
 $oeCommentOld   = static function ($key) {
     return osc_esc_html((string)Session::getInstance()->_getForm($key));
 };
@@ -55,10 +57,16 @@ $oeCommentOld   = static function ($key) {
                         <time class="oe-comment-date" datetime="<?php echo osc_esc_html(osc_comment_pub_date()); ?>"><?php
                             echo osc_esc_html(osc_format_date(osc_comment_pub_date())); ?></time>
                     </div>
+                    <?php if (osc_comment_rating() !== null) { ?>
+                        <p class="oe-comment-rating" aria-label="<?php echo osc_esc_html(sprintf(_m('Rated %d out of 5'), osc_comment_rating())); ?>"><?php
+                            echo str_repeat('★', osc_comment_rating()) . str_repeat('☆', 5 - osc_comment_rating()); ?></p>
+                    <?php } ?>
                     <?php if ($oeCommentTitle !== '') { ?>
                         <h3 class="oe-comment-title"><?php echo osc_esc_html($oeCommentTitle); ?></h3>
                     <?php } ?>
-                    <p class="oe-comment-body"><?php echo nl2br(osc_esc_html(osc_comment_body())); ?></p>
+                    <?php if (trim(osc_comment_body()) !== '') { ?>
+                        <p class="oe-comment-body"><?php echo nl2br(osc_esc_html(osc_comment_body())); ?></p>
+                    <?php } ?>
                     <?php if ($oeCommentMine) { ?>
                         <div class="oe-comment-actions">
                             <a class="oe-comment-delete" rel="nofollow"
@@ -105,6 +113,22 @@ $oeCommentOld   = static function ($key) {
                 </div>
             <?php } ?>
 
+            <?php if ($oeCommentStars) {
+                $oeCommentRated = (int)Session::getInstance()->_getForm('commentRating'); ?>
+                <fieldset class="oe-field oe-rating">
+                    <legend><?php echo osc_esc_html(_m('Your rating')); ?>
+                        <span class="oe-comment-optional">(<?php echo osc_esc_html(_m('optional')); ?>)</span></legend>
+                    <div class="oe-rating-stars">
+                        <?php for ($oeStar = 5; $oeStar >= 1; $oeStar--) { ?>
+                            <input type="radio" name="rating" id="oe-rating-<?php echo $oeStar; ?>" value="<?php echo $oeStar; ?>"<?php
+                                echo $oeCommentRated === $oeStar ? ' checked' : ''; ?> />
+                            <label for="oe-rating-<?php echo $oeStar; ?>" title="<?php echo osc_esc_html(sprintf(_mn('%d star', '%d stars', $oeStar), $oeStar)); ?>"><span class="oe-rating-star" aria-hidden="true">★</span><span class="oe-sr"><?php
+                                echo osc_esc_html(sprintf(_mn('%d star', '%d stars', $oeStar), $oeStar)); ?></span></label>
+                        <?php } ?>
+                    </div>
+                </fieldset>
+            <?php } ?>
+
             <div class="oe-field">
                 <label for="oe-comment-title"><?php echo osc_esc_html(_m('Title')); ?>
                     <span class="oe-comment-optional">(<?php echo osc_esc_html(_m('optional')); ?>)</span></label>
@@ -113,7 +137,7 @@ $oeCommentOld   = static function ($key) {
             </div>
             <div class="oe-field">
                 <label for="oe-comment-body"><?php echo osc_esc_html(_m('Comment')); ?></label>
-                <textarea id="oe-comment-body" name="body" rows="4" required><?php
+                <textarea id="oe-comment-body" name="body" rows="4"<?php echo $oeCommentStars ? '' : ' required'; ?>><?php
                     echo $oeCommentOld('commentBody'); ?></textarea>
             </div>
 

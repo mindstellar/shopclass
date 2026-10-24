@@ -540,6 +540,7 @@ pin(
         'enabled_comments'           => 'osclass/enabled_comments',
         'reg_user_post_comments'     => 'osclass/reg_user_post_comments',
         'enabled_recaptcha_comments' => 'osclass/enabled_recaptcha_comments',
+        'comment_ratings'            => 'osclass/comment_ratings',
         'moderate_comments'          => 'osclass/moderate_comments',
         'num_moderate_comments'      => '(not stored)',
         'comments_per_page'          => 'osclass/comments_per_page',

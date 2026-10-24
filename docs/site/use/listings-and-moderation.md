@@ -91,6 +91,9 @@ and on what terms:
 - **Allow people to post comments on listings**: the master switch.
 - **Users must be registered and logged in to comment**.
 - **Require a CAPTCHA to post a comment**: see [spam and abuse](/docs/use/spam-and-abuse/).
+- **Allow signed-in users to add a star rating (1 to 5) to a comment**: turns
+  comments into reviews. Each user rates a listing once. Until you save this
+  screen, it is on for a shop and off for a classifieds site.
 - **A comment is being held for moderation**: turns moderation on, with a
   threshold next to it: **Moderated comments** (the number of previously
   approved comments an author needs before theirs appear without review).

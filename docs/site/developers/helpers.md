@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1233 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -526,7 +526,7 @@ Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (123)
+### hItems (124)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -539,6 +539,7 @@ Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_comment_field($field, $locale = '')` | Gets a specific field from current comment |
 | `osc_comment_id()` | Gets id of current comment |
 | `osc_comment_pub_date()` | Gets publication date of current comment |
+| `osc_comment_rating()` | Gets the star rating of current comment, 1 to 5, or null when it has none |
 | `osc_comment_title()` | Gets title of current commnet |
 | `osc_comment_user_id()` | Gets user id of current comment |
 | `osc_count_custom_items()` | Gets number of custom items |
@@ -867,7 +868,7 @@ Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (136)
+### hPreference (137)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -883,6 +884,7 @@ Core defines 1231 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_auto_update()` | Gets auto update settings |
 | `osc_billing_enabled()` | Whether the billing section is switched on. |
 | `osc_captcha_provider_pref()` | Gets the configured captcha provider preference. |
+| `osc_comment_ratings_enabled()` | Whether a comment may carry a star rating. Until an admin saves the choice, shops allow it and classifieds sites do not. |
 | `osc_comment_spam_delay()` | Gets how many seconds between comment post to not consider it SPAM |
 | `osc_comments_enabled()` | Gets if comments are enabled or not |
 | `osc_comments_per_page()` | Gets comments per page |

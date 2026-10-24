@@ -22,7 +22,7 @@ require_once __DIR__ . '/api-admin-kit.php';
 $admin = scratchdb_bootstrap($database);
 $admin->select_db($database);
 api_admin_env();
-foreach (['enabled_users' => '1', 'enabled_comments' => '1', 'moderate_comments' => '-1', 'reg_user_post_comments' => '0', 'language' => 'en_US'] as $k => $v) {
+foreach (['enabled_users' => '1', 'enabled_comments' => '1', 'comment_ratings' => '1', 'moderate_comments' => '-1', 'reg_user_post_comments' => '0', 'language' => 'en_US'] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
 $_COOKIE['oc_userLocale'] = 'en_US';

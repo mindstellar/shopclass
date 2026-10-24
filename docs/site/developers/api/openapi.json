@@ -53353,6 +53353,10 @@
                                 "type": "boolean",
                                 "description": "Whether listings take comments."
                             },
+                            "ratings": {
+                                "type": "boolean",
+                                "description": "Whether a comment may carry a star rating."
+                            },
                             "shop": {
                                 "type": "boolean",
                                 "description": "Whether the site sells products: its mode is shop."
@@ -53362,6 +53366,7 @@
                             "users",
                             "registration",
                             "comments",
+                            "ratings",
                             "shop"
                         ],
                         "description": "What the site itself offers."
@@ -54428,7 +54433,7 @@
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5,
-                        "description": "Stars. Needs a signed-in user, one rated comment per listing (409 `already_reviewed`)."
+                        "description": "Stars. Needs a signed-in user, one rated comment per listing (409 `already_reviewed`). Refused (403 `feature_disabled`) while `features.ratings` is false."
                     }
                 },
                 "additionalProperties": false
@@ -56960,6 +56965,9 @@
                     "comments_captcha": {
                         "type": "boolean"
                     },
+                    "comments_ratings": {
+                        "type": "boolean"
+                    },
                     "comments_per_page": {
                         "type": "integer",
                         "minimum": 0,
@@ -57027,6 +57035,7 @@
                     "comments_enabled",
                     "comments_need_account",
                     "comments_captcha",
+                    "comments_ratings",
                     "comments_per_page",
                     "comments_notify_admin",
                     "comments_notify_seller",
@@ -57114,6 +57123,9 @@
                         "type": "boolean"
                     },
                     "comments_captcha": {
+                        "type": "boolean"
+                    },
+                    "comments_ratings": {
                         "type": "boolean"
                     },
                     "comments_per_page": {

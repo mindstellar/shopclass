@@ -84,7 +84,7 @@ final class CommentService
      *
      * @param array{title?:string,body?:string,rating?:mixed,author_name?:string,author_email?:string} $input
      *
-     * @throws ForbiddenException when comments are off, the author is banned, or only users may comment
+     * @throws ForbiddenException when comments or ratings are off, the author is banned, or only users may comment
      * @throws NotFoundException  for a listing the actor cannot see
      * @throws InvalidException   for a bad e-mail, a rating out of range, or no text and no rating
      * @throws ConflictException  when the author already rated this listing
@@ -126,6 +126,9 @@ final class CommentService
             throw new InvalidException('/body', 'minLength', _m('Please type a comment'));
         }
         if ($rating !== null) {
+            if (!osc_comment_ratings_enabled()) {
+                throw new ForbiddenException(_m('Star ratings are turned off on this site'), ForbiddenException::DISABLED);
+            }
             if ($actor->userId() === null) {
                 throw new ForbiddenException(_m('You need to be logged to rate'), ForbiddenException::SIGN_IN);
             }

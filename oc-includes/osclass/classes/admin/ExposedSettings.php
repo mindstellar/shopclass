@@ -51,6 +51,7 @@ final class ExposedSettings
         'comments_enabled'             => [CommentSettingsScreen::class, 'enabled_comments', ['type' => 'boolean']],
         'comments_need_account'        => [CommentSettingsScreen::class, 'reg_user_post_comments', ['type' => 'boolean']],
         'comments_captcha'             => [CommentSettingsScreen::class, 'enabled_recaptcha_comments', ['type' => 'boolean']],
+        'comments_ratings'             => [CommentSettingsScreen::class, 'comment_ratings', ['type' => 'boolean']],
         'comments_per_page'            => [CommentSettingsScreen::class, 'comments_per_page', ['type' => 'integer', 'minimum' => 0, 'description' => '0 shows every comment.']],
         'comments_notify_admin'        => [CommentSettingsScreen::class, 'notify_new_comment', ['type' => 'boolean']],
         'comments_notify_seller'       => [CommentSettingsScreen::class, 'notify_new_comment_user', ['type' => 'boolean']],

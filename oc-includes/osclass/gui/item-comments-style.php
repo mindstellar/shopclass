@@ -42,4 +42,15 @@ if (!defined('ABS_PATH')) {
 :where(.oe-comment-form input, .oe-comment-form textarea) { inline-size: 100%; padding: .5rem .625rem; font: inherit; color: inherit; background: transparent; border: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 35%, transparent); border-radius: .25rem; }
 :where(.oe-comment-form textarea) { resize: vertical; }
 :where(.oe-comment-optional) { font-weight: 400; opacity: .7; }
+:where(.oe-comment-rating) { margin: .35rem 0 0; letter-spacing: .1em; color: #b7791f; }
+:where(.oe-rating) { border: 0; margin: 0; padding: 0; }
+:where(.oe-rating legend) { padding: 0; font-weight: 600; font-size: .9375em; }
+:where(.oe-rating-stars) { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: .125rem; }
+:where(.oe-rating-stars input) { position: absolute; opacity: 0; inline-size: 1px; block-size: 1px; }
+:where(.oe-rating-stars label) { margin: 0; line-height: 1; cursor: pointer; opacity: .35; }
+:where(.oe-rating-star) { font-size: 1.5rem; }
+:where(.oe-rating-stars input:checked ~ label, .oe-rating-stars label:hover, .oe-rating-stars label:hover ~ label) { opacity: 1; }
+:where(.oe-rating-stars input:checked ~ label .oe-rating-star, .oe-rating-stars label:hover .oe-rating-star, .oe-rating-stars label:hover ~ label .oe-rating-star) { color: #b7791f; }
+:where(.oe-rating-stars input:focus-visible + label) { outline: 2px solid currentColor; outline-offset: 2px; }
+:where(.oe-sr) { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 </style>
