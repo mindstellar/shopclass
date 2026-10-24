@@ -42,6 +42,7 @@ require_once LIB_PATH . 'osclass/install-functions.php';
 require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
+require_once LIB_PATH . 'osclass/helpers/hJobs.php';
 
 Params::init();
 Session::getInstance()->session_start();
