@@ -3321,7 +3321,7 @@ msgstr ""
 msgid "The selected photo has been successfully deleted"
 msgstr ""
 
-#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/helpers/hItems.php
 msgid "The seller replies to this address."
 msgstr ""
 
