@@ -181,3 +181,23 @@ osc_show_widgets('footer');
 
 It prints nothing when the zone is empty, which is most zones on most sites, so
 buffer it if your wrapper would otherwise render as an empty box.
+
+## Menus
+
+The owner builds menus in **Appearance → Menus**. Read one with `osc_menu()`:
+
+```php
+foreach (osc_menu('main') as $link) {
+    echo '<a href="' . osc_esc_html($link['url']) . '">' . osc_esc_html($link['label']) . '</a>';
+    // $link['children'] holds the items below it, same shape, when there are any.
+}
+```
+
+- `main` and `footer` always exist. Until the owner saves them they list the top categories and the linked pages.
+- Other ids are menus the owner made. An unknown id gives an empty array.
+- Labels are plain text in the visitor's language. Escape them when printing.
+- Items nest up to three levels. Show as many as your design has room for.
+
+The `core.menu` widget prints one menu as `<nav class="osc-menu">` with nested `<ul>` lists and an optional `<h2 class="osc-menu-title">`. Core adds no CSS for it; style `.osc-menu` in your theme. `osc_menu_choices()` lists the menus as `id => name`.
+
+The API serves the same menus at `GET /menus`, with `children` on nested items. See the [API changelog](/docs/developers/api/changelog/).

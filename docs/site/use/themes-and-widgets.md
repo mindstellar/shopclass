@@ -89,6 +89,7 @@ section; the order is the order visitors see.
 |---|---|
 | **Rich text** | A block of formatted text. Blank lines become paragraphs. |
 | **Image** | An image from your media library, optionally linking somewhere. |
+| **Menu** | One of your [menus](#menus) as a list of links, with an optional heading. |
 | **Custom Code (HTML / JavaScript)** | Raw markup and script. |
 
 Plugins register further types, which appear in the same picker.
@@ -106,6 +107,31 @@ only code you understand, from a source you trust. A "free analytics snippet"
 from a forum post is the classic way a classifieds site starts serving malware
 to its own users.
 :::
+
+## Menus
+
+**Appearance → Menus** sets the links your theme shows in its header and footer.
+Admins only; moderators cannot edit menus.
+
+- **Main menu and Footer menu.** Until you save them, the main menu lists your top
+  categories and the footer lists the pages you show as links. The editor starts
+  from that list. Once saved, visitors see your list instead.
+- **Add items.** Add a category, a page or a link. A link needs a label and an
+  address starting with `http://`, `https://` or `/`. Category and page items use
+  their own name unless you give them a label.
+- **Arrange.** Drag the handle, or focus it and use the arrow keys: up and down
+  move the item, right puts it under the item above, left moves it out. Items nest
+  up to three levels. A category you switch off, or a page you delete, drops out
+  of the menu with the items under it.
+- **Labels in each language.** With more than one language, the pencil opens a
+  label field for each.
+- **Save menu** stores the whole menu. **Use the automatic menu** throws your main
+  or footer list away and goes back to the automatic one.
+- **Other menus.** **New menu** makes another one, up to 20, with a name and an id
+  such as `top-bar`. Show it with a **Menu** widget, or ask your theme's developer
+  to use its id. **Delete menu** removes it.
+
+How much of a menu shows depends on the theme. A theme may show only the top level.
 
 ## Customise your theme
 
