@@ -305,6 +305,13 @@ class AdminMenu
             'appearance_widgets',
             'administrator'
         );
+        $this->add_submenu(
+            'appearance',
+            __('Menus'),
+            osc_admin_base_url(true) . '?page=appearance&action=menus',
+            'appearance_menus',
+            'administrator'
+        );
         // Shown only for a theme that declares a customiser, which it does on init.
         osc_add_hook('init_admin', static function () {
             if (osc_customiser_spec() !== null) {

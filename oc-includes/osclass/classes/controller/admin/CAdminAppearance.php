@@ -21,6 +21,7 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\market\Catalog;
 use mindstellar\market\PluginDependencies;
+use mindstellar\menu\MenuService;
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\widgets\Customiser;
@@ -52,6 +53,9 @@ class CAdminAppearance extends AdminSecBaseModel
         'customise_draft_post'   => 'customiseDraftPost',
         'customise_publish_post' => 'customisePublishPost',
         'customise_discard_post' => 'customiseDiscardPost',
+        'menus'                  => 'menusScreen',
+        'menu_save_post'         => 'menuSavePost',
+        'menu_delete_post'       => 'menuDeletePost',
         'activate'             => 'activateTheme',
         'dependencies'         => 'dependencies',
         'render'               => 'render',
@@ -622,6 +626,114 @@ class CAdminAppearance extends AdminSecBaseModel
         }
 
         return $customiser;
+    }
+
+    /**
+     * The menu editor: one menu at a time, with the categories and pages it can link to.
+     */
+    private function menusScreen(): void
+    {
+        if (osc_is_moderator()) {
+            http_response_code(403);
+            osc_add_flash_error_message(_m('Only an administrator can edit the menus.'), 'admin');
+            $this->_exportVariableToView('menuEditor', null);
+            $this->doView('appearance/menus.php');
+
+            return;
+        }
+        $service = MenuService::getInstance();
+        $ids     = $service->menuIds();
+        $id      = Params::getParamString('menu');
+        $id      = in_array($id, $ids, true) ? $id : 'main';
+        $saved   = $service->load($id);
+        $locale  = osc_current_admin_locale();
+
+        $categories = array();
+        foreach ((new \mindstellar\category\CategoryQuery())->enabledTree($locale) as $row) {
+            $categories[] = array('id' => (int) $row['pk_i_id'], 'parent' => (int) ($row['fk_i_parent_id'] ?? 0), 'name' => html_entity_decode((string) $row['s_name'], ENT_QUOTES, 'UTF-8'));
+        }
+        $query = new \mindstellar\pages\PageQuery();
+        $rows  = $query->listed();
+        $texts = $query->texts(array_map(static fn (array $p): int => (int) $p['pk_i_id'], $rows));
+        $pages = array();
+        foreach ($rows as $row) {
+            $text    = $texts[(int) $row['pk_i_id']] ?? array();
+            $title   = $text[$locale]['s_title'] ?? (reset($text)['s_title'] ?? $row['s_internal_name']);
+            $pages[] = array('id' => (int) $row['pk_i_id'], 'name' => html_entity_decode((string) $title, ENT_QUOTES, 'UTF-8'));
+        }
+
+        $this->_exportVariableToView('menuEditor', array(
+            'id'         => $id,
+            'menus'      => osc_menu_choices(),
+            'saved'      => $saved !== null,
+            'core'       => in_array($id, MenuService::CORE, true),
+            'items'      => $saved !== null ? $saved['items'] : $service->automaticItems($id),
+            'categories' => $categories,
+            'pages'      => $pages,
+        ));
+        $this->doView('appearance/menus.php');
+    }
+
+    /**
+     * Save a whole menu posted as JSON, or create an empty one.
+     */
+    private function menuSavePost(): void
+    {
+        osc_csrf_check();
+        $back = osc_admin_base_url(true) . '?page=appearance&action=menus';
+        if (osc_is_moderator()) {
+            osc_add_flash_error_message(_m('Only an administrator can edit the menus.'), 'admin');
+            $this->redirectTo($back);
+
+            return;
+        }
+        $service = MenuService::getInstance();
+        $id      = Params::getParamString('menu');
+        $create  = Params::getParamString('create') === '1';
+        if ($create && in_array($id, $service->menuIds(), true)) {
+            osc_add_flash_error_message(_m('A menu with that id already exists.'), 'admin');
+            $this->redirectTo($back . '&menu=' . urlencode($id));
+
+            return;
+        }
+        if ($create) {
+            $items = array();
+            $label = Params::getParamString('label', false, false, false);
+        } else {
+            $items = json_decode(Params::getParamString('items', false, false, false), true);
+            $label = ($service->load($id) ?? array('label' => ''))['label'];
+        }
+        $errors = $service->save($id, $items, $label);
+        foreach ($errors as $error) {
+            osc_add_flash_error_message($error, 'admin');
+        }
+        if ($errors === array()) {
+            osc_add_flash_ok_message($create ? _m('Menu created. Add items to it.') : _m('Menu saved.'), 'admin');
+        }
+        $this->redirectTo($back . (preg_match(MenuService::ID, $id) === 1 && ($errors === array() || !$create) ? '&menu=' . urlencode($id) : ''));
+    }
+
+    /**
+     * Delete a custom menu, or send main or footer back to the automatic one.
+     */
+    private function menuDeletePost(): void
+    {
+        osc_csrf_check();
+        $back = osc_admin_base_url(true) . '?page=appearance&action=menus';
+        if (osc_is_moderator()) {
+            osc_add_flash_error_message(_m('Only an administrator can edit the menus.'), 'admin');
+            $this->redirectTo($back);
+
+            return;
+        }
+        $id   = Params::getParamString('menu');
+        $core = in_array($id, MenuService::CORE, true);
+        if (MenuService::getInstance()->delete($id)) {
+            osc_add_flash_ok_message($core ? _m('The automatic menu is back.') : _m('Menu deleted.'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('The menu could not be deleted.'), 'admin');
+        }
+        $this->redirectTo($back . ($core ? '&menu=' . $id : ''));
     }
 
     /**

@@ -233,6 +233,10 @@ msgstr ""
 msgid "A held alert cannot be activated. Ask the user to save the search again."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "A menu with that id already exists."
+msgstr ""
+
 #: oc-includes/osclass/classes/security/MessageGuard.php
 msgid "A message can be up to %d characters long."
 msgstr ""
@@ -1461,6 +1465,18 @@ msgstr ""
 msgid "Member since %s"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "Menu created. Add items to it."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "Menu deleted."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "Menu saved."
+msgstr ""
+
 #: oc-includes/osclass/gui/item-send-friend-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Message"
@@ -1871,6 +1887,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "Only an administrator can customise the theme."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "Only an administrator can edit the menus."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -2912,6 +2932,10 @@ msgstr ""
 msgid "The admin id isn't in the correct format"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The automatic menu is back."
+msgstr ""
+
 #: oc-includes/osclass/classes/storage/AvatarUpload.php
 msgid "The avatar you tried to upload exceeds the maximum size"
 msgstr ""
@@ -3184,6 +3208,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "The member replies to this address."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The menu could not be deleted."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php

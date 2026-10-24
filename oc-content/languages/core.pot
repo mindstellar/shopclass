@@ -949,6 +949,10 @@ msgid ""
 "have stopped partway."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "A link needs a label and an address."
+msgstr ""
+
 #: oc-includes/osclass/classes/menu/MenuItems.php
 msgid "A link needs a label."
 msgstr ""
@@ -957,6 +961,7 @@ msgstr ""
 msgid "A link needs an address that starts with http://, https:// or /."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-includes/osclass/classes/menu/MenuItems.php
 msgid "A menu can hold at most %d items."
 msgstr ""
@@ -1241,6 +1246,7 @@ msgstr ""
 msgid "Activity log"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/currency_form.php
@@ -1322,6 +1328,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid "Add field"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Add items"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php
@@ -1468,6 +1478,7 @@ msgstr ""
 msgid "Added to the order total. 0 means no fee."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Address"
@@ -1936,6 +1947,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/add_widget.php
 #: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/appearance/index.php
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/appearance/view.php
 #: oc-admin/themes/modern/appearance/widgets.php
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -2170,6 +2182,14 @@ msgstr ""
 msgid ""
 "Automatic prefers reCAPTCHA whenever its site and secret keys below are "
 "set; clear "
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Automatic: the pages you show as links. Save to use this list instead."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Automatic: your top categories. Save to use this list instead."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
@@ -2564,6 +2584,12 @@ msgid ""
 "a form on the left. "
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid ""
+"Build the links your theme shows in its header and footer, or in a Menu "
+"widget."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/DatabaseTools.php
 msgid "Building: %1$d of %2$d listings done"
 msgstr ""
@@ -2793,6 +2819,7 @@ msgstr ""
 msgid "Categories: %s"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/parts/market.php
@@ -3685,6 +3712,10 @@ msgstr ""
 msgid "Create key"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Create menu"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/index.php
 msgid "Create page"
 msgstr ""
@@ -4049,6 +4080,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/admins/index.php
 #: oc-admin/themes/modern/appearance/index.php
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/appearance/widgets.php
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/categories/index.php
@@ -4227,6 +4259,10 @@ msgstr ""
 msgid "Delete matching items"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Delete menu"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/index.php
 msgid "Delete page"
 msgstr ""
@@ -4265,6 +4301,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
 msgid "Delete this file?"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Delete this menu?"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -4706,6 +4746,7 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/billing/package.php
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/settings/api.php
@@ -5886,6 +5927,10 @@ msgstr ""
 msgid "IP rule"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Id"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/group_iframe.php
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Identifier name"
@@ -6327,6 +6372,10 @@ msgstr ""
 msgid "Items"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Items in %s"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
 msgid "Items removed per batch"
 msgstr ""
@@ -6488,6 +6537,14 @@ msgstr ""
 msgid "Kilometres"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Label"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Label (%s)"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/page-block-form.php
 msgid "Label (for your reference)"
 msgstr ""
@@ -6640,6 +6697,10 @@ msgstr ""
 msgid "Leave blank to keep the currently saved secret key"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Leave empty to use its own name."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid ""
 "Leave the provider-specific placeholders (e.g. {region}, {account_id}) "
@@ -6708,12 +6769,24 @@ msgid ""
 "a user and share a listing."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Link"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Link address"
+msgstr ""
+
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Link for account validation."
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Link for edit listing"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Link label"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -7121,6 +7194,12 @@ msgstr ""
 msgid "Lower price first"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid ""
+"Lowercase letters, digits, - and _. Themes and widgets use it to find the "
+"menu. At most %d menus."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "MB"
 msgstr ""
@@ -7483,6 +7562,15 @@ msgstr ""
 msgid "Menu"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Menu to edit"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+#: oc-includes/osclass/classes/AdminMenu.php
+msgid "Menus"
+msgstr ""
+
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/messages/index.php
 #: oc-admin/themes/modern/messages/thread.php
@@ -7596,6 +7684,10 @@ msgstr ""
 msgid "Missing table"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Missing: remove it"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "Moderated comments"
 msgstr ""
@@ -7693,8 +7785,20 @@ msgstr ""
 msgid "Move %s down"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Move %s out one level"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Move %s under the item above"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/customise.php
 msgid "Move %s up"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Move %s with the arrow keys"
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
@@ -7768,6 +7872,7 @@ msgid "NEW custom field"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/index.php
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/billing/package.php
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/emails/index.php
@@ -7976,6 +8081,12 @@ msgstr ""
 msgid "New form"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid ""
+"New items go to the end of the menu. Drag them into place, or use the arrow "
+"keys on the handle."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 msgid "New key"
 msgstr ""
@@ -7990,6 +8101,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
 msgid "New listings/users"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "New menu"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -8212,6 +8327,10 @@ msgstr ""
 msgid ""
 "No internet connection. You can continue and add your location later from "
 "the admin panel."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "No items yet. Add some from the list on the right."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -8494,6 +8613,10 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Not saved yet"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Not saved yet."
 msgstr ""
 
 #: oc-includes/osclass/classes/utility/SystemInfo.php
@@ -8837,6 +8960,7 @@ msgstr ""
 msgid "Opacity"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/billing/credits.php
 msgid "Open"
 msgstr ""
@@ -9109,6 +9233,7 @@ msgid "Packages"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/functions.php
@@ -10153,6 +10278,7 @@ msgid "Remove"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/items/frm.php
 msgid "Remove %s"
 msgstr ""
@@ -10659,6 +10785,10 @@ msgstr ""
 msgid "Save listing views"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Save menu"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Save on the server"
 msgstr ""
@@ -10740,6 +10870,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Saved searches per user"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Saved. Visitors see this menu."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
@@ -12925,6 +13059,10 @@ msgstr ""
 msgid "Themes"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Themes and widgets that show this menu show nothing until you make it again."
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "Themes updated."
 msgstr ""
@@ -13864,12 +14002,22 @@ msgstr ""
 msgid "Unmark as spam"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Unsaved changes"
+msgstr ""
+
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Unsubscribe link."
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
 msgid "Up"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid ""
+"Up and down arrows move the item. Right arrow puts it under the item above, "
+"left arrow moves it out."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Compatibility.php
@@ -14088,12 +14236,24 @@ msgstr ""
 msgid "Use POST"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Use automatic"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "Use my location"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid "Use path-style bucket URLs."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Use the automatic menu"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Use the automatic menu?"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
@@ -14884,6 +15044,10 @@ msgstr ""
 msgid "You have unpublished changes"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "You have unsaved changes to this menu."
+msgstr ""
+
 #: oc-admin/themes/modern/upgrade/index.php
 msgid ""
 "You have uploaded a new version of Shopclass, you need to upgrade Shopclass "
@@ -15088,6 +15252,10 @@ msgstr ""
 msgid ""
 "Your reusable fields. Drag one into a form on the left, or use a form’s "
 "“Add field”. The same field can be placed in several forms."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Your saved items are removed and the menu lists its automatic links again."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -15351,6 +15519,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 msgid "from %s"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "https://… or /path"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php

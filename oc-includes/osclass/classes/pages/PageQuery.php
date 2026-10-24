@@ -81,6 +81,23 @@ final class PageQuery
     }
 
     /**
+     * Every public page, linked or not, in display order.
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function listed(): array
+    {
+        return Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_pages')
+                ->where('b_indelible', 0)
+                ->orderBy('i_order', 'ASC')
+                ->orderBy('pk_i_id', 'ASC')
+                ->get()
+        );
+    }
+
+    /**
      * One public page by id (all digits) or by internal name, linked or not.
      *
      * @return array<string,mixed>|null

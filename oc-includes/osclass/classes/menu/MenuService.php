@@ -106,6 +106,30 @@ final class MenuService
     }
 
     /**
+     * The stored-item form of the automatic `main` or `footer`, for an editor to start from.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function automaticItems(string $id): array
+    {
+        if ($id === 'main') {
+            $items = [];
+            foreach ($this->categories($this->defaultLocale) as $ref => $row) {
+                if (empty($row['fk_i_parent_id'])) {
+                    $items[] = ['type' => 'category', 'ref' => $ref];
+                }
+            }
+
+            return $items;
+        }
+        if ($id === 'footer') {
+            return array_map(static fn (array $page): array => ['type' => 'page', 'ref' => (int) $page['pk_i_id']], (new PageQuery())->linked());
+        }
+
+        return [];
+    }
+
+    /**
      * Check and store a whole menu. Returns what is wrong; an empty list means it was saved.
      *
      * @return string[]
@@ -131,6 +155,7 @@ final class MenuService
         if ($value === false || !$this->preferences->replace($id, $value, self::SECTION, 'STRING')) {
             return [__('The menu could not be saved.')];
         }
+        osc_purge_page_cache('menu');
 
         return [];
     }
@@ -146,6 +171,7 @@ final class MenuService
         $deleted = $this->preferences->delete(['s_name' => $id, 's_section' => self::SECTION]);
         // The in-request map keeps deleted keys, so blank it here.
         $this->preferences->set($id, '', self::SECTION);
+        osc_purge_page_cache('menu');
 
         return $deleted !== false;
     }

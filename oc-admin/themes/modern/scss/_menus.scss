@@ -1,0 +1,111 @@
+// Appearance > Menus: the menu's items on the left, what can be added on the right.
+.menu-pick {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1rem;
+
+  .form-sublabel {
+    margin: 0;
+  }
+}
+
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+// Each level of nesting steps the row in.
+.menu-item {
+  margin-inline-start: calc(var(--menu-depth, 0) * 1.75rem);
+
+  &.is-drop-before {
+    box-shadow: 0 -2px 0 var(--osc-bronze);
+  }
+
+  &.is-drop-after {
+    box-shadow: 0 2px 0 var(--osc-bronze);
+  }
+
+  &.is-missing .chip-type {
+    background-color: var(--osc-warning-tint);
+    color: var(--osc-warning-deep);
+  }
+
+  .chip-btn:disabled {
+    cursor: default;
+    opacity: .35;
+
+    &:hover {
+      background: transparent;
+      color: var(--osc-ink-muted);
+    }
+  }
+
+  .field-chip-editor {
+    display: grid;
+    gap: .35rem;
+
+    .input-text {
+      max-width: 32rem;
+    }
+  }
+}
+
+.menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.menu-add-card,
+.menu-new {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+
+  .form-sublabel {
+    margin: .4rem 0 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  .input-text,
+  .field-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  > .btn {
+    align-self: flex-start;
+    margin-top: .4rem;
+  }
+}
+
+.menu-add-row {
+  display: flex;
+  gap: .4rem;
+
+  .btn {
+    flex: 0 0 auto;
+  }
+}
+
+.menu-help {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+  margin: 0;
+}
+
+.menu-add-error {
+  color: var(--osc-danger);
+  font-size: $font-size-label;
+  margin: .25rem 0 0;
+}
