@@ -154,6 +154,11 @@ class BaseModel
     {
         $GLOBALS['view'] = $file;
     }
+
+    protected function isXhrRequest(): bool
+    {
+        return strtolower((string) Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+    }
 }
 
 class WebSecBaseModel extends BaseModel
@@ -246,9 +251,14 @@ pin('a stranger gets 404 not_found', array(404, 'not_found'), array($r['status']
 pin('and nothing is marked read', $before, $unread($open));
 web_sign_in($buyer);
 $first = (int) $col("SELECT MIN(pk_i_id) FROM {$p}t_message WHERE fk_i_conversation_id = $open");
-web_request('GET', array('page' => 'ajax', 'action' => 'messages_since', 'id' => $open, 'after' => $first));
+web_request('GET', array('page' => 'ajax', 'action' => 'messages_since', 'id' => $open, 'after' => 0));
+$r = web_ajax('messagesSince');
+check('the buyer has unread messages here', explode('/', $before)[0] !== '0');
+pin('a request with no X-Requested-With reads the thread but leaves it unread', array(200, $before), array($r['status'], $unread($open)));
+web_request('GET', array('page' => 'ajax', 'action' => 'messages_since', 'id' => $open, 'after' => $first), array(), array('HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest'));
 $r = web_ajax('messagesSince');
 pin('the buyer gets the messages after the id', array(200, array('Yes.')), array($r['status'], array_column($r['json']['messages'] ?? array(), 'body')));
+pin('the page script marks the buyer read', '0', explode('/', $unread($open))[0]);
 web_request('GET', array('page' => 'ajax', 'action' => 'messages_since', 'id' => $open, 'after' => 0));
 pin('after 0 gives the whole thread', array('Is it for sale?', 'Yes.'), array_column(web_ajax('messagesSince')['json']['messages'] ?? array(), 'body'));
 

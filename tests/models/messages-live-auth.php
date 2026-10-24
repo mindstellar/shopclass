@@ -64,6 +64,11 @@ final class LaNchan implements LivePublisher
 class BaseModel
 {
     protected $ajax = false;
+
+    protected function isXhrRequest(): bool
+    {
+        return strtolower((string) Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+    }
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/classes/controller/CWebAjax.php';

@@ -83,6 +83,11 @@ final class PaClock implements Clock
 class BaseModel
 {
     protected $ajax = false;
+
+    protected function isXhrRequest(): bool
+    {
+        return strtolower((string) Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+    }
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/classes/controller/CWebAjax.php';
@@ -120,7 +125,7 @@ function pa_call(string $action, string $method, array $fields = array()): array
     $_GET     = array('page' => 'ajax', 'action' => $action) + ($method === 'GET' ? $fields : array());
     $_POST    = $method === 'POST' ? $fields : array();
     $_REQUEST = $_GET + $_POST;
-    $_SERVER  = array('REQUEST_METHOD' => $method, 'REMOTE_ADDR' => '10.0.0.9', 'HTTP_USER_AGENT' => 'Mozilla/5.0 Chrome/130.0 Safari/537.36') + $_SERVER;
+    $_SERVER  = array('REQUEST_METHOD' => $method, 'REMOTE_ADDR' => '10.0.0.9', 'HTTP_USER_AGENT' => 'Mozilla/5.0 Chrome/130.0 Safari/537.36', 'HTTP_X_REQUESTED_WITH' => $GLOBALS['pa_xhr'] ?? 'XMLHttpRequest') + $_SERVER;
     Params::init();
     http_response_code(200);
     $ajax = (new ReflectionClass('CWebAjax'))->newInstanceWithoutConstructor();
@@ -197,6 +202,9 @@ pin('the row keeps the endpoint and the browser family only', array($ep, 'Chrome
 harness_section('status');
 $before = (int) $row['expires'];
 $clock->t += 3600;
+$GLOBALS['pa_xhr'] = '';
+pin('a request with no X-Requested-With is 400 and renews nothing', array(array(400, array('error' => 'bad_request')), $before), array(pa_call('push_status', 'GET', array('endpoint' => $ep)), (int) $kv->get('push', $me . ':' . PushSubscriptions::browserId($ep))['expires']));
+unset($GLOBALS['pa_xhr']);
 pin('active for its user', array(200, array('active' => true)), pa_call('push_status', 'GET', array('endpoint' => $ep)));
 pin('and the expiry moved on', $before + 3600, (int) $kv->get('push', $me . ':' . PushSubscriptions::browserId($ep))['expires']);
 pin('another endpoint is not active', array(200, array('active' => false)), pa_call('push_status', 'GET', array('endpoint' => $ep . 'x')));
