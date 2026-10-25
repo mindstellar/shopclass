@@ -30,8 +30,8 @@ Add a listing as an admin, then use **Sell this item** on its edit screen. Tick 
 this item to a cart** and set the SKU, price, stock and weight.
 
 For a product that comes in sizes or colours, add **option rows**: one row per combination, such
-as Black / M, each with its own SKU, price, stock and an optional "was" price. The shopper picks
-the options on the product page.
+as Black / M, each with its own SKU, price, stock and an optional old price, shown crossed out.
+The shopper picks the options on the product page.
 
 - **Stock** is counted per row. At 0 the row is out of stock. Leave it blank to not count.
 - **Weight** and **Shipping class** are for the Shipping plugin.
@@ -51,9 +51,9 @@ A number beside **Billing** and **Orders** counts the orders waiting to ship, an
 | **Paid** | Money received. It shows in **To ship** until you send it. |
 | **Shipped** | You marked it shipped with a carrier and tracking number. Cash on delivery is shipped before it is paid. |
 | **Delivered** | You marked it delivered. A cash on delivery order is marked paid now. |
-| **Cancelled** | Closed before payment. The stock goes back on sale. |
+| **Cancelled** | Closed before payment, by you, the buyer, or because a card order was not paid within the hold minutes. The stock goes back on sale. |
 | **Refunded** | The money went back. The stock goes back on sale. |
-| **Failed** | A card payment failed or never came. The order is closed. |
+| **Failed** | The payment provider reported a failed card payment. The order is closed and its stock goes back on sale. |
 
 A card payment that arrives after its order was cancelled is refunded by the payment plugin.
 
