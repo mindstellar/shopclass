@@ -38011,6 +38011,16 @@
                         }
                     },
                     {
+                        "name": "city",
+                        "in": "query",
+                        "required": false,
+                        "description": "The delivery city, up to 100 characters; a longer one is ignored. Cash on delivery limited to chosen cities needs it.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 200
+                        }
+                    },
+                    {
                         "name": "postcode",
                         "in": "query",
                         "required": false,

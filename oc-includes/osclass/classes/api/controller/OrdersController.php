@@ -71,7 +71,7 @@ final class OrdersController
             'gateway'         => $request->queryString('gateway'),
             'user_id'         => $call->userId(),
             'locale'          => $request->queryString('locale'),
-            'address'         => CartPricer::quoteAddress($request->queryString('country'), $request->queryString('state'), $request->queryString('postcode')),
+            'address'         => CartPricer::quoteAddress($request->queryString('country'), $request->queryString('state'), $request->queryString('postcode'), $request->queryString('city')),
             'coupon'          => $request->queryString('coupon'),
         ));
 

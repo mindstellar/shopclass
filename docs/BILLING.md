@@ -727,8 +727,8 @@ core's `PUT account/cart`, once for each variant new to the saved cart, with the
 | `cart_item_add_after` | action | `($cart, $line)` after `PUT account/cart` adds a variant to the saved cart |
 | `cart_checkout_before` | action | `($cart)` before checkout starts |
 
-**Address and coupon.** `GET cart/quote` takes `country` (two letters), `state` (up to 100) and
-`postcode` (up to 20); they reach `$cart['address']` as those three keys only. On placement
+**Address and coupon.** `GET cart/quote` takes `country` (two letters), `state` and `city` (up to 100) and
+`postcode` (up to 20); they reach `$cart['address']` as those four keys only. On placement
 `address` is the full delivery address. `coupon` (query, or the `POST account/orders` body) is
 trimmed and upper-cased to `[A-Z0-9-]{1,40}`, else null. A malformed value is dropped, not refused.
 

@@ -573,6 +573,7 @@ final class PublicRoutes
                     'gateway'  => ['type' => 'string', 'maxLength' => 64, 'description' => 'A payment method id; its fee is added to the totals.'],
                     'country'  => ['type' => 'string', 'maxLength' => 200, 'description' => 'The delivery country\'s two-letter code, for delivery and tax plugins; anything else is ignored.'],
                     'state'    => ['type' => 'string', 'maxLength' => 200, 'description' => 'The delivery state, up to 100 characters; a longer one is ignored.'],
+                    'city'     => ['type' => 'string', 'maxLength' => 200, 'description' => 'The delivery city, up to 100 characters; a longer one is ignored. Cash on delivery limited to chosen cities needs it.'],
                     'postcode' => ['type' => 'string', 'maxLength' => 200, 'description' => 'The delivery postcode, up to 20 characters; a longer one is ignored.'],
                     'coupon'   => ['type' => 'string', 'maxLength' => 200, 'description' => 'A coupon code: trimmed and upper-cased, 1-40 of A-Z, 0-9 and -. Anything else is ignored, not refused.'],
                     'locale'   => self::LOCALE,

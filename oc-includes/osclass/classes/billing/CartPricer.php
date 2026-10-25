@@ -202,12 +202,12 @@ final class CartPricer
 
     /**
      * The part of an address a shopper gives before checkout, for a quote: a two-letter
-     * country code, a state of up to 100 characters and a postcode of up to 20. A value that
-     * does not fit, or is empty, is left out.
+     * country code, a state and a city of up to 100 characters and a postcode of up to 20. A
+     * value that does not fit, or is empty, is left out.
      *
-     * @return array{country?:string,state?:string,postcode?:string}
+     * @return array{country?:string,state?:string,city?:string,postcode?:string}
      */
-    public static function quoteAddress(string $country, string $state, string $postcode): array
+    public static function quoteAddress(string $country, string $state, string $postcode, string $city = ''): array
     {
         $clean   = static fn (string $v): string => trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $v) ?? '');
         $out     = array();
@@ -215,7 +215,7 @@ final class CartPricer
         if (preg_match('/^[A-Z]{2}$/', $country) === 1) {
             $out['country'] = $country;
         }
-        foreach (array('state' => array($state, 100), 'postcode' => array($postcode, 20)) as $field => [$value, $max]) {
+        foreach (array('state' => array($state, 100), 'city' => array($city, 100), 'postcode' => array($postcode, 20)) as $field => [$value, $max]) {
             $value = $clean($value);
             if ($value !== '' && mb_strlen($value, 'UTF-8') <= $max) {
                 $out[$field] = $value;
