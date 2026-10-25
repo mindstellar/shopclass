@@ -973,24 +973,19 @@ function oc_install()
 }
 
 /**
- * Insert the example data (categories and emails) on all available locales
+ * Insert the starter category tree for a site type.
  *
- * @return void
- * @since 2.4
+ * @param string $type 'classifieds' or 'shop'
+ *
+ * @return int Number of categories written
+ * @throws \InvalidArgumentException when the type is unknown
  */
-function oc_install_example_data()
+function install_seed_categories(string $type): int
 {
+    if (!in_array($type, array('classifieds', 'shop'), true)) {
+        throw new \InvalidArgumentException('Unknown site type: ' . $type);
+    }
     require_once LIB_PATH . 'osclass/formatting.php';
-    require LIB_PATH . 'osclass/installer/basic_data.php';
-    /**
-     * @var array<int, array<string, mixed>> $categories
-     * @var array<string, mixed>             $item
-     * @var array<string, mixed>             $page
-     */
-    require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
-    require_once LIB_PATH . 'osclass/helpers/hValidate.php';
-    require_once LIB_PATH . 'osclass/helpers/hUsers.php';
-    $mCat = Category::getInstance();
 
     if (!function_exists('osc_apply_filter')) {
         /**
@@ -1008,17 +1003,45 @@ function oc_install_example_data()
         }
     }
 
-    foreach ($categories as $category) {
-        $fields['pk_i_id']           = $category['pk_i_id'];
-        $fields['fk_i_parent_id']    = $category['fk_i_parent_id'];
-        $fields['i_position']        = $category['i_position'];
-        $fields['i_expiration_days'] = 0;
-        $fields['b_enabled']         = 1;
-
-        $aFieldsDescription[osc_current_admin_locale()]['s_name'] = $category['s_name'];
-
-        $mCat->insert($fields, $aFieldsDescription);
+    $rows      = require LIB_PATH . 'osclass/installer/data/categories-' . $type . '.php';
+    $locale    = osc_current_admin_locale();
+    $mCat      = Category::getInstance();
+    $positions = array();
+    foreach ($rows as $row) {
+        $parent                    = $row['parent'];
+        $key                       = (string) $parent;
+        $positions[$key]           = ($positions[$key] ?? 0) + 1;
+        $fields                    = array(
+            'pk_i_id'            => $row['id'],
+            'fk_i_parent_id'     => $parent,
+            'i_position'         => $positions[$key],
+            'i_expiration_days'  => 0,
+            'b_enabled'          => 1,
+        );
+        $mCat->insert($fields, array($locale => array('s_name' => $row['name'])));
     }
+
+    return count($rows);
+}
+
+/**
+ * Insert the example data (categories and emails) on all available locales
+ *
+ * @return void
+ * @since 2.4
+ */
+function oc_install_example_data()
+{
+    require_once LIB_PATH . 'osclass/formatting.php';
+    require LIB_PATH . 'osclass/installer/basic_data.php';
+    /**
+     * @var array<string, mixed>             $item
+     * @var array<string, mixed>             $page
+     */
+    require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
+    require_once LIB_PATH . 'osclass/helpers/hValidate.php';
+    require_once LIB_PATH . 'osclass/helpers/hUsers.php';
+    install_seed_categories('classifieds');
 
     // Posting a listing goes through the billing helper for the seller's limits.
     // It is required here rather than in the bootstrap because it reads a preference
