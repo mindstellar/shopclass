@@ -1585,6 +1585,10 @@ msgstr ""
 msgid "Address: no more than 100 characters"
 msgstr ""
 
+#: oc-includes/osclass/functions.php
+msgid "Addresses"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/security.php
 msgid ""
 "Addresses and accounts with failures in the last %d minutes. Unblock one to "

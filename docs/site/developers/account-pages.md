@@ -98,6 +98,8 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-empty` | an empty state | replaces the list, never sits beside it |
 | `.oe-panel` | a bordered block grouping related content | also used by the credits pages |
 | `.oe-muted` | secondary prose | a paragraph, not a control |
+| `.oe-address` | one saved address on the addresses page | also carries `.oe-panel`; holds an `<h2>` (with an `.oe-badge` on the default), `.oe-address-lines` and the row actions |
+| `.oe-address-lines` | a saved address on one line | a `<p>` |
 
 ### Forms
 
@@ -107,6 +109,7 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-label` | the field's `<label>` | `for` always matches a real control id |
 | `.oe-input` | a control core renders itself | absent on controls `UserForm` renders (see below) |
 | `.oe-hint` | help text under a field | bound with `aria-describedby` |
+| `.oe-field-error` | why a field was refused | also carries `.oe-hint`; the control has `aria-invalid` |
 | `.oe-profile-head` | the top of a public profile | holds the `.oe-avatar`, an `.oe-meta` line, and the owner's Edit button |
 | `.oe-dialog-close` | a dialog's close button | carries `data-osc-dialog-close` |
 | `.oe-contact-open` | the profile head's Message button | a link to `#oe-contact-dialog` |
@@ -374,6 +377,42 @@ or `create` (with `name`, `expires` as `YYYY-MM-DD`, `scopes[]` and `password`).
 
 The page reuses `.oe-panel`, `.oe-badge`, `.oe-group`, `.oe-field`, `.oe-check` and
 `.oe-link-btn`. The two page hooks fire as on the other account pages.
+
+## The addresses page
+
+`user-addresses.php` is the member's address book: saved delivery addresses, the default first,
+with Edit, Make default and Delete on each, and a form to add one. The default address is the
+account's own address. At most 10 are kept.
+
+| | |
+|---|---|
+| Fallback file | `oc-includes/osclass/gui/account/user-addresses-content.php` |
+| URL | `osc_user_addresses_url()` |
+| Nav entry | "Addresses", class `opt_addresses`. Shown in shop mode and wherever billing is on (`osc_address_book_enabled()`). |
+
+A theme that ships its own `user-addresses.php` gets these view variables:
+
+| Variable | Holds |
+|---|---|
+| `addresses` | The book, default first. Each has `id`, `label`, `name`, `phone`, `line1`, `city`, `state`, `postcode`, `country` (a two-letter code) and `default`. |
+| `address_form` | The address being edited (from `?edit=<id>`), or the fields just posted back after a refusal. Empty for a new one. |
+| `address_errors` | Field name to message, after a refusal. |
+
+Every form posts `page=user`, `action=addresses_post` and the CSRF token. The `do` field is
+`save` (with `id` empty for a new address, the fields above and `default=1` to make it the
+default), `default` or `delete` (each with `id`). `osc_address_text($address)` prints an address
+on one line.
+
+### At checkout
+
+`osc_address_picker()` prints the saved addresses as radio cards (`.osc-address-picker`,
+`.osc-address-card`, `.osc-address-new`, `.osc-address-default`), the default chosen, and "Use a
+new address". It prints nothing for a buyer with no saved address. Wrap your address fields in an
+element with `data-address-form`: the picker fills fields named `name`, `phone`, `line1`, `city`,
+`state`, `postcode` and `country` from the chosen address, hides the box while a saved one is
+chosen, and fires `osc:address` with `{id, address}` on every change. `osc_address_save_field()`
+prints the ticked "Save this address" box (`.osc-address-save`) for a typed address. Send the
+chosen id as `address.id` to `POST account/orders`, or the typed fields with `address.save`.
 
 ## The messages pages
 

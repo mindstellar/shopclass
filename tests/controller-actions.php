@@ -136,6 +136,8 @@ $controllers = array(
         'widgets'              => 'widgets',
     ), 'themes'),
     'CWebUser' => array('CWebUser.php', array(
+        'addresses'            => 'addresses',
+        'addresses_post'       => 'addressesPost',
         'alerts'               => 'alerts',
         'api_access'           => 'apiAccessPage',
         'api_access_post'      => 'apiAccessPagePost',

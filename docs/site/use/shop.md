@@ -97,6 +97,11 @@ orders, profile, password and delete account. The seller pages (listings, public
 alerts, credits and API access) are hidden, and a link to one leads to the dashboard. With
 Digital Goods on, a Downloads entry lists what they bought. An admin signed in sees everything.
 
+**Addresses** keeps up to 10 delivery addresses. The default one is also the account's own
+address. At checkout the saved addresses show as cards with the default chosen; "Use a new
+address" opens the form, and "Save this address" (ticked) adds it to the book. The first address
+saved becomes the default. Addresses also shows on a classifieds site with billing on.
+
 ## 6. Customise
 
 If your theme supports it, **Appearance → Customise** edits the home page sections and the look

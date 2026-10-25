@@ -325,6 +325,10 @@ class CoreRoutes
                 'to'   => array('page' => 'user', 'action' => 'delete'),
                 'rule' => false,
             ),
+            'user_addresses' => array(
+                'to'   => array('page' => 'user', 'action' => 'addresses'),
+                'rule' => false,
+            ),
             'user_api_access' => array(
                 'to'   => array('page' => 'user', 'action' => 'api_access'),
                 'rule' => false,

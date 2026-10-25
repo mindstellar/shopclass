@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1243 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1328,12 +1328,16 @@ Core defines 1243 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (74)
+### hUsers (79)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_address_book_enabled()` | Whether the account area offers the address book: in shop mode, and wherever billing is on, since goods orders need a delivery address. |
+| `osc_address_picker(array $opts = array())` | The checkout address picker for the signed-in buyer: each saved address as a radio card, the default chosen, and "Use a new address". The theme wraps its own address fields in an element with `data-address-form`; the picker fills them from the chosen address, hides them while a saved one is chosen and fires `osc:address` ({id, address}) on each change. Prints nothing for a buyer with no saved address. |
+| `osc_address_save_field(array $opts = array())` | The "Save this address" box for a typed checkout address, ticked by default. Shown with the address fields; nothing once the address book is full. |
+| `osc_address_text(array $address)` | One saved address on a line: "1 Main St, Austin, Texas 73301, United States · 5550100". |
 | `osc_admin_is_browsing()` | Whether a signed-in admin is browsing the site, for display and preview only: it grants no admin power, and permission checks must use osc_is_admin_user_logged_in() instead. |
 | `osc_alert()` | Gets current alert fomr view |
 | `osc_alert_criteria(?array $alert = null)` | What an alert searches for, as labelled parts: each entry is ['label', 'value']. Empty for an alert on all listings. A paused alert (one the upgrade could not keep) returns one 'held' entry. Defaults to the current alert in the loop. |
@@ -1379,6 +1383,7 @@ Core defines 1243 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_access_date()` | Gets last access date |
 | `osc_user_access_ip()` | Gets last access ip |
 | `osc_user_address()` | Gets address of current user |
+| `osc_user_addresses_url()` | The account page with the user's saved delivery addresses. |
 | `osc_user_avatar_url(?int $userId = null, string $variant = 'thumbnail')` | Public URL of a user's avatar, or a bundled placeholder when they have none. |
 | `osc_user_city()` | Gets city of current user |
 | `osc_user_city_area()` | Gets city area of current user |

@@ -339,6 +339,10 @@ msgstr ""
 msgid "Activity log settings saved"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Add an address"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Add at least one option row, or turn options off."
 msgstr ""
@@ -348,6 +352,7 @@ msgid "Added by admin"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Address"
 msgstr ""
@@ -358,6 +363,11 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Address too short."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Addresses"
 msgstr ""
 
 #: oc-includes/osclass/classes/messaging/MessagingService.php
@@ -571,6 +581,7 @@ msgstr ""
 msgid "Buying credits is not available on this site."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/contact-message-content.php
 #: oc-includes/osclass/gui/user-delete_account-content.php
 msgid "Cancel"
@@ -636,6 +647,10 @@ msgstr ""
 msgid "Choose a country and save; the regions for it load on the next screen."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressBook.php
+msgid "Choose a country from the list."
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
 msgid "Choose a delivery method."
 msgstr ""
@@ -669,6 +684,7 @@ msgid "Choose at least one scope."
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "City"
@@ -786,6 +802,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Country"
@@ -889,7 +906,13 @@ msgstr ""
 msgid "Date"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+#: oc-includes/osclass/gui/parts/address-picker.php
+msgid "Default"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "Delete"
 msgstr ""
@@ -903,6 +926,10 @@ msgstr ""
 msgid "Delete my account"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Delete this address?"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Delete this listing"
 msgstr ""
@@ -914,6 +941,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "Delete your comment? This cannot be undone."
+msgstr ""
+
+#: oc-includes/osclass/gui/parts/address-picker.php
+msgid "Deliver to"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
@@ -976,7 +1007,12 @@ msgid "E-mail"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 msgid "Edit"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Edit address"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
@@ -1029,6 +1065,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "Ends: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressBook.php
+msgid "Enter a mobile number with at least 8 digits."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -1180,6 +1220,10 @@ msgstr ""
 msgid "From: %s"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Full name"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
 msgid "General settings have been updated"
 msgstr ""
@@ -1300,6 +1344,7 @@ msgid "Keep me signed in"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
+#: oc-includes/osclass/classes/user/AddressBook.php
 msgid "Keep this under %d characters."
 msgstr ""
 
@@ -1321,6 +1366,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Keywords"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Label (Home, Work)"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
@@ -1449,8 +1498,20 @@ msgstr ""
 msgid "Make a key"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Make default"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "Make key"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Make this my default address"
+msgstr ""
+
+#: oc-includes/osclass/gui/parts/address-picker.php
+msgid "Manage addresses"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
@@ -1518,6 +1579,7 @@ msgid "Messages, %d unread"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Mobile"
 msgstr ""
@@ -2015,6 +2077,14 @@ msgstr ""
 msgid "Orders are not available on this site."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressBook.php
+msgid "PIN code needs 6 digits."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "PIN code or postcode"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Package created"
 msgstr ""
@@ -2451,12 +2521,21 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Save address"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Save changes"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
 msgid "Save the new password"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Save this address to my address book"
 msgstr ""
 
 #: oc-includes/osclass/gui/alert-form-content.php
@@ -2703,6 +2782,10 @@ msgstr ""
 msgid "Star ratings are turned off on this site"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "State"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Status"
 msgstr ""
@@ -2775,6 +2858,15 @@ msgstr ""
 msgid "That address cannot be used: %s"
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/GoodsCheckout.php
+msgid "That address is not in your address book any more."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebUser.php
+#: oc-includes/osclass/classes/user/AddressBook.php
+msgid "That address was not found."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "That backup is not in the list any more."
 msgstr ""
@@ -2811,6 +2903,10 @@ msgstr ""
 msgid ""
 "That is more than the balance holds. Remove no more than the current "
 "balance."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebUser.php
+msgid "That is now your default address."
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -2914,6 +3010,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/webhook/WebhookService.php
 msgid "That webhook endpoint is not in the list any more."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebUser.php
+msgid "The address has been deleted."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebUser.php
+msgid "The address has been saved."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
@@ -3644,6 +3748,7 @@ msgid "This conversation was reported and is waiting for review."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
+#: oc-includes/osclass/classes/user/AddressBook.php
 msgid "This field is needed."
 msgstr ""
 
@@ -3923,6 +4028,10 @@ msgid_plural "Use %d credits and publish"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/parts/address-picker.php
+msgid "Use a new address"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "User id isn't in the correct format"
 msgstr ""
@@ -4049,6 +4158,12 @@ msgstr ""
 msgid "What happened"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid ""
+"Where your orders can be delivered. The default address is offered first at "
+"checkout."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-conversation-content.php
 msgid "Why are you reporting this conversation?"
 msgstr ""
@@ -4141,6 +4256,14 @@ msgstr ""
 msgid "You blocked this conversation."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressBook.php
+msgid "You can keep up to %d addresses. Delete one first."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "You can keep up to %d addresses. Delete one to add another."
+msgstr ""
+
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
 msgid "You can only revoke your own keys, public keys and users' keys."
 msgstr ""
@@ -4208,6 +4331,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "You have no alerts yet."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "You have no saved addresses yet."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php

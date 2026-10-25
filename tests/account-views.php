@@ -65,6 +65,7 @@ $expected = array(
     'user-custom.php',
     'user-delete_account.php',
     'user-api_access.php',
+    'user-addresses.php',
 );
 
 // ---------------------------------------------------------------- the map --
@@ -188,6 +189,7 @@ $slotPages = array(
     'user-custom'         => $accountIn . 'user-custom-content.php',
     'user-delete_account' => $guiDir . 'user-delete_account-content.php',
     'user-api_access'     => $accountIn . 'user-api_access-content.php',
+    'user-addresses'      => $accountIn . 'user-addresses-content.php',
     'billing-wallet'      => $guiDir . 'billing/wallet-content.php',
     'billing-buy'         => $guiDir . 'billing/buy-content.php',
     'billing-orders'      => $guiDir . 'billing/orders-content.php',

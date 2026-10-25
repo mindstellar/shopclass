@@ -540,6 +540,7 @@ function osc_gui_account_view(string $themeView): bool
         'user-public-profile.php'  => array('heading' => (string) osc_user_name()),
         'user-custom.php'          => array('heading' => osc_gui_custom_heading()),
         'user-api_access.php'      => array('heading' => _m('API access')),
+        'user-addresses.php'       => array('heading' => _m('Addresses')),
         'user-delete_account.php'  => array(
             'heading' => _m('Delete your account'),
             'tone'    => 'danger',

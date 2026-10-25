@@ -222,6 +222,9 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-danger h2{color:var(--oe-danger);}
   .oe-page .oe-profile-head{margin-block-end:1.5rem;}
   .oe-page .oe-contact-open{white-space:nowrap;}
+  .oe-page .oe-field-error{color:var(--oe-danger);}
+  .oe-page .oe-address-lines{margin:6px 0 0;overflow-wrap:anywhere;}
+  .oe-page .oe-address h2 .oe-badge{vertical-align:middle;margin-inline-start:6px;}
   .oe-page .oe-form-error{margin:0 0 16px;padding:10px 14px;border:1px solid var(--oe-danger);border-radius:6px;background:#ffe9e5;color:var(--oe-danger);}
   .oe-page .oe-dialog:not([data-osc-dialog-ready]){display:block;position:static;inset:auto;margin:1.5rem 0 0;padding:0;border:0;max-inline-size:none;background:none;color:inherit;}
   .oe-page .oe-dialog:not([data-osc-dialog-ready]) .oe-dialog-close{display:none;}

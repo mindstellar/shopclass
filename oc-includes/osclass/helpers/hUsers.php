@@ -1319,6 +1319,95 @@ function osc_shopper_user_menu($options)
     return $options;
 }
 
+/**
+ * The account page with the user's saved delivery addresses.
+ *
+ * @return string
+ */
+function osc_user_addresses_url(): string
+{
+    return osc_core_url('user_addresses');
+}
+
+/**
+ * Whether the account area offers the address book: in shop mode, and wherever billing is on,
+ * since goods orders need a delivery address.
+ */
+function osc_address_book_enabled(): bool
+{
+    return osc_site_mode() === \mindstellar\site\SiteMode::SHOP || osc_billing_enabled();
+}
+
+/**
+ * One saved address on a line: "1 Main St, Austin, Texas 73301, United States · 5550100".
+ *
+ * @param array<string,mixed> $address an address from the address book
+ */
+function osc_address_text(array $address): string
+{
+    static $names = null;
+    if ($names === null) {
+        $names = array_column((array) osc_get_countries(), 's_name', 'pk_c_code');
+    }
+    $country = (string) ($address['country'] ?? '');
+    $country = (string) ($names[$country] ?? $country);
+    $place = trim((string) ($address['state'] ?? '') . ' ' . (string) ($address['postcode'] ?? ''));
+    $parts = array_filter(array((string) ($address['line1'] ?? ''), (string) ($address['city'] ?? ''), $place, $country), static fn (string $part): bool => trim($part) !== '');
+    $text  = implode(', ', $parts);
+    $phone = trim((string) ($address['phone'] ?? ''));
+
+    return $phone === '' ? $text : $text . ' · ' . $phone;
+}
+
+/**
+ * The checkout address picker for the signed-in buyer: each saved address as a radio card, the
+ * default chosen, and "Use a new address". The theme wraps its own address fields in an element
+ * with `data-address-form`; the picker fills them from the chosen address, hides them while a saved
+ * one is chosen and fires `osc:address` ({id, address}) on each change. Prints nothing for a
+ * buyer with no saved address.
+ *
+ * @param array<string,mixed> $opts `name`: the radio name, `address_id` by default
+ */
+function osc_address_picker(array $opts = array()): void
+{
+    $userId = (int) osc_logged_user_id();
+    if ($userId <= 0) {
+        return;
+    }
+    $pickerAddresses = (new \mindstellar\user\AddressBook())->all($userId);
+    if ($pickerAddresses === array()) {
+        return;
+    }
+    $pickerName = preg_replace('/[^a-z0-9_]/i', '', (string) ($opts['name'] ?? 'address_id')) ?: 'address_id';
+    require ABS_PATH . 'oc-includes/osclass/gui/parts/address-picker.php';
+}
+
+/**
+ * The "Save this address" box for a typed checkout address, ticked by default. Shown with the
+ * address fields; nothing once the address book is full.
+ *
+ * @param array<string,mixed> $opts `name`: the checkbox name, `save_address` by default
+ */
+function osc_address_save_field(array $opts = array()): void
+{
+    $userId = (int) osc_logged_user_id();
+    if ($userId <= 0 || count((new \mindstellar\user\AddressBook())->all($userId)) >= \mindstellar\user\AddressBook::MAX) {
+        return;
+    }
+    $name = preg_replace('/[^a-z0-9_]/i', '', (string) ($opts['name'] ?? 'save_address')) ?: 'save_address';
+    echo '<label class="osc-address-save" data-address-save><input type="checkbox" name="' . osc_esc_html($name) . '" value="1" checked> <span>'
+        . osc_esc_html(_m('Save this address to my address book')) . '</span></label>';
+}
+
+Plugins::addHook('user_menu_filter', static function ($options) {
+    $options = is_array($options) ? $options : array();
+    if (osc_logged_user_id() > 0 && osc_address_book_enabled() && !in_array('opt_addresses', array_column($options, 'class'), true)) {
+        $options[] = array('name' => _m('Addresses'), 'url' => osc_user_addresses_url(), 'class' => 'opt_addresses');
+    }
+
+    return $options;
+});
+
 // Priority 20, so core's billing and API entries are already in the list; entries added after it
 // are not filtered. Plugins::addHook() because this file loads before hPlugins.php.
 Plugins::addHook('user_menu_filter', 'osc_shopper_user_menu', 20);

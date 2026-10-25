@@ -165,7 +165,7 @@ harness_section('classifieds');
 $mode('classifieds');
 check('credits are on', osc_billing_credits_enabled() && osc_billing_can_buy());
 pin('the buy and wallet pages draw', array('view:user-billing-buy.php', 'view:user-billing-wallet.php'), array(shop_credits_open('buy'), shop_credits_open('')));
-pin('the account menu links Credits and Buy credits', array('opt_billing_wallet', 'opt_billing_buy'), $menu());
+pin('the account menu links Addresses, Credits and Buy credits', array('opt_addresses', 'opt_billing_wallet', 'opt_billing_buy'), $menu());
 check('the receipt links the wallet', $wallet() !== '');
 
 harness_section('shop');
@@ -187,6 +187,6 @@ pin('and the menu has no credit links', array(), array_values(array_intersect(ar
 harness_section('back to classifieds');
 $mode('classifieds');
 pin('the buy page draws again', 'view:user-billing-buy.php', shop_credits_open('buy'));
-pin('and the menu links come back', array('opt_billing_wallet', 'opt_billing_buy'), $menu());
+pin('and the menu links come back', array('opt_addresses', 'opt_billing_wallet', 'opt_billing_buy'), $menu());
 
 exit(harness_result());

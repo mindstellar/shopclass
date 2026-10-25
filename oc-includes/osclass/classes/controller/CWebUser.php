@@ -21,6 +21,7 @@ use mindstellar\exception\RefusedException;
 use mindstellar\search\UserAlerts;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
+use mindstellar\user\AddressBook;
 use mindstellar\user\Usernames;
 use mindstellar\utility\AjaxResponse;
 
@@ -47,6 +48,8 @@ class CWebUser extends WebSecBaseModel
         'items'                => 'items',
         'unsub_alert'          => 'unsubscribeAlert',
         'export'               => 'export',
+        'addresses'            => 'addresses',
+        'addresses_post'       => 'addressesPost',
         'api_access'           => 'apiAccessPage',
         'api_access_post'      => 'apiAccessPagePost',
         'delete'               => 'deleteForm',
@@ -199,6 +202,77 @@ class CWebUser extends WebSecBaseModel
         View::getInstance()->_reset('alerts');
         $this->_exportVariableToView('user', $user);
         $this->doView(osc_locate_template(array('user-alerts.php'), 'user-alerts'));
+    }
+
+    /**
+     * The address book; `edit` names the address the form opens with.
+     *
+     * @param array<string,mixed>|null $form   what was posted, shown again with $errors
+     * @param array<string,string>     $errors field => message
+     */
+    private function addresses(?array $form = null, array $errors = array()): void
+    {
+        $addresses = (new AddressBook())->all((int) osc_logged_user_id());
+        $editing   = Params::getParamString('edit', false, false);
+        if ($form === null && $editing !== '') {
+            foreach ($addresses as $address) {
+                if ($address['id'] === $editing) {
+                    $form = $address;
+                }
+            }
+        }
+        $this->_exportVariableToView('addresses', $addresses);
+        $this->_exportVariableToView('address_form', $form ?? array());
+        $this->_exportVariableToView('address_errors', $errors);
+        $this->doView(osc_locate_template(array('user-addresses.php'), 'user-addresses'));
+    }
+
+    /**
+     * Save, delete or make default one address (`do`: save, delete, default).
+     */
+    private function addressesPost(): void
+    {
+        osc_csrf_check();
+        $userId = (int) osc_logged_user_id();
+        $book   = new AddressBook();
+        $id     = Params::getParamString('id', false, false);
+        $form   = array('id' => $id);
+        foreach (array_keys(AddressBook::FIELDS) as $field) {
+            $form[$field] = Params::getParamString($field, false, false);
+        }
+        try {
+            switch (Params::getParamString('do', false, false)) {
+                case 'delete':
+                    $book->remove($userId, $id);
+                    osc_add_flash_ok_message(_m('The address has been deleted.'));
+                    break;
+                case 'default':
+                    $book->makeDefault($userId, $id);
+                    osc_add_flash_ok_message(_m('That is now your default address.'));
+                    break;
+                default:
+                    if ($id === '') {
+                        $book->add($userId, $form, Params::getParamString('default', false, false) === '1');
+                    } else {
+                        $book->update($userId, $id, $form);
+                    }
+                    osc_add_flash_ok_message(_m('The address has been saved.'));
+            }
+        } catch (InvalidException $e) {
+            $errors = array();
+            foreach ($e->errors() as $error) {
+                $errors[ltrim((string) $error['pointer'], '/')] = (string) $error['message'];
+            }
+            if (isset($errors[''])) {
+                osc_add_flash_error_message($errors['']);
+            }
+            $this->addresses($form, $errors);
+
+            return;
+        } catch (\mindstellar\exception\NotFoundException $e) {
+            osc_add_flash_error_message(_m('That address was not found.'));
+        }
+        $this->redirectTo(osc_user_addresses_url());
     }
 
     /**
