@@ -97,6 +97,16 @@ if (!function_exists('_e')) {
         echo $key;
     }
 }
+foreach (array(
+    'osc_register_script'            => '',
+    'osc_enqueue_script'             => '$GLOBALS["enqueued"][] = func_get_arg(0);',
+    'osc_asset_url_versioned'        => 'return (string) func_get_arg(0);',
+    'osc_current_admin_theme_js_url' => 'return (string) func_get_arg(0);',
+) as $fn => $body) {
+    if (!function_exists($fn)) {
+        eval('function ' . $fn . '(...$args) { ' . $body . ' }');
+    }
+}
 if (!function_exists('osc_admin_base_url')) {
     function osc_admin_base_url($index = false)
     {
@@ -1205,6 +1215,7 @@ pin(
 pin('nothing is re-registered for a save that did not happen', array(), $run['effects']);
 pin('and the stored currency is untouched', array('EUR', 'STRING'), pref($admin, 'billing_currency'));
 pin('a refused save redraws its own tab', 'pricing', __get('billing_tab'));
+check('the cash on delivery areas script is not loaded on another tab', !in_array('admin-cod-areas', $GLOBALS['enqueued'] ?? array(), true));
 
 $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' => '1'));
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
@@ -1237,6 +1248,7 @@ $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shippi
 pin('an amount that is not a number is refused', array('warning:Enter an amount, e.g. 49 or 49.50.'), flashed($run));
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
 pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
+check('the shop tab loads the cash on delivery areas script, with no inline script', in_array('admin-cod-areas', $GLOBALS['enqueued'] ?? array(), true) && !str_contains($run['drawn'], 'data-cod-chips]\')') && str_contains($run['drawn'], 'data-store="billing_cod_areas"'));
 
 seed_pref($admin, 'site_mode', 'shop');
 osc_reset_preferences();
