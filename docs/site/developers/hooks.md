@@ -355,9 +355,9 @@ Core fires 630 names. Generated from the source; do not edit by hand.
 | `email_after_auto_upgrade_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_after_auto_upgrade_description', $body, $result) ), $words ), $result` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_after_auto_upgrade_title` | filter | `$title, $result` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_after_auto_upgrade_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_after_auto_upgrade_title', $title, $result) ), $words), $result` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_alert_validation_description` | filter | `$page_description[$prefLocale]['s_text'], $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_alert_validation_description` | filter | `$template['s_text'], $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_alert_validation_description_after` | filter | `osc_mailBeauty($_body, $words), $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_alert_validation_title` | filter | `$page_description[$prefLocale]['s_title'], $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_alert_validation_title` | filter | `$template['s_title'], $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_alert_validation_title_after` | filter | `osc_mailBeauty($_title, $words), $alert, $email, $secret` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_comment_validated_description` | filter | `$content['s_text'], $aComment` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_comment_validated_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_comment_validated_description', $content['s_text'], $aComment) ), $words), $aComment` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
@@ -433,7 +433,7 @@ Core fires 630 names. Generated from the source; do not edit by hand.
 | `email_send_friend_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_send_friend_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_send_friend_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
-| `email_title` | filter | `osc_apply_filter( 'email_alert_validation_title', $page_description[$prefLocale]['s_title'], $alert, $email, $secret )` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
+| `email_title` | filter | `osc_apply_filter( 'email_alert_validation_title', $template['s_title'], $alert, $email, $secret )` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_user_forgot_pass_word_title` | filter | `$content['s_title'], $user, $password_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_user_forgot_pass_word_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_forgot_pass_word_title', $content['s_title'], $user, $password_url) ), $words ), $user, $password_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
 | `email_user_forgot_password_description` | filter | `$content['s_text'], $user, $password_url` | `oc-includes/osclass/classes/mail/CoreEmails.php` |
@@ -596,7 +596,7 @@ Core fires 630 names. Generated from the source; do not edit by hand.
 | `api_listing` | filter | `$data, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
 | `api_listing_input` | filter | `$input, $request, $credential` | `oc-includes/osclass/classes/api/write/ListingWriter.php` |
 | `api_listings_prefetch` | action | `$ids, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
-| `api_menus` | filter | `['main' => $main, 'footer' => $footer], $locale` | `oc-includes/osclass/classes/api/serializer/PageSerializer.php` |
+| `api_menus` | filter | `$menus, $locale` | `oc-includes/osclass/classes/api/serializer/PageSerializer.php` |
 | `api_problem_codes` | filter | `[]` | `oc-includes/osclass/classes/api/Problem.php` |
 | `api_rate_limit` | filter | `$limit, $credential, $route` | `oc-includes/osclass/classes/api/ratelimit/RatePolicy.php` |
 | `api_request_before` | action | `$request, $route, $credential` | `oc-includes/osclass/classes/api/Kernel.php` |
@@ -642,7 +642,7 @@ Core fires 630 names. Generated from the source; do not edit by hand.
 | `billing_receipt_details` | event | `ReceiptComposing` | `oc-includes/osclass/classes/billing/event/ReceiptComposing.php` |
 | `billing_tracking_url` | event | `TrackingUrlResolving` | `oc-includes/osclass/classes/billing/event/TrackingUrlResolving.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
-| `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', 'oc_theme', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
+| `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', 'oc_theme', 'oc_admin_browsing', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `cart_checkout_before` | event | `CheckoutStarting` | `oc-includes/osclass/classes/billing/event/CheckoutStarting.php` |
 | `cart_discount_lines` | event | `CartDiscountLines` | `oc-includes/osclass/classes/billing/event/CartDiscountLines.php` |
 | `cart_free_over` | event | `CartFreeOver` | `oc-includes/osclass/classes/billing/event/CartFreeOver.php` |
