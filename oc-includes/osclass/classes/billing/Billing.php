@@ -379,7 +379,8 @@ final class Billing
      * @param bool|null $providerAccepted Set to true when the provider accepted the refund,
      *                                    including when it could not be recorded here
      *
-     * @return CallbackResult refunded() when this call refunded the order, otherwise
+     * @return CallbackResult refunded() when this call refunded the order, refundPending()
+     *                        when the provider is still processing it, otherwise
      *                        ignored() with a reason the admin can read
      */
     public static function refundThroughGateway(Order $order, ?bool &$providerAccepted = null): CallbackResult
@@ -461,6 +462,15 @@ final class Billing
         if ($result->getOutcome() === CallbackResult::OUTCOME_IGNORED) {
             // A clear no from the provider: nothing was sent, so the button comes back.
             OrderStore::markRefundRequested($fresh->getId(), false);
+        }
+
+        if ($result->getOutcome() === CallbackResult::OUTCOME_PENDING && $result->getOrderId() === $fresh->getId()) {
+            // Sent and accepted: the sent mark stays so it is never sent twice, and the
+            // provider's webhook refunds the order when it finishes.
+            $providerAccepted = true;
+            self::log('refund pending', $fresh, $result->getExternalRef());
+
+            return $result;
         }
 
         if ($result->getOutcome() !== CallbackResult::OUTCOME_REFUNDED) {

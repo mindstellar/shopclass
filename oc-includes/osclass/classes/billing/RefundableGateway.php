@@ -24,6 +24,8 @@ interface RefundableGateway extends PaymentGateway
      *
      * Return CallbackResult::refunded() with this order's id once the provider has
      * accepted the refund; core then marks the order refunded and takes the credits back.
+     * Return CallbackResult::refundPending() when the provider took the refund but is
+     * still processing it; the order stays paid until its webhook returns refunded().
      * Return CallbackResult::ignored() with a short reason when it refused or could not
      * be reached; core changes nothing and shows the reason to the admin. A thrown
      * exception is logged and also changes nothing. Use an idempotency key, so a

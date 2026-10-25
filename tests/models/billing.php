@@ -557,6 +557,27 @@ pin('a refund for another order id is refused', CallbackResult::OUTCOME_IGNORED,
 pin('the order stays paid after a mismatched answer', Order::STATUS_PAID, $orderStatus($mismatched));
 pin('a mismatched answer takes no credits', $balance, Wallet::balance($userId));
 
+$pending = $paidRefundy(12);
+$balance = Wallet::balance($userId);
+$refundy->onRefund = static fn (Order $o): CallbackResult => CallbackResult::refundPending($o->getId(), 'processing', 're_p');
+$accepted = null;
+$result   = Billing::refundThroughGateway($pending, $accepted);
+pin('a pending answer is passed back', CallbackResult::OUTCOME_PENDING, $result->getOutcome());
+pin('with the provider\'s note', 'processing', $result->getMessage());
+check('the provider counts as having accepted it', $accepted === true);
+pin('a pending refund leaves the order paid', Order::STATUS_PAID, $orderStatus($pending));
+pin('a pending refund takes no credits', $balance, Wallet::balance($userId));
+check('the sent mark stays, so the button is gone', OrderStore::find($pending->getId())->meta(OrderStore::REFUND_REQUESTED) !== null && Billing::refundableGateway(OrderStore::find($pending->getId())) === null);
+$calls = $refundy->calls;
+Billing::refundThroughGateway($pending);
+pin('and it is never sent twice', $calls, $refundy->calls);
+$refundy->onRefund = null;
+
+$pendingOther = $paidRefundy();
+$refundy->onRefund = static fn (Order $o): CallbackResult => CallbackResult::refundPending($o->getId() + 1000);
+pin('a pending answer for another order id is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($pendingOther)->getOutcome());
+$refundy->onRefund = null;
+
 $wrongOutcome = $paidRefundy();
 $refundy->onRefund = static fn (Order $o): CallbackResult => CallbackResult::paid($o->getId());
 pin('an answer that is not a refund is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($wrongOutcome)->getOutcome());

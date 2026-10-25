@@ -40,6 +40,9 @@ final class CallbackResult
     /** Not ours, not actionable, or already handled. Core does nothing and returns 200. */
     public const OUTCOME_IGNORED = 'ignored';
 
+    /** A refund the provider accepted but has not finished. Changes no order state. */
+    public const OUTCOME_PENDING = 'pending';
+
     /**
      * @param string      $outcome     One of the OUTCOME_* constants
      * @param int|null    $orderId     Our t_billing_order id, when the payload named one
@@ -103,6 +106,21 @@ final class CallbackResult
     public static function refunded(int $orderId, ?string $externalRef = null): self
     {
         return new self(self::OUTCOME_REFUNDED, $orderId, $externalRef);
+    }
+
+    /**
+     * The provider accepted a refund and is still processing it. The order stays paid
+     * until its refund webhook returns refunded(). Return it only from refund().
+     *
+     * @param int         $orderId
+     * @param string      $message     Short note shown to the admin
+     * @param string|null $externalRef The provider's own id for the refund
+     *
+     * @return self
+     */
+    public static function refundPending(int $orderId, string $message = '', ?string $externalRef = null): self
+    {
+        return new self(self::OUTCOME_PENDING, $orderId, $externalRef, null, null, $message);
     }
 
     /**

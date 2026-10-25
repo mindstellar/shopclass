@@ -188,12 +188,15 @@ When the admin confirms, core:
   only if it is still paid;
 - on `refunded()` for this order's id, marks the order refunded and takes the credits
   back, once;
+- on `refundPending()`, for a refund the provider accepted but is still processing,
+  changes nothing and tells the admin it was sent; the order stays paid until the
+  provider's webhook returns `refunded()`;
 - on `ignored()`, changes nothing and shows your reason to the admin, so keep it short
   and free of secrets;
 - on any other answer, or an exception, changes nothing and logs it.
 
 Core marks the order as sent just before it calls `refund()`, and clears the mark only
-on `ignored()`. While the mark is set the Refund button is gone, so an unclear outcome
+on `ignored()` (`refundPending()` keeps it). While the mark is set the Refund button is gone, so an unclear outcome
 is never sent twice; the admin checks the provider and uses **Record a refund**.
 
 If the provider also sends a refund webhook, return `refunded()` from

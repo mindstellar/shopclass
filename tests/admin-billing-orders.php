@@ -267,4 +267,63 @@ check('the list drops the unpublished word once live', !str_contains($page['draw
 $page = drive('order', [], ['id' => $credits->getId()]);
 check('a credits order shows none of it', !str_contains($page['drawn'], 'Listing: ') && !str_contains($page['drawn'], 'could not be published'));
 
+harness_section('gateway refund pending');
+final class PendingRefundGateway implements \mindstellar\billing\RefundableGateway
+{
+    public ?\mindstellar\billing\CallbackResult $answer = null;
+
+    public function getId(): string
+    {
+        return 'pendingpay';
+    }
+
+    public function getName(): string
+    {
+        return 'Pending pay';
+    }
+
+    public function getSupportedCurrencies(): array
+    {
+        return array('USD');
+    }
+
+    public function isConfigured(): bool
+    {
+        return true;
+    }
+
+    public function createCheckout(Order $order): \mindstellar\billing\CheckoutIntent
+    {
+        return \mindstellar\billing\CheckoutIntent::redirect('https://example.test/pay');
+    }
+
+    public function handleCallback(array $request): \mindstellar\billing\CallbackResult
+    {
+        return \mindstellar\billing\CallbackResult::ignored();
+    }
+
+    public function refund(Order $order): \mindstellar\billing\CallbackResult
+    {
+        return $this->answer;
+    }
+}
+$pg = new PendingRefundGateway();
+\mindstellar\billing\PaymentGatewayRegistry::getInstance()->register($pg);
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$refundAnswer = static function (callable $answer) use ($pg, $make, $status): array {
+    $o = $make('pendingpay');
+    Billing::markPaid(OrderStore::find($o->getId()), 'ext_' . $o->getId());
+    $pg->answer = $answer($o->getId());
+    $page = drive('order_refund_gateway', ['id' => $o->getId()]);
+
+    return [implode(' | ', $page['flashes']), $status($o->getId())];
+};
+[$flash, $st] = $refundAnswer(static fn (int $id) => \mindstellar\billing\CallbackResult::refundPending($id, 'Razorpay is processing it.'));
+pin('a pending refund shows an info flash with the provider note', 'info:The refund was sent. Razorpay is processing it.', $flash);
+pin('and leaves the order paid', 'paid', $st);
+[$flash] = $refundAnswer(static fn (int $id) => \mindstellar\billing\CallbackResult::refundPending($id));
+check('without a note it uses the core words', str_starts_with($flash, 'info:The refund was sent. The order changes to refunded'));
+[$flash] = $refundAnswer(static fn (int $id) => \mindstellar\billing\CallbackResult::ignored('card expired'));
+pin('a refusal is still an error', 'error:The refund was not made: card expired', $flash);
+
 exit(harness_result());
