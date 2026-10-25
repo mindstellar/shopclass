@@ -78,6 +78,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
 - A listing waiting for payment takes no slot.
 - Card orders take their stock at placement and are cancelled if still unpaid after **Hold stock for card payments (minutes)** (Settings → Billing → Shop, 15 by default).
+- Shop mode hides credit packages: the Packages and Credits menus, the buy-credits and pay-to-publish pages (404), the account credit links and `POST /listings/{id}/publish` (404). Switching back to classifieds brings them back.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.

@@ -170,10 +170,21 @@ pin('nothing waits now', 0, OrderStore::toShipCount());
 [$billing, $orders, $url] = $menu();
 check('at zero there is no badge and Orders opens the plain list', !str_contains($billing, 'osc-count') && !str_contains($orders, 'osc-count') && !str_contains($url, 'toShip'));
 
+harness_section('credits in the menu');
+$credits = static function (): array {
+    $m = new AdminMenu();
+    $m->init();
+    $sub = $m->get_array_menu()['billing']['sub'] ?? [];
+
+    return [isset($sub['billing_orders']), isset($sub['billing_packages']), isset($sub['billing_credits'])];
+};
+pin('classifieds: Orders, Packages and Credits', [true, true, true], $credits());
+
 harness_section('the dashboard card');
 Preference::getInstance()->set('site_mode', 'shop');
 scratchdb_forget_cache();
 osc_reset_preferences();
+pin('shop mode: Orders stays, Packages and Credits are hidden', [true, false, false], $credits());
 $first  = $goods('offline', 11);
 $second = $goods('offline', 12);
 $third  = $goods('offline', 13);

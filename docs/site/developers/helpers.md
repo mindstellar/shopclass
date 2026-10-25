@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1237 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1239 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -177,7 +177,7 @@ Core defines 1237 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (85)
+### hBilling (86)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -203,6 +203,7 @@ Core defines 1237 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_free_over()` | Subtotal from which delivery is free, in micros. 0 = never. |
 | `osc_billing_gateway_name(string $gatewayId)` | The gateway's display name for an order list, falling back to the stored id when the plugin that took the payment is no longer installed. |
 | `osc_billing_gateway_setup_url($gateway)` | Where an admin sets a payment method up, or '' when the gateway does not say. A gateway names it with an optional settingsUrl(): ?string method; one without it has no link. |
+| `osc_billing_gateways()` | The payment methods that can take a credit package, which is charged in the billing currency. |
 | `osc_billing_highlight_credits()` | Credit price of highlighting a listing. |
 | `osc_billing_highlight_days()` | Days a highlight runs for. |
 | `osc_billing_highlight_enabled()` | Whether highlighting is registered as a purchasable upgrade at all. |
@@ -869,7 +870,7 @@ Core defines 1237 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (137)
+### hPreference (138)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -883,6 +884,7 @@ Core defines 1237 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_allowed_extension()` | Gets allowed extensions of uploads |
 | `osc_auto_cron()` | Gets if autocron is enabled |
 | `osc_auto_update()` | Gets auto update settings |
+| `osc_billing_credits_enabled()` | Whether credits are in use: billing is on and the site is not a shop. Shoppers cannot post, so a shop hides packages, credits and paying to publish; their data stays. |
 | `osc_billing_enabled()` | Whether the billing section is switched on. |
 | `osc_captcha_provider_pref()` | Gets the configured captcha provider preference. |
 | `osc_comment_ratings_enabled()` | Whether a comment may carry a star rating. Until an admin saves the choice, shops allow it and classifieds sites do not. |

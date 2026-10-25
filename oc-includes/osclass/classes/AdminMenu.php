@@ -234,20 +234,22 @@ class AdminMenu
                 null,
                 array(osc_admin_base_url(true) . '?page=billing')
             );
-            $this->add_submenu(
-                'billing',
-                __('Packages'),
-                osc_admin_base_url(true) . '?page=billing&action=packages',
-                'billing_packages',
-                'administrator'
-            );
-            $this->add_submenu(
-                'billing',
-                __('Credits'),
-                osc_admin_base_url(true) . '?page=billing&action=credits',
-                'billing_credits',
-                'administrator'
-            );
+            if (osc_billing_credits_enabled()) {
+                $this->add_submenu(
+                    'billing',
+                    __('Packages'),
+                    osc_admin_base_url(true) . '?page=billing&action=packages',
+                    'billing_packages',
+                    'administrator'
+                );
+                $this->add_submenu(
+                    'billing',
+                    __('Credits'),
+                    osc_admin_base_url(true) . '?page=billing&action=credits',
+                    'billing_credits',
+                    'administrator'
+                );
+            }
             // Plugin pages that belong to selling (Shipping, Tax, ...) land before this entry.
             $this->add_submenu(
                 'billing',

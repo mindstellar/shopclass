@@ -15,6 +15,7 @@ use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\boot\CoreServices;
 use mindstellar\currency\Money;
 use mindstellar\mail\CoreEmails;
+use mindstellar\site\SiteMode;
 use RuntimeException;
 use Throwable;
 use User;
@@ -424,7 +425,7 @@ final class Receipts
             'email'    => (string) ($user['s_email'] ?? ''),
             'name'     => (string) ($user['s_name'] ?? ''),
             'url'      => self::url($order->getId()),
-            'wallet'   => osc_billing_wallet_url(),
+            'wallet'   => osc_site_mode() === SiteMode::SHOP ? '' : osc_billing_wallet_url(),
             'business' => self::businessDetails(),
             'refunded' => $order->getStatus() === Order::STATUS_REFUNDED,
             'details'  => $order->isGoods() ? self::details($order) : null,

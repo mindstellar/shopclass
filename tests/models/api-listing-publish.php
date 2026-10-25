@@ -222,4 +222,15 @@ osc_reset_preferences();
 osc_remove_hook('hook_email_admin_new_item', $broken);
 pin('the publish still commits: 200, live, credits spent', [200, 'active', 2], [$r->status(), $r->body()['data']['status'] ?? null, Wallet::balance($eve)]);
 
+harness_section('a shop has no pay step');
+
+[$fay, $fayKey, , $fayHeld] = $seller(5);
+osc_set_preference('site_mode', 'shop');
+osc_reset_preferences();
+$r = $call('POST', 'listings/' . $fayHeld . '/publish', [], $fayKey);
+pin('shop mode: 404 not_found, nothing spent, still held', ['404 not_found', 5, null], [$code($r), Wallet::balance($fay), $firstPub($fayHeld)]);
+osc_set_preference('site_mode', 'classifieds');
+osc_reset_preferences();
+pin('back to classifieds: 200 and live', [200, 'active'], [($r = $call('POST', 'listings/' . $fayHeld . '/publish', [], $fayKey))->status(), $r->body()['data']['status'] ?? null]);
+
 exit(harness_result());

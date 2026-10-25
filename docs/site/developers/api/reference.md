@@ -1405,7 +1405,7 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 | POST | `/listings/{id}/photos` | user | `listings:write` | Add a photo to your listing |
 | GET | `/listings/{id}/photos/{photo}` | public | `listings:read` | One photo of a listing |
 | DELETE | `/listings/{id}/photos/{photo}` | user | `listings:write` | Remove a photo from your listing |
-| POST | `/listings/{id}/publish` | user | `listings:write` | Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of. Needs orders:write too |
+| POST | `/listings/{id}/publish` | user | `listings:write` | Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of. Needs orders:write too; 404 on a shop |
 | GET | `/listings/{id}/related` | public | `listings:read` | Live listings like this one, best first: same category and shared title words, or what a search plugin picks |
 | POST | `/photos` | user | `listings:write` | Upload a photo for a listing you are about to post; its token lasts two hours. 200, not 201: the token names no resource to read |
 
@@ -1601,7 +1601,7 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 
 ### POST `/listings/{id}/publish`
 
-Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of. Needs orders:write too
+Publish a listing that waits for payment: with your credits, or by starting an order for the credits it is short of. Needs orders:write too; 404 on a shop
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|

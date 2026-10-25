@@ -218,7 +218,9 @@ harness_section('shop mode, a shopper');
 $signIn($amy);
 check('Amy is a shopper', osc_is_shopper());
 foreach ($hidden as $name => [$class, $page, $action, $get, $post]) {
-    pin("$name sends her to the dashboard", $dashboard, $drive($class, $page, $action, $get, $post)['redirect']);
+    // A shop has no credits pages at all, so those are 404 rather than a redirect.
+    $billing = $class === 'TestShopperBilling';
+    pin($billing ? "$name is 404" : "$name sends her to the dashboard", $billing ? '404' : $dashboard, $drive($class, $page, $action, $get, $post)['redirect']);
 }
 pin('the held listing is untouched', null, $admin->query("SELECT dt_first_pub_date FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0]);
 $orders = $drive('TestShopperBilling', 'billing', 'orders');
