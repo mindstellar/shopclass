@@ -161,6 +161,53 @@ final class ShopSetup
     }
 
     /**
+     * The plugins whose box starts ticked.
+     *
+     * @return list<string>
+     */
+    public static function defaultPlugins(): array
+    {
+        return array_keys(array_filter(self::PLUGINS));
+    }
+
+    /**
+     * The shop install in order: Aisle, then each chosen plugin the catalogue has, then shop mode.
+     *
+     * @param list<string> $plugins the chosen plugin slugs
+     *
+     * @return list<array{action:string, type:string, slug:string, name:string}> action is install_package or activate_theme
+     */
+    public function steps(array $plugins): array
+    {
+        $steps = [['action' => 'install_package', 'type' => 'theme', 'slug' => self::THEME, 'name' => 'Aisle']];
+        foreach (array_keys(self::PLUGINS) as $slug) {
+            if (in_array($slug, $plugins, true) && $this->pluginEntry($slug) !== null) {
+                $name    = (string) ($this->pluginIndex[$slug]['name'] ?? $slug);
+                $steps[] = ['action' => 'install_package', 'type' => 'plugin', 'slug' => $slug, 'name' => $name];
+            }
+        }
+        $steps[] = ['action' => 'activate_theme', 'type' => 'theme', 'slug' => self::THEME, 'name' => 'Aisle'];
+
+        return $steps;
+    }
+
+    /**
+     * Run one step from steps().
+     *
+     * @param array{action:string, type:string, slug:string} $step
+     *
+     * @return array{ok:bool, message:string}
+     */
+    public function run(array $step): array
+    {
+        if ($step['action'] === 'activate_theme') {
+            return $this->activate();
+        }
+
+        return $step['type'] === 'theme' ? $this->installTheme() : $this->installPlugin($step['slug']);
+    }
+
+    /**
      * Download Aisle, unless it is on disk already.
      *
      * @return array{ok:bool, message:string}

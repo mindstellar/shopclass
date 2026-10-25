@@ -218,7 +218,7 @@ class Cli
                 . "             --web-url= --site-title= --locale=\n"
                 . "  Admin:     OSC_ADMIN_EMAIL [OSC_ADMIN_USER=admin] [OSC_ADMIN_PASSWORD] [OSC_ADMIN_NAME]\n"
                 . "             --admin-email= --admin-user= --admin-password= --admin-name=\n"
-                . "  Content:   [--site-type=classifieds|shop] [--sample-data] [--sample-photos=<zip>]\n"
+                . "  Content:   [--site-type=classifieds|shop] [--plugins=<slug,slug>] [--sample-data] [--sample-photos=<zip>]\n"
             );
 
             return 2;
@@ -281,6 +281,16 @@ class Cli
         $siteType   = (string) $opt('site-type', $env('OSC_SITE_TYPE'), 'classifieds');
         $sampleData = array_key_exists('sample-data', $args) || $env('OSC_SAMPLE_DATA') === '1';
         $photosZip  = $opt('sample-photos', null);
+        $plugins    = ShopSetup::defaultPlugins();
+        if (array_key_exists('plugins', $args)) {
+            $plugins = is_string($args['plugins']) ? array_values(array_filter(array_map('trim', explode(',', $args['plugins'])))) : array();
+            $unknown = array_diff($plugins, array_keys(ShopSetup::PLUGINS));
+            if ($unknown !== array()) {
+                $this->err('Unknown --plugins entry: ' . implode(', ', $unknown) . '. Use any of: ' . implode(', ', array_keys(ShopSetup::PLUGINS)) . ".\n");
+
+                return 2;
+            }
+        }
 
         $missing = [];
         foreach (['DB_NAME/--db-name' => $dbName, 'DB_USER/--db-user' => $dbUser,
@@ -412,7 +422,7 @@ class Cli
             $this->err("Sample photos could not be downloaded, so the sample listings have no photos.\n");
         }
         if ($siteType === SiteMode::SHOP) {
-            $this->installShop();
+            $this->installShop($plugins);
         }
 
         // Finalize: writes the osclass_installed sentinel LAST.
@@ -429,40 +439,33 @@ class Cli
     }
 
     /**
-     * Install Aisle and the shop plugins ticked by default, then turn on shop mode. Any failure
-     * leaves the site a classifieds site or a plugin off, and is reported.
+     * Install Aisle and the chosen shop plugins, then turn on shop mode, in the order ShopSetup::steps()
+     * gives. Any failure leaves the site a classifieds site or a plugin off, and is reported.
+     *
+     * @param list<string> $plugins
      *
      * @return void
      */
-    private function installShop(): void
+    private function installShop(array $plugins): void
     {
         install_load_app_helpers();
         $setup = ShopSetup::probe();
-        $offer = $setup->offer();
-        if (!$offer['available']) {
+        if (!$setup->offer()['available']) {
             $this->err("The Aisle shop theme is not available (no internet, not in the market yet, or package installs are off). The site stays a classifieds site.\n");
 
             return;
         }
-        $this->out("Installing the Aisle theme\n");
-        $theme = $setup->installTheme();
-        if (!$theme['ok']) {
-            $this->err('Aisle could not be installed: ' . $theme['message'] . " The site stays a classifieds site.\n");
-
-            return;
-        }
-        foreach ($offer['plugins'] as $plugin) {
-            if (!$plugin['checked']) {
-                continue;
+        foreach ($setup->steps($plugins) as $step) {
+            if ($step['action'] === 'install_package') {
+                $this->out(sprintf("Installing %s\n", $step['name']));
             }
-            $this->out(sprintf("Installing the %s plugin\n", $plugin['name']));
-            $result = $setup->installPlugin($plugin['slug']);
+            $result = $setup->run($step);
             if (!$result['ok']) {
-                $this->err(sprintf("%s could not be installed: %s\n", $plugin['name'], $result['message']));
+                $this->err(sprintf("%s: %s\n", $step['name'], $result['message']));
+            } elseif ($step['action'] === 'activate_theme') {
+                $this->out($result['message'] . "\n");
             }
         }
-        $live = $setup->activate();
-        $live['ok'] ? $this->out($live['message'] . "\n") : $this->err($live['message'] . "\n");
     }
 
     /**

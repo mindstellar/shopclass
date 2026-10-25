@@ -45,16 +45,11 @@ if ($country_list === array()) {
     $internet_error = true;
 }
 
-// The packages the shop set-up installs after the form is sent, one request each.
-$ins_queue  = array();
+// The shop set-up steps run after the form is sent, one request each.
 $ins_choice = install_site_choice();
-if ($ins_choice['type'] === 'shop') {
-    $ins_queue[] = array('type' => 'theme', 'slug' => mindstellar\install\ShopSetup::THEME, 'name' => 'Aisle');
-    $ins_names   = array_column(mindstellar\install\ShopSetup::fromCache()->offer()['plugins'], 'name', 'slug');
-    foreach ((array) $ins_choice['plugins'] as $ins_slug) {
-        $ins_queue[] = array('type' => 'plugin', 'slug' => $ins_slug, 'name' => (string) ($ins_names[$ins_slug] ?? $ins_slug));
-    }
-}
+$ins_queue  = $ins_choice['type'] === 'shop'
+    ? mindstellar\install\ShopSetup::fromCache()->steps((array) $ins_choice['plugins'])
+    : array();
 ?>
 <h1 class="ins-headline"><?php _e('Set up your site'); ?></h1>
 

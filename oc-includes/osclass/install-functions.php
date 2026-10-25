@@ -1627,7 +1627,8 @@ function install_ajax_allowed(): bool
 
 /**
  * One step of a shop install, one package per request: install_package (type theme or plugin)
- * or activate_theme. Only Aisle and the plugins ticked on the site-type step are accepted.
+ * or activate_theme. Only the steps ShopSetup::steps() lists for the plugins ticked on the
+ * site-type step are accepted.
  *
  * @param string                              $action install_package or activate_theme
  * @param string                              $type   theme or plugin
@@ -1638,37 +1639,40 @@ function install_ajax_allowed(): bool
  */
 function install_shop_step(string $action, string $type, string $slug, ?\mindstellar\install\ShopSetup $setup = null): array
 {
-    $choice = install_site_choice();
-    $theme  = \mindstellar\install\ShopSetup::THEME;
-    if ($action === 'install_package' && $type === 'theme' && $slug === $theme) {
-        $allowed = true;
-    } elseif ($action === 'install_package' && $type === 'plugin') {
-        $allowed = in_array($slug, (array) $choice['plugins'], true);
-    } else {
-        $allowed = $action === 'activate_theme';
-        $slug    = $theme;
-    }
-    if ($choice['type'] !== SiteMode::SHOP || !$allowed) {
-        return array('ok' => false, 'message' => __('This package was not chosen for this site.'));
+    $choice  = install_site_choice();
+    $refused = array('ok' => false, 'message' => __('This package was not chosen for this site.'));
+    if ($choice['type'] !== SiteMode::SHOP) {
+        return $refused;
     }
 
+    $step = null;
     try {
         $setup ??= \mindstellar\install\ShopSetup::fromCache();
-        if ($action === 'activate_theme') {
-            $result = $setup->activate();
-        } else {
-            $result = $type === 'theme' ? $setup->installTheme() : $setup->installPlugin($slug);
+        foreach ($setup->steps((array) $choice['plugins']) as $candidate) {
+            if ($candidate['action'] === $action
+                && ($action === 'activate_theme' || ($candidate['type'] === $type && $candidate['slug'] === $slug))
+            ) {
+                $step = $candidate;
+                break;
+            }
         }
+        if ($step === null) {
+            return $refused;
+        }
+        $result = $setup->run($step);
     } catch (\Throwable $e) {
         error_log('Shopclass install: setting up ' . $slug . ' failed: ' . $e->getMessage());
         $result = array('ok' => false, 'message' => __('Something went wrong while setting this up.'));
     }
+    if ($step === null) {
+        return $result;
+    }
 
     $session = Session::getInstance();
     $failed  = (array) ($session->_get('install_shop_failed') ?: array());
-    unset($failed[$slug]);
+    unset($failed[$step['slug']]);
     if (!$result['ok']) {
-        $failed[$slug] = array('type' => $type === 'plugin' ? 'plugin' : 'theme', 'message' => $result['message']);
+        $failed[$step['slug']] = array('type' => $step['type'], 'message' => $result['message']);
     }
     $session->_set('install_shop_failed', $failed);
 

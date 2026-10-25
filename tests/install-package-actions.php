@@ -118,6 +118,14 @@ $loc = (string) file_get_contents(LIB_PATH . 'osclass/install-location.php');
 check('install-location.php checks the guard before any shop step', strpos($loc, 'install_ajax_allowed()') !== false
     && strpos($loc, 'install_ajax_allowed()') < strpos($loc, 'install_shop_step('));
 
+harness_section('one sequence');
+[$setup] = $make();
+$order   = array_map(static fn (array $s): string => $s['action'] . ':' . $s['slug'], $setup->steps(array('razorpay', 'shipping', 'tax')));
+check('Aisle, then the chosen plugins the catalogue has in their order, then shop mode', $order === array(
+    'install_package:aisle', 'install_package:shipping', 'install_package:razorpay', 'activate_theme:aisle',
+));
+check('the default plugins are the ticked ones', ShopSetup::defaultPlugins() === array('shipping', 'tax', 'promotions', 'shop-emails', 'digital-goods'));
+
 harness_section('the allow-list');
 [$setup, $log] = $make();
 $log['aisle'] = true;

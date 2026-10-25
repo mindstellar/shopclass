@@ -458,18 +458,19 @@
                         .replace('%2$s', String(sampleBatches)),
                 });
             }
-            queue.forEach(function (item, index) {
-                steps.push({
-                    fields: { action: 'install_package', type: item.type, slug: item.slug },
-                    label: text('installing', 'Installing %1$s… (%2$s of %3$s)')
-                        .replace('%1$s', item.name)
-                        .replace('%2$s', String(index + 1))
-                        .replace('%3$s', String(queue.length)),
-                });
+            var packages = queue.filter(function (item) {
+                return item.action === 'install_package';
             });
-            if (queue.length) {
-                steps.push({ fields: { action: 'activate_theme' }, label: text('shopMode', 'Turning on shop mode…') });
-            }
+            queue.forEach(function (item) {
+                var label = text('shopMode', 'Turning on shop mode…');
+                if (item.action === 'install_package') {
+                    label = text('installing', 'Installing %1$s… (%2$s of %3$s)')
+                        .replace('%1$s', item.name)
+                        .replace('%2$s', String(packages.indexOf(item) + 1))
+                        .replace('%3$s', String(packages.length));
+                }
+                steps.push({ fields: { action: item.action, type: item.type, slug: item.slug }, label: label });
+            });
             return steps;
         }
 
