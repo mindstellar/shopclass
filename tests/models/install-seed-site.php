@@ -60,7 +60,7 @@ check('still no listings', $count("SELECT COUNT(*) FROM {$p}t_item") === 0);
 
 harness_section('classifieds with sample data');
 $fresh();
-check('reports success', install_seed_site('classifieds', true) === true);
+check('reports success', install_seed_site('classifieds', true, new \mindstellar\install\SamplePhotos('/nonexistent.zip', '', '', sys_get_temp_dir())) === true);
 check('103 categories', $count("SELECT COUNT(*) FROM {$p}t_category") === 103);
 check('26 listings', $count("SELECT COUNT(*) FROM {$p}t_item") === 26);
 

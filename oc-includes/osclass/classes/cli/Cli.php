@@ -16,6 +16,7 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
 use mindstellar\database\Db;
+use mindstellar\install\SamplePhotos;
 use mindstellar\install\ShopSetup;
 use mindstellar\language\LanguageService;
 use mindstellar\market\Catalog;
@@ -216,7 +217,7 @@ class Cli
                 . "             --web-url= --site-title= --locale=\n"
                 . "  Admin:     OSC_ADMIN_EMAIL [OSC_ADMIN_USER=admin] [OSC_ADMIN_PASSWORD] [OSC_ADMIN_NAME]\n"
                 . "             --admin-email= --admin-user= --admin-password= --admin-name=\n"
-                . "  Content:   [--site-type=classifieds|shop] [--sample-data]\n"
+                . "  Content:   [--site-type=classifieds|shop] [--sample-data] [--sample-photos=<zip>]\n"
             );
 
             return 2;
@@ -278,6 +279,7 @@ class Cli
         $createDb   = array_key_exists('create-db', $args);
         $siteType   = (string) $opt('site-type', $env('OSC_SITE_TYPE'), 'classifieds');
         $sampleData = array_key_exists('sample-data', $args) || $env('OSC_SAMPLE_DATA') === '1';
+        $photosZip  = $opt('sample-photos', null);
 
         $missing = [];
         foreach (['DB_NAME/--db-name' => $dbName, 'DB_USER/--db-user' => $dbUser,
@@ -401,8 +403,12 @@ class Cli
         }
 
         install_load_seed_helpers();
-        if (!install_seed_site($siteType, $sampleData)) {
+        $photos = new SamplePhotos($photosZip);
+        if (!install_seed_site($siteType, $sampleData, $photos)) {
             $this->err("Starter categories or sample data could not be fully added; see the error log.\n");
+        }
+        if ($photos->missing()) {
+            $this->err("Sample photos could not be downloaded, so the sample listings have no photos.\n");
         }
         if ($siteType === 'shop') {
             $this->installShop();

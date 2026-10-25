@@ -1017,7 +1017,7 @@ function install_seed_categories(string $type): int
  * Each step is non-fatal; what went wrong comes back in 'errors'.
  *
  * @param string      $type     'classifieds' or 'shop'
- * @param string|null $imageDir folder of photos named like the sample's 'image' keys; the bundled pack when null
+ * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
  *
  * @return array{listings: int, fields: int, errors: string[]}
  * @throws \InvalidArgumentException when the type is unknown
@@ -1070,7 +1070,6 @@ function install_seed_sample(string $type, ?string $imageDir = null): array
 
     $service = new \mindstellar\listing\ListingService();
     $actor   = \mindstellar\auth\Actor::admin(1, '127.0.0.1');
-    $imgDir  = $imageDir ?? LIB_PATH . 'osclass/installer/sample/img/';
     foreach (require LIB_PATH . 'osclass/installer/data/sample-' . $type . '.php' as $row) {
         $copy = null;
         try {
@@ -1095,8 +1094,8 @@ function install_seed_sample(string $type, ?string $imageDir = null): array
                 $form['product'] = array('sell' => 1, 'stock' => $row['stock']);
             }
             // A photo is moved into the listing and deleted from where it was, so give it a copy.
-            $source = $imgDir . $row['image'] . '.webp';
-            if (is_file($source)) {
+            $source = $imageDir . $row['image'] . '.webp';
+            if ($imageDir !== null && is_file($source)) {
                 $copy = tempnam(sys_get_temp_dir(), 'sample');
                 copy($source, $copy);
                 $form['photos'] = array($copy);
@@ -1149,12 +1148,13 @@ function install_load_seed_helpers(): void
  * Write what the Your-site step chose: the category tree, the example page and, if asked, the sample data.
  * Non-fatal: a failure is logged and flagged for the finish screen, and the site still installs.
  *
- * @param string $type   'classifieds' or 'shop'
- * @param bool   $sample add sample custom fields and listings
+ * @param string                                  $type   'classifieds' or 'shop'
+ * @param bool                                    $sample add sample custom fields and listings
+ * @param \mindstellar\install\SamplePhotos|null $photos where the sample photos come from; the pinned download when null
  *
  * @return bool True when everything was written
  */
-function install_seed_site(string $type, bool $sample): bool
+function install_seed_site(string $type, bool $sample, ?\mindstellar\install\SamplePhotos $photos = null): bool
 {
     // The Your-site step can be sent twice; the second call finds the tree and stops.
     if (\mindstellar\database\Db::selectOne('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_category LIMIT 1') !== null) {
@@ -1169,8 +1169,9 @@ function install_seed_site(string $type, bool $sample): bool
         $ok = false;
     }
     if ($sample && $ok) {
+        $photos ??= new \mindstellar\install\SamplePhotos();
         try {
-            $result = install_seed_sample($type);
+            $result = install_seed_sample($type, $photos->fetch());
             if ($result['errors'] !== array()) {
                 error_log('Shopclass install: sample data was added with errors: ' . implode('; ', $result['errors']));
                 $ok = $result['listings'] > 0;
@@ -1178,6 +1179,8 @@ function install_seed_site(string $type, bool $sample): bool
         } catch (\Throwable $e) {
             error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
             $ok = false;
+        } finally {
+            $photos->clean();
         }
     }
     if (!$ok) {

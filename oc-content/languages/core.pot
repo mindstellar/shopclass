@@ -11457,6 +11457,12 @@ msgstr ""
 msgid "Same as parent (%s)"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid ""
+"Sample photos could not be downloaded, so the sample listings have no "
+"photos."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Sat"
 msgstr ""
