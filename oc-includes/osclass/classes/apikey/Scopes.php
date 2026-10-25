@@ -49,6 +49,8 @@ final class Scopes
         'orders:write'    => 'Place and cancel own orders.',
         'cart:read'       => 'Read own saved cart.',
         'cart:write'      => 'Save own cart.',
+        'addresses:read'  => 'Read own address book.',
+        'addresses:write' => 'Add, edit and delete own saved addresses.',
         'conversations:read'  => 'Read own conversations and messages.',
         'conversations:write' => 'Send messages, mark read, block and report.',
         'account:read'    => 'Read own profile and sessions.',
@@ -68,7 +70,7 @@ final class Scopes
     public const USER = [
         'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:read', 'alerts:write',
         'account:read', 'account:write', 'wishlist:read', 'wishlist:write', 'orders:read', 'orders:write',
-        'cart:read', 'cart:write', 'conversations:read', 'conversations:write',
+        'cart:read', 'cart:write', 'addresses:read', 'addresses:write', 'conversations:read', 'conversations:write',
     ];
 
     public const ADMIN = [
@@ -95,6 +97,7 @@ final class Scopes
         'wishlist:write' => ['wishlist:read'],
         'orders:write'   => ['orders:read'],
         'cart:write'     => ['cart:read'],
+        'addresses:write' => ['addresses:read'],
         'conversations:write' => ['conversations:read'],
     ];
 

@@ -19,6 +19,7 @@ use mindstellar\container\Container;
 use mindstellar\database\Db;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\exception\InvalidException;
+use mindstellar\user\AddressBook;
 use mindstellar\user\UserStore;
 
 /**
@@ -66,7 +67,7 @@ final class GoodsCheckout
      *
      * @return array{order:Order,next:CheckoutIntent}
      * @throws InvalidException with `/lines/n` (not_buyable, out_of_stock, qty), `/lines` (empty),
-     *                          `/address/<field>`, `/shipping_method` (unknown), `/gateway` (unavailable, too_many_open),
+     *                          `/address/<field>`, `/address/id` (unknown), `/shipping_method` (unknown), `/gateway` (unavailable, too_many_open),
      *                          or `rejected` at a `cart_problems` entry's pointer, with its message
      * @throws \mindstellar\database\DbException
      */
@@ -79,8 +80,8 @@ final class GoodsCheckout
         if (!osc_billing_enabled()) {
             throw new InvalidException('/gateway', 'unavailable', _m('This payment method is not available.'));
         }
-        $raw     = $address;
-        $address = self::address($raw, false);
+        [$raw, $save] = self::chosenAddress($userId, $address);
+        $address      = self::address($raw, false);
 
         $quote  = $this->pricer->quote($lines, array(
             'address'         => $address,
@@ -92,6 +93,9 @@ final class GoodsCheckout
         $ships = $quote->needsShipping();
         if ($ships) {
             self::address($raw, true);
+            if ($save) {
+                AddressBook::check($raw, '/address');
+            }
         }
         $errors = array();
         foreach ($quote->problems() as $problem) {
@@ -161,9 +165,40 @@ final class GoodsCheckout
             OrderStore::cancel($order->getId());
             throw new InvalidException('/gateway', 'unavailable', _m('This payment method is not available right now. Try another.'));
         }
+        if ($save && $ships) {
+            try {
+                (new AddressBook())->keep($userId, $raw);
+            } catch (\mindstellar\database\DbException $e) {
+                // The order is placed; a failed save must not report it as failed.
+                trigger_error('Address book: ' . $e->getMessage(), E_USER_WARNING);
+            }
+        }
         CoreServices::dispatcher()->dispatch(new OrderPlaced($order->getId(), $userId));
 
         return array('order' => $order, 'next' => $intent);
+    }
+
+    /**
+     * The address to deliver to, and whether to save it: a saved address by `id`, or the typed one.
+     *
+     * @param array<string,mixed> $address
+     *
+     * @return array{0:array<string,mixed>,1:bool}
+     * @throws InvalidException `/address/id` unknown for an id that is not one of the buyer's
+     * @throws \mindstellar\database\DbException
+     */
+    private static function chosenAddress(int $userId, array $address): array
+    {
+        $id = $address['id'] ?? null;
+        if ($id === null || $id === '') {
+            return array($address, ($address['save'] ?? false) === true);
+        }
+        $saved = is_string($id) ? (new AddressBook())->find($userId, $id) : null;
+        if ($saved === null) {
+            throw new InvalidException('/address/id', 'unknown', _m('That address is not in your address book any more.'));
+        }
+
+        return array(AddressBook::forOrder($saved), false);
     }
 
     /**

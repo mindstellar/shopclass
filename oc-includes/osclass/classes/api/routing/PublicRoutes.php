@@ -15,6 +15,7 @@ namespace mindstellar\api\routing;
 use mindstellar\api\controller\AccountController;
 use mindstellar\api\controller\AccountKeysController;
 use mindstellar\api\controller\AccountPushController;
+use mindstellar\api\controller\AddressesController;
 use mindstellar\api\controller\AlertsController;
 use mindstellar\api\controller\AuthController;
 use mindstellar\api\controller\CartController;
@@ -561,6 +562,52 @@ final class PublicRoutes
                 auth: RouteSpec::AUTH_USER,
                 scope: 'wishlist:write',
                 status: 204
+            ),
+            'GET account/addresses' => RouteSpec::read(
+                handler: [AddressesController::class, 'index'],
+                tag: 'Account',
+                summary: 'Your saved delivery addresses, the default first',
+                response: 'AddressList',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'addresses:read'
+            ),
+            'POST account/addresses' => RouteSpec::write(
+                handler: [AddressesController::class, 'create'],
+                tag: 'Account',
+                summary: 'Save an address; the first one, or one sent with default true, becomes the default',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'addresses:write',
+                body: 'AddressInput',
+                response: 'AddressDocument',
+                status: 201
+            ),
+            'PUT account/addresses/{address}' => RouteSpec::write(
+                handler: [AddressesController::class, 'update'],
+                tag: 'Account',
+                summary: 'Replace one saved address\'s fields',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'addresses:write',
+                body: 'AddressInput',
+                response: 'AddressDocument',
+                errors: [404]
+            ),
+            'DELETE account/addresses/{address}' => RouteSpec::write(
+                handler: [AddressesController::class, 'delete'],
+                tag: 'Account',
+                summary: 'Delete a saved address; deleting the default makes the next one the default',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'addresses:write',
+                status: 204,
+                errors: [404]
+            ),
+            'POST account/addresses/{address}/default' => RouteSpec::write(
+                handler: [AddressesController::class, 'makeDefault'],
+                tag: 'Account',
+                summary: 'Make a saved address the default; it becomes the account\'s own address and the old default moves to the list',
+                auth: RouteSpec::AUTH_USER,
+                scope: 'addresses:write',
+                response: 'AddressList',
+                errors: [404]
             ),
             'GET cart/quote' => RouteSpec::read(
                 handler: [OrdersController::class, 'quote'],

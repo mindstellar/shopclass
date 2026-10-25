@@ -178,6 +178,7 @@ foreach ($coreTable->all() as $key => $route) {
 ksort($routeTable);
 ksort($adminTable);
 pin('the core table needs no database; every route names its auth and scope', [
+    'DELETE account/addresses/{address}' => 'user addresses:write',
     'DELETE account/alerts/{id}'        => 'user alerts:write',
     'DELETE account/conversations/{id}/block' => 'user conversations:write',
     'DELETE account/keys/{id}'          => 'user account:write',
@@ -189,6 +190,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'DELETE listings/{id}/photos/{photo}' => 'user listings:write',
     'GET '                              => 'public listings:read',
     'GET account'                       => 'user account:read',
+    'GET account/addresses'             => 'user addresses:read',
     'GET account/alerts'                => 'user alerts:read',
     'GET account/alerts/{id}'           => 'user alerts:read',
     'GET account/cart'                  => 'user cart:read',
@@ -230,6 +232,8 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET users/{id}/listings'           => 'public listings:read',
     'PATCH account'                     => 'user account:write',
     'PATCH listings/{id}'               => 'user listings:write',
+    'POST account/addresses'            => 'user addresses:write',
+    'POST account/addresses/{address}/default' => 'user addresses:write',
     'POST account/alerts'               => 'user alerts:write',
     'POST account/conversations'        => 'user conversations:write',
     'POST account/conversations/{id}/block' => 'user conversations:write',
@@ -251,6 +255,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'POST listings/{id}/publish'        => 'user listings:write',
     'POST photos'                       => 'user listings:write',
     'POST users'                        => 'none -',
+    'PUT account/addresses/{address}'   => 'user addresses:write',
     'PUT account/cart'                  => 'user cart:write',
     'PUT account/push-subscriptions'    => 'user conversations:write',
     'PUT account/wishlist'              => 'user wishlist:write',

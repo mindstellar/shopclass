@@ -232,6 +232,10 @@ function meta_title()
                 case ('delete'):
                     $text = __('Delete your account');
                     break;
+                case ('addresses'):
+                case ('addresses_post'):
+                    $text = __('Addresses');
+                    break;
             }
             break;
         case ('billing'):
@@ -1021,6 +1025,9 @@ osc_add_hook('delete_user', array(\mindstellar\listing\WishlistService::class, '
 // The saved cart lives in t_key_value too.
 osc_add_filter('personal_data_export', array(\mindstellar\billing\CartStore::class, 'export'));
 osc_add_hook('delete_user', array(\mindstellar\billing\CartStore::class, 'erase'));
+// And the address book's saved addresses.
+osc_add_filter('personal_data_export', array(\mindstellar\user\AddressBook::class, 'export'));
+osc_add_hook('delete_user', array(\mindstellar\user\AddressBook::class, 'erase'));
 // So are the browsers asked to wake for new messages.
 osc_add_filter('personal_data_export', array(\mindstellar\push\PushSubscriptions::class, 'export'));
 osc_add_hook('delete_user', array(\mindstellar\push\PushSubscriptions::class, 'erase'));

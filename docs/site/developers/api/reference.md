@@ -18,6 +18,11 @@ endpoints, at `/api/v1/openapi.json`.
 |---|---|---|---|---|
 | GET | `/account` | user | `account:read` | The signed-in user's own profile |
 | PATCH | `/account` | user | `account:write` | Edit the profile; a new e-mail address is confirmed by a link first |
+| GET | `/account/addresses` | user | `addresses:read` | Your saved delivery addresses, the default first |
+| POST | `/account/addresses` | user | `addresses:write` | Save an address; the first one, or one sent with default true, becomes the default |
+| DELETE | `/account/addresses/{address}` | user | `addresses:write` | Delete a saved address; deleting the default makes the next one the default |
+| PUT | `/account/addresses/{address}` | user | `addresses:write` | Replace one saved address's fields |
+| POST | `/account/addresses/{address}/default` | user | `addresses:write` | Make a saved address the default; it becomes the account's own address and the old default moves to the list |
 | GET | `/account/alerts` | user | `alerts:read` | Your saved searches |
 | POST | `/account/alerts` | user | `alerts:write` | Save a search, with the filters GET /listings takes, or a back-in-stock or price-drop alert on a product; an existing one is answered as it is |
 | GET | `/account/alerts/{id}` | user | `alerts:read` | One of your saved searches |
@@ -60,6 +65,63 @@ Edit the profile; a new e-mail address is confirmed by a link first
 Body: `AccountInput` as JSON, optional.
 
 Answers: 200 OK (`AccountDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 412 Precondition failed; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/account/addresses`
+
+Your saved delivery addresses, the default first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`AddressList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/addresses`
+
+Save an address; the first one, or one sent with default true, becomes the default
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `AddressInput` as JSON.
+
+Answers: 201 Created (`AddressDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### DELETE `/account/addresses/{address}`
+
+Delete a saved address; deleting the default makes the next one the default
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `address` | path | string | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### PUT `/account/addresses/{address}`
+
+Replace one saved address's fields
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `address` | path | string | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `AddressInput` as JSON.
+
+Answers: 200 OK (`AddressDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/account/addresses/{address}/default`
+
+Make a saved address the default; it becomes the account's own address and the old default moves to the list
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `address` | path | string | yes |  |
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Answers: 200 OK (`AddressList`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/account/alerts`
 

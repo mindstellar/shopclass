@@ -80,7 +80,10 @@ final class OrderSchema
             'Amount' => $money + ['description' => 'An amount: a decimal string, its currency code and the site\'s formatting.'],
 
             'OrderAddress'      => Schema::object($addr, array_keys($addr)),
-            'OrderAddressInput' => Schema::object($addr, array_values(array_diff(array_keys($addr), ['line2']))),
+            'OrderAddressInput' => Schema::object($addr + [
+                'id'   => ['type' => 'string', 'maxLength' => 16, 'description' => 'One of your saved addresses (GET account/addresses); the other fields are then ignored.'],
+                'save' => ['type' => 'boolean', 'description' => 'true: add this typed address to your address book once the order is placed, unless it is there or the book is full. It must then pass the address book\'s checks.'],
+            ]) + ['description' => 'Send id, or the address with every field but line2 when the cart ships.'],
             'OrderLineInput'    => Schema::object([
                 'variant' => ['type' => 'integer', 'minimum' => 1],
                 'qty'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => CartPricer::MAX_QTY],

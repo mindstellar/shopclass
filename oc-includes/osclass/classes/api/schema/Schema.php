@@ -22,6 +22,7 @@ use mindstellar\listing\ListingStatus;
 use mindstellar\listing\WishlistService;
 use mindstellar\location\CountryCode;
 use mindstellar\user\AccountService;
+use mindstellar\user\AddressBook;
 use mindstellar\user\UserStatus;
 use mindstellar\utility\DateInput;
 
@@ -39,12 +40,12 @@ final class Schema
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'ListingPayment', 'ListingPublishInput', 'ListingPublished', 'PhotoToken', 'CommentInput', 'SavedComment',
-        'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'CartLine', 'Cart', 'CartInput', 'CartDocument', 'SearchSuggestions', 'CategorySuggestions',
+        'AlertFilters', 'Alert', 'AlertInput', 'AlertProductInput', 'Wishlist', 'WishlistInput', 'WishlistDocument', 'CartLine', 'Cart', 'CartInput', 'CartDocument', 'Address', 'AddressInput', 'SearchSuggestions', 'CategorySuggestions',
         'PageSummary', 'Page', 'MenuItem', 'Menu', 'Seo',
     ];
 
     /** `<name>List`: every item at once. */
-    private const LISTS = ['PageSummary', 'Menu', 'Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert'];
+    private const LISTS = ['PageSummary', 'Menu', 'Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert', 'Address'];
 
     /** `<name>List` that is paged: the location lists keep their List names. */
     private const PAGED_LISTS = ['Country', 'Region', 'City', 'CityArea'];
@@ -53,7 +54,7 @@ final class Schema
     private const PAGES = ['Listing', 'Comment'];
 
     /** `<name>Document`: one resource. */
-    private const DOCUMENTS = ['Page', 'Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions', 'Seo'];
+    private const DOCUMENTS = ['Page', 'Listing', 'User', 'Category', 'Site', 'PersonalKey', 'NewAccount', 'Photo', 'PhotoToken', 'Alert', 'Comment', 'SessionToken', 'SearchSuggestions', 'CategorySuggestions', 'Seo', 'Address'];
 
     private function __construct()
     {
@@ -783,7 +784,30 @@ final class Schema
                 'lines' => ['type' => 'array', 'maxItems' => CartPricer::MAX_LINES, 'items' => self::ref('CartLine'), 'description' => 'Variant ids and quantities. A variant that cannot be bought is dropped.'],
             ], ['lines']),
             'CartDocument'      => self::object(['data' => self::ref('Cart')], ['data']),
+            'Address'           => self::object(self::addressMembers() + [
+                'id'      => ['type' => 'string'],
+                'default' => ['type' => 'boolean', 'description' => 'The default address is also the account\'s own address.'],
+            ], array_merge(['id'], array_keys(AddressBook::FIELDS), ['default'])),
+            'AddressInput'      => $input(self::addressMembers() + [
+                'default' => ['type' => 'boolean', 'description' => 'POST only: make the new address the default.'],
+            ], array_values(array_diff(array_keys(AddressBook::FIELDS), ['label']))) + ['description' => 'An Indian PIN code (country IN) has 6 digits; a mobile number has at least 8.'],
         ];
+    }
+
+    /**
+     * The fields of a saved address.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private static function addressMembers(): array
+    {
+        $out = [];
+        foreach (AddressBook::FIELDS as $field => $max) {
+            $out[$field] = ['type' => 'string', 'maxLength' => $max];
+        }
+        $out['country'] += ['description' => 'A two-letter country code of the site.'];
+
+        return $out;
     }
 
     /**

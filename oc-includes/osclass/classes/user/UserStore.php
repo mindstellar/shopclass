@@ -28,6 +28,12 @@ final class UserStore extends Model
 {
     protected const TABLE = 't_user';
 
+    /** The columns setAddress() may write. */
+    public const ADDRESS_COLUMNS = array(
+        's_address', 's_zip', 's_city', 'fk_i_city_id', 's_region', 'fk_i_region_id', 's_country', 'fk_c_country_code',
+        's_phone_mobile', 'fk_i_city_area_id', 's_city_area',
+    );
+
     /**
      * One bare t_user row, or null.
      *
@@ -97,6 +103,25 @@ final class UserStore extends Model
         ListingCounters::lockByItems($items);
         VariantStore::lockByItems($items);
         AlertStore::lockGuest($email);
+    }
+
+    /**
+     * Write the account's address columns: the default address of the address book.
+     *
+     * @param array<string,mixed> $columns t_user address column => value
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function setAddress(int $userId, array $columns): void
+    {
+        $columns = array_intersect_key($columns, array_flip(self::ADDRESS_COLUMNS));
+        if ($columns === array()) {
+            return;
+        }
+        self::table()->where('pk_i_id', $userId)->update($columns);
+        if (function_exists('osc_invalidate_user_cache')) {
+            osc_invalidate_user_cache($userId);
+        }
     }
 
     /**
