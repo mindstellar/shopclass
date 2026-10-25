@@ -545,7 +545,7 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_cod_fee` | `0` | Fee added to a cash on delivery order, micros |
 | `billing_hold_days` | `7` | Days an unpaid bank transfer or cash on delivery order holds its stock |
 | `billing_card_hold_minutes` | `15` | Minutes an unpaid card goods order holds its stock before `billing.card_hold_expire` cancels it; 5 to 120 |
-| `billing_open_hold_orders` | `3` | Most pending `offline` + `cod` orders one buyer may hold; 0 = no limit. Past it `place()` refuses `/gateway` `too_many_open` |
+| `billing_open_hold_orders` | `3` | Most pending goods orders one buyer may hold, every gateway; 0 = no limit. Past it `place()` refuses `/gateway` `too_many_open` |
 | `billing_order_prefix` | *(empty)* | Printed before the id in an order number (`osc_billing_order_number()`) |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
@@ -662,8 +662,8 @@ cancels it and gives its stock back, with no cancel mail. A payment that arrives
 logged as "paid after close", takes no stock, and the gateway refunds it. On shared hosting the
 queue runs on page visits, so the cancel may come a little after the minutes are up.
 
-`GoodsCheckout::place()` counts a buyer's pending `HOLDS_STOCK` orders (one count on
-`idx_user_status`, both gateways together) and refuses a new one at `billing_open_hold_orders`.
+`GoodsCheckout::place()` counts a buyer's pending goods orders (one count on
+`idx_user_status`, every gateway together, since each holds stock) and refuses a new one at `billing_open_hold_orders`.
 `POST account/orders` checks the `api_checkout` bucket before `place()` and counts it after, so a
 refused placement does not spend the hour.
 

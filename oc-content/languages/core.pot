@@ -8465,8 +8465,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
-"Most unpaid bank transfer and cash on delivery orders one buyer may hold at "
-"once. 0 means no limit."
+"Most unpaid orders one buyer may hold at once, card orders included. 0 "
+"means no limit."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php

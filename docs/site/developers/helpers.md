@@ -214,7 +214,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_no_wait_enabled()` | Whether waiving the flood wait is registered as a purchasable limit at all. |
 | `osc_billing_offline_enabled()` | Whether the bundled bank-transfer gateway is switched on. |
 | `osc_billing_offline_instructions()` | Admin-authored payment instructions shown on the offline checkout screen. |
-| `osc_billing_open_hold_orders()` | Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit. |
+| `osc_billing_open_hold_orders()` | Most unpaid goods orders one buyer may hold at once, every gateway together. 0 means no limit. |
 | `osc_billing_order_number(int $orderId)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
 | `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
 | `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |

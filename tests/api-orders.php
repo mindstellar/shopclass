@@ -40,7 +40,7 @@ $cat = seed_category($admin, 'Tees', seed_category($admin, 'Goods', null, $local
 $sue = seed_user($admin, 'sue', 'sue@example.test');
 $tom = seed_user($admin, 'tom', 'tom@example.test');
 $ann = seed_user($admin, 'ann', 'ann@example.test');
-foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD', 'rewriteEnabled' => '0'] as $k => $v) {
+foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD', 'rewriteEnabled' => '0', 'billing_open_hold_orders' => '0'] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();

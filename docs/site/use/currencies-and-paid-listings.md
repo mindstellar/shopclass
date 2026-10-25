@@ -67,8 +67,8 @@ The **Shop** tab holds the settings a goods checkout needs:
   the buyer pays (15 by default, 5 to 120). Still unpaid then, it is cancelled with no mail
   to the buyer and the stock goes back on sale. On shared hosting the job queue runs on page
   visits, so the cancel may come a little late.
-- **Open unpaid orders per buyer**: the most bank transfer and cash on delivery orders one
-  buyer may hold unpaid at once (3 by default, 0 for no limit). Past it, checkout asks them to
+- **Open unpaid orders per buyer**: the most orders one buyer may hold unpaid at once, card
+  orders included (3 by default, 0 for no limit). Past it, checkout asks them to
   pay for or cancel an open order first.
 - **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`.
 

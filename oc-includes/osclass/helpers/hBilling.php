@@ -244,7 +244,7 @@ function osc_billing_card_hold_minutes(): int
 }
 
 /**
- * Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit.
+ * Most unpaid goods orders one buyer may hold at once, every gateway together. 0 means no limit.
  *
  * @return int
  */

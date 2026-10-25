@@ -2143,7 +2143,7 @@ msgid "Pay again"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
-msgid "Pay for or cancel your open orders first, or choose another way to pay."
+msgid "Pay for or cancel your open orders first."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php

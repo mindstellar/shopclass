@@ -114,8 +114,8 @@ final class GoodsCheckout
         if (!isset($gateways[$gatewayId])) {
             $errors[] = array('pointer' => '/gateway', 'code' => 'unavailable', 'message' => _m('This payment method is not available.'));
         }
-        if (isset($gateways[$gatewayId]) && self::holdsTooMany($userId, $gatewayId)) {
-            $errors[] = array('pointer' => '/gateway', 'code' => 'too_many_open', 'message' => _m('Pay for or cancel your open orders first, or choose another way to pay.'));
+        if (isset($gateways[$gatewayId]) && self::holdsTooMany($userId)) {
+            $errors[] = array('pointer' => '/gateway', 'code' => 'too_many_open', 'message' => _m('Pay for or cancel your open orders first.'));
         }
         if ($errors !== array()) {
             throw InvalidException::all($errors);
@@ -202,16 +202,14 @@ final class GoodsCheckout
     }
 
     /**
-     * Whether the buyer already holds the most unpaid orders that keep stock aside, counting every
-     * such gateway together so switching between them does not get round the limit.
+     * Whether the buyer already holds the most unpaid goods orders. Every one keeps stock aside,
+     * so every gateway counts together.
      */
-    private static function holdsTooMany(int $userId, string $gatewayId): bool
+    private static function holdsTooMany(int $userId): bool
     {
         $limit = osc_billing_open_hold_orders();
 
-        return $limit > 0
-            && in_array($gatewayId, Billing::HOLDS_STOCK, true)
-            && OrderStore::countForUser($userId, array(Order::STATUS_PENDING), Billing::HOLDS_STOCK) >= $limit;
+        return $limit > 0 && OrderStore::countForUser($userId, array(Order::STATUS_PENDING)) >= $limit;
     }
 
     /**

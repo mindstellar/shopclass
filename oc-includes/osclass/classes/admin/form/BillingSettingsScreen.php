@@ -403,7 +403,7 @@ final class BillingSettingsScreen
             ->number(
                 'billing_open_hold_orders',
                 __('Open unpaid orders per buyer'),
-                __('Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit.')
+                __('Most unpaid orders one buyer may hold at once, card orders included. 0 means no limit.')
             )
                 ->clampMin(0)
                 ->default(3)
