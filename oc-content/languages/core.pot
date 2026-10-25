@@ -9378,6 +9378,10 @@ msgstr ""
 msgid "Nothing to browse yet"
 msgstr ""
 
+#: oc-admin/themes/modern/main/index.php
+msgid "Nothing to ship."
+msgstr ""
+
 #: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Nothing was changed."
 msgstr ""
@@ -11894,6 +11898,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Security updates"
+msgstr ""
+
+#: oc-admin/themes/modern/main/index.php
+msgid "See all"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php
@@ -14629,6 +14637,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
+#: oc-admin/themes/modern/main/index.php
 msgid "To ship"
 msgstr ""
 

@@ -59,6 +59,8 @@ class CAdminMain extends AdminSecBaseModel
                 );
                 $this->_exportVariableToView('numReportedItems', Item::getInstance()->countByMarkas('spam'));
 
+                $this->exportToShip();
+
                 // stats
                 $items       = array();
                 $stats_items = Stats::getInstance()->new_items_count(date(
@@ -121,6 +123,33 @@ class CAdminMain extends AdminSecBaseModel
 
     //hopefully generic...
 
+    /**
+     * Shop mode: the orders waiting to ship, oldest first, for the dashboard card.
+     *
+     * @return void
+     */
+    private function exportToShip(): void
+    {
+        if (osc_site_mode() !== 'shop' || !osc_billing_enabled() || osc_is_moderator()) {
+            return;
+        }
+        $waiting = \mindstellar\billing\OrderStore::oldestToShip(5);
+            $buyers  = array();
+            $rows    = $waiting === array() ? array() : \mindstellar\user\UserStore::byIds(
+                array_values(array_unique(array_map(static fn ($o) => $o->getUserId(), $waiting))),
+                array('pk_i_id', 's_username', 's_name')
+            );
+            $byId = array();
+            foreach ($rows as $row) {
+                $byId[(int) $row['pk_i_id']] = $row['s_name'] ?: $row['s_username'];
+            }
+            foreach ($waiting as $order) {
+                $buyers[$order->getId()] = (string) ($byId[$order->getUserId()] ?? '');
+            }
+            $this->_exportVariableToView('toShip', array(
+                'count'  => \mindstellar\billing\OrderStore::toShipCount(),
+                'orders' => $waiting,
+                'buyers' => $buyers,
+            ));
+    }
 }
-
-/* file end: ./oc-admin/CAdminSettingsMain.php */

@@ -164,3 +164,15 @@
   margin-inline-start: auto;
   text-align: end;
 }
+
+// ---- To ship card -----------------------------------------------------------
+.dash-ship-row .dash-system-value {
+  margin-inline-start: auto;
+}
+
+.dash-ship-age {
+  color: var(--osc-ink-muted);
+  flex: 0 0 5.5rem;
+  font-size: $font-size-sm;
+  text-align: end;
+}

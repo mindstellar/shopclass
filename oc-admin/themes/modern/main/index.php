@@ -19,6 +19,7 @@ $numUsers            = __get('numUsers');
 $numPendingComments  = (int) __get('numPendingComments');
 $numReportedItems    = (int) __get('numReportedItems');
 $aFeatured           = __get('aFeatured');
+$toShip              = __get('toShip');
 osc_add_filter('render-wrapper', 'render_offset');
 /**
  * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
@@ -186,6 +187,33 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </a>
     </div>
     <div class="row g-3">
+        <?php if (is_array($toShip)) {
+            $toShipUrl = osc_admin_base_url(true) . '?page=billing&amp;toShip=1'; ?>
+        <div class="col-12">
+            <div class="widget-box" id="dash-to-ship">
+                <div class="widget-box-title">
+                    <h3><?php _e('To ship'); ?><?php echo $toShip['count'] > 0 ? osc_admin_count((int) $toShip['count']) : ''; ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <?php if ($toShip['orders'] === array()) { ?>
+                        <p class="text-muted mb-0"><?php _e('Nothing to ship.'); ?></p>
+                    <?php } else { ?>
+                        <ul class="dash-system">
+                            <?php foreach ($toShip['orders'] as $order) { ?>
+                                <li class="dash-system-row dash-ship-row">
+                                    <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()); ?>"><?php echo osc_esc_html(osc_billing_order_number($order->getId())); ?></a>
+                                    <span class="dash-system-label"><?php echo osc_esc_html($toShip['buyers'][$order->getId()] ?? ''); ?></span>
+                                    <span class="dash-system-value"><?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?></span>
+                                    <span class="dash-ship-age"><?php echo osc_esc_html(osc_admin_duration(time() - (int) strtotime($order->getDate()))); ?></span>
+                                </li>
+                            <?php } ?>
+                        </ul>
+                        <a href="<?php echo $toShipUrl; ?>" class="btn btn-sm btn-dim"><?php _e('See all'); ?></a>
+                    <?php } ?>
+                </div>
+            </div>
+        </div>
+        <?php } ?>
         <div class="col-lg-4 col-md-6">
             <div class="widget-box h-100">
                 <div class="widget-box-title">
