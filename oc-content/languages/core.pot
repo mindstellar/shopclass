@@ -2998,6 +2998,10 @@ msgstr ""
 msgid "Cash on delivery fee"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Cash on delivery only in"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Cat tree, three levels"
 msgstr ""
@@ -3286,6 +3290,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/preview.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "City"
 msgstr ""
@@ -3941,6 +3946,7 @@ msgstr ""
 #: oc-admin/themes/modern/stats/users.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Country"
@@ -5226,6 +5232,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/job/CategoryJobs.php
 msgid "Empty and delete a category"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Empty: cash on delivery everywhere you deliver."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -9051,6 +9061,10 @@ msgstr ""
 msgid "No locations yet"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "No match"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/media-picker.php
 msgid "No media here yet. Upload an image to get started."
 msgstr ""
@@ -10979,6 +10993,7 @@ msgstr ""
 #: oc-admin/themes/modern/stats/users.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "Region"
@@ -11075,6 +11090,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/items/frm.php
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Remove %s"
 msgstr ""
 
@@ -11748,6 +11764,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Search URL"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Search a country, region or city"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php

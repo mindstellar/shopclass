@@ -94,3 +94,79 @@
     white-space: nowrap;
   }
 }
+
+// Settings > Billing > Shop: the cash on delivery areas picker.
+.cod-areas {
+  max-width: 32rem;
+  position: relative;
+}
+
+.cod-areas-chips,
+.cod-areas-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cod-areas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+
+  &:not(:empty) {
+    margin-block-end: .5rem;
+  }
+}
+
+.cod-chip {
+  align-items: center;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1rem;
+  display: inline-flex;
+  gap: .25rem;
+  padding: .125rem .25rem .125rem .75rem;
+}
+
+.cod-chip-x {
+  background: none;
+  border: 0;
+  color: var(--bs-secondary-color);
+  line-height: 1;
+  padding: .125rem .375rem;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--bs-body-color);
+  }
+}
+
+.cod-areas-results {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  margin-block-start: .25rem;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.cod-result {
+  background: none;
+  border: 0;
+  display: flex;
+  gap: .5rem;
+  justify-content: space-between;
+  padding: .375rem .75rem;
+  text-align: start;
+  width: 100%;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--bs-secondary-bg);
+  }
+}
+
+.cod-none {
+  color: var(--bs-secondary-color);
+  padding: .375rem .75rem;
+}

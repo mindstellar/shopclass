@@ -181,14 +181,14 @@ final class GoodsCheckout
 
     /**
      * The payment methods a quote may pay through, by id. Cash on delivery needs something to
-     * deliver.
+     * deliver, to an address inside the areas set for it.
      *
      * @return array<string,PaymentGateway>
      */
     public static function gateways(Quote $quote): array
     {
         $gateways = PaymentGatewayRegistry::getInstance()->available($quote->currency());
-        if (!$quote->needsShipping()) {
+        if (!$quote->needsShipping() || !CodAreas::allows($quote->cart()['address'] ?? array())) {
             unset($gateways[gateway\CashOnDeliveryGateway::ID]);
         }
 

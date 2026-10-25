@@ -17,6 +17,8 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
 3. **Settings → Billing → Shop**: set the delivery charge, the amount that makes delivery free,
    cash on delivery and its fee, how long unpaid orders wait before they are cancelled, how long a
    card payment holds the stock, and the order number prefix.
+   **Cash on delivery only in** limits cash on delivery to the countries, regions or cities you pick
+   (a buyer's address must be inside one); empty offers it everywhere you deliver.
 4. **Appearance**: activate the shop theme. If it asks for plugins, one screen installs and turns
    them on for you.
 5. Install a payment method (see below), or use the built-in bank transfer and cash on delivery.
