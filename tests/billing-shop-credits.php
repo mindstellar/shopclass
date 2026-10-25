@@ -106,6 +106,41 @@ final class ShopCreditsBilling extends CWebBilling
     }
 }
 
+require_once ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php';
+
+if (!function_exists('osc_locate_template')) {
+    function osc_locate_template($templates, $fallback = '')
+    {
+        return (string) ((array) $templates)[0];
+    }
+}
+
+/** The account controller, for the address book page. */
+final class ShopCreditsUser extends CWebUser
+{
+    protected $page = 'user';
+
+    public function doView($file)
+    {
+        throw new ShopCreditsStop('view:' . basename((string) $file));
+    }
+}
+
+/** Where a GET of the account page with $action ends: '404', a redirect or 'view:<file>'. */
+function shop_account_open(string $action): string
+{
+    $_GET  = array('page' => 'user', 'action' => $action);
+    $_POST = array();
+    Params::init();
+    try {
+        (new ShopCreditsUser())->doModel();
+    } catch (ShopCreditsStop $s) {
+        return $s->url;
+    }
+
+    return '';
+}
+
 final class ShopCreditsGateway implements PaymentGateway
 {
     public function getId(): string
@@ -190,7 +225,8 @@ harness_section('classifieds');
 $mode('classifieds');
 check('credits are on', osc_billing_credits_enabled() && osc_billing_can_buy());
 pin('the buy and wallet pages draw', array('view:user-billing-buy.php', 'view:user-billing-wallet.php'), array(shop_credits_open('buy'), shop_credits_open('')));
-pin('the account menu links Addresses, Credits and Buy credits', array('opt_addresses', 'opt_billing_wallet', 'opt_billing_buy'), $menu());
+pin('the account menu links Credits and Buy credits, not Addresses', array('opt_billing_wallet', 'opt_billing_buy'), $menu());
+pin('and the address book page is 404', '404', shop_account_open('addresses'));
 check('the receipt links the wallet', $wallet() !== '');
 pin('a seller can pay at post, feature and bump', array('pay at post' => true, 'feature' => true, 'bump' => true, 'over limit' => ListingCheckout::POST_HOLD), $selling());
 check('a seller at the limit is offered a slot', $slotPrompt() !== '');
@@ -200,6 +236,8 @@ $mode('shop');
 check('credits are off', !osc_billing_credits_enabled() && !osc_billing_can_buy());
 pin('buy, wallet, checkout, upgrades and the pay step are 404', array_fill(0, 6, '404'), array_map('shop_credits_open', array('buy', '', 'checkout', 'upgrade', 'account_upgrade', 'publish')));
 pin('the order list still draws', 'view:user-billing-orders.php', shop_credits_open('orders'));
+pin('the address book page draws', 'view:user-addresses.php', shop_account_open('addresses'));
+check('and the account menu links it', in_array('opt_addresses', $menu(), true));
 pin('the account menu has no credit links', array(), array_values(array_intersect(array('opt_billing_wallet', 'opt_billing_buy'), $menu())));
 pin('the receipt has no wallet link', '', $wallet());
 pin('no paying at post, featuring, bumping or listing limit', array('pay at post' => false, 'feature' => false, 'bump' => false, 'over limit' => ListingCheckout::POST_PUBLISH), $selling());
@@ -216,6 +254,6 @@ pin('and the menu has no credit links', array(), array_values(array_intersect(ar
 harness_section('back to classifieds');
 $mode('classifieds');
 pin('the buy page draws again', 'view:user-billing-buy.php', shop_credits_open('buy'));
-pin('and the menu links come back', array('opt_addresses', 'opt_billing_wallet', 'opt_billing_buy'), $menu());
+pin('and the menu links come back', array('opt_billing_wallet', 'opt_billing_buy'), $menu());
 
 exit(harness_result());

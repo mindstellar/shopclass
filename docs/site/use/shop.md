@@ -100,7 +100,7 @@ Digital Goods on, a Downloads entry lists what they bought. An admin signed in s
 **Addresses** keeps up to 10 delivery addresses. The default one is also the account's own
 address. At checkout the saved addresses show as cards with the default chosen; "Use a new
 address" opens the form, and "Save this address" (ticked) adds it to the book. The first address
-saved becomes the default. Addresses also shows on a classifieds site with billing on.
+saved becomes the default. A classifieds site has no Addresses page.
 
 ## 6. Customise
 

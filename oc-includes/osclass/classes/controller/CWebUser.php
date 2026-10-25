@@ -212,6 +212,11 @@ class CWebUser extends WebSecBaseModel
      */
     private function addresses(?array $form = null, array $errors = array()): void
     {
+        if (!osc_address_book_enabled()) {
+            $this->do404();
+
+            return;
+        }
         $addresses = (new AddressBook())->all((int) osc_logged_user_id());
         $editing   = Params::getParamString('edit', false, false);
         if ($form === null && $editing !== '') {
@@ -233,6 +238,11 @@ class CWebUser extends WebSecBaseModel
     private function addressesPost(): void
     {
         osc_csrf_check();
+        if (!osc_address_book_enabled()) {
+            $this->do404();
+
+            return;
+        }
         $userId = (int) osc_logged_user_id();
         $book   = new AddressBook();
         $id     = Params::getParamString('id', false, false);

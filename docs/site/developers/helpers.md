@@ -1335,7 +1335,7 @@ Core defines 1249 helpers, 19 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_address_book_enabled()` | Whether the account area offers the address book: in shop mode, and wherever billing is on, since goods orders need a delivery address. |
+| `osc_address_book_enabled()` | Whether the account area offers the address book: in shop mode only, since only goods orders are delivered. |
 | `osc_address_picker(array $opts = array())` | The checkout address picker for the signed-in buyer: each saved address as a radio card, the default chosen, and "Use a new address". The theme wraps its own address fields in an element with `data-address-form`; the picker fills them from the chosen address, hides them while a saved one is chosen and fires `osc:address` ({id, address}) on each change. Prints nothing for a buyer with no saved address. |
 | `osc_address_save_field(array $opts = array())` | The "Save this address" box for a typed checkout address, ticked by default. Shown with the address fields; nothing once the address book is full. |
 | `osc_address_text(array $address)` | One saved address on a line: "1 Main St, Austin, Texas 73301, United States · 5550100". |

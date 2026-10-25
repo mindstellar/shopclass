@@ -1330,12 +1330,12 @@ function osc_user_addresses_url(): string
 }
 
 /**
- * Whether the account area offers the address book: in shop mode, and wherever billing is on,
- * since goods orders need a delivery address.
+ * Whether the account area offers the address book: in shop mode only, since only goods
+ * orders are delivered.
  */
 function osc_address_book_enabled(): bool
 {
-    return osc_is_shop_mode() || osc_billing_enabled();
+    return osc_is_shop_mode();
 }
 
 /**

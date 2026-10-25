@@ -388,7 +388,7 @@ account's own address. At most 10 are kept.
 |---|---|
 | Fallback file | `oc-includes/osclass/gui/account/user-addresses-content.php` |
 | URL | `osc_user_addresses_url()` |
-| Nav entry | "Addresses", class `opt_addresses`. Shown in shop mode and wherever billing is on (`osc_address_book_enabled()`). |
+| Nav entry | "Addresses", class `opt_addresses`. Shown in shop mode only (`osc_address_book_enabled()`); elsewhere the page is a 404. |
 
 A theme that ships its own `user-addresses.php` gets these view variables:
 
