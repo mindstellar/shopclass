@@ -315,6 +315,16 @@ $onCancel  = static function ($orderId) use (&$cancelled): void {
 osc_add_hook('billing_order_cancelled', $onCancel);
 osc_run_hook('register_jobs');
 check('the hold job has a handler', osc_job_has_handler(Billing::JOB_CARD_HOLD));
+$holdEnd = static fn (Order $o): int => (int) OrderStore::find($o->getId())->meta(Billing::CARD_HOLD_UNTIL);
+pin('the order records when its hold ends', true, abs($holdEnd($mine) - (time() + 900)) <= 5);
+pin('the job does nothing before the hold ends', [false, 'pending'], [Billing::expireCardHold($mine->getId()), OrderStore::find($mine->getId())->getStatus()]);
+OrderStore::withMeta($mine->getId(), static fn (array $meta): array => [Billing::CARD_HOLD_UNTIL => time() - 600] + $meta);
+$admin->query("UPDATE {$p}t_job_queue SET dt_next_run = NOW() WHERE s_type = '" . Billing::JOB_CARD_HOLD . "' AND s_unique = '" . $mine->getId() . "'");
+Billing::queueCardHold($mine->getId());
+$job = $holdJob($mine);
+pin('queueing it again (Pay again) moves both the hold end and the waiting job to the full minutes', [true, true], [abs($holdEnd($mine) - (time() + 900)) <= 5, abs((int) ($job['i_in'] ?? 0) - 900) <= 5]);
+pin('so the earlier run leaves it pending', [false, 'pending'], [Billing::expireCardHold($mine->getId()), OrderStore::find($mine->getId())->getStatus()]);
+OrderStore::withMeta($mine->getId(), static fn (array $meta): array => [Billing::CARD_HOLD_UNTIL => time() - 1] + $meta);
 pin('when the hold ends unpaid, the order is cancelled and its stock is back', [true, 'cancelled', '1'], [Billing::expireCardHold($mine->getId()), OrderStore::find($mine->getId())->getStatus(), $stock($r)]);
 pin('announced once, with no cancel mail to the buyer', [[$mine->getId()], true], [$cancelled, OrderStore::find($mine->getId())->meta('_mail_cancelled') !== null]);
 pin('a second run changes nothing', [false, '1'], [Billing::expireCardHold($mine->getId()), $stock($r)]);

@@ -46,6 +46,9 @@ final class Billing
     /** Job queued at placement that cancels a card goods order still unpaid after billing_card_hold_minutes. */
     public const JOB_CARD_HOLD = 'billing.card_hold_expire';
 
+    /** Order meta: the Unix time a card order's stock hold ends. Pay again moves it later. */
+    public const CARD_HOLD_UNTIL = '_card_hold_until';
+
     /** Held orders the release job cancels per run. */
     private const RELEASE_BATCH = 100;
 
@@ -632,11 +635,16 @@ final class Billing
     }
 
     /**
-     * Queue the end of a card order's stock hold. Call it in the placement's own transaction.
+     * Start or extend a card order's stock hold: the end moves to billing_card_hold_minutes from
+     * now, and the waiting job is pushed back to it. Call it in the placement's own transaction.
+     *
+     * @throws \mindstellar\database\DbException
      */
     public static function queueCardHold(int $orderId): void
     {
         $delay = osc_billing_card_hold_minutes() * 60;
+        $until = time() + $delay;
+        OrderStore::withMeta($orderId, static fn (array $meta): array => array(self::CARD_HOLD_UNTIL => $until) + $meta);
         if (osc_job_enqueue(self::JOB_CARD_HOLD, array('order' => $orderId), array('delay' => $delay, 'unique_key' => (string) $orderId)) === 0) {
             // The daily release job still cancels it after billing_hold_days.
             error_log('Billing: the card hold of order #' . $orderId . ' was not queued.');
@@ -644,9 +652,10 @@ final class Billing
     }
 
     /**
-     * Cancel a card goods order still unpaid when its hold ends, and give its stock back. The
-     * buyer left the payment page, so no cancel mail goes. A payment that comes later finds the
-     * order closed, and the gateway refunds it.
+     * Cancel a card goods order still unpaid when its hold ends, and give its stock back. A hold
+     * that Pay again moved later is left for the later run. The buyer left the payment page, so
+     * no cancel mail goes. A payment that comes later finds the order closed: core takes no
+     * stock and logs it as "paid after close", and the gateway plugin refunds it.
      *
      * @return bool whether the order was cancelled
      * @throws \mindstellar\database\DbException
@@ -655,6 +664,9 @@ final class Billing
     {
         $order = OrderStore::find($orderId);
         if ($order === null || !$order->isGoods() || !$order->isPending() || in_array($order->getGateway(), self::HOLDS_STOCK, true)) {
+            return false;
+        }
+        if ((int) $order->meta(self::CARD_HOLD_UNTIL) > time()) {
             return false;
         }
         OrderStore::markMailSent($orderId, Receipts::MAIL_CANCELLED);

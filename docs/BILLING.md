@@ -659,7 +659,8 @@ back. Card orders are closed too, so whatever they reserved (a coupon use) is gi
 `GoodsCheckout::place()` also queues `billing.card_hold_expire` for a card order, delayed
 `billing_card_hold_minutes`. If the order is still pending then, `Billing::expireCardHold()`
 cancels it and gives its stock back, with no cancel mail. A payment that arrives later is
-logged as "paid after close", takes no stock, and the gateway refunds it. On shared hosting the
+logged as "paid after close", takes no stock, and the gateway plugin refunds it. Pay again
+(`POST account/orders/{id}/pay`) moves the hold end to the full minutes from then. On shared hosting the
 queue runs on page visits, so the cancel may come a little after the minutes are up.
 
 `GoodsCheckout::place()` counts a buyer's pending goods orders (one count on

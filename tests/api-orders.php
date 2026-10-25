@@ -22,6 +22,7 @@ use mindstellar\apikey\ApiKeys;
 use mindstellar\apikey\CredentialKind;
 use mindstellar\apikey\KeyOwner;
 use mindstellar\apikey\Scopes;
+use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\Order;
@@ -286,7 +287,10 @@ pin('another user cannot cancel it', ['404 not_found', 'pending'], [api_admin_co
 pin('a read-only key cannot cancel', '403 insufficient_scope', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $reader)));
 pin('a pending card order can be paid again', true, $one->body()['data']['can_pay']);
 $calls = $gateway->calls;
+OrderStore::withMeta((int) $o['id'], static fn (array $meta): array => [Billing::CARD_HOLD_UNTIL => time() + 30] + $meta);
 $again = $call('POST', 'account/orders/' . $o['id'] . '/pay', null, $tomKey);
+$holdEnd = (int) OrderStore::find((int) $o['id'])->meta(Billing::CARD_HOLD_UNTIL);
+pin('Pay again gives the order a full stock hold again', true, abs($holdEnd - (time() + 60 * osc_billing_card_hold_minutes())) <= 5);
 pin('Pay again asks the gateway once more and says where to go', [200, $calls + 1, 'redirect', 'https://pay.example.test/' . $o['id'], 'pending', []], [$again->status(), $gateway->calls, $again->body()['next']['kind'] ?? null, $again->body()['next']['payload'] ?? null, $again->body()['data']['status'] ?? null, api_admin_schema_errors('OrderPlaced', $again)]);
 pin('another user cannot pay it', '404 not_found', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $annKey)));
 pin('nor a read-only key', '403 insufficient_scope', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $reader)));

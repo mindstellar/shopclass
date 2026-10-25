@@ -149,6 +149,12 @@ final class OrdersController
             throw ProblemException::of('conflict', 'Only a pending card order can be paid again.');
         }
         $this->api->limiter()->enforce($this->api->ratePolicy()->checkout($call->userId()), 'Too many payments started in an hour. Try again later.');
+        // A new payment page gets a full hold, so the stock is not given back while the buyer pays.
+        Billing::queueCardHold($order->getId());
+        $order = ProblemException::found(OrderStore::find($order->getId()), 'order');
+        if (!$order->canPayAgain()) {
+            throw ProblemException::of('conflict', 'Only a pending card order can be paid again.');
+        }
         $next = Billing::checkout($order);
         if ($next === null) {
             throw ProblemException::of('conflict', 'That payment method is not available right now.');
