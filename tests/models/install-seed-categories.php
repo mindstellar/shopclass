@@ -68,6 +68,10 @@ check('10 top categories', $count("SELECT COUNT(*) FROM {$p}t_category WHERE fk_
 check('Clothing keeps id 1', $count("SELECT COUNT(*) FROM {$p}t_category_description WHERE fk_i_category_id = 1 AND s_name = 'Clothing'") === 1);
 $kids = $admin->query("SELECT d.s_name FROM {$p}t_category c JOIN {$p}t_category_description d ON d.fk_i_category_id = c.pk_i_id WHERE c.fk_i_parent_id = 1 ORDER BY c.i_position")->fetch_all();
 check('children follow list order', array_column($kids, 0) === array('Women', 'Men', 'Kids', 'Shoes', 'Accessories'));
+$positions = $admin->query("SELECT i_position FROM {$p}t_category WHERE fk_i_parent_id = 1 ORDER BY i_position")->fetch_all();
+check('positions count from 1 under each parent', array_map('intval', array_column($positions, 0)) === array(1, 2, 3, 4, 5));
+$positions = $admin->query("SELECT i_position FROM {$p}t_category WHERE fk_i_parent_id IS NULL ORDER BY i_position")->fetch_all();
+check('top categories count from 1 too', array_map('intval', array_column($positions, 0)) === range(1, 10));
 
 scratchdb_truncate_all($admin);
 seed_locale($admin, 'en_US', 'English');

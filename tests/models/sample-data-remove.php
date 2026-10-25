@@ -94,6 +94,30 @@ check('nothing is installed now', $sample->installed() === array());
 check('nothing is present now', !$sample->present());
 check('removing again does nothing', $sample->remove($actor) === array('listings' => 0, 'fields' => 0, 'groups' => 0));
 
+harness_section('a set partly removed by hand');
+install_seed_sample('classifieds', $pack);
+$ids = $sample->installed();
+$service->delete($ids[0], (string) \Item::getInstance()->findByPrimaryKey($ids[0])['s_secret'], $actor);
+$fieldIds = array_values((array) osc_kv_get('sample', 'fields'));
+\mindstellar\fields\FieldService::make('en_US')->delete((int) $fieldIds[0]);
+check('a listing removed by hand is not counted', count($sample->installed()) === 25);
+$removed = $sample->remove($actor);
+check('the other 25 are removed', $removed['listings'] === 25);
+check('the fields left are removed', $removed['fields'] === count($fieldIds) - 1);
+check('no field or group is left', $count("SELECT COUNT(*) FROM {$p}t_meta_fields") === 0 && $count("SELECT COUNT(*) FROM {$p}t_meta_group") === 0);
+check('only the real listing is left', $count("SELECT COUNT(*) FROM {$p}t_item") === 1);
+
+harness_section('every listing removed by hand');
+install_seed_sample('classifieds');
+foreach ($sample->installed() as $id) {
+    $service->delete($id, (string) \Item::getInstance()->findByPrimaryKey($id)['s_secret'], $actor);
+}
+check('no sample listing is installed', $sample->installed() === array());
+check('the Listings line still shows, as fields remain', $sample->present());
+$removed = $sample->remove($actor);
+check('the fields and groups are removed', $removed['listings'] === 0 && $removed['fields'] > 0 && $removed['groups'] === 7);
+check('nothing is present after', !$sample->present() && $count("SELECT COUNT(*) FROM {$p}t_meta_fields") === 0);
+
 unlink($pack . 'car-hatchback.webp');
 rmdir($pack);
 

@@ -53,12 +53,19 @@ $count = static fn (string $sql): int => (int) $admin->query($sql)->fetch_row()[
 $pack = sys_get_temp_dir() . '/sample-pack-' . getmypid() . '/';
 mkdir($pack);
 imagewebp(imagecreatetruecolor(640, 480), $pack . 'car-hatchback.webp');
+// Starts like a webp but is not one, so the image library refuses it.
+file_put_contents($pack . 'bike-trek.webp', 'RIFF' . pack('V', 100) . 'WEBP' . str_repeat('x', 100));
+$temps = static fn (): int => count(glob(sys_get_temp_dir() . '/sample??????') ?: array());
+$tempsBefore = $temps();
 
 harness_section('classifieds sample');
 install_seed_categories('classifieds');
 $result = install_seed_sample('classifieds', $pack);
-check('no errors: ' . implode('; ', $result['errors']), $result['errors'] === array());
+$photoErrors = array_values(array_filter($result['errors'], static fn (string $e): bool => str_starts_with($e, 'bike-trek: ')));
+check('the only error names the corrupt photo', count($photoErrors) === 1 && count($result['errors']) === 1);
 check('26 listings made', $result['listings'] === 26 && $result['failed'] === 0);
+check('the listing with the corrupt photo is saved without it', $count("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title LIKE 'Hybrid commuter bike%'") === 1);
+check('no temp copy is left', $temps() === $tempsBefore);
 check('26 listings active', $count("SELECT COUNT(*) FROM {$p}t_item WHERE b_active = 1 AND b_enabled = 1") === 26);
 check('the kv group holds the item ids', count(osc_kv_get('sample', 'items', array())) === 26);
 check('the kv group holds every field id', count(osc_kv_get('sample', 'fields', array())) === $count("SELECT COUNT(*) FROM {$p}t_meta_fields"));
@@ -123,6 +130,7 @@ foreach (glob(UPLOADS_PATH . '0/*') ?: array() as $file) {
 }
 @rmdir(UPLOADS_PATH . '0');
 unlink($pack . 'car-hatchback.webp');
+unlink($pack . 'bike-trek.webp');
 rmdir($pack);
 
 if (!defined('MODELS_RUNNER')) {

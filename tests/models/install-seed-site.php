@@ -75,6 +75,24 @@ check('reports success', install_seed_site('classifieds', true, $noPhotos()) ===
 check('103 categories', $count("SELECT COUNT(*) FROM {$p}t_category") === 103);
 check('26 listings', $count("SELECT COUNT(*) FROM {$p}t_item") === 26);
 
+harness_section('failures raise the finish-page warning');
+$fresh();
+$_SESSION = array();
+Session::getInstance()->_drop('install_sample_warning');
+check('a category tree that cannot be written returns false', install_seed_site('blog', false) === false);
+check('and sets the warning', (bool) Session::getInstance()->_get('install_sample_warning'));
+check('and adds no sample data', install_seed_site('blog', true, $noPhotos()) === false && $count("SELECT COUNT(*) FROM {$p}t_item") === 0);
+$fresh();
+$_SESSION = array();
+Session::getInstance()->_drop('install_sample_warning');
+check('no warning on a clean run', install_seed_site('classifieds', false) === true && !Session::getInstance()->_get('install_sample_warning'));
+Preference::getInstance()->set('title_character_length', '3');
+scratchdb_forget_cache();
+osc_reset_preferences();
+check('no sample listing saved returns false', install_seed_site('classifieds', true, $noPhotos()) === false);
+check('none were saved', $count("SELECT COUNT(*) FROM {$p}t_item") === 0);
+check('and the warning is set', (bool) Session::getInstance()->_get('install_sample_warning'));
+
 harness_section('the browser adds sample data one batch per request');
 $fresh();
 $_SESSION = array();

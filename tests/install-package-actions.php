@@ -134,6 +134,7 @@ check('a plugin that was not ticked is refused', install_shop_step('install_pack
 check('a theme other than Aisle is refused', install_shop_step('install_package', 'theme', 'storefront', $setup)['ok'] === false);
 check('a path is refused', install_shop_step('install_package', 'plugin', '../shipping', $setup)['ok'] === false);
 check('an unknown action is refused', install_shop_step('drop_tables', 'theme', 'aisle', $setup)['ok'] === false);
+check('an unknown action on a ticked plugin is refused', install_shop_step('drop_tables', 'plugin', 'shipping', $setup)['ok'] === false);
 check('nothing was fetched', $log['fetched'] === array());
 $choose('classifieds', array('shipping'));
 check('on a classifieds site even Aisle is refused', install_shop_step('install_package', 'theme', 'aisle', $setup)['ok'] === false);

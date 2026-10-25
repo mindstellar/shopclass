@@ -103,6 +103,21 @@ $packs = array(
     'a fake webp'      => $zip('fake.zip', array('car-hatchback.webp' => '<?php echo 1;')),
     'an oversize file' => $zip('big.zip', array('car-hatchback.webp' => $webp . random_bytes(2200000))),
 );
+$link = $root . 'link.zip';
+$z    = new ZipArchive();
+$z->open($link, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+$z->addFromString('car-hatchback.webp', $webp);
+$z->addFromString('bike-trek.webp', '/etc/passwd');
+$z->setExternalAttributesName('bike-trek.webp', ZipArchive::OPSYS_UNIX, (0120777 << 16));
+$z->close();
+$packs['a symlink entry'] = $link;
+$many = array('car-hatchback.webp' => $webp);
+for ($i = 1; $i <= 200; $i++) {
+    $many['extra-' . $i . '.txt'] = 'x';
+}
+$packs['201 entries']  = $zip('many.zip', $many);
+$packs['a corrupt zip'] = $root . 'corrupt.zip';
+file_put_contents($packs['a corrupt zip'], substr((string) file_get_contents($good), 0, 200));
 foreach ($packs as $label => $path) {
     $pack = new SamplePhotos($path, (string) hash_file('sha256', $path), SamplePhotos::URL, $work);
     check($label . ' is rejected', $pack->fetch() === null);
@@ -112,13 +127,14 @@ foreach ($packs as $label => $path) {
 check('nothing was written beside the work folder', !is_file($root . 'evil.webp'));
 
 harness_section('only root webp files are written');
-$path   = $zip('mixed.zip', array('car-hatchback.webp' => $webp, 'img/bike-trek.webp' => $webp, '__MACOSX/._car-hatchback.webp' => 'x', 'notes.txt' => 'x'));
+$path   = $zip('mixed.zip', array('car-hatchback.webp' => $webp, 'img/bike-trek.webp' => $webp, '__MACOSX/._car-hatchback.webp' => 'x', 'notes.txt' => 'x', 'bike-trek.jpg' => $webp));
 $pack   = new SamplePhotos($path, (string) hash_file('sha256', $path), SamplePhotos::URL, $work);
 $folder = (string) $pack->fetch();
 check('the pack is used', $folder !== '' && is_file($folder . 'car-hatchback.webp'));
 check('a file in a sub folder is skipped', !is_dir($folder . 'img'));
 check('__MACOSX is skipped', !is_dir($folder . '__MACOSX'));
 check('a text file is skipped', !is_file($folder . 'notes.txt'));
+check('a non-webp name is skipped', !is_file($folder . 'bike-trek.jpg'));
 $pack->clean();
 check('clean() leaves no temp files', $empty());
 
