@@ -609,10 +609,10 @@ class CAdminItems extends AdminSecBaseModel
         $this->_exportVariableToView('countries', Country::getInstance()->listAll());
         $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
         $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
-        $this->_exportVariableToView(
-            'sampleCount',
-            osc_is_moderator() ? 0 : count((new SampleData())->installed())
-        );
+        $sample        = new SampleData();
+        $samplePresent = !osc_is_moderator() && $sample->present();
+        $this->_exportVariableToView('samplePresent', $samplePresent);
+        $this->_exportVariableToView('sampleCount', $samplePresent ? count($sample->installed()) : 0);
 
         $bulk_options = BulkAction::options(
             array(

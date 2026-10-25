@@ -69,8 +69,12 @@ $own     = $service->create(
     true
 );
 
+// A recorded id that now belongs to a real listing, as after an id is reused.
+osc_kv_set('sample', 'items', array_merge(osc_kv_get('sample', 'items'), array((int) $own->id())));
+
 $sample = new \mindstellar\install\SampleData();
-check('26 sample listings are installed', count($sample->installed()) === 26);
+check('sample data is present', $sample->present());
+check('26 sample listings are installed, not the real one', count($sample->installed()) === 26);
 $files = glob(UPLOADS_PATH . '0/*') ?: array();
 check('the photo is on disk', count($files) > 0);
 $categories = $count("SELECT COUNT(*) FROM {$p}t_category");
@@ -87,6 +91,7 @@ check('groups are gone', $count("SELECT COUNT(*) FROM {$p}t_meta_group") === 0);
 check('the kv group is gone', osc_kv_get('sample', 'items') === null && osc_kv_get('sample', 'groups') === null);
 check('categories stay', $count("SELECT COUNT(*) FROM {$p}t_category") === $categories && $categories > 0);
 check('nothing is installed now', $sample->installed() === array());
+check('nothing is present now', !$sample->present());
 check('removing again does nothing', $sample->remove($actor) === array('listings' => 0, 'fields' => 0, 'groups' => 0));
 
 unlink($pack . 'car-hatchback.webp');

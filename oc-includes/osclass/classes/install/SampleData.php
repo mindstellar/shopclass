@@ -20,24 +20,40 @@ use mindstellar\listing\ListingService;
 use mindstellar\site\SiteMode;
 
 /**
- * The sample listings, custom fields and groups the installer added. It reads the ids the
- * installer recorded and removes them. Categories stay.
+ * The sample listings, custom fields and groups the installer can add. Their ids are recorded
+ * in the key-value store so they can be removed later. Categories and the example page stay.
  *
  * @package mindstellar\install
  */
 final class SampleData
 {
+    /** The key-value group that records what was added. */
+    public const GROUP = 'sample';
+
+    /** Every sample listing has this contact e-mail. */
+    public const SELLER_EMAIL = 'seller@example.com';
+
     /**
-     * Ids of the recorded sample listings that still exist.
+     * Whether anything the installer added is still recorded. One query.
+     *
+     * @return bool
+     */
+    public function present(): bool
+    {
+        return osc_kv_list(self::GROUP, 1) !== array();
+    }
+
+    /**
+     * Ids of the recorded sample listings that still exist and are still samples.
      *
      * @return int[]
      */
     public function installed(): array
     {
-        $items = \Item::getInstance();
         $found = array();
         foreach ($this->recorded('items') as $id) {
-            if ($items->findByPrimaryKey($id)) {
+            $item = \Item::getInstance()->findByPrimaryKey($id);
+            if ($item && ($item['s_contact_email'] ?? '') === self::SELLER_EMAIL) {
                 $found[] = $id;
             }
         }
@@ -61,7 +77,7 @@ final class SampleData
         if (!SiteMode::isValid($type)) {
             throw new \InvalidArgumentException('Unknown site type: ' . $type);
         }
-        if (osc_kv_get('sample', 'items') !== null) {
+        if (osc_kv_get(self::GROUP, 'items') !== null) {
             throw new \RuntimeException('Sample data is already installed.');
         }
 
@@ -117,7 +133,7 @@ final class SampleData
                     'description'  => array($locale => $row['description']),
                     'price'        => $row['price'],
                     'contactName'  => __('Example seller'),
-                    'contactEmail' => 'seller@example.com',
+                    'contactEmail' => self::SELLER_EMAIL,
                     'meta'         => $meta,
                 );
                 if (isset($row['variants'])) {
@@ -153,15 +169,15 @@ final class SampleData
             }
         }
 
-        osc_kv_set('sample', 'items', $itemIds);
-        osc_kv_set('sample', 'fields', $fieldIds);
-        osc_kv_set('sample', 'groups', $groupIds);
+        osc_kv_set(self::GROUP, 'items', $itemIds);
+        osc_kv_set(self::GROUP, 'fields', $fieldIds);
+        osc_kv_set(self::GROUP, 'groups', $groupIds);
 
         return array('listings' => count($itemIds), 'fields' => count($fieldIds), 'errors' => $errors);
     }
 
     /**
-     * Delete the sample listings (with their photos), fields, groups and example page, then forget them.
+     * Delete the sample listings (with their photos), fields and groups, then forget them.
      *
      * @return array{listings: int, fields: int, groups: int}
      */
@@ -190,10 +206,7 @@ final class SampleData
                 $removed['groups']++;
             }
         }
-        foreach ($this->recorded('page') as $id) {
-            \Page::getInstance()->deleteByPrimaryKey($id);
-        }
-        osc_kv_delete_group('sample');
+        osc_kv_delete_group(self::GROUP);
 
         return $removed;
     }
@@ -203,7 +216,7 @@ final class SampleData
      */
     private function recorded(string $key): array
     {
-        $ids = osc_kv_get('sample', $key, array());
+        $ids = osc_kv_get(self::GROUP, $key, array());
 
         return is_array($ids) ? array_values(array_map('intval', $ids)) : array();
     }
