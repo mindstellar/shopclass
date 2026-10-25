@@ -16,6 +16,8 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
 use mindstellar\database\Db;
+use mindstellar\install\SamplePhotos;
+use mindstellar\install\ShopSetup;
 use mindstellar\language\LanguageService;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
@@ -24,6 +26,7 @@ use mindstellar\market\PackageIndex;
 use mindstellar\market\PackageReconciler;
 use mindstellar\market\PluginDependencies;
 use mindstellar\security\Demo;
+use mindstellar\site\SiteMode;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
@@ -215,6 +218,7 @@ class Cli
                 . "             --web-url= --site-title= --locale=\n"
                 . "  Admin:     OSC_ADMIN_EMAIL [OSC_ADMIN_USER=admin] [OSC_ADMIN_PASSWORD] [OSC_ADMIN_NAME]\n"
                 . "             --admin-email= --admin-user= --admin-password= --admin-name=\n"
+                . "  Content:   [--site-type=classifieds|shop] [--plugins=<slug,slug>] [--sample-data] [--sample-photos=<zip>]\n"
             );
 
             return 2;
@@ -274,6 +278,24 @@ class Cli
         $adminEmail = $opt('admin-email', $env('OSC_ADMIN_EMAIL'));
         $adminName  = $opt('admin-name', $env('OSC_ADMIN_NAME'), 'Administrator');
         $createDb   = array_key_exists('create-db', $args);
+        $siteType   = (string) $opt('site-type', $env('OSC_SITE_TYPE'), 'classifieds');
+        $sampleData = array_key_exists('sample-data', $args) || $env('OSC_SAMPLE_DATA') === '1';
+        $photosZip  = $opt('sample-photos', null);
+        if (array_key_exists('sample-photos', $args) && $photosZip === null) {
+            $this->err("--sample-photos needs a path: --sample-photos=/path/to/sample-photos.zip\n");
+
+            return 2;
+        }
+        $plugins    = ShopSetup::defaultPlugins();
+        if (array_key_exists('plugins', $args)) {
+            $plugins = is_string($args['plugins']) ? array_values(array_filter(array_map('trim', explode(',', $args['plugins'])))) : array();
+            $unknown = array_diff($plugins, array_keys(ShopSetup::PLUGINS));
+            if ($unknown !== array()) {
+                $this->err('Unknown --plugins entry: ' . implode(', ', $unknown) . '. Use any of: ' . implode(', ', array_keys(ShopSetup::PLUGINS)) . ".\n");
+
+                return 2;
+            }
+        }
 
         $missing = [];
         foreach (['DB_NAME/--db-name' => $dbName, 'DB_USER/--db-user' => $dbUser,
@@ -289,6 +311,11 @@ class Cli
         }
         if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
             $this->err("Invalid admin email address.\n");
+
+            return 2;
+        }
+        if (!SiteMode::isValid($siteType)) {
+            $this->err("Invalid --site-type. Use classifieds or shop.\n");
 
             return 2;
         }
@@ -391,6 +418,18 @@ class Cli
             return 1;
         }
 
+        install_load_seed_helpers();
+        $photos = new SamplePhotos($photosZip);
+        if (!install_seed_site($siteType, $sampleData, $photos)) {
+            $this->err("Starter categories or sample data could not be fully added; see the error log.\n");
+        }
+        if ($photos->missing()) {
+            $this->err("Sample photos could not be downloaded, so the sample listings have no photos.\n");
+        }
+        if ($siteType === SiteMode::SHOP) {
+            $this->installShop($plugins);
+        }
+
         // Finalize: writes the osclass_installed sentinel LAST.
         finish_installation($adminPassword);
 
@@ -402,6 +441,36 @@ class Cli
         }
 
         return 0;
+    }
+
+    /**
+     * Install Aisle and the chosen shop plugins, then turn on shop mode, in the order ShopSetup::steps()
+     * gives. Any failure leaves the site a classifieds site or a plugin off, and is reported.
+     *
+     * @param list<string> $plugins
+     *
+     * @return void
+     */
+    private function installShop(array $plugins): void
+    {
+        install_load_app_helpers();
+        $setup = ShopSetup::probe();
+        if (!$setup->offer()['available']) {
+            $this->err("The Aisle shop theme is not available (no internet, not in the market yet, or package installs are off). The site stays a classifieds site.\n");
+
+            return;
+        }
+        foreach ($setup->steps($plugins) as $step) {
+            if ($step['action'] === 'install_package') {
+                $this->out(sprintf("Installing %s\n", $step['name']));
+            }
+            $result = $setup->run($step);
+            if (!$result['ok']) {
+                $this->err(sprintf("%s: %s\n", $step['name'], $result['message']));
+            } elseif ($step['action'] === 'activate_theme') {
+                $this->out($result['message'] . "\n");
+            }
+        }
     }
 
     /**

@@ -70,7 +70,7 @@
     }
 
     /* -----------------------------------------------------------------
-       Password / value reveal toggles (used on step 2, step 3, finish)
+       Password / value reveal toggles (used on step 2, step 4, finish)
        ------------------------------------------------------------- */
     function initReveal() {
         var toggles = document.querySelectorAll('[data-reveal-target]');
@@ -306,8 +306,27 @@
     }
 
     /* -----------------------------------------------------------------
-       Step 3: site + admin form, submitted via fetch, then a synthetic
-       POST to install.php carrying the result to step 4.
+       Step 3: the shop plugin list shows only while Shop is picked
+       ------------------------------------------------------------- */
+    function initSiteType() {
+        var form = document.getElementById('ins-site-type-form');
+        var list = document.getElementById('ins-shop-plugins');
+        if (!form || !list) {
+            return;
+        }
+        function sync() {
+            var shop = form.querySelector('input[name="site_type"][value="shop"]');
+            list.hidden = !(shop && shop.checked);
+        }
+        form.querySelectorAll('input[name="site_type"]').forEach(function (radio) {
+            radio.addEventListener('change', sync);
+        });
+        sync();
+    }
+
+    /* -----------------------------------------------------------------
+       Step 4: site + admin form, submitted via fetch, then a synthetic
+       POST to install.php carrying the result to step 5.
        ------------------------------------------------------------- */
     function initTargetForm() {
         var form = document.getElementById('ins-target-form');
@@ -379,21 +398,107 @@
             errorPanel.hidden = false;
         }
 
-        function submitStepFour(emailStatus, password, locationError) {
+        // Steps whose request got no answer (network error, time limit, not JSON); the finish page lists them.
+        var lost = [];
+
+        function submitFinish(emailStatus, password, locationError) {
             var nextForm = document.createElement('form');
             nextForm.method = 'POST';
             nextForm.action = 'install.php';
             nextForm.style.display = 'none';
-            addHiddenField(nextForm, 'step', '4');
+            addHiddenField(nextForm, 'step', '5');
             addHiddenField(nextForm, 'result', emailStatus || '');
             addHiddenField(nextForm, 'password', password || '');
             if (locationError) {
                 addHiddenField(nextForm, 'error_location', '1');
             }
+            lost.forEach(function (token) {
+                addHiddenField(nextForm, 'lost[]', token);
+            });
             var nonceField = form.elements.install_nonce;
             addHiddenField(nextForm, 'install_nonce', nonceField ? nonceField.value : '');
             document.body.appendChild(nextForm);
             nextForm.submit();
+        }
+
+        var queue = [];
+        try {
+            queue = JSON.parse(form.getAttribute('data-shop-queue') || '[]');
+        } catch (e) {
+            queue = [];
+        }
+        var overlayText = document.getElementById('ins-overlay-text');
+
+        function shopRequest(fields) {
+            var params = new URLSearchParams(fields);
+            var nonceField = form.elements.install_nonce;
+            params.set('install_nonce', nonceField ? nonceField.value : '');
+            return fetch('install-location.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString(),
+            }).then(
+                function (response) {
+                    return response.json();
+                },
+                function () {
+                    return null;
+                }
+            ).catch(function () {
+                return null;
+            });
+        }
+
+        // One package or one batch of sample listings per request, so no request runs into a
+        // shared host's time limit. A failure does not stop the queue; the server keeps it for the finish page.
+        function buildSteps(sampleBatches) {
+            var steps = [];
+            if (sampleBatches > 0) {
+                steps.push({ fields: { action: 'sample_photos' }, lost: 'sample_photos', label: text('samplePhotos', 'Downloading sample photos…') });
+            }
+            for (var b = 0; b < sampleBatches; b++) {
+                steps.push({
+                    fields: { action: 'sample_batch', batch: String(b) },
+                    lost: 'sample_batch',
+                    label: text('sampleBatch', 'Adding sample listings… (%1$s of %2$s)')
+                        .replace('%1$s', String(b + 1))
+                        .replace('%2$s', String(sampleBatches)),
+                });
+            }
+            var packages = queue.filter(function (item) {
+                return item.action === 'install_package';
+            });
+            queue.forEach(function (item) {
+                var label = text('shopMode', 'Turning on shop mode…');
+                if (item.action === 'install_package') {
+                    label = text('installing', 'Installing %1$s… (%2$s of %3$s)')
+                        .replace('%1$s', item.name)
+                        .replace('%2$s', String(packages.indexOf(item) + 1))
+                        .replace('%3$s', String(packages.length));
+                }
+                steps.push({
+                    fields: { action: item.action, type: item.type, slug: item.slug },
+                    lost: item.action === 'install_package' ? item.type + ':' + item.slug : 'activate',
+                    label: label,
+                });
+            });
+            return steps;
+        }
+
+        function runSteps(steps, index, done) {
+            if (index >= steps.length) {
+                done();
+                return;
+            }
+            if (overlayText) {
+                overlayText.textContent = steps[index].label;
+            }
+            shopRequest(steps[index].fields).then(function (data) {
+                if (!data && lost.indexOf(steps[index].lost) === -1) {
+                    lost.push(steps[index].lost);
+                }
+                runSteps(steps, index + 1, done);
+            });
         }
 
         form.addEventListener('submit', function (event) {
@@ -429,7 +534,9 @@
                 })
                 .then(function (data) {
                     if (data && data.status) {
-                        submitStepFour(data.email_status, data.password, data.location_error);
+                        runSteps(buildSteps(parseInt(data.sample_batches, 10) || 0), 0, function () {
+                            submitFinish(data.email_status, data.password, data.location_error);
+                        });
                         return;
                     }
                     hideOverlay();
@@ -449,6 +556,7 @@
         initDismissiblePanels();
         initCreateDbToggle();
         initDbTest();
+        initSiteType();
         initTargetForm();
     });
 })();

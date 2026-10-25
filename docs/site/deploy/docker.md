@@ -74,6 +74,8 @@ Everything is set from environment variables:
 | `OSC_CLI_URL` | The site's address for `oc-cli.php`, when `WEB_PATH` is left unset so web pages keep the address they were opened on. Also the address e-mail links use in that case. Use the exact address visitors use |
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | The first admin account. Leave the password unset and a strong one is generated and printed to the logs |
 | `OSC_SITE_TITLE` | Site title at provisioning time |
+| `OSC_SITE_TYPE` | `classifieds` (default) or `shop`, at provisioning time. `shop` also downloads the Aisle theme and the default shop plugins, and needs internet |
+| `OSC_SAMPLE_DATA` | Set to `1` to add the sample listings and custom fields at provisioning time. Remove them later under **Listings** |
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |
 | `OSC_DISABLE_WEB_RESTORE` | Set to `1` to turn off restoring backups from the admin. Backups still work: see [backups](/docs/use/backups-and-maintenance/#turning-web-restore-off) |
 | `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing and updating plugins and themes from the admin market and `oc-cli.php market:*` |

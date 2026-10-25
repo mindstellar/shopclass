@@ -51,6 +51,7 @@ $controllers = array(
         'post'           => 'newItem',
         'post_item'      => 'newItemPost',
         'publish_free'   => 'publishFree',
+        'remove_sample'  => 'removeSample',
         'settings'       => 'settings',
         'settings_post'  => 'settingsPost',
         'status'         => 'setStatus',

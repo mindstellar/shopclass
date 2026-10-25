@@ -55,11 +55,28 @@ header('Content-Type: application/json; charset=utf-8');
 
 // State-changing request: require the installer nonce (osc_csrf_check() cannot
 // work yet — no preferences exist).
-if (!install_nonce_check() || !Session::getInstance()->_get('install_db_done')) {
+if (!install_ajax_allowed()) {
     echo json_encode(array(
         'status' => false,
         'error'  => __('Your session expired. Reload the page and start again.'),
     ));
+    exit;
+}
+
+// Shop set-up, one package per request.
+$shopAction = Params::getParamString('action');
+if ($shopAction === 'install_package' || $shopAction === 'activate_theme') {
+    install_load_app_helpers();
+    $shopResult = install_shop_step($shopAction, Params::getParamString('type'), Params::getParamString('slug'));
+    echo json_encode(array('status' => $shopResult['ok'], 'message' => $shopResult['message']));
+    exit;
+}
+
+// Sample data, one batch per request.
+if ($shopAction === 'sample_photos' || $shopAction === 'sample_batch') {
+    install_load_seed_helpers();
+    $sampleResult = install_sample_step($shopAction, Params::getParamInt('batch'));
+    echo json_encode(array('status' => $sampleResult['ok']));
     exit;
 }
 
@@ -112,5 +129,11 @@ if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $l
         $json_message['location_error'] = true;
     }
 }
+
+// Starter categories now; sample data follows in its own requests. A failure only raises the finish-page notice.
+$choice = install_site_choice();
+install_load_seed_helpers();
+install_seed_site($choice['type'], false);
+$json_message['sample_batches'] = $choice['sample'] ? (new \mindstellar\install\SampleData())->batches($choice['type']) : 0;
 
 echo json_encode($json_message);

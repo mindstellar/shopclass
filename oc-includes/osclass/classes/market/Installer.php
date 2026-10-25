@@ -15,7 +15,6 @@ use mindstellar\backup\BackupStore;
 use mindstellar\security\Demo;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\FileSystem;
-use mindstellar\utility\Validate;
 use mindstellar\utility\Zip;
 use RuntimeException;
 use Throwable;
@@ -189,7 +188,7 @@ final class Installer
         }
         $sha256 = strtolower($sha256);
 
-        if (!Validate::httpUrl($url) || !FileSystem::isAllowedPackageHost($url)) {
+        if (!FileSystem::isPackageDownloadUrl($url)) {
             return $this->result(
                 false,
                 __('Package source host is not on the allowed list for verified downloads.'),

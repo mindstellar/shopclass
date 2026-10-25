@@ -7,6 +7,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only admins post and shoppers get a buyer account. Over the limit, a seller now saves the listing and pays on the last step.
 
 ### New
+- The installer asks what kind of site (classifieds or shop) and offers sample data; the CLI takes `--site-type` and `--sample-data`. Shop installs the Aisle theme and the plugins you tick; sample photos are downloaded when online.
+- New category trees for classifieds and shop sites, for new installs only. Translations of the old category names do not carry over.
+- **Listings** shows a line to remove the sample data the installer added; categories stay.
+- The installer takes Storefront's look, and installs Storefront from the catalogue when it is missing.
 - Option filters and custom-field filters read a filter index (`t_item_facet`), built in the background after the update. `search:reindex` and System info → Database → Rebuild filter index rebuild it.
 - The shop hooks are typed events. A callback whose first parameter is an event class gets the event; the hook names and old callbacks work as before. See [Hooks](https://shopclass.org/docs/developers/hooks/).
 - `osc_admin_is_browsing()` tells the site's own API calls that an admin is browsing, so a theme preview passes maintenance and test-mode gateways show. It grants no admin rights.

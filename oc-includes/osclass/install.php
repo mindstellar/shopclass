@@ -32,6 +32,7 @@ mindstellar\logger\ErrorHandler::getInstance()->register();
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
+require_once LIB_PATH . 'osclass/helpers/hKv.php';
 if (extension_loaded('mysqli')) {
     require_once LIB_PATH . 'osclass/helpers/hPreference.php';
 }
@@ -169,9 +170,22 @@ switch ($step) {
                 $error = oc_install();
             }
         }
+        if (!isset($error['error']) && Session::getInstance()->_get('install_db_done')) {
+            $shop_offer = mindstellar\install\ShopSetup::probe()->offer();
+        }
         break;
     case 4:
+        $site_choice_saved = install_nonce_check() && Session::getInstance()->_get('install_db_done');
+        if ($site_choice_saved) {
+            install_save_site_choice(mindstellar\install\ShopSetup::fromCache()->offer());
+        }
+        break;
+    case 5:
         $password = Params::getParam('password', false, false);
+        if (install_nonce_check() && Session::getInstance()->_get('install_db_done')) {
+            install_discard_sample_photos();
+            install_record_lost_steps(Params::getParamArray('lost'));
+        }
         break;
     default:
         break;

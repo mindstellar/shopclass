@@ -922,6 +922,18 @@ class FileSystem
     private const DOWNLOAD_TIMEOUT_SECONDS = 300;
 
     /**
+     * Whether a package download URL is https on an allowed package host.
+     *
+     * @param string $url
+     *
+     * @return bool
+     */
+    public static function isPackageDownloadUrl(string $url): bool
+    {
+        return Validate::httpUrl($url) && self::isAllowedPackageHost($url);
+    }
+
+    /**
      * Hosts a package download URL is allowed to resolve to, checked by callers such as
      * mindstellar\upgrade\Upgrade before downloadFile() is invoked (this method stays
      * general-purpose and is used by callers that have nothing to do with packages).

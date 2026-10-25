@@ -44,6 +44,12 @@ if (preg_match(
 if ($country_list === array()) {
     $internet_error = true;
 }
+
+// The shop set-up steps run after the form is sent, one request each.
+$ins_choice = install_site_choice();
+$ins_queue  = $ins_choice['type'] === 'shop'
+    ? mindstellar\install\ShopSetup::fromCache()->steps((array) $ins_choice['plugins'])
+    : array();
 ?>
 <h1 class="ins-headline"><?php _e('Set up your site'); ?></h1>
 
@@ -54,7 +60,7 @@ if ($country_list === array()) {
 </noscript>
 
 <div id="ins-target-wrap" class="ins-target-wrap">
-    <form id="ins-target-form" action="#" method="post">
+    <form id="ins-target-form" action="#" method="post" data-shop-queue="<?php echo osc_esc_html((string) json_encode($ins_queue)); ?>">
         <input type="hidden" name="install_nonce" value="<?php echo osc_esc_html($install_nonce); ?>" />
 
         <div id="ins-target-error" class="ins-panel ins-panel-danger" role="alert" hidden></div>
@@ -117,6 +123,6 @@ if ($country_list === array()) {
 
     <div id="ins-setup-overlay" class="ins-overlay" role="status" aria-live="polite" hidden>
         <span class="ins-overlay-spinner" aria-hidden="true"></span>
-        <p><?php _e("Setting up your site… this can take a minute on shared hosting — don't close this tab."); ?></p>
+        <p id="ins-overlay-text"><?php _e("Setting up your site… this can take a minute on shared hosting — don't close this tab."); ?></p>
     </div>
 </div>

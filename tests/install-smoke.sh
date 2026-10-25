@@ -174,14 +174,21 @@ curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install.php" 
   -o "$WORK/step3.html" || fail "the database step did not respond"
 
 # The installer re-renders the database form with the message when it fails, and
-# moves on to the site-details form when it succeeds. The nonce field on the
+# moves on to the site-type form when it succeeds. The nonce field on the
 # page that comes back is the one the finish step needs.
 if grep -qiE 'ins-panel-danger[^>]*>[^<]*[A-Za-z]' "$WORK/step3.html"; then
   grep -oiE 'ins-panel-danger.{0,200}' "$WORK/step3.html" | head -2 >&2
   fail "the database step reported an error"
 fi
-grep -q 'id="ins-target-form"' "$WORK/step3.html" || fail "the database step did not reach the site-details form"
+grep -q 'id="ins-site-type-form"' "$WORK/step3.html" || fail "the database step did not reach the site-type form"
 ok "schema created"
+
+echo "==> step 4: site type"
+curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install.php" \
+  -d "step=4" -d "install_nonce=$(nonce_from "$WORK/step3.html")" -d "site_type=classifieds" \
+  -o "$WORK/step4.html" || fail "the site-type step did not respond"
+grep -q 'id="ins-target-form"' "$WORK/step4.html" || fail "the site-type step did not reach the site-details form"
+ok "site type saved"
 
 # The country list on this form comes from the published catalog, which is reached
 # through a document naming the current release rather than one listing countries.
@@ -198,9 +205,9 @@ CATALOG_URL="$(sed -n "s/.*return '\(https:\/\/[^']*latest\.json\)'.*/\1/p" \
 : "${CATALOG_URL:=https://geo.mindstellar.com/releases/latest.json}"
 
 if curl -fsS --max-time 25 -o /dev/null "$CATALOG_URL" 2>/dev/null; then
-  grep -q 'id="location-json"' "$WORK/step3.html" \
+  grep -q 'id="location-json"' "$WORK/step4.html" \
     || fail "the catalog is reachable but the form offered no country list"
-  COUNTRIES="$(grep -coE '<option value="[A-Za-z]{2}"' "$WORK/step3.html" || true)"
+  COUNTRIES="$(grep -coE '<option value="[A-Za-z]{2}"' "$WORK/step4.html" || true)"
   [ "${COUNTRIES:-0}" -ge 50 ] \
     || fail "the country list offered ${COUNTRIES:-0} countries, expected the catalog's"
   ok "country list populated (${COUNTRIES} countries)"
@@ -211,7 +218,7 @@ fi
 
 # ---------------------------------------------------------------------------
 echo "==> creating the admin account"
-NONCE="$(nonce_from "$WORK/step3.html")"
+NONCE="$(nonce_from "$WORK/step4.html")"
 [ -n "$NONCE" ] || fail "no installer nonce on the site-details form"
 
 # A location that cannot be imported must still let the install finish.
@@ -247,11 +254,11 @@ ok "admin account created"
 # Only this step writes the osclass_installed sentinel, and until it is written
 # every page renders "not installed". A release that gets this far and no
 # further looks installed and is not.
-echo "==> step 4: finalising"
+echo "==> step 5: finalising"
 curl -fsS -b "$JAR" -c "$JAR" \
-  "${BASE}/oc-includes/osclass/install.php?step=4&install_nonce=${NONCE}&password=${ADMIN_PASS}" \
-  -o "$WORK/step4.html" || fail "step 4 did not render"
-grep -qi "session expired" "$WORK/step4.html" && fail "step 4 rejected the installer nonce"
+  "${BASE}/oc-includes/osclass/install.php?step=5&install_nonce=${NONCE}&password=${ADMIN_PASS}" \
+  -o "$WORK/step5.html" || fail "step 5 did not render"
+grep -qi "session expired" "$WORK/step5.html" && fail "step 5 rejected the installer nonce"
 ok "finalised"
 
 # ---------------------------------------------------------------------------

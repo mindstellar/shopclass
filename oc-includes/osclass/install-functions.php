@@ -12,6 +12,7 @@
  */
 
 use mindstellar\admin\SystemChecks;
+use mindstellar\site\SiteMode;
 use PHPMailer\PHPMailer\PHPMailer;
 
 /**
@@ -951,18 +952,6 @@ function oc_install()
         );
     }
 
-    // Sample categories, a demo listing and the default page. These run on the
-    // existing models (their per-locale child rows carry real domain logic), so
-    // they stay on the legacy path and, crucially, are non-fatal: a site with no
-    // sample content still installs cleanly. A failure is flagged for the finish
-    // screen rather than aborting the install.
-    try {
-        oc_install_example_data();
-    } catch (\Throwable $e) {
-        error_log('Shopclass install: sample content could not be added: ' . $e->getMessage());
-        Session::getInstance()->_set('install_sample_warning', 1);
-    }
-
     if ($writesConfig) {
         copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
     }
@@ -973,24 +962,19 @@ function oc_install()
 }
 
 /**
- * Insert the example data (categories and emails) on all available locales
+ * Insert the starter category tree for a site type.
  *
- * @return void
- * @since 2.4
+ * @param string $type 'classifieds' or 'shop'
+ *
+ * @return int Number of categories written
+ * @throws \InvalidArgumentException when the type is unknown
  */
-function oc_install_example_data()
+function install_seed_categories(string $type): int
 {
+    if (!SiteMode::isValid($type)) {
+        throw new \InvalidArgumentException('Unknown site type: ' . $type);
+    }
     require_once LIB_PATH . 'osclass/formatting.php';
-    require LIB_PATH . 'osclass/installer/basic_data.php';
-    /**
-     * @var array<int, array<string, mixed>> $categories
-     * @var array<string, mixed>             $item
-     * @var array<string, mixed>             $page
-     */
-    require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
-    require_once LIB_PATH . 'osclass/helpers/hValidate.php';
-    require_once LIB_PATH . 'osclass/helpers/hUsers.php';
-    $mCat = Category::getInstance();
 
     if (!function_exists('osc_apply_filter')) {
         /**
@@ -1008,37 +992,228 @@ function oc_install_example_data()
         }
     }
 
-    foreach ($categories as $category) {
-        $fields['pk_i_id']           = $category['pk_i_id'];
-        $fields['fk_i_parent_id']    = $category['fk_i_parent_id'];
-        $fields['i_position']        = $category['i_position'];
-        $fields['i_expiration_days'] = 0;
-        $fields['b_enabled']         = 1;
-
-        $aFieldsDescription[osc_current_admin_locale()]['s_name'] = $category['s_name'];
-
-        $mCat->insert($fields, $aFieldsDescription);
+    $rows      = require LIB_PATH . 'osclass/installer/data/categories-' . $type . '.php';
+    $locale    = osc_current_admin_locale();
+    $mCat      = Category::getInstance();
+    $positions = array();
+    foreach ($rows as $row) {
+        $parent                    = $row['parent'];
+        $key                       = (string) $parent;
+        $positions[$key]           = ($positions[$key] ?? 0) + 1;
+        $fields                    = array(
+            'pk_i_id'            => $row['id'],
+            'fk_i_parent_id'     => $parent,
+            'i_position'         => $positions[$key],
+            'i_expiration_days'  => 0,
+            'b_enabled'          => 1,
+        );
+        $mCat->insert($fields, array($locale => array('s_name' => $row['name'])));
     }
 
-    // Posting a listing goes through the billing helper for the seller's limits.
-    // It is required here rather than in the bootstrap because it reads a preference
-    // as it loads, and during bootstrap there is no database to read one from.
-    require_once LIB_PATH . 'osclass/helpers/hTheme.php';
-    require_once LIB_PATH . 'osclass/helpers/hBilling.php';
+    return count($rows);
+}
 
-    $mItem = new ItemActions(true);
+/**
+ * Add the sample custom fields and listings for a site type; see SampleData::install().
+ *
+ * @param string      $type     'classifieds' or 'shop'
+ * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
+ *
+ * @return array{listings: int, failed: int, errors: string[]}
+ * @throws \InvalidArgumentException when the type is unknown
+ */
+function install_seed_sample(string $type, ?string $imageDir = null): array
+{
+    require_once LIB_PATH . 'osclass/helpers/hKv.php';
 
-    foreach ($item as $k => $v) {
-        if ($k === 'description' || $k === 'title') {
-            Params::setParam($k, array(osc_current_admin_locale() => $v));
-        } else {
-            Params::setParam($k, $v);
+    return (new \mindstellar\install\SampleData())->install($type, $imageDir);
+}
+
+/**
+ * Load the helpers the starter content and sample listings call; the installer's bootstrap leaves them out.
+ *
+ * @return void
+ */
+function install_load_seed_helpers(): void
+{
+    foreach (array('hSecurity', 'hValidate', 'hUsers', 'hItems', 'hFields', 'hKv', 'hTheme', 'hBilling') as $helper) {
+        require_once LIB_PATH . 'osclass/helpers/' . $helper . '.php';
+    }
+}
+
+/**
+ * Write what the Your-site step chose: the category tree, the example page and, if asked, all the sample data.
+ * Each part is skipped when it is there already, so a second call resumes. Non-fatal: a failure is
+ * logged and flagged for the finish screen, and the site still installs.
+ *
+ * @param string                                  $type   'classifieds' or 'shop'
+ * @param bool                                    $sample add sample custom fields and listings
+ * @param \mindstellar\install\SamplePhotos|null $photos where the sample photos come from; the pinned download when null
+ *
+ * @return bool True when everything was written
+ */
+function install_seed_site(string $type, bool $sample, ?\mindstellar\install\SamplePhotos $photos = null): bool
+{
+    $ok = install_seed_starter($type);
+    if ($sample && $ok) {
+        $photos ??= new \mindstellar\install\SamplePhotos();
+        try {
+            $ok = install_sample_result((new \mindstellar\install\SampleData())->install($type, $photos->fetch()));
+        } catch (\Throwable $e) {
+            error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
+            $ok = false;
+        } finally {
+            $photos->clean();
         }
     }
+    if (!$ok) {
+        Session::getInstance()->_set('install_sample_warning', 1);
+    }
 
-    $mItem->prepareData(true);
-    $mItem->add();
+    return $ok;
+}
 
+/**
+ * Write the category tree and the example page, unless a category exists already.
+ *
+ * @param string $type 'classifieds' or 'shop'
+ *
+ * @return bool false when they could not be written
+ */
+function install_seed_starter(string $type): bool
+{
+    if (\mindstellar\database\Db::selectOne('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_category LIMIT 1') !== null) {
+        return true;
+    }
+    try {
+        install_seed_categories($type);
+        install_seed_page();
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: starter content could not be added: ' . $e->getMessage());
+
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Log what went wrong while adding sample listings.
+ *
+ * @param array{listings: int, failed: int, errors: string[]} $result SampleData::install() or installBatch()
+ *
+ * @return bool false when a listing could not be saved
+ */
+function install_sample_result(array $result): bool
+{
+    if ($result['errors'] !== array()) {
+        error_log('Shopclass install: sample data was added with errors: ' . implode('; ', $result['errors']));
+    }
+
+    return $result['failed'] === 0;
+}
+
+/**
+ * One step of adding sample data in the browser, one request each so no request runs into a
+ * shared host's time limit: sample_photos fetches the photo pack, sample_batch adds one batch of listings.
+ * The photo folder is removed after the last batch.
+ *
+ * @param string                                  $action sample_photos or sample_batch
+ * @param int                                     $batch  from 0 to SampleData::batches() - 1
+ * @param \mindstellar\install\SamplePhotos|null $photos where the photos come from; the pinned download when null
+ *
+ * @return array{ok:bool}
+ */
+function install_sample_step(string $action, int $batch, ?\mindstellar\install\SamplePhotos $photos = null): array
+{
+    $choice  = install_site_choice();
+    $session = Session::getInstance();
+    $data    = new \mindstellar\install\SampleData();
+    if (!$choice['sample']) {
+        return array('ok' => false);
+    }
+    $photos ??= new \mindstellar\install\SamplePhotos();
+    if ($action === 'sample_photos') {
+        $folder = $photos->fetch();
+        $session->_set('install_sample_photos', (string) $folder);
+        if ($folder === null) {
+            $session->_set('install_sample_photos_failed', 1);
+        }
+
+        return array('ok' => $folder !== null);
+    }
+    $last = $data->batches($choice['type']) - 1;
+    if ($action !== 'sample_batch' || $batch < 0 || $batch > $last) {
+        return array('ok' => false);
+    }
+    $folder = (string) $session->_get('install_sample_photos');
+    try {
+        $ok = install_sample_result($data->installBatch($choice['type'], $batch, $photos->owns($folder) ? $folder : null));
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
+        $ok = false;
+    }
+    if (!$ok) {
+        $session->_set('install_sample_warning', 1);
+    }
+    if ($batch === $last) {
+        install_discard_sample_photos($photos);
+    }
+
+    return array('ok' => $ok);
+}
+
+/**
+ * Remove the photo folder the sample steps unpacked, if one is left.
+ *
+ * @param \mindstellar\install\SamplePhotos|null $photos the default work folder when null
+ *
+ * @return void
+ */
+function install_discard_sample_photos(?\mindstellar\install\SamplePhotos $photos = null): void
+{
+    $session = Session::getInstance();
+    $folder  = (string) $session->_get('install_sample_photos');
+    if ($folder !== '') {
+        ($photos ?? new \mindstellar\install\SamplePhotos())->discard($folder);
+        $session->_set('install_sample_photos', '');
+    }
+}
+
+/**
+ * Install Storefront from the catalogue when it is not on disk, as the newest release this core can run.
+ * A release zip bundles it, so this matters for git checkouts. Failing leaves the site without a public theme.
+ *
+ * @param array<int, array<string,mixed>>|null            $versions Storefront's catalogue releases; read from the catalogue when null
+ * @param callable(array<string,mixed>): array<string,mixed>|null $fetcher   installs a release and returns the Installer result
+ *
+ * @return bool True when Storefront is on disk
+ */
+function install_fallback_theme(?array $versions = null, ?callable $fetcher = null): bool
+{
+    if (is_dir(CONTENT_PATH . 'themes/storefront')) {
+        return true;
+    }
+    $versions ??= \mindstellar\market\Catalog::forThemes()->updates(true)['storefront'] ?? array();
+    $entry      = \mindstellar\market\Compatibility::pickBestVersion($versions);
+    if ($entry === null) {
+        return false;
+    }
+    $fetcher ??= static fn (array $release): array => \mindstellar\market\Installer::forThemes()->install('storefront', $release);
+    $result    = $fetcher($entry);
+
+    return !empty($result['ok']);
+}
+
+/**
+ * Insert the default example page.
+ *
+ * @return void
+ */
+function install_seed_page(): void
+{
+    require LIB_PATH . 'osclass/installer/basic_data.php';
+    /** @var array<string, mixed> $page */
     Page::getInstance()->insert(
         array(
             's_internal_name' => $page['s_internal_name'],
@@ -1356,6 +1531,227 @@ function finish_installation($password)
 function display_database_config($form_data = null, $error = null)
 {
     include_once 'installer/gui/install-database.php';
+}
+
+/**
+ * The notice shown when a step arrives without a valid installer session.
+ *
+ * @return void
+ */
+function install_session_expired_panel()
+{
+    ?>
+    <div class="ins-panel ins-panel-warning" role="alert">
+        <?php _e('Your session expired before setup finished. Please restart the installer to complete it.'); ?>
+    </div>
+    <p>
+        <a class="ins-btn ins-btn-primary" href="install.php"><?php _e('Restart the installer'); ?></a>
+    </p>
+    <?php
+}
+
+/**
+ * Render the "What kind of site?" step.
+ *
+ * @param array{available:bool, reason:string, plugins:list<array<string,mixed>>} $offer  ShopSetup::offer()
+ * @param array{type:string, sample:bool, plugins:list<string>|null}             $chosen install_site_choice()
+ *
+ * @return void
+ */
+function display_site_type(array $offer, array $chosen)
+{
+    include 'installer/gui/install-site-type.php';
+}
+
+/**
+ * What the visitor picked on the site-type step, as kept in the session.
+ *
+ * @return array{type:string, sample:bool, plugins:list<string>|null} plugins is null before the step was sent
+ */
+function install_site_choice(): array
+{
+    $session = Session::getInstance();
+    $plugins = $session->_get('install_shop_plugins');
+
+    return array(
+        'type'    => SiteMode::normalize((string) $session->_get('install_site_type')),
+        'sample'  => (bool) $session->_get('install_sample_data'),
+        'plugins' => is_array($plugins) ? array_values(array_map('strval', $plugins)) : null,
+    );
+}
+
+/**
+ * Keep the site-type step's answer in the session. Shop is kept only when it was offered, and only
+ * offered plugins are kept, so later steps install nothing else.
+ *
+ * @param array{available:bool, plugins:list<array<string,mixed>>} $offer ShopSetup::offer()
+ *
+ * @return void
+ */
+function install_save_site_choice(array $offer): void
+{
+    $shop    = Params::getParamString('site_type') === SiteMode::SHOP && $offer['available'];
+    $offered = array_column($offer['plugins'], 'slug');
+    $posted  = Params::getParamArray('shop_plugins');
+    $plugins = $shop ? array_values(array_intersect($offered, array_filter($posted, 'is_string'))) : array();
+
+    $session = Session::getInstance();
+    $session->_set('install_site_type', $shop ? SiteMode::SHOP : SiteMode::CLASSIFIEDS);
+    $session->_set('install_sample_data', Params::getParamString('sample_data') === '1' ? 1 : 0);
+    $session->_set('install_shop_plugins', $plugins);
+}
+
+/**
+ * Load every helper a normal request has and the core services; plugin install code expects them.
+ *
+ * @return void
+ */
+function install_load_app_helpers(): void
+{
+    foreach (\mindstellar\boot\Boot::HELPERS as $helper) {
+        require_once LIB_PATH . $helper;
+    }
+    \mindstellar\boot\Boot::services();
+}
+
+/**
+ * Whether a state-changing installer request may run: it carries the session's nonce and the
+ * database step is done.
+ *
+ * @return bool
+ */
+function install_ajax_allowed(): bool
+{
+    return install_nonce_check() && (bool) Session::getInstance()->_get('install_db_done');
+}
+
+/**
+ * One step of a shop install, one package per request: install_package (type theme or plugin)
+ * or activate_theme. Only the steps ShopSetup::steps() lists for the plugins ticked on the
+ * site-type step are accepted.
+ *
+ * @param string                              $action install_package or activate_theme
+ * @param string                              $type   theme or plugin
+ * @param string                              $slug
+ * @param \mindstellar\install\ShopSetup|null $setup  the cached catalogue when null
+ *
+ * @return array{ok:bool, message:string}
+ */
+function install_shop_step(string $action, string $type, string $slug, ?\mindstellar\install\ShopSetup $setup = null): array
+{
+    $choice  = install_site_choice();
+    $refused = array('ok' => false, 'message' => __('This package was not chosen for this site.'));
+    if ($choice['type'] !== SiteMode::SHOP) {
+        return $refused;
+    }
+
+    $step = null;
+    try {
+        $setup ??= \mindstellar\install\ShopSetup::fromCache();
+        foreach ($setup->steps((array) $choice['plugins']) as $candidate) {
+            if ($candidate['action'] === $action
+                && ($action === 'activate_theme' || ($candidate['type'] === $type && $candidate['slug'] === $slug))
+            ) {
+                $step = $candidate;
+                break;
+            }
+        }
+        if ($step === null) {
+            return $refused;
+        }
+        $result = $setup->run($step);
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: setting up ' . $slug . ' failed: ' . $e->getMessage());
+        $result = array('ok' => false, 'message' => __('Something went wrong while setting this up.'));
+    }
+    if ($step === null) {
+        return $result;
+    }
+
+    $session = Session::getInstance();
+    if ($step['action'] === 'activate_theme') {
+        $session->_set('install_shop_activate_error', $result['ok'] ? '' : $result['message']);
+
+        return $result;
+    }
+    $failed = (array) ($session->_get('install_shop_failed') ?: array());
+    unset($failed[$step['slug']]);
+    if (!$result['ok']) {
+        $failed[$step['slug']] = array('type' => $step['type'], 'message' => $result['message']);
+    }
+    $session->_set('install_shop_failed', $failed);
+
+    return $result;
+}
+
+/**
+ * Record the steps whose request the browser got no answer to, so the finish page lists them.
+ * Only steps this install chose are kept.
+ *
+ * @param array<int, mixed> $tokens sample_photos, sample_batch, activate, theme:aisle or plugin:<slug>
+ *
+ * @return void
+ */
+function install_record_lost_steps(array $tokens): void
+{
+    $choice  = install_site_choice();
+    $session = Session::getInstance();
+    $failed  = (array) ($session->_get('install_shop_failed') ?: array());
+    $message = __('The server did not answer in time, or the connection dropped.');
+    $chosen  = array_merge(array('theme:' . \mindstellar\install\ShopSetup::THEME), array_map(
+        static fn (string $slug): string => 'plugin:' . $slug,
+        (array) $choice['plugins']
+    ));
+    foreach (array_filter($tokens, 'is_string') as $token) {
+        if ($choice['sample'] && $token === 'sample_photos') {
+            $session->_set('install_sample_photos_failed', 1);
+        } elseif ($choice['sample'] && $token === 'sample_batch') {
+            $session->_set('install_sample_warning', 1);
+        } elseif ($choice['type'] !== SiteMode::SHOP) {
+            continue;
+        } elseif ($token === 'activate') {
+            $session->_set('install_shop_activate_error', $message);
+        } elseif (in_array($token, $chosen, true)) {
+            [$type, $slug] = explode(':', $token, 2);
+            $failed[$slug] = array('type' => $type, 'message' => $message);
+        }
+    }
+    $session->_set('install_shop_failed', $failed);
+}
+
+/**
+ * What the finish page says about a shop install, or null on a classifieds install.
+ *
+ * @param string $siteMode the site mode now
+ *
+ * @return array{ok:bool, text:string}|null
+ */
+function install_shop_notice(string $siteMode): ?array
+{
+    if (install_site_choice()['type'] !== SiteMode::SHOP) {
+        return null;
+    }
+    if ($siteMode === SiteMode::SHOP) {
+        return array('ok' => true, 'text' => __('Shop mode is on, with the Aisle theme.'));
+    }
+    $session = Session::getInstance();
+    $failed  = (array) ($session->_get('install_shop_failed') ?: array());
+    $later   = __('The site stays a classifieds site with the shop categories. Install Aisle under Appearance, then switch to shop mode in Settings, General.');
+    if (isset($failed[\mindstellar\install\ShopSetup::THEME])) {
+        return array('ok' => false, 'text' => sprintf(
+            /* translators: 1: why the theme failed, 2: what happens next */
+            __('The Aisle theme could not be installed: %1$s %2$s'),
+            (string) $failed[\mindstellar\install\ShopSetup::THEME]['message'],
+            $later
+        ));
+    }
+
+    return array('ok' => false, 'text' => sprintf(
+        /* translators: 1: why shop mode is off, 2: what happens next */
+        __('The Aisle theme was installed, but shop mode could not be turned on: %1$s %2$s'),
+        (string) ($session->_get('install_shop_activate_error') ?: __('the last step did not finish.')),
+        __('The site stays a classifieds site with the shop categories. Switch to shop mode in Settings, General once the problem is fixed.')
+    ));
 }
 
 /**
