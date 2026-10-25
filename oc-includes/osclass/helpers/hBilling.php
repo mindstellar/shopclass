@@ -95,14 +95,14 @@ function osc_billing_credits_enabled(): bool
 
 /**
  * Whether a listing over the free limit is held until its slot is paid, instead of refused.
- * Needs billing and slot sales on; the billing_pay_at_post preference defaults to on.
+ * Needs credits (billing on, not a shop) and slot sales on; the billing_pay_at_post preference defaults to on.
  * Set on the admin Billing > Pricing screen.
  *
  * @return bool
  */
 function osc_billing_pay_at_post(): bool
 {
-    if (!osc_billing_enabled() || !osc_billing_slot_enabled()) {
+    if (!osc_billing_credits_enabled() || !osc_billing_slot_enabled()) {
         return false;
     }
     $v = osc_get_preference('billing_pay_at_post', 'osclass');
@@ -907,7 +907,7 @@ function osc_item_premium_expiration(?array $item = null): ?string
 }
 
 /**
- * Whether a listing is eligible to be featured for credits: billing switched on,
+ * Whether a listing is eligible to be featured for credits: credits in use (billing on, not a shop),
  * featuring itself switched on, and the listing not already featured. A price of 0
  * with billing_premium_enabled on means every seller can feature for free -- it does
  * not mean unavailable.
@@ -918,7 +918,7 @@ function osc_item_premium_expiration(?array $item = null): ?string
  */
 function osc_item_can_be_featured(?array $item = null): bool
 {
-    if (!osc_billing_enabled() || !osc_billing_premium_enabled()) {
+    if (!osc_billing_credits_enabled() || !osc_billing_premium_enabled()) {
         return false;
     }
 
@@ -1024,7 +1024,7 @@ function osc_item_is_urgent(?array $item = null): bool
 }
 
 /**
- * Whether an item may be bumped right now: bump is switched on, the item belongs to
+ * Whether an item may be bumped right now: credits are in use, bump is switched on, the item belongs to
  * the logged-in user, and there is no live cooldown row. Bump has no state of its
  * own beyond that row -- the cooldown IS the row's expiry, not a second concept.
  *
@@ -1034,7 +1034,7 @@ function osc_item_is_urgent(?array $item = null): bool
  */
 function osc_item_can_bump(?array $item = null): bool
 {
-    if (!osc_billing_enabled() || !osc_billing_bump_enabled()) {
+    if (!osc_billing_credits_enabled() || !osc_billing_bump_enabled()) {
         return false;
     }
 

@@ -37,6 +37,10 @@ $tabs = array(
     'shop'     => __('Shop'),
     'methods'  => __('Payment methods'),
 );
+$shown = __get('billing_tabs');
+if (is_array($shown)) {
+    $tabs = array_intersect_key($tabs, array_flip($shown));
+}
 $tab = (string) __get('billing_tab');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>

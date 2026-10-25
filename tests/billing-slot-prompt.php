@@ -27,7 +27,7 @@ function osc_is_web_user_logged_in()
     global $S;
     return $S['in'];
 }
-function osc_billing_enabled()
+function osc_billing_credits_enabled()
 {
     global $S;
     return $S['on'];

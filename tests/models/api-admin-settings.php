@@ -71,6 +71,15 @@ pin('the stored values, typed', ['My shop', 'owner@example.test', 10, true], [
     $r->body()['data']['site_title'] ?? null, $r->body()['data']['contact_email'] ?? null, $r->body()['data']['comments_per_page'] ?? null, $r->body()['data']['comments_enabled'] ?? null,
 ]);
 pin('matches the schema', [], api_admin_schema_errors('SettingsDocument', $r));
+osc_set_preference('selectable_parent_categories', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+$parents = static fn (): bool => (new ExposedSettings())->read()['selectable_parent_categories'];
+$plain   = $parents();
+osc_set_preference('site_mode', 'shop');
+osc_reset_preferences();
+pin('a shop reads parent categories as selectable, whatever is stored', [false, true], [$plain, $parents()]);
+osc_set_preference('site_mode', 'classifieds');
+osc_reset_preferences();
 pin('no stored secret is in the answer', [], array_values(array_filter($secrets, static fn (string $secret): bool => str_contains($json, $secret))));
 $fields = [];
 foreach (ExposedSettings::FIELDS as $member => [$form, $field]) {

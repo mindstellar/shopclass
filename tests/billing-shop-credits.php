@@ -21,6 +21,7 @@ require_once __DIR__ . '/lib/api-admin-kit.php';
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
@@ -36,6 +37,12 @@ foreach (array('error', 'ok', 'warning', 'info') as $kind) {
     }
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+if (!function_exists('_mn')) {
+    function _mn($single, $plural, $n)
+    {
+        return (int) $n === 1 ? $single : $plural;
+    }
+}
 
 seed_locale($admin);
 seed_currency($admin);
@@ -160,6 +167,24 @@ $mode = static function (string $mode): void {
 $menu = static fn (): array => array_column(osc_apply_filter('user_menu_filter', array()), 'class');
 $order  = OrderStore::create($uid, 'scgw', 2_000_000, 'USD', 5);
 $wallet = static fn (): string => (string) Receipts::vars($order)['wallet'];
+foreach (array('billing_slot_enabled' => '1', 'billing_premium_enabled' => '1', 'billing_bump_enabled' => '1', 'billing_free_live_listings' => '1') as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+scratchdb_forget_cache();
+osc_reset_preferences();
+$listing = Item::getInstance()->findByPrimaryKey(seed_item($admin, seed_category($admin, 'Mugs', null, 'en_US'), $uid, 'Mug', 9.0));
+$selling = static fn (): array => array(
+    'pay at post' => osc_billing_pay_at_post(),
+    'feature'     => osc_item_can_be_featured($listing),
+    'bump'        => osc_item_can_bump($listing),
+    'over limit'  => ListingCheckout::postingRule($uid),
+);
+$slotPrompt = static function (): string {
+    ob_start();
+    require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php';
+
+    return trim((string) ob_get_clean());
+};
 
 harness_section('classifieds');
 $mode('classifieds');
@@ -167,6 +192,8 @@ check('credits are on', osc_billing_credits_enabled() && osc_billing_can_buy());
 pin('the buy and wallet pages draw', array('view:user-billing-buy.php', 'view:user-billing-wallet.php'), array(shop_credits_open('buy'), shop_credits_open('')));
 pin('the account menu links Addresses, Credits and Buy credits', array('opt_addresses', 'opt_billing_wallet', 'opt_billing_buy'), $menu());
 check('the receipt links the wallet', $wallet() !== '');
+pin('a seller can pay at post, feature and bump', array('pay at post' => true, 'feature' => true, 'bump' => true, 'over limit' => ListingCheckout::POST_HOLD), $selling());
+check('a seller at the limit is offered a slot', $slotPrompt() !== '');
 
 harness_section('shop');
 $mode('shop');
@@ -175,6 +202,8 @@ pin('buy, wallet, checkout, upgrades and the pay step are 404', array_fill(0, 6,
 pin('the order list still draws', 'view:user-billing-orders.php', shop_credits_open('orders'));
 pin('the account menu has no credit links', array(), array_values(array_intersect(array('opt_billing_wallet', 'opt_billing_buy'), $menu())));
 pin('the receipt has no wallet link', '', $wallet());
+pin('no paying at post, featuring, bumping or listing limit', array('pay at post' => false, 'feature' => false, 'bump' => false, 'over limit' => ListingCheckout::POST_PUBLISH), $selling());
+pin('and no slot offer', '', $slotPrompt());
 
 harness_section('shop, with an admin signed in');
 $adminId = api_admin_seed_admin($admin, 'boss');

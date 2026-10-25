@@ -91,6 +91,8 @@ final class ExposedSettings
             $values[$page] ??= osc_settings_values($page);
             $out[$member] = self::typed($values[$page][$field] ?? null, (string) $schema['type']);
         }
+        // A shop always allows parent categories, whatever is stored.
+        $out['selectable_parent_categories'] = (bool) osc_selectable_parent_categories();
 
         return $out;
     }

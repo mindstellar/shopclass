@@ -17,7 +17,7 @@ if (!defined('ABS_PATH')) {
  * them one at a time. Renders nothing otherwise.
  */
 
-if (!osc_is_web_user_logged_in() || !osc_billing_enabled() || osc_user_can_publish()) {
+if (!osc_is_web_user_logged_in() || !osc_billing_credits_enabled() || osc_user_can_publish()) {
     return;
 }
 

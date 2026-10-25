@@ -1238,6 +1238,17 @@ pin('an amount that is not a number is refused', array('warning:Enter an amount,
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
 pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
 
+seed_pref($admin, 'site_mode', 'shop');
+osc_reset_preferences();
+$run = drive('CAdminSettingsBilling', 'billing');
+pin('a shop hides the credit tabs', array('switch', 'offline', 'receipts', 'shop', 'methods'), __get('billing_tabs'));
+$run = drive('CAdminSettingsBilling', 'billing_pricing_post', array('billing_currency' => 'GBP') + $pricing);
+pin('and their forms do not save, so what is stored is kept', array(array(), array('EUR', 'STRING'), array('settings/billing.php')), array($run['flashes'], pref($admin, 'billing_currency'), $run['views']));
+seed_pref($admin, 'site_mode', 'classifieds');
+osc_reset_preferences();
+drive('CAdminSettingsBilling', 'billing');
+pin('classifieds shows them', array('switch', 'pricing', 'offline', 'upgrades', 'limits', 'receipts', 'shop', 'methods'), __get('billing_tabs'));
+
 harness_section('billing pricing: pay at post');
 
 $payFields = SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_PRICING);

@@ -418,7 +418,7 @@ final class ListingCheckout
      */
     public static function postingRule(int $userId, array $ctx = array(), bool $current = false, bool $mayHold = true): string
     {
-        $within = !osc_billing_enabled() || EntitlementStore::withinFreeQuota($userId, $current);
+        $within = !osc_billing_credits_enabled() || EntitlementStore::withinFreeQuota($userId, $current);
         if (EntitlementStore::canPublish($userId, $ctx, $within)) {
             return self::POST_PUBLISH;
         }

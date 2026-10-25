@@ -914,7 +914,7 @@ final class ListingService
         // The one choke point for the listing quota: guests and admin posts are not metered.
         // Over the limit the listing is held until paid for, or refused (see postingRule()).
         // It runs here, inside the transaction, so the seller lock holds until the insert commits.
-        if ((!$actor->isAdmin() || $import) && osc_billing_enabled() && !empty($aItem['userId'])) {
+        if ((!$actor->isAdmin() || $import) && osc_billing_credits_enabled() && !empty($aItem['userId'])) {
             // Locked, so two posts or a post and a publish cannot both take the last free slot.
             \mindstellar\billing\EntitlementStore::lockSeller((int) $aItem['userId']);
             $rule = \mindstellar\billing\ListingCheckout::postingRule((int) $aItem['userId'], array('item' => $aItem), true, !$actor->isAdmin());

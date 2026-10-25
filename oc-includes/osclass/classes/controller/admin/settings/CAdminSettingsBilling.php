@@ -39,6 +39,9 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         'billing_shop_post'     => 'shop',
     );
 
+    /** Tabs for selling credits, which a shop does not do: hidden there, their values kept. */
+    private const CREDIT_TABS = array('pricing', 'upgrades', 'limits');
+
     /**
      * Boots the admin controller and fires the init_admin_settings_billing hook.
      */
@@ -56,7 +59,7 @@ class CAdminSettingsBilling extends AdminSecBaseModel
      */
     public function doModel()
     {
-        if (isset(self::FORMS[$this->action])) {
+        if (isset(self::FORMS[$this->action]) && in_array(self::FORMS[$this->action], self::tabs(), true)) {
             $this->save($this->action);
 
             return;
@@ -89,6 +92,19 @@ class CAdminSettingsBilling extends AdminSecBaseModel
 
         osc_add_flash_ok_message(self::saved($action), 'admin');
         $this->redirectTo(self::tabUrl(self::FORMS[$action]));
+    }
+
+    /**
+     * The tabs this site shows: every form's and the payment methods, without the credit tabs
+     * in shop mode.
+     *
+     * @return string[]
+     */
+    private static function tabs(): array
+    {
+        $tabs = array_merge(array_values(self::FORMS), array('methods'));
+
+        return osc_is_shop_mode() ? array_values(array_diff($tabs, self::CREDIT_TABS)) : $tabs;
     }
 
     /**
@@ -172,7 +188,8 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         if ($tab === '') {
             $tab = Params::getParamString('tab');
         }
-        $this->_exportVariableToView('billing_tab', in_array($tab, self::FORMS, true) || $tab === 'methods' ? $tab : 'switch');
+        $this->_exportVariableToView('billing_tab', in_array($tab, self::tabs(), true) ? $tab : 'switch');
+        $this->_exportVariableToView('billing_tabs', self::tabs());
         // Exported under the name it has always had as well: a replaced admin theme's own
         // view reads it, and View::_get() answers '' for a key nobody exported -- so the
         // switch would draw unticked and the next save would turn billing off.
