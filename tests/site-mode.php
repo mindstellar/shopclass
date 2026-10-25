@@ -81,6 +81,22 @@ check('features.shop is false in classifieds', !$siteFeatures('classifieds'));
 check('features.shop is true in shop', $siteFeatures('shop'));
 check('features.shop is false for a stored both', !$siteFeatures('both'));
 
+harness_section('parent categories');
+$admin->query("INSERT INTO {$p}t_category (fk_i_parent_id, i_expiration_days, i_position, b_enabled) VALUES (NULL, 0, 0, 1)");
+$parent = (int) $admin->insert_id;
+Preference::getInstance()->set('selectable_parent_categories', '0');
+$mode('classifieds');
+check('classifieds: the stored off is kept', !osc_selectable_parent_categories());
+check('classifieds: a parent category is refused', !(new \mindstellar\utility\Validate())->category($parent));
+$mode('shop');
+check('shop: on with the stored value off', (bool) osc_selectable_parent_categories());
+check('shop: a parent category is accepted', (new \mindstellar\utility\Validate())->category($parent));
+Preference::getInstance()->set('selectable_parent_categories', '1');
+$mode('classifieds');
+check('classifieds: the stored on is kept', (bool) osc_selectable_parent_categories());
+Preference::getInstance()->set('selectable_parent_categories', '0');
+$admin->query("DELETE FROM {$p}t_category WHERE pk_i_id = {$parent}");
+
 harness_section('the migration');
 $run = static function () use ($p): void {
     (require ABS_PATH . 'oc-includes/osclass/installer/migrations/0077_site_mode.php')->up(\mindstellar\database\Connection::getInstance());

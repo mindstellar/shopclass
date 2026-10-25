@@ -55,6 +55,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
 
 ### Changed
+- In shop mode a listing can be posted in a parent category, whatever the stored setting.
 - Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.
 - Core works with MariaDB 11.6+ snapshot isolation (`innodb_snapshot_isolation=ON`): rows are locked first, and plugin writes should follow the [Write transactions](https://shopclass.org/docs/developers/database/) rule, locking the listing with `ListingStore::lockForWrite()` in `apply()`.
 - Option names that differ only by case or accent count as one filter; the listing form refuses such duplicates.

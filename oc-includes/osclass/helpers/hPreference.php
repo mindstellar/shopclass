@@ -1264,12 +1264,17 @@ function osc_comment_spam_delay()
 }
 
 /**
- * Gets if parent categories are enabled or not
+ * Gets if parent categories are enabled or not. A shop always allows them; the stored
+ * value is kept for when the site goes back to classifieds.
  *
- * @return string '1' when a parent category may be selected
+ * @return string|bool '1' or true when a parent category may be selected
  */
 function osc_selectable_parent_categories()
 {
+    if (osc_site_mode() === \mindstellar\site\SiteMode::SHOP) {
+        return true;
+    }
+
     return getPreference('selectable_parent_categories');
 }
 
