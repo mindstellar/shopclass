@@ -29,6 +29,7 @@ use mindstellar\event\DispatcherInterface;
 use mindstellar\listing\ListingStatus;
 use mindstellar\mail\event\MailComposing;
 use mindstellar\mail\event\MailSent;
+use mindstellar\site\SiteMode;
 use OSCLocale;
 use Page;
 use Params;
@@ -2077,7 +2078,8 @@ final class CoreEmails
         $itemId = (int) ($item['pk_i_id'] ?? 0);
         // Read fresh: a listing paid or deleted since the caller read it gets no reminder.
         $item = $itemId > 0 ? Item::getInstance()->findByPrimaryKey($itemId) : null;
-        if (!is_array($item) || !ListingStatus::isHeld($item)) {
+        // A shop has no pay step to link to.
+        if (!is_array($item) || !ListingStatus::isHeld($item) || osc_site_mode() === SiteMode::SHOP) {
             return;
         }
         $ownerId = (int) ($item['fk_i_user_id'] ?? 0);

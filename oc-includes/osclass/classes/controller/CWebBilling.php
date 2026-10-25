@@ -23,6 +23,7 @@ use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
 use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
+use mindstellar\site\SiteMode;
 
 /**
  * The buyer-facing side of billing: wallet, checkout, orders, and featuring a listing.
@@ -101,6 +102,12 @@ class CWebBilling extends WebSecBaseModel
      */
     public function doModel()
     {
+        // A shop has no credits or pay step; only the order pages stay.
+        if (osc_site_mode() === SiteMode::SHOP && !in_array($this->action, array('orders', 'receipt'), true)) {
+            $this->do404();
+
+            return;
+        }
         $this->redirectShopperHome();
 
         switch ($this->action) {

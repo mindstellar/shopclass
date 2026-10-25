@@ -756,7 +756,8 @@ function osc_billing_gateways(): array
  */
 function osc_billing_can_buy(): bool
 {
-    return osc_billing_gateways() !== array()
+    return osc_billing_credits_enabled()
+        && osc_billing_gateways() !== array()
         && osc_billing_packages() !== array();
 }
 
@@ -1590,7 +1591,7 @@ if (!function_exists('osc_billing_gateway_setup_url')) {
  * the other -- no theme file has to know billing exists.
  */
 osc_add_hook('user_menu_filter', static function (array $options): array {
-    if (!osc_billing_enabled()) {
+    if (!osc_billing_credits_enabled()) {
         return $options;
     }
 

@@ -57,7 +57,7 @@ if (!defined('ABS_PATH')) {
     <?php osc_run_hook('user_register_form_after'); ?>
 
     <p class="oe-muted"><?php echo osc_esc_html(_m('Already have an account?')); ?>
-        <a href="<?php echo osc_esc_html(osc_user_login_url()); ?>"><?php
+        <a href="<?php echo osc_esc_html(osc_user_login_url(osc_login_return_path())); ?>"><?php
             echo osc_esc_html(_m('Sign in')); ?></a></p>
 
     <?php UserForm::js_validation(); ?>

@@ -1566,6 +1566,18 @@ function osc_billing_enabled()
     );
 }
 
+/**
+ * Whether credits are in use: billing is on and the site is not a shop. Shoppers cannot post,
+ * so a shop hides packages, credits and paying to publish; their data stays.
+ *
+ * @return bool
+ * @since 7.1.0
+ */
+function osc_billing_credits_enabled(): bool
+{
+    return osc_billing_enabled() && osc_site_mode() !== \mindstellar\site\SiteMode::SHOP;
+}
+
 // PRIVATE FUNCTION FOR GETTING NO BOOLEAN INFORMATION (if there was a class :P)
 /**
  * Gets preference

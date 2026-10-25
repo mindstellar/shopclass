@@ -47,7 +47,7 @@ if (!osc_is_web_user_logged_in()) {
     $total  = OrderStore::searchCount(array('user_id' => $userId));
 }
 
-$shopper = osc_is_shopper();
+$shopper = osc_is_shopper() || !osc_billing_credits_enabled();
 ?>
 <div class="oe-account">
 <div class="oe-account-main">

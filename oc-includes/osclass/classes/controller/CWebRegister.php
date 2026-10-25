@@ -69,7 +69,7 @@ class CWebRegister extends BaseModel
                     $do->doModel();
                 } else {
                     osc_add_flash_error_message($success);
-                    $this->redirectTo(osc_register_account_url());
+                    $this->redirectTo(osc_register_account_url(osc_login_return_path()));
                 }
                 break;
             case ('validate'):       //validate account

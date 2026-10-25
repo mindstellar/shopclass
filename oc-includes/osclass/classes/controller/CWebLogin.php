@@ -68,6 +68,11 @@ class CWebLogin extends BaseModel
         }
         osc_csrf_check();
 
+        // A `return` path from the sign-in link wins over the remembered page, and every
+        // bounce back to the form keeps it.
+        $return = osc_login_return_url(Params::getParamString('return', false, false, false));
+        $back   = osc_user_login_url(osc_login_return_path());
+
         // e-mail or/and password is/are empty or incorrect
         $wrongCredentials = false;
         $email            = trim(Params::getParamString('email'));
@@ -81,12 +86,12 @@ class CWebLogin extends BaseModel
             $wrongCredentials = true;
         }
         if ($wrongCredentials) {
-            $this->redirectTo(osc_user_login_url());
+            $this->redirectTo($back);
         }
 
         if (!\mindstellar\security\Captcha::passes()) {
             osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage());
-            $this->redirectTo(osc_user_login_url());
+            $this->redirectTo($back);
         }
 
         $signIn = \mindstellar\auth\SignIn::attempt($email, $password, osc_captcha_enabled());
@@ -94,11 +99,11 @@ class CWebLogin extends BaseModel
         switch ($signIn->status()) {
             case \mindstellar\auth\SignIn::BLOCKED:
                 osc_add_flash_error_message(osc_login_throttle_message($signIn->retryAfter()));
-                $this->redirectTo(osc_user_login_url());
+                $this->redirectTo($back);
                 break;
             case \mindstellar\auth\SignIn::WRONG:
                 osc_add_flash_error_message(_m('Invalid email/username or password'));
-                $this->redirectTo(osc_user_login_url());
+                $this->redirectTo($back);
                 break;
             case \mindstellar\auth\SignIn::BANNED:
                 if ($signIn->banned() & 1) {
@@ -107,7 +112,7 @@ class CWebLogin extends BaseModel
                 if ($signIn->banned() & 2) {
                     osc_add_flash_error_message(_m('Your current IP is not allowed'));
                 }
-                $this->redirectTo(osc_user_login_url());
+                $this->redirectTo($back);
                 break;
             case \mindstellar\auth\SignIn::INACTIVE:
                 if ((time() - strtotime($user['dt_access_date'])) > 1200) { // EACH 20 MINUTES
@@ -118,16 +123,18 @@ class CWebLogin extends BaseModel
                 } else {
                     osc_add_flash_error_message(_m('The user has not been validated yet'));
                 }
-                $this->redirectTo(osc_user_login_url());
+                $this->redirectTo($back);
                 break;
             case \mindstellar\auth\SignIn::DISABLED:
                 osc_add_flash_error_message(_m('The user has been suspended'));
-                $this->redirectTo(osc_user_login_url());
+                $this->redirectTo($back);
                 break;
         }
 
         $url_redirect = osc_pop_login_redirect();
-        if (osc_rewrite_enabled() && $url_redirect != '') {
+        if ($return !== '') {
+            $url_redirect = $return;
+        } elseif (osc_rewrite_enabled() && $url_redirect != '') {
             // if comes from oc-admin/
             if (strpos($url_redirect, 'oc-admin') !== false) {
                 $url_redirect = osc_user_dashboard_url();
@@ -161,7 +168,7 @@ class CWebLogin extends BaseModel
         $fresh = User::getInstance()->findByPrimaryKey((int) $user['pk_i_id']);
         if (!$fresh || !$fresh['b_active'] || !$fresh['b_enabled']) {
             osc_add_flash_error_message(_m("The user doesn't exist"));
-            $this->redirectTo(osc_user_login_url());
+            $this->redirectTo($back);
         }
         osc_web_user_login($fresh, Params::getParam('remember') == 1);
 
@@ -329,7 +336,10 @@ class CWebLogin extends BaseModel
         // Stash where the visitor came from in a short-lived signed cookie rather
         // than the session, so merely opening the login page never starts a session
         // (which would carry an osclass cookie and defeat reverse-proxy caching).
-        osc_set_login_redirect(osc_get_http_referer(), true);
+        // A sign-in link with a valid `return` already says where to go, so no cookie is set.
+        if (osc_login_return_path() === '') {
+            osc_set_login_redirect(osc_get_http_referer(), true);
+        }
         if (osc_logged_user_id()) {
             $this->redirectTo(osc_user_dashboard_url());
         }

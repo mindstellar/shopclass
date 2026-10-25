@@ -31,6 +31,7 @@ use mindstellar\api\write\PhotoIntake;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\currency\CurrencyService;
 use mindstellar\listing\PhotoRoom;
+use mindstellar\site\SiteMode;
 
 /**
  * The seller's own listings: `POST /listings`, `PATCH` and `DELETE /listings/{id}` and
@@ -129,6 +130,9 @@ final class ListingWritesController
      */
     public function publish(ApiCall $call): Response
     {
+        if (osc_site_mode() === SiteMode::SHOP) {
+            throw ProblemException::notFound('A shop has no pay step for listings.');
+        }
         if (!$call->credential()->has('orders:write')) {
             throw ProblemException::from(Problem::insufficientScope('orders:write'));
         }
