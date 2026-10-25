@@ -147,7 +147,7 @@ function osc_comment_ratings_enabled(): bool
 {
     $value = (string) getPreference('comment_ratings');
 
-    return $value === '' ? osc_site_mode() === \mindstellar\site\SiteMode::SHOP : (bool) $value;
+    return $value === '' ? osc_is_shop_mode() : (bool) $value;
 }
 
 /**
@@ -1271,7 +1271,7 @@ function osc_comment_spam_delay()
  */
 function osc_selectable_parent_categories()
 {
-    if (osc_site_mode() === \mindstellar\site\SiteMode::SHOP) {
+    if (osc_is_shop_mode()) {
         return true;
     }
 
@@ -1464,6 +1464,17 @@ function osc_site_mode(): string
 }
 
 /**
+ * Whether the site is a shop: only admins add products, and shoppers buy them.
+ *
+ * @return bool
+ * @since 7.1.0
+ */
+function osc_is_shop_mode(): bool
+{
+    return osc_site_mode() === \mindstellar\site\SiteMode::SHOP;
+}
+
+/**
  * Return subdomain type
  *
  * @return string
@@ -1564,18 +1575,6 @@ function osc_billing_enabled()
         \mindstellar\billing\Billing::PREF_ENABLED,
         \mindstellar\billing\Billing::PREF_GROUP
     );
-}
-
-/**
- * Whether credits are in use: billing is on and the site is not a shop. Shoppers cannot post,
- * so a shop hides packages, credits and paying to publish; their data stays.
- *
- * @return bool
- * @since 7.1.0
- */
-function osc_billing_credits_enabled(): bool
-{
-    return osc_billing_enabled() && osc_site_mode() !== \mindstellar\site\SiteMode::SHOP;
 }
 
 // PRIVATE FUNCTION FOR GETTING NO BOOLEAN INFORMATION (if there was a class :P)

@@ -552,7 +552,7 @@ function osc_admin_is_browsing(): bool
  */
 function osc_is_shopper(): bool
 {
-    return osc_site_mode() === \mindstellar\site\SiteMode::SHOP
+    return osc_is_shop_mode()
         && osc_is_web_user_logged_in()
         && !osc_is_admin_user_logged_in();
 }
@@ -1335,7 +1335,7 @@ function osc_user_addresses_url(): string
  */
 function osc_address_book_enabled(): bool
 {
-    return osc_site_mode() === \mindstellar\site\SiteMode::SHOP || osc_billing_enabled();
+    return osc_is_shop_mode() || osc_billing_enabled();
 }
 
 /**

@@ -20,7 +20,6 @@ use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\apikey\ApiSettings;
 use mindstellar\billing\CartPricer;
-use mindstellar\site\SiteMode;
 
 /**
  * `GET /`: what the site is, what the API allows on it and where its collections are.
@@ -65,7 +64,7 @@ final class SiteController
                 'registration' => (bool) osc_user_registration_enabled(),
                 'comments'     => $facts->commentsEnabled(),
                 'ratings'      => $facts->commentsEnabled() && osc_comment_ratings_enabled(),
-                'shop'         => osc_site_mode() === SiteMode::SHOP,
+                'shop'         => osc_is_shop_mode(),
             ],
             'api'            => [
                 'registration'  => $settings->registration() && $facts->usersEnabled() && (bool) osc_user_registration_enabled(),

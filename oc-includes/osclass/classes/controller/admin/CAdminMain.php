@@ -130,7 +130,7 @@ class CAdminMain extends AdminSecBaseModel
      */
     private function exportToShip(): void
     {
-        if (osc_site_mode() !== 'shop' || !osc_billing_enabled() || osc_is_moderator()) {
+        if (!osc_is_shop_mode() || !osc_billing_enabled() || osc_is_moderator()) {
             return;
         }
         $waiting = \mindstellar\billing\OrderStore::oldestToShip(5);

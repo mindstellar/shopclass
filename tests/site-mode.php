@@ -33,9 +33,9 @@ $root  = Actor::admin(1, '192.0.2.80');
 Preference::getInstance()->set('reg_user_post', '0');
 
 harness_section('the setting');
-pin('unset reads classifieds', 'classifieds', osc_site_mode());
+pin('unset reads classifieds', ['classifieds', false], [osc_site_mode(), osc_is_shop_mode()]);
 $mode('shop');
-pin('shop', 'shop', osc_site_mode());
+pin('shop', ['shop', true], [osc_site_mode(), osc_is_shop_mode()]);
 $mode('both');
 pin('a stored both reads classifieds', 'classifieds', osc_site_mode());
 pin('the modes are classifieds and shop', ['classifieds', 'shop'], SiteMode::ALL);

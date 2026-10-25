@@ -41,6 +41,11 @@ function osc_site_mode(): string
     return $GLOBALS['state']['mode'];
 }
 
+function osc_is_shop_mode(): bool
+{
+    return osc_site_mode() === 'shop';
+}
+
 function osc_is_web_user_logged_in()
 {
     return $GLOBALS['state']['user'];

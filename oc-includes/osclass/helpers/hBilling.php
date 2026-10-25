@@ -82,6 +82,18 @@ function osc_billing_slot_enabled(): bool
 }
 
 /**
+ * Whether credits are in use: billing is on and the site is not a shop. Shoppers cannot post,
+ * so a shop hides packages, credits and paying to publish; their data stays.
+ *
+ * @return bool
+ * @since 7.1.0
+ */
+function osc_billing_credits_enabled(): bool
+{
+    return osc_billing_enabled() && !osc_is_shop_mode();
+}
+
+/**
  * Whether a listing over the free limit is held until its slot is paid, instead of refused.
  * Needs billing and slot sales on; the billing_pay_at_post preference defaults to on.
  * Set on the admin Billing > Pricing screen.

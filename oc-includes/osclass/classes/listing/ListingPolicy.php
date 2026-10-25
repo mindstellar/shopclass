@@ -14,7 +14,6 @@ namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
 use mindstellar\security\ActionThrottle;
-use mindstellar\site\SiteMode;
 
 /**
  * Who may see, change and post listings, for the web pages and the API alike.
@@ -135,7 +134,7 @@ final class ListingPolicy
         if ($actor->isAdmin()) {
             return self::ALLOWED;
         }
-        if (osc_site_mode() === SiteMode::SHOP) {
+        if (osc_is_shop_mode()) {
             return self::SHOP_MODE;
         }
         if (self::requiresSignIn($actor)) {

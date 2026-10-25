@@ -33,7 +33,6 @@ use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
 use mindstellar\messaging\MessagingService;
 use mindstellar\security\Captcha;
-use mindstellar\site\SiteMode;
 use mindstellar\utility\Validate;
 
 /**
@@ -109,7 +108,7 @@ class CWebItem extends BaseModel
     private function itemAdd(): void
     {
         // The public form posts as a visitor, never as an admin, so in shop mode nobody here may post.
-        if (osc_site_mode() === SiteMode::SHOP) {
+        if (osc_is_shop_mode()) {
             osc_add_flash_warning_message(ListingService::refusalMessage(ListingPolicy::SHOP_MODE));
             $this->redirectTo(osc_base_url(true));
         }

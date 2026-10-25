@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1249 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -177,7 +177,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (86)
+### hBilling (87)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -196,6 +196,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_card_hold_minutes()` | Minutes an unpaid card order keeps its stock before it is cancelled, 5 to 120. |
 | `osc_billing_cod_enabled()` | Whether cash on delivery is offered at checkout. |
 | `osc_billing_cod_fee()` | The fee added to a cash on delivery order, in micros. |
+| `osc_billing_credits_enabled()` | Whether credits are in use: billing is on and the site is not a shop. Shoppers cannot post, so a shop hides packages, credits and paying to publish; their data stays. |
 | `osc_billing_currency()` | ISO 4217 code credits are priced in, always upper-case. |
 | `osc_billing_feature(string $id)` | A registered billing feature by id, or null when nothing is registered under it. |
 | `osc_billing_features()` | Every registered billing feature, keyed by id. |
@@ -888,7 +889,6 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_allowed_extension()` | Gets allowed extensions of uploads |
 | `osc_auto_cron()` | Gets if autocron is enabled |
 | `osc_auto_update()` | Gets auto update settings |
-| `osc_billing_credits_enabled()` | Whether credits are in use: billing is on and the site is not a shop. Shoppers cannot post, so a shop hides packages, credits and paying to publish; their data stays. |
 | `osc_billing_enabled()` | Whether the billing section is switched on. |
 | `osc_captcha_provider_pref()` | Gets the configured captcha provider preference. |
 | `osc_comment_ratings_enabled()` | Whether a comment may carry a star rating. Until an admin saves the choice, shops allow it and classifieds sites do not. |
@@ -919,6 +919,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_images_enabled_at_items()` | Gets if images are o not enabled in item's form |
 | `osc_installed_plugins()` | Gets list of installed plugins |
 | `osc_is_admin_log_enabled()` | Whether admin activity logging (t_log) is enabled. Defaults to on when the preference has never been set, so existing installs keep logging as before. |
+| `osc_is_shop_mode()` | Whether the site is a shop: only admins add products, and shoppers buy them. |
 | `osc_is_watermark_image()` | Return if need mark images with image |
 | `osc_is_watermark_text()` | Return if need mark images with text |
 | `osc_item_attachment()` | Gets item attachment is enabled |

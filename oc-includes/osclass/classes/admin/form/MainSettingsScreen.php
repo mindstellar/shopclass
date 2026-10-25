@@ -54,7 +54,7 @@ final class MainSettingsScreen extends SettingsScreen
 
     protected static function declareFields(): void
     {
-        $shop = osc_site_mode() === SiteMode::SHOP;
+        $shop = osc_is_shop_mode();
         $form = CoreSettings::page(self::PAGE_ID, __('General Settings'))
             // A changed channel offers different releases, so the saved answer is dropped and
             // the next update check asks again.
@@ -153,7 +153,7 @@ final class MainSettingsScreen extends SettingsScreen
                 ->writeOnly($shop)
                 ->default($shop)
                 ->set('help', $shop ? __('Always on for a shop.') : '')
-                ->persist(static fn ($value) => osc_site_mode() === SiteMode::SHOP ? null : ($value ? '1' : '0'))
+                ->persist(static fn ($value) => osc_is_shop_mode() ? null : ($value ? '1' : '0'))
             ->group(__('Contact Settings'))
             ->checkbox('enabled_attachment', __('Allow people to attach a file to the contact form'))
                 ->column('contact_attachment')

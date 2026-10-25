@@ -1253,10 +1253,10 @@ check(
     stripos((string) (SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP)['billing_hold_days']['help'] ?? ''), 'listing') !== false
 );
 
-// hBilling.php cannot be loaded whole here (the harness stubs its registrars), so the two
-// readers under test are taken from it by name.
+// hBilling.php cannot be loaded whole here (the harness stubs its registrars), so the
+// readers under test (and the credits switch the admin menu reads) are taken from it by name.
 $billingSrc = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php');
-foreach (array('osc_billing_slot_enabled', 'osc_billing_pay_at_post') as $reader) {
+foreach (array('osc_billing_credits_enabled', 'osc_billing_slot_enabled', 'osc_billing_pay_at_post') as $reader) {
     if (!function_exists($reader) && preg_match('/^function ' . $reader . '\(\).*?^}$/ms', $billingSrc, $fn)) {
         eval($fn[0]);
     }
