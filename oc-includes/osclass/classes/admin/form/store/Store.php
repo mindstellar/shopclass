@@ -42,6 +42,18 @@ interface Store
     public function value(string $name, array $field, $id = null);
 
     /**
+     * Whether something is saved for one field, without returning it. A write-only secret
+     * uses this to show a placeholder.
+     *
+     * @param string              $name field name
+     * @param array<string,mixed> $field field spec
+     * @param int|string|null     $id    the row, for a store that has rows
+     *
+     * @return bool
+     */
+    public function isStored(string $name, array $field, $id = null): bool;
+
+    /**
      * Every declared field's stored value, keyed by field name.
      *
      * @param array<string,array<string,mixed>> $fields declared fields, keyed by name

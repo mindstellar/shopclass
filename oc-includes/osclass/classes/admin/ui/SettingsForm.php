@@ -11,6 +11,7 @@
 
 namespace mindstellar\admin\ui;
 
+use mindstellar\admin\form\store\StoreFactory;
 use mindstellar\settings\SettingsImage;
 
 /**
@@ -86,7 +87,7 @@ final class SettingsForm
             }
 
             foreach ($group['fields'] as $field) {
-                self::field($field, $page['id'], $values);
+                self::field($field, $page, $values);
             }
 
             // A schema that cannot express something must not force a plugin back to raw
@@ -124,14 +125,15 @@ final class SettingsForm
      * One declared field, carrying the value it should show.
      *
      * @param array<string,mixed> $field
-     * @param string              $pageId
+     * @param array<string,mixed> $page   normalised page spec
      * @param array<string,mixed> $values
      *
      * @return void
      */
-    private static function field(array $field, $pageId, array $values)
+    private static function field(array $field, array $page, array $values)
     {
-        $name = $field['name'];
+        $pageId = $page['id'];
+        $name   = $field['name'];
         if ($field['type'] === 'custom') {
             // What a custom field draws is often conditional on the rest of the form, so it
             // gets the same values every declared control is drawn from -- including the
@@ -146,6 +148,10 @@ final class SettingsForm
             $field['checked']   = !empty($values[$name]);
         } else {
             $field['value'] = $values[$name] ?? '';
+            if ($field['type'] === 'secret' && !empty($field['write_only'])) {
+                // The value is never read, so only the store can say whether one is saved.
+                $field['stored'] = StoreFactory::forPage($page)->isStored($name, $field);
+            }
             // Resolved here, not inside the field: drawing a control must not query
             // anything, and render and store have to expand a translated field over the
             // same list.

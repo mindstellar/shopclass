@@ -1120,6 +1120,23 @@ $values = osc_settings_values('writeonlypref');
 pin('and read back as its default', 'x', $values['p_hidden'] ?? null);
 pin('while its neighbour reads what was stored', 'a', $values['p_shown'] ?? null);
 
+// A write-only secret shows dots when something is saved, and the value stays off the page.
+SettingsPageRegistry::getInstance()->register('writeonlysecret', array(
+    'title'  => 'Write-only secret',
+    'menu'   => '',
+    'fields' => array(
+        array('type' => 'secret', 'name' => 'p_key', 'label' => 'Key', 'write_only' => true),
+    ),
+));
+$secretPage = SettingsPageRegistry::getInstance()->get('writeonlysecret');
+$html       = draw($secretPage, osc_settings_values('writeonlysecret'));
+check('an empty write-only secret has no placeholder', strpos($html, 'placeholder="••••••••"') === false, $html);
+post('writeonlysecret', array('p_key' => 'sk_live_abc123'));
+$html = draw($secretPage, osc_settings_values('writeonlysecret'));
+check('a saved write-only secret shows the placeholder', strpos($html, 'placeholder="••••••••"') !== false, $html);
+check('and the secret is not on the page', strpos($html, 'sk_live_abc123') === false, $html);
+pin('osc_settings_value() still does not return it', '', osc_settings_value('writeonlysecret', 'p_key'));
+
 // The validation pipeline still runs over both: they are refused, re-rendered and reported
 // exactly like a column-backed field, which is what makes a confirmation box declarable.
 SettingsPageRegistry::getInstance()->register('derivedreq', array(

@@ -16,8 +16,8 @@ use mindstellar\base\SettingsScreen;
 /**
  * The mail-server settings screen.
  *
- * The password is the only control here that is not simply what it looks like: it renders
- * masked, so the stored value never reaches the page as text, and a blank box means "leave
+ * The password is the only control here that is not simply what it looks like: it is write-only,
+ * so the stored value never reaches the page as text, and a blank box means "leave
  * it as it was" rather than "clear it" -- declared as a persist callable that writes nothing
  * for an empty value, which is what the hand-written controller did by reading the old
  * password back and writing it again.
@@ -51,11 +51,8 @@ final class MailServerSettingsScreen extends SettingsScreen
                 ->default(0)
             ->text('mailserver_username', __('Username'))
             ->secret('mailserver_password', __('Password'), __('Leave blank to keep the current password.'))
-                ->set('masked', true)
                 ->set('reveal', true)
-                // Masked, so the stored value is read back only to know there is one -- the
-                // control draws a placeholder, never the password.
-                ->writeOnly(false)
+                ->writeOnly()
                 ->persist(static fn ($value) => $value === '' ? null : $value)
             ->select('mailserver_ssl', __('Encryption'), array(
                 ''    => __('None'),

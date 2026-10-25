@@ -105,6 +105,16 @@ final class PreferenceStore implements Store
     }
 
     /**
+     * @inheritDoc
+     */
+    public function isStored(string $name, array $field, $id = null): bool
+    {
+        $stored = Preference::getInstance()->get(self::key($name, $field), $this->section);
+
+        return $stored !== null && $stored !== '';
+    }
+
+    /**
      * Every declared field's stored preference, keyed by field name.
      *
      * @inheritDoc

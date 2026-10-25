@@ -166,6 +166,17 @@ final class TableStore implements Store
     }
 
     /**
+     * @inheritDoc
+     *
+     * Always false: a write-only column here is a password hash or a proof of identity, and
+     * a "new password" box must not read as if one were saved.
+     */
+    public function isStored(string $name, array $field, $id = null): bool
+    {
+        return false;
+    }
+
+    /**
      * Write the declared columns of one row, inserting when no key was given and updating
      * when one was.
      *

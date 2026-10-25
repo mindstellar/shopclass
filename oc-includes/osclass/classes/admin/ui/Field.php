@@ -377,14 +377,13 @@ class Field
                 break;
 
             case 'secret':
-                // A stored secret is not echoed back into the DOM when 'masked' is set: the
-                // field renders empty over a bullet placeholder, and a blank submission means
-                // "unchanged". Callers keep the old value themselves until the save layer lands.
-                $masked = !empty($spec['masked']);
+                // A secret is never echoed into the DOM: the box is empty over a bullet
+                // placeholder when one is saved, and a blank submission means "unchanged".
+                $saved = !isset($spec['placeholder'])
+                    && (!empty($spec['stored']) || (string)$value !== '');
                 echo '<input type="password"' . $common . ' class="' . self::cssClass($type, $spec) . '"'
-                    . ' value="' . ($masked ? '' : osc_esc_html((string)$value)) . '"'
-                    . ' autocomplete="off" spellcheck="false"'
-                    . ($masked && (string)$value !== '' ? ' placeholder="••••••••"' : '')
+                    . ' value="" autocomplete="off" spellcheck="false"'
+                    . ($saved ? ' placeholder="••••••••"' : '')
                     . $attrs . ' />';
                 if (!empty($spec['reveal'])) {
                     echo '<button type="button" class="btn btn-sm btn-secondary" data-osc-reveal="'
