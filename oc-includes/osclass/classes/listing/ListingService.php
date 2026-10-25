@@ -1367,7 +1367,8 @@ final class ListingService
 
             return;
         }
-        VariantStore::saveDefault($itemId, (array) ($aItem['product']['fields'] ?? array()));
+        // A product with no options sells at the listing price, so its row keeps none of its own.
+        VariantStore::saveDefault($itemId, array('i_price' => null) + (array) ($aItem['product']['fields'] ?? array()));
     }
 
     private static function place(mixed $value): string

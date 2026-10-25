@@ -347,7 +347,7 @@ final class Schema
                     'id'             => ['type' => 'integer'],
                     'sku'            => self::nullable('string'),
                     'options'        => ['type' => ['object', 'null'], 'additionalProperties' => ['type' => 'string'], 'description' => 'Option name => value; null for the default variant.'],
-                    'price'          => self::nullable('string', 'A decimal such as "12.50"; null uses the listing price.'),
+                    'price'          => self::nullable('string', 'An option row\'s own price, a decimal such as "12.50"; null sells at the listing price. Always null for a product with no options.'),
                     'compare_at'     => self::nullable('string', 'The "was" price, a decimal such as "20.00"; null when none is set.'),
                     'on_sale'        => ['type' => 'boolean', 'description' => 'true when compare_at is above the price the variant sells at.'],
                     'in_stock'       => ['type' => 'boolean', 'description' => 'true when stock is not tracked.'],

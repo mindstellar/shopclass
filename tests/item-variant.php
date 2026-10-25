@@ -87,6 +87,7 @@ $form       = static fn (array $extra = []): array => $extra + [
     'title'        => ['en_US' => 'Ceramic mug'],
     'description'  => ['en_US' => 'A hand made ceramic mug, dishwasher safe.'],
     'price'        => '12',
+    'currency'     => 'USD',
     'contactName'  => 'Sue',
     'contactEmail' => 'sue@example.test',
     'contactPhone' => '5550199',
@@ -110,8 +111,11 @@ pin('the service ignores product from a non-admin actor', [], $rows($byHand));
 $one = $service->create(ListingInput::fromArray($form(['ownerId' => '0', 'product' => $sell]), $adminActor, true), $adminActor)->id();
 $got = $rows($one);
 pin('an admin\'s new listing gets the default row', 1, count($got));
-pin('with the sent values', ['MUG-1', '9500000', '4', '350', 'small', null], [$got[0]['s_sku'], $got[0]['i_price'], $got[0]['i_stock'], $got[0]['i_weight'], $got[0]['s_shipping_class'], $got[0]['s_options']]);
+pin('with the sent values, and no price of its own', ['MUG-1', null, '4', '350', 'small', null], [$got[0]['s_sku'], $got[0]['i_price'], $got[0]['i_stock'], $got[0]['i_weight'], $got[0]['s_shipping_class'], $got[0]['s_options']]);
 pin('and the listing is buyable', true, VariantStore::isBuyable($one));
+$listingPrice = static fn (int $id): ?string => $admin->query("SELECT i_price FROM {$p}t_item WHERE pk_i_id = $id")->fetch_row()[0] ?? null;
+$unit         = static fn (int $id): ?int => (new \mindstellar\billing\CartPricer())->quote([['variant' => (int) $rows($id)[0]['pk_i_id'], 'qty' => 1]], [])->lines()[0]['unit'] ?? null;
+pin('the quote sells it at the listing price', 12000000, $unit($one));
 
 $edit = static fn (int $id, array $extra): int => $service->update(
     ListingInput::fromArray($form(['id' => (string) $id, 'ownerId' => '0'] + $extra), $adminActor, false),
@@ -122,9 +126,13 @@ $edit = static fn (int $id, array $extra): int => $service->update(
 $edit($one, ['product' => ['sell' => '1', 'stock' => '9', 'sku' => '']]);
 $got = $rows($one);
 pin('an edit changes the row, not adds one', 1, count($got));
-pin('a sent member changes, an empty one clears, one left out stays', ['9', null, '9500000'], [$got[0]['i_stock'], $got[0]['s_sku'], $got[0]['i_price']]);
+pin('a sent member changes, an empty one clears, one left out stays', ['9', null], [$got[0]['i_stock'], $got[0]['s_sku']]);
+VariantStore::saveDefault($one, ['i_price' => 9500000]);
+$edit($one, ['price' => '14', 'product' => ['sell' => '1', 'price' => '9.50']]);
+pin('an admin save stores no price on the default row, even one posted', [null, '14000000'], [$rows($one)[0]['i_price'], $listingPrice($one)]);
+pin('and the quote follows the new listing price', 14000000, $unit($one));
 $edit($one, []);
-pin('a form with no product leaves the row alone', ['9', '9500000'], [$rows($one)[0]['i_stock'], $rows($one)[0]['i_price']]);
+pin('a form with no product leaves the row alone', '9', $rows($one)[0]['i_stock']);
 $bad = null;
 try {
     $edit($one, ['product' => ['sell' => '1', 'stock' => 'lots']]);
@@ -154,13 +162,18 @@ pin('a listing with no row has no product member', [200, false], [$r->status(), 
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => ['sku' => 'P-1', 'price' => '7.25', 'stock' => 2, 'weight' => 120, 'shipping_class' => 'letter']], $boss);
 pin('an admin PATCH saves the default row', 200, $r->status());
 $got = $rows($plain);
-pin('with the sent values', ['P-1', '7250000', '2', '120', 'letter'], [$got[0]['s_sku'], $got[0]['i_price'], $got[0]['i_stock'], $got[0]['i_weight'], $got[0]['s_shipping_class']]);
+pin('with the sent values; the price goes to the listing', ['P-1', null, '2', '120', 'letter', '7250000'], [$got[0]['s_sku'], $got[0]['i_price'], $got[0]['i_stock'], $got[0]['i_weight'], $got[0]['s_shipping_class'], $listingPrice($plain)]);
+$call('PATCH', 'admin/listings/' . $plain, ['price' => '8', 'product' => ['price' => '7.25']], $boss);
+pin('a listing price sent too wins over product.price', [null, '8000000'], [$rows($plain)[0]['i_price'], $listingPrice($plain)]);
+$call('PATCH', 'admin/listings/' . $plain, ['product' => ['price' => null]], $boss);
+pin('product.price null changes nothing', [null, '8000000'], [$rows($plain)[0]['i_price'], $listingPrice($plain)]);
+$call('PATCH', 'admin/listings/' . $plain, ['product' => ['price' => '7.25']], $boss);
 pin('the response matches the schema', [], api_admin_schema_errors('ListingDocument', $call('GET', 'admin/listings/' . $plain, null, $boss)));
 
 $r       = $call('GET', 'listings/' . $plain, null, $tomKey);
 $product = $r->body()['data']['product'] ?? null;
 pin('the public view shows the product', true, $product['buyable'] ?? null);
-pin('one variant, with stock reduced to in_stock', [1, true, 'P-1', '7.25', 120, 'letter', false], [
+pin('one variant, with stock reduced to in_stock', [1, true, 'P-1', null, 120, 'letter', false], [
     count($product['variants'] ?? []),
     $product['variants'][0]['in_stock'] ?? null,
     $product['variants'][0]['sku'] ?? null,
@@ -185,7 +198,7 @@ pin('a user\'s PATCH with product is refused', 422, $r->status());
 pin('and no row is written', [], $rows($mine));
 
 $shown = ListingInput::productForm($plain);
-pin('the admin form reads the default row', [true, 'P-1', '7.25', '2', '120', 'letter'], [$shown['sell'], $shown['sku'], $shown['price'], $shown['stock'], $shown['weight'], $shown['shippingClass']]);
+pin('the admin form reads the default row', [true, 'P-1', '2', '120', 'letter'], [$shown['sell'], $shown['sku'], $shown['stock'], $shown['weight'], $shown['shippingClass']]);
 pin('a listing with no row shows an unticked form', [false, ''], [ListingInput::productForm($mine)['sell'], ListingInput::productForm(0)['sku']]);
 
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => null], $boss);
@@ -202,7 +215,7 @@ pin('equal to the price is not on sale', ['7.25', false], [$variant($plain)['com
 $call('PATCH', 'admin/listings/' . $plain, ['product' => ['compare_at' => '5']], $boss);
 pin('below the price is not on sale', false, $variant($plain)['on_sale'] ?? null);
 $call('PATCH', 'admin/listings/' . $plain, ['product' => ['price' => null, 'compare_at' => '12']], $boss);
-pin('a variant with no price compares to the listing price (10)', [null, '12.00', true], [$variant($plain)['price'], $variant($plain)['compare_at'], $variant($plain)['on_sale']]);
+pin('a variant with no price compares to the listing price (7.25)', [null, '12.00', true], [$variant($plain)['price'], $variant($plain)['compare_at'], $variant($plain)['on_sale']]);
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => ['compare_at' => 'cheap']], $boss);
 pin('a bad compare_at is refused', 422, $r->status());
 $call('PATCH', 'admin/listings/' . $plain, ['product' => ['compare_at' => null]], $boss);
@@ -457,6 +470,8 @@ $r    = $call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [
 pin('an admin PATCH replaces the rows', [200, 2], [$r->status(), count($rows($set))]);
 pin('and keeps the id of a kept combination', $keep, (int) $rows($set)[0]['pk_i_id']);
 pin('with the sent values', ['T-2', '22500000', '5', (string) $photoA], [$rows($set)[0]['s_sku'], $rows($set)[0]['i_price'], $rows($set)[0]['i_stock'], $rows($set)[0]['fk_i_resource_id']]);
+$quoted = (new \mindstellar\billing\CartPricer())->quote([['variant' => (int) $rows($set)[0]['pk_i_id'], 'qty' => 1], ['variant' => (int) $rows($set)[1]['pk_i_id'], 'qty' => 1]], [])->lines();
+pin('an option row\'s price beats the listing price, a blank one inherits it', [22500000, (int) $listingPrice($set)], array_column($quoted, 'unit'));
 $r = $call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [['options' => ['Colour' => 'Navy']], ['options' => ['Colour' => 'Navy']]]]], $boss);
 pin('a duplicate combination is a 422 with its path', [422, ['/product/variants/1/options']], [$r->status(), array_column($r->body()['errors'] ?? [], 'pointer')]);
 $r = $call('PATCH', 'admin/listings/' . $set, ['product' => ['variants' => [['options' => ['Colour' => 'Navy'], 'photo_id' => $other]]]], $boss);
