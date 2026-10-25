@@ -22,7 +22,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
 - Listings have a `product` member with variants (SKU, stock, weight, shipping class), set by an admin; a product with no options sells at the listing price.
 - A listing can have option rows (Colour x Size and so on), each with its own SKU, price (blank uses the listing price) and stock, set in the admin item form or by an admin through the API. `GET /listings` takes `option[name][]=value` and `ids`.
-- **Goods orders**: a cart is priced on the server and placed as an order, paid by a card plugin, bank transfer or cash on delivery. Stock is taken once when the order is paid (bank transfer and cash on delivery hold it from placement) and given back on refund or cancel; a line paid after the last one sold is marked oversold.
+- **Goods orders**: a cart is priced on the server and placed as an order, paid by a card plugin, bank transfer or cash on delivery. Stock is taken when the order is placed, whatever the way to pay, and given back on refund or cancel; an unpaid card order is cancelled after the hold minutes.
 - **Billing → Orders** shows a goods order's items, address, buyer and oversold lines, and can mark it shipped (carrier, tracking number, https link), delivered or cancelled. **To ship** lists paid orders not yet sent.
 - **Settings → Billing → Shop → Cash on delivery only in** limits cash on delivery to chosen countries, regions or cities; empty offers it everywhere. `GET /cart/quote` takes `city`.
 - **Billing** and **Billing → Orders** show how many orders wait to ship; Orders opens on the To ship list, and shop mode adds a To ship card to the dashboard.
@@ -81,6 +81,9 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
 - A listing waiting for payment takes no slot.
 - Card orders take their stock at placement and are cancelled if still unpaid after **Hold stock for card payments (minutes)** (Settings → Billing → Shop, 15 by default).
+- Plugin authors: `api_menus` now receives the saved menus, and a menu item may carry `children`.
+- The variant "was" price field is labelled "Old price, shown crossed out".
+- A saved secret field shows dots instead of an empty box; the value still never reaches the page.
 - Shop mode hides credit packages: the Packages and Credits menus, the buy-credits and pay-to-publish pages (404), the account credit links and `POST /listings/{id}/publish` (404). Switching back to classifieds brings them back.
 
 ### Security
