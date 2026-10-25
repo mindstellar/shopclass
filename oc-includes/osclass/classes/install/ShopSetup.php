@@ -66,6 +66,8 @@ final class ShopSetup
     private ?array $installed;
 
     /**
+     * The callables and $installed are test seams; the installer leaves them null.
+     *
      * @param array<string, array<int, array<string,mixed>>> $themeVersions  Catalog::forThemes()->updates()
      * @param array<string, array<string,mixed>>             $themeIndex     Catalog::forThemes()->index()
      * @param array<string, array<int, array<string,mixed>>> $pluginVersions Catalog::forPlugins()->updates()
@@ -243,7 +245,7 @@ final class ShopSetup
      *
      * @return array<string,mixed>|null
      */
-    public function themeEntry(): ?array
+    private function themeEntry(): ?array
     {
         if (!isset($this->themeIndex[self::THEME])) {
             return null;
@@ -257,7 +259,7 @@ final class ShopSetup
      *
      * @return array<string,mixed>|null
      */
-    public function pluginEntry(string $slug): ?array
+    private function pluginEntry(string $slug): ?array
     {
         if (!isset(self::PLUGINS[$slug])) {
             return null;

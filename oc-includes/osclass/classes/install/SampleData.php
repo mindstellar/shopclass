@@ -15,7 +15,9 @@ namespace mindstellar\install;
 
 use mindstellar\auth\Actor;
 use mindstellar\fields\FieldService;
+use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\site\SiteMode;
 
 /**
  * The sample listings, custom fields and groups the installer added. It reads the ids the
@@ -41,6 +43,121 @@ final class SampleData
         }
 
         return $found;
+    }
+
+    /**
+     * Add the sample custom fields and listings for a site type, and record their ids so they can be removed.
+     * Each step is non-fatal; what went wrong comes back in 'errors'.
+     *
+     * @param string      $type     'classifieds' or 'shop'
+     * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
+     *
+     * @return array{listings: int, fields: int, errors: string[]}
+     * @throws \InvalidArgumentException when the type is unknown
+     * @throws \RuntimeException when sample data is already installed
+     */
+    public function install(string $type, ?string $imageDir = null): array
+    {
+        if (!SiteMode::isValid($type)) {
+            throw new \InvalidArgumentException('Unknown site type: ' . $type);
+        }
+        if (osc_kv_get('sample', 'items') !== null) {
+            throw new \RuntimeException('Sample data is already installed.');
+        }
+
+        $locale    = osc_current_admin_locale();
+        $errors    = array();
+        $fieldId   = array();
+        $fieldType = array();
+        $fieldIds  = array();
+        $groupIds  = array();
+        $itemIds   = array();
+
+        $groupModel = \FieldGroup::getInstance();
+        $fields     = FieldService::make($locale);
+        foreach (require LIB_PATH . 'osclass/installer/data/fields-' . $type . '.php' as $position => $group) {
+            try {
+                $groupId = $groupModel->insertGroup($group['name'], '', $position);
+                if (!$groupId) {
+                    throw new \RuntimeException('group');
+                }
+                $groupIds[] = (int) $groupId;
+                $groupModel->insertCategories($groupId, $group['categories']);
+                foreach ($group['fields'] as $field) {
+                    $id = $fields->create(array(
+                        'name'       => $field['name'],
+                        'type'       => $field['type'],
+                        'searchable' => $field['searchable'],
+                        'options'    => $field['options'] ?? array(),
+                    ));
+                    $groupModel->setFieldSingleGroup($id, $groupId);
+                    $fieldId[$field['key']]   = $id;
+                    $fieldIds[]               = $id;
+                    $fieldType[$field['key']] = $field['type'];
+                }
+            } catch (\Throwable $e) {
+                $errors[] = 'fields: ' . $e->getMessage();
+            }
+        }
+
+        $service = new ListingService();
+        $actor   = Actor::admin(1, '127.0.0.1');
+        foreach (require LIB_PATH . 'osclass/installer/data/sample-' . $type . '.php' as $row) {
+            $copy = null;
+            try {
+                $meta = array();
+                foreach ($row['fields'] as $key => $value) {
+                    if (isset($fieldId[$key])) {
+                        $meta[$fieldId[$key]] = $fieldType[$key] === 'DATE' ? strtotime((string) $value) : $value;
+                    }
+                }
+                $form = array(
+                    'catId'        => $row['category'],
+                    'title'        => array($locale => $row['title']),
+                    'description'  => array($locale => $row['description']),
+                    'price'        => $row['price'],
+                    'contactName'  => __('Example seller'),
+                    'contactEmail' => 'seller@example.com',
+                    'meta'         => $meta,
+                );
+                if (isset($row['variants'])) {
+                    $form['product'] = array('sell' => 1, 'hasOptions' => 1, 'variants' => $row['variants']);
+                } elseif (isset($row['stock'])) {
+                    $form['product'] = array('sell' => 1, 'stock' => $row['stock']);
+                }
+                // A photo is moved into the listing and deleted from where it was, so give it a copy.
+                $source = $imageDir . $row['image'] . '.webp';
+                if ($imageDir !== null && is_file($source)) {
+                    $copy = tempnam(sys_get_temp_dir(), 'sample');
+                    copy($source, $copy);
+                    $form['photos'] = array($copy);
+                }
+                $save = static fn (array $form) => $service->create(ListingInput::fromArray($form, $actor, true), $actor, true);
+                try {
+                    $saved = $save($form);
+                } catch (\Throwable $e) {
+                    // A photo the server refuses must not cost the listing.
+                    if (!isset($form['photos'])) {
+                        throw $e;
+                    }
+                    $errors[] = $row['image'] . ': ' . $e->getMessage();
+                    unset($form['photos']);
+                    $saved = $save($form);
+                }
+                $itemIds[] = $saved->id();
+            } catch (\Throwable $e) {
+                $errors[] = $row['category'] . ': ' . $e->getMessage();
+            }
+            if ($copy !== null && is_file($copy)) {
+                unlink($copy);
+            }
+        }
+
+        osc_kv_set('sample', 'items', $itemIds);
+        osc_kv_set('sample', 'fields', $fieldIds);
+        osc_kv_set('sample', 'groups', $groupIds);
+
+        return array('listings' => count($itemIds), 'fields' => count($fieldIds), 'errors' => $errors);
     }
 
     /**
