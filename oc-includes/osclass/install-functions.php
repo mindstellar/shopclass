@@ -1188,6 +1188,31 @@ function install_seed_site(string $type, bool $sample): bool
 }
 
 /**
+ * Install Storefront from the catalogue when it is not on disk, as the newest release this core can run.
+ * A release zip bundles it, so this matters for git checkouts. Failing leaves the site without a public theme.
+ *
+ * @param array<int, array<string,mixed>>|null            $versions Storefront's catalogue releases; read from the catalogue when null
+ * @param callable(array<string,mixed>): array<string,mixed>|null $fetcher   installs a release and returns the Installer result
+ *
+ * @return bool True when Storefront is on disk
+ */
+function install_fallback_theme(?array $versions = null, ?callable $fetcher = null): bool
+{
+    if (is_dir(CONTENT_PATH . 'themes/storefront')) {
+        return true;
+    }
+    $versions ??= \mindstellar\market\Catalog::forThemes()->updates(true)['storefront'] ?? array();
+    $entry      = \mindstellar\market\Compatibility::pickBestVersion($versions);
+    if ($entry === null) {
+        return false;
+    }
+    $fetcher ??= static fn (array $release): array => \mindstellar\market\Installer::forThemes()->install('storefront', $release);
+    $result    = $fetcher($entry);
+
+    return !empty($result['ok']);
+}
+
+/**
  * Insert the default example page.
  *
  * @return void

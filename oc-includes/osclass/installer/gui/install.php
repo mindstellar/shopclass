@@ -247,23 +247,8 @@ $ins_i18n = array(
 
                             display_finish($password);
 
-                            // Install storefront theme for first time. One constant for the
-                            // version: the tag and the asset filename both carry it, and pinning
-                            // them separately is how they drift apart.
-                            if (!is_dir(CONTENT_PATH . 'themes/storefront')) {
-                                $fileSystem      = new \mindstellar\utility\FileSystem();
-                                $download_path   = CONTENT_PATH . 'downloads/';
-                                $storefrontVer   = '1.2.0';
-                                if ($downloaded = $fileSystem->downloadFile(
-                                    'https://github.com/mindstellar/theme-storefront/releases/download/v'
-                                    . $storefrontVer . '/storefront_' . $storefrontVer . '.zip',
-                                    $download_path . 'storefront.zip'
-                                )) {
-                                    $zip = new \mindstellar\utility\Zip();
-                                    $zip->unzipFile($downloaded, CONTENT_PATH . 'themes/');
-                                    $fileSystem->remove($downloaded);
-                                }
-                            }
+                            // A git checkout has no bundled theme; the release zip does.
+                            install_fallback_theme();
                         } elseif ($step === 5) {
                             // A missing nonce must never finalize: that writes osclass_installed and locks the installer.
                             install_session_expired_panel();

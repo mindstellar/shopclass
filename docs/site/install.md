@@ -1,6 +1,6 @@
 ---
 title: Install ShopClass
-description: "Step-by-step installation guide for ShopClass: server requirements, the four-step installer, and what to do when a step fails."
+description: "Step-by-step installation guide for ShopClass: server requirements, the five-step installer, and what to do when a step fails."
 sidebar:
   order: 1
 ---
@@ -77,14 +77,32 @@ you and creates the schema.
 
 ![The installer's database step: host, name, user, password and table prefix fields above a Test connection button.](images/install/2-connect-database.png)
 
-### Step 3 · Your site
+### Step 3 · What kind of site?
+
+Pick **Classifieds** (local buy and sell, jobs, property, cars, services) or **Shop**
+(a store with products, variants and a cart). You can change this later in the admin.
+
+Shop downloads the Aisle theme and the shop plugins you tick, so it needs internet
+and package installs turned on. When it cannot be used, the Shop card is greyed out and
+the site installs as classifieds. If a download fails, the finish page lists what to
+install later.
+
+Tick **Install sample data** to start with example listings (or products) and custom
+fields. Sample photos are downloaded when the site is online; with no internet the
+listings install without photos. Remove it all later under **Listings → Remove sample
+data**. Categories stay.
+
+Either way the site starts with a ready category tree. Edit it under
+**Listings → Categories**.
+
+### Step 4 · Your site
 
 Pick an admin username, your site title, a contact e-mail and your country.
 Leave the password field blank and a strong one is generated for you.
 
 ![The installer's site step: admin username and password, site title, contact e-mail and country.](images/install/3-your-site.png)
 
-### Step 4 · Done
+### Step 5 · Done
 
 Copy the admin password (it is also e-mailed to you) and open the admin panel.
 
@@ -117,7 +135,9 @@ from environment variables:
 php oc-cli.php install --unattended
 ```
 
-See the [command-line interface](/docs/cli/) for the full flag list.
+Add `--site-type=classifieds|shop` (default `classifieds`) and `--sample-data` to
+choose the site type and install the sample data. See the
+[command-line interface](/docs/cli/) for the full flag list.
 
 ## Troubleshooting
 

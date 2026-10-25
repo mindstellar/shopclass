@@ -48,7 +48,7 @@ full setup):
 
 | Command | What it does |
 |---|---|
-| `install --unattended` | Install with no browser: settings come from environment variables or flags. |
+| `install --unattended [--site-type=classifieds\|shop] [--sample-data]` | Install with no browser: settings come from environment variables or flags. `--site-type` picks the category tree (default `classifieds`); `shop` also downloads the Aisle theme and the shop plugins, and needs internet. `--sample-data` adds example listings and custom fields; their photos are downloaded when the site is online, otherwise the listings install without photos. |
 | `core:update [--reinstall]` | Update ShopClass to the newest release on the site's channel, then run the migrations. Run it as the owner of the files when the admin updater cannot write them. `--reinstall` copies the current release again. |
 | `db:upgrade` | Run pending migrations. Also in the admin under **Tools → System info → Database**. |
 | `db:doctor [--strict]` | Report where this database differs from what ShopClass expects, then whether the site is ready for strict SQL mode. `--strict` prints only the readiness part. Changes nothing. Exits `1` when it finds a problem; an extra column or index is listed but does not fail it. |
