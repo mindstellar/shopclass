@@ -356,7 +356,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     foreach (
         array(
             'sku'           => array(__('SKU'), 'text', 64, ''),
-            'compareAt'     => array(__('Was price (blank for none)'), 'text', 0, 'decimal'),
+            'compareAt'     => array(__('Old price, shown crossed out (blank: no sale)'), 'text', 0, 'decimal'),
             'stock'         => array(__('Stock (blank does not track)'), 'text', 0, 'numeric'),
             'weight'        => array(__('Weight in grams'), 'text', 0, 'numeric'),
             'shippingClass' => array(__('Shipping class'), 'text', 40, ''),
@@ -437,7 +437,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     foreach ($sellValues['options'] as $variantOption) {
         echo '<th scope="col" data-option-head>' . osc_esc_html($variantOption['name']) . '</th>';
     }
-    foreach (array(__('SKU'), __('Price'), __('Was price'), __('Stock'), __('Weight (g)'), __('Photo')) as $variantHead) {
+    foreach (array(__('SKU'), __('Price'), __('Old price'), __('Stock'), __('Weight (g)'), __('Photo')) as $variantHead) {
         echo '<th scope="col">' . osc_esc_html($variantHead) . '</th>';
     }
     echo '<th scope="col"><span class="visually-hidden">' . osc_esc_html($variantI18n['remove']) . '</span></th>';

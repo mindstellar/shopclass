@@ -9557,6 +9557,14 @@ msgstr ""
 msgid "Offload all local images to remote storage"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Old price"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Old price, shown crossed out (blank: no sale)"
+msgstr ""
+
 #: oc-admin/themes/modern/messages/index.php
 msgid "Older"
 msgstr ""
@@ -15743,14 +15751,6 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-shop.php
 msgid "Warranty months"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "Was price"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "Was price (blank for none)"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php

@@ -1827,6 +1827,10 @@ msgid ""
 "storage worker runs."
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Old price must be a positive number."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-messages-content.php
 #: oc-includes/osclass/gui/billing/orders-content.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -3986,10 +3990,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Waiting for the payment to be confirmed."
-msgstr ""
-
-#: oc-includes/osclass/classes/listing/ListingValidator.php
-msgid "Was price must be a positive number."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php

@@ -175,7 +175,7 @@ final class ListingSearch
 
     /**
      * The condition for `in_stock`, `on_sale` and `option`: the listing has one variant that is in
-     * stock (stock not tracked, or above 0), on sale (a was price above the price it sells at)
+     * stock (stock not tracked, or above 0), on sale (an old price above the price it sells at)
      * and/or has these options. With several, one variant must meet all. A per-row probe, not
      * EXISTS: the planner would turn EXISTS into a scan of every variant before the sort (0.2 s
      * against 0.4 ms on 232k listings).

@@ -61,7 +61,7 @@ item to a cart**, then set:
 | Field | What it does |
 |---|---|
 | **SKU** | Your stock code, up to 64 characters. |
-| **Was price** | The old price, shown crossed out. Blank for none. |
+| **Old price, shown crossed out** | The price before a sale, shown crossed out next to the price; a higher old price marks the product as on sale. Blank: no sale. |
 | **Stock** | How many you have. Each sale takes one; at 0 it is out of stock. Blank does not count stock. |
 | **Weight in grams** | For shipping. |
 | **Shipping class** | A name your shipping plugin groups items by, such as `bulky`. |

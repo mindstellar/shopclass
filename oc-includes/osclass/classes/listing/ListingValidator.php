@@ -309,7 +309,7 @@ final class ListingValidator
                 $errors[] = self::entry($base . $capped[$column][0], 'too_long', $label . $capped[$column][1]);
             }
         }
-        foreach (array('i_price' => array('/price', _m('Price must be a positive number.')), 'i_compare_price' => array('/compare_at', _m('Was price must be a positive number.'))) as $column => $failure) {
+        foreach (array('i_price' => array('/price', _m('Price must be a positive number.')), 'i_compare_price' => array('/compare_at', _m('Old price must be a positive number.'))) as $column => $failure) {
             $price = $fields[$column] ?? null;
             if (is_string($price) || (is_int($price) && ($price < 0 || $price > 999999999999999999))) {
                 $errors[] = self::entry($base . $failure[0], 'invalid', $label . $failure[1]);
