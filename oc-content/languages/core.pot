@@ -4661,12 +4661,6 @@ msgstr ""
 msgid "Description length"
 msgstr ""
 
-#: oc-includes/osclass/installer/basic_data.php
-msgid ""
-"Description of the example ad. Insert here some usefull description of your "
-"ad."
-msgstr ""
-
 #: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
 #: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
@@ -5433,27 +5427,7 @@ msgid "Evictions"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
-msgid "Example Ad"
-msgstr ""
-
-#: oc-includes/osclass/installer/basic_data.php
-msgid "Example author"
-msgstr ""
-
-#: oc-includes/osclass/installer/basic_data.php
-msgid "Example city"
-msgstr ""
-
-#: oc-includes/osclass/installer/basic_data.php
-msgid "Example country"
-msgstr ""
-
-#: oc-includes/osclass/installer/basic_data.php
 msgid "Example page title"
-msgstr ""
-
-#: oc-includes/osclass/installer/basic_data.php
-msgid "Example region"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -16714,10 +16688,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "on, site closed"
-msgstr ""
-
-#: oc-includes/osclass/installer/basic_data.php
-msgid "osclass@example.com"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php

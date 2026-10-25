@@ -113,4 +113,12 @@ if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $l
     }
 }
 
+// Starter categories and, if chosen, sample data. A failure only raises the finish-page notice.
+$session = Session::getInstance();
+install_load_seed_helpers();
+install_seed_site(
+    (string) $session->_get('install_site_type') === 'shop' ? 'shop' : 'classifieds',
+    (bool) $session->_get('install_sample_data')
+);
+
 echo json_encode($json_message);

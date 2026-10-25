@@ -215,6 +215,7 @@ class Cli
                 . "             --web-url= --site-title= --locale=\n"
                 . "  Admin:     OSC_ADMIN_EMAIL [OSC_ADMIN_USER=admin] [OSC_ADMIN_PASSWORD] [OSC_ADMIN_NAME]\n"
                 . "             --admin-email= --admin-user= --admin-password= --admin-name=\n"
+                . "  Content:   [--site-type=classifieds|shop] [--sample-data]\n"
             );
 
             return 2;
@@ -274,6 +275,8 @@ class Cli
         $adminEmail = $opt('admin-email', $env('OSC_ADMIN_EMAIL'));
         $adminName  = $opt('admin-name', $env('OSC_ADMIN_NAME'), 'Administrator');
         $createDb   = array_key_exists('create-db', $args);
+        $siteType   = (string) $opt('site-type', $env('OSC_SITE_TYPE'), 'classifieds');
+        $sampleData = array_key_exists('sample-data', $args) || $env('OSC_SAMPLE_DATA') === '1';
 
         $missing = [];
         foreach (['DB_NAME/--db-name' => $dbName, 'DB_USER/--db-user' => $dbUser,
@@ -289,6 +292,11 @@ class Cli
         }
         if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
             $this->err("Invalid admin email address.\n");
+
+            return 2;
+        }
+        if (!in_array($siteType, ['classifieds', 'shop'], true)) {
+            $this->err("Invalid --site-type. Use classifieds or shop.\n");
 
             return 2;
         }
@@ -389,6 +397,11 @@ class Cli
             $this->err('Schema installed, but creating the admin account failed: ' . $e->getMessage() . "\n");
 
             return 1;
+        }
+
+        install_load_seed_helpers();
+        if (!install_seed_site($siteType, $sampleData)) {
+            $this->err("Starter categories or sample data could not be fully added; see the error log.\n");
         }
 
         // Finalize: writes the osclass_installed sentinel LAST.

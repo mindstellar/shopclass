@@ -951,18 +951,6 @@ function oc_install()
         );
     }
 
-    // Sample categories, a demo listing and the default page. These run on the
-    // existing models (their per-locale child rows carry real domain logic), so
-    // they stay on the legacy path and, crucially, are non-fatal: a site with no
-    // sample content still installs cleanly. A failure is flagged for the finish
-    // screen rather than aborting the install.
-    try {
-        oc_install_example_data();
-    } catch (\Throwable $e) {
-        error_log('Shopclass install: sample content could not be added: ' . $e->getMessage());
-        Session::getInstance()->_set('install_sample_warning', 1);
-    }
-
     if ($writesConfig) {
         copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
     }
@@ -1146,43 +1134,68 @@ function install_seed_sample(string $type, ?string $imageDir = null): array
 }
 
 /**
- * Insert the example data (categories and emails) on all available locales
+ * Load the helpers the starter content and sample listings call; the installer's bootstrap leaves them out.
  *
  * @return void
- * @since 2.4
  */
-function oc_install_example_data()
+function install_load_seed_helpers(): void
 {
-    require_once LIB_PATH . 'osclass/formatting.php';
-    require LIB_PATH . 'osclass/installer/basic_data.php';
-    /**
-     * @var array<string, mixed>             $item
-     * @var array<string, mixed>             $page
-     */
-    require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
-    require_once LIB_PATH . 'osclass/helpers/hValidate.php';
-    require_once LIB_PATH . 'osclass/helpers/hUsers.php';
-    install_seed_categories('classifieds');
+    foreach (array('hSecurity', 'hValidate', 'hUsers', 'hItems', 'hFields', 'hKv', 'hTheme', 'hBilling') as $helper) {
+        require_once LIB_PATH . 'osclass/helpers/' . $helper . '.php';
+    }
+}
 
-    // Posting a listing goes through the billing helper for the seller's limits.
-    // It is required here rather than in the bootstrap because it reads a preference
-    // as it loads, and during bootstrap there is no database to read one from.
-    require_once LIB_PATH . 'osclass/helpers/hTheme.php';
-    require_once LIB_PATH . 'osclass/helpers/hBilling.php';
-
-    $mItem = new ItemActions(true);
-
-    foreach ($item as $k => $v) {
-        if ($k === 'description' || $k === 'title') {
-            Params::setParam($k, array(osc_current_admin_locale() => $v));
-        } else {
-            Params::setParam($k, $v);
+/**
+ * Write what the Your-site step chose: the category tree, the example page and, if asked, the sample data.
+ * Non-fatal: a failure is logged and flagged for the finish screen, and the site still installs.
+ *
+ * @param string $type   'classifieds' or 'shop'
+ * @param bool   $sample add sample custom fields and listings
+ *
+ * @return bool True when everything was written
+ */
+function install_seed_site(string $type, bool $sample): bool
+{
+    // The Your-site step can be sent twice; the second call finds the tree and stops.
+    if (\mindstellar\database\Db::selectOne('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_category LIMIT 1') !== null) {
+        return true;
+    }
+    $ok = true;
+    try {
+        install_seed_categories($type);
+        install_seed_page();
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: starter content could not be added: ' . $e->getMessage());
+        $ok = false;
+    }
+    if ($sample && $ok) {
+        try {
+            $result = install_seed_sample($type);
+            if ($result['errors'] !== array()) {
+                error_log('Shopclass install: sample data was added with errors: ' . implode('; ', $result['errors']));
+                $ok = $result['listings'] > 0;
+            }
+        } catch (\Throwable $e) {
+            error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
+            $ok = false;
         }
     }
+    if (!$ok) {
+        Session::getInstance()->_set('install_sample_warning', 1);
+    }
 
-    $mItem->prepareData(true);
-    $mItem->add();
+    return $ok;
+}
 
+/**
+ * Insert the default example page.
+ *
+ * @return void
+ */
+function install_seed_page(): void
+{
+    require LIB_PATH . 'osclass/installer/basic_data.php';
+    /** @var array<string, mixed> $page */
     Page::getInstance()->insert(
         array(
             's_internal_name' => $page['s_internal_name'],
