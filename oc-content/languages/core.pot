@@ -413,6 +413,12 @@ msgstr ""
 msgid "%d s"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "%d sample listing is on this site."
+msgid_plural "%d sample listings are on this site."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/categories/index.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "%d subcategory"
@@ -11022,6 +11028,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Remove premium"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+msgid "Remove sample data"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php

@@ -3343,6 +3343,10 @@ msgstr ""
 msgid "The request was refused."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The sample data has been removed"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "The sections could not be published."
 msgstr ""

@@ -89,6 +89,16 @@ $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_page_head(__('Manage listings')); ?>
+<?php $sampleCount = (int) __get('sampleCount'); ?>
+<?php if ($sampleCount > 0) { ?>
+    <form method="post" action="<?php echo osc_admin_base_url(true); ?>" class="text-muted small mb-2">
+        <input type="hidden" name="page" value="items" />
+        <input type="hidden" name="action" value="remove_sample" />
+        <?php echo osc_csrf_token_form(); ?>
+        <?php echo osc_esc_html(sprintf(_n('%d sample listing is on this site.', '%d sample listings are on this site.', $sampleCount), $sampleCount)); ?>
+        <button type="submit" class="btn btn-link btn-sm p-0 align-baseline"><?php _e('Remove sample data'); ?></button>
+    </form>
+<?php } ?>
 <div class="relative">
     <?php osc_admin_list_filter(array(
             'page'     => 'items',

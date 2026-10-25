@@ -26,6 +26,7 @@ use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\RefusedException;
+use mindstellar\install\SampleData;
 use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
@@ -58,6 +59,7 @@ class CAdminItems extends AdminSecBaseModel
         'settings'       => 'settings',
         'settings_post'  => 'settingsPost',
         'items_reported' => 'reported',
+        'remove_sample'  => 'removeSample',
     );
 
     /**
@@ -193,6 +195,21 @@ class CAdminItems extends AdminSecBaseModel
                 break;
         }
         $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+    }
+
+    /**
+     * Remove the sample data the installer added. Admins only.
+     */
+    private function removeSample(): void
+    {
+        osc_csrf_check();
+        if (osc_is_moderator()) {
+            osc_add_flash_error_message(_m("You don't have enough permissions"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=items');
+        }
+        (new SampleData())->remove(Actor::fromSession(true));
+        osc_add_flash_ok_message(_m('The sample data has been removed'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=items');
     }
 
     /**
@@ -592,6 +609,10 @@ class CAdminItems extends AdminSecBaseModel
         $this->_exportVariableToView('countries', Country::getInstance()->listAll());
         $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
         $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
+        $this->_exportVariableToView(
+            'sampleCount',
+            osc_is_moderator() ? 0 : count((new SampleData())->installed())
+        );
 
         $bulk_options = BulkAction::options(
             array(
