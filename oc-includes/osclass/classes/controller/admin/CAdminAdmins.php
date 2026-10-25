@@ -385,6 +385,7 @@ class CAdminAdmins extends AdminSecBaseModel
             $stamp = (int)$id === (int)Session::getInstance()->_get('adminId') ? \mindstellar\auth\AdminPassword::stamp((int)$id) : null;
             if ($stamp !== null) {
                 Session::getInstance()->_set('adminStamp', $stamp);
+                \mindstellar\auth\AdminBrowsing::issue(['pk_i_id' => (int)$id, \mindstellar\auth\AuthStamp::COLUMN => $stamp]);
             }
         }
 

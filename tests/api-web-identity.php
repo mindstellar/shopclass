@@ -80,7 +80,7 @@ $boot  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/
 check('page=api forgets the web identity', str_contains($run, "if (\$api) {\n            \\mindstellar\\apikey\\ApiAccess::begin();"));
 check('which is WebIdentity::forget()', str_contains($boot, 'static fn () => \\mindstellar\\api\\identity\\WebIdentity::forget(),'));
 check('before the maintenance check', $at('ApiAccess::begin()') > 0 && $at('ApiAccess::begin()') < $at('self::maintenanceGate($api, $cli);'));
-check('an admin cookie does not lift maintenance for the API', str_contains($index, '!$api && osc_is_admin_user_logged_in(),'));
+check('only the signed admin-browsing cookie lifts maintenance for the API', str_contains($index, "\n            osc_admin_is_browsing(),\n"));
 check('an API call under maintenance gets problem+json', str_contains($index, "if (\$api) {\n            \\mindstellar\\apikey\\ApiAccess::maintenance();")
     && str_contains($boot, 'static fn () => \\mindstellar\\api\\Problem::maintenance()->send()'));
 check('an API call never records last access nor touches the user cookies', str_contains($run, "if (!\$api) {\n            self::userUpkeep();"));

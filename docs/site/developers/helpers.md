@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1235 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1236 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -511,7 +511,7 @@ Core defines 1235 helpers, 19 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_cache_relevant_cookies()` | The cookie names that mean "this response is personalized" — core's PHP session, the chosen front-end locale, a theme preview, and the fixed-name cache-bypass flag Cookie::set() writes whenever the visitor carries identity state (front-end user, admin). |
+| `osc_cache_relevant_cookies()` | The cookie names that mean "this response is personalized" — core's PHP session, an admin preview, the chosen front-end locale, a theme preview, and the fixed-name cache-bypass flag Cookie::set() writes whenever the visitor carries identity state (front-end user, admin). |
 | `osc_etag_matches(string $header, string $etag)` | Whether a conditional header names $etag: `*`, or any tag in the list, weak or strong. |
 | `osc_etag_tags(string $header)` | The tags in an If-Match or If-None-Match header, quoted, with any `W/` removed. A proxy that compresses the answer (nginx gzip, Cloudflare) weakens the tag it passes on. |
 | `osc_mark_response_cacheable($cacheable = true)` | Declare the current response a public, cacheable read page. |
@@ -982,7 +982,7 @@ Core defines 1235 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_save_latest_searches()` | Gets if save searches is enabled or not |
 | `osc_save_webp()` | Whether new photos are stored as WebP. Only when the server can write WebP. |
 | `osc_search_count_cap()` | The most matches a visitor or API search counts before it shows "1,000+" instead of the total. 0 counts every match; the most it can be is Search::COUNT_CAP_MAX. |
-| `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not |
+| `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not. A shop always allows them; the stored value is kept for when the site goes back to classifieds. |
 | `osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')` | generic function to insert/update preferences |
 | `osc_site_mode()` | What the site is for: 'classifieds' (the default) or 'shop'. |
 | `osc_subdomain_host()` | Return subdomain host |
@@ -1321,12 +1321,13 @@ Core defines 1235 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (73)
+### hUsers (74)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_admin_is_browsing()` | Whether a signed-in admin is browsing the site, for display and preview only: it grants no admin power, and permission checks must use osc_is_admin_user_logged_in() instead. |
 | `osc_alert()` | Gets current alert fomr view |
 | `osc_alert_criteria(?array $alert = null)` | What an alert searches for, as labelled parts: each entry is ['label', 'value']. Empty for an alert on all listings. A paused alert (one the upgrade could not keep) returns one 'held' entry. Defaults to the current alert in the loop. |
 | `osc_alert_date()` | Gets aate of current alert |

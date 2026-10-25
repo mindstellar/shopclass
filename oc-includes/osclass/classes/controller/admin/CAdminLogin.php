@@ -371,6 +371,7 @@ class CAdminLogin extends AdminBaseModel
         Session::getInstance()->_set('adminName', $admin['s_name']);
         Session::getInstance()->_set('adminEmail', $admin['s_email']);
         Session::getInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
+        \mindstellar\auth\AdminBrowsing::issue($admin);
         if ($is_valid_locale === true) {
             Session::getInstance()->_set('adminLocale', $locale);
         } else {

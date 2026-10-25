@@ -32,6 +32,7 @@ itself (`osc_cache_relevant_cookies()`, filterable via `cache_relevant_cookies`)
 | `oc_cache_bypass` | front-end or admin login / remember-me | logged-in user or admin |
 | `oc_userLocale` | a visitor switches language (`?lang=`) | changes the rendered language |
 | `oc_theme` | an admin previews a theme (any visitor on a demo site) | changes the rendered theme |
+| `oc_admin_browsing` | admin login, renewed while the admin session lives | an admin's preview (maintenance, test-mode gateways) |
 
 Front-end and admin identity (`oc_userId`, `oc_userSecret`, `oc_adminId`) are **keys inside one
 cookie named `md5(WEB_PATH)`**, not cookie names — a proxy config cannot hardcode that per-site
@@ -125,7 +126,7 @@ The full reference is `.docker/nginx/microcache.conf`. The essence:
     # Bypass ONLY on core's cache-relevant cookies; ignore _ga / __gads / consent / everything else.
     map $http_cookie $mc_private {
         default 0;
-        "~(^|;\s*)(oc_cache_bypass|oc_userLocale|oc_theme|osclass|PHPSESSID)=" 1;
+        "~(^|;\s*)(oc_cache_bypass|oc_userLocale|oc_theme|oc_admin_browsing|osclass|PHPSESSID)=" 1;
     }
 
     # location ~ \.php$

@@ -34,6 +34,7 @@ class AdminSecBaseModel extends SecBaseModel
             osc_add_flash_error_message(_m("You don't have enough permissions"), 'admin');
             $this->redirectTo(osc_admin_base_url());
         }
+        \mindstellar\auth\AdminBrowsing::keep((int) osc_logged_admin_id());
         osc_run_hook('init_admin');
 
         $config_version = OSCLASS_VERSION;
@@ -135,6 +136,7 @@ class AdminSecBaseModel extends SecBaseModel
         Cookie::getInstance()->pop('oc_adminLocale');
         Cookie::getInstance()->set();
         CAdminLogin::clearTwoFactorCookie();
+        \mindstellar\auth\AdminBrowsing::clear();
     }
 
     /**

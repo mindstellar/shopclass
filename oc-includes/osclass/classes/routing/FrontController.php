@@ -126,7 +126,7 @@ final class FrontController
         if (!osc_maintenance_should_lockout_request(
             true,
             $schemaBehind || osc_maintenance_lockout_enabled(),
-            !$api && osc_is_admin_user_logged_in(),
+            osc_admin_is_browsing(),
             $cli,
             !$schemaBehind && osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')
         )) {
@@ -170,10 +170,13 @@ final class FrontController
     }
 
     /**
-     * Sign the user out when user accounts are off, else record their last visit.
+     * Sign the user out when user accounts are off, else record their last visit. Renew or drop
+     * the admin-browsing cookie the site's own API calls read.
      */
     private static function userUpkeep(): void
     {
+        \mindstellar\auth\AdminBrowsing::keep(osc_is_admin_user_logged_in() ? (int) osc_logged_admin_id() : 0);
+
         if (!osc_users_enabled() && osc_is_web_user_logged_in()) {
             Session::getInstance()->_drop('userId');
             Session::getInstance()->_drop('userName');

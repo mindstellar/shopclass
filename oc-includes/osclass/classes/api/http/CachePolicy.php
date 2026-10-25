@@ -16,6 +16,7 @@ use mindstellar\api\Request;
 use mindstellar\apikey\Credential;
 use mindstellar\apikey\CredentialKind;
 use mindstellar\apikey\PageTokens;
+use mindstellar\auth\AdminBrowsing;
 
 /**
  * Caching headers for a successful answer. Public answers may sit in a shared cache, key answers
@@ -35,9 +36,11 @@ final class CachePolicy
 
     public function isPublic(Request $request, Credential $credential): bool
     {
+        // An admin's preview may differ, e.g. during maintenance or with test-mode gateways.
         return $request->isRead()
             && !in_array($request->routePath(), self::PRIVATE_PATHS, true)
-            && ($credential->isAnonymous() || $credential->kind() === CredentialKind::PUBLIC);
+            && ($credential->isAnonymous() || $credential->kind() === CredentialKind::PUBLIC)
+            && !AdminBrowsing::present();
     }
 
     /**

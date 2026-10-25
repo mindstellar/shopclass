@@ -9,6 +9,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 ### New
 - Option filters and custom-field filters read a filter index (`t_item_facet`), built in the background after the update. `search:reindex` and System info → Database → Rebuild filter index rebuild it.
 - The shop hooks are typed events. A callback whose first parameter is an event class gets the event; the hook names and old callbacks work as before. See [Hooks](https://shopclass.org/docs/developers/hooks/).
+- `osc_admin_is_browsing()` tells the site's own API calls that an admin is browsing, so a theme preview passes maintenance and test-mode gateways show. It grants no admin rights.
 - `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key, and work with the API switched off. See [REST API](https://shopclass.org/docs/developers/api/).
 - A theme or plugin can declare `modes` (`classifieds`, `shop`) and the plugins it needs, in `shopclass.json` or the `Modes:` and `Requires Plugins:` headers. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
 - **Settings → General → Site is a** sets classifieds or shop; in shop mode only admins post. `osc_site_mode()` reads it.

@@ -525,6 +525,24 @@ function osc_is_admin_user_logged_in()
 }
 
 /**
+ * Whether a signed-in admin is browsing the site, for display and preview only: it grants no
+ * admin power, and permission checks must use osc_is_admin_user_logged_in() instead.
+ *
+ * On a page request it is the admin session; on an API call from the site's own pages it is the
+ * signed admin-browsing cookie set at admin sign-in.
+ *
+ * @return bool
+ */
+function osc_admin_is_browsing(): bool
+{
+    if (function_exists('osc_is_api_request') && osc_is_api_request()) {
+        return \mindstellar\auth\AdminBrowsing::verified();
+    }
+
+    return (bool) osc_is_admin_user_logged_in();
+}
+
+/**
  * True for a shopper: a signed-in user, with no admin session, on a site in shop mode.
  *
  * A shopper buys and never sells, so the account hides the seller pages: listings, public
