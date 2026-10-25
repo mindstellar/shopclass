@@ -646,21 +646,7 @@ class CAdminAppearance extends AdminSecBaseModel
         $id      = Params::getParamString('menu');
         $id      = in_array($id, $ids, true) ? $id : 'main';
         $saved   = $service->load($id);
-        $locale  = osc_current_admin_locale();
-
-        $categories = array();
-        foreach ((new \mindstellar\category\CategoryQuery())->enabledTree($locale) as $row) {
-            $categories[] = array('id' => (int) $row['pk_i_id'], 'parent' => (int) ($row['fk_i_parent_id'] ?? 0), 'name' => html_entity_decode((string) $row['s_name'], ENT_QUOTES, 'UTF-8'));
-        }
-        $query = new \mindstellar\pages\PageQuery();
-        $rows  = $query->listed();
-        $texts = $query->texts(array_map(static fn (array $p): int => (int) $p['pk_i_id'], $rows));
-        $pages = array();
-        foreach ($rows as $row) {
-            $text    = $texts[(int) $row['pk_i_id']] ?? array();
-            $title   = $text[$locale]['s_title'] ?? (reset($text)['s_title'] ?? $row['s_internal_name']);
-            $pages[] = array('id' => (int) $row['pk_i_id'], 'name' => html_entity_decode((string) $title, ENT_QUOTES, 'UTF-8'));
-        }
+        $picker  = $service->pickerItems(osc_current_admin_locale());
 
         $this->_exportVariableToView('menuEditor', array(
             'id'         => $id,
@@ -670,8 +656,8 @@ class CAdminAppearance extends AdminSecBaseModel
             'place'      => $service->themePlaces()[$id] ?? null,
             'places'     => $service->themePlaces() !== array(),
             'items'      => $saved !== null ? $saved['items'] : $service->automaticItems($id),
-            'categories' => $categories,
-            'pages'      => $pages,
+            'categories' => $picker['categories'],
+            'pages'      => $picker['pages'],
         ));
         $this->doView('appearance/menus.php');
     }
@@ -692,27 +678,17 @@ class CAdminAppearance extends AdminSecBaseModel
         $service = MenuService::getInstance();
         $id      = Params::getParamString('menu');
         $create  = Params::getParamString('create') === '1';
-        if ($create && in_array($id, $service->menuIds(), true)) {
-            osc_add_flash_error_message(_m('A menu with that id already exists.'), 'admin');
-            $this->redirectTo($back . '&menu=' . urlencode($id));
-
-            return;
-        }
-        if ($create) {
-            $items = array();
-            $label = Params::getParamString('label', false, false, false);
-        } else {
-            $items = json_decode(Params::getParamString('items', false, false, false), true);
-            $label = ($service->load($id) ?? array('label' => ''))['label'];
-        }
-        $errors = $service->save($id, $items, $label);
+        $errors  = $create
+            ? $service->save($id, array(), Params::getParamString('label', false, false, false), true)
+            : $service->save($id, json_decode(Params::getParamString('items', false, false, false), true), null);
         foreach ($errors as $error) {
             osc_add_flash_error_message($error, 'admin');
         }
         if ($errors === array()) {
             osc_add_flash_ok_message($create ? _m('Menu created. Add items to it.') : _m('Menu saved.'), 'admin');
         }
-        $this->redirectTo($back . (preg_match(MenuService::ID, $id) === 1 && ($errors === array() || !$create) ? '&menu=' . urlencode($id) : ''));
+        $opened = $errors === array() || !$create || in_array($id, $service->menuIds(), true);
+        $this->redirectTo($back . (preg_match(MenuService::ID, $id) === 1 && $opened ? '&menu=' . urlencode($id) : ''));
     }
 
     /**

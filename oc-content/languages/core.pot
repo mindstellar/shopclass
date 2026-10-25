@@ -1046,6 +1046,10 @@ msgstr ""
 msgid "A menu item points to a page that does not exist."
 msgstr ""
 
+#: oc-includes/osclass/classes/menu/MenuService.php
+msgid "A menu with that id already exists."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "A new comment is posted"
 msgstr ""

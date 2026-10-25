@@ -164,4 +164,11 @@ pin('items beyond level 2', 1, MenuService::itemsBeyond($tree, 2));
 pin('items beyond level 3', 0, MenuService::itemsBeyond($tree, 3));
 $support->reset();
 
+harness_section('the editor');
+pin('it offers the enabled categories in tree order', [['id' => $motors, 'parent' => 0, 'name' => 'Motors'], ['id' => $cars, 'parent' => $motors, 'name' => 'Cars']], $menus->pickerItems('en_US')['categories']);
+pin('creating a new menu takes its name', [[], 'Strip'], [$menus->save('strip', [], 'Strip', true), $menus->load('strip')['label']]);
+pin('creating it again is refused', ['A menu with that id already exists.'], $menus->save('strip', [], 'Other', true));
+pin('a null label keeps the saved name', [[], 'Strip'], [$menus->save('strip', [$link()], null), $menus->load('strip')['label']]);
+$menus->delete('strip');
+
 exit(harness_result());

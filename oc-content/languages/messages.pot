@@ -233,10 +233,6 @@ msgstr ""
 msgid "A held alert cannot be activated. Ask the user to save the search again."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "A menu with that id already exists."
-msgstr ""
-
 #: oc-includes/osclass/classes/security/MessageGuard.php
 msgid "A message can be up to %d characters long."
 msgstr ""

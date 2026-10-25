@@ -186,14 +186,19 @@ final class MenuService
 
     /**
      * Check and store a whole menu. Returns what is wrong; an empty list means it was saved.
+     * A null label keeps the saved one. With $create the id must be new.
      *
      * @return string[]
      */
-    public function save(string $id, mixed $items, string $label = ''): array
+    public function save(string $id, mixed $items, ?string $label = '', bool $create = false): array
     {
         if (preg_match(self::ID, $id) !== 1) {
             return [__('A menu id starts with a letter and has at most 32 lowercase letters, digits, - or _.')];
         }
+        if ($create && in_array($id, $this->menuIds(), true)) {
+            return [__('A menu with that id already exists.')];
+        }
+        $label ??= ($this->load($id) ?? ['label' => ''])['label'];
         if ($this->load($id) === null && !in_array($id, self::CORE, true) && count(array_diff($this->ids(), self::CORE)) >= self::MAX_MENUS) {
             return [sprintf(__('A site can keep at most %d menus besides the main and footer menus.'), self::MAX_MENUS)];
         }
@@ -229,6 +234,31 @@ final class MenuService
         osc_purge_page_cache('menu');
 
         return $deleted !== false;
+    }
+
+    /**
+     * What the admin editor offers to add, names in $locale: the enabled categories in tree
+     * order with their parent, and the listed pages.
+     *
+     * @return array{categories:array<int,array{id:int,parent:int,name:string}>,pages:array<int,array{id:int,name:string}>}
+     */
+    public function pickerItems(string $locale): array
+    {
+        $categories = [];
+        foreach ($this->categories($locale) as $id => $row) {
+            $categories[] = ['id' => $id, 'parent' => (int) ($row['fk_i_parent_id'] ?? 0), 'name' => html_entity_decode((string) $row['s_name'], ENT_QUOTES, 'UTF-8')];
+        }
+        $query = new PageQuery();
+        $rows  = $query->listed();
+        $texts = $query->texts(array_map(static fn (array $p): int => (int) $p['pk_i_id'], $rows));
+        $pages = [];
+        foreach ($rows as $row) {
+            $text    = $texts[(int) $row['pk_i_id']] ?? [];
+            $title   = $text[$locale]['s_title'] ?? (reset($text)['s_title'] ?? $row['s_internal_name']);
+            $pages[] = ['id' => (int) $row['pk_i_id'], 'name' => html_entity_decode((string) $title, ENT_QUOTES, 'UTF-8')];
+        }
+
+        return ['categories' => $categories, 'pages' => $pages];
     }
 
     /**
