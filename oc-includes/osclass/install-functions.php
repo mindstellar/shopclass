@@ -1516,6 +1516,74 @@ function display_database_config($form_data = null, $error = null)
 }
 
 /**
+ * The notice shown when a step arrives without a valid installer session.
+ *
+ * @return void
+ */
+function install_session_expired_panel()
+{
+    ?>
+    <div class="ins-panel ins-panel-warning" role="alert">
+        <?php _e('Your session expired before setup finished. Please restart the installer to complete it.'); ?>
+    </div>
+    <p>
+        <a class="ins-btn ins-btn-primary" href="install.php"><?php _e('Restart the installer'); ?></a>
+    </p>
+    <?php
+}
+
+/**
+ * Render the "What kind of site?" step.
+ *
+ * @param array{available:bool, reason:string, plugins:list<array<string,mixed>>} $offer  ShopSetup::offer()
+ * @param array{type:string, sample:bool, plugins:list<string>|null}             $chosen install_site_choice()
+ *
+ * @return void
+ */
+function display_site_type(array $offer, array $chosen)
+{
+    include 'installer/gui/install-site-type.php';
+}
+
+/**
+ * What the visitor picked on the site-type step, as kept in the session.
+ *
+ * @return array{type:string, sample:bool, plugins:list<string>|null} plugins is null before the step was sent
+ */
+function install_site_choice(): array
+{
+    $session = Session::getInstance();
+    $plugins = $session->_get('install_shop_plugins');
+
+    return array(
+        'type'    => $session->_get('install_site_type') === 'shop' ? 'shop' : 'classifieds',
+        'sample'  => (bool) $session->_get('install_sample_data'),
+        'plugins' => is_array($plugins) ? array_values(array_map('strval', $plugins)) : null,
+    );
+}
+
+/**
+ * Keep the site-type step's answer in the session. Shop is kept only when it was offered, and only
+ * offered plugins are kept, so later steps install nothing else.
+ *
+ * @param array{available:bool, plugins:list<array<string,mixed>>} $offer ShopSetup::offer()
+ *
+ * @return void
+ */
+function install_save_site_choice(array $offer): void
+{
+    $shop    = Params::getParamString('site_type') === 'shop' && $offer['available'];
+    $offered = array_column($offer['plugins'], 'slug');
+    $posted  = Params::getParamArray('shop_plugins');
+    $plugins = $shop ? array_values(array_intersect($offered, array_filter($posted, 'is_string'))) : array();
+
+    $session = Session::getInstance();
+    $session->_set('install_site_type', $shop ? 'shop' : 'classifieds');
+    $session->_set('install_sample_data', Params::getParamString('sample_data') === '1' ? 1 : 0);
+    $session->_set('install_shop_plugins', $plugins);
+}
+
+/**
  * Render the installer's target-directory step.
  *
  * @return void

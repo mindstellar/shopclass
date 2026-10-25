@@ -120,6 +120,7 @@ in the `mindstellar\<folder>` namespace. The old classes plugins use have no nam
 | `fields` | Custom fields and their types |
 | `form` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
 | `http` | Outgoing HTTPS requests for core and plugins: `HttpClient`, `CurlHttpClient` |
+| `install` | The first-run installer: what it can set up for a shop site |
 | `job` | The background job queue |
 | `live` | Push to open browsers: publisher, status |
 | `language` | Installing and storing languages |

@@ -22,6 +22,8 @@ if (!defined('ABS_PATH')) {
  * @var array<string,string> $jsonLocales
  * @var bool                 $already_installed
  * @var string               $password
+ * @var array                $shop_offer
+ * @var bool                 $site_choice_saved
  */
 
 // Which rail stop to render as current. $step tracks the backend's own state
@@ -33,17 +35,16 @@ if ($step === 1) {
     $ins_rail_step = 1;
 } elseif ($step === 2 || $ins_showing_db_retry) {
     $ins_rail_step = 2;
-} elseif ($step === 3) {
-    $ins_rail_step = 3;
 } else {
-    $ins_rail_step = 4;
+    $ins_rail_step = min($step, 5);
 }
 
 $ins_step_labels = array(
     1 => __('Check server'),
     2 => __('Connect database'),
-    3 => __('Your site'),
-    4 => __('Done'),
+    3 => __('Site type'),
+    4 => __('Your site'),
+    5 => __('Done'),
 );
 
 $ins_i18n = array(
@@ -202,8 +203,10 @@ $ins_i18n = array(
                         <?php } elseif ($step === 2) {
                             display_database_config();
                         } elseif ($step === 3) {
-                            if (!isset($error['error'])) {
-                                display_target();
+                            if (!isset($error['error']) && isset($shop_offer)) {
+                                display_site_type($shop_offer, install_site_choice());
+                            } elseif (!isset($error['error'])) {
+                                install_session_expired_panel();
                             } else {
                                 $form_data = array(
                                     'dbhost'         => Params::getParam('dbhost'),
@@ -217,7 +220,11 @@ $ins_i18n = array(
                                 );
                                 display_database_config($form_data, $error);
                             }
-                        } elseif ($step === 4 && install_nonce_check() && Session::getInstance()->_get('install_db_done')) {
+                        } elseif ($step === 4 && !empty($site_choice_saved)) {
+                            display_target();
+                        } elseif ($step === 4) {
+                            install_session_expired_panel();
+                        } elseif ($step === 5 && install_nonce_check() && Session::getInstance()->_get('install_db_done')) {
                             if (!headers_sent()) {
                                 setcookie('osclass_save_stats', '', time() - 3600);
                                 setcookie('osclass_ping_engines', '', time() - 3600);
@@ -254,19 +261,9 @@ $ins_i18n = array(
                                     $fileSystem->remove($downloaded);
                                 }
                             }
-                        } elseif ($step === 4) {
-                            // Missing/invalid installer nonce: never finalize the
-                            // install (that writes the osclass_installed sentinel
-                            // and would lock out the installer). Show a neutral
-                            // message instead of silently completing.
-                            ?>
-                            <div class="ins-panel ins-panel-warning" role="alert">
-                                <?php _e('Your session expired before setup finished. Please restart the installer to complete it.'); ?>
-                            </div>
-                            <p>
-                                <a class="ins-btn ins-btn-primary" href="install.php"><?php _e('Restart the installer'); ?></a>
-                            </p>
-                            <?php
+                        } elseif ($step === 5) {
+                            // A missing nonce must never finalize: that writes osclass_installed and locks the installer.
+                            install_session_expired_panel();
                         }
             ?>
                     </div>

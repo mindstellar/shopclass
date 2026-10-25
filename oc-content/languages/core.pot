@@ -979,6 +979,10 @@ msgstr ""
 msgid "A database update is running. Try again in a few minutes."
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "A fashion or gift shop, a bakery, a craft or digital goods store"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid ""
 "A form is a set of fields shown together on the listing form, for the "
@@ -3283,6 +3287,10 @@ msgstr ""
 msgid "Classified ads in %s"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "Classifieds"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Classifieds site"
 msgstr ""
@@ -3706,6 +3714,7 @@ msgid "Content"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-database.php
+#: oc-includes/osclass/installer/gui/install-site-type.php
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Continue"
 msgstr ""
@@ -5426,6 +5435,10 @@ msgstr ""
 msgid "Evictions"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "Example listings and form fields, so you can see how the site works."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Example page title"
 msgstr ""
@@ -6612,6 +6625,10 @@ msgid ""
 "cases, "
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "Install sample data"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Install security updates by themselves."
 msgstr ""
@@ -7603,6 +7620,10 @@ msgstr ""
 msgid "Loading…"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "Local buy and sell, jobs, property, cars, services"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid "Local copies"
 msgstr ""
@@ -8568,6 +8589,10 @@ msgstr ""
 msgid "Needs attention"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "Needs internet. You can switch to shop mode later in the admin."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Needs reCAPTCHA keys first."
 msgstr ""
@@ -8601,6 +8626,7 @@ msgstr ""
 #: oc-admin/themes/modern/fields/submissions.php
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 #: oc-includes/osclass/installer/data/sample-classifieds.php
+#: oc-includes/osclass/installer/gui/install-site-type.php
 msgid "New"
 msgstr ""
 
@@ -9810,6 +9836,12 @@ msgstr ""
 msgid ""
 "Package installs are disabled on this deployment. Install the plugins by "
 "hand, then come back."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid ""
+"Package installs are turned off on this server. You can switch to shop mode "
+"later in the admin."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
@@ -11163,7 +11195,7 @@ msgstr ""
 msgid "Responses"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install.php
+#: oc-includes/osclass/install-functions.php
 msgid "Restart the installer"
 msgstr ""
 
@@ -12217,6 +12249,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+#: oc-includes/osclass/installer/gui/install-site-type.php
 msgid "Shop"
 msgstr ""
 
@@ -12226,6 +12259,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Shop Fittings"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "Shop plugins to add"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -12544,6 +12581,11 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Site is a"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-site-type.php
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Site type"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php
@@ -15718,6 +15760,10 @@ msgstr ""
 msgid "What it should look like"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "What kind of site?"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
 msgid "What to remove"
 msgstr ""
@@ -15915,6 +15961,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/market/PluginDependencies.php
 msgid "You can also download the zip file and upload it under Plugins, Add plugin."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "You can change this later in the admin."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/locations.php
@@ -16171,7 +16221,7 @@ msgstr ""
 msgid "Your server meets every requirement."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install.php
+#: oc-includes/osclass/install-functions.php
 msgid ""
 "Your session expired before setup finished. Please restart the installer to "
 "complete it."

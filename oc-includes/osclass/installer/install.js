@@ -70,7 +70,7 @@
     }
 
     /* -----------------------------------------------------------------
-       Password / value reveal toggles (used on step 2, step 3, finish)
+       Password / value reveal toggles (used on step 2, step 4, finish)
        ------------------------------------------------------------- */
     function initReveal() {
         var toggles = document.querySelectorAll('[data-reveal-target]');
@@ -306,8 +306,27 @@
     }
 
     /* -----------------------------------------------------------------
-       Step 3: site + admin form, submitted via fetch, then a synthetic
-       POST to install.php carrying the result to step 4.
+       Step 3: the shop plugin list shows only while Shop is picked
+       ------------------------------------------------------------- */
+    function initSiteType() {
+        var form = document.getElementById('ins-site-type-form');
+        var list = document.getElementById('ins-shop-plugins');
+        if (!form || !list) {
+            return;
+        }
+        function sync() {
+            var shop = form.querySelector('input[name="site_type"][value="shop"]');
+            list.hidden = !(shop && shop.checked);
+        }
+        form.querySelectorAll('input[name="site_type"]').forEach(function (radio) {
+            radio.addEventListener('change', sync);
+        });
+        sync();
+    }
+
+    /* -----------------------------------------------------------------
+       Step 4: site + admin form, submitted via fetch, then a synthetic
+       POST to install.php carrying the result to step 5.
        ------------------------------------------------------------- */
     function initTargetForm() {
         var form = document.getElementById('ins-target-form');
@@ -384,7 +403,7 @@
             nextForm.method = 'POST';
             nextForm.action = 'install.php';
             nextForm.style.display = 'none';
-            addHiddenField(nextForm, 'step', '4');
+            addHiddenField(nextForm, 'step', '5');
             addHiddenField(nextForm, 'result', emailStatus || '');
             addHiddenField(nextForm, 'password', password || '');
             if (locationError) {
@@ -449,6 +468,7 @@
         initDismissiblePanels();
         initCreateDbToggle();
         initDbTest();
+        initSiteType();
         initTargetForm();
     });
 })();

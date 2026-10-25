@@ -20,6 +20,8 @@
     --ins-bronze: #0b7269;
     --ins-bronze-deep: #09625c;
     --ins-bronze-tint: #e6f6f4;
+    --ins-accent-2-tint: #ffe9e3;
+    --ins-accent-2-deep: #a3361d;
 
     --ins-bench: #ffffff;
     --ins-bench-warm: #f7f9fb;
@@ -477,6 +479,139 @@ select.ins-input {
 
 .ins-disclosure-body {
     padding: 0 var(--ins-space-3) var(--ins-space-3);
+}
+
+/* ---------------------------------------------------------------------
+   Choice cards and check rows (site-type step)
+   ------------------------------------------------------------------ */
+.ins-choices {
+    border: none;
+    margin: var(--ins-space-4) 0 var(--ins-space-2);
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--ins-space-3);
+}
+
+.ins-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ins-space-3);
+    margin: 0;
+    padding: var(--ins-space-4);
+    border: 1px solid var(--ins-rule-strong);
+    border-radius: var(--ins-radius-md);
+    background: var(--ins-bench);
+    font-size: var(--ins-fs-body);
+    font-weight: 400;
+    cursor: pointer;
+    transition: border-color var(--ins-motion-fast), box-shadow var(--ins-motion-fast);
+}
+
+.ins-choice:hover {
+    border-color: var(--ins-bronze);
+}
+
+.ins-choice:has(input:checked) {
+    border-color: var(--ins-bronze);
+    box-shadow: inset 0 0 0 1px var(--ins-bronze);
+    background: var(--ins-bronze-tint);
+}
+
+.ins-choice:has(input:focus-visible) {
+    outline: 2px solid var(--ins-bronze);
+    outline-offset: 2px;
+}
+
+.ins-choice.is-disabled {
+    cursor: not-allowed;
+    background: var(--ins-bench-sunk);
+    border-color: var(--ins-rule);
+    color: var(--ins-ink-muted);
+}
+
+.ins-choice input,
+.ins-check input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 2px 0 0;
+    accent-color: var(--ins-bronze);
+}
+
+.ins-choice-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ins-space-1);
+    min-width: 0;
+}
+
+.ins-choice-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ins-space-2);
+    font-weight: 600;
+    font-size: var(--ins-fs-title);
+}
+
+.ins-choice-text {
+    color: var(--ins-ink-muted);
+    font-size: var(--ins-fs-label);
+    line-height: 1.45;
+}
+
+.ins-choice-note {
+    margin: 0 0 var(--ins-space-4);
+}
+
+.ins-badge {
+    display: inline-block;
+    padding: 1px var(--ins-space-2);
+    border-radius: var(--ins-radius-pill);
+    background: var(--ins-accent-2-tint);
+    color: var(--ins-accent-2-deep);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.ins-plugin-list {
+    border: none;
+    margin: var(--ins-space-4) 0 0;
+    padding: 0;
+}
+
+.ins-plugin-list legend {
+    padding: 0;
+}
+
+.ins-check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ins-space-3);
+    margin: 0;
+    padding: var(--ins-space-2) 0;
+    font-size: var(--ins-fs-body);
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.ins-check-title {
+    display: block;
+    font-weight: 500;
+}
+
+.ins-check .ins-help {
+    display: block;
+    margin-top: 0;
+}
+
+.ins-sample-check {
+    margin-top: var(--ins-space-4);
+    padding-top: var(--ins-space-4);
+    border-top: 1px solid var(--ins-rule);
 }
 
 /* ---------------------------------------------------------------------
