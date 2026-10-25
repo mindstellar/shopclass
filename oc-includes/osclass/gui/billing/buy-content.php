@@ -13,7 +13,6 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\billing\Order;
-use mindstellar\billing\PaymentGatewayRegistry;
 
 /**
  * Package picker and payment methods -- markup only: no page chrome, no heading
@@ -39,7 +38,7 @@ if (!osc_is_web_user_logged_in()) {
     $emptyMessage = null;
 
     $packages = osc_billing_packages();
-    $gateways = PaymentGatewayRegistry::getInstance()->available();
+    $gateways = osc_billing_gateways();
 }
 
 $order        = __get('order');

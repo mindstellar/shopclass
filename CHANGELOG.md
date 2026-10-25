@@ -95,6 +95,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Two first upgrade grants for one listing no longer deadlock and lose one.
 - A mail template with no text now uses the bundled English text instead of stopping the request.
 - Checkbox filters use the `s_value` index.
+- The buy-credits page lists only the payment methods that take the billing currency.
 
 ## Shopclass 7.0.5
 

@@ -163,7 +163,7 @@ class CWebBilling extends WebSecBaseModel
     private function buyView()
     {
         $this->_exportVariableToView('packages', PackageStore::enabled());
-        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::getInstance()->available());
+        $this->_exportVariableToView('gateways', osc_billing_gateways());
         $this->doView('user-billing-buy.php');
     }
 
@@ -257,7 +257,7 @@ class CWebBilling extends WebSecBaseModel
         $this->_exportVariableToView('checkoutHtml', $intent->getPayload());
         $this->_exportVariableToView('order', $order);
         $this->_exportVariableToView('packages', PackageStore::enabled());
-        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::getInstance()->available());
+        $this->_exportVariableToView('gateways', osc_billing_gateways());
         $this->doView('user-billing-buy.php');
     }
 

@@ -739,6 +739,16 @@ function osc_billing_packages(): array
 }
 
 /**
+ * The payment methods that can take a credit package, which is charged in the billing currency.
+ *
+ * @return array<string,\mindstellar\billing\PaymentGateway>
+ */
+function osc_billing_gateways(): array
+{
+    return PaymentGatewayRegistry::getInstance()->available(osc_billing_currency());
+}
+
+/**
  * Whether buying credits leads anywhere: a payment method is on and a package is for sale.
  * Gateways are preference reads, so they gate the packages query.
  *
@@ -746,7 +756,7 @@ function osc_billing_packages(): array
  */
 function osc_billing_can_buy(): bool
 {
-    return PaymentGatewayRegistry::getInstance()->available() !== array()
+    return osc_billing_gateways() !== array()
         && osc_billing_packages() !== array();
 }
 

@@ -848,6 +848,15 @@ check(
     && !isset(PaymentGatewayRegistry::getInstance()->available('GBP')['fake'])
 );
 
+osc_set_preference('billing_currency', 'USD', 'osclass', 'STRING');
+osc_reset_preferences();
+check('a credit package lists a gateway that takes the billing currency', isset(osc_billing_gateways()['fake']));
+osc_set_preference('billing_currency', 'GBP', 'osclass', 'STRING');
+osc_reset_preferences();
+check('and not one that does not', !isset(osc_billing_gateways()['fake']));
+osc_set_preference('billing_currency', 'USD', 'osclass', 'STRING');
+osc_reset_preferences();
+
 // Fresh registries, so the first read is still to come. The hook hands over the registry it loads.
 $freshRegistry = static fn (): PaymentGatewayRegistry => (new ReflectionClass(PaymentGatewayRegistry::class))->newInstanceWithoutConstructor();
 $fired         = array();
