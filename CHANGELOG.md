@@ -85,6 +85,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - The API main menu no longer links a top category to a subcategory that has the same slug.
 - After-commit callbacks queued behind one that ends the request now run at shutdown.
 - Two first upgrade grants for one listing no longer deadlock and lose one.
+- A mail template with no text now uses the bundled English text instead of stopping the request.
 - Checkbox filters use the `s_value` index.
 
 ## Shopclass 7.0.5

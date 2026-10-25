@@ -92,14 +92,16 @@ final class CoreEmails
 
         // send alert validation email
         $prefLocale       = osc_language();
-        $page             = Page::getInstance()->findByInternalName('email_alert_validation');
-        $page_description = $page['locale'];
+        $template         = self::template('email_alert_validation', $prefLocale);
+        if (null === $template) {
+            return;
+        }
 
         $_title = osc_apply_filter(
             'email_title',
             osc_apply_filter(
                 'email_alert_validation_title',
-                $page_description[$prefLocale]['s_title'],
+                $template['s_title'],
                 $alert,
                 $email,
                 $secret
@@ -109,7 +111,7 @@ final class CoreEmails
             'email_description',
             osc_apply_filter(
                 'email_alert_validation_description',
-                $page_description[$prefLocale]['s_text'],
+                $template['s_text'],
                 $alert,
                 $email,
                 $secret
@@ -163,13 +165,72 @@ final class CoreEmails
      *
      * @param string $internalName alert_email_hourly or alert_email_weekly
      *
-     * @return array<string,string> The s_title and s_text of that page
+     * @return array<string,string>|null The s_title and s_text of that page, or null when none can be found
      */
     public static function alertTemplate($internalName)
     {
-        $page = Page::getInstance()->findByInternalName($internalName);
+        return self::template($internalName, osc_language());
+    }
 
-        return $page['locale'][osc_language()];
+    /**
+     * The text of an e-mail template: the page text in the given locale, else in any other
+     * locale, else the bundled English text. Null (and one log line) when none exists.
+     *
+     * @param string      $internalName Template page name, such as email_user_validation
+     * @param string|null $locale       Locale code; the current user locale when null
+     *
+     * @return array{s_title:string,s_text:string}|null
+     */
+    public static function template(string $internalName, ?string $locale = null): ?array
+    {
+        $locale ??= osc_current_user_locale();
+        $page     = Page::getInstance()->findByInternalName($internalName);
+        $texts    = is_array($page) && is_array($page['locale'] ?? null) ? $page['locale'] : array();
+        $row      = isset($texts[$locale]['s_title']) ? $texts[$locale] : null;
+        if ($row === null) {
+            foreach ($texts as $candidate) {
+                if (is_array($candidate) && isset($candidate['s_title'])) {
+                    $row = $candidate;
+                    break;
+                }
+            }
+        }
+        if ($row !== null) {
+            return array('s_title' => (string) $row['s_title'], 's_text' => (string) ($row['s_text'] ?? ''));
+        }
+
+        $bundled = self::bundledTemplates()[$internalName] ?? null;
+        if ($bundled !== null) {
+            return $bundled;
+        }
+        error_log('E-mail template "' . $internalName . '" has no text; mail not sent.');
+
+        return null;
+    }
+
+    /**
+     * The English templates shipped in installer/mail.json, read once per request.
+     *
+     * @return array<string,array{s_title:string,s_text:string}>
+     */
+    private static function bundledTemplates(): array
+    {
+        static $bundled = null;
+        if ($bundled === null) {
+            $bundled = array();
+            $json    = is_readable(__DIR__ . '/../../installer/mail.json')
+                ? json_decode((string) file_get_contents(__DIR__ . '/../../installer/mail.json'), true) : null;
+            foreach (is_array($json['template'] ?? null) ? $json['template'] : array() as $row) {
+                if (isset($row['s_internal_name'], $row['s_title'])) {
+                    $bundled[(string) $row['s_internal_name']] = array(
+                        's_title' => (string) $row['s_title'],
+                        's_text'  => (string) ($row['s_description'] ?? ''),
+                    );
+                }
+            }
+        }
+
+        return $bundled;
     }
 
     /**
@@ -262,6 +323,9 @@ final class CoreEmails
     public static function alertHourly($user, $ads, $s_search, $items, $totalItems)
     {
         $template = self::alertTemplate('alert_email_hourly');
+        if (null === $template) {
+            return;
+        }
 
         $_title = osc_apply_filter(
             'email_title',
@@ -332,6 +396,9 @@ final class CoreEmails
     public static function alertDaily($user, $ads, $s_search, $items, $totalItems)
     {
         $template = self::alertTemplate('alert_email_daily');
+        if (null === $template) {
+            return;
+        }
 
         $_title = osc_apply_filter(
             'email_title',
@@ -402,6 +469,9 @@ final class CoreEmails
     public static function alertWeekly($user, $ads, $s_search, $items, $totalItems)
     {
         $template = self::alertTemplate('alert_email_weekly');
+        if (null === $template) {
+            return;
+        }
 
         $_title = osc_apply_filter(
             'email_title',
@@ -467,15 +537,7 @@ final class CoreEmails
      */
     public static function commentValidated($aComment)
     {
-        $mPages = new Page();
-        $locale = osc_current_user_locale();
-        $aPage  = $mPages->findByInternalName('email_comment_validated');
-
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
-        }
+        $content = self::template('email_comment_validated');
 
         if (null !== $content) {
             $words   = array();
@@ -535,14 +597,10 @@ final class CoreEmails
      */
     public static function newItemNonRegisterUser($item)
     {
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_new_item_non_register_user');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_new_item_non_register_user');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $item_url   = osc_item_url();
@@ -615,14 +673,7 @@ final class CoreEmails
      */
     public static function userForgotPassword($user, $password_url)
     {
-        $aPage  = Page::getInstance()->findByInternalName('email_user_forgot_password');
-        $locale = osc_current_user_locale();
-
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
-        }
+        $content = self::template('email_user_forgot_password');
 
         if (null !== $content) {
             $words   = array();
@@ -693,15 +744,7 @@ final class CoreEmails
      */
     public static function userRegistration($user)
     {
-        $pageManager = new Page();
-        $locale      = osc_current_user_locale();
-        $aPage       = $pageManager->findByInternalName('email_user_registration');
-
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
-        }
+        $content = self::template('email_user_registration');
 
         if (null !== $content) {
             $words   = array();
@@ -756,14 +799,7 @@ final class CoreEmails
      */
     public static function newEmail($new_email, $validation_url)
     {
-        $locale = osc_current_user_locale();
-        $aPage  = Page::getInstance()->findByInternalName('email_new_email');
-
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
-        }
+        $content = self::template('email_new_email');
 
         if (null !== $content) {
             $words   = array();
@@ -829,15 +865,7 @@ final class CoreEmails
      */
     public static function userValidation($user, $input)
     {
-        $mPages = new Page();
-        $locale = osc_current_user_locale();
-        $aPage  = $mPages->findByInternalName('email_user_validation');
-
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
-        }
+        $content = self::template('email_user_validation');
 
         if (null !== $content) {
             $validation_url = osc_user_activate_url($user['pk_i_id'], $input['s_secret']);
@@ -898,14 +926,10 @@ final class CoreEmails
      */
     public static function sendFriend($aItem)
     {
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_send_friend');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_send_friend');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $item_url = osc_item_url();
@@ -1009,14 +1033,10 @@ final class CoreEmails
         $item = Item::getInstance()->findByPrimaryKey($id);
         View::getInstance()->_exportVariableToView('item', $item);
 
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_item_inquiry');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_item_inquiry');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $item_url  = osc_item_url();
@@ -1106,14 +1126,10 @@ final class CoreEmails
         $itemURL = osc_item_url();
         $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
 
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_new_comment_admin');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_new_comment_admin');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $words   = array();
@@ -1185,14 +1201,11 @@ final class CoreEmails
         View::getInstance()->_exportVariableToView('item', $item);
         $contactEmail = $item['s_contact_email'];
         $contactName  = $item['s_contact_name'];
-        $mPages       = new Page();
         $locale       = osc_current_user_locale();
-        $aPage        = $mPages->findByInternalName('email_item_validation');
+        $content = self::template('email_item_validation');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $item_url  = osc_item_url();
@@ -1293,14 +1306,11 @@ final class CoreEmails
     {
         View::getInstance()->_exportVariableToView('item', $item);
         $title  = osc_item_title();
-        $mPages = new Page();
         $locale = osc_current_user_locale();
-        $aPage  = $mPages->findByInternalName('email_admin_new_item');
+        $content = self::template('email_admin_new_item');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $item_url  = osc_item_url();
@@ -1413,14 +1423,10 @@ final class CoreEmails
     {
         View::getInstance()->_exportVariableToView('item', $item);
 
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_item_validation_non_register_user');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_item_validation_non_register_user');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $item_url   = osc_item_url();
@@ -1537,15 +1543,7 @@ final class CoreEmails
      */
     public static function adminNewUser($user)
     {
-        $pageManager = new Page();
-        $locale      = osc_current_user_locale();
-        $aPage       = $pageManager->findByInternalName('email_admin_new_user');
-
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
-        }
+        $content = self::template('email_admin_new_user');
 
         if (null !== $content) {
             $words   = array();
@@ -1607,14 +1605,10 @@ final class CoreEmails
      */
     public static function contactUser($id, $yourEmail, $yourName, $phoneNumber, $message)
     {
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_contact_user');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_contact_user');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         [$titleWords, $words] = self::words(array(
@@ -1705,14 +1699,10 @@ final class CoreEmails
         $itemURL = osc_item_url();
         $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
 
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_new_comment_user');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_new_comment_user');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $words   = array();
@@ -1787,14 +1777,10 @@ final class CoreEmails
         $name     = trim(strip_tags((string) $data['s_name']));
         $username = trim(strip_tags((string) $data['s_username']));
 
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_new_admin');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_new_admin');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $words   = array();
@@ -1853,14 +1839,10 @@ final class CoreEmails
         $itemURL = osc_item_url();
         $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
 
-        $mPages = new Page();
-        $aPage  = $mPages->findByInternalName('email_warn_expiration');
-        $locale = osc_current_user_locale();
+        $content = self::template('email_warn_expiration');
 
-        if (isset($aPage['locale'][$locale]['s_title'])) {
-            $content = $aPage['locale'][$locale];
-        } else {
-            $content = current($aPage['locale']);
+        if (null === $content) {
+            return;
         }
 
         $words       = array();
@@ -2106,16 +2088,12 @@ final class CoreEmails
         $to   = (string) $user['s_email'];
         $name = (string) ($user['s_name'] ?? '');
 
-        $page    = (new Page())->findByInternalName('email_listing_unpaid_reminder');
-        $locale  = osc_current_user_locale();
-        $content = null;
-        if (is_array($page) && !empty($page['locale'])) {
-            $content = isset($page['locale'][$locale]['s_title']) ? $page['locale'][$locale] : current($page['locale']);
+        $content = self::template('email_listing_unpaid_reminder');
+        if (null === $content) {
+            return;
         }
-        $title = is_array($content) ? (string) $content['s_title'] : __('{WEB_TITLE} - Pay to publish your listing');
-        $body  = is_array($content)
-            ? (string) $content['s_text']
-            : __('<p>Hi {USER_NAME},</p><p>Your listing <a href="{PAY_URL}">{ITEM_TITLE}</a> is saved but not published. It costs {CREDITS} credits to publish.</p><p>Pay for it by {DEADLINE} or it is deleted: {PAY_LINK}</p><p>Regards,</p><p>{WEB_LINK}</p>');
+        $title = $content['s_title'];
+        $body  = $content['s_text'];
 
         $payUrl = osc_billing_publish_url($itemId);
         $quote  = ListingCheckout::quote($itemId, $ownerId);
