@@ -210,8 +210,15 @@ class AdminMenu
         // clutter that makes an admin panel feel like someone else's product. While it is
         // off the switch lives under Settings instead (see below), so this is reversible.
         if (osc_billing_enabled()) {
+            // Orders waiting to ship show as a badge; Orders then opens on the To ship list.
+            $toShip = $this->ordersToShip();
+            $badge  = '';
+            if ($toShip > 0) {
+                require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
+                $badge = osc_admin_count($toShip);
+            }
             $this->add_menu(
-                __('Billing'),
+                __('Billing') . $badge,
                 osc_admin_base_url(true) . '?page=billing',
                 'billing',
                 'administrator',
@@ -219,10 +226,13 @@ class AdminMenu
             );
             $this->add_submenu(
                 'billing',
-                __('Orders'),
-                osc_admin_base_url(true) . '?page=billing',
+                __('Orders') . $badge,
+                osc_admin_base_url(true) . '?page=billing' . ($toShip > 0 ? '&toShip=1' : ''),
                 'billing_orders',
-                'administrator'
+                'administrator',
+                null,
+                null,
+                array(osc_admin_base_url(true) . '?page=billing')
             );
             $this->add_submenu(
                 'billing',
@@ -434,6 +444,24 @@ class AdminMenu
         }
 
         osc_run_hook('admin_menu_init');
+    }
+
+    /**
+     * Orders waiting to ship, for the badge. Zero for a moderator, who cannot open Billing,
+     * and when the orders table is not there yet.
+     *
+     * @return int
+     */
+    private function ordersToShip(): int
+    {
+        if (osc_is_moderator()) {
+            return 0;
+        }
+        try {
+            return \mindstellar\billing\OrderStore::toShipCount();
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     /**

@@ -48,6 +48,10 @@ final class OrderStore extends Model
     /** s_meta key core sets when an order was paid but its listing could not be published. */
     public const PUBLISH_FAILED = '_publish_failed';
 
+    /** Cache key and lifetime (seconds) of the "to ship" count shown in the admin menu. */
+    public const TO_SHIP_CACHE_KEY = 'osclass_orders_to_ship';
+    private const TO_SHIP_CACHE_TTL = 60;
+
     /** Key-value group linking an unpaid listing to its open order. */
     private const LISTING_GROUP = 'listing_unpaid';
 
@@ -91,6 +95,7 @@ final class OrderStore extends Model
             's_meta'         => $meta === array() ? null : json_encode($meta),
             'dt_date'        => $now,
         ));
+        self::forgetToShip();
 
         return new Order($id, $userId, $gateway, null, $amount, $currency, $credits, Order::STATUS_PENDING, $meta, $now);
     }
@@ -211,6 +216,10 @@ final class OrderStore extends Model
             // order, which means the callback is being replayed against the wrong
             // record. Refuse rather than overwrite.
             return false;
+        }
+
+        if ($changed === 1) {
+            self::forgetToShip();
         }
 
         return $changed === 1;
@@ -435,6 +444,10 @@ final class OrderStore extends Model
                 $data = $set + $data + array('s_status' => $to);
             }
             if ($write->update($data) === 1) {
+                if ($to !== null) {
+                    self::forgetToShip();
+                }
+
                 return true;
             }
         }
@@ -485,6 +498,9 @@ final class OrderStore extends Model
             ->where('pk_i_id', $id)
             ->whereIn('s_status', Order::SETTLED)
             ->update(array('s_status' => Order::STATUS_REFUNDED));
+        if ($changed === 1) {
+            self::forgetToShip();
+        }
 
         return $changed === 1;
     }
@@ -798,6 +814,68 @@ final class OrderStore extends Model
         }
 
         return self::filtered($filters)->count();
+    }
+
+    /**
+     * How many orders wait to be shipped: paid goods orders and unpaid cash on delivery
+     * ones. One indexed COUNT, kept for a minute and dropped whenever an order is written.
+     *
+     * @return int
+     */
+    public static function toShipCount(): int
+    {
+        $cache = \mindstellar\cache\CacheManager::getInstance();
+        $found = false;
+        $count = $cache->get(self::TO_SHIP_CACHE_KEY, $found);
+        if ($found && is_int($count)) {
+            return $count;
+        }
+
+        $count = self::table()
+            ->where('i_credits', 0)
+            ->whereRaw(
+                '(s_status = ? OR (s_status = ? AND s_gateway = ?))',
+                array(Order::STATUS_PAID, Order::STATUS_PENDING, gateway\CashOnDeliveryGateway::ID)
+            )
+            ->count();
+        $cache->set(self::TO_SHIP_CACHE_KEY, $count, self::TO_SHIP_CACHE_TTL);
+
+        return $count;
+    }
+
+    /**
+     * The oldest orders still waiting to ship, oldest first.
+     *
+     * @param int $limit
+     *
+     * @return Order[]
+     */
+    public static function oldestToShip(int $limit): array
+    {
+        $limit = max(1, $limit);
+        $parts = array();
+        foreach (array(Order::STATUS_PAID, Order::STATUS_PENDING) as $status) {
+            $parts = array_merge($parts, self::filtered(array('status' => $status, 'goods' => true, 'to_ship' => true))
+                ->orderBy('dt_date', 'ASC')
+                ->orderBy('pk_i_id', 'ASC')
+                ->limit($limit)
+                ->get());
+        }
+        usort($parts, static fn (array $a, array $b): int => array($a['dt_date'], (int) $a['pk_i_id']) <=> array($b['dt_date'], (int) $b['pk_i_id']));
+
+        return array_map(static fn (array $row): Order => Order::fromRow($row), array_slice($parts, 0, $limit));
+    }
+
+    /**
+     * Drop the cached "to ship" count, once any write in flight has committed.
+     *
+     * @return void
+     */
+    public static function forgetToShip(): void
+    {
+        Db::afterCommit(static function (): void {
+            \mindstellar\cache\CacheManager::getInstance()->delete(self::TO_SHIP_CACHE_KEY);
+        });
     }
 
     /**

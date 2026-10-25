@@ -39,6 +39,8 @@ the options on the product page.
 
 **Billing → Orders** lists every order. Open one to see its items, address and buyer.
 
+A number beside **Billing** and **Orders** counts the orders waiting to ship, and the dashboard lists the five oldest.
+
 | Status | Meaning |
 |---|---|
 | **Pending** | Placed, not paid. Bank transfer and cash on delivery orders wait here. |
